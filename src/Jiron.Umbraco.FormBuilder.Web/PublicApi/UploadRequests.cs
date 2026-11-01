@@ -4,6 +4,7 @@ using Jiron.Umbraco.FormBuilder.Core.Definitions.Serialization;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Core.Files;
 using Jiron.Umbraco.FormBuilder.Web.ManagementApi;
+using Jiron.Umbraco.FormBuilder.Web.PublicApi.RateLimiting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Mvc;
@@ -23,8 +24,9 @@ namespace Jiron.Umbraco.FormBuilder.Web.PublicApi;
 /// <param name="uploads">The checks and the store of uploads.</param>
 /// <param name="tokens">The upload tokens.</param>
 /// <param name="challenges">The challenges, which an upload's first part holds (ADR-0138).</param>
+/// <param name="limiter">Holds a client to its share of what may wait for an entry (ADR-0148).</param>
 /// <param name="logger">Notes which server key uploaded a file.</param>
-internal sealed partial class UploadRequests(FileUploads uploads, UploadTokens tokens, ChallengeTokens challenges, ILogger<UploadRequests> logger)
+internal sealed partial class UploadRequests(FileUploads uploads, UploadTokens tokens, ChallengeTokens challenges, FormBuilderRateLimiter limiter, ILogger<UploadRequests> logger)
 {
     /// <summary>The longest multipart boundary (RFC 2046).</summary>
     public const int MaxBoundaryLength = 70;
@@ -113,6 +115,11 @@ internal sealed partial class UploadRequests(FileUploads uploads, UploadTokens t
             return Refused(http, FormBuilderPublicProblems.InvalidRequest(part.Invalid));
         }
 
+        if (limiter.CheckUploadShare(http) is { Allowed: false } spent)
+        {
+            return Refused(http, FormBuilderPublicProblems.RateLimited(http, spent));
+        }
+
         FileUploadResult result;
         try
         {
@@ -123,9 +130,13 @@ internal sealed partial class UploadRequests(FileUploads uploads, UploadTokens t
             return Refused(http, Fault(exception, type));
         }
 
-        if (result is { Status: FileUploadStatus.Stored, File: { } kept } && ServerKeyRequest.NameOf(http) is { } serverKey)
+        if (result is { Status: FileUploadStatus.Stored, File: { } kept })
         {
-            LogStoredByKey(logger, serverKey, kept.Key, formKey);
+            limiter.CountUploadShare(http, kept.SizeBytes);
+            if (ServerKeyRequest.NameOf(http) is { } serverKey)
+            {
+                LogStoredByKey(logger, serverKey, kept.Key, formKey);
+            }
         }
 
         return result switch

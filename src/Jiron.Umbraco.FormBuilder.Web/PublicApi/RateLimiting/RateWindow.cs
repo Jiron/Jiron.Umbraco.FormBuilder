@@ -104,6 +104,40 @@ internal sealed class RateWindow
         }
     }
 
+    /// <summary>Counts what has happened already, past the limit if it must be; false for a window that has ended, which counted nothing.</summary>
+    /// <param name="count">How much to count.</param>
+    public bool TryCount(int count)
+    {
+        lock (_gate)
+        {
+            if (_retired)
+            {
+                return false;
+            }
+
+            var now = _time.GetUtcNow().UtcTicks;
+            Advance(now);
+            _lastActivity = now;
+            _taken[_current] += count;
+            _takenTotal += count;
+            return true;
+        }
+    }
+
+    /// <summary>Whether the window holds its limit already, with how long until it holds less; it counts nothing.</summary>
+    /// <param name="retryAfter">How long until it holds less; zero when it does now.</param>
+    public bool IsFull(out TimeSpan retryAfter)
+    {
+        lock (_gate)
+        {
+            var now = _time.GetUtcNow().UtcTicks;
+            Advance(now);
+            var full = _takenTotal >= Limit;
+            retryAfter = full ? RetryAfter(now) : TimeSpan.Zero;
+            return full;
+        }
+    }
+
     /// <summary>Gives back the newest request still counted: one that a later partition refused.</summary>
     public void Release()
     {

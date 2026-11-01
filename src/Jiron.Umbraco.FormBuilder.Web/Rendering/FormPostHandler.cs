@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text;
 using Jiron.Umbraco.FormBuilder.Core.Configuration;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
@@ -75,6 +76,7 @@ internal sealed record FormPostAnswer(FormPostAnswerKind Kind, string? Url = nul
 /// <param name="entries">The entries' files, which a kept file's token names.</param>
 /// <param name="availability">The form's times and entry limit, checked before the post stores anything.</param>
 /// <param name="limits">The rate limits, which every post meets before anything else that costs (ADR-0012).</param>
+/// <param name="limiter">Holds a client to its share of what may wait for an entry (ADR-0148).</param>
 internal sealed class FormPostHandler(
     PublishedFormCache forms,
     FormRequests requests,
@@ -86,7 +88,8 @@ internal sealed class FormPostHandler(
     UploadTokens tokens,
     IEntryRepository entries,
     FormAvailability availability,
-    FormRateLimits limits)
+    FormRateLimits limits,
+    FormBuilderRateLimiter limiter)
 {
     /// <summary>The notice's code after a post that met a form published again meanwhile.</summary>
     public const string FormChangedCode = "form_changed";
@@ -170,40 +173,64 @@ internal sealed class FormPostHandler(
 
         var culture = await pages.CultureAsync(FormPages.IsCulture(published.Culture) ? published.Culture : null);
         var content = published.PublishedContent?.Key;
+        // Umbraco read a post that names no form in its address, so the total of its values, which the files' reader holds a marked
+        // one to, is held here: it ends as a post too large (ADR-0102).
+        if (posted.Sum(pair => pair.Value.Sum(value => (long)Encoding.UTF8.GetByteCount(value ?? string.Empty))) > FormPostFilesMiddleware.MostValuesBytes)
+        {
+            FormPostFileNotes.Set(http, formKey, instance, new FormPostFileRead([], IsRefused: true));
+            return FormPostAnswer.Page;
+        }
+
         var reader = FormPostReader.Read(posted, definition, types);
         var listed = definition.Settings.Developer.QueryValues;
         var query = Held(reader.Query.Count > 0 ? reader.Query : Referred(http.Request), listed);
+        var hasFiles = posted.Files.Any(file => file.Length > 0);
+        var storesFiles = hasFiles || HoldsTypedSignature(posted);
+        if (limit.Allowed && storesFiles)
+        {
+            limit = limiter.CheckUploadShare(http);
+        }
+
         if (!limit.Allowed)
         {
             // Nothing of the post is stored or checked; its answers come back with when to send again (ADR-0012).
             http.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+            http.Response.Headers.RetryAfter = limit.RetryAfterSeconds.ToString(CultureInfo.InvariantCulture);
             var refused = new Step(reader, definition, Guid.TryParseExact(One(posted, FormPostFields.Page), "D", out var refusedPage) ? refusedPage : null, query)
             {
-                Notice = WaitNotice(culture, limit, posted.Files.Any(file => file.Length > 0) || FormPostFileNotes.Get(http, formKey, instance) is { LeftOutFiles: true }),
+                Notice = WaitNotice(culture, limit, hasFiles || FormPostFileNotes.Get(http, formKey, instance) is { LeftOutFiles: true }),
             };
             FormPosts.Set(http, formKey, instance, refused.State(await KeptAsync(reader, definition, formKey, cancellationToken)));
             return FormPostAnswer.Page;
         }
 
-        // A post with files when the site can take no more stores nothing; its answers come back, as they do over a limit (ADR-0148).
-        var hasFiles = posted.Files.Any(file => file.Length > 0);
-        if ((hasFiles || HoldsTypedSignature(posted)) && !await uploads.HasRoomAsync(cancellationToken))
+        // A post with files when the site can take no more stores nothing more, also when its own files bring it there; its answers
+        // come back, as they do over a limit (ADR-0148).
+        var noRoom = storesFiles && !await uploads.HasRoomAsync(cancellationToken);
+        List<SubmissionProblem> noted = [];
+        if (!noRoom)
+        {
+            (noted, noRoom) = await FilesAsync(http, posted.Files, reader, formKey, instance, cancellationToken);
+        }
+
+        var nav = posted[FormPostFields.Nav].LastOrDefault();
+        var moves = nav is FormPostFields.Back or FormPostFields.Next or FormPostFields.Submit or null || Goto(nav) is not null;
+        if (moves && !noRoom)
+        {
+            var signed = await SignaturesAsync(http, reader, formKey, cancellationToken);
+            noted.AddRange(signed.Problems);
+            noRoom = signed.NoRoom;
+        }
+
+        if (noRoom)
         {
             var words = RenderingWords.Of(culture);
-            var noRoom = new Step(reader, definition, Guid.TryParseExact(One(posted, FormPostFields.Page), "D", out var noRoomPage) ? noRoomPage : null, query)
+            var full = new Step(reader, definition, Guid.TryParseExact(One(posted, FormPostFields.Page), "D", out var fullPage) ? fullPage : null, query)
             {
                 Notice = new FormPostNotice(words.NotSentHeading, hasFiles ? words.NoRoomText + " " + words.ChooseFilesAgain : words.NoRoomText, NoRoomCode),
             };
-            FormPosts.Set(http, formKey, instance, noRoom.State(await KeptAsync(reader, definition, formKey, cancellationToken)));
+            FormPosts.Set(http, formKey, instance, full.State(await KeptAsync(reader, definition, formKey, cancellationToken)));
             return FormPostAnswer.Page;
-        }
-
-        var noted = await FilesAsync(http, posted.Files, reader, formKey, instance, cancellationToken);
-        var nav = posted[FormPostFields.Nav].LastOrDefault();
-        var moves = nav is FormPostFields.Back or FormPostFields.Next or FormPostFields.Submit or null || Goto(nav) is not null;
-        if (moves)
-        {
-            noted.AddRange(await SignaturesAsync(reader, formKey, cancellationToken));
         }
 
         var (fields, rows) = reader.Posted();
@@ -306,7 +333,7 @@ internal sealed class FormPostHandler(
 
     // The post's files (ADR-0102): each one the files' reader took goes through the upload's rules and is stored, its
     // token joining its field's answer; each it could not take, or the rules refused, is a problem at its field.
-    private async Task<List<SubmissionProblem>> FilesAsync(HttpContext http, IFormFileCollection files, FormPostReader reader, Guid formKey, string instance, CancellationToken cancellationToken)
+    private async Task<(List<SubmissionProblem> Problems, bool NoRoom)> FilesAsync(HttpContext http, IFormFileCollection files, FormPostReader reader, Guid formKey, string instance, CancellationToken cancellationToken)
     {
         var problems = new List<SubmissionProblem>();
         foreach (var note in FormPostFileNotes.Get(http, formKey, instance)?.Notes ?? [])
@@ -335,8 +362,14 @@ internal sealed class FormPostHandler(
 
             await using var content = file.OpenReadStream();
             var stored = await uploads.StoreAsync(formKey, type, found.Field, file.FileName, content, _ => Task.FromResult(true), cancellationToken);
+            if (stored is { Status: FileUploadStatus.NoRoom })
+            {
+                return (problems, true);
+            }
+
             if (stored is { Status: FileUploadStatus.Stored, File: { } kept })
             {
+                limiter.CountUploadShare(http, kept.SizeBytes);
                 reader.AddFile(found.Field, found.Group, found.Row, tokens.Issue(formKey, found.Field.Key, kept.Key), FormPostFilesMiddleware.Most(type, found.Field) == 1);
             }
             else
@@ -345,13 +378,13 @@ internal sealed class FormPostHandler(
             }
         }
 
-        return problems;
+        return (problems, false);
     }
 
     // The names typed instead of signatures (ADR-0103), when a page button may check or send the post: each drawn on its
     // pad as the signature's PNG and stored as an upload is, its token the field's answer in place of any other; a name
     // too long, or one the upload's rules refuse, is a problem at its field.
-    private async Task<List<SubmissionProblem>> SignaturesAsync(FormPostReader reader, Guid formKey, CancellationToken cancellationToken)
+    private async Task<(List<SubmissionProblem> Problems, bool NoRoom)> SignaturesAsync(HttpContext http, FormPostReader reader, Guid formKey, CancellationToken cancellationToken)
     {
         var problems = new List<SubmissionProblem>();
         foreach (var (field, group, row, typed) in reader.Typed().ToList())
@@ -370,8 +403,14 @@ internal sealed class FormPostHandler(
             var pad = signature.ReadSettings(field.Settings);
             await using var drawn = new MemoryStream(TypedSignature.Draw(name, pad.Width ?? TypedSignature.DefaultWidth, pad.Height ?? TypedSignature.DefaultHeight));
             var stored = await uploads.StoreAsync(formKey, signature, field, TypedSignature.FileName, drawn, _ => Task.FromResult(true), cancellationToken);
+            if (stored is { Status: FileUploadStatus.NoRoom })
+            {
+                return (problems, true);
+            }
+
             if (stored is { Status: FileUploadStatus.Stored, File: { } kept })
             {
+                limiter.CountUploadShare(http, kept.SizeBytes);
                 reader.AddFile(field, group, row, tokens.Issue(formKey, field.Key, kept.Key), replace: true);
             }
             else
@@ -380,7 +419,7 @@ internal sealed class FormPostHandler(
             }
         }
 
-        return problems;
+        return (problems, false);
     }
 
     // A file's problem at its field, by the live version's names as the pipeline names them (ADR-0088).

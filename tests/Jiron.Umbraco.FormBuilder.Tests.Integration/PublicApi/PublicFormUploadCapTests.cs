@@ -66,12 +66,40 @@ public sealed class PublicFormUploadCapTests : PublicApiTestBase
         });
     }
 
+    [Test]
+    public async Task PastItsShare_AClientIsToldToWait_AndStoresNothing()
+    {
+        var key = await PublishAsync(fields: [NameField, Attachment]);
+
+        using var first = await UploadAsync(key);
+        using var refused = await UploadAsync(key);
+        var problem = JsonDocument.Parse(await refused.Content.ReadAsStringAsync()).RootElement;
+        var waiting = await WaitingAsync();
+        _clock.Advance(Core.Retention.OrphanFileCleanup.KeptFor);
+        using var later = await UploadAsync(key);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(first.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+            Assert.That(refused.StatusCode, Is.EqualTo(HttpStatusCode.TooManyRequests));
+            Assert.That(problem.GetProperty("code").GetString(), Is.EqualTo(FormBuilderPublicProblems.RateLimitedCode));
+            Assert.That(refused.Headers.RetryAfter?.Delta, Is.GreaterThan(TimeSpan.Zero));
+            Assert.That(refused.Headers.ConnectionClose, Is.True);
+            Assert.That(waiting, Has.Count.EqualTo(1), "nothing more recorded");
+            Assert.That(later.StatusCode, Is.EqualTo(HttpStatusCode.OK), "a day later");
+        });
+    }
+
     /// <inheritdoc />
     protected override void ConfigureHost(IDictionary<string, string> configuration)
     {
         ArgumentNullException.ThrowIfNull(configuration);
         base.ConfigureHost(configuration);
-        configuration[FormBuilderOptions.SectionName + ":Files:MaxWaitingBytes"] = "10";
+        // The host's configuration stays from test to test, so each says both.
+        var oneShare = TestContext.CurrentContext.Test.MethodName == nameof(PastItsShare_AClientIsToldToWait_AndStoresNothing);
+        configuration[FormBuilderOptions.SectionName + ":Files:MaxWaitingBytesPerAddress"] = oneShare ? "1048576" : "0";
+        configuration[FormBuilderOptions.SectionName + ":Files:MaxWaitingBytes"] = oneShare ? "0" : "10";
+        configuration[FormBuilderOptions.SectionName + ":Limits:ServerKeyFactor"] = "1";
     }
 
     /// <inheritdoc />

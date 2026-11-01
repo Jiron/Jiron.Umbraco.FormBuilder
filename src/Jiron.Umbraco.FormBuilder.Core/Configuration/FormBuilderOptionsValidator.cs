@@ -76,6 +76,11 @@ internal sealed class FormBuilderOptionsValidator(IHostFolders folders, IConfigu
             failures.Add(string.Create(CultureInfo.InvariantCulture, $"{Root}:Files:MaxWaitingBytes ({files.MaxWaitingBytes}) must be 0 to {FormBuilderFilesOptions.HighestMaxFileBytes}."));
         }
 
+        if (files.MaxWaitingBytesPerAddress is < 0 or > FormBuilderFilesOptions.HighestMaxFileBytes)
+        {
+            failures.Add(string.Create(CultureInfo.InvariantCulture, $"{Root}:Files:MaxWaitingBytesPerAddress ({files.MaxWaitingBytesPerAddress}) must be 0 to {FormBuilderFilesOptions.HighestMaxFileBytes}."));
+        }
+
         var seen = new Dictionary<string, int>(StringComparer.Ordinal);
         for (var i = 0; i < files.BlockedExtensions.Count; i++)
         {

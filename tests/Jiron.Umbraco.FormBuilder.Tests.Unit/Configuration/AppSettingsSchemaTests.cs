@@ -87,7 +87,7 @@ public sealed class AppSettingsSchemaTests
             Assert.That(section["properties"]!["PublicApi"]!["properties"]!["BasePath"]!["default"]!.GetValue<string>(), Is.EqualTo("/jfb/api"));
             Assert.That(section["description"]!.GetValue<string>(), Does.StartWith("Jiron Form Builder's host configuration: the JironFormBuilder section of appsettings. It is for developers"));
             Assert.That(section["properties"]!["Files"]!["properties"]!["Root"]!["default"]!.GetValue<string>(), Is.EqualTo("~/umbraco/Data/JironFormBuilder/Uploads"));
-            Assert.That(Keys(section["properties"]!["Files"]!), Is.EqualTo(new[] { "Root", "MaxFileBytes", "MaxWaitingBytes", "BlockedExtensions" }));
+            Assert.That(Keys(section["properties"]!["Files"]!), Is.EqualTo(new[] { "Root", "MaxFileBytes", "MaxWaitingBytes", "MaxWaitingBytesPerAddress", "BlockedExtensions" }));
             Assert.That(Keys(section["properties"]!["Captcha"]!), Is.EqualTo(new[] { "RecaptchaV2", "RecaptchaV3", "Hcaptcha", "UseRecaptchaNet" }));
             Assert.That(Keys(section["properties"]!["Captcha"]!["properties"]!["Hcaptcha"]!), Is.EqualTo(new[] { "SiteKey", "SecretKey", "VerifyAddress" }));
             Assert.That(section["properties"]!["Files"]!["properties"]!["MaxFileBytes"]!["default"]!.GetValue<long>(), Is.EqualTo(52_428_800));

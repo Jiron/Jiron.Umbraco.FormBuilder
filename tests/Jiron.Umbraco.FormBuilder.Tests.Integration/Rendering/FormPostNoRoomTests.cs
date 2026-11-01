@@ -120,12 +120,74 @@ public sealed class FormPostNoRoomTests : RenderingTestBase
         });
     }
 
+    [Test]
+    public async Task APostWhoseOwnFilesReachTheCap_ShowsTheNotice_NotAnErrorAtAField()
+    {
+        var two = Attachment with { Settings = SettingsObject.Parse("""{"types":["pdf"],"maxFiles":2}""") };
+        var key = await PublishFormAsync("limitedPost", null, Topic, two);
+        _ = await PagesAsync("limited");
+        var form = await FormAsync();
+        Fill(form, "topic", "Ideas");
+        var content = new MultipartFormDataContent();
+        foreach (var (name, value) in Posted(form, FormPostFields.Submit))
+        {
+            content.Add(new StringContent(value), name);
+        }
+
+        content.Add(new ByteArrayContent(Encoding.ASCII.GetBytes("%PDF-1.7 the first")), "attachment", "a.pdf");
+        content.Add(new ByteArrayContent(Encoding.ASCII.GetBytes("%PDF-1.7 the second")), "attachment", "b.pdf");
+
+        using var post = await SendAsync(HttpMethod.Post, form.GetAttribute("action")!.Split('#')[0], request =>
+        {
+            request.Content = content;
+            request.Headers.TryAddWithoutValidation("Origin", Client.BaseAddress!.GetLeftPart(UriPartial.Authority));
+            request.Headers.Referrer = new Uri(Client.BaseAddress!, "/limited/");
+        });
+        var answered = await new HtmlParser().ParseDocumentAsync(await post.Content.ReadAsStringAsync());
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(answered.QuerySelector("[data-jfb-notice], .jfb-notice")?.TextContent, Does.Contain("can't take files right now"));
+            Assert.That(answered.QuerySelector("#jfb-1-attachment-error"), Is.Null, "the file is not at fault");
+            Assert.That(await WaitingAsync(), Has.Count.EqualTo(1), "only the first was stored");
+            Assert.That(await CountEntriesAsync(key), Is.Zero);
+        });
+    }
+
+    [Test]
+    public async Task PastItsShare_APostWithAFile_IsToldToWait_AndKeepsItsAnswers()
+    {
+        var key = await PublishFormAsync("limitedPost", null, Topic, Attachment);
+        _ = await PagesAsync("limited");
+        using var first = await PostAsync(await FormAsync(), withFile: true, topic: "Ideas");
+        var form = await FormAsync();
+
+        using var refused = await PostAsync(form, withFile: true, topic: "More ideas");
+        var answered = await new HtmlParser().ParseDocumentAsync(await refused.Content.ReadAsStringAsync());
+        using var withoutAFile = await PostAsync(await FormAsync(), withFile: false, topic: "No file");
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(first.StatusCode, Is.EqualTo(HttpStatusCode.Redirect));
+            Assert.That(refused.StatusCode, Is.EqualTo(HttpStatusCode.TooManyRequests));
+            Assert.That(refused.Headers.RetryAfter, Is.Not.Null);
+            Assert.That(answered.QuerySelector("input[name='topic']")?.GetAttribute("value"), Is.EqualTo("More ideas"));
+            Assert.That(answered.QuerySelector("[data-jfb-notice], .jfb-notice")?.TextContent, Does.Contain("Choose your files again"));
+            Assert.That(withoutAFile.StatusCode, Is.EqualTo(HttpStatusCode.Redirect), "a post that stores no file goes on");
+            Assert.That(await CountEntriesAsync(key), Is.EqualTo(2));
+        });
+    }
+
     /// <inheritdoc />
     protected override void ConfigureHost(IDictionary<string, string> configuration)
     {
         ArgumentNullException.ThrowIfNull(configuration);
         base.ConfigureHost(configuration);
-        configuration[FormBuilderOptions.SectionName + ":Files:MaxWaitingBytes"] = "10";
+        // The host's configuration stays from test to test, so each says both.
+        var oneShare = TestContext.CurrentContext.Test.MethodName == nameof(PastItsShare_APostWithAFile_IsToldToWait_AndKeepsItsAnswers);
+        configuration[FormBuilderOptions.SectionName + ":Files:MaxWaitingBytesPerAddress"] = oneShare ? "1048576" : "0";
+        configuration[FormBuilderOptions.SectionName + ":Files:MaxWaitingBytes"] = oneShare ? "0" : "10";
+        configuration[FormBuilderOptions.SectionName + ":Limits:Submit:PerAddressAndFormPerMinute"] = "0";
     }
 
     /// <inheritdoc />

@@ -53,6 +53,10 @@ flood. Once in ten seconds per server, with what the server stores itself added 
 - **The answers:** the upload endpoint answers `503 uploads_full` with `Retry-After: 300`. A post without JavaScript shows "Your
   answers weren't sent" with its answers, and asks to choose the files again. A typed signature counts as a file.
 - **The upload policy's defaults** gain `PerAddressPerHour: 200` and `PerFormPerMinute: 600`.
+- **An address's share:** `Files:MaxWaitingBytesPerAddress`, 1 GiB by default and 0 leaves it out, holds one address to that many bytes in
+  the day an upload waits, counted on each server. Past it, the upload endpoint answers `429 rate_limited` with `Retry-After`, and a
+  post without JavaScript comes back with its answers and when to send again. The review of 7.4 found that without it two addresses
+  could fill the cap in about ten minutes and shut every form's uploads for a day; now it takes eleven, for the whole day.
 - **The cleanup** is `OrphanFileJob`, on the server that schedules, every minute, for at most 30 seconds. It is no longer a
   part of the retention job.
 - **A scan:** what an entry holds goes first. Uploads are looked at in batches of ten, so a new entry's file waits for at most
@@ -66,7 +70,7 @@ flood. Once in ten seconds per server, with what the server stores itself added 
 
 ## Consequences
 
-- One flood can fill the cap, and the site then takes no new uploads until entries take what waits or a day has passed. That
+- A flood from many addresses can still fill the cap, and the site then takes no new uploads until entries take what waits or a day has passed. That
   is the point: a form stops taking files, and the disk, the site and every entry stay safe. The warning tells the operator,
   who can raise the cap or clear what waits.
 - Other servers' uploads count at the next reading, so the sum can pass the cap by what they take in ten seconds. The rate limits

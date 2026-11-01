@@ -146,6 +146,46 @@ public sealed class FormBuilderRateLimiterTests
     }
 
     [Test]
+    public void AnAddressesShareOfUploads_HoldsAfterItsBytes_ByTheAddress_ForADay()
+    {
+        var limiter = Limiter(share: 3 * 1_048_576);
+        var address = Address("203.0.113.7");
+
+        var atFirst = limiter.CheckUploadShare(address).Allowed;
+        limiter.CountUploadShare(address, 1_048_577);
+        var withRoom = limiter.CheckUploadShare(address).Allowed;
+        limiter.CountUploadShare(address, 1);
+        var full = limiter.CheckUploadShare(address);
+        var another = limiter.CheckUploadShare(Address("203.0.113.8")).Allowed;
+        _clock.Advance(Jiron.Umbraco.FormBuilder.Core.Retention.OrphanFileCleanup.KeptFor);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That((atFirst, withRoom), Is.EqualTo((true, true)));
+            Assert.That(full.Allowed, Is.False, "a part of a mebibyte counts as a whole one: two and one");
+            Assert.That(full.Renders, Is.True, "a visitor over its own share keeps its answers");
+            Assert.That(full.RetryAfter, Is.GreaterThan(TimeSpan.Zero));
+            Assert.That(another, Is.True);
+            Assert.That(limiter.CheckUploadShare(address).Allowed, Is.True, "a day later");
+        });
+    }
+
+    [Test]
+    public void NoShareOfUploads_LeavesItOut_AndMakesNoWindow()
+    {
+        var limiter = Limiter(share: 0);
+        var address = Address("203.0.113.7");
+
+        limiter.CountUploadShare(address, 1_000_000_000_000);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(limiter.CheckUploadShare(address).Allowed, Is.True);
+            Assert.That(limiter.TrackedWindows, Is.Zero);
+        });
+    }
+
+    [Test]
     public void NoSiteLimit_NoLookupWindow()
     {
         var limiter = Limiter(limits =>
@@ -640,9 +680,10 @@ public sealed class FormBuilderRateLimiterTests
         }
     }
 
-    private FormBuilderRateLimiter Limiter(Action<FormBuilderLimitsOptions>? change = null)
+    private FormBuilderRateLimiter Limiter(Action<FormBuilderLimitsOptions>? change = null, long? share = null)
     {
         var options = new FormBuilderOptions();
+        options.Files.MaxWaitingBytesPerAddress = share ?? options.Files.MaxWaitingBytesPerAddress;
         change?.Invoke(options.Limits);
         return new FormBuilderRateLimiter(Options.Create(options), _clock);
     }

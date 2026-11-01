@@ -135,6 +135,8 @@ public sealed class FormElementEndpointTests : RenderingTestBase
         {
             Assert.That((visitor!["form"]!["display"]!.GetValue<string>(), visitor["form"]!["notice"]!["kind"]!.GetValue<string>(), visitorCache), Is.EqualTo(("notice", "signIn", "no-store")));
             Assert.That(visitor["form"]!["pages"]?.AsArray(), Is.Null.Or.Empty, "no field for a visitor the form does not admit");
+            Assert.That(visitor["form"]!["modelData"]?.ToString(), Is.Null.Or.Empty, "nor what the runtime would read of them");
+            Assert.That(member!["form"]!["modelData"]?.ToString(), Is.Not.Null.And.Not.Empty, "which a member it admits gets");
             Assert.That(member!["form"]!["display"]!.GetValue<string>(), Is.EqualTo("form"));
         });
     }

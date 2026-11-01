@@ -26,8 +26,9 @@ internal sealed class ChallengeTokens(IDataProtectionProvider protection, TimePr
 
     /// <summary>
     /// A new challenge for a form. A valid earlier challenge of the form, even an expired one, carries its issue time over,
-    /// so a visitor who took a long time is not taken for one who rushed; its id is never carried over. Only for
-    /// <see cref="FormChallenges.ReceiptGrace"/> past its expiry, so one old challenge does not switch the time signal off for good.
+    /// so a visitor who took a long time is not taken for one who rushed; its id is never carried over. Only for a challenge within
+    /// <see cref="FormChallenges.ReceiptGrace"/> past its expiry and a time younger than a challenge's lifetime and that grace, however
+    /// many renewals it came through, so one old challenge does not switch the time signal off for good.
     /// </summary>
     /// <param name="form">The form's key.</param>
     /// <param name="member">On a form for members, the signed-in member.</param>
@@ -36,7 +37,8 @@ internal sealed class ChallengeTokens(IDataProtectionProvider protection, TimePr
     public string Issue(Guid form, Guid? member, string? previous = null, int proofBits = 0)
     {
         var now = time.GetUtcNow();
-        var issued = Read(previous, form, FormChallenges.ReceiptGrace)?.IssuedUtc ?? now;
+        var carried = Read(previous, form, FormChallenges.ReceiptGrace)?.IssuedUtc;
+        var issued = carried is { } first && now - first < FormChallenges.Lifetime + FormChallenges.ReceiptGrace ? first : now;
         var payload = new byte[PayloadLength];
         payload[0] = Version;
         form.TryWriteBytes(payload.AsSpan(1, KeyLength));

@@ -169,6 +169,29 @@ public sealed class ChallengeTokensTests
     }
 
     [Test]
+    public void AChainOfRenewals_KeepsItsTime_NoLongerThanOneChallengeMay()
+    {
+        var limit = FormChallenges.Lifetime + FormChallenges.ReceiptGrace;
+        var issued = _clock.GetUtcNow();
+        var token = _tokens.Issue(Form, null);
+        for (var left = limit - TimeSpan.FromSeconds(1); left > TimeSpan.Zero; left -= FormChallenges.Lifetime)
+        {
+            _clock.Advance(left > FormChallenges.Lifetime ? FormChallenges.Lifetime : left);
+            token = _tokens.Issue(Form, null, token);
+        }
+
+        var withinIt = _tokens.Read(token, Form, TimeSpan.Zero)!.IssuedUtc;
+        _clock.Advance(TimeSpan.FromSeconds(1));
+        var renewed = _tokens.Issue(Form, null, token);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(withinIt, Is.EqualTo(issued), "through as many renewals as it takes");
+            Assert.That(_tokens.Read(renewed, Form, TimeSpan.Zero)!.IssuedUtc, Is.EqualTo(_clock.GetUtcNow()), "and no longer");
+        });
+    }
+
+    [Test]
     public void ARenewal_OfAnotherFormsChallenge_OrOfNothing_StartsTheTimeNow()
     {
         var foreign = _tokens.Issue(Guid.NewGuid(), null);

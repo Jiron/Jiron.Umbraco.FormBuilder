@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Net;
 using System.Net.Sockets;
 using Jiron.Umbraco.FormBuilder.Core.Configuration;
+using Jiron.Umbraco.FormBuilder.Core.Retention;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 
@@ -61,7 +62,12 @@ internal sealed class FormBuilderRateLimiter
     /// <summary>How many times its limit a client may try before a refusal stops rendering a page.</summary>
     public const int RenderedTimesLimit = 10;
 
+    private const long Mebibyte = 1_048_576;
+
     private static readonly TimeSpan SweepEvery = TimeSpan.FromMinutes(1);
+
+    // As long as an upload may wait for an entry (ADR-0148).
+    private static readonly TimeSpan UploadShare = OrphanFileCleanup.KeptFor;
     private static readonly TimeSpan Second = TimeSpan.FromSeconds(1);
     private static readonly TimeSpan Minute = TimeSpan.FromMinutes(1);
     private static readonly TimeSpan Hour = TimeSpan.FromHours(1);
@@ -70,6 +76,7 @@ internal sealed class FormBuilderRateLimiter
     private readonly Dictionary<string, FormBuilderRatePolicyOptions> _policies;
     private readonly int _maxTracked;
     private readonly int _serverKeyFactor;
+    private readonly int _uploadMebibytes;
     private readonly TimeProvider _time;
     private int _tracked;
     private long _nextSweep;
@@ -93,6 +100,7 @@ internal sealed class FormBuilderRateLimiter
         };
         _maxTracked = limits.MaxTrackedClients;
         _serverKeyFactor = limits.ServerKeyFactor;
+        _uploadMebibytes = (int)Math.Min(options.Value.Files.MaxWaitingBytesPerAddress / Mebibyte, int.MaxValue);
         _time = time;
         _nextSweep = time.GetUtcNow().Add(SweepEvery).UtcTicks;
     }
@@ -148,6 +156,46 @@ internal sealed class FormBuilderRateLimiter
             ? TakeAll(count, [new Partition(PartitionKind.Lookup, count.Limits.SitePerSecond, Second, UsesClient: false, UsesForm: false)], form: null)
             : null;
     }
+
+    /// <summary>
+    /// Whether a client may upload another file, by its share of what may wait for an entry (<c>Files:MaxWaitingBytesPerAddress</c>,
+    /// ADR-0148). It counts nothing, as the bytes are only known once they are stored; a refusal renders, as for one over its own limit.
+    /// </summary>
+    /// <param name="http">The request, whose server key or address is the client.</param>
+    public RateLimitDecision CheckUploadShare(HttpContext http)
+    {
+        ArgumentNullException.ThrowIfNull(http);
+        return _uploadMebibytes > 0 && _windows.TryGetValue(UploadShareKey(http), out var window) && window.IsFull(out var retryAfter)
+            ? new RateLimitDecision(false, retryAfter, true)
+            : RateLimitDecision.Go;
+    }
+
+    /// <summary>Counts what a client has just stored towards its share, in whole mebibytes.</summary>
+    /// <param name="http">The request, whose server key or address is the client.</param>
+    /// <param name="bytes">What it stored.</param>
+    public void CountUploadShare(HttpContext http, long bytes)
+    {
+        ArgumentNullException.ThrowIfNull(http);
+        if (_uploadMebibytes == 0)
+        {
+            return;
+        }
+
+        var key = UploadShareKey(http);
+        var factor = ServerKeyRequest.NameOf(http) is null ? 1 : _serverKeyFactor;
+        var part = new Partition(PartitionKind.ClientUploads, (int)Math.Min(_uploadMebibytes * (long)factor, int.MaxValue), UploadShare, UsesClient: true, UsesForm: false);
+        var count = (int)Math.Min((bytes + Mebibyte - 1) / Mebibyte, int.MaxValue);
+        var (window, _) = WindowFor(key, part);
+        while (!window.TryCount(Math.Max(1, count)))
+        {
+            // The sweep ended it just after this request found it: it counts on a new one.
+            Forget(key, window);
+            (window, _) = WindowFor(key, part);
+        }
+    }
+
+    private static WindowKey UploadShareKey(HttpContext http) =>
+        new(FormBuilderRateLimitPolicies.Upload, PartitionKind.ClientUploads, FormBuilderRateLimitPolicies.ClientOf(http), null);
 
     // Counts a request in each of these partitions; the first that refuses it answers, and those before it give it back.
     private RateLimitDecision? TakeAll(RateLimitCount count, IEnumerable<Partition> partitions, Guid? form)
@@ -277,6 +325,7 @@ internal sealed class FormBuilderRateLimiter
         Form,
         Site,
         Lookup,
+        ClientUploads,
     }
 
     private readonly record struct Partition(PartitionKind Kind, int Limit, TimeSpan Length, bool UsesClient, bool UsesForm);

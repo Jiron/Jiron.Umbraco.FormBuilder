@@ -145,7 +145,8 @@ internal sealed partial class FormModels(
             (path.Length == 0 ? "/" : path) + (HoldsFile(form.Definition) ? "?" + FormPostFields.PostMarker + "=" + form.Form.Key.ToString("D") + "." + render.Instance : string.Empty) + "#" + render.Instance,
             HoldsFile(form.Definition) ? Multipart : null,
             (request.PathBase + new PathString(paths.Root)).ToUriComponent(),
-            ModelData.Of(render.Shown.Answer.Body),
+            // Only a form on show reads it, and a notice or an outcome must not give away what a visitor it does not admit may not see (ADR-0150).
+            display == FormDisplay.Form ? ModelData.Of(render.Shown.Answer.Body) : HtmlString.Empty,
             parts,
             classes);
         var model = display switch

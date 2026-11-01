@@ -82,13 +82,16 @@ Option 2 for each question.
 - **What a post may hold and how long it may take** (7.4c):
   - **Values:** 1 MB plus 64 KB together, what the form's limit allows for everything but its files, with room for the
     form's own hidden inputs. Each value's 1 MB alone would let a post with a large allowance keep up to a gigabyte in
-    memory across its 1,024 parts. Past the total, the post is refused as one past the allowance.
+    memory across its 1,024 parts. Past the total, the post is refused as one past the allowance. A post without the marker is
+    held to the same total by the surface action.
   - **Time:** five minutes from the start of reading, as long as an upload may take, then it is refused the same way.
     Kestrel's minimum data rate is low and a host can turn it off, so it does not bound a post that trickles.
   - **A refused post is not written down.** A post over a rate limit still shows its answers, so its values are read, but
     its files are skipped instead of buffered: a flood costs no disk. The notice asks to choose the files again.
   - **A post without the marker** is read by Umbraco, so the middleware does not count its files. The surface action holds
-    each field to its count before storing any, and notes one too many as `fileCount`.
+    each field to its count before storing any, and notes one too many as `fileCount`. The time limit and the files left unwritten
+    cover marked posts alone, which is every post the views write: a post made to leave the marker out meets Umbraco's own limits
+    on what it reads, and the rate limit after that.
   - **The marker names the form only for the middleware's own work.** Its rate-limit decision holds for the form it
     named; a post that goes on to another form meets that form's limit.
 - **The surface action,** before any button's work: each buffered file goes through `FileUploads.StoreAsync`, the

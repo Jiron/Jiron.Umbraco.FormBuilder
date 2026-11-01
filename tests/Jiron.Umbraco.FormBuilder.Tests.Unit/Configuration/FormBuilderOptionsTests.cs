@@ -33,6 +33,7 @@ public sealed class FormBuilderOptionsTests
             Assert.That(options.Files.Root, Is.EqualTo("~/umbraco/Data/JironFormBuilder/Uploads"));
             Assert.That(options.Files.MaxFileBytes, Is.EqualTo(52_428_800), "50 MiB");
             Assert.That(options.Files.MaxWaitingBytes, Is.EqualTo(10_737_418_240), "10 GiB");
+            Assert.That(options.Files.MaxWaitingBytesPerAddress, Is.EqualTo(1_073_741_824), "1 GiB");
             Assert.That((options.Limits.Upload.PerAddressPerHour, options.Limits.Upload.PerFormPerMinute), Is.EqualTo((200, 600)), "an upload has an hour's limit and a form's");
             Assert.That(options.Files.BlockedExtensions, Is.Empty, "the defaults apply while a site lists none");
             Assert.That(FormBuilderFilesOptions.DefaultBlockedExtensions, Is.EqualTo(new[] { "exe", "dll", "js", "mjs", "bat", "cmd", "ps1", "sh", "msi", "msp", "scr", "pif", "cpl", "jar", "vbs", "wsf", "hta", "lnk", "reg", "html", "htm", "xhtml", "shtml", "svg", "php", "phtml", "asp", "aspx", "jsp", "cgi" }));
@@ -338,6 +339,7 @@ public sealed class FormBuilderOptionsTests
         {
             [$"{Root}:Files:MaxFileBytes"] = "0",
             [$"{Root}:Files:MaxWaitingBytes"] = "-1",
+            [$"{Root}:Files:MaxWaitingBytesPerAddress"] = "-1",
             [$"{Root}:Files:BlockedExtensions:0"] = "exe",
             [$"{Root}:Files:BlockedExtensions:1"] = ".js",
             [$"{Root}:Files:BlockedExtensions:2"] = "EXE",
@@ -352,6 +354,7 @@ public sealed class FormBuilderOptionsTests
             {
                 $"{Root}:Files:MaxFileBytes (0) must be 1 to 999999999999999.",
                 $"{Root}:Files:MaxWaitingBytes (-1) must be 0 to 999999999999999.",
+                $"{Root}:Files:MaxWaitingBytesPerAddress (-1) must be 0 to 999999999999999.",
                 $"{Root}:Files:BlockedExtensions:1 ('.js') must be an extension in lowercase letters and digits without the point, at most 10 of them, such as 'exe'.",
                 $"{Root}:Files:BlockedExtensions:2 ('EXE') must be an extension in lowercase letters and digits without the point, at most 10 of them, such as 'exe'.",
                 $"{Root}:Files:BlockedExtensions:3 ('abcdefghijk') must be an extension in lowercase letters and digits without the point, at most 10 of them, such as 'exe'.",

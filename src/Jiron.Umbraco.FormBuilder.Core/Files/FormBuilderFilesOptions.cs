@@ -25,6 +25,9 @@ public sealed class FormBuilderFilesOptions
     /// <summary>The most bytes of uploads may wait for an entry unless the host sets another: 10 GiB.</summary>
     public const long DefaultMaxWaitingBytes = 10_737_418_240;
 
+    /// <summary>The most bytes one address may upload in the time an upload waits unless the host sets another: 1 GiB.</summary>
+    public const long DefaultMaxWaitingBytesPerAddress = 1_073_741_824;
+
     /// <summary>The longest extension, as a file field's own extensions are.</summary>
     public const int MaxExtensionLength = 10;
 
@@ -61,6 +64,13 @@ public sealed class FormBuilderFilesOptions
     /// few seconds, so it can pass the cap by what other servers take in that time.
     /// </summary>
     public long MaxWaitingBytes { get; set; } = DefaultMaxWaitingBytes;
+
+    /// <summary>
+    /// The most bytes one address may upload in the day an upload waits for an entry, 0 to 999,999,999,999,999: 1 GiB unless the site
+    /// sets another, and 0 leaves it out, so that a few addresses cannot use up <see cref="MaxWaitingBytes"/> for everybody (ADR-0148).
+    /// Counted on each server, in whole mebibytes. Raise it for a form that takes large files from visitors behind one address.
+    /// </summary>
+    public long MaxWaitingBytesPerAddress { get; set; } = DefaultMaxWaitingBytesPerAddress;
 
     /// <summary>
     /// The extensions no field takes, in lowercase letters and digits without the point, each once, such as dwg. A

@@ -221,6 +221,38 @@ public sealed partial class FormPostTests
     }
 
     [Test]
+    public async Task APostWithoutTheMarker_IsHeldToTheValuesTotal_AndStoresNothing()
+    {
+        var key = await PublishFormAsync("postFiles", FilesForm);
+        _ = await PagesAsync("post-files");
+        var form = FormOf(await DocumentAsync(FilesPage), "jfb-1");
+        var words = new string('x', 1_000_000);
+        var content = new MultipartFormDataContent();
+        foreach (var (name, value) in Posted(form, FormPostFields.Submit))
+        {
+            content.Add(new StringContent(name == "subject" ? words : value), name);
+        }
+
+        content.Add(new StringContent(words), "another");
+        content.Add(new ByteArrayContent(Bytes(Pdf, 100)), "attachment", "a.pdf");
+
+        using var answer = await SendAsync(HttpMethod.Post, FilesPage, request =>
+        {
+            request.Content = content;
+            request.Headers.TryAddWithoutValidation("Origin", Client.BaseAddress!.GetLeftPart(UriPartial.Authority));
+        });
+        var html = await answer.Content.ReadAsStringAsync();
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(answer.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+            Assert.That(html, Does.Contain("too large"), "as a post too large to read");
+            Assert.That(await Entries.ListOrphanFilesAsync(DateTimeOffset.UtcNow.AddHours(1), 50), Is.Empty);
+            Assert.That((await Entries.ListIdsAsync((await GetRequiredService<Core.Persistence.Repositories.IFormRepository>().GetAsync(key))!.Id, 10)).Count, Is.Zero);
+        });
+    }
+
+    [Test]
     public async Task APostWithoutTheMarker_IsHeldToTheFieldsCount_AndStoresNothingPastIt()
     {
         _ = await PublishFormAsync("postFiles", FilesForm);
