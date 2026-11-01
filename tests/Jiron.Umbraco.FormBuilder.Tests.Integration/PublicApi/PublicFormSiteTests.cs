@@ -117,6 +117,10 @@ public sealed class PublicFormSiteTests : PublicApiTestBase
         var protection = new ProtectionSettings
         {
             BlockedRanges = ["203.0.113.0/24"],
+            ContentRules = ContentRuleLevel.Strict,
+            BlockedWords = ["JFB_TEST blocked word"],
+            BlockedDomains = ["jfb-allowlist-blocked.example"],
+            MaxLinks = 7,
         };
         var currentProtection = await Settings.GetAsync<ProtectionSettings>();
         await Settings.SaveAsync(protection, currentProtection.Version, Editor);

@@ -17,7 +17,7 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Integration.Rendering;
 
 /// <summary>
 /// The spam score of a post without JavaScript (ROADMAP 7.1c, ADR-0012, ADR-0139): it has no challenge, so no time signal
-/// however fast it comes back, and is scored on the honeypot and the blocked ranges; and in Spam it leads to the same page
+/// however fast it comes back, and is scored on the honeypot, the blocked ranges and the content rules; and in Spam it leads to the same page
 /// as any other post.
 /// </summary>
 [TestFixture]
@@ -123,6 +123,27 @@ public sealed class FormPostProtectionTests : RenderingTestBase
             Assert.That(sent.StatusCode, Is.EqualTo(HttpStatusCode.Redirect));
             Assert.That(entry.State, Is.EqualTo(EntryState.Spam));
             Assert.That(entry.SpamReasons, Is.EqualTo("honeypot"));
+        });
+    }
+
+    [Test]
+    public async Task TheContentRules_HoldForAPost()
+    {
+        var key = await PublishFormAsync("limitedPost", null, Topic);
+        _ = await PagesAsync("limited");
+        var settings = GetRequiredService<IFormBuilderSettingsService>();
+        var current = await settings.GetAsync<ProtectionSettings>();
+        await settings.SaveAsync(current.Value with { BlockedWords = ["casino"] }, current.Version, null);
+        var form = await FormAsync();
+        Fill(form, "topic", "A casino");
+
+        using var sent = await SubmitAsync(form);
+
+        var entry = await OnlyAsync(key);
+        Assert.Multiple(() =>
+        {
+            Assert.That(entry.SpamScore, Is.EqualTo(40));
+            Assert.That(entry.SpamReasons, Is.EqualTo("blocked_word"));
         });
     }
 

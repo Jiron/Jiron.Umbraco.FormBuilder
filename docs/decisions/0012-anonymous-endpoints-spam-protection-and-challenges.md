@@ -14,7 +14,9 @@
   ([ADR-0137](0137-the-rate-limiter.md)); where the challenge is checked, what a request without JavaScript carries, a
   race on one submission and the endpoint's places built in 7.1b ([ADR-0138](0138-the-challenge.md)); how a body
   carries the honeypot, what Spam still checks and keeps, and where the blocked ranges live built in 7.1c
-  ([ADR-0139](0139-the-signals-and-the-score.md))
+  ([ADR-0139](0139-the-signals-and-the-score.md)); what the content rules read, whose maximum of links counts, what a
+  failing spam check does and how "not spam" knows its actions built in 7.1d
+  ([ADR-0140](0140-content-rules-and-the-spam-folder.md))
 - Date: 2026-10-23
 - Roadmap step: 1.7b (decided); built in 6.1 (the public API and the pipeline), 6.6 (server keys), 7.1 (standard
   protection, content rules and the spam folder), 7.2 (proof of work and captchas), 8.x (mail limits) and 16.1 (the

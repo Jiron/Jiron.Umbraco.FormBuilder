@@ -368,9 +368,6 @@ internal sealed class FormSubmissions(
             return Reading.Refused(SubmissionResult.Invalid([new SubmissionProblem(SubmissionProblems.Empty, string.Empty)]));
         }
 
-        // The protection, for a submission (section 4.4, step 6): Spam is told nothing of places or unique answers, which
-        // it neither takes nor holds (ADR-0090, ADR-0091).
-        var verdict = pageKey is null ? await protection.ScoreAsync(request, page.Site, cancellationToken) : SpamVerdict.None;
         var zone = await timeZones.GetAsync(page.Site, cancellationToken);
         var read = await reader.ReadAsync(
             new PostedSubmission
@@ -384,6 +381,10 @@ internal sealed class FormSubmissions(
             },
             cancellationToken);
         var paths = new FieldPaths(definition);
+
+        // The protection, for a submission (section 4.4, step 6), on the answers as they were read: Spam is told nothing of
+        // places or unique answers, which it neither takes nor holds (ADR-0090, ADR-0091).
+        var verdict = pageKey is null ? await protection.ScoreAsync(request, definition, read, scope.Culture, page, cancellationToken) : SpamVerdict.None;
         var full = verdict.IsSpam ? [] : await places.CheckAsync(served.Row.Id, read.Places, cancellationToken);
         // A unique answer is checked once nothing else refuses the post: an answer taken by another entry is then told to
         // a post that would be stored, never to one that stores nothing, which could ask it of any address (ADR-0091).

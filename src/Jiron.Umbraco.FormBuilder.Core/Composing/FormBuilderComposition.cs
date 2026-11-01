@@ -1,6 +1,7 @@
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Core.MergeTags;
 using Jiron.Umbraco.FormBuilder.Core.OptionLists;
+using Jiron.Umbraco.FormBuilder.Core.Submissions;
 using Jiron.Umbraco.FormBuilder.Core.Themes;
 using Umbraco.Cms.Core.DependencyInjection;
 
@@ -28,6 +29,9 @@ public sealed class FormBuilderComposition
 
     /// <summary>The option sources, the standard lists among them (ADR-0073).</summary>
     public FormBuilderOptionSourceCollectionBuilder OptionSources() => Builder.WithCollectionBuilder<FormBuilderOptionSourceCollectionBuilder>();
+
+    /// <summary>The site's own spam checks (ADR-0140).</summary>
+    public FormBuilderSpamCheckCollectionBuilder SpamChecks() => Builder.WithCollectionBuilder<FormBuilderSpamCheckCollectionBuilder>();
 
     /// <summary>The themes of the website forms, the built-in ones among them (ADR-0105).</summary>
     public FormBuilderThemeCollectionBuilder Themes() => Builder.WithCollectionBuilder<FormBuilderThemeCollectionBuilder>();

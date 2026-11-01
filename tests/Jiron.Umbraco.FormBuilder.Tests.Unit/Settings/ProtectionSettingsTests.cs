@@ -1,4 +1,5 @@
 using System.Net;
+using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Settings;
 
 namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Settings;
@@ -49,6 +50,82 @@ public sealed class ProtectionSettingsTests
         Assert.That(ErrorsOf(range).Select(error => (error.Field, error.Code)), Is.EqualTo(new[] { ("protection.BlockedRanges", SettingsErrors.RangeCode) }));
 
     [Test]
+    public void TheContentRules_StartNormal_WithNothingBlocked_AndThreeLinksAllowed()
+    {
+        var settings = new ProtectionSettings();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(settings.ContentRules, Is.EqualTo(ContentRuleLevel.Normal));
+            Assert.That(settings.BlockedWords, Is.Empty);
+            Assert.That(settings.BlockedDomains, Is.Empty);
+            Assert.That(settings.MaxLinks, Is.EqualTo(3));
+        });
+    }
+
+    [Test]
+    public void AWord_LosesItsSurroundingSpace_AndStandsOnceHoweverItIsWritten()
+    {
+        var normal = _validator.Normalize(new ProtectionSettings { BlockedWords = [" Casino ", "casino", "CASINO", "cheap pills"] });
+
+        Assert.That(normal.BlockedWords, Is.EqualTo(new[] { "Casino", "cheap pills" }));
+    }
+
+    [Test]
+    public void ADomain_IsWrittenAsItIsCompared_Once()
+    {
+        var normal = _validator.Normalize(new ProtectionSettings { BlockedDomains = [" Spam.Example ", "@spam.example", "spam.example.", "b\u00fccher.example", "not a domain"] });
+
+        Assert.That(normal.BlockedDomains, Is.EqualTo(new[] { "spam.example", "xn--bcher-kva.example", "not a domain" }));
+    }
+
+    [TestCase("", TestName = "No word")]
+    [TestCase("two\nlines", TestName = "A word on two lines")]
+    public void WhatIsNoWord_IsRefused(string word) =>
+        Assert.That(Codes(new ProtectionSettings { BlockedWords = [word] }), Is.EqualTo(new[] { SettingsErrors.WordCode }));
+
+    [Test]
+    public void AWord_MayBeAsLongAsTheLimit_AndNoLonger()
+    {
+        Assert.Multiple(() =>
+        {
+            Assert.That(Codes(new ProtectionSettings { BlockedWords = [new string('a', ProtectionSettings.MaxBlockedWordLength)] }), Is.Empty);
+            Assert.That(Codes(new ProtectionSettings { BlockedWords = [new string('a', ProtectionSettings.MaxBlockedWordLength + 1)] }), Is.EqualTo(new[] { SettingsErrors.WordCode }));
+        });
+    }
+
+    [TestCase("", TestName = "No domain")]
+    [TestCase("not a domain", TestName = "Words")]
+    [TestCase("Spam.Example", TestName = "A domain not as it is compared")]
+    public void WhatIsNoDomain_IsRefused(string domain) =>
+        Assert.That(Codes(new ProtectionSettings { BlockedDomains = [domain] }), Is.EqualTo(new[] { SettingsErrors.DomainCode }));
+
+    [Test]
+    public void TooManyWordsOrDomains_AreRefused()
+    {
+        string[] Items(int count) => [.. Enumerable.Range(0, count).Select(at => $"item{at}.example")];
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(Codes(new ProtectionSettings { BlockedWords = Items(ProtectionSettings.MaxBlockedItems) }), Is.Empty);
+            Assert.That(Codes(new ProtectionSettings { BlockedWords = Items(ProtectionSettings.MaxBlockedItems + 1) }), Is.EqualTo(new[] { SettingsErrors.Range }));
+            Assert.That(Codes(new ProtectionSettings { BlockedDomains = Items(ProtectionSettings.MaxBlockedItems) }), Is.Empty);
+            Assert.That(Codes(new ProtectionSettings { BlockedDomains = Items(ProtectionSettings.MaxBlockedItems + 1) }), Is.EqualTo(new[] { SettingsErrors.Range }));
+        });
+    }
+
+    [TestCase(-1, false)]
+    [TestCase(0, true)]
+    [TestCase(ProtectionSettings.MostMaxLinks, true)]
+    [TestCase(ProtectionSettings.MostMaxLinks + 1, false)]
+    public void TheMostLinks_AreHeldToTheirRange(int links, bool saved) =>
+        Assert.That(Codes(new ProtectionSettings { MaxLinks = links }), saved ? Is.Empty : Is.EqualTo(new[] { SettingsErrors.Range }));
+
+    [Test]
+    public void ASitesContentRules_AreNeverInherited() =>
+        Assert.That(Codes(new ProtectionSettings { ContentRules = ContentRuleLevel.Inherit }), Is.EqualTo(new[] { SettingsErrors.ContentRulesCode }));
+
+    [Test]
     public void TooManyRanges_AreRefused()
     {
         string Range(int at) => $"10.{at / 256}.{at % 256}.0/24";
@@ -87,6 +164,13 @@ public sealed class ProtectionSettingsTests
             Assert.That(settings.Blocks(IPAddress.Parse("203.0.113.9")), Is.True);
             Assert.That(settings.Blocks(null), Is.False, "the host could not tell");
         });
+    }
+
+    private List<string> Codes(ProtectionSettings settings)
+    {
+        var errors = new SettingsErrors(ProtectionSettings.Alias);
+        _validator.Validate(settings, errors);
+        return [.. errors.Errors.Select(error => error.Code)];
     }
 
     private IReadOnlyList<SettingsError> ErrorsOf(string range)

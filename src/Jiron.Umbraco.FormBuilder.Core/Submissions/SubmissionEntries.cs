@@ -94,6 +94,9 @@ internal sealed class SubmissionEntries(
     // The name of what the rules hid in the submitted event's details: the keys of pages, groups and fields (ADR-0123).
     private const string HiddenDetail = "hidden";
 
+    // The name of the actions the rules chose in the details of an entry that went to Spam, which marking it as no spam queues (ADR-0140).
+    private const string ActionsDetail = "actions";
+
     // The origin a page's address is built on when the site has no base URL: only its path is kept.
     private const string NoOrigin = "https://jfb.invalid";
 
@@ -154,7 +157,7 @@ internal sealed class SubmissionEntries(
                     }
                 }
 
-                await events.AddAsync(new NewEntryEvent(created.Id, SubmittedEvent, Details: Details(outcome, submission.Answers.State.Hidden)), cancellationToken);
+                await events.AddAsync(new NewEntryEvent(created.Id, SubmittedEvent, Details: Details(outcome, submission.Answers.State.Hidden, verdict.IsSpam ? submission.Answers.State.Actions : null)), cancellationToken);
                 if (queued.Count > 0)
                 {
                     await runs.AddAsync(created.Id, created.FormVersionId, Guid.NewGuid(), queued, cancellationToken: cancellationToken);
@@ -229,7 +232,7 @@ internal sealed class SubmissionEntries(
     }
 
     // The runs of the enabled actions the rules let run that fire on submission, in the form's order.
-    private static List<NewActionRun> Runs(FormDefinition definition, IReadOnlyList<string> running)
+    internal static List<NewActionRun> Runs(FormDefinition definition, IReadOnlyList<string> running)
     {
         var chosen = running.ToHashSet(StringComparer.Ordinal);
         return [.. definition.Actions
@@ -296,7 +299,7 @@ internal sealed class SubmissionEntries(
 
     // The submitted event's details: the outcome the rules chose and the keys of what they hid, in the form's order,
     // and nothing a visitor typed.
-    private static string Details(string? outcome, IReadOnlyList<string> hidden)
+    private static string Details(string? outcome, IReadOnlyList<string> hidden, IReadOnlyList<string>? actions)
     {
         var buffer = new ArrayBufferWriter<byte>();
         using (var writer = new Utf8JsonWriter(buffer))
@@ -314,6 +317,17 @@ internal sealed class SubmissionEntries(
             }
 
             writer.WriteEndArray();
+            if (actions is not null)
+            {
+                writer.WriteStartArray(ActionsDetail);
+                foreach (var id in actions)
+                {
+                    writer.WriteStringValue(id);
+                }
+
+                writer.WriteEndArray();
+            }
+
             writer.WriteEndObject();
         }
 
@@ -347,6 +361,21 @@ internal sealed class SubmissionEntries(
     }
 
     // The outcome the entry's submitted event names, or null.
+    /// <summary>The actions the rules chose for an entry that went to Spam, as its <c>submitted</c> event records them; none for any other.</summary>
+    /// <param name="timeline">The entry's timeline.</param>
+    internal static IReadOnlyList<string> ChosenActions(IReadOnlyList<StoredEntryEvent> timeline)
+    {
+        if (timeline.FirstOrDefault(entryEvent => entryEvent.Kind == SubmittedEvent) is not { } submitted)
+        {
+            return [];
+        }
+
+        using var details = JsonDocument.Parse(submitted.Details);
+        return details.RootElement.ValueKind == JsonValueKind.Object && details.RootElement.TryGetProperty(ActionsDetail, out var actions) && actions.ValueKind == JsonValueKind.Array
+            ? [.. actions.EnumerateArray().Select(action => action.GetString()).OfType<string>()]
+            : [];
+    }
+
     private static string? Outcome(IReadOnlyList<StoredEntryEvent> timeline)
     {
         if (timeline.FirstOrDefault(item => item.Kind == SubmittedEvent) is not { } submitted)

@@ -442,8 +442,10 @@ sequenceDiagram
   a lost answer gets its receipt, through `receipt` once its challenge has expired, for up to 24 hours past that
   expiry (ADR-0012).
 - Suspicious submissions take the same path into `Spam`, with no action runs (ADR-0012): a filled honeypot, a send
-  sooner than the fill time and a blocked address range score it, the score and reasons are stored with the entry, and at
-  100 it goes to `Spam`, answered as any other, holding no place and no unique answer and told of neither (ADR-0139).
+  sooner than the fill time, a blocked address range, the content rules and the site's own checks score it, the score and
+  reasons are stored with the entry, and at 100 it goes to `Spam`, answered as any other, holding no place and no unique
+  answer and told of neither (ADR-0139, ADR-0140). Marking it as no spam queues the actions the rules chose when it came
+  in (`EntrySpamFolder`).
 - After the commit the worker sends within milliseconds; the distributed job only wakes it (ADR-0007).
 
 ## 5. The public API
@@ -625,7 +627,7 @@ names and traits are read once, at start-up
 | `IFormBuilderOptionSource` | options from code, with parent filtering, by a name start-up checks; the standard lists are sources a site may replace or remove | ADR-0002, ADR-0073 |
 | `IFormBuilderExportFormat` | an export | §4.9 |
 | `IFormBuilderCaptchaProvider` | a captcha | ADR-0012 |
-| `IFormBuilderSpamCheck` | a spam signal with a score and a reason | ADR-0012 |
+| `IFormBuilderSpamCheck` | a spam signal with a score and a reason, through `SpamChecks()`; one that fails or takes over 5 seconds counts for nothing | ADR-0012, ADR-0140 |
 | `IFormBuilderMergeTagSource`, `IFormBuilderMergeTagFilter` | merge-tag sources and filters of a site's own, in the places their traits allow | ADR-0014, ADR-0065 |
 | `IFormBuilderFileScanner` | scanning and quarantine | ADR-0006 |
 | `IFormBuilderFileStore` | other file storage, asynchronous: all of a file or nothing, never replacing one | ADR-0006, ADR-0041 |

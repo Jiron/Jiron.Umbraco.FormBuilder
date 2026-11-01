@@ -1,4 +1,11 @@
+using System.Text;
+using Jiron.Umbraco.FormBuilder.Core.Definitions;
+using Jiron.Umbraco.FormBuilder.Core.Entries;
+using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
+using Jiron.Umbraco.FormBuilder.Core.Forms;
+using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Core.Settings;
+using Microsoft.Extensions.Logging;
 
 namespace Jiron.Umbraco.FormBuilder.Core.Submissions;
 
@@ -14,9 +21,43 @@ internal static class SpamReasons
     /// <summary>The request's address lies in a blocked range.</summary>
     public const string BlockedRange = "blocked_range";
 
-    /// <summary>The reasons as an entry stores them: comma-separated, or "" for none.</summary>
+    /// <summary>A blocked email domain in an email field.</summary>
+    public const string BlockedDomain = "blocked_domain";
+
+    /// <summary>A blocked word in the texts.</summary>
+    public const string BlockedWord = "blocked_word";
+
+    /// <summary>More links in the texts than the site allows.</summary>
+    public const string TooManyLinks = "too_many_links";
+
+    /// <summary>What a spam check's reason is stored as when it is not one (ADR-0140).</summary>
+    public const string SpamCheck = "spam_check";
+
+    /// <summary>
+    /// The reasons as an entry stores them: comma-separated, each once, or "" for none; those past what the column holds
+    /// are left out, as the score still counts them.
+    /// </summary>
     /// <param name="reasons">The reasons.</param>
-    public static string Stored(IEnumerable<string> reasons) => string.Join(',', reasons);
+    public static string Stored(IEnumerable<string> reasons)
+    {
+        var stored = new StringBuilder();
+        foreach (var reason in reasons.Distinct(StringComparer.Ordinal))
+        {
+            if (stored.Length + reason.Length + 1 > EntryRepository.MaxSpamReasonsLength)
+            {
+                break;
+            }
+
+            stored.Append(stored.Length == 0 ? string.Empty : ",").Append(reason);
+        }
+
+        return stored.ToString();
+    }
+
+    /// <summary>A spam check's reason as it can be stored.</summary>
+    /// <param name="reason">The reason it gave.</param>
+    public static string OfCheck(string? reason) =>
+        reason is { Length: > 0 and <= 64 } && reason.All(letter => char.IsAsciiLetterLower(letter) || char.IsAsciiDigit(letter) || letter is '_' or '-') ? reason : SpamCheck;
 }
 
 /// <summary>A submission's spam score and the reasons for it (ADR-0012).</summary>
@@ -35,25 +76,42 @@ internal sealed record SpamVerdict(int Score, IReadOnlyList<string> Reasons)
 }
 
 /// <summary>
-/// Scores a submission (section 4.4, step 6, ADR-0012, ADR-0139). A server key's request has no page behind it, so neither
-/// the honeypot nor the time speaks for or against it; a post without JavaScript has no challenge, so no time. The blocked
-/// ranges hold for every request.
+/// Scores a submission (section 4.4, step 6, ADR-0012, ADR-0139, ADR-0140). A server key's request has no page behind it,
+/// so neither the honeypot nor the time speaks for or against it; a post without JavaScript has no challenge, so no time.
+/// The blocked ranges, the content rules and the site's own checks hold for every request.
 /// </summary>
 /// <param name="settings">The site's protection settings.</param>
+/// <param name="types">The field types, which say whose answers are text.</param>
+/// <param name="checks">The site's own spam checks.</param>
+/// <param name="logger">Records a check that failed.</param>
 /// <param name="time">The site's clock.</param>
-internal sealed class SubmissionProtection(IFormBuilderSettingsService settings, TimeProvider time)
+internal sealed partial class SubmissionProtection(
+    IFormBuilderSettingsService settings,
+    FieldTypeRegistry types,
+    FormBuilderSpamCheckCollection checks,
+    ILogger<SubmissionProtection> logger,
+    TimeProvider time)
 {
+    private const int MostCheckScore = 1_000;
+    private static readonly TimeSpan CheckLimit = TimeSpan.FromSeconds(5);
+
     private const int HoneypotScore = 100;
     private const int TooFastScore = 60;
     private const int BlockedRangeScore = 100;
 
     /// <summary>The score of a submission and why.</summary>
     /// <param name="request">The submission, with what the gate found in its challenge.</param>
-    /// <param name="site">The site its page is on.</param>
-    /// <param name="cancellationToken">Cancels the read of the settings.</param>
-    public async Task<SpamVerdict> ScoreAsync(SubmissionRequest request, Guid? site, CancellationToken cancellationToken)
+    /// <param name="definition">The form.</param>
+    /// <param name="answers">The answers as they were read.</param>
+    /// <param name="culture">The culture the page was in.</param>
+    /// <param name="page">The page and the site it is on.</param>
+    /// <param name="cancellationToken">Cancels the read of the settings and the checks.</param>
+    public async Task<SpamVerdict> ScoreAsync(SubmissionRequest request, FormDefinition definition, SubmissionAnswers answers, string culture, RequestPage page, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
+        ArgumentNullException.ThrowIfNull(definition);
+        ArgumentNullException.ThrowIfNull(answers);
+        ArgumentNullException.ThrowIfNull(page);
         var score = 0;
         var reasons = new List<string>();
         void Add(int points, string reason)
@@ -72,11 +130,74 @@ internal sealed class SubmissionProtection(IFormBuilderSettingsService settings,
             Add(TooFastScore, SpamReasons.TooFast);
         }
 
-        if ((await settings.GetAsync<ProtectionSettings>(site, cancellationToken)).Value.Blocks(request.Address))
+        var site = (await settings.GetAsync<ProtectionSettings>(page.Site, cancellationToken)).Value;
+        if (site.Blocks(request.Address))
         {
             Add(BlockedRangeScore, SpamReasons.BlockedRange);
         }
 
+        var level = definition.Settings.Protection.ContentRules is ContentRuleLevel.Inherit ? site.ContentRules : definition.Settings.Protection.ContentRules;
+        foreach (var (points, reason) in ContentRules.Check(site, level, definition, answers.Answers, types))
+        {
+            Add(points, reason);
+        }
+
+        // A check may be a slow call elsewhere, so it is not asked once the score has decided.
+        if (checks.Count > 0 && score < SpamVerdict.SpamFrom)
+        {
+            var context = new FormBuilderSpamCheckContext
+            {
+                Form = request.Form,
+                Culture = culture,
+                Page = page.Content,
+                Answers = Texts(definition, answers),
+                Address = request.Address,
+                IsFromServerKey = request.ServerKey is not null,
+            };
+            foreach (var check in checks)
+            {
+                if (await SignalAsync(check, context, cancellationToken) is { } signal)
+                {
+                    Add(Math.Clamp(signal.Score, 0, MostCheckScore), SpamReasons.OfCheck(signal.Reason));
+                }
+
+                if (score >= SpamVerdict.SpamFrom)
+                {
+                    break;
+                }
+            }
+        }
+
         return reasons.Count == 0 ? SpamVerdict.None : new SpamVerdict(score, reasons);
     }
+
+    // The texts of the answers by their field's alias.
+    private static Dictionary<string, IReadOnlyList<string>> Texts(FormDefinition definition, SubmissionAnswers answers)
+    {
+        var aliases = definition.Pages.SelectMany(page => page.Groups).SelectMany(group => group.Fields).SelectMany(field => field.Fields.Prepend(field)).Where(field => field.Alias is not null).ToDictionary(field => field.Key, field => field.Alias!);
+        return answers.Answers
+            .Where(answer => aliases.ContainsKey(answer.Field))
+            .GroupBy(answer => aliases[answer.Field], StringComparer.Ordinal)
+            .ToDictionary(group => group.Key, IReadOnlyList<string> (group) => [.. group.SelectMany(answer => answer.Values).Select(value => value.Text)], StringComparer.Ordinal);
+    }
+
+    // A check's signal; one that fails or takes too long counts for nothing, so it never loses an entry. Only the
+    // submission's own cancellation ends the submission.
+    private async Task<FormBuilderSpamSignal?> SignalAsync(IFormBuilderSpamCheck check, FormBuilderSpamCheckContext context, CancellationToken cancellationToken)
+    {
+        using var limit = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        limit.CancelAfter(CheckLimit);
+        try
+        {
+            return await check.CheckAsync(context, limit.Token).WaitAsync(limit.Token);
+        }
+        catch (Exception exception) when (!cancellationToken.IsCancellationRequested)
+        {
+            LogCheckFailed(logger, check.GetType().Name, exception.GetType().Name);
+            return null;
+        }
+    }
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "The spam check {Check} counted for nothing: {Failure}.")]
+    private static partial void LogCheckFailed(ILogger logger, string check, string failure);
 }
