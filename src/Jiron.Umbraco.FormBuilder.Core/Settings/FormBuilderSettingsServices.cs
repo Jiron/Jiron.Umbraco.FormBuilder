@@ -20,6 +20,7 @@ internal static class FormBuilderSettingsServices
         builder.CacheRefreshers().Add<FormBuilderSettingsCacheRefresher>();
 
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<ISettingsValidator<GeneralSettings>, GeneralSettingsValidator>());
+        builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<ISettingsValidator<ProtectionSettings>, ProtectionSettingsValidator>());
         return builder;
     }
 }

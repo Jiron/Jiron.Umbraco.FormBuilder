@@ -76,6 +76,12 @@ internal sealed record SubmissionRequest
     /// <summary>What the gate found in the request's challenge; null without one.</summary>
     public ChallengeTicket? Ticket { get; init; }
 
+    /// <summary>What the page's honeypot was posted with (ADR-0012), which only a bot fills in; null or blank for nothing.</summary>
+    public string? Honeypot { get; init; }
+
+    /// <summary>The request's address as the host tells it, which the blocked ranges are matched against and which is not stored from here (section 4.8).</summary>
+    public System.Net.IPAddress? Address { get; init; }
+
     /// <summary>The context name an entry a server key submitted records the key's name under (ADR-0126).</summary>
     public const string ServerKeyContext = "jfbServerKey";
 

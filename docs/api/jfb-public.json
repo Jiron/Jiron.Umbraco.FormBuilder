@@ -1791,6 +1791,10 @@
             },
             "nullable": true
           },
+          "honeypot": {
+            "type": "string",
+            "nullable": true
+          },
           "challenge": {
             "type": "string",
             "nullable": true
@@ -2093,6 +2097,10 @@
             "additionalProperties": {
               "type": "string"
             },
+            "nullable": true
+          },
+          "honeypot": {
+            "type": "string",
             "nullable": true
           },
           "challenge": {

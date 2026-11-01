@@ -441,7 +441,9 @@ sequenceDiagram
   of the `submissionId` comes before the revision, availability and the single use of the challenge, so a retry after
   a lost answer gets its receipt, through `receipt` once its challenge has expired, for up to 24 hours past that
   expiry (ADR-0012).
-- Suspicious submissions take the same path into `Spam`, with no action runs (ADR-0012).
+- Suspicious submissions take the same path into `Spam`, with no action runs (ADR-0012): a filled honeypot, a send
+  sooner than the fill time and a blocked address range score it, the score and reasons are stored with the entry, and at
+  100 it goes to `Spam`, answered as any other, holding no place and no unique answer and told of neither (ADR-0139).
 - After the commit the worker sends within milliseconds; the distributed job only wakes it (ADR-0007).
 
 ## 5. The public API
@@ -454,7 +456,8 @@ codes, `no-store` except the form and the options, the OpenAPI document `jfb-pub
 [ADR-0087](decisions/0087-the-upload-endpoint.md),
 [ADR-0088](decisions/0088-the-submission-pipeline-and-the-entries-endpoint.md),
 [ADR-0089](decisions/0089-the-validate-and-receipt-endpoints.md),
-[ADR-0138](decisions/0138-the-challenge.md)).
+[ADR-0138](decisions/0138-the-challenge.md),
+[ADR-0139](decisions/0139-the-signals-and-the-score.md)).
 
 | Route | Purpose | Rate-limit policy | Needs |
 | --- | --- | --- | --- |

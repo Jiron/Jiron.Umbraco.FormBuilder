@@ -51,7 +51,7 @@ internal sealed class EntryRequests(FormSubmissions submissions, UploadTokens to
 
         var invalid = new List<string>();
         return EntryBodies.Read(body.Bytes, formKey, invalid) is { } submission
-            ? Answer(await submissions.SubmitAsync(submission with { Tokens = tokens, Challenges = challenges, Member = await MemberAsync(http), ServerKey = ServerKeyRequest.NameOf(http) }, cancellationToken))
+            ? Answer(await submissions.SubmitAsync(submission with { Tokens = tokens, Challenges = challenges, Address = http.Connection.RemoteIpAddress, Member = await MemberAsync(http), ServerKey = ServerKeyRequest.NameOf(http) }, cancellationToken))
             : FormBuilderPublicProblems.InvalidRequest([.. invalid]);
     }
 
@@ -69,7 +69,7 @@ internal sealed class EntryRequests(FormSubmissions submissions, UploadTokens to
 
         var invalid = new List<string>();
         return EntryBodies.ReadPage(body.Bytes, formKey, invalid) is ({ } submission, var page)
-            ? Answer(await submissions.ValidateAsync(submission with { Tokens = tokens, Challenges = challenges, Member = await MemberAsync(http), ServerKey = ServerKeyRequest.NameOf(http) }, page, cancellationToken))
+            ? Answer(await submissions.ValidateAsync(submission with { Tokens = tokens, Challenges = challenges, Address = http.Connection.RemoteIpAddress, Member = await MemberAsync(http), ServerKey = ServerKeyRequest.NameOf(http) }, page, cancellationToken))
             : FormBuilderPublicProblems.InvalidRequest([.. invalid]);
     }
 
@@ -244,6 +244,9 @@ internal sealed record EntryRequestModel
     /// <summary>Context values by name; only the names the form lists are read and stored.</summary>
     public IReadOnlyDictionary<string, string>? Context { get; init; }
 
+    /// <summary>What the form's honeypot holds; a visitor never fills it in, and a request with a server key does not send it (ADR-0139).</summary>
+    public string? Honeypot { get; init; }
+
     /// <summary>The challenge the form's challenge endpoint gave; a request with a server key needs none.</summary>
     public string? Challenge { get; init; }
 
@@ -284,6 +287,9 @@ internal sealed record PageRequestModel
 
     /// <summary>Context values by name; only the names the form lists are read.</summary>
     public IReadOnlyDictionary<string, string>? Context { get; init; }
+
+    /// <summary>What the form's honeypot holds; a visitor never fills it in, and a request with a server key does not send it (ADR-0139).</summary>
+    public string? Honeypot { get; init; }
 
     /// <summary>The challenge the form's challenge endpoint gave; a request with a server key needs none.</summary>
     public string? Challenge { get; init; }

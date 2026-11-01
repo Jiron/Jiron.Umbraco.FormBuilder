@@ -168,6 +168,7 @@ internal static class EntryBodies
         var query = new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal);
         var context = new Dictionary<string, string>(StringComparer.Ordinal);
         string? challenge = null;
+        string? honeypot = null;
         foreach (var (name, value) in Members(root, string.Empty, invalid))
         {
             switch (name)
@@ -207,6 +208,9 @@ internal static class EntryBodies
                 case "captchaToken" when !page:
                     _ = Text(value, name, invalid, MaxCaptchaTokenLength);
                     break;
+                case "honeypot":
+                    honeypot = Text(value, name, invalid, int.MaxValue);
+                    break;
                 default:
                     invalid.Add(name);
                     break;
@@ -235,6 +239,7 @@ internal static class EntryBodies
             Query = query,
             Context = context,
             Challenge = challenge,
+            Honeypot = honeypot,
         }, pageKey);
     }
 

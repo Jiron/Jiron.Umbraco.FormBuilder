@@ -196,6 +196,8 @@ internal sealed class FormPostHandler(
             Context = reader.Context,
             Tokens = tokens,
             Member = member,
+            Honeypot = posted[FormHoneypot.NameOf(formKey, revision)].ToString(),
+            Address = http.Connection.RemoteIpAddress,
         };
         var page = Guid.TryParseExact(One(posted, FormPostFields.Page), "D", out var pageKey) ? pageKey : (Guid?)null;
         var state = new Step(reader, definition, page, query);

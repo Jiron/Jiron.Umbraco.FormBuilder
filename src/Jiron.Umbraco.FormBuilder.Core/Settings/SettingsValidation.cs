@@ -41,6 +41,9 @@ internal sealed class SettingsErrors(string section)
     /// <summary>The code of a theme's alias that is too long or not on one line (ADR-0105).</summary>
     public const string ThemeCode = "theme";
 
+    /// <summary>The code of a blocked address range that is not one in CIDR notation (ADR-0139).</summary>
+    public const string RangeCode = "addressRange";
+
     /// <summary>The code of a field a site cannot override.</summary>
     public const string Scope = "scope";
 

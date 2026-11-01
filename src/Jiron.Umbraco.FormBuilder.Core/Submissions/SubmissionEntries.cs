@@ -25,6 +25,7 @@ namespace Jiron.Umbraco.FormBuilder.Core.Submissions;
 /// <param name="Context">The context values the form lists, as posted.</param>
 /// <param name="Redirect">The page the placement sends the visitor to after the send (ADR-0129), or null for the outcome.</param>
 /// <param name="ChallengeId">The id of the challenge that made it, which makes one entry (ADR-0012); null for a request without one.</param>
+/// <param name="Verdict">Its spam score and why (ADR-0012); null for none.</param>
 internal sealed record NewSubmission(
     int FormId,
     int FormVersionId,
@@ -37,7 +38,8 @@ internal sealed record NewSubmission(
     RequestPage Page,
     IReadOnlyDictionary<string, string> Context,
     Guid? Redirect = null,
-    string? ChallengeId = null);
+    string? ChallengeId = null,
+    SpamVerdict? Verdict = null);
 
 /// <summary>An entry with its receipt and outcome (ADR-0088).</summary>
 /// <param name="Entry">The entry.</param>
@@ -83,6 +85,9 @@ internal sealed class SubmissionEntries(
     /// <summary>The daily metric that counts submissions (section 4.5).</summary>
     public const string SubmissionsMetric = "submissions";
 
+    /// <summary>The daily metric that counts the submissions the protection put into Spam (section 4.5).</summary>
+    public const string SpamMetric = "spam";
+
     // The name of the outcome in the submitted event's details.
     private const string OutcomeDetail = "outcome";
 
@@ -105,8 +110,9 @@ internal sealed class SubmissionEntries(
         ArgumentNullException.ThrowIfNull(submission);
         ArgumentNullException.ThrowIfNull(scope);
         var definition = submission.Form.Definition;
-        var state = definition.Settings.Submission.Verification is null ? EntryState.Submitted : EntryState.Unverified;
-        var queued = state == EntryState.Unverified ? [] : Runs(definition, submission.Answers.State.Actions);
+        var verdict = submission.Verdict ?? SpamVerdict.None;
+        var state = verdict.IsSpam ? EntryState.Spam : definition.Settings.Submission.Verification is null ? EntryState.Submitted : EntryState.Unverified;
+        var queued = state is EntryState.Unverified or EntryState.Spam ? [] : Runs(definition, submission.Answers.State.Actions);
         var kept = queued.Count > 0 || TriggerCanFire(definition, state);
         var answers = kept ? submission.Answers.Answers : [.. submission.Answers.Answers.Where(answer => !KeptUntilActions(definition, answer.Field))];
         var entry = new NewEntry
@@ -122,6 +128,8 @@ internal sealed class SubmissionEntries(
             ContentKey = submission.Page.Content,
             PageUrl = await PathAsync(submission.Page, submission.Culture, cancellationToken),
             Context = Json(submission.Context),
+            SpamScore = verdict.Score,
+            SpamReasons = SpamReasons.Stored(verdict.Reasons),
             EntryLimit = definition.Settings.Availability.MaxEntries,
         };
 
@@ -152,7 +160,7 @@ internal sealed class SubmissionEntries(
                     await runs.AddAsync(created.Id, created.FormVersionId, Guid.NewGuid(), queued, cancellationToken: cancellationToken);
                 }
 
-                await stats.IncrementAsync(created.FormId, [new DailyStatCount(SubmissionsMetric)], cancellationToken);
+                await stats.IncrementAsync(created.FormId, [new DailyStatCount(verdict.IsSpam ? SpamMetric : SubmissionsMetric)], cancellationToken);
             },
             cancellationToken);
         if (stored is null)
@@ -236,7 +244,7 @@ internal sealed class SubmissionEntries(
     private static bool TriggerCanFire(FormDefinition definition, EntryState state)
     {
         var enabled = definition.Actions.Where(action => action.Enabled).ToList();
-        if (state == EntryState.Unverified)
+        if (state is EntryState.Unverified or EntryState.Spam)
         {
             return enabled.Count > 0;
         }
@@ -277,11 +285,12 @@ internal sealed class SubmissionEntries(
         return path.Length <= EntryRepository.MaxPageUrlLength ? path : null;
     }
 
+    // What a visitor's texts may say of an entry; one in Spam reads as any other, so a bot learns nothing (ADR-0012).
     private static MergeTagEntry EntryOf(StoredEntry entry) => new()
     {
         Key = entry.Key,
         Number = entry.Number,
-        State = StoredNames.Of(entry.State),
+        State = StoredNames.Of(entry.State == EntryState.Spam ? EntryState.Submitted : entry.State),
         Submitted = entry.SubmittedUtc,
     };
 

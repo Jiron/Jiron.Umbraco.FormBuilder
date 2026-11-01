@@ -2379,7 +2379,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - Done when: tests cover each content rule, a custom `IFormBuilderSpamCheck`, and "not spam" running the submitted actions.
 - [~] **7.1e The challenge in the runtime** (7.1 split in five, WORKLOG 2026-11-01)
   - **Blocked (2026-11-01):** the runtime stands 2 bytes below the 40 KB of §4.12, a budget only the owner can change, and this part adds to it and builds on the sending of 6.4i (ADR-0120, `docs/OWNER-TODO.md`). The server's parts are 7.1a to 7.1d.
-  - **Signals:** the `challenge` endpoint's use by the runtime for JS posts, and as the first part of every upload.
+  - **Signals:** the `challenge` endpoint's use by the runtime for JS posts, and as the first part of every upload; the honeypot's value posted as the body's `honeypot` (ADR-0139).
   - **What cached markup cannot carry** (§4.6): the runtime then shows the places ("3 places left", "full") and evaluates member conditions with them.
   - Done when:
     - a `429` keeps the visitor's answers and says when to send again, in the runtime (Playwright);

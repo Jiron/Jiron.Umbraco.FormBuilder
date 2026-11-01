@@ -12,7 +12,9 @@
   from 6.3a by [ADR-0105](0105-the-theme-registry-and-the-base-rules.md), its scoring still 7.1's; the limiter's
   partitions, what a post without JavaScript counts as and where, and what a server key gets built and amended in 7.1a
   ([ADR-0137](0137-the-rate-limiter.md)); where the challenge is checked, what a request without JavaScript carries, a
-  race on one submission and the endpoint's places built in 7.1b ([ADR-0138](0138-the-challenge.md))
+  race on one submission and the endpoint's places built in 7.1b ([ADR-0138](0138-the-challenge.md)); how a body
+  carries the honeypot, what Spam still checks and keeps, and where the blocked ranges live built in 7.1c
+  ([ADR-0139](0139-the-signals-and-the-score.md))
 - Date: 2026-10-23
 - Roadmap step: 1.7b (decided); built in 6.1 (the public API and the pipeline), 6.6 (server keys), 7.1 (standard
   protection, content rules and the spam folder), 7.2 (proof of work and captchas), 8.x (mail limits) and 16.1 (the

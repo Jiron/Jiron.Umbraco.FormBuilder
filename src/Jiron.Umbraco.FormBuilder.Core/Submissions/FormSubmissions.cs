@@ -37,6 +37,7 @@ internal sealed class FormSubmissions(
     OptionPlaces places,
     UniqueAnswers unique,
     FieldTypeRegistry types,
+    SubmissionProtection protection,
     TimeProvider time)
 {
     /// <summary>The most values a query name may hold.</summary>
@@ -93,7 +94,7 @@ internal sealed class FormSubmissions(
 
         // One transaction (section 4.4, step 8).
         var (scope, page, read, wordings) = reading.Read;
-        var submission = new NewSubmission(served.Row.Id, version.Info.Id, served.Form, read, wordings, request.SubmissionId ?? Guid.NewGuid(), digest, scope.Culture, page, scope.Context, request.Redirect, request.Ticket is { } used ? FormChallenges.StoredId(used) : null);
+        var submission = new NewSubmission(served.Row.Id, version.Info.Id, served.Form, read, wordings, request.SubmissionId ?? Guid.NewGuid(), digest, scope.Culture, page, scope.Context, request.Redirect, request.Ticket is { } used ? FormChallenges.StoredId(used) : null, reading.Verdict);
         try
         {
             return await recorder.CreateAsync(submission, scope, cancellationToken) is { } created
@@ -367,6 +368,9 @@ internal sealed class FormSubmissions(
             return Reading.Refused(SubmissionResult.Invalid([new SubmissionProblem(SubmissionProblems.Empty, string.Empty)]));
         }
 
+        // The protection, for a submission (section 4.4, step 6): Spam is told nothing of places or unique answers, which
+        // it neither takes nor holds (ADR-0090, ADR-0091).
+        var verdict = pageKey is null ? await protection.ScoreAsync(request, page.Site, cancellationToken) : SpamVerdict.None;
         var zone = await timeZones.GetAsync(page.Site, cancellationToken);
         var read = await reader.ReadAsync(
             new PostedSubmission
@@ -380,10 +384,10 @@ internal sealed class FormSubmissions(
             },
             cancellationToken);
         var paths = new FieldPaths(definition);
-        var full = await places.CheckAsync(served.Row.Id, read.Places, cancellationToken);
+        var full = verdict.IsSpam ? [] : await places.CheckAsync(served.Row.Id, read.Places, cancellationToken);
         // A unique answer is checked once nothing else refuses the post: an answer taken by another entry is then told to
         // a post that would be stored, never to one that stores nothing, which could ask it of any address (ADR-0091).
-        var taken = pageKey is null && read.Errors.IsEmpty && full.IsEmpty ? await unique.CheckAsync(served.Row.Id, read.Unique, cancellationToken) : [];
+        var taken = !verdict.IsSpam && pageKey is null && read.Errors.IsEmpty && full.IsEmpty ? await unique.CheckAsync(served.Row.Id, read.Unique, cancellationToken) : [];
         var all = full.IsEmpty && taken.IsEmpty ? read.Errors : [.. read.Errors.Concat(full).Concat(taken).OrderBy(paths.Rank)];
         ImmutableArray<SubmissionError> errors = onPage is null ? all : [.. all.Where(error => onPage.Contains(error.Field))];
         if (!errors.IsEmpty)
@@ -393,7 +397,7 @@ internal sealed class FormSubmissions(
                 : SubmissionResult.Refused(SubmissionRefusal.FormChanged));
         }
 
-        return new Reading(null, new ReadSubmission(scope, page, read, wordings));
+        return new Reading(null, new ReadSubmission(scope, page, read, wordings), verdict);
     }
 
     // A retry of an entry's submission id: the same answers get the entry's receipt and outcome, others 409.
@@ -697,7 +701,7 @@ internal sealed class FormSubmissions(
     private sealed record Served(PublishedForm Form, StoredForm Row);
 
     // What a request's reading gave: its refusal, or the answers with what they were read in.
-    private sealed record Reading(SubmissionResult? Refusal, ReadSubmission? Read)
+    private sealed record Reading(SubmissionResult? Refusal, ReadSubmission? Read, SpamVerdict? Verdict = null)
     {
         [MemberNotNullWhen(true, nameof(Refusal))]
         [MemberNotNullWhen(false, nameof(Read))]
