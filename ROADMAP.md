@@ -2344,7 +2344,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
 
 ### Phase 7: Spam protection and file security
 
-- [ ] **7.1a The rate limits** (7.1 split in five, WORKLOG 2026-11-01)
+- [x] **7.1a The rate limits** (7.1 split in five, WORKLOG 2026-11-01) (2026-11-01, 107c9a0)
   - **Limits:** the ASP.NET Core rate limiter per IP, form and site, with bounded partitions; a server key's requests in their key's partition (6.6b, ADR-0126), with a test that a key's limit holds and does not touch the address's; origin checks.
   - No-JS posts are rate limited like every post (ADR-0012), and a test covers that case.
   - Done when:
