@@ -1062,7 +1062,7 @@ A settings change raises a notification and a cache refresher: the saving server
 | 5510 | Research sandbox (Phase 1) |
 | 5520 | E2E test host (fresh database per run) |
 | 5521 | Static page server for headless and cross-origin tests |
-| 5522 to 5529 | Extra E2E hosts for suites that need their own (privacy on 5522, load on 5523, resilience with restarts on 5524, the strict site behind the output cache and a strict CSP on 5525, 6.4k; the hosts that must refuse to start on 5526 and 5527, 4.4a, which never listen), §3.3 |
+| 5522 to 5529 | Extra E2E hosts for suites that need their own (privacy on 5522, load on 5523, resilience with restarts on 5524, the strict site behind the output cache and a strict CSP on 5525, 6.4k; the hosts that must refuse to start on 5526 and 5527, 4.4a, which never listen; refused uploads over HTTPS and HTTP/2 on 5528 and 5529, 7.3d), §3.3 |
 | 5530 | Install-test site (packages from the local feed) |
 | 5540 | Umbraco 18 sandbox (Phase 19) |
 | 5541 | Umbraco 18 demo (Phase 19) |

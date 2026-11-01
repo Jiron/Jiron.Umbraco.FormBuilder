@@ -41,6 +41,13 @@ public sealed class FormBuilderTestingOptions
     public bool Csp { get; set; }
 
     /// <summary>
+    /// The name of the key that gives the addresses in the host's <c>ASPNETCORE_URLS</c> that use HTTPS a certificate of
+    /// <see cref="Tls.TestCertificate"/>, where the host answers HTTP/2 too (ROADMAP 7.3d, ADR-0006); empty for none. Only a host in the
+    /// Development environment sets it.
+    /// </summary>
+    public string? HttpsKey { get; set; }
+
+    /// <summary>
     /// Backoffice user groups to create before the users; existing aliases are left as they are, and each group's global
     /// grant is set to its <see cref="TestUserGroup.Permissions"/>.
     /// </summary>

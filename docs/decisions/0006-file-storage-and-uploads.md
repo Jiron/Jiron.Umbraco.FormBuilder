@@ -157,7 +157,15 @@ nothing in the temp folder; on the blob store against the local emulator, with 1
 - 6.4's runtime refuses an oversize or mistyped file before uploading, with signature test vectors shared with the
   server (D10), and treats a reset during an upload as a failed upload the visitor can retry.
 - 7.3 hardens the rules and checks over HTTPS with HTTP/2, where the server can end a request stream without closing
-  the connection, that a refused upload's answer reaches the browser.
+  the connection, that a refused upload's answer reaches the browser. **Measured in 7.3d, in Edge against Kestrel:**
+  every refusal arrives whole. A declared length gets its `413`. A stream of 32 MB that declares no length gets its
+  `413` after 2.8 MB left the page, and a program its `415` after 0.7 MB, as the flow control stops the rest, and the
+  same page then uploads a file that fits. Without JavaScript, a post just over the limit shows its page with the error
+  at the field, and one of 40 MB, far past what the server drains, its page with the notice that nothing was sent,
+  where HTTP/1.1 showed `ERR_CONNECTION_RESET`. So over HTTP/2 a visitor always reads why; the drain allowance is what
+  HTTP/1.1 needs. The spec's host has a certificate of its own for this machine; Windows' TLS cannot use a key no store
+  holds, so its key sits under one name in the user's key store for the run, and the spec removes it (a run stopped by
+  force leaves that one key, which the next run takes and removes).
 - 15.2's blob sample follows this ADR and passes the store's contract tests against a local storage emulator. Only
   the samples project references the provider (an Umbraco HQ package, MIT) and, through it, the Azure SDK; the
   product's packages never do, so no site gets them unless it adds the sample's store itself.

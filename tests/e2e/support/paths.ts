@@ -61,6 +61,15 @@ export const REFUSAL_PORTS = { configuration: 5526, globalization: 5527 } as con
 export const CACHED_PORT = 5525;
 export const CACHED_BASE_URL = `http://127.0.0.1:${CACHED_PORT}`;
 
+/**
+ * The host of the refused uploads (ROADMAP 7.3d, ADR-0006): the plain port its start-up wait reads, and the port with HTTPS
+ * and HTTP/2, under a certificate of the Testing project's that nothing trusts, so its browser ignores that.
+ */
+export const SECURE_HOST_PORT = 5528;
+export const SECURE_PORT = 5529;
+export const SECURE_BASE_URL = `https://127.0.0.1:${SECURE_PORT}`;
+export const SECURE_KEY_NAME = 'JironFormBuilderTestHost';
+
 /** The HTTP stub that the test host starts for webhooks, URL option lists and captcha verification. */
 export const STUB_PORT = 5560;
 export const STUB_URL = `http://127.0.0.1:${STUB_PORT}`;
