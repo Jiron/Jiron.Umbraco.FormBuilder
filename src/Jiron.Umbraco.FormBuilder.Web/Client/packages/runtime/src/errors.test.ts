@@ -3,7 +3,7 @@
 // the focus, and `jfb:invalid` without an answer; a passing check lets the post go on with the button pressed; the
 // server's errors stay while their field is unchanged and join only a refused send; a field the page leaves out is the
 // server's to check; and a send whose errors are on another page goes to the server.
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { showFieldError } from './display';
 import { engineOf } from './engine';
 import { pageErrorsOf, type InvalidDetail } from './errors';
@@ -138,6 +138,17 @@ const shownOf = (form: HTMLFormElement) => ({
   summary: [...form.querySelectorAll(':scope > [data-jfb-summary] a')].map(
     (link) => `${link.getAttribute('href') ?? ''} ${link.textContent}`,
   ),
+});
+
+// What the checks load on first use, loaded up front: a first load takes as long as the machine is busy, which no
+// wait in a test can know, and from then on `settle` only has promises to wait for.
+beforeAll(async () => {
+  await Promise.all([
+    import('@jfb/logic/calc'),
+    import('@jfb/logic/lang/en'),
+    import('@jfb/logic/lang/de'),
+    import('./recall'),
+  ]);
 });
 
 afterEach(() => {
