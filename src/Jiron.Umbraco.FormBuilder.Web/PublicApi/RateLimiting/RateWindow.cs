@@ -20,6 +20,7 @@ internal sealed class RateWindow
     private int _current;
     private int _takenTotal;
     private int _refusedTotal;
+    private bool _retired;
 
     /// <summary>A window of <paramref name="limit"/> requests per <paramref name="length"/>.</summary>
     /// <param name="limit">The requests per window, 1 or more.</param>
@@ -56,26 +57,35 @@ internal sealed class RateWindow
         }
     }
 
-    /// <summary>How long the window has been empty and unused; null while it still counts a request.</summary>
-    public TimeSpan? IdleFor
+    /// <summary>
+    /// Ends a window that has been empty and unused for a whole length, so a request that holds it still does not count on
+    /// a window nobody will ask again; false for one that is still in use.
+    /// </summary>
+    public bool TryRetire()
     {
-        get
+        lock (_gate)
         {
-            lock (_gate)
-            {
-                var now = _time.GetUtcNow().UtcTicks;
-                Advance(now);
-                return _takenTotal + _refusedTotal == 0 ? TimeSpan.FromTicks(Math.Max(0, now - _lastActivity)) : null;
-            }
+            var now = _time.GetUtcNow().UtcTicks;
+            Advance(now);
+            _retired |= _takenTotal + _refusedTotal == 0 && now - _lastActivity >= Length.Ticks;
+            return _retired;
         }
     }
 
     /// <summary>Counts one request when it fits; otherwise <paramref name="retryAfter"/> says when the next will.</summary>
     /// <param name="retryAfter">How long until a request fits; zero when this one did.</param>
-    public bool TryTake(out TimeSpan retryAfter)
+    /// <param name="retired">Whether the window has ended and counted nothing, so the request belongs to a new one.</param>
+    public bool TryTake(out TimeSpan retryAfter, out bool retired)
     {
         lock (_gate)
         {
+            retired = _retired;
+            if (retired)
+            {
+                retryAfter = TimeSpan.Zero;
+                return false;
+            }
+
             var now = _time.GetUtcNow().UtcTicks;
             Advance(now);
             _lastActivity = now;

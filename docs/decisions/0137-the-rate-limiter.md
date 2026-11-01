@@ -1,7 +1,7 @@
 # 0137. The rate limiter
 
 - Status: accepted; builds on and amends [ADR-0012](0012-anonymous-endpoints-spam-protection-and-challenges.md)
-  and [ADR-0126](0126-server-key-submissions.md)
+  and [ADR-0126](0126-server-key-submissions.md); a window the sweep ends counts nothing more, found by 7.1c's gate
 - Date: 2026-11-01
 - Roadmap step: 7.1a
 
@@ -58,6 +58,8 @@ headless site.
 - **The test hosts turn the limits off** and each test of a limit names its own: their requests all come from one
   address. The browser suite's host keeps one limit per address and form, which the spec of a `429` uses up on a demo
   form no other spec posts to.
+
+- **The sweep ends a window under its lock.** A request may hold a window the sweep is about to remove, and a count made on it would be lost, which lets a client send one request too many. So the sweep retires a window only while it is empty and unused for a whole length; a request that meets a retired window counts on a new one.
 
 ## Consequences
 

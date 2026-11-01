@@ -290,6 +290,70 @@ public sealed class FormBuilderRateLimiterTests
     }
 
     [Test]
+    public void AWindowUnusedForItsLength_Retires_AndCountsNothingMore()
+    {
+        var window = new RateWindow(5, TimeSpan.FromMinutes(1), _clock);
+        var inUse = window.TryRetire();
+        _ = window.TryTake(out _, out _);
+        _clock.Advance(TimeSpan.FromMinutes(1) - TimeSpan.FromTicks(1));
+        var justBefore = window.TryRetire();
+        _clock.Advance(TimeSpan.FromTicks(1));
+
+        var retires = window.TryRetire();
+        var fits = window.TryTake(out var wait, out var retired);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(inUse, Is.False, "a new window has been used just now");
+            Assert.That(justBefore, Is.False, "not before its whole length");
+            Assert.That(retires, Is.True);
+            Assert.That(fits, Is.False);
+            Assert.That(retired, Is.True);
+            Assert.That(wait, Is.EqualTo(TimeSpan.Zero));
+            Assert.That(window.Tried, Is.Zero, "the request is not counted here");
+            Assert.That(window.TryRetire(), Is.True, "and it stays ended");
+        });
+    }
+
+    [Test]
+    public void AWindowThatStillCounts_DoesNotRetire()
+    {
+        var window = new RateWindow(5, TimeSpan.FromMinutes(1), _clock);
+        _ = window.TryTake(out _, out _);
+        _clock.Advance(TimeSpan.FromSeconds(30));
+        _ = window.TryTake(out _, out _);
+        _clock.Advance(TimeSpan.FromSeconds(30));
+
+        Assert.That(window.TryRetire(), Is.False, "its second request still counts");
+    }
+
+    [Test]
+    public void RequestsThatMeetTheSweep_EachCount_AndTheNextWindowHoldsThemAll()
+    {
+        const int Limit = 40;
+        const int AtOnce = 8;
+        var limiter = Limiter(limits =>
+        {
+            limits.Submit.PerAddressPerMinute = 0;
+            limits.Submit.PerAddressPerHour = 0;
+            limits.Submit.PerFormPerMinute = 0;
+            limits.Submit.SitePerSecond = 0;
+            limits.Submit.PerAddressAndFormPerMinute = Limit;
+        });
+        var address = Address("203.0.113.7");
+
+        for (var round = 0; round < 500; round++)
+        {
+            // The window has been empty for its whole length, and the sweep is due: the first of them starts it.
+            _clock.Advance(TimeSpan.FromMinutes(2));
+            Parallel.For(0, AtOnce, new ParallelOptions { MaxDegreeOfParallelism = AtOnce }, _ => limiter.Take(address, FormBuilderRateLimitPolicies.Submit, Form));
+
+            Assert.That(Count(limiter, address, FormBuilderRateLimitPolicies.Submit, Form, Limit), Is.EqualTo(Limit - AtOnce), $"round {round}: none of them was lost");
+            Assert.That(limiter.TrackedWindows, Is.EqualTo(1), $"round {round}");
+        }
+    }
+
+    [Test]
     public void TheEmptyKey_NamesNoForm_AndCannotFillTheBoundBySweeping()
     {
         var limiter = Limiter(limits =>
@@ -423,32 +487,32 @@ public sealed class FormBuilderRateLimiterTests
     public void AClockThatGoesBack_FreesNothingEarly()
     {
         var window = new RateWindow(1, TimeSpan.FromMinutes(1), _clock);
-        Assert.That(window.TryTake(out _), Is.True);
+        Assert.That(window.TryTake(out _, out _), Is.True);
 
         _clock.Advance(TimeSpan.FromMinutes(-5));
 
-        Assert.That(window.TryTake(out _), Is.False);
+        Assert.That(window.TryTake(out _, out _), Is.False);
     }
 
     [Test]
     public void AWindow_RollsOutSegmentBySegment_AndGivesBackTheNewest()
     {
         var window = new RateWindow(2, TimeSpan.FromSeconds(100), _clock);
-        Assert.That(window.TryTake(out _), Is.True);
+        Assert.That(window.TryTake(out _, out _), Is.True);
         _clock.Advance(TimeSpan.FromSeconds(50));
-        Assert.That(window.TryTake(out _), Is.True);
-        Assert.That(window.TryTake(out var after), Is.False);
+        Assert.That(window.TryTake(out _, out _), Is.True);
+        Assert.That(window.TryTake(out var after, out _), Is.False);
         Assert.That(after, Is.EqualTo(TimeSpan.FromSeconds(50)), "when the first rolls out");
 
         window.Release();
-        Assert.That(window.TryTake(out _), Is.True, "what was given back fits again");
-        Assert.That(window.TryTake(out _), Is.False);
+        Assert.That(window.TryTake(out _, out _), Is.True, "what was given back fits again");
+        Assert.That(window.TryTake(out _, out _), Is.False);
 
         _clock.Advance(TimeSpan.FromSeconds(50));
         Assert.Multiple(() =>
         {
-            Assert.That(window.TryTake(out _), Is.True, "the first has rolled out");
-            Assert.That(window.TryTake(out _), Is.False, "the second has not");
+            Assert.That(window.TryTake(out _, out _), Is.True, "the first has rolled out");
+            Assert.That(window.TryTake(out _, out _), Is.False, "the second has not");
         });
     }
 

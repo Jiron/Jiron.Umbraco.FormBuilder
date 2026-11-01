@@ -96,7 +96,16 @@ internal sealed class FormBuilderRateLimiter
         {
             var key = new WindowKey(policy, part.Kind, part.UsesClient ? client : null, part.UsesForm ? named : null);
             var (window, overflow) = WindowFor(key, part);
-            if (window.TryTake(out var retryAfter))
+            var fits = window.TryTake(out var retryAfter, out var retired);
+            while (retired)
+            {
+                // The sweep ended it just after this request found it: the request counts on a new one.
+                Forget(key, window);
+                (window, overflow) = WindowFor(key, part);
+                fits = window.TryTake(out retryAfter, out retired);
+            }
+
+            if (fits)
             {
                 taken.Add(window);
                 continue;
@@ -181,10 +190,18 @@ internal sealed class FormBuilderRateLimiter
 
         foreach (var (key, window) in _windows)
         {
-            if (window.IdleFor is { } idle && idle >= window.Length && _windows.TryRemove(new KeyValuePair<WindowKey, RateWindow>(key, window)) && key.Counts)
+            if (window.TryRetire())
             {
-                Interlocked.Decrement(ref _tracked);
+                Forget(key, window);
             }
+        }
+    }
+
+    private void Forget(WindowKey key, RateWindow window)
+    {
+        if (_windows.TryRemove(new KeyValuePair<WindowKey, RateWindow>(key, window)) && key.Counts)
+        {
+            Interlocked.Decrement(ref _tracked);
         }
     }
 
