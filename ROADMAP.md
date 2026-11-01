@@ -2428,7 +2428,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - Done when: tests cover a zip-slip name, a download by a user with and without the permission and by an anonymous caller, and an SVG and an HTML file served as attachments.
 - [x] **7.3d A refused upload over HTTP/2** (7.3 split in four, WORKLOG 2026-11-01) (2026-11-01, a6b18ba)
   - Done when: over HTTPS with HTTP/2, Playwright shows that a refused upload's answer reaches the browser (ADR-0006).
-- [ ] **7.4a The site that protects a form** (7.4 split in nine, WORKLOG 2026-11-01)
+- [x] **7.4a The site that protects a form** (7.4 split in nine, WORKLOG 2026-11-01) (2026-11-01, ac18692)
   - **What the review found:** a request names its own page, so a visitor chooses whose protection applies: no page, or a page of the laxest site, escapes a stricter site's puzzle, captcha, blocked ranges and content rules on a form that inherits them.
   - A named page's site applies only when that page holds the form, by the reference index. Otherwise, a request with no such page gets the strictest of the shared settings and every site's: the highest level, and every range, word and domain.
   - A puzzle's answer counts only for a challenge asking at least the bits the site asks now.
