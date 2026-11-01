@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Security.Cryptography;
 
 namespace Jiron.Umbraco.FormBuilder.Core.Files;
@@ -7,14 +8,16 @@ namespace Jiron.Umbraco.FormBuilder.Core.Files;
 /// the request, counted on every read against a limit, past which a read throws <see cref="FileTooLargeException"/>,
 /// and hashed with SHA-256 when asked. A failure to read the rest arrives as <see cref="FileUploadReadException"/>, so
 /// that a store's own failures stay apart from the request's. It reads asynchronously only, as a request body may only
-/// be read. With nothing read already, it counts a whole request.
+/// be read. With nothing read already, it counts a whole request. Asked to, it keeps the last bytes it gave.
 /// </summary>
 /// <param name="head">The bytes read already, which come first.</param>
 /// <param name="rest">The rest, which the caller owns and disposes.</param>
 /// <param name="limit">The most bytes it gives, 0 or more.</param>
 /// <param name="hash">Whether to compute the SHA-256 of the bytes it gives.</param>
-internal sealed class FileUploadStream(ReadOnlyMemory<byte> head, Stream rest, long limit, bool hash = false) : Stream
+/// <param name="tailLength">How many of the last bytes it gives to keep, 0 for none.</param>
+internal sealed class FileUploadStream(ReadOnlyMemory<byte> head, Stream rest, long limit, bool hash = false, int tailLength = 0) : Stream
 {
+    private byte[]? _tail = tailLength > 0 ? ArrayPool<byte>.Shared.Rent(tailLength) : null;
     private readonly IncrementalHash? _hash = hash ? IncrementalHash.CreateHash(HashAlgorithmName.SHA256) : null;
     private readonly long _limit = limit >= 0 ? limit : throw new ArgumentOutOfRangeException(nameof(limit), limit, "A limit is 0 or more bytes.");
     private int _headRead;
@@ -25,6 +28,23 @@ internal sealed class FileUploadStream(ReadOnlyMemory<byte> head, Stream rest, l
 
     /// <summary>Whether a read found the end of the bytes.</summary>
     public bool IsAtEnd { get; private set; }
+
+    /// <summary>The last bytes it gave, in their order, as many as it keeps or all it gave.</summary>
+    /// <exception cref="InvalidOperationException">It keeps none.</exception>
+    public byte[] Tail
+    {
+        get
+        {
+            var kept = _tail ?? throw new InvalidOperationException("This stream keeps no bytes.");
+            var length = (int)Math.Min(BytesRead, tailLength);
+            var start = (int)((BytesRead - length) % tailLength);
+            var tail = new byte[length];
+            var first = Math.Min(length, tailLength - start);
+            kept.AsSpan(start, first).CopyTo(tail);
+            kept.AsSpan(0, length - first).CopyTo(tail.AsSpan(first));
+            return tail;
+        }
+    }
 
     /// <summary>The SHA-256 of the bytes in lowercase hex, once a read found their end.</summary>
     /// <exception cref="InvalidOperationException">It does not hash, or the end has not been read.</exception>
@@ -83,6 +103,7 @@ internal sealed class FileUploadStream(ReadOnlyMemory<byte> head, Stream rest, l
         }
 
         _hash?.AppendData(buffer.Span[..read]);
+        Keep(buffer.Span[..read]);
         return read;
     }
 
@@ -103,6 +124,21 @@ internal sealed class FileUploadStream(ReadOnlyMemory<byte> head, Stream rest, l
         {
             throw new FileUploadReadException("The upload could not be read from its request.", exception);
         }
+    }
+
+    // The bytes just given, BytesRead counting them, in a ring: a byte stands at its place in the file modulo the length.
+    private void Keep(ReadOnlySpan<byte> given)
+    {
+        if (_tail is not { } kept)
+        {
+            return;
+        }
+
+        var last = given.Length > tailLength ? given[^tailLength..] : given;
+        var at = (int)((BytesRead - last.Length) % tailLength);
+        var first = Math.Min(last.Length, tailLength - at);
+        last[..first].CopyTo(kept.AsSpan(at));
+        last[first..].CopyTo(kept);
     }
 
     /// <inheritdoc />
@@ -132,6 +168,11 @@ internal sealed class FileUploadStream(ReadOnlyMemory<byte> head, Stream rest, l
         if (disposing)
         {
             _hash?.Dispose();
+            if (_tail is { } kept)
+            {
+                _tail = null;
+                ArrayPool<byte>.Shared.Return(kept);
+            }
         }
 
         base.Dispose(disposing);

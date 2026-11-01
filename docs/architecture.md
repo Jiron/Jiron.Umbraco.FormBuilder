@@ -701,7 +701,7 @@ others in a cluster.
 | Tampering | Posted values for hidden fields, member-prefilled hidden fields or calculations | hidden fields stripped, hide-mode prefill ignored, calculations recomputed on the server | §4.3.3, ADR-0005 | 6.1, 6.5 |
 | Tampering | A submission against an older definition | the compatibility rule: `form_changed` when an error falls on a field the visitor never saw, an answered field is gone, or a consent wording changed (by its posted hash) | ADR-0002 | 6.1, 6.4 |
 | Tampering | Two editors overwrite each other | concurrency versions on forms and settings | ADR-0002, ADR-0008 | 4.3, 4.5 |
-| Tampering | A disguised upload (renamed executable, polyglot, zip slip) | allowlist and blocklist, magic numbers, random names, safe ZIP paths | ADR-0006 | 7.3 |
+| Tampering | A disguised upload (renamed executable, polyglot, double extension, zip slip) | allowlist and blocklist over the whole name, magic numbers, a page hidden in the first bytes, a ZIP behind another kind, random names, safe ZIP paths | ADR-0006, ADR-0143 | 7.3 |
 | Tampering | Hostile theme CSS or rich text | the sanitiser and its CSS parser on every output | §4.10, ADR-0015 | 6.3, 12.2 |
 | Repudiation | An editor denies a change, export, deletion or reveal | the audit log with user, entity and changed fields, never values | §4.10, ADR-0013 | 4.3, 12.4b |
 | Repudiation | A visitor disputes a consent | the exact consent text's hash and culture with the entry | ADR-0009 | 6.1 |

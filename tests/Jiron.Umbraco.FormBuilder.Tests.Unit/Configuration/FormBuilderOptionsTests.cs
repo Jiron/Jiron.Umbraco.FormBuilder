@@ -33,7 +33,7 @@ public sealed class FormBuilderOptionsTests
             Assert.That(options.Files.Root, Is.EqualTo("~/umbraco/Data/JironFormBuilder/Uploads"));
             Assert.That(options.Files.MaxFileBytes, Is.EqualTo(52_428_800), "50 MiB");
             Assert.That(options.Files.BlockedExtensions, Is.Empty, "the defaults apply while a site lists none");
-            Assert.That(FormBuilderFilesOptions.DefaultBlockedExtensions, Is.EqualTo(new[] { "exe", "dll", "js", "bat", "cmd", "ps1", "sh", "msi", "html", "svg" }));
+            Assert.That(FormBuilderFilesOptions.DefaultBlockedExtensions, Is.EqualTo(new[] { "exe", "dll", "js", "mjs", "bat", "cmd", "ps1", "sh", "msi", "msp", "scr", "pif", "cpl", "jar", "vbs", "wsf", "hta", "lnk", "reg", "html", "htm", "xhtml", "shtml", "svg", "php", "phtml", "asp", "aspx", "jsp", "cgi" }));
             Assert.That(options.Limits.Definitions, Is.EqualTo(new DefinitionLimits()));
             Assert.That(options.Designer.SettingLocks, Is.Empty);
             Assert.That(options.LockedSections, Is.Empty);

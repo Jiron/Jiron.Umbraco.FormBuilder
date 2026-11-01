@@ -195,7 +195,7 @@ public sealed class PublicFormUploadTests : PublicApiTestBase
             Assert.That(await AnswerAsync(response), Is.EqualTo("413 payload_too_large fileSize at file, close"));
             Assert.That(read, Is.InRange(FieldLimit, FieldLimit + FileUploads.OverheadBytes), "the server stopped reading at the field's limit");
             Assert.That(written, Is.LessThan(62_914_560), "the transfer was cut off before the client had sent the whole file");
-            Assert.That(allocated, Is.LessThan(read / 4), "streamed: buffering in memory would allocate at least what it read");
+            Assert.That(allocated, Is.LessThan(read / 2), "streamed: buffering in memory would allocate at least what it read, and the whole test host counts here");
             Assert.That(buffered, Is.Empty, "nothing buffered to disk");
             Assert.That(StoredFiles(), Is.Empty, "no file, and no partial one");
             Assert.That(await OrphansAsync(), Is.Empty);
@@ -274,6 +274,10 @@ public sealed class PublicFormUploadTests : PublicApiTestBase
             ("a type group's extension the site blocks", Archive, "backup.rar", Rar),
             ("a script by its first bytes", Small, "notes.txt", "#!/bin/sh"u8.ToArray()),
             ("a program named as a drawing", Drawing, "drawing.svg", Program),
+            ("a double extension", Attachment, "report.exe.pdf", Pdf),
+            ("a page named as text", Small, "notes.txt", "<html><body>"u8.ToArray()),
+            ("a polyglot: a script inside an image", Attachment, "photo.jpg", [0xFF, 0xD8, 0xFF, 0xE0, .. "<script>alert(1)</script>"u8]),
+            ("a polyglot: an image that ends as an archive", Attachment, "photo.jpg", [0xFF, 0xD8, 0xFF, 0xE0, .. new byte[1_000], 0x50, 0x4B, 0x05, 0x06, .. new byte[18]]),
             ("a signature that is no PNG", Sign, "signature.png", Pdf),
             ("a signature past its limit", Sign, "signature.png", Bytes(OnePixel, 1_048_577)),
         })
@@ -298,6 +302,10 @@ public sealed class PublicFormUploadTests : PublicApiTestBase
                 ["a type group's extension the site blocks"] = "415 unsupported_media_type fileType at file, close",
                 ["a script by its first bytes"] = "415 unsupported_media_type fileType at file, close",
                 ["a program named as a drawing"] = "415 unsupported_media_type fileType at file, close",
+                ["a double extension"] = "415 unsupported_media_type fileType at file, close",
+                ["a page named as text"] = "415 unsupported_media_type fileType at file, close",
+                ["a polyglot: a script inside an image"] = "415 unsupported_media_type fileType at file, close",
+                ["a polyglot: an image that ends as an archive"] = "415 unsupported_media_type fileType at file, close",
                 ["a signature that is no PNG"] = "415 unsupported_media_type invalid at file, close",
                 ["a signature past its limit"] = "413 payload_too_large invalid at file, close",
             }));

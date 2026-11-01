@@ -31,6 +31,7 @@ internal sealed partial class FileUploads(
     private const char Slash = '/';
     private const char Backslash = (char)92;
     private const char Point = '.';
+    private const char Colon = ':';
 
     /// <summary>The most bytes of one request to a field: the field's limit and <see cref="OverheadBytes"/>.</summary>
     /// <param name="type">The field's type, which stores files.</param>
@@ -57,7 +58,7 @@ internal sealed partial class FileUploads(
 
     /// <summary>
     /// A file's name as the visitor's device gave it, cleaned for downloads (ADR-0087): its last path segment, without
-    /// control characters, with lone surrogates replaced, normalised to NFC, trimmed, and at most
+    /// control characters or marks that reorder how it reads, with lone surrogates replaced, normalised to NFC, trimmed, and at most
     /// <see cref="MaxNameLength"/> characters with its extension kept. Null for a missing name, and for one that is
     /// empty or only points once cleaned.
     /// </summary>
@@ -73,7 +74,7 @@ internal sealed partial class FileUploads(
         var kept = new StringBuilder(segment.Length);
         foreach (var unit in segment)
         {
-            if (!char.IsControl(unit))
+            if (!char.IsControl(unit) && !ReordersText(unit))
             {
                 kept.Append(unit);
             }
@@ -85,9 +86,9 @@ internal sealed partial class FileUploads(
 
     /// <summary>
     /// The first error of a file, checked on its first bytes in ADR-0087's order before any byte is stored; null when it
-    /// passes. Bytes of a program or a script, and an extension the host blocks, are <c>fileType</c>; then the type's own
-    /// check reports its kind; then bytes that are not the kind the extension names are <c>fileType</c>. A
-    /// <c>fileType</c> the type does not declare is <c>invalid</c>.
+    /// passes. Bytes of a program or a script, and an extension the host blocks anywhere in the name, are <c>fileType</c>;
+    /// then the type's own check reports its kind; then bytes that are not the kind the extension names, or that hide a
+    /// page (ADR-0143), are <c>fileType</c>. A <c>fileType</c> the type does not declare is <c>invalid</c>.
     /// </summary>
     /// <param name="type">The field's type, which stores files.</param>
     /// <param name="field">The field.</param>
@@ -97,7 +98,7 @@ internal sealed partial class FileUploads(
     {
         ArgumentException.ThrowIfNullOrEmpty(name);
         var extension = FileFieldType.ExtensionOf(name);
-        if (FileKinds.IsExecutable(head.Span) || host.BlockedExtensions.Contains(extension))
+        if (FileKinds.IsExecutable(head.Span) || NamesABlockedExtension(name))
         {
             return FieldUploads.Declared(type, FieldMessageKinds.FileType);
         }
@@ -108,14 +109,14 @@ internal sealed partial class FileUploads(
             return own[0];
         }
 
-        return FileKinds.Matches(extension, head.Span) ? null : FieldUploads.Declared(type, FieldMessageKinds.FileType);
+        return FileKinds.Matches(extension, head.Span) && !FileKinds.HidesMarkup(extension, head.Span) ? null : FieldUploads.Declared(type, FieldMessageKinds.FileType);
     }
 
     /// <summary>
     /// Checks a file and stores it for its field (ADR-0087): the name is cleaned, the first bytes are read and checked,
     /// the form's row is looked up, the bytes go to the store under a random id, counted against the field's limit and
-    /// hashed, and once <paramref name="endsAfter"/> confirms that nothing follows the file, a row without an entry
-    /// records it. A file refused, cut off or not recorded leaves nothing in the store; an exception reaches the caller
+    /// hashed, a file that must not also be an archive is refused when it ends as one (ADR-0143), and once
+    /// <paramref name="endsAfter"/> confirms that nothing follows the file, a row without an entry records it. A file refused, cut off or not recorded leaves nothing in the store; an exception reaches the caller
     /// with the bytes deleted again. An exception reading <paramref name="content"/> arrives as
     /// <see cref="FileUploadReadException"/>.
     /// </summary>
@@ -164,12 +165,19 @@ internal sealed partial class FileUploads(
         var saved = false;
         try
         {
-            using var upload = new FileUploadStream(head.AsMemory(0, headLength), content, limit, hash: true);
+            var keepsTail = FileKinds.MustNotEndAsZip(FileFieldType.ExtensionOf(cleaned));
+            using var upload = new FileUploadStream(head.AsMemory(0, headLength), content, limit, hash: true, tailLength: keepsTail ? FileKinds.ZipTailLength : 0);
             await store.SaveAsync(id, upload, cancellationToken);
             saved = true;
             if (!upload.IsAtEnd)
             {
                 throw new InvalidOperationException($"The file store {store.GetType().FullName} returned before it read the upload to its end.");
+            }
+
+            if (keepsTail && FileKinds.EndsAsZip(upload.Tail))
+            {
+                await DiscardAsync(id);
+                return new(FileUploadStatus.Refused, Error: FieldUploads.Declared(type, FieldMessageKinds.FileType));
             }
 
             if (!await endsAfter(cancellationToken))
@@ -214,6 +222,26 @@ internal sealed partial class FileUploads(
             throw;
         }
     }
+
+    // Whether any part of a name after its first is an extension the host blocks: report.exe.pdf and page.php.jpg reach
+    // something that reads the name's middle, and report.exe:.pdf a stream of an NTFS file. Spaces around a part do not hide it.
+    private bool NamesABlockedExtension(string name)
+    {
+        foreach (var part in name.Split(Point).Skip(1))
+        {
+            var cut = part.IndexOf(Colon, StringComparison.Ordinal);
+            var extension = BuiltInValidation.AsciiLower((cut < 0 ? part : part[..cut]).Trim());
+            if (host.BlockedExtensions.Contains(extension))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    // The marks that make a name read otherwise than its bytes run: gpj.exe written to show as exe.jpg.
+    private static bool ReordersText(char unit) => unit is (char)0x061C or (char)0x200E or (char)0x200F or (>= (char)0x202A and <= (char)0x202E) or (>= (char)0x2066 and <= (char)0x2069);
 
     // The first bytes, as many as the head holds or all of a shorter file.
     private static async Task<int> ReadHeadAsync(Stream content, byte[] head, CancellationToken cancellationToken)

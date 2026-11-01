@@ -23,6 +23,7 @@ public sealed class FileUploadsTests
     private static readonly byte[] Pdf = [.. "%PDF-1.7"u8, 0x0A, .. "1 0 obj"u8];
     private static readonly byte[] Jpeg = [0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10, .. "JFIF"u8, 0x00];
     private static readonly byte[] Program = [0x4D, 0x5A, 0x90, 0x00, 0x03, 0x00];
+    private static readonly byte[] ZipClosing = [0x50, 0x4B, 0x05, 0x06, .. new byte[18]];
 
     // A 1-by-1 PNG in true colour with alpha, with the CRC zlib computes for its header.
     private static readonly byte[] OnePixel = Convert.FromHexString("89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c489");
@@ -54,6 +55,13 @@ public sealed class FileUploadsTests
         yield return Case("a name cut before a whole character", new string('a', 250) + pair + "bbb.pdf", new string('a', 250) + ".pdf");
         yield return Case("an extension too long to keep", "a." + new string('x', 300), "a." + new string('x', 253));
         yield return Case("a name of its extension", ".htaccess", ".htaccess");
+        yield return Case("a right-to-left override", $"photo{(char)0x202E}gpj.exe", "photogpj.exe");
+        foreach (var mark in new[] { 0x061C, 0x200E, 0x200F, 0x202A, 0x202E, 0x2066, 0x2069 })
+        {
+            yield return Case($"the mark {mark:X4} that reorders a name", $"a{(char)mark}b.pdf", "ab.pdf");
+        }
+
+        yield return Case("a mark past those that reorder a name", $"a{(char)0x2070}b.pdf", $"a{(char)0x2070}b.pdf");
     }
 
     [SetUp]
@@ -116,6 +124,88 @@ public sealed class FileUploadsTests
             Assert.That(uploads.Check(type, drawings, "drawing.svg", "<svg/>"u8.ToArray()), Is.Null);
             Assert.That(uploads.Check(type, drawings, "plan.dwg", Pdf), Is.EqualTo(FieldMessageKinds.FileType));
         });
+    }
+
+    [TestCase("report.exe.pdf", TestName = "A program's extension before the last")]
+    [TestCase("page.php.pdf", TestName = "A server's script before the last")]
+    [TestCase("REPORT.EXE.PDF", TestName = "An extension in capitals")]
+    [TestCase("report.pdf.exe.pdf", TestName = "An extension in the middle")]
+    [TestCase("report.exe .pdf", TestName = "An extension with a space after it")]
+    [TestCase("report.exe:.pdf", TestName = "An extension with an NTFS stream's colon")]
+    [TestCase("report.pdf:evil.exe", TestName = "An extension after a stream's name")]
+    [TestCase(".exe.pdf", TestName = "An extension at the start")]
+    public void ANameThatHidesABlockedExtension_IsRefused(string name)
+    {
+        var uploads = Uploads();
+        var field = File("""{"types":["pdf"]}""");
+
+        Assert.That(uploads.Check(uploads.TypeOf(field)!, field, name, Pdf), Is.EqualTo(FieldMessageKinds.FileType));
+    }
+
+    [TestCase("exe.pdf", TestName = "A stem that reads as an extension")]
+    [TestCase("report.final.v2.pdf", TestName = "Points in a name")]
+    [TestCase("backup.tar.pdf", TestName = "An extension the site does not block")]
+    public void ANameWithPoints_IsTaken(string name)
+    {
+        var uploads = Uploads();
+        var field = File("""{"types":["pdf"]}""");
+
+        Assert.That(uploads.Check(uploads.TypeOf(field)!, field, name, Pdf), Is.Null);
+    }
+
+    [Test]
+    public void BytesThatHideAPage_AreRefused_AsTheFieldReportsIt()
+    {
+        var uploads = Uploads();
+        var field = File("""{"types":["images","pdf"]}""");
+        byte[] polyglot = [.. Jpeg, .. "<script>alert(1)</script>"u8];
+        string? Check(FormField on, string name, byte[] head) => uploads.Check(uploads.TypeOf(on)!, on, name, head) is { } kind ? Name(kind) : null;
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(Check(field, "photo.jpg", polyglot), Is.EqualTo("fileType"));
+            Assert.That(Check(field, "photo.jpg", Jpeg), Is.Null);
+            Assert.That(Check(Signature(), "signature.png", [.. OnePixel, .. "<script>"u8]), Is.EqualTo("invalid"), "a signature has no message of its own for file types");
+        });
+    }
+
+    [Test]
+    public async Task AnImageThatEndsAsAZip_IsRefused_AndLeavesNothing()
+    {
+        var field = File("""{"types":["images","pdf"]}""");
+        byte[] polyglot = [.. Jpeg, .. new byte[100_000], .. ZipClosing];
+
+        var result = await StoreAsync(field, "photo.jpg", polyglot);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(Answer(result), Is.EqualTo("Refused fileType"));
+            Assert.That(_store.Files, Is.Empty);
+            Assert.That(result.File, Is.Null);
+        });
+        await _entries.DidNotReceive().AddFileAsync(Arg.Any<NewEntryFile>(), Arg.Any<CancellationToken>());
+    }
+
+    [Test]
+    public async Task AnImageThatEndsAsAZip_WithTheLongestComment_IsRefused()
+    {
+        var field = File("""{"types":["images","pdf"]}""");
+        byte[] polyglot = [.. Jpeg, 0x50, 0x4B, 0x05, 0x06, .. new byte[16], 0xFF, 0xFF, .. new byte[65_535]];
+
+        var result = await StoreAsync(field, "photo.jpg", polyglot);
+
+        Assert.That(Answer(result), Is.EqualTo("Refused fileType"));
+    }
+
+    [TestCase("backup.zip", TestName = "An archive")]
+    [TestCase("report.docx", TestName = "A document that is one")]
+    public async Task AFileThatIsAZip_MayEndAsOne(string name)
+    {
+        var field = File("""{"extensions":["zip","docx"]}""");
+
+        var result = await StoreAsync(field, name, [0x50, 0x4B, 0x03, 0x04, .. new byte[100], .. ZipClosing]);
+
+        Assert.That(Answer(result), Is.EqualTo("Stored"));
     }
 
     [Test]

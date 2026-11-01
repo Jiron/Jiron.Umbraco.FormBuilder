@@ -203,6 +203,33 @@ public sealed class FileUploadStreamTests
         }
     }
 
+    [TestCase(5, 3, 2, TestName = "A short file, whole")]
+    [TestCase(8, 3, 8, TestName = "A file of exactly what it keeps")]
+    [TestCase(9, 3, 8, TestName = "A byte past what it keeps")]
+    [TestCase(30, 3, 8, TestName = "A long file in small reads")]
+    [TestCase(30, 8, 8, TestName = "Reads as long as what it keeps")]
+    [TestCase(30, 20, 8, TestName = "Reads longer than what it keeps")]
+    [TestCase(30, 5, 7, TestName = "Reads that wrap around it")]
+    public async Task ItKeeps_TheLastBytesItGave_InTheirOrder(int length, int readLength, int keeps)
+    {
+        var bytes = Enumerable.Range(1, length).Select(number => (byte)number).ToArray();
+        using var upload = new FileUploadStream(bytes.AsMemory(0, Math.Min(2, length)), new MemoryStream(bytes[Math.Min(2, length)..]), length, tailLength: keeps);
+        var buffer = new byte[readLength];
+        while (await upload.ReadAsync(buffer) > 0)
+        {
+        }
+
+        Assert.That(upload.Tail, Is.EqualTo(bytes[^Math.Min(keeps, length)..]));
+    }
+
+    [Test]
+    public void ItKeepsNothing_UnlessAsked()
+    {
+        using var upload = new FileUploadStream(ReadOnlyMemory<byte>.Empty, new MemoryStream(), 0);
+
+        Assert.That(() => upload.Tail, Throws.InvalidOperationException);
+    }
+
     // A request whose every read fails.
     private sealed class Throwing(Exception exception) : Stream
     {

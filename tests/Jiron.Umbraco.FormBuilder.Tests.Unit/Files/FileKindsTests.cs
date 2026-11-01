@@ -112,6 +112,103 @@ public sealed class FileKindsTests
     [TestCase(new byte[] { 0x23, 0x21, 0x2F, 0x62, 0x69, 0x6E, 0x2F, 0x73, 0x68 }, TestName = "AProgram_IsKnownByItsBytes(script)")]
     public void AProgram_IsKnownByItsBytes(byte[] head) => Assert.That(FileKinds.IsExecutable(head), Is.True);
 
+    public static IEnumerable<TestCaseData> Disguises()
+    {
+        static TestCaseData Case(string name, string extension, byte[] head, bool hides) => new TestCaseData(extension, head, hides).SetName($"APageBehindAnotherName_IsFound({name})");
+        static byte[] Wide(string text, byte[] mark, bool littleEndian) =>
+        [
+            .. mark,
+            .. text.SelectMany(letter => littleEndian ? new[] { (byte)letter, (byte)0 } : [(byte)0, (byte)letter]),
+        ];
+
+        yield return Case("a page named as text", "txt", [.. "<html><body>"u8], true);
+        yield return Case("a page in capitals", "txt", [.. "<HTML>"u8], true);
+        yield return Case("a doctype", "csv", [.. "<!DOCTYPE html>"u8], true);
+        yield return Case("a script after spaces", "txt", [.. " \t\r\n\f<script>"u8], true);
+        yield return Case("a drawing named as text", "txt", [.. "<svg xmlns="u8], true);
+        yield return Case("XML, which can be a drawing", "txt", [.. "<?xml version="u8], true);
+        yield return Case("a head", "txt", [.. "<head>"u8], true);
+        yield return Case("a body", "txt", [.. "<body>"u8], true);
+        yield return Case("a frame", "txt", [.. "<iframe>"u8], true);
+        yield return Case("an object", "txt", [.. "<object>"u8], true);
+        yield return Case("an embed", "txt", [.. "<embed>"u8], true);
+        yield return Case("a server's script", "txt", [.. "<?php echo"u8], true);
+        yield return Case("a server's page", "txt", [.. "<%@ Page"u8], true);
+        yield return Case("a page after a byte-order mark", "txt", [0xEF, 0xBB, 0xBF, .. "<html>"u8], true);
+        yield return Case("a page in UTF-16", "txt", Wide("<html>", [0xFF, 0xFE], littleEndian: true), true);
+        yield return Case("a page in big-endian UTF-16", "txt", Wide("<html>", [0xFE, 0xFF], littleEndian: false), true);
+        yield return Case("a page in UTF-16 without its mark", "txt", Wide("<html>", [], littleEndian: true), true);
+        yield return Case("a zero byte inside a tag", "txt", [.. "<scr"u8, 0, .. "ipt>"u8], true);
+        yield return Case("a page without an extension", "", [.. "<html>"u8], true);
+        yield return Case("a page outside the table", "dwg", [.. "<script>"u8], true);
+        yield return Case("a script inside a JPEG", "jpg", [.. Jpeg, .. "<script>"u8], true);
+        yield return Case("a script in capitals inside a GIF", "gif", [.. "GIF89a/*<SCRIPT>"u8], true);
+        yield return Case("a server's script inside a PNG", "png", [.. Png, .. "<?php"u8], true);
+        yield return Case("a page inside a PDF", "pdf", [.. Pdf, .. "<html>"u8], true);
+        yield return Case("a doctype inside a PDF", "pdf", [.. Pdf, .. "<!doctype html>"u8], true);
+        yield return Case("a drawing inside a JPEG", "jpg", [.. Jpeg, .. "<svg"u8], true);
+        yield return Case("a frame inside a JPEG", "jpg", [.. Jpeg, .. "<iframe"u8], true);
+        yield return Case("a mention inside a text", "txt", [.. "A <script> tag"u8], false);
+        yield return Case("a mention inside a list", "csv", [.. "a,<html>"u8], false);
+        yield return Case("a tag that runs nothing", "txt", [.. "<p>Hello"u8], false);
+        yield return Case("a mention outside the table", "dwg", [.. "x<html>"u8], false);
+        yield return Case("an image's own metadata", "jpg", [.. Jpeg, .. "<?xpacket begin=''?><x:xmpmeta>"u8], false);
+        yield return Case("two common bytes in an image", "jpg", [.. Jpeg, .. "<%"u8], false);
+        yield return Case("a plain PDF", "pdf", Pdf, false);
+        yield return Case("an empty file", "txt", [], false);
+        yield return Case("a page the site lets through", "html", [.. "<html>"u8], false);
+        yield return Case("an old page", "htm", [.. "<html>"u8], false);
+        yield return Case("a strict page", "xhtml", [.. "<html>"u8], false);
+        yield return Case("an included page", "shtml", [.. "<html>"u8], false);
+        yield return Case("a drawing the site lets through", "svg", [.. "<svg>"u8], false);
+        yield return Case("XML the site lets through", "xml", [.. "<?xml"u8], false);
+    }
+
+    [TestCaseSource(nameof(Disguises))]
+    public void APageBehindAnotherName_IsFound(string extension, byte[] head, bool hides) =>
+        Assert.That(FileKinds.HidesMarkup(extension, head), Is.EqualTo(hides));
+
+    [Test]
+    public void AHeadLongerThanTheStack_IsReadToo() =>
+        Assert.That(FileKinds.HidesMarkup("jpg", [.. Jpeg, .. new byte[2_000], .. "<script>"u8]), Is.True);
+
+    [TestCase("jpg", true)]
+    [TestCase("png", true)]
+    [TestCase("gif", true)]
+    [TestCase("pdf", true)]
+    [TestCase("txt", true)]
+    [TestCase("doc", true)]
+    [TestCase("rar", true)]
+    [TestCase("zip", false)]
+    [TestCase("docx", false)]
+    [TestCase("xlsx", false)]
+    [TestCase("odt", false)]
+    [TestCase("dwg", false)]
+    [TestCase("", false)]
+    public void OnlyAKindThatIsNoZip_MustNotEndAsOne(string extension, bool must) =>
+        Assert.That(FileKinds.MustNotEndAsZip(extension), Is.EqualTo(must));
+
+    public static IEnumerable<TestCaseData> Endings()
+    {
+        static TestCaseData Case(string name, byte[] tail, bool ends) => new TestCaseData(tail, ends).SetName($"AFile_EndsAsAZipByItsClosingRecord({name})");
+        static byte[] Closing(int comment) => [0x50, 0x4B, 0x05, 0x06, .. new byte[16], (byte)comment, (byte)(comment >> 8)];
+
+        yield return Case("the record alone", Closing(0), true);
+        yield return Case("after a JPEG", [.. Jpeg, .. Closing(0)], true);
+        yield return Case("with its comment", [.. Closing(3), 1, 2, 3], true);
+        yield return Case("with the longest comment", [.. Closing(65_535), .. new byte[65_535]], true);
+        yield return Case("a byte too few", [.. Closing(3), 1, 2], false);
+        yield return Case("a byte too many", [.. Closing(0), 1], false);
+        yield return Case("a byte short of a record", Closing(0)[..21], false);
+        yield return Case("no signature", [0x50, 0x4B, 0x05, 0x07, .. new byte[18]], false);
+        yield return Case("a plain image", Jpeg, false);
+        yield return Case("nothing", [], false);
+    }
+
+    [TestCaseSource(nameof(Endings))]
+    public void AFile_EndsAsAZipByItsClosingRecord(byte[] tail, bool ends) =>
+        Assert.That(FileKinds.EndsAsZip(tail), Is.EqualTo(ends));
+
     [Test]
     public void OtherBytes_AreNoProgram()
     {

@@ -895,7 +895,7 @@ Each type declares: alias, icon, group in the palette, storage kind (`text`, `lo
 "JironFormBuilder": {
   "PublicApi": { "BasePath": "/jfb/api", "AllowedOrigins": [], "ServerKeys": [] },
   "Rendering": { "IncludeAssetsAutomatically": true },
-  "Files": { "Root": "~/umbraco/Data/JironFormBuilder/Uploads", "MaxFileBytes": 52428800, "BlockedExtensions": ["exe", "dll", "js", "bat", "cmd", "ps1", "sh", "msi", "html", "svg"] },
+  "Files": { "Root": "~/umbraco/Data/JironFormBuilder/Uploads", "MaxFileBytes": 52428800, "BlockedExtensions": ["exe", "dll", "js", "mjs", "bat", "cmd", "ps1", "sh", "msi", "msp", "scr", "pif", "cpl", "jar", "vbs", "wsf", "hta", "lnk", "reg", "html", "htm", "xhtml", "shtml", "svg", "php", "phtml", "asp", "aspx", "jsp", "cgi"] },
   "Privacy": { "AllowFullIp": false, "AllowRetentionOff": false, "AllowImplicitCaptchaConsent": false },
   "Captcha": { "RecaptchaV2": { "SiteKey": null, "SecretKey": null }, "RecaptchaV3": { "...": "..." }, "HCaptcha": { "...": "..." } },
   "Webhooks": { "AllowedHosts": [], "AllowHttp": false },

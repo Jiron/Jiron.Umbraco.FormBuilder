@@ -25,8 +25,12 @@ public sealed class FormBuilderFilesOptions
     /// <summary>The longest extension, as a file field's own extensions are.</summary>
     public const int MaxExtensionLength = 10;
 
-    /// <summary>The extensions blocked unless the host lists its own: programs, scripts, and pages that run script.</summary>
-    public static IReadOnlyList<string> DefaultBlockedExtensions { get; } = ["exe", "dll", "js", "bat", "cmd", "ps1", "sh", "msi", "html", "svg"];
+    /// <summary>The extensions blocked unless the host lists its own: programs, scripts, and pages that run script (ADR-0143).</summary>
+    public static IReadOnlyList<string> DefaultBlockedExtensions { get; } =
+    [
+        "exe", "dll", "js", "mjs", "bat", "cmd", "ps1", "sh", "msi", "msp", "scr", "pif", "cpl", "jar", "vbs", "wsf", "hta", "lnk", "reg",
+        "html", "htm", "xhtml", "shtml", "svg", "php", "phtml", "asp", "aspx", "jsp", "cgi",
+    ];
 
     /// <summary>
     /// The folder the default store keeps the files in: <c>~/</c> followed by a path relative to the site's content root, or an
