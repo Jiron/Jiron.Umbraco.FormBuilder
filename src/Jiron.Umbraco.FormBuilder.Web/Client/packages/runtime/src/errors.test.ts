@@ -5,8 +5,9 @@
 // server's to check; and a send whose errors are on another page goes to the server.
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { showFieldError } from './display';
-import { engineOf } from './engine';
+import { engineOf, loadFormulas, loadTexts } from './engine';
 import { pageErrorsOf, type InvalidDetail } from './errors';
+import { wordsFor } from './messages';
 import type { FormModel, ModelField, ModelPage } from './model';
 import { ENGLISH } from './testing';
 
@@ -130,8 +131,14 @@ function press(form: HTMLFormElement, id: string): SubmitEvent {
   return event;
 }
 
-/** Lets the checks run: their words load, their promises settle. */
-const settle = (): Promise<void> => new Promise((resolve) => setTimeout(resolve, 20));
+/**
+ * Lets the checks run in two steps. A check's promises have all run once the first wait ends, however long they took on a
+ * busy machine, and a send that goes on has its timer by then. The second wait starts after that timer, so it ends after it.
+ */
+const settle = async (): Promise<void> => {
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  await new Promise((resolve) => setTimeout(resolve, 2));
+};
 
 const shownOf = (form: HTMLFormElement) => ({
   inline: [...form.querySelectorAll('[data-jfb-error]')].map((each) => `${each.id}: ${each.textContent}`),
@@ -140,15 +147,10 @@ const shownOf = (form: HTMLFormElement) => ({
   ),
 });
 
-// What the checks load on first use, loaded up front: a first load takes as long as the machine is busy, which no
-// wait in a test can know, and from then on `settle` only has promises to wait for.
+// What the checks load on first use, through the runtime's own loaders, loaded up front: a first load takes as long as the
+// machine is busy, which no wait in a test can know, and from then on `settle` only has promises to wait for.
 beforeAll(async () => {
-  await Promise.all([
-    import('@jfb/logic/calc'),
-    import('@jfb/logic/lang/en'),
-    import('@jfb/logic/lang/de'),
-    import('./recall'),
-  ]);
+  await Promise.all([loadFormulas(), loadTexts(), wordsFor('en-US'), wordsFor('de')]);
 });
 
 afterEach(() => {
