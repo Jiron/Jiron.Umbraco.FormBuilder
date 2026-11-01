@@ -2130,7 +2130,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
 - [x] **6.4h Defaults with merge tags** (6.4 split in nine, WORKLOG 2026-10-30; one letter on as 6.4a, 6.4b, 6.4c and 6.4d split in two, WORKLOG 2026-10-30; then 6.4f in two, WORKLOG 2026-10-30; then 6.4g in two, WORKLOG 2026-10-30) (2026-10-30, cf95911)
   - **A default value with merge tags** is filled in the browser from what the page knows, as ADR-0093 leaves it (added in the split of 6.4a): the form endpoint's answer gives each such default's template and the values of the tags the server knows, and the page fills in the rest (its query values) as the form is shown, before the visitor touches it (added in the split of 6.4g).
   - Done when: Vitest covers the runtime's part; an integration test covers the form endpoint's answer for defaults with merge tags (added in the split of 6.4g); Playwright on the demo covers a default with merge tags filled in; axe is clean; the size check passes with every chunk.
-- [~] **6.4i Submitting** (6.4 split in nine, WORKLOG 2026-10-30; one letter on as 6.4a, 6.4b, 6.4c, 6.4d, 6.4f and 6.4g split in two, WORKLOG 2026-10-30)
+- [ ] **6.4i Submitting** (6.4 split in nine, WORKLOG 2026-10-30; one letter on as 6.4a, 6.4b, 6.4c, 6.4d, 6.4f and 6.4g split in two, WORKLOG 2026-10-30)
   - **Resumes (2026-11-01):** the owner raised the budget to 60 KB (ADR-0146); this step resumes at 7.4i, with every check below.
   - **Blocked (2026-10-30):** built on the branch `wip/6.4i-sending`, sending takes the website runtime with every feature to 41.38 KB gzip, past the 40 KB of section 4.12, a budget only the owner can change; the work so far and its design wait there (ADR-0120, `docs/OWNER-TODO.md`).
   - **Submitting:**
@@ -2148,7 +2148,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - Playwright on the demo covers submission (the outcome, the error summary from a `422` with its focus, the server's errors in place), and the send states (a second press during a slow send sends nothing; a `429` and a `500` show the notice above the buttons, move the focus to it and keep every answer; a redirect outcome with "Go now" and "Stay here");
     - Playwright shows a submission from a plain-HTTP origin, where `crypto.randomUUID()` does not exist;
     - axe is clean in every send state; the size check passes with every chunk.
-- [~] **6.4j `form_changed`** (6.4 split in nine, WORKLOG 2026-10-30; one letter on as 6.4a, 6.4b, 6.4c, 6.4d, 6.4f and 6.4g split in two, WORKLOG 2026-10-30)
+- [ ] **6.4j `form_changed`** (6.4 split in nine, WORKLOG 2026-10-30; one letter on as 6.4a, 6.4b, 6.4c, 6.4d, 6.4f and 6.4g split in two, WORKLOG 2026-10-30)
   - **Resumes (2026-11-01):** the owner raised the budget to 60 KB (ADR-0146); this step resumes at 7.4i, with every check below.
   - **Blocked (2026-10-30):** `form_changed` is the answer of a send, which 6.4i builds, and it adds to the website runtime past section 4.12's budget, which only the owner can change (ADR-0120, `docs/OWNER-TODO.md`).
   - `form_changed` handling with answer restore (§3.1), through the `render` endpoint, leaving a consent whose wording changed unticked (ADR-0004).
@@ -2160,7 +2160,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - Playwright shows the page with no cookie set;
     - a test shows every file of the runtime's build but its entry named with a content hash;
     - axe is clean; the size check passes with every chunk.
-- [~] **6.4l Fitting the page and the developer surface** (6.4 split in nine, WORKLOG 2026-10-30; one letter on as 6.4a, 6.4b, 6.4c, 6.4d, 6.4f and 6.4g split in two, WORKLOG 2026-10-30; 6.4k split in two, WORKLOG 2026-10-30)
+- [ ] **6.4l Fitting the page and the developer surface** (6.4 split in nine, WORKLOG 2026-10-30; one letter on as 6.4a, 6.4b, 6.4c, 6.4d, 6.4f and 6.4g split in two, WORKLOG 2026-10-30; 6.4k split in two, WORKLOG 2026-10-30)
   - **Resumes (2026-11-01):** the owner raised the budget to 60 KB (ADR-0146); this step resumes at 7.4i, with every check below.
   - **Blocked (2026-10-30):** the ground check, step folding, the JS API and its events add to the website runtime past section 4.12's budget, which only the owner can change, and the API's `submit()` sends through 6.4i, which waits with it (ADR-0120, `docs/OWNER-TODO.md`).
   - **Fitting the page** (ADR-0022, amended in 2.4): the ground check (a form without a scheme class, on itself or on an ancestor (ADR-0106), on a dark ground gets `jfb-scheme-dark`; a class the site set is never changed) and step folding (`data-jfb-compact` when a word of a step name is wider than its step, after layout and on every resize).
@@ -2170,7 +2170,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - Playwright shows the ground check (an unclassed form on a dark page gets `jfb-scheme-dark` and passes contrast, a form the site set to light stays light, and a light page changes nothing) and step folding (a six-step German form folds where a name would break inside a word and unfolds when the window grows);
     - Playwright covers `init(root)`, `get(formEl)` with `validate()`, `submit()` and `values()`, and every DOM event of 6.4;
     - axe is clean; the size check passes with every chunk.
-- [~] **6.4m Uploads** (6.4 split in nine, WORKLOG 2026-10-30; one letter on as 6.4a, 6.4b, 6.4c, 6.4d, 6.4f and 6.4g split in two, WORKLOG 2026-10-30; one letter on again as 6.4k split in two, WORKLOG 2026-10-30)
+- [ ] **6.4m Uploads** (6.4 split in nine, WORKLOG 2026-10-30; one letter on as 6.4a, 6.4b, 6.4c, 6.4d, 6.4f and 6.4g split in two, WORKLOG 2026-10-30; one letter on again as 6.4k split in two, WORKLOG 2026-10-30)
   - **Resumes (2026-11-01):** the owner raised the budget to 60 KB (ADR-0146); this step resumes at 7.4i, with every check below.
   - **Blocked (2026-10-30):** uploads add to the website runtime past section 4.12's budget, which only the owner can change, and an upload is sent with the entry that 6.4i sends, which waits with it (ADR-0120, `docs/OWNER-TODO.md`).
   - **Uploads with progress,** loaded on demand: against `uploads`, the challenge part first; size and type are checked in the browser before sending, with signature test vectors shared with the server; a reset during an upload is a failed upload the visitor can retry (ADR-0006). The upload's own controls follow 2.4's design (`data-jfb-enhanced`, "Choose files", "Take a photo" on touch screens, a file dragged over, each file's progress and state).
@@ -2178,14 +2178,14 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - **Design skills:** load the three skills before building the upload's controls (ADR-0019, ADR-0020).
   - **Refused for now** (added in 7.4h, ADR-0148): an upload answered `503 uploads_full` or `429 rate_limited` says at its field to try again later, and keeps the other answers.
   - Done when: Vitest passes the signature vectors, which NUnit passes against the server's checks too; Playwright shows an oversize file and a renamed `.exe` refused before any upload request is sent, an upload cut off by the server reported as a failed upload with a retry, a file uploaded with its progress and sent with the entry, and each of `thumbnails` and `camera` changing what shows when turned off; axe is clean; the size check passes with every chunk.
-- [~] **6.4n The signature pad** (6.4 split in nine, WORKLOG 2026-10-30; one letter on as 6.4a, 6.4b, 6.4c, 6.4d, 6.4f and 6.4g split in two, WORKLOG 2026-10-30; one letter on again as 6.4k split in two, WORKLOG 2026-10-30)
+- [ ] **6.4n The signature pad** (6.4 split in nine, WORKLOG 2026-10-30; one letter on as 6.4a, 6.4b, 6.4c, 6.4d, 6.4f and 6.4g split in two, WORKLOG 2026-10-30; one letter on again as 6.4k split in two, WORKLOG 2026-10-30)
   - **Resumes (2026-11-01):** the owner raised the budget to 60 KB (ADR-0146); this step resumes at 7.4i, with every check below.
   - **Blocked (2026-10-30):** the pad adds to the website runtime past section 4.12's budget, which only the owner can change, and each signature is sent through 6.4i's sending, which waits with it (ADR-0120, `docs/OWNER-TODO.md`).
   - **The signature pad,** loaded on demand, with the typed alternative, whose PNG carries the name typed in its `jfb:typed-name` text chunk as the server's does (ADR-0103, added in 6.2k); drawn by pointer, touch and pen, cleared and drawn again.
   - **Its error marks** (added in 6.8c, WORKLOG 2026-10-31): as the runtime shows a signature's error it marks the typed name's input `aria-invalid` as the server's view does, since the group's fieldset carries no invalid state since 6.8c, and the themes draw the pad's error border from that mark (`.jfb-signature:has([aria-invalid='true'])`).
   - **Design skills:** load the three skills before building the pad (ADR-0019, ADR-0020).
   - Done when: Vitest shows the typed alternative's PNG reads back on the server as the server's own (its text chunk, its size and its pixels' limits), and that a refused signature's typed name is marked as the server marks it; Playwright draws a signature, clears it, types one instead and sends each; axe is clean; the size check passes with every chunk.
-- [~] **6.4o The other field behaviours** (6.4 split in nine, WORKLOG 2026-10-30; one letter on as 6.4a, 6.4b, 6.4c, 6.4d, 6.4f and 6.4g split in two, WORKLOG 2026-10-30; one letter on again as 6.4k split in two, WORKLOG 2026-10-30)
+- [ ] **6.4o The other field behaviours** (6.4 split in nine, WORKLOG 2026-10-30; one letter on as 6.4a, 6.4b, 6.4c, 6.4d, 6.4f and 6.4g split in two, WORKLOG 2026-10-30; one letter on again as 6.4k split in two, WORKLOG 2026-10-30)
   - **Resumes (2026-11-01):** the owner raised the budget to 60 KB (ADR-0146); this step resumes at 7.4i, with every check below.
   - **Blocked (2026-10-30):** the behaviours add to the website runtime past section 4.12's budget, which only the owner can change, and each is sent and stored through 6.4i's sending, which waits with it (ADR-0120, `docs/OWNER-TODO.md`).
   - **Loaded on demand:** the repeater (rows added and removed in place, their names and ids as the server's, the focus kept), character counters, choice cards and the "Other" input.
@@ -2194,7 +2194,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - **A text area's `autoGrow` setting** (added in 6.8i by the Phase 6 wiring sweep): `TextAreaControlModel` carries it and nothing reads it. A text area with it on grows with its text, and one with it off keeps its rows.
   - **Design skills:** load the three skills before building these behaviours (ADR-0019, ADR-0020).
   - Done when: Playwright on the demo covers every field type's interaction that 6.4b to 6.4n did not (the repeater's rows at their limits, a counter past its limit, a card chosen, "Other" with its text, a text area growing with `autoGrow` on and keeping its rows with it off, a ranking moved by its buttons with the announcement, the grid answered on a phone, a cascading field's options following its parent), each sent and stored as the server reads it; axe is clean; the size check passes with every chunk.
-- [~] **6.4p The kitchen sink by keyboard, and the runtime's review** (6.4 split in nine, WORKLOG 2026-10-30; one letter on as 6.4a, 6.4b, 6.4c, 6.4d, 6.4f and 6.4g split in two, WORKLOG 2026-10-30; one letter on again as 6.4k split in two, WORKLOG 2026-10-30)
+- [ ] **6.4p The kitchen sink by keyboard, and the runtime's review** (6.4 split in nine, WORKLOG 2026-10-30; one letter on as 6.4a, 6.4b, 6.4c, 6.4d, 6.4f and 6.4g split in two, WORKLOG 2026-10-30; one letter on again as 6.4k split in two, WORKLOG 2026-10-30)
   - **Resumes (2026-11-01):** the owner raised the budget to 60 KB (ADR-0146); this step resumes at 7.4i, with every check below.
   - **Blocked (2026-10-30):** it reviews the states that 6.4i, 6.4j and 6.4l to 6.4o add, all waiting for section 4.12's budget, which only the owner can change (ADR-0120, `docs/OWNER-TODO.md`).
   - **The review:** the three skills review the runtime's states on the demo (errors, busy, the notices, the redirect, `form_changed`, uploads, the signature, rows and moves) at 375 and 1440 px, light, dark and right to left, in `docs/ux/review-6.4.md` with a section per skill (ADR-0019, ADR-0020).
@@ -2223,7 +2223,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - from context values.
   - Save and resume needs the email outbox, so it comes in 8.6.
   - Done when: a tamper test proves that a posted value for a hidden member-prefilled field is ignored; Playwright shows a field prefilled from the signed-in member, from an allowed query value and from a context value, and a query value the form does not allow left out.
-- [~] **6.5d Moving through pages in the browser** (6.5 split in four, WORKLOG 2026-10-30)
+- [ ] **6.5d Moving through pages in the browser** (6.5 split in four, WORKLOG 2026-10-30)
   - **Resumes (2026-11-01):** the owner raised the budget to 60 KB (ADR-0146); this step resumes at 7.4i, with every check below.
   - **Blocked (2026-10-30):** paging in the browser adds to the website runtime past section 4.12's budget, which only the owner can change, and the copy after a JS submission comes from 6.4i's sending, which waits with it (ADR-0120, `docs/OWNER-TODO.md`).
   - **Moving through pages in the browser:** each page checked on the server (`validate`) before the runtime moves on, the JS API's `next()` and `back()` and the `jfb:page` event (§4.9), moved from 6.4 in its split.
@@ -2248,7 +2248,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
 - [x] **6.6f The element on a headless page** (6.6 split in four, WORKLOG 2026-10-31; then 6.6d in four, WORKLOG 2026-10-31) (2026-10-31, e878d5a)
   - **The static site on 5521** (ADR-0011, ADR-0031): the browser harness serves a static page there, cross-origin to the host and allowlisted, that loads the element from the host.
   - Done when: a static page on 5521 (cross-origin, allowlisted) renders a multi-page form through the element, with the honeypot out of view and out of the accessibility tree, and the runtime enhances it as on a Razor page (a rule shows a field, a check shows its error); a page on an origin that is not allowlisted renders nothing and says why in the console; axe is clean.
-- [~] **6.6g The element's pages and sending** (6.6 split in four, WORKLOG 2026-10-31; then 6.6d in four, WORKLOG 2026-10-31)
+- [ ] **6.6g The element's pages and sending** (6.6 split in four, WORKLOG 2026-10-31; then 6.6d in four, WORKLOG 2026-10-31)
   - **Resumes (2026-11-01):** the owner raised the budget to 60 KB (ADR-0146); this step resumes at 7.4i, with every check below.
   - **Blocked (2026-10-31):** the element's form moves through its pages and is sent by the runtime's paging (6.5d) and sending (6.4i), which wait for section 4.12's budget, which only the owner can change (ADR-0120, ADR-0128, `docs/OWNER-TODO.md`).
   - **Through the runtime:** the element's form is moved through its pages in the browser, each page checked on the server (`validate`) before the next, and sent, by the runtime's paging (6.5d) and sending (6.4i).
@@ -2387,7 +2387,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - Blocked words, blocked email domains, maximum links, per-form strictness, and `IFormBuilderSpamCheck`.
     - The `Spam` state. "Not spam" runs the submitted actions then; on a form with email verification, 8.5 sends an unverified entry to `Unverified` instead.
   - Done when: tests cover each content rule, a custom `IFormBuilderSpamCheck`, and "not spam" running the submitted actions.
-- [~] **7.1e The challenge in the runtime** (7.1 split in five, WORKLOG 2026-11-01)
+- [ ] **7.1e The challenge in the runtime** (7.1 split in five, WORKLOG 2026-11-01)
   - **Resumes (2026-11-01):** the owner raised the budget to 60 KB (ADR-0146); this step resumes at 7.4i, with every check below.
   - **Blocked (2026-11-01):** the runtime stands 2 bytes below the 40 KB of §4.12, a budget only the owner can change, and this part adds to it and builds on the sending of 6.4i (ADR-0120, `docs/OWNER-TODO.md`). The server's parts are 7.1a to 7.1d.
   - **Signals:** the `challenge` endpoint's use by the runtime for JS posts, and as the first part of every upload; the honeypot's value posted as the body's `honeypot` (ADR-0139).
@@ -2407,7 +2407,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - Done when:
     - the field types the designer reads give the captcha placement as not configured, with its reason, on a site where no provider has keys, and as available once one has;
     - unit tests pass against the HTTP stub.
-- [~] **7.2c Proof of work and the captchas in the runtime** (7.2 split in three, WORKLOG 2026-11-01)
+- [ ] **7.2c Proof of work and the captchas in the runtime** (7.2 split in three, WORKLOG 2026-11-01)
   - **Resumes (2026-11-01):** the owner raised the budget to 60 KB (ADR-0146); this step resumes at 7.4i, with every check below.
   - **Blocked (2026-11-01):** the runtime stands 2 bytes below the 40 KB of §4.12, a budget only the owner can change, and this part adds to it and builds on the sending of 6.4i (ADR-0120, `docs/OWNER-TODO.md`). The server's parts are 7.2a and 7.2b.
   - **Proof of work:** solved in a Web Worker with a progress hint for slow devices.
@@ -2459,7 +2459,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - A security review of Phases 6 and 7 (STRIDE for the public surface; the readers' findings are 7.4a to 7.4g, and a reader of those fixes reads them here). Fix what it finds, with a test per fix.
   - Write the handover note, with the wiring sweep's inventory.
   - Done when: pushed, with the phase-review gate.
-- [ ] **7.4i Resume what was blocked** (7.4 split in nine, WORKLOG 2026-11-01)
+- [x] **7.4i Resume what was blocked** (7.4 split in nine, WORKLOG 2026-11-01) (2026-11-01, 5cdd852)
   - The owner raised the runtime's budget (ADR-0146), so 7.4h's retry of the `[~]` steps finds them free: mark 6.4i, 6.4j, 6.4l, 6.4m, 6.4n, 6.4o, 6.4p, 6.5d, 6.6g, 7.1e and 7.2c `[ ]`, and take them in order, from the work on `wip/6.4i-sending`.
   - Done when: `node scripts/roadmap-status.mjs` shows `blocked=0` and names 6.4i next, pushed.
 
