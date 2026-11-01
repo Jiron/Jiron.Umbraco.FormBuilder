@@ -2385,7 +2385,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - a `429` keeps the visitor's answers and says when to send again, in the runtime (Playwright);
     - a runtime test shows a retry after a lost answer, whose challenge has expired, asking `receipt` and showing the original outcome, and, past the grace, the fresh post's `409` shown as already sent;
     - Playwright shows the places left changing on a cached page after another visitor's submission, and a member condition applied for a signed-in member.
-- [ ] **7.2a Proof of work on the server** (7.2 split in three, WORKLOG 2026-11-01)
+- [x] **7.2a Proof of work on the server** (7.2 split in three, WORKLOG 2026-11-01) (2026-11-01, 64fac1a)
   - **Proof of work:** a SHA-256 puzzle with difficulty per level, a signed and expiring nonce: the challenge carries the nonce and the difficulty, and the server checks the answer once, with the challenge. A post without JavaScript on a form whose protection needs JavaScript scores into Spam with `no_script`, and a server key skips the puzzle (ADR-0012).
   - Done when:
     - integration tests cover a form at the proof-of-work level, directly and through the site's default: its challenge carries the puzzle, a right answer passes, and a wrong or missing one is refused;
