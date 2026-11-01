@@ -49,7 +49,8 @@ internal static class FormInstances
 /// <param name="Content">The page's content, or null.</param>
 /// <param name="Culture">The page's culture as asked for, or null for the default language.</param>
 /// <param name="Theme">The theme the page's placement names, or null for the form's own (ADR-0105).</param>
-internal sealed record FormRenderTarget(string Instance, string Page, Guid? Content, string? Culture, string? Theme = null);
+/// <param name="Redirect">The placement's page after a send, from the page's token (ADR-0129), or null.</param>
+internal sealed record FormRenderTarget(string Instance, string Page, Guid? Content, string? Culture, string? Theme = null, Guid? Redirect = null);
 
 /// <summary>The target of a request to the render endpoint, which the view component renders for.</summary>
 internal static class FormRenderTargets

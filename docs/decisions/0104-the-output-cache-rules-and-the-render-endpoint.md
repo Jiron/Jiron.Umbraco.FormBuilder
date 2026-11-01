@@ -81,7 +81,7 @@ Option 3 for keeping a page out, option 2 for what is per visitor, option 2 for 
   request whose query holds `jfb-sent` it adds that name to the rule's query keys, keeping the site's own, and marks the
   response `no-store`; on any other request it does nothing. Jiron Form Builder never registers an
   `IWebsiteOutputCacheRequestFilter`, so the site's filter, Umbraco's or its own, stays in charge of everything else.
-- **`GET forms/{key}/render?instance=&page=&contentKey=&culture=`:**
+- **`GET forms/{key}/render?instance=&page=&contentKey=&culture=`** (with `theme` from 6.3a and `placement`, the page's token of ADR-0129, from 6.4j)**:**
   - `key` is the form's key only, never an alias: the endpoint renders a form whose key the page already holds. It
     renders every published form not in the trash, as the `options` endpoint answers it; the headless setting governs
     the JSON projection only, since a page shows the form's markup anyway.

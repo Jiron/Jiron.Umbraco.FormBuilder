@@ -144,7 +144,7 @@ function wake({
   const invalid: InvalidDetail[] = [];
   form.addEventListener('jfb:invalid', (event) => invalid.push((event as CustomEvent<InvalidDetail>).detail));
   const gone: string[] = [];
-  const deliver = senderOf(form, model, ID, (address) => gone.push(address));
+  const deliver = senderOf(form, model, { id: ID, go: (address) => gone.push(address) });
   pageErrorsOf(form, model, engineOf(model, null), () => NOW, deliver);
   const value = (id: string): HTMLInputElement => document.getElementById(id) as HTMLInputElement;
   value('n').value = 'Ana';

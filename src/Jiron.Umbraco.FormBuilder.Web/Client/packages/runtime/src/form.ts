@@ -7,7 +7,7 @@
  * chunk of their own for a form that has such a text (ADR-0115), and 6.4h fills in the default values that hold merge
  * tags before the rules first decide, from a chunk of its own that a form loads only when the server marked such a
  * field (ADR-0118); 6.4i sends a send that passes to the entries endpoint and shows its outcome in the form's place
- * (ADR-0120).
+ * (ADR-0120), and 6.4j puts a form published again meanwhile in the old one's place, which it wakes again here.
  */
 import type { Context } from '@jfb/logic';
 import { loadEngine, type PageEngine } from './engine';
@@ -57,6 +57,7 @@ export async function attach(
   form: HTMLFormElement,
   model: FormModel,
   defaults: () => Promise<FillDefaults> = loadDefaults,
+  carried?: { readonly id: string; readonly challenge: string | null },
 ): Promise<FormSession | null> {
   const loaded = await Promise.all([
     loadEngine(model),
@@ -67,7 +68,16 @@ export async function attach(
   fill?.(form, model, contextOf(model, readPage(form, model), Date.now(), form.ownerDocument.URL));
   const rules = rulesOf(form, model, engine);
   followSliders(form, model);
-  const errors = pageErrorsOf(form, model, engine, Date.now, senderOf(form, model));
+  const errors = pageErrorsOf(
+    form,
+    model,
+    engine,
+    Date.now,
+    senderOf(form, model, {
+      ...carried,
+      rewake: (next, nextModel, carry) => void attach(next, nextModel, defaults, carry),
+    }),
+  );
   return {
     form,
     model,

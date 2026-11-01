@@ -221,6 +221,7 @@ internal sealed partial class FormModels(
             SendNotice(root, words, FormPostHandler.RateLimitedCode, new HtmlString("<p data-jfb-seconds=\"" + WebUtility.HtmlEncode(words.WaitSecondsText) + "\" data-jfb-minutes=\"" + WebUtility.HtmlEncode(words.WaitMinutesText) + "\"></p>")),
             SendNotice(root, words, ServerErrorCode, Paragraph(words.ServerErrorText)),
             SendNotice(root, words, TimeoutCode, Paragraph(words.ConnectionText)),
+            SendNotice(root, words, FormPostHandler.FormChangedCode, new HtmlString("<p data-jfb-one=\"" + WebUtility.HtmlEncode(words.ChangedConsent) + "\" data-jfb-other=\"" + WebUtility.HtmlEncode(words.ChangedConsents) + "\">" + WebUtility.HtmlEncode(words.ChangedText) + "</p>"), words.ChangedHeading),
         ],
         Outcome = new OutcomeViewModel
         {
@@ -233,15 +234,15 @@ internal sealed partial class FormModels(
         },
     };
 
-    private static NoticeViewModel SendNotice(Root root, RenderingWords words, string code, IHtmlContent text) => new()
+    private static NoticeViewModel SendNotice(Root root, RenderingWords words, string code, IHtmlContent text, string? heading = null) => new()
     {
         Classes = root.Classes,
         Kind = NoticeKind.Message,
-        Heading = words.NotSentHeading,
+        Heading = heading ?? words.NotSentHeading,
         Text = text,
         Code = code,
         HeadingId = root.Id + "-notice-" + code,
-        CssClass = root.Classes.Join("jfb-notice jfb-notice-error", FormBuilderThemeSlots.Notice),
+        CssClass = root.Classes.Join(heading is null ? "jfb-notice jfb-notice-error" : "jfb-notice", FormBuilderThemeSlots.Notice),
     };
 
     // The page a post moves to (ADR-0100): from the posted page, the next one or the last one before it that the rules

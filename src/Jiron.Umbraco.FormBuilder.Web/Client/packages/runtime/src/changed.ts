@@ -1,0 +1,129 @@
+/**
+ * A form published again while its visitor filled it in (ROADMAP 6.4j, ADR-0004, ADR-0120): the page asks the `render`
+ * endpoint for the form as it is now, in the page's theme, culture and placement, copies the answers over by each
+ * control's name, leaves a consent whose wording changed unticked, puts the form in place of the old one and moves the
+ * focus to the theme's notice, which says so. The page is never reloaded. What this cannot carry over, as a form the
+ * server pages, with rows or a ranking until 6.5d and 6.4o bring them to the page, and a form that takes no entry now,
+ * goes the way without JavaScript, whose answer does the same.
+ */
+import { parseSanitised } from './html';
+import { parseModel, type FormModel } from './model';
+
+/** How long the page waits for the form as it is now: the endpoint's own limit, and a little. */
+const WAIT = 25_000;
+/** The input that holds a consent's wording hash, before the field's alias (ADR-0015). */
+const CONSENT = 'jfb-consent-';
+/** The hidden inputs a page gives its form, which a render from elsewhere does not have (ADR-0104). */
+const CARRIED = ['jfb-context-', 'jfb-query-'];
+const CONTROLS = 'input[name], select[name], textarea[name]';
+const NOT_ANSWERS = ['hidden', 'file', 'submit', 'button', 'reset', 'image'];
+
+type Control = HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
+
+const answers = (form: Element): Control[] =>
+  [...form.querySelectorAll<Control>(CONTROLS)].filter(
+    (control) =>
+      control.closest('.jfb-hp') === null &&
+      !(control instanceof HTMLInputElement && NOT_ANSWERS.includes(control.type)),
+  );
+
+const hash = (form: Element, alias: string): string | undefined =>
+  form.querySelector<HTMLInputElement>(`input[type="hidden"][name="${CSS.escape(CONSENT + alias)}"]`)?.value;
+
+/**
+ * Copies the old form's answers to the new one by each control's name, and the values the page gave it. A control the
+ * new form lacks takes its answer with it, as its question is gone; the answers a default would fill in stay the
+ * visitor's. Answers how many ticked consents have new wording, which stay unticked.
+ */
+export function copyAnswers(from: HTMLFormElement, to: HTMLFormElement): number {
+  const old = new Map<string, Control[]>();
+  for (const control of answers(from)) old.set(control.name, [...(old.get(control.name) ?? []), control]);
+  const seen = new Map<string, number>();
+  let unticked = 0;
+  for (const control of answers(to)) {
+    const same = old.get(control.name);
+    if (same === undefined) continue;
+    control.closest('[data-jfb-default]')?.removeAttribute('data-jfb-default');
+    if (control instanceof HTMLSelectElement) {
+      const chosen = new Set(
+        same
+          .flatMap((each) => (each instanceof HTMLSelectElement ? [...each.selectedOptions] : []))
+          .map((o) => o.value),
+      );
+      for (const option of control.options) option.selected = chosen.has(option.value);
+    } else if (control instanceof HTMLInputElement && (control.type === 'checkbox' || control.type === 'radio')) {
+      const ticked = same.some(
+        (each) => each instanceof HTMLInputElement && each.checked && each.value === control.value,
+      );
+      const before = hash(from, control.name);
+      const changed = before !== undefined && before !== hash(to, control.name);
+      control.checked = ticked && !changed;
+      if (ticked && changed) unticked += 1;
+    } else {
+      const at = seen.get(control.name) ?? 0;
+      seen.set(control.name, at + 1);
+      const each = same[at];
+      if (each !== undefined) control.value = each.value;
+    }
+  }
+  for (const input of [...to.querySelectorAll<HTMLInputElement>('input[type="hidden"]')]) {
+    if (CARRIED.some((prefix) => input.name.startsWith(prefix))) input.remove();
+  }
+  const live = to.querySelector(':scope > [data-jfb-live]');
+  for (const input of from.querySelectorAll<HTMLInputElement>('input[type="hidden"]')) {
+    if (CARRIED.some((prefix) => input.name.startsWith(prefix))) to.insertBefore(input.cloneNode(), live);
+  }
+  return unticked;
+}
+
+/** The form as it is now, with its model, or null for what the page cannot put in the old one's place. */
+async function renderOf(form: HTMLFormElement, model: FormModel, api: string): Promise<HTMLFormElement | null> {
+  const query = new URLSearchParams({
+    instance: form.id,
+    page: form.ownerDocument.location.pathname,
+    culture: model.culture,
+  });
+  const content = form.dataset['jfbContent'];
+  if (content) query.set('contentKey', content);
+  const theme = [...form.classList].find((name) => name.startsWith('jfb-theme-'))?.slice('jfb-theme-'.length);
+  if (theme) query.set('theme', theme);
+  const placement = form.dataset['jfbPlacement'];
+  if (placement) query.set('placement', placement);
+  const response = await fetch(`${api}/forms/${form.dataset['jfbForm'] ?? ''}/render?${query.toString()}`, {
+    signal: AbortSignal.timeout(WAIT),
+  }).catch(() => null);
+  if (!response?.ok) return null;
+  const made = parseSanitised(form.ownerDocument, await response.text());
+  return made.querySelector<HTMLFormElement>('form[data-jfb-form]');
+}
+
+/**
+ * Puts the form as it is now in the old one's place, with the answers and the notice, which takes the focus; null for a
+ * form this cannot carry over, which goes the way without JavaScript.
+ */
+export async function swapForm(
+  form: HTMLFormElement,
+  model: FormModel,
+  api: string,
+): Promise<{ readonly form: HTMLFormElement; readonly model: FormModel } | null> {
+  if (form.querySelectorAll('[data-jfb-page]').length > 1 || form.querySelector('.jfb-repeater, .jfb-ranking') !== null)
+    return null;
+  const next = await renderOf(form, model, api);
+  const data = next?.querySelector('script[type="application/json"][data-jfb-model]');
+  const nextModel = data ? parseModel(data.textContent ?? '') : null;
+  const template = next
+    ?.querySelector<HTMLTemplateElement>(':scope > template[data-jfb-templates]')
+    ?.content.querySelector('[data-jfb-notice="form_changed"]');
+  if (!next || nextModel === null || !template) return null;
+  const unticked = copyAnswers(form, next);
+  const notice = template.cloneNode(true) as HTMLElement;
+  const line = notice.querySelector<HTMLElement>('[data-jfb-one]');
+  if (line !== null && unticked > 0) {
+    line.append(' ', line.dataset[unticked === 1 ? 'jfbOne' : 'jfbOther'] ?? '');
+  }
+  next.insertBefore(notice, next.querySelector(':scope > [data-jfb-page]'));
+  next.setAttribute('data-jfb-woken', '');
+  form.replaceWith(next);
+  notice.focus();
+  return { form: next, model: nextModel };
+}

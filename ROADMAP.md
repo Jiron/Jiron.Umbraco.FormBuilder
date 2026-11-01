@@ -2253,6 +2253,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - **Resumes (2026-11-01):** the owner raised the budget to 60 KB (ADR-0146); this step resumes at 7.4i, with every check below.
   - **Blocked (2026-10-31):** the element's form moves through its pages and is sent by the runtime's paging (6.5d) and sending (6.4i), which wait for section 4.12's budget, which only the owner can change (ADR-0120, ADR-0128, `docs/OWNER-TODO.md`).
   - **Through the runtime:** the element's form is moved through its pages in the browser, each page checked on the server (`validate`) before the next, and sent, by the runtime's paging (6.5d) and sending (6.4i).
+  - **`form_changed` on the element** (added in 6.4j, ADR-0004): it fetches its form again with the answers kept; until then the runtime shows the notice of a failed send there, as a form with no address cannot post.
   - Done when: a static page on 5521 (cross-origin, allowlisted) renders and submits a multi-page form through the element, each page checked with `validate` before the next; axe is clean.
 - [x] **6.7a The form picker's settings** (6.7 split in five, WORKLOG 2026-10-31) (2026-10-31, abc6a27)
   - **The data type "Jiron Form Builder form picker":** single or multiple, allowed folders or forms, optional theme override and redirect override. Plus the value converters (Razor and the Content Delivery API, one form or several, with the overrides) for each setting; a value the settings do not allow is refused when the page is saved.

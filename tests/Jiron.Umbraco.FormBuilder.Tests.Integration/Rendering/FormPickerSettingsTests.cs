@@ -139,6 +139,36 @@ public sealed class FormPickerSettingsTests : RenderingTestBase
     }
 
     [Test]
+    public async Task TheFormAsItIsNow_RendersWithThePlacement_WhoseTokenThePageGives()
+    {
+        var form = await PublishFormAsync("pickerForm");
+        var pages = await PagesAsync("picker-single", "picker-thanks");
+        await PickersAsync(Settings(redirect: pages["picker-thanks"]), Settings(multiple: true));
+        await SetAsync(pages["picker-single"], "form", form.ToString("D"));
+        var shown = await FormAtAsync("/picker-single/");
+        var token = Uri.EscapeDataString(shown.GetAttribute("data-jfb-placement")!);
+        var place = $"instance=jfb-1&page=/picker-single/&contentKey={pages["picker-single"]:D}";
+
+        using var placed = await GetAsync($"{Root}/forms/{form}/render?{place}&placement={token}");
+        using var without = await GetAsync($"{Root}/forms/{form}/render?{place}");
+        using var changed = await GetAsync($"{Root}/forms/{form}/render?{place}&placement=changed");
+        var rendered = new AngleSharp.Html.Parser.HtmlParser().ParseDocument(await placed.Content.ReadAsStringAsync()).QuerySelector("form.jfb-form")!;
+        var plain = new AngleSharp.Html.Parser.HtmlParser().ParseDocument(await without.Content.ReadAsStringAsync()).QuerySelector("form.jfb-form")!;
+        Fill(rendered, "name", "Ada");
+        rendered.SetAttribute("action", "/picker-single/#jfb-1");
+        using var sent = await PostAsync(rendered, "submit", "/picker-single/");
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(await RefusalAsync(changed), Is.EqualTo("400 invalid_request"));
+            Assert.That(rendered.GetAttribute("data-jfb-content"), Is.EqualTo(pages["picker-single"].ToString("D")));
+            Assert.That(rendered.GetAttribute("data-jfb-placement"), Is.Not.Null, "the send that follows carries it too");
+            Assert.That(plain.HasAttribute("data-jfb-placement"), Is.False);
+            Assert.That(sent.Headers.Location?.ToString(), Does.EndWith("/picker-thanks/#"), "and so does its route token");
+        });
+    }
+
+    [Test]
     public async Task APlacementAVisitorChanged_IsRefused_AndNothingIsStored()
     {
         var form = await PublishFormAsync("pickerForm");
@@ -207,15 +237,25 @@ public sealed class FormPickerSettingsTests : RenderingTestBase
         {
             Assert.That(templates.GetAttribute("data-jfb-sending"), Is.EqualTo("Sending your answers"));
             Assert.That(templates.GetAttribute("data-jfb-thanks"), Is.EqualTo("Thank you. We have received your message."));
-            Assert.That(notices.Select(notice => notice.GetAttribute("data-jfb-notice")), Is.EqualTo(new[] { "rate_limited", "server_error", "timeout" }));
+            Assert.That(notices.Select(notice => notice.GetAttribute("data-jfb-notice")), Is.EqualTo(new[] { "rate_limited", "server_error", "timeout", "form_changed" }));
             foreach (var notice in notices)
             {
-                Assert.That(notice.ClassList, Does.Contain("jfb-notice-error"));
                 Assert.That(notice.GetAttribute("role"), Is.EqualTo("alert"));
                 Assert.That(notice.GetAttribute("tabindex"), Is.EqualTo("-1"));
                 Assert.That(notice.QuerySelector("h2")!.Id, Is.EqualTo(notice.GetAttribute("aria-labelledby")));
+            }
+
+            foreach (var notice in notices.SkipLast(1))
+            {
+                Assert.That(notice.ClassList, Does.Contain("jfb-notice-error"));
                 Assert.That(notice.QuerySelector("h2")!.TextContent, Is.EqualTo("Your answers weren't sent"));
             }
+
+            Assert.That(notices[3].ClassList, Does.Not.Contain("jfb-notice-error"), "nothing went wrong: the form changed");
+            Assert.That(notices[3].QuerySelector("h2")!.TextContent, Is.EqualTo("This form was updated while you filled it in"));
+            Assert.That(notices[3].QuerySelector("p")!.TextContent, Is.EqualTo("Your answers are kept."));
+            Assert.That(notices[3].QuerySelector("p")!.GetAttribute("data-jfb-one"), Does.StartWith("An agreement has new wording"));
+            Assert.That(notices[3].QuerySelector("p")!.GetAttribute("data-jfb-other"), Does.StartWith("Some agreements have new wording"));
 
             Assert.That(notices[0].QuerySelector("p")!.GetAttribute("data-jfb-seconds"), Does.Contain("{0} seconds"));
             Assert.That(notices[0].QuerySelector("p")!.GetAttribute("data-jfb-minutes"), Does.Contain("{0} minutes"));

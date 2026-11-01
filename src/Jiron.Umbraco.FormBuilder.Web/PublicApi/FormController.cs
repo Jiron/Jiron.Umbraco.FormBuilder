@@ -30,6 +30,7 @@ namespace Jiron.Umbraco.FormBuilder.Web.PublicApi;
 /// <param name="rendering">What a page renders for a form, which the element endpoint answers as JSON.</param>
 /// <param name="assets">The addresses of the stylesheets and the script a form's page loads.</param>
 /// <param name="challenges">What the challenge endpoint answers.</param>
+/// <param name="placements">The placements' tokens, with which a page's form renders again (ADR-0129).</param>
 [Route("forms")]
 internal sealed class FormController(
     FormRequests requests,
@@ -41,7 +42,8 @@ internal sealed class FormController(
     FormBuilderThemes themes,
     FormRendering rendering,
     PageAssets assets,
-    ChallengeRequests challenges) : FormBuilderPublicApiController
+    ChallengeRequests challenges,
+    PlacementTokens placements) : FormBuilderPublicApiController
 {
     /// <summary>The start of a query name that gives a context value to the element endpoint, as <c>&lt;jfb-render&gt;</c>'s attributes do.</summary>
     internal const string ContextQueryPrefix = "context-";
@@ -183,6 +185,7 @@ internal sealed class FormController(
     /// <param name="culture">The page's culture: one of the site's languages, otherwise the default language.</param>
     /// <param name="contentKey">The page's content, whose site's settings apply.</param>
     /// <param name="theme">The theme the page's placement names (ADR-0105), or none for the form's own; one the site lacks renders as <c>default</c>.</param>
+    /// <param name="placement">The page's token of its placement's page after a send (ADR-0129), which the form renders with again.</param>
     /// <param name="cancellationToken">The request's cancellation, with its time limit.</param>
     [HttpGet("{key}/render")]
     [FormBuilderRateLimit(FormBuilderRateLimitPolicies.Read)]
@@ -199,6 +202,7 @@ internal sealed class FormController(
         [FromQuery] string? culture,
         [FromQuery] string? contentKey,
         [FromQuery] string? theme,
+        [FromQuery] string? placement,
         CancellationToken cancellationToken)
     {
         if (instance is null || !FormInstances.IsId(instance))
@@ -240,7 +244,17 @@ internal sealed class FormController(
         // A theme the site lacks renders as default, as the page renders it, without a line in the log or a name kept
         // for it: the name is the request's, and a page whose placement names it is logged as it renders (ADR-0105).
         var placed = theme is null ? null : themes.Find(theme)?.Name ?? BuiltInThemes.DefaultAlias;
-        FormRenderTargets.Set(HttpContext, new FormRenderTarget(instance, page, content, culture, placed));
+        Guid? redirect = null;
+        if (placement is not null)
+        {
+            redirect = placements.Read(placement, formKey);
+            if (redirect is null)
+            {
+                return FormBuilderPublicProblems.InvalidRequest("placement");
+            }
+        }
+
+        FormRenderTargets.Set(HttpContext, new FormRenderTarget(instance, page, content, culture, placed, redirect));
         var markup = new ViewComponentResult
         {
             ViewComponentName = FormBuilderFormViewComponent.Name,

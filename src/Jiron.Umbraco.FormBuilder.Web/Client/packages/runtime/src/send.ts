@@ -14,6 +14,7 @@
  */
 import type { PostAnswer, ReadPost } from '@jfb/logic';
 import type { PageErrors, ServerProblem } from './errors';
+import { swapForm } from './changed';
 import { parseSanitised } from './html';
 import type { FormModel } from './model';
 import { readPage } from './page';
@@ -118,13 +119,26 @@ function wordWait(notice: Element, retryAfter: string | null): void {
       : (line.dataset['jfbMinutes'] ?? '').replace('{0}', String(Math.ceil(seconds / 60)));
 }
 
+/** What a sender starts from; each has its default but in a test, and in a form that came in another's place. */
+export interface SenderOptions {
+  /** The submission id: a form that came in another's place keeps it (ADR-0004). */
+  readonly id?: string;
+  /** The challenge, which that form keeps too, as no entry used it and its first time still counts. */
+  readonly challenge?: string | null;
+  /** Goes to an address. */
+  readonly go?: (address: string) => void;
+  /** Gives a form that came in this one's place its logic. */
+  readonly rewake?: (
+    form: HTMLFormElement,
+    model: FormModel,
+    carried: { id: string; challenge: string | null },
+  ) => void;
+}
+
 /** A form's sender: one submission id for every send of the page, which makes a retry safe. */
-export function senderOf(
-  form: HTMLFormElement,
-  model: FormModel,
-  id: string = submissionId(),
-  go: (address: string) => void = (address) => form.ownerDocument.defaultView?.location.assign(address),
-): Deliver {
+export function senderOf(form: HTMLFormElement, model: FormModel, options: SenderOptions = {}): Deliver {
+  const id = options.id ?? submissionId();
+  const go = options.go ?? ((address: string) => form.ownerDocument.defaultView?.location.assign(address));
   const templates = form.querySelector<HTMLTemplateElement>(':scope > template[data-jfb-templates]');
   const api = form.dataset['jfbApi'];
   const key = form.dataset['jfbForm'] ?? '';
@@ -148,7 +162,11 @@ export function senderOf(
       .then((response) => (response.ok ? (response.json() as Promise<{ challenge?: string }>) : null))
       .then((answer) => answer?.challenge ?? null)
       .catch(() => null);
-  let challenge = take ? ask() : Promise.resolve(null);
+  let challenge = !take
+    ? Promise.resolve(null)
+    : options.challenge === undefined
+      ? ask()
+      : Promise.resolve(options.challenge);
   /** The challenges the page's sends went with, one of which its entry names. */
   const held = new Set<string>();
   let notice: Element | null | undefined;
@@ -171,6 +189,7 @@ export function senderOf(
     let retryAfter: string | null = null;
     let answer: Answer = {};
     let handedOver = false;
+    let swapped: Awaited<ReturnType<typeof swapForm>> = null;
     try {
       const reading = readPage(form, model);
       const query = contextOf(model, reading, Date.now(), form.ownerDocument.URL).query;
@@ -206,6 +225,10 @@ export function senderOf(
         status = response.status;
         retryAfter = response.headers.get('Retry-After');
         answer = ((await response.json().catch(() => null)) as Answer | null) ?? {};
+        // Published again meanwhile: the form as it is now comes in this one's place.
+        if (status === 409 && answer.code === 'form_changed' && posts && api !== undefined) {
+          swapped = await swapForm(form, model, api);
+        }
         // The page's id holds an entry with other answers: one whose answer was lost, whatever was changed since.
         if (status === 409 && answer.code === 'duplicate_submission') {
           answer = {};
@@ -227,6 +250,16 @@ export function senderOf(
       if (live !== null) live.textContent = '';
     }
     if (handedOver) return false;
+    if (swapped !== null) {
+      swapped.form.dispatchEvent(
+        new CustomEvent<SendDetail>('jfb:error', {
+          bubbles: true,
+          detail: { key, alias: swapped.model.alias, code: 'form_changed' },
+        }),
+      );
+      options.rewake?.(swapped.form, swapped.model, { id, challenge: await challenge });
+      return true;
+    }
     // A stored entry is never sent again, whatever its answer holds.
     if (status === 200) {
       event('jfb:submitted');

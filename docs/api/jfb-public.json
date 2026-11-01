@@ -946,6 +946,13 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "placement",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {

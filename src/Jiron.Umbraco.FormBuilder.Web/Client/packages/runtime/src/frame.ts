@@ -8,6 +8,9 @@
  */
 import { parseModel, type FormModel } from './model';
 
+/** Marks a form that came in another's place with its logic already (6.4j): one the frame leaves alone. */
+const WOKEN = 'data-jfb-woken';
+
 /** The contract version this runtime knows (ADR-0015). */
 export const CONTRACT = '1';
 
@@ -39,7 +42,7 @@ export function createFrame(load: () => Promise<Chunk>): Frame {
   let chunk: Promise<Chunk | null> | undefined;
 
   function enhance(form: HTMLFormElement): void {
-    if (enhanced.has(form) || form.dataset['jfbContract'] !== CONTRACT) return;
+    if (enhanced.has(form) || form.hasAttribute(WOKEN) || form.dataset['jfbContract'] !== CONTRACT) return;
     const data = form.querySelector('script[type="application/json"][data-jfb-model]');
     const model = data === null ? null : parseModel(data.textContent ?? '');
     if (model === null) return;

@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test, type Page, type Response } from '@playwright/test';
+import { expect, test, type APIRequestContext, type Page, type Response } from '@playwright/test';
+import { loginThroughApi } from '../../support/api-login.ts';
 import { formPages, pathOf } from '../../support/demo-content.ts';
 import { signInMember } from '../../support/demo-members.ts';
 import { fillForm, submitForm } from '../../support/form.ts';
@@ -7,7 +8,7 @@ import { waitForStartupWork } from '../../support/host-health.ts';
 import { hostEnvironment } from '../../support/host-env.ts';
 import { startHost, type Host } from '../../support/host.ts';
 import { CACHED_BASE_URL, CACHED_PORT } from '../../support/paths.ts';
-import { readSecrets } from '../../support/users.ts';
+import { account, readSecrets } from '../../support/users.ts';
 
 // A strict site (ROADMAP 6.4k, ADR-0004), on a host of its own whose pages come from Umbraco's output cache, behind the
 // Testing project's Content Security Policy (no inline script, no style attribute, nothing from another host): a form's
@@ -43,6 +44,45 @@ test.beforeAll(async () => {
 test.afterAll(async () => {
   await host?.stop();
 });
+
+/** Publishes a consent's wording for the newsletter on this host, and gives back the wording it had. */
+async function publishWording(
+  api: APIRequestContext,
+  formKey: string,
+  wording: Record<string, string>,
+): Promise<Record<string, string>> {
+  const MANAGEMENT_API = '/umbraco/jfb/management/api/v1';
+  const draft = await api.get(`${MANAGEMENT_API}/form/${formKey}/draft`);
+  expect(draft.status()).toBe(200);
+  const { form, definition } = (await draft.json()) as {
+    form: { concurrencyVersion: number };
+    definition: {
+      pages: {
+        groups: {
+          fields: { alias: string; settings?: { text?: Record<string, string> } & Record<string, unknown> }[];
+        }[];
+      }[];
+    };
+  };
+  let had: Record<string, string> = {};
+  for (const shown of definition.pages)
+    for (const group of shown.groups)
+      for (const field of group.fields)
+        if (field.alias === 'agree') {
+          had = field.settings?.text ?? {};
+          field.settings = { ...field.settings, text: wording };
+        }
+  const saved = await api.put(`${MANAGEMENT_API}/form/${formKey}/draft`, {
+    data: { concurrencyVersion: form.concurrencyVersion, definition, comment: 'The browser tests change the wording' },
+  });
+  expect(saved.status(), await saved.text()).toBe(200);
+  const { form: savedForm } = (await saved.json()) as { form: { concurrencyVersion: number } };
+  const published = await api.post(`${MANAGEMENT_API}/form/${formKey}/publish`, {
+    data: { concurrencyVersion: savedForm.concurrencyVersion },
+  });
+  expect(published.status(), await published.text()).toBe(200);
+  return had;
+}
 
 /** The English page of a demo form. */
 function pathOfForm(alias: string): string {
@@ -178,6 +218,62 @@ for (const mode of ['nonce', 'strict-dynamic'] as const) {
     expect(await violations()).toEqual([]);
   });
 }
+
+test('form_changed on a page the cache still serves: the published form comes in its place, the answers kept and a consent with new wording unticked', async ({
+  page,
+  browser,
+}) => {
+  const violations = await violationsOf(page);
+  const path = '/en/';
+  const first = await browser.newPage({ baseURL: CACHED_BASE_URL });
+  expect((await first.goto(path))?.ok()).toBe(true);
+  await first.close();
+  const newsletter = page.locator('[data-demo-slot="newsletter"] form.jfb-form');
+  await page.goto(path);
+  const formKey = (await newsletter.getAttribute('data-jfb-form')) ?? '';
+  const stale = (await newsletter.getAttribute('data-jfb-revision')) ?? '';
+  const api = await loginThroughApi(account('designer'), CACHED_BASE_URL);
+  const original = await publishWording(api, formKey, { '': 'I agree to the newsletter, with one click to leave it.' });
+  try {
+    const response = await page.goto(path);
+    expect(response?.headers()['age'], 'the cache still serves the page').toBeDefined();
+    expect(await newsletter.getAttribute('data-jfb-revision'), 'with the form as it was').toBe(stale);
+    await fillForm(newsletter, { email: 'lin@visitor.jfb.test', agree: true });
+    const rendered = page.waitForResponse((each) => each.url().includes('/render?'));
+    const left: string[] = [];
+    page.on('request', (request) => {
+      if (request.isNavigationRequest()) left.push(request.url());
+    });
+    await newsletter.locator('button[data-jfb-nav="submit"]').click();
+    expect((await rendered).status()).toBe(200);
+
+    const notice = newsletter.locator('[data-jfb-notice="form_changed"]');
+    await expect(notice).toBeFocused();
+    await expect(notice).toHaveAttribute('role', 'alert');
+    await expect(notice.locator('h2')).toHaveText('This form was updated while you filled it in');
+    await expect(notice.locator('p')).toHaveText(
+      'Your answers are kept. An agreement has new wording, so it is no longer ticked: read it again before you send.',
+    );
+    expect(await newsletter.getAttribute('data-jfb-revision'), 'the published form').not.toBe(stale);
+    await expect(newsletter.getByLabel('Email address')).toHaveValue('lin@visitor.jfb.test');
+    const consent = newsletter.getByRole('checkbox', { name: 'with one click to leave it', exact: false });
+    await expect(consent).not.toBeChecked();
+    expect(left, 'the page is never reloaded').toEqual([]);
+    await page.waitForFunction(() => document.getAnimations().every((animation) => animation.playState !== 'running'));
+    await axe(page, 'the notice of a changed form');
+
+    const sent = page.waitForResponse((each) => each.url().includes('/entries'));
+    await consent.check();
+    await newsletter.locator('button[data-jfb-nav="submit"]').click();
+    expect((await sent).status()).toBe(200);
+    await expect(page.locator('[data-demo-slot="newsletter"] [data-jfb-outcome]')).toBeFocused();
+    expect(left, 'nor after the send').toEqual([]);
+    expect(await violations()).toEqual([]);
+  } finally {
+    await publishWording(api, formKey, original);
+    await api.dispose();
+  }
+});
 
 test('nothing sets a cookie: neither the page, its chunks, the checks nor a post', async ({ page, context }) => {
   const setters: string[] = [];

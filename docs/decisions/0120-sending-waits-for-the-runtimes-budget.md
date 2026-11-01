@@ -125,3 +125,21 @@ since then changed, and what the step finished:
   the line changes without being said again. A message with a redirect and no delay waits at "Go now", as after a post.
 - **The ring** turns in both themes that draw a button; the two steps it turns by moved to the base rules, and an
   unstyled form says "busy" by its cursor and the live region.
+
+## `form_changed` on the page (2026-11-01, step 6.4j)
+
+ADR-0004 says what happens; three things it left open:
+
+- **What it carries.** Answers go by each control's name, which holds for every control a page has now but for rows and
+  a ranking's order, which a form's first render does not hold. So a form with those, and a form the server pages, whose
+  visitor would land on its first page, goes by post, whose answer keeps all of it (ADR-0100) until 6.5d and 6.4o bring
+  them to the page; so does a form that takes no entry now, or a render that fails. The honeypot starts over, and the
+  context and query values the page gave its form are carried, as a render from elsewhere lacks them.
+- **The same submission, on.** The new form keeps the submission id and the challenge: no entry used either, and a new
+  challenge would count as filled in no time (ADR-0139). The frame leaves the new form alone (`data-jfb-woken`).
+- **The placement** reaches `render` as its `placement` query value, the same token, so the new form's route token and its
+  own `data-jfb-placement` hold the page too (ADR-0129). A token this site did not write for the form is `400`.
+
+The notice's words are in the form's templates like the other send notices, with both sentences about consents on its
+line (`data-jfb-one`, `data-jfb-other`). It is no `jfb-notice-error`, as nothing went wrong. The element has no address
+to post to and renders otherwise (ADR-0128), so its turn comes with 6.6g.
