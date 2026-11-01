@@ -114,6 +114,12 @@ public sealed class PublicFormSiteTests : PublicApiTestBase
         };
         var current = await Settings.GetAsync<GeneralSettings>();
         await Settings.SaveAsync(filled, current.Version, Editor);
+        var protection = new ProtectionSettings
+        {
+            BlockedRanges = ["203.0.113.0/24"],
+        };
+        var currentProtection = await Settings.GetAsync<ProtectionSettings>();
+        await Settings.SaveAsync(protection, currentProtection.Version, Editor);
         using var after = await GetAsync($"{Root}/forms/{key}");
         var set = await JsonAsync(after);
         var allowed = set.DeepClone();
@@ -130,10 +136,10 @@ public sealed class PublicFormSiteTests : PublicApiTestBase
         }
 
         var sections = typeof(GeneralSettings).Assembly.GetTypes().Where(type => typeof(ISettingsSection).IsAssignableFrom(type) && !type.IsInterface).ToList();
-        var unchanged = Leaves(filled, new GeneralSettings(), nameof(GeneralSettings)).Where(leaf => leaf.Filled == leaf.Default).Select(leaf => leaf.Path).ToList();
+        var unchanged = Leaves(filled, new GeneralSettings(), nameof(GeneralSettings)).Concat(Leaves(protection, new ProtectionSettings(), nameof(ProtectionSettings))).Where(leaf => leaf.Filled == leaf.Default).Select(leaf => leaf.Path).ToList();
         Assert.Multiple(() =>
         {
-            Assert.That(sections, Is.EquivalentTo(new[] { typeof(GeneralSettings) }), "a new section is filled here too");
+            Assert.That(sections, Is.EquivalentTo(new[] { typeof(GeneralSettings), typeof(ProtectionSettings) }), "a new section is filled here too");
             Assert.That(unchanged, Is.Empty, "a new field is filled here too");
             Assert.That(set["timeZone"]!.GetValue<string>(), Is.EqualTo("Pacific/Chatham"), "visitors get the time zone");
             Assert.That(set["form"]!["settings"]!["requiredMarker"]!.GetValue<string>(), Is.EqualTo("none"), "the style of a form that inherits it");
