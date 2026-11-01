@@ -141,11 +141,13 @@ public abstract class RenderingTestBase : PublicApiTestBase
         return ascii.ToString();
     }
 
-    // A copy of a form element as the fixture keeps it: without its route token, which changes with every render, and
-    // its honeypot, whose name follows the form's key, and with each form's key fixed.
+    // A copy of a form element as the fixture keeps it: without its route token, which changes with every render, its
+    // page's key, which changes with every page, and its honeypot, whose name follows the form's key, and with each
+    // form's key fixed.
     private protected static string Normalised(IElement shown, params (Guid Key, Guid Fixed)[] keys)
     {
         var form = (IElement)shown.Clone(deep: true);
+        form.RemoveAttribute("data-jfb-content");
         foreach (var varying in form.QuerySelectorAll($"input[name='{FormPostFields.RouteToken}'], .jfb-hp").ToList())
         {
             varying.Remove();

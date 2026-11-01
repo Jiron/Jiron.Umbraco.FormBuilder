@@ -202,7 +202,7 @@ public sealed class FormRenderingViewTests : RenderingTestBase
         {
             Assert.That(document.QuerySelectorAll("form"), Is.Empty);
             Assert.That(Compact(document.QuerySelector("div.jfb-form")!.InnerHtml), Is.EqualTo(
-                """<div class="jfb-outcome" data-jfb-outcome="" data-jfb-pending="" tabindex="-1"><h2>Thank you, Bob</h2><p>We write back within a day.</p><p class="jfb-reference">Your reference is <strong>REQ-2026-00042</strong></p></div>"""));
+                """<div class="jfb-outcome" data-jfb-outcome="" data-jfb-pending="" tabindex="-1"><h2>Thank you, Bob</h2><p>We write back within a day.</p><p class="jfb-reference" data-jfb-reference="">Your reference is <strong>REQ-2026-00042</strong></p></div>"""));
         });
     }
 
