@@ -1,8 +1,10 @@
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Migrations;
+using Jiron.Umbraco.FormBuilder.Web.PublicApi.RateLimiting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Mvc.Filters;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Jiron.Umbraco.FormBuilder.Web.PublicApi;
 
@@ -57,6 +59,14 @@ internal sealed class FormBuilderPublicApiFilter(IFormBuilderMigrationState migr
             if (await migrations.IsPendingAsync(linked.Token))
             {
                 context.Result = FormBuilderPublicProblems.MigrationsPending(http);
+                return;
+            }
+
+            // A form's rate limits need the form, which takes a read: after the migrations' check, and within the time limit (ADR-0149).
+            if (http.Features.Get<FormLimitsToTake>() is { } limits
+                && await http.RequestServices.GetRequiredService<FormRateLimits>().FinishAsync(limits, linked.Token) is { Allowed: false } refused)
+            {
+                context.Result = FormBuilderPublicProblems.RateLimited(http, refused);
                 return;
             }
 

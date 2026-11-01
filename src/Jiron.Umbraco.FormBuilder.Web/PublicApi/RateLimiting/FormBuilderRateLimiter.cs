@@ -25,13 +25,36 @@ internal readonly record struct RateLimitDecision(bool Allowed, TimeSpan RetryAf
     public int RetryAfterSeconds => Math.Max(1, (int)Math.Ceiling(RetryAfter.TotalSeconds));
 }
 
+/// <summary>What one request has counted so far, while its form is looked up (ADR-0149).</summary>
+internal sealed class RateLimitCount(FormBuilderRatePolicyOptions limits, string policy, string client, int factor)
+{
+    /// <summary>The policy's limits.</summary>
+    public FormBuilderRatePolicyOptions Limits { get; } = limits;
+
+    /// <summary>The policy's name.</summary>
+    public string Policy { get; } = policy;
+
+    /// <summary>Who the request counts for.</summary>
+    public string Client { get; } = client;
+
+    /// <summary>How many times an address's limits the client gets.</summary>
+    public int Factor { get; } = factor;
+
+    /// <summary>The windows that counted it, which a refusal further on gives back.</summary>
+    public List<RateWindow> Taken { get; } = new(5);
+
+    /// <summary>The refusal, when its address's own limits refused it.</summary>
+    public RateLimitDecision? Refusal { get; set; }
+}
+
 /// <summary>
 /// The rate limits of the public API and of posts without JavaScript, in memory on each server (ADR-0012, ADR-0137): each
 /// policy's partitions, cheapest first, on the site's <see cref="TimeProvider"/>. A request a partition refuses is not
 /// counted by the ones it would have met next, and those before it give it back, so one flooding client uses up no one
 /// else's limit. It keeps at most <c>Limits:MaxTrackedClients</c> windows: past that a new client shares one overflow
 /// window per partition, so a flood of distinct addresses is limited, never let through, and memory stays bounded.
-/// Emptied windows are swept every minute.
+/// Emptied windows are swept every minute. A request that names a form counts its address first and the rest once the form is
+/// known, so a key that names no form spends none of a form's or the site's limits (<see cref="FormRateLimits"/>, ADR-0149).
 /// </summary>
 internal sealed class FormBuilderRateLimiter
 {
@@ -83,18 +106,55 @@ internal sealed class FormBuilderRateLimiter
     /// <param name="form">The form it asks about; null for one that names none.</param>
     public RateLimitDecision Take(HttpContext http, string policy, Guid? form)
     {
+        var count = Start(http, policy);
+
+        // The empty key names no form: it is the overflow window's mark, and a route may send it.
+        return count.Refusal ?? Finish(count, form == Guid.Empty ? null : form);
+    }
+
+    /// <summary>Counts one request under its address's own limits, which ask nothing about a form.</summary>
+    /// <param name="http">The request, whose server key or address is the client.</param>
+    /// <param name="policy">One of <see cref="FormBuilderRateLimitPolicies"/>.</param>
+    public RateLimitCount Start(HttpContext http, string policy)
+    {
         ArgumentNullException.ThrowIfNull(http);
         SweepWhenDue();
         var limits = _policies[policy];
-        var client = FormBuilderRateLimitPolicies.ClientOf(http);
         var factor = ServerKeyRequest.NameOf(http) is null ? 1 : _serverKeyFactor;
+        var count = new RateLimitCount(limits, policy, FormBuilderRateLimitPolicies.ClientOf(http), factor);
+        count.Refusal = TakeAll(count, AddressPartitions(limits, factor), form: null);
+        return count;
+    }
 
-        // The empty key names no form: it is the overflow window's mark, and a route may send it.
-        var named = form == Guid.Empty ? null : form;
-        var taken = new List<RateWindow>(5);
-        foreach (var part in Partitions(limits, named is not null, factor))
+    /// <summary>Counts a request that was started under the form's limits and the site's, or refuses it and gives back what it counted.</summary>
+    /// <param name="count">What it has counted.</param>
+    /// <param name="form">The form it asks about; null for one that names none.</param>
+    public RateLimitDecision Finish(RateLimitCount count, Guid? form)
+    {
+        ArgumentNullException.ThrowIfNull(count);
+        return TakeAll(count, FormPartitions(count.Limits, form is not null, count.Factor), form) ?? RateLimitDecision.Go;
+    }
+
+    /// <summary>
+    /// Counts a request that was started and names a form this server does not keep, before the database is asked about it: a
+    /// site-wide window of its own, as large as the site's, so made-up keys cannot read without limit or spend the site's.
+    /// A refusal gives back what it counted.
+    /// </summary>
+    /// <param name="count">What it has counted.</param>
+    public RateLimitDecision? TakeLookup(RateLimitCount count)
+    {
+        ArgumentNullException.ThrowIfNull(count);
+        return count.Limits.SitePerSecond > 0
+            ? TakeAll(count, [new Partition(PartitionKind.Lookup, count.Limits.SitePerSecond, Second, UsesClient: false, UsesForm: false)], form: null)
+            : null;
+    }
+
+    // Counts a request in each of these partitions; the first that refuses it answers, and those before it give it back.
+    private RateLimitDecision? TakeAll(RateLimitCount count, IEnumerable<Partition> partitions, Guid? form)
+    {
+        foreach (var part in partitions)
         {
-            var key = new WindowKey(policy, part.Kind, part.UsesClient ? client : null, part.UsesForm ? named : null);
+            var key = new WindowKey(count.Policy, part.Kind, part.UsesClient ? count.Client : null, part.UsesForm ? form : null);
             var (window, overflow) = WindowFor(key, part);
             var fits = window.TryTake(out var retryAfter, out var retired);
             while (retired)
@@ -107,21 +167,21 @@ internal sealed class FormBuilderRateLimiter
 
             if (fits)
             {
-                taken.Add(window);
+                count.Taken.Add(window);
                 continue;
             }
 
-            taken.ForEach(earlier => earlier.Release());
+            count.Taken.ForEach(earlier => earlier.Release());
 
-            var renders = part.Kind != PartitionKind.Site && !overflow && window.Tried < window.Limit * RenderedTimesLimit;
+            var renders = (part.UsesClient || part.UsesForm) && !overflow && window.Tried < window.Limit * RenderedTimesLimit;
             return new RateLimitDecision(false, retryAfter, renders);
         }
 
-        return RateLimitDecision.Go;
+        return null;
     }
 
-    // The partitions a policy has: those whose limit is 0 do not exist, and a form's need the form.
-    private static IEnumerable<Partition> Partitions(FormBuilderRatePolicyOptions limits, bool hasForm, int factor)
+    // The partitions of an address alone: those whose limit is 0 do not exist.
+    private static IEnumerable<Partition> AddressPartitions(FormBuilderRatePolicyOptions limits, int factor)
     {
         if (limits.PerAddressPerMinute > 0)
         {
@@ -132,7 +192,11 @@ internal sealed class FormBuilderRateLimiter
         {
             yield return new Partition(PartitionKind.ClientHour, limits.PerAddressPerHour * factor, Hour, UsesClient: true, UsesForm: false);
         }
+    }
 
+    // The other partitions of a policy: those whose limit is 0 do not exist, and a form's need the form.
+    private static IEnumerable<Partition> FormPartitions(FormBuilderRatePolicyOptions limits, bool hasForm, int factor)
+    {
         if (hasForm && limits.PerAddressAndFormPerMinute > 0)
         {
             yield return new Partition(PartitionKind.ClientForm, limits.PerAddressAndFormPerMinute * factor, Minute, UsesClient: true, UsesForm: true);
@@ -158,7 +222,7 @@ internal sealed class FormBuilderRateLimiter
             return (existing, key.IsOverflow);
         }
 
-        if (part.Kind == PartitionKind.Site)
+        if (!part.UsesClient && !part.UsesForm)
         {
             return (_windows.GetOrAdd(key, _ => new RateWindow(part.Limit, part.Length, _time)), false);
         }
@@ -212,6 +276,7 @@ internal sealed class FormBuilderRateLimiter
         ClientForm,
         Form,
         Site,
+        Lookup,
     }
 
     private readonly record struct Partition(PartitionKind Kind, int Limit, TimeSpan Length, bool UsesClient, bool UsesForm);
@@ -223,7 +288,7 @@ internal sealed class FormBuilderRateLimiter
         public bool IsOverflow => Client == Overflow || Form == Guid.Empty;
 
         // Whether the key counts toward the bound: the site-wide and overflow windows are few, whatever a flood does.
-        public bool Counts => Kind != PartitionKind.Site && !IsOverflow;
+        public bool Counts => Kind is not (PartitionKind.Site or PartitionKind.Lookup) && !IsOverflow;
     }
 }
 

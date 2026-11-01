@@ -19,6 +19,9 @@ internal static class EntryBodies
     /// <summary>The deepest a body nests.</summary>
     public const int MaxDepth = 64;
 
+    /// <summary>The most places a body's list of errors names.</summary>
+    public const int MaxInvalidPaths = 100;
+
     /// <summary>The longest challenge, in UTF-16 code units, as an upload's challenge part.</summary>
     public const int MaxChallengeLength = 4_096;
 
@@ -78,7 +81,7 @@ internal static class EntryBodies
                     challenge = Text(value, name, invalid, MaxChallengeLength);
                     break;
                 default:
-                    invalid.Add(name);
+                    Add(invalid, name);
                     break;
             }
         }
@@ -117,7 +120,7 @@ internal static class EntryBodies
                     contentKey = Key(value, name, invalid);
                     break;
                 default:
-                    invalid.Add(name);
+                    Add(invalid, name);
                     break;
             }
         }
@@ -140,7 +143,7 @@ internal static class EntryBodies
     {
         if (!System.Text.Unicode.Utf8.IsValid(body))
         {
-            invalid.Add(Body);
+            Add(invalid, Body);
             return null;
         }
 
@@ -151,7 +154,7 @@ internal static class EntryBodies
         }
         catch (JsonException)
         {
-            invalid.Add(Body);
+            Add(invalid, Body);
             return null;
         }
 
@@ -161,7 +164,7 @@ internal static class EntryBodies
         }
 
         document.Dispose();
-        invalid.Add(Body);
+        Add(invalid, Body);
         return null;
     }
 
@@ -225,7 +228,7 @@ internal static class EntryBodies
                     proof = Text(value, name, invalid, MaxProofLength);
                     break;
                 default:
-                    invalid.Add(name);
+                    Add(invalid, name);
                     break;
             }
         }
@@ -289,7 +292,7 @@ internal static class EntryBodies
             var path = Join("values", name);
             if (Split(name) is not (string alias, var part))
             {
-                invalid.Add(path);
+                Add(invalid, path);
                 continue;
             }
 
@@ -305,7 +308,7 @@ internal static class EntryBodies
 
             if (Texts(value) is not { } texts || !answers.Take(alias, part, texts))
             {
-                invalid.Add(path);
+                Add(invalid, path);
             }
         }
     }
@@ -323,7 +326,7 @@ internal static class EntryBodies
             {
                 if (Split(name) is not (string alias, var part) || Texts(value) is not { } texts || !Answer.Of(answers, alias).Take(part, texts))
                 {
-                    invalid.Add(Join(rowPath, name));
+                    Add(invalid, Join(rowPath, name));
                 }
             }
 
@@ -352,7 +355,7 @@ internal static class EntryBodies
 
             if (Split(alias) is not (_, null) || JsonPaths.TryGetString(value) is not { } hash || !answers.Take(alias, ConsentFieldType.WordingPart, [hash]))
             {
-                invalid.Add(path);
+                Add(invalid, path);
             }
         }
     }
@@ -374,7 +377,7 @@ internal static class EntryBodies
             }
             else if (value.ValueKind != JsonValueKind.Null)
             {
-                invalid.Add(Join("query", name));
+                Add(invalid, Join("query", name));
             }
         }
     }
@@ -396,7 +399,7 @@ internal static class EntryBodies
             }
             else if (value.ValueKind != JsonValueKind.Null)
             {
-                invalid.Add(Join("context", name));
+                Add(invalid, Join("context", name));
             }
         }
     }
@@ -479,9 +482,10 @@ internal static class EntryBodies
         return none;
     }
 
+    // Each once, and at most a hundred: a body's list of errors costs what a few of them cost, however many it could name.
     private static void Add(List<string> invalid, string path)
     {
-        if (!invalid.Contains(path))
+        if (invalid.Count < MaxInvalidPaths && !invalid.Contains(path))
         {
             invalid.Add(path);
         }

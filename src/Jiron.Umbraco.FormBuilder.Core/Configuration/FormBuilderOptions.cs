@@ -145,7 +145,7 @@ public sealed class FormBuilderLimitsOptions
     public FormBuilderRatePolicyOptions Challenge { get; } = new() { PerAddressPerMinute = 30, PerAddressAndFormPerMinute = 10, SitePerSecond = 100 };
 
     /// <summary>Sending a form, checking a page, saving a draft, asking for a receipt, and any other post without JavaScript.</summary>
-    public FormBuilderRatePolicyOptions Submit { get; } = new() { PerAddressPerMinute = 20, PerAddressPerHour = 100, PerAddressAndFormPerMinute = 5, PerFormPerMinute = 60, SitePerSecond = 50 };
+    public FormBuilderRatePolicyOptions Submit { get; } = new() { PerAddressPerMinute = 20, PerAddressPerHour = 100, PerAddressAndFormPerMinute = 5, PerFormPerMinute = 600, SitePerSecond = 50 };
 
     /// <summary>Uploading a file.</summary>
     public FormBuilderRatePolicyOptions Upload { get; } = new() { PerAddressPerMinute = 30, PerAddressPerHour = 200, PerAddressAndFormPerMinute = 20, PerFormPerMinute = 600, SitePerSecond = 20 };

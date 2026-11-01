@@ -25,10 +25,16 @@ namespace Jiron.Umbraco.FormBuilder.Web.PublicApi;
 /// <param name="paths">The public API's paths.</param>
 /// <param name="logger">Logs what went wrong unexpectedly.</param>
 /// <param name="serverKeys">The server keys a headless server signs with (ADR-0126); none in a test that leaves them out.</param>
-internal sealed partial class FormBuilderPublicApiMiddleware(FormBuilderPublicApiPaths paths, ILogger<FormBuilderPublicApiMiddleware> logger, ServerKeys? serverKeys = null) : IMiddleware
+/// <param name="time">The clock that bounds the log of keys that match none; the system's in a test that leaves it out.</param>
+internal sealed partial class FormBuilderPublicApiMiddleware(FormBuilderPublicApiPaths paths, ILogger<FormBuilderPublicApiMiddleware> logger, ServerKeys? serverKeys = null, TimeProvider? time = null) : IMiddleware
 {
     /// <summary>How long a browser keeps a preflight's answer.</summary>
     public const int PreflightSeconds = 600;
+
+    // A key that matches none comes before any limit, so its warning is at most one a minute.
+    private static readonly TimeSpan InvalidKeyLogEvery = TimeSpan.FromMinutes(1);
+
+    private long _nextInvalidKeyLog;
 
     /// <inheritdoc />
     public async Task InvokeAsync(HttpContext context, RequestDelegate next)
@@ -76,7 +82,7 @@ internal sealed partial class FormBuilderPublicApiMiddleware(FormBuilderPublicAp
         {
             if (signed.Status == ServerKeyStatus.Invalid)
             {
-                LogServerKeyInvalid(logger, request.Path.Value ?? string.Empty);
+                LogInvalidKeyOnce();
                 response.Headers.WWWAuthenticate = ServerKeys.Scheme;
                 await FormBuilderPublicProblems.ServerKeyInvalid().WriteAsync(context);
                 return;
@@ -147,6 +153,16 @@ internal sealed partial class FormBuilderPublicApiMiddleware(FormBuilderPublicAp
     }
 
     // What an endpoint set before it failed, except what every answer of the API carries.
+    private void LogInvalidKeyOnce()
+    {
+        var now = (time ?? TimeProvider.System).GetUtcNow().UtcTicks;
+        var due = Interlocked.Read(ref _nextInvalidKeyLog);
+        if (now >= due && Interlocked.CompareExchange(ref _nextInvalidKeyLog, now + InvalidKeyLogEvery.Ticks, due) == due)
+        {
+            LogServerKeyInvalid(logger);
+        }
+    }
+
     private static void Reset(HttpResponse response)
     {
         response.Headers.ETag = StringValues.Empty;
@@ -155,7 +171,8 @@ internal sealed partial class FormBuilderPublicApiMiddleware(FormBuilderPublicAp
 
     [LoggerMessage(Level = LogLevel.Error, Message = "The public API's endpoint {Endpoint} failed unexpectedly; the visitor got server_error.")]
     private static partial void LogUnexpected(ILogger logger, string endpoint, Exception exception);
-    [LoggerMessage(Level = LogLevel.Warning, Message = "A request to {Path} carried a server key that matches none; it got server_key_invalid.")] private static partial void LogServerKeyInvalid(ILogger logger, string path);
+    [LoggerMessage(Level = LogLevel.Warning, Message = "A request carried a server key that matches none; it got server_key_invalid. This is said at most once a minute.")]
+    private static partial void LogServerKeyInvalid(ILogger logger);
 
     private sealed record RequestOrigin(string Value, bool Same, bool Allowed);
 }

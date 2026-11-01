@@ -25,9 +25,9 @@ namespace Jiron.Umbraco.FormBuilder.Web.Rendering;
 /// <param name="forms">The published forms.</param>
 /// <param name="uploads">The upload's rules, whose limits the files are read to.</param>
 /// <param name="types">The field types, which say which fields store files and how many.</param>
-/// <param name="limiter">The rate limits, which such a post meets before a byte of it is read (ADR-0012).</param>
+/// <param name="limits">The rate limits, which such a post meets before a byte of it is read (ADR-0012).</param>
 /// <param name="time">The clock its reading is limited by.</param>
-internal sealed class FormPostFilesMiddleware(PublishedFormCache forms, FileUploads uploads, FieldTypeRegistry types, FormBuilderRateLimiter limiter, TimeProvider time) : IMiddleware
+internal sealed class FormPostFilesMiddleware(PublishedFormCache forms, FileUploads uploads, FieldTypeRegistry types, FormRateLimits limits, TimeProvider time) : IMiddleware
 {
     /// <summary>The most parts a post may have.</summary>
     public const int MostParts = 1024;
@@ -61,7 +61,7 @@ internal sealed class FormPostFilesMiddleware(PublishedFormCache forms, FileUplo
     {
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(next);
-        if (Limited(context))
+        if (await LimitedAsync(context))
         {
             return;
         }
@@ -74,9 +74,9 @@ internal sealed class FormPostFilesMiddleware(PublishedFormCache forms, FileUplo
         await next(context);
     }
 
-    // A marked post counts here, before its body is read and before its form is looked up, and only once: the handler
-    // takes the decision from the request. A flood gets a bare 429 and is not read at all.
-    private bool Limited(HttpContext context)
+    // A marked post counts here, before its body is read, and only once: the handler takes the decision from the request.
+    // A flood gets a bare 429 and is not read at all.
+    private async Task<bool> LimitedAsync(HttpContext context)
     {
         if (!HttpMethods.IsPost(context.Request.Method)
             || context.Request.Query[FormPostFields.PostMarker] is not [{ } marker]
@@ -86,7 +86,7 @@ internal sealed class FormPostFilesMiddleware(PublishedFormCache forms, FileUplo
             return false;
         }
 
-        var limit = limiter.Take(context, FormBuilderRateLimitPolicies.Submit, key);
+        var limit = await limits.TakeAsync(context, FormBuilderRateLimitPolicies.Submit, key, context.RequestAborted);
         FormPostRateLimit.Set(context, limit, key);
         if (limit is { Allowed: false, Renders: false })
         {

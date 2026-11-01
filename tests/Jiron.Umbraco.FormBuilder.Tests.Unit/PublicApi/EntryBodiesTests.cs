@@ -264,6 +264,23 @@ public sealed class EntryBodiesTests
         });
     }
 
+    [Test]
+    public void ABodyOfDuplicateMembers_NamesAHundredPlaces_AndTakesNoTimeOverIt()
+    {
+        var members = string.Join(",", Enumerable.Range(0, 60_000).Select(number => $"\"k{number}\":\"\",\"k{number}\":\"\""));
+        var timer = System.Diagnostics.Stopwatch.StartNew();
+
+        var submission = Read("{\"revision\":1,\"values\":{" + members + "}}", out var invalid);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(submission, Is.Null);
+            Assert.That(invalid, Has.Count.EqualTo(100));
+            Assert.That(invalid, Is.Unique);
+            Assert.That(timer.Elapsed, Is.LessThan(TimeSpan.FromSeconds(10)), "not each path against all before it");
+        });
+    }
+
     private static SubmissionRequest? Read(string json, out List<string> invalid)
     {
         invalid = [];

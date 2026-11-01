@@ -58,7 +58,7 @@ public sealed class FormBuilderOptionsTests
             Assert.That(limits.ServerKeyFactor, Is.EqualTo(10));
             Assert.That(Of(limits.Read), Is.EqualTo(new[] { 120, 0, 0, 0, 200 }));
             Assert.That(Of(limits.Challenge), Is.EqualTo(new[] { 30, 0, 10, 0, 100 }));
-            Assert.That(Of(limits.Submit), Is.EqualTo(new[] { 20, 100, 5, 60, 50 }));
+            Assert.That(Of(limits.Submit), Is.EqualTo(new[] { 20, 100, 5, 600, 50 }));
             Assert.That(Of(limits.Upload), Is.EqualTo(new[] { 30, 200, 20, 600, 20 }));
             Assert.That(Of(limits.Events), Is.EqualTo(new[] { 120, 0, 0, 0, 500 }));
             Assert.That(Of(limits.Verify), Is.EqualTo(new[] { 10, 0, 0, 0, 0 }));

@@ -1,5 +1,6 @@
 using System.Text.Json.Nodes;
 using Jiron.Umbraco.FormBuilder.Core.Configuration;
+using Jiron.Umbraco.FormBuilder.Testing.Time;
 using Jiron.Umbraco.FormBuilder.Tests.Unit.OptionLists;
 using Jiron.Umbraco.FormBuilder.Web.PublicApi;
 using Microsoft.AspNetCore.Http;
@@ -299,6 +300,38 @@ public sealed class FormBuilderPublicApiMiddlewareTests
         return body.Length == 0
             ? $"{http.Response.StatusCode}"
             : $"{http.Response.StatusCode} {JsonNode.Parse(body)!["code"]!.GetValue<string>()}";
+    }
+
+    [Test]
+    public async Task AKeyThatMatchesNone_IsLoggedOnceAMinute_WithoutThePath()
+    {
+        var options = new FormBuilderOptions();
+        var clock = new TestTimeProvider(DateTimeOffset.UnixEpoch.AddDays(1));
+        var middleware = new FormBuilderPublicApiMiddleware(new FormBuilderPublicApiPaths(Options.Create(options)), _logger, new ServerKeys(Options.Create(options)), clock);
+
+        async Task SendAsync(string path)
+        {
+            var http = Request("POST", path);
+            http.Request.Headers.Authorization = ServerKeys.Scheme + " JFB_FAKE_no_such_key";
+            await middleware.InvokeAsync(http, _ => Task.CompletedTask);
+            Assert.That(http.Response.StatusCode, Is.EqualTo(StatusCodes.Status401Unauthorized));
+        }
+
+        await SendAsync("/jfb/api/v1/forms/jfb-chosen-path");
+        await SendAsync("/jfb/api/v1/forms/another");
+        clock.Advance(TimeSpan.FromMinutes(1) - TimeSpan.FromSeconds(1));
+        await SendAsync("/jfb/api/v1/forms/another");
+        var withinAMinute = _logger.Entries.Count;
+        clock.Advance(TimeSpan.FromSeconds(1));
+        await SendAsync("/jfb/api/v1/forms/another");
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(withinAMinute, Is.EqualTo(1));
+            Assert.That(_logger.Entries, Has.Count.EqualTo(2), "and again a minute later");
+            Assert.That(_logger.Entries[0].Level, Is.EqualTo(LogLevel.Warning));
+            Assert.That(_logger.Entries[0].Message, Does.Not.Contain("jfb-chosen-path").And.Not.Contain("/jfb"));
+        });
     }
 
     private async Task<(DefaultHttpContext Http, bool Passed)> SendAsync(DefaultHttpContext http, RequestDelegate? next = null)

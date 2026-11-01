@@ -201,6 +201,124 @@ public sealed class PublicApiRateLimitTests : PublicApiTestBase
     }
 
     [Test]
+    public async Task AMadeUpKey_CostsItsAddress_NoFormsWindow_AndNoneOfTheSitesLimit()
+    {
+        var key = await PublishAsync();
+        var path = $"{Root}/forms/{key}";
+        using var first = await GetAsync(path, "203.0.113.7");
+        var windows = Limiter.TrackedWindows;
+
+        using var madeUp = await GetAsync($"{Root}/forms/{Guid.NewGuid()}", "203.0.113.7");
+        using var another = await GetAsync($"{Root}/forms/{Guid.NewGuid()}", "203.0.113.7");
+        using var pastItsWindow = await GetAsync($"{Root}/forms/{Guid.NewGuid()}", "203.0.113.7");
+        var afterThem = Limiter.TrackedWindows;
+        using var second = await GetAsync(path, "203.0.113.7");
+        using var third = await GetAsync(path, "203.0.113.7");
+        using var pastTheSite = await GetAsync(path, "203.0.113.7");
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(first.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+            Assert.That((madeUp.StatusCode, another.StatusCode), Is.EqualTo((HttpStatusCode.NotFound, HttpStatusCode.NotFound)));
+            Assert.That(pastItsWindow.StatusCode, Is.EqualTo(HttpStatusCode.TooManyRequests), "looking up made-up keys has a limit of its own");
+            Assert.That(afterThem, Is.EqualTo(windows), "no window for a form that does not exist");
+            Assert.That((second.StatusCode, third.StatusCode), Is.EqualTo((HttpStatusCode.OK, HttpStatusCode.OK)), "the site's limit is what it was");
+            Assert.That(pastTheSite.StatusCode, Is.EqualTo(HttpStatusCode.TooManyRequests), "and it still holds");
+        });
+    }
+
+    [Test]
+    public async Task ARouteValueThatCanBeNoForm_CostsItsAddress_AndNoLookup()
+    {
+        // The site's limit and the lookups' are one a second here, so a second lookup of either kind would answer 429.
+        var noAlias = $"{Root}/forms/{new string('x', 300)}";
+        using var noKey = await GetAsync($"{Root}/forms/not-a-key/render", "203.0.113.7");
+        using var noKeyAgain = await GetAsync($"{Root}/forms/not-a-key/render", "203.0.113.7");
+        using var noSuchAlias = await GetAsync(noAlias, "203.0.113.8");
+        using var noSuchAliasAgain = await GetAsync(noAlias, "203.0.113.8");
+        using var emptyKey = await GetAsync($"{Root}/forms/{Guid.Empty}/render", "203.0.113.9");
+        using var emptyKeyAgain = await GetAsync($"{Root}/forms/{Guid.Empty}/render", "203.0.113.9");
+        var windows = Limiter.TrackedWindows;
+        using var overItsAddress = await GetAsync($"{Root}/forms/not-a-key/render", "203.0.113.7");
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(new[] { noKey.StatusCode, noKeyAgain.StatusCode, noSuchAlias.StatusCode, noSuchAliasAgain.StatusCode, emptyKey.StatusCode, emptyKeyAgain.StatusCode }, Has.None.EqualTo(HttpStatusCode.TooManyRequests));
+            Assert.That(windows, Is.EqualTo(3), "each address's");
+            Assert.That(overItsAddress.StatusCode, Is.EqualTo(HttpStatusCode.TooManyRequests));
+        });
+    }
+
+    [Test]
+    public async Task AnAliasOfNoForm_HasTheLookupsLimit_AndSpendsNothingOfTheSites_WhileAKeptOneReadsNothing()
+    {
+        var key = await PublishAsync();
+        var alias = (await FormRows.GetAsync(key))!.Alias;
+        using var first = await GetAsync($"{Root}/forms/{alias}", "203.0.113.7");
+        using var second = await GetAsync($"{Root}/forms/{alias}", "203.0.113.7");
+
+        // The first read's lookup and two more fill the lookups' window of three, as the kept one's second read took none of it.
+        using var one = await GetAsync($"{Root}/forms/noSuchAlias1", "203.0.113.7");
+        using var two = await GetAsync($"{Root}/forms/noSuchAlias2", "203.0.113.7");
+        using var pastItsWindow = await GetAsync($"{Root}/forms/noSuchAlias3", "203.0.113.7");
+        using var third = await GetAsync($"{Root}/forms/{alias}", "203.0.113.7");
+        using var pastTheSite = await GetAsync($"{Root}/forms/{alias}", "203.0.113.7");
+
+        Assert.Multiple(() =>
+        {
+            Assert.That((first.StatusCode, second.StatusCode), Is.EqualTo((HttpStatusCode.OK, HttpStatusCode.OK)));
+            Assert.That((one.StatusCode, two.StatusCode), Is.EqualTo((HttpStatusCode.NotFound, HttpStatusCode.NotFound)));
+            Assert.That(pastItsWindow.StatusCode, Is.EqualTo(HttpStatusCode.TooManyRequests));
+            Assert.That(third.StatusCode, Is.EqualTo(HttpStatusCode.OK), "aliases of no form spent none of the site's limit");
+            Assert.That(pastTheSite.StatusCode, Is.EqualTo(HttpStatusCode.TooManyRequests), "and it still holds");
+        });
+    }
+
+    [Test]
+    public async Task AnAlias_CountsAsItsForm()
+    {
+        var key = await PublishAsync();
+        var other = await PublishAsync("Another");
+        var alias = (await FormRows.GetAsync(key))!.Alias;
+
+        using var byKey = await GetAsync($"{Root}/forms/{key}", "203.0.113.7");
+        using var byAlias = await GetAsync($"{Root}/forms/{alias}", "203.0.113.8");
+        using var overTheForm = await GetAsync($"{Root}/forms/{alias}", "203.0.113.9");
+        using var byKeyOver = await GetAsync($"{Root}/forms/{key}", "203.0.113.9");
+        using var anotherForm = await GetAsync($"{Root}/forms/{other}", "203.0.113.9");
+        using var noSuchAlias = await GetAsync($"{Root}/forms/noSuchAlias", "203.0.113.9");
+
+        Assert.Multiple(() =>
+        {
+            Assert.That((byKey.StatusCode, byAlias.StatusCode), Is.EqualTo((HttpStatusCode.OK, HttpStatusCode.OK)));
+            Assert.That(overTheForm.StatusCode, Is.EqualTo(HttpStatusCode.TooManyRequests), "the key's and the alias's reads share one window");
+            Assert.That(byKeyOver.StatusCode, Is.EqualTo(HttpStatusCode.TooManyRequests));
+            Assert.That(anotherForm.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+            Assert.That(noSuchAlias.StatusCode, Is.EqualTo(HttpStatusCode.NotFound), "an alias of no form spends nothing of a form's");
+        });
+    }
+
+    [Test]
+    public async Task AChallengeOverItsLimit_Answers429WithRetryAfter()
+    {
+        var key = await PublishAsync();
+
+        using var first = await PostAsync($"{Root}/forms/{key}/challenge", "{}", "203.0.113.7");
+        using var refused = await PostAsync($"{Root}/forms/{key}/challenge", "{}", "203.0.113.7");
+        var problem = JsonDocument.Parse(await refused.Content.ReadAsStringAsync()).RootElement;
+        using var otherAddress = await PostAsync($"{Root}/forms/{key}/challenge", "{}", "203.0.113.8");
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(first.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+            Assert.That(refused.StatusCode, Is.EqualTo(HttpStatusCode.TooManyRequests));
+            Assert.That(problem.GetProperty("code").GetString(), Is.EqualTo("rate_limited"));
+            Assert.That(refused.Headers.RetryAfter?.Delta, Is.GreaterThan(TimeSpan.Zero));
+            Assert.That(otherAddress.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+        });
+    }
+
+    [Test]
     public async Task AForwardedHeader_ChangesNothing_WithoutTheSitesForwardedHeaders()
     {
         var key = await PublishAsync();
@@ -231,6 +349,29 @@ public sealed class PublicApiRateLimitTests : PublicApiTestBase
         configuration[FormBuilderOptions.SectionName + ":PublicApi:ServerKeys:0:Sha256"] = Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(ShopKey)));
 
         var name = TestContext.CurrentContext.Test.MethodName ?? string.Empty;
+        if (name == nameof(ARouteValueThatCanBeNoForm_CostsItsAddress_AndNoLookup))
+        {
+            configuration[Limits + "Read:SitePerSecond"] = "1";
+        }
+
+        if (name is nameof(AMadeUpKey_CostsItsAddress_NoFormsWindow_AndNoneOfTheSitesLimit) or nameof(AnAliasOfNoForm_HasTheLookupsLimit_AndSpendsNothingOfTheSites_WhileAKeptOneReadsNothing))
+        {
+            configuration[Limits + "Read:PerAddressPerMinute"] = "0";
+            configuration[Limits + "Read:PerFormPerMinute"] = "100";
+            configuration[Limits + "Read:SitePerSecond"] = "3";
+        }
+
+        if (name == nameof(AnAlias_CountsAsItsForm))
+        {
+            configuration[Limits + "Read:PerAddressPerMinute"] = "0";
+            configuration[Limits + "Read:PerFormPerMinute"] = "2";
+        }
+
+        if (name == nameof(AChallengeOverItsLimit_Answers429WithRetryAfter))
+        {
+            configuration[Limits + "Challenge:PerAddressAndFormPerMinute"] = "1";
+        }
+
         if (name.StartsWith("AFloodFrom20000Addresses", StringComparison.Ordinal))
         {
             foreach (var (key, value) in Flood)

@@ -2,7 +2,8 @@
 
 - Status: accepted; builds on and amends [ADR-0012](0012-anonymous-endpoints-spam-protection-and-challenges.md)
   and [ADR-0126](0126-server-key-submissions.md); a window the sweep ends counts nothing more, found by 7.1c's gate; a
-  typed signature counts as a submission, found by 7.4c's review
+  typed signature counts as a submission, found by 7.4c's review; a key that names no form, an alias and the per-form default
+  changed in 7.4e by [ADR-0149](0149-a-key-that-names-no-form.md)
 - Date: 2026-11-01
 - Roadmap step: 7.1a
 

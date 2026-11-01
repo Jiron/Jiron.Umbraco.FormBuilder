@@ -490,7 +490,7 @@ codes, `no-store` except the form and the options, the OpenAPI document `jfb-pub
   key's partition, its entry records the key's name as `jfbServerKey`, and only that key gets its receipt; the keys
   are read once, so a changed key takes effect at the next start ([ADR-0126](decisions/0126-server-key-submissions.md)).
 - **Each action declares** its rate-limit policy, body limit and time limit (`x-jfb-*` in the document). The policy is
-  applied after routing by `FormBuilderRateLimitMiddleware` (`429 rate_limited` with `Retry-After`; a post without JavaScript meets the same limiter in its handler and comes back with its answers, ADR-0137); the others are applied before the body is read: a body above the limit, or any for an action that takes none, answers `413`; the time
+  applied after routing by `FormBuilderRateLimitMiddleware`, a form's own limits and the site's in the API's filter once the form is known, so a key that names no form spends neither (ADR-0149) (`429 rate_limited` with `Retry-After`; a post without JavaScript meets the same limiter in its handler and comes back with its answers, ADR-0137); the others are applied before the body is read: a body above the limit, or any for an action that takes none, answers `413`; the time
   limit `504 timeout`; pending migrations `503 migrations_pending` with `Retry-After: 10`. Anything unexpected answers
   `500 server_error`, logged with the endpoint's name.
 - **Members-only forms** bind the challenge to the signed-in member (`member_required` without one), with no cookie;

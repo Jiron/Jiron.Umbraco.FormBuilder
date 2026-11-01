@@ -42,6 +42,121 @@ public sealed class FormBuilderRateLimiterTests
         });
     }
 
+    [Test]
+    public void TheFormsDefault_LeavesItOpenToAFewAddresses_AndHoldsAFlood()
+    {
+        var limiter = Limiter(NoSiteWideLimits);
+        var sent = Enumerable.Range(1, 12).Sum(number => Count(limiter, Address($"203.0.113.{number}"), FormBuilderRateLimitPolicies.Submit, Form, 5));
+        var another = limiter.Take(Address("203.0.113.13"), FormBuilderRateLimitPolicies.Submit, Form).Allowed;
+        var flood = Enumerable.Range(0, 200).Sum(number => Count(limiter, Address($"198.51.{number / 200}.{number % 200}"), FormBuilderRateLimitPolicies.Submit, Form, 5));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(sent, Is.EqualTo(60), "twelve addresses at their limit");
+            Assert.That(another, Is.True, "leave the form open to the next");
+            Assert.That(sent + 1 + flood, Is.EqualTo(600), "and a flood stops at the form's limit");
+        });
+    }
+
+    [Test]
+    public void AStartedRequest_CountsItsAddress_AndOnlyFinishingCountsTheFormAndTheSite()
+    {
+        var limiter = Limiter(limits => limits.Submit.SitePerSecond = 1);
+        var address = Address("203.0.113.7");
+
+        var started = limiter.Start(address, FormBuilderRateLimitPolicies.Submit);
+        var windows = limiter.TrackedWindows;
+        var site = limiter.Take(Address("203.0.113.8"), FormBuilderRateLimitPolicies.Submit, null).Allowed;
+        var finished = limiter.Finish(limiter.Start(address, FormBuilderRateLimitPolicies.Submit), Form);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(started.Refusal, Is.Null);
+            Assert.That(windows, Is.EqualTo(2), "the address's minute and hour, and no form's");
+            Assert.That(site, Is.True, "nothing of the site's was spent");
+            Assert.That(finished.Allowed, Is.False, "the second to finish meets the site's limit");
+        });
+    }
+
+    [Test]
+    public void TheAddressesOwnLimit_RefusesAStart_AndAFormsOrASitesRefusal_GivesItBack()
+    {
+        var limiter = Limiter(limits =>
+        {
+            limits.Submit.PerAddressPerMinute = 2;
+            limits.Submit.PerAddressPerHour = 0;
+            limits.Submit.PerAddressAndFormPerMinute = 1;
+            limits.Submit.SitePerSecond = 0;
+        });
+        var address = Address("203.0.113.7");
+
+        var first = limiter.Finish(limiter.Start(address, FormBuilderRateLimitPolicies.Submit), Form);
+        var overTheForm = limiter.Finish(limiter.Start(address, FormBuilderRateLimitPolicies.Submit), Form);
+        var given = limiter.Start(address, FormBuilderRateLimitPolicies.Submit);
+        var refused = limiter.Start(address, FormBuilderRateLimitPolicies.Submit);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(first.Allowed, Is.True);
+            Assert.That(overTheForm.Allowed, Is.False);
+            Assert.That(given.Refusal, Is.Null, "the refusal gave back the address's count");
+            Assert.That(refused.Refusal?.Allowed, Is.False);
+        });
+    }
+
+    [Test]
+    public void TheLookupWindow_IsAsLargeAsTheSites_AndNotTheSites_AndAnswersBare()
+    {
+        var limiter = Limiter(limits =>
+        {
+            limits.Read.PerAddressPerMinute = 0;
+            limits.Read.SitePerSecond = 2;
+        });
+        var address = Address("203.0.113.7");
+        var one = limiter.TakeLookup(limiter.Start(address, FormBuilderRateLimitPolicies.Read));
+        var two = limiter.TakeLookup(limiter.Start(address, FormBuilderRateLimitPolicies.Read));
+        var three = limiter.TakeLookup(limiter.Start(address, FormBuilderRateLimitPolicies.Read));
+        var windows = limiter.TrackedWindows;
+
+        Assert.Multiple(() =>
+        {
+            Assert.That((one, two), Is.EqualTo(((RateLimitDecision?)null, (RateLimitDecision?)null)));
+            Assert.That(three, Is.Not.Null);
+            Assert.That(three!.Value.Allowed, Is.False);
+            Assert.That(three.Value.Renders, Is.False, "a flood costs no render");
+            Assert.That(windows, Is.Zero, "a site-wide window counts toward no bound");
+            Assert.That(limiter.Take(address, FormBuilderRateLimitPolicies.Read, null).Allowed, Is.True, "the site's limit is untouched");
+        });
+    }
+
+    [Test]
+    public void TheLookupWindow_WhenSwept_TakesNothingFromTheBound()
+    {
+        var limiter = Limiter(limits =>
+        {
+            limits.Read.PerAddressPerMinute = 1;
+            limits.Read.SitePerSecond = 2;
+        });
+        _ = limiter.TakeLookup(limiter.Start(Address("203.0.113.7"), FormBuilderRateLimitPolicies.Read));
+        _clock.Advance(TimeSpan.FromMinutes(3));
+
+        _ = limiter.Start(Address("203.0.113.8"), FormBuilderRateLimitPolicies.Read);
+
+        Assert.That(limiter.TrackedWindows, Is.EqualTo(1), "the one new address's, and the sweep took off only what counted");
+    }
+
+    [Test]
+    public void NoSiteLimit_NoLookupWindow()
+    {
+        var limiter = Limiter(limits =>
+        {
+            limits.Read.PerAddressPerMinute = 0;
+            limits.Read.SitePerSecond = 0;
+        });
+
+        Assert.That(Enumerable.Range(0, 50).Select(_ => limiter.TakeLookup(limiter.Start(Address("203.0.113.7"), FormBuilderRateLimitPolicies.Read))), Is.All.Null);
+    }
+
     [TestCase(FormBuilderRateLimitPolicies.Challenge, 10)]
     [TestCase(FormBuilderRateLimitPolicies.Submit, 5)]
     [TestCase(FormBuilderRateLimitPolicies.Upload, 20)]
@@ -62,11 +177,11 @@ public sealed class FormBuilderRateLimiterTests
     {
         var limiter = Limiter(NoSiteWideLimits);
 
-        var passed = Enumerable.Range(0, 70).Count(i => limiter.Take(Address($"203.0.113.{i}"), FormBuilderRateLimitPolicies.Submit, Form).Allowed);
+        var passed = Enumerable.Range(0, 610).Count(i => limiter.Take(Address($"203.0.{i / 200}.{i % 200}"), FormBuilderRateLimitPolicies.Submit, Form).Allowed);
 
         Assert.Multiple(() =>
         {
-            Assert.That(passed, Is.EqualTo(60));
+            Assert.That(passed, Is.EqualTo(600));
             Assert.That(limiter.Take(Address("198.51.100.1"), FormBuilderRateLimitPolicies.Submit, OtherForm).Allowed, Is.True, "another form counts by itself");
         });
     }

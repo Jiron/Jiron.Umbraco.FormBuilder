@@ -184,6 +184,18 @@ internal sealed partial class PublishedFormCache(
         return (kept as FormKey)?.Key;
     }
 
+    /// <summary>Whether this server keeps the form as the website serves it, which takes no read (ADR-0149).</summary>
+    /// <param name="key">The form's key.</param>
+    public bool IsKept(Guid key) => appCaches.RuntimeCache.Get(FormCacheKeys.Published(key)) is CachedForm;
+
+    /// <summary>The key of the form an alias names when this server keeps it, which takes no read (ADR-0149); null otherwise.</summary>
+    /// <param name="alias">The alias.</param>
+    public Guid? KeptKeyOf(string alias)
+    {
+        ArgumentNullException.ThrowIfNull(alias);
+        return (appCaches.RuntimeCache.Get(FormCacheKeys.Alias(alias)) as FormKey)?.Key;
+    }
+
     // The form's row first, so a key that names no form costs one read.
     private async Task<object> LoadAsync(Guid key)
     {

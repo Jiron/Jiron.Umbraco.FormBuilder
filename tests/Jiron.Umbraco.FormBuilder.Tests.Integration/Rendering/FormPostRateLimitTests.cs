@@ -7,6 +7,7 @@ using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Files;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Tests.Integration.Support;
+using Jiron.Umbraco.FormBuilder.Web.PublicApi.RateLimiting;
 using Jiron.Umbraco.FormBuilder.Web.Rendering;
 using Microsoft.Extensions.DependencyInjection;
 using Umbraco.Cms.Tests.Common.Testing;
@@ -223,6 +224,24 @@ public sealed class FormPostRateLimitTests : RenderingTestBase
             Assert.That(await Entries.ListOrphanFilesAsync(DateTimeOffset.UtcNow.AddHours(1), 50), Is.Empty, "neither the file nor the typed signature");
             Assert.That(await CountEntriesAsync(key), Is.Zero);
         });
+    }
+
+    [Test]
+    public async Task APostMarkedWithAFormThatDoesNotExist_MakesNoWindowForIt()
+    {
+        _ = await PublishFormAsync("limitedPost", null, Topic);
+        _ = await PagesAsync("limited");
+        var limiter = GetRequiredService<FormBuilderRateLimiter>();
+        var before = limiter.TrackedWindows;
+        using var content = new MultipartFormDataContent { { new StringContent("Ideas"), "topic" } };
+
+        using var post = await SendAsync(HttpMethod.Post, $"/limited/?{FormPostFields.PostMarker}={Guid.NewGuid():D}.jfb-1", request =>
+        {
+            request.Content = content;
+            request.Headers.TryAddWithoutValidation("Origin", Client.BaseAddress!.GetLeftPart(UriPartial.Authority));
+        });
+
+        Assert.That(limiter.TrackedWindows, Is.EqualTo(before));
     }
 
     [Test]

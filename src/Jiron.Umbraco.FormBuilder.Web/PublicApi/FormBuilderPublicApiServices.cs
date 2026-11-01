@@ -43,6 +43,7 @@ internal static class FormBuilderPublicApiServices
         builder.Services.TryAddScoped<FormBuilderPublicApiFilter>();
         builder.Services.TryAddSingleton<ServerKeys>();
         builder.Services.TryAddSingleton<FormBuilderRateLimiter>();
+        builder.Services.TryAddSingleton<FormRateLimits>();
         builder.Services.TryAddSingleton<FormBuilderRateLimitMiddleware>();
         builder.Services.TryAddSingleton<FormBuilderPublicApiMiddleware>();
         builder.Services.TryAddSingleton<Picker.FormBuilderDeliveryApiMiddleware>();

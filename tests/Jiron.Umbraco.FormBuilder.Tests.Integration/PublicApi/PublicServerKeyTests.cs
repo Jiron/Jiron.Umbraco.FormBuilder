@@ -5,7 +5,9 @@ using System.Text.Json;
 using Jiron.Umbraco.FormBuilder.Core.Configuration;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Tests.Integration.Support;
+using Jiron.Umbraco.FormBuilder.Web.PublicApi;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
 using Umbraco.Cms.Tests.Common.Testing;
@@ -72,6 +74,7 @@ public sealed class PublicServerKeyTests : PublicApiTestBase
             ("a read", await GetAsync($"{Root}/forms/{key}", request => request.Headers.TryAddWithoutValidation("Authorization", "Jfb-Key " + RevokedKey))),
         };
         var logged = string.Join("\n", GetRequiredService<LogCapture>().Entries.Select(entry => entry.Message));
+        var warnings = GetRequiredService<LogCapture>().Entries.Where(entry => entry.Category == typeof(FormBuilderPublicApiMiddleware).FullName && entry.Level == LogLevel.Warning).ToList();
 
         try
         {
@@ -86,6 +89,8 @@ public sealed class PublicServerKeyTests : PublicApiTestBase
 
                 Assert.That(await ContextsAsync(key), Is.Empty, "nothing stored");
                 Assert.That(logged, Does.Contain("carried a server key that matches none"));
+                Assert.That(warnings, Has.Count.EqualTo(1), "a key that matches none comes before any limit, so its warning is bounded");
+                Assert.That(warnings[0].Message, Does.Not.Contain("/forms"), "and names no path a caller chose");
                 Assert.That(logged, Does.Not.Contain("JFB_FAKE").And.Not.Contain(Hash(RevokedKey)).And.Not.Contain(Hash(ShopKey)), "neither a key nor a hash in a log");
             });
         }

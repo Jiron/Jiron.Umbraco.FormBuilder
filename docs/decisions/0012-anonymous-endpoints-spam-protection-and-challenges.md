@@ -140,7 +140,7 @@ refusals, and an address further over its limit, get a bare `429`, so a flood st
 | --- | --- |
 | `read` (definition, render, options) | per address 120 a minute; site-wide 200 a second |
 | `challenge` | per address 30 a minute; per address and form 10 a minute; site-wide 100 a second |
-| `submit` (entries, drafts, validate, receipt) | per address 20 a minute and 100 an hour; per address and form 5 a minute; per form 60 a minute; site-wide 50 a second |
+| `submit` (entries, drafts, validate, receipt) | per address 20 a minute and 100 an hour; per address and form 5 a minute; per form 600 a minute (60 until 7.4e, [ADR-0149](0149-a-key-that-names-no-form.md)); site-wide 50 a second |
 | `upload` | per address 30 a minute and 200 an hour; per address and form 20 a minute; per form 600 a minute; site-wide 20 a second (the hour and the form added in 7.4d, [ADR-0148](0148-what-uploads-may-hold.md)) |
 | `events` (the insights beacon) | per address 120 a minute; site-wide 500 a second |
 | `verify` | per address 10 a minute |
