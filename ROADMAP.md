@@ -2149,7 +2149,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - Playwright on the demo covers submission (the outcome, the error summary from a `422` with its focus, the server's errors in place), and the send states (a second press during a slow send sends nothing; a `429` and a `500` show the notice above the buttons, move the focus to it and keep every answer; a redirect outcome with "Go now" and "Stay here");
     - Playwright shows a submission from a plain-HTTP origin, where `crypto.randomUUID()` does not exist;
     - axe is clean in every send state; the size check passes with every chunk.
-- [ ] **6.4j `form_changed`** (6.4 split in nine, WORKLOG 2026-10-30; one letter on as 6.4a, 6.4b, 6.4c, 6.4d, 6.4f and 6.4g split in two, WORKLOG 2026-10-30)
+- [x] **6.4j `form_changed`** (6.4 split in nine, WORKLOG 2026-10-30; one letter on as 6.4a, 6.4b, 6.4c, 6.4d, 6.4f and 6.4g split in two, WORKLOG 2026-10-30) (2026-11-01, b0442d4)
   - **Resumes (2026-11-01):** the owner raised the budget to 60 KB (ADR-0146); this step resumes at 7.4i, with every check below.
   - **Blocked (2026-10-30):** `form_changed` is the answer of a send, which 6.4i builds, and it adds to the website runtime past section 4.12's budget, which only the owner can change (ADR-0120, `docs/OWNER-TODO.md`).
   - `form_changed` handling with answer restore (§3.1), through the `render` endpoint, leaving a consent whose wording changed unticked (ADR-0004).
