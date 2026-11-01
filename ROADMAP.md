@@ -2412,7 +2412,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
 - [x] **7.3b Cleanup and scanning** (7.3 split in four, WORKLOG 2026-11-01) (2026-11-01, 266c600)
   - the orphan-cleanup job, and the scanner hook with quarantine.
   - Done when: tests cover a quarantined file and the cleanup of an orphan.
-- [ ] **7.3c Downloads** (7.3 split in four, WORKLOG 2026-11-01)
+- [x] **7.3c Downloads** (7.3 split in four, WORKLOG 2026-11-01) (2026-11-01, 5cb544f)
   - protected and permission-checked, with SVG and HTML never served inline; ZIP exports safe against path traversal.
   - Done when: tests cover a zip-slip name, a download by a user with and without the permission and by an anonymous caller, and an SVG and an HTML file served as attachments.
 - [ ] **7.3d A refused upload over HTTP/2** (7.3 split in four, WORKLOG 2026-11-01)
