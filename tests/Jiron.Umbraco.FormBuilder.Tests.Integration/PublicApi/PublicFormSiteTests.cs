@@ -4,6 +4,7 @@ using System.Text.Json.Nodes;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Core.Settings;
+using Jiron.Umbraco.FormBuilder.Core.Submissions;
 using Jiron.Umbraco.FormBuilder.Tests.Integration.Support;
 using Microsoft.Extensions.Logging;
 using Umbraco.Cms.Core;
@@ -116,7 +117,8 @@ public sealed class PublicFormSiteTests : PublicApiTestBase
         await Settings.SaveAsync(filled, current.Version, Editor);
         var protection = new ProtectionSettings
         {
-            Level = ProtectionLevel.ProofOfWork,
+            Level = ProtectionLevel.Captcha,
+            CaptchaProvider = HcaptchaProvider.ChosenAs,
             ProofBits = 12,
             BlockedRanges = ["203.0.113.0/24"],
             ContentRules = ContentRuleLevel.Strict,

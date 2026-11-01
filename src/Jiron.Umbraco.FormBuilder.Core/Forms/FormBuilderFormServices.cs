@@ -18,6 +18,7 @@ internal static class FormBuilderFormServices
     {
         ArgumentNullException.ThrowIfNull(builder);
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IFormPublishCheck, StructuralPublishCheck>());
+        builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IFormPublishCheck, CaptchaPublishCheck>());
         builder.Services.TryAddSingleton<FormRemoval>();
         builder.Services.TryAddSingleton<LibraryPlaces>();
         builder.Services.TryAddSingleton<FormDocuments>();

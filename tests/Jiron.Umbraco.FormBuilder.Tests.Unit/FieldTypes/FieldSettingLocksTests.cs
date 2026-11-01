@@ -505,6 +505,7 @@ public sealed class FieldSettingLocksTests
         var builder = new FormBuilderFieldTypeCollectionBuilder();
         change?.Invoke(builder);
         builder.RegisterWith(services);
+        TestFieldTypes.AddCaptchaProviders(services);
         services.AddFieldTypeRegistry();
         return services.BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });
     }

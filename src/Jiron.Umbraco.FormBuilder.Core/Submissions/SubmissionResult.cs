@@ -12,6 +12,9 @@ internal enum SubmissionRefusal
     /// <summary>The request's challenge is missing, forged, expired, another's or used for another entry (<c>challenge_required</c>).</summary>
     ChallengeRequired,
 
+    /// <summary>The captcha's token does not pass, and the visitor can try again (ADR-0142).</summary>
+    CaptchaFailed,
+
     /// <summary>The form takes entries only from members it admits (<c>member_required</c>).</summary>
     MemberRequired,
 

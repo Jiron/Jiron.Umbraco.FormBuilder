@@ -251,6 +251,7 @@ public sealed class FieldTypeRegistryTests
         var builder = new FormBuilderFieldTypeCollectionBuilder();
         change(builder);
         builder.RegisterWith(services);
+        TestFieldTypes.AddCaptchaProviders(services);
         services.AddFieldTypeRegistry();
         return services.BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });
     }

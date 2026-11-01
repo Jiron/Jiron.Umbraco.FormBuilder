@@ -2,7 +2,6 @@ using System.Reflection;
 using System.Text.Json;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
-using Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn;
 using Jiron.Umbraco.FormBuilder.Core.MergeTags;
 using Jiron.Umbraco.FormBuilder.Logic;
 using Jiron.Umbraco.FormBuilder.Testing;
@@ -36,7 +35,7 @@ public sealed class VisitorMessageDefaultsTests
     };
 
     private static IEnumerable<FieldTypeDeclaration> BuiltIn =>
-        BuiltInFieldTypes.All.Select(type => ((IFormBuilderFieldType)Activator.CreateInstance(type)!).Declaration);
+        TestFieldTypes.Registry.Types.Select(type => type.Declaration);
 
     [Test]
     public void EveryKindEveryBuiltInTypeDeclares_HasADefaultOfItsOwn_InEveryLanguage()

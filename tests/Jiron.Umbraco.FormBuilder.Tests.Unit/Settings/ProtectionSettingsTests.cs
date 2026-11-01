@@ -128,9 +128,39 @@ public sealed class ProtectionSettingsTests
     [TestCase(ProtectionLevel.Standard, true)]
     [TestCase(ProtectionLevel.ProofOfWork, true)]
     [TestCase(ProtectionLevel.Inherit, false)]
-    [TestCase(ProtectionLevel.Captcha, false)]
-    public void ASitesLevel_IsStandardOrProofOfWork(ProtectionLevel level, bool saved) =>
+    public void ASitesLevel_IsNeverInherited(ProtectionLevel level, bool saved) =>
         Assert.That(Codes(new ProtectionSettings { Level = level }), saved ? Is.Empty : Is.EqualTo(new[] { SettingsErrors.ProtectionLevelCode }));
+
+    [TestCase(ProtectionLevel.Captcha, "hcaptcha", true, TestName = "The captcha level with its provider")]
+    [TestCase(ProtectionLevel.Captcha, null, false, TestName = "The captcha level without a provider")]
+    [TestCase(ProtectionLevel.Captcha, " ", false, TestName = "The captcha level with a blank provider")]
+    [TestCase(ProtectionLevel.Standard, "hcaptcha", false, TestName = "A provider at the standard level")]
+    [TestCase(ProtectionLevel.ProofOfWork, "hcaptcha", false, TestName = "A provider at the proof of work level")]
+    public void ASitesCaptchaProvider_GoesWithItsLevel(ProtectionLevel level, string? provider, bool saved) =>
+        Assert.That(Codes(new ProtectionSettings { Level = level, CaptchaProvider = provider }), saved ? Is.Empty : Is.EqualTo(new[] { SettingsErrors.ProtectionLevelCode }));
+
+    [Test]
+    public void TheCaptchaOfAForm_IsItsOwn_OrItsSitesWhenItInherits_AndNoneOtherwise()
+    {
+        var own = new CaptchaChoice { Provider = "own" };
+        var site = new ProtectionSettings { Level = ProtectionLevel.Captcha, CaptchaProvider = "sites" };
+        static FormDefinition Form(ProtectionLevel level, CaptchaChoice? choice = null) => new()
+        {
+            Key = Guid.Empty,
+            Settings = new FormSettings { Protection = new FormProtectionSettings { Level = level, Captcha = choice } },
+        };
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(site.CaptchaOf(Form(ProtectionLevel.Captcha, own)), Is.SameAs(own));
+            Assert.That(new ProtectionSettings().CaptchaOf(Form(ProtectionLevel.Captcha, own)), Is.SameAs(own));
+            Assert.That(site.CaptchaOf(Form(ProtectionLevel.Inherit))?.Provider, Is.EqualTo("sites"));
+            Assert.That(site.CaptchaOf(Form(ProtectionLevel.Standard)), Is.Null);
+            Assert.That(site.CaptchaOf(Form(ProtectionLevel.ProofOfWork)), Is.Null);
+            Assert.That(new ProtectionSettings().CaptchaOf(Form(ProtectionLevel.Inherit)), Is.Null);
+            Assert.That(new ProtectionSettings { Level = ProtectionLevel.ProofOfWork, CaptchaProvider = "stale" }.CaptchaOf(Form(ProtectionLevel.Inherit)), Is.Null);
+        });
+    }
 
     [TestCase(7, false)]
     [TestCase(8, true)]

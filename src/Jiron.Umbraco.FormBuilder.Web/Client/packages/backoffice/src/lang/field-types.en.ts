@@ -200,5 +200,6 @@ export default {
   },
   jfbFieldTypeAvailability: {
     checkFailed: "Its setup could not be checked. The site's log says why.",
+    captchaNoKeys: "No captcha provider has its keys yet. They go in the site's configuration.",
   },
 } satisfies UmbLocalizationDictionary;

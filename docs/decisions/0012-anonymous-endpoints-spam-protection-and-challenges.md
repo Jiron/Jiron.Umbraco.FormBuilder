@@ -17,7 +17,9 @@
   ([ADR-0139](0139-the-signals-and-the-score.md)); what the content rules read, whose maximum of links counts, what a
   failing spam check does and how "not spam" knows its actions built in 7.1d
   ([ADR-0140](0140-content-rules-and-the-spam-folder.md)); what the puzzle's nonce is, what a wrong answer answers and the
-  level's home built in 7.2a ([ADR-0141](0141-proof-of-work-on-the-server.md))
+  level's home built in 7.2a ([ADR-0141](0141-proof-of-work-on-the-server.md)); a provider's shape, where a page reads the
+  site key, when a token is spent and a form whose provider cannot be shown built and amended in 7.2b
+  ([ADR-0142](0142-the-captcha-providers.md))
 - Date: 2026-10-23
 - Roadmap step: 1.7b (decided); built in 6.1 (the public API and the pipeline), 6.6 (server keys), 7.1 (standard
   protection, content rules and the spam folder), 7.2 (proof of work and captchas), 8.x (mail limits) and 16.1 (the
@@ -236,7 +238,8 @@ that the demo machine solves it in under 2 seconds.
   provider answers. reCAPTCHA v2, reCAPTCHA v3 and hCaptcha are built in; the last registration of an alias wins, so a
   site can replace one. A provider without keys is greyed out with the reason (§4.3.2).
 - **Keys** live only in host configuration (`JironFormBuilder:Captcha`); the projection carries the site key, never the
-  secret.
+  secret. **Amended in 7.2b ([ADR-0142](0142-the-captcha-providers.md)):** the challenge carries it, since the provider of
+  a form that inherits depends on the page's site, and the projection names the form's own provider only.
 - **Verification** posts only the secret and the token, never the visitor's address, and checks success, the action,
   the host (from the site's configured domains and `AllowedOrigins`, never the request's Host header), the token's age
   (two minutes for reCAPTCHA v3, five for the others, with 30 s of clock skew) and, for v3, the score against the

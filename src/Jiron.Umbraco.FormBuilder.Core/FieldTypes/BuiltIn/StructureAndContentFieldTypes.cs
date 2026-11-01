@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
+using Jiron.Umbraco.FormBuilder.Core.Submissions;
 using Jiron.Umbraco.FormBuilder.Logic;
 
 namespace Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn;
@@ -189,13 +190,23 @@ public enum ImageSize
 
 /// <summary>
 /// Where the form's chosen captcha renders (<c>captcha</c>, section 4.3.2); without it, the captcha renders before the
-/// submit button (section 4.10). A form has at most one, never inside a repeatable group.
+/// submit button (section 4.10). A form has at most one, never inside a repeatable group. It marks where a provider's
+/// captcha renders, so it is not configured while no provider has its keys (ADR-0142).
 /// </summary>
-public sealed class CaptchaFieldType() : FormBuilderFieldTypeBase<NoFieldSettings>(new FieldTypeDeclaration
+/// <param name="providers">The captcha providers the site has.</param>
+public sealed class CaptchaFieldType(FormBuilderCaptchaProviderCollection providers) : FormBuilderFieldTypeBase<NoFieldSettings>(new FieldTypeDeclaration
 {
     Alias = "captcha",
     Name = "#jfbFieldTypes_captcha",
     Icon = "icon-shield",
     PaletteGroup = FieldPaletteGroup.Protection,
     OnePerForm = true,
-});
+})
+{
+    /// <summary>The reason a site whose captcha providers have no keys is given.</summary>
+    public const string NoKeys = "#jfbFieldTypeAvailability_captchaNoKeys";
+
+    /// <inheritdoc />
+    public override ValueTask<FieldTypeAvailability> CheckAvailabilityAsync(CancellationToken cancellationToken) =>
+        ValueTask.FromResult(providers.Any(provider => provider.IsConfigured) ? FieldTypeAvailability.Available : FieldTypeAvailability.NotConfigured(NoKeys));
+}

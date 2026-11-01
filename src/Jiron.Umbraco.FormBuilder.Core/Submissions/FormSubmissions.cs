@@ -388,9 +388,16 @@ internal sealed class FormSubmissions(
             cancellationToken);
         var paths = new FieldPaths(definition);
 
+        // A token is spent when it is verified, so only answers that can be stored ask the provider (ADR-0142).
+        var captcha = pageKey is null && read.Errors.IsEmpty ? await protection.CheckCaptchaAsync(request, definition, page, cancellationToken) : FormBuilderCaptchaOutcome.Passed;
+        if (captcha == FormBuilderCaptchaOutcome.Failed)
+        {
+            return Reading.Refused(SubmissionResult.Refused(SubmissionRefusal.CaptchaFailed));
+        }
+
         // The protection, for a submission (section 4.4, step 6), on the answers as they were read: Spam is told nothing of
         // places or unique answers, which it neither takes nor holds (ADR-0090, ADR-0091).
-        var verdict = pageKey is null ? await protection.ScoreAsync(request, definition, read, scope.Culture, page, cancellationToken) : SpamVerdict.None;
+        var verdict = pageKey is null ? await protection.ScoreAsync(request, definition, read, scope.Culture, page, captcha, cancellationToken) : SpamVerdict.None;
         var full = verdict.IsSpam ? [] : await places.CheckAsync(served.Row.Id, read.Places, cancellationToken);
         // A unique answer is checked once nothing else refuses the post: an answer taken by another entry is then told to
         // a post that would be stored, never to one that stores nothing, which could ask it of any address (ADR-0091).

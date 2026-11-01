@@ -40,8 +40,11 @@ internal sealed record ProtectionSettings : ISettingsSection
     /// <inheritdoc />
     public static bool PerSite => true;
 
-    /// <summary>The level of the site's forms that inherit it: <c>standard</c> or <c>proofOfWork</c>, never <c>inherit</c>, which is how a form takes this one.</summary>
+    /// <summary>The level of the site's forms that inherit it: <c>standard</c>, <c>proofOfWork</c> or <c>captcha</c>, never <c>inherit</c>, which is how a form takes this one.</summary>
     public ProtectionLevel Level { get; init; } = ProtectionLevel.Standard;
+
+    /// <summary>At the <c>captcha</c> level, the provider of the site's forms that inherit it (ADR-0142).</summary>
+    public string? CaptchaProvider { get; init; }
 
     /// <summary>How many zero bits a puzzle of the site's forms asks for; each more doubles the work (ADR-0141).</summary>
     public int ProofBits { get; init; } = 16;
@@ -70,6 +73,19 @@ internal sealed record ProtectionSettings : ISettingsSection
     {
         ArgumentNullException.ThrowIfNull(definition);
         return definition.Settings.Protection.Level is ProtectionLevel.Inherit ? Level : definition.Settings.Protection.Level;
+    }
+
+    /// <summary>The captcha a form asks for: its own at the captcha level, the site's for one that inherits that level; null for none.</summary>
+    /// <param name="definition">The form.</param>
+    public CaptchaChoice? CaptchaOf(FormDefinition definition)
+    {
+        ArgumentNullException.ThrowIfNull(definition);
+        return definition.Settings.Protection.Level switch
+        {
+            ProtectionLevel.Captcha => definition.Settings.Protection.Captcha,
+            ProtectionLevel.Inherit when Level == ProtectionLevel.Captcha && CaptchaProvider is { } provider => new CaptchaChoice { Provider = provider },
+            _ => null,
+        };
     }
 
     /// <summary>
@@ -133,9 +149,14 @@ internal sealed class ProtectionSettingsValidator : ISettingsValidator<Protectio
             }
         }
 
-        if (section.Level is not (ProtectionLevel.Standard or ProtectionLevel.ProofOfWork))
+        if (section.Level == ProtectionLevel.Inherit)
         {
-            errors.Add(nameof(ProtectionSettings.Level), SettingsErrors.ProtectionLevelCode, "A site's protection level is standard or proofOfWork.");
+            errors.Add(nameof(ProtectionSettings.Level), SettingsErrors.ProtectionLevelCode, "A site's protection level is standard, proofOfWork or captcha.");
+        }
+
+        if ((section.Level == ProtectionLevel.Captcha) == string.IsNullOrWhiteSpace(section.CaptchaProvider))
+        {
+            errors.Add(nameof(ProtectionSettings.CaptchaProvider), SettingsErrors.ProtectionLevelCode, "A site names a captcha provider at the captcha level, and only there.");
         }
 
         if (section.ProofBits is < ProtectionSettings.FewestProofBits or > ProtectionSettings.MostProofBits)

@@ -4164,8 +4164,8 @@
       "messages": [],
       "settings": [],
       "availability": {
-        "isAvailable": true,
-        "reason": null
+        "isAvailable": false,
+        "reason": "#jfbFieldTypeAvailability_captchaNoKeys"
       }
     }
   ]

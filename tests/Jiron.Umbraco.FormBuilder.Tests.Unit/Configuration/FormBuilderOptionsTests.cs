@@ -140,6 +140,14 @@ public sealed class FormBuilderOptionsTests
             [$"{Locks}1:Setting"] = "maxLength",
             [$"{Root}:LockedSections:0"] = "privacy",
             [$"{Root}:LockedSections:1"] = "Email",
+            [$"{Root}:Captcha:Hcaptcha:SiteKey"] = "JFB_FAKE_site",
+            [$"{Root}:Captcha:Hcaptcha:SecretKey"] = "JFB_FAKE_secret",
+            [$"{Root}:Captcha:Hcaptcha:VerifyAddress"] = "http://localhost:5560/captcha/hcaptcha/siteverify",
+            [$"{Root}:Captcha:RecaptchaV2:SiteKey"] = "JFB_FAKE_v2_site",
+            [$"{Root}:Captcha:RecaptchaV2:SecretKey"] = "JFB_FAKE_v2_secret",
+            [$"{Root}:Captcha:RecaptchaV3:SiteKey"] = "JFB_FAKE_v3_site",
+            [$"{Root}:Captcha:RecaptchaV3:SecretKey"] = "JFB_FAKE_v3_secret",
+            [$"{Root}:Captcha:UseRecaptchaNet"] = "true",
             [$"{Root}:Webhooks:AllowedHosts:0"] = "events.example.com",
             [$"{Root}:Webhooks:AllowHttp"] = "true",
             [$"{Root}:Rendering:IncludeAssetsAutomatically"] = "false",
@@ -158,6 +166,10 @@ public sealed class FormBuilderOptionsTests
                 options.Designer.SettingLocks.Select(l => (l.Kind, l.Type, l.Setting, l.Value, l.Hidden)),
                 Is.EqualTo(new[] { ("action", "email", "from", "noreply@example.com", true), ("field", "text", "maxLength", (string?)null, false) }));
             Assert.That(options.LockedSections, Is.EqualTo(new[] { "privacy", "Email" }));
+            Assert.That((options.Captcha.Hcaptcha.SiteKey, options.Captcha.Hcaptcha.SecretKey, options.Captcha.Hcaptcha.VerifyAddress), Is.EqualTo(("JFB_FAKE_site", "JFB_FAKE_secret", "http://localhost:5560/captcha/hcaptcha/siteverify")));
+            Assert.That((options.Captcha.RecaptchaV2.SiteKey, options.Captcha.RecaptchaV2.SecretKey), Is.EqualTo(("JFB_FAKE_v2_site", "JFB_FAKE_v2_secret")));
+            Assert.That((options.Captcha.RecaptchaV3.SiteKey, options.Captcha.RecaptchaV3.SecretKey), Is.EqualTo(("JFB_FAKE_v3_site", "JFB_FAKE_v3_secret")));
+            Assert.That(options.Captcha.UseRecaptchaNet, Is.True);
             Assert.That((options.Webhooks.AllowedHosts.Single(), options.Webhooks.AllowHttp), Is.EqualTo(("events.example.com", true)));
             Assert.That(options.Rendering.IncludeAssetsAutomatically, Is.False);
             Assert.That(HostOptions.Failures(settings), Is.Empty);
@@ -470,10 +482,27 @@ public sealed class FormBuilderOptionsTests
         Assert.That(failures, Has.Count.EqualTo(4));
     }
 
-    [TestCase("JironFormBuilder:Limit:Definitions:MaxFields", "JironFormBuilder:Limit is not a setting of Jiron Form Builder; the settings in JironFormBuilder are PublicApi, Rendering, Files, Limits, Designer, Access, Webhooks and LockedSections.")]
+    [TestCase("RecaptchaV2", "SiteKey")]
+    [TestCase("RecaptchaV2", "SecretKey")]
+    [TestCase("RecaptchaV3", "SiteKey")]
+    [TestCase("RecaptchaV3", "SecretKey")]
+    [TestCase("Hcaptcha", "SiteKey")]
+    [TestCase("Hcaptcha", "SecretKey")]
+    public void ACaptchaProviderWithOneKey_IsRefused(string provider, string key) =>
+        Assert.That(HostOptions.Failures(new Dictionary<string, string?> { [$"{Root}:Captcha:{provider}:{key}"] = "JFB_FAKE_key" }), Is.EqualTo(new[] { $"{Root}:Captcha:{provider} needs both its SiteKey and its SecretKey, or neither." }));
+
+    [TestCase("RecaptchaV2", "ftp://stub.example/verify", false)]
+    [TestCase("RecaptchaV3", "/captcha/siteverify", false)]
+    [TestCase("Hcaptcha", "stub.example", false)]
+    [TestCase("Hcaptcha", "https://stub.example/verify", true)]
+    [TestCase("Hcaptcha", "http://localhost:5560/verify", true)]
+    public void ACaptchaProvidersVerifyAddress_IsOne(string provider, string address, bool saved) =>
+        Assert.That(HostOptions.Failures(new Dictionary<string, string?> { [$"{Root}:Captcha:{provider}:VerifyAddress"] = address }), saved ? Is.Empty : Is.EqualTo(new[] { $"{Root}:Captcha:{provider}:VerifyAddress must be an http or https address." }));
+
+    [TestCase("JironFormBuilder:Limit:Definitions:MaxFields", "JironFormBuilder:Limit is not a setting of Jiron Form Builder; the settings in JironFormBuilder are PublicApi, Rendering, Files, Limits, Designer, Access, Captcha, Webhooks and LockedSections.")]
     [TestCase("JironFormBuilder:Limits:Definitions:MaxField", "JironFormBuilder:Limits:Definitions:MaxField is not a setting of Jiron Form Builder; the settings in JironFormBuilder:Limits:Definitions are MaxBytes, MaxPages, MaxGroups, MaxFields, MaxOptionsPerField, MaxActions, MaxOutcomes and MaxRules.")]
     [TestCase("JironFormBuilder:Limits:Definition:MaxFields", "JironFormBuilder:Limits:Definition is not a setting of Jiron Form Builder; the settings in JironFormBuilder:Limits are Definitions, MaxTrackedClients, ServerKeyFactor, Read, Challenge, Submit, Upload, Events and Verify.")]
-    [TestCase("JironFormBuilder:LockedSection:0", "JironFormBuilder:LockedSection is not a setting of Jiron Form Builder; the settings in JironFormBuilder are PublicApi, Rendering, Files, Limits, Designer, Access, Webhooks and LockedSections.")]
+    [TestCase("JironFormBuilder:LockedSection:0", "JironFormBuilder:LockedSection is not a setting of Jiron Form Builder; the settings in JironFormBuilder are PublicApi, Rendering, Files, Limits, Designer, Access, Captcha, Webhooks and LockedSections.")]
     [TestCase("JironFormBuilder:Designer:SettingLocks:0:Typ", "JironFormBuilder:Designer:SettingLocks:0:Typ is not a setting of Jiron Form Builder; the settings in JironFormBuilder:Designer:SettingLocks:0 are Kind, Type, Setting, Value and Hidden.")]
     [TestCase("JironFormBuilder:Files:Root:Folder", "JironFormBuilder:Files:Root is a single value, not a section.")]
     [TestCase("JironFormBuilder:LockedSections:0:Name", "JironFormBuilder:LockedSections:0 is a single value, not a section.")]

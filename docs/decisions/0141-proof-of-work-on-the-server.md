@@ -24,7 +24,7 @@ when the challenge endpoint knows no page, and what difficulty to start at while
 - **Only a submission is checked.** A page's check and an upload need the challenge alone, since the puzzle should cost a
   bot per entry, not a visitor per page. `proofOfWork` on a page's check is an unknown member, as `captchaToken` is.
 - **The level is the form's, or its site's for a form that inherits it.** `protection` gains `Level` (`standard` by default)
-  and `ProofBits`. A site's level is `standard` or `proofOfWork`, and the captcha level follows with its provider in 7.2b. The
+  and `ProofBits`. A site's level is `standard` or `proofOfWork`, and the captcha level with its provider since 7.2b ([ADR-0142](0142-the-captcha-providers.md)). The
   challenge endpoint's body gains an optional `contentKey`, the same page a submission names, so both read the same site's
   level; without one, it reads the global settings, as a submission without a page does.
 - **A post without JavaScript** cannot solve anything, so it is scored `no_script` (100) and goes to Spam, as ADR-0012 says, so

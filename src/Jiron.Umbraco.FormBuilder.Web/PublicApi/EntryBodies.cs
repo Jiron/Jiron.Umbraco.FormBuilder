@@ -178,6 +178,7 @@ internal static class EntryBodies
         string? challenge = null;
         string? honeypot = null;
         string? proof = null;
+        string? captchaToken = null;
         foreach (var (name, value) in Members(root, string.Empty, invalid))
         {
             switch (name)
@@ -215,7 +216,7 @@ internal static class EntryBodies
                     challenge = Text(value, name, invalid, MaxChallengeLength);
                     break;
                 case "captchaToken" when !page:
-                    _ = Text(value, name, invalid, MaxCaptchaTokenLength);
+                    captchaToken = Text(value, name, invalid, MaxCaptchaTokenLength);
                     break;
                 case "honeypot":
                     honeypot = Text(value, name, invalid, int.MaxValue);
@@ -253,6 +254,7 @@ internal static class EntryBodies
             Challenge = challenge,
             Honeypot = honeypot,
             ProofOfWork = proof,
+            CaptchaToken = captchaToken,
         }, pageKey);
     }
 

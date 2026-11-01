@@ -1627,6 +1627,30 @@
   },
   "components": {
     "schemas": {
+      "ChallengeCaptchaResponseModel": {
+        "required": [
+          "provider",
+          "scriptAddress",
+          "siteKey"
+        ],
+        "type": "object",
+        "properties": {
+          "provider": {
+            "type": "string"
+          },
+          "siteKey": {
+            "type": "string"
+          },
+          "scriptAddress": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "ChallengeMemberResponseModel": {
         "required": [
           "groups",
@@ -1701,6 +1725,14 @@
                 "format": "int32"
               }
             },
+            "nullable": true
+          },
+          "captcha": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ChallengeCaptchaResponseModel"
+              }
+            ],
             "nullable": true
           },
           "proofOfWork": {

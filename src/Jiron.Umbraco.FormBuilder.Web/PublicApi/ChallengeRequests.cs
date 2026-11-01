@@ -27,7 +27,8 @@ namespace Jiron.Umbraco.FormBuilder.Web.PublicApi;
 /// <param name="cascading">The options of a field from a list or another source.</param>
 /// <param name="pages">The site's default culture, which a list's labels would be in, and the site of the page.</param>
 /// <param name="settings">The site's protection level.</param>
-internal sealed class ChallengeRequests(ChallengeTokens tokens, IEntryRepository entries, IFormRepository forms, FieldTypeRegistry types, CascadingOptions cascading, FormPages pages, IFormBuilderSettingsService settings)
+/// <param name="captchas">The captcha providers.</param>
+internal sealed class ChallengeRequests(ChallengeTokens tokens, IEntryRepository entries, IFormRepository forms, FieldTypeRegistry types, CascadingOptions cascading, FormPages pages, IFormBuilderSettingsService settings, FormBuilderCaptchaProviderCollection captchas)
 {
     /// <summary>The most bytes the endpoint's body holds: the longest earlier challenge, with room for escapes.</summary>
     public const int MaxBodyBytes = 16_384;
@@ -81,12 +82,19 @@ internal sealed class ChallengeRequests(ChallengeTokens tokens, IEntryRepository
         {
             Challenge = challenge,
             MinFillSeconds = FormChallenges.MinFillSeconds,
+            Captcha = Captcha(site.CaptchaOf(definition)),
             ProofOfWork = proofBits == 0 ? null : new ChallengeProofResponseModel { Nonce = ProofOfWork.NonceOf(tokens.Read(challenge, form.Form.Key, TimeSpan.Zero)!), Bits = proofBits },
             Places = await PlacesAsync(form, cancellationToken),
             Member = member is null ? null : await MemberAsync(members, definition),
         };
         return new FileContentResult(JsonSerializer.SerializeToUtf8Bytes(model, Json), "application/json; charset=utf-8");
     }
+
+    // What a page needs to show the form's captcha, and no secret; nothing when its provider cannot be shown.
+    private ChallengeCaptchaResponseModel? Captcha(CaptchaChoice? chosen) =>
+        captchas.Find(chosen?.Provider)?.Client is { } client
+            ? new ChallengeCaptchaResponseModel { Provider = chosen!.Provider, SiteKey = client.SiteKey, ScriptAddress = client.ScriptAddress, Action = client.Action }
+            : null;
 
     // The places left, by the field's key and the option's value, of every option known without a visitor's answers: the
     // form's own, and those of a list or a source no parent's answer filters (ADR-0138).
@@ -161,6 +169,22 @@ internal sealed record ChallengeRequestModel
     public Guid? ContentKey { get; init; }
 }
 
+/// <summary>What a page needs to show a form's captcha (ADR-0142), which holds no secret.</summary>
+internal sealed record ChallengeCaptchaResponseModel
+{
+    /// <summary>The provider's alias.</summary>
+    public required string Provider { get; init; }
+
+    /// <summary>The provider's public key.</summary>
+    public required string SiteKey { get; init; }
+
+    /// <summary>The address of the provider's script, which a page loads only after consent.</summary>
+    public required string ScriptAddress { get; init; }
+
+    /// <summary>The action a score-based provider's token is asked for; left out for the others.</summary>
+    public string? Action { get; init; }
+}
+
 /// <summary>A challenge's puzzle (ADR-0141): the number to find makes the SHA-256 of <c>nonce:number</c> start with so many zero bits.</summary>
 internal sealed record ChallengeProofResponseModel
 {
@@ -182,6 +206,9 @@ internal sealed record ChallengeResponseModel
 
     /// <summary>The places left, by the field's key and the option's value, of the form's own options that have places; left out when none has.</summary>
     public IReadOnlyDictionary<string, Dictionary<string, int>>? Places { get; init; }
+
+    /// <summary>What a page needs to show the form's captcha; left out when the form has none or its provider has no keys.</summary>
+    public ChallengeCaptchaResponseModel? Captcha { get; init; }
 
     /// <summary>The puzzle a page solves before it sends; left out when the form's level has none.</summary>
     public ChallengeProofResponseModel? ProofOfWork { get; init; }

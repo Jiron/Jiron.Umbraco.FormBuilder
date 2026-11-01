@@ -1,5 +1,6 @@
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
+using Jiron.Umbraco.FormBuilder.Core.Submissions;
 
 namespace Jiron.Umbraco.FormBuilder.Core.Forms;
 
@@ -36,5 +37,20 @@ internal sealed class StructuralPublishCheck(FormDefinitionSerializer serializer
         ArgumentNullException.ThrowIfNull(definition);
         var problems = serializer.CheckSave(definition);
         return problems.Count > 0 ? problems : DefinitionStructureChecks.Check(definition, types, host);
+    }
+}
+
+/// <summary>Refuses a captcha provider the site lacks (ADR-0035, ADR-0142). One without its keys is the site's to mend, and its entries go to Spam until then.</summary>
+/// <param name="providers">The providers the site has.</param>
+internal sealed class CaptchaPublishCheck(FormBuilderCaptchaProviderCollection providers) : IFormPublishCheck
+{
+    /// <inheritdoc />
+    public ValueTask<IReadOnlyList<DefinitionProblem>> CheckAsync(FormDefinition definition, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(definition);
+        IReadOnlyList<DefinitionProblem> problems = definition.Settings.Protection.Captcha is { } captcha && providers.Find(captcha.Provider) is null
+            ? [new DefinitionProblem(DefinitionErrors.UnknownType, "$.settings.protection.captcha.provider", $"The site has no captcha provider '{captcha.Provider}'.")]
+            : [];
+        return ValueTask.FromResult(problems);
     }
 }

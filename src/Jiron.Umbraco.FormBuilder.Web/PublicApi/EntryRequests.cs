@@ -191,6 +191,7 @@ internal sealed class EntryRequests(FormSubmissions submissions, UploadTokens to
             null => new NoContentResult(),
             SubmissionRefusal.FormNotFound => FormBuilderPublicProblems.FormNotFound(),
             SubmissionRefusal.ChallengeRequired => FormBuilderPublicProblems.ChallengeRequired(),
+            SubmissionRefusal.CaptchaFailed => FormBuilderPublicProblems.CaptchaFailed(),
             SubmissionRefusal.MemberRequired => FormBuilderPublicProblems.MemberRequired(),
             SubmissionRefusal.DuplicateSubmission => FormBuilderPublicProblems.DuplicateSubmission(),
             SubmissionRefusal.FormChanged => FormBuilderPublicProblems.FormChanged(),
@@ -250,7 +251,7 @@ internal sealed record EntryRequestModel
     /// <summary>The challenge the form's challenge endpoint gave; a request with a server key needs none.</summary>
     public string? Challenge { get; init; }
 
-    /// <summary>The captcha's token, for a form whose protection uses one (from 7.2).</summary>
+    /// <summary>The captcha's token, for a form whose protection uses one (ADR-0142).</summary>
     public string? CaptchaToken { get; init; }
 
     /// <summary>The number that solves the challenge's puzzle, in digits, for a form at the proof-of-work level (ADR-0141).</summary>

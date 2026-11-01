@@ -18,6 +18,9 @@ internal static class SpamReasons
     /// <summary>Submitted sooner than the minimum fill time after the challenge was issued.</summary>
     public const string TooFast = "too_fast";
 
+    /// <summary>A captcha provider that cannot answer.</summary>
+    public const string CaptchaUnavailable = "captcha_unavailable";
+
     /// <summary>A post without JavaScript, on a form whose protection needs it.</summary>
     public const string NoScript = "no_script";
 
@@ -86,12 +89,16 @@ internal sealed record SpamVerdict(int Score, IReadOnlyList<string> Reasons)
 /// <param name="settings">The site's protection settings.</param>
 /// <param name="types">The field types, which say whose answers are text.</param>
 /// <param name="checks">The site's own spam checks.</param>
+/// <param name="captchas">The captcha providers.</param>
+/// <param name="hosts">The site's own hosts, which a captcha's token is held to.</param>
 /// <param name="logger">Records a check that failed.</param>
 /// <param name="time">The site's clock.</param>
 internal sealed partial class SubmissionProtection(
     IFormBuilderSettingsService settings,
     FieldTypeRegistry types,
     FormBuilderSpamCheckCollection checks,
+    FormBuilderCaptchaProviderCollection captchas,
+    CaptchaHosts hosts,
     ILogger<SubmissionProtection> logger,
     TimeProvider time)
 {
@@ -102,6 +109,7 @@ internal sealed partial class SubmissionProtection(
     private const int TooFastScore = 60;
     private const int BlockedRangeScore = 100;
     private const int NoScriptScore = 100;
+    private const int CaptchaUnavailableScore = 100;
 
     /// <summary>
     /// Whether a submission has the answer its form's level asks for (ADR-0141). A server key and a post without JavaScript
@@ -124,14 +132,61 @@ internal sealed partial class SubmissionProtection(
         return site.LevelOf(definition) != ProtectionLevel.ProofOfWork || (request.Ticket is { } ticket && ProofOfWork.IsSolved(ticket, request.ProofOfWork));
     }
 
+    /// <summary>
+    /// What a submission's captcha comes to (ADR-0142): it passes on a form without one, and for a server key and a post
+    /// without JavaScript, which have none to solve. A provider the site no longer has, or that lost its keys, cannot answer,
+    /// and its page showed no captcha, so its visitor is not asked for a token they cannot have.
+    /// </summary>
+    /// <param name="request">The submission.</param>
+    /// <param name="definition">The form.</param>
+    /// <param name="page">The page and the site it is on.</param>
+    /// <param name="cancellationToken">Cancels the read of the settings and the provider's call.</param>
+    public async Task<FormBuilderCaptchaOutcome> CheckCaptchaAsync(SubmissionRequest request, FormDefinition definition, RequestPage page, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        ArgumentNullException.ThrowIfNull(page);
+        if (request.Challenges is null || request.ServerKey is not null)
+        {
+            return FormBuilderCaptchaOutcome.Passed;
+        }
+
+        var site = (await settings.GetAsync<ProtectionSettings>(page.Site, cancellationToken)).Value;
+        if (site.CaptchaOf(definition) is not { } chosen)
+        {
+            return FormBuilderCaptchaOutcome.Passed;
+        }
+
+        if (captchas.Find(chosen.Provider) is not { IsConfigured: true } provider)
+        {
+            return FormBuilderCaptchaOutcome.Unavailable;
+        }
+
+        if (string.IsNullOrWhiteSpace(request.CaptchaToken))
+        {
+            return FormBuilderCaptchaOutcome.Failed;
+        }
+
+        try
+        {
+            return await provider.VerifyAsync(new FormBuilderCaptchaCheck(request.CaptchaToken, await hosts.GetAsync(), chosen.Settings), cancellationToken);
+        }
+        catch (Exception exception) when (!cancellationToken.IsCancellationRequested)
+        {
+            // A provider of a site's own that broke its promise not to throw: an outage, as any other.
+            LogCaptchaFailed(logger, provider.GetType().Name, exception.GetType().Name);
+            return FormBuilderCaptchaOutcome.Unavailable;
+        }
+    }
+
     /// <summary>The score of a submission and why.</summary>
     /// <param name="request">The submission, with what the gate found in its challenge.</param>
     /// <param name="definition">The form.</param>
     /// <param name="answers">The answers as they were read.</param>
     /// <param name="culture">The culture the page was in.</param>
     /// <param name="page">The page and the site it is on.</param>
+    /// <param name="captcha">What its captcha came to.</param>
     /// <param name="cancellationToken">Cancels the read of the settings and the checks.</param>
-    public async Task<SpamVerdict> ScoreAsync(SubmissionRequest request, FormDefinition definition, SubmissionAnswers answers, string culture, RequestPage page, CancellationToken cancellationToken)
+    public async Task<SpamVerdict> ScoreAsync(SubmissionRequest request, FormDefinition definition, SubmissionAnswers answers, string culture, RequestPage page, FormBuilderCaptchaOutcome captcha, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
         ArgumentNullException.ThrowIfNull(definition);
@@ -159,6 +214,12 @@ internal sealed partial class SubmissionProtection(
         if (site.Blocks(request.Address))
         {
             Add(BlockedRangeScore, SpamReasons.BlockedRange);
+        }
+
+        // An outage loses no lead and lets no unchecked entry run actions (ADR-0012).
+        if (captcha == FormBuilderCaptchaOutcome.Unavailable)
+        {
+            Add(CaptchaUnavailableScore, SpamReasons.CaptchaUnavailable);
         }
 
         // A real visitor without JavaScript is never lost and never trusted (ADR-0012).
@@ -231,4 +292,7 @@ internal sealed partial class SubmissionProtection(
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "The spam check {Check} counted for nothing: {Failure}.")]
     private static partial void LogCheckFailed(ILogger logger, string check, string failure);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "The captcha provider {Provider} could not answer: {Failure}.")]
+    private static partial void LogCaptchaFailed(ILogger logger, string provider, string failure);
 }

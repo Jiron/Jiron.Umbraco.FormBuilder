@@ -30,6 +30,9 @@ public sealed class FormBuilderComposition
     /// <summary>The option sources, the standard lists among them (ADR-0073).</summary>
     public FormBuilderOptionSourceCollectionBuilder OptionSources() => Builder.WithCollectionBuilder<FormBuilderOptionSourceCollectionBuilder>();
 
+    /// <summary>The captcha providers, the built-in ones among them (ADR-0142).</summary>
+    public FormBuilderCaptchaProviderCollectionBuilder CaptchaProviders() => Builder.WithCollectionBuilder<FormBuilderCaptchaProviderCollectionBuilder>();
+
     /// <summary>The site's own spam checks (ADR-0140).</summary>
     public FormBuilderSpamCheckCollectionBuilder SpamChecks() => Builder.WithCollectionBuilder<FormBuilderSpamCheckCollectionBuilder>();
 

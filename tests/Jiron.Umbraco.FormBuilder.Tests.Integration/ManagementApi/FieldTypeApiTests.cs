@@ -58,7 +58,8 @@ public sealed class FieldTypeApiTests : ManagementApiTestBase
                 "files #jfbFieldPalette_files", "structure #jfbFieldPalette_structure", "content #jfbFieldPalette_content", "protection #jfbFieldPalette_protection",
             }));
             Assert.That(Pairs(body["settingGroups"]!), Is.EqualTo(new[] { "essentials #jfbFieldSettingGroups_essentials", "validation #jfbFieldSettingGroups_validation", "appearance #jfbFieldSettingGroups_appearance", "advanced #jfbFieldSettingGroups_advanced" }));
-            Assert.That(types.Select(type => (bool)type["availability"]!["isAvailable"]!), Is.All.True, "no built-in type needs configuration yet");
+            Assert.That(types.Where(type => Text(type["alias"]) != "captcha").Select(type => (bool)type["availability"]!["isAvailable"]!), Is.All.True, "only the captcha needs configuration");
+            Assert.That(((bool)Type("captcha")["availability"]!["isAvailable"]!, Text(Type("captcha")["availability"]!["reason"])), Is.EqualTo((false, "#jfbFieldTypeAvailability_captchaNoKeys")), "no provider has its keys");
 
             var text = Type("text");
             Assert.That((Text(text["name"]), Text(text["icon"]), Text(text["paletteGroup"]), (bool)text["holdsValue"]!, Text(text["storage"]), Text(text["ruleKind"])), Is.EqualTo(("#jfbFieldTypes_text", registry.FindType("text")!.Declaration.Icon, "text", true, "text", "text")));

@@ -200,5 +200,6 @@ export default {
   },
   jfbFieldTypeAvailability: {
     checkFailed: 'Die Einrichtung konnte nicht geprüft werden. Die Server-Logs nennen den Grund.',
+    captchaNoKeys: 'Noch kein Captcha-Anbieter hat seine Schlüssel. Sie gehören in die Konfiguration der Website.',
   },
 } satisfies { [Area in keyof typeof fieldTypesEn]: Record<keyof (typeof fieldTypesEn)[Area], string> };

@@ -34,6 +34,9 @@ public sealed class FormBuilderOptions
     /// <summary>Who holds which permission: the global grants, set from the host (ADR-0048).</summary>
     public FormBuilderAccessOptions Access { get; } = new();
 
+    /// <summary>The keys of the captcha providers (ADR-0012, ADR-0142), which live only here.</summary>
+    public FormBuilderCaptchaOptions Captcha { get; } = new();
+
     /// <summary>The other hosts Jiron Form Builder may call: JSON option lists now, webhooks later (ADR-0076).</summary>
     public FormBuilderWebhooksOptions Webhooks { get; } = new();
 
@@ -42,6 +45,35 @@ public sealed class FormBuilderOptions
     /// <c>privacy</c>, <c>access</c> (every grant and restriction) or <c>integrations</c>, in any case.
     /// </summary>
     public IList<string> LockedSections { get; } = [];
+}
+
+/// <summary>The keys of the captcha providers (ADR-0012, ADR-0142). A provider without both of its keys is not configured.</summary>
+public sealed class FormBuilderCaptchaOptions
+{
+    /// <summary>reCAPTCHA v2's keys.</summary>
+    public FormBuilderCaptchaKeys RecaptchaV2 { get; } = new();
+
+    /// <summary>reCAPTCHA v3's keys.</summary>
+    public FormBuilderCaptchaKeys RecaptchaV3 { get; } = new();
+
+    /// <summary>hCaptcha's keys.</summary>
+    public FormBuilderCaptchaKeys Hcaptcha { get; } = new();
+
+    /// <summary>Whether reCAPTCHA is reached through <c>recaptcha.net</c> instead of <c>google.com</c> (section 4.10).</summary>
+    public bool UseRecaptchaNet { get; set; }
+}
+
+/// <summary>One captcha provider's keys.</summary>
+public sealed class FormBuilderCaptchaKeys
+{
+    /// <summary>The public key a page shows the captcha with.</summary>
+    public string? SiteKey { get; set; }
+
+    /// <summary>The secret key tokens are verified with; it never leaves the server except to the provider.</summary>
+    public string? SecretKey { get; set; }
+
+    /// <summary>Another address to verify tokens at, for a test host's stub; null for the provider's own.</summary>
+    public string? VerifyAddress { get; set; }
 }
 
 /// <summary>How the forms placed on the site's pages are written (section 4.8).</summary>

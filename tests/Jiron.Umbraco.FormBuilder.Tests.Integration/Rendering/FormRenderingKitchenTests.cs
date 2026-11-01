@@ -7,6 +7,7 @@ using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn;
 using Jiron.Umbraco.FormBuilder.Core.Themes;
+using Jiron.Umbraco.FormBuilder.Testing;
 using Jiron.Umbraco.FormBuilder.Web.Rendering;
 using Umbraco.Cms.Tests.Common.Testing;
 
@@ -53,7 +54,7 @@ public sealed class FormRenderingKitchenTests : RenderingTestBase
     // The built-in types whose fields take a help text, and the site's own.
     private static readonly ImmutableHashSet<string> Helped =
     [
-        .. BuiltInFieldTypes.All.Select(type => ((IFormBuilderFieldType)Activator.CreateInstance(type)!).Declaration).Where(type => type.Features.HasFlag(FieldFeatures.Help)).Select(type => type.Alias),
+        .. TestFieldTypes.Registry.Types.Select(type => type.Declaration).Where(type => type.Features.HasFlag(FieldFeatures.Help)).Select(type => type.Alias),
         MoodFieldType.TypeAlias,
     ];
 

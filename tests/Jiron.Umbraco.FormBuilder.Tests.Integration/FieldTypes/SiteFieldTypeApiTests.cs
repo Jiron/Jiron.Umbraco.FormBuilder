@@ -29,7 +29,7 @@ public sealed class SiteFieldTypeApiTests : ManagementApiTestBase
             Assert.That(colour["alias"]!.GetValue<string>(), Is.EqualTo("acme.colour"), "after the built-in types");
             Assert.That(colour["availability"]!.ToJsonString(), Is.EqualTo(new JsonObject { ["isAvailable"] = false, ["reason"] = ColourFieldType.MissingSwatches }.ToJsonString()));
             Assert.That(colour["settings"]!.AsArray().Select(setting => $"{setting!["name"]} {setting["label"]}"), Is.EquivalentTo(new[] { "swatches Swatches", "source Source" }), "a site's type names its settings in its own words");
-            Assert.That(types.Take(types.Count - 1).Select(type => (bool)type["availability"]!["isAvailable"]!), Is.All.True);
+            Assert.That(types.Take(types.Count - 1).Where(type => type["alias"]!.GetValue<string>() != "captcha").Select(type => (bool)type["availability"]!["isAvailable"]!), Is.All.True);
             Assert.That(types.Select(type => type["alias"]!.GetValue<string>()), Does.Not.Contain("signature"), "removed after the core composer");
         });
     }

@@ -76,6 +76,9 @@ internal sealed record SubmissionRequest
     /// <summary>What the gate found in the request's challenge; null without one.</summary>
     public ChallengeTicket? Ticket { get; init; }
 
+    /// <summary>The token of the form's captcha, as posted (ADR-0142).</summary>
+    public string? CaptchaToken { get; init; }
+
     /// <summary>The answer to the challenge's puzzle, as posted (ADR-0141).</summary>
     public string? ProofOfWork { get; init; }
 

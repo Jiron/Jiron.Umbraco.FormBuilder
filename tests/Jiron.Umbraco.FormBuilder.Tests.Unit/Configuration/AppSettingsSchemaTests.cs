@@ -39,12 +39,14 @@ public sealed class AppSettingsSchemaTests
         Assert.Multiple(() =>
         {
             Assert.That(schema["$schema"]!.GetValue<string>(), Is.EqualTo("http://json-schema.org/draft-04/schema#"), "as Umbraco's own schemas");
-            Assert.That(Keys(section), Is.EqualTo(new[] { "PublicApi", "Rendering", "Files", "Limits", "Designer", "Access", "Webhooks", "LockedSections" }));
+            Assert.That(Keys(section), Is.EqualTo(new[] { "PublicApi", "Rendering", "Files", "Limits", "Designer", "Access", "Captcha", "Webhooks", "LockedSections" }));
             Assert.That(section["properties"]!["Rendering"]!["properties"]!["IncludeAssetsAutomatically"]!["default"]!.GetValue<bool>(), Is.True);
             Assert.That(section["properties"]!["PublicApi"]!["properties"]!["BasePath"]!["default"]!.GetValue<string>(), Is.EqualTo("/jfb/api"));
             Assert.That(section["description"]!.GetValue<string>(), Does.StartWith("Jiron Form Builder's host configuration: the JironFormBuilder section of appsettings. It is for developers"));
             Assert.That(section["properties"]!["Files"]!["properties"]!["Root"]!["default"]!.GetValue<string>(), Is.EqualTo("~/umbraco/Data/JironFormBuilder/Uploads"));
             Assert.That(Keys(section["properties"]!["Files"]!), Is.EqualTo(new[] { "Root", "MaxFileBytes", "BlockedExtensions" }));
+            Assert.That(Keys(section["properties"]!["Captcha"]!), Is.EqualTo(new[] { "RecaptchaV2", "RecaptchaV3", "Hcaptcha", "UseRecaptchaNet" }));
+            Assert.That(Keys(section["properties"]!["Captcha"]!["properties"]!["Hcaptcha"]!), Is.EqualTo(new[] { "SiteKey", "SecretKey", "VerifyAddress" }));
             Assert.That(section["properties"]!["Files"]!["properties"]!["MaxFileBytes"]!["default"]!.GetValue<long>(), Is.EqualTo(52_428_800));
             Assert.That(section["properties"]!["Files"]!["properties"]!["BlockedExtensions"]!["items"]!["type"]!.ToJsonString(), Does.Contain("string"));
             Assert.That(Keys(definitions), Is.EqualTo(new[] { "MaxBytes", "MaxPages", "MaxGroups", "MaxFields", "MaxOptionsPerField", "MaxActions", "MaxOutcomes", "MaxRules" }));

@@ -49,6 +49,9 @@ internal sealed class FormBuilderOptionsValidator(IHostFolders folders, IConfigu
         CheckHostGrants(options.Access.Grants, failures);
         CheckAllowedHosts(options.Webhooks.AllowedHosts, failures);
         CheckPublicApi(options.PublicApi, failures);
+        CheckCaptcha("RecaptchaV2", options.Captcha.RecaptchaV2, failures);
+        CheckCaptcha("RecaptchaV3", options.Captcha.RecaptchaV3, failures);
+        CheckCaptcha("Hcaptcha", options.Captcha.Hcaptcha, failures);
         return failures.Count == 0 ? ValidateOptionsResult.Success : ValidateOptionsResult.Fail(failures);
     }
 
@@ -265,6 +268,20 @@ internal sealed class FormBuilderOptionsValidator(IHostFolders folders, IConfigu
             {
                 failures.Add(string.Create(CultureInfo.InvariantCulture, $"{key} ('{hosts[i]}') names a host and port again; {Root}:Webhooks:AllowedHosts:{seen[host]} names them already. Keep one."));
             }
+        }
+    }
+
+    // A provider has both of its keys or neither, and its address to verify at is one (ADR-0142).
+    private static void CheckCaptcha(string name, FormBuilderCaptchaKeys keys, List<string> failures)
+    {
+        if (string.IsNullOrWhiteSpace(keys.SiteKey) != string.IsNullOrWhiteSpace(keys.SecretKey))
+        {
+            failures.Add($"{Root}:Captcha:{name} needs both its SiteKey and its SecretKey, or neither.");
+        }
+
+        if (keys.VerifyAddress is { } address && !(Uri.TryCreate(address, UriKind.Absolute, out var verify) && verify.Scheme is "https" or "http"))
+        {
+            failures.Add($"{Root}:Captcha:{name}:VerifyAddress must be an http or https address.");
         }
     }
 

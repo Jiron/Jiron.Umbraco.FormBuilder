@@ -1,5 +1,6 @@
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn;
+using Jiron.Umbraco.FormBuilder.Core.Submissions;
 using Jiron.Umbraco.FormBuilder.Testing;
 using Jiron.Umbraco.FormBuilder.Testing.Time;
 using Microsoft.Extensions.Logging;
@@ -42,10 +43,26 @@ public sealed class FieldTypeAvailabilityTests
             Assert.That(await plain.CheckAvailabilityAsync(CancellationToken.None), Is.SameAs(FieldTypeAvailability.Available));
             Assert.That(await builtIn.CheckAvailabilityAsync(CancellationToken.None), Is.SameAs(FieldTypeAvailability.Available));
         });
-        foreach (var type in TestFieldTypes.Registry.Types)
+        foreach (var type in TestFieldTypes.Registry.Types.Where(type => type.Declaration.Alias != "captcha"))
         {
-            Assert.That(await type.CheckAvailabilityAsync(CancellationToken.None), Is.SameAs(FieldTypeAvailability.Available), $"{type.Declaration.Alias}: no built-in type needs configuration yet (7.2 adds the captcha's)");
+            Assert.That(await type.CheckAvailabilityAsync(CancellationToken.None), Is.SameAs(FieldTypeAvailability.Available), $"{type.Declaration.Alias}: only the captcha needs configuration");
         }
+    }
+
+    [Test]
+    public async Task TheCaptcha_IsNotConfigured_UntilAProviderHasItsKeys()
+    {
+        var none = await new CaptchaFieldType(Providers(false, false)).CheckAvailabilityAsync(CancellationToken.None);
+        var one = await new CaptchaFieldType(Providers(false, true)).CheckAvailabilityAsync(CancellationToken.None);
+        var built = await TestFieldTypes.Registry.Types.Single(type => type.Declaration.Alias == "captcha").CheckAvailabilityAsync(CancellationToken.None);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That((none.IsAvailable, none.Reason), Is.EqualTo((false, "#jfbFieldTypeAvailability_captchaNoKeys")));
+            Assert.That(CaptchaFieldType.NoKeys, Is.EqualTo("#jfbFieldTypeAvailability_captchaNoKeys"));
+            Assert.That(one, Is.SameAs(FieldTypeAvailability.Available));
+            Assert.That((built.IsAvailable, built.Reason), Is.EqualTo((false, CaptchaFieldType.NoKeys)), "the built-in type of a site without keys");
+        });
     }
 
     [Test]
@@ -225,6 +242,9 @@ public sealed class FieldTypeAvailabilityTests
         });
     }
 
+    private static FormBuilderCaptchaProviderCollection Providers(params bool[] configured) =>
+        new(() => configured.Select(IFormBuilderCaptchaProvider (keys) => new Provider(keys)));
+
     private static (FieldTypeAvailabilityService Service, RecordingLogger Logger) Service(params IFormBuilderFieldType[] types) =>
         Service(TimeProvider.System, types);
 
@@ -254,6 +274,18 @@ public sealed class FieldTypeAvailabilityTests
         PaletteGroup = FieldPaletteGroup.Content,
         Features = FieldFeatures.VisibilityRules,
     };
+
+    // A captcha provider with or without its keys.
+    private sealed class Provider(bool configured) : IFormBuilderCaptchaProvider
+    {
+        public string Name => "acme";
+
+        public bool IsConfigured => configured;
+
+        public FormBuilderCaptchaClient? Client => null;
+
+        public Task<FormBuilderCaptchaOutcome> VerifyAsync(FormBuilderCaptchaCheck check, CancellationToken cancellationToken) => Task.FromResult(FormBuilderCaptchaOutcome.Passed);
+    }
 
     // A type whose availability a test decides.
     private sealed class Checked(string alias, Func<CancellationToken, ValueTask<FieldTypeAvailability>> check) : IFormBuilderFieldType
