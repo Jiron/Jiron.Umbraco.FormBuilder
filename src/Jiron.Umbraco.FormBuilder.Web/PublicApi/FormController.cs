@@ -62,6 +62,7 @@ internal sealed class FormController(
     [ProducesResponseType<FormDefinitionResponseModel>(StatusCodes.Status200OK, "application/json")]
     [ProducesResponseType(StatusCodes.Status304NotModified)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest, FormBuilderProblemResult.MediaType)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden, FormBuilderProblemResult.MediaType)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound, FormBuilderProblemResult.MediaType)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status503ServiceUnavailable, FormBuilderProblemResult.MediaType)]
     public async Task<IActionResult> Definition(string keyOrAlias, [FromQuery] string? culture, [FromQuery] string? contentKey, CancellationToken cancellationToken)
@@ -87,6 +88,12 @@ internal sealed class FormController(
             || !form.Published.Definition.Settings.Developer.Headless)
         {
             return FormBuilderPublicProblems.FormNotFound();
+        }
+
+        // A form for members shows what it asks only to a member it admits, or to a server that signs for its own visitors (ADR-0150).
+        if (ServerKeyRequest.NameOf(HttpContext) is null && !await ChallengeRequests.AdmitsAsync(HttpContext, form.Published.Definition.Settings.Availability))
+        {
+            return FormBuilderPublicProblems.MemberRequired();
         }
 
         return Answered(await requests.DefinitionAsync(form, await pages.CultureAsync(culture), await pages.PageAsync(content), cancellationToken));

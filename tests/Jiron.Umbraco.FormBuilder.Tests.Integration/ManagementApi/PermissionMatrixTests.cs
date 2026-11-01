@@ -1,5 +1,8 @@
+using System.Net;
+using System.Text.Json.Nodes;
 using Jiron.Umbraco.FormBuilder.Core.Access;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
+using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Tests.Integration.Access;
 using Jiron.Umbraco.FormBuilder.Web.ManagementApi.Access;
@@ -85,6 +88,57 @@ public sealed class PermissionMatrixTests : ManagementApiTestBase
         var forms = GetRequiredService<IFormBuilderFormService>();
         _spring = (await forms.CreateAsync(new NewFormRequest("Spring", FolderKey: _events))).Key;
         _payroll = (await forms.CreateAsync(new NewFormRequest("Payroll", FolderKey: _hr))).Key;
+    }
+
+    /// <summary>What the table's declarations cannot say: lowering a field's sensitivity also takes <c>viewSensitive</c> (ADR-0150).</summary>
+    [Test]
+    public async Task PublishingOrRestoringALowerSensitivity_NeedsViewSensitive()
+    {
+        var versions = GetRequiredService<IFormBuilderFormVersionService>();
+        var fieldKey = Guid.NewGuid().ToString();
+        async Task<ApiAnswer> SaveAsync(bool sensitive)
+        {
+            var draft = await CallAsync("designer", HttpMethod.Get, $"form/{_spring}/draft");
+            var definition = draft.Body!["definition"]!.DeepClone().AsObject();
+            definition["pages"]![0]!["groups"]![0]!["fields"] = new JsonArray(new JsonObject
+            {
+                ["key"] = fieldKey,
+                ["type"] = "text",
+                ["alias"] = "email",
+                ["label"] = new JsonObject { [string.Empty] = "Email" },
+                ["sensitive"] = sensitive,
+            });
+            return await CallAsync("designer", HttpMethod.Put, $"form/{_spring}/draft", new { concurrencyVersion = draft.Body["form"]!["concurrencyVersion"]!.GetValue<int>(), definition });
+        }
+
+        async Task<int> ConcurrencyAsync() => (await GetRequiredService<IFormBuilderFormService>().GetAsync(_spring))!.ConcurrencyVersion;
+        async Task<ApiAnswer> PublishAsync(string role) => await CallAsync(role, HttpMethod.Post, $"form/{_spring}/publish", new { concurrencyVersion = await ConcurrencyAsync() });
+
+        await SaveAsync(false);
+        var plain = await PublishAsync("designer");
+        var plainVersion = (await versions.ListVersionsAsync(_spring, includeDrafts: true, PageRequest.First(1)))!.Items[0].Version.Number;
+        await SaveAsync(true);
+        var raised = await PublishAsync("designer");
+        var savedLower = await SaveAsync(false);
+        var lowered = await PublishAsync("designer");
+        var stale = await CallAsync("designer", HttpMethod.Post, $"form/{_spring}/publish", new { concurrencyVersion = await ConcurrencyAsync() - 1 });
+        var byAdmin = await PublishAsync("admin");
+        await SaveAsync(true);
+        await PublishAsync("designer");
+        var restored = await CallAsync("designer", HttpMethod.Post, $"form/{_spring}/versions/{plainVersion}/restore", new { concurrencyVersion = await ConcurrencyAsync() });
+        var restoredByAdmin = await CallAsync("admin", HttpMethod.Post, $"form/{_spring}/versions/{plainVersion}/restore", new { concurrencyVersion = await ConcurrencyAsync() });
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(plain.Status, Is.EqualTo(HttpStatusCode.OK), plain.ToString());
+            Assert.That(raised.Status, Is.EqualTo(HttpStatusCode.OK), raised.ToString());
+            Assert.That(savedLower.Status, Is.EqualTo(HttpStatusCode.OK), "a draft may hold it: designing is not reading");
+            Assert.That((lowered.Outcome, lowered.Body?["permission"]?.GetValue<string>()), Is.EqualTo(("403 forbidden", "viewSensitive")), lowered.ToString());
+            Assert.That(stale.Outcome, Is.EqualTo("409 concurrency_conflict"), "a stale publish names no permission");
+            Assert.That(byAdmin.Status, Is.EqualTo(HttpStatusCode.OK), byAdmin.ToString());
+            Assert.That((restored.Outcome, restored.Body?["permission"]?.GetValue<string>()), Is.EqualTo(("403 forbidden", "viewSensitive")), restored.ToString());
+            Assert.That(restoredByAdmin.Status, Is.EqualTo(HttpStatusCode.OK), restoredByAdmin.ToString());
+        });
     }
 
     [Test]

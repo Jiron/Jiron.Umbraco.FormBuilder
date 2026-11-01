@@ -104,6 +104,28 @@ public sealed class PublicServerKeyTests : PublicApiTestBase
     }
 
     [Test]
+    public async Task AnUploadByAKey_LeavesTheKeysName_AndAVisitorsLeavesNone()
+    {
+        var attachment = new Core.Definitions.FormField { Key = Guid.NewGuid(), Type = "file", Alias = "attachment", Label = new Core.Definitions.LocalizedText("Attachment") };
+        var key = await PublishAsync(fields: [NameField, attachment]);
+        using var content = new MultipartFormDataContent { { new ByteArrayContent([.. "%PDF-1.7"u8, 0x0A, .. "1 0 obj"u8]), "file", "a.pdf" } };
+
+        using var sent = await SendAsync(HttpMethod.Post, $"{Root}/forms/{key}/uploads?fieldKey={attachment.Key}", request =>
+        {
+            request.Content = content;
+            request.Headers.TryAddWithoutValidation("Authorization", "Jfb-Key " + ShopKey);
+        });
+        var logged = GetRequiredService<LogCapture>().Entries.Where(entry => entry.Category == typeof(UploadRequests).FullName).ToList();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(sent.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+            Assert.That(logged, Has.Count.EqualTo(1));
+            Assert.That(logged[0].Message, Does.Contain("shop").And.Not.Contain("a.pdf").And.Not.Contain("JFB_FAKE"));
+        });
+    }
+
+    [Test]
     public async Task AReceipt_AnswersTheKeyThatSubmitted_AndNoOther_NorARequestWithoutAKey()
     {
         var key = await PublishAsync();

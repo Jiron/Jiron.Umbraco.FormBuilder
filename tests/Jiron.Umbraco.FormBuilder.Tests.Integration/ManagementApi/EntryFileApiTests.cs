@@ -129,6 +129,44 @@ public abstract class EntryFileApiTestBase : ManagementApiTestBase
 public sealed class EntryFileApiTests : EntryFileApiTestBase
 {
     [Test]
+    public async Task AnArchive_IsAudited_BeforeItsFirstByte_AndEvenCutOff_WithItsCounts()
+    {
+        var (key, row) = await PublishedFormAsync();
+        await FileAsync(row, "one.pdf");
+        await FileAsync(row, "two.pdf");
+        var downloads = GetRequiredService<EntryFileDownloads>();
+        using var stopped = new CancellationTokenSource();
+        var output = new CutOff(stopped, () => AuditedAsync(EntryFileDownloads.ArchiveStartedAction));
+
+        Assert.That(async () => await downloads.WriteArchiveAsync(key, output, maySeeSensitive: true, null, stopped.Token), Throws.InstanceOf<Exception>());
+
+        var ended = await AuditedAsync(EntryFileDownloads.ArchivedAction);
+        Assert.Multiple(() =>
+        {
+            Assert.That(output.StartedBeforeFirstByte, Is.EqualTo(1), "the entry came before the first byte");
+            Assert.That(ended, Has.Count.EqualTo(1), "and one with its counts, though the request was cut off");
+            Assert.That(ended[0].Details, Does.Contain("\"finished\":false"));
+        });
+    }
+
+    [Test]
+    public async Task AnArchiveSentToTheEnd_SaysSo()
+    {
+        var (key, row) = await PublishedFormAsync();
+        await FileAsync(row, "one.pdf");
+        using var output = new MemoryStream();
+
+        await GetRequiredService<EntryFileDownloads>().WriteArchiveAsync(key, output, maySeeSensitive: true, null, CancellationToken.None);
+
+        var ended = await AuditedAsync(EntryFileDownloads.ArchivedAction);
+        Assert.Multiple(() =>
+        {
+            Assert.That(ended.Single().Details, Does.Contain("\"finished\":true").And.Contain("\"files\":1"));
+            Assert.That(ended.Single().EntityKey, Is.EqualTo(key));
+        });
+    }
+
+    [Test]
     public async Task AFile_IsAnAttachment_WithItsBytesAndName_ThatNoBrowserGuessesAt_OrKeeps()
     {
         var (key, row) = await PublishedFormAsync();
@@ -333,7 +371,7 @@ public sealed class EntryFileApiTests : EntryFileApiTestBase
             Assert.That(audited, Has.Count.EqualTo(1));
             Assert.That(audited[0].EntityKey, Is.EqualTo(key));
             Assert.That(audited[0].UserKey, Is.Not.Null);
-            Assert.That(audited[0].Details, Is.EqualTo("""{"files":3,"leftOut":3,"sensitive":false}"""));
+            Assert.That(audited[0].Details, Is.EqualTo("""{"files":3,"leftOut":3,"sensitive":false,"finished":true}"""));
         });
     }
 
@@ -351,7 +389,7 @@ public sealed class EntryFileApiTests : EntryFileApiTestBase
         Assert.Multiple(() =>
         {
             Assert.That(archive.Entries.Select(entry => entry.Name), Is.EqualTo(new[] { "secret.pdf" }));
-            Assert.That(audited[0].Details, Is.EqualTo("""{"files":1,"leftOut":0,"sensitive":true}"""));
+            Assert.That(audited[0].Details, Is.EqualTo("""{"files":1,"leftOut":0,"sensitive":true,"finished":true}"""));
         });
     }
 
@@ -369,7 +407,7 @@ public sealed class EntryFileApiTests : EntryFileApiTestBase
         {
             Assert.That(answer.StatusCode, Is.EqualTo(HttpStatusCode.OK));
             Assert.That(archive.Entries, Is.Empty);
-            Assert.That(audited[0].Details, Is.EqualTo("""{"files":0,"leftOut":0,"sensitive":false}"""));
+            Assert.That(audited[0].Details, Is.EqualTo("""{"files":0,"leftOut":0,"sensitive":false,"finished":true}"""));
         });
     }
 
@@ -457,4 +495,20 @@ public sealed class EntryFileApiScannerTests : EntryFileApiTestBase
     {
         public Task<FormBuilderFileScanOutcome> ScanAsync(FormBuilderFileToScan file, CancellationToken cancellationToken) => Task.FromResult(FormBuilderFileScanOutcome.Unavailable);
     }
+}
+
+// Counts what the audit holds at the first write, then cuts the archive off, as a visitor leaving does.
+file sealed class CutOff(CancellationTokenSource stopped, Func<Task<IReadOnlyList<StoredAuditEntry>>> started) : MemoryStream
+{
+    public int? StartedBeforeFirstByte { get; private set; }
+
+    public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+    {
+        StartedBeforeFirstByte ??= (await started()).Count;
+        await stopped.CancelAsync();
+        throw new IOException("The connection is gone.");
+    }
+
+    public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
+        WriteAsync(buffer.AsMemory(offset, count), cancellationToken).AsTask();
 }

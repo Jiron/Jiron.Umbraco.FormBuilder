@@ -22,7 +22,7 @@ namespace Jiron.Umbraco.FormBuilder.Web.ManagementApi.Library;
 [ApiVersion("1.0")]
 [BackOfficeRoute(FormBuilderManagementApi.Route + "/form/{key:guid}/versions")]
 [ApiExplorerSettings(GroupName = "Version")]
-internal sealed class VersionController(IFormBuilderFormVersionService versions, IFormBuilderFormService forms, IFormBuilderAccessService access) : FormBuilderManagementApiController
+internal sealed class VersionController(IFormBuilderFormVersionService versions, IFormBuilderFormService forms, IFormBuilderAccessService access, FormSensitivityChecks sensitivity) : FormBuilderManagementApiController
 {
     /// <summary>A page of the form's versions, newest first: the publishes, and the draft saves too when asked.</summary>
     /// <param name="key">The form.</param>
@@ -120,6 +120,11 @@ internal sealed class VersionController(IFormBuilderFormVersionService versions,
             if ((held & FormBuilderPermissions.ManageActions) == FormBuilderPermissions.None && DefinitionDiff.ChangesActions(draft.Definition, definition))
             {
                 return FormBuilderProblems.Missing(FormBuilderPermissions.ManageActions);
+            }
+
+            if (await sensitivity.RefusesAsync(RequestAccess.User, draft.Form, definition, cancellationToken))
+            {
+                return FormBuilderProblems.Missing(FormBuilderPermissions.ViewSensitive);
             }
         }
 

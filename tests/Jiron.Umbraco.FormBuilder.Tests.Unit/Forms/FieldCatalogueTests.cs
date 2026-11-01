@@ -65,6 +65,35 @@ public sealed class FieldCatalogueTests
     private static readonly Guid Visit = Key(10);
     private static readonly Guid Newsletter = Key(11);
 
+    [TestCase(true, true, false, null, false, TestName = "A sensitive field that stays so")]
+    [TestCase(true, false, false, null, true, TestName = "A sensitive field that is so no more")]
+    [TestCase(false, true, false, null, false, TestName = "A plain field made sensitive")]
+    [TestCase(false, false, false, null, false, TestName = "A plain field that stays so")]
+    [TestCase(false, false, true, false, true, TestName = "A field moved out of a sensitive group")]
+    [TestCase(false, false, true, true, false, TestName = "A field moved from one sensitive group to another")]
+    public void LoweringASensitivity_CountsTheFieldAndTheGroupAroundIt(bool was, bool now, bool wasInSensitiveGroup, bool? nowInSensitiveGroup, bool lowers)
+    {
+        var field = Key(30);
+        var oldGroup = Key(31);
+        var newGroup = Key(32);
+        CatalogueField Stored(Guid key, bool sensitive, Guid? parent) =>
+            new(1, 1, new CatalogueFieldValues(key, "alias", "Label", "text", FieldStorageKind.Text, sensitive, 0, 1, null, parent));
+        CatalogueEntry Entry(Guid key, bool sensitive, Guid? parent) => new(key, "alias", "Label", "text", FieldStorageKind.Text, sensitive, parent);
+        CatalogueField[] stored = wasInSensitiveGroup ? [Stored(oldGroup, true, null), Stored(field, was, oldGroup)] : [Stored(field, was, null)];
+        CatalogueEntry[] entries = nowInSensitiveGroup is { } inGroup ? [Entry(newGroup, inGroup, null), Entry(field, now, newGroup)] : [Entry(field, now, null)];
+
+        Assert.That(FieldCatalogue.LowersSensitivity(entries, stored), Is.EqualTo(lowers));
+    }
+
+    [Test]
+    public void LoweringASensitivity_CountsAFieldNoLaterPublishHas()
+    {
+        var field = Key(30);
+        CatalogueField[] stored = [new(1, 1, new CatalogueFieldValues(field, "alias", "Label", "text", FieldStorageKind.Text, true, 0, 1, 3, null))];
+
+        Assert.That(FieldCatalogue.LowersSensitivity([new(field, "alias", "Label", "text", FieldStorageKind.Text, false, null)], stored), Is.True, "dropped and brought back");
+    }
+
     [Test]
     public void EachBuiltInType_StoresItsValuesAsWhatItHolds()
     {

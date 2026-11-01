@@ -39,6 +39,22 @@ internal static class FieldCatalogue
     }
 
     /// <summary>
+    /// Whether a definition makes any field that has been sensitive no longer so (ADR-0150): by the field itself, or by the
+    /// repeatable group it sits in, since a field inside a sensitive one counts as sensitive and could move out of it.
+    /// </summary>
+    /// <param name="entries">The definition's rows.</param>
+    /// <param name="stored">The rows the catalogue holds, those of earlier publishes among them.</param>
+    public static bool LowersSensitivity(IReadOnlyList<CatalogueEntry> entries, IReadOnlyList<CatalogueField> stored)
+    {
+        ArgumentNullException.ThrowIfNull(entries);
+        ArgumentNullException.ThrowIfNull(stored);
+        var marked = stored.Where(field => field.Values.IsSensitive).Select(field => field.Values.FieldKey).ToHashSet();
+        var was = stored.Where(field => marked.Contains(field.Values.FieldKey) || (field.Values.ParentFieldKey is { } parent && marked.Contains(parent))).Select(field => field.Values.FieldKey).ToHashSet();
+        var now = entries.Where(entry => entry.IsSensitive).Select(entry => entry.FieldKey).ToHashSet();
+        return entries.Any(entry => was.Contains(entry.FieldKey) && !now.Contains(entry.FieldKey) && !(entry.ParentFieldKey is { } parent && now.Contains(parent)));
+    }
+
+    /// <summary>
     /// The values a publish writes for each row, and the stored rows it changes: <paramref name="entries"/> in document
     /// order, then the stored rows that the publish dropped. A new row starts at <paramref name="version"/>, a returning
     /// one is live again, and a dropped one ends at <paramref name="previousPublish"/>, the last publish that had it.

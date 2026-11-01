@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
 using Microsoft.Net.Http.Headers;
 
@@ -22,7 +23,8 @@ namespace Jiron.Umbraco.FormBuilder.Web.PublicApi;
 /// <param name="uploads">The checks and the store of uploads.</param>
 /// <param name="tokens">The upload tokens.</param>
 /// <param name="challenges">The challenges, which an upload's first part holds (ADR-0138).</param>
-internal sealed class UploadRequests(FileUploads uploads, UploadTokens tokens, ChallengeTokens challenges)
+/// <param name="logger">Notes which server key uploaded a file.</param>
+internal sealed partial class UploadRequests(FileUploads uploads, UploadTokens tokens, ChallengeTokens challenges, ILogger<UploadRequests> logger)
 {
     /// <summary>The longest multipart boundary (RFC 2046).</summary>
     public const int MaxBoundaryLength = 70;
@@ -119,6 +121,11 @@ internal sealed class UploadRequests(FileUploads uploads, UploadTokens tokens, C
         catch (Exception exception) when (exception is FileUploadReadException or InvalidDataException)
         {
             return Refused(http, Fault(exception, type));
+        }
+
+        if (result is { Status: FileUploadStatus.Stored, File: { } kept } && ServerKeyRequest.NameOf(http) is { } serverKey)
+        {
+            LogStoredByKey(logger, serverKey, kept.Key, formKey);
         }
 
         return result switch
@@ -236,6 +243,9 @@ internal sealed class UploadRequests(FileUploads uploads, UploadTokens tokens, C
         FormBuilderPublicProblems.CloseConnection(http);
         return problem;
     }
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "The server key {KeyName} uploaded the file {FileKey} to the form {FormKey}")]
+    private static partial void LogStoredByKey(ILogger logger, string keyName, Guid fileKey, Guid formKey);
 
     private static FileContentResult Answer(FileUploadResponseModel model) =>
         new(JsonSerializer.SerializeToUtf8Bytes(model, Json), "application/json; charset=utf-8");

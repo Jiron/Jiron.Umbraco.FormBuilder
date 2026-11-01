@@ -270,7 +270,8 @@ internal sealed class SubmissionEntries(
         return new SubmissionReceipt(entry.SubmissionId, EntryReferences.Format(definition.Settings.Submission.EntryReference, entry.Number, year), entry.SubmittedUtc);
     }
 
-    // The page's path in the culture, from the content's address and never from the visitor; null without one.
+    // The page's path in the culture, from the content's own address and not from an address the visitor sends, though a request
+    // names which page it is on; null without one.
     private async Task<string?> PathAsync(RequestPage page, string culture, CancellationToken cancellationToken)
     {
         if (page.Content is not { } key || await umbraco.ContentAsync(key) is not { } content)

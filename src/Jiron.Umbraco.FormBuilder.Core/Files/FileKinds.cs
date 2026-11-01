@@ -129,14 +129,22 @@ internal static class FileKinds
 
     /// <summary>
     /// Whether the bytes end as a ZIP archive does, whatever they start with (ADR-0143): its closing record, which readers
-    /// look for from the end, with its comment reaching exactly to the last byte. An image or a PDF that does is both.
+    /// look for from the end, with its comment reaching to the last byte. Readers pass over bytes after that, so a record whose
+    /// comment ends earlier counts too, when it describes one archive on one disk, which bytes that only look like its signature
+    /// do not (ADR-0150). An image or a PDF that does is both.
     /// </summary>
     /// <param name="tail">The file's last <see cref="ZipTailLength"/> bytes, or all of a shorter file.</param>
     public static bool EndsAsZip(ReadOnlySpan<byte> tail)
     {
         for (var at = tail.Length - ZipClosingLength; at >= 0; at--)
         {
-            if (tail[at..].StartsWith(ZipClosing) && at + ZipClosingLength + BinaryPrimitives.ReadUInt16LittleEndian(tail[(at + 20)..]) == tail.Length)
+            if (!tail[at..].StartsWith(ZipClosing))
+            {
+                continue;
+            }
+
+            var end = at + ZipClosingLength + BinaryPrimitives.ReadUInt16LittleEndian(tail[(at + 20)..]);
+            if (end == tail.Length || (end < tail.Length && IsOneDisk(tail[at..])))
             {
                 return true;
             }
@@ -144,6 +152,12 @@ internal static class FileKinds
 
         return false;
     }
+
+    // A closing record's own disk and the disk its directory starts on are the first, and that disk holds every entry.
+    private static bool IsOneDisk(ReadOnlySpan<byte> record) =>
+        BinaryPrimitives.ReadUInt16LittleEndian(record[4..]) == 0
+        && BinaryPrimitives.ReadUInt16LittleEndian(record[6..]) == 0
+        && BinaryPrimitives.ReadUInt16LittleEndian(record[8..]) == BinaryPrimitives.ReadUInt16LittleEndian(record[10..]);
 
     /// <summary>The content type of a file by its extension: the table's, otherwise <see cref="UnknownContentType"/>.</summary>
     /// <param name="extension">The extension in lowercase without the point.</param>

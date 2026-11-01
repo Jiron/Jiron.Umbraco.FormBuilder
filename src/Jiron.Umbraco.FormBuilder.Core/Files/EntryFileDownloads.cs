@@ -53,6 +53,9 @@ internal sealed partial class EntryFileDownloads(
     /// <summary>The audit action of the archive of a form's files.</summary>
     public const string ArchivedAction = "entryFile.archived";
 
+    /// <summary>The audit action of an archive about to go out, written before its first byte (ADR-0150).</summary>
+    public const string ArchiveStartedAction = "entryFile.archiveStarted";
+
     private const int Page = 250;
 
     /// <summary>Opens an entry's file.</summary>
@@ -97,7 +100,8 @@ internal sealed partial class EntryFileDownloads(
     /// <summary>
     /// Writes a form's files as a ZIP, in the order they came, each under a name that stays in its folder (<see cref="FileArchiveNames"/>):
     /// those of its entries that count, not Spam, drafts or test entries, and only what <see cref="OpenAsync"/> would give the user.
-    /// A page at a time, each its own read, so submissions wait behind one page at most.
+    /// A page at a time, each its own read, so submissions wait behind one page at most. The audit has an entry before the first
+    /// byte and one with the counts at the end, even of an archive cut off (ADR-0150).
     /// </summary>
     /// <param name="form">The form the access was checked on.</param>
     /// <param name="output">Where the archive goes; left open.</param>
@@ -112,23 +116,39 @@ internal sealed partial class EntryFileDownloads(
         var names = new FileArchiveNames();
         var written = 0L;
         var left = 0L;
+        var finished = false;
+        await audit.AddAsync(new NewAuditEntry(ArchiveStartedAction, "form", form, userKey, new AuditDetails().Add("sensitive", maySeeSensitive)), cancellationToken);
+        try
+        {
+            await WriteArchiveAsync(row.Id, output, maySeeSensitive, plain, names, () => written++, () => left++, cancellationToken);
+            finished = true;
+        }
+        finally
+        {
+            // Whatever the request's cancellation says, as an archive cut off is what this entry is for.
+            await audit.AddAsync(new NewAuditEntry(ArchivedAction, "form", form, userKey, new AuditDetails().Add("files", written).Add("leftOut", left).Add("sensitive", maySeeSensitive).Add("finished", finished)), CancellationToken.None);
+        }
+    }
+
+    private async Task WriteArchiveAsync(int formId, Stream output, bool maySeeSensitive, HashSet<Guid> plain, FileArchiveNames names, Action wrote, Action leftOut, CancellationToken cancellationToken)
+    {
         await using var held = new HeldWritesStream(output);
         await using (var archive = await ZipArchive.CreateAsync(held, ZipArchiveMode.Create, leaveOpen: true, entryNameEncoding: null, cancellationToken))
         {
             var after = 0;
-            while (await entries.ListFilesToArchiveAsync(row.Id, after, Page, cancellationToken) is { Count: > 0 } files)
+            while (await entries.ListFilesToArchiveAsync(formId, after, Page, cancellationToken) is { Count: > 0 } files)
             {
                 foreach (var file in files)
                 {
                     after = file.Id;
                     if (IsHeldBack(file) is not null || (!maySeeSensitive && !plain.Contains(file.FieldKey)))
                     {
-                        left++;
+                        leftOut();
                     }
                     else if (await store.OpenReadAsync(file.StoredName, cancellationToken) is not { } content)
                     {
                         LogBytesGone(logger, file.Key);
-                        left++;
+                        leftOut();
                     }
                     else
                     {
@@ -140,14 +160,13 @@ internal sealed partial class EntryFileDownloads(
                             await content.CopyToAsync(into, cancellationToken);
                         }
 
-                        written++;
+                        wrote();
                     }
                 }
             }
         }
 
         await held.FlushAsync(cancellationToken);
-        await audit.AddAsync(new NewAuditEntry(ArchivedAction, "form", form, userKey, new AuditDetails().Add("files", written).Add("leftOut", left).Add("sensitive", maySeeSensitive)), cancellationToken);
     }
 
     // Why a file is held back from everybody. A site that took its scanner away has nothing left to wait for (ADR-0144).

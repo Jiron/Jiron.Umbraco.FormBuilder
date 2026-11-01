@@ -35,7 +35,8 @@ internal sealed class FormController(
     IFormBuilderLibraryService library,
     IFormBuilderAccessService access,
     IAuthorizationService authorization,
-    FormDefinitionSerializer serializer)
+    FormDefinitionSerializer serializer,
+    FormSensitivityChecks sensitivity)
     : FormBuilderManagementApiController
 {
     /// <summary>How long a search text may be.</summary>
@@ -147,7 +148,10 @@ internal sealed class FormController(
             : FormBuilderProblems.NotFound(FormBuilderAccessResourceKind.Form);
     }
 
-    /// <summary>Publishes the stored draft after every publish check; a draft that is live already writes no version.</summary>
+    /// <summary>
+    /// Publishes the stored draft after every publish check; a draft that is live already writes no version. One that makes a
+    /// sensitive field no longer so needs <c>viewSensitive</c> (ADR-0150).
+    /// </summary>
     /// <param name="key">The form.</param>
     /// <param name="request">The publish.</param>
     /// <param name="cancellationToken">The request's cancellation.</param>
@@ -161,6 +165,15 @@ internal sealed class FormController(
     public async Task<IActionResult> Publish(Guid key, PublishFormRequestModel request, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
+
+        // A stale publish meets its conflict below, and names no permission for someone else's draft.
+        if (await forms.GetDraftAsync(key, cancellationToken) is { Definition: { } definition } draft
+            && draft.Form.ConcurrencyVersion == request.ConcurrencyVersion
+            && await sensitivity.RefusesAsync(RequestAccess.User, draft.Form, definition, cancellationToken))
+        {
+            return FormBuilderProblems.Missing(FormBuilderPermissions.ViewSensitive);
+        }
+
         return await forms.PublishAsync(key, request.ConcurrencyVersion, request.Comment, RequestAccess.User.Key, cancellationToken) is { } published
             ? Ok(await SavedAsync(published, cancellationToken))
             : FormBuilderProblems.NotFound(FormBuilderAccessResourceKind.Form);

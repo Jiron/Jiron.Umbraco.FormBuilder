@@ -458,6 +458,32 @@ public sealed class PublicFormChallengeTests : PublicApiTestBase
     }
 
     [Test]
+    public async Task AFormForMembers_ShowsWhatItAsks_OnlyToAServerKey_WhileAVisitorIsToldToSignIn()
+    {
+        var alias = "membersOnly";
+        var key = await PublishAsync("Members only", change: definition => definition with
+        {
+            Settings = definition.Settings with { Availability = definition.Settings.Availability with { Access = MemberAccess.Members } },
+        });
+        alias = (await GetRequiredService<Core.Persistence.Repositories.IFormRepository>().GetAsync(key))!.Alias;
+        var open = await PublishAsync("Open to all");
+
+        using var byKey = await GetAsync($"{Root}/forms/{key}");
+        using var byAlias = await GetAsync($"{Root}/forms/{alias}");
+        using var signed = await GetAsync($"{Root}/forms/{key}", request => request.Headers.TryAddWithoutValidation("Authorization", "Jfb-Key " + ShopKey));
+        using var other = await GetAsync($"{Root}/forms/{open}");
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(await RefusalAsync(byKey), Is.EqualTo("403 member_required"));
+            Assert.That(await RefusalAsync(byAlias), Is.EqualTo("403 member_required"));
+            Assert.That(await byKey.Content.ReadAsStringAsync(), Does.Not.Contain("fields"), "nothing of the form");
+            Assert.That(signed.StatusCode, Is.EqualTo(HttpStatusCode.OK), "a server signs for its own visitors");
+            Assert.That(other.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+        });
+    }
+
+    [Test]
     public async Task AFormForMembers_GivesNoChallengeToAVisitor_NorToAServerKey()
     {
         var key = await PublishAsync(change: definition => definition with

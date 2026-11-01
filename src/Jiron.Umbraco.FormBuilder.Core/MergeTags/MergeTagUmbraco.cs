@@ -20,6 +20,7 @@ namespace Jiron.Umbraco.FormBuilder.Core.MergeTags;
 /// <param name="members">The members.</param>
 /// <param name="memberTypes">The member types, which say what a member may see of their own.</param>
 /// <param name="publishedMembers">The members' published values.</param>
+/// <param name="publicAccess">Which pages visitors must sign in to see.</param>
 internal sealed class MergeTagUmbraco(
     IPublishedContentCache contents,
     IDocumentNavigationQueryService navigation,
@@ -28,10 +29,14 @@ internal sealed class MergeTagUmbraco(
     ILanguageService languages,
     IMemberService members,
     IMemberTypeService memberTypes,
-    IPublishedMemberCache publishedMembers)
+    IPublishedMemberCache publishedMembers,
+    IPublicAccessService publicAccess)
 {
     /// <summary>A published content item by its key, a draft in a preview; null when there is none.</summary>
     public Task<IPublishedContent?> ContentAsync(Guid key) => contents.GetByIdAsync(key);
+
+    /// <summary>Whether visitors must sign in as a member to see the page, by a rule on it or on a page above it.</summary>
+    public bool IsProtected(IPublishedContent page) => publicAccess.IsProtected(page.Path).Success;
 
     /// <summary>The keys of a content item's ancestors, its parent first.</summary>
     public IReadOnlyList<Guid> Ancestors(Guid key) => navigation.TryGetAncestorsKeys(key, out var ancestors) ? [.. ancestors] : [];

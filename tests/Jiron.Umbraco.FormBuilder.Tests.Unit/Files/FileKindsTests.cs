@@ -198,7 +198,12 @@ public sealed class FileKindsTests
         yield return Case("with its comment", [.. Closing(3), 1, 2, 3], true);
         yield return Case("with the longest comment", [.. Closing(65_535), .. new byte[65_535]], true);
         yield return Case("a byte too few", [.. Closing(3), 1, 2], false);
-        yield return Case("a byte too many", [.. Closing(0), 1], false);
+        yield return Case("a byte after it", [.. Closing(0), 1], true);
+        yield return Case("bytes after its comment", [.. Closing(3), 1, 2, 3, 4, 5], true);
+        yield return Case("a byte after a record of another disk", [0x50, 0x4B, 0x05, 0x06, 1, 0, .. new byte[16], 1], false);
+        yield return Case("a byte after a record whose directory is on another disk", [0x50, 0x4B, 0x05, 0x06, 0, 0, 1, 0, .. new byte[14], 1], false);
+        yield return Case("a byte after a record of split entries", [0x50, 0x4B, 0x05, 0x06, 0, 0, 0, 0, 1, 0, 2, 0, .. new byte[10], 1], false);
+        yield return Case("no byte after a record of another disk", [0x50, 0x4B, 0x05, 0x06, 1, 0, .. new byte[16]], true);
         yield return Case("a byte short of a record", Closing(0)[..21], false);
         yield return Case("no signature", [0x50, 0x4B, 0x05, 0x07, .. new byte[18]], false);
         yield return Case("a plain image", Jpeg, false);

@@ -85,6 +85,33 @@ public sealed class UmbracoMergeTagSourceTests : FormBuilderMigrationTestBase
     }
 
     [Test]
+    public async Task APageVisitorsMustSignInToSee_IsNoPage_NorIsOneBelowIt()
+    {
+        Request(null);
+        var site = await LibraryAsync();
+        var service = GetRequiredService<IFormBuilderMergeTagService>();
+        const string Text = "{{ page.name }}|{{ page.heroTitle }}|{{ page.up.brand }}|{{ page.url }}";
+        var before = await service.RenderAsync(Text, MergeTagPlace.Mail, MergeTagContext.Text, Scope(site));
+
+        var access = await GetRequiredService<IPublicAccessService>().CreateAsync(new PublicAccessEntrySlim
+        {
+            ContentId = site.Root,
+            MemberGroupNames = ["Members"],
+            MemberUserNames = [],
+            LoginPageId = site.Root,
+            ErrorPageId = site.Root,
+        });
+        var after = await service.RenderAsync(Text, MergeTagPlace.Mail, MergeTagContext.Text, Scope(site));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(access.Success, Is.True, access.Status.ToString());
+            Assert.That(before.Text, Does.StartWith("Veranstaltungen|Mach mit|Lindenhall Library|"));
+            Assert.That(after.Text, Is.EqualTo("|||"), "the rule on the site's root covers the page below it");
+        });
+    }
+
+    [Test]
     public async Task TheSitesOwnBaseUrl_AsTheSettingsStoreIt_ComesBeforeItsDomains()
     {
         Request(null);

@@ -6,8 +6,8 @@ namespace Jiron.Umbraco.FormBuilder.Core.MergeTags;
 /// <summary>
 /// <c>page.name</c>, <c>page.url</c>, <c>page.&lt;alias&gt;</c> and <c>page.up.&lt;alias&gt;</c> (ADR-0014, ADR-0067):
 /// the content page the form is on, its name in the culture, its address, a property's value in the culture, and the
-/// value of the page or its nearest ancestor that has one. Without a page, or for a page that is gone, every path is
-/// empty; so is a property the page's type lacks.
+/// value of the page or its nearest ancestor that has one. Without a page, for a page that is gone, or for one visitors must sign
+/// in to see, as a request names its page itself (ADR-0150), every path is empty; so is a property the page's type lacks.
 /// </summary>
 /// <param name="umbraco">The content.</param>
 /// <param name="baseUrls">The sites' base URLs.</param>
@@ -36,7 +36,7 @@ internal sealed class PageMergeTagSource(MergeTagUmbraco umbraco, SiteBaseUrl ba
         }
 
         var scope = request.Scope;
-        if (scope.Page is not { } key || await umbraco.ContentAsync(key) is not { } page)
+        if (scope.Page is not { } key || await umbraco.ContentAsync(key) is not { } page || umbraco.IsProtected(page))
         {
             return MergeTagValue.Empty;
         }

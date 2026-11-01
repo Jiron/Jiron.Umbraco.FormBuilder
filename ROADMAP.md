@@ -842,7 +842,7 @@ Each type declares: alias, icon, group in the palette, storage kind (`text`, `lo
 
 | Route | Purpose |
 | --- | --- |
-| `GET forms/{keyOrAlias}?culture=&contentKey=` | The public projection for headless rendering, when the form allows it. `ETag` from the response itself, so it follows the public revision, the culture and dictionary changes (ADR-0002). |
+| `GET forms/{keyOrAlias}?culture=&contentKey=` | The public projection for headless rendering, when the form allows it; a form for members answers `403 member_required` unless a member it admits or a server key asks (ADR-0150). `ETag` from the response itself, so it follows the public revision, the culture and dictionary changes (ADR-0002). |
 | `GET forms/{key}/element?instance=&culture=&contentKey=&theme=&context-<name>=` | The published form's first render as the headless element writes it (ADR-0128): the view model the render endpoint renders, with the context values the form lists, as JSON with a `contract` number and the definition endpoint's answer as the model data's text, without what only a post without JavaScript uses. `no-store`. |
 | `GET forms/{key}/render?instance=&page=&contentKey=&culture=&theme=` | The published form as HTML in the page's theme and culture, for a runtime that got `form_changed` on a page that may come from a cache (ADR-0004). `page` must be a local path; `theme`, the placement's theme if the page named one, is a theme's alias (ADR-0105). `no-store`. |
 | `POST forms/{key}/challenge` | A signed challenge (form, time, and optionally a proof-of-work puzzle). Fetched on first interaction, so cached pages stay cacheable. The response also carries what cached markup cannot: the places left per option, and the member values that rules use (§4.3.3). |

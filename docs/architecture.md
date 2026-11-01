@@ -516,7 +516,7 @@ permission each needs:
 | Forms and folders: the draft, create, save draft, publish, unpublish, duplicate, rename, move, trash, restore, references | `design` on the form or folder (creating: on the folder it goes in; a move, and a restore that lands somewhere else: on the new one too, and `managePermissions` with a confirmation when it widens access; a save that changes the actions: `manageActions` too) |
 | Forms and folders: delete for good | `design` and `deleteEntries` on everything it removes |
 | Empty the trash | any user of the section; it removes only what the user may delete for good |
-| Versions: list, get, diff, restore, pin, comment | `design` (a restore that changes the actions: `manageActions` too) |
+| Versions: list, get, diff, restore, pin, comment | `design` (a restore that changes the actions: `manageActions` too; one that makes a sensitive field no longer so: `viewSensitive` too, ADR-0150) |
 | Designer support: the registries (the field types, [ADR-0057](decisions/0057-field-types-endpoint-and-availability.md)) | any user of the section; they describe the site's code, the same for everyone |
 | Designer support: the form check, preview render, preview tickets | `design` |
 | Actions: edit, test against a sample entry | `manageActions` |
@@ -524,7 +524,7 @@ permission each needs:
 | Entries: change state, edit, forward | `editEntries` |
 | Entries: delete, empty Spam | `deleteEntries` |
 | Exports | `export` |
-| Sensitive values unmasked | `viewSensitive` |
+| Sensitive values unmasked, and publishing a sensitive field as no longer so | `viewSensitive` |
 | Deliveries: retry action runs and mail | `manageActions` |
 | Library: option lists, themes, email layouts, templates | `manageLibrary` |
 | Settings, the audit log, the deliveries log | `manageSettings` |

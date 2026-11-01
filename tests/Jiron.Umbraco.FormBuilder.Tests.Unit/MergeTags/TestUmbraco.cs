@@ -103,6 +103,9 @@ internal sealed class TestUmbraco
     /// <summary>The members' published values.</summary>
     public IPublishedMemberCache PublishedMembers { get; } = Substitute.For<IPublishedMemberCache>();
 
+    /// <summary>Which pages visitors must sign in to see: none, unless a test says.</summary>
+    public IPublicAccessService PublicAccess { get; } = Substitute.For<IPublicAccessService>();
+
     /// <summary>The domains.</summary>
     public IDomainService Domains { get; } = Substitute.For<IDomainService>();
 
@@ -250,13 +253,14 @@ internal sealed class TestUmbraco
         services.AddSingleton(Members);
         services.AddSingleton(MemberTypes);
         services.AddSingleton(PublishedMembers);
+        services.AddSingleton(PublicAccess);
         services.AddSingleton(Domains);
         services.AddSingleton(Ids);
         services.AddSingleton(Routing);
     }
 
     /// <summary>What the Umbraco sources read.</summary>
-    public MergeTagUmbraco Umbraco() => new(Contents, Navigation, Contexts, Urls, Languages, Members, MemberTypes, PublishedMembers);
+    public MergeTagUmbraco Umbraco() => new(Contents, Navigation, Contexts, Urls, Languages, Members, MemberTypes, PublishedMembers, PublicAccess);
 
     /// <summary>The dictionary as merge tags read it.</summary>
     public MergeTagDictionary DictionaryTexts() => new(Dictionary, Languages);
