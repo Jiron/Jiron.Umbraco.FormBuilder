@@ -2161,7 +2161,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - Playwright shows the page with no cookie set;
     - a test shows every file of the runtime's build but its entry named with a content hash;
     - axe is clean; the size check passes with every chunk.
-- [ ] **6.4l Fitting the page and the developer surface** (6.4 split in nine, WORKLOG 2026-10-30; one letter on as 6.4a, 6.4b, 6.4c, 6.4d, 6.4f and 6.4g split in two, WORKLOG 2026-10-30; 6.4k split in two, WORKLOG 2026-10-30)
+- [x] **6.4l Fitting the page and the developer surface** (6.4 split in nine, WORKLOG 2026-10-30; one letter on as 6.4a, 6.4b, 6.4c, 6.4d, 6.4f and 6.4g split in two, WORKLOG 2026-10-30; 6.4k split in two, WORKLOG 2026-10-30) (2026-11-02, 6c8df99)
   - **Resumes (2026-11-01):** the owner raised the budget to 60 KB (ADR-0146); this step resumes at 7.4i, with every check below.
   - **Blocked (2026-10-30):** the ground check, step folding, the JS API and its events add to the website runtime past section 4.12's budget, which only the owner can change, and the API's `submit()` sends through 6.4i, which waits with it (ADR-0120, `docs/OWNER-TODO.md`).
   - **Fitting the page** (ADR-0022, amended in 2.4): the ground check (a form without a scheme class, on itself or on an ancestor (ADR-0106), on a dark ground gets `jfb-scheme-dark`; a class the site set is never changed) and step folding (`data-jfb-compact` when a word of a step name is wider than its step, after layout and on every resize).
