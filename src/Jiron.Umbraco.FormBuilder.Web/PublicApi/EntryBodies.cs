@@ -25,6 +25,9 @@ internal static class EntryBodies
     /// <summary>The longest captcha token, in UTF-16 code units.</summary>
     public const int MaxCaptchaTokenLength = 8_192;
 
+    /// <summary>The longest answer to a puzzle a body may post (ADR-0141); a longer one is no number.</summary>
+    public const int MaxProofLength = 64;
+
     /// <summary>Where a body that is not JSON, or not an object, goes wrong.</summary>
     public const string Body = "body";
 
@@ -88,33 +91,38 @@ internal static class EntryBodies
         return invalid.Count > 0 ? default : (submissionId, challenge);
     }
 
-    /// <summary>The earlier challenge a request for a new one names, or null; any other member is invalid.</summary>
+    /// <summary>The earlier challenge a request for a new one names and the page it is for, each or null; any other member is invalid.</summary>
     /// <param name="body">The body's bytes.</param>
     /// <param name="invalid">Receives where the body cannot be read.</param>
-    public static string? ReadChallengeRequest(byte[] body, List<string> invalid)
+    public static (string? Previous, Guid? ContentKey) ReadChallengeRequest(byte[] body, List<string> invalid)
     {
         ArgumentNullException.ThrowIfNull(body);
         ArgumentNullException.ThrowIfNull(invalid);
         using var document = Parse(body, invalid);
         if (document is null)
         {
-            return null;
+            return default;
         }
 
         string? previous = null;
+        Guid? contentKey = null;
         foreach (var (name, value) in Members(document.RootElement, string.Empty, invalid))
         {
-            if (name == "previous")
+            switch (name)
             {
-                previous = Text(value, name, invalid, MaxChallengeLength);
-            }
-            else
-            {
-                invalid.Add(name);
+                case "previous":
+                    previous = Text(value, name, invalid, MaxChallengeLength);
+                    break;
+                case "contentKey":
+                    contentKey = Key(value, name, invalid);
+                    break;
+                default:
+                    invalid.Add(name);
+                    break;
             }
         }
 
-        return previous;
+        return (previous, contentKey);
     }
 
     // A submission's body, or a page's with the page's key.
@@ -169,6 +177,7 @@ internal static class EntryBodies
         var context = new Dictionary<string, string>(StringComparer.Ordinal);
         string? challenge = null;
         string? honeypot = null;
+        string? proof = null;
         foreach (var (name, value) in Members(root, string.Empty, invalid))
         {
             switch (name)
@@ -211,6 +220,9 @@ internal static class EntryBodies
                 case "honeypot":
                     honeypot = Text(value, name, invalid, int.MaxValue);
                     break;
+                case "proofOfWork" when !page:
+                    proof = Text(value, name, invalid, MaxProofLength);
+                    break;
                 default:
                     invalid.Add(name);
                     break;
@@ -240,6 +252,7 @@ internal static class EntryBodies
             Context = context,
             Challenge = challenge,
             Honeypot = honeypot,
+            ProofOfWork = proof,
         }, pageKey);
     }
 

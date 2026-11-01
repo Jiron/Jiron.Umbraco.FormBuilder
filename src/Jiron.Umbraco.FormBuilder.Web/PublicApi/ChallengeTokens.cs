@@ -8,7 +8,7 @@ namespace Jiron.Umbraco.FormBuilder.Web.PublicApi;
 
 /// <summary>
 /// The signed challenges of the public API (ADR-0012, ADR-0138): each names the form, its id, when it was issued, when it
-/// expires on the site's clock, and on a form for members the member. Data Protection protects them under a purpose of
+/// expires on the site's clock, on a form for members the member, and at the proof-of-work level its puzzle's difficulty. Data Protection protects them under a purpose of
 /// their own, so no other token reads as one; a load-balanced site shares its key ring.
 /// </summary>
 /// <param name="protection">The site's Data Protection.</param>
@@ -20,7 +20,7 @@ internal sealed class ChallengeTokens(IDataProtectionProvider protection, TimePr
 
     private const byte Version = 1;
     private const int KeyLength = 16;
-    private const int PayloadLength = 1 + (3 * KeyLength) + (2 * sizeof(long));
+    private const int PayloadLength = 1 + (3 * KeyLength) + (2 * sizeof(long)) + 1;
 
     private readonly IDataProtector _protector = protection.CreateProtector(Purpose);
 
@@ -31,7 +31,8 @@ internal sealed class ChallengeTokens(IDataProtectionProvider protection, TimePr
     /// <param name="form">The form's key.</param>
     /// <param name="member">On a form for members, the signed-in member.</param>
     /// <param name="previous">The earlier challenge the runtime still holds, or null.</param>
-    public string Issue(Guid form, Guid? member, string? previous = null)
+    /// <param name="proofBits">How many zero bits its puzzle asks for; 0 for none (ADR-0141).</param>
+    public string Issue(Guid form, Guid? member, string? previous = null, int proofBits = 0)
     {
         var now = time.GetUtcNow();
         var issued = Read(previous, form, TimeSpan.MaxValue)?.IssuedUtc ?? now;
@@ -42,6 +43,7 @@ internal sealed class ChallengeTokens(IDataProtectionProvider protection, TimePr
         (member ?? Guid.Empty).TryWriteBytes(payload.AsSpan(1 + (2 * KeyLength), KeyLength));
         BinaryPrimitives.WriteInt64BigEndian(payload.AsSpan(1 + (3 * KeyLength)), issued.UtcTicks);
         BinaryPrimitives.WriteInt64BigEndian(payload.AsSpan(1 + (3 * KeyLength) + sizeof(long)), (now + FormChallenges.Lifetime).UtcTicks);
+        payload[PayloadLength - 1] = checked((byte)proofBits);
         return Base64Url.EncodeToString(_protector.Protect(payload));
     }
 
@@ -79,6 +81,7 @@ internal sealed class ChallengeTokens(IDataProtectionProvider protection, TimePr
         return new ChallengeTicket(
             new Guid(payload.AsSpan(1 + KeyLength, KeyLength)),
             new DateTimeOffset(BinaryPrimitives.ReadInt64BigEndian(payload.AsSpan(1 + (3 * KeyLength))), TimeSpan.Zero),
-            member == Guid.Empty ? null : member);
+            member == Guid.Empty ? null : member,
+            payload[PayloadLength - 1]);
     }
 }

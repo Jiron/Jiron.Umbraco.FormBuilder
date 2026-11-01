@@ -252,6 +252,9 @@ internal sealed record EntryRequestModel
 
     /// <summary>The captcha's token, for a form whose protection uses one (from 7.2).</summary>
     public string? CaptchaToken { get; init; }
+
+    /// <summary>The number that solves the challenge's puzzle, in digits, for a form at the proof-of-work level (ADR-0141).</summary>
+    public string? ProofOfWork { get; init; }
 }
 
 /// <summary>

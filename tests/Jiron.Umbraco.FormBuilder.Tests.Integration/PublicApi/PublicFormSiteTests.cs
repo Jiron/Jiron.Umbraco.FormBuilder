@@ -116,6 +116,8 @@ public sealed class PublicFormSiteTests : PublicApiTestBase
         await Settings.SaveAsync(filled, current.Version, Editor);
         var protection = new ProtectionSettings
         {
+            Level = ProtectionLevel.ProofOfWork,
+            ProofBits = 12,
             BlockedRanges = ["203.0.113.0/24"],
             ContentRules = ContentRuleLevel.Strict,
             BlockedWords = ["JFB_TEST blocked word"],

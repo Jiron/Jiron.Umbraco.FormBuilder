@@ -5,8 +5,8 @@ using Jiron.Umbraco.FormBuilder.Logic;
 namespace Jiron.Umbraco.FormBuilder.Core.Settings;
 
 /// <summary>
-/// The spam protection settings (section 4.8, ADR-0012, ADR-0139, ADR-0140), set per site: the blocked address ranges and
-/// the content rules. The default level comes with what it configures (ADR-0043).
+/// The spam protection settings (section 4.8, ADR-0012, ADR-0139, ADR-0140, ADR-0141), set per site: the default level, the
+/// blocked address ranges and the content rules.
 /// </summary>
 internal sealed record ProtectionSettings : ISettingsSection
 {
@@ -25,6 +25,12 @@ internal sealed record ProtectionSettings : ISettingsSection
     /// <summary>The most links a site may allow.</summary>
     public const int MostMaxLinks = 1_000;
 
+    /// <summary>The easiest puzzle a site may set, which still costs a bot something.</summary>
+    public const int FewestProofBits = 8;
+
+    /// <summary>The hardest puzzle a site may set, which a slow phone can still solve.</summary>
+    public const int MostProofBits = 24;
+
     /// <inheritdoc />
     public static string Alias => FormBuilderSettingsSections.Protection;
 
@@ -33,6 +39,12 @@ internal sealed record ProtectionSettings : ISettingsSection
 
     /// <inheritdoc />
     public static bool PerSite => true;
+
+    /// <summary>The level of the site's forms that inherit it: <c>standard</c> or <c>proofOfWork</c>, never <c>inherit</c>, which is how a form takes this one.</summary>
+    public ProtectionLevel Level { get; init; } = ProtectionLevel.Standard;
+
+    /// <summary>How many zero bits a puzzle of the site's forms asks for; each more doubles the work (ADR-0141).</summary>
+    public int ProofBits { get; init; } = 16;
 
     /// <summary>
     /// The address ranges whose submissions go to Spam, in CIDR notation such as <c>203.0.113.0/24</c> or
@@ -51,6 +63,14 @@ internal sealed record ProtectionSettings : ISettingsSection
 
     /// <summary>The most links a submission's texts may hold before they count against it.</summary>
     public int MaxLinks { get; init; } = 3;
+
+    /// <summary>The level a form is at: its own, or the site's for one that inherits it.</summary>
+    /// <param name="definition">The form.</param>
+    public ProtectionLevel LevelOf(FormDefinition definition)
+    {
+        ArgumentNullException.ThrowIfNull(definition);
+        return definition.Settings.Protection.Level is ProtectionLevel.Inherit ? Level : definition.Settings.Protection.Level;
+    }
 
     /// <summary>
     /// Whether a request's address lies in one of the blocked ranges; an address the host could not tell lies in none. An
@@ -111,6 +131,16 @@ internal sealed class ProtectionSettingsValidator : ISettingsValidator<Protectio
             {
                 errors.Add(nameof(ProtectionSettings.BlockedRanges), SettingsErrors.RangeCode, $"\"{range}\" is not an address range such as 203.0.113.0/24 or 2001:db8::/32.");
             }
+        }
+
+        if (section.Level is not (ProtectionLevel.Standard or ProtectionLevel.ProofOfWork))
+        {
+            errors.Add(nameof(ProtectionSettings.Level), SettingsErrors.ProtectionLevelCode, "A site's protection level is standard or proofOfWork.");
+        }
+
+        if (section.ProofBits is < ProtectionSettings.FewestProofBits or > ProtectionSettings.MostProofBits)
+        {
+            errors.Add(nameof(ProtectionSettings.ProofBits), SettingsErrors.Range, $"A puzzle asks for {ProtectionSettings.FewestProofBits} to {ProtectionSettings.MostProofBits} zero bits.");
         }
 
         if (section.ContentRules == ContentRuleLevel.Inherit)

@@ -105,9 +105,9 @@ public sealed class ChallengeTokensTests
         Assert.That(_tokens.Read(upload, Form, TimeSpan.Zero), Is.Null);
     }
 
-    [TestCase("Another.Purpose", 1, 65, TestName = "A token of the right shape under another purpose")]
-    [TestCase(ChallengeTokens.Purpose, 2, 65, TestName = "A token of another version")]
-    [TestCase(ChallengeTokens.Purpose, 1, 64, TestName = "A token of another length")]
+    [TestCase("Another.Purpose", 1, 66, TestName = "A token of the right shape under another purpose")]
+    [TestCase(ChallengeTokens.Purpose, 2, 66, TestName = "A token of another version")]
+    [TestCase(ChallengeTokens.Purpose, 1, 65, TestName = "A token of another length")]
     public void WhatIsNotThisTokensShape_ReadsAsNone(string purpose, byte version, int length)
     {
         // A challenge's bytes as Issue writes them, whose expiry is far off, so that only the case at hand can refuse it.
@@ -116,14 +116,21 @@ public sealed class ChallengeTokensTests
         Form.TryWriteBytes(payload.AsSpan(1, 16));
         Guid.NewGuid().TryWriteBytes(payload.AsSpan(17, 16));
         System.Buffers.Binary.BinaryPrimitives.WriteInt64BigEndian(payload.AsSpan(49), _clock.GetUtcNow().UtcTicks);
-        if (length == 65)
-        {
-            System.Buffers.Binary.BinaryPrimitives.WriteInt64BigEndian(payload.AsSpan(57), _clock.GetUtcNow().AddDays(1).UtcTicks);
-        }
+        System.Buffers.Binary.BinaryPrimitives.WriteInt64BigEndian(payload.AsSpan(57), _clock.GetUtcNow().AddDays(1).UtcTicks);
 
         var token = System.Buffers.Text.Base64Url.EncodeToString(_protection.CreateProtector(purpose).Protect(payload));
 
         Assert.That(_tokens.Read(token, Form, TimeSpan.Zero), Is.Null);
+    }
+
+    [Test]
+    public void AChallenge_CarriesItsPuzzlesDifficulty()
+    {
+        Assert.Multiple(() =>
+        {
+            Assert.That(_tokens.Read(_tokens.Issue(Form, null, proofBits: 16), Form, TimeSpan.Zero)!.ProofBits, Is.EqualTo(16));
+            Assert.That(_tokens.Read(_tokens.Issue(Form, null), Form, TimeSpan.Zero)!.ProofBits, Is.Zero);
+        });
     }
 
     [Test]

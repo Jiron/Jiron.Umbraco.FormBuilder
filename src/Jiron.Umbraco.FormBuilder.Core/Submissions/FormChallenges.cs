@@ -7,7 +7,8 @@ namespace Jiron.Umbraco.FormBuilder.Core.Submissions;
 /// <param name="Id">Its id, 128 random bits, which an entry stores so that a challenge makes one entry.</param>
 /// <param name="IssuedUtc">When the visitor first asked, which a renewal carries over.</param>
 /// <param name="Member">On a form for members, the member it was issued to; null otherwise.</param>
-internal sealed record ChallengeTicket(Guid Id, DateTimeOffset IssuedUtc, Guid? Member);
+/// <param name="ProofBits">How many zero bits its puzzle asks for (ADR-0141); 0 for a challenge without a puzzle.</param>
+internal sealed record ChallengeTicket(Guid Id, DateTimeOffset IssuedUtc, Guid? Member, int ProofBits = 0);
 
 /// <summary>Reads a transport's challenges (ADR-0138); only the transport knows how they are protected.</summary>
 internal interface IChallengeReader

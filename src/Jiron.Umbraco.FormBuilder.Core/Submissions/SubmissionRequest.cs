@@ -76,6 +76,9 @@ internal sealed record SubmissionRequest
     /// <summary>What the gate found in the request's challenge; null without one.</summary>
     public ChallengeTicket? Ticket { get; init; }
 
+    /// <summary>The answer to the challenge's puzzle, as posted (ADR-0141).</summary>
+    public string? ProofOfWork { get; init; }
+
     /// <summary>What the page's honeypot was posted with (ADR-0012), which only a bot fills in; null or blank for nothing.</summary>
     public string? Honeypot { get; init; }
 

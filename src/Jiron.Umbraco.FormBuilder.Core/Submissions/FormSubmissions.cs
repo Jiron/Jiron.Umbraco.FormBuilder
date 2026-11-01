@@ -368,6 +368,12 @@ internal sealed class FormSubmissions(
             return Reading.Refused(SubmissionResult.Invalid([new SubmissionProblem(SubmissionProblems.Empty, string.Empty)]));
         }
 
+        // The puzzle comes with the challenge, so an answer that does not solve it asks for a new challenge (ADR-0141).
+        if (pageKey is null && !await protection.HasItsProofAsync(request, definition, page, cancellationToken))
+        {
+            return Reading.Refused(SubmissionResult.Refused(SubmissionRefusal.ChallengeRequired));
+        }
+
         var zone = await timeZones.GetAsync(page.Site, cancellationToken);
         var read = await reader.ReadAsync(
             new PostedSubmission

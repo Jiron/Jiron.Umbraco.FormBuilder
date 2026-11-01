@@ -445,7 +445,8 @@ sequenceDiagram
   sooner than the fill time, a blocked address range, the content rules and the site's own checks score it, the score and
   reasons are stored with the entry, and at 100 it goes to `Spam`, answered as any other, holding no place and no unique
   answer and told of neither (ADR-0139, ADR-0140). Marking it as no spam queues the actions the rules chose when it came
-  in (`EntrySpamFolder`).
+  in (`EntrySpamFolder`). A form at the proof-of-work level asks its submissions for the answer to the challenge's puzzle,
+  and without JavaScript, which cannot solve one, a post goes to `Spam` with `no_script` (ADR-0141).
 - After the commit the worker sends within milliseconds; the distributed job only wakes it (ADR-0007).
 
 ## 5. The public API
@@ -459,13 +460,14 @@ codes, `no-store` except the form and the options, the OpenAPI document `jfb-pub
 [ADR-0088](decisions/0088-the-submission-pipeline-and-the-entries-endpoint.md),
 [ADR-0089](decisions/0089-the-validate-and-receipt-endpoints.md),
 [ADR-0138](decisions/0138-the-challenge.md),
-[ADR-0139](decisions/0139-the-signals-and-the-score.md)).
+[ADR-0139](decisions/0139-the-signals-and-the-score.md),
+[ADR-0141](decisions/0141-proof-of-work-on-the-server.md)).
 
 | Route | Purpose | Rate-limit policy | Needs |
 | --- | --- | --- | --- |
 | `GET forms/{keyOrAlias}` | the published form in one culture with its revision, the site's time zone and whether it is open, when the form allows headless access, with what the browser decides each field by (`fields`: its kinds, whether it can be required, whether its type is built in), the culture's `formats` and `words`, what the browser renders its visitor texts with (`mergeTags`, null for none) and each consent's wording hash (`consents`); `no-cache` with an `ETag` from the answer's bytes | `read` | – |
 | `GET forms/{key}/render` | the published form's markup as a page shows it at one place, for `form_changed` on a page from a cache: the page's `instance` id and `page` path (the form's no-JS action), its `contentKey` and `culture`, through the view component without the asset tags; every published form not in the trash, by key only; a members-only form for the member signed in; never an outcome (ADR-0004, ADR-0104) | `read` | a local `page` path as `location.pathname` gives it |
-| `POST forms/{key}/challenge` | a signed challenge, an earlier one renewed by a body with `previous`; the places left of the options known without a visitor's answers; what the form's rules ask of a member; `member_required` on a form for members for anyone it does not admit | `challenge` | – |
+| `POST forms/{key}/challenge` | a signed challenge, an earlier one renewed by a body with `previous`, and at the proof-of-work level its puzzle; the page's site from the body's `contentKey`; the places left of the options known without a visitor's answers; what the form's rules ask of a member; `member_required` on a form for members for anyone it does not admit | `challenge` | – |
 | `POST forms/{key}/uploads` | one file to a field before submitting (`?fieldKey=`), streamed as `multipart/form-data`: a `challenge` part, which only a server key leaves out and which is verified before the file is read, then the `file` part; held to the field's limit (its type's or `Files:MaxFileBytes`) before and while it is read, checked on its first bytes (programs and scripts, blocked extensions, the field's own check, bytes of another kind than the extension names), stored with a row that waits for its entry; answers a token for 24 hours with the cleaned name, the size and the detected content type; a form that takes no entry now refuses it with the submission's code before a byte is read; every refusal closes the connection | `upload` | the challenge as the first part (verified from 7.1) |
 | `POST forms/{key}/validate` | one page's check: a submission's body with the page's key, of at most 1 MiB, the answers given so far read and ruled as the submission's; `204` when the page's answers pass, `422 validation_failed` with the errors of its fields only, the submission's refusals before (a closed or full form among them); every check but `uniquePerForm`; nothing stored | `submit` | the challenge (from 7.1) |
 | `POST forms/{key}/entries` | submit: a JSON object of at most 1 MiB, counted as it is read, with the revision the page showed and the answers by alias (`values`, a file field's upload tokens among them), the consents' wording hashes, the query and context values; answers the entry's `receipt` and `outcome`, the same for a retry of the same answers; refusals by code, `422 validation_failed` with each error's code and path and the check or rule whose message shows | `submit` | the challenge (from 7.1), or a server key |

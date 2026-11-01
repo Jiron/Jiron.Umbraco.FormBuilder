@@ -125,6 +125,32 @@ public sealed class ProtectionSettingsTests
     public void ASitesContentRules_AreNeverInherited() =>
         Assert.That(Codes(new ProtectionSettings { ContentRules = ContentRuleLevel.Inherit }), Is.EqualTo(new[] { SettingsErrors.ContentRulesCode }));
 
+    [TestCase(ProtectionLevel.Standard, true)]
+    [TestCase(ProtectionLevel.ProofOfWork, true)]
+    [TestCase(ProtectionLevel.Inherit, false)]
+    [TestCase(ProtectionLevel.Captcha, false)]
+    public void ASitesLevel_IsStandardOrProofOfWork(ProtectionLevel level, bool saved) =>
+        Assert.That(Codes(new ProtectionSettings { Level = level }), saved ? Is.Empty : Is.EqualTo(new[] { SettingsErrors.ProtectionLevelCode }));
+
+    [TestCase(7, false)]
+    [TestCase(8, true)]
+    [TestCase(24, true)]
+    [TestCase(25, false)]
+    public void APuzzlesDifficulty_IsHeldToItsRange(int bits, bool saved) =>
+        Assert.That(Codes(new ProtectionSettings { ProofBits = bits }), saved ? Is.Empty : Is.EqualTo(new[] { SettingsErrors.Range }));
+
+    [Test]
+    public void TheLevel_StartsStandard_WithAPuzzleOfSixteenBits()
+    {
+        var settings = new ProtectionSettings();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(settings.Level, Is.EqualTo(ProtectionLevel.Standard));
+            Assert.That(settings.ProofBits, Is.EqualTo(16));
+        });
+    }
+
     [Test]
     public void TooManyRanges_AreRefused()
     {

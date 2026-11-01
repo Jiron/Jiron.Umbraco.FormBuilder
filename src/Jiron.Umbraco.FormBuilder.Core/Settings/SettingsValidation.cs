@@ -44,6 +44,9 @@ internal sealed class SettingsErrors(string section)
     /// <summary>The code of a blocked address range that is not one in CIDR notation (ADR-0139).</summary>
     public const string RangeCode = "addressRange";
 
+    /// <summary>The code of a site's protection level that a site cannot have (ADR-0141).</summary>
+    public const string ProtectionLevelCode = "protectionLevel";
+
     /// <summary>The code of a site's content rules set to <c>inherit</c>, which is a form's (ADR-0140).</summary>
     public const string ContentRulesCode = "contentRules";
 

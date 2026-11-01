@@ -148,6 +148,29 @@ public sealed class FormPostProtectionTests : RenderingTestBase
     }
 
     [Test]
+    public async Task OnAFormWhoseProtectionNeedsJavaScript_APost_GoesToSpam_AndIsNeverLost()
+    {
+        var key = await PublishFormAsync(
+            "limitedPost",
+            definition => definition with { Settings = definition.Settings with { Protection = definition.Settings.Protection with { Level = ProtectionLevel.ProofOfWork } } },
+            Topic);
+        _ = await PagesAsync("limited");
+        var form = await FormAsync();
+        Fill(form, "topic", "Ideas");
+
+        using var sent = await SubmitAsync(form);
+
+        var entry = await OnlyAsync(key);
+        Assert.Multiple(() =>
+        {
+            Assert.That(sent.StatusCode, Is.EqualTo(HttpStatusCode.Redirect));
+            Assert.That(entry.State, Is.EqualTo(EntryState.Spam));
+            Assert.That(entry.SpamScore, Is.EqualTo(100));
+            Assert.That(entry.SpamReasons, Is.EqualTo("no_script"));
+        });
+    }
+
+    [Test]
     public async Task ABlockedAddress_GoesToSpam()
     {
         var key = await PublishFormAsync("limitedPost", null, Topic);

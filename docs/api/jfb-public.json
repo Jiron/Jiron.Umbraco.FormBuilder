@@ -1646,11 +1646,33 @@
         },
         "additionalProperties": false
       },
+      "ChallengeProofResponseModel": {
+        "required": [
+          "bits",
+          "nonce"
+        ],
+        "type": "object",
+        "properties": {
+          "nonce": {
+            "type": "string"
+          },
+          "bits": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
       "ChallengeRequestModel": {
         "type": "object",
         "properties": {
           "previous": {
             "type": "string",
+            "nullable": true
+          },
+          "contentKey": {
+            "type": "string",
+            "format": "uuid",
             "nullable": true
           }
         },
@@ -1679,6 +1701,14 @@
                 "format": "int32"
               }
             },
+            "nullable": true
+          },
+          "proofOfWork": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ChallengeProofResponseModel"
+              }
+            ],
             "nullable": true
           },
           "member": {
@@ -1800,6 +1830,10 @@
             "nullable": true
           },
           "captchaToken": {
+            "type": "string",
+            "nullable": true
+          },
+          "proofOfWork": {
             "type": "string",
             "nullable": true
           }

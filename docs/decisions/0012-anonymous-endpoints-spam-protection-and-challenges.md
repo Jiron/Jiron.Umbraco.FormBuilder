@@ -16,7 +16,8 @@
   carries the honeypot, what Spam still checks and keeps, and where the blocked ranges live built in 7.1c
   ([ADR-0139](0139-the-signals-and-the-score.md)); what the content rules read, whose maximum of links counts, what a
   failing spam check does and how "not spam" knows its actions built in 7.1d
-  ([ADR-0140](0140-content-rules-and-the-spam-folder.md))
+  ([ADR-0140](0140-content-rules-and-the-spam-folder.md)); what the puzzle's nonce is, what a wrong answer answers and the
+  level's home built in 7.2a ([ADR-0141](0141-proof-of-work-on-the-server.md))
 - Date: 2026-10-23
 - Roadmap step: 1.7b (decided); built in 6.1 (the public API and the pipeline), 6.6 (server keys), 7.1 (standard
   protection, content rules and the spam folder), 7.2 (proof of work and captchas), 8.x (mail limits) and 16.1 (the

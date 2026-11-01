@@ -6,6 +6,7 @@ using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.OptionLists;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
+using Jiron.Umbraco.FormBuilder.Core.Settings;
 using Jiron.Umbraco.FormBuilder.Core.Submissions;
 using Jiron.Umbraco.FormBuilder.Web.Rendering;
 using Microsoft.AspNetCore.Http;
@@ -24,8 +25,9 @@ namespace Jiron.Umbraco.FormBuilder.Web.PublicApi;
 /// <param name="forms">The forms' rows.</param>
 /// <param name="types">The field types, which say whose options can have places.</param>
 /// <param name="cascading">The options of a field from a list or another source.</param>
-/// <param name="pages">The site's default culture, which a list's labels would be in.</param>
-internal sealed class ChallengeRequests(ChallengeTokens tokens, IEntryRepository entries, IFormRepository forms, FieldTypeRegistry types, CascadingOptions cascading, FormPages pages)
+/// <param name="pages">The site's default culture, which a list's labels would be in, and the site of the page.</param>
+/// <param name="settings">The site's protection level.</param>
+internal sealed class ChallengeRequests(ChallengeTokens tokens, IEntryRepository entries, IFormRepository forms, FieldTypeRegistry types, CascadingOptions cascading, FormPages pages, IFormBuilderSettingsService settings)
 {
     /// <summary>The most bytes the endpoint's body holds: the longest earlier challenge, with room for escapes.</summary>
     public const int MaxBodyBytes = 16_384;
@@ -56,7 +58,7 @@ internal sealed class ChallengeRequests(ChallengeTokens tokens, IEntryRepository
         }
 
         var invalid = new List<string>();
-        var previous = body.Bytes.Length == 0 ? null : EntryBodies.ReadChallengeRequest(body.Bytes, invalid);
+        var (previous, content) = body.Bytes.Length == 0 ? default : EntryBodies.ReadChallengeRequest(body.Bytes, invalid);
         if (invalid.Count > 0)
         {
             return FormBuilderPublicProblems.InvalidRequest([.. invalid]);
@@ -71,10 +73,15 @@ internal sealed class ChallengeRequests(ChallengeTokens tokens, IEntryRepository
             return FormBuilderPublicProblems.MemberRequired();
         }
 
+        // The level comes from the page's site, as a submission's does: only a server's own request skips the puzzle.
+        var site = (await settings.GetAsync<ProtectionSettings>((await pages.PageAsync(content)).Site, cancellationToken)).Value;
+        var proofBits = site.LevelOf(definition) == ProtectionLevel.ProofOfWork ? site.ProofBits : 0;
+        var challenge = tokens.Issue(form.Form.Key, forMembers ? member : null, previous, proofBits);
         var model = new ChallengeResponseModel
         {
-            Challenge = tokens.Issue(form.Form.Key, forMembers ? member : null, previous),
+            Challenge = challenge,
             MinFillSeconds = FormChallenges.MinFillSeconds,
+            ProofOfWork = proofBits == 0 ? null : new ChallengeProofResponseModel { Nonce = ProofOfWork.NonceOf(tokens.Read(challenge, form.Form.Key, TimeSpan.Zero)!), Bits = proofBits },
             Places = await PlacesAsync(form, cancellationToken),
             Member = member is null ? null : await MemberAsync(members, definition),
         };
@@ -149,6 +156,19 @@ internal sealed record ChallengeRequestModel
 {
     /// <summary>The earlier challenge the page holds, even an expired one, whose issue time a valid one carries over.</summary>
     public string? Previous { get; init; }
+
+    /// <summary>The page the form is on, whose site says what the protection is for a form that inherits it.</summary>
+    public Guid? ContentKey { get; init; }
+}
+
+/// <summary>A challenge's puzzle (ADR-0141): the number to find makes the SHA-256 of <c>nonce:number</c> start with so many zero bits.</summary>
+internal sealed record ChallengeProofResponseModel
+{
+    /// <summary>The puzzle's nonce.</summary>
+    public required string Nonce { get; init; }
+
+    /// <summary>How many zero bits the hash starts with.</summary>
+    public required int Bits { get; init; }
 }
 
 /// <summary>A challenge and what cached markup cannot carry (ADR-0012).</summary>
@@ -162,6 +182,9 @@ internal sealed record ChallengeResponseModel
 
     /// <summary>The places left, by the field's key and the option's value, of the form's own options that have places; left out when none has.</summary>
     public IReadOnlyDictionary<string, Dictionary<string, int>>? Places { get; init; }
+
+    /// <summary>The puzzle a page solves before it sends; left out when the form's level has none.</summary>
+    public ChallengeProofResponseModel? ProofOfWork { get; init; }
 
     /// <summary>What the form's rules ask of a signed-in member; left out for a visitor, and when no rule asks.</summary>
     public ChallengeMemberResponseModel? Member { get; init; }

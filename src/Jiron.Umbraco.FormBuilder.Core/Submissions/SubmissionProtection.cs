@@ -18,6 +18,9 @@ internal static class SpamReasons
     /// <summary>Submitted sooner than the minimum fill time after the challenge was issued.</summary>
     public const string TooFast = "too_fast";
 
+    /// <summary>A post without JavaScript, on a form whose protection needs it.</summary>
+    public const string NoScript = "no_script";
+
     /// <summary>The request's address lies in a blocked range.</summary>
     public const string BlockedRange = "blocked_range";
 
@@ -98,6 +101,28 @@ internal sealed partial class SubmissionProtection(
     private const int HoneypotScore = 100;
     private const int TooFastScore = 60;
     private const int BlockedRangeScore = 100;
+    private const int NoScriptScore = 100;
+
+    /// <summary>
+    /// Whether a submission has the answer its form's level asks for (ADR-0141). A server key and a post without JavaScript
+    /// have no puzzle to solve: the first skips it, and the second is scored instead.
+    /// </summary>
+    /// <param name="request">The submission, with what the gate found in its challenge.</param>
+    /// <param name="definition">The form.</param>
+    /// <param name="page">The page and the site it is on.</param>
+    /// <param name="cancellationToken">Cancels the read of the settings.</param>
+    public async Task<bool> HasItsProofAsync(SubmissionRequest request, FormDefinition definition, RequestPage page, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        ArgumentNullException.ThrowIfNull(page);
+        if (request.Challenges is null || request.ServerKey is not null)
+        {
+            return true;
+        }
+
+        var site = (await settings.GetAsync<ProtectionSettings>(page.Site, cancellationToken)).Value;
+        return site.LevelOf(definition) != ProtectionLevel.ProofOfWork || (request.Ticket is { } ticket && ProofOfWork.IsSolved(ticket, request.ProofOfWork));
+    }
 
     /// <summary>The score of a submission and why.</summary>
     /// <param name="request">The submission, with what the gate found in its challenge.</param>
@@ -134,6 +159,12 @@ internal sealed partial class SubmissionProtection(
         if (site.Blocks(request.Address))
         {
             Add(BlockedRangeScore, SpamReasons.BlockedRange);
+        }
+
+        // A real visitor without JavaScript is never lost and never trusted (ADR-0012).
+        if (request.Challenges is null && request.ServerKey is null && site.LevelOf(definition) is ProtectionLevel.ProofOfWork or ProtectionLevel.Captcha)
+        {
+            Add(NoScriptScore, SpamReasons.NoScript);
         }
 
         var level = definition.Settings.Protection.ContentRules is ContentRuleLevel.Inherit ? site.ContentRules : definition.Settings.Protection.ContentRules;
