@@ -518,6 +518,16 @@ internal interface IEntryRepository
     /// <summary>The files of an entry, in the order they were uploaded.</summary>
     Task<IReadOnlyList<StoredEntryFile>> ListFilesAsync(long entryId, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// A form's files for an archive after the file <paramref name="afterId"/>, in the order they came (ADR-0145): those of its
+    /// entries that count (<see cref="EntryLimits.CountingStates"/>), not Spam, drafts or test entries.
+    /// </summary>
+    /// <param name="formId">The form.</param>
+    /// <param name="afterId">The id to go on after; 0 from the first.</param>
+    /// <param name="take">How many, 1 to <see cref="EntryRepository.MaxOrphansPerList"/>.</param>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    Task<IReadOnlyList<StoredEntryFile>> ListFilesToArchiveAsync(int formId, int afterId, int take, CancellationToken cancellationToken = default);
+
     /// <summary>The files that wait for a scan after the file <paramref name="afterId"/>, in the order they came (ADR-0144).</summary>
     /// <param name="afterId">The id to go on after; 0 from the first.</param>
     /// <param name="take">How many, 1 to <see cref="EntryRepository.MaxOrphansPerList"/>.</param>

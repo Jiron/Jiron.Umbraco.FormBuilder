@@ -39,6 +39,15 @@ internal static class FormBuilderProblems
     /// <summary>A form's version that does not exist.</summary>
     public const string VersionNotFoundCode = "version_not_found";
 
+    /// <summary>A file the form's entries do not hold (ADR-0145).</summary>
+    public const string FileNotFoundCode = "file_not_found";
+
+    /// <summary>A file a scanner quarantined (ADR-0144).</summary>
+    public const string FileQuarantinedCode = "file_quarantined";
+
+    /// <summary>A file that waits for the site's scanners (ADR-0144).</summary>
+    public const string FileNotScannedCode = "file_not_scanned";
+
     /// <summary>The code of a data type that does not exist or is no form picker's.</summary>
     public const string DataTypeNotFoundCode = "data_type_not_found";
 
@@ -67,6 +76,18 @@ internal static class FormBuilderProblems
     /// <summary>A version of a form the user sees that does not exist (ADR-0052).</summary>
     public static FormBuilderProblemResult VersionNotFound() =>
         Problem(StatusCodes.Status404NotFound, VersionNotFoundCode, "The version does not exist.");
+
+    /// <summary>A file the form's entries do not hold, or whose bytes are gone (ADR-0145).</summary>
+    public static FormBuilderProblemResult FileNotFound() =>
+        Problem(StatusCodes.Status404NotFound, FileNotFoundCode, "The form's entries hold no such file.");
+
+    /// <summary>A file a scanner quarantined, which nobody gets (ADR-0144).</summary>
+    public static FormBuilderProblemResult FileQuarantined() =>
+        Problem(StatusCodes.Status409Conflict, FileQuarantinedCode, "A scanner quarantined this file.");
+
+    /// <summary>A file that waits for the site's scanners (ADR-0144).</summary>
+    public static FormBuilderProblemResult FileNotScanned() =>
+        Problem(StatusCodes.Status409Conflict, FileNotScannedCode, "This file is still being scanned. Try again in a minute.");
 
     /// <summary>A data type that does not exist, or one that is no form picker's (ADR-0133).</summary>
     public static FormBuilderProblemResult DataTypeNotFound() =>

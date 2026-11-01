@@ -47,6 +47,8 @@ public sealed class PermissionMatrixTests : ManagementApiTestBase
         ["POST form/{key}/restore"] = (FormBuilderPermissions.Design, FormBuilderAccessResourceKind.Form, "key"),
         ["DELETE form/{key}"] = (FormBuilderPermissions.Design | FormBuilderPermissions.DeleteEntries, FormBuilderAccessResourceKind.Form, "key"),
         ["GET form/{key}/referenced-by"] = (FormBuilderPermissions.None, FormBuilderAccessResourceKind.Form, "key"),
+        ["GET form/{key}/files/{fileKey}"] = (FormBuilderPermissions.ViewEntries, FormBuilderAccessResourceKind.Form, "key"),
+        ["GET form/{key}/files/archive"] = (FormBuilderPermissions.Export, FormBuilderAccessResourceKind.Form, "key"),
         ["GET form/{key}/versions"] = (FormBuilderPermissions.Design, FormBuilderAccessResourceKind.Form, "key"),
         ["GET form/{key}/versions/{number}"] = (FormBuilderPermissions.Design, FormBuilderAccessResourceKind.Form, "key"),
         ["GET form/{key}/versions/compare"] = (FormBuilderPermissions.Design, FormBuilderAccessResourceKind.Form, "key"),

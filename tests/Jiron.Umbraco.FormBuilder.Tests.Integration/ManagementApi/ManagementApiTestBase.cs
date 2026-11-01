@@ -110,6 +110,18 @@ internal sealed class ManagementApiCaller(HttpClient client, IServiceProvider se
             text);
     }
 
+    /// <summary>Calls as <paramref name="role"/> (null: without a token) for an answer that may be no JSON, such as a file; the caller reads and disposes it.</summary>
+    public async Task<HttpResponseMessage> SendAsync(string? role, string path)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, new Uri(BasePath + path, UriKind.Relative));
+        if (role is not null)
+        {
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", await TokenAsync(role));
+        }
+
+        return await client.SendAsync(request);
+    }
+
     private async Task<string> TokenAsync(string role)
     {
         if (!_tokens.TryGetValue(role, out var token))

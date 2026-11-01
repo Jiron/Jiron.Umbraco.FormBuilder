@@ -109,6 +109,25 @@ internal sealed partial class EntryRepository
     }
 
     /// <inheritdoc />
+    public Task<IReadOnlyList<StoredEntryFile>> ListFilesToArchiveAsync(int formId, int afterId, int take, CancellationToken cancellationToken = default)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(take);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(take, MaxOrphansPerList);
+        return database.ReadAsync<IReadOnlyList<StoredEntryFile>>(
+            async db =>
+            {
+                var n = new SqlNames(db);
+                var a = new SqlArgs();
+                var sql = $"SELECT f.* FROM {n.T(FormBuilderTables.EntryFile)} f INNER JOIN {n.T(FormBuilderTables.Entry)} e ON e.{n.C("id")} = f.{n.C("entryId")} "
+                    + $"WHERE f.{n.C("formId")} = {a.Add(formId)} AND f.{n.C("id")} > {a.Add(afterId)} AND e.{n.C("isTest")} = {a.Add(false)} "
+                    + $"AND e.{n.C("state")} IN ({a.List(EntryLimits.CountingStates.Select(state => (object?)StoredNames.Of(state)))}) ORDER BY f.{n.C("id")} {n.Page(0, take)}";
+                var rows = await db.FetchListAsync<EntryFileDto>(sql, a.Values);
+                return rows.Select(FileFromDto).ToList();
+            },
+            cancellationToken);
+    }
+
+    /// <inheritdoc />
     public Task<IReadOnlyList<StoredEntryFile>> ListFilesToScanAsync(int afterId, int take, CancellationToken cancellationToken = default)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(take);

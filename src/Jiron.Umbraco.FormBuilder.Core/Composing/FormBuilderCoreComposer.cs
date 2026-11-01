@@ -135,6 +135,7 @@ public sealed class FormBuilderCoreComposer : IComposer
         _ = builder.JironFormBuilder().CaptchaProviders();
         _ = builder.JironFormBuilder().FileScanners();
         builder.Services.TryAddSingleton<FileScans>();
+        builder.Services.TryAddSingleton<EntryFileDownloads>();
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IRecurringBackgroundJob, FileScanJob>());
         builder.Services.TryAddSingleton<CaptchaHosts>();
         builder.Services.TryAddSingleton<UniqueAnswers>();

@@ -377,6 +377,81 @@ export type FormReferencesResponseModelWritable = {
     notShown: number;
 };
 
+export type EntryFileDownloadData = {
+    body?: never;
+    path: {
+        key: string;
+        fileKey: string;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/form/{key}/files/{fileKey}';
+};
+
+export type EntryFileDownloadErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+};
+
+export type EntryFileDownloadError = EntryFileDownloadErrors[keyof EntryFileDownloadErrors];
+
+export type EntryFileDownloadResponses = {
+    /**
+     * OK
+     */
+    200: Blob | File;
+};
+
+export type EntryFileDownloadResponse = EntryFileDownloadResponses[keyof EntryFileDownloadResponses];
+
+export type EntryFileArchiveData = {
+    body?: never;
+    path: {
+        key: string;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/form/{key}/files/archive';
+};
+
+export type EntryFileArchiveErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type EntryFileArchiveError = EntryFileArchiveErrors[keyof EntryFileArchiveErrors];
+
+export type EntryFileArchiveResponses = {
+    /**
+     * OK
+     */
+    200: Blob | File;
+};
+
+export type EntryFileArchiveResponse = EntryFileArchiveResponses[keyof EntryFileArchiveResponses];
+
 export type FieldTypeListData = {
     body?: never;
     path?: never;
