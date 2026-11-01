@@ -2390,7 +2390,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - Done when:
     - integration tests cover a form at the proof-of-work level, directly and through the site's default: its challenge carries the puzzle, a right answer passes, and a wrong or missing one is refused;
     - tests cover the no-JS post's `no_script`, and a server key that skips the puzzle.
-- [ ] **7.2b Captcha providers on the server** (7.2 split in three, WORKLOG 2026-11-01)
+- [x] **7.2b Captcha providers on the server** (7.2 split in three, WORKLOG 2026-11-01) (2026-11-01, 8546aac)
   - **Third-party providers:** reCAPTCHA v2 and v3 (ported from Ligata.Forms) and hCaptcha, with their verification, their keys in host configuration only and the outcomes of ADR-0012. Providers are greyed out without keys. Publishing refuses a provider the site lacks (`unknown_type` at `settings.protection.captcha.provider`, ADR-0035).
   - **The captcha placement** (added in 5.1b): the `captcha` field type is not configured (5.1c's availability, "not configured: …") while no captcha provider has its keys, since it marks where a provider's captcha renders.
   - Done when:
