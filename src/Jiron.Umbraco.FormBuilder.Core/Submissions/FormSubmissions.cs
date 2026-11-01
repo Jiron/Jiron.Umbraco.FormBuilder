@@ -75,7 +75,7 @@ internal sealed class FormSubmissions(
         if (request.SubmissionId is { } posted && await entries.GetBySubmissionAsync(served.Row.Id, posted, cancellationToken) is { } earlier)
         {
             return IsItsOwn(earlier, request)
-                ? await RetryAsync(earlier, digest, served.Form, cancellationToken)
+                ? await RetryAsync(earlier, digest, served.Form, request.Redirect, cancellationToken)
                 : SubmissionResult.Refused(SubmissionRefusal.DuplicateSubmission);
         }
 
@@ -83,7 +83,7 @@ internal sealed class FormSubmissions(
         if (request.Ticket is { } ticket && await entries.GetByChallengeAsync(served.Row.Id, FormChallenges.StoredId(ticket), cancellationToken) is { } solved)
         {
             return request.SubmissionId == solved.SubmissionId
-                ? await RetryAsync(solved, digest, served.Form, cancellationToken)
+                ? await RetryAsync(solved, digest, served.Form, request.Redirect, cancellationToken)
                 : SubmissionResult.Refused(SubmissionRefusal.ChallengeRequired);
         }
 
@@ -106,7 +106,7 @@ internal sealed class FormSubmissions(
         {
             // Another request with this submission id was stored a moment earlier: answer as a retry of it.
             return await entries.GetBySubmissionAsync(served.Row.Id, submission.SubmissionId, cancellationToken) is { } other && IsItsOwn(other, request)
-                ? await RetryAsync(other, digest, served.Form, cancellationToken)
+                ? await RetryAsync(other, digest, served.Form, request.Redirect, cancellationToken)
                 : SubmissionResult.Refused(SubmissionRefusal.DuplicateSubmission);
         }
         catch (FormBuilderConflictException conflict) when (conflict.Conflict == FormBuilderConflict.ChallengeUsed)
@@ -194,7 +194,7 @@ internal sealed class FormSubmissions(
 
         return await entries.GetBySubmissionAsync(served.Row.Id, submissionId, cancellationToken) is { State: not EntryState.Draft } entry
             && string.Equals(KeyThatSubmitted(entry), serverKey, StringComparison.Ordinal)
-            ? await ReplayAsync(entry, served.Form, cancellationToken)
+            ? await ReplayAsync(entry, served.Form, placement: null, cancellationToken)
             : SubmissionResult.Refused(SubmissionRefusal.EntryNotFound);
     }
 
@@ -208,8 +208,9 @@ internal sealed class FormSubmissions(
     /// <param name="serverKey">The name of the server key the request carried, or null.</param>
     /// <param name="challenge">The challenge the request posted, or null.</param>
     /// <param name="challenges">Reads the challenge.</param>
+    /// <param name="placement">The page the placement names (ADR-0129), which no entry keeps, or null.</param>
     /// <param name="cancellationToken">Cancelled when the request is.</param>
-    public async Task<SubmissionResult> ReceiptAsync(Guid form, Guid submissionId, string? serverKey, string? challenge, IChallengeReader challenges, CancellationToken cancellationToken = default)
+    public async Task<SubmissionResult> ReceiptAsync(Guid form, Guid submissionId, string? serverKey, string? challenge, IChallengeReader challenges, Guid? placement = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(challenges);
         if (await ServedAsync(form, cancellationToken) is not { } served)
@@ -225,7 +226,7 @@ internal sealed class FormSubmissions(
         var ticket = serverKey is null ? challenges.Read(challenge, form, FormChallenges.ReceiptGrace) : null;
         return await entries.GetBySubmissionAsync(served.Row.Id, submissionId, cancellationToken) is { State: not EntryState.Draft } entry
             && (serverKey is not null ? string.Equals(KeyThatSubmitted(entry), serverKey, StringComparison.Ordinal) : ticket is not null && entry.ChallengeId == FormChallenges.StoredId(ticket))
-            ? await ReplayAsync(entry, served.Form, cancellationToken)
+            ? await ReplayAsync(entry, served.Form, placement, cancellationToken)
             : SubmissionResult.Refused(SubmissionRefusal.EntryNotFound);
     }
 
@@ -417,15 +418,15 @@ internal sealed class FormSubmissions(
     }
 
     // A retry of an entry's submission id: the same answers get the entry's receipt and outcome, others 409.
-    private async Task<SubmissionResult> RetryAsync(StoredEntry entry, string digest, PublishedForm form, CancellationToken cancellationToken) =>
+    private async Task<SubmissionResult> RetryAsync(StoredEntry entry, string digest, PublishedForm form, Guid? placement, CancellationToken cancellationToken) =>
         string.Equals(entry.SubmissionHash, digest, StringComparison.Ordinal)
-            ? await ReplayAsync(entry, form, cancellationToken)
+            ? await ReplayAsync(entry, form, placement, cancellationToken)
             : SubmissionResult.Refused(SubmissionRefusal.DuplicateSubmission);
 
     // An entry's receipt and outcome again, as it was answered.
-    private async Task<SubmissionResult> ReplayAsync(StoredEntry entry, PublishedForm form, CancellationToken cancellationToken)
+    private async Task<SubmissionResult> ReplayAsync(StoredEntry entry, PublishedForm form, Guid? placement, CancellationToken cancellationToken)
     {
-        var replayed = await recorder.ReplayAsync(entry, form, cancellationToken);
+        var replayed = await recorder.ReplayAsync(entry, form, placement, cancellationToken);
         return SubmissionResult.Accepted(replayed.Receipt, replayed.Outcome, replayed: true);
     }
 

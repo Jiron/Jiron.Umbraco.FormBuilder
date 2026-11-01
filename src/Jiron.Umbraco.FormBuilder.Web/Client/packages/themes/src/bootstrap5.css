@@ -802,6 +802,32 @@
     }
   }
 
+  /* Busy while the answers are on their way: the label gives way to a turning ring, so the button keeps its size. */
+
+  & .jfb-button-primary[data-jfb-busy] {
+    position: relative;
+    color: transparent;
+  }
+
+  & .jfb-button-primary[data-jfb-busy]::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    inline-size: 1.25em;
+    block-size: 1.25em;
+    margin: auto;
+    border: 2px solid var(--bs-btn-color);
+    border-block-start-color: transparent;
+    border-radius: 50%;
+    animation: jfb-turn 0.7s linear infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    & .jfb-button-primary[data-jfb-busy]::after {
+      animation: jfb-pulse 1.4s ease-in-out infinite alternate;
+    }
+  }
+
   /* Motion that only colours or rings, and none at all when the visitor asks for less, as Bootstrap's own. */
 
   @media (prefers-reduced-motion: reduce) {

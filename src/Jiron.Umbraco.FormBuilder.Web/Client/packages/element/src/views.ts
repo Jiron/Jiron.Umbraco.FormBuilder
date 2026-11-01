@@ -3,7 +3,7 @@
  * view model (ADR-0128): each function follows its Razor view element for element and attribute for attribute, so the
  * element's markup is the server's (ADR-0015). What only a post without JavaScript uses (the action, the encoding, the
  * route token, the post values, a button's `formaction`) is not in the model, and the form posts through the runtime.
- * A first render has no outcome and no summary page; a field of a site's own type gets its frame, its control from the
+ * A first render has no outcome but the one in its templates, which the runtime shows after a send, and no summary page; a field of a site's own type gets its frame, its control from the
  * site (15.1).
  */
 import type {
@@ -16,6 +16,7 @@ import type {
   HoneypotModel,
   NavigationViewModel,
   NoticeViewModel,
+  OutcomeViewModel,
   PageViewModel,
   PartsControl,
   ProgressViewModel,
@@ -62,10 +63,16 @@ export function writeForm(context: ViewContext, model: FormViewModel): HTMLEleme
 
   const script = el(d, 'script', { type: 'application/json', 'data-jfb-model': FLAG });
   script.textContent = model.modelData;
-  const templates = el(d, 'template', { 'data-jfb-templates': FLAG }) as HTMLTemplateElement;
+  const templates = el(d, 'template', {
+    'data-jfb-templates': FLAG,
+    'data-jfb-sending': model.sending?.sendingText,
+    'data-jfb-thanks': model.sending?.thanksText,
+  }) as HTMLTemplateElement;
   append(templates.content, [
     model.errorSummaryTemplate && errorSummary(d, classes, model.errorSummaryTemplate),
     el(d, 'p', { class: classes.error, 'data-jfb-error': FLAG }),
+    model.sending?.notices.map((each) => notice(d, each)),
+    model.sending && outcome(d, classes, model.sending.outcome),
   ]);
   const first = model.defaultButton;
   return el(
@@ -77,6 +84,8 @@ export function writeForm(context: ViewContext, model: FormViewModel): HTMLEleme
       'data-jfb-form': model.key,
       'data-jfb-revision': model.revision,
       'data-jfb-api': context.api,
+      'data-jfb-content': model.contentKey,
+      'data-jfb-placement': model.placement,
       'data-jfb-contract': CONTRACT_VERSION,
       lang: model.culture,
       dir: model.direction,
@@ -1156,6 +1165,33 @@ function notice(d: Document, model: NoticeViewModel): HTMLElement {
     { class: model.cssClass },
     model.heading !== undefined && el(d, 'h2', {}, model.heading),
     html(d, model.text),
+  );
+}
+
+/** `Outcome.cshtml`, as the form's templates hold it: without its message, for the runtime to fill in after a send. */
+function outcome(d: Document, classes: ThemeClassesModel, model: OutcomeViewModel): HTMLElement {
+  return el(
+    d,
+    'div',
+    { class: classes.outcome, 'data-jfb-outcome': FLAG, 'data-jfb-pending': flag(model.isPending), tabindex: '-1' },
+    html(d, model.message),
+    model.reference !== undefined &&
+      el(d, 'p', { class: 'jfb-reference', 'data-jfb-reference': FLAG }, html(d, model.reference)),
+    model.countdown &&
+      el(d, 'p', {
+        'data-jfb-countdown': FLAG,
+        'data-jfb-one': model.countdown.one,
+        'data-jfb-other': model.countdown.other,
+      }),
+    model.continue &&
+      el(
+        d,
+        'div',
+        { class: classes.navigation },
+        el(d, 'a', { class: classes.button, href: model.continue.url, 'data-jfb-continue': FLAG }, model.continue.text),
+        model.countdown &&
+          el(d, 'button', { type: 'button', class: classes.buttonLink, 'data-jfb-stay': FLAG }, model.countdown.stay),
+      ),
   );
 }
 

@@ -2238,15 +2238,3 @@
     }
   }
 }
-
-@keyframes jfb-turn {
-  to {
-    rotate: 1turn;
-  }
-}
-
-@keyframes jfb-pulse {
-  to {
-    opacity: 0.4;
-  }
-}

@@ -145,7 +145,7 @@ internal sealed partial class FormRendering(
 
         // The picker's theme and page after a send are the placement's (ADR-0129); the render endpoint names its own theme.
         var formTheme = themes.Resolve(target is null ? theme ?? picked?.Theme : target.Theme, shown.Form.Settings.Theme);
-        var (view, model) = await models.BuildAsync(new FormRender(httpContext, cached, shown, culture, instance, context ?? new Dictionary<string, string?>(), formTheme, gate, target?.Page, member, target is null ? picked?.Redirect : null), cancellationToken);
+        var (view, model) = await models.BuildAsync(new FormRender(httpContext, cached, shown, culture, instance, context ?? new Dictionary<string, string?>(), formTheme, gate, target?.Page, member, target is null ? picked?.Redirect : null, content), cancellationToken);
         return new RenderedForm(view, model, formTheme);
     }
 

@@ -1,7 +1,11 @@
 using System.Net;
+using System.Text;
+using System.Text.Json;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
+using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Web.Picker;
+using Jiron.Umbraco.FormBuilder.Web.PublicApi;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Models.ContentEditing;
@@ -20,7 +24,8 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Integration.Rendering;
 /// settings do not allow (a form outside the allowed folders, not among the allowed forms, several in a single picker, a
 /// form the library lacks or holds in its trash, a value that is not keys) is reported when the page is saved and never
 /// published, as Umbraco does for its own properties; a theme the site lacks, and a folder, form or page that is not a
-/// key, are refused with the data type.
+/// key, are refused with the data type. A send with JavaScript from a picked form goes to the same page, by a token only
+/// the server can write and read, and a token a visitor changed is refused (6.4i, ADR-0120).
 /// </summary>
 [TestFixture]
 [UmbracoTest(Database = UmbracoTestOptions.Database.NewSchemaPerTest, Boot = true)]
@@ -76,6 +81,158 @@ public sealed class FormPickerSettingsTests : RenderingTestBase
             Assert.That(picked.OuterHtml, Does.Not.Contain(pages["picker-thanks"].ToString("D")), "and nowhere a visitor can read or change it");
         });
     }
+
+    [Test]
+    public async Task ASendWithJavaScript_FromAPickedForm_GoesToThePickersPage_WhereTheFormByItsAliasShowsItsOutcome()
+    {
+        var form = await PublishFormAsync("pickerForm");
+        var pages = await PagesAsync("picker-single", "picker-direct", "picker-thanks");
+        await PickersAsync(Settings(redirect: pages["picker-thanks"]), Settings(multiple: true));
+        await SetAsync(pages["picker-single"], "form", form.ToString("D"));
+        var picked = await FormAtAsync("/picker-single/");
+        var direct = await FormAtAsync("/picker-direct/");
+        var placement = picked.GetAttribute("data-jfb-placement")!;
+
+        using var sent = await SendEntryAsync(form, $$"""{"revision":1,"values":{"name":"Ada"},"contentKey":"{{picked.GetAttribute("data-jfb-content")}}","placement":{{JsonSerializer.Serialize(placement)}}}""");
+        var sentAnswer = await JsonAsync(sent);
+        using var outcome = await SendEntryAsync(form, """{"revision":1,"values":{"name":"Ada"}}""");
+        var outcomeAnswer = await JsonAsync(outcome);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(sent.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+            Assert.That(sentAnswer["outcome"]!["kind"]!.GetValue<string>(), Is.EqualTo("redirect"));
+            Assert.That(sentAnswer["outcome"]!["url"]!.GetValue<string>(), Does.EndWith("/picker-thanks/"), "the picker's page");
+            Assert.That(picked.GetAttribute("data-jfb-content"), Is.EqualTo(pages["picker-single"].ToString("D")), "the page the form is on");
+            Assert.That(placement, Does.Not.Contain(pages["picker-thanks"].ToString("D")).And.Not.Contain(pages["picker-thanks"].ToString("N")), "the visitor cannot read it");
+            Assert.That(direct.HasAttribute("data-jfb-placement"), Is.False, "the form by its alias has no placement");
+            Assert.That(outcome.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+            Assert.That(outcomeAnswer["outcome"]!["kind"]!.GetValue<string>(), Is.EqualTo("message"), "the form's own outcome");
+        });
+    }
+
+    [Test]
+    public async Task ARetryAndAReceipt_KeepThePlacement_WhichNoEntryKeeps()
+    {
+        var form = await PublishFormAsync("pickerForm");
+        var pages = await PagesAsync("picker-single", "picker-thanks");
+        await PickersAsync(Settings(redirect: pages["picker-thanks"]), Settings(multiple: true));
+        await SetAsync(pages["picker-single"], "form", form.ToString("D"));
+        var placement = JsonSerializer.Serialize((await FormAtAsync("/picker-single/")).GetAttribute("data-jfb-placement")!);
+        var id = Guid.NewGuid();
+        var challenge = await ChallengeAsync(form);
+        var body = $$"""{"revision":1,"submissionId":"{{id}}","challenge":{{JsonSerializer.Serialize(challenge)}},"values":{"name":"Ada"},"placement":{{placement}}}""";
+
+        using var sent = await SendEntryAsync(form, body);
+        using var retry = await SendEntryAsync(form, body);
+        using var plainRetry = await SendEntryAsync(form, body.Replace(",\"placement\":" + placement, string.Empty, StringComparison.Ordinal));
+        using var receipt = await SendAsync(HttpMethod.Post, $"{Root}/forms/{form}/receipt", request => request.Content = new StringContent($$"""{"submissionId":"{{id}}","challenge":{{JsonSerializer.Serialize(challenge)}},"placement":{{placement}}}""", Encoding.UTF8, "application/json"));
+        using var changed = await SendAsync(HttpMethod.Post, $"{Root}/forms/{form}/receipt", request => request.Content = new StringContent($$"""{"submissionId":"{{id}}","challenge":{{JsonSerializer.Serialize(challenge)}},"placement":"changed"}""", Encoding.UTF8, "application/json"));
+
+        var kinds = new[] { await JsonAsync(sent), await JsonAsync(retry), await JsonAsync(receipt) }.Select(answer => answer["outcome"]!["url"]?.GetValue<string>());
+        Assert.Multiple(async () =>
+        {
+            Assert.That(kinds, Has.All.EndsWith("/picker-thanks/"), "the entry, its retry and its receipt");
+            Assert.That((await JsonAsync(plainRetry))["outcome"]!["kind"]!.GetValue<string>(), Is.EqualTo("message"), "a retry without it has the form's own outcome");
+            Assert.That(await RefusalAsync(changed), Is.EqualTo("400 invalid_request"), "a receipt's token is held as a send's");
+        });
+    }
+
+    [Test]
+    public async Task APlacementAVisitorChanged_IsRefused_AndNothingIsStored()
+    {
+        var form = await PublishFormAsync("pickerForm");
+        var other = await PublishFormAsync("otherForm");
+        var pages = await PagesAsync("picker-single", "picker-thanks", "picker-many");
+        await PickersAsync(Settings(redirect: pages["picker-thanks"]), Settings(multiple: true));
+        await SetAsync(pages["picker-single"], "form", form.ToString("D"));
+        var token = (await FormAtAsync("/picker-single/")).GetAttribute("data-jfb-placement")!;
+        var another = GetRequiredService<PlacementTokens>().Issue(other, pages["picker-thanks"]);
+        var entries = GetRequiredService<IEntryRepository>();
+        var row = (await GetRequiredService<IFormRepository>().GetAsync(form))!;
+        var flipped = token[^1] == 'A' ? token[..^1] + "B" : token[..^1] + "A";
+        var values = new[]
+        {
+            JsonSerializer.Serialize(flipped),
+            JsonSerializer.Serialize(token[..^4]),
+            JsonSerializer.Serialize(pages["picker-many"].ToString("D")),
+            JsonSerializer.Serialize("https://evil.example/"),
+            JsonSerializer.Serialize(another),
+            JsonSerializer.Serialize(new string('A', 1_025)),
+            JsonSerializer.Serialize(string.Empty),
+            "12",
+            "true",
+            "[]",
+        };
+
+        foreach (var value in values)
+        {
+            using var refused = await SendEntryAsync(form, $$"""{"revision":1,"values":{"name":"Ada"},"placement":{{value}}}""");
+            var problem = await JsonAsync(refused);
+            Assert.Multiple(() =>
+            {
+                Assert.That(refused.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest), value);
+                Assert.That(problem["code"]!.GetValue<string>(), Is.EqualTo("invalid_request"), value);
+                Assert.That(problem["errors"]!.AsArray().Select(error => error!["path"]!.GetValue<string>()), Is.EqualTo(new[] { "placement" }), value);
+            });
+        }
+
+        using var check = await SendAsync(HttpMethod.Post, $"{Root}/forms/{form}/validate", request => request.Content = new StringContent($$"""{"revision":1,"pageKey":"{{Guid.NewGuid()}}","values":{"name":"Ada"},"placement":{{JsonSerializer.Serialize(token)}}}""", Encoding.UTF8, "application/json"));
+        Assert.Multiple(async () =>
+        {
+            Assert.That(await RefusalAsync(check), Is.EqualTo("400 invalid_request"), "a page's check takes no placement");
+            Assert.That(await entries.ListIdsAsync(row.Id, 50), Is.Empty, "nothing was stored");
+        });
+
+        using var without = await SendEntryAsync(form, """{"revision":1,"values":{"name":"Ada"},"placement":null}""");
+        Assert.That(without.StatusCode, Is.EqualTo(HttpStatusCode.OK), "no placement is the form's own outcome");
+    }
+
+    [Test]
+    public async Task AFormsTemplates_HoldWhatTheRuntimeShowsASendWith_InTheThemeAndTheLanguage()
+    {
+        var form = await PublishFormAsync("pickerForm");
+        var pages = await PagesAsync("picker-single");
+        await PickersAsync(Settings(theme: "bootstrap5"), Settings(multiple: true));
+        await SetAsync(pages["picker-single"], "form", form.ToString("D"));
+
+        var shown = await FormAtAsync("/picker-single/");
+        var templates = shown.QuerySelector(":scope > template[data-jfb-templates]")!;
+        var parts = ((AngleSharp.Html.Dom.IHtmlTemplateElement)templates).Content;
+        var notices = parts.QuerySelectorAll("[data-jfb-notice]");
+        var outcome = parts.QuerySelector("[data-jfb-outcome]")!;
+        var countdown = outcome.QuerySelector("[data-jfb-countdown]")!;
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(templates.GetAttribute("data-jfb-sending"), Is.EqualTo("Sending your answers"));
+            Assert.That(templates.GetAttribute("data-jfb-thanks"), Is.EqualTo("Thank you. We have received your message."));
+            Assert.That(notices.Select(notice => notice.GetAttribute("data-jfb-notice")), Is.EqualTo(new[] { "rate_limited", "server_error", "timeout" }));
+            foreach (var notice in notices)
+            {
+                Assert.That(notice.ClassList, Does.Contain("jfb-notice-error"));
+                Assert.That(notice.GetAttribute("role"), Is.EqualTo("alert"));
+                Assert.That(notice.GetAttribute("tabindex"), Is.EqualTo("-1"));
+                Assert.That(notice.QuerySelector("h2")!.Id, Is.EqualTo(notice.GetAttribute("aria-labelledby")));
+                Assert.That(notice.QuerySelector("h2")!.TextContent, Is.EqualTo("Your answers weren't sent"));
+            }
+
+            Assert.That(notices[0].QuerySelector("p")!.GetAttribute("data-jfb-seconds"), Does.Contain("{0} seconds"));
+            Assert.That(notices[0].QuerySelector("p")!.GetAttribute("data-jfb-minutes"), Does.Contain("{0} minutes"));
+            Assert.That(notices[1].TextContent, Does.Contain("Something went wrong"));
+            Assert.That(notices[2].TextContent, Does.Contain("Check your connection"));
+            Assert.That(outcome.GetAttribute("tabindex"), Is.EqualTo("-1"));
+            Assert.That(outcome.QuerySelector("[data-jfb-reference] strong")!.TextContent, Is.Empty);
+            Assert.That(countdown.GetAttribute("data-jfb-one"), Does.Contain("{0} second."));
+            Assert.That(countdown.GetAttribute("data-jfb-other"), Does.Contain("{0} seconds."));
+            Assert.That(outcome.QuerySelector("a[data-jfb-continue]")!.TextContent, Is.EqualTo("Go now"));
+            Assert.That(outcome.QuerySelector("button[type=button][data-jfb-stay]")!.TextContent, Is.EqualTo("Stay here"));
+            Assert.That(outcome.ClassName, Does.Contain("jfb-outcome"));
+        });
+    }
+
+    private Task<HttpResponseMessage> SendEntryAsync(Guid form, string body) =>
+        SendAsync(HttpMethod.Post, $"{Root}/forms/{form}/entries", request => request.Content = new StringContent(body, Encoding.UTF8, "application/json"));
 
     [Test]
     public async Task APageValueTheSettingsDoNotAllow_IsReportedOnSave_AndNeverPublished()

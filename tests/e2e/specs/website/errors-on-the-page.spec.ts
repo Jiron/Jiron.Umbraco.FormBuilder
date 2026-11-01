@@ -171,9 +171,7 @@ for (const language of LANGUAGES) {
       await form.locator(`label[for="${(await input.getAttribute('id')) ?? ''}"]`).click();
       await expect(input).toBeChecked();
     }
-    const loaded = page.waitForEvent('load');
     await form.locator('button[data-jfb-nav="submit"]').click();
-    await loaded;
     await expect(page.locator('main [data-jfb-outcome]'), 'the answers were sent').toBeVisible();
     expect(watched.errors, 'nothing wrote an error to the console').toEqual([]);
   });

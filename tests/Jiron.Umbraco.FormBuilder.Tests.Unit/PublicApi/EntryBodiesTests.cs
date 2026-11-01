@@ -228,6 +228,7 @@ public sealed class EntryBodiesTests
     [TestCase("""{"submissionId":7}""", "submissionId")]
     [TestCase("""{"submissionId":"e0000000-0000-4000-8000-000000000088","revision":1}""", "revision")]
     [TestCase("""{"submissionId":"e0000000-0000-4000-8000-000000000088","challenge":1}""", "challenge")]
+    [TestCase("""{"submissionId":"e0000000-0000-4000-8000-000000000088","placement":"token"}""", "placement")]
     [TestCase("""{"submissionId":"e0000000-0000-4000-8000-000000000088","submissionId":"e0000000-0000-4000-8000-000000000088"}""", "submissionId")]
     [TestCase("""{"submissionId":"e0000000-0000-4000-8000-000000000088"} {}""", "body")]
     [TestCase(""" "e0000000-0000-4000-8000-000000000088" """, "body")]

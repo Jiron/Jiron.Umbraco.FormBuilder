@@ -43,6 +43,7 @@ namespace Jiron.Umbraco.FormBuilder.Web.Rendering;
 /// </param>
 /// <param name="Member">The key of the member signed in, for a form that takes values from the member (ADR-0124); null otherwise.</param>
 /// <param name="Redirect">The placement's page after a send (ADR-0129), which the route token carries; null for the outcome.</param>
+/// <param name="Content">The page the form is on, whose site's settings apply to a send (ADR-0120); null outside a page.</param>
 internal sealed record FormRender(
     HttpContext HttpContext,
     CachedForm Form,
@@ -54,7 +55,8 @@ internal sealed record FormRender(
     MemberGate? Gate = null,
     string? Page = null,
     Guid? Member = null,
-    Guid? Redirect = null)
+    Guid? Redirect = null,
+    Guid? Content = null)
 {
     /// <summary>What the server prefills (ADR-0124), worked out as the form's page is built.</summary>
     public FormPrefill Prefill { get; init; } = FormPrefill.None;
@@ -82,6 +84,7 @@ internal sealed record FormRender(
 /// <param name="time">The site's clock.</param>
 /// <param name="cultures">The culture formats a calculation's and a slider's numbers are written with.</param>
 /// <param name="protection">The site's Data Protection, which Umbraco's route token for a post without JavaScript takes.</param>
+/// <param name="placements">The tokens that carry a placement's page after a send through a page's send (ADR-0120).</param>
 /// <param name="logger">Where context values that are not taken are logged.</param>
 internal sealed partial class FormModels(
     FieldTypeRegistry types,
@@ -95,6 +98,7 @@ internal sealed partial class FormModels(
     TimeProvider time,
     MergeTagCultures cultures,
     IDataProtectionProvider protection,
+    PlacementTokens placements,
     ILogger<FormModels> logger)
 {
     /// <summary>The longest context value a page may give (ADR-0088).</summary>
@@ -108,6 +112,12 @@ internal sealed partial class FormModels(
 
     /// <summary>The prefix of the hidden input that carries a consent's wording hash, before the field's alias (ADR-0015).</summary>
     public const string ConsentPrefix = "jfb-consent-";
+
+    /// <summary>The code of the notice after a send the server failed on (ADR-0022).</summary>
+    public const string ServerErrorCode = "server_error";
+
+    /// <summary>The code of the notice after a send that got no answer in time, or none at all (ADR-0022).</summary>
+    public const string TimeoutCode = "timeout";
 
     private static readonly IReadOnlyDictionary<string, IReadOnlyList<string>> NoQuery = FrozenDictionary<string, IReadOnlyList<string>>.Empty;
 
@@ -198,6 +208,40 @@ internal sealed partial class FormModels(
         Reference = outcome.Reference is { Length: > 0 } reference ? WithMarkup(words.Reference, "<strong>" + WebUtility.HtmlEncode(reference) + "</strong>") : null,
         IsPending = outcome.IsPending,
         Continue = outcome.ContinueUrl is { } url ? new OutcomeLinkModel(url, words.Continue) : null,
+    };
+
+    // What the runtime shows a send with (ADR-0120, ADR-0022): the notices just above the buttons, whose rate limit's
+    // text the runtime words as a post's (WaitNotice), and the outcome without its message or its reference's value.
+    private static FormSendingModel Sending(Root root, RenderingWords words) => new()
+    {
+        SendingText = words.Sending,
+        ThanksText = words.ThankYou,
+        Notices =
+        [
+            SendNotice(root, words, FormPostHandler.RateLimitedCode, new HtmlString("<p data-jfb-seconds=\"" + WebUtility.HtmlEncode(words.WaitSecondsText) + "\" data-jfb-minutes=\"" + WebUtility.HtmlEncode(words.WaitMinutesText) + "\"></p>")),
+            SendNotice(root, words, ServerErrorCode, Paragraph(words.ServerErrorText)),
+            SendNotice(root, words, TimeoutCode, Paragraph(words.ConnectionText)),
+        ],
+        Outcome = new OutcomeViewModel
+        {
+            Classes = root.Classes,
+            Views = root.Views,
+            Message = HtmlString.Empty,
+            Reference = WithMarkup(words.Reference, "<strong></strong>"),
+            Continue = new OutcomeLinkModel("#", words.GoNow),
+            Countdown = new OutcomeCountdownModel(words.CountdownOne, words.CountdownOther, words.StayHere),
+        },
+    };
+
+    private static NoticeViewModel SendNotice(Root root, RenderingWords words, string code, IHtmlContent text) => new()
+    {
+        Classes = root.Classes,
+        Kind = NoticeKind.Message,
+        Heading = words.NotSentHeading,
+        Text = text,
+        Code = code,
+        HeadingId = root.Id + "-notice-" + code,
+        CssClass = root.Classes.Join("jfb-notice jfb-notice-error", FormBuilderThemeSlots.Notice),
     };
 
     // The page a post moves to (ADR-0100): from the posted page, the next one or the last one before it that the rules
@@ -347,7 +391,10 @@ internal sealed partial class FormModels(
                 : null,
             honeypot: new HoneypotModel(root.Id + "-" + honeypot, honeypot, words.Honeypot),
             context: Context(render),
-            postValues: PostValues(root, current, post, render.Redirect));
+            postValues: PostValues(root, current, post, render.Redirect),
+            contentKey: render.Content,
+            placement: render.Redirect is { } placement ? placements.Issue(root.Key, placement) : null,
+            sending: Sending(root, words));
     }
 
     // The visitor texts that hold tags, each rendered as the server renders it in its place for the answers the page
@@ -952,7 +999,10 @@ internal sealed partial class FormModels(
             OutcomeViewModel? outcome = null,
             IReadOnlyList<HiddenInputModel>? context = null,
             IReadOnlyList<HiddenInputModel>? postValues = null,
-            HoneypotModel? honeypot = null) => new()
+            HoneypotModel? honeypot = null,
+            Guid? contentKey = null,
+            string? placement = null,
+            FormSendingModel? sending = null) => new()
             {
                 Key = Key,
                 Alias = Alias,
@@ -984,6 +1034,9 @@ internal sealed partial class FormModels(
                 ContextValues = context ?? [],
                 PostValues = postValues ?? [],
                 Honeypot = honeypot,
+                ContentKey = contentKey,
+                Placement = placement,
+                Sending = sending,
             };
     }
 

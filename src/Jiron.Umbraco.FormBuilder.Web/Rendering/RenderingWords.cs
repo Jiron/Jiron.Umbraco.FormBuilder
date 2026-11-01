@@ -72,6 +72,13 @@ internal sealed record RenderingWords
             SignatureTyped = "Type your full name. It counts as your signature.",
             ThankYou = "Thank you. We have received your message.",
             Continue = "Continue",
+            GoNow = "Go now",
+            StayHere = "Stay here",
+            CountdownOne = "Taking you to the next page in {0} second.",
+            CountdownOther = "Taking you to the next page in {0} seconds.",
+            Sending = "Sending your answers",
+            ConnectionText = "Check your connection, then send again. Your answers are kept.",
+            ServerErrorText = "Something went wrong on our side. Send again in a moment. Your answers are kept.",
             ChangedHeading = "This form was updated while you filled it in",
             ChangedText = "Your answers are kept.",
             ChangedConsent = "An agreement has new wording, so it is no longer ticked: read it again before you send.",
@@ -149,6 +156,13 @@ internal sealed record RenderingWords
             SignatureTyped = "Geben Sie Ihren vollst" + AUmlaut + "ndigen Namen ein. Er gilt als Ihre Unterschrift.",
             ThankYou = "Vielen Dank. Wir haben Ihre Nachricht erhalten.",
             Continue = "Weiter",
+            GoNow = "Jetzt weiter",
+            StayHere = "Hier bleiben",
+            CountdownOne = "In {0} Sekunde geht es weiter zur n" + AUmlaut + "chsten Seite.",
+            CountdownOther = "In {0} Sekunden geht es weiter zur n" + AUmlaut + "chsten Seite.",
+            Sending = "Ihre Antworten werden gesendet",
+            ConnectionText = "Pr" + UUmlaut + "fen Sie die Verbindung und senden Sie erneut. Ihre Antworten bleiben erhalten.",
+            ServerErrorText = "Bei uns ist etwas schiefgegangen. Senden Sie gleich noch einmal. Ihre Antworten bleiben erhalten.",
             ChangedHeading = "Dieses Formular wurde ge" + AUmlaut + "ndert, w" + AUmlaut + "hrend Sie es ausgef" + UUmlaut + "llt haben",
             ChangedText = "Ihre Antworten bleiben erhalten.",
             ChangedConsent = "Eine Einwilligung hat einen neuen Wortlaut und ist deshalb nicht mehr angehakt: Lesen Sie sie vor dem Senden noch einmal.",
@@ -335,6 +349,27 @@ internal sealed record RenderingWords
 
     /// <summary>The link after an outcome's message to the redirect that a page without JavaScript does not count down to.</summary>
     public required string Continue { get; init; }
+
+    /// <summary>The link after an outcome's message to the redirect the page counts down to (ADR-0022).</summary>
+    public required string GoNow { get; init; }
+
+    /// <summary>The button beside it that stops the countdown (WCAG 2.2.1).</summary>
+    public required string StayHere { get; init; }
+
+    /// <summary>The line that says when the page moves on, with one second left: {0} is the second.</summary>
+    public required string CountdownOne { get; init; }
+
+    /// <summary>The line that says when the page moves on, with more seconds left: {0} is the seconds.</summary>
+    public required string CountdownOther { get; init; }
+
+    /// <summary>What the live region says while a send is on its way (ADR-0022).</summary>
+    public required string Sending { get; init; }
+
+    /// <summary>The notice's text when a send got no answer in time, or none at all.</summary>
+    public required string ConnectionText { get; init; }
+
+    /// <summary>The notice's text when the server failed on a send.</summary>
+    public required string ServerErrorText { get; init; }
 
     /// <summary>The heading of the notice after a post that met a form published again meanwhile (ADR-0100).</summary>
     public required string ChangedHeading { get; init; }

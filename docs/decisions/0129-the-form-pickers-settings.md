@@ -64,8 +64,8 @@ Three questions follow from the settings:
   MVC's typed tag helper attributes are; `form` stays text, so `form="@reference"` still names the form by its key
   alone (ADR-0093), without the settings.
 - **After a send:** a post whose route token holds `jfbRedirect` goes, once sent, to that page's address in the
-  page's culture instead of the outcome; a page that is gone or not published leaves the outcome as it is. A post
-  with JavaScript goes the same way until the runtime sends (6.4i). The render endpoint (ADR-0104) takes no
+  page's culture instead of the outcome; a page that is gone or not published leaves the outcome as it is. A send
+  with JavaScript goes the same way, by a token of its own (6.4i, ADR-0120). The render endpoint (ADR-0104) takes no
   placement: the page's refresh of a form (6.4j) carries the theme it has and must carry the placement's token too.
 - **The Delivery API:** a single picker answers `{ key, alias, name }` and a multiple one an array of them in the
   editor's order (`null` in the place of a form that is not published or not headless), with

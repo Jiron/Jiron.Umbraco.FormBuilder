@@ -105,7 +105,7 @@ What the runtime, the headless element and site CSS may rely on, in every theme:
 
 | Element | Contract |
 | --- | --- |
-| The form | `<form class="jfb-form jfb-theme-<alias>" id="<instance>" data-jfb-form="<key>" data-jfb-revision="<n>" data-jfb-api="<public API base>" data-jfb-contract="1" lang="<culture>" dir="ltr or rtl" method="post" novalidate>`; `action` and `enctype` as ADR-0004 sets them |
+| The form | `<form class="jfb-form jfb-theme-<alias>" id="<instance>" data-jfb-form="<key>" data-jfb-revision="<n>" data-jfb-api="<public API base>" data-jfb-contract="1" lang="<culture>" dir="ltr or rtl" method="post" novalidate>`; `action` and `enctype` as ADR-0004 sets them; on a page, `data-jfb-content="<the page's key>"`, and for a placement that names a page after a send, `data-jfb-placement="<token>"` (ADR-0120) |
 | The model data | one `<script type="application/json" data-jfb-model>` per form with what the runtime needs from the projection (rules, checks, recall templates, field kinds, culture patterns, ADR-0014); data, never executed, so a CSP needs nothing for it |
 | The runtime's templates | one `<template data-jfb-templates>` per form with the error summary as the `ErrorSummary` view renders it for one empty link and an error paragraph with the error slot's classes, which the runtime copies to show errors in the theme's markup ([ADR-0113](0113-errors-on-the-page.md)); inert, so nothing in it is posted, read out or styled |
 | A page | `<section class="jfb-page" data-jfb-page="<key>">`; pages other than the current one carry `hidden` |
@@ -120,7 +120,8 @@ What the runtime, the headless element and site CSS may rely on, in every theme:
 | The error summary | `<div class="jfb-error-summary" data-jfb-summary role="alert" tabindex="-1">` with a heading and one link per error to the control's id |
 | Live messages | one `<div data-jfb-live aria-live="polite">` per form (places left, the changed form, saved drafts) |
 | Navigation | `<div class="jfb-navigation">` with `<button type="submit" name="jfb-nav" value="back\|next\|submit" data-jfb-nav="…">` |
-| The outcome | `<div class="jfb-outcome" data-jfb-outcome tabindex="-1">`, which receives focus |
+| What a send shows | in the runtime's templates (ADR-0120): `data-jfb-sending` and `data-jfb-thanks` on the template, the `Notice` view for each of `rate_limited`, `server_error` and `timeout`, the rate limit's `<p data-jfb-seconds data-jfb-minutes>`, and the `Outcome` view without its message; a view that leaves them out has its form posted as without JavaScript |
+| The outcome | `<div class="jfb-outcome" data-jfb-outcome tabindex="-1">`, which receives focus; its reference `data-jfb-reference`, and in the runtime's templates `<p data-jfb-countdown data-jfb-one data-jfb-other>`, the link `data-jfb-continue` and the button `data-jfb-stay` |
 | The honeypot | `<div class="jfb-hp" aria-hidden="true">` with its label and input (ADR-0012) |
 | A consent field | its checkbox, plus `<input type="hidden" name="jfb-consent-<alias>" value="<hash>">` holding the `jfbConsentText` hash (SHA-256 of the culture and the wording shown), which is the same for every visitor (ADR-0009) |
 | A members-only form | `<input type="hidden" name="jfb-challenge" value="…">` with the member-bound challenge (ADR-0012); an override must keep it |

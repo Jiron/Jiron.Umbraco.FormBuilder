@@ -2138,7 +2138,8 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - the error summary with focus management, and `aria-live` announcements;
     - a submission id that does not depend on `crypto.randomUUID()`, which exists only in secure contexts (ADR-0004);
     - the send states of ADR-0022's amendment: the busy primary button (`data-jfb-busy`, `aria-disabled`, "Sending your answers" in the live region), the error notice just above the buttons that takes the focus after a refused or failed send (`rate_limited`, `server_error`, `timeout`) with every answer kept, and the redirect notice with "Go now" and "Stay here";
-    - the outcome in place of the form (the challenge, and `receipt` for a send whose answer never came, come with 7.1);
+    - the outcome in place of the form, with `receipt` for an id that already holds an entry with other answers, so a fallback post never stores a second one (added in the step's review, ADR-0120);
+    - the challenge asked for as the page wakes, renewed once on a `401`, and the honeypot's value in the body (moved here from 7.1e: since ADR-0138 no send passes without a challenge, WORKLOG 2026-11-01);
     - `jfb:submitting`, `jfb:submitted` and `jfb:error` (§4.9);
     - the page after a send of the form's placement (the picker's `redirect`, ADR-0129): today it reaches the pipeline only in the post's encrypted route token, which the entries endpoint's body does not carry, so a send with JavaScript carries it too, protected as the token protects it, and goes there (found in 6.8's review).
   - **Design skills:** load `design-taste-frontend`, `impeccable` and `emil-design-eng` before building the send states (ADR-0019, ADR-0020).
@@ -2390,7 +2391,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
 - [ ] **7.1e The challenge in the runtime** (7.1 split in five, WORKLOG 2026-11-01)
   - **Resumes (2026-11-01):** the owner raised the budget to 60 KB (ADR-0146); this step resumes at 7.4i, with every check below.
   - **Blocked (2026-11-01):** the runtime stands 2 bytes below the 40 KB of §4.12, a budget only the owner can change, and this part adds to it and builds on the sending of 6.4i (ADR-0120, `docs/OWNER-TODO.md`). The server's parts are 7.1a to 7.1d.
-  - **Signals:** the `challenge` endpoint's use by the runtime for JS posts, and as the first part of every upload; the honeypot's value posted as the body's `honeypot` (ADR-0139).
+  - **Signals:** the `challenge` endpoint's use by the runtime as the first part of every upload (its use for JS posts, the honeypot's value and the wait in a `429`'s notice moved to 6.4i, whose sends need them, ADR-0120; this step's checks stay as they are).
   - **What cached markup cannot carry** (§4.6): the runtime then shows the places ("3 places left", "full") and evaluates member conditions with them.
   - Done when:
     - a `429` keeps the visitor's answers and says when to send again, in the runtime (Playwright);

@@ -61,6 +61,15 @@ public sealed class FormViewModel
     /// <summary>The public API's base below the path base (<c>data-jfb-api</c>).</summary>
     public required string ApiBase { get; init; }
 
+    /// <summary>The page the form is on, whose site's settings apply to a send (<c>data-jfb-content</c>); null outside a page.</summary>
+    public Guid? ContentKey { get; init; }
+
+    /// <summary>
+    /// The placement's page after a send, in a token only the server can write and read (<c>data-jfb-placement</c>,
+    /// ADR-0129, ADR-0120), which a send with JavaScript carries as a post carries the route token; null for the outcome.
+    /// </summary>
+    public string? Placement { get; init; }
+
     /// <summary>The model data: the form endpoint's answer as JSON, written so no text in it can end its element.</summary>
     public required IHtmlContent ModelData { get; init; }
 
@@ -78,6 +87,12 @@ public sealed class FormViewModel
     /// the form view renders through the summary's own view into its templates; null unless the form shows itself.
     /// </summary>
     public ErrorSummaryViewModel? ErrorSummaryTemplate { get; init; }
+
+    /// <summary>
+    /// What the runtime shows a send with (ADR-0120), which the form view writes into its templates; null unless the form
+    /// shows itself. A view that leaves it out has its form posted as without JavaScript.
+    /// </summary>
+    public FormSendingModel? Sending { get; init; }
 
     /// <summary>
     /// A copy of the current page's Next or Send button at the form's start, hidden from sight and from screen readers,

@@ -21,7 +21,8 @@ namespace Jiron.Umbraco.FormBuilder.Web.PublicApi;
 /// <param name="submissions">The submission pipeline.</param>
 /// <param name="tokens">The upload tokens, which the values of fields storing files post.</param>
 /// <param name="challenges">The challenges, which every request but a server key's posts (ADR-0138).</param>
-internal sealed class EntryRequests(FormSubmissions submissions, UploadTokens tokens, ChallengeTokens challenges)
+/// <param name="placements">The placements' tokens, which a page's send carries (ADR-0120).</param>
+internal sealed class EntryRequests(FormSubmissions submissions, UploadTokens tokens, ChallengeTokens challenges, PlacementTokens placements)
 {
     /// <summary>The most bytes a submission's body holds, and a page's.</summary>
     public const int MaxBodyBytes = 1_048_576;
@@ -50,7 +51,7 @@ internal sealed class EntryRequests(FormSubmissions submissions, UploadTokens to
         }
 
         var invalid = new List<string>();
-        return EntryBodies.Read(body.Bytes, formKey, invalid) is { } submission
+        return EntryBodies.Read(body.Bytes, formKey, invalid, placements) is { } submission
             ? Answer(await submissions.SubmitAsync(submission with { Tokens = tokens, Challenges = challenges, Address = http.Connection.RemoteIpAddress, Member = await MemberAsync(http), ServerKey = ServerKeyRequest.NameOf(http) }, cancellationToken))
             : FormBuilderPublicProblems.InvalidRequest([.. invalid]);
     }
@@ -89,8 +90,8 @@ internal sealed class EntryRequests(FormSubmissions submissions, UploadTokens to
         }
 
         var invalid = new List<string>();
-        return EntryBodies.ReadReceipt(body.Bytes, invalid) is ({ } submissionId, var challenge)
-            ? Answer(await submissions.ReceiptAsync(formKey, submissionId, ServerKeyRequest.NameOf(http), challenge, challenges, cancellationToken))
+        return EntryBodies.ReadReceipt(body.Bytes, invalid, placements, formKey) is ({ } submissionId, var challenge, var placement)
+            ? Answer(await submissions.ReceiptAsync(formKey, submissionId, ServerKeyRequest.NameOf(http), challenge, challenges, placement, cancellationToken))
             : FormBuilderPublicProblems.InvalidRequest([.. invalid]);
     }
 
@@ -219,6 +220,12 @@ internal sealed record EntryRequestModel
     /// <summary>The visitor's id of this submission, a UUID that makes a retry safe; the server makes one when it is left out.</summary>
     public Guid? SubmissionId { get; init; }
 
+    /// <summary>
+    /// The placement's page after a send, as the page gave it in <c>data-jfb-placement</c> (ADR-0129, ADR-0120); anything
+    /// the site did not write for this form is refused. An outcome goes to that page once the entry is stored.
+    /// </summary>
+    public string? Placement { get; init; }
+
     /// <summary>The form's public revision the page showed, as the form endpoint gives it.</summary>
     public required int Revision { get; init; }
 
@@ -307,6 +314,9 @@ internal sealed record ReceiptRequestModel
 
     /// <summary>The challenge the submission was sent with, which counts here for 24 hours past its expiry; a request with the server key that made the entry needs none.</summary>
     public string? Challenge { get; init; }
+
+    /// <summary>The placement's page after a send, as the submission carried it (ADR-0120), which no entry keeps.</summary>
+    public string? Placement { get; init; }
 }
 
 /// <summary>A stored entry's receipt and the outcome to show (ADR-0088), for a new submission and its retries alike.</summary>

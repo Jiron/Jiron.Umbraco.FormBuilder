@@ -1830,6 +1830,10 @@
             "format": "uuid",
             "nullable": true
           },
+          "placement": {
+            "type": "string",
+            "nullable": true
+          },
           "revision": {
             "type": "integer",
             "format": "int32"
@@ -2228,6 +2232,10 @@
             "format": "uuid"
           },
           "challenge": {
+            "type": "string",
+            "nullable": true
+          },
+          "placement": {
             "type": "string",
             "nullable": true
           }

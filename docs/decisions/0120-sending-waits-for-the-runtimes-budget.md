@@ -69,9 +69,8 @@ feature to **41.38 KB gzip** (1.49 KB more, about 4.3 KB of minified code), 1.38
   own 30) show the notice above the buttons, which takes the focus; every answer stays and the id is kept for the
   retry. Any other answer, and a form that posts files, goes the way without JavaScript, which the server answers in
   full.
-- Still to build: the server's templates (the theme's notice for each code, its outcome with `data-jfb-reference`,
-  `data-jfb-countdown` and "Stay here", the words "Sending your answers" and the page's thank-you), `data-jfb-content`
-  on the form, the tests, axe, the look in a real browser and the design skills' pass.
+- Still to build then: the server's templates, `data-jfb-content`, the tests, axe, the look in a real browser and the
+  design skills' pass; built in 6.4i, below.
 
 ## Consequences
 
@@ -82,3 +81,47 @@ feature to **41.38 KB gzip** (1.49 KB more, about 4.3 KB of minified code), 1.38
   2.5: about 18 KB, so about 58 KB with everything. The core stays near 1 KB of its 16 KB, and a page loads only the
   features its form uses.
 - **Revisit** when the owner answers, and at each phase end, where every blocked step is retried.
+
+## Sending as it resumed (2026-11-01, step 6.4i)
+
+The owner raised the budget (ADR-0146), and the branch's work came back on `main`. What the steps
+since then changed, and what the step finished:
+
+- **The challenge came forward from 7.1e.** Since ADR-0138 every request but a server key's and a post without
+  JavaScript's needs a challenge, so a send without one could never pass: the page asks for one as it wakes, on the
+  visitor's first touch, so the form's fill time counts from there; it asks again at the send when that failed, and on
+  a `401` it renews with the one it holds, which carries the first time over, and sends once more, with the same
+  submission id. A second `401` goes the way without JavaScript. The honeypot's value goes as the body's `honeypot`,
+  and a `429` says when to send again from its `Retry-After`. 7.1e keeps what stays its own: a challenge for each
+  upload, the places and the member's values from the challenge's answer, the receipt for a send whose answer never
+  came, and its checks.
+- **The placement's page** (ADR-0129) reaches the entries endpoint in a token of its own, not in Umbraco's route token:
+  `data-jfb-placement`, written only for a placed form that names a page, encrypted and signed through Data Protection
+  (`PlacementTokens`, purpose `Jiron.FormBuilder.Placement.v1`) with the form's key, so a visitor can neither name another
+  page nor bring one from another form's placement. The body's `placement` takes it. Anything else, an empty text among
+  them, answers `400 invalid_request` naming `placement`, and the page's post then goes by the route token, which is
+  intact. Umbraco's route token was the other way: it names no form, and the endpoint would have had to take a surface
+  controller's token.
+- **The server's part:** the form's templates hold what a send shows, in the theme's views and the page's language
+  (`FormViewModel.Sending`): the notices of `rate_limited`, `server_error` and `timeout`, the outcome without its
+  message, with `data-jfb-reference`, `data-jfb-countdown`, "Go now" and "Stay here", and the words as attributes of the
+  template. `data-jfb-content` names the page. The headless element writes the same (ADR-0128).
+- **A site's own views keep working.** A form view that writes none of this has no `data-jfb-sending` on its templates,
+  and its form posts as without JavaScript; a theme's notice view that leaves a code out does the same for that send.
+  So the markup contract stays at version 1.
+- **An entry is never made twice.** A send whose answer was lost leaves an entry the page does not know of. Its retry with
+  the same answers gets that entry's answer; with others, or past the challenge's life, it gets `409 duplicate_submission`,
+  which must not go on to a post, as a post carries no id and would store a second entry. The page asks `receipt` with
+  each challenge it sent with and shows that outcome, or its thank-you when none comes. A retry and a receipt carry the
+  placement too, which no entry keeps. No other button leaves the page while a check or a send is on its way.
+- **A form that stores files does not send through the page** until 6.4m, by its fields' kind as well as its encoding,
+  since the element writes none and its files would be lost without a word.
+- **A form with no address to post to** (the element, ADR-0128) has nothing to fall back on, so what a form with one posts
+  shows the notice of a failed send.
+- **A challenge made at the send counts as filled in no time** (ADR-0139). So when the first asking failed and this one
+  succeeds, a form that can post goes that way, where no time counts; only the element sends with it.
+- **The countdown** runs for at least ten seconds, whatever shorter delay the outcome names: a shorter one leaves a visitor
+  on a keyboard or a screen reader no time to reach "Stay here" (WCAG 2.2.1). Focus on the outcome reads its line once, and
+  the line changes without being said again. A message with a redirect and no delay waits at "Go now", as after a post.
+- **The ring** turns in both themes that draw a button; the two steps it turns by moved to the base rules, and an
+  unstyled form says "busy" by its cursor and the live region.

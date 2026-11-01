@@ -142,6 +142,13 @@ export type FileControl = {
   kept: KeptFileModel[];
 };
 
+export type FormSendingModel = {
+  sendingText: string;
+  thanksText: string;
+  notices: NoticeViewModel[];
+  outcome: OutcomeViewModel;
+};
+
 export type FormViewModel = {
   classes: ThemeClassesModel;
   key: string;
@@ -153,11 +160,14 @@ export type FormViewModel = {
   cssClass: string;
   display: "form" | "notice" | "outcome";
   apiBase: string;
+  contentKey?: string;
+  placement?: string;
   modelData: string;
   pages: PageViewModel[];
   progress?: ProgressViewModel;
   errorSummary?: ErrorSummaryViewModel;
   errorSummaryTemplate?: ErrorSummaryViewModel;
+  sending?: FormSendingModel;
   defaultButton?: NavigationButtonModel;
   navigation?: NavigationViewModel;
   requiredNote?: string;
@@ -286,6 +296,12 @@ export type OutcomeCopyModel = {
   again: OutcomeLinkModel;
 };
 
+export type OutcomeCountdownModel = {
+  one: string;
+  other: string;
+  stay: string;
+};
+
 export type OutcomeLinkModel = {
   url: string;
   text: string;
@@ -296,6 +312,7 @@ export type OutcomeViewModel = {
   reference?: string;
   isPending: boolean;
   continue?: OutcomeLinkModel;
+  countdown?: OutcomeCountdownModel;
   copy?: OutcomeCopyModel;
 };
 

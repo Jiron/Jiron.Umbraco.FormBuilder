@@ -170,6 +170,8 @@ when no length is declared, ADR-0084), time limit 30 seconds. The body:
   characters; names the form does not list are left out, never stored or rendered, since every value of a public post
   is the visitor's to set.
 - `challenge` and `captchaToken` are strings, read and not verified until 7.1.
+- `placement` (added in 6.4i, ADR-0120) is the token a placed form's markup carries in `data-jfb-placement`; an entry
+  whose token names a page goes there. Anything this site did not write for this form answers `400 invalid_request`.
 - An unknown member, a value of another shape, a body that is not JSON, an escaped lone surrogate, more than 64
   levels, or a `submissionId` or `contentKey` that is not a UUID answers `400 invalid_request` with the paths.
 - The answer is `200 {receipt: {submissionId, reference, submittedUtc}, outcome: {kind, html?, url?, delaySeconds?,

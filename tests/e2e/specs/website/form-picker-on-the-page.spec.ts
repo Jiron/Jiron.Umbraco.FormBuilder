@@ -45,7 +45,11 @@ async function axeOnThePicker(page: Page, what: string): Promise<void> {
  * is not carried to it, where it would name the newsletter form in the footer (ADR-0136).
  */
 async function sendToTheThanksPage(page: Page, form: Locator): Promise<void> {
+  const answered = page.waitForResponse((response) => response.url().includes('/entries'));
   await form.locator('button[data-jfb-nav="submit"]').click();
+  const answer = await answered;
+  expect(answer.status(), 'sent with JavaScript').toBe(200);
+  expect((answer.request().postDataJSON() as { placement?: string }).placement, "the picker's page").toBeTruthy();
   await expect(page).toHaveURL(new RegExp(`${thanksPath}#?$`));
   await expect(page.locator('main h1')).toHaveText(thanks.heading);
   expect(await page.evaluate(() => window.scrollY), 'the thanks page at its top').toBe(0);
@@ -135,6 +139,30 @@ test("an editor picks a form in a block, publishes, and a visitor's send goes to
   } finally {
     await visitor.close();
   }
+});
+
+test("a send with JavaScript carries the picker's page in its token, and a value a visitor changed is refused", async ({
+  page,
+}) => {
+  await page.goto(volunteerPath);
+  await fillForm(formOf(page), { name: 'Ada Lovelace', email: 'ada@visitor.jfb.test', role: 'reading' });
+  await press(formOf(page), 'next');
+  const form = formOf(page);
+  await fillForm(form, { days: ['sat'], privacy: true });
+  const token = await form.getAttribute('data-jfb-placement');
+  expect(token, 'the form carries it').toBeTruthy();
+  expect(token, 'that a visitor cannot read').not.toContain(thanks.name);
+
+  // A changed token is refused, nothing is stored, and the post that follows goes by the route token, which is intact.
+  await form.evaluate((element) => {
+    const given = element.getAttribute('data-jfb-placement') ?? '';
+    element.setAttribute('data-jfb-placement', (given.endsWith('A') ? 'B' : 'A') + given.slice(1));
+  });
+  const refused = page.waitForResponse((response) => response.url().includes('/entries'));
+  await form.locator('button[data-jfb-nav="submit"]').click();
+  const answer = await refused;
+  expect(answer.status(), 'refused').toBe(400);
+  await expect(page).toHaveURL(new RegExp(`${thanksPath}#?$`));
 });
 
 test("the form block's picker settings name the thanks page, and axe finds nothing in them", async ({

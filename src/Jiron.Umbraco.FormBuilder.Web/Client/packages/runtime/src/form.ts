@@ -6,7 +6,8 @@
  * 6.4g renders the visitor texts that recall answers as the visitor types, with the merge tags loaded first as a
  * chunk of their own for a form that has such a text (ADR-0115), and 6.4h fills in the default values that hold merge
  * tags before the rules first decide, from a chunk of its own that a form loads only when the server marked such a
- * field (ADR-0118).
+ * field (ADR-0118); 6.4i sends a send that passes to the entries endpoint and shows its outcome in the form's place
+ * (ADR-0120).
  */
 import type { Context } from '@jfb/logic';
 import { loadEngine, type PageEngine } from './engine';
@@ -14,6 +15,7 @@ import { pageErrorsOf } from './errors';
 import type { FormModel } from './model';
 import { followSliders } from './outputs';
 import { readPage, type PageReading } from './page';
+import { senderOf } from './send';
 import type { ShownError } from './messages';
 import { contextOf, rulesOf, type PageRules } from './rules';
 import { checkPage, type CheckScope } from './validation';
@@ -65,7 +67,7 @@ export async function attach(
   fill?.(form, model, contextOf(model, readPage(form, model), Date.now(), form.ownerDocument.URL));
   const rules = rulesOf(form, model, engine);
   followSliders(form, model);
-  const errors = pageErrorsOf(form, model, engine);
+  const errors = pageErrorsOf(form, model, engine, Date.now, senderOf(form, model));
   return {
     form,
     model,

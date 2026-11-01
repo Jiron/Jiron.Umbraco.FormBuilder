@@ -181,8 +181,36 @@ public sealed class OutcomeViewModel
     /// </summary>
     public OutcomeLinkModel? Continue { get; init; }
 
+    /// <summary>
+    /// What the runtime counts down to the redirect with, in the outcome it shows after a send (ADR-0120); null in the
+    /// outcome after a post, which waits for the visitor.
+    /// </summary>
+    public OutcomeCountdownModel? Countdown { get; init; }
+
     /// <summary>The copy of the answers below the message, for a message that offers it (ADR-0123); null otherwise.</summary>
     public OutcomeCopyModel? Copy { get; init; }
+}
+
+/// <summary>The line that says when the page moves on, and the button that stops it (ADR-0022, WCAG 2.2.1).</summary>
+/// <param name="One">The line with one second left, {0} the second (<c>data-jfb-one</c>).</param>
+/// <param name="Other">The line with more seconds left, {0} the seconds (<c>data-jfb-other</c>).</param>
+/// <param name="Stay">The button's text, "Stay here".</param>
+public sealed record OutcomeCountdownModel(string One, string Other, string Stay);
+
+/// <summary>What the runtime shows a send with (ADR-0120): the form view writes it into its templates, which stay inert.</summary>
+public sealed class FormSendingModel
+{
+    /// <summary>What the live region says while a send is on its way (<c>data-jfb-sending</c>).</summary>
+    public required string SendingText { get; init; }
+
+    /// <summary>The message of an entry whose form has none of its own (<c>data-jfb-thanks</c>).</summary>
+    public required string ThanksText { get; init; }
+
+    /// <summary>The notices just above the buttons, one per code of a send that did not go through (ADR-0022).</summary>
+    public required IReadOnlyList<NoticeViewModel> Notices { get; init; }
+
+    /// <summary>The outcome without its message, which the runtime fills in and puts in the form's place.</summary>
+    public required OutcomeViewModel Outcome { get; init; }
 }
 
 /// <summary>

@@ -183,12 +183,13 @@ internal sealed class SubmissionEntries(
     /// </summary>
     /// <param name="entry">The entry.</param>
     /// <param name="form">The form as the site serves it now, whose name and alias the outcome renders with.</param>
+    /// <param name="placement">The page the retry's placement names (ADR-0129), which no entry keeps, or null.</param>
     /// <param name="cancellationToken">Cancels the reads and the rendering.</param>
-    public async Task<SubmittedEntry> ReplayAsync(StoredEntry entry, PublishedForm form, CancellationToken cancellationToken = default)
+    public async Task<SubmittedEntry> ReplayAsync(StoredEntry entry, PublishedForm form, Guid? placement = null, CancellationToken cancellationToken = default)
     {
         var (scope, timeline) = await ReadAsync(entry, form, cancellationToken);
         var receipt = await ReceiptAsync(entry, scope.Form, scope.Site, cancellationToken);
-        return new SubmittedEntry(entry, receipt, await outcomes.RenderAsync(Outcome(timeline), scope, cancellationToken: cancellationToken));
+        return new SubmittedEntry(entry, receipt, await outcomes.RenderAsync(Outcome(timeline), scope, placement, cancellationToken));
     }
 
     /// <summary>

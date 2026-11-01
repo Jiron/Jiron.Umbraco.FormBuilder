@@ -543,6 +543,33 @@
       ],
       "additionalProperties": false
     },
+    "FormSendingModel": {
+      "type": "object",
+      "properties": {
+        "sendingText": {
+          "type": "string"
+        },
+        "thanksText": {
+          "type": "string"
+        },
+        "notices": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/NoticeViewModel"
+          }
+        },
+        "outcome": {
+          "$ref": "#/$defs/OutcomeViewModel"
+        }
+      },
+      "required": [
+        "sendingText",
+        "thanksText",
+        "notices",
+        "outcome"
+      ],
+      "additionalProperties": false
+    },
     "FormViewModel": {
       "type": "object",
       "properties": {
@@ -581,6 +608,13 @@
         "apiBase": {
           "type": "string"
         },
+        "contentKey": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "placement": {
+          "type": "string"
+        },
         "modelData": {
           "type": "string"
         },
@@ -598,6 +632,9 @@
         },
         "errorSummaryTemplate": {
           "$ref": "#/$defs/ErrorSummaryViewModel"
+        },
+        "sending": {
+          "$ref": "#/$defs/FormSendingModel"
         },
         "defaultButton": {
           "$ref": "#/$defs/NavigationButtonModel"
@@ -1063,6 +1100,26 @@
       ],
       "additionalProperties": false
     },
+    "OutcomeCountdownModel": {
+      "type": "object",
+      "properties": {
+        "one": {
+          "type": "string"
+        },
+        "other": {
+          "type": "string"
+        },
+        "stay": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "one",
+        "other",
+        "stay"
+      ],
+      "additionalProperties": false
+    },
     "OutcomeLinkModel": {
       "type": "object",
       "properties": {
@@ -1093,6 +1150,9 @@
         },
         "continue": {
           "$ref": "#/$defs/OutcomeLinkModel"
+        },
+        "countdown": {
+          "$ref": "#/$defs/OutcomeCountdownModel"
         },
         "copy": {
           "$ref": "#/$defs/OutcomeCopyModel"

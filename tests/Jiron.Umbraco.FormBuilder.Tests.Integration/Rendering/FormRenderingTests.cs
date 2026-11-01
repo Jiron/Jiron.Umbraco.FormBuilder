@@ -42,6 +42,7 @@ public sealed class FormRenderingTests : RenderingTestBase
                 ["data-jfb-form"] = key.ToString("D"),
                 ["data-jfb-revision"] = "1",
                 ["data-jfb-api"] = "/jfb/api/v1",
+                ["data-jfb-content"] = pages[page].ToString("D"),
                 ["data-jfb-contract"] = "1",
                 ["lang"] = "en-US",
                 ["dir"] = "ltr",

@@ -77,7 +77,7 @@ Option 3, 3, 3, 2 and 2.
   a microtask while any error shows; a message that changes waits for the visitor to leave the field.
 - **A refused send or Next** (`jfb-nav` `submit` or `next`, the hidden default button too) shows every error of its
   scope, the summary, and fires `jfb:invalid`. A passing check lets the post go on as without JavaScript, through
-  `requestSubmit` with the button pressed, until 6.4i sends it; a second press while a check runs does nothing; and when
+  `requestSubmit` with the button pressed, until 6.4i, which sends it (ADR-0120); a second press while a check runs does nothing; and when
   the words cannot load, the post goes on and the server checks it.
 - **A send whose errors lie on another page** of a form the server pages goes on, and the server shows the first page
   that holds one, until 6.5.

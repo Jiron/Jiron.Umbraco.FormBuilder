@@ -41,8 +41,9 @@ internal static class EntryBodies
     /// <param name="body">The body's bytes.</param>
     /// <param name="form">The form's key, from the route.</param>
     /// <param name="invalid">Receives where the body cannot be read.</param>
-    public static SubmissionRequest? Read(byte[] body, Guid form, List<string> invalid) =>
-        Submission(body, form, page: false, invalid) is ({ } request, _) ? request : null;
+    /// <param name="placements">Reads the <c>placement</c> a page's send carries (ADR-0120); without them, that member is invalid.</param>
+    public static SubmissionRequest? Read(byte[] body, Guid form, List<string> invalid, PlacementTokens? placements = null) =>
+        Submission(body, form, page: false, invalid, placements) is ({ } request, _) ? request : null;
 
     /// <summary>
     /// The answers a page's body holds for a form, and the page's key (ADR-0089): a submission's members with
@@ -56,9 +57,11 @@ internal static class EntryBodies
         Submission(body, form, page: true, invalid) is ({ } request, { } page) ? (request, page) : null;
 
     /// <summary>The submission id a receipt's body names (ADR-0089), or null with where the body cannot be read.</summary>
-    /// <param name="body">The body's bytes: <c>submissionId</c>, and the optional <c>challenge</c>.</param>
+    /// <param name="body">The body's bytes: <c>submissionId</c>, and the optional <c>challenge</c> and <c>placement</c>.</param>
     /// <param name="invalid">Receives where the body cannot be read.</param>
-    public static (Guid? SubmissionId, string? Challenge) ReadReceipt(byte[] body, List<string> invalid)
+    /// <param name="placements">Reads the <c>placement</c> a page's send carries (ADR-0120); without them, that member is invalid.</param>
+    /// <param name="form">The form's key, from the route, which a placement is for.</param>
+    public static (Guid? SubmissionId, string? Challenge, Guid? Placement) ReadReceipt(byte[] body, List<string> invalid, PlacementTokens? placements = null, Guid form = default)
     {
         ArgumentNullException.ThrowIfNull(body);
         ArgumentNullException.ThrowIfNull(invalid);
@@ -70,10 +73,14 @@ internal static class EntryBodies
 
         Guid? submissionId = null;
         string? challenge = null;
+        Guid? placement = null;
         foreach (var (name, value) in Members(document.RootElement, string.Empty, invalid))
         {
             switch (name)
             {
+                case "placement" when placements is not null:
+                    placement = Placement(value, form, placements, invalid);
+                    break;
                 case "submissionId":
                     submissionId = Key(value, name, invalid);
                     break;
@@ -91,7 +98,7 @@ internal static class EntryBodies
             Add(invalid, "submissionId");
         }
 
-        return invalid.Count > 0 ? default : (submissionId, challenge);
+        return invalid.Count > 0 ? default : (submissionId, challenge, placement);
     }
 
     /// <summary>The earlier challenge a request for a new one names and the page it is for, each or null; any other member is invalid.</summary>
@@ -129,12 +136,12 @@ internal static class EntryBodies
     }
 
     // A submission's body, or a page's with the page's key.
-    private static (SubmissionRequest? Request, Guid? Page) Submission(byte[] body, Guid form, bool page, List<string> invalid)
+    private static (SubmissionRequest? Request, Guid? Page) Submission(byte[] body, Guid form, bool page, List<string> invalid, PlacementTokens? placements = null)
     {
         ArgumentNullException.ThrowIfNull(body);
         ArgumentNullException.ThrowIfNull(invalid);
         using var document = Parse(body, invalid);
-        return document is null ? default : Read(document.RootElement, form, page, invalid);
+        return document is null ? default : Read(document.RootElement, form, page, invalid, placements);
     }
 
     // The body as a JSON object, or null with where it goes wrong: bytes that are not UTF-8, text that is not JSON or
@@ -168,7 +175,7 @@ internal static class EntryBodies
         return null;
     }
 
-    private static (SubmissionRequest? Request, Guid? Page) Read(JsonElement root, Guid form, bool page, List<string> invalid)
+    private static (SubmissionRequest? Request, Guid? Page) Read(JsonElement root, Guid form, bool page, List<string> invalid, PlacementTokens? placements)
     {
         int? revision = null;
         Guid? submissionId = null;
@@ -182,6 +189,7 @@ internal static class EntryBodies
         string? honeypot = null;
         string? proof = null;
         string? captchaToken = null;
+        Guid? redirect = null;
         foreach (var (name, value) in Members(root, string.Empty, invalid))
         {
             switch (name)
@@ -227,6 +235,10 @@ internal static class EntryBodies
                 case "proofOfWork" when !page:
                     proof = Text(value, name, invalid, MaxProofLength);
                     break;
+                case "placement" when placements is not null:
+                    // A page's check is read without them, so its body names no placement.
+                    redirect = Placement(value, form, placements, invalid);
+                    break;
                 default:
                     Add(invalid, name);
                     break;
@@ -258,7 +270,25 @@ internal static class EntryBodies
             Honeypot = honeypot,
             ProofOfWork = proof,
             CaptchaToken = captchaToken,
+            Redirect = redirect,
         }, pageKey);
+    }
+
+    // The page a placement's token names for the form, or null with its place named; null itself is none.
+    private static Guid? Placement(JsonElement value, Guid form, PlacementTokens placements, List<string> invalid)
+    {
+        if (value.ValueKind == JsonValueKind.Null)
+        {
+            return null;
+        }
+
+        var page = placements.Read(Text(value, "placement", invalid, PlacementTokens.MaxLength), form);
+        if (page is null)
+        {
+            Add(invalid, "placement");
+        }
+
+        return page;
     }
 
     // The members of an object, each name once; a name with a lone surrogate, or one given twice, is named once.

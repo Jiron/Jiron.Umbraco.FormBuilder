@@ -186,3 +186,25 @@
     break-after: avoid;
   }
 }
+
+/* What takes the focus after a send stands clear of the edge of the screen it scrolls to. */
+.jfb-form :is(.jfb-outcome, .jfb-notice, .jfb-error-summary) {
+  scroll-margin-block: 1rem;
+}
+
+/* A form on its way: the primary button says so in any theme, and a theme's ring turns by the two steps below. */
+.jfb-form [data-jfb-busy] {
+  cursor: progress;
+}
+
+@keyframes jfb-turn {
+  to {
+    rotate: 1turn;
+  }
+}
+
+@keyframes jfb-pulse {
+  to {
+    opacity: 0.4;
+  }
+}

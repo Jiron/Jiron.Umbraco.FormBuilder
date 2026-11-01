@@ -52,8 +52,8 @@ sender write.
 
 ## Consequences
 
-- Every request but a server key's and a post without JavaScript's needs a challenge from now on. The website runtime does
-  not send yet (ADR-0120), so nothing on a visitor's page changes until 7.1e.
+- Every request but a server key's and a post without JavaScript's needs a challenge from now on. The website runtime
+  asks for one as it wakes, and sends it (6.4i, ADR-0120).
 - A headless site's browser code must ask for a challenge first; a headless server signs with its key.
 - Fetching a challenge reads the entries' counts when the form has options with places, which the `challenge` policy
   limits.

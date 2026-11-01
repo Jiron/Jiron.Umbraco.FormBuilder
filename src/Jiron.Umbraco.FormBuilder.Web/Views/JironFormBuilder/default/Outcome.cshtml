@@ -1,17 +1,25 @@
 @* jfb-view: Outcome 1 *@
 @model Jiron.Umbraco.FormBuilder.Web.Rendering.Models.OutcomeViewModel
 @using Jiron.Umbraco.FormBuilder.Web.Rendering
-@* A message with a redirect gives its link here; the runtime counts down to it, a page without JavaScript waits for the visitor. *@
+@* A message with a redirect gives its link here: after a post it waits for the visitor; in the form's templates it has the countdown, which the runtime runs after a send, and "Stay here" (ADR-0120). *@
 <div class="@Model.Classes.Outcome" data-jfb-outcome @FormBuilderHtml.Flag("data-jfb-pending", Model.IsPending) tabindex="-1">
     @Model.Message
     @if (Model.Reference is not null)
     {
-        <p class="jfb-reference">@Model.Reference</p>
+        <p class="jfb-reference" data-jfb-reference>@Model.Reference</p>
+    }
+    @if (Model.Countdown is { } countdown)
+    {
+        <p data-jfb-countdown data-jfb-one="@countdown.One" data-jfb-other="@countdown.Other"></p>
     }
     @if (Model.Continue is { } next)
     {
         <div class="@Model.Classes.Navigation">
             <a class="@Model.Classes.Button" href="@next.Url" data-jfb-continue>@next.Text</a>
+            @if (Model.Countdown is { } stay)
+            {
+                <button type="button" class="@Model.Classes.ButtonLink" data-jfb-stay>@stay.Stay</button>
+            }
         </div>
     }
 </div>

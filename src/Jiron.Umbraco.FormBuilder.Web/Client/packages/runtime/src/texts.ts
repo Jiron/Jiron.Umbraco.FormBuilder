@@ -5,6 +5,7 @@
  * attribute it writes. An element is written only where its text differs, so the page's own observers see only real
  * changes.
  */
+import { parseSanitised } from './html';
 import type { FormModel } from './model';
 
 /** Shows the texts the renderer gave, by `<owner> <name>`, on the elements that show them. */
@@ -59,10 +60,7 @@ const textsOf = (node: Node): string =>
  * which no template renders, is left as the page has it.
  */
 function writeHtml(element: HTMLElement, markup: string): void {
-  const parsed = element.ownerDocument.createElement('template');
-  // eslint-disable-next-line no-restricted-properties -- parsed inert; none of its nodes enters the page (ADR-0115)
-  parsed.innerHTML = markup;
-  const given = parsed.content;
+  const given = parseSanitised(element.ownerDocument, markup);
   if (skeleton(element) !== skeleton(given)) return;
   const theirs = [given, ...given.querySelectorAll(':not(br)')];
   [element, ...element.querySelectorAll(':not(br)')].forEach((own, at) => {
