@@ -74,7 +74,7 @@ const BUTTONS =
   '<button type="submit" name="jfb-nav" value="submit" id="send">Send</button></div>';
 
 /** A one-page contact form as the views write it, with its templates, its note, its live region. */
-function contact(model: FormModel, fields: string, before = '') {
+function contact(model: FormModel, fields: string, before = '', beforeWaking: () => void = () => undefined) {
   document.body.innerHTML =
     `<form id="jfb-1" class="jfb-form" data-jfb-form="f" data-jfb-contract="1">${TEMPLATES}${before}` +
     `<p class="jfb-help">Questions marked * need an answer.</p>` +
@@ -88,6 +88,7 @@ function contact(model: FormModel, fields: string, before = '') {
   };
   const invalid: InvalidDetail[] = [];
   form.addEventListener('jfb:invalid', (event) => invalid.push((event as CustomEvent<InvalidDetail>).detail));
+  beforeWaking();
   const errors = pageErrorsOf(form, model, engineOf(model, null), () => NOW);
   return { form, sent, invalid, errors };
 }
@@ -496,6 +497,17 @@ describe("a grid's error", () => {
   });
 });
 
+describe('a browser that cannot send on with the button pressed', () => {
+  it('posts as without JavaScript, for the server to check', () => {
+    const { form, sent } = contact(ONE_PAGE, FIELDS);
+    Reflect.deleteProperty(form, 'requestSubmit');
+    Reflect.deleteProperty(HTMLFormElement.prototype, 'requestSubmit');
+    const event = press(form, 'send');
+    expect(event.defaultPrevented).toBe(false);
+    expect(sent).toEqual([]);
+  });
+});
+
 describe("the server's errors after a post without JavaScript", () => {
   const unique = field('k-email', 'email', 'email', {
     required: true,
@@ -544,6 +556,72 @@ describe("the server's errors after a post without JavaScript", () => {
     expect(shownOf(form).inline, 'still shown until the server answers').toEqual([
       'jfb-1-email-error: This address has sent the form already',
     ]);
+  });
+
+  it('go on waking when the visitor already fixed their field, as the runtime heard nothing of it', async () => {
+    const { form } = contact(model, served, summary, () => {
+      control('jfb-1-email').value = 'lin@example.com';
+    });
+    await settle();
+    expect(shownOf(form).inline).toEqual([]);
+  });
+
+  it('stay on waking while their field is as the server saw it', async () => {
+    const { form } = contact(model, served, summary);
+    await settle();
+    expect(shownOf(form).inline).toEqual(['jfb-1-email-error: This address has sent the form already']);
+  });
+
+  it('stay on waking on a list that came with its first option, which no visitor chose', async () => {
+    const lists = modelOf([
+      { key: 'p1', groups: [{ key: 'g1', fields: [field('k-list', 'dropdown', 'list', { label: 'List' })] }] },
+    ]);
+    const markup =
+      '<div class="jfb-field" data-jfb-field="k-list" data-jfb-alias="list" data-jfb-type="dropdown">' +
+      '<select id="jfb-1-list" name="list" aria-invalid="true"><option value="a">A</option><option value="b">B</option></select>' +
+      '<p class="jfb-error" id="jfb-1-list-error" data-jfb-error>Taken</p></div>';
+    const { form } = contact(lists, markup);
+    await settle();
+    expect(shownOf(form).inline).toEqual(['jfb-1-list-error: Taken']);
+  });
+
+  it('go on waking for a choice or a list the visitor already answered', async () => {
+    const choices = modelOf([
+      {
+        key: 'p1',
+        groups: [
+          {
+            key: 'g1',
+            fields: [
+              field('k-way', 'radio', 'way', {
+                required: true,
+                label: 'Way',
+                settings: { options: [{ value: 'a' }, { value: 'b' }] },
+              }),
+              field('k-list', 'dropdown', 'list', {
+                required: true,
+                label: 'List',
+                settings: { options: [{ value: 'a' }, { value: 'b' }] },
+              }),
+            ],
+          },
+        ],
+      },
+    ]);
+    const markup =
+      '<div class="jfb-field" data-jfb-field="k-way" data-jfb-alias="way" data-jfb-type="radio">' +
+      '<input id="jfb-1-way-1" type="radio" name="way" value="a" aria-invalid="true"><input id="jfb-1-way-2" type="radio" name="way" value="b" aria-invalid="true">' +
+      '<p class="jfb-error" id="jfb-1-way-error" data-jfb-error>Choose one</p></div>' +
+      '<div class="jfb-field" data-jfb-field="k-list" data-jfb-alias="list" data-jfb-type="dropdown">' +
+      '<select id="jfb-1-list" name="list" aria-invalid="true"><option value=""></option><option value="a">A</option></select>' +
+      '<p class="jfb-error" id="jfb-1-list-error" data-jfb-error>Choose one</p></div>';
+    const { form } = contact(choices, markup, '', () => {
+      control('jfb-1-way-2').checked = true;
+      const list = document.getElementById('jfb-1-list');
+      if (list instanceof HTMLSelectElement) list.value = 'a';
+    });
+    await settle();
+    expect(shownOf(form).inline).toEqual([]);
   });
 
   it('go when the rules hide their field', async () => {

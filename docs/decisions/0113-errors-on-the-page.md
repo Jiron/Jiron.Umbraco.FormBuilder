@@ -131,6 +131,10 @@ row's index) or null for the empty submission, and the kind of error (`required`
 - Every form's markup grows by its templates, a few hundred bytes, the same for every visitor and cacheable.
 - **Revisit** in 6.5, when Send on the last page can show an earlier page's errors in the browser.
 
+## Waking late (7.3d, 2026-11-01)
+
+A visitor may answer before the runtime's chunk arrives, on a page the server refused, and the runtime hears no such change. So on waking it keeps only the errors of fields still as the page came (a control's state against its default, a list's first option counting as nobody's choice) and checks once, so an answer that fixed its field takes the error away. A gate caught this as a test that failed under load, in 7.3d. A browser without `requestSubmit` (before Safari 16) posts as without JavaScript, and the server checks it: this replaces a copy of the button in a hidden input, which no test held.
+
 ## A group's choices carry its error (6.8c, 2026-10-31)
 
 The phase review found a group's error state on its fieldset only, where the group role does not support

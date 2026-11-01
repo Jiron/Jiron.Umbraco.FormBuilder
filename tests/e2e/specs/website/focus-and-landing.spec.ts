@@ -96,6 +96,31 @@ async function focusOn(page: Page, control: Locator): Promise<void> {
   await control.focus();
 }
 
+test('an answer given before a slow runtime woke takes its error away once it wakes, on the page the server refused', async ({
+  page,
+}) => {
+  await page.route('**/runtime/chunks/**', async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 2_500));
+    await route.continue();
+  });
+  const form = formOn(page);
+  const scale = form.locator('[data-jfb-alias="recommend"]');
+  await page.goto(urlOf('default', ''));
+  await form.locator('[name="displayName"]').fill('Mira Okafor');
+  await send(page).click();
+  await expect(page, 'the server answered the send').toHaveURL(/jfb-post=/);
+  await expect(scale.locator('[data-jfb-error]')).toBeVisible();
+
+  await scale.locator('label').nth(3).click();
+
+  await expect(scale.locator('[data-jfb-error]')).toHaveCount(0);
+  await expect(scale.locator('input').first()).not.toHaveAttribute('aria-invalid', 'true');
+  await expect(
+    form.locator('[data-jfb-alias="rating"] [data-jfb-error]'),
+    'an unanswered field keeps its own',
+  ).toBeVisible();
+});
+
 for (const theme of THEMES) {
   for (const scheme of SCHEMES) {
     test(`${theme}${scheme === '' ? '' : ` ${scheme}`}: each control the theme draws shows focus at 3:1 or more`, async ({

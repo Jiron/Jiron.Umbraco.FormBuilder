@@ -47,6 +47,9 @@ const SERVER = 'server';
 /** How long the live region stays empty before it says an error, so the same words are said again. */
 const SPEAK_AFTER = 100;
 
+/** `Node.DOCUMENT_POSITION_FOLLOWING`, which the build cannot shorten. */
+const FOLLOWING = 4;
+
 /** An error the server showed: the control it names and its summary link's text. */
 interface Kept {
   readonly target: string;
@@ -161,7 +164,7 @@ export function pageErrorsOf(
       };
       const at = merged.findIndex((other) => {
         const next = fieldAt(other);
-        return next !== null && (field.compareDocumentPosition(next) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0;
+        return next !== null && (field.compareDocumentPosition(next) & FOLLOWING) !== 0;
       });
       if (at < 0) merged.push(error);
       else merged.splice(at, 0, error);
@@ -214,23 +217,13 @@ export function pageErrorsOf(
   /** The post goes on as without JavaScript, with the button the visitor pressed. */
   const send = (button: HTMLButtonElement): void => {
     passing = true;
-    try {
-      if (typeof form.requestSubmit === 'function') form.requestSubmit(button);
-      else {
-        const nav = form.ownerDocument.createElement('input');
-        nav.type = 'hidden';
-        nav.name = NAV;
-        nav.value = button.value;
-        form.append(nav);
-        form.submit();
-      }
-    } finally {
-      passing = false;
-    }
+    form.requestSubmit(button);
+    passing = false;
   };
 
   form.addEventListener('submit', (event) => {
-    if (passing) return;
+    // A browser that cannot send on with the button pressed posts as without JavaScript, and the server checks it.
+    if (passing || !('requestSubmit' in form)) return;
     const button = event.submitter;
     if (!(button instanceof HTMLButtonElement) || button.name !== NAV) return;
     if (button.value !== 'submit' && button.value !== 'next') return;
@@ -284,10 +277,21 @@ export function pageErrorsOf(
     if (focusTarget(form, (link.getAttribute('href') ?? '').slice(1))) event.preventDefault();
   });
 
+  // An answer given before this woke changed nothing it heard: its error goes now if the answer fixed it.
+  if (showsErrors(form)) void recheck();
   return { validate };
 }
 
-/** The errors the server showed at fields after a post without JavaScript, with their summary links' texts. */
+/** Whether the visitor changed a field's answer since the page came: before the runtime woke, as it hears later ones. */
+function changedSinceServed(field: HTMLElement): boolean {
+  return (
+    [...field.querySelectorAll<HTMLInputElement>('input,textarea')].some(
+      (each) => each.checked !== each.defaultChecked || each.value !== each.defaultValue,
+    ) || [...field.querySelectorAll('option')].some((each) => each.index > 0 && each.selected !== each.defaultSelected)
+  );
+}
+
+/** The errors the server showed at fields still as it saw them after a post without JavaScript, with their summary links' texts. */
 function keptOf(form: HTMLFormElement): Map<HTMLElement, Kept> {
   const links = new Map<string, string>();
   for (const link of form.querySelectorAll(':scope > [data-jfb-summary] a[href^="#"]'))
@@ -296,7 +300,7 @@ function keptOf(form: HTMLFormElement): Map<HTMLElement, Kept> {
   for (const paragraph of form.querySelectorAll<HTMLElement>('[data-jfb-error]')) {
     const field = paragraph.closest<HTMLElement>(FIELD);
     const target = paragraph.id.endsWith('-error') ? paragraph.id.slice(0, -'-error'.length) : '';
-    if (field !== null && target.length > 0)
+    if (field !== null && target.length > 0 && !changedSinceServed(field))
       kept.set(field, { target, link: links.get(target) ?? (paragraph.textContent ?? '').trim() });
   }
   return kept;
