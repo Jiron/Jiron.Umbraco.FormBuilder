@@ -41,7 +41,7 @@ const chunk = (file, imports = [], dynamicImports = [], entry = false, modules =
 
 describe('the budgets', () => {
   test('are those of ROADMAP section 4.12', () => {
-    assert.deepEqual(BUDGETS, { runtimeCore: 16 * 1024, runtimeAll: 40 * 1024, themeCss: 10 * 1024 });
+    assert.deepEqual(BUDGETS, { runtimeCore: 16 * 1024, runtimeAll: 60 * 1024, themeCss: 10 * 1024 });
   });
 });
 
@@ -101,7 +101,7 @@ describe('the check', () => {
     const lang = (language) => [`Client/packages/logic/src/lang/messages.${language}.ts`];
     const english = randomBytes(3000);
     const german = randomBytes(4000);
-    const feature = randomBytes(34 * 1024);
+    const feature = randomBytes(54 * 1024);
     const paths = project({
       ...base(),
       runtime: {
@@ -119,10 +119,10 @@ describe('the check', () => {
     const all = results.find((r) => r.line.startsWith('runtime with every feature and every language'));
     assert.match(every.line, /[(]2 files, and the largest of 2 languages' words[)]: /);
     const counted = gzipSize(small('r')) + gzipSize(feature) + Math.max(gzipSize(english), gzipSize(german));
-    assert.match(every.line, new RegExp(`: ${(counted / 1024).toFixed(2)} KB gzip of 40[.]00 KB, ok$`));
+    assert.match(every.line, new RegExp(`: ${(counted / 1024).toFixed(2)} KB gzip of 60[.]00 KB, ok$`));
     assert.equal(every.ok, true);
     const sum = gzipSize(small('r')) + gzipSize(feature) + gzipSize(english) + gzipSize(german);
-    assert.ok(sum > 40 * 1024, 'every language together is over the budget, which no page loads');
+    assert.ok(sum > 60 * 1024, 'every language together is over the budget, which no page loads');
     assert.equal(all.ok, true);
     assert.match(all.line, /[(]4 files[)]: .* gzip, more than a page loads$/);
   });

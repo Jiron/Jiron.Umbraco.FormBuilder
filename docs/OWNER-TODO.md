@@ -96,7 +96,8 @@ what to do and why. Items for blocked roadmap steps name the step as "step X.Y",
 
 ## Budgets
 
-- [ ] **Decide whether the website runtime's 40 KB "with everything" (ROADMAP §4.12) should grow.**
+- [x] **Decided 2026-11-01: the website runtime's budget "with everything" grows from 40 KB to 60 KB (ROADMAP §4.12,
+  [ADR-0146](decisions/0146-the-runtimes-budget-grows-to-60-kb.md)).** The steps below resume at step 7.4i. What was asked:
   It blocks step 6.4i, step 6.4j, step 6.4l, step 6.4m, step 6.4n, step 6.4o, step 6.4p, step 6.5d,
   step 6.6g, step 7.1e and step 7.2c ([ADR-0120](decisions/0120-sending-waits-for-the-runtimes-budget.md); 6.6g, the headless
   element's pages and sending, waits for 6.5d and 6.4i, [ADR-0128](decisions/0128-the-element-writes-the-servers-view-model.md)). After 6.4h the runtime with

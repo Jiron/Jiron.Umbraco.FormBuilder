@@ -2,7 +2,8 @@
 
 - Status: accepted; follows [ADR-0116](0116-the-runtimes-budget-counts-one-language.md) (which asked each later step
   of 6.4 to make room for what it adds) and [ADR-0119](0119-a-terser-pass-for-the-website-runtime.md); the owner's
-  answer on section 4.12's budget, asked in `docs/OWNER-TODO.md`, unblocks it
+  answer on section 4.12's budget, asked in `docs/OWNER-TODO.md`, came on 2026-11-01 and unblocks it
+  ([ADR-0146](0146-the-runtimes-budget-grows-to-60-kb.md))
 - Date: 2026-10-30
 - Roadmap step: 6.4i (built on a branch, measured and blocked); 6.4j and 6.4l to 6.4p are blocked with it, and 6.4k
   is split off from 6.4l as the part that adds nothing to the runtime
