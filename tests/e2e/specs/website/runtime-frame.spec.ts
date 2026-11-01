@@ -16,7 +16,15 @@ interface Ready {
 declare global {
   interface Window {
     jfbReadies?: Ready[];
-    JironFormBuilder?: { readonly version: string; init(root?: ParentNode): void };
+    JironFormBuilder?: {
+      readonly version: string;
+      init(root?: ParentNode): void;
+      get(form: Element): {
+        validate(): Promise<boolean>;
+        submit(): Promise<boolean>;
+        values(): Promise<Readonly<Record<string, unknown>>>;
+      } | null;
+    };
   }
 }
 

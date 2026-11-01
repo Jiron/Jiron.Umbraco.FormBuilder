@@ -15,7 +15,7 @@ import { pageErrorsOf } from './errors';
 import type { FormModel } from './model';
 import { followSliders } from './outputs';
 import { readPage, type PageReading } from './page';
-import { senderOf } from './send';
+import { senderOf, valuesOf } from './send';
 import type { ShownError } from './messages';
 import { contextOf, rulesOf, type PageRules } from './rules';
 import { checkPage, type CheckScope } from './validation';
@@ -34,6 +34,18 @@ export interface FormSession {
   check(scope: CheckScope): Promise<ShownError[]>;
   /** Checks as a send or Next does and shows what stops it on the page (ADR-0113); true when nothing does. */
   validate(scope: CheckScope): Promise<boolean>;
+  /** Presses the form's send button; false when the form shows none now. */
+  submit(): boolean;
+  /** The answers as the page would send them. */
+  values(): Readonly<Record<string, unknown>>;
+}
+
+/** The logic of each form, for a site's code to reach, the form that came in another's place among them. */
+const sessions = new WeakMap<HTMLFormElement, Promise<FormSession | null>>();
+
+/** The logic given to a form, if any. */
+export function sessionOf(form: HTMLFormElement): Promise<FormSession | null> | undefined {
+  return sessions.get(form);
 }
 
 /** Fills in the default values the server marked, from a chunk of its own. */
@@ -53,10 +65,21 @@ export function loadDefaults(): Promise<FillDefaults> {
  * Gives a form its logic; the frame calls it once per form. A form whose calculation language or defaults' filler
  * cannot load is left to the post without JavaScript (null), as one whose chunk cannot.
  */
-export async function attach(
+export function attach(
   form: HTMLFormElement,
   model: FormModel,
   defaults: () => Promise<FillDefaults> = loadDefaults,
+  carried?: { readonly id: string; readonly challenge: string | null },
+): Promise<FormSession | null> {
+  const session = wake(form, model, defaults, carried);
+  sessions.set(form, session);
+  return session;
+}
+
+async function wake(
+  form: HTMLFormElement,
+  model: FormModel,
+  defaults: () => Promise<FillDefaults>,
   carried?: { readonly id: string; readonly challenge: string | null },
 ): Promise<FormSession | null> {
   const loaded = await Promise.all([
@@ -86,5 +109,12 @@ export async function attach(
     rules,
     check: (scope) => checkPage(form, model, engine, scope),
     validate: (scope) => errors.validate(scope),
+    submit: () => {
+      const button = form.querySelector<HTMLButtonElement>('button[data-jfb-nav="submit"]');
+      if (button === null) return false;
+      form.requestSubmit(button);
+      return true;
+    },
+    values: () => valuesOf(readPage(form, model).post),
   };
 }

@@ -1,7 +1,8 @@
 // The frame (ROADMAP 6.4b, ADR-0110): the forms of the markup contract found and enhanced once, later ones through
 // init(root), others left to the post without JavaScript, `jfb:ready` once per form, and the chunk with the logic
 // loaded on a form's first interaction only, or at once for a form with a default the page fills in (6.4h, ADR-0118),
-// and the print button of the copy of the answers below an outcome revealed and bound once (6.5b, ADR-0123).
+// the print button of the copy of the answers below an outcome revealed and bound once (6.5b, ADR-0123), every form
+// root fitted to its page once, and a form to work with through `get` (6.4l, section 4.9).
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createFrame, type Chunk, type ReadyDetail } from './frame';
 import type { FormModel } from './model';
@@ -290,5 +291,110 @@ describe('the frame', () => {
     await settled();
     await settled();
     expect(failing).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('a form to work with', () => {
+  const session = {
+    validate: vi.fn(() => Promise.resolve(false)),
+    submit: vi.fn(() => true),
+    values: vi.fn(() => ({ name: ['Ana'] })),
+  };
+
+  function placed(): HTMLFormElement {
+    const element = form('f1');
+    element.className = 'jfb-form';
+    document.body.append(element);
+    return element;
+  }
+
+  it('loads the logic when first asked, once, and asks it', async () => {
+    const element = placed();
+    const attach = vi.fn(() => Promise.resolve(session));
+    const load = vi.fn(() => Promise.resolve({ attach } as Chunk));
+    const handle = createFrame(load).get(element);
+    expect(load, 'not before it is asked').not.toHaveBeenCalled();
+    expect(Object.isFrozen(handle), "a site's code cannot change it").toBe(true);
+
+    expect(await handle?.validate()).toBe(false);
+    expect(session.validate).toHaveBeenCalledWith('send');
+    expect(await handle?.submit()).toBe(true);
+    expect(await handle?.values()).toEqual({ name: ['Ana'] });
+    element.dispatchEvent(new Event('focusin', { bubbles: true }));
+
+    expect(load).toHaveBeenCalledTimes(1);
+    expect(attach).toHaveBeenCalledTimes(1);
+  });
+
+  it('shares the logic a touch woke', async () => {
+    const element = placed();
+    const attach = vi.fn(() => Promise.resolve(session));
+    const frame = createFrame(() => Promise.resolve({ attach } as Chunk));
+    frame.init();
+    element.dispatchEvent(new Event('focusin', { bubbles: true }));
+
+    await frame.get(element)?.values();
+
+    expect(attach).toHaveBeenCalledTimes(1);
+  });
+
+  it('is none for an element that is no form of the contract', () => {
+    const frame = createFrame(() => Promise.reject(new Error('never')));
+    const other = form('o', { contract: '9' });
+    const unreadable = form('u', { data: 'nope' });
+    const unnamed = form('n');
+    unnamed.removeAttribute('data-jfb-form');
+    document.body.append(other, unreadable, unnamed);
+
+    expect(frame.get(document.body)).toBeNull();
+    expect(frame.get(document.createElement('form'))).toBeNull();
+    expect(frame.get(other)).toBeNull();
+    expect(frame.get(unreadable)).toBeNull();
+    expect(frame.get(unnamed)).toBeNull();
+  });
+
+  it('says nothing stops a form whose logic cannot load, as the server checks every send', async () => {
+    const element = placed();
+    const handle = createFrame(() => Promise.reject(new Error('offline'))).get(element);
+
+    expect(await handle?.validate()).toBe(true);
+    expect(await handle?.submit()).toBe(false);
+    expect(await handle?.values()).toEqual({});
+  });
+
+  it("reaches a form that came in another one's place through the logic that woke it", async () => {
+    const element = placed();
+    element.setAttribute('data-jfb-woken', '');
+    const attach = vi.fn();
+    const sessionOf = vi.fn(() => Promise.resolve(session));
+    const other = placed();
+    const frame = createFrame(() => Promise.resolve({ attach, sessionOf } as Chunk));
+    frame.init();
+    other.dispatchEvent(new Event('focusin', { bubbles: true }));
+
+    expect(await frame.get(element)?.values()).toEqual({ name: ['Ana'] });
+    expect(sessionOf).toHaveBeenCalledWith(element);
+    expect(attach.mock.calls.map((call: unknown[]) => call[0])).not.toContain(element);
+  });
+});
+
+describe('fitting a form to its page', () => {
+  it('reaches every form root of the contract once, an outcome among them', () => {
+    const outcomeRoot = document.createElement('div');
+    outcomeRoot.className = 'jfb-form';
+    outcomeRoot.dataset['jfbContract'] = '1';
+    const otherContract = document.createElement('div');
+    otherContract.className = 'jfb-form';
+    otherContract.dataset['jfbContract'] = '9';
+    document.body.append(outcomeRoot, otherContract);
+    const listen = vi.fn();
+    vi.stubGlobal('matchMedia', () => ({ addEventListener: listen }));
+    const frame = createFrame(() => Promise.reject(new Error('never')));
+
+    frame.init();
+    frame.init();
+
+    expect(listen, 'one form root, once').toHaveBeenCalledTimes(1);
+    vi.unstubAllGlobals();
   });
 });

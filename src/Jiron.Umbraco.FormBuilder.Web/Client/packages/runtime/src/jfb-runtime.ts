@@ -13,7 +13,12 @@ declare global {
 }
 
 const frame = createFrame(() => import('./form'));
-const runtime = installGlobal(window, __JFB_VERSION__, (root) => frame.init(root));
+const runtime = installGlobal(
+  window,
+  __JFB_VERSION__,
+  (root) => frame.init(root),
+  (form) => frame.get(form),
+);
 
 // A module runs once the document is parsed; one added while it still loads waits for the rest of the forms.
 if (document.readyState === 'loading')

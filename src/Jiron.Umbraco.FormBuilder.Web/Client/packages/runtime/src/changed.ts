@@ -137,6 +137,7 @@ export async function swapForm(
   }
   next.insertBefore(notice, next.querySelector(':scope > [data-jfb-page]'));
   next.setAttribute('data-jfb-woken', '');
+  if (form.classList.contains('jfb-scheme-dark')) next.classList.add('jfb-scheme-dark');
   form.replaceWith(next);
   notice.focus();
   return { form: next, model: nextModel };

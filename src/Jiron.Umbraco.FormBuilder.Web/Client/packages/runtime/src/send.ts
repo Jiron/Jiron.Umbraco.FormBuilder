@@ -66,18 +66,8 @@ export function submissionId(
   return [hex.slice(0, 8), hex.slice(8, 12), hex.slice(12, 16), hex.slice(16, 20), hex.slice(20)].join('-');
 }
 
-/**
- * The entries endpoint's body for a post (ADR-0088): each answer's texts by its alias and each part's by
- * `alias.part`, a consent's wording among them, a repeatable group's rows as objects of their children's, and the
- * query and context values, so the server reads what the post without JavaScript would give it.
- */
-export function bodyOf(
-  model: FormModel,
-  post: ReadPost,
-  query: Readonly<Record<string, string | readonly string[]>>,
-  id: string,
-  extra: { content?: string; challenge?: string; honeypot?: string; placement?: string } = {},
-): object {
+/** A post's answers as the entries endpoint takes them: each answer's texts by its alias, each part's by `alias.part`, a consent's wording among them, and a repeatable group's rows as objects of their children's. */
+export function valuesOf(post: ReadPost): Record<string, unknown> {
   const put = (into: Record<string, unknown>, answers: ReadonlyMap<string, PostAnswer>): Record<string, unknown> => {
     for (const [alias, answer] of answers) {
       into[alias] = answer.values;
@@ -87,6 +77,21 @@ export function bodyOf(
   };
   const values = put({}, post.fields);
   for (const [alias, rows] of post.rows) if (rows.length > 0) values[alias] = rows.map((row) => put({}, row));
+  return values;
+}
+
+/**
+ * The entries endpoint's body for a post (ADR-0088): the answers, and the query and context values, so the server reads
+ * what the post without JavaScript would give it.
+ */
+export function bodyOf(
+  model: FormModel,
+  post: ReadPost,
+  query: Readonly<Record<string, string | readonly string[]>>,
+  id: string,
+  extra: { content?: string; challenge?: string; honeypot?: string; placement?: string } = {},
+): object {
+  const values = valuesOf(post);
   return {
     submissionId: id,
     revision: model.revision,

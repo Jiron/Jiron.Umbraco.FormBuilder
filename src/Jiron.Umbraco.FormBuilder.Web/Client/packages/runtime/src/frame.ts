@@ -4,8 +4,11 @@
  * visitor never touches a form loads the frame alone; a form with a default value for the page to fill in loads it at
  * once, so the default is there before the visitor touches the form (ADR-0118). A form of another contract version,
  * with model data this runtime cannot read, or whose chunk cannot load, is left to the post without JavaScript. Below
- * an outcome, it reveals the print button of the copy of the answers and binds it to the browser's print (ADR-0123).
+ * an outcome, it reveals the print button of the copy of the answers and binds it to the browser's print (ADR-0123). It
+ * fits every form root to its page (6.4l), and gives a site's code a form to work with (`get`, section 4.9).
  */
+import { checkGround, followSteps } from './fit';
+import type { JironFormBuilderForm } from './global';
 import { parseModel, type FormModel } from './model';
 
 /** Marks a form that came in another's place with its logic already (6.4j): one the frame leaves alone. */
@@ -20,6 +23,15 @@ const TOUCHES = ['focusin', 'pointerdown', 'input', 'change'] as const;
 /** What the chunk offers the frame. */
 export interface Chunk {
   attach(form: HTMLFormElement, model: FormModel): unknown;
+  /** The logic of a form that came in another's place, which the chunk gave it itself (6.4j). */
+  sessionOf?(form: HTMLFormElement): unknown;
+}
+
+/** What a form's logic offers a site's code. */
+interface Session {
+  validate(scope: 'send'): Promise<boolean>;
+  submit(): boolean;
+  values(): Readonly<Record<string, unknown>>;
 }
 
 /** What `jfb:ready` tells a site: which form, never an answer. */
@@ -34,12 +46,28 @@ export interface Frame {
    * buttons of the copies of the answers in it; each once only.
    */
   init(root?: ParentNode): void;
+  /** A form of the markup contract to work with, enhanced if it was not; null for any other element. */
+  get(form: Element): JironFormBuilderForm | null;
 }
 
 /** A frame that loads its chunk through `load`, once for every form of the page. */
 export function createFrame(load: () => Promise<Chunk>): Frame {
   const enhanced = new WeakSet<Element>();
+  const wakes = new WeakMap<HTMLFormElement, () => void>();
+  const sessions = new WeakMap<HTMLFormElement, Promise<unknown>>();
+  const fitted = new WeakSet<Element>();
   let chunk: Promise<Chunk | null> | undefined;
+
+  /** Fits a form root to the page once: an outcome or a notice stands on the same ground as a form. */
+  function fit(root: Element): void {
+    if (fitted.has(root)) return;
+    fitted.add(root);
+    checkGround(root);
+    const follows = root.ownerDocument.defaultView?.matchMedia?.('(prefers-color-scheme: dark)');
+    follows?.addEventListener('change', () => checkGround(root));
+    const steps = root.querySelector(':scope > .jfb-progress-steps');
+    if (steps !== null) followSteps(steps);
+  }
 
   function enhance(form: HTMLFormElement): void {
     if (enhanced.has(form) || form.hasAttribute(WOKEN) || form.dataset['jfbContract'] !== CONTRACT) return;
@@ -48,10 +76,15 @@ export function createFrame(load: () => Promise<Chunk>): Frame {
     if (model === null) return;
     enhanced.add(form);
     const touched = (): void => {
+      if (sessions.has(form)) return;
       for (const type of TOUCHES) form.removeEventListener(type, touched);
       chunk ??= load().catch(() => null);
-      void chunk.then((loaded) => loaded?.attach(form, model));
+      sessions.set(
+        form,
+        chunk.then((loaded) => loaded?.attach(form, model)),
+      );
     };
+    wakes.set(form, touched);
     for (const type of TOUCHES) form.addEventListener(type, touched);
     if (form.querySelector('[data-jfb-default]') !== null) touched();
     form.dispatchEvent(
@@ -62,8 +95,31 @@ export function createFrame(load: () => Promise<Chunk>): Frame {
     );
   }
 
+  /** The logic of a form, loaded now if the visitor has not touched it; null where it cannot load. */
+  async function sessionOf(form: HTMLFormElement): Promise<Session | null> {
+    if (form.hasAttribute(WOKEN)) {
+      const loaded = await chunk;
+      return ((await loaded?.sessionOf?.(form)) as Session | null | undefined) ?? null;
+    }
+    wakes.get(form)?.();
+    return ((await sessions.get(form)) as Session | null | undefined) ?? null;
+  }
+
   return {
+    get(form: Element): JironFormBuilderForm | null {
+      if (!(form instanceof HTMLFormElement) || !form.matches('[data-jfb-form]')) return null;
+      enhance(form);
+      if (!form.hasAttribute(WOKEN) && !wakes.has(form)) return null;
+      return Object.freeze({
+        validate: async () => (await (await sessionOf(form))?.validate('send')) ?? true,
+        submit: async () => (await sessionOf(form))?.submit() ?? false,
+        values: async () => (await sessionOf(form))?.values() ?? {},
+      });
+    },
     init(root: ParentNode = document): void {
+      const roots = root.querySelectorAll(`.jfb-form[data-jfb-contract="${CONTRACT}"]`);
+      if (root instanceof Element && root.matches(`.jfb-form[data-jfb-contract="${CONTRACT}"]`)) fit(root);
+      for (const each of roots) fit(each);
       if (root instanceof HTMLFormElement && root.matches('[data-jfb-form]')) enhance(root);
       for (const form of root.querySelectorAll<HTMLFormElement>('form[data-jfb-form]')) enhance(form);
       for (const button of root.querySelectorAll<HTMLButtonElement>(
