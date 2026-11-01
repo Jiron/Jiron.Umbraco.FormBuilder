@@ -2668,6 +2668,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
 
 - [ ] **10.1 The form settings view**
   - The groups of §4.3.4 with help text. The outcomes editor (an ordered list with rules), plus availability, spam, privacy, appearance and developer settings.
+  - **Captcha providers:** the spam group greys out a provider without keys, from `GET designer/captcha-provider` (each provider's name and `isConfigured`, never a key), with its row in the permission matrix (added in 7.4g).
   - Done when: Playwright covers each group, including validation messages.
 - [ ] **10.2 The actions view and its editors**
   - **The list:** action cards per trigger (Submitted, Approved, Rejected, Verified), with order (drag and keyboard), an on/off switch, a rule chip and the last-run status.
@@ -2744,6 +2745,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
     - unique members are counted from entries at query time.
   - **What it shows:**
     - views, starts, submissions and conversion;
+    - spam caught, from the daily `spam` metric the pipeline already counts (added in 7.4g);
     - drop-off per page (funnel), median time to complete;
     - the fields that fail validation most, with the kind of error ("Postcode: 31% of attempts, mostly the format");
     - top origin pages, hour of day, unique members;

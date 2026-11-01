@@ -51,7 +51,6 @@ idempotent, so a rerun changes nothing.
 | `jfb-002-default-settings` | `CreateDefaultSettingsV1` | Adds the global row of each settings section (General, Email, Protection, Files, Privacy, Integrations) at version 1, holding no values: the defaults live in code. |
 | `jfb-003-grant-forms-section` | `GrantFormsSectionV1` | Gives Umbraco's administrators group the Forms section, once. A flag in `jfbKeyValue` records it, so an administrator who removes the section later is not overruled. |
 | `jfb-004-request-reference-rebuild` | `RequestReferenceRebuildV1` | Asks for a rebuild of the "used on" index: the row `references-rebuild` in `jfbKeyValue`, from the first document, where it is missing; a walk under way goes on where it was. The reference job does the walk (ADR-0131). |
-
 | `jfb-005-file-scan-index` | `AddFileScanIndexV1` | Adds `IX_jfbEntryFile_scanState_id`, for the files that wait for a scan ([ADR-0144](decisions/0144-cleanup-and-the-scanner.md)), where it is missing. |
 | `jfb-006-file-scan-order` | `ChangeFileScanIndexV1` | Replaces `IX_jfbEntryFile_scanState_id` with `IX_jfbEntryFile_scanState_entryId_id`, which also tells what an entry holds from uploads no entry took ([ADR-0148](decisions/0148-what-uploads-may-hold.md)). |
 
@@ -505,7 +504,8 @@ One row per entry, numbered per form from `jfbForm.lastEntryNumber` (drafts and 
 `submissionId` and `submissionHash` make retries safe: the same submission returns the first receipt, a different one
 with the same id is refused (§4.4). `state` is the entry's place in the review workflow; `isTest` marks
 entries from the preview. The search text holds the answers cleaned and folded the way rules compare text, one per
-line, and leaves out sensitive fields (ADR-0039).
+line, and leaves out sensitive fields (ADR-0039). `spamScore` and `spamReasons` are what the protection found (ADR-0139), kept
+for the folder's review; an entry in `Spam` runs no actions until someone says it is not spam.
 Resume tokens and challenges are stored only as hashes and ids.
 
 - `IX_jfbEntry_key`: unique.
@@ -521,7 +521,9 @@ Resume tokens and challenges are stored only as hashes and ids.
 
 Uploaded files. The bytes live in the file store under `storedName`, a random name; the original name is kept for
 downloads only. A file is linked to its entry when the entry is stored, and files that stay without one for a day are
-cleaned up (ADR-0006). `fileHash` is the SHA-256 of the bytes.
+cleaned up on a timer of their own (ADR-0006, ADR-0148). `fileHash` is the SHA-256 of the bytes. `scanState` is `unscanned` (the site has
+no scanner, or the bytes were gone), `pending` (waiting for its scanners), `clean` or `quarantined`, which no entry takes and nobody downloads
+(ADR-0144).
 
 - `IX_jfbEntryFile_key`: unique.
 - `IX_jfbEntryFile_entryId_createdUtc`: the files of an entry, and the uploads that wait for one, oldest first, for
@@ -561,8 +563,9 @@ entry's unit of work, insert-once (ADR-0070). No indexes besides the primary key
 
 ### `jfbEntryEvent`
 
-The timeline of an entry: submitted, changed, forwarded, and so on. `changeKey` ties together the events of one change
-by a user, a bulk change included, so it can be undone (ADR-0023).
+The timeline of an entry: submitted, changed, forwarded, `notSpam` when someone takes it out of the spam folder (ADR-0140),
+`fileQuarantined` when a scanner finds malware in a file it holds (ADR-0144), and so on. `changeKey` ties together the events of one
+change by a user, a bulk change included, so it can be undone (ADR-0023).
 
 - `IX_jfbEntryEvent_entryId_occurredUtc`: an entry's timeline.
 - `IX_jfbEntryEvent_changeKey`: the events of one change.
@@ -675,7 +678,8 @@ Who did what to which item and when, never with field values (ADR-0041). The act
 null for Jiron Form Builder's own jobs, and the details are a JSON object of keys, numbers, flags, enum values, times
 and identifiers; details about an entry name its fields by key. Entries never change and outlive what they name;
 retention deletes them oldest first, in batches. SQL Server compares actions and entity types ignoring case, so none
-differs from another in case only.
+differs from another in case only. Files have `entryFile.sensitiveDownloaded`, `entryFile.archiveStarted` and `entryFile.archived`
+(ADR-0145, ADR-0150).
 
 - `IX_jfbAuditEntry_occurredUtc`: the log in order.
 - `IX_jfbAuditEntry_entityKey`: the history of one form, entry or setting.

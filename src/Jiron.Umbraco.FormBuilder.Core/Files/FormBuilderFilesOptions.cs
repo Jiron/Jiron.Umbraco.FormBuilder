@@ -64,8 +64,8 @@ public sealed class FormBuilderFilesOptions
 
     /// <summary>
     /// The extensions no field takes, in lowercase letters and digits without the point, each once, such as dwg. A
-    /// site's own list replaces the defaults (exe, dll, js, bat, cmd, ps1, sh, msi, html and svg), which apply while it
-    /// lists none. Publishing refuses a field that lists one, and a field's groups of file types leave them out.
+    /// site's own list replaces the defaults (exe, dll, js, mjs, bat, cmd, ps1, sh, msi, msp, scr, pif, cpl, jar, vbs, wsf, hta, lnk, reg,
+    /// html, htm, xhtml, shtml, svg, php, phtml, asp, aspx, jsp and cgi), which apply while it lists none. Publishing refuses a field that lists one, and a field's groups of file types leave them out.
     /// Programs and scripts are refused by their first bytes, whatever their name.
     /// </summary>
     public IList<string> BlockedExtensions { get; } = [];

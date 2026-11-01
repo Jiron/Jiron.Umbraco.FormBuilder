@@ -29,6 +29,49 @@ public sealed class AppSettingsSchemaTests
     }
 
     [Test]
+    public void EveryDefault_InTheSchema_IsWhatNewOptionsHold()
+    {
+        var section = JsonNode.Parse(AppSettingsSchema.Generate())!["properties"]!["JironFormBuilder"]!;
+        var limits = section["properties"]!["Limits"]!["properties"]!;
+        var compared = new List<string>();
+
+        void Compare(JsonNode schema, object options, string path)
+        {
+            foreach (var (name, node) in schema["properties"]!.AsObject())
+            {
+                var value = options.GetType().GetProperty(name)!.GetValue(options);
+                if (node!["default"] is { } expected && value is int or long or bool or string)
+                {
+                    Assert.That(expected.ToJsonString(), Is.EqualTo(System.Text.Json.JsonSerializer.Serialize(value)), $"{path}:{name}");
+                    compared.Add($"{path}:{name}");
+                }
+
+                if (node["properties"] is not null && value is not null)
+                {
+                    Compare(node, value, $"{path}:{name}");
+                }
+            }
+        }
+
+        Assert.Multiple(() =>
+        {
+            Compare(section, new Jiron.Umbraco.FormBuilder.Core.Configuration.FormBuilderOptions(), "JironFormBuilder");
+            Assert.That(limits["Read"]!["properties"]!["PerAddressPerMinute"]!["default"]!.GetValue<int>(), Is.EqualTo(120));
+            Assert.That(limits["Submit"]!["properties"]!["PerFormPerMinute"]!["default"]!.GetValue<int>(), Is.EqualTo(600));
+            Assert.That(limits["Verify"]!["properties"]!["SitePerSecond"]!["default"]!.GetValue<int>(), Is.Zero);
+            Assert.That(compared, Has.Member("JironFormBuilder:Files:MaxWaitingBytes"), "a walk that reached them");
+        });
+    }
+
+    [Test]
+    public void TheBlockedExtensions_Description_NamesEveryDefault()
+    {
+        var description = JsonNode.Parse(AppSettingsSchema.Generate())!["properties"]!["JironFormBuilder"]!["properties"]!["Files"]!["properties"]!["BlockedExtensions"]!["description"]!.GetValue<string>();
+
+        Assert.That(Jiron.Umbraco.FormBuilder.Core.Files.FormBuilderFilesOptions.DefaultBlockedExtensions.Where(extension => !System.Text.RegularExpressions.Regex.IsMatch(description, $@"\b{extension}\b")), Is.Empty);
+    }
+
+    [Test]
     public void TheSchema_DescribesEveryKey_WithItsDefault_AndNoOtherKeys()
     {
         var schema = JsonNode.Parse(AppSettingsSchema.Generate())!;

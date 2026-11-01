@@ -202,7 +202,21 @@ public sealed class CaptchaProviderTests
             KeysOf(options, name).SiteKey = null;
         });
 
-        foreach (var provider in new[] { none, noSecret, noSiteKey })
+        var blank = Provider(name, transport, change: options =>
+        {
+            KeysOf(options, name).SiteKey = "   ";
+            KeysOf(options, name).SecretKey = "   ";
+        });
+        var blankSecret = Provider(name, transport, change: options =>
+        {
+            KeysOf(options, name).SecretKey = "   ";
+        });
+        var blankSiteKey = Provider(name, transport, change: options =>
+        {
+            KeysOf(options, name).SiteKey = "   ";
+        });
+
+        foreach (var provider in new[] { none, noSecret, noSiteKey, blank, blankSecret, blankSiteKey })
         {
             Assert.Multiple(async () =>
             {

@@ -25,7 +25,7 @@ internal abstract class SiteVerifyCaptchaProvider(IFormBuilderHttpTransport tran
     public abstract string Name { get; }
 
     /// <inheritdoc />
-    public bool IsConfigured => Keys is { SiteKey: { Length: > 0 }, SecretKey: { Length: > 0 } };
+    public bool IsConfigured => !string.IsNullOrWhiteSpace(Keys.SiteKey) && !string.IsNullOrWhiteSpace(Keys.SecretKey);
 
     /// <inheritdoc />
     public FormBuilderCaptchaClient? Client => IsConfigured ? new FormBuilderCaptchaClient(Keys.SiteKey!, ScriptAddress, Action) : null;

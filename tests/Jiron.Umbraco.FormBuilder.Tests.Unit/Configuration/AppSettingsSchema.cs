@@ -29,6 +29,7 @@ internal static partial class AppSettingsSchema
     public static string Generate(Type options, string section, string title)
     {
         var docs = XmlDocs.Of(options.Assembly);
+        var defaults = options.GetConstructor(Type.EmptyTypes) is null ? null : Activator.CreateInstance(options);
         var serializer = new JsonSerializerOptions(JsonSerializerDefaults.General)
         {
             Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) },
@@ -56,7 +57,7 @@ internal static partial class AppSettingsSchema
                     schema["enum"] = new JsonArray([.. allowed.Values.Select(value => JsonValue.Create(value?.ToString()))]);
                 }
 
-                if (property is not null && Default(property, serializer) is { } value)
+                if (property is not null && Default(property, context.Path, defaults, serializer) is { } value)
                 {
                     schema["default"] = value;
                 }
@@ -137,17 +138,39 @@ internal static partial class AppSettingsSchema
         }
     }
 
-    // A value's default, read from a new instance of the class that declares it; lists and sections have none.
-    private static JsonNode? Default(PropertyInfo property, JsonSerializerOptions serializer)
+    // A value's default, as new options hold it, since a section can set its own values' defaults, as each rate policy does. A
+    // value in a list's items, which new options do not reach, reads a new instance of its class. Lists and sections have none.
+    private static JsonNode? Default(PropertyInfo property, ReadOnlySpan<string> path, object? defaults, JsonSerializerOptions serializer)
     {
-        var owner = property.DeclaringType!;
-        if (owner.GetConstructor(Type.EmptyTypes) is null)
+        if (!TryValueAt(path, defaults, out var value))
         {
-            return null;
+            var owner = property.DeclaringType!;
+            if (owner.GetConstructor(Type.EmptyTypes) is null)
+            {
+                return null;
+            }
+
+            value = property.GetValue(Activator.CreateInstance(owner));
         }
 
-        var value = property.GetValue(Activator.CreateInstance(owner));
         return value is string or bool or int or long or double or decimal or Enum ? JsonSerializer.SerializeToNode(value, property.PropertyType, serializer) : null;
+    }
+
+    // Walks new options by a schema's path, of "properties" and a name each; false for a path that goes anywhere else.
+    private static bool TryValueAt(ReadOnlySpan<string> path, object? defaults, out object? value)
+    {
+        value = defaults;
+        for (var at = 0; at < path.Length; at += 2)
+        {
+            if (value is null || path[at] != "properties" || at + 1 == path.Length)
+            {
+                return false;
+            }
+
+            value = value.GetType().GetProperty(path[at + 1])?.GetValue(value);
+        }
+
+        return value is not null || defaults is not null;
     }
 
     // The documentation's references to the roadmap and the decisions mean nothing in a site's editor.

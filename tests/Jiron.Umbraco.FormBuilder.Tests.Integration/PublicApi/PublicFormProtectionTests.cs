@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text;
 using System.Text.Json.Nodes;
+using Jiron.Umbraco.FormBuilder.Core.Composing;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Core.Settings;
@@ -207,6 +208,24 @@ public sealed class PublicFormProtectionTests : PublicApiTestBase
     }
 
     [Test]
+    public async Task ASpamCheck_SeesThePageAndTheAddress_OfTheRequest()
+    {
+        var key = await PublishAsync();
+        var (_, contact, _) = await SitesAsync();
+        _address = "203.0.113.7";
+
+        using var sent = await InTimeAsync(key, $$$"""{"revision":1,"contentKey":"{{{contact}}}","values":{"name":"Ada"}}""");
+
+        var seen = GetRequiredService<SeenChecks>().Contexts.Single();
+        Assert.Multiple(() =>
+        {
+            Assert.That(sent.IsSuccessStatusCode, Is.True);
+            Assert.That(seen.Page, Is.EqualTo(contact));
+            Assert.That(seen.Address, Is.EqualTo(IPAddress.Parse("203.0.113.7")));
+        });
+    }
+
+    [Test]
     public async Task ASitesRanges_HoldForItsPages()
     {
         var key = await PublishAsync();
@@ -392,6 +411,8 @@ public sealed class PublicFormProtectionTests : PublicApiTestBase
         _clock = new StoppedClock();
         builder.Services.AddUnique<TimeProvider>(_clock);
         builder.Services.AddSingleton<IStartupFilter>(new AddressFilter(() => _address));
+        builder.Services.AddSingleton<SeenChecks>();
+        builder.JironFormBuilder().SpamChecks().Append<SeeingCheck>();
     }
 
     private static StringContent Json(string body) => new(body, Encoding.UTF8, "application/json");
@@ -476,6 +497,20 @@ public sealed class PublicFormProtectionTests : PublicApiTestBase
     }
 
     // Gives a request the address a test names, as the connection would.
+    private sealed class SeenChecks
+    {
+        public List<FormBuilderSpamCheckContext> Contexts { get; } = [];
+    }
+
+    private sealed class SeeingCheck(SeenChecks seen) : IFormBuilderSpamCheck
+    {
+        public Task<FormBuilderSpamSignal?> CheckAsync(FormBuilderSpamCheckContext context, CancellationToken cancellationToken)
+        {
+            seen.Contexts.Add(context);
+            return Task.FromResult<FormBuilderSpamSignal?>(null);
+        }
+    }
+
     private sealed class AddressFilter(Func<string?> address) : IStartupFilter
     {
         public Action<IApplicationBuilder> Configure(Action<IApplicationBuilder> next) => app =>
