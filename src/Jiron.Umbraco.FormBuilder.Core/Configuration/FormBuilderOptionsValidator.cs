@@ -63,12 +63,17 @@ internal sealed class FormBuilderOptionsValidator(IHostFolders folders, IConfigu
     internal static bool IsSettingName(string? setting) =>
         setting is { Length: > 0 and <= MaxNameLength } && char.IsAsciiLetterLower(setting[0]) && setting.All(char.IsAsciiLetterOrDigit);
 
-    // The most bytes of a file within its bounds, and each blocked extension lowercase letters and digits, once (ADR-0087).
+    // The most bytes of a file and of what waits within their bounds, and each blocked extension lowercase letters and digits, once (ADR-0087).
     private static void CheckFileLimits(FormBuilderFilesOptions files, List<string> failures)
     {
         if (files.MaxFileBytes is < 1 or > FormBuilderFilesOptions.HighestMaxFileBytes)
         {
             failures.Add(string.Create(CultureInfo.InvariantCulture, $"{Root}:Files:MaxFileBytes ({files.MaxFileBytes}) must be 1 to {FormBuilderFilesOptions.HighestMaxFileBytes}."));
+        }
+
+        if (files.MaxWaitingBytes is < 0 or > FormBuilderFilesOptions.HighestMaxFileBytes)
+        {
+            failures.Add(string.Create(CultureInfo.InvariantCulture, $"{Root}:Files:MaxWaitingBytes ({files.MaxWaitingBytes}) must be 0 to {FormBuilderFilesOptions.HighestMaxFileBytes}."));
         }
 
         var seen = new Dictionary<string, int>(StringComparer.Ordinal);

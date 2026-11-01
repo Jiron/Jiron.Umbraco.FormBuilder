@@ -100,6 +100,9 @@ internal sealed class FormPostHandler(
     /// <summary>The notice's code after a post over a rate limit, whose answers are kept (ADR-0012).</summary>
     public const string RateLimitedCode = FormBuilderPublicProblems.RateLimitedCode;
 
+    /// <summary>The notice's code when the site can take no more files (ADR-0148).</summary>
+    public const string NoRoomCode = "no_room";
+
     /// <summary>Reads a post and answers it.</summary>
     /// <param name="http">The request, which Umbraco routed to the surface action.</param>
     /// <param name="cancellationToken">Cancelled when the request is.</param>
@@ -179,6 +182,19 @@ internal sealed class FormPostHandler(
                 Notice = WaitNotice(culture, limit, posted.Files.Any(file => file.Length > 0) || FormPostFileNotes.Get(http, formKey, instance) is { LeftOutFiles: true }),
             };
             FormPosts.Set(http, formKey, instance, refused.State(await KeptAsync(reader, definition, formKey, cancellationToken)));
+            return FormPostAnswer.Page;
+        }
+
+        // A post with files when the site can take no more stores nothing; its answers come back, as they do over a limit (ADR-0148).
+        var hasFiles = posted.Files.Any(file => file.Length > 0);
+        if ((hasFiles || HoldsTypedSignature(posted)) && !await uploads.HasRoomAsync(cancellationToken))
+        {
+            var words = RenderingWords.Of(culture);
+            var noRoom = new Step(reader, definition, Guid.TryParseExact(One(posted, FormPostFields.Page), "D", out var noRoomPage) ? noRoomPage : null, query)
+            {
+                Notice = new FormPostNotice(words.NotSentHeading, hasFiles ? words.NoRoomText + " " + words.ChooseFilesAgain : words.NoRoomText, NoRoomCode),
+            };
+            FormPosts.Set(http, formKey, instance, noRoom.State(await KeptAsync(reader, definition, formKey, cancellationToken)));
             return FormPostAnswer.Page;
         }
 
@@ -474,7 +490,7 @@ internal sealed class FormPostHandler(
     // and a row's or a ranking's button only render the page again, as a read does (ADR-0137).
     private static bool CountsAsSubmit(IFormCollection posted)
     {
-        if (posted.Files.Count > 0 || posted.Any(pair => pair.Key.EndsWith("." + SignatureFieldType.TypedPart, StringComparison.Ordinal) && pair.Value.Any(value => !string.IsNullOrWhiteSpace(value))))
+        if (posted.Files.Count > 0 || HoldsTypedSignature(posted))
         {
             return true;
         }
@@ -482,6 +498,9 @@ internal sealed class FormPostHandler(
         var nav = posted[FormPostFields.Nav].LastOrDefault();
         return nav is null or FormPostFields.Next or FormPostFields.Submit;
     }
+
+    private static bool HoldsTypedSignature(IFormCollection posted) =>
+        posted.Any(pair => pair.Key.EndsWith("." + SignatureFieldType.TypedPart, StringComparison.Ordinal) && pair.Value.Any(value => !string.IsNullOrWhiteSpace(value)));
 
     // What a post over a rate limit shows: when to send again, in the larger unit from two minutes on.
     private static FormPostNotice WaitNotice(string culture, RateLimitDecision limit, bool hadFiles)

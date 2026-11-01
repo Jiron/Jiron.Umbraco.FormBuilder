@@ -174,7 +174,7 @@ public sealed class DraftVersionCleanupTests : RepositoryTestBase
         Assert.Multiple(async () =>
         {
             Assert.That((job.Name, job.Period), Is.EqualTo(("Jiron.FormBuilder.Retention", TimeSpan.FromHours(1))));
-            Assert.That(GetRequiredService<IEnumerable<IFormBuilderRetentionPart>>().Select(part => part.GetType()), Is.EqualTo(new[] { typeof(DraftVersionCleanup), typeof(OrphanFileCleanup) }));
+            Assert.That(GetRequiredService<IEnumerable<IFormBuilderRetentionPart>>().Select(part => part.GetType()), Is.EqualTo(new[] { typeof(DraftVersionCleanup) }));
             Assert.That(await NumbersAsync(form), Is.EqualTo(new[] { 2 }));
         });
     }

@@ -145,7 +145,7 @@ public sealed class PublicFormFileScanTests : PublicApiTestBase
         builder.JironFormBuilder().FileScanners().Append<NamedScanner>();
     }
 
-    private async Task<int> WaitingAsync() => (await Entries.ListFilesToScanAsync(0, 100)).Count;
+    private async Task<int> WaitingAsync() => (await Entries.ListEntryFilesToScanAsync(0, 100)).Count + (await Entries.ListUploadsToScanAsync(0, 100)).Count;
 
     private async Task<string> UploadAsync(Guid form, string name)
     {

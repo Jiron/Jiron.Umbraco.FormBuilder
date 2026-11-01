@@ -148,7 +148,7 @@ public sealed class FormBuilderLimitsOptions
     public FormBuilderRatePolicyOptions Submit { get; } = new() { PerAddressPerMinute = 20, PerAddressPerHour = 100, PerAddressAndFormPerMinute = 5, PerFormPerMinute = 60, SitePerSecond = 50 };
 
     /// <summary>Uploading a file.</summary>
-    public FormBuilderRatePolicyOptions Upload { get; } = new() { PerAddressPerMinute = 30, PerAddressAndFormPerMinute = 20, SitePerSecond = 20 };
+    public FormBuilderRatePolicyOptions Upload { get; } = new() { PerAddressPerMinute = 30, PerAddressPerHour = 200, PerAddressAndFormPerMinute = 20, PerFormPerMinute = 600, SitePerSecond = 20 };
 
     /// <summary>The insights beacon.</summary>
     public FormBuilderRatePolicyOptions Events { get; } = new() { PerAddressPerMinute = 120, SitePerSecond = 500 };

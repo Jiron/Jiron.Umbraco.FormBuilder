@@ -32,6 +32,8 @@ public sealed class FormBuilderOptionsTests
             Assert.That(FormBuilderOptions.SectionName, Is.EqualTo("JironFormBuilder"));
             Assert.That(options.Files.Root, Is.EqualTo("~/umbraco/Data/JironFormBuilder/Uploads"));
             Assert.That(options.Files.MaxFileBytes, Is.EqualTo(52_428_800), "50 MiB");
+            Assert.That(options.Files.MaxWaitingBytes, Is.EqualTo(10_737_418_240), "10 GiB");
+            Assert.That((options.Limits.Upload.PerAddressPerHour, options.Limits.Upload.PerFormPerMinute), Is.EqualTo((200, 600)), "an upload has an hour's limit and a form's");
             Assert.That(options.Files.BlockedExtensions, Is.Empty, "the defaults apply while a site lists none");
             Assert.That(FormBuilderFilesOptions.DefaultBlockedExtensions, Is.EqualTo(new[] { "exe", "dll", "js", "mjs", "bat", "cmd", "ps1", "sh", "msi", "msp", "scr", "pif", "cpl", "jar", "vbs", "wsf", "hta", "lnk", "reg", "html", "htm", "xhtml", "shtml", "svg", "php", "phtml", "asp", "aspx", "jsp", "cgi" }));
             Assert.That(options.Limits.Definitions, Is.EqualTo(new DefinitionLimits()));
@@ -57,7 +59,7 @@ public sealed class FormBuilderOptionsTests
             Assert.That(Of(limits.Read), Is.EqualTo(new[] { 120, 0, 0, 0, 200 }));
             Assert.That(Of(limits.Challenge), Is.EqualTo(new[] { 30, 0, 10, 0, 100 }));
             Assert.That(Of(limits.Submit), Is.EqualTo(new[] { 20, 100, 5, 60, 50 }));
-            Assert.That(Of(limits.Upload), Is.EqualTo(new[] { 30, 0, 20, 0, 20 }));
+            Assert.That(Of(limits.Upload), Is.EqualTo(new[] { 30, 200, 20, 600, 20 }));
             Assert.That(Of(limits.Events), Is.EqualTo(new[] { 120, 0, 0, 0, 500 }));
             Assert.That(Of(limits.Verify), Is.EqualTo(new[] { 10, 0, 0, 0, 0 }));
         });
@@ -335,6 +337,7 @@ public sealed class FormBuilderOptionsTests
         var settings = new Dictionary<string, string?>
         {
             [$"{Root}:Files:MaxFileBytes"] = "0",
+            [$"{Root}:Files:MaxWaitingBytes"] = "-1",
             [$"{Root}:Files:BlockedExtensions:0"] = "exe",
             [$"{Root}:Files:BlockedExtensions:1"] = ".js",
             [$"{Root}:Files:BlockedExtensions:2"] = "EXE",
@@ -348,6 +351,7 @@ public sealed class FormBuilderOptionsTests
             Assert.That(HostOptions.Failures(settings), Is.EqualTo(new[]
             {
                 $"{Root}:Files:MaxFileBytes (0) must be 1 to 999999999999999.",
+                $"{Root}:Files:MaxWaitingBytes (-1) must be 0 to 999999999999999.",
                 $"{Root}:Files:BlockedExtensions:1 ('.js') must be an extension in lowercase letters and digits without the point, at most 10 of them, such as 'exe'.",
                 $"{Root}:Files:BlockedExtensions:2 ('EXE') must be an extension in lowercase letters and digits without the point, at most 10 of them, such as 'exe'.",
                 $"{Root}:Files:BlockedExtensions:3 ('abcdefghijk') must be an extension in lowercase letters and digits without the point, at most 10 of them, such as 'exe'.",
@@ -356,6 +360,9 @@ public sealed class FormBuilderOptionsTests
             Assert.That(HostOptions.Failures(new Dictionary<string, string?> { [$"{Root}:Files:MaxFileBytes"] = "1000000000000000" }), Has.One.StartsWith($"{Root}:Files:MaxFileBytes (1000000000000000) must be"));
             Assert.That(HostOptions.Failures(new Dictionary<string, string?> { [$"{Root}:Files:MaxFileBytes"] = "999999999999999", [$"{Root}:Files:BlockedExtensions:0"] = "abcdefghij" }), Is.Empty, "the highest limit, the longest extension");
             Assert.That(HostOptions.Failures(new Dictionary<string, string?> { [$"{Root}:Files:MaxFileBytes"] = "1" }), Is.Empty);
+            Assert.That(HostOptions.Failures(new Dictionary<string, string?> { [$"{Root}:Files:MaxWaitingBytes"] = "1000000000000000" }), Has.One.StartsWith($"{Root}:Files:MaxWaitingBytes (1000000000000000)"));
+            Assert.That(HostOptions.Failures(new Dictionary<string, string?> { [$"{Root}:Files:MaxWaitingBytes"] = "999999999999999" }), Is.Empty);
+            Assert.That(HostOptions.Failures(new Dictionary<string, string?> { [$"{Root}:Files:MaxWaitingBytes"] = "0" }), Is.Empty, "0 leaves the cap out");
         });
     }
 

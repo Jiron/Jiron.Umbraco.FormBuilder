@@ -232,7 +232,7 @@ public sealed class RenderingPartsTests
                 words.Other, words.OtherText, words.Choose, words.ChooseCountry, words.SeveralHint, words.NoChoices,
                 words.ChoicesUnavailable, words.NameTitle, words.NameFirst, words.NameMiddle, words.NameLast, words.Street,
                 words.Street2, words.Postcode, words.City, words.Region, words.Country, words.SignatureName,
-                words.SignatureTyped, words.TooLargeText,
+                words.SignatureTyped, words.TooLargeText, words.NoRoomText,
             };
             Assert.Multiple(() =>
             {
@@ -266,6 +266,7 @@ public sealed class RenderingPartsTests
             Assert.That(words.Street, Is.EqualTo("Stra" + (char)0xDF + "e und Hausnummer"));
             Assert.That(words.SignatureName, Is.EqualTo("Ihr vollst" + (char)0xE4 + "ndiger Name"));
             Assert.That(words.TooLargeText, Does.StartWith("Die Dateien waren zu gro" + (char)0xDF + ",").And.Contain("W" + (char)0xE4 + "hlen").And.Contain("f" + (char)0xFC + "llen"));
+            Assert.That(words.NoRoomText, Does.Contain("sp" + (char)0xE4 + "ter"));
             Assert.That(words.KeepFile, Is.EqualTo("{0} ({1}) behalten"));
         });
     }

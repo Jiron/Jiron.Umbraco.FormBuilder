@@ -82,6 +82,7 @@ internal sealed record RenderingWords
             WaitSecondsText = "This form was sent too often. Wait {0} seconds, then send it again. Your answers are kept.",
             WaitMinutesText = "This form was sent too often. Wait {0} minutes, then send it again. Your answers are kept.",
             ChooseFilesAgain = "Choose your files again before you send.",
+            NoRoomText = "This form can't take files right now. Try again later. Your answers are kept.",
             KeepFile = "Keep {0} ({1})",
             Kilobytes = "{0} KB",
             Megabytes = "{0} MB",
@@ -158,6 +159,7 @@ internal sealed record RenderingWords
             WaitSecondsText = "Dieses Formular wurde zu oft gesendet. Warten Sie {0} Sekunden und senden Sie es dann erneut. Ihre Antworten bleiben erhalten.",
             WaitMinutesText = "Dieses Formular wurde zu oft gesendet. Warten Sie {0} Minuten und senden Sie es dann erneut. Ihre Antworten bleiben erhalten.",
             ChooseFilesAgain = "W" + AUmlaut + "hlen Sie Ihre Dateien vor dem Senden erneut aus.",
+            NoRoomText = "Dieses Formular kann gerade keine Dateien annehmen. Versuchen Sie es sp" + AUmlaut + "ter noch einmal. Ihre Antworten bleiben erhalten.",
             KeepFile = "{0} ({1}) behalten",
             Kilobytes = "{0} KB",
             Megabytes = "{0} MB",
@@ -354,6 +356,9 @@ internal sealed record RenderingWords
 
     /// <summary>That notice's text after a post too large to read, whose answers are lost (ADR-0102).</summary>
     public required string TooLargeText { get; init; }
+
+    /// <summary>The text of a post with files when the site can take no more of them (ADR-0148).</summary>
+    public required string NoRoomText { get; init; }
 
     /// <summary>That notice's text after a post over a rate limit, with the seconds to wait, always two or more (ADR-0137).</summary>
     public required string WaitSecondsText { get; init; }

@@ -21,6 +21,7 @@ internal sealed partial class FileUploads(
     IFormRepository forms,
     IEntryRepository entries,
     FormBuilderFileScannerCollection scanners,
+    WaitingUploads waiting,
     ILogger<FileUploads> logger)
 {
     /// <summary>What a request may carry besides its file: the multipart boundaries, the part headers and the challenge.</summary>
@@ -39,6 +40,9 @@ internal sealed partial class FileUploads(
     /// <param name="field">The field.</param>
     public long RequestLimitOf(IFormBuilderFieldType type, FormField field) => LimitOf(type, field) + OverheadBytes;
 
+    /// <summary>Whether the site has room for another upload (<see cref="WaitingUploads"/>, ADR-0148).</summary>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    public Task<bool> HasRoomAsync(CancellationToken cancellationToken) => waiting.HasRoomAsync(cancellationToken);
 
     /// <summary>The type of a field when it stores files, so the field takes uploads; null otherwise.</summary>
     /// <param name="field">The field.</param>
@@ -115,7 +119,7 @@ internal sealed partial class FileUploads(
 
     /// <summary>
     /// Checks a file and stores it for its field (ADR-0087): the name is cleaned, the first bytes are read and checked,
-    /// the form's row is looked up, the bytes go to the store under a random id, counted against the field's limit and
+    /// the form's row is looked up, an upload past what the site lets wait is refused (ADR-0148), the bytes go to the store under a random id, counted against the field's limit and
     /// hashed, a file that must not also be an archive is refused when it ends as one (ADR-0143), and once
     /// <paramref name="endsAfter"/> confirms that nothing follows the file, a row without an entry records it. A file refused, cut off or not recorded leaves nothing in the store; an exception reaches the caller
     /// with the bytes deleted again. An exception reading <paramref name="content"/> arrives as
@@ -162,6 +166,11 @@ internal sealed partial class FileUploads(
             return new(FileUploadStatus.FormGone);
         }
 
+        if (!await waiting.HasRoomAsync(cancellationToken))
+        {
+            return new(FileUploadStatus.NoRoom);
+        }
+
         var id = FormBuilderFileId.New();
         var saved = false;
         try
@@ -205,6 +214,7 @@ internal sealed partial class FileUploads(
                 return new(FileUploadStatus.FormGone);
             }
 
+            waiting.Add(file.SizeBytes);
             LogStored(logger, file.Key, file.SizeBytes, formKey);
             return new(FileUploadStatus.Stored, file);
         }
@@ -331,6 +341,9 @@ internal enum FileUploadStatus
 
     /// <summary>The form is no longer published, or went while the file was read.</summary>
     FormGone,
+
+    /// <summary>The uploads that wait for an entry have reached what the site lets wait (ADR-0148): nothing of it was stored.</summary>
+    NoRoom,
 }
 
 /// <summary>The result of an upload.</summary>

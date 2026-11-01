@@ -128,7 +128,24 @@ internal sealed partial class EntryRepository
     }
 
     /// <inheritdoc />
-    public Task<IReadOnlyList<StoredEntryFile>> ListFilesToScanAsync(int afterId, int take, CancellationToken cancellationToken = default)
+    public Task<IReadOnlyList<StoredEntryFile>> ListEntryFilesToScanAsync(int afterId, int take, CancellationToken cancellationToken = default) =>
+        ListToScanAsync("IS NOT NULL", afterId, take, cancellationToken);
+
+    /// <inheritdoc />
+    public Task<IReadOnlyList<StoredEntryFile>> ListUploadsToScanAsync(int afterId, int take, CancellationToken cancellationToken = default) =>
+        ListToScanAsync("IS NULL", afterId, take, cancellationToken);
+
+    /// <inheritdoc />
+    public Task<long> SumWaitingBytesAsync(CancellationToken cancellationToken = default) =>
+        database.ReadAsync(
+            db =>
+            {
+                var n = new SqlNames(db);
+                return db.ExecuteScalarAsync<long>($"SELECT COALESCE(SUM({n.C("sizeBytes")}), 0) FROM {n.T(FormBuilderTables.EntryFile)} WHERE {n.C("entryId")} IS NULL");
+            },
+            cancellationToken);
+
+    private Task<IReadOnlyList<StoredEntryFile>> ListToScanAsync(string entry, int afterId, int take, CancellationToken cancellationToken)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(take);
         ArgumentOutOfRangeException.ThrowIfGreaterThan(take, MaxOrphansPerList);
@@ -137,7 +154,7 @@ internal sealed partial class EntryRepository
             {
                 var n = new SqlNames(db);
                 var rows = await db.FetchListAsync<EntryFileDto>(
-                    $"SELECT * FROM {n.T(FormBuilderTables.EntryFile)} WHERE {n.C("scanState")} = @0 AND {n.C("id")} > @1 ORDER BY {n.C("id")} {n.Page(0, take)}",
+                    $"SELECT * FROM {n.T(FormBuilderTables.EntryFile)} WHERE {n.C("scanState")} = @0 AND {n.C("entryId")} {entry} AND {n.C("id")} > @1 ORDER BY {n.C("id")} {n.Page(0, take)}",
                     FileScanStates.Pending,
                     afterId);
                 return rows.Select(FileFromDto).ToList();

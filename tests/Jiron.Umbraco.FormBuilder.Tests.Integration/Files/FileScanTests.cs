@@ -18,9 +18,10 @@ using Umbraco.Cms.Tests.Common.Testing;
 namespace Jiron.Umbraco.FormBuilder.Tests.Integration.Files;
 
 /// <summary>
-/// The scan of what waits (ROADMAP 7.3b, ADR-0144), on a migrated database: any scanner's quarantine decides, an answer from
-/// each that finds nothing makes a file clean, anything else leaves it waiting, a quarantine marks the entry that holds the
-/// file and keeps any entry from taking it, and a file's name is never logged.
+/// The scan of what waits (ROADMAP 7.3b and 7.4d, ADR-0144, ADR-0148), on a migrated database: any scanner's quarantine decides, an
+/// answer from each that finds nothing makes a file clean, anything else leaves it waiting, a quarantine marks the entry that holds
+/// the file and keeps any entry from taking it, what an entry holds goes before uploads, a file that cannot be opened passes its
+/// turn, and a file's name is never logged.
 /// </summary>
 [TestFixture]
 [UmbracoTest(Database = UmbracoTestOptions.Database.NewSchemaPerTest, Boot = true)]
@@ -265,12 +266,167 @@ public sealed class FileScanTests : RepositoryTestBase
 
         Assert.Multiple(async () =>
         {
-            Assert.That((await Entries.ListFilesToScanAsync(0, 10)).Select(file => file.Id), Is.EqualTo(new[] { first.Id, second.Id, third.Id }));
-            Assert.That((await Entries.ListFilesToScanAsync(first.Id, 10)).Select(file => file.Id), Is.EqualTo(new[] { second.Id, third.Id }));
-            Assert.That((await Entries.ListFilesToScanAsync(0, 2)).Select(file => file.Id), Is.EqualTo(new[] { first.Id, second.Id }));
-            Assert.That(async () => await Entries.ListFilesToScanAsync(0, 0), Throws.InstanceOf<ArgumentOutOfRangeException>());
-            Assert.That(async () => await Entries.ListFilesToScanAsync(0, EntryRepository.MaxOrphansPerList + 1), Throws.InstanceOf<ArgumentOutOfRangeException>());
+            Assert.That((await Entries.ListUploadsToScanAsync(0, 10)).Select(file => file.Id), Is.EqualTo(new[] { first.Id, second.Id, third.Id }));
+            Assert.That((await Entries.ListUploadsToScanAsync(first.Id, 10)).Select(file => file.Id), Is.EqualTo(new[] { second.Id, third.Id }));
+            Assert.That((await Entries.ListUploadsToScanAsync(0, 2)).Select(file => file.Id), Is.EqualTo(new[] { first.Id, second.Id }));
+            Assert.That(async () => await Entries.ListUploadsToScanAsync(0, 0), Throws.InstanceOf<ArgumentOutOfRangeException>());
+            Assert.That(async () => await Entries.ListUploadsToScanAsync(0, EntryRepository.MaxOrphansPerList + 1), Throws.InstanceOf<ArgumentOutOfRangeException>());
+            Assert.That(async () => await Entries.ListEntryFilesToScanAsync(0, 0), Throws.InstanceOf<ArgumentOutOfRangeException>());
+            Assert.That(async () => await Entries.ListEntryFilesToScanAsync(0, EntryRepository.MaxOrphansPerList + 1), Throws.InstanceOf<ArgumentOutOfRangeException>());
         });
+    }
+
+    [Test]
+    public async Task WhatAnEntryHolds_AndUploads_AreListedApart()
+    {
+        var form = await CreateTestFormAsync("upload");
+        var first = await WaitingAsync(form.Id);
+        var upload = await WaitingAsync(form.Id);
+        var second = await WaitingAsync(form.Id);
+        var done = await WaitingAsync(form.Id);
+        await Entries.CreateAsync(NewEntry(form.Id, form.VersionId) with { FileIds = [first.Id, second.Id, done.Id] });
+        await Entries.ChangeScanStateAsync(done.Id, FileScanStates.Pending, FileScanStates.Clean);
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That((await Entries.ListEntryFilesToScanAsync(0, 10)).Select(file => file.Id), Is.EqualTo(new[] { first.Id, second.Id }));
+            Assert.That((await Entries.ListEntryFilesToScanAsync(first.Id, 10)).Select(file => file.Id), Is.EqualTo(new[] { second.Id }));
+            Assert.That((await Entries.ListEntryFilesToScanAsync(0, 1)).Select(file => file.Id), Is.EqualTo(new[] { first.Id }));
+            Assert.That((await Entries.ListUploadsToScanAsync(0, 10)).Select(file => file.Id), Is.EqualTo(new[] { upload.Id }));
+        });
+    }
+
+    [Test]
+    public async Task WhatAnEntryHolds_IsScannedBeforeUploadsThatCameFirst()
+    {
+        var form = await CreateTestFormAsync("upload");
+        var upload = await WaitingAsync(form.Id);
+        var held = await WaitingAsync(form.Id);
+        await Entries.CreateAsync(NewEntry(form.Id, form.VersionId) with { FileIds = [held.Id] });
+        var asked = new List<Guid>();
+
+        await Job(new Answering(file =>
+        {
+            asked.Add(file.Key);
+            return FormBuilderFileScanOutcome.Clean;
+        })).RunJobAsync();
+
+        Assert.That(asked, Is.EqualTo(new[] { held.Key, upload.Key }));
+    }
+
+    [Test]
+    public async Task AFloodOfUploads_HoldsANewEntrysFile_BehindOneBatchAtMost()
+    {
+        var form = await CreateTestFormAsync("upload");
+        var uploads = new List<StoredEntryFile>();
+        for (var number = 0; number < 25; number++)
+        {
+            uploads.Add(await WaitingAsync(form.Id));
+        }
+
+        var held = await WaitingAsync(form.Id);
+        var asked = new List<Guid>();
+
+        await Job(new AnsweringAfter(async file =>
+        {
+            asked.Add(file.Key);
+            if (asked.Count == 1)
+            {
+                await Entries.CreateAsync(NewEntry(form.Id, form.VersionId) with { FileIds = [held.Id] });
+            }
+        })).RunJobAsync();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(asked.IndexOf(held.Key), Is.EqualTo(10), "right after the batch under way");
+            Assert.That(asked, Has.Count.EqualTo(26), "and everything else after it");
+        });
+    }
+
+    [Test]
+    public async Task AFileAnEntryTook_BehindWhereTheJobStood_IsFoundByARunSoon()
+    {
+        var form = await CreateTestFormAsync("upload");
+        var behind = await WaitingAsync(form.Id);
+        var held = await WaitingAsync(form.Id);
+        await Entries.CreateAsync(NewEntry(form.Id, form.VersionId) with { FileIds = [held.Id] });
+        var asked = new List<Guid>();
+        var job = Job(new Answering(file =>
+        {
+            asked.Add(file.Key);
+            Clock.Advance(FileScanJob.Budget);
+            return FormBuilderFileScanOutcome.Clean;
+        }));
+
+        await job.RunJobAsync();
+        var firstRun = asked.ToList();
+        await Entries.CreateAsync(NewEntry(form.Id, form.VersionId) with { FileIds = [behind.Id] });
+        await job.RunJobAsync();
+        await job.RunJobAsync();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(firstRun, Is.EqualTo(new[] { held.Key }));
+            Assert.That(asked, Is.EqualTo(new[] { held.Key, behind.Key }), "the entries' list starts over in the run after its end");
+        });
+    }
+
+    [Test]
+    public async Task AFileThatCannotBeOpened_StaysWaiting_AndPassesItsTurn()
+    {
+        var form = await CreateTestFormAsync("upload");
+        var broken = await WaitingAsync(form.Id);
+        var next = await WaitingAsync(form.Id);
+        _store.Refused.Add(broken.StoredName);
+        var asked = new List<Guid>();
+
+        await Job(new Answering(file =>
+        {
+            asked.Add(file.Key);
+            return FormBuilderFileScanOutcome.Clean;
+        })).RunJobAsync();
+        var warnings = GetRequiredService<LogCapture>().Entries.Where(entry => entry.Category == typeof(FileScans).FullName && entry.Level == LogLevel.Warning).ToList();
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(asked, Is.EqualTo(new[] { next.Key }));
+            Assert.That((await Entries.GetFileAsync(broken.Key))!.ScanState, Is.EqualTo(FileScanStates.Pending));
+            Assert.That((await Entries.GetFileAsync(next.Key))!.ScanState, Is.EqualTo(FileScanStates.Clean));
+            Assert.That(warnings, Has.Count.EqualTo(1));
+            Assert.That(warnings[0].Message, Does.Contain(broken.Key.ToString()).And.Not.Contain(SecretName));
+        });
+    }
+
+    [Test]
+    public async Task AScanThatFailsOutright_EndsItsRun_AndTheNextGoesPastIt()
+    {
+        var form = await CreateTestFormAsync("upload");
+        var broken = await WaitingAsync(form.Id);
+        var next = await WaitingAsync(form.Id);
+        _store.Fatal.Add(broken.StoredName);
+        var asked = new List<Guid>();
+        var job = Job(new Answering(file =>
+        {
+            asked.Add(file.Key);
+            return FormBuilderFileScanOutcome.Clean;
+        }));
+
+        Assert.That(job.RunJobAsync, Throws.InstanceOf<OutOfMemoryException>());
+        await job.RunJobAsync();
+
+        Assert.That(asked, Is.EqualTo(new[] { next.Key }));
+    }
+
+    [Test]
+    public async Task TheSitesStopping_EndsAScan_WhileItOpensAFile()
+    {
+        var form = await CreateTestFormAsync("upload");
+        var file = await WaitingAsync(form.Id);
+        _store.Refused.Add(file.StoredName);
+        using var stopping = new CancellationTokenSource();
+        await stopping.CancelAsync();
+
+        Assert.That(async () => await Scans(new Answering(_ => FormBuilderFileScanOutcome.Clean)).ScanAsync(file, stopping.Token), Throws.InstanceOf<IOException>());
     }
 
     [Test]
@@ -301,7 +457,7 @@ public sealed class FileScanTests : RepositoryTestBase
 
         await Job(new Answering(_ => FormBuilderFileScanOutcome.Clean)).RunJobAsync();
 
-        Assert.That(await Entries.ListFilesToScanAsync(0, 100), Is.Empty);
+        Assert.That(await Entries.ListUploadsToScanAsync(0, 100), Is.Empty);
     }
 
     [TestCase(false, RuntimeLevel.Run, false, TestName = "Without a scanner")]
@@ -326,7 +482,8 @@ public sealed class FileScanTests : RepositoryTestBase
         Assert.Multiple(async () =>
         {
             Assert.That(asked, Is.Zero);
-            await entries.DidNotReceiveWithAnyArgs().ListFilesToScanAsync(0, 0);
+            await entries.DidNotReceiveWithAnyArgs().ListEntryFilesToScanAsync(0, 0);
+            await entries.DidNotReceiveWithAnyArgs().ListUploadsToScanAsync(0, 0);
         });
     }
 
@@ -399,6 +556,15 @@ public sealed class FileScanTests : RepositoryTestBase
         public Task<FormBuilderFileScanOutcome> ScanAsync(FormBuilderFileToScan file, CancellationToken cancellationToken) => Task.FromResult(answer(file));
     }
 
+    private sealed class AnsweringAfter(Func<FormBuilderFileToScan, Task> work) : IFormBuilderFileScanner
+    {
+        public async Task<FormBuilderFileScanOutcome> ScanAsync(FormBuilderFileToScan file, CancellationToken cancellationToken)
+        {
+            await work(file);
+            return FormBuilderFileScanOutcome.Clean;
+        }
+    }
+
     // Waits for its limit.
     private sealed class Slow(TaskCompletionSource listening) : IFormBuilderFileScanner
     {
@@ -414,10 +580,23 @@ public sealed class FileScanTests : RepositoryTestBase
     {
         public Dictionary<string, byte[]> Files { get; } = [];
 
+        public HashSet<string> Refused { get; } = [];
+
+        public HashSet<string> Fatal { get; } = [];
+
         public Task SaveAsync(string id, Stream content, CancellationToken cancellationToken = default) => throw new NotSupportedException();
 
-        public Task<Stream?> OpenReadAsync(string id, CancellationToken cancellationToken = default) =>
-            Task.FromResult<Stream?>(Files.TryGetValue(id, out var bytes) ? new MemoryStream(bytes) : null);
+        public Task<Stream?> OpenReadAsync(string id, CancellationToken cancellationToken = default)
+        {
+            if (Fatal.Remove(id))
+            {
+                throw new InsufficientMemoryException();
+            }
+
+            return Refused.Contains(id)
+                ? throw new IOException("The store is locked.")
+                : Task.FromResult<Stream?>(Files.TryGetValue(id, out var bytes) ? new MemoryStream(bytes) : null);
+        }
 
         public Task DeleteAsync(string id, CancellationToken cancellationToken = default) => throw new NotSupportedException();
     }

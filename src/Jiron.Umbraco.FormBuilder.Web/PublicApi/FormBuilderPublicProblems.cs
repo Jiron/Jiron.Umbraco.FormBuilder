@@ -61,6 +61,12 @@ internal static class FormBuilderPublicProblems
     /// <summary>A rate limit is reached; <c>Retry-After</c> says when to send again (ADR-0012).</summary>
     public const string RateLimitedCode = "rate_limited";
 
+    /// <summary>The code of an upload past what the site lets wait for an entry (ADR-0148).</summary>
+    public const string UploadsFullCode = "uploads_full";
+
+    /// <summary>How soon an upload past what the site lets wait may be tried again.</summary>
+    public static readonly TimeSpan UploadsFullRetryAfter = TimeSpan.FromMinutes(5);
+
     /// <summary>The form takes entries only from members it admits (ADR-0012).</summary>
     public const string MemberRequiredCode = "member_required";
 
@@ -229,6 +235,15 @@ internal static class FormBuilderPublicProblems
         SubmissionProblems.Empty => "The submission holds no answer.",
         _ => "This answer cannot be taken as it is.",
     };
+
+    /// <summary>An upload past what the site lets wait for an entry; the answer says when to try again (ADR-0148).</summary>
+    /// <param name="http">The request, whose response carries <c>Retry-After</c>.</param>
+    public static FormBuilderProblemResult UploadsFull(HttpContext http)
+    {
+        ArgumentNullException.ThrowIfNull(http);
+        http.Response.Headers.RetryAfter = ((int)UploadsFullRetryAfter.TotalSeconds).ToString(System.Globalization.CultureInfo.InvariantCulture);
+        return FormBuilderProblems.Problem(StatusCodes.Status503ServiceUnavailable, UploadsFullCode, "This site can take no more files for now. Please try again later.");
+    }
 
     /// <summary>The tables are not ready yet; the answer says when to ask again (ADR-0033).</summary>
     public static FormBuilderProblemResult MigrationsPending(HttpContext http)

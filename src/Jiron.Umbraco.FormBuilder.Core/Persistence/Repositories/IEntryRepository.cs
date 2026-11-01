@@ -528,11 +528,21 @@ internal interface IEntryRepository
     /// <param name="cancellationToken">Cancels the read.</param>
     Task<IReadOnlyList<StoredEntryFile>> ListFilesToArchiveAsync(int formId, int afterId, int take, CancellationToken cancellationToken = default);
 
-    /// <summary>The files that wait for a scan after the file <paramref name="afterId"/>, in the order they came (ADR-0144).</summary>
+    /// <summary>The files an entry holds that wait for a scan after the file <paramref name="afterId"/>, in the order they came (ADR-0144, ADR-0148).</summary>
     /// <param name="afterId">The id to go on after; 0 from the first.</param>
     /// <param name="take">How many, 1 to <see cref="EntryRepository.MaxOrphansPerList"/>.</param>
     /// <param name="cancellationToken">Cancels the read.</param>
-    Task<IReadOnlyList<StoredEntryFile>> ListFilesToScanAsync(int afterId, int take, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<StoredEntryFile>> ListEntryFilesToScanAsync(int afterId, int take, CancellationToken cancellationToken = default);
+
+    /// <summary>The uploads no entry took yet that wait for a scan after the file <paramref name="afterId"/>, in the order they came (ADR-0144, ADR-0148).</summary>
+    /// <param name="afterId">The id to go on after; 0 from the first.</param>
+    /// <param name="take">How many, 1 to <see cref="EntryRepository.MaxOrphansPerList"/>.</param>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    Task<IReadOnlyList<StoredEntryFile>> ListUploadsToScanAsync(int afterId, int take, CancellationToken cancellationToken = default);
+
+    /// <summary>The bytes of all the uploads no entry took yet (ADR-0148).</summary>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    Task<long> SumWaitingBytesAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Files that no entry took and that were uploaded before <paramref name="createdBefore"/>, oldest first: what the

@@ -4,6 +4,7 @@ using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Core.Files;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Testing;
+using Jiron.Umbraco.FormBuilder.Testing.Time;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
 
@@ -184,6 +185,44 @@ public sealed class FileUploadsTests
             Assert.That(result.File, Is.Null);
         });
         await _entries.DidNotReceive().AddFileAsync(Arg.Any<NewEntryFile>(), Arg.Any<CancellationToken>());
+    }
+
+    [Test]
+    public async Task PastWhatMayWait_NothingIsStored_AndWhatTheChecksRefuse_IsSaidFirst()
+    {
+        var field = File("""{"types":["pdf"]}""");
+        _entries.SumWaitingBytesAsync(Arg.Any<CancellationToken>()).Returns(Core.Files.FormBuilderFilesOptions.DefaultMaxWaitingBytes);
+
+        var fine = await StoreAsync(field, "a.pdf", Pdf);
+        var refused = await StoreAsync(field, "a.pdf", Program);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(fine.Status, Is.EqualTo(FileUploadStatus.NoRoom));
+            Assert.That(Answer(refused), Is.EqualTo("Refused fileType"));
+            Assert.That(_store.Files, Is.Empty);
+        });
+        await _entries.DidNotReceive().AddFileAsync(Arg.Any<NewEntryFile>(), Arg.Any<CancellationToken>());
+    }
+
+    [Test]
+    public async Task WhatIsStored_CountsAtOnce_TowardsWhatMayWait()
+    {
+        var field = File("""{"types":["pdf"]}""");
+        _entries.SumWaitingBytesAsync(Arg.Any<CancellationToken>()).Returns(Core.Files.FormBuilderFilesOptions.DefaultMaxWaitingBytes - Pdf.Length);
+        var uploads = Uploads();
+        using var first = new MemoryStream(Pdf);
+        using var second = new MemoryStream(Pdf);
+
+        var stored = await uploads.StoreAsync(FormKey, uploads.TypeOf(field)!, field, "a.pdf", first, _ => Task.FromResult(true), CancellationToken.None);
+        var past = await uploads.StoreAsync(FormKey, uploads.TypeOf(field)!, field, "b.pdf", second, _ => Task.FromResult(true), CancellationToken.None);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(stored.Status, Is.EqualTo(FileUploadStatus.Stored));
+            Assert.That(past.Status, Is.EqualTo(FileUploadStatus.NoRoom));
+            Assert.That(_store.Files, Has.Count.EqualTo(1));
+        });
     }
 
     [Test]
@@ -470,7 +509,15 @@ public sealed class FileUploadsTests
         1, file.Key, null, file.FormId, file.FieldKey, file.OriginalName, file.StoredName, file.ContentType, file.SizeBytes, file.FileHash, file.ScanState, DateTimeOffset.UnixEpoch);
 
     private FileUploads Uploads(FieldHostLimits? host = null, IEntryRepository? entries = null, params IFormBuilderFileScanner[] scanners) =>
-        new(TestFieldTypes.Registry, host ?? FieldHostLimits.Default, _store, _forms, entries ?? _entries, new FormBuilderFileScannerCollection(() => scanners), _logger);
+        new(
+            TestFieldTypes.Registry,
+            host ?? FieldHostLimits.Default,
+            _store,
+            _forms,
+            entries ?? _entries,
+            new FormBuilderFileScannerCollection(() => scanners),
+            new WaitingUploads(entries ?? _entries, Microsoft.Extensions.Options.Options.Create(new Core.Configuration.FormBuilderOptions()), new TestTimeProvider(), Microsoft.Extensions.Logging.Abstractions.NullLogger<WaitingUploads>.Instance),
+            _logger);
 
     private async Task<FileUploadResult> StoreAsync(FormField field, string? name, byte[] bytes, Func<CancellationToken, Task<bool>>? endsAfter = null, IEntryRepository? entries = null)
     {

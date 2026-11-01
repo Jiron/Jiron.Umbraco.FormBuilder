@@ -56,7 +56,19 @@ internal sealed partial class FileScans(
         var unavailable = false;
         foreach (var scanner in scanners)
         {
-            await using var content = await store.OpenReadAsync(file.StoredName, cancellationToken);
+            Stream? opened;
+            try
+            {
+                opened = await store.OpenReadAsync(file.StoredName, cancellationToken);
+            }
+            catch (Exception exception) when (!cancellationToken.IsCancellationRequested && exception is not OutOfMemoryException)
+            {
+                // It stays waiting, and its turn passes to the next (ADR-0148).
+                LogOpenFailed(logger, file.Key, exception.GetType().Name);
+                return;
+            }
+
+            await using var content = opened;
             if (content is null)
             {
                 LogBytesGone(logger, file.Key);
@@ -133,15 +145,20 @@ internal sealed partial class FileScans(
     [LoggerMessage(Level = LogLevel.Warning, Message = "The file scanner {Scanner} could not answer about the file {FileKey} ({Failure}); it is asked again later")]
     private static partial void LogScanFailed(ILogger logger, string scanner, Guid fileKey, string failure);
 
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Jiron Form Builder could not open the file {FileKey} to scan it ({Failure}); it is asked again later")]
+    private static partial void LogOpenFailed(ILogger logger, Guid fileKey, string failure);
+
     [LoggerMessage(Level = LogLevel.Warning, Message = "Jiron Form Builder could not scan the file {FileKey}: its bytes are gone")]
     private static partial void LogBytesGone(ILogger logger, Guid fileKey);
 }
 
 /// <summary>
-/// Scans what waits (ADR-0144), oldest first, on a timer of its own and not in Umbraco's distributed runner, where a long scan
-/// would hold every other job of the server (ADR-0007). It runs on the server that schedules, only with a scanner, only while
-/// Umbraco runs and no migration is pending. Each run goes on from where the last stopped, so files a scanner cannot answer
-/// about do not keep the others waiting; once it reaches the end, the next run starts over with those.
+/// Scans what waits (ADR-0144), on a timer of its own and not in Umbraco's distributed runner, where a long scan would hold
+/// every other job of the server (ADR-0007). It runs on the server that schedules, only with a scanner, only while Umbraco runs
+/// and no migration is pending. What an entry holds goes first, oldest first, so uploads no entry took cannot keep it behind
+/// them (ADR-0148), and then those uploads. Each goes on from where it stopped, so files a scanner cannot answer about, or that
+/// cannot be opened, do not keep the others waiting: the files of entries start over in the run after they reach their end,
+/// which also finds a file an entry took behind where they stood, and the uploads when they reach theirs.
 /// </summary>
 internal sealed class FileScanJob(
     FormBuilderFileScannerCollection scanners,
@@ -156,9 +173,12 @@ internal sealed class FileScanJob(
     /// <summary>How long one run starts new scans.</summary>
     public static readonly TimeSpan Budget = TimeSpan.FromMinutes(2);
 
-    private const int Batch = 50;
+    // Small, as what an entry holds is looked for again after each batch of uploads.
+    private const int Batch = 10;
 
-    private int _after;
+    private int _entryFilesAfter;
+    private bool _entryFilesReachedEnd;
+    private int _uploadsAfter;
 
     /// <inheritdoc />
     public event EventHandler? PeriodChanged
@@ -190,20 +210,41 @@ internal sealed class FileScanJob(
             return;
         }
 
+        if (_entryFilesReachedEnd)
+        {
+            _entryFilesAfter = 0;
+            _entryFilesReachedEnd = false;
+        }
+
         var deadline = time.GetUtcNow() + Budget;
         while (time.GetUtcNow() < deadline)
         {
-            var waiting = await entries.ListFilesToScanAsync(_after, Batch, stopping);
+            var waiting = await entries.ListEntryFilesToScanAsync(_entryFilesAfter, Batch, stopping);
             if (waiting.Count == 0)
             {
-                _after = 0;
+                _entryFilesReachedEnd = true;
+                waiting = await entries.ListUploadsToScanAsync(_uploadsAfter, Batch, stopping);
+            }
+
+            if (waiting.Count == 0)
+            {
+                _uploadsAfter = 0;
                 return;
             }
 
             foreach (var file in waiting)
             {
+                // Past it before its scan, so one whose scan fails for good cannot hold the queue.
+                if (file.EntryId is null)
+                {
+                    _uploadsAfter = file.Id;
+                }
+                else
+                {
+                    _entryFilesAfter = file.Id;
+                }
+
                 await scans.ScanAsync(file, stopping);
-                _after = file.Id;
                 if (time.GetUtcNow() >= deadline)
                 {
                     return;

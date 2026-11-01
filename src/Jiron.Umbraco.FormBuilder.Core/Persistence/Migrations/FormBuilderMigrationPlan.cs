@@ -26,6 +26,9 @@ internal sealed class FormBuilderMigrationPlan : PackageMigrationPlan
     /// <summary>The state after the index of the files that wait for a scan (ADR-0144).</summary>
     public const string StateFileScanIndex = "jfb-005-file-scan-index";
 
+    /// <summary>The state after that index also tells an entry's files from uploads (ADR-0148).</summary>
+    public const string StateFileScanOrder = "jfb-006-file-scan-order";
+
     /// <summary>The steps in order, with the state each one leaves. The tests build their copies of the plan from it.</summary>
     internal static readonly IReadOnlyList<(string State, Type Step)> Steps =
     [
@@ -34,6 +37,7 @@ internal sealed class FormBuilderMigrationPlan : PackageMigrationPlan
         (StateGrantSection, typeof(GrantFormsSectionV1)),
         (StateRequestReferenceRebuild, typeof(RequestReferenceRebuildV1)),
         (StateFileScanIndex, typeof(AddFileScanIndexV1)),
+        (StateFileScanOrder, typeof(ChangeFileScanIndexV1)),
     ];
 
     /// <summary>Creates the plan with Jiron Form Builder's package id, name and plan name.</summary>

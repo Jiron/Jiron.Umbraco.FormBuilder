@@ -1,15 +1,22 @@
 using Jiron.Umbraco.FormBuilder.Core.Files;
+using Jiron.Umbraco.FormBuilder.Core.Persistence.Migrations;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Core.Retention;
 using Jiron.Umbraco.FormBuilder.Tests.Integration.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Tests.Integration.Support;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using NSubstitute;
+using Umbraco.Cms.Core;
+using Umbraco.Cms.Core.Services;
+using Umbraco.Cms.Core.Sync;
+using Umbraco.Cms.Infrastructure.BackgroundJobs;
 using Umbraco.Cms.Tests.Common.Testing;
 
 namespace Jiron.Umbraco.FormBuilder.Tests.Integration.Retention;
 
 /// <summary>
-/// The orphan cleanup (ROADMAP 7.3b, ADR-0144): an upload no entry took goes with its bytes once its token has run out and a
+/// The orphan cleanup (ROADMAP 7.3b and 7.4d, ADR-0144, ADR-0148): an upload no entry took goes with its bytes once its token has run out and a
 /// request that read the token cannot still be under way. A file that cannot go keeps its row and does not stop the others, and
 /// a file's name is never logged.
 /// </summary>
@@ -25,6 +32,15 @@ public sealed class OrphanFileCleanupTests : RepositoryTestBase
 
     private OrphanFileCleanup Cleanup => new(Entries, _store, Clock, GetRequiredService<ILogger<OrphanFileCleanup>>());
 
+    private OrphanFileJob Job(RuntimeLevel level, bool pending)
+    {
+        var runtime = Substitute.For<IRuntimeState>();
+        runtime.Level.Returns(level);
+        var migrations = Substitute.For<IFormBuilderMigrationState>();
+        migrations.IsPendingAsync(Arg.Any<CancellationToken>()).Returns(pending);
+        return new(Cleanup, runtime, migrations, Substitute.For<IHostApplicationLifetime>(), Clock);
+    }
+
     [SetUp]
     public void ForgetTheStore()
     {
@@ -33,8 +49,61 @@ public sealed class OrphanFileCleanupTests : RepositoryTestBase
     }
 
     [Test]
-    public void TheCleanup_IsAPartOfTheRetention_AfterTheDraftSaves() =>
-        Assert.That(GetRequiredService<IEnumerable<IFormBuilderRetentionPart>>().Select(part => part.GetType()), Is.EqualTo(new[] { typeof(DraftVersionCleanup), typeof(OrphanFileCleanup) }));
+    public void TheCleanup_HasATimerOfItsOwn_OnTheServerThatSchedules()
+    {
+        var job = GetRequiredService<IEnumerable<IRecurringBackgroundJob>>().OfType<OrphanFileJob>().Single();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(GetRequiredService<IEnumerable<IFormBuilderRetentionPart>>().Select(part => part.GetType()), Does.Not.Contain(typeof(OrphanFileCleanup)), "the hourly job's share would fall behind");
+            Assert.That(job.Period, Is.EqualTo(TimeSpan.FromMinutes(1)));
+            Assert.That(job.ServerRoles, Is.EquivalentTo(new[] { ServerRole.Single, ServerRole.SchedulingPublisher }));
+            Assert.That(OrphanFileJob.Budget, Is.EqualTo(TimeSpan.FromSeconds(30)));
+        });
+    }
+
+    [Test]
+    public async Task ABacklog_IsClearedPastOneRun()
+    {
+        var form = await CreateTestFormAsync("upload");
+        var first = await UploadAsync(form.Id);
+        var second = await UploadAsync(form.Id);
+        var third = await UploadAsync(form.Id);
+        Clock.Advance(TimeSpan.FromDays(2));
+        var job = Job(RuntimeLevel.Run, pending: false);
+        _store.OnDelete = () => Clock.Advance(OrphanFileJob.Budget);
+
+        await job.RunJobAsync();
+        var afterOne = _store.Deleted.Count;
+        await job.RunJobAsync();
+        await job.RunJobAsync();
+        _store.OnDelete = null;
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(afterOne, Is.EqualTo(1), "a run ends at its budget");
+            Assert.That(await Entries.GetFileAsync(first.Key), Is.Null);
+            Assert.That(await Entries.GetFileAsync(second.Key), Is.Null);
+            Assert.That(await Entries.GetFileAsync(third.Key), Is.Null, "the next runs go on");
+        });
+    }
+
+    [TestCase(RuntimeLevel.Upgrade, false, TestName = "The job removes nothing while Umbraco does not run")]
+    [TestCase(RuntimeLevel.Run, true, TestName = "The job removes nothing while a migration is pending")]
+    public async Task TheJob_RemovesNothing(RuntimeLevel level, bool pending)
+    {
+        var form = await CreateTestFormAsync("upload");
+        var file = await UploadAsync(form.Id);
+        Clock.Advance(TimeSpan.FromDays(2));
+
+        await Job(level, pending).RunJobAsync();
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(_store.Deleted, Is.Empty);
+            Assert.That(await Entries.GetFileAsync(file.Key), Is.Not.Null);
+        });
+    }
 
     [Test]
     public void AnUploadIsKept_PastItsTokensDay_ByTheLongestARequestMayTake() =>

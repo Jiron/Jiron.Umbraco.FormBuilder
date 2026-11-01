@@ -20,6 +20,7 @@ public sealed class IndexPlanTests : RepositoryTestBase
 {
     private const string EntryFileIndex = "IX_jfbEntryFile_entryId_createdUtc";
     private const string EntryFileFormIndex = "IX_jfbEntryFile_formId_entryId";
+    private const string EntryFileScanIndex = "IX_jfbEntryFile_scanState_entryId_id";
     private const string DailyStatDayIndex = "IX_jfbDailyStat_day_formId";
     private const string ReferenceIndex = "IX_jfbReference_contentKey";
 
@@ -36,9 +37,30 @@ public sealed class IndexPlanTests : RepositoryTestBase
             await Entries.ListFilesAsync(1L);
             await Entries.ListFilesAsync([1L, 2L]);
             await Entries.ListOrphanFilesAsync(Now, 10);
+            await Entries.SumWaitingBytesAsync();
         });
 
-        AssertEach(plans, FormBuilderTables.EntryFile, 3, EntryFileIndex);
+        AssertEach(plans, FormBuilderTables.EntryFile, 4, EntryFileIndex);
+    }
+
+    [Test]
+    public async Task TheFilesThatWaitForAScan_UseTheirIndex_AndTheUploadsComeInOrderFromIt()
+    {
+        Assume.That(IsSqlite, Is.True, "plans are SQLite's");
+        var form = await CreateTestFormAsync("cv");
+        await Entries.AddFileAsync(EntryRepositoryTests.NewFile(form.Id));
+
+        var entryFiles = await PlansAsync(() => Entries.ListEntryFilesToScanAsync(0, 10));
+        var uploads = await PlansAsync(() => Entries.ListUploadsToScanAsync(0, 10));
+
+        Assert.Multiple(() =>
+        {
+            AssertEach(entryFiles, FormBuilderTables.EntryFile, 1, EntryFileScanIndex);
+            AssertEach(uploads, FormBuilderTables.EntryFile, 1, EntryFileScanIndex);
+            Assert.That(entryFiles.Single().Plan, Has.Some.Contains("(scanState=? AND entryId>?)"), "the uploads, whose entry is null, are not read");
+            Assert.That(uploads.Single().Plan, Has.Some.Contains("(scanState=? AND entryId=? AND id>?)"));
+            Assert.That(uploads.Single().Plan, Has.None.Contains("TEMP B-TREE"), "in the order of the ids, without a sort");
+        });
     }
 
     [Test]

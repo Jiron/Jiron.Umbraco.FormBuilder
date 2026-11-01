@@ -133,6 +133,7 @@ internal sealed class UploadRequests(FileUploads uploads, UploadTokens tokens, C
             { Status: FileUploadStatus.Refused, Error: { } kind } => Refused(http, FormBuilderPublicProblems.FileRefused(kind)),
             { Status: FileUploadStatus.TooLarge, Error: { } kind } => Refused(http, FormBuilderPublicProblems.FileTooLarge(kind)),
             { Status: FileUploadStatus.FormGone } => Refused(http, FormBuilderPublicProblems.FormNotFound()),
+            { Status: FileUploadStatus.NoRoom } => Refused(http, FormBuilderPublicProblems.UploadsFull(http)),
             _ => Refused(http, FormBuilderPublicProblems.InvalidRequest(FormBuilderUploadBodyAttribute.FilePart)),
         };
     }

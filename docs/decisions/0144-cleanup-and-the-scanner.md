@@ -1,7 +1,8 @@
 # 0144. The orphan cleanup and the file scanner
 
 - Status: accepted; builds on [ADR-0006](0006-file-storage-and-uploads.md), [ADR-0007](0007-background-work-outbox-and-email.md)
-  and [ADR-0087](0087-the-upload-endpoint.md); schema step 5 follows the freeze of [ADR-0054](0054-schema-freeze.md)
+  and [ADR-0087](0087-the-upload-endpoint.md); schema step 5 follows the freeze of [ADR-0054](0054-schema-freeze.md); the
+  cleanup's timer, the order of the scans and their index changed in 7.4d by [ADR-0148](0148-what-uploads-may-hold.md)
 - Date: 2026-11-01
 - Roadmap step: 7.3b
 
