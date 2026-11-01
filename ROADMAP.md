@@ -2404,15 +2404,19 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - Playwright, with the provider hosts routed to a local stub (`page.route`, so no real third-party request ever happens, D22), shows **zero requests to them before consent** and the script loading after;
     - proof of work completes in under 2 s at the default level on the demo machine;
     - Playwright shows `consent.grant('captcha')` loading the provider's script on a form in the `cmp` mode, and none on the next page after `withdraw()` (added in the split of 6.4).
-- [ ] **7.3 File security**
-  - **Upload checks:**
-    - streaming limits;
-    - the allowlist, the global blocklist and magic-number checks;
-    - SVG and HTML never served inline;
-    - random names.
-  - **Cleanup and scanning:** the orphan-cleanup job, and the scanner hook with quarantine.
-  - **Downloads:** protected and permission-checked; ZIP exports safe against path traversal.
-  - Done when: tests cover a polyglot file, a double extension, an oversize stream aborted early, a zip-slip name, and a quarantined file. Over HTTPS with HTTP/2, Playwright shows that a refused upload's answer reaches the browser (ADR-0006).
+- [ ] **7.3a Upload checks** (7.3 split in four, WORKLOG 2026-11-01)
+  - streaming limits;
+  - the allowlist, the global blocklist and magic-number checks;
+  - random names.
+  - Done when: tests cover a polyglot file, a double extension and an oversize stream aborted early.
+- [ ] **7.3b Cleanup and scanning** (7.3 split in four, WORKLOG 2026-11-01)
+  - the orphan-cleanup job, and the scanner hook with quarantine.
+  - Done when: tests cover a quarantined file and the cleanup of an orphan.
+- [ ] **7.3c Downloads** (7.3 split in four, WORKLOG 2026-11-01)
+  - protected and permission-checked, with SVG and HTML never served inline; ZIP exports safe against path traversal.
+  - Done when: tests cover a zip-slip name, a download by a user with and without the permission and by an anonymous caller, and an SVG and an HTML file served as attachments.
+- [ ] **7.3d A refused upload over HTTP/2** (7.3 split in four, WORKLOG 2026-11-01)
+  - Done when: over HTTPS with HTTP/2, Playwright shows that a refused upload's answer reaches the browser (ADR-0006).
 - [ ] **7.4 Phase review**
   - A security review of Phases 6 and 7 (STRIDE for the public surface). Fix what it finds, with a test per fix.
   - Write the handover note.
