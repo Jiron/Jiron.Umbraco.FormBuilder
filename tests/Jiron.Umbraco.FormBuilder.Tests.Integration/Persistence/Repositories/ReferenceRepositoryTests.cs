@@ -49,6 +49,10 @@ public sealed class ReferenceRepositoryTests : RepositoryTestBase
             Assert.That(await References.ContentOfAsync(newsletter.Key), Is.EqualTo(new[] { page }));
             Assert.That(Count(FormBuilderTables.Reference), Is.EqualTo(2));
             Assert.That(await References.ContentOfAsync(Guid.NewGuid()), Is.Empty, "a form that does not exist");
+            Assert.That(await References.HoldsAsync(newsletter.Key, page), Is.True);
+            Assert.That(await References.HoldsAsync(contact.Key, page), Is.False, "its row went");
+            Assert.That(await References.HoldsAsync(contact.Key, other), Is.True);
+            Assert.That(await References.HoldsAsync(Guid.NewGuid(), page), Is.False, "a form that does not exist");
         });
     }
 

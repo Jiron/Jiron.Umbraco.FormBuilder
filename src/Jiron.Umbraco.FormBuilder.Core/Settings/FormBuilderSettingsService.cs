@@ -31,6 +31,10 @@ internal interface IFormBuilderSettingsService
     Task<SettingsSnapshot<T>> GetAsync<T>(Guid? siteKey = null, CancellationToken cancellationToken = default)
         where T : class, ISettingsSection, new();
 
+    /// <summary>The keys of the sites that set something of a per-site section of their own.</summary>
+    Task<IReadOnlyList<Guid>> SitesOfAsync<T>(CancellationToken cancellationToken = default)
+        where T : class, ISettingsSection, new();
+
     /// <summary>
     /// Validates and saves the global values of a section; <paramref name="expectedVersion"/> is the version the editor
     /// read. The save is a unit of work of its own.
@@ -90,6 +94,20 @@ internal sealed partial class FormBuilderSettingsService(
             cacheKey,
             cacheKey + SettingsCacheKeys.LoadingSuffix,
             async () => Snapshot<T>(await ReadStoredAsync<T>(scope, CancellationToken.None)),
+            CacheDuration,
+            cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public Task<IReadOnlyList<Guid>> SitesOfAsync<T>(CancellationToken cancellationToken = default)
+        where T : class, ISettingsSection, new()
+    {
+        var cacheKey = SettingsCacheKeys.Of(SettingsCacheKeys.Sites, T.Alias);
+        return RuntimeCacheLoads.GetAsync<IReadOnlyList<Guid>>(
+            appCaches.RuntimeCache,
+            cacheKey,
+            cacheKey + SettingsCacheKeys.LoadingSuffix,
+            async () => [.. (await repository.ListSectionAsync(T.Alias, CancellationToken.None)).Where(row => row.Scope != SettingsScopes.Global).Select(row => Guid.ParseExact(row.Scope, "D"))],
             CacheDuration,
             cancellationToken);
     }

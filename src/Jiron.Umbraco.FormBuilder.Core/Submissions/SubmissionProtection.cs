@@ -87,6 +87,7 @@ internal sealed record SpamVerdict(int Score, IReadOnlyList<string> Reasons)
 /// The blocked ranges, the content rules and the site's own checks hold for every request.
 /// </summary>
 /// <param name="settings">The site's protection settings.</param>
+/// <param name="references">The pages that hold a form, whose sites' settings apply to it.</param>
 /// <param name="types">The field types, which say whose answers are text.</param>
 /// <param name="checks">The site's own spam checks.</param>
 /// <param name="captchas">The captcha providers.</param>
@@ -95,6 +96,7 @@ internal sealed record SpamVerdict(int Score, IReadOnlyList<string> Reasons)
 /// <param name="time">The site's clock.</param>
 internal sealed partial class SubmissionProtection(
     IFormBuilderSettingsService settings,
+    IReferenceRepository references,
     FieldTypeRegistry types,
     FormBuilderSpamCheckCollection checks,
     FormBuilderCaptchaProviderCollection captchas,
@@ -117,19 +119,43 @@ internal sealed partial class SubmissionProtection(
     /// </summary>
     /// <param name="request">The submission, with what the gate found in its challenge.</param>
     /// <param name="definition">The form.</param>
-    /// <param name="page">The page and the site it is on.</param>
-    /// <param name="cancellationToken">Cancels the read of the settings.</param>
-    public async Task<bool> HasItsProofAsync(SubmissionRequest request, FormDefinition definition, RequestPage page, CancellationToken cancellationToken)
+    /// <param name="site">The settings that protect it (<see cref="SettingsOfAsync"/>).</param>
+    public static bool HasItsProof(SubmissionRequest request, FormDefinition definition, ProtectionSettings site)
     {
         ArgumentNullException.ThrowIfNull(request);
-        ArgumentNullException.ThrowIfNull(page);
+        ArgumentNullException.ThrowIfNull(site);
         if (request.Challenges is null || request.ServerKey is not null)
         {
             return true;
         }
 
-        var site = (await settings.GetAsync<ProtectionSettings>(page.Site, cancellationToken)).Value;
-        return site.LevelOf(definition) != ProtectionLevel.ProofOfWork || (request.Ticket is { } ticket && ProofOfWork.IsSolved(ticket, request.ProofOfWork));
+        // A puzzle of fewer bits than the site asks now, from another site's challenge or an earlier setting, proves too little.
+        return site.LevelOf(definition) != ProtectionLevel.ProofOfWork
+            || (request.Ticket is { } ticket && ticket.ProofBits >= site.ProofBits && ProofOfWork.IsSolved(ticket, request.ProofOfWork));
+    }
+
+    /// <summary>
+    /// The settings that protect a request for a form (ADR-0147). A request names its own page, so a page's site counts only when
+    /// that page holds the form; anything else could choose the laxest site, and gets the strictest of the shared values and every site's.
+    /// </summary>
+    /// <param name="formKey">The form.</param>
+    /// <param name="page">The page the request names, and its site.</param>
+    /// <param name="cancellationToken">Cancels the reads.</param>
+    public async Task<ProtectionSettings> SettingsOfAsync(Guid formKey, RequestPage page, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(page);
+        if (page.Content is { } content && await references.HoldsAsync(formKey, content, cancellationToken))
+        {
+            return (await settings.GetAsync<ProtectionSettings>(page.Site, cancellationToken)).Value;
+        }
+
+        var sections = new List<ProtectionSettings> { (await settings.GetAsync<ProtectionSettings>(null, cancellationToken)).Value };
+        foreach (var site in await settings.SitesOfAsync<ProtectionSettings>(cancellationToken))
+        {
+            sections.Add((await settings.GetAsync<ProtectionSettings>(site, cancellationToken)).Value);
+        }
+
+        return sections.Count == 1 ? sections[0] : ProtectionSettings.Strictest(sections);
     }
 
     /// <summary>
@@ -139,18 +165,17 @@ internal sealed partial class SubmissionProtection(
     /// </summary>
     /// <param name="request">The submission.</param>
     /// <param name="definition">The form.</param>
-    /// <param name="page">The page and the site it is on.</param>
-    /// <param name="cancellationToken">Cancels the read of the settings and the provider's call.</param>
-    public async Task<FormBuilderCaptchaOutcome> CheckCaptchaAsync(SubmissionRequest request, FormDefinition definition, RequestPage page, CancellationToken cancellationToken)
+    /// <param name="site">The settings that protect it (<see cref="SettingsOfAsync"/>).</param>
+    /// <param name="cancellationToken">Cancels the provider's call.</param>
+    public async Task<FormBuilderCaptchaOutcome> CheckCaptchaAsync(SubmissionRequest request, FormDefinition definition, ProtectionSettings site, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
-        ArgumentNullException.ThrowIfNull(page);
+        ArgumentNullException.ThrowIfNull(site);
         if (request.Challenges is null || request.ServerKey is not null)
         {
             return FormBuilderCaptchaOutcome.Passed;
         }
 
-        var site = (await settings.GetAsync<ProtectionSettings>(page.Site, cancellationToken)).Value;
         if (site.CaptchaOf(definition) is not { } chosen)
         {
             return FormBuilderCaptchaOutcome.Passed;
@@ -184,14 +209,16 @@ internal sealed partial class SubmissionProtection(
     /// <param name="answers">The answers as they were read.</param>
     /// <param name="culture">The culture the page was in.</param>
     /// <param name="page">The page and the site it is on.</param>
+    /// <param name="site">The settings that protect it (<see cref="SettingsOfAsync"/>).</param>
     /// <param name="captcha">What its captcha came to.</param>
-    /// <param name="cancellationToken">Cancels the read of the settings and the checks.</param>
-    public async Task<SpamVerdict> ScoreAsync(SubmissionRequest request, FormDefinition definition, SubmissionAnswers answers, string culture, RequestPage page, FormBuilderCaptchaOutcome captcha, CancellationToken cancellationToken)
+    /// <param name="cancellationToken">Cancels the checks.</param>
+    public async Task<SpamVerdict> ScoreAsync(SubmissionRequest request, FormDefinition definition, SubmissionAnswers answers, string culture, RequestPage page, ProtectionSettings site, FormBuilderCaptchaOutcome captcha, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
         ArgumentNullException.ThrowIfNull(definition);
         ArgumentNullException.ThrowIfNull(answers);
         ArgumentNullException.ThrowIfNull(page);
+        ArgumentNullException.ThrowIfNull(site);
         var score = 0;
         var reasons = new List<string>();
         void Add(int points, string reason)
@@ -210,7 +237,6 @@ internal sealed partial class SubmissionProtection(
             Add(TooFastScore, SpamReasons.TooFast);
         }
 
-        var site = (await settings.GetAsync<ProtectionSettings>(page.Site, cancellationToken)).Value;
         if (site.Blocks(request.Address))
         {
             Add(BlockedRangeScore, SpamReasons.BlockedRange);

@@ -193,6 +193,32 @@ public sealed class FormPostProtectionTests : RenderingTestBase
     }
 
     [Test]
+    public async Task APostOnAPageThatDoesNotHoldTheForm_IsHeldToTheStrictestSite_AndOneThatHoldsIt_ToItsOwn()
+    {
+        var key = await PublishFormAsync("limitedPost", null, Topic);
+        var pages = await PagesAsync("limited");
+        await GetRequiredService<IFormBuilderSettingsService>().SaveSiteAsync(Guid.NewGuid(), new ProtectionSettings { Level = ProtectionLevel.ProofOfWork }, ["level"], 0, null);
+        var form = await FormAsync();
+        Fill(form, "topic", "Ideas");
+
+        using var sent = await SubmitAsync(form);
+
+        var entry = await OnlyAsync(key);
+        await GetRequiredService<IReferenceRepository>().ReplaceContentAsync(pages["limited"], [new ContentFormReference(key, "form", string.Empty)]);
+        var held = await FormAsync();
+        Fill(held, "topic", "Ideas");
+        using var sentHeld = await SubmitAsync(held);
+        var entries = await Entries.ListIdsAsync((await FormRows.GetAsync(key))!.Id, 10);
+        var newest = await Entries.GetByIdAsync(entries.Max());
+        Assert.Multiple(() =>
+        {
+            Assert.That(entry.State, Is.EqualTo(EntryState.Spam));
+            Assert.That(entry.SpamReasons, Is.EqualTo("no_script"));
+            Assert.That(newest!.State, Is.EqualTo(EntryState.Submitted), "its page's site asks for nothing a post without JavaScript cannot do");
+        });
+    }
+
+    [Test]
     public async Task ABlockedAddress_GoesToSpam()
     {
         var key = await PublishFormAsync("limitedPost", null, Topic);

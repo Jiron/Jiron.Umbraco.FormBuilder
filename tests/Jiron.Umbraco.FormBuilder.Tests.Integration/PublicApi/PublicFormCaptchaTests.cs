@@ -217,6 +217,24 @@ public sealed class PublicFormCaptchaTests : PublicApiTestBase
     }
 
     [Test]
+    public async Task AStrictSitesCaptcha_HoldsForAPostThatNamesNoPageOfTheForm()
+    {
+        await Settings.SaveSiteAsync(Guid.NewGuid(), new ProtectionSettings { Level = ProtectionLevel.Captcha, CaptchaProvider = Hcaptcha }, ["level", "captchaProvider"], 0, null);
+        var key = await PublishAsync();
+
+        var (_, shown) = await AskAsync(key);
+        using var missing = await SendAsync(key, null);
+        using var good = await SendAsync(key, StubCaptcha.Pass);
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(shown!["provider"]!.GetValue<string>(), Is.EqualTo(Hcaptcha));
+            Assert.That(await RefusalAsync(missing), Is.EqualTo("403 captcha_failed"));
+            Assert.That(good.StatusCode, Is.EqualTo(HttpStatusCode.OK), await good.Content.ReadAsStringAsync());
+        });
+    }
+
+    [Test]
     public async Task AFormThatInherits_TakesItsSitesCaptcha_AndAFormAtTheStandardLevelDoesNot()
     {
         await SiteAsync(new ProtectionSettings { Level = ProtectionLevel.Captcha, CaptchaProvider = Hcaptcha });

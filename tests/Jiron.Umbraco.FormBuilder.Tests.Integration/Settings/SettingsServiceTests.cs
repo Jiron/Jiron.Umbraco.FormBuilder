@@ -21,6 +21,23 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Integration.Settings;
 [UmbracoTest(Database = UmbracoTestOptions.Database.NewSchemaPerTest)]
 public sealed class SettingsServiceTests : RepositoryTestBase
 {
+    [Test]
+    public async Task TheSitesThatSetASection_AreListed_AndASiteThatStopsLeavesTheList()
+    {
+        var none = await Service.SitesOfAsync<GeneralSettings>();
+        var saved = await Service.SaveSiteAsync(SiteA, new GeneralSettings { TimeZone = "America/New_York" }, ["timeZone"], 0, null);
+        var one = await Service.SitesOfAsync<GeneralSettings>();
+        await Service.SaveSiteAsync(SiteA, new GeneralSettings(), [], saved.Version, null);
+        var gone = await Service.SitesOfAsync<GeneralSettings>();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(none, Is.Empty);
+            Assert.That(one, Is.EqualTo(new[] { SiteA }));
+            Assert.That(gone, Is.Empty);
+        });
+    }
+
     private static readonly Guid SiteA = Guid.Parse("4f6a2c1e-8d3b-4e5f-a7c9-1b2d3e4f5a01");
     private static readonly Guid SiteB = Guid.Parse("4f6a2c1e-8d3b-4e5f-a7c9-1b2d3e4f5a02");
 

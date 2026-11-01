@@ -6,7 +6,6 @@ using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.OptionLists;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
-using Jiron.Umbraco.FormBuilder.Core.Settings;
 using Jiron.Umbraco.FormBuilder.Core.Submissions;
 using Jiron.Umbraco.FormBuilder.Web.Rendering;
 using Microsoft.AspNetCore.Http;
@@ -26,9 +25,9 @@ namespace Jiron.Umbraco.FormBuilder.Web.PublicApi;
 /// <param name="types">The field types, which say whose options can have places.</param>
 /// <param name="cascading">The options of a field from a list or another source.</param>
 /// <param name="pages">The site's default culture, which a list's labels would be in, and the site of the page.</param>
-/// <param name="settings">The site's protection level.</param>
+/// <param name="protection">The settings that protect a form, whose level the challenge carries.</param>
 /// <param name="captchas">The captcha providers.</param>
-internal sealed class ChallengeRequests(ChallengeTokens tokens, IEntryRepository entries, IFormRepository forms, FieldTypeRegistry types, CascadingOptions cascading, FormPages pages, IFormBuilderSettingsService settings, FormBuilderCaptchaProviderCollection captchas)
+internal sealed class ChallengeRequests(ChallengeTokens tokens, IEntryRepository entries, IFormRepository forms, FieldTypeRegistry types, CascadingOptions cascading, FormPages pages, SubmissionProtection protection, FormBuilderCaptchaProviderCollection captchas)
 {
     /// <summary>The most bytes the endpoint's body holds: the longest earlier challenge, with room for escapes.</summary>
     public const int MaxBodyBytes = 16_384;
@@ -74,8 +73,8 @@ internal sealed class ChallengeRequests(ChallengeTokens tokens, IEntryRepository
             return FormBuilderPublicProblems.MemberRequired();
         }
 
-        // The level comes from the page's site, as a submission's does: only a server's own request skips the puzzle.
-        var site = (await settings.GetAsync<ProtectionSettings>((await pages.PageAsync(content)).Site, cancellationToken)).Value;
+        // The level comes from the settings that protect the form, as a submission's does: only a server's own request skips the puzzle.
+        var site = await protection.SettingsOfAsync(form.Form.Key, await pages.PageAsync(content), cancellationToken);
         var proofBits = site.LevelOf(definition) == ProtectionLevel.ProofOfWork ? site.ProofBits : 0;
         var challenge = tokens.Issue(form.Form.Key, forMembers ? member : null, previous, proofBits);
         var model = new ChallengeResponseModel

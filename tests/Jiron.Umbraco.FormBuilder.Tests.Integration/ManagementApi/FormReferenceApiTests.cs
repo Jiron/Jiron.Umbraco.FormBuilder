@@ -719,6 +719,8 @@ public sealed class FormReferenceApiTests : ManagementApiTestBase
 
         public Task<IReadOnlyList<Guid>> ContentOfAsync(Guid formKey, CancellationToken cancellationToken = default) => inner.ContentOfAsync(formKey, cancellationToken);
 
+        public Task<bool> HoldsAsync(Guid formKey, Guid contentKey, CancellationToken cancellationToken = default) => inner.HoldsAsync(formKey, contentKey, cancellationToken);
+
         public Task<IReadOnlyList<int>> DocumentsAfterAsync(int afterId, int take, CancellationToken cancellationToken = default) => inner.DocumentsAfterAsync(afterId, take, cancellationToken);
 
         public Task<IReadOnlyDictionary<int, DocumentVersion>> VersionsOfAsync(IReadOnlyCollection<int> documentIds, CancellationToken cancellationToken = default) => inner.VersionsOfAsync(documentIds, cancellationToken);

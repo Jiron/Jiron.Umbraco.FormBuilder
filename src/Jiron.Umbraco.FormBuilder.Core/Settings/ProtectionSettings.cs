@@ -67,6 +67,28 @@ internal sealed record ProtectionSettings : ISettingsSection
     /// <summary>The most links a submission's texts may hold before they count against it.</summary>
     public int MaxLinks { get; init; } = 3;
 
+    /// <summary>
+    /// The strictest of these sections (ADR-0147), for a request that names no page of its form: the highest level and the hardest
+    /// puzzle, every range, word and domain, the strictest content rules and the fewest links.
+    /// </summary>
+    /// <param name="sections">The sections, the first of which names the captcha when several ask for one.</param>
+    public static ProtectionSettings Strictest(IReadOnlyList<ProtectionSettings> sections)
+    {
+        ArgumentNullException.ThrowIfNull(sections);
+        var level = sections.Max(section => section.Level);
+        return new ProtectionSettings
+        {
+            Level = level,
+            CaptchaProvider = sections.FirstOrDefault(section => section.Level == ProtectionLevel.Captcha)?.CaptchaProvider,
+            ProofBits = sections.Max(section => section.ProofBits),
+            BlockedRanges = [.. sections.SelectMany(section => section.BlockedRanges).Distinct(StringComparer.Ordinal)],
+            ContentRules = sections.Max(section => section.ContentRules),
+            BlockedWords = [.. sections.SelectMany(section => section.BlockedWords).DistinctBy(TextSemantics.Fold, StringComparer.Ordinal)],
+            BlockedDomains = [.. sections.SelectMany(section => section.BlockedDomains).Distinct(StringComparer.Ordinal)],
+            MaxLinks = sections.Min(section => section.MaxLinks),
+        };
+    }
+
     /// <summary>The level a form is at: its own, or the site's for one that inherits it.</summary>
     /// <param name="definition">The form.</param>
     public ProtectionLevel LevelOf(FormDefinition definition)

@@ -188,9 +188,30 @@ public sealed class PublicFormProtectionTests : PublicApiTestBase
         var key = await PublishAsync();
         var (shop, contact, other) = await SitesAsync();
         await Settings.SaveSiteAsync(shop, new ProtectionSettings { BlockedRanges = ["203.0.113.0/24"] }, ["blockedRanges"], 0, null);
+        await GetRequiredService<IReferenceRepository>().ReplaceContentAsync(contact, [new ContentFormReference(key, "form", string.Empty)]);
+        await GetRequiredService<IReferenceRepository>().ReplaceContentAsync(other, [new ContentFormReference(key, "form", string.Empty)]);
         _address = "203.0.113.7";
 
         using var onShop = await InTimeAsync(key, $$$"""{"revision":1,"contentKey":"{{{contact}}}","values":{"name":"Ada"}}""");
+        using var elsewhere = await InTimeAsync(key, $$$"""{"revision":1,"contentKey":"{{{other}}}","values":{"name":"Ada"}}""");
+
+        var entries = await StoredAsync(key);
+        Assert.Multiple(() =>
+        {
+            Assert.That(entries[0].State, Is.EqualTo(EntryState.Spam));
+            Assert.That(entries[1].State, Is.EqualTo(EntryState.Submitted), "a page of the other site that holds the form");
+        });
+    }
+
+    [Test]
+    public async Task AStrictSitesRanges_HoldForAPostThatNamesNoPageOfTheForm()
+    {
+        var key = await PublishAsync();
+        var (shop, contact, other) = await SitesAsync();
+        await Settings.SaveSiteAsync(shop, new ProtectionSettings { BlockedRanges = ["203.0.113.0/24"] }, ["blockedRanges"], 0, null);
+        await GetRequiredService<IReferenceRepository>().ReplaceContentAsync(contact, [new ContentFormReference(key, "form", string.Empty)]);
+        _address = "203.0.113.7";
+
         using var elsewhere = await InTimeAsync(key, $$$"""{"revision":1,"contentKey":"{{{other}}}","values":{"name":"Ada"}}""");
         using var noPage = await InTimeAsync(key, Clean);
 
@@ -198,9 +219,22 @@ public sealed class PublicFormProtectionTests : PublicApiTestBase
         Assert.Multiple(() =>
         {
             Assert.That(entries[0].State, Is.EqualTo(EntryState.Spam));
-            Assert.That(entries[1].State, Is.EqualTo(EntryState.Submitted));
-            Assert.That(entries[2].State, Is.EqualTo(EntryState.Submitted));
+            Assert.That(entries[1].State, Is.EqualTo(EntryState.Spam));
+            Assert.That(entries[1].SpamReasons, Does.Contain("blocked_range"));
         });
+    }
+
+    [Test]
+    public async Task AStrictSitesWords_HoldForAPostThatNamesNoPageOfTheForm()
+    {
+        var key = await PublishAsync();
+        var (shop, _, _) = await SitesAsync();
+        await Settings.SaveSiteAsync(shop, new ProtectionSettings { ContentRules = ContentRuleLevel.Strict, BlockedWords = ["casino"] }, ["contentRules", "blockedWords"], 0, null);
+
+        using var noPage = await InTimeAsync(key, """{"revision":1,"values":{"name":"casino"}}""");
+
+        var entries = await StoredAsync(key);
+        Assert.That(entries[0].SpamReasons, Does.Contain("blocked_word"));
     }
 
     [Test]

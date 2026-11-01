@@ -19,6 +19,9 @@ internal static class SettingsCacheKeys
     /// <summary>The start of every key.</summary>
     public const string Prefix = "Jiron.FormBuilder.Settings.";
 
+    /// <summary>The scope of the cached list of the sites that set a section.</summary>
+    public const string Sites = "sites";
+
     /// <summary>The end of the loading token's key beside a section's key.</summary>
     public const string LoadingSuffix = ".loading";
 
@@ -26,13 +29,13 @@ internal static class SettingsCacheKeys
     public static string Of(string scope, string section) => $"{Prefix}{scope}.{section}";
 
     /// <summary>
-    /// The keys a change clears, with their loading tokens: its own scope's, and for the global scope every scope's,
-    /// since each site's values rest on the global row.
+    /// The keys a change clears, with their loading tokens: its own scope's and the list of the sites that set the section, and
+    /// for the global scope every scope's, since each site's values rest on the global row.
     /// </summary>
     public static string Pattern(SettingsCacheChange change)
     {
         ArgumentNullException.ThrowIfNull(change);
-        var scope = change.Scope == SettingsScopes.Global ? "[^.]+" : Regex.Escape(change.Scope);
+        var scope = change.Scope == SettingsScopes.Global ? "[^.]+" : $"(?:{Regex.Escape(change.Scope)}|{Sites})";
         return $"^{Regex.Escape(Prefix)}{scope}\\.{Regex.Escape(change.Section)}({Regex.Escape(LoadingSuffix)})?$";
     }
 }

@@ -134,6 +134,7 @@ public sealed class PublicFormProofOfWorkTests : PublicApiTestBase
         await SiteAsync(ProtectionLevel.Standard);
         await Settings.SaveSiteAsync(shop, new ProtectionSettings { Level = ProtectionLevel.ProofOfWork, ProofBits = Bits }, ["level", "proofBits"], 0, null);
         var key = await PublishAsync();
+        await PlaceAsync(key, contact, other);
 
         var (onShop, puzzleOnShop) = await AskAsync(key, contact);
         var (_, puzzleElsewhere) = await AskAsync(key, other);
@@ -210,6 +211,74 @@ public sealed class PublicFormProofOfWorkTests : PublicApiTestBase
     private static StringContent Json(string body) => new(body, Encoding.UTF8, "application/json");
 
     // Works the puzzle out as a page does.
+    [Test]
+    public async Task ARequestThatNamesNoPageOfTheForm_IsHeldToTheStrictestSite_NotTheLaxestItChooses()
+    {
+        var (shop, contact, other) = await SitesAsync();
+        await SiteAsync(ProtectionLevel.Standard);
+        await Settings.SaveSiteAsync(shop, new ProtectionSettings { Level = ProtectionLevel.ProofOfWork, ProofBits = Bits }, ["level", "proofBits"], 0, null);
+        var key = await PublishAsync();
+        await PlaceAsync(key, contact);
+        var namingOther = $$$"""{"revision":1,"contentKey":"{{{other}}}","values":{"name":"Ada"}}""";
+
+        var (elsewhere, puzzleElsewhere) = await AskAsync(key, other);
+        var (noPage, puzzleNoPage) = await AskAsync(key);
+        using var unsolvedElsewhere = await SendAsync(key, namingOther, elsewhere);
+        using var unsolvedNoPage = await SendAsync(key, Body, noPage);
+        using var solved = await SendAsync(key, namingOther, elsewhere, Solve(puzzleElsewhere!));
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(puzzleElsewhere!["bits"]!.GetValue<int>(), Is.EqualTo(Bits));
+            Assert.That(puzzleNoPage!["bits"]!.GetValue<int>(), Is.EqualTo(Bits));
+            Assert.That(await RefusalAsync(unsolvedElsewhere), Is.EqualTo("401 challenge_required"));
+            Assert.That(await RefusalAsync(unsolvedNoPage), Is.EqualTo("401 challenge_required"));
+            Assert.That(solved.StatusCode, Is.EqualTo(HttpStatusCode.OK), await solved.Content.ReadAsStringAsync());
+        });
+    }
+
+    [Test]
+    public async Task AFormOfItsOwnLevel_KeepsIt_WhateverTheStrictestSiteAsks()
+    {
+        var (shop, _, _) = await SitesAsync();
+        await SiteAsync(ProtectionLevel.Standard);
+        await Settings.SaveSiteAsync(shop, new ProtectionSettings { Level = ProtectionLevel.ProofOfWork, ProofBits = Bits }, ["level", "proofBits"], 0, null);
+        var key = await PublishAsync(change: definition => definition with { Settings = definition.Settings with { Protection = definition.Settings.Protection with { Level = ProtectionLevel.Standard } } });
+
+        var (_, puzzle) = await AskAsync(key);
+
+        Assert.That(puzzle, Is.Null);
+    }
+
+    [Test]
+    public async Task AChallengeOfFewerBitsThanTheSiteAsksNow_ProvesTooLittle()
+    {
+        await SiteAsync(ProtectionLevel.Standard);
+        var key = await PublishAsync(change: AtTheLevel);
+        var (challenge, puzzle) = await AskAsync(key);
+        var current = await Settings.GetAsync<ProtectionSettings>();
+        await Settings.SaveAsync(current.Value with { ProofBits = Bits + 2 }, current.Version, null);
+
+        using var refused = await SendAsync(key, Body, challenge, Solve(puzzle!));
+        var (fresh, harder) = await AskAsync(key);
+        using var passed = await SendAsync(key, Body, fresh, Solve(harder!));
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(await RefusalAsync(refused), Is.EqualTo("401 challenge_required"));
+            Assert.That(harder!["bits"]!.GetValue<int>(), Is.EqualTo(Bits + 2));
+            Assert.That(passed.StatusCode, Is.EqualTo(HttpStatusCode.OK), await passed.Content.ReadAsStringAsync());
+        });
+    }
+
+    private async Task PlaceAsync(Guid form, params Guid[] pages)
+    {
+        foreach (var page in pages)
+        {
+            await GetRequiredService<IReferenceRepository>().ReplaceContentAsync(page, [new ContentFormReference(form, "form", string.Empty)]);
+        }
+    }
+
     private static string Solve(JsonNode puzzle)
     {
         var nonce = puzzle["nonce"]!.GetValue<string>();

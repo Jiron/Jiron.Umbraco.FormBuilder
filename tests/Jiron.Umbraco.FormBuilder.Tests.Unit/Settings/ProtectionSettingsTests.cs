@@ -28,6 +28,42 @@ public sealed class ProtectionSettingsTests
     }
 
     [Test]
+    public void TheStrictest_TakesTheHardestOfEach_AndEveryListedItem()
+    {
+        var strictest = ProtectionSettings.Strictest(
+        [
+            new ProtectionSettings { MaxLinks = 5, ProofBits = 12, BlockedRanges = ["203.0.113.0/24"], BlockedWords = ["Casino"], BlockedDomains = ["a.test"], ContentRules = ContentRuleLevel.Off },
+            new ProtectionSettings { Level = ProtectionLevel.Captcha, CaptchaProvider = "hcaptcha", MaxLinks = 1, ProofBits = 10, BlockedRanges = ["203.0.113.0/24", "2001:db8::/32"], BlockedWords = ["casino", "pills"], BlockedDomains = ["a.test", "b.test"], ContentRules = ContentRuleLevel.Strict },
+            new ProtectionSettings { Level = ProtectionLevel.ProofOfWork, MaxLinks = 3, ProofBits = 20, ContentRules = ContentRuleLevel.Normal },
+            new ProtectionSettings { Level = ProtectionLevel.Captcha, CaptchaProvider = "recaptchaV2" },
+        ]);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(strictest.Level, Is.EqualTo(ProtectionLevel.Captcha));
+            Assert.That(strictest.CaptchaProvider, Is.EqualTo("hcaptcha"), "the first that asks for one");
+            Assert.That(strictest.ProofBits, Is.EqualTo(20));
+            Assert.That(strictest.MaxLinks, Is.EqualTo(1));
+            Assert.That(strictest.ContentRules, Is.EqualTo(ContentRuleLevel.Strict));
+            Assert.That(strictest.BlockedRanges, Is.EqualTo(new[] { "203.0.113.0/24", "2001:db8::/32" }));
+            Assert.That(strictest.BlockedWords, Is.EqualTo(new[] { "Casino", "pills" }), "each word once, as rules compare them");
+            Assert.That(strictest.BlockedDomains, Is.EqualTo(new[] { "a.test", "b.test" }));
+        });
+    }
+
+    [Test]
+    public void TheStrictest_BelowTheCaptchaLevel_NamesNoProvider()
+    {
+        var strictest = ProtectionSettings.Strictest([new ProtectionSettings(), new ProtectionSettings { Level = ProtectionLevel.ProofOfWork }]);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(strictest.Level, Is.EqualTo(ProtectionLevel.ProofOfWork));
+            Assert.That(strictest.CaptchaProvider, Is.Null);
+        });
+    }
+
+    [Test]
     public void ARange_IsWrittenAsTheHostWritesIt_Once()
     {
         var normal = _validator.Normalize(new ProtectionSettings { BlockedRanges = [" 203.0.113.0/24 ", "2001:DB8::/32", "2001:db8::/32", "198.51.100.7/24", "no range"] });

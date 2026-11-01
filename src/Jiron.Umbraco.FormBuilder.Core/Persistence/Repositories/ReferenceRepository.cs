@@ -48,6 +48,9 @@ internal interface IReferenceRepository
     /// <summary>The keys of the content items that name a form, each once, in key order; none for a form that does not exist.</summary>
     Task<IReadOnlyList<Guid>> ContentOfAsync(Guid formKey, CancellationToken cancellationToken = default);
 
+    /// <summary>Whether a content item names a form.</summary>
+    Task<bool> HoldsAsync(Guid formKey, Guid contentKey, CancellationToken cancellationToken = default);
+
     /// <summary>
     /// The node ids of up to <paramref name="take"/> of Umbraco's documents after <paramref name="afterId"/>, in id
     /// order, the recycle bin's included and blueprints not: the rebuild's walk (ADR-0131), which a new or deleted
@@ -136,6 +139,19 @@ internal sealed class ReferenceRepository(FormBuilderDatabase database) : IRefer
                     $"SELECT DISTINCT r.{n.C("contentKey")} FROM {n.T(FormBuilderTables.Reference)} r INNER JOIN {n.T(FormBuilderTables.Form)} f ON f.{n.C("id")} = r.{n.C("formId")} WHERE f.{n.C("key")} = @0",
                     formKey);
                 return [.. keys.Order()];
+            },
+            cancellationToken);
+
+    /// <inheritdoc />
+    public Task<bool> HoldsAsync(Guid formKey, Guid contentKey, CancellationToken cancellationToken = default) =>
+        database.ReadAsync(
+            async db =>
+            {
+                var n = new SqlNames(db);
+                return await db.ExecuteScalarAsync<int>(
+                    $"SELECT COUNT(*) FROM {n.T(FormBuilderTables.Reference)} r INNER JOIN {n.T(FormBuilderTables.Form)} f ON f.{n.C("id")} = r.{n.C("formId")} WHERE f.{n.C("key")} = @0 AND r.{n.C("contentKey")} = @1",
+                    formKey,
+                    contentKey) > 0;
             },
             cancellationToken);
 

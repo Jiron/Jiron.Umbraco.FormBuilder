@@ -42,6 +42,19 @@ public sealed class SettingsCacheRefresherTests
     }
 
     [Test]
+    public void ASitesSave_ClearsTheListOfTheSitesThatSetTheSection()
+    {
+        var pattern = new System.Text.RegularExpressions.Regex(SettingsCacheKeys.Pattern(new SettingsCacheChange("11111111-1111-4111-8111-111111111111", "protection")));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(pattern.IsMatch(SettingsCacheKeys.Of(SettingsCacheKeys.Sites, "protection")), Is.True);
+            Assert.That(pattern.IsMatch(SettingsCacheKeys.Of(SettingsCacheKeys.Sites, "protection") + SettingsCacheKeys.LoadingSuffix), Is.True);
+            Assert.That(pattern.IsMatch(SettingsCacheKeys.Of(SettingsCacheKeys.Sites, "general")), Is.False);
+        });
+    }
+
+    [Test]
     public void AGlobalSave_ClearsTheSectionInEveryScope_WithTheLoadingTokens()
     {
         Assert.That(

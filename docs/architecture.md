@@ -694,6 +694,7 @@ others in a cluster.
 | STRIDE | Threat | Mitigation | Decided in | Tested in |
 | --- | --- | --- | --- | --- |
 | Spoofing | A bot posts as a visitor | signed challenge, honeypot, minimum fill time, rate limits, optional proof of work or captcha; suspicious entries go to Spam | ADR-0012 | 7.1, 7.2 |
+| Spoofing | A bot names a lax site's page, or none, to escape a stricter site's protection | a page's site counts only when that page holds the form, by the reference index; anything else gets the strictest of the shared values and every site's | ADR-0147 | 7.4a |
 | Spoofing | A forged server key or token (resume, verification, upload, preview) | keys stored as SHA-256 and compared in fixed time; Data Protection tokens bound to form and time; resume tokens stored as hashes | ADR-0012 | 6.6, 7.1, 8.5, 8.6 |
 | Spoofing | A faked client address through `X-Forwarded-For` | the connection address only; forwarded headers only through ASP.NET Core with known proxies | ADR-0012 | 7.1 |
 | Spoofing | Someone posts as a member | a challenge bound to the signed-in member, readable only from the same origin, on members-only forms; a post without JavaScript from another origin refused while a member is signed in | ADR-0004, ADR-0012, ADR-0100 | 14.3 |
