@@ -2404,7 +2404,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - Playwright, with the provider hosts routed to a local stub (`page.route`, so no real third-party request ever happens, D22), shows **zero requests to them before consent** and the script loading after;
     - proof of work completes in under 2 s at the default level on the demo machine;
     - Playwright shows `consent.grant('captcha')` loading the provider's script on a form in the `cmp` mode, and none on the next page after `withdraw()` (added in the split of 6.4).
-- [ ] **7.3a Upload checks** (7.3 split in four, WORKLOG 2026-11-01)
+- [x] **7.3a Upload checks** (7.3 split in four, WORKLOG 2026-11-01) (2026-11-01, cc8ac17)
   - streaming limits;
   - the allowlist, the global blocklist and magic-number checks;
   - random names.
