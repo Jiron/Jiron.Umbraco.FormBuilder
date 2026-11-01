@@ -5,8 +5,9 @@
   [ADR-0100](0100-the-post-without-javascript.md) (the post's files, kept across a re-render) and
   [ADR-0087](0087-the-upload-endpoint.md) (its token, posted back as the field's answer); a signature typed without
   JavaScript stored as a file is, by [ADR-0103](0103-a-signature-typed-without-javascript.md) in 6.2k
-- Date: 2026-10-29; amended 2026-10-31 (6.8a: the form's availability before any file is stored)
-- Roadmap step: 6.2j (decided and built); 6.8a (availability first); 6.4's runtime uploads before sending, 7.1 verifies the challenge, 7.3
+- Date: 2026-10-29; amended 2026-10-31 (6.8a: the form's availability before any file is stored), 2026-11-01 (7.4c:
+  what a post may hold and how long it may take)
+- Roadmap step: 6.2j (decided and built); 6.8a (availability first); 7.4c (the post's own limits); 6.4's runtime uploads before sending, 7.1 verifies the challenge, 7.3
   hardens the rules over HTTP/2
 
 ## Context
@@ -76,7 +77,20 @@ Option 2 for each question.
     summary's place, saying that the files were too large to send and that the answers could not be kept (`too_large`).
 - **The form's availability comes first** (6.8a): a form that is closed, or whose entry limit is reached, stores
   nothing of the post, as the upload endpoint stores nothing for it (ADR-0087). Whatever the button, the page shows the
-  form's notice in its place, as for any visitor now, and no file or typed signature is stored.
+  form's notice in its place, as for any visitor now, and no file or typed signature is stored. A form for members
+  does the same for a visitor it does not admit (7.4c), whose page says to sign in.
+- **What a post may hold and how long it may take** (7.4c):
+  - **Values:** 1 MB plus 64 KB together, what the form's limit allows for everything but its files, with room for the
+    form's own hidden inputs. Each value's 1 MB alone would let a post with a large allowance keep up to a gigabyte in
+    memory across its 1,024 parts. Past the total, the post is refused as one past the allowance.
+  - **Time:** five minutes from the start of reading, as long as an upload may take, then it is refused the same way.
+    Kestrel's minimum data rate is low and a host can turn it off, so it does not bound a post that trickles.
+  - **A refused post is not written down.** A post over a rate limit still shows its answers, so its values are read, but
+    its files are skipped instead of buffered: a flood costs no disk. The notice asks to choose the files again.
+  - **A post without the marker** is read by Umbraco, so the middleware does not count its files. The surface action holds
+    each field to its count before storing any, and notes one too many as `fileCount`.
+  - **The marker names the form only for the middleware's own work.** Its rate-limit decision holds for the form it
+    named; a post that goes on to another form meets that form's limit.
 - **The surface action,** before any button's work: each buffered file goes through `FileUploads.StoreAsync`, the
   same rules as the upload endpoint, and a stored file's token joins its field's answer (for a field that takes one
   file it replaces a kept one). A refused file is noted with its kind (`fileType`, `fileSize`, `invalid`). The request

@@ -221,6 +221,33 @@ public sealed partial class FormPostTests
     }
 
     [Test]
+    public async Task APostWithoutTheMarker_IsHeldToTheFieldsCount_AndStoresNothingPastIt()
+    {
+        _ = await PublishFormAsync("postFiles", FilesForm);
+        _ = await PagesAsync("post-files");
+        var form = FormOf(await DocumentAsync(FilesPage), "jfb-1");
+        Fill(form, "subject", "Room plan");
+
+        using var response = await SubmitFilesAsync(
+            form,
+            FormPostFields.Submit,
+            FilesPage,
+            ("attachment", "a.pdf", Bytes(Pdf, 100)),
+            ("attachment", "b.pdf", Bytes(Pdf, 100)),
+            ("attachment", "c.pdf", Bytes(Pdf, 100)),
+            ("attachment", "d.pdf", Bytes(Pdf, 100)));
+        var answered = FormOf(await ParseAsync(response), "jfb-1");
+        var waiting = await Entries.ListOrphanFilesAsync(DateTimeOffset.UtcNow.AddHours(1), 50);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(answered.QuerySelector("#jfb-1-attachment-error"), Is.Not.Null, "one too many is an error at its field");
+            Assert.That(answered.QuerySelectorAll(".jfb-error-summary a").Select(link => link.GetAttribute("href")), Is.EqualTo(new[] { "#jfb-1-attachment" }), "said once");
+            Assert.That(waiting.Select(file => file.OriginalName), Is.EquivalentTo(new[] { "a.pdf", "b.pdf" }), "nothing past its count stored");
+        });
+    }
+
+    [Test]
     public async Task TheFilesReader_LeavesOtherPostsAlone_SkipsPartsOfNoField_AndRefusesAPostThatBreaksItsLimits()
     {
         var key = await PublishFormAsync("postFiles", FilesForm);
@@ -260,6 +287,7 @@ public sealed partial class FormPostTests
         var manyHeaders = await RawAsync(marked, Multipart(Boundary, pairs, [headed]));
         var longHeaders = await RawAsync(marked, Multipart(Boundary, pairs, [Part("form-data; name=\"remark\"; note=\"" + new string('a', FormPostFilesMiddleware.MostHeaderBytes) + "\"", "a"u8.ToArray())]));
         var longValue = await RawAsync(marked, Multipart(Boundary, [.. pairs, new("remark", new string('a', FormPostFilesMiddleware.MostValueBytes + 1))]));
+        var longValues = await RawAsync(marked, Multipart(Boundary, [.. pairs, new("one", new string('a', 700_000)), new("two", new string('a', 700_000))]));
         var cut = await RawAsync(marked, new ByteArrayContent(System.Text.Encoding.ASCII.GetBytes("--" + Boundary + Crlf + "Content-Disposition: form-data; name=\"subject\"" + Crlf + Crlf + "Room"))
         {
             Headers = { ContentType = MediaTypeHeaderValue.Parse("multipart/form-data; boundary=" + Boundary) },
@@ -275,7 +303,7 @@ public sealed partial class FormPostTests
 
             Assert.That(skipped.StatusCode, Is.EqualTo(HttpStatusCode.Redirect), "the parts of no field skipped, the rest sent");
             Assert.That(exactValue.StatusCode, Is.EqualTo(HttpStatusCode.Redirect), "a value of its most bytes read");
-            foreach (var (name, response) in new[] { ("too many parts", many), ("too many headers", manyHeaders), ("headers too long", longHeaders), ("a value too long", longValue), ("a body cut short", cut), ("a body of no declared length past the allowance", undeclared) })
+            foreach (var (name, response) in new[] { ("too many parts", many), ("too many headers", manyHeaders), ("headers too long", longHeaders), ("a value too long", longValue), ("values too long together", longValues), ("a body cut short", cut), ("a body of no declared length past the allowance", undeclared) })
             {
                 var form = FormOf(await ParseAsync(response), "jfb-1");
                 Assert.That(form.QuerySelector("[data-jfb-notice='too_large']"), Is.Not.Null, name + ": nothing kept, and the notice says so");

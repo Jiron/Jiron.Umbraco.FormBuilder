@@ -26,7 +26,8 @@ namespace Jiron.Umbraco.FormBuilder.Web.Rendering;
 /// <param name="uploads">The upload's rules, whose limits the files are read to.</param>
 /// <param name="types">The field types, which say which fields store files and how many.</param>
 /// <param name="limiter">The rate limits, which such a post meets before a byte of it is read (ADR-0012).</param>
-internal sealed class FormPostFilesMiddleware(PublishedFormCache forms, FileUploads uploads, FieldTypeRegistry types, FormBuilderRateLimiter limiter) : IMiddleware
+/// <param name="time">The clock its reading is limited by.</param>
+internal sealed class FormPostFilesMiddleware(PublishedFormCache forms, FileUploads uploads, FieldTypeRegistry types, FormBuilderRateLimiter limiter, TimeProvider time) : IMiddleware
 {
     /// <summary>The most parts a post may have.</summary>
     public const int MostParts = 1024;
@@ -42,6 +43,12 @@ internal sealed class FormPostFilesMiddleware(PublishedFormCache forms, FileUplo
 
     /// <summary>What the form's limit allows for everything but its files.</summary>
     public const long OtherBytes = 1_048_576;
+
+    /// <summary>The most bytes a post's values may hold together: what the limit allows for them, with room for the form's own hidden inputs.</summary>
+    public const long MostValuesBytes = OtherBytes + 65_536;
+
+    /// <summary>The longest a post may take to be read: as long as an upload may take, so a post that trickles holds nothing for good.</summary>
+    public static readonly TimeSpan ReadLimit = TimeSpan.FromMinutes(5);
 
     // A file's bytes held in memory before they go to a temporary file, as ASP.NET's own form reader holds them.
     private const int MemoryBytes = 65_536;
@@ -80,7 +87,7 @@ internal sealed class FormPostFilesMiddleware(PublishedFormCache forms, FileUplo
         }
 
         var limit = limiter.Take(context, FormBuilderRateLimitPolicies.Submit, key);
-        FormPostRateLimit.Set(context, limit);
+        FormPostRateLimit.Set(context, limit, key);
         if (limit is { Allowed: false, Renders: false })
         {
             FormBuilderPublicProblems.CloseConnection(context);
@@ -172,12 +179,16 @@ internal sealed class FormPostFilesMiddleware(PublishedFormCache forms, FileUplo
             return;
         }
 
+        // A post the limits refuse still shows its answers, and its files, which it stores nothing of, are not even written down.
+        var limited = FormPostRateLimit.Of(context, marked.Key) is { Allowed: false };
         var read = new Read(FormPostReader.Read(new FormCollection([]), marked.Definition, types));
+        using var timer = new CancellationTokenSource(ReadLimit, time);
+        using var reading = CancellationTokenSource.CreateLinkedTokenSource(timer.Token, context.RequestAborted);
         try
         {
             var multipart = new MultipartReader(marked.Boundary, context.Request.Body) { HeadersCountLimit = MostHeaders, HeadersLengthLimit = MostHeaderBytes };
             var parts = 0;
-            while (await multipart.ReadNextSectionAsync(context.RequestAborted) is { } section)
+            while (await multipart.ReadNextSectionAsync(reading.Token) is { } section)
             {
                 if (++parts > MostParts)
                 {
@@ -194,34 +205,40 @@ internal sealed class FormPostFilesMiddleware(PublishedFormCache forms, FileUplo
                 // A part with a file name is a file, even an empty one: a file input left empty posts one so.
                 if (disposition.FileName.HasValue || disposition.FileNameStar.HasValue)
                 {
-                    await FileAsync(context, read, section, disposition, name);
+                    await FileAsync(context, read, section, disposition, name, limited, reading.Token);
                 }
                 else
                 {
-                    read.Value(name, await ValueAsync(section, context.RequestAborted));
+                    read.Value(name, await ValueAsync(section, reading.Token));
                 }
             }
         }
-        catch (Exception exception) when (exception is InvalidDataException or IOException)
+        catch (Exception exception) when (exception is InvalidDataException or IOException || (exception is OperationCanceledException && timer.IsCancellationRequested))
         {
             Refuse(context, marked);
             return;
         }
 
         context.Features.Set<IFormFeature>(new FormFeature(new FormCollection(read.Values(), read.Files)));
-        if (read.Notes.Count > 0)
+        if (read.Notes.Count > 0 || read.LeftOutFiles)
         {
-            FormPostFileNotes.Set(context, marked.Key, marked.Instance, new FormPostFileRead(read.Notes, IsRefused: false));
+            FormPostFileNotes.Set(context, marked.Key, marked.Instance, new FormPostFileRead(read.Notes, IsRefused: false, read.LeftOutFiles));
         }
     }
 
     // A file part: buffered when a field that stores files names it, up to its limit and its count; past either noted.
-    private async Task FileAsync(HttpContext context, Read read, MultipartSection section, ContentDispositionHeaderValue disposition, string name)
+    private async Task FileAsync(HttpContext context, Read read, MultipartSection section, ContentDispositionHeaderValue disposition, string name, bool limited, CancellationToken cancellationToken)
     {
         var fileName = HeaderUtilities.RemoveQuotes(disposition.FileNameStar.HasValue ? disposition.FileNameStar : disposition.FileName).Value ?? string.Empty;
         if (fileName.Length == 0 || read.Names.FieldOf(name, anyRow: true) is not { } found || uploads.TypeOf(found.Field) is not { } type)
         {
             // No file chosen, or a file of no field that stores files: the next part drains it.
+            return;
+        }
+
+        if (limited)
+        {
+            read.LeftOutFiles = true;
             return;
         }
 
@@ -236,7 +253,7 @@ internal sealed class FormPostFilesMiddleware(PublishedFormCache forms, FileUplo
         context.Response.RegisterForDisposeAsync(buffered);
         try
         {
-            await buffered.DrainAsync(context.RequestAborted);
+            await buffered.DrainAsync(cancellationToken);
         }
         catch (IOException exception) when (exception is not BadHttpRequestException)
         {
@@ -293,6 +310,7 @@ internal sealed class FormPostFilesMiddleware(PublishedFormCache forms, FileUplo
     private sealed class Read(FormPostReader names)
     {
         private KeyValueAccumulator _values;
+        private long _valueBytes;
 
         public FormPostReader Names { get; } = names;
 
@@ -302,7 +320,18 @@ internal sealed class FormPostFilesMiddleware(PublishedFormCache forms, FileUplo
 
         public Dictionary<string, int> Counts { get; } = new(StringComparer.Ordinal);
 
-        public void Value(string name, string value) => _values.Append(name, value);
+        public bool LeftOutFiles { get; set; }
+
+        public void Value(string name, string value)
+        {
+            _valueBytes += Encoding.UTF8.GetByteCount(value);
+            if (_valueBytes > MostValuesBytes)
+            {
+                throw new InvalidDataException("The values of the post are too long together.");
+            }
+
+            _values.Append(name, value);
+        }
 
         public Dictionary<string, StringValues> Values() => _values.GetResults();
     }
@@ -316,7 +345,8 @@ internal sealed record FormPostFileNote(string Name, FieldMessageKinds Kind);
 /// <summary>What reading a post's files left for its surface action and its form's render.</summary>
 /// <param name="Notes">The files it could not take.</param>
 /// <param name="IsRefused">Whether nothing of the post could be kept (ADR-0102).</param>
-internal sealed record FormPostFileRead(IReadOnlyList<FormPostFileNote> Notes, bool IsRefused);
+/// <param name="LeftOutFiles">Whether a post the limits refuse held files, which were not read.</param>
+internal sealed record FormPostFileRead(IReadOnlyList<FormPostFileNote> Notes, bool IsRefused, bool LeftOutFiles = false);
 
 /// <summary>Where reading a post's files leaves what it found: the request's items, by the form's key and the instance.</summary>
 internal static class FormPostFileNotes

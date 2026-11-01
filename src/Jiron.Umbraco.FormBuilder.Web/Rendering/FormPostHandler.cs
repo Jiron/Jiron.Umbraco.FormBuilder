@@ -123,7 +123,7 @@ internal sealed class FormPostHandler(
 
         // The limit comes before anything that reads a table, since a flood must cost next to nothing. A refusal that renders
         // waits for the origin's check below, so nothing is rendered for another site.
-        var limit = FormPostRateLimit.Of(http)
+        var limit = FormPostRateLimit.Of(http, formKey)
             ?? limiter.Take(http, CountsAsSubmit(posted) ? FormBuilderRateLimitPolicies.Submit : FormBuilderRateLimitPolicies.Read, formKey);
         if (!limit.Allowed)
         {
@@ -144,10 +144,18 @@ internal sealed class FormPostHandler(
         // member is signed in, a post from another origin answers 403, as the public API refuses one. A visitor who is not
         // signed in carries nothing another site could borrow.
         var definition = cached.Published.Definition;
-        var member = await http.RequestServices.GetRequiredService<FormMembers>().KeyAsync();
+        var members = http.RequestServices.GetRequiredService<FormMembers>();
+        var member = await members.KeyAsync();
         if ((definition.Settings.Availability.Access != MemberAccess.Anyone || member is not null) && !IsOwnOrigin(http.Request))
         {
             return FormPostAnswer.Forbidden;
+        }
+
+        // A form for members stores nothing of a post from a visitor it does not admit, as the upload endpoint stores nothing
+        // (ADR-0138): the page shows its render for that visitor, which says to sign in.
+        if (await members.GateAsync(definition.Settings.Availability) is not null)
+        {
+            return FormPostAnswer.Page;
         }
 
         // A form that takes no entry now stores nothing of the post, its files and typed signatures among them, as the
@@ -168,7 +176,7 @@ internal sealed class FormPostHandler(
             http.Response.StatusCode = StatusCodes.Status429TooManyRequests;
             var refused = new Step(reader, definition, Guid.TryParseExact(One(posted, FormPostFields.Page), "D", out var refusedPage) ? refusedPage : null, query)
             {
-                Notice = WaitNotice(culture, limit, posted.Files),
+                Notice = WaitNotice(culture, limit, posted.Files.Any(file => file.Length > 0) || FormPostFileNotes.Get(http, formKey, instance) is { LeftOutFiles: true }),
             };
             FormPosts.Set(http, formKey, instance, refused.State(await KeptAsync(reader, definition, formKey, cancellationToken)));
             return FormPostAnswer.Page;
@@ -293,10 +301,19 @@ internal sealed class FormPostHandler(
             }
         }
 
+        var counts = new Dictionary<string, int>(StringComparer.Ordinal);
         foreach (var file in files)
         {
             if (reader.FieldOf(file.Name) is not { } found || uploads.TypeOf(found.Field) is not { } type)
             {
+                continue;
+            }
+
+            // A post that names no form in its address is read by Umbraco, so its count is held here: nothing past it is stored.
+            var counted = counts[file.Name] = counts.GetValueOrDefault(file.Name) + 1;
+            if (counted > FormPostFilesMiddleware.Most(type, found.Field))
+            {
+                problems.Add(Problem(found, FieldUploads.Declared(type, FieldMessageKinds.FileCount)));
                 continue;
             }
 
@@ -453,11 +470,11 @@ internal sealed class FormPostHandler(
         }
     }
 
-    // Whether a post counts as a submission's: one that runs the pipeline or may store files. Back, an answer's "Change",
+    // Whether a post counts as a submission's: one that runs the pipeline or may store files, a typed signature among them. Back, an answer's "Change",
     // and a row's or a ranking's button only render the page again, as a read does (ADR-0137).
     private static bool CountsAsSubmit(IFormCollection posted)
     {
-        if (posted.Files.Count > 0)
+        if (posted.Files.Count > 0 || posted.Any(pair => pair.Key.EndsWith("." + SignatureFieldType.TypedPart, StringComparison.Ordinal) && pair.Value.Any(value => !string.IsNullOrWhiteSpace(value))))
         {
             return true;
         }
@@ -467,14 +484,14 @@ internal sealed class FormPostHandler(
     }
 
     // What a post over a rate limit shows: when to send again, in the larger unit from two minutes on.
-    private static FormPostNotice WaitNotice(string culture, RateLimitDecision limit, IFormFileCollection files)
+    private static FormPostNotice WaitNotice(string culture, RateLimitDecision limit, bool hadFiles)
     {
         var words = RenderingWords.Of(culture);
         var seconds = Math.Max(2, limit.RetryAfterSeconds);
         var text = seconds < 120
             ? string.Format(CultureInfo.InvariantCulture, words.WaitSecondsText, seconds)
             : string.Format(CultureInfo.InvariantCulture, words.WaitMinutesText, (int)Math.Ceiling(seconds / 60d));
-        return new FormPostNotice(words.NotSentHeading, files.Any(file => file.Length > 0) ? text + " " + words.ChooseFilesAgain : text, RateLimitedCode);
+        return new FormPostNotice(words.NotSentHeading, hadFiles ? text + " " + words.ChooseFilesAgain : text, RateLimitedCode);
     }
 
     // An outcome's or a placement's page after a send (ADR-0129, ADR-0136) with a fragment of its own. The post's address

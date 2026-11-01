@@ -1,7 +1,8 @@
 # 0137. The rate limiter
 
 - Status: accepted; builds on and amends [ADR-0012](0012-anonymous-endpoints-spam-protection-and-challenges.md)
-  and [ADR-0126](0126-server-key-submissions.md); a window the sweep ends counts nothing more, found by 7.1c's gate
+  and [ADR-0126](0126-server-key-submissions.md); a window the sweep ends counts nothing more, found by 7.1c's gate; a
+  typed signature counts as a submission, found by 7.4c's review
 - Date: 2026-11-01
 - Roadmap step: 7.1a
 
@@ -41,7 +42,8 @@ headless site.
 - **Partitions count cheapest first.** A request one refuses is not counted by those after it, and those before it give
   it back, so one flooding client uses up no one's site-wide limit.
 - **A post counts as `submit` when it runs the pipeline or holds files:** Send, Next, or any post of a form that takes
-  files. Back, an answer's "Change", and a row's or a ranking's button only render the page again, and count as `read`.
+  files, a typed signature among them. Back, an answer's "Change", and a row's or a ranking's button only render the
+  page again, and count as `read`.
 - **A post is counted where its form is known, before anything that reads a table.** `FormPostHandler` counts it after
   reading the form's key. `FormPostFilesMiddleware` counts a post that names its form in its address before reading a
   byte of it, and leaves the decision on the request, so it counts once. ADR-0012's "the middleware hands its refusal to

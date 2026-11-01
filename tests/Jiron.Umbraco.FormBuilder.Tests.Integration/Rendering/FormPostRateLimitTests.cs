@@ -190,6 +190,141 @@ public sealed class FormPostRateLimitTests : RenderingTestBase
     }
 
     [Test]
+    public async Task AnAnonymousPost_ToAFormForMembers_StoresNothing()
+    {
+        var sign = new FormField { Key = Guid.Parse("71a00000-0000-4000-8000-000000000015"), Type = "signature", Alias = "sign", Label = new LocalizedText("Sign") };
+        var key = await PublishFormAsync("limitedPost", definition => definition with
+        {
+            Settings = definition.Settings with { Availability = definition.Settings.Availability with { Access = MemberAccess.Members } },
+        }, Topic, Attachment, sign);
+        _ = await PublishFormAsync("limitedOpen", null, Note);
+        _ = await PagesAsync("limited");
+        var carrier = await FormAsync("jfb-2");
+        var content = new MultipartFormDataContent
+        {
+            { new StringContent(carrier.QuerySelector("input[name='ufprt']")!.GetAttribute("value")!), FormPostFields.RouteToken },
+            { new StringContent(key.ToString("D")), FormPostFields.Form },
+            { new StringContent("jfb-1"), FormPostFields.Instance },
+            { new StringContent("1"), FormPostFields.Revision },
+            { new StringContent(FormPostFields.Submit), FormPostFields.Nav },
+            { new StringContent("Ada King"), "sign.typed" },
+            { new ByteArrayContent(Encoding.ASCII.GetBytes("%PDF-1.7 a file")), "attachment", "a.pdf" },
+        };
+
+        using var post = await SendAsync(HttpMethod.Post, "/limited/", request =>
+        {
+            request.Content = content;
+            request.Headers.TryAddWithoutValidation("Origin", Client.BaseAddress!.GetLeftPart(UriPartial.Authority));
+        });
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(post.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+            Assert.That(await Entries.ListOrphanFilesAsync(DateTimeOffset.UtcNow.AddHours(1), 50), Is.Empty, "neither the file nor the typed signature");
+            Assert.That(await CountEntriesAsync(key), Is.Zero);
+        });
+    }
+
+    [Test]
+    public async Task APostUnderAnotherFormsMarker_CountsAgainstTheFormItPosts()
+    {
+        var key = await PublishFormAsync("limitedPost", null, Topic);
+        _ = await PagesAsync("limited");
+        var form = await FormAsync();
+        Fill(form, "topic", "Ideas");
+        var answers = new List<HttpStatusCode>();
+        foreach (var _ in Enumerable.Range(0, 3))
+        {
+            using var post = await SendAsync(HttpMethod.Post, "/limited/?" + FormPostFields.PostMarker + "=" + Guid.NewGuid().ToString("D") + ".jfb-1", request =>
+            {
+                request.Content = new FormUrlEncodedContent(Posted(form, FormPostFields.Submit));
+                request.Headers.TryAddWithoutValidation("Origin", Client.BaseAddress!.GetLeftPart(UriPartial.Authority));
+            });
+            answers.Add(post.StatusCode);
+        }
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(answers, Is.EqualTo(new[] { HttpStatusCode.Redirect, HttpStatusCode.Redirect, HttpStatusCode.TooManyRequests }), "the limit of its own form, of two");
+            Assert.That(await CountEntriesAsync(key), Is.EqualTo(2));
+        });
+    }
+
+    [Test]
+    public async Task ATypedSignature_CountsAsASubmission_EvenOnAButtonThatOnlyMoves()
+    {
+        var sign = new FormField { Key = Guid.Parse("71a00000-0000-4000-8000-000000000015"), Type = "signature", Alias = "sign", Label = new LocalizedText("Sign") };
+        _ = await PublishFormAsync("limitedPost", null, Topic, sign);
+        _ = await PagesAsync("limited");
+        var form = await FormAsync();
+        Fill(form, "sign.typed", "Ada King");
+        var withTyped = new List<HttpStatusCode>();
+        // To the page without the marker, which would count it as a submission whatever it holds.
+        Task<HttpResponseMessage> BackAsync() => SendAsync(HttpMethod.Post, "/limited/", request =>
+        {
+            request.Content = new FormUrlEncodedContent(Posted(form, FormPostFields.Submit).Select(pair => pair.Key == FormPostFields.Nav ? new KeyValuePair<string, string>(pair.Key, FormPostFields.Back) : pair));
+            request.Headers.TryAddWithoutValidation("Origin", Client.BaseAddress!.GetLeftPart(UriPartial.Authority));
+        });
+        foreach (var _ in Enumerable.Range(0, 3))
+        {
+            using var post = await BackAsync();
+            withTyped.Add(post.StatusCode);
+        }
+
+        Fill(form, "sign.typed", " ");
+        using var blank = await BackAsync();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(withTyped[2], Is.EqualTo(HttpStatusCode.TooManyRequests), "the submission's limit, of two");
+            Assert.That(blank.StatusCode, Is.Not.EqualTo(HttpStatusCode.TooManyRequests), "a blank one only moves");
+        });
+    }
+
+    [Test]
+    public async Task APostTheLimitsRefuse_WritesNoFile_AndAnAllowedOneDoes()
+    {
+        var big = new FormField { Key = Guid.Parse("71a00000-0000-4000-8000-000000000016"), Type = "file", Alias = "big", Label = new LocalizedText("Big"), Settings = SettingsObject.Parse("""{"types":["pdf"],"maxBytes":1048576}""") };
+        _ = await PublishFormAsync("limitedPost", null, Topic, big);
+        _ = await PagesAsync("limited");
+        var form = await FormAsync();
+        Fill(form, "topic", "Ideas");
+        var folder = Directory.CreateTempSubdirectory("jfb-post-temp-").FullName;
+        var earlier = Environment.GetEnvironmentVariable("ASPNETCORE_TEMP");
+        Environment.SetEnvironmentVariable("ASPNETCORE_TEMP", folder);
+        try
+        {
+            using var watcher = new FileSystemWatcher(folder) { EnableRaisingEvents = true };
+            var written = 0;
+            watcher.Created += (_, _) => Interlocked.Increment(ref written);
+            var file = Encoding.ASCII.GetBytes("%PDF-1.7 ").Concat(new byte[300_000]).ToArray();
+
+            using var first = await SubmitLargeFileAsync(form, file);
+            await Task.Delay(TimeSpan.FromSeconds(1));
+            var afterAllowed = Volatile.Read(ref written);
+            using var second = await SubmitLargeFileAsync(form, file);
+            await Task.Delay(TimeSpan.FromSeconds(1));
+            var beforeRefused = Volatile.Read(ref written);
+            using var refused = await SubmitLargeFileAsync(form, file);
+            await Task.Delay(TimeSpan.FromSeconds(1));
+            var page = await refused.Content.ReadAsStringAsync();
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(afterAllowed, Is.GreaterThan(0), "an allowed post waits on disk");
+                Assert.That(refused.StatusCode, Is.EqualTo(HttpStatusCode.TooManyRequests));
+                Assert.That(Volatile.Read(ref written), Is.EqualTo(beforeRefused), "a refused one does not");
+                Assert.That(page, Does.Contain("choose").IgnoreCase, "and it still says to choose its files again");
+            });
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("ASPNETCORE_TEMP", earlier);
+            Directory.Delete(folder, recursive: true);
+        }
+    }
+
+    [Test]
     public async Task APostWithFiles_CountsOnce_AndOverTheLimit_StoresNothing_AndSaysToChooseThemAgain()
     {
         var key = await PublishFormAsync("limitedPost", null, Topic, Attachment);
@@ -300,6 +435,23 @@ public sealed class FormPostRateLimitTests : RenderingTestBase
             request.Headers.TryAddWithoutValidation("Origin", Client.BaseAddress!.GetLeftPart(UriPartial.Authority));
             request.Headers.Referrer = new Uri(Client.BaseAddress!, "/limited/");
         });
+
+    private Task<HttpResponseMessage> SubmitLargeFileAsync(IElement form, byte[] bytes)
+    {
+        var content = new MultipartFormDataContent();
+        foreach (var (name, value) in Posted(form, FormPostFields.Submit))
+        {
+            content.Add(new StringContent(value), name);
+        }
+
+        content.Add(new ByteArrayContent(bytes), "big", "large.pdf");
+        return SendAsync(HttpMethod.Post, form.GetAttribute("action")!.Split('#')[0], request =>
+        {
+            request.Content = content;
+            request.Headers.TryAddWithoutValidation("Origin", Client.BaseAddress!.GetLeftPart(UriPartial.Authority));
+            request.Headers.Referrer = new Uri(Client.BaseAddress!, "/limited/");
+        });
+    }
 
     // Posts the form as a browser without JavaScript does with a file: multipart, to the address that names the form.
     private Task<HttpResponseMessage> SubmitFilesAsync(IElement form)
