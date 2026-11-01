@@ -24,6 +24,7 @@ namespace Jiron.Umbraco.FormBuilder.Core.Submissions;
 /// <param name="Page">The page the form was on.</param>
 /// <param name="Context">The context values the form lists, as posted.</param>
 /// <param name="Redirect">The page the placement sends the visitor to after the send (ADR-0129), or null for the outcome.</param>
+/// <param name="ChallengeId">The id of the challenge that made it, which makes one entry (ADR-0012); null for a request without one.</param>
 internal sealed record NewSubmission(
     int FormId,
     int FormVersionId,
@@ -35,7 +36,8 @@ internal sealed record NewSubmission(
     string Culture,
     RequestPage Page,
     IReadOnlyDictionary<string, string> Context,
-    Guid? Redirect = null);
+    Guid? Redirect = null,
+    string? ChallengeId = null);
 
 /// <summary>An entry with its receipt and outcome (ADR-0088).</summary>
 /// <param name="Entry">The entry.</param>
@@ -114,6 +116,7 @@ internal sealed class SubmissionEntries(
             FormVersionId = submission.FormVersionId,
             State = state,
             SubmissionId = submission.SubmissionId,
+            ChallengeId = submission.ChallengeId,
             SubmissionHash = submission.Digest,
             Culture = submission.Culture,
             ContentKey = submission.Page.Content,

@@ -47,7 +47,8 @@ public sealed class UploadRequestsTests
         entries.AddFileAsync(Arg.Any<NewEntryFile>(), Arg.Any<CancellationToken>()).Returns(call => Recorded(call.Arg<NewEntryFile>()));
         _store = new Store();
         _uploads = new FileUploads(TestFieldTypes.Registry, FieldHostLimits.Default, _store, _forms, entries, NullLogger<FileUploads>.Instance);
-        _requests = new UploadRequests(_uploads, new UploadTokens(new EphemeralDataProtectionProvider(), new TestTimeProvider()));
+        var protection = new EphemeralDataProtectionProvider();
+        _requests = new UploadRequests(_uploads, new UploadTokens(protection, new TestTimeProvider()), new ChallengeTokens(protection, new TestTimeProvider()));
         var field = new FormField { Key = Guid.Parse("30000000-0000-4000-8000-000000000087"), Type = "file", Alias = "upload", Label = new LocalizedText("Upload") };
         _field = new UploadField(field, _uploads.TypeOf(field)!);
     }
@@ -144,7 +145,9 @@ public sealed class UploadRequestsTests
     // The status, the code, the errors and whether the connection closes, such as "404 form_not_found, close".
     private async Task<string> UploadAsync(Stream body, IHttpMaxRequestBodySizeFeature? size = null)
     {
+        // A server key's request: these tests are of the file, and the challenge's are PublicFormChallengeTests.
         var http = new DefaultHttpContext();
+        http.Features.Set(new ServerKeyRequest("test"));
         http.Request.Protocol = "HTTP/1.1";
         http.Request.Method = HttpMethods.Post;
         http.Request.ContentType = $"multipart/form-data; boundary={Boundary}";
@@ -154,7 +157,7 @@ public sealed class UploadRequestsTests
             http.Features.Set(size);
         }
 
-        var result = await _requests.UploadAsync(http, FormKey, _field, CancellationToken.None);
+        var result = await _requests.UploadAsync(http, FormKey, _field, null, CancellationToken.None);
         var close = http.Response.Headers.Connection == "close" ? ", close" : string.Empty;
         return result switch
         {

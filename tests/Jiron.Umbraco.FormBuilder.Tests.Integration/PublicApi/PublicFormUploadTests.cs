@@ -31,6 +31,9 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Integration.PublicApi;
 [UmbracoTest(Database = UmbracoTestOptions.Database.NewSchemaPerTest, Boot = true)]
 public sealed class PublicFormUploadTests : PublicApiTestBase
 {
+    /// <summary>A fixture of bodies and files, for which the challenge is beside the point: PublicFormChallengeTests holds its tests.</summary>
+    public PublicFormUploadTests() => SendsWithServerKey = true;
+
     // The site's limit for any file, above the default so the setting shows, and the limit of the large field.
     private const long SiteLimit = 62_914_560;
     private const long FieldLimit = 52_428_800;

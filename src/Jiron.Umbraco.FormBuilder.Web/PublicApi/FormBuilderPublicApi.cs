@@ -146,7 +146,7 @@ internal sealed class FormBuilderBodyLimitAttribute : Attribute
 
 
 /// <summary>
-/// An action that reads its <c>multipart/form-data</c> body itself, as it streams (ADR-0087): an optional
+/// An action that reads its <c>multipart/form-data</c> body itself, as it streams (ADR-0087): a
 /// <c>challenge</c> part, then the <c>file</c> part. The document describes the body; the public API's form feature
 /// (<see cref="NoFormFeature"/>) keeps every other part of the site from reading or buffering it.
 /// </summary>
@@ -298,7 +298,7 @@ internal sealed class FormBuilderPublicDeclarations(FieldHostLimits host) : IOpe
     private static OpenApiRequestBody UploadBody() => new()
     {
         Required = true,
-        Description = "An optional challenge part, then the file part with the file's name. Nothing may follow the file.",
+        Description = "A challenge part, which only a server key leaves out, then the file part with the file's name. Nothing may follow the file.",
         Content = new Dictionary<string, OpenApiMediaType>
         {
             [FormBuilderUploadBodyAttribute.MediaType] = new()

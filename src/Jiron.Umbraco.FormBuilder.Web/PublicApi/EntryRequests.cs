@@ -20,7 +20,8 @@ namespace Jiron.Umbraco.FormBuilder.Web.PublicApi;
 /// </summary>
 /// <param name="submissions">The submission pipeline.</param>
 /// <param name="tokens">The upload tokens, which the values of fields storing files post.</param>
-internal sealed class EntryRequests(FormSubmissions submissions, UploadTokens tokens)
+/// <param name="challenges">The challenges, which every request but a server key's posts (ADR-0138).</param>
+internal sealed class EntryRequests(FormSubmissions submissions, UploadTokens tokens, ChallengeTokens challenges)
 {
     /// <summary>The most bytes a submission's body holds, and a page's.</summary>
     public const int MaxBodyBytes = 1_048_576;
@@ -50,7 +51,7 @@ internal sealed class EntryRequests(FormSubmissions submissions, UploadTokens to
 
         var invalid = new List<string>();
         return EntryBodies.Read(body.Bytes, formKey, invalid) is { } submission
-            ? Answer(await submissions.SubmitAsync(submission with { Tokens = tokens, Member = await MemberAsync(http), ServerKey = ServerKeyRequest.NameOf(http) }, cancellationToken))
+            ? Answer(await submissions.SubmitAsync(submission with { Tokens = tokens, Challenges = challenges, Member = await MemberAsync(http), ServerKey = ServerKeyRequest.NameOf(http) }, cancellationToken))
             : FormBuilderPublicProblems.InvalidRequest([.. invalid]);
     }
 
@@ -68,7 +69,7 @@ internal sealed class EntryRequests(FormSubmissions submissions, UploadTokens to
 
         var invalid = new List<string>();
         return EntryBodies.ReadPage(body.Bytes, formKey, invalid) is ({ } submission, var page)
-            ? Answer(await submissions.ValidateAsync(submission with { Tokens = tokens, Member = await MemberAsync(http), ServerKey = ServerKeyRequest.NameOf(http) }, page, cancellationToken))
+            ? Answer(await submissions.ValidateAsync(submission with { Tokens = tokens, Challenges = challenges, Member = await MemberAsync(http), ServerKey = ServerKeyRequest.NameOf(http) }, page, cancellationToken))
             : FormBuilderPublicProblems.InvalidRequest([.. invalid]);
     }
 
@@ -88,9 +89,21 @@ internal sealed class EntryRequests(FormSubmissions submissions, UploadTokens to
         }
 
         var invalid = new List<string>();
-        return EntryBodies.ReadReceipt(body.Bytes, invalid) is { } submissionId
-            ? Answer(await submissions.ReceiptAsync(formKey, submissionId, ServerKeyRequest.NameOf(http), cancellationToken))
+        return EntryBodies.ReadReceipt(body.Bytes, invalid) is ({ } submissionId, var challenge)
+            ? Answer(await submissions.ReceiptAsync(formKey, submissionId, ServerKeyRequest.NameOf(http), challenge, challenges, cancellationToken))
             : FormBuilderPublicProblems.InvalidRequest([.. invalid]);
+    }
+
+    /// <summary>A body that may be left out: no bytes for none, otherwise as every other endpoint reads its body.</summary>
+    /// <param name="http">The request.</param>
+    /// <param name="limit">The most bytes it may hold.</param>
+    /// <param name="cancellationToken">The request's cancellation, with its time limit.</param>
+    public static async Task<Body> ReadOptionalAsync(HttpContext http, int limit, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(http);
+        return http.Request.ContentLength == 0 || (http.Request.ContentLength is null && http.Request.ContentType is null)
+            ? new Body([], null)
+            : await ReadAsync(http, limit, cancellationToken);
     }
 
     // The body of JSON in UTF-8, read whole when it holds at most the limit; otherwise the refusal, and a body past the
@@ -177,6 +190,7 @@ internal sealed class EntryRequests(FormSubmissions submissions, UploadTokens to
         {
             null => new NoContentResult(),
             SubmissionRefusal.FormNotFound => FormBuilderPublicProblems.FormNotFound(),
+            SubmissionRefusal.ChallengeRequired => FormBuilderPublicProblems.ChallengeRequired(),
             SubmissionRefusal.MemberRequired => FormBuilderPublicProblems.MemberRequired(),
             SubmissionRefusal.DuplicateSubmission => FormBuilderPublicProblems.DuplicateSubmission(),
             SubmissionRefusal.FormChanged => FormBuilderPublicProblems.FormChanged(),
@@ -189,8 +203,10 @@ internal sealed class EntryRequests(FormSubmissions submissions, UploadTokens to
         };
     }
 
-    // A body as it was read, or the refusal of it.
-    private readonly record struct Body(byte[] Bytes, IActionResult? Refusal);
+    /// <summary>A body as it was read, or the refusal of it.</summary>
+    /// <param name="Bytes">Its bytes.</param>
+    /// <param name="Refusal">The refusal, or null.</param>
+    public readonly record struct Body(byte[] Bytes, IActionResult? Refusal);
 }
 
 /// <summary>
@@ -228,10 +244,10 @@ internal sealed record EntryRequestModel
     /// <summary>Context values by name; only the names the form lists are read and stored.</summary>
     public IReadOnlyDictionary<string, string>? Context { get; init; }
 
-    /// <summary>The challenge (from 7.1).</summary>
+    /// <summary>The challenge the form's challenge endpoint gave; a request with a server key needs none.</summary>
     public string? Challenge { get; init; }
 
-    /// <summary>The captcha's token, for a form whose protection uses one (from 7.1).</summary>
+    /// <summary>The captcha's token, for a form whose protection uses one (from 7.2).</summary>
     public string? CaptchaToken { get; init; }
 }
 
@@ -269,7 +285,7 @@ internal sealed record PageRequestModel
     /// <summary>Context values by name; only the names the form lists are read.</summary>
     public IReadOnlyDictionary<string, string>? Context { get; init; }
 
-    /// <summary>The challenge (from 7.1).</summary>
+    /// <summary>The challenge the form's challenge endpoint gave; a request with a server key needs none.</summary>
     public string? Challenge { get; init; }
 }
 
@@ -279,7 +295,7 @@ internal sealed record ReceiptRequestModel
     /// <summary>The submission id the submission posted.</summary>
     public required Guid SubmissionId { get; init; }
 
-    /// <summary>The challenge the submission was sent with (from 7.1).</summary>
+    /// <summary>The challenge the submission was sent with, which counts here for 24 hours past its expiry; a request with the server key that made the entry needs none.</summary>
     public string? Challenge { get; init; }
 }
 

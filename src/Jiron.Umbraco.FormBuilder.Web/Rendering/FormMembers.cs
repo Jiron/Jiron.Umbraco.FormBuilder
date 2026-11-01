@@ -27,6 +27,22 @@ internal sealed class FormMembers(IMemberManager members, IMemberGroupService gr
     /// <summary>The key of the member signed in on the request, or null (ADR-0124).</summary>
     public async Task<Guid?> KeyAsync() => (await members.GetCurrentMemberAsync())?.Key;
 
+    /// <summary>The groups among these, as a form's rules name them, that the member signed in on the request is in (ADR-0138).</summary>
+    /// <param name="named">The groups, by key or name.</param>
+    public async Task<IReadOnlyList<string>> GroupsAmongAsync(IReadOnlySet<string> named)
+    {
+        ArgumentNullException.ThrowIfNull(named);
+        if (await members.GetCurrentMemberAsync() is not { } member)
+        {
+            return [];
+        }
+
+        var roles = (await members.GetRolesAsync(member)).ToHashSet(StringComparer.Ordinal);
+        var keys = named.Select(name => Guid.TryParse(name, out var key) ? key : (Guid?)null).OfType<Guid>().ToList();
+        var byKey = keys.Count == 0 ? [] : (await groups.GetAsync(keys)).ToList();
+        return [.. named.Where(name => roles.Contains(name) || byKey.Any(group => group.Name is { } own && roles.Contains(own) && Guid.TryParse(name, out var key) && key == group.Key))];
+    }
+
     /// <summary>Why the form shows its notice to the visitor, or null when it shows.</summary>
     /// <param name="availability">The form's availability, which says for whom it is.</param>
     public async Task<MemberGate?> GateAsync(FormAvailabilitySettings availability)

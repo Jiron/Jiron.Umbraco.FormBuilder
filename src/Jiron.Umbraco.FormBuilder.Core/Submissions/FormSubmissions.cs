@@ -21,7 +21,7 @@ namespace Jiron.Umbraco.FormBuilder.Core.Submissions;
 /// the empty submission and the transaction, and answers its own fields' errors; a receipt answers an entry as a retry
 /// would (ADR-0089). The places on options and the answers that must be unique are held while the answers are read and
 /// again inside the transaction (ADR-0090, ADR-0091).
-/// Spam protection comes in 7.1, and waking the action processor in 8.1.
+/// The gate reads the request's challenge (ADR-0138); the spam score comes in 7.1c, and waking the action processor in 8.1.
 /// </summary>
 internal sealed class FormSubmissions(
     PublishedFormCache cache,
@@ -60,16 +60,29 @@ internal sealed class FormSubmissions(
             return SubmissionResult.Refused(SubmissionRefusal.FormNotFound);
         }
 
-        if (IsForMembers(served.Form))
+        if (Gate(request, served.Form) is { } refused)
         {
-            return SubmissionResult.Refused(SubmissionRefusal.MemberRequired);
+            return SubmissionResult.Refused(refused);
         }
 
-        // Idempotency, before anything that could refuse a retry (section 4.4).
+        request = request with { Ticket = TicketOf(request) };
+
+        // Idempotency, before anything that could refuse a retry (section 4.4): only the challenge or the server key that
+        // made an entry hears of it.
         var digest = SubmissionDigest.Of(request);
         if (request.SubmissionId is { } posted && await entries.GetBySubmissionAsync(served.Row.Id, posted, cancellationToken) is { } earlier)
         {
-            return await RetryAsync(earlier, digest, served.Form, cancellationToken);
+            return IsItsOwn(earlier, request)
+                ? await RetryAsync(earlier, digest, served.Form, cancellationToken)
+                : SubmissionResult.Refused(SubmissionRefusal.DuplicateSubmission);
+        }
+
+        // A solved challenge makes one entry; its own submission id, stored a moment after the read above, is a retry.
+        if (request.Ticket is { } ticket && await entries.GetByChallengeAsync(served.Row.Id, FormChallenges.StoredId(ticket), cancellationToken) is { } solved)
+        {
+            return request.SubmissionId == solved.SubmissionId
+                ? await RetryAsync(solved, digest, served.Form, cancellationToken)
+                : SubmissionResult.Refused(SubmissionRefusal.ChallengeRequired);
         }
 
         var reading = await ReadAsync(request, served, pageKey: null, cancellationToken);
@@ -80,7 +93,7 @@ internal sealed class FormSubmissions(
 
         // One transaction (section 4.4, step 8).
         var (scope, page, read, wordings) = reading.Read;
-        var submission = new NewSubmission(served.Row.Id, version.Info.Id, served.Form, read, wordings, request.SubmissionId ?? Guid.NewGuid(), digest, scope.Culture, page, scope.Context, request.Redirect);
+        var submission = new NewSubmission(served.Row.Id, version.Info.Id, served.Form, read, wordings, request.SubmissionId ?? Guid.NewGuid(), digest, scope.Culture, page, scope.Context, request.Redirect, request.Ticket is { } used ? FormChallenges.StoredId(used) : null);
         try
         {
             return await recorder.CreateAsync(submission, scope, cancellationToken) is { } created
@@ -90,9 +103,14 @@ internal sealed class FormSubmissions(
         catch (FormBuilderConflictException conflict) when (conflict.Conflict == FormBuilderConflict.DuplicateSubmission)
         {
             // Another request with this submission id was stored a moment earlier: answer as a retry of it.
-            return await entries.GetBySubmissionAsync(served.Row.Id, submission.SubmissionId, cancellationToken) is { } other
+            return await entries.GetBySubmissionAsync(served.Row.Id, submission.SubmissionId, cancellationToken) is { } other && IsItsOwn(other, request)
                 ? await RetryAsync(other, digest, served.Form, cancellationToken)
                 : SubmissionResult.Refused(SubmissionRefusal.DuplicateSubmission);
+        }
+        catch (FormBuilderConflictException conflict) when (conflict.Conflict == FormBuilderConflict.ChallengeUsed)
+        {
+            // Another request with this challenge was stored a moment earlier, under another submission id.
+            return SubmissionResult.Refused(SubmissionRefusal.ChallengeRequired);
         }
         catch (FormBuilderConflictException conflict) when (conflict.Conflict == FormBuilderConflict.EntryLimitReached)
         {
@@ -131,11 +149,12 @@ internal sealed class FormSubmissions(
             return SubmissionResult.Refused(SubmissionRefusal.FormNotFound);
         }
 
-        if (IsForMembers(served.Form))
+        if (Gate(request, served.Form) is { } refused)
         {
-            return SubmissionResult.Refused(SubmissionRefusal.MemberRequired);
+            return SubmissionResult.Refused(refused);
         }
 
+        request = request with { Ticket = TicketOf(request) };
         var reading = await ReadAsync(request, served, pageKey, cancellationToken);
         return reading.IsRefused ? reading.Refusal : SubmissionResult.Valid();
     }
@@ -175,6 +194,68 @@ internal sealed class FormSubmissions(
             && string.Equals(KeyThatSubmitted(entry), serverKey, StringComparison.Ordinal)
             ? await ReplayAsync(entry, served.Form, cancellationToken)
             : SubmissionResult.Refused(SubmissionRefusal.EntryNotFound);
+    }
+
+    /// <summary>
+    /// The receipt of a submission for a request of the public API (ADR-0012, ADR-0138): only the challenge that made the
+    /// entry, for up to <see cref="FormChallenges.ReceiptGrace"/> past its expiry, or the server key that made it, finds it;
+    /// any other request gets the same miss as an unknown submission, so submission ids cannot be probed.
+    /// </summary>
+    /// <param name="form">The form's key.</param>
+    /// <param name="submissionId">The submission's id.</param>
+    /// <param name="serverKey">The name of the server key the request carried, or null.</param>
+    /// <param name="challenge">The challenge the request posted, or null.</param>
+    /// <param name="challenges">Reads the challenge.</param>
+    /// <param name="cancellationToken">Cancelled when the request is.</param>
+    public async Task<SubmissionResult> ReceiptAsync(Guid form, Guid submissionId, string? serverKey, string? challenge, IChallengeReader challenges, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(challenges);
+        if (await ServedAsync(form, cancellationToken) is not { } served)
+        {
+            return SubmissionResult.Refused(SubmissionRefusal.FormNotFound);
+        }
+
+        if (IsForMembers(served.Form))
+        {
+            return SubmissionResult.Refused(SubmissionRefusal.MemberRequired);
+        }
+
+        var ticket = serverKey is null ? challenges.Read(challenge, form, FormChallenges.ReceiptGrace) : null;
+        return await entries.GetBySubmissionAsync(served.Row.Id, submissionId, cancellationToken) is { State: not EntryState.Draft } entry
+            && (serverKey is not null ? string.Equals(KeyThatSubmitted(entry), serverKey, StringComparison.Ordinal) : ticket is not null && entry.ChallengeId == FormChallenges.StoredId(ticket))
+            ? await ReplayAsync(entry, served.Form, cancellationToken)
+            : SubmissionResult.Refused(SubmissionRefusal.EntryNotFound);
+    }
+
+    // The gate (section 4.4, step 2, ADR-0012): the challenge's signature and expiry, and on a form for members the member
+    // it names. A server key skips the challenge, and a transport with no challenges has none to read. A form for members
+    // goes no further until 14.3, which admits its members.
+    private static SubmissionRefusal? Gate(SubmissionRequest request, PublishedForm form)
+    {
+        var ticket = TicketOf(request);
+        if (IsForMembers(form))
+        {
+            return request.Challenges is not null && request.ServerKey is null && request.Member is not null && (ticket is null || ticket.Member != request.Member)
+                ? SubmissionRefusal.ChallengeRequired
+                : SubmissionRefusal.MemberRequired;
+        }
+
+        return request.Challenges is not null && request.ServerKey is null && ticket is null ? SubmissionRefusal.ChallengeRequired : null;
+    }
+
+    // What the request's challenge holds, read while it counts; a server key's request carries none.
+    private static ChallengeTicket? TicketOf(SubmissionRequest request) =>
+        request.ServerKey is null ? request.Challenges?.Read(request.Challenge, request.Form, TimeSpan.Zero) : null;
+
+    // Whether a request may hear of an entry with its submission id: the challenge or the server key that made it.
+    private static bool IsItsOwn(StoredEntry entry, SubmissionRequest request)
+    {
+        if (request.ServerKey is { } key)
+        {
+            return string.Equals(KeyThatSubmitted(entry), key, StringComparison.Ordinal);
+        }
+
+        return request.Ticket is { } ticket && entry.ChallengeId == FormChallenges.StoredId(ticket);
     }
 
     // The name of the server key the entry records as the one that submitted it, or null when no key did (ADR-0126): a
@@ -554,7 +635,7 @@ internal sealed class FormSubmissions(
 
             foreach (var token in answer.Values.OfType<string>().Select(TextSemantics.Clean).Where(token => token.Length > 0 && !uploads.ContainsKey(token)))
             {
-                if (tokens.FileOf(token, request.Form, field) is { } key && await entries.GetFileAsync(key, cancellationToken) is { } file && file.FormId == formId)
+                if (tokens.FileOf(token, request.Form, field, request.Ticket?.Id) is { } key && await entries.GetFileAsync(key, cancellationToken) is { } file && file.FormId == formId)
                 {
                     uploads[token] = file;
                 }

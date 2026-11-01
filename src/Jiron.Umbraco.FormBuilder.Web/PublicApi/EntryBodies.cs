@@ -52,17 +52,18 @@ internal static class EntryBodies
     /// <summary>The submission id a receipt's body names (ADR-0089), or null with where the body cannot be read.</summary>
     /// <param name="body">The body's bytes: <c>submissionId</c>, and the optional <c>challenge</c>.</param>
     /// <param name="invalid">Receives where the body cannot be read.</param>
-    public static Guid? ReadReceipt(byte[] body, List<string> invalid)
+    public static (Guid? SubmissionId, string? Challenge) ReadReceipt(byte[] body, List<string> invalid)
     {
         ArgumentNullException.ThrowIfNull(body);
         ArgumentNullException.ThrowIfNull(invalid);
         using var document = Parse(body, invalid);
         if (document is null)
         {
-            return null;
+            return default;
         }
 
         Guid? submissionId = null;
+        string? challenge = null;
         foreach (var (name, value) in Members(document.RootElement, string.Empty, invalid))
         {
             switch (name)
@@ -71,7 +72,7 @@ internal static class EntryBodies
                     submissionId = Key(value, name, invalid);
                     break;
                 case "challenge":
-                    _ = Text(value, name, invalid, MaxChallengeLength);
+                    challenge = Text(value, name, invalid, MaxChallengeLength);
                     break;
                 default:
                     invalid.Add(name);
@@ -84,7 +85,36 @@ internal static class EntryBodies
             Add(invalid, "submissionId");
         }
 
-        return invalid.Count > 0 ? null : submissionId;
+        return invalid.Count > 0 ? default : (submissionId, challenge);
+    }
+
+    /// <summary>The earlier challenge a request for a new one names, or null; any other member is invalid.</summary>
+    /// <param name="body">The body's bytes.</param>
+    /// <param name="invalid">Receives where the body cannot be read.</param>
+    public static string? ReadChallengeRequest(byte[] body, List<string> invalid)
+    {
+        ArgumentNullException.ThrowIfNull(body);
+        ArgumentNullException.ThrowIfNull(invalid);
+        using var document = Parse(body, invalid);
+        if (document is null)
+        {
+            return null;
+        }
+
+        string? previous = null;
+        foreach (var (name, value) in Members(document.RootElement, string.Empty, invalid))
+        {
+            if (name == "previous")
+            {
+                previous = Text(value, name, invalid, MaxChallengeLength);
+            }
+            else
+            {
+                invalid.Add(name);
+            }
+        }
+
+        return previous;
     }
 
     // A submission's body, or a page's with the page's key.
@@ -137,6 +167,7 @@ internal static class EntryBodies
         var answers = new Answers();
         var query = new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal);
         var context = new Dictionary<string, string>(StringComparer.Ordinal);
+        string? challenge = null;
         foreach (var (name, value) in Members(root, string.Empty, invalid))
         {
             switch (name)
@@ -171,7 +202,7 @@ internal static class EntryBodies
                     Context(value, context, invalid);
                     break;
                 case "challenge":
-                    _ = Text(value, name, invalid, MaxChallengeLength);
+                    challenge = Text(value, name, invalid, MaxChallengeLength);
                     break;
                 case "captchaToken" when !page:
                     _ = Text(value, name, invalid, MaxCaptchaTokenLength);
@@ -203,6 +234,7 @@ internal static class EntryBodies
             Rows = answers.Rows(),
             Query = query,
             Context = context,
+            Challenge = challenge,
         }, pageKey);
     }
 

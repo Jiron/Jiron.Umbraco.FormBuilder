@@ -20,6 +20,9 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Integration.PublicApi;
 [UmbracoTest(Database = UmbracoTestOptions.Database.NewSchemaPerTest, Boot = true)]
 public sealed class PublicFormValidateReceiptBodyTests : PublicApiTestBase
 {
+    /// <summary>A fixture of bodies and files, for which the challenge is beside the point: PublicFormChallengeTests holds its tests.</summary>
+    public PublicFormValidateReceiptBodyTests() => SendsWithServerKey = true;
+
     private static readonly char Backslash = (char)92;
 
     private RequestBodies Bodies => GetRequiredService<RequestBodies>();

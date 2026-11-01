@@ -10,6 +10,7 @@ using Jiron.Umbraco.FormBuilder.Web.Rendering;
 using Jiron.Umbraco.FormBuilder.Web.Rendering.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Net.Http.Headers;
 
 namespace Jiron.Umbraco.FormBuilder.Web.PublicApi;
@@ -28,6 +29,7 @@ namespace Jiron.Umbraco.FormBuilder.Web.PublicApi;
 /// <param name="themes">The site's themes, which a page's markup is rendered in.</param>
 /// <param name="rendering">What a page renders for a form, which the element endpoint answers as JSON.</param>
 /// <param name="assets">The addresses of the stylesheets and the script a form's page loads.</param>
+/// <param name="challenges">What the challenge endpoint answers.</param>
 [Route("forms")]
 internal sealed class FormController(
     FormRequests requests,
@@ -38,7 +40,8 @@ internal sealed class FormController(
     PublishedFormCache forms,
     FormBuilderThemes themes,
     FormRendering rendering,
-    PageAssets assets) : FormBuilderPublicApiController
+    PageAssets assets,
+    ChallengeRequests challenges) : FormBuilderPublicApiController
 {
     /// <summary>The start of a query name that gives a context value to the element endpoint, as <c>&lt;jfb-render&gt;</c>'s attributes do.</summary>
     internal const string ContextQueryPrefix = "context-";
@@ -344,7 +347,7 @@ internal sealed class FormController(
 
     /// <summary>
     /// Uploads one file to a field before the submission (ADR-0006, ADR-0087), streamed as a <c>multipart/form-data</c>
-    /// body: an optional <c>challenge</c> part, then the <c>file</c> part, and nothing after it. The file is held to the
+    /// body: a <c>challenge</c> part, which only a server key leaves out, then the <c>file</c> part, and nothing after it. The file is held to the
     /// field's limit, its type's or the site's, whichever is smaller, before and while it is read, and checked on its
     /// first bytes before any is stored: a program or a script, an extension the site blocks, one the field does not
     /// take, and bytes that are not the kind the extension names are refused, whatever the client says the file is.
@@ -366,6 +369,7 @@ internal sealed class FormController(
     [FormBuilderUploadBody]
     [ProducesResponseType<FileUploadResponseModel>(StatusCodes.Status200OK, "application/json")]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest, FormBuilderProblemResult.MediaType)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized, FormBuilderProblemResult.MediaType)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden, FormBuilderProblemResult.MediaType)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound, FormBuilderProblemResult.MediaType)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status413PayloadTooLarge, FormBuilderProblemResult.MediaType)]
@@ -397,7 +401,51 @@ internal sealed class FormController(
             return unavailable == FormUnavailable.Closed ? FormBuilderPublicProblems.FormClosed() : FormBuilderPublicProblems.EntryLimitReached();
         }
 
-        return await uploads.UploadAsync(HttpContext, form.Published.Form.Key, field, cancellationToken);
+        // A form for members takes files only from a member it admits, with their own challenge (ADR-0012, ADR-0138).
+        Guid? member = null;
+        if (form.Published.Definition.Settings.Availability is { Access: not MemberAccess.Anyone } forMembers)
+        {
+            if (!await ChallengeRequests.AdmitsAsync(HttpContext, forMembers))
+            {
+                FormBuilderPublicProblems.CloseConnection(HttpContext);
+                return FormBuilderPublicProblems.MemberRequired();
+            }
+
+            member = await HttpContext.RequestServices.GetRequiredService<FormMembers>().KeyAsync();
+        }
+
+        return await uploads.UploadAsync(HttpContext, form.Published.Form.Key, field, member, cancellationToken);
+    }
+
+    /// <summary>
+    /// A signed challenge for a published form (ADR-0012, ADR-0138), which a page fetches when its visitor first touches the
+    /// form, so that cached pages stay cacheable, and with it what cached markup cannot carry: the places left on the
+    /// form's own options and what its rules ask of a signed-in member. Every submission, page check and upload posts it
+    /// back, and it makes one entry. It counts for 24 hours; an earlier one, even expired, carries its issue time over.
+    /// </summary>
+    /// <param name="key">The form's key.</param>
+    /// <param name="cancellationToken">The request's cancellation, with its time limit.</param>
+    [HttpPost("{key}/challenge")]
+    [FormBuilderRateLimit(FormBuilderRateLimitPolicies.Challenge)]
+    [FormBuilderBodyLimit(ChallengeRequests.MaxBodyBytes)]
+    [FormBuilderTimeLimit(10)]
+    [FormBuilderJsonBody(typeof(ChallengeRequestModel))]
+    [ProducesResponseType<ChallengeResponseModel>(StatusCodes.Status200OK, "application/json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest, FormBuilderProblemResult.MediaType)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden, FormBuilderProblemResult.MediaType)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound, FormBuilderProblemResult.MediaType)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status415UnsupportedMediaType, FormBuilderProblemResult.MediaType)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status503ServiceUnavailable, FormBuilderProblemResult.MediaType)]
+    public async Task<IActionResult> Challenge(string key, CancellationToken cancellationToken)
+    {
+        // A form the site does not serve answers before its body is read.
+        if (!Guid.TryParseExact(key, "D", out var formKey) || await forms.GetAsync(formKey, cancellationToken) is not { } form)
+        {
+            FormBuilderPublicProblems.CloseConnection(HttpContext);
+            return FormBuilderPublicProblems.FormNotFound();
+        }
+
+        return await challenges.IssueAsync(HttpContext, form.Published, cancellationToken);
     }
 
     /// <summary>
@@ -412,7 +460,8 @@ internal sealed class FormController(
     /// <c>422 validation_failed</c> lists each error with its code (the field's kind of error, <c>check</c>, <c>rule</c>
     /// or <c>empty</c>) and its path (the alias, <c>grid.rowKey</c>, <c>group[row].child</c>, or empty for the form).
     /// <c>409 form_changed</c> asks the page to load the form again; <c>409 duplicate_submission</c> says the id was used
-    /// for other answers.
+    /// for other answers, or by another challenge. <c>401 challenge_required</c> asks the page for a new challenge: one
+    /// missing, forged, expired, another form's, or used for another entry.
     /// </remarks>
     [HttpPost("{key}/entries")]
     [FormBuilderRateLimit(FormBuilderRateLimitPolicies.Submit)]
@@ -421,6 +470,7 @@ internal sealed class FormController(
     [FormBuilderJsonBody(typeof(EntryRequestModel))]
     [ProducesResponseType<EntryResponseModel>(StatusCodes.Status200OK, "application/json")]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest, FormBuilderProblemResult.MediaType)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized, FormBuilderProblemResult.MediaType)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden, FormBuilderProblemResult.MediaType)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound, FormBuilderProblemResult.MediaType)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict, FormBuilderProblemResult.MediaType)]
@@ -459,6 +509,7 @@ internal sealed class FormController(
     [FormBuilderJsonBody(typeof(PageRequestModel))]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest, FormBuilderProblemResult.MediaType)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized, FormBuilderProblemResult.MediaType)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden, FormBuilderProblemResult.MediaType)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound, FormBuilderProblemResult.MediaType)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict, FormBuilderProblemResult.MediaType)]
@@ -481,8 +532,8 @@ internal sealed class FormController(
     /// <summary>
     /// The receipt and the outcome of the entry a submission id names on this form (ADR-0012, ADR-0089), for a page whose
     /// answer to a submission was lost: what a retry of the same answers gets. Every miss answers the same
-    /// <c>404 not_found</c>, so submission ids cannot be probed; from 7.1 the entry must have been made with the posted
-    /// challenge.
+    /// <c>404 not_found</c>, so submission ids cannot be probed: the entry must have been made with the posted challenge,
+    /// whose signature counts here for 24 hours past its expiry, or by the request's server key.
     /// </summary>
     /// <param name="key">The form's key.</param>
     /// <param name="cancellationToken">The request's cancellation, with its time limit.</param>

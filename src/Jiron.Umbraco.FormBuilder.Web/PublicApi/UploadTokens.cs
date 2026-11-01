@@ -9,7 +9,7 @@ namespace Jiron.Umbraco.FormBuilder.Web.PublicApi;
 
 /// <summary>
 /// The tokens an upload answers with (ADR-0006, ADR-0087), which a submission posts for the field's value: each names
-/// the form, the field and the file's key, never its stored id, and when it expires on the site's clock. Data
+/// the form, the field, the file's key, never its stored id, the challenge it came with, and when it expires on the site's clock. Data
 /// Protection protects them under a purpose of their own, so no other token reads as one; a load-balanced site shares
 /// its key ring.
 /// </summary>
@@ -25,7 +25,7 @@ internal sealed class UploadTokens(IDataProtectionProvider protection, TimeProvi
 
     private const byte Version = 1;
     private const int KeyLength = 16;
-    private const int PayloadLength = 1 + (3 * KeyLength) + sizeof(long);
+    private const int PayloadLength = 1 + (4 * KeyLength) + sizeof(long);
 
     private readonly IDataProtector _protector = protection.CreateProtector(Purpose);
 
@@ -33,14 +33,16 @@ internal sealed class UploadTokens(IDataProtectionProvider protection, TimeProvi
     /// <param name="formKey">The form's key.</param>
     /// <param name="fieldKey">The field's key.</param>
     /// <param name="fileKey">The recorded file's key.</param>
-    public string Issue(Guid formKey, Guid fieldKey, Guid fileKey)
+    /// <param name="challenge">The id of the upload's challenge; null for one that had none, as a server key's and a post without JavaScript's.</param>
+    public string Issue(Guid formKey, Guid fieldKey, Guid fileKey, Guid? challenge = null)
     {
         var payload = new byte[PayloadLength];
         payload[0] = Version;
         formKey.TryWriteBytes(payload.AsSpan(1, KeyLength));
         fieldKey.TryWriteBytes(payload.AsSpan(1 + KeyLength, KeyLength));
         fileKey.TryWriteBytes(payload.AsSpan(1 + (2 * KeyLength), KeyLength));
-        BinaryPrimitives.WriteInt64BigEndian(payload.AsSpan(1 + (3 * KeyLength)), (time.GetUtcNow() + Lifetime).UtcTicks);
+        (challenge ?? Guid.Empty).TryWriteBytes(payload.AsSpan(1 + (3 * KeyLength), KeyLength));
+        BinaryPrimitives.WriteInt64BigEndian(payload.AsSpan(1 + (4 * KeyLength)), (time.GetUtcNow() + Lifetime).UtcTicks);
         return Base64Url.EncodeToString(_protector.Protect(payload));
     }
 
@@ -72,18 +74,21 @@ internal sealed class UploadTokens(IDataProtectionProvider protection, TimeProvi
             return null;
         }
 
-        var expires = new DateTimeOffset(BinaryPrimitives.ReadInt64BigEndian(payload.AsSpan(1 + (3 * KeyLength))), TimeSpan.Zero);
+        var expires = new DateTimeOffset(BinaryPrimitives.ReadInt64BigEndian(payload.AsSpan(1 + (4 * KeyLength))), TimeSpan.Zero);
+        var challenge = new Guid(payload.AsSpan(1 + (3 * KeyLength), KeyLength));
         return expires > time.GetUtcNow()
-            ? new UploadToken(new Guid(payload.AsSpan(1 + KeyLength, KeyLength)), new Guid(payload.AsSpan(1 + (2 * KeyLength), KeyLength)), expires)
+            ? new UploadToken(new Guid(payload.AsSpan(1 + KeyLength, KeyLength)), new Guid(payload.AsSpan(1 + (2 * KeyLength), KeyLength)), expires, challenge == Guid.Empty ? null : challenge)
             : null;
     }
 
     /// <inheritdoc />
-    public Guid? FileOf(string token, Guid form, Guid field) => Read(token, form) is { } read && read.FieldKey == field ? read.FileKey : null;
+    public Guid? FileOf(string token, Guid form, Guid field, Guid? challenge) =>
+        Read(token, form) is { } read && read.FieldKey == field && read.Challenge == challenge ? read.FileKey : null;
 }
 
 /// <summary>The upload a token names.</summary>
 /// <param name="FieldKey">The field it was uploaded to.</param>
 /// <param name="FileKey">The recorded file's key.</param>
 /// <param name="ExpiresUtc">When the token stops counting.</param>
-internal sealed record UploadToken(Guid FieldKey, Guid FileKey, DateTimeOffset ExpiresUtc);
+/// <param name="Challenge">The id of the upload's challenge, which only a submission with the same one may claim it with; null for one that had none.</param>
+internal sealed record UploadToken(Guid FieldKey, Guid FileKey, DateTimeOffset ExpiresUtc, Guid? Challenge = null);

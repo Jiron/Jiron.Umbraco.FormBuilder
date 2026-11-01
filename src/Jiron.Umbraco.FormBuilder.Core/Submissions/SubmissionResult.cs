@@ -9,6 +9,9 @@ internal enum SubmissionRefusal
     /// <summary>The form is missing, unpublished, in the trash or unreadable (<c>form_not_found</c>).</summary>
     FormNotFound,
 
+    /// <summary>The request's challenge is missing, forged, expired, another's or used for another entry (<c>challenge_required</c>).</summary>
+    ChallengeRequired,
+
     /// <summary>The form takes entries only from members it admits (<c>member_required</c>).</summary>
     MemberRequired,
 

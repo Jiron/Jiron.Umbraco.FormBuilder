@@ -72,6 +72,11 @@ internal sealed record PublicApiEndpoint(ApiDescription Description)
             return content;
         }
 
+        if (Description.RelativePath.EndsWith("/challenge", StringComparison.Ordinal))
+        {
+            return new StringContent("{}", Encoding.UTF8, "application/json");
+        }
+
         if (Description.RelativePath.EndsWith("/entries", StringComparison.Ordinal))
         {
             return new StringContent("""{"revision":1,"values":{"name":"Ada"}}""", Encoding.UTF8, "application/json");

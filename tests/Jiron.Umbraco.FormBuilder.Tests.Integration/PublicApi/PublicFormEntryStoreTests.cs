@@ -25,6 +25,10 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Integration.PublicApi;
 [UmbracoTest(Database = UmbracoTestOptions.Database.NewSchemaPerTest, Boot = true)]
 public sealed class PublicFormEntryStoreTests : PublicApiTestBase
 {
+    /// <summary>A fixture of bodies and files, for which the challenge is beside the point: PublicFormChallengeTests holds its tests. The tests that race on a challenge turn this off, and a fixture's tests share one instance.</summary>
+    [SetUp]
+    public void SignWithTheServerKey() => SendsWithServerKey = true;
+
     private static readonly FormOutcome Thanks = new()
     {
         Key = Guid.Parse("30000000-0000-4000-8000-000000000388"),
@@ -95,6 +99,76 @@ public sealed class PublicFormEntryStoreTests : PublicApiTestBase
             Assert.That(await AnswerAsync(second), Is.EqualTo("403 entry_limit_reached"));
             Assert.That(await StoredAsync(key), Is.EqualTo(1));
             Assert.That((await FormRows.GetAsync(key))!.LastEntryNumber, Is.EqualTo(1), "the refusal rolled the form's counter back");
+        });
+    }
+
+    [Test]
+    public async Task ASubmissionStoredAMomentEarlier_WithItsChallenge_IsAnsweredAsItsRetry()
+    {
+        SendsWithServerKey = false;
+        var key = await PublishAsync();
+        var submissionId = Guid.NewGuid();
+        var ada = $$$"""{"submissionId":"{{{submissionId}}}","revision":1,"values":{"name":"Ada"}}""";
+        using var first = await PostAsync(key, ada);
+
+        // The read of the id misses the entry, as a read does while another request stores it: the challenge finds it.
+        var misses = 1;
+        Hooks<IEntryRepository>().On(nameof(IEntryRepository.GetBySubmissionAsync), (_, call) => misses-- > 0 ? Task.FromResult<StoredEntry?>(null) : call());
+        using var retry = await PostAsync(key, ada);
+        Hooks<IEntryRepository>().Off(nameof(IEntryRepository.GetBySubmissionAsync));
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(await retry.Content.ReadAsStringAsync(), Is.EqualTo(await first.Content.ReadAsStringAsync()));
+            Assert.That(await StoredAsync(key), Is.EqualTo(1));
+        });
+    }
+
+    [Test]
+    public async Task TheSameSubmissionBeingStored_IsARetry_ForItsChallenge_AndNotForAnother()
+    {
+        SendsWithServerKey = false;
+        var key = await PublishAsync();
+        var submissionId = Guid.NewGuid();
+        var ada = $$$"""{"submissionId":"{{{submissionId}}}","revision":1,"values":{"name":"Ada"}}""";
+        using var first = await PostAsync(key, ada);
+
+        // Both reads miss the entry another request is storing: the conflict on the id finds it.
+        var misses = 1;
+        Hooks<IEntryRepository>().On(nameof(IEntryRepository.GetBySubmissionAsync), (_, call) => misses-- > 0 ? Task.FromResult<StoredEntry?>(null) : call());
+        Hooks<IEntryRepository>().On(nameof(IEntryRepository.GetByChallengeAsync), (_, _) => Task.FromResult<StoredEntry?>(null));
+        using var retry = await PostAsync(key, ada);
+        misses = 1;
+        var other = $$$"""{"submissionId":"{{{submissionId}}}","revision":1,"values":{"name":"Ada"},"challenge":"{{{await ChallengeAsync(key)}}}"}""";
+        using var another = await PostAsync(key, other);
+        Hooks<IEntryRepository>().Off(nameof(IEntryRepository.GetBySubmissionAsync));
+        Hooks<IEntryRepository>().Off(nameof(IEntryRepository.GetByChallengeAsync));
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(await retry.Content.ReadAsStringAsync(), Is.EqualTo(await first.Content.ReadAsStringAsync()));
+            Assert.That(await AnswerAsync(another), Is.EqualTo("409 duplicate_submission"), "another challenge hears nothing of it");
+            Assert.That(await StoredAsync(key), Is.EqualTo(1));
+        });
+    }
+
+    [Test]
+    public async Task AChallengeBeingUsed_UnderAnotherSubmissionId_IsRefusedByTheIndex()
+    {
+        SendsWithServerKey = false;
+        var key = await PublishAsync();
+        var challenge = await ChallengeAsync(key);
+        using var first = await PostAsync(key, $$$"""{"revision":1,"values":{"name":"Ada"},"challenge":"{{{challenge}}}"}""");
+
+        Hooks<IEntryRepository>().On(nameof(IEntryRepository.GetByChallengeAsync), (_, _) => Task.FromResult<StoredEntry?>(null));
+        using var second = await PostAsync(key, $$$"""{"revision":1,"values":{"name":"Ada"},"challenge":"{{{challenge}}}"}""");
+        Hooks<IEntryRepository>().Off(nameof(IEntryRepository.GetByChallengeAsync));
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(first.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+            Assert.That(await AnswerAsync(second), Is.EqualTo("401 challenge_required"));
+            Assert.That(await StoredAsync(key), Is.EqualTo(1));
         });
     }
 

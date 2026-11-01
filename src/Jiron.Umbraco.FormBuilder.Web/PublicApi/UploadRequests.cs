@@ -15,13 +15,14 @@ namespace Jiron.Umbraco.FormBuilder.Web.PublicApi;
 
 /// <summary>
 /// What the upload endpoint reads of a request and answers with (ADR-0087): the multipart body as it streams, held to
-/// the field's limit before and while it is read, its optional challenge part, then its file part, which
+/// the field's limit before and while it is read, its challenge part, then its file part, which
 /// <see cref="FileUploads"/> checks and stores; the answer carries the upload's token. Every refusal closes the
 /// connection on HTTP/1.x, as the rest of the body is never read.
 /// </summary>
 /// <param name="uploads">The checks and the store of uploads.</param>
 /// <param name="tokens">The upload tokens.</param>
-internal sealed class UploadRequests(FileUploads uploads, UploadTokens tokens)
+/// <param name="challenges">The challenges, which an upload's first part holds (ADR-0138).</param>
+internal sealed class UploadRequests(FileUploads uploads, UploadTokens tokens, ChallengeTokens challenges)
 {
     /// <summary>The longest multipart boundary (RFC 2046).</summary>
     public const int MaxBoundaryLength = 70;
@@ -57,8 +58,9 @@ internal sealed class UploadRequests(FileUploads uploads, UploadTokens tokens)
     /// <param name="http">The request.</param>
     /// <param name="formKey">The published form's key.</param>
     /// <param name="upload">The field (<see cref="FieldOf"/>).</param>
+    /// <param name="member">On a form for members, the member signed in, whom the challenge must name.</param>
     /// <param name="cancellationToken">The request's cancellation, with its time limit.</param>
-    public async Task<IActionResult> UploadAsync(HttpContext http, Guid formKey, UploadField upload, CancellationToken cancellationToken)
+    public async Task<IActionResult> UploadAsync(HttpContext http, Guid formKey, UploadField upload, Guid? member, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(http);
         ArgumentNullException.ThrowIfNull(upload);
@@ -92,11 +94,16 @@ internal sealed class UploadRequests(FileUploads uploads, UploadTokens tokens)
         FilePart part;
         try
         {
-            part = await FilePartAsync(reader, cancellationToken);
+            part = await FilePartAsync(reader, formKey, ServerKeyRequest.NameOf(http) is null, member, cancellationToken);
         }
         catch (Exception exception) when (exception is IOException or InvalidDataException)
         {
             return Refused(http, Fault(exception, type));
+        }
+
+        if (part.ChallengeRefused)
+        {
+            return Refused(http, FormBuilderPublicProblems.ChallengeRequired());
         }
 
         if (part.Section is null)
@@ -118,7 +125,7 @@ internal sealed class UploadRequests(FileUploads uploads, UploadTokens tokens)
         {
             { Status: FileUploadStatus.Stored, File: { } file } => Answer(new FileUploadResponseModel
             {
-                Token = tokens.Issue(formKey, field.Key, file.Key),
+                Token = tokens.Issue(formKey, field.Key, file.Key, part.Challenge),
                 Name = file.OriginalName,
                 Size = file.SizeBytes,
                 ContentType = file.ContentType,
@@ -130,10 +137,12 @@ internal sealed class UploadRequests(FileUploads uploads, UploadTokens tokens)
         };
     }
 
-    // The file part after an optional challenge part; a part out of place names where the request went wrong.
-    private static async Task<FilePart> FilePartAsync(MultipartReader reader, CancellationToken cancellationToken)
+    // The file part after its challenge, which is read and checked before the file's first byte (ADR-0006); a request with
+    // a server key needs none. A part out of place names where the request went wrong.
+    private async Task<FilePart> FilePartAsync(MultipartReader reader, Guid formKey, bool needsChallenge, Guid? member, CancellationToken cancellationToken)
     {
         var challenge = false;
+        Guid? challengeId = null;
         while (await reader.ReadNextSectionAsync(cancellationToken) is { } section)
         {
             if (!ContentDispositionHeaderValue.TryParse(section.ContentDisposition, out var disposition)
@@ -146,13 +155,22 @@ internal sealed class UploadRequests(FileUploads uploads, UploadTokens tokens)
             var isFile = disposition.IsFileDisposition();
             if (!challenge && !isFile && name.Equals(FormBuilderUploadBodyAttribute.ChallengePart, StringComparison.Ordinal))
             {
-                // 7.1 verifies the challenge before the file is read; until then it is held to its limit only.
-                if (!await FitsAsync(section.Body, MaxChallengeBytes, cancellationToken))
+                if (await TextAsync(section.Body, MaxChallengeBytes, cancellationToken) is not { } text)
                 {
                     return new FilePart(null, null, FormBuilderUploadBodyAttribute.ChallengePart);
                 }
 
                 challenge = true;
+                if (needsChallenge)
+                {
+                    if (challenges.Read(text, formKey, TimeSpan.Zero) is not { } ticket || (member is not null && ticket.Member != member))
+                    {
+                        return new FilePart(null, null, FormBuilderUploadBodyAttribute.ChallengePart) { ChallengeRefused = true };
+                    }
+
+                    challengeId = ticket.Id;
+                }
+
                 continue;
             }
 
@@ -161,7 +179,9 @@ internal sealed class UploadRequests(FileUploads uploads, UploadTokens tokens)
                 // The name as the device gave it, decoded and without its quotes; browsers do not escape a backslash in
                 // it, so none is unescaped, and a path's separators stay for the name's cleaning.
                 var fileName = StringSegment.IsNullOrEmpty(disposition.FileNameStar) ? disposition.FileName : disposition.FileNameStar;
-                return new FilePart(section, fileName.Value, FormBuilderUploadBodyAttribute.FilePart);
+                return needsChallenge && challengeId is null
+                    ? new FilePart(null, null, FormBuilderUploadBodyAttribute.ChallengePart) { ChallengeRefused = true }
+                    : new FilePart(section, fileName.Value, FormBuilderUploadBodyAttribute.FilePart) { Challenge = challengeId };
             }
 
             break;
@@ -170,8 +190,8 @@ internal sealed class UploadRequests(FileUploads uploads, UploadTokens tokens)
         return new FilePart(null, null, FormBuilderUploadBodyAttribute.FilePart);
     }
 
-    // Whether a part's bytes are no more than the limit, reading them to their end or one past the limit.
-    private static async Task<bool> FitsAsync(Stream part, int limit, CancellationToken cancellationToken)
+    // A part's text when its bytes are no more than the limit, reading them to their end or one past the limit.
+    private static async Task<string?> TextAsync(Stream part, int limit, CancellationToken cancellationToken)
     {
         var buffer = new byte[limit + 1];
         var length = 0;
@@ -180,13 +200,13 @@ internal sealed class UploadRequests(FileUploads uploads, UploadTokens tokens)
             var read = await part.ReadAsync(buffer.AsMemory(length), cancellationToken);
             if (read == 0)
             {
-                return true;
+                return System.Text.Encoding.UTF8.GetString(buffer, 0, length);
             }
 
             length += read;
         }
 
-        return false;
+        return null;
     }
 
     // Whether the request ends after the file: the closing boundary, then at most a short epilogue.
@@ -220,7 +240,12 @@ internal sealed class UploadRequests(FileUploads uploads, UploadTokens tokens)
         new(JsonSerializer.SerializeToUtf8Bytes(model, Json), "application/json; charset=utf-8");
 
     // The file part with the name its device gave, or none and where the request went wrong.
-    private sealed record FilePart(MultipartSection? Section, string? Name, string Invalid);
+    private sealed record FilePart(MultipartSection? Section, string? Name, string Invalid)
+    {
+        public Guid? Challenge { get; init; }
+
+        public bool ChallengeRefused { get; init; }
+    }
 }
 
 /// <summary>A field that takes uploads, with its type.</summary>

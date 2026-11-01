@@ -156,8 +156,11 @@ async function postAsTheRuntime(
   const hashes: Record<string, string> = {};
   for (const alias of consents)
     hashes[alias] = (await form.locator(`input[name="jfb-consent-${alias}"]`).getAttribute('value')) ?? '';
+  const asked = await request.post(`/jfb/api/v1/forms/${key}/challenge`);
+  expect(asked.status(), await asked.text()).toBe(200);
+  const { challenge } = (await asked.json()) as { challenge: string };
   const response = await request.post(`/jfb/api/v1/forms/${key}/entries`, {
-    data: { revision, values, consents: hashes },
+    data: { revision, values, consents: hashes, challenge },
   });
   expect(response.status(), await response.text()).toBe(200);
 }

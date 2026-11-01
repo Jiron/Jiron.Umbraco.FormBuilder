@@ -64,6 +64,18 @@ internal sealed record SubmissionRequest
     /// </summary>
     public string? ServerKey { get; init; }
 
+    /// <summary>The challenge the request posted, read by <see cref="Challenges"/> (ADR-0138).</summary>
+    public string? Challenge { get; init; }
+
+    /// <summary>
+    /// Reads the request's challenge: the transport's own, since only it knows how challenges are protected. Null for a
+    /// transport whose posts carry none, as a post without JavaScript on a cached page cannot (ADR-0012).
+    /// </summary>
+    public IChallengeReader? Challenges { get; init; }
+
+    /// <summary>What the gate found in the request's challenge; null without one.</summary>
+    public ChallengeTicket? Ticket { get; init; }
+
     /// <summary>The context name an entry a server key submitted records the key's name under (ADR-0126).</summary>
     public const string ServerKeyContext = "jfbServerKey";
 
@@ -77,9 +89,13 @@ internal sealed record SubmissionRequest
 /// <summary>Reads a transport's upload tokens (ADR-0087, ADR-0088).</summary>
 internal interface IUploadTokenReader
 {
-    /// <summary>The key of the file a token names for this form's field, or null when it names none: changed, expired or another field's.</summary>
+    /// <summary>
+    /// The key of the file a token names for this form's field, or null when it names none: changed, expired, another
+    /// field's, or uploaded with another challenge, which only the submission with the same one may claim (ADR-0006).
+    /// </summary>
     /// <param name="token">The token, as a file field's value posts it.</param>
     /// <param name="form">The form's key.</param>
     /// <param name="field">The field's key.</param>
-    Guid? FileOf(string token, Guid form, Guid field);
+    /// <param name="challenge">The id of the request's challenge; null for a request without one.</param>
+    Guid? FileOf(string token, Guid form, Guid field, Guid? challenge);
 }

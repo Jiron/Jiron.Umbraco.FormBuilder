@@ -173,6 +173,16 @@ internal sealed partial class EntryRepository(FormBuilderDatabase database) : IE
             cancellationToken);
 
     /// <inheritdoc />
+    public Task<StoredEntry?> GetByChallengeAsync(int formId, string challengeId, CancellationToken cancellationToken = default) =>
+        database.ReadAsync(
+            db =>
+            {
+                var n = new SqlNames(db);
+                return FindAsync(db, n, $"{n.C("formId")} = @0 AND {n.C("challengeId")} = @1", formId, challengeId);
+            },
+            cancellationToken);
+
+    /// <inheritdoc />
     public Task<StoredEntry?> ChangeStateAsync(long entryId, EntryState expected, EntryState state, Guid? userKey, CancellationToken cancellationToken = default)
     {
         CheckState(expected, nameof(expected));

@@ -395,7 +395,7 @@ internal sealed class FormPostHandler(
         var files = new List<FormPostFile>();
         foreach (var token in answers.Values.Distinct(StringComparer.Ordinal))
         {
-            if (tokens.FileOf(token, formKey, fieldKey) is { } key && await entries.GetFileAsync(key, cancellationToken) is { EntryId: null } file && file.FieldKey == fieldKey)
+            if (tokens.FileOf(token, formKey, fieldKey, null) is { } key && await entries.GetFileAsync(key, cancellationToken) is { EntryId: null } file && file.FieldKey == fieldKey)
             {
                 files.Add(new FormPostFile(token, file.OriginalName, file.SizeBytes));
             }

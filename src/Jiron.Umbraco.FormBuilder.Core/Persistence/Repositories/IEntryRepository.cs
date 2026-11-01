@@ -442,6 +442,12 @@ internal interface IEntryRepository
     /// <summary>The form's entry with this submission id, or null: what answers a retry (section 4.4).</summary>
     Task<StoredEntry?> GetBySubmissionAsync(int formId, Guid submissionId, CancellationToken cancellationToken = default);
 
+    /// <summary>The form's entry a challenge made, or null (ADR-0012).</summary>
+    /// <param name="formId">The form.</param>
+    /// <param name="challengeId">The challenge's id as an entry stores it.</param>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    Task<StoredEntry?> GetByChallengeAsync(int formId, string challengeId, CancellationToken cancellationToken = default);
+
     /// <summary>
     /// The values of these entries, by entry, field, row and item. The ids go into statements of at most
     /// <see cref="SqlArgs.MaxListLength"/> (ADR-0003).

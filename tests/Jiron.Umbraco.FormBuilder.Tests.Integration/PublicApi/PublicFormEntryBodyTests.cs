@@ -25,6 +25,9 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Integration.PublicApi;
 [UmbracoTest(Database = UmbracoTestOptions.Database.NewSchemaPerTest, Boot = true)]
 public sealed class PublicFormEntryBodyTests : PublicApiTestBase
 {
+    /// <summary>A fixture of bodies and files, for which the challenge is beside the point: PublicFormChallengeTests holds its tests.</summary>
+    public PublicFormEntryBodyTests() => SendsWithServerKey = true;
+
     private static readonly char Backslash = (char)92;
 
     // The header by which a test asks the site to refuse the body at its end, with the status the server refuses it with.

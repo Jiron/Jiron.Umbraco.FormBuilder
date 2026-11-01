@@ -48,6 +48,8 @@ internal static class FormBuilderPublicApiServices
         builder.Services.TryAddSingleton<Picker.FormBuilderDeliveryApiMiddleware>();
         builder.Services.TryAddSingleton<FormRequests>();
         builder.Services.TryAddSingleton<UploadTokens>();
+        builder.Services.TryAddSingleton<ChallengeTokens>();
+        builder.Services.TryAddSingleton<ChallengeRequests>();
         builder.Services.TryAddSingleton<UploadRequests>();
         builder.Services.TryAddSingleton<EntryRequests>();
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IConfigureOptions<SwaggerGenOptions>, ConfigureFormBuilderPublicApiSwagger>());

@@ -52,10 +52,10 @@ public sealed class UploadTokensTests
 
         Assert.Multiple(() =>
         {
-            Assert.That(_tokens.FileOf(token, Form, Field), Is.EqualTo(File));
-            Assert.That(_tokens.FileOf(token, Form, Guid.NewGuid()), Is.Null, "another field");
-            Assert.That(_tokens.FileOf(token, Guid.NewGuid(), Field), Is.Null, "another form");
-            Assert.That(_tokens.FileOf("not a token!", Form, Field), Is.Null);
+            Assert.That(_tokens.FileOf(token, Form, Field, null), Is.EqualTo(File));
+            Assert.That(_tokens.FileOf(token, Form, Guid.NewGuid(), null), Is.Null, "another field");
+            Assert.That(_tokens.FileOf(token, Guid.NewGuid(), Field, null), Is.Null, "another form");
+            Assert.That(_tokens.FileOf("not a token!", Form, Field, null), Is.Null);
         });
     }
 
@@ -112,16 +112,16 @@ public sealed class UploadTokensTests
         });
     }
 
-    // The payload of a token for the form, the field and the file, expiring in a day, in base64url: its version, the
-    // three keys and the expiry's ticks, big-endian.
+    // The payload of a token for the form, the field and the file, with no challenge, expiring in a day, in base64url: its
+    // version, the four keys and the expiry's ticks, big-endian.
     private string Plain()
     {
-        var payload = new byte[1 + 48 + 8];
+        var payload = new byte[1 + 64 + 8];
         payload[0] = 1;
         Form.TryWriteBytes(payload.AsSpan(1, 16));
         Field.TryWriteBytes(payload.AsSpan(17, 16));
         File.TryWriteBytes(payload.AsSpan(33, 16));
-        System.Buffers.Binary.BinaryPrimitives.WriteInt64BigEndian(payload.AsSpan(49), (_clock.GetUtcNow() + TimeSpan.FromDays(1)).UtcTicks);
+        System.Buffers.Binary.BinaryPrimitives.WriteInt64BigEndian(payload.AsSpan(65), (_clock.GetUtcNow() + TimeSpan.FromDays(1)).UtcTicks);
         return Base64Url.EncodeToString(payload);
     }
 }

@@ -50,7 +50,7 @@ public sealed class PublicFormReceiptTests : PublicApiTestBase
         var made = Guid.Parse(JsonNode.Parse(secondAnswer)!["receipt"]!["submissionId"]!.GetValue<string>());
         using var third = await SubmitAsync(key, """{"revision":1,"values":{"name":"Alan"}}""");
 
-        using var ofPosted = await ReceiptAsync(key, $$$"""{"submissionId":"{{{posted}}}","challenge":"a challenge 7.1 checks"}""");
+        using var ofPosted = await ReceiptAsync(key, $$$"""{"submissionId":"{{{posted}}}"}""");
         using var ofMade = await ReceiptAsync(key, $$$"""{"submissionId":"{{{made}}}"}""");
 
         Assert.Multiple(async () =>

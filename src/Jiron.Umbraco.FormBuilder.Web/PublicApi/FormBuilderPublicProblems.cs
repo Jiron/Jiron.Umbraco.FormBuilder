@@ -64,6 +64,9 @@ internal static class FormBuilderPublicProblems
     /// <summary>The form takes entries only from members it admits (ADR-0012).</summary>
     public const string MemberRequiredCode = "member_required";
 
+    /// <summary>The request's challenge is missing, forged, expired, another's or used; the page fetches a new one (ADR-0012).</summary>
+    public const string ChallengeRequiredCode = "challenge_required";
+
     /// <summary>The form has an entry with this submission id and other answers (section 4.4).</summary>
     public const string DuplicateSubmissionCode = "duplicate_submission";
 
@@ -138,6 +141,10 @@ internal static class FormBuilderPublicProblems
             http.Response.Headers.Connection = "close";
         }
     }
+
+    /// <summary>A request without a challenge that counts; the page fetches a new one and sends again (ADR-0012).</summary>
+    public static FormBuilderProblemResult ChallengeRequired() =>
+        FormBuilderProblems.Problem(StatusCodes.Status401Unauthorized, ChallengeRequiredCode, "Please send this form again.");
 
     /// <summary>A form that takes entries only from members it admits; until 14.3 every public submission to one.</summary>
     public static FormBuilderProblemResult MemberRequired() =>

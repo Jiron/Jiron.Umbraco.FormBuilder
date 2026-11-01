@@ -217,7 +217,7 @@ public sealed class EntryBodiesTests
 
         Assert.Multiple(() =>
         {
-            Assert.That(EntryBodies.ReadReceipt(Encoding.UTF8.GetBytes(body), invalid), Is.EqualTo(Submission));
+            Assert.That(EntryBodies.ReadReceipt(Encoding.UTF8.GetBytes(body), invalid).SubmissionId, Is.EqualTo(Submission));
             Assert.That(invalid, Is.Empty);
         });
     }
@@ -237,7 +237,7 @@ public sealed class EntryBodiesTests
 
         Assert.Multiple(() =>
         {
-            Assert.That(EntryBodies.ReadReceipt(Encoding.UTF8.GetBytes(body), invalid), Is.Null);
+            Assert.That(EntryBodies.ReadReceipt(Encoding.UTF8.GetBytes(body), invalid).SubmissionId, Is.Null);
             Assert.That(invalid, Is.EqualTo(new[] { path }));
         });
     }

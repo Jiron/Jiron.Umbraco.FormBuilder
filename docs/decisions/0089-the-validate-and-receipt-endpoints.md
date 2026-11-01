@@ -4,7 +4,8 @@
   validation checks, the receipt before 7.1) and
   [ADR-0088](0088-the-submission-pipeline-and-the-entries-endpoint.md) (the pipeline's steps for a page and for a
   receipt); amends ADR-0088 (a UUID with a lone surrogate); where a submission checks `uniquePerForm` amended in
-  6.1h ([ADR-0091](0091-unique-answers.md))
+  6.1h ([ADR-0091](0091-unique-answers.md)); the challenge checked on both, and the receipt's 24 hours past its
+  expiry, in 7.1b ([ADR-0138](0138-the-challenge.md))
 - Date: 2026-10-28
 - Roadmap step: 6.1f (decided and built); 6.1g checks the places on options for a page too (ADR-0090), 6.1h leaves
   `uniquePerForm` out of a page's validation, 6.5 calls `validate` between pages, 7.1 binds the receipt to the entry's

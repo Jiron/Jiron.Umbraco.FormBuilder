@@ -12,6 +12,9 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Integration.Support;
 /// </summary>
 public abstract class ConfiguredTestServerTestBase : UmbracoTestServerTestBase
 {
+    /// <summary>The server key every test host knows.</summary>
+    protected const string TestServerKey = "JFB_FAKE_tests_server_key_0123456789abcdefg";
+
     /// <summary>Adds the test's configuration, then builds the host.</summary>
     [SetUp]
     public override void Setup()
@@ -25,6 +28,9 @@ public abstract class ConfiguredTestServerTestBase : UmbracoTestServerTestBase
             }
         }
 
+        // A key a fixture of bodies or files signs with, for which the challenge is beside the point (JFB_FAKE).
+        InMemoryConfiguration[$"{FormBuilderOptions.SectionName}:PublicApi:ServerKeys:9:Name"] = "tests";
+        InMemoryConfiguration[$"{FormBuilderOptions.SectionName}:PublicApi:ServerKeys:9:Sha256"] = Convert.ToHexStringLower(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(TestServerKey)));
         ConfigureHost(InMemoryConfiguration);
         base.Setup();
     }

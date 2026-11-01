@@ -18,6 +18,14 @@ public abstract class PublicApiTestBase : FormBuilderTestServerTestBase
     /// <summary>The public API's root with the default base path.</summary>
     public const string Root = "/jfb/api/v1";
 
+    private static readonly System.Text.RegularExpressions.Regex PostsChallenge = new(
+        "/forms/(?<form>[0-9a-fA-F-]{36})/(?<endpoint>entries|validate|receipt|uploads)(\\?|$)",
+        System.Text.RegularExpressions.RegexOptions.Compiled,
+        TimeSpan.FromSeconds(1));
+
+    private readonly Dictionary<string, string> _challenges = new(StringComparer.Ordinal);
+    private readonly Dictionary<(string Form, string Submission), string> _solved = [];
+
     /// <summary>The user the tests' changes are made by.</summary>
     private protected static readonly Guid Editor = Guid.Parse("7d1c3a52-31f4-4e57-9d2e-61b0f6a1c084");
 
@@ -69,7 +77,142 @@ public abstract class PublicApiTestBase : FormBuilderTestServerTestBase
     {
         using var request = new HttpRequestMessage(method, path);
         prepare?.Invoke(request);
-        return await Client.SendAsync(request);
+        var challenged = await AddChallengeAsync(request);
+        var response = await Client.SendAsync(request);
+        if (challenged is { Endpoint: "entries" } && response.StatusCode == HttpStatusCode.OK)
+        {
+            // A solved challenge has made its entry: a retry of that submission holds it, the id the server made too, and
+            // anything else asks anew.
+            _challenges.Remove(challenged.Form);
+            var made = (await JsonAsync(response))["receipt"]?["submissionId"]?.GetValue<string>();
+            foreach (var submission in new[] { challenged.Submission, made }.OfType<string>())
+            {
+                _solved[(challenged.Form, submission)] = challenged.Token;
+            }
+        }
+
+        return response;
+    }
+
+    /// <summary>Whether this fixture signs its requests with the test server key, because its tests are of bodies or files.</summary>
+    private protected bool SendsWithServerKey { get; set; }
+
+    /// <summary>Asks the form's challenge endpoint for a challenge, as a page does when its visitor first touches the form.</summary>
+    private protected async Task<string> ChallengeAsync(Guid form)
+    {
+        using var answer = await Client.PostAsync($"{Root}/forms/{form}/challenge", null);
+        Assert.That(answer.StatusCode, Is.EqualTo(HttpStatusCode.OK), await answer.Content.ReadAsStringAsync());
+        return (await JsonAsync(answer))["challenge"]!.GetValue<string>();
+    }
+
+    // What a page does for the requests a test writes without one: it holds one challenge per form, posts it with each page
+    // check, upload and submission, and asks for a new one once it has made an entry. A test of the challenge writes its
+    // own, even a null one, and a request with a server key has none.
+    private async Task<Challenged?> AddChallengeAsync(HttpRequestMessage request)
+    {
+        if (request.Method != HttpMethod.Post || request.Headers.Authorization is not null || request.Headers.Contains("Authorization")
+            || request.RequestUri is null || PostsChallenge.Match(request.RequestUri.OriginalString) is not { Success: true } match)
+        {
+            return null;
+        }
+
+        if (SendsWithServerKey)
+        {
+            request.Headers.TryAddWithoutValidation("Authorization", "Jfb-Key " + TestServerKey);
+            return null;
+        }
+
+        var form = match.Groups["form"].Value;
+        var endpoint = match.Groups["endpoint"].Value;
+        if (request.Content is MultipartFormDataContent parts)
+        {
+            if (endpoint != "uploads" || parts.Any(part => part.Headers.ContentDisposition?.Name?.Trim('"') == "challenge") || await TokenAsync(form, null) is not { } token)
+            {
+                return null;
+            }
+
+            var added = new MultipartFormDataContent { { new StringContent(token), "challenge" } };
+            foreach (var part in parts)
+            {
+                added.Add(part);
+            }
+
+            request.Content = added;
+            return null;
+        }
+
+        if (request.Content is null || request.Content.Headers.ContentType?.MediaType != "application/json")
+        {
+            return null;
+        }
+
+        JsonObject? body;
+        var text = await request.Content.ReadAsStringAsync();
+        try
+        {
+            body = JsonNode.Parse(text) as JsonObject;
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            return null;
+        }
+
+        if (body is null || body.ContainsKey("challenge"))
+        {
+            return null;
+        }
+
+        string? submission;
+        try
+        {
+            submission = body["submissionId"]?.GetValue<string>();
+        }
+        catch (InvalidOperationException)
+        {
+            return null;
+        }
+
+        if (await TokenAsync(form, submission) is not { } held)
+        {
+            return null;
+        }
+
+        body["challenge"] = held;
+        var contentType = request.Content.Headers.ContentType;
+        try
+        {
+            request.Content = new StringContent(body.ToJsonString());
+        }
+        catch (InvalidOperationException)
+        {
+            // A body with a lone surrogate, which the endpoint refuses before it looks for a challenge.
+            return null;
+        }
+
+        request.Content.Headers.ContentType = contentType;
+        return new Challenged(form, endpoint, submission, held);
+    }
+
+    // The challenge a page holds for a form, or the one that made this submission's entry; null when the form gives none.
+    private async Task<string?> TokenAsync(string form, string? submission)
+    {
+        if (submission is not null && _solved.TryGetValue((form, submission), out var solved))
+        {
+            return solved;
+        }
+
+        if (_challenges.TryGetValue(form, out var held))
+        {
+            return held;
+        }
+
+        using var answer = await Client.PostAsync($"{Root}/forms/{form}/challenge", null);
+        if (answer.StatusCode != HttpStatusCode.OK)
+        {
+            return null;
+        }
+
+        return _challenges[form] = (await JsonAsync(answer))["challenge"]!.GetValue<string>();
     }
 
     /// <summary>Gets a path of the site.</summary>
@@ -93,6 +236,8 @@ public abstract class PublicApiTestBase : FormBuilderTestServerTestBase
 
     /// <summary>Whether the answer is a success.</summary>
     private protected static bool Succeeded(HttpResponseMessage response) => response.StatusCode == HttpStatusCode.OK;
+
+    private sealed record Challenged(string Form, string Endpoint, string? Submission, string Token);
 
     /// <inheritdoc />
     protected override void CustomTestSetup(IUmbracoBuilder builder)

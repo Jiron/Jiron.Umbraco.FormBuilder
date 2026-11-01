@@ -23,6 +23,9 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Integration.PublicApi;
 [UmbracoTest(Database = UmbracoTestOptions.Database.NewSchemaPerTest, Boot = true)]
 public sealed class PublicFormPlacesTests : PublicApiTestBase
 {
+    /// <summary>A fixture of bodies and files, for which the challenge is beside the point: PublicFormChallengeTests holds its tests.</summary>
+    public PublicFormPlacesTests() => SendsWithServerKey = true;
+
     private static readonly TimeSpan Patience = TimeSpan.FromSeconds(60);
     private static readonly Guid ListKey = Guid.Parse("74000000-0000-4000-8000-000000000090");
 
