@@ -2438,7 +2438,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - **The verdict's answer:** a post with a taken or full answer is told so unless the protection marks it Spam, which tells a bot its verdict. The review of this finding keeps 7.1c's check, as hiding those answers from Spam is what stops silent probing of who has registered: an ADR says why, and what bounds the probing.
   - A `previous` challenge carries its issue time only for a limited age, so one old token cannot switch the time signal off for good.
   - Done when: tests cover a blocked word and a link in a name's part, an address's part and an "other" text, an old `previous` that no longer carries its time, and the ADR is written.
-- [ ] **7.4c The post without JavaScript** (7.4 split in nine, WORKLOG 2026-11-01)
+- [x] **7.4c The post without JavaScript** (7.4 split in nine, WORKLOG 2026-11-01) (2026-11-01, a503f37)
   - **What the review found:** an anonymous post stores files on a members-only form before its gate answers; the marker decides whose form limit a post counts against; a typed signature is stored under the read limit; a post without the marker has no file count; text values have no total limit; a refused post is still read to disk; reading has no time limit.
   - Done when: tests cover each: nothing stored for an anonymous post on a members-only form; a marker of another form still counts against the posted form; a typed signature counts as a submit; a post without the marker is held to the field's count; texts past the form's total are refused; a post the limits refuse writes no file; a post that trickles past its time is ended.
 - [ ] **7.4d The disk, the cleanup and the scanner** (7.4 split in nine, WORKLOG 2026-11-01)
