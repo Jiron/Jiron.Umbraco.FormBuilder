@@ -2361,7 +2361,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - integration tests cover the challenge's signature, expiry, form, member and renewal, on entries, validate, receipt and uploads;
     - a replay with the same body and its entry's own, already used challenge returns the original receipt and outcome, also once the form has closed or the option it took is full; the same `submissionId` and the same body with another challenge or server key gets `409` with neither receipt nor outcome;
     - `receipt` finds an entry by its challenge for up to 24 hours past that challenge's expiry and answers `404` after that; the runtime's retry is 7.1e.
-- [ ] **7.1c The signals and the score** (7.1 split in five, WORKLOG 2026-11-01)
+- [x] **7.1c The signals and the score** (7.1 split in five, WORKLOG 2026-11-01) (2026-11-01, 25e2d44)
   - **Signals:**
     - a honeypot whose name varies per public revision (its markup and name rendered since 6.3a, ADR-0105; 7.1 reads and scores it);
     - a minimum fill time from the signed challenge;
