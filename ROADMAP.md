@@ -2344,27 +2344,47 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
 
 ### Phase 7: Spam protection and file security
 
-- [ ] **7.1 Standard protection, content rules and the spam folder**
+- [ ] **7.1a The rate limits** (7.1 split in five, WORKLOG 2026-11-01)
+  - **Limits:** the ASP.NET Core rate limiter per IP, form and site, with bounded partitions; a server key's requests in their key's partition (6.6b, ADR-0126), with a test that a key's limit holds and does not touch the address's; origin checks.
+  - No-JS posts are rate limited like every post (ADR-0012), and a test covers that case.
+  - Done when:
+    - integration tests cover each policy, and a flood from 20,000 distinct IPs neither bypasses the site-wide limit nor grows memory without bound;
+    - a `429` keeps the visitor's answers and says when to send again on the no-JS page (Playwright); the runtime's part is 7.1e.
+- [ ] **7.1b The challenge** (7.1 split in five, WORKLOG 2026-11-01)
+  - **Signals:**
+    - a minimum fill time from the signed challenge (its token and issue time here; its score in 7.1c);
+    - the `challenge` endpoint (§4.6), and as the first part of every upload, verified before the file is read (ADR-0006); its use by the runtime for JS posts is 7.1e;
+    - the challenge id stored on the entry (unique per form), so a solved challenge can't be replayed.
+  - **What cached markup cannot carry** (§4.6): the challenge response also brings the places left per option and the member values for rules. The server has refused full options since 6.1 either way; the runtime's use of them is 7.1e.
+  - **Limits:** member-bound challenges on members-only forms (ADR-0004).
+  - Done when:
+    - integration tests cover the challenge's signature, expiry, form, member and renewal, on entries, validate, receipt and uploads;
+    - a replay with the same body and its entry's own, already used challenge returns the original receipt and outcome, also once the form has closed or the option it took is full; the same `submissionId` and the same body with another challenge or server key gets `409` with neither receipt nor outcome;
+    - `receipt` finds an entry by its challenge for up to 24 hours past that challenge's expiry and answers `404` after that; the runtime's retry is 7.1e.
+- [ ] **7.1c The signals and the score** (7.1 split in five, WORKLOG 2026-11-01)
   - **Signals:**
     - a honeypot whose name varies per public revision (its markup and name rendered since 6.3a, ADR-0105; 7.1 reads and scores it);
     - a minimum fill time from the signed challenge;
-    - the `challenge` endpoint (§4.6) and its use by the runtime for JS posts, and as the first part of every upload, verified before the file is read (ADR-0006);
-    - no time signal on no-JS posts, because the markup of anonymous forms is cache-safe (§3.4). They are scored on the honeypot, the blocked ranges and the content rules, and rate limited like every post (ADR-0012), and a test covers that case;
-    - the challenge id stored on the entry (unique per form), so a solved challenge can't be replayed.
-  - **What cached markup cannot carry** (§4.6): the challenge response also brings the places left per option and the member values for rules. The runtime then shows the places ("3 places left", "full") and evaluates member conditions with them; the server has refused full options since 6.1 either way.
-  - **Limits:** the ASP.NET Core rate limiter per IP, form and site, with bounded partitions; a server key's requests in their key's partition (6.6b, ADR-0126), with a test that a key's limit holds and does not touch the address's; origin checks; member-bound challenges on members-only forms (ADR-0004); the blocked address ranges of the spam settings (§4.8).
+    - no time signal on no-JS posts, because the markup of anonymous forms is cache-safe (§3.4). They are scored on the honeypot, the blocked ranges and the content rules, and a test covers that case.
+  - **Limits:** the blocked address ranges of the spam settings (§4.8).
   - **Scoring:** the spam score with reasons, and silent acceptance into `Spam` (§4.4). A submission put into `Spam` holds no place and no unique answer, and neither check runs for it, so a bot learns nothing from `full` or from a taken answer (ADR-0090, ADR-0091).
+  - Done when:
+    - integration tests cover each signal;
+    - tests cover a blocked IPv4 and IPv6 range;
+    - a submission the protection puts into `Spam` is answered as accepted though its option is full and its unique answer is taken, and holds neither (ADR-0090, ADR-0091).
+- [ ] **7.1d Content rules and the spam folder** (7.1 split in five, WORKLOG 2026-11-01)
   - **Content rules and the spam folder:**
     - Blocked words, blocked email domains, maximum links, per-form strictness, and `IFormBuilderSpamCheck`.
     - The `Spam` state. "Not spam" runs the submitted actions then; on a form with email verification, 8.5 sends an unverified entry to `Unverified` instead.
+  - Done when: tests cover each content rule, a custom `IFormBuilderSpamCheck`, and "not spam" running the submitted actions.
+- [~] **7.1e The challenge in the runtime** (7.1 split in five, WORKLOG 2026-11-01)
+  - **Blocked (2026-11-01):** the runtime stands 2 bytes below the 40 KB of §4.12, a budget only the owner can change, and this part adds to it and builds on the sending of 6.4i (ADR-0120, `docs/OWNER-TODO.md`). The server's parts are 7.1a to 7.1d.
+  - **Signals:** the `challenge` endpoint's use by the runtime for JS posts, and as the first part of every upload.
+  - **What cached markup cannot carry** (§4.6): the runtime then shows the places ("3 places left", "full") and evaluates member conditions with them.
   - Done when:
-    - integration tests cover each signal, and a flood from 20,000 distinct IPs neither bypasses the site-wide limit nor grows memory without bound;
-    - a `429` keeps the visitor's answers and says when to send again, in the runtime and on the no-JS page (Playwright);
-    - a replay with the same body and its entry's own, already used challenge returns the original receipt and outcome, also once the form has closed or the option it took is full; the same `submissionId` and the same body with another challenge or server key gets `409` with neither receipt nor outcome;
-    - `receipt` finds an entry by its challenge for up to 24 hours past that challenge's expiry and answers `404` after that, and a runtime test shows a retry after a lost answer, whose challenge has expired, asking `receipt` and showing the original outcome, and, past the grace, the fresh post's `409` shown as already sent;
-    - tests cover a blocked IPv4 and IPv6 range, and Playwright shows the places left changing on a cached page after another visitor's submission, and a member condition applied for a signed-in member;
-    - tests cover each content rule, a custom `IFormBuilderSpamCheck`, and "not spam" running the submitted actions;
-    - a submission the protection puts into `Spam` is answered as accepted though its option is full and its unique answer is taken, and holds neither (ADR-0090, ADR-0091).
+    - a `429` keeps the visitor's answers and says when to send again, in the runtime (Playwright);
+    - a runtime test shows a retry after a lost answer, whose challenge has expired, asking `receipt` and showing the original outcome, and, past the grace, the fresh post's `409` shown as already sent;
+    - Playwright shows the places left changing on a cached page after another visitor's submission, and a member condition applied for a signed-in member.
 - [ ] **7.2 Proof of work and captcha providers**
   - **Proof of work:** a SHA-256 puzzle with difficulty per level, a signed and expiring nonce, solved in a Web Worker with a progress hint for slow devices.
   - **Third-party providers:** reCAPTCHA v2 and v3 (ported from Ligata.Forms) and hCaptcha. Providers are greyed out without keys. The consent modes of §4.10 apply, with the JS API's `consent.grant('captcha')` and `withdraw()` for the `cmp` mode (§4.9, moved from 6.4 in its split). Publishing refuses a provider the site lacks (`unknown_type` at `settings.protection.captcha.provider`, ADR-0035).

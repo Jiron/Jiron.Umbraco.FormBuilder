@@ -97,8 +97,8 @@ what to do and why. Items for blocked roadmap steps name the step as "step X.Y",
 ## Budgets
 
 - [ ] **Decide whether the website runtime's 40 KB "with everything" (ROADMAP §4.12) should grow.**
-  It blocks step 6.4i, step 6.4j, step 6.4l, step 6.4m, step 6.4n, step 6.4o, step 6.4p, step 6.5d and
-  step 6.6g ([ADR-0120](decisions/0120-sending-waits-for-the-runtimes-budget.md); 6.6g, the headless
+  It blocks step 6.4i, step 6.4j, step 6.4l, step 6.4m, step 6.4n, step 6.4o, step 6.4p, step 6.5d,
+  step 6.6g and step 7.1e ([ADR-0120](decisions/0120-sending-waits-for-the-runtimes-budget.md); 6.6g, the headless
   element's pages and sending, waits for 6.5d and 6.4i, [ADR-0128](decisions/0128-the-element-writes-the-servers-view-model.md)). After 6.4h the runtime with
   every feature it has is 39.89 KB gzip (counting the largest language's words, ADR-0116, after a
   terser pass, ADR-0119): the frame 1 KB, the form chunk 28 KB (the rules, checks and messages both
