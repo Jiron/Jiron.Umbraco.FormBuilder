@@ -994,7 +994,7 @@ A settings change raises a notification and a cache refresher: the saving server
   - Exports guard against formula injection.
 - **Anonymous endpoints:**
   - signed challenges (Data Protection, form-bound, time-bound), honeypot, minimum fill time;
-  - the ASP.NET Core rate limiter per IP, per form and site-wide, with bounded partitions that fail closed: .NET's partitioned limiters on `TimeProvider`, applied by Jiron Form Builder's own middleware, so a site's own `UseRateLimiter()` and CORS are untouched; past `MaxTrackedClients` new addresses share one overflow partition (ADR-0012);
+  - the rate limiter per IP, per form and site-wide, with bounded partitions that fail closed: sliding windows on `TimeProvider` (ADR-0137), applied by Jiron Form Builder's own middleware, so a site's own `UseRateLimiter()` and CORS are untouched; past `MaxTrackedClients` new addresses share one overflow partition (ADR-0012);
   - request size and time limits, and cancellation everywhere;
   - `Cache-Control: no-store` on every response except the definition, which sends `no-cache` with its `ETag` (ADR-0012);
   - origin checks.

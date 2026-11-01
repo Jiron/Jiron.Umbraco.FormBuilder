@@ -79,6 +79,9 @@ internal sealed record RenderingWords
             NotSentHeading = "Your answers weren't sent",
             NotSentText = "Check your answers, then send again. Your answers are kept.",
             TooLargeText = "The files were too large to send, so your answers could not be kept. Choose smaller files and fill in the form again.",
+            WaitSecondsText = "This form was sent too often. Wait {0} seconds, then send it again. Your answers are kept.",
+            WaitMinutesText = "This form was sent too often. Wait {0} minutes, then send it again. Your answers are kept.",
+            ChooseFilesAgain = "Choose your files again before you send.",
             KeepFile = "Keep {0} ({1})",
             Kilobytes = "{0} KB",
             Megabytes = "{0} MB",
@@ -152,6 +155,9 @@ internal sealed record RenderingWords
             NotSentHeading = "Ihre Antworten wurden nicht gesendet",
             NotSentText = "Pr" + UUmlaut + "fen Sie Ihre Antworten und senden Sie erneut. Ihre Antworten bleiben erhalten.",
             TooLargeText = "Die Dateien waren zu gro" + SharpS + ", um sie zu senden, deshalb konnten Ihre Antworten nicht erhalten bleiben. W" + AUmlaut + "hlen Sie kleinere Dateien und f" + UUmlaut + "llen Sie das Formular erneut aus.",
+            WaitSecondsText = "Dieses Formular wurde zu oft gesendet. Warten Sie {0} Sekunden und senden Sie es dann erneut. Ihre Antworten bleiben erhalten.",
+            WaitMinutesText = "Dieses Formular wurde zu oft gesendet. Warten Sie {0} Minuten und senden Sie es dann erneut. Ihre Antworten bleiben erhalten.",
+            ChooseFilesAgain = "W" + AUmlaut + "hlen Sie Ihre Dateien vor dem Senden erneut aus.",
             KeepFile = "{0} ({1}) behalten",
             Kilobytes = "{0} KB",
             Megabytes = "{0} MB",
@@ -348,6 +354,15 @@ internal sealed record RenderingWords
 
     /// <summary>That notice's text after a post too large to read, whose answers are lost (ADR-0102).</summary>
     public required string TooLargeText { get; init; }
+
+    /// <summary>That notice's text after a post over a rate limit, with the seconds to wait, always two or more (ADR-0137).</summary>
+    public required string WaitSecondsText { get; init; }
+
+    /// <summary>That notice's text after a post over a rate limit, with the minutes to wait, always two or more (ADR-0137).</summary>
+    public required string WaitMinutesText { get; init; }
+
+    /// <summary>That notice's sentence when a post over a rate limit held files, which it did not store.</summary>
+    public required string ChooseFilesAgain { get; init; }
 
     /// <summary>The label of a kept file's box: its name and its size (ADR-0102).</summary>
     public required string KeepFile { get; init; }

@@ -39,6 +39,13 @@ export default defineConfig({
       use: browser,
     },
     {
+      // What uses up a limit of the one host, after every spec that could meet it (ADR-0137).
+      name: 'limits',
+      testDir: './specs/limits',
+      dependencies: ['website'],
+      use: browser,
+    },
+    {
       // Sites that must not start: each test runs the built demo in a process of its own and reads its log; no browser.
       name: 'startup',
       testDir: './specs/startup',

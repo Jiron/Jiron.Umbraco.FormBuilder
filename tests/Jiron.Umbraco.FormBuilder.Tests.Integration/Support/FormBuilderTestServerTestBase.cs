@@ -1,4 +1,5 @@
 using Jiron.Umbraco.FormBuilder.Core;
+using Jiron.Umbraco.FormBuilder.Core.Configuration;
 using Umbraco.Cms.Infrastructure.Install;
 using Umbraco.Cms.Tests.Integration.TestServerTest;
 
@@ -15,6 +16,15 @@ public abstract class ConfiguredTestServerTestBase : UmbracoTestServerTestBase
     [SetUp]
     public override void Setup()
     {
+        // A test asks far more of one address than any visitor does; a test that holds a rate limit names its own below.
+        foreach (var policy in new[] { "Read", "Challenge", "Submit", "Upload", "Events", "Verify" })
+        {
+            foreach (var limit in new[] { "PerAddressPerMinute", "PerAddressPerHour", "PerAddressAndFormPerMinute", "PerFormPerMinute", "SitePerSecond" })
+            {
+                InMemoryConfiguration[$"{FormBuilderOptions.SectionName}:Limits:{policy}:{limit}"] = "0";
+            }
+        }
+
         ConfigureHost(InMemoryConfiguration);
         base.Setup();
     }

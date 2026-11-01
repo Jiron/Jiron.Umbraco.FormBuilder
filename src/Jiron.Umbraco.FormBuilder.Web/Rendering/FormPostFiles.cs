@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
@@ -5,6 +6,7 @@ using Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn;
 using Jiron.Umbraco.FormBuilder.Core.Files;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Web.PublicApi;
+using Jiron.Umbraco.FormBuilder.Web.PublicApi.RateLimiting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.WebUtilities;
@@ -23,7 +25,8 @@ namespace Jiron.Umbraco.FormBuilder.Web.Rendering;
 /// <param name="forms">The published forms.</param>
 /// <param name="uploads">The upload's rules, whose limits the files are read to.</param>
 /// <param name="types">The field types, which say which fields store files and how many.</param>
-internal sealed class FormPostFilesMiddleware(PublishedFormCache forms, FileUploads uploads, FieldTypeRegistry types) : IMiddleware
+/// <param name="limiter">The rate limits, which such a post meets before a byte of it is read (ADR-0012).</param>
+internal sealed class FormPostFilesMiddleware(PublishedFormCache forms, FileUploads uploads, FieldTypeRegistry types, FormBuilderRateLimiter limiter) : IMiddleware
 {
     /// <summary>The most parts a post may have.</summary>
     public const int MostParts = 1024;
@@ -51,12 +54,43 @@ internal sealed class FormPostFilesMiddleware(PublishedFormCache forms, FileUplo
     {
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(next);
+        if (Limited(context))
+        {
+            return;
+        }
+
         if (await MarkedAsync(context) is { } marked)
         {
             await ReadAsync(context, marked);
         }
 
         await next(context);
+    }
+
+    // A marked post counts here, before its body is read and before its form is looked up, and only once: the handler
+    // takes the decision from the request. A flood gets a bare 429 and is not read at all.
+    private bool Limited(HttpContext context)
+    {
+        if (!HttpMethods.IsPost(context.Request.Method)
+            || context.Request.Query[FormPostFields.PostMarker] is not [{ } marker]
+            || marker.IndexOf('.', StringComparison.Ordinal) is var dot && dot < 0
+            || !Guid.TryParseExact(marker.AsSpan(0, dot), "D", out var key))
+        {
+            return false;
+        }
+
+        var limit = limiter.Take(context, FormBuilderRateLimitPolicies.Submit, key);
+        FormPostRateLimit.Set(context, limit);
+        if (limit is { Allowed: false, Renders: false })
+        {
+            FormBuilderPublicProblems.CloseConnection(context);
+            context.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+            context.Response.Headers.RetryAfter = limit.RetryAfterSeconds.ToString(CultureInfo.InvariantCulture);
+            context.Response.Headers.CacheControl = "no-store";
+            return true;
+        }
+
+        return false;
     }
 
     /// <summary>The most bytes a post of the form may have, and the most Kestrel reads of one, twice that (ADR-0006).</summary>

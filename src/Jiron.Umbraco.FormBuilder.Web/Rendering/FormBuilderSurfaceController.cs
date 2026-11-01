@@ -38,9 +38,10 @@ public sealed class FormBuilderSurfaceController(
     public const string ActionName = nameof(Post);
 
     /// <summary>
-    /// Reads the post and answers it: the page again (<c>200</c>), a redirect (<c>302</c>) to the outcome or its target,
-    /// or <c>400</c> for a post that reached the action without a page (Umbraco's route <c>/umbraco/surface/...</c>) or
-    /// that names no form of the page. Every answer is <c>no-store</c>.
+    /// Reads the post and answers it: the page again (<c>200</c>, or <c>429</c> with its answers over a rate limit), a
+    /// redirect (<c>302</c>) to the outcome or its target, a bare <c>429</c> for a flood, or <c>400</c> for a post that
+    /// reached the action without a page (Umbraco's route <c>/umbraco/surface/...</c>) or that names no form of the page.
+    /// Every answer is <c>no-store</c>.
     /// </summary>
     [HttpPost]
     [IgnoreAntiforgeryToken]
@@ -52,6 +53,7 @@ public sealed class FormBuilderSurfaceController(
             FormPostAnswerKind.Page => CurrentUmbracoPage(),
             FormPostAnswerKind.Redirect => Redirect(answer.Url!),
             FormPostAnswerKind.Forbidden => StatusCode(StatusCodes.Status403Forbidden),
+            FormPostAnswerKind.TooManyRequests => StatusCode(StatusCodes.Status429TooManyRequests),
             _ => BadRequest(),
         };
     }

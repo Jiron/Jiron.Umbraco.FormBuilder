@@ -3,6 +3,7 @@ using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Core.Submissions;
 using Jiron.Umbraco.FormBuilder.Web.ManagementApi;
+using Jiron.Umbraco.FormBuilder.Web.PublicApi.RateLimiting;
 using Microsoft.AspNetCore.Http;
 
 namespace Jiron.Umbraco.FormBuilder.Web.PublicApi;
@@ -56,6 +57,9 @@ internal static class FormBuilderPublicProblems
 
     /// <summary>The endpoint ran out of time.</summary>
     public const string TimeoutCode = "timeout";
+
+    /// <summary>A rate limit is reached; <c>Retry-After</c> says when to send again (ADR-0012).</summary>
+    public const string RateLimitedCode = "rate_limited";
 
     /// <summary>The form takes entries only from members it admits (ADR-0012).</summary>
     public const string MemberRequiredCode = "member_required";
@@ -163,6 +167,16 @@ internal static class FormBuilderPublicProblems
             ValidationFailedCode,
             "Some answers need another look.",
             extensions: new Dictionary<string, object?> { ["errors"] = problems.Select(problem => new FormBuilderValidationError(problem.Code, problem.Path, LineOf(problem.Code), problem.Check, problem.Rule)).ToList() });
+
+    /// <summary>A rate limit is reached: the answer says when to send again, and the visitor keeps every answer (ADR-0012).</summary>
+    /// <param name="http">The request, whose response gets <c>Retry-After</c>.</param>
+    /// <param name="decision">The limiter's refusal.</param>
+    public static FormBuilderProblemResult RateLimited(HttpContext http, RateLimitDecision decision)
+    {
+        ArgumentNullException.ThrowIfNull(http);
+        http.Response.Headers.RetryAfter = decision.RetryAfterSeconds.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        return FormBuilderProblems.Problem(StatusCodes.Status429TooManyRequests, RateLimitedCode, "Too many requests. Please wait a moment and try again.");
+    }
 
     /// <summary>The endpoint ran out of time.</summary>
     public static FormBuilderProblemResult Timeout() =>

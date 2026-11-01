@@ -35,7 +35,7 @@ instead of its challenge. This step builds it. The challenge, the honeypot and t
   public endpoint, with `WWW-Authenticate: Jfb-Key`; it is never treated as an anonymous request, so a server with a
   revoked key notices at once. A request without the scheme is an ordinary anonymous one.
 - **What a key changes:** the request counts in its key's partition instead of its address's
-  (`FormBuilderRateLimitPartitions.ClientOf`: `key:<name>` or `address:<ip>`), which the limiter 7.1 builds applies
+  (`FormBuilderRateLimitPolicies.ClientOf`: `key:<name>` or `address:<ip>`), which the limiter of 7.1a applies with `Limits:ServerKeyFactor` times an address's limits ([ADR-0137](0137-the-rate-limiter.md))
   with the same policies; the challenge, the captcha and the honeypot will skip it (7.1, 7.2). The origin check stays
   as it is: a server sends no `Origin`, and a browser cannot send the header across origins, as the preflight allows
   only `Content-Type`. Validation, the content rules, the domain limits and every other check run as for any

@@ -57,16 +57,16 @@ internal abstract class FormBuilderPublicApiController : ControllerBase;
 internal static class FormBuilderRateLimitPolicies
 {
     /// <summary>
-    /// The client a request counts for in the per-client partitions, which the limiter 7.1 builds applies: the server key
-    /// that signed it (<c>key:&lt;name&gt;</c>, ADR-0126), otherwise its address (<c>address:&lt;ip&gt;</c>, from the
-    /// connection only, ADR-0012).
+    /// The client a request counts for in the per-client partitions: the server key that signed it
+    /// (<c>key:&lt;name&gt;</c>, ADR-0126), otherwise its address (<c>address:&lt;ip&gt;</c>, from the connection only,
+    /// an IPv6 address as its /64 network, ADR-0012).
     /// </summary>
     public static string ClientOf(HttpContext http)
     {
         ArgumentNullException.ThrowIfNull(http);
         return ServerKeyRequest.NameOf(http) is { } key
             ? "key:" + key
-            : "address:" + (http.Connection.RemoteIpAddress?.ToString() ?? "unknown");
+            : "address:" + RateLimiting.RateLimitClients.KeyOf(http.Connection.RemoteIpAddress);
     }
 
     /// <summary>Reading a form, its markup and its options.</summary>
@@ -92,8 +92,8 @@ internal static class FormBuilderRateLimitPolicies
 }
 
 /// <summary>
-/// The rate-limit policy an endpoint's requests count against (ADR-0012). The limits apply from step 7.1 on, through
-/// Jiron Form Builder's own middleware; the declaration is there from the endpoint's first day.
+/// The rate-limit policy an endpoint's requests count against (ADR-0012), which Jiron Form Builder's own middleware
+/// applies after routing.
 /// </summary>
 /// <param name="policy">One of <see cref="FormBuilderRateLimitPolicies"/>.</param>
 [AttributeUsage(AttributeTargets.Method, Inherited = false)]
@@ -231,7 +231,7 @@ internal sealed class FormBuilderPublicDocument : IDocumentFilter
 /// <summary>
 /// Writes an operation's declarations into the document <c>jfb-public</c> as extensions, the body of an upload or of a
 /// JSON action, and the refusals the frame answers for every operation: <c>413 payload_too_large</c>,
-/// <c>500 server_error</c> and <c>504 timeout</c>, and <c>403 origin_denied</c> for one a browser on another origin
+/// <c>429 rate_limited</c>, <c>500 server_error</c> and <c>504 timeout</c>, and <c>403 origin_denied</c> for one a browser on another origin
 /// may not send.
 /// </summary>
 /// <param name="host">The host's limits for files, which give the largest upload.</param>
@@ -289,6 +289,7 @@ internal sealed class FormBuilderPublicDeclarations(FieldHostLimits host) : IOpe
         }
 
         Refusal(operation.Responses, problem, StatusCodes.Status413PayloadTooLarge, "Payload Too Large", "the body is longer than the endpoint takes (payload_too_large).");
+        Refusal(operation.Responses, problem, StatusCodes.Status429TooManyRequests, "Too Many Requests", "a rate limit is reached; Retry-After says when to send again (rate_limited).");
         Refusal(operation.Responses, problem, StatusCodes.Status500InternalServerError, "Internal Server Error", "something failed unexpectedly (server_error).");
         Refusal(operation.Responses, problem, StatusCodes.Status504GatewayTimeout, "Gateway Timeout", "the endpoint did not answer within its time limit (timeout).");
     }

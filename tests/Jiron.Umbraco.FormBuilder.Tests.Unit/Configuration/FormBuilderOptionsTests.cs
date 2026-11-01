@@ -45,6 +45,50 @@ public sealed class FormBuilderOptionsTests
     }
 
     [Test]
+    public void TheRateLimits_DefaultToTheTableOfADR0012()
+    {
+        var limits = new FormBuilderLimitsOptions();
+        static int[] Of(FormBuilderRatePolicyOptions policy) => [policy.PerAddressPerMinute, policy.PerAddressPerHour, policy.PerAddressAndFormPerMinute, policy.PerFormPerMinute, policy.SitePerSecond];
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(limits.MaxTrackedClients, Is.EqualTo(100_000));
+            Assert.That(limits.ServerKeyFactor, Is.EqualTo(10));
+            Assert.That(Of(limits.Read), Is.EqualTo(new[] { 120, 0, 0, 0, 200 }));
+            Assert.That(Of(limits.Challenge), Is.EqualTo(new[] { 30, 0, 10, 0, 100 }));
+            Assert.That(Of(limits.Submit), Is.EqualTo(new[] { 20, 100, 5, 60, 50 }));
+            Assert.That(Of(limits.Upload), Is.EqualTo(new[] { 30, 0, 20, 0, 20 }));
+            Assert.That(Of(limits.Events), Is.EqualTo(new[] { 120, 0, 0, 0, 500 }));
+            Assert.That(Of(limits.Verify), Is.EqualTo(new[] { 10, 0, 0, 0, 0 }));
+        });
+    }
+
+    [TestCase("MaxTrackedClients", "999", "must be 1000 to 10000000")]
+    [TestCase("MaxTrackedClients", "10000001", "must be 1000 to 10000000")]
+    [TestCase("ServerKeyFactor", "0", "must be 1 to 1000")]
+    [TestCase("ServerKeyFactor", "1001", "must be 1 to 1000")]
+    [TestCase("Read:PerAddressPerMinute", "-1", "must be 0 to 10000000")]
+    [TestCase("Challenge:PerAddressPerHour", "10000001", "must be 0 to 10000000")]
+    [TestCase("Submit:PerAddressAndFormPerMinute", "-1", "must be 0 to 10000000")]
+    [TestCase("Upload:PerFormPerMinute", "-1", "must be 0 to 10000000")]
+    [TestCase("Events:SitePerSecond", "-1", "must be 0 to 10000000")]
+    [TestCase("Verify:PerAddressPerMinute", "-1", "must be 0 to 10000000")]
+    public void ARateLimitOutOfItsBounds_StopsTheSite_NamingItsKey(string key, string value, string says)
+    {
+        var failures = HostOptions.Failures(new Dictionary<string, string?> { [$"{Root}:Limits:{key}"] = value });
+
+        Assert.That(failures, Has.One.Contains($"{Root}:Limits:{key} ({value}) {says}"));
+    }
+
+    [TestCase("MaxTrackedClients", "1000")]
+    [TestCase("MaxTrackedClients", "10000000")]
+    [TestCase("ServerKeyFactor", "1000")]
+    [TestCase("Submit:SitePerSecond", "0")]
+    [TestCase("Submit:SitePerSecond", "10000000")]
+    public void ARateLimitAtItsBounds_Passes(string key, string value) =>
+        Assert.That(HostOptions.Failures(new Dictionary<string, string?> { [$"{Root}:Limits:{key}"] = value }), Is.Empty);
+
+    [Test]
     public void TheDefinitionLimits_DefaultToSection431s()
     {
         var limits = new DefinitionLimits();
@@ -428,7 +472,7 @@ public sealed class FormBuilderOptionsTests
 
     [TestCase("JironFormBuilder:Limit:Definitions:MaxFields", "JironFormBuilder:Limit is not a setting of Jiron Form Builder; the settings in JironFormBuilder are PublicApi, Rendering, Files, Limits, Designer, Access, Webhooks and LockedSections.")]
     [TestCase("JironFormBuilder:Limits:Definitions:MaxField", "JironFormBuilder:Limits:Definitions:MaxField is not a setting of Jiron Form Builder; the settings in JironFormBuilder:Limits:Definitions are MaxBytes, MaxPages, MaxGroups, MaxFields, MaxOptionsPerField, MaxActions, MaxOutcomes and MaxRules.")]
-    [TestCase("JironFormBuilder:Limits:Definition:MaxFields", "JironFormBuilder:Limits:Definition is not a setting of Jiron Form Builder; the settings in JironFormBuilder:Limits are Definitions.")]
+    [TestCase("JironFormBuilder:Limits:Definition:MaxFields", "JironFormBuilder:Limits:Definition is not a setting of Jiron Form Builder; the settings in JironFormBuilder:Limits are Definitions, MaxTrackedClients, ServerKeyFactor, Read, Challenge, Submit, Upload, Events and Verify.")]
     [TestCase("JironFormBuilder:LockedSection:0", "JironFormBuilder:LockedSection is not a setting of Jiron Form Builder; the settings in JironFormBuilder are PublicApi, Rendering, Files, Limits, Designer, Access, Webhooks and LockedSections.")]
     [TestCase("JironFormBuilder:Designer:SettingLocks:0:Typ", "JironFormBuilder:Designer:SettingLocks:0:Typ is not a setting of Jiron Form Builder; the settings in JironFormBuilder:Designer:SettingLocks:0 are Kind, Type, Setting, Value and Hidden.")]
     [TestCase("JironFormBuilder:Files:Root:Folder", "JironFormBuilder:Files:Root is a single value, not a section.")]

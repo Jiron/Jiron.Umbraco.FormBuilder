@@ -342,7 +342,7 @@ internal sealed partial class FormModels(
             isRequiredNoteHidden: !build.MarksRequired,
             hooks: build.Hooks,
             notice: post?.Notice is { } notice
-                ? new NoticeViewModel { Classes = root.Classes, Kind = NoticeKind.Message, Heading = notice.Heading, Text = Paragraph(notice.Text), Code = notice.Code, HeadingId = notice.Code is null ? null : root.Id + "-notice", CssClass = root.Classes.Join(notice.Code is FormPostHandler.NotSentCode or FormPostHandler.TooLargeCode ? "jfb-notice jfb-notice-error" : "jfb-notice", FormBuilderThemeSlots.Notice) }
+                ? new NoticeViewModel { Classes = root.Classes, Kind = NoticeKind.Message, Heading = notice.Heading, Text = Paragraph(notice.Text), Code = notice.Code, HeadingId = notice.Code is null ? null : root.Id + "-notice", CssClass = root.Classes.Join(notice.Code is FormPostHandler.NotSentCode or FormPostHandler.TooLargeCode or FormPostHandler.RateLimitedCode ? "jfb-notice jfb-notice-error" : "jfb-notice", FormBuilderThemeSlots.Notice) }
                 : null,
             honeypot: new HoneypotModel(root.Id + "-" + honeypot, honeypot, words.Honeypot),
             context: Context(render),

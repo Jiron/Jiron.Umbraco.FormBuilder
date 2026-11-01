@@ -9,7 +9,9 @@
   receipt before 7.1 extended in 6.1f ([ADR-0089](0089-the-validate-and-receipt-endpoints.md)); a page's places on
   options extended in 6.1g ([ADR-0090](0090-places-on-options.md)); a submission's `uniquePerForm`, which a page's
   validation leaves out, built in 6.1h ([ADR-0091](0091-unique-answers.md)); the honeypot's markup and name rendered
-  from 6.3a by [ADR-0105](0105-the-theme-registry-and-the-base-rules.md), its scoring still 7.1's
+  from 6.3a by [ADR-0105](0105-the-theme-registry-and-the-base-rules.md), its scoring still 7.1's; the limiter's
+  partitions, what a post without JavaScript counts as and where, and what a server key gets built and amended in 7.1a
+  ([ADR-0137](0137-the-rate-limiter.md))
 - Date: 2026-10-23
 - Roadmap step: 1.7b (decided); built in 6.1 (the public API and the pipeline), 6.6 (server keys), 7.1 (standard
   protection, content rules and the spam folder), 7.2 (proof of work and captchas), 8.x (mail limits) and 16.1 (the
@@ -118,7 +120,8 @@ proxies configure ASP.NET Core's forwarded headers with their known proxies (doc
 ### Rate limits
 
 **On each server, in memory**, applied by `FormBuilderRateLimitMiddleware` after routing, only to endpoints that
-carry `[FormBuilderRateLimit(policy)]`. Windows are sliding windows of ten segments on the injected `TimeProvider`. A
+carry `[FormBuilderRateLimit(policy)]`, and by the post's own handler where the form is known
+([ADR-0137](0137-the-rate-limiter.md)). Windows are sliding windows of ten segments on the injected `TimeProvider`. A
 refusal answers `429 rate_limited` with `Retry-After`. Jiron Form Builder's policies never enter the site's
 `RateLimiterOptions`. On the surface action of a no-JS post, the middleware hands its refusal to the action, which
 renders the page again with the answers, a notice saying when to send again, `429` and `Retry-After`. Only refusals of

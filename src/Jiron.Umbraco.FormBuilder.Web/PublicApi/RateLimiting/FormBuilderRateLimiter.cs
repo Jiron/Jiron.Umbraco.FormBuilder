@@ -1,0 +1,242 @@
+using System.Collections.Concurrent;
+using System.Globalization;
+using System.Net;
+using System.Net.Sockets;
+using Jiron.Umbraco.FormBuilder.Core.Configuration;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Options;
+
+namespace Jiron.Umbraco.FormBuilder.Web.PublicApi.RateLimiting;
+
+/// <summary>What the limiter says about one request.</summary>
+/// <param name="Allowed">Whether the request goes on.</param>
+/// <param name="RetryAfter">For a refusal, how long until a request fits.</param>
+/// <param name="Renders">
+/// For a refusal, whether a post without JavaScript may render its page again with its answers: only for a client a
+/// little over a limit of its own or of the form (ADR-0012). The site-wide and overflow partitions, and a client at ten
+/// times its limit, get a bare <c>429</c>, so a flood costs next to nothing.
+/// </param>
+internal readonly record struct RateLimitDecision(bool Allowed, TimeSpan RetryAfter, bool Renders)
+{
+    /// <summary>The request goes on.</summary>
+    public static readonly RateLimitDecision Go = new(true, TimeSpan.Zero, false);
+
+    /// <summary>The refusal's <c>Retry-After</c>: whole seconds, rounded up, at least one.</summary>
+    public int RetryAfterSeconds => Math.Max(1, (int)Math.Ceiling(RetryAfter.TotalSeconds));
+}
+
+/// <summary>
+/// The rate limits of the public API and of posts without JavaScript, in memory on each server (ADR-0012, ADR-0137): each
+/// policy's partitions, cheapest first, on the site's <see cref="TimeProvider"/>. A request a partition refuses is not
+/// counted by the ones it would have met next, and those before it give it back, so one flooding client uses up no one
+/// else's limit. It keeps at most <c>Limits:MaxTrackedClients</c> windows: past that a new client shares one overflow
+/// window per partition, so a flood of distinct addresses is limited, never let through, and memory stays bounded.
+/// Emptied windows are swept every minute.
+/// </summary>
+internal sealed class FormBuilderRateLimiter
+{
+    /// <summary>How many times its limit a client may try before a refusal stops rendering a page.</summary>
+    public const int RenderedTimesLimit = 10;
+
+    private static readonly TimeSpan SweepEvery = TimeSpan.FromMinutes(1);
+    private static readonly TimeSpan Second = TimeSpan.FromSeconds(1);
+    private static readonly TimeSpan Minute = TimeSpan.FromMinutes(1);
+    private static readonly TimeSpan Hour = TimeSpan.FromHours(1);
+
+    private readonly ConcurrentDictionary<WindowKey, RateWindow> _windows = new();
+    private readonly Dictionary<string, FormBuilderRatePolicyOptions> _policies;
+    private readonly int _maxTracked;
+    private readonly int _serverKeyFactor;
+    private readonly TimeProvider _time;
+    private int _tracked;
+    private long _nextSweep;
+
+    /// <summary>The limiter with the host's limits.</summary>
+    /// <param name="options">The host configuration.</param>
+    /// <param name="time">The site's clock.</param>
+    public FormBuilderRateLimiter(IOptions<FormBuilderOptions> options, TimeProvider time)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(time);
+        var limits = options.Value.Limits;
+        _policies = new Dictionary<string, FormBuilderRatePolicyOptions>(StringComparer.Ordinal)
+        {
+            [FormBuilderRateLimitPolicies.Read] = limits.Read,
+            [FormBuilderRateLimitPolicies.Challenge] = limits.Challenge,
+            [FormBuilderRateLimitPolicies.Submit] = limits.Submit,
+            [FormBuilderRateLimitPolicies.Upload] = limits.Upload,
+            [FormBuilderRateLimitPolicies.Events] = limits.Events,
+            [FormBuilderRateLimitPolicies.Verify] = limits.Verify,
+        };
+        _maxTracked = limits.MaxTrackedClients;
+        _serverKeyFactor = limits.ServerKeyFactor;
+        _time = time;
+        _nextSweep = time.GetUtcNow().Add(SweepEvery).UtcTicks;
+    }
+
+    /// <summary>How many windows it keeps for clients and forms now.</summary>
+    public int TrackedWindows => Volatile.Read(ref _tracked);
+
+    /// <summary>Counts one request under a policy, or refuses it.</summary>
+    /// <param name="http">The request, whose server key or address is the client.</param>
+    /// <param name="policy">One of <see cref="FormBuilderRateLimitPolicies"/>.</param>
+    /// <param name="form">The form it asks about; null for one that names none.</param>
+    public RateLimitDecision Take(HttpContext http, string policy, Guid? form)
+    {
+        ArgumentNullException.ThrowIfNull(http);
+        SweepWhenDue();
+        var limits = _policies[policy];
+        var client = FormBuilderRateLimitPolicies.ClientOf(http);
+        var factor = ServerKeyRequest.NameOf(http) is null ? 1 : _serverKeyFactor;
+
+        // The empty key names no form: it is the overflow window's mark, and a route may send it.
+        var named = form == Guid.Empty ? null : form;
+        var taken = new List<RateWindow>(5);
+        foreach (var part in Partitions(limits, named is not null, factor))
+        {
+            var key = new WindowKey(policy, part.Kind, part.UsesClient ? client : null, part.UsesForm ? named : null);
+            var (window, overflow) = WindowFor(key, part);
+            if (window.TryTake(out var retryAfter))
+            {
+                taken.Add(window);
+                continue;
+            }
+
+            taken.ForEach(earlier => earlier.Release());
+
+            var renders = part.Kind != PartitionKind.Site && !overflow && window.Tried < window.Limit * RenderedTimesLimit;
+            return new RateLimitDecision(false, retryAfter, renders);
+        }
+
+        return RateLimitDecision.Go;
+    }
+
+    // The partitions a policy has: those whose limit is 0 do not exist, and a form's need the form.
+    private static IEnumerable<Partition> Partitions(FormBuilderRatePolicyOptions limits, bool hasForm, int factor)
+    {
+        if (limits.PerAddressPerMinute > 0)
+        {
+            yield return new Partition(PartitionKind.ClientMinute, limits.PerAddressPerMinute * factor, Minute, UsesClient: true, UsesForm: false);
+        }
+
+        if (limits.PerAddressPerHour > 0)
+        {
+            yield return new Partition(PartitionKind.ClientHour, limits.PerAddressPerHour * factor, Hour, UsesClient: true, UsesForm: false);
+        }
+
+        if (hasForm && limits.PerAddressAndFormPerMinute > 0)
+        {
+            yield return new Partition(PartitionKind.ClientForm, limits.PerAddressAndFormPerMinute * factor, Minute, UsesClient: true, UsesForm: true);
+        }
+
+        if (hasForm && limits.PerFormPerMinute > 0)
+        {
+            yield return new Partition(PartitionKind.Form, limits.PerFormPerMinute, Minute, UsesClient: false, UsesForm: true);
+        }
+
+        if (limits.SitePerSecond > 0)
+        {
+            yield return new Partition(PartitionKind.Site, limits.SitePerSecond, Second, UsesClient: false, UsesForm: false);
+        }
+    }
+
+    // The window of a key. The site-wide windows are few and always kept; past the bound a new client's or form's window
+    // is the partition's overflow window, and a client that has one keeps it.
+    private (RateWindow Window, bool Overflow) WindowFor(WindowKey key, Partition part)
+    {
+        if (_windows.TryGetValue(key, out var existing))
+        {
+            return (existing, key.IsOverflow);
+        }
+
+        if (part.Kind == PartitionKind.Site)
+        {
+            return (_windows.GetOrAdd(key, _ => new RateWindow(part.Limit, part.Length, _time)), false);
+        }
+
+        if (Volatile.Read(ref _tracked) >= _maxTracked)
+        {
+            var overflow = key with { Client = key.Client is null ? null : WindowKey.Overflow, Form = key.Form is null ? null : Guid.Empty };
+            return (_windows.GetOrAdd(overflow, _ => new RateWindow(part.Limit, part.Length, _time)), true);
+        }
+
+        var window = new RateWindow(part.Limit, part.Length, _time);
+        if (_windows.TryAdd(key, window))
+        {
+            Interlocked.Increment(ref _tracked);
+            return (window, false);
+        }
+
+        return (_windows[key], false);
+    }
+
+    private void SweepWhenDue()
+    {
+        var now = _time.GetUtcNow().UtcTicks;
+        var due = Interlocked.Read(ref _nextSweep);
+        if (now < due || Interlocked.CompareExchange(ref _nextSweep, now + SweepEvery.Ticks, due) != due)
+        {
+            return;
+        }
+
+        foreach (var (key, window) in _windows)
+        {
+            if (window.IdleFor is { } idle && idle >= window.Length && _windows.TryRemove(new KeyValuePair<WindowKey, RateWindow>(key, window)) && key.Counts)
+            {
+                Interlocked.Decrement(ref _tracked);
+            }
+        }
+    }
+
+    private enum PartitionKind : byte
+    {
+        ClientMinute,
+        ClientHour,
+        ClientForm,
+        Form,
+        Site,
+    }
+
+    private readonly record struct Partition(PartitionKind Kind, int Limit, TimeSpan Length, bool UsesClient, bool UsesForm);
+
+    private readonly record struct WindowKey(string Policy, PartitionKind Kind, string? Client, Guid? Form)
+    {
+        public const string Overflow = "overflow";
+
+        public bool IsOverflow => Client == Overflow || Form == Guid.Empty;
+
+        // Whether the key counts toward the bound: the site-wide and overflow windows are few, whatever a flood does.
+        public bool Counts => Kind != PartitionKind.Site && !IsOverflow;
+    }
+}
+
+/// <summary>Who a request counts for in the per-client partitions, from the connection only (ADR-0012).</summary>
+internal static class RateLimitClients
+{
+    /// <summary>The key when the connection has no address.</summary>
+    public const string Unknown = "unknown";
+
+    /// <summary>The key of an address: IPv4 as it is, an IPv4-mapped one as IPv4, IPv6 as its /64 network.</summary>
+    /// <param name="address">The connection's address.</param>
+    public static string KeyOf(IPAddress? address)
+    {
+        if (address is null)
+        {
+            return Unknown;
+        }
+
+        if (address.IsIPv4MappedToIPv6)
+        {
+            address = address.MapToIPv4();
+        }
+
+        if (address.AddressFamily != AddressFamily.InterNetworkV6)
+        {
+            return address.ToString();
+        }
+
+        var bytes = address.GetAddressBytes();
+        Array.Clear(bytes, 8, 8);
+        return string.Create(CultureInfo.InvariantCulture, $"{new IPAddress(bytes)}/64");
+    }
+}

@@ -83,6 +83,68 @@ public sealed class FormBuilderLimitsOptions
     /// save a form above it, and forms stored above it keep working.
     /// </summary>
     public DefinitionLimits Definitions { get; } = new();
+
+    /// <summary>The highest a rate limit may be.</summary>
+    public const int HighestRate = 10_000_000;
+
+    /// <summary>The fewest windows a server may keep.</summary>
+    public const int LeastTrackedClients = 1_000;
+
+    /// <summary>The most times an address's limits a server key may get.</summary>
+    public const int HighestServerKeyFactor = 1_000;
+
+    /// <summary>
+    /// The most rate windows one server keeps for addresses, server keys and forms: 1,000 to 10,000,000, 100,000 by
+    /// default. Past that, new ones share one overflow window per limit, so a flood of distinct addresses is limited and
+    /// memory stays bounded (ADR-0012).
+    /// </summary>
+    public int MaxTrackedClients { get; set; } = 100_000;
+
+    /// <summary>
+    /// How many times an address's limits a server key gets, since one server sends for all its visitors: 1 to 1,000, 10
+    /// by default. The limits of a form and of the site stay as they are (ADR-0137).
+    /// </summary>
+    public int ServerKeyFactor { get; set; } = 10;
+
+    /// <summary>Reading a form, its markup and its options, and a post without JavaScript that only moves the visitor.</summary>
+    public FormBuilderRatePolicyOptions Read { get; } = new() { PerAddressPerMinute = 120, SitePerSecond = 200 };
+
+    /// <summary>Asking for a challenge.</summary>
+    public FormBuilderRatePolicyOptions Challenge { get; } = new() { PerAddressPerMinute = 30, PerAddressAndFormPerMinute = 10, SitePerSecond = 100 };
+
+    /// <summary>Sending a form, checking a page, saving a draft, asking for a receipt, and any other post without JavaScript.</summary>
+    public FormBuilderRatePolicyOptions Submit { get; } = new() { PerAddressPerMinute = 20, PerAddressPerHour = 100, PerAddressAndFormPerMinute = 5, PerFormPerMinute = 60, SitePerSecond = 50 };
+
+    /// <summary>Uploading a file.</summary>
+    public FormBuilderRatePolicyOptions Upload { get; } = new() { PerAddressPerMinute = 30, PerAddressAndFormPerMinute = 20, SitePerSecond = 20 };
+
+    /// <summary>The insights beacon.</summary>
+    public FormBuilderRatePolicyOptions Events { get; } = new() { PerAddressPerMinute = 120, SitePerSecond = 500 };
+
+    /// <summary>Confirming an address.</summary>
+    public FormBuilderRatePolicyOptions Verify { get; } = new() { PerAddressPerMinute = 10 };
+}
+
+/// <summary>
+/// One rate-limit policy's limits (ADR-0012), each counted on each server: 0 to 10,000,000, where 0 leaves that limit out.
+/// A request over any of them answers <c>429 rate_limited</c> with <c>Retry-After</c>.
+/// </summary>
+public sealed class FormBuilderRatePolicyOptions
+{
+    /// <summary>Requests per minute from one address, or one server key.</summary>
+    public int PerAddressPerMinute { get; set; }
+
+    /// <summary>Requests per hour from one address, or one server key.</summary>
+    public int PerAddressPerHour { get; set; }
+
+    /// <summary>Requests per minute from one address, or one server key, about one form.</summary>
+    public int PerAddressAndFormPerMinute { get; set; }
+
+    /// <summary>Requests per minute about one form, from anyone.</summary>
+    public int PerFormPerMinute { get; set; }
+
+    /// <summary>Requests per second to the whole site, from anyone; whatever the other limits do, this one holds.</summary>
+    public int SitePerSecond { get; set; }
 }
 
 /// <summary>Locks on the settings that editors give fields and actions in the designer (section 4.8).</summary>

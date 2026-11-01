@@ -9,6 +9,7 @@ using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Core.Signatures;
 using Jiron.Umbraco.FormBuilder.Core.Submissions;
 using Jiron.Umbraco.FormBuilder.Web.PublicApi;
+using Jiron.Umbraco.FormBuilder.Web.PublicApi.RateLimiting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.WebUtilities;
@@ -32,6 +33,9 @@ internal enum FormPostAnswerKind
 
     /// <summary><c>403</c>: a post from another origin to a form for members, or to any form while a member is signed in.</summary>
     Forbidden,
+
+    /// <summary>A bare <c>429</c>: a flood, which costs no render (ADR-0012).</summary>
+    TooManyRequests,
 }
 
 /// <summary>The surface action's answer to a post.</summary>
@@ -47,6 +51,9 @@ internal sealed record FormPostAnswer(FormPostAnswerKind Kind, string? Url = nul
 
     /// <summary><c>403</c>.</summary>
     public static readonly FormPostAnswer Forbidden = new(FormPostAnswerKind.Forbidden);
+
+    /// <summary>A bare <c>429</c>.</summary>
+    public static readonly FormPostAnswer TooManyRequests = new(FormPostAnswerKind.TooManyRequests);
 }
 
 /// <summary>
@@ -67,6 +74,7 @@ internal sealed record FormPostAnswer(FormPostAnswerKind Kind, string? Url = nul
 /// <param name="tokens">The upload tokens, which a file field's answer holds.</param>
 /// <param name="entries">The entries' files, which a kept file's token names.</param>
 /// <param name="availability">The form's times and entry limit, checked before the post stores anything.</param>
+/// <param name="limiter">The rate limits, which every post meets before anything else that costs (ADR-0012).</param>
 internal sealed class FormPostHandler(
     PublishedFormCache forms,
     FormRequests requests,
@@ -77,7 +85,8 @@ internal sealed class FormPostHandler(
     FileUploads uploads,
     UploadTokens tokens,
     IEntryRepository entries,
-    FormAvailability availability)
+    FormAvailability availability,
+    FormBuilderRateLimiter limiter)
 {
     /// <summary>The notice's code after a post that met a form published again meanwhile.</summary>
     public const string FormChangedCode = "form_changed";
@@ -87,6 +96,9 @@ internal sealed class FormPostHandler(
 
     /// <summary>The notice's code after a post too large to read, whose answers are lost (ADR-0102).</summary>
     public const string TooLargeCode = "too_large";
+
+    /// <summary>The notice's code after a post over a rate limit, whose answers are kept (ADR-0012).</summary>
+    public const string RateLimitedCode = FormBuilderPublicProblems.RateLimitedCode;
 
     /// <summary>Reads a post and answers it.</summary>
     /// <param name="http">The request, which Umbraco routed to the surface action.</param>
@@ -107,6 +119,19 @@ internal sealed class FormPostHandler(
             || !int.TryParse(One(posted, FormPostFields.Revision), NumberStyles.None, CultureInfo.InvariantCulture, out var revision))
         {
             return FormPostAnswer.BadRequest;
+        }
+
+        // The limit comes before anything that reads a table, since a flood must cost next to nothing. A refusal that renders
+        // waits for the origin's check below, so nothing is rendered for another site.
+        var limit = FormPostRateLimit.Of(http)
+            ?? limiter.Take(http, CountsAsSubmit(posted) ? FormBuilderRateLimitPolicies.Submit : FormBuilderRateLimitPolicies.Read, formKey);
+        if (!limit.Allowed)
+        {
+            http.Response.Headers.RetryAfter = limit.RetryAfterSeconds.ToString(CultureInfo.InvariantCulture);
+            if (!limit.Renders)
+            {
+                return FormPostAnswer.TooManyRequests;
+            }
         }
 
         if (await forms.GetAsync(formKey, cancellationToken) is not { } cached)
@@ -137,6 +162,18 @@ internal sealed class FormPostHandler(
         var reader = FormPostReader.Read(posted, definition, types);
         var listed = definition.Settings.Developer.QueryValues;
         var query = Held(reader.Query.Count > 0 ? reader.Query : Referred(http.Request), listed);
+        if (!limit.Allowed)
+        {
+            // Nothing of the post is stored or checked; its answers come back with when to send again (ADR-0012).
+            http.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+            var refused = new Step(reader, definition, Guid.TryParseExact(One(posted, FormPostFields.Page), "D", out var refusedPage) ? refusedPage : null, query)
+            {
+                Notice = WaitNotice(culture, limit, posted.Files),
+            };
+            FormPosts.Set(http, formKey, instance, refused.State(await KeptAsync(reader, definition, formKey, cancellationToken)));
+            return FormPostAnswer.Page;
+        }
+
         var noted = await FilesAsync(http, posted.Files, reader, formKey, instance, cancellationToken);
         var nav = posted[FormPostFields.Nav].LastOrDefault();
         var moves = nav is FormPostFields.Back or FormPostFields.Next or FormPostFields.Submit or null || Goto(nav) is not null;
@@ -412,6 +449,30 @@ internal sealed class FormPostHandler(
                 // Closed, full or gone: the form's render shows its notice, or nothing, as for any visitor now.
                 return false;
         }
+    }
+
+    // Whether a post counts as a submission's: one that runs the pipeline or may store files. Back, an answer's "Change",
+    // and a row's or a ranking's button only render the page again, as a read does (ADR-0137).
+    private static bool CountsAsSubmit(IFormCollection posted)
+    {
+        if (posted.Files.Count > 0)
+        {
+            return true;
+        }
+
+        var nav = posted[FormPostFields.Nav].LastOrDefault();
+        return nav is null or FormPostFields.Next or FormPostFields.Submit;
+    }
+
+    // What a post over a rate limit shows: when to send again, in the larger unit from two minutes on.
+    private static FormPostNotice WaitNotice(string culture, RateLimitDecision limit, IFormFileCollection files)
+    {
+        var words = RenderingWords.Of(culture);
+        var seconds = Math.Max(2, limit.RetryAfterSeconds);
+        var text = seconds < 120
+            ? string.Format(CultureInfo.InvariantCulture, words.WaitSecondsText, seconds)
+            : string.Format(CultureInfo.InvariantCulture, words.WaitMinutesText, (int)Math.Ceiling(seconds / 60d));
+        return new FormPostNotice(words.NotSentHeading, files.Any(file => file.Length > 0) ? text + " " + words.ChooseFilesAgain : text, RateLimitedCode);
     }
 
     // An outcome's or a placement's page after a send (ADR-0129, ADR-0136) with a fragment of its own. The post's address

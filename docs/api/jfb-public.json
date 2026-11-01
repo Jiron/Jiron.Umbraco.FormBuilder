@@ -119,6 +119,20 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests: a rate limit is reached; Retry-After says when to send again (rate_limited).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
           "500": {
             "description": "Internal Server Error: something failed unexpectedly (server_error).",
             "content": {
@@ -307,6 +321,20 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests: a rate limit is reached; Retry-After says when to send again (rate_limited).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
           "500": {
             "description": "Internal Server Error: something failed unexpectedly (server_error).",
             "content": {
@@ -448,6 +476,20 @@
           },
           "413": {
             "description": "Payload Too Large: the body is longer than the endpoint takes (payload_too_large).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests: a rate limit is reached; Retry-After says when to send again (rate_limited).",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -620,6 +662,20 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests: a rate limit is reached; Retry-After says when to send again (rate_limited).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
           "500": {
             "description": "Internal Server Error: something failed unexpectedly (server_error).",
             "content": {
@@ -759,6 +815,20 @@
           },
           "413": {
             "description": "Payload Too Large: the body is longer than the endpoint takes (payload_too_large).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests: a rate limit is reached; Retry-After says when to send again (rate_limited).",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -950,6 +1020,20 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests: a rate limit is reached; Retry-After says when to send again (rate_limited).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
           "500": {
             "description": "Internal Server Error: something failed unexpectedly (server_error).",
             "content": {
@@ -1127,6 +1211,20 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests: a rate limit is reached; Retry-After says when to send again (rate_limited).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
           "500": {
             "description": "Internal Server Error: something failed unexpectedly (server_error).",
             "content": {
@@ -1250,6 +1348,20 @@
           },
           "413": {
             "description": "Payload Too Large: the body is longer than the endpoint takes (payload_too_large).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests: a rate limit is reached; Retry-After says when to send again (rate_limited).",
             "content": {
               "application/problem+json": {
                 "schema": {

@@ -43,6 +43,7 @@ internal sealed class FormBuilderOptionsValidator(IHostFolders folders, IConfigu
 
         CheckFileLimits(options.Files, failures);
         CheckDefinitionLimits(options.Limits.Definitions, failures);
+        CheckRateLimits(options.Limits, failures);
         CheckSettingLocks(options.Designer.SettingLocks, failures);
         CheckLockedSections(options.LockedSections, failures);
         CheckHostGrants(options.Access.Grants, failures);
@@ -104,6 +105,48 @@ internal sealed class FormBuilderOptionsValidator(IHostFolders folders, IConfigu
                 failures.Add(string.Create(
                     CultureInfo.InvariantCulture,
                     $"{Root}:Limits:Definitions:{name} ({value}) must be 1 to {highest}, which is {DefinitionLimits.CeilingFactor} times its default."));
+            }
+        }
+    }
+
+    // The rate limits within their bounds (ADR-0012, ADR-0137).
+    private static void CheckRateLimits(FormBuilderLimitsOptions limits, List<string> failures)
+    {
+        if (limits.MaxTrackedClients is < FormBuilderLimitsOptions.LeastTrackedClients or > FormBuilderLimitsOptions.HighestRate)
+        {
+            failures.Add(string.Create(CultureInfo.InvariantCulture, $"{Root}:Limits:MaxTrackedClients ({limits.MaxTrackedClients}) must be {FormBuilderLimitsOptions.LeastTrackedClients} to {FormBuilderLimitsOptions.HighestRate}."));
+        }
+
+        if (limits.ServerKeyFactor is < 1 or > FormBuilderLimitsOptions.HighestServerKeyFactor)
+        {
+            failures.Add(string.Create(CultureInfo.InvariantCulture, $"{Root}:Limits:ServerKeyFactor ({limits.ServerKeyFactor}) must be 1 to {FormBuilderLimitsOptions.HighestServerKeyFactor}."));
+        }
+
+        (string Name, FormBuilderRatePolicyOptions Policy)[] policies =
+        [
+            (nameof(limits.Read), limits.Read),
+            (nameof(limits.Challenge), limits.Challenge),
+            (nameof(limits.Submit), limits.Submit),
+            (nameof(limits.Upload), limits.Upload),
+            (nameof(limits.Events), limits.Events),
+            (nameof(limits.Verify), limits.Verify),
+        ];
+        foreach (var (name, policy) in policies)
+        {
+            (string Name, int Value)[] rates =
+            [
+                (nameof(policy.PerAddressPerMinute), policy.PerAddressPerMinute),
+                (nameof(policy.PerAddressPerHour), policy.PerAddressPerHour),
+                (nameof(policy.PerAddressAndFormPerMinute), policy.PerAddressAndFormPerMinute),
+                (nameof(policy.PerFormPerMinute), policy.PerFormPerMinute),
+                (nameof(policy.SitePerSecond), policy.SitePerSecond),
+            ];
+            foreach (var (rate, value) in rates)
+            {
+                if (value is < 0 or > FormBuilderLimitsOptions.HighestRate)
+                {
+                    failures.Add(string.Create(CultureInfo.InvariantCulture, $"{Root}:Limits:{name}:{rate} ({value}) must be 0 to {FormBuilderLimitsOptions.HighestRate}, where 0 leaves the limit out."));
+                }
             }
         }
     }

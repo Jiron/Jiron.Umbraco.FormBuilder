@@ -1,4 +1,7 @@
 import { STATIC_ORIGIN, STUB_PORT } from './paths.ts';
+
+/** What one address may ask about one form in a minute on the test host. */
+export const E2E_FORM_LIMIT = 200;
 import { PEOPLE, RESTRICTED_FOLDERS, ROLES, USER_GROUPS, type E2ESecrets } from './users.ts';
 
 /** Whether the run's host has the Content Delivery API on: `JFB_E2E_DELIVERY_API=on` or `off` (the default). */
@@ -30,6 +33,15 @@ export function hostEnvironment(secrets: E2ESecrets, options: { deliveryApi: boo
     // The static page's origin may call the public API (ROADMAP 6.6f), as a headless site's would.
     JironFormBuilder__PublicApi__AllowedOrigins__0: STATIC_ORIGIN,
   };
+
+  // The suite asks far more of one address than any visitor does; the limits project uses up one form's.
+  for (const policy of ['Read', 'Challenge', 'Submit', 'Upload', 'Events', 'Verify']) {
+    env[`JironFormBuilder__Limits__${policy}__PerAddressPerMinute`] = '0';
+    env[`JironFormBuilder__Limits__${policy}__PerAddressPerHour`] = '0';
+    env[`JironFormBuilder__Limits__${policy}__PerFormPerMinute`] = '0';
+    env[`JironFormBuilder__Limits__${policy}__SitePerSecond`] = '0';
+    env[`JironFormBuilder__Limits__${policy}__PerAddressAndFormPerMinute`] = String(E2E_FORM_LIMIT);
+  }
 
   USER_GROUPS.forEach((group, g) => {
     env[`JironFormBuilderTesting__UserGroups__${g}__Alias`] = group.alias;

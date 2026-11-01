@@ -1,5 +1,6 @@
 using System.Reflection;
 using Jiron.Umbraco.FormBuilder.Core.Configuration;
+using Jiron.Umbraco.FormBuilder.Web.PublicApi.RateLimiting;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ApplicationModels;
@@ -41,6 +42,8 @@ internal static class FormBuilderPublicApiServices
         builder.Services.TryAddSingleton<FormBuilderPublicApiPaths>();
         builder.Services.TryAddScoped<FormBuilderPublicApiFilter>();
         builder.Services.TryAddSingleton<ServerKeys>();
+        builder.Services.TryAddSingleton<FormBuilderRateLimiter>();
+        builder.Services.TryAddSingleton<FormBuilderRateLimitMiddleware>();
         builder.Services.TryAddSingleton<FormBuilderPublicApiMiddleware>();
         builder.Services.TryAddSingleton<Picker.FormBuilderDeliveryApiMiddleware>();
         builder.Services.TryAddSingleton<FormRequests>();
@@ -57,6 +60,7 @@ internal static class FormBuilderPublicApiServices
                 options.AddFilter(new UmbracoPipelineFilter(PipelineFilterName)
                 {
                     PrePipeline = app => app.UseMiddleware<Picker.FormBuilderDeliveryApiMiddleware>().UseMiddleware<FormBuilderPublicApiMiddleware>(),
+                    PostRouting = app => app.UseMiddleware<FormBuilderRateLimitMiddleware>(),
                 });
             }
         });
