@@ -2455,7 +2455,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
 - [x] **7.4g Wiring and docs** (7.4 split in nine, WORKLOG 2026-11-01) (2026-11-01, a4d56e7)
   - **What the sweep found:** the schema says every rate limit defaults to 0; blank captcha keys read as configured; no step names the endpoint that greys out providers without keys, or a reader of the daily `spam` metric; `FormBuilderSpamCheckContext.Page` and `Address` have no test; the blocked extensions' description is stale; `docs/architecture.md` and `docs/database.md` lag behind Phase 7.
   - Done when: a test reads the schema's defaults from `new FormBuilderOptions()`; tests cover blank keys and both context members; 10.1 and 11.5 name what they read; the docs name what Phase 7 stores and runs.
-- [ ] **7.4h Phase review** (7.4 split in nine, WORKLOG 2026-11-01)
+- [x] **7.4h Phase review** (7.4 split in nine, WORKLOG 2026-11-01) (2026-11-01, 4a1b457)
   - A security review of Phases 6 and 7 (STRIDE for the public surface; the readers' findings are 7.4a to 7.4g, and a reader of those fixes reads them here). Fix what it finds, with a test per fix.
   - Write the handover note, with the wiring sweep's inventory.
   - Done when: pushed, with the phase-review gate.
