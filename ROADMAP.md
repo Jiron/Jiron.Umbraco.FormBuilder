@@ -2409,7 +2409,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - the allowlist, the global blocklist and magic-number checks;
   - random names.
   - Done when: tests cover a polyglot file, a double extension and an oversize stream aborted early.
-- [ ] **7.3b Cleanup and scanning** (7.3 split in four, WORKLOG 2026-11-01)
+- [x] **7.3b Cleanup and scanning** (7.3 split in four, WORKLOG 2026-11-01) (2026-11-01, 266c600)
   - the orphan-cleanup job, and the scanner hook with quarantine.
   - Done when: tests cover a quarantined file and the cleanup of an orphan.
 - [ ] **7.3c Downloads** (7.3 split in four, WORKLOG 2026-11-01)
