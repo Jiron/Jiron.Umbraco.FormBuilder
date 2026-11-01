@@ -37,8 +37,17 @@ public sealed record FieldValue
     /// <summary>The key of the grid row it answers; null for the field itself.</summary>
     public Guid? Row { get; }
 
-    /// <summary>Whether the visitor wrote this value themselves in a field of choices, as an "Other" text, so it is no option's value.</summary>
+    /// <summary>
+    /// Whether the visitor wrote this value themselves in a field of choices, as an "Other" text, so it is no option's value. It says
+    /// how the value was read, which is not stored, so it does not count towards two values being the same.
+    /// </summary>
     public bool IsOwnText { get; init; }
+
+    /// <inheritdoc />
+    public bool Equals(FieldValue? other) => other is not null && Text == other.Text && Row == other.Row && StoredText == other.StoredText;
+
+    /// <inheritdoc />
+    public override int GetHashCode() => HashCode.Combine(Text, Row, StoredText);
 
     /// <summary>
     /// The text the entry stores instead of <see cref="Text"/>, or null to store the value: a ticked consent is

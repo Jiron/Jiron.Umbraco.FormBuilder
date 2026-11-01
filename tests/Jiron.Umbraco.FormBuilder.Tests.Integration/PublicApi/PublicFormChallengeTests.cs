@@ -392,7 +392,7 @@ public sealed class PublicFormChallengeTests : PublicApiTestBase
         var first = await ChallengeAsync(key);
         var tokens = GetRequiredService<Web.PublicApi.ChallengeTokens>();
         var issued = tokens.Read(first, key, TimeSpan.Zero)!.IssuedUtc;
-        _clock.Advance(TimeSpan.FromDays(2));
+        _clock.Advance(Core.Submissions.FormChallenges.Lifetime + Core.Submissions.FormChallenges.ReceiptGrace - TimeSpan.FromSeconds(1));
 
         using var renewed = await PostAsync($"{Root}/forms/{key}/challenge", $$$"""{"previous":"{{{first}}}"}""");
         var token = (await JsonAsync(renewed))["challenge"]!.GetValue<string>();
