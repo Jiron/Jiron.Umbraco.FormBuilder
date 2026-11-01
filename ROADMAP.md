@@ -2428,10 +2428,39 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - Done when: tests cover a zip-slip name, a download by a user with and without the permission and by an anonymous caller, and an SVG and an HTML file served as attachments.
 - [x] **7.3d A refused upload over HTTP/2** (7.3 split in four, WORKLOG 2026-11-01) (2026-11-01, a6b18ba)
   - Done when: over HTTPS with HTTP/2, Playwright shows that a refused upload's answer reaches the browser (ADR-0006).
-- [ ] **7.4 Phase review**
-  - A security review of Phases 6 and 7 (STRIDE for the public surface). Fix what it finds, with a test per fix.
-  - Write the handover note.
+- [ ] **7.4a The site that protects a form** (7.4 split in nine, WORKLOG 2026-11-01)
+  - **What the review found:** a request names its own page, so a visitor chooses whose protection applies: no page, or a page of the laxest site, escapes a stricter site's puzzle, captcha, blocked ranges and content rules on a form that inherits them.
+  - A named page's site applies only when that page holds the form, by the reference index. Otherwise, a request with no such page gets the strictest of the shared settings and every site's: the highest level, and every range, word and domain.
+  - A puzzle's answer counts only for a challenge asking at least the bits the site asks now.
+  - Done when: tests cover a post with no page and one naming another site's page, on a form placed on a strict site, each held to that site's puzzle, captcha, ranges and words, directly and without JavaScript; a page that holds the form keeps its own site's settings; a challenge of fewer bits is refused; 14.4 says it keeps this.
+- [ ] **7.4b What the content rules read and the verdict's answer** (7.4 split in nine, WORKLOG 2026-11-01)
+  - **What the review found:** the content rules skip a name's and an address's parts and a choice's own "other" text, so blocked words and links pass there.
+  - **The verdict's answer:** a post with a taken or full answer is told so unless the protection marks it Spam, which tells a bot its verdict. The review of this finding keeps 7.1c's check, as hiding those answers from Spam is what stops silent probing of who has registered: an ADR says why, and what bounds the probing.
+  - A `previous` challenge carries its issue time only for a limited age, so one old token cannot switch the time signal off for good.
+  - Done when: tests cover a blocked word and a link in a name's part, an address's part and an "other" text, an old `previous` that no longer carries its time, and the ADR is written.
+- [ ] **7.4c The post without JavaScript** (7.4 split in nine, WORKLOG 2026-11-01)
+  - **What the review found:** an anonymous post stores files on a members-only form before its gate answers; the marker decides whose form limit a post counts against; a typed signature is stored under the read limit; a post without the marker has no file count; text values have no total limit; a refused post is still read to disk; reading has no time limit.
+  - Done when: tests cover each: nothing stored for an anonymous post on a members-only form; a marker of another form still counts against the posted form; a typed signature counts as a submit; a post without the marker is held to the field's count; texts past the form's total are refused; a post the limits refuse writes no file; a post that trickles past its time is ended.
+- [ ] **7.4d The disk, the cleanup and the scanner** (7.4 split in nine, WORKLOG 2026-11-01)
+  - **What the review found:** one address can fill the disk with uploads no entry claims, as nothing caps their bytes and the upload policy has no hourly limit; the cleanup can fall behind what the limits allow in; a flood of unclaimed uploads holds a real entry's file behind it in the scan queue; a file that cannot be opened stalls the queue.
+  - A host option caps the bytes waiting for an entry, and an upload past it is refused before it is stored. The upload policy gets hourly and per-form defaults. The cleanup keeps up on a timer of its own. A scan takes what an entry holds first, and a file that fails does not stop the others.
+  - Done when: tests cover each: the cap with its refusal and its recovery, the new defaults, a backlog the cleanup clears past one run, an entry's file scanned ahead of unclaimed ones, and a file that cannot be opened passed by.
+- [ ] **7.4e The limits** (7.4 split in nine, WORKLOG 2026-11-01)
+  - **What the review found:** made-up form keys spend the site's limit and fill the windows; twelve addresses can shut one form for everyone; a form read by its alias has no per-form limit; the challenge's `429` has no test of its own; an invalid server key writes a warning with a path the caller chose, before any limit; a body's error list costs quadratic time and cannot be cancelled.
+  - Done when: tests cover each: an unknown key costs no form window and no site count; the per-form default holds a flood and leaves a form open to a few addresses; an alias counts as its form; the challenge's `429` with `Retry-After`; the warning is bounded and names no path; a body of duplicate members answers within a time limit and with a bounded list.
+- [ ] **7.4f Permissions and what goes out** (7.4 split in nine, WORKLOG 2026-11-01)
+  - **What the review found:** a user with `design` and `viewEntries` can publish a field as not sensitive and read its files without `viewSensitive`; an archive cut off just before its end leaves no audit entry; `page.*` merge tags read a page protected from the visitor; the form endpoint serves a members-only form's whole definition; one trailing byte hides a ZIP behind another kind; a server key's uploads leave no trace of the key.
+  - Done when: tests cover each: publishing or restoring a lower sensitivity refused without `viewSensitive`, in the permission matrix; the audit entry written before the first byte, with its counts after; a protected page treated as no page; `403 member_required` on the form endpoint; a ZIP with trailing bytes refused; the key's name logged on an upload.
+- [ ] **7.4g Wiring and docs** (7.4 split in nine, WORKLOG 2026-11-01)
+  - **What the sweep found:** the schema says every rate limit defaults to 0; blank captcha keys read as configured; no step names the endpoint that greys out providers without keys, or a reader of the daily `spam` metric; `FormBuilderSpamCheckContext.Page` and `Address` have no test; the blocked extensions' description is stale; `docs/architecture.md` and `docs/database.md` lag behind Phase 7.
+  - Done when: a test reads the schema's defaults from `new FormBuilderOptions()`; tests cover blank keys and both context members; 10.1 and 11.5 name what they read; the docs name what Phase 7 stores and runs.
+- [ ] **7.4h Phase review** (7.4 split in nine, WORKLOG 2026-11-01)
+  - A security review of Phases 6 and 7 (STRIDE for the public surface; the readers' findings are 7.4a to 7.4g, and a reader of those fixes reads them here). Fix what it finds, with a test per fix.
+  - Write the handover note, with the wiring sweep's inventory.
   - Done when: pushed, with the phase-review gate.
+- [ ] **7.4i Resume what was blocked** (7.4 split in nine, WORKLOG 2026-11-01)
+  - The owner raised the runtime's budget (ADR-0146), so 7.4h's retry of the `[~]` steps finds them free: mark 6.4i, 6.4j, 6.4l, 6.4m, 6.4n, 6.4o, 6.4p, 6.5d, 6.6g, 7.1e and 7.2c `[ ]`, and take them in order, from the work on `wip/6.4i-sending`.
+  - Done when: `node scripts/roadmap-status.mjs` shows `blocked=0` and names 6.4i next, pushed.
 
 ### Phase 8: Actions and email
 
