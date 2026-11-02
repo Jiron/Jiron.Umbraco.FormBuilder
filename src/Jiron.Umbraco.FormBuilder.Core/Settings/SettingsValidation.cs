@@ -59,6 +59,9 @@ internal sealed class SettingsErrors(string section)
     /// <summary>The code of a value that is not one mail address (ADR-0159).</summary>
     public const string AddressCode = "address";
 
+    /// <summary>The code of a value that must be a reference to a secret (ADR-0161).</summary>
+    public const string SecretCode = "secretReference";
+
     /// <summary>The code of a field a site cannot override.</summary>
     public const string Scope = "scope";
 

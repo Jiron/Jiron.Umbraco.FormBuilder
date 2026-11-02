@@ -359,6 +359,85 @@ public sealed class OutboundHttpTests
     }
 
     [Test]
+    public async Task APost_SendsItsBodyAndHeaders_AndGivesTheStatus_WithoutReadingTheAnswer()
+    {
+        _stub.Answer(new StubAnswer("POST", "/hook", Status: 202, Body: "accepted"));
+        using var transport = StubTransport();
+
+        var status = await Outbound(transport, allowHttp: true, Host).PostAsync(At("/hook"), Encoding.UTF8.GetBytes("{}"), "application/json; charset=utf-8", [new("X-Source", "forms")], TimeSpan.FromSeconds(5), CancellationToken.None);
+
+        var call = _stub.Calls.Single();
+        Assert.Multiple(() =>
+        {
+            Assert.That(status, Is.EqualTo(202));
+            Assert.That((call.Method, call.Path, call.Body), Is.EqualTo(("POST", "/hook", "{}")));
+            Assert.That(call.Header("Content-Type"), Is.EqualTo("application/json; charset=utf-8"));
+            Assert.That(call.Header("X-Source"), Is.EqualTo("forms"));
+            Assert.That(call.Header("User-Agent"), Is.EqualTo($"JironFormBuilder/{FormBuilderVersion.Package}"));
+        });
+    }
+
+    [Test]
+    public async Task ATransportThatGivesUpOnConnecting_HasNoConnection_AsNothingWasSent()
+    {
+        var scripted = new ScriptedTransport(_ => throw new TaskCanceledException("connect", new TimeoutException()));
+
+        var reason = await ReasonAsync(() => Outbound(scripted, allowHttp: false, Host).PostAsync(new Uri($"https://{Host}/hook"), [], "text/plain", [], TimeSpan.FromSeconds(5), CancellationToken.None));
+
+        Assert.That(reason, Is.EqualTo(OutboundFailure.NoConnection));
+    }
+
+    [Test]
+    public async Task APost_FollowsNoRedirect()
+    {
+        _stub.Answer(new StubAnswer("POST", "/hook", Status: 307, Location: "/elsewhere"));
+        _stub.Answer(new StubAnswer("POST", "/elsewhere"));
+        using var transport = StubTransport();
+
+        var status = await Outbound(transport, allowHttp: true, Host).PostAsync(At("/hook"), [], "text/plain", [], TimeSpan.FromSeconds(5), CancellationToken.None);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(status, Is.EqualTo(307));
+            Assert.That(_stub.CallsTo("/elsewhere"), Is.Empty);
+        });
+    }
+
+    [Test]
+    public async Task APost_ToAnAddressTheHostRefuses_SendsNothing()
+    {
+        var scripted = new ScriptedTransport(_ => ScriptedTransport.Json("[]"));
+
+        var reason = await ReasonAsync(() => Outbound(scripted, allowHttp: false, Host).PostAsync(new Uri("https://other.example.com/hook"), [], "text/plain", [], TimeSpan.FromSeconds(5), CancellationToken.None));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(reason, Is.EqualTo(OutboundFailure.HostNotAllowed));
+            Assert.That(scripted.Requests, Is.Empty);
+        });
+    }
+
+    [Test]
+    public async Task APost_TooSlow_TimesOut_AndABrokenOneHasNoConnection()
+    {
+        _stub.Answer(new StubAnswer("POST", "/slow", DelayMs: 10_000));
+        using var transport = StubTransport();
+        var outbound = Outbound(transport, allowHttp: true, Host);
+
+        var slow = await ReasonAsync(() => outbound.PostAsync(At("/slow"), [], "text/plain", [], TimeSpan.FromMilliseconds(200), CancellationToken.None));
+        var address = At("/slow");
+        await _stub.DisposeAsync();
+        var gone = await ReasonAsync(() => outbound.PostAsync(address, [], "text/plain", [], TimeSpan.FromSeconds(5), CancellationToken.None));
+        _stub = await StubServer.StartAsync(port: 0);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(slow, Is.EqualTo(OutboundFailure.TimedOut));
+            Assert.That(gone, Is.EqualTo(OutboundFailure.NoConnection));
+        });
+    }
+
+    [Test]
     public void ACallerThatStopsWaiting_IsCancelled_NotTimedOut()
     {
         _stub.Answer(new StubAnswer("GET", "/slow", Body: "[]", DelayMs: 10_000));

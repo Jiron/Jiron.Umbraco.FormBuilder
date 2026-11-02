@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text.Json;
 using Jiron.Umbraco.FormBuilder.Core.Access;
+using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Email;
 using Jiron.Umbraco.FormBuilder.Core.Files;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
@@ -90,6 +91,7 @@ internal sealed class TestEndpointsStartupFilter(IOptions<FormBuilderTestingOpti
 /// <item><description><c>POST /jfb-testing/mail-layouts {"marker": "...", "word": "..."}</c>: queues a mail in every layout's shape, each
 /// holding the word wherever text goes, with the subject <c>&lt;marker&gt; &lt;layout&gt;</c>, and answers those subjects, so the browser
 /// tests can render what arrives in the pickup folder (ADR-0159).</description></item>
+/// <item><description><c>POST /jfb-testing/webhook-form {"url": "..."}</c>: publishes a headless form whose webhook action calls this address (ROADMAP 8.4).</description></item>
 /// <item><description><c>GET /jfb-testing/mail-log?key=...</c>: the states of the mail one mailbox got, by any spelling of it (ADR-0159).</description></item>
 /// <item><description><c>GET /jfb-testing/mail-view?view=...</c>: what the site's view of a mail writes for a fixed model (ADR-0160).</description></item>
 /// </list>
@@ -115,6 +117,34 @@ internal sealed class TestEndpointsMiddleware(RequestDelegate next)
     }
 
     private sealed record ProtectionRequest(string? CaptchaConsent);
+
+    // A published headless form with one field and a webhook action to this address, signed with the host's secret.
+    private static async Task WebhookFormAsync(HttpContext context)
+    {
+        var body = await JsonSerializer.DeserializeAsync<WebhookFormRequest>(context.Request.Body, Json, context.RequestAborted);
+        var forms = context.RequestServices.GetRequiredService<IFormBuilderFormService>();
+        var created = await forms.CreateAsync(new NewFormRequest($"Webhook {Guid.NewGuid():N}"), context.RequestAborted);
+        var draft = (await forms.GetDraftAsync(created.Key, cancellationToken: context.RequestAborted))!;
+        var definition = draft.Definition!;
+        var field = new FormField { Key = Guid.NewGuid(), Type = "text", Alias = "name", Label = new LocalizedText("Name") };
+        var settings = JsonSerializer.Serialize(new { url = body?.Url, secret = "$JironFormBuilder:Secrets:E2EWebhook" });
+        var saved = (await forms.SaveDraftAsync(
+            created.Key,
+            draft.Form.ConcurrencyVersion,
+            definition with
+            {
+                Pages = [definition.Pages[0] with { Groups = [definition.Pages[0].Groups[0] with { Fields = [field] }] }],
+                Settings = definition.Settings with { Developer = definition.Settings.Developer with { Headless = true } },
+                Actions = [new FormAction { Key = Guid.NewGuid(), Type = "webhook", Name = "Hook", Settings = SettingsObject.Parse(settings) }],
+            },
+            null,
+            null,
+            context.RequestAborted))!;
+        _ = await forms.PublishAsync(created.Key, saved.Form.ConcurrencyVersion, null, null, context.RequestAborted);
+        await context.Response.WriteAsJsonAsync(new { key = created.Key }, Json, context.RequestAborted);
+    }
+
+    private sealed record WebhookFormRequest(string? Url);
 
     // One mail in every shape a mail can take, each holding this word wherever text goes, through the queue.
     private static async Task MailLayoutsAsync(HttpContext context)
@@ -198,6 +228,9 @@ internal sealed class TestEndpointsMiddleware(RequestDelegate next)
                 return;
             case "mail-view" when HttpMethods.IsGet(context.Request.Method):
                 await MailViewAsync(context);
+                return;
+            case "webhook-form" when HttpMethods.IsPost(context.Request.Method):
+                await WebhookFormAsync(context);
                 return;
             case "mail-layouts" when HttpMethods.IsPost(context.Request.Method):
                 await MailLayoutsAsync(context);

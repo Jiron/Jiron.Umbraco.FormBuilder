@@ -85,3 +85,6 @@ export const SECURE_KEY_NAME = 'JironFormBuilderTestHost';
 /** The HTTP stub that the test host starts for webhooks, URL option lists and captcha verification. */
 export const STUB_PORT = 5560;
 export const STUB_URL = `http://127.0.0.1:${STUB_PORT}`;
+
+/** The secret the test host's webhooks are signed with: a made-up one, as this build uses no real keys. */
+export const E2E_WEBHOOK_SECRET = 'JFB_FAKE_e2e_webhook_signing';

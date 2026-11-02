@@ -77,6 +77,9 @@ public sealed record MergeTagScope
     /// mail to an address a visitor typed, which a bot could otherwise use to send a link in the site's name.
     /// </summary>
     internal bool BreaksVisitorLinks { get; init; }
+
+    /// <summary>What a chat message does to what a visitor typed, so it stays text there (ADR-0161); null for nothing.</summary>
+    internal Func<string, string>? GuardsVisitorText { get; init; }
 }
 
 /// <summary>An entry as merge tags see it (ADR-0014): its key, number, state and when it was submitted.</summary>

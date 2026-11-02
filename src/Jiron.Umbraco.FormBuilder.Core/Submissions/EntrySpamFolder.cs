@@ -2,6 +2,7 @@ using Jiron.Umbraco.FormBuilder.Core.Actions;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
+using Jiron.Umbraco.FormBuilder.Core.Webhooks;
 
 namespace Jiron.Umbraco.FormBuilder.Core.Submissions;
 
@@ -19,6 +20,7 @@ namespace Jiron.Umbraco.FormBuilder.Core.Submissions;
 /// <param name="forms">The forms' versions, whose actions the entry was read with.</param>
 /// <param name="documents">Reads a version's definition.</param>
 /// <param name="settlement">Lets go of what no action can use any more (ADR-0158).</param>
+/// <param name="entryEvents">Tells of an entry that is submitted now.</param>
 internal sealed class EntrySpamFolder(
     FormBuilderDatabase database,
     IEntryRepository entries,
@@ -27,7 +29,8 @@ internal sealed class EntrySpamFolder(
     IDailyStatRepository stats,
     IFormRepository forms,
     FormDocuments documents,
-    ActionSettlement settlement)
+    ActionSettlement settlement,
+    EntryEvents entryEvents)
 {
     /// <summary>The kind of the event that records the move.</summary>
     public const string NotSpamEvent = "notSpam";
@@ -85,6 +88,11 @@ internal sealed class EntrySpamFolder(
             },
             cancellationToken);
         await settlement.DeleteBytesAsync(gone);
+        if (taken?.State == EntryState.Submitted && await forms.GetByIdAsync(taken.FormId, CancellationToken.None) is { } form)
+        {
+            await SubmissionEntries.PublishSubmittedAsync(taken, form.Alias, entryEvents);
+        }
+
         return taken;
     }
 }

@@ -43,7 +43,13 @@ public sealed class FormBuilderOptions
     /// <summary>What the host allows of the settings that touch a visitor's privacy (ADR-0008).</summary>
     public FormBuilderPrivacyOptions Privacy { get; } = new();
 
-    /// <summary>The other hosts Jiron Form Builder may call: JSON option lists now, webhooks later (ADR-0076).</summary>
+    /// <summary>
+    /// The secrets settings may name by reference, as <c>$JironFormBuilder:Secrets:&lt;Name&gt;</c>: each name is 1 to 64 letters, digits
+    /// and '_', and its value lives only here, never in the database or a screen (ADR-0008).
+    /// </summary>
+    public IDictionary<string, string?> Secrets { get; } = new Dictionary<string, string?>(StringComparer.Ordinal);
+
+    /// <summary>The other hosts Jiron Form Builder may call: JSON option lists and webhooks (ADR-0076, ADR-0161).</summary>
     public FormBuilderWebhooksOptions Webhooks { get; } = new();
 
     /// <summary>

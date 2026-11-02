@@ -49,6 +49,7 @@ internal sealed class FormBuilderOptionsValidator(IHostFolders folders, IConfigu
         CheckLockedSections(options.LockedSections, failures);
         CheckHostGrants(options.Access.Grants, failures);
         CheckAllowedHosts(options.Webhooks.AllowedHosts, failures);
+        CheckSecrets(options.Secrets, failures);
         CheckPublicApi(options.PublicApi, failures);
         CheckCaptcha("RecaptchaV2", options.Captcha.RecaptchaV2, failures);
         CheckCaptcha("RecaptchaV3", options.Captcha.RecaptchaV3, failures);
@@ -124,6 +125,15 @@ internal sealed class FormBuilderOptionsValidator(IHostFolders folders, IConfigu
     }
 
     // The rate limits within their bounds (ADR-0012, ADR-0137).
+    // Only the names, as a failure is written to the log, and a value is nobody's to read there.
+    private static void CheckSecrets(IDictionary<string, string?> secrets, List<string> failures)
+    {
+        foreach (var name in secrets.Keys.Where(name => !Webhooks.FormBuilderSecrets.IsName(name)))
+        {
+            failures.Add($"{Root}:Secrets:{name} is not a secret's name: it has 1 to 64 letters, digits and '_'.");
+        }
+    }
+
     private static void CheckMailLimits(FormBuilderMailLimitsOptions mail, List<string> failures)
     {
         foreach (var (name, value) in new[] { (nameof(mail.PerRecipientPerDay), mail.PerRecipientPerDay), (nameof(mail.PerSitePerHour), mail.PerSitePerHour) })

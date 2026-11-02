@@ -10,6 +10,7 @@ using Jiron.Umbraco.FormBuilder.Core.MergeTags;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Core.Settings;
+using Jiron.Umbraco.FormBuilder.Core.Webhooks;
 
 namespace Jiron.Umbraco.FormBuilder.Core.Submissions;
 
@@ -79,7 +80,8 @@ internal sealed class SubmissionEntries(
     SiteTimeZones timeZones,
     MergeTagUmbraco umbraco,
     SiteBaseUrl baseUrls,
-    ActionSettlement settlement)
+    ActionSettlement settlement,
+    EntryEvents entryEvents)
 {
     /// <summary>The kind of the event that records a submission.</summary>
     public const string SubmittedEvent = "submitted";
@@ -180,6 +182,12 @@ internal sealed class SubmissionEntries(
             return null;
         }
 
+        // An entry that waits for a confirmation or sits in Spam is told of when it gets here (8.5, EntrySpamFolder).
+        if (stored.State == EntryState.Submitted)
+        {
+            await PublishSubmittedAsync(stored, scope.FormAlias, entryEvents);
+        }
+
         try
         {
             var receipt = await ReceiptAsync(stored, definition, submission.Page.Site, cancellationToken);
@@ -195,6 +203,26 @@ internal sealed class SubmissionEntries(
                 await settlement.SettleAsync(stored.Id, definition, CancellationToken.None);
             }
         }
+    }
+
+    /// <summary>Tells of an entry that is submitted now, for good (ROADMAP 8.4).</summary>
+    /// <param name="entry">The entry.</param>
+    /// <param name="formAlias">Its form's alias.</param>
+    /// <param name="entryEvents">Publishes it.</param>
+    public static Task PublishSubmittedAsync(StoredEntry entry, string formAlias, EntryEvents entryEvents)
+    {
+        ArgumentNullException.ThrowIfNull(entry);
+        ArgumentNullException.ThrowIfNull(entryEvents);
+        return entryEvents.PublishAsync(
+            on => new EntrySubmittedNotification
+            {
+                EntryKey = entry.Key,
+                EntryNumber = entry.Number,
+                State = StoredNames.Of(entry.State),
+                FormAlias = formAlias,
+                OccurredUtc = entry.SubmittedUtc,
+                FiresWebhooks = on,
+            });
     }
 
     /// <summary>

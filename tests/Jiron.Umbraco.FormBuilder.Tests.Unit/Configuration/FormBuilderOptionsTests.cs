@@ -41,6 +41,7 @@ public sealed class FormBuilderOptionsTests
             Assert.That(options.Designer.SettingLocks, Is.Empty);
             Assert.That(options.LockedSections, Is.Empty);
             Assert.That(options.Webhooks.AllowedHosts, Is.Empty, "no other host is called");
+            Assert.That(options.Secrets, Is.Empty, "no secret unless the host gives it");
             Assert.That(options.Webhooks.AllowHttp, Is.False);
             Assert.That(options.Rendering.IncludeAssetsAutomatically, Is.True, "a placed form loads its assets");
             Assert.That(HostOptions.Failures(options), Is.Empty);
@@ -414,6 +415,25 @@ public sealed class FormBuilderOptionsTests
     }
 
     [Test]
+    public void ASecretsName_IsRefusedByItsKey_NeverItsValue()
+    {
+        var failures = HostOptions.Failures(new Dictionary<string, string?>
+        {
+            [$"{Root}:Secrets:Crm_Signing2"] = "JFB_FAKE-fine",
+            [$"{Root}:Secrets:with-dash"] = "JFB_FAKE-value",
+            [$"{Root}:Secrets:{new string('a', 65)}"] = "JFB_FAKE-value",
+        });
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(failures, Has.Count.EqualTo(2));
+            Assert.That(failures, Has.One.Contains($"{Root}:Secrets:with-dash is not a secret's name"));
+            Assert.That(failures, Has.None.Contains("JFB_FAKE"));
+            Assert.That(failures, Has.None.Contains("Crm_Signing2"));
+        });
+    }
+
+    [Test]
     public void AHostGrant_ThatIsNotWhole_IsRefused_NamingItsKey()
     {
         var failures = HostOptions.Failures(new Dictionary<string, string?>
@@ -521,10 +541,10 @@ public sealed class FormBuilderOptionsTests
     public void ACaptchaProvidersVerifyAddress_IsOne(string provider, string address, bool saved) =>
         Assert.That(HostOptions.Failures(new Dictionary<string, string?> { [$"{Root}:Captcha:{provider}:VerifyAddress"] = address }), saved ? Is.Empty : Is.EqualTo(new[] { $"{Root}:Captcha:{provider}:VerifyAddress must be an http or https address." }));
 
-    [TestCase("JironFormBuilder:Limit:Definitions:MaxFields", "JironFormBuilder:Limit is not a setting of Jiron Form Builder; the settings in JironFormBuilder are PublicApi, Rendering, Files, Actions, Limits, Designer, Access, Captcha, Privacy, Webhooks and LockedSections.")]
+    [TestCase("JironFormBuilder:Limit:Definitions:MaxFields", "JironFormBuilder:Limit is not a setting of Jiron Form Builder; the settings in JironFormBuilder are PublicApi, Rendering, Files, Actions, Limits, Designer, Access, Captcha, Privacy, Secrets, Webhooks and LockedSections.")]
     [TestCase("JironFormBuilder:Limits:Definitions:MaxField", "JironFormBuilder:Limits:Definitions:MaxField is not a setting of Jiron Form Builder; the settings in JironFormBuilder:Limits:Definitions are MaxBytes, MaxPages, MaxGroups, MaxFields, MaxOptionsPerField, MaxActions, MaxOutcomes and MaxRules.")]
     [TestCase("JironFormBuilder:Limits:Definition:MaxFields", "JironFormBuilder:Limits:Definition is not a setting of Jiron Form Builder; the settings in JironFormBuilder:Limits are Definitions, Mail, MaxTrackedClients, ServerKeyFactor, Read, Challenge, Submit, Upload, Events and Verify.")]
-    [TestCase("JironFormBuilder:LockedSection:0", "JironFormBuilder:LockedSection is not a setting of Jiron Form Builder; the settings in JironFormBuilder are PublicApi, Rendering, Files, Actions, Limits, Designer, Access, Captcha, Privacy, Webhooks and LockedSections.")]
+    [TestCase("JironFormBuilder:LockedSection:0", "JironFormBuilder:LockedSection is not a setting of Jiron Form Builder; the settings in JironFormBuilder are PublicApi, Rendering, Files, Actions, Limits, Designer, Access, Captcha, Privacy, Secrets, Webhooks and LockedSections.")]
     [TestCase("JironFormBuilder:Designer:SettingLocks:0:Typ", "JironFormBuilder:Designer:SettingLocks:0:Typ is not a setting of Jiron Form Builder; the settings in JironFormBuilder:Designer:SettingLocks:0 are Kind, Type, Setting, Value and Hidden.")]
     [TestCase("JironFormBuilder:Files:Root:Folder", "JironFormBuilder:Files:Root is a single value, not a section.")]
     [TestCase("JironFormBuilder:LockedSections:0:Name", "JironFormBuilder:LockedSections:0 is a single value, not a section.")]

@@ -85,7 +85,9 @@ what to do and why. Items for blocked roadmap steps name the step as "step X.Y",
      machine. Until step 8.1 fills it in, the load-balancing job only starts SQL Server, creates the
      shared database and ends with a notice that names 8.1. From 4.3a on, the repository tests also run
      SQL written only for SQL Server (its paging, the lock hints and the recursive folder walks of
-     ADR-0036), which has never run against a server.
+     ADR-0036), which has never run against a server. The PHP sample that verifies a webhook's signature
+     (`docs/samples/webhook-signature/verify.php`, ROADMAP 8.4, ADR-0161) also runs for the first time here:
+     this machine has no PHP, so `ThePhpSample` is skipped on it, and on a CI runner without PHP it fails.
 
 ## Publishing
 

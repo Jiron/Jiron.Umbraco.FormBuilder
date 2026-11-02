@@ -2533,6 +2533,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - "not spam" on such a form sends an entry without `VerifiedUtc` to `Unverified` with the verification mail (§4.4).
   - **Manual approval:**
     - The approved and rejected triggers, with bulk and single changes.
+    - **Entry events** (registered in 8.4, ADR-0161): a change to approved or rejected publishes `EntryApprovedNotification` or `EntryRejectedNotification`, and a confirmed entry that becomes submitted publishes `EntrySubmittedNotification`, each through `EntryEvents` and tested; a user's change, "not spam" among them, publishes once its undo window is over, so an event never needs calling back.
     - **Letting go after a user's change** (ADR-0158): a state change that leaves no trigger settles the entry, once its undo window is over when a user made it (8.1 leaves a user's "not spam" with no run unsettled for this).
   - Done when:
     - tests pass, and E2E double opt-in works from the pickup email, including a simulated link-scanner GET that verifies nothing; no action runs before the confirmation, and after it the submitted and verified actions run together in the order shown. A test shows that verification mail obeys the visitor-address limits (§4.10);
@@ -2723,6 +2724,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
   - **The timeline:** events, action runs with retry, and emails.
   - **Notes:** add and edit your own.
   - **State actions:** moving an entry back into a state that holds places takes them again, and asks before overbooking an option that is full by then (§4.4, ADR-0090). Moving an entry back whose unique answer another entry holds by then asks first too (ADR-0091).
+  - **Entry events** (registered in 8.4, ADR-0161): a user deleting an entry, one at a time or in bulk, publishes `EntryDeletedNotification` through `EntryEvents`, tested; a form's removal and a stored-nothing form letting go of its entry publish none.
   - **Edit mode:** validation per type, audited; a changed choice moves its place, and asks before overbooking an option that is full (ADR-0090); a changed answer that must be unique and that another entry holds asks first too (ADR-0091).
   - **Sensitive values:** masked, with an audited "reveal".
   - **Forward** (added in 1.1): send the entry to a backoffice user or to one of the team addresses of the email settings (§4.8), through the outbox. Sensitive values go along only when the user may see them and chooses to. Audited, and shown on the timeline.

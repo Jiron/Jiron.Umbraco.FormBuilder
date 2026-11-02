@@ -91,7 +91,7 @@ public sealed class FormServiceLimitTests : RepositoryTestBase
     [Test]
     public async Task CopiedActions_ComeFromASourceAboveALoweredLimit_ButNotIntoATargetAboveIt()
     {
-        var source = await TwoPagesAsync(new FormAction { Key = Guid.NewGuid(), Type = "webhook", Name = "CRM", Enabled = false });
+        var source = await TwoPagesAsync(new FormAction { Key = Guid.NewGuid(), Type = "testing.webhook", Name = "CRM", Enabled = false });
         var within = await Service.CreateAsync(new NewFormRequest("Within", UserKey: Editor));
         var above = await TwoPagesAsync();
 

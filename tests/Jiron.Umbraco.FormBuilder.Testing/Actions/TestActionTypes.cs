@@ -38,7 +38,7 @@ public sealed class StandInEmailActionType() : StandInActionType(Alias)
 }
 
 /// <summary>An action type under the alias <c>webhook</c>, until 8.4 brings the real one; see <see cref="StandInEmailActionType"/>.</summary>
-public sealed class StandInWebhookActionType() : StandInActionType("webhook");
+public sealed class StandInWebhookActionType() : StandInActionType("testing.webhook");
 
 /// <summary>
 /// An action type that writes each delivery as one line to the file <see cref="FormBuilderTestingOptions.DeliveriesFile"/> names,

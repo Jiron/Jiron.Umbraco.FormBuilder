@@ -121,18 +121,67 @@ internal sealed class OutboundHttp(IFormBuilderHttpTransport transport, IOptions
     /// <param name="accept">The media type asked for, such as <c>application/json</c>.</param>
     /// <param name="limits">The time limit and the cap.</param>
     /// <param name="cancellationToken">Cancelled when the caller stops waiting.</param>
-    public async Task<byte[]> GetAsync(Uri address, string accept, OutboundLimits limits, CancellationToken cancellationToken)
+    public Task<byte[]> GetAsync(Uri address, string accept, OutboundLimits limits, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(address);
-        using var timeout = new CancellationTokenSource(limits.Timeout, time);
+        return CallAsync(limits.Timeout, token => GetCoreAsync(address, accept, limits.MaxBytes, token), cancellationToken);
+    }
+
+    /// <summary>
+    /// The status of a <c>POST</c> to <paramref name="address"/>, or a <see cref="FormBuilderOutboundException"/>. It follows no redirect,
+    /// as that would carry the body to wherever the answer says, and it reads no answer's body.
+    /// </summary>
+    /// <param name="address">The address.</param>
+    /// <param name="body">The body.</param>
+    /// <param name="contentType">Its media type.</param>
+    /// <param name="headers">More headers, whose names the caller checked.</param>
+    /// <param name="timeout">The time limit.</param>
+    /// <param name="cancellationToken">Cancelled when the caller stops waiting.</param>
+    public Task<int> PostAsync(Uri address, byte[] body, string contentType, IEnumerable<KeyValuePair<string, string>> headers, TimeSpan timeout, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(address);
+        ArgumentNullException.ThrowIfNull(body);
+        ArgumentNullException.ThrowIfNull(headers);
+        return CallAsync(
+            timeout,
+            async token =>
+            {
+                if (Refusal(address) is { } refusal)
+                {
+                    throw new FormBuilderOutboundException(refusal);
+                }
+
+                using var request = new HttpRequestMessage(HttpMethod.Post, address) { Content = new ByteArrayContent(body) };
+                request.Content.Headers.ContentType = MediaTypeHeaderValue.Parse(contentType);
+                request.Headers.UserAgent.Add(new ProductInfoHeaderValue("JironFormBuilder", FormBuilderVersion.Package));
+                foreach (var (name, value) in headers)
+                {
+                    request.Headers.TryAddWithoutValidation(name, value);
+                }
+
+                using var response = await transport.SendAsync(request, token);
+                return (int)response.StatusCode;
+            },
+            cancellationToken);
+    }
+
+    // A call within its time, with every way it can fail as one exception.
+    private async Task<T> CallAsync<T>(TimeSpan limit, Func<CancellationToken, Task<T>> call, CancellationToken cancellationToken)
+    {
+        using var timeout = new CancellationTokenSource(limit, time);
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeout.Token);
         try
         {
-            return await GetCoreAsync(address, accept, limits.MaxBytes, linked.Token);
+            return await call(linked.Token);
         }
         catch (OperationCanceledException exception) when (timeout.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
         {
             throw new FormBuilderOutboundException(OutboundFailure.TimedOut, innerException: exception);
+        }
+        catch (OperationCanceledException exception) when (!cancellationToken.IsCancellationRequested)
+        {
+            // The transport's own limit on connecting: nothing was sent.
+            throw new FormBuilderOutboundException(OutboundFailure.NoConnection, innerException: exception);
         }
         catch (HttpRequestException exception) when (exception.InnerException is FormBuilderOutboundException refused)
         {

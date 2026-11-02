@@ -241,7 +241,13 @@ internal sealed partial class FormBuilderMergeTagService(MergeTagRegistry regist
         {
             var rest = path.Length > name.Length ? path[(name.Length + 1)..] : string.Empty;
             var value = await source.ResolveAsync(new MergeTagSourceRequest(rest, scope, place, context), cancellationToken);
-            return scope.BreaksVisitorLinks && VisitorLinks.CanHoldVisitorText(name, rest) ? VisitorLinks.Broken(value) : value;
+            if (!VisitorLinks.CanHoldVisitorText(name, rest))
+            {
+                return value;
+            }
+
+            var unlinked = scope.BreaksVisitorLinks ? VisitorLinks.Broken(value) : value;
+            return scope.GuardsVisitorText is { } guard ? VisitorLinks.Guarded(unlinked, guard) : unlinked;
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {

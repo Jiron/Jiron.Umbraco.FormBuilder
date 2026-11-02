@@ -141,6 +141,15 @@ public sealed class PublicFormSiteTests : PublicApiTestBase
         };
         var currentEmail = await Settings.GetAsync<EmailSettings>();
         await Settings.SaveAsync(email, currentEmail.Version, Editor);
+        var integrations = new IntegrationSettings
+        {
+            SigningSecret = "$JironFormBuilder:Secrets:JfbAllowlistSigning",
+            SlackWebhook = "$JironFormBuilder:Secrets:JfbAllowlistSlack",
+            TeamsWebhook = "$JironFormBuilder:Secrets:JfbAllowlistTeams",
+            UmbracoWebhookEvents = false,
+        };
+        var currentIntegrations = await Settings.GetAsync<IntegrationSettings>();
+        await Settings.SaveAsync(integrations, currentIntegrations.Version, Editor);
         using var after = await GetAsync($"{Root}/forms/{key}");
         var set = await JsonAsync(after);
         var allowed = set.DeepClone();
@@ -157,17 +166,17 @@ public sealed class PublicFormSiteTests : PublicApiTestBase
         }
 
         var sections = typeof(GeneralSettings).Assembly.GetTypes().Where(type => typeof(ISettingsSection).IsAssignableFrom(type) && !type.IsInterface).ToList();
-        var unchanged = Leaves(filled, new GeneralSettings(), nameof(GeneralSettings)).Concat(Leaves(protection, new ProtectionSettings(), nameof(ProtectionSettings))).Concat(Leaves(email, new EmailSettings(), nameof(EmailSettings))).Where(leaf => leaf.Filled == leaf.Default).Select(leaf => leaf.Path).ToList();
+        var unchanged = Leaves(filled, new GeneralSettings(), nameof(GeneralSettings)).Concat(Leaves(protection, new ProtectionSettings(), nameof(ProtectionSettings))).Concat(Leaves(email, new EmailSettings(), nameof(EmailSettings))).Concat(Leaves(integrations, new IntegrationSettings(), nameof(IntegrationSettings))).Where(leaf => leaf.Filled == leaf.Default).Select(leaf => leaf.Path).ToList();
         Assert.Multiple(() =>
         {
-            Assert.That(sections, Is.EquivalentTo(new[] { typeof(GeneralSettings), typeof(ProtectionSettings), typeof(EmailSettings) }), "a new section is filled here too");
+            Assert.That(sections, Is.EquivalentTo(new[] { typeof(GeneralSettings), typeof(ProtectionSettings), typeof(EmailSettings), typeof(IntegrationSettings) }), "a new section is filled here too");
             Assert.That(unchanged, Is.Empty, "a new field is filled here too");
             Assert.That(set["timeZone"]!.GetValue<string>(), Is.EqualTo("Pacific/Chatham"), "visitors get the time zone");
             Assert.That(set["form"]!["settings"]!["requiredMarker"]!.GetValue<string>(), Is.EqualTo("none"), "the style of a form that inherits it");
             Assert.That(set["form"]!["settings"]!["submitLabel"]!.GetValue<string>(), Is.EqualTo(defaults["submitLabel"]?.GetValue<string>() ?? "Send for the allowlist"), "and a label the form has not");
             Assert.That(set["form"]!["settings"]!["theme"]!.GetValue<string>(), Is.EqualTo(defaults["theme"]?.GetValue<string>() ?? "bootstrap5"), "and the site's theme for a form without one (ADR-0105)");
             Assert.That(JsonNode.DeepEquals(allowed, unset), Is.True, $"nothing else of the settings shows:\n{unset.ToJsonString()}\n{set.ToJsonString()}");
-            Assert.That(set.ToJsonString(), Does.Not.Contain("JFB_TEST").And.Not.Contain("jfb-allowlist"));
+            Assert.That(set.ToJsonString(), Does.Not.Contain("JFB_TEST").And.Not.Contain("jfb-allowlist").And.Not.Contain("JfbAllowlist"));
         });
     }
 

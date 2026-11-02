@@ -3,6 +3,7 @@ using Jiron.Umbraco.FormBuilder.Core.Configuration;
 using Jiron.Umbraco.FormBuilder.Core.Email;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.Retention;
+using Jiron.Umbraco.FormBuilder.Core.Webhooks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
@@ -40,6 +41,7 @@ internal static class FormBuilderActionServices
         builder.Services.TryAddSingleton<OutboxPass>();
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IOutboxQueue, ActionRunQueue>());
         builder.AddFormBuilderEmail();
+        builder.AddFormBuilderWebhooks();
         builder.Services.AddHostedService<OutboxWorker>();
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IDistributedBackgroundJob, FormBuilderOutboxJob>());
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IFormBuilderRetentionPart, UsedChallengeCleanup>());

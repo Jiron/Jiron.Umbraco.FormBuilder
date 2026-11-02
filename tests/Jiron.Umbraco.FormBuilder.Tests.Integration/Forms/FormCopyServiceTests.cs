@@ -68,7 +68,7 @@ public sealed class FormCopyServiceTests : RepositoryTestBase
         Settings = SettingsObject.Parse($$"""{"replyTo":"{{Key(1)}}","to":["sales@example.com"]}"""),
     };
 
-    private static readonly FormAction Hook = new() { Key = Key(8), Type = "webhook", Name = "CRM", Enabled = false };
+    private static readonly FormAction Hook = new() { Key = Key(8), Type = "testing.webhook", Name = "CRM", Enabled = false };
 
     private IFormBuilderFormService Service => GetRequiredService<IFormBuilderFormService>();
 

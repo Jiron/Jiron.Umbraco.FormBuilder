@@ -1,4 +1,4 @@
-import { STATIC_ORIGIN, STUB_PORT } from './paths.ts';
+import { E2E_WEBHOOK_SECRET, STATIC_ORIGIN, STUB_PORT } from './paths.ts';
 
 /** What one address may ask about one form in a minute on the test host. */
 export const E2E_FORM_LIMIT = 200;
@@ -30,6 +30,10 @@ export function hostEnvironment(secrets: E2ESecrets, options: { deliveryApi: boo
     JironFormBuilderTesting__Clock: 'true',
     JironFormBuilderTesting__StubPort: String(STUB_PORT),
     JironFormBuilderTesting__StartupMarker: 'true',
+    // The webhook action calls the stub (ROADMAP 8.4).
+    JironFormBuilder__Webhooks__AllowedHosts__0: `127.0.0.1:${STUB_PORT}`,
+    JironFormBuilder__Webhooks__AllowHttp: 'true',
+    JironFormBuilder__Secrets__E2EWebhook: E2E_WEBHOOK_SECRET,
     // The static page's origin may call the public API (ROADMAP 6.6f), as a headless site's would.
     JironFormBuilder__PublicApi__AllowedOrigins__0: STATIC_ORIGIN,
   };

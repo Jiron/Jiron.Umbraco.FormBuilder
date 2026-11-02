@@ -51,7 +51,7 @@ public sealed class ActionApiTests : ManagementApiTestBase
     public async Task TheBuiltInActionTypes_AreServedAsTheReviewedSnapshotHolds()
     {
         var answer = await CallAsync("noAccess", HttpMethod.Get, "action-type");
-        var builtIn = new JsonArray([.. answer.Body!["types"]!.AsArray().Where(type => type!["alias"]!.GetValue<string>() is EmailActionType.Alias).Select(type => type!.DeepClone())]);
+        var builtIn = new JsonArray([.. answer.Body!["types"]!.AsArray().Where(type => type!["alias"]!.GetValue<string>() is EmailActionType.Alias or Core.Webhooks.WebhookActionType.Alias).Select(type => type!.DeepClone())]);
         var served = builtIn.ToJsonString(new JsonSerializerOptions { WriteIndented = true }).ReplaceLineEndings("\n") + "\n";
         var path = RepositoryRoot.Path(typeof(ActionApiTests).Assembly, "docs", "api", "action-types.json");
         if (Environment.GetEnvironmentVariable("JFB_UPDATE_SNAPSHOTS") == "1")

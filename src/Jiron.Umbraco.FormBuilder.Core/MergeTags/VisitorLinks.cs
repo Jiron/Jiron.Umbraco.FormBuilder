@@ -21,12 +21,15 @@ internal static class VisitorLinks
         !SiteSources.Contains(source) && (source != "entry" || path is "answers" or "table");
 
     /// <summary>The value with its links broken, in its text and in its markup; numbers and dates behind it stay.</summary>
-    public static MergeTagValue? Broken(MergeTagValue? value) => value is null
+    public static MergeTagValue? Broken(MergeTagValue? value) => Guarded(value, Broken);
+
+    /// <summary>The value with this done to its text and its markup; numbers and dates behind it stay.</summary>
+    public static MergeTagValue? Guarded(MergeTagValue? value, Func<string, string> guard) => value is null
         ? null
         : value with
         {
-            Items = [.. value.Items.Select(item => item with { Text = Broken(item.Text) })],
-            Html = value.Html is { } html ? Broken(html) : null,
+            Items = [.. value.Items.Select(item => item with { Text = guard(item.Text) })],
+            Html = value.Html is { } html ? guard(html) : null,
         };
 
     /// <summary>The text with a zero-width space where a client would see the start of a link.</summary>

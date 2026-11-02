@@ -12,4 +12,8 @@
     <ProjectReference Include="..\Jiron.Umbraco.FormBuilder.Testing\Jiron.Umbraco.FormBuilder.Testing.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Include="../../docs/samples/webhook-signature/Verify.cs" Link="Webhooks/Samples/Verify.cs" />
+  </ItemGroup>
+
 </Project>

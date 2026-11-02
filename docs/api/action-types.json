@@ -448,5 +448,319 @@
         "settings": "{\u0022subject\u0022:{\u0022\u0022:\u0022We have your answers\u0022,\u0022de\u0022:\u0022Wir haben Ihre Angaben erhalten\u0022},\u0022body\u0022:{\u0022\u0022:\u0022\u003Cp\u003EThank you. We have your answers.\u003C/p\u003E{{ entry.table }}\u0022,\u0022de\u0022:\u0022\u003Cp\u003EVielen Dank. Wir haben Ihre Angaben erhalten.\u003C/p\u003E{{ entry.table }}\u0022}}"
       }
     ]
+  },
+  {
+    "alias": "webhook",
+    "name": "#jfbActionTypes_webhook",
+    "icon": "icon-link",
+    "test": "afterConfirmation",
+    "settings": [
+      {
+        "name": "target",
+        "kind": "choice",
+        "itemKind": null,
+        "choices": [
+          {
+            "value": "url",
+            "label": "Url"
+          },
+          {
+            "value": "slack",
+            "label": "Slack"
+          },
+          {
+            "value": "teams",
+            "label": "Teams"
+          }
+        ],
+        "settings": [],
+        "default": "url",
+        "label": "#jfbActionSettings_webhookTarget",
+        "description": null,
+        "editor": "choice",
+        "group": "essentials",
+        "supportsMergeTags": false,
+        "isPublic": false,
+        "rules": {
+          "required": false,
+          "minimum": null,
+          "minimumIsExclusive": false,
+          "maximum": null,
+          "maximumIsExclusive": false,
+          "minimumLength": null,
+          "maximumLength": null,
+          "minimumCount": null,
+          "maximumCount": null,
+          "allowedValues": []
+        },
+        "lock": null
+      },
+      {
+        "name": "url",
+        "kind": "text",
+        "itemKind": null,
+        "choices": [],
+        "settings": [],
+        "default": null,
+        "label": "#jfbActionSettings_webhookUrl",
+        "description": null,
+        "editor": "text",
+        "group": "essentials",
+        "supportsMergeTags": false,
+        "isPublic": false,
+        "rules": {
+          "required": false,
+          "minimum": null,
+          "minimumIsExclusive": false,
+          "maximum": null,
+          "maximumIsExclusive": false,
+          "minimumLength": null,
+          "maximumLength": 2000,
+          "minimumCount": null,
+          "maximumCount": null,
+          "allowedValues": []
+        },
+        "lock": null
+      },
+      {
+        "name": "format",
+        "kind": "choice",
+        "itemKind": null,
+        "choices": [
+          {
+            "value": "json",
+            "label": "Json"
+          },
+          {
+            "value": "form",
+            "label": "Form"
+          },
+          {
+            "value": "xml",
+            "label": "Xml"
+          }
+        ],
+        "settings": [],
+        "default": "json",
+        "label": "#jfbActionSettings_webhookFormat",
+        "description": null,
+        "editor": "choice",
+        "group": "essentials",
+        "supportsMergeTags": false,
+        "isPublic": false,
+        "rules": {
+          "required": false,
+          "minimum": null,
+          "minimumIsExclusive": false,
+          "maximum": null,
+          "maximumIsExclusive": false,
+          "minimumLength": null,
+          "maximumLength": null,
+          "minimumCount": null,
+          "maximumCount": null,
+          "allowedValues": []
+        },
+        "lock": null
+      },
+      {
+        "name": "fields",
+        "kind": "json",
+        "itemKind": null,
+        "choices": [],
+        "settings": [],
+        "default": null,
+        "label": "#jfbActionSettings_webhookFields",
+        "description": null,
+        "editor": "webhookFieldMap",
+        "group": "essentials",
+        "supportsMergeTags": false,
+        "isPublic": false,
+        "rules": {
+          "required": false,
+          "minimum": null,
+          "minimumIsExclusive": false,
+          "maximum": null,
+          "maximumIsExclusive": false,
+          "minimumLength": null,
+          "maximumLength": null,
+          "minimumCount": null,
+          "maximumCount": null,
+          "allowedValues": []
+        },
+        "lock": null
+      },
+      {
+        "name": "withoutAnswers",
+        "kind": "boolean",
+        "itemKind": null,
+        "choices": [],
+        "settings": [],
+        "default": false,
+        "label": "#jfbActionSettings_webhookWithoutAnswers",
+        "description": null,
+        "editor": "boolean",
+        "group": "essentials",
+        "supportsMergeTags": false,
+        "isPublic": false,
+        "rules": {
+          "required": false,
+          "minimum": null,
+          "minimumIsExclusive": false,
+          "maximum": null,
+          "maximumIsExclusive": false,
+          "minimumLength": null,
+          "maximumLength": null,
+          "minimumCount": null,
+          "maximumCount": null,
+          "allowedValues": []
+        },
+        "lock": null
+      },
+      {
+        "name": "metadata",
+        "kind": "boolean",
+        "itemKind": null,
+        "choices": [],
+        "settings": [],
+        "default": true,
+        "label": "#jfbActionSettings_webhookMetadata",
+        "description": null,
+        "editor": "boolean",
+        "group": "essentials",
+        "supportsMergeTags": false,
+        "isPublic": false,
+        "rules": {
+          "required": false,
+          "minimum": null,
+          "minimumIsExclusive": false,
+          "maximum": null,
+          "maximumIsExclusive": false,
+          "minimumLength": null,
+          "maximumLength": null,
+          "minimumCount": null,
+          "maximumCount": null,
+          "allowedValues": []
+        },
+        "lock": null
+      },
+      {
+        "name": "template",
+        "kind": "text",
+        "itemKind": null,
+        "choices": [],
+        "settings": [],
+        "default": null,
+        "label": "#jfbActionSettings_webhookTemplate",
+        "description": null,
+        "editor": "text",
+        "group": "advanced",
+        "supportsMergeTags": true,
+        "isPublic": false,
+        "rules": {
+          "required": false,
+          "minimum": null,
+          "minimumIsExclusive": false,
+          "maximum": null,
+          "maximumIsExclusive": false,
+          "minimumLength": null,
+          "maximumLength": 50000,
+          "minimumCount": null,
+          "maximumCount": null,
+          "allowedValues": []
+        },
+        "lock": null
+      },
+      {
+        "name": "secret",
+        "kind": "text",
+        "itemKind": null,
+        "choices": [],
+        "settings": [],
+        "default": null,
+        "label": "#jfbActionSettings_webhookSecret",
+        "description": null,
+        "editor": "text",
+        "group": "advanced",
+        "supportsMergeTags": false,
+        "isPublic": false,
+        "rules": {
+          "required": false,
+          "minimum": null,
+          "minimumIsExclusive": false,
+          "maximum": null,
+          "maximumIsExclusive": false,
+          "minimumLength": null,
+          "maximumLength": 2000,
+          "minimumCount": null,
+          "maximumCount": null,
+          "allowedValues": []
+        },
+        "lock": null
+      },
+      {
+        "name": "headers",
+        "kind": "json",
+        "itemKind": null,
+        "choices": [],
+        "settings": [],
+        "default": null,
+        "label": "#jfbActionSettings_webhookHeaders",
+        "description": null,
+        "editor": "headerMap",
+        "group": "advanced",
+        "supportsMergeTags": false,
+        "isPublic": false,
+        "rules": {
+          "required": false,
+          "minimum": null,
+          "minimumIsExclusive": false,
+          "maximum": null,
+          "maximumIsExclusive": false,
+          "minimumLength": null,
+          "maximumLength": null,
+          "minimumCount": null,
+          "maximumCount": null,
+          "allowedValues": []
+        },
+        "lock": null
+      },
+      {
+        "name": "includeSensitive",
+        "kind": "list",
+        "itemKind": "key",
+        "choices": [],
+        "settings": [],
+        "default": null,
+        "label": "#jfbActionSettings_webhookIncludeSensitive",
+        "description": null,
+        "editor": "fieldPicker",
+        "group": "advanced",
+        "supportsMergeTags": false,
+        "isPublic": false,
+        "rules": {
+          "required": false,
+          "minimum": null,
+          "minimumIsExclusive": false,
+          "maximum": null,
+          "maximumIsExclusive": false,
+          "minimumLength": null,
+          "maximumLength": null,
+          "minimumCount": null,
+          "maximumCount": 1000,
+          "allowedValues": []
+        },
+        "lock": null
+      }
+    ],
+    "presets": [
+      {
+        "name": "#jfbActionPresets_webhookSlack",
+        "settings": "{\u0022target\u0022:\u0022slack\u0022,\u0022format\u0022:\u0022json\u0022,\u0022template\u0022:\u0022{\\\u0022text\\\u0022:\\\u0022*New entry in {{ form.name }}*\\\\n{{ entry.answers }}\\\u0022}\u0022}"
+      },
+      {
+        "name": "#jfbActionPresets_webhookTeams",
+        "settings": "{\u0022target\u0022:\u0022teams\u0022,\u0022format\u0022:\u0022json\u0022,\u0022template\u0022:\u0022{\\\u0022type\\\u0022:\\\u0022message\\\u0022,\\\u0022attachments\\\u0022:[{\\\u0022contentType\\\u0022:\\\u0022application/vnd.microsoft.card.adaptive\\\u0022,\\\u0022content\\\u0022:{\\\u0022type\\\u0022:\\\u0022AdaptiveCard\\\u0022,\\\u0022version\\\u0022:\\\u00221.4\\\u0022,\\\u0022body\\\u0022:[{\\\u0022type\\\u0022:\\\u0022TextBlock\\\u0022,\\\u0022weight\\\u0022:\\\u0022Bolder\\\u0022,\\\u0022text\\\u0022:\\\u0022New entry in {{ form.name }}\\\u0022},{\\\u0022type\\\u0022:\\\u0022TextBlock\\\u0022,\\\u0022wrap\\\u0022:true,\\\u0022text\\\u0022:\\\u0022{{ entry.answers }}\\\u0022}]}}]}\u0022}"
+      }
+    ]
   }
 ]
