@@ -559,6 +559,24 @@ describe("the server's errors after a post without JavaScript", () => {
     expect(shownOf(form).inline).toEqual(['jfb-1-name-error: Enter an answer']);
   });
 
+  it('follow their field when a row moves it, and go with a row removed', async () => {
+    const { form } = contact(model, served, summary);
+    control('jfb-1-name').value = '';
+    control('jfb-1-email').id = 'jfb-1-moved';
+    (form.querySelector('#jfb-1-email-error') as HTMLElement).id = 'jfb-1-moved-error';
+    press(form, 'send');
+    await settle();
+    expect(shownOf(form).summary).toEqual([
+      '#jfb-1-name Name: Enter an answer',
+      '#jfb-1-moved This address has sent the form already',
+    ]);
+
+    form.querySelector('[data-jfb-field="k-email"]')?.remove();
+    press(form, 'send');
+    await settle();
+    expect(shownOf(form).summary).toEqual(['#jfb-1-name Answer at least one question before you send the form']);
+  });
+
   it("let a send go on when the page's own checks pass, as the server checks it again (6.8b)", async () => {
     const { form, sent, invalid } = contact(model, served, summary);
     type('jfb-1-name', 'Ada');

@@ -32,6 +32,12 @@ internal sealed record RenderingWords
             Page = "Page {0}",
             ConfirmEmail = "Repeat your email address",
             Counter = "Up to {0} characters",
+            CounterLeft = "{0} characters left",
+            CounterLeftOne = "{0} character left",
+            CounterOver = "{0} characters too many",
+            CounterOverOne = "{0} character too many",
+            RankingMoved = "{0} moved to place {1}.",
+            RowRemoved = "{0} removed.",
             Reference = "Your reference is {0}",
             OpensHeading = "This form opens on {0}",
             OpensText = "Come back then to fill it in.",
@@ -136,6 +142,12 @@ internal sealed record RenderingWords
             Page = "Seite {0}",
             ConfirmEmail = "E-Mail-Adresse wiederholen",
             Counter = "Bis zu {0} Zeichen",
+            CounterLeft = "Noch {0} Zeichen",
+            CounterLeftOne = "Noch {0} Zeichen",
+            CounterOver = "{0} Zeichen zu viel",
+            CounterOverOne = "{0} Zeichen zu viel",
+            RankingMoved = "{0} auf Platz {1} verschoben.",
+            RowRemoved = "{0} entfernt.",
             Reference = "Ihre Referenz lautet {0}",
             OpensHeading = "Dieses Formular " + OUmlaut + "ffnet am {0}",
             OpensText = "Kommen Sie dann wieder, um es auszuf" + UUmlaut + "llen.",
@@ -332,6 +344,24 @@ internal sealed record RenderingWords
 
     /// <summary>The words of a ranking's button that moves an option up; <c>{0}</c> is the option's label.</summary>
     public required string MoveUp { get; init; }
+
+    /// <summary>What the runtime says of a ranking's option moved, {0} its label and {1} its place.</summary>
+    public required string RankingMoved { get; init; }
+
+    /// <summary>What the runtime says of a row removed, {0} its legend.</summary>
+    public required string RowRemoved { get; init; }
+
+    /// <summary>A counter with characters left, {0} how many.</summary>
+    public required string CounterLeft { get; init; }
+
+    /// <summary>A counter with one character left, {0} the number.</summary>
+    public required string CounterLeftOne { get; init; }
+
+    /// <summary>A counter past its limit, {0} by how many.</summary>
+    public required string CounterOver { get; init; }
+
+    /// <summary>A counter one past its limit, {0} the number.</summary>
+    public required string CounterOverOne { get; init; }
 
     /// <summary>The words of a ranking's button that moves an option down; <c>{0}</c> is the option's label.</summary>
     public required string MoveDown { get; init; }

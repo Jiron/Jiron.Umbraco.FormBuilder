@@ -16,7 +16,7 @@ import type { PostAnswer, ReadPost } from '@jfb/logic';
 import type { PageErrors, ServerProblem } from './errors';
 import { swapForm } from './changed';
 import { parseSanitised } from './html';
-import type { PageUploads, UploadedFile } from './uploads';
+import { optionsByPost, type PageUploads, type UploadedFile } from './uploads';
 import type { FormModel } from './model';
 import { readPage } from './page';
 import { contextOf } from './rules';
@@ -193,6 +193,7 @@ export function senderOf(form: HTMLFormElement, model: FormModel, options: Sende
   const sends = templates?.dataset['jfbSending'] !== undefined && api !== undefined;
   const take =
     sends &&
+    !optionsByPost(model) &&
     (options.files !== undefined ||
       (form.enctype !== 'multipart/form-data' && !Object.values(model.fields).some((field) => field.kind === 'files')));
   const posts = form.hasAttribute('action');

@@ -64,6 +64,34 @@
           "title": { "": "What you think", "de": "Was Sie denken" },
           "fields": [
             {
+              "key": "d0000000-0000-4000-8000-000000000342",
+              "type": "dropdown",
+              "alias": "desk",
+              "label": { "": "Which room?", "de": "Welcher Raum?" },
+              "options": {
+                "parent": "d0000000-0000-4000-8000-000000000303",
+                "items": [
+                  { "value": "ground", "label": { "": "Ground floor", "de": "Erdgeschoss" }, "parentValues": [ "market" ] },
+                  { "value": "reading", "label": { "": "Reading room", "de": "Lesesaal" }, "parentValues": [ "market" ] },
+                  { "value": "garden", "label": { "": "Garden room", "de": "Gartenzimmer" }, "parentValues": [ "riverside" ] }
+                ]
+              }
+            },
+            {
+              "key": "d0000000-0000-4000-8000-000000000343",
+              "type": "radio",
+              "alias": "corner",
+              "label": { "": "Where did you sit?", "de": "Wo saßen Sie?" },
+              "options": {
+                "parent": "d0000000-0000-4000-8000-000000000303",
+                "items": [
+                  { "value": "door", "label": { "": "By the door", "de": "An der Tür" }, "parentValues": [ "market" ] },
+                  { "value": "window", "label": { "": "By the window", "de": "Am Fenster" }, "parentValues": [ "market" ] },
+                  { "value": "terrace", "label": { "": "On the terrace", "de": "Auf der Terrasse" }, "parentValues": [ "riverside" ] }
+                ]
+              }
+            },
+            {
               "key": "d0000000-0000-4000-8000-000000000304",
               "type": "rating",
               "alias": "lastVisit",
@@ -149,7 +177,7 @@
               "type": "textarea",
               "alias": "comments",
               "label": { "": "Anything else you would like to tell us?", "de": "Möchten Sie uns sonst noch etwas sagen?" },
-              "settings": { "rows": 4, "counter": true, "maxLength": 2000 },
+              "settings": { "rows": 4, "autoGrow": false, "counter": true, "maxLength": 2000 },
               "rules": [
                 {
                   "key": "d0000000-0000-4000-8000-000000003a09",

@@ -35,6 +35,7 @@
               "alias": "post",
               "label": { "": "Which post are you applying for?", "de": "Auf welche Stelle bewerben Sie sich?" },
               "required": true,
+              "settings": { "layout": "cards" },
               "options": {
                 "items": [
                   { "value": "assistant", "label": { "": "Library assistant (60%)", "de": "Bibliotheksassistenz (60 %)" } },

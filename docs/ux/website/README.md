@@ -54,7 +54,7 @@ The markup follows the contract of ADR-0015. The mocks add these classes and att
 should adopt:
 
 - **Structure:** `jfb-title` and `jfb-intro` on the page title and intro; `jfb-fields` around a group's fields;
-  `jfb-group-card` for the card style; `jfb-mark` for "(optional)" or the asterisk; `jfb-counter` (with
+  `jfb-group-card` for the card style; `jfb-mark` for "(optional)" or the asterisk; `jfb-counter` (its limit and words in `data-jfb-*`, with
   `data-jfb-over` past the limit); `jfb-places` for places left.
 - **Progress:** `jfb-progress-steps` (an `ol` with `aria-current="step"` and `data-jfb-done`) or `jfb-progress-bar`
   (a `progress` element), each with `jfb-progress-text`.
@@ -133,7 +133,8 @@ should adopt:
   in words beside the bar. Without JavaScript the drop frame is solid and the drop text is hidden, since nothing can
   be dropped on it.
 - **The signature:** "Clear" turns into "Undo clear" until the next stroke, so a slip of the finger loses nothing.
-- **Other parts:** `jfb-other` holds the text an "Other" choice asks for, lined up with the choice labels;
+- **Other parts:** `jfb-other` holds the text an "Other" choice asks for, lined up with the choice labels, which shows with the
+  runtime only while its choice is chosen (ADR-0154);
   `jfb-captcha` holds the notice and "Load the check" button of a third-party captcha in the `explicit` consent
   mode (ROADMAP 4.10), and its error after `captcha_failed`; the server renders the place empty and the theme hides
   it until something fills it (added in 6.2e); `jfb-skeleton` is the headless element's placeholder

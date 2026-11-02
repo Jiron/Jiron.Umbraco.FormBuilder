@@ -163,13 +163,18 @@ export function pageErrorsOf(
     const merged = [...errors];
     const errored = new Set(errors.map(fieldAt));
     for (const [field, keep] of kept) {
+      // A row removed in place takes its errors with it, and those after it move up with their ids.
+      if (!field.isConnected) {
+        kept.delete(field);
+        continue;
+      }
       const paragraph = errorIn(field);
       if (errored.has(field) || paragraph === null || ruledOut(field) || offPage(field)) continue;
       const error: ShownError = {
         field: field.dataset['jfbField'] ?? '',
         row: null,
         code: SERVER,
-        target: keep.target,
+        target: paragraph.id.endsWith('-error') ? paragraph.id.slice(0, -'-error'.length) : keep.target,
         message: (paragraph.textContent ?? '').trim(),
         link: keep.link,
       };

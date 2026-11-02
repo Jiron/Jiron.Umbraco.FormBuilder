@@ -41,12 +41,19 @@ export type ChoiceModel = {
   isChecked: boolean;
 };
 
+export type ChoicesCascadeModel = {
+  sample: ChoiceModel;
+  none: string;
+  unavailable: string;
+};
+
 export type ChoicesControl = {
   kind: "choices";
   inputType: string;
   cssClass: string;
   choices: ChoiceModel[];
   other?: OtherChoiceModel;
+  cascade?: ChoicesCascadeModel;
   ends?: ScaleEndsModel;
   empty?: string;
 };
@@ -62,6 +69,10 @@ export type CounterModel = {
   text: string;
   id: string;
   limit: number;
+  left: string;
+  leftOne: string;
+  over: string;
+  overOne: string;
 };
 
 export type CustomControl = {
@@ -396,6 +407,9 @@ export type ProgressViewModel = {
 export type RankingControl = {
   kind: "ranking";
   items: RankingItemModel[];
+  name: string;
+  ranked: number;
+  moved: string;
   empty?: string;
 };
 
@@ -419,7 +433,12 @@ export type RankingMoveModel = {
 export type RepeaterControl = {
   kind: "repeater";
   rows: RepeaterRowModel[];
-  add?: RowButtonModel;
+  template: RepeaterRowModel;
+  least: number;
+  most: number;
+  legend: string;
+  removed: string;
+  add: RowButtonModel;
   rowCount: HiddenInputModel;
   fieldsCssClass: string;
 };
@@ -428,13 +447,14 @@ export type RepeaterRowModel = {
   index: number;
   id: string;
   legend: string;
-  remove?: RowButtonModel;
+  remove: RowButtonModel;
   fields: FieldViewModel[];
 };
 
 export type RowButtonModel = {
   value: string;
   text: string;
+  isHidden: boolean;
   context?: string;
 };
 
@@ -448,6 +468,9 @@ export type SelectControl = {
   multiple: boolean;
   size?: number;
   prompt?: string;
+  cascades: boolean;
+  none?: string;
+  unavailable?: string;
   options: SelectOptionModel[];
   hint?: HintModel;
   empty?: string;
@@ -457,6 +480,9 @@ export type SelectControlModel = {
   multiple: boolean;
   size?: number;
   prompt?: string;
+  cascades: boolean;
+  none?: string;
+  unavailable?: string;
   options: SelectOptionModel[];
   hint?: HintModel;
   empty?: string;

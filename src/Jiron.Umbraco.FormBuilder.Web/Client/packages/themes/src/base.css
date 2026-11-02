@@ -192,6 +192,12 @@
   scroll-margin-block: 1rem;
 }
 
+/* What the runtime hides for now (ADR-0154), whatever a theme's own display says. */
+.jfb-form .jfb-repeater [hidden],
+.jfb-form .jfb-other[hidden] {
+  display: none;
+}
+
 /* A signature (ADR-0153): the pad and the way between it and the typed name show once the runtime runs. */
 .jfb-form .jfb-signature:not([data-jfb-enhanced]) :is([data-jfb-drawn], .jfb-signature-tools),
 .jfb-form .jfb-signature-way[hidden],

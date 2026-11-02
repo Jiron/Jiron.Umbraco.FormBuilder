@@ -5,32 +5,15 @@
     The rows in the field's fieldset, each a fieldset with its legend and its fields; the container carries the field's
     id, so the error summary's link to the group's own error moves the focus to its rows. Add and Remove are submit
     buttons, so a page without JavaScript adds or removes a row by rendering the page again, opened at the row added or
-    at the group.
+    at the group; the runtime does it in place, from the row in the template (ADR-0154).
 *@
 @{
     var control = (RepeaterControlModel)Model.Control!;
-    void Remove(RowButtonModel remove)
-    {
-        if (remove.Context is { } context)
-        {
-            <button type="submit" class="@Model.Classes.ButtonLink" name="jfb-nav" value="@remove.Value" formaction="@remove.Action" disabled="@Model.IsDisabled">@remove.Text<span class="jfb-visually-hidden"> @context</span></button>
-        }
-        else
-        {
-            <button type="submit" class="@Model.Classes.ButtonLink" name="jfb-nav" value="@remove.Value" formaction="@remove.Action" disabled="@Model.IsDisabled">@remove.Text</button>
-        }
-    }
-}
-<div class="jfb-repeater" id="@Model.Id" tabindex="-1">
-    <input type="hidden" name="@control.RowCount.Name" value="@control.RowCount.Value" disabled="@Model.IsDisabled">
-    @foreach (var row in control.Rows)
+    async Task Row(RepeaterRowModel row)
     {
         <fieldset class="jfb-row" id="@row.Id" data-jfb-row="@row.Index">
             <legend>@row.Legend</legend>
-            @if (row.Remove is { } remove)
-            {
-                Remove(remove);
-            }
+            @{ Remove(row.Remove); }
             <div class="@control.FieldsCssClass">
                 @foreach (var field in row.Fields)
                 {
@@ -39,8 +22,26 @@
             </div>
         </fieldset>
     }
-    @if (control.Add is { } add)
+    void Remove(RowButtonModel remove)
     {
-        <button type="submit" class="@Model.Classes.Button" name="jfb-nav" value="@add.Value" formaction="@add.Action" disabled="@Model.IsDisabled"><span class="jfb-icon jfb-icon-add" aria-hidden="true"></span>@add.Text</button>
+        if (remove.Context is { } context)
+        {
+            <button type="submit" class="@Model.Classes.ButtonLink" name="jfb-nav" value="@remove.Value" formaction="@remove.Action" disabled="@Model.IsDisabled" hidden="@remove.IsHidden">@remove.Text<span class="jfb-visually-hidden"> @context</span></button>
+        }
+        else
+        {
+            <button type="submit" class="@Model.Classes.ButtonLink" name="jfb-nav" value="@remove.Value" formaction="@remove.Action" disabled="@Model.IsDisabled" hidden="@remove.IsHidden">@remove.Text</button>
+        }
     }
+}
+<div class="jfb-repeater" id="@Model.Id" tabindex="-1" data-jfb-least="@control.Least" data-jfb-most="@control.Most" data-jfb-legend="@control.Legend" data-jfb-removed="@control.Removed">
+    <input type="hidden" name="@control.RowCount.Name" value="@control.RowCount.Value" disabled="@Model.IsDisabled">
+    @foreach (var row in control.Rows)
+    {
+        await Row(row);
+    }
+    <template>
+        @{ await Row(control.Template); }
+    </template>
+    <button type="submit" class="@Model.Classes.Button" name="jfb-nav" value="@control.Add.Value" formaction="@control.Add.Action" disabled="@Model.IsDisabled" hidden="@control.Add.IsHidden"><span class="jfb-icon jfb-icon-add" aria-hidden="true"></span>@control.Add.Text</button>
 </div>

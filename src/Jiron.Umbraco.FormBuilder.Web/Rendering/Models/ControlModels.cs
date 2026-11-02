@@ -14,7 +14,11 @@ public sealed record AffixModel(string Text, string Id);
 /// <param name="Text">The line, such as "Up to 255 characters".</param>
 /// <param name="Id">Its id, which the input names in <c>aria-describedby</c>.</param>
 /// <param name="Limit">The most characters the text takes.</param>
-public sealed record CounterModel(string Text, string Id, int Limit);
+/// <param name="Left">The line with characters left, {0} how many.</param>
+/// <param name="LeftOne">The line with one left.</param>
+/// <param name="Over">The line past the limit, {0} by how many.</param>
+/// <param name="OverOne">The line one past it.</param>
+public sealed record CounterModel(string Text, string Id, int Limit, string Left, string LeftOne, string Over, string OverOne);
 
 /// <summary>The control of a one-line input: <c>text</c>, <c>email</c>, <c>phone</c> and <c>url</c>.</summary>
 public sealed class TextControlModel

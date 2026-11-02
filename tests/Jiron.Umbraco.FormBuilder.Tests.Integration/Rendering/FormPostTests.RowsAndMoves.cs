@@ -208,7 +208,7 @@ public sealed partial class FormPostTests
 
     // The rows' Add and Remove buttons the page offers.
     private static string[] RowButtons(IElement form) =>
-        [.. form.QuerySelectorAll("button[name='jfb-nav']").Select(button => button.GetAttribute("value")!).Where(value => value.StartsWith("add:", StringComparison.Ordinal) || value.StartsWith("remove:", StringComparison.Ordinal))];
+        [.. form.QuerySelectorAll("button[name='jfb-nav']:not([hidden])").Select(button => button.GetAttribute("value")!).Where(value => value.StartsWith("add:", StringComparison.Ordinal) || value.StartsWith("remove:", StringComparison.Ordinal))];
 
     // A ranking's options as shown: each one's position, if any, and its label.
     private static string[] Ranked(IElement form, string path) =>

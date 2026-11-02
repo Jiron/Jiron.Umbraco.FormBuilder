@@ -111,7 +111,14 @@ async function fillField(form: Locator, alias: string, value: FieldValue): Promi
       const match = await choiceMatches(control, wanted);
       if (match) matched++;
       if (type === 'radio') {
-        if (match) await control.check();
+        // A card's whole face is its label, over the input.
+        if (match && (await control.evaluate((element) => element.closest('.jfb-choices-cards') !== null)))
+          await control
+            .locator('xpath=ancestor::*[contains(@class, "jfb-choice")][1]')
+            .locator('label')
+            .first()
+            .click();
+        else if (match) await control.check();
       } else {
         await control.setChecked(match);
       }

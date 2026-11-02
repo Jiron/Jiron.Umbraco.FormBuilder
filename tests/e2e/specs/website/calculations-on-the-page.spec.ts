@@ -99,11 +99,13 @@ for (const language of LANGUAGES) {
     await expect(cost, 'four hours of the hall').toHaveText(words.cost('100'));
 
     const after = form.locator('[data-jfb-alias="keyPickup"]');
-    const top = (await after.boundingBox())?.y;
+    const gap = async (): Promise<number> =>
+      ((await after.boundingBox())?.y ?? 0) - ((await cost.boundingBox())?.y ?? 0);
+    const held = await gap();
     await form.locator('input[name="room"][value=""]').check();
     await form.locator('input[name="room.other"]').fill('A room for forty people');
     await expect(cost, 'a room the library must quote first').toHaveText('');
-    expect((await after.boundingBox())?.y, 'what follows the cost stays where it was').toBe(top);
+    expect(await gap(), 'what follows the cost stays where it was').toBe(held);
     await axe(page, `${language}: the room hire with its cost worked out`);
 
     await form.locator('input[name="room"][value="15"]').check();

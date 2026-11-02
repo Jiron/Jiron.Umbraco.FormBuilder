@@ -122,6 +122,15 @@ const changedPixels = (page: Page, one: Buffer, other: Buffer): Promise<number> 
     [one.toString('base64'), other.toString('base64')] as const,
   );
 
+/** The "Other" text shows once its choice is chosen, as a visitor gets to it. */
+async function chooseOther(page: Page): Promise<void> {
+  const form = formOn(page);
+  await logicCome(form);
+  const box = field(form, 'interests').locator('.jfb-other');
+  await box.locator('xpath=preceding-sibling::*[1]').locator('label').click();
+  await expect(box).toBeVisible();
+}
+
 /** Holds that a control shows the focus: a ring's worth of its region's pixels change with it, and nothing else does. */
 async function holdsFocusShown(page: Page, what: string, selector: string): Promise<void> {
   const control = formOn(page).locator(selector).first();
@@ -156,13 +165,11 @@ async function holdsFocusShown(page: Page, what: string, selector: string): Prom
 /** Holds the focus shown on what appears later: a row's Remove, a summary's link, Back. */
 async function holdsLaterFocusShown(page: Page): Promise<void> {
   const form = formOn(page);
-  const added = page.waitForEvent('load');
+  await logicCome(form);
   await field(form, 'guests').locator('button').first().click();
-  await added;
   await holdsFocusShown(page, "a row's Remove", '.jfb-row button');
-  const removed = page.waitForEvent('load');
   await form.locator('.jfb-row button').first().click();
-  await removed;
+  await expect(form.locator('.jfb-row')).toHaveCount(0);
 
   await form.locator('.jfb-navigation .jfb-button-primary').click();
   await expect(form.locator('.jfb-error-summary')).toBeVisible();
@@ -213,9 +220,8 @@ const movesOf = (page: Page): Promise<string[]> =>
 async function moveEverything(page: Page): Promise<void> {
   const form = formOn(page);
   await form.locator('[name="displayName"]').fill('Mira Okafor');
-  const added = page.waitForEvent('load');
+  await logicCome(form);
   await field(form, 'guests').locator('button').first().click();
-  await added;
   await expect(field(form, 'guests').locator('.jfb-row')).toHaveCount(1);
   await page.waitForTimeout(150);
   await form.locator('[name="newsletter"]').first().click({ force: true });
@@ -286,6 +292,7 @@ for (const theme of THEMES) {
       test.setTimeout(240_000);
       await page.setViewportSize({ width: 1280, height: 900 });
       await page.goto(urlOf(theme, scheme));
+      await chooseOther(page);
       for (const [what, selector] of KINDS) await holdsFocusShown(page, what, selector);
       await page.goto(urlOf(theme, scheme));
       await holdsLaterFocusShown(page);
@@ -304,6 +311,7 @@ for (const theme of THEMES) {
     await page.emulateMedia({ forcedColors: 'active' });
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto(urlOf(theme));
+    await chooseOther(page);
     for (const [what, selector] of KINDS) await holdsFocusShown(page, what, selector);
     await page.goto(urlOf(theme));
     await holdsLaterFocusShown(page);
@@ -389,21 +397,19 @@ for (const theme of THEMES) {
       const places = form.locator('.jfb-ranking > li');
       const first = await places.nth(0).locator('span').nth(1).textContent();
       await form.locator('[name="displayName"]').fill('Mira Okafor');
+      await logicCome(form);
 
-      const moved = page.waitForEvent('load');
       await field(form, 'priorities').locator('button').nth(1).focus();
       await page.keyboard.press('Enter');
-      await moved;
       await expect(places.nth(1).locator('span').nth(1), 'Enter on a move moves the option').toHaveText(first ?? '');
       await expect(form.locator('[name="displayName"]'), 'the answers stay').toHaveValue('Mira Okafor');
 
       const rows = field(form, 'guests').locator('.jfb-row');
       await expect(rows).toHaveCount(0);
-      const added = page.waitForEvent('load');
       await field(form, 'guests').locator('button').first().focus();
       await page.keyboard.press('Enter');
-      await added;
       await expect(rows, 'Enter on Add adds a row').toHaveCount(1);
+      await expect(rows.locator('input[type="text"]').first(), 'the focus on its first field').toBeFocused();
 
       const name = rows.locator('input[type="text"]').first();
       await name.focus();
@@ -412,11 +418,10 @@ for (const theme of THEMES) {
       await expect(rows.locator('input[type="radio"]').first(), "Tab goes on to the row's next field").toBeFocused();
       await holdsFocusShown(page, "a row's field", '.jfb-row input[type="text"]');
 
-      const removed = page.waitForEvent('load');
       await rows.locator('button').first().focus();
       await page.keyboard.press('Enter');
-      await removed;
       await expect(rows, 'Enter on Remove removes it').toHaveCount(0);
+      await expect(field(form, 'guests').locator('button').first(), 'the focus on Add').toBeFocused();
     });
 
     test(`${variant}: Enter in a text box asks for the next page, not a move, and the summary's links take the focus`, async ({

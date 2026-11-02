@@ -746,10 +746,60 @@ describe('its error', () => {
   });
 });
 
+describe('a signature in a row added or moved in place', () => {
+  const inRow = (row: number): string =>
+    `<fieldset data-jfb-row="${String(row)}">${FIELD()
+      .replaceAll('sign.typed', `rows[${String(row)}].sign.typed`)
+      .replaceAll('jfb-1-sign', `jfb-1-sign-${String(row)}`)}</fieldset>`;
+
+  it('takes on the pad of a row added', () => {
+    const { form, signatures } = wake(inRow(0));
+    const row = document.createElement('div');
+    row.innerHTML = inRow(1);
+    form.append(row);
+    signatures.add?.(row);
+
+    expect(row.querySelector('.jfb-signature')?.hasAttribute('data-jfb-enhanced')).toBe(true);
+    expect(row.querySelector('[data-jfb-typed] input')?.getAttribute('data-jfb-name')).toBe('rows[1].sign.typed');
+  });
+
+  it('names its answer as its row is named by now', async () => {
+    serve();
+    const { draw, signatures, form, typed } = wake(inRow(1));
+    typed.setAttribute('data-jfb-name', 'rows[0].sign.typed');
+    draw();
+    await signatures.settled();
+
+    expect(form.querySelector<HTMLInputElement>('input[type="hidden"]')?.name).toBe('rows[0].sign');
+    expect([...signatures.uploaded().keys()]).toEqual(['rows[0].sign']);
+  });
+
+  it('forgets a row that is gone, and sends nothing of it', async () => {
+    const sent = serve();
+    const { draw, signatures, form } = wake(inRow(0));
+    draw();
+    form.querySelector('fieldset')?.remove();
+    await signatures.settled();
+
+    expect(sent).toEqual([]);
+    expect(signatures.uploaded().size).toBe(0);
+  });
+});
+
 describe('uploads of each kind, as one', () => {
   const part = (settled: boolean, name: string): PageUploads => ({
     settled: () => Promise.resolve(settled),
     uploaded: () => new Map([[name, [{ token: name, name, size: 1 }]]]),
+  });
+
+  it('take on a row each', () => {
+    const one = vi.fn();
+    const other = vi.fn();
+    const row = document.createElement('div');
+    allOf([{ ...part(true, 'a'), add: one }, part(true, 'b'), { ...part(true, 'c'), add: other }]).add?.(row);
+
+    expect(one).toHaveBeenCalledWith(row);
+    expect(other).toHaveBeenCalledWith(row);
   });
 
   it('let a send go only when each may', async () => {
@@ -786,10 +836,30 @@ describe('which forms take a signature on the page', () => {
   });
 
   it.each([
-    ['a repeater, whose Add posts', '<div class="jfb-repeater"></div>'],
-    ['a ranking, whose moves post', '<ol class="jfb-ranking"></ol>'],
-  ])('not a form with %s, until 6.4o', (_name, markup) => {
-    expect(takesUploads(form(FIELD() + markup), MODEL)).toBe(false);
+    ['a repeater', '<div class="jfb-repeater"></div>'],
+    ['a ranking', '<ol class="jfb-ranking"></ol>'],
+  ])('a form with %s, which works in place', (_name, markup) => {
+    expect(takesUploads(form(FIELD() + markup), MODEL)).toBe(true);
+  });
+
+  it.each(['ranking', 'grid'])('not a form with a %s below a parent, whose options only a post writes anew', (type) => {
+    const fields = [
+      ...(MODEL.form.pages[0]?.groups[0]?.fields ?? []),
+      { key: 'k-other', type, alias: 'other', settings: {}, options: { parent: 'k-sign' } },
+    ];
+    const below = { ...MODEL, form: { ...MODEL.form, pages: [{ key: 'p1', groups: [{ key: 'g1', fields }] }] } };
+
+    expect(takesUploads(form(FIELD()), below)).toBe(false);
+  });
+
+  it('a form with a dropdown below a parent, which follows on the page', () => {
+    const fields = [
+      ...(MODEL.form.pages[0]?.groups[0]?.fields ?? []),
+      { key: 'k-other', type: 'dropdown', alias: 'other', settings: {}, options: { parent: 'k-sign' } },
+    ];
+    const below = { ...MODEL, form: { ...MODEL.form, pages: [{ key: 'p1', groups: [{ key: 'g1', fields }] }] } };
+
+    expect(takesUploads(form(FIELD()), below)).toBe(true);
   });
 
   it("not a form view that writes none of the send's parts, which cannot go from the page", () => {

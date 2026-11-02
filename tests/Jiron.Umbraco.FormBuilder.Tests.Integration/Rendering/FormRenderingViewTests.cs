@@ -69,7 +69,7 @@ public sealed class FormRenderingViewTests : RenderingTestBase
             Assert.That(first.QuerySelector("#jfb-1-firstName-help")!.TextContent, Is.EqualTo("As on your card"));
             Assert.That(first.QuerySelector(".jfb-affix")!.InnerHtml.Replace("\n", string.Empty, StringComparison.Ordinal).Replace("  ", string.Empty, StringComparison.Ordinal), Is.EqualTo(
                 """<span id="jfb-1-firstName-prefix">Dr</span><input class="jfb-control" type="text" id="jfb-1-firstName" name="firstName" value="Ada" placeholder="Your first name" autocomplete="given-name" required="required" data-jfb-requires="" aria-describedby="jfb-1-firstName-help jfb-1-firstName-prefix jfb-1-firstName-suffix jfb-1-firstName-count"><span id="jfb-1-firstName-suffix">(given)</span>"""));
-            Assert.That(first.QuerySelector("p.jfb-counter")!.OuterHtml, Is.EqualTo("""<p class="jfb-counter" id="jfb-1-firstName-count">Up to 40 characters</p>"""));
+            Assert.That(first.QuerySelector("p.jfb-counter")!.OuterHtml, Is.EqualTo("""<p class="jfb-counter" id="jfb-1-firstName-count" data-jfb-limit="40" data-jfb-left="{0} characters left" data-jfb-left-one="{0} character left" data-jfb-too-many="{0} characters too many" data-jfb-too-many-one="{0} character too many">Up to 40 characters</p>"""));
             Assert.That(Control(form, "nickname").HasAttribute("value"), Is.False, "a default with a merge tag is the browser's to fill");
             Assert.That(Control(form, "email").OuterHtml, Is.EqualTo("""<input class="jfb-control" type="email" id="jfb-1-email" name="email" autocomplete="email" spellcheck="false" required="required" data-jfb-requires="">"""));
             Assert.That(Field(form, "email").QuerySelector("label[for=jfb-1-email-confirm]")!.TextContent, Is.EqualTo("Email again *"));
@@ -80,6 +80,8 @@ public sealed class FormRenderingViewTests : RenderingTestBase
             Assert.That(Control(form, "website").OuterHtml, Is.EqualTo("""<input class="jfb-control" type="url" id="jfb-1-website" name="website" autocomplete="url" spellcheck="false" data-jfb-requires="">"""));
             Assert.That(Control(form, "about").OuterHtml, Is.EqualTo("""<textarea class="jfb-control" id="jfb-1-about" name="about" rows="3" data-jfb-requires="" aria-describedby="jfb-1-about-count">First line</textarea>"""));
             Assert.That(Text(Field(form, "about"), "p.jfb-counter"), Is.EqualTo("Up to 200 characters"));
+            Assert.That(Control(form, "about").HasAttribute("data-jfb-grow"), Is.False, "its rows stay with autoGrow off");
+            Assert.That(Control(form, "story").HasAttribute("data-jfb-grow"), Is.True, "autoGrow is on by default");
             Assert.That(Control(form, "guests").OuterHtml, Is.EqualTo("""<input class="jfb-control" type="number" id="jfb-1-guests" name="guests" inputmode="numeric" min="1" max="40" step="1" data-jfb-requires="" aria-describedby="jfb-1-guests-suffix">"""));
             Assert.That(Text(Field(form, "guests"), "#jfb-1-guests-suffix"), Is.EqualTo("people"));
             Assert.That(Control(form, "budget").OuterHtml, Is.EqualTo("""<input class="jfb-control" type="text" id="jfb-1-budget" name="budget" inputmode="decimal" data-jfb-requires="" aria-describedby="jfb-1-budget-prefix">"""), "a number with places is typed as text");
@@ -317,6 +319,7 @@ public sealed class FormRenderingViewTests : RenderingTestBase
                         Fields =
                         [
                             Typed(Key(0x06), "textarea", "about", "About you", """{"rows":3,"counter":true,"maxLength":200,"autoGrow":false}""") with { DefaultValue = FieldDefaultValue.Of("First line") },
+                            Typed(Key(0x7e), "textarea", "story", "Your story", """{"rows":2}"""),
                             Typed(Key(0x07), "number", "guests", "Guests", """{"min":"1","max":"40","step":"1","suffix":{"":"people"}}"""),
                             Typed(Key(0x08), "number", "budget", "Budget", """{"decimals":2,"min":"0","prefix":{"":"EUR"}}"""),
                             Typed(Key(0x09), "number", "temperature", "Temperature"),

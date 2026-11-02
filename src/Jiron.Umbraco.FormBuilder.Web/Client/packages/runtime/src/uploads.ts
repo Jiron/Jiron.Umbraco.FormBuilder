@@ -23,6 +23,8 @@ export interface PageUploads {
   settled(): Promise<boolean>;
   /** The files the server holds, by the name their field posts them under. */
   uploaded(): ReadonlyMap<string, readonly UploadedFile[]>;
+  /** Takes on the fields of a row added in place (ADR-0154). */
+  add?(root: Element): void;
 }
 
 export interface UploadOptions {
@@ -36,14 +38,19 @@ export interface UploadOptions {
   readonly restored?: ReadonlyMap<string, readonly UploadedFile[]>;
 }
 
+/** Whether a ranking or a grid takes its options from a parent, which only a post writes anew (ADR-0154). */
+export const optionsByPost = (model: FormModel): boolean =>
+  fieldsOf(model)
+    .flatMap((field) => [field, ...(field.fields ?? [])])
+    .some((field) => (field.type === 'ranking' || field.type === 'grid') && field.options?.parent != null);
+
 /**
  * Whether a form takes its files on the page: one it can send from there, whose every field that stores a file has what the
- * page needs in its view, and no button that posts on the way, as a page's Next, a row's Add and a ranking's moves do until 6.5d
- * and 6.4o: a post cannot claim a token, and would lose a drawing.
+ * page needs in its view, and no button that posts on the way, as a page's Next does until 6.5d: a post cannot claim a token, and
+ * would lose a drawing.
  */
 export function takesUploads(form: HTMLFormElement, model: FormModel): boolean {
-  if (form.querySelectorAll('[data-jfb-page]').length > 1 || form.querySelector('.jfb-repeater, .jfb-ranking') !== null)
-    return false;
+  if (form.querySelectorAll('[data-jfb-page]').length > 1 || optionsByPost(model)) return false;
   if (form.querySelector(':scope > template[data-jfb-templates]')?.hasAttribute('data-jfb-sending') !== true)
     return false;
   const files = fieldsOf(model)
@@ -65,5 +72,8 @@ export function allOf(parts: readonly PageUploads[]): PageUploads {
   return {
     settled: async () => (await Promise.all(parts.map((part) => part.settled()))).every(Boolean),
     uploaded: () => new Map(parts.flatMap((part) => [...part.uploaded()])),
+    add: (root) => {
+      for (const part of parts) part.add?.(root);
+    },
   };
 }

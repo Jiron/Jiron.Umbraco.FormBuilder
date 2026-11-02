@@ -37,7 +37,8 @@ const stateOf = (form: Locator) =>
         field: field.getAttribute('data-jfb-alias') ?? field.getAttribute('data-jfb-field'),
         hidden: field.hasAttribute('hidden'),
         ruled: field.hasAttribute('data-jfb-hidden'),
-        controls: own('input, select, textarea, button').map(
+        // The "Other" text carries no name while its choice is not chosen, here and not in a post, which posts it empty.
+        controls: own('input:not(.jfb-other input), select, textarea, button').map(
           (control) =>
             `${control.getAttribute('name') ?? ''}${control.hasAttribute('disabled') ? ' disabled' : ''}${control.hasAttribute('required') ? ' required' : ''}`,
         ),

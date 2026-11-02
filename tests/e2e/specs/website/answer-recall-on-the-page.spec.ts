@@ -116,10 +116,9 @@ for (const language of LANGUAGES) {
     await choose(form, 'bringGuests', 'yes');
     const guests = form.locator('[data-jfb-alias="guests"]');
     await expect(guests).toBeVisible();
-    const added = page.waitForEvent('load');
     await guests.locator('button[name="jfb-nav"]').last().click();
-    await added;
-    await expect(question, 'the page the server sent back recalls the name too').toHaveText(words.question('Anna'));
+    await expect(form.locator('input[name="guests[0].guestName"]'), 'a row in place').toBeVisible();
+    await expect(question).toHaveText(words.question('Anna'));
     await form.locator('input[name="guests[0].guestName"]').fill('Ben');
     await expect(closing, 'a text block that follows the rows').toHaveText(words.guests('Ben'));
     await choose(form, 'bringGuests', 'no');

@@ -67,6 +67,13 @@ export function loadDefaults(): Promise<FillDefaults> {
  * Gives a form its logic; the frame calls it once per form. A form whose calculation language or defaults' filler
  * cannot load is left to the post without JavaScript (null), as one whose chunk cannot.
  */
+/** Whether a form holds something, or a row it may add in place does, which its group's template holds. */
+const holds = (form: HTMLFormElement, selector: string): boolean =>
+  form.querySelector(selector) !== null ||
+  [...form.querySelectorAll<HTMLTemplateElement>('.jfb-repeater > template')].some(
+    (each) => each.content.querySelector(selector) !== null,
+  );
+
 export function attach(
   form: HTMLFormElement,
   model: FormModel,
@@ -84,10 +91,9 @@ async function wake(
   defaults: () => Promise<FillDefaults>,
   carried?: Carried,
 ): Promise<FormSession | null> {
-  const loaded = await Promise.all([
-    loadEngine(model),
-    form.querySelector('[data-jfb-default]') === null ? null : defaults(),
-  ]).catch(() => null);
+  const loaded = await Promise.all([loadEngine(model), holds(form, '[data-jfb-default]') ? defaults() : null]).catch(
+    () => null,
+  );
   if (loaded === null) return null;
   const [engine, fill] = loaded;
   fill?.(form, model, contextOf(model, readPage(form, model), Date.now(), form.ownerDocument.URL));
@@ -109,15 +115,30 @@ async function wake(
     uploading === undefined
       ? undefined
       : await Promise.all([
-          form.querySelector('.jfb-upload') === null
+          !holds(form, '.jfb-upload')
             ? []
             : import('./uploads-chunk').then((module) => [module.enhanceUploads(form, model, uploading)]),
-          form.querySelector('.jfb-signature') === null
+          !holds(form, '.jfb-signature')
             ? []
             : import('./signature-chunk').then((module) => [module.enhanceSignatures(form, model, uploading)]),
         ])
           .then((parts) => allOf(parts.flat()))
           .catch(() => undefined);
+  if (
+    form.querySelector('.jfb-repeater,.jfb-ranking,.jfb-counter,.jfb-other,[data-jfb-grow],[data-jfb-cascade]') !== null
+  ) {
+    await import('./fields-chunk')
+      .then((module) => {
+        module.enhanceFields(form, model, {
+          api,
+          added: (row) => {
+            files?.add?.(row);
+            fill?.(form, model, contextOf(model, readPage(form, model), Date.now(), form.ownerDocument.URL));
+          },
+        });
+      })
+      .catch(() => undefined);
+  }
   const errors = pageErrorsOf(
     form,
     model,

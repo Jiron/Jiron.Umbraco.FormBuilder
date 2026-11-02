@@ -1052,7 +1052,7 @@
                   "rows": [],
                   "fields": [],
                   "settings": {
-                    "layout": "inherit",
+                    "layout": "cards",
                     "other": false
                   }
                 }
@@ -1898,6 +1898,95 @@
               "rules": [],
               "fields": [
                 {
+                  "key": "d0000000-0000-4000-8000-000000000342",
+                  "type": "dropdown",
+                  "alias": "desk",
+                  "span": 1,
+                  "label": "Which room?",
+                  "hideLabel": false,
+                  "required": false,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "options": {
+                    "items": [
+                      {
+                        "value": "ground",
+                        "label": "Ground floor",
+                        "parentValues": [
+                          "market"
+                        ]
+                      },
+                      {
+                        "value": "reading",
+                        "label": "Reading room",
+                        "parentValues": [
+                          "market"
+                        ]
+                      },
+                      {
+                        "value": "garden",
+                        "label": "Garden room",
+                        "parentValues": [
+                          "riverside"
+                        ]
+                      }
+                    ],
+                    "fromSource": false,
+                    "parent": "d0000000-0000-4000-8000-000000000303"
+                  },
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "multiple": false
+                  }
+                },
+                {
+                  "key": "d0000000-0000-4000-8000-000000000343",
+                  "type": "radio",
+                  "alias": "corner",
+                  "span": 1,
+                  "label": "Where did you sit?",
+                  "hideLabel": false,
+                  "required": false,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "options": {
+                    "items": [
+                      {
+                        "value": "door",
+                        "label": "By the door",
+                        "parentValues": [
+                          "market"
+                        ]
+                      },
+                      {
+                        "value": "window",
+                        "label": "By the window",
+                        "parentValues": [
+                          "market"
+                        ]
+                      },
+                      {
+                        "value": "terrace",
+                        "label": "On the terrace",
+                        "parentValues": [
+                          "riverside"
+                        ]
+                      }
+                    ],
+                    "fromSource": false,
+                    "parent": "d0000000-0000-4000-8000-000000000303"
+                  },
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "layout": "inherit",
+                    "other": false
+                  }
+                },
+                {
                   "key": "d0000000-0000-4000-8000-000000000304",
                   "type": "rating",
                   "alias": "lastVisit",
@@ -2143,7 +2232,7 @@
                   "rows": [],
                   "fields": [],
                   "settings": {
-                    "autoGrow": true,
+                    "autoGrow": false,
                     "counter": true,
                     "maxLength": 2000,
                     "minLength": 0,
@@ -2169,6 +2258,16 @@
         "builtIn": true
       },
       "d0000000-0000-4000-8000-000000000303": {
+        "kind": "choice",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000342": {
+        "kind": "choice",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000343": {
         "kind": "choice",
         "canBeRequired": true,
         "builtIn": true
@@ -2258,6 +2357,28 @@
               "id": "d0000000-0000-4000-8000-000000000032",
               "rules": [],
               "fields": [
+                {
+                  "id": "d0000000-0000-4000-8000-000000000342",
+                  "kind": "choice",
+                  "canBeRequired": true,
+                  "alias": "desk",
+                  "calculation": null,
+                  "required": false,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                },
+                {
+                  "id": "d0000000-0000-4000-8000-000000000343",
+                  "kind": "choice",
+                  "canBeRequired": true,
+                  "alias": "corner",
+                  "calculation": null,
+                  "required": false,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                },
                 {
                   "id": "d0000000-0000-4000-8000-000000000304",
                   "kind": "number",

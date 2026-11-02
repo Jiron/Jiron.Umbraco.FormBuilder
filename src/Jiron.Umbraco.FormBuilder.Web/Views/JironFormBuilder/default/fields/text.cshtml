@@ -29,5 +29,5 @@ else
 }
 @if (control.Counter is { } counter)
 {
-    <p class="@Model.Classes.Counter" id="@counter.Id">@counter.Text</p>
+    <p class="@Model.Classes.Counter" id="@counter.Id" data-jfb-limit="@counter.Limit" data-jfb-left="@counter.Left" data-jfb-left-one="@counter.LeftOne" data-jfb-too-many="@counter.Over" data-jfb-too-many-one="@counter.OverOne">@counter.Text</p>
 }

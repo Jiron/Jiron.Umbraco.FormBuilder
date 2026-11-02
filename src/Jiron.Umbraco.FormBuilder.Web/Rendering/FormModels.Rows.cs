@@ -24,6 +24,26 @@ internal sealed partial class FormModels
         var rows = new List<RepeaterRowModel>();
         for (var row = 0; row < count; row++)
         {
+            rows.Add(await RowAsync(row));
+        }
+
+        return new RepeaterControlModel
+        {
+            Rows = rows,
+            Template = await RowAsync(count),
+            Least = limits.MinRows,
+            Most = limits.MaxRows,
+            Legend = label is null ? build.Words.RepeaterRow : label + " {0}",
+            Removed = build.Words.RowRemoved,
+            Add = new RowButtonModel { Value = FormPostFields.Add + FormPostFields.Separator + alias, Text = settings.Text("addLabel") is { Length: > 0 } adding ? adding : build.Words.AddRow, Action = build.Root.At(build.RowPrefix(alias, count)), IsHidden = count >= limits.MaxRows },
+            RowCount = new HiddenInputModel(FormPostFields.RowsPrefix + alias, count.ToString(CultureInfo.InvariantCulture)),
+            FieldsCssClass = "jfb-fields jfb-columns-" + build.ColumnsOf(field.Key).ToString(CultureInfo.InvariantCulture),
+            FieldView = build.Root.Views.Field,
+        };
+
+        // A row at its place, each of its fields built in it; one past the others starts as a first render does.
+        async Task<RepeaterRowModel> RowAsync(int row)
+        {
             var number = (row + 1).ToString(CultureInfo.InvariantCulture);
             var legend = label is null ? string.Format(build.Culture, build.Words.RepeaterRow, number) : label + " " + number;
             var inRow = build.Row(field, row, legend);
@@ -36,28 +56,15 @@ internal sealed partial class FormModels
                 }
             }
 
-            rows.Add(new RepeaterRowModel
+            return new RepeaterRowModel
             {
                 Index = row,
                 Id = inRow.Prefix,
                 Legend = legend,
-                Remove = count > limits.MinRows
-                    ? new RowButtonModel { Value = FormPostFields.Remove + FormPostFields.Separator + alias + FormPostFields.Separator + row.ToString(CultureInfo.InvariantCulture), Text = remove, Context = legend, Action = build.Root.At(id) }
-                    : null,
+                Remove = new RowButtonModel { Value = FormPostFields.Remove + FormPostFields.Separator + alias + FormPostFields.Separator + row.ToString(CultureInfo.InvariantCulture), Text = remove, Context = legend, Action = build.Root.At(id), IsHidden = count <= limits.MinRows },
                 Fields = fields,
-            });
+            };
         }
-
-        return new RepeaterControlModel
-        {
-            Rows = rows,
-            Add = count < limits.MaxRows
-                ? new RowButtonModel { Value = FormPostFields.Add + FormPostFields.Separator + alias, Text = settings.Text("addLabel") is { Length: > 0 } adding ? adding : build.Words.AddRow, Action = build.Root.At(build.RowPrefix(alias, count)) }
-                : null,
-            RowCount = new HiddenInputModel(FormPostFields.RowsPrefix + alias, count.ToString(CultureInfo.InvariantCulture)),
-            FieldsCssClass = "jfb-fields jfb-columns-" + build.ColumnsOf(field.Key).ToString(CultureInfo.InvariantCulture),
-            FieldView = build.Root.Views.Field,
-        };
     }
 
     // A repeatable group's rows (ADR-0098): a post's, at most as many as a group may have, each with its child fields'
@@ -77,19 +84,21 @@ internal sealed partial class FormModels
 
         return rows;
 
-        // A row as a first render starts it.
-        Dictionary<Guid, FieldAnswers> Started()
-        {
-            var answers = new Dictionary<Guid, FieldAnswers>();
-            foreach (var child in group.Fields)
-            {
-                if (StartOf(child, defined[child.Key], local, prefill) is { } start)
-                {
-                    answers[child.Key] = start;
-                }
-            }
+        Dictionary<Guid, FieldAnswers> Started() => StartedRow(group, defined, local, prefill);
+    }
 
-            return answers;
+    // A row as a first render starts it.
+    private Dictionary<Guid, FieldAnswers> StartedRow(PublicField group, Dictionary<Guid, FormField> defined, DateTime local, FormPrefill prefill)
+    {
+        var answers = new Dictionary<Guid, FieldAnswers>();
+        foreach (var child in group.Fields)
+        {
+            if (StartOf(child, defined[child.Key], local, prefill) is { } start)
+            {
+                answers[child.Key] = start;
+            }
         }
+
+        return answers;
     }
 }

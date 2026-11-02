@@ -529,6 +529,64 @@ describe('what the page reads while a file is on its way', () => {
   });
 });
 
+describe('a file in a row added or moved in place', () => {
+  const GROUP: ModelField = { key: 'k-group', type: 'repeater', alias: 'rows', settings: {}, fields: [FILE] };
+  const inRow = (row: number): string =>
+    `<div data-jfb-field="k-group" data-jfb-alias="rows"><fieldset data-jfb-row="${String(row)}">${FIELD()
+      .replace('name="plan"', `name="rows[${String(row)}].plan"`)
+      .replace('id="f1"', `id="f${String(row)}"`)}</fieldset></div>`;
+  const IN_GROUP: FormModel = {
+    ...modelOf([GROUP]),
+    fields: {
+      'k-file': { kind: 'files', canBeRequired: true, builtIn: true },
+      'k-group': { kind: null, canBeRequired: false, builtIn: true },
+    },
+  };
+  const chooseIn = (input: HTMLInputElement, file: File): void => {
+    Object.defineProperty(input, 'files', { value: [file], configurable: true });
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+  };
+
+  it('takes on the zone of a row added', () => {
+    const { form, uploads } = wake(inRow(0), IN_GROUP);
+    const row = document.createElement('div');
+    row.innerHTML = inRow(1);
+    form.append(row);
+    uploads.add?.(row);
+
+    expect(row.querySelector('.jfb-upload')?.hasAttribute('data-jfb-enhanced')).toBe(true);
+  });
+
+  it('names its token as its row is named by now', async () => {
+    const { form, uploads } = wake(inRow(1), IN_GROUP);
+    const input = form.querySelector('input[type="file"]') as HTMLInputElement;
+    chooseIn(input, fileOf('plan.pdf', PDF));
+    await until(() => expect(FakeRequest.made[0]?.body).toBeInstanceOf(FormData));
+    input.name = 'rows[0].plan';
+    FakeRequest.made[0]?.answer(200, { token: 't1', name: 'plan.pdf', size: 9 });
+
+    expect(form.querySelector<HTMLInputElement>('.jfb-file input[type="hidden"]')?.name).toBe('rows[0].plan');
+    expect([...uploads.uploaded().keys()]).toEqual(['rows[0].plan']);
+  });
+
+  it('forgets a row that is gone', async () => {
+    const { form, uploads } = wake(inRow(0), IN_GROUP);
+    form.querySelector('fieldset')?.remove();
+
+    expect(uploads.uploaded().size).toBe(0);
+    await expect(uploads.settled()).resolves.toBe(true);
+  });
+
+  it('words a refusal for its own row', async () => {
+    const { form } = wake(inRow(1), IN_GROUP);
+    chooseIn(
+      form.querySelector('input[type="file"]') as HTMLInputElement,
+      fileOf('big.pdf', PDF, 'application/pdf', 1001),
+    );
+    await until(() => expect(row().querySelector('.jfb-error')?.textContent).toContain('KB'));
+  });
+});
+
 describe("a failed row beside the field's own errors", () => {
   it('is no error of the field, which a check would take away with its row', async () => {
     const { choose, form } = wake();

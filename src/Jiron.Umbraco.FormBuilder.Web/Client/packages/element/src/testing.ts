@@ -46,17 +46,23 @@ export function serverMarkup(document: Document, element: ElementCase): Element 
   template.innerHTML = element.html;
   const root = template.content.firstElementChild;
   if (root === null) throw new Error(`${element.name}: no markup`);
-  for (const attribute of element.postOnly.attributes) {
-    for (const each of [root, ...root.querySelectorAll(`[${attribute}]`)]) each.removeAttribute(attribute);
-  }
-  for (const input of root.querySelectorAll('input[type="hidden"]')) {
-    const name = input.getAttribute('name') ?? '';
-    if (
-      element.postOnly.inputs.includes(name) ||
-      element.postOnly.inputPrefixes.some((prefix) => name.startsWith(prefix))
-    )
-      input.remove();
-  }
+  // A row in a repeater's template holds what a post uses as the rows do.
+  const reduce = (tree: ParentNode): void => {
+    for (const attribute of element.postOnly.attributes) {
+      for (const each of tree.querySelectorAll(`[${attribute}]`)) each.removeAttribute(attribute);
+    }
+    for (const input of tree.querySelectorAll('input[type="hidden"]')) {
+      const name = input.getAttribute('name') ?? '';
+      if (
+        element.postOnly.inputs.includes(name) ||
+        element.postOnly.inputPrefixes.some((prefix) => name.startsWith(prefix))
+      )
+        input.remove();
+    }
+    for (const nested of tree.querySelectorAll('template')) reduce(nested.content);
+  };
+  for (const attribute of element.postOnly.attributes) root.removeAttribute(attribute);
+  reduce(root);
   return root;
 }
 

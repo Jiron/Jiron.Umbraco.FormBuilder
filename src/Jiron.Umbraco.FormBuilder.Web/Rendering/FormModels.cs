@@ -541,6 +541,7 @@ internal sealed partial class FormModels(
             if (types.FindType(field.Type)?.Declaration.Features.HasFlag(FieldFeatures.ChildFields) == true)
             {
                 answers.Rows[field.Key] = RowsOf(field, post, defined, local, prefill);
+                answers.StartedRows[field.Key] = StartedRow(field, defined, local, prefill);
             }
             else if ((post is null ? StartOf(field, defined[field.Key], local, prefill) : post.Answers.GetValueOrDefault(field.Key)) is { } given)
             {
@@ -939,7 +940,7 @@ internal sealed partial class FormModels(
     private static AffixModel? Affix(string? text, string id) => string.IsNullOrEmpty(text) ? null : new AffixModel(text, id);
 
     private static CounterModel Counter(Build build, string id, int limit) =>
-        new(string.Format(build.Culture, build.Words.Counter, limit), id + "-count", limit);
+        new(string.Format(build.Culture, build.Words.Counter, limit), id + "-count", limit, build.Words.CounterLeft, build.Words.CounterLeftOne, build.Words.CounterOver, build.Words.CounterOverOne);
 
     private static IReadOnlyList<string> Ids(AffixModel? prefix, AffixModel? suffix, CounterModel? counter) =>
         [.. new[] { prefix?.Id, suffix?.Id, counter?.Id }.OfType<string>()];
@@ -1046,7 +1047,11 @@ internal sealed partial class FormModels(
     private sealed record PageFacts(DateOnly Today, IReadOnlyDictionary<string, string?> Calculations, IReadOnlyDictionary<string, IReadOnlyList<RowState>> Rows, CultureFormats Formats);
 
     // The page's answers: each field's outside repeatable groups, and each group's rows of its child fields' answers.
-    private sealed record PageAnswers(Dictionary<Guid, FieldAnswers> Fields, Dictionary<Guid, List<Dictionary<Guid, FieldAnswers>>> Rows);
+    private sealed record PageAnswers(Dictionary<Guid, FieldAnswers> Fields, Dictionary<Guid, List<Dictionary<Guid, FieldAnswers>>> Rows)
+    {
+        // Each repeatable group's row as a first render starts it, which the runtime adds in place (ADR-0154).
+        public Dictionary<Guid, Dictionary<Guid, FieldAnswers>> StartedRows { get; } = [];
+    }
 
     // The page's answers as their types read them: each field's, and each repeatable group's rows within its limits.
     private sealed record PageRead(Dictionary<Guid, ImmutableArray<FieldValue>> Fields, Dictionary<Guid, List<Dictionary<Guid, ImmutableArray<FieldValue>>>> Rows)
@@ -1211,7 +1216,8 @@ internal sealed partial class FormModels(
         public Build Row(PublicField group, int row, string legend)
         {
             var inRow = new Dictionary<Guid, FieldAnswers>(Answers);
-            foreach (var (key, given) in RowAnswers[group.Key][row])
+            var rows = RowAnswers[group.Key];
+            foreach (var (key, given) in row < rows.Count ? rows[row] : answers.StartedRows[group.Key])
             {
                 inRow[key] = given;
             }
@@ -1226,6 +1232,12 @@ internal sealed partial class FormModels(
 
             var rowRequired = new HashSet<string>(required, StringComparer.Ordinal);
             rowRequired.UnionWith(state?.Required ?? []);
+            if (state is null)
+            {
+                // A row yet to come has no state; what the definition requires it requires, and the rules decide the rest once it is there.
+                rowRequired.UnionWith(group.Fields.Where(child => child.Required).Select(child => Id(child.Key)));
+            }
+
             var calculations = new Dictionary<string, string?>(facts.Calculations, StringComparer.Ordinal);
             foreach (var (id, value) in state?.Calculations ?? new Dictionary<string, string?>())
             {

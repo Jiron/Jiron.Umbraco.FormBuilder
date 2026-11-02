@@ -79,6 +79,9 @@ public sealed class ChoicesControlModel
     /// <summary>The "Other" choice with its text, or null.</summary>
     public OtherChoiceModel? Other { get; init; }
 
+    /// <summary>For a field whose options a parent filters, what the runtime writes its options from (ADR-0154), or null.</summary>
+    public ChoicesCascadeModel? Cascade { get; init; }
+
     /// <summary>The words at a scale's or a rating's ends, or null for none.</summary>
     public ScaleEndsModel? Ends { get; init; }
 
@@ -88,6 +91,12 @@ public sealed class ChoicesControlModel
     /// </summary>
     public string? Empty { get; init; }
 }
+
+/// <summary>What the runtime writes the options of a field that a parent filters from (ADR-0154).</summary>
+/// <param name="Sample">A choice with no option yet, with a description's place.</param>
+/// <param name="None">What shows when the parent's answers offer nothing.</param>
+/// <param name="Unavailable">What shows when the options could not be resolved.</param>
+public sealed record ChoicesCascadeModel(ChoiceModel Sample, string None, string Unavailable);
 
 /// <summary>One option of a select (<c>option</c>).</summary>
 /// <param name="Value">The value it posts.</param>
@@ -109,6 +118,15 @@ public sealed class SelectControlModel
 
     /// <summary>The dropdown's first line, which posts nothing; null for a list box.</summary>
     public string? Prompt { get; init; }
+
+    /// <summary>Whether a parent filters its options, so the runtime writes them anew (ADR-0154).</summary>
+    public bool Cascades { get; init; }
+
+    /// <summary>What shows when the parent's answers offer nothing, for a field a parent filters.</summary>
+    public string? None { get; init; }
+
+    /// <summary>What shows when the options could not be resolved, for a field a parent filters.</summary>
+    public string? Unavailable { get; init; }
 
     /// <summary>The options, in order.</summary>
     public required IReadOnlyList<SelectOptionModel> Options { get; init; }
@@ -232,6 +250,15 @@ public sealed class RankingControlModel
 {
     /// <summary>The options in their order.</summary>
     public required IReadOnlyList<RankingItemModel> Items { get; init; }
+
+    /// <summary>The name its positions are posted under, the field's (ADR-0154).</summary>
+    public required string Name { get; init; }
+
+    /// <summary>How many of the first options it asks a position of.</summary>
+    public required int Ranked { get; init; }
+
+    /// <summary>What the runtime says of an option moved, {0} its label and {1} its place.</summary>
+    public required string Moved { get; init; }
 
     /// <summary>What shows in place of the list when there are no options, carrying the field's id; null otherwise.</summary>
     public string? Empty { get; init; }

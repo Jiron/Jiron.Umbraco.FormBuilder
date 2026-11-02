@@ -188,7 +188,8 @@ flowchart LR
   vectors hold to the server's, then sent with its progress, its token a hidden input of its row
   ([ADR-0152](decisions/0152-uploads-on-the-page.md)); signs on a pad or types a name (`signature-chunk.ts`, with
   `@jfb/logic/signature`, held to `TypedSignature` by shared vectors), the image going at a send
-  ([ADR-0153](decisions/0153-the-signature-pad.md)); its budget of every feature
+  ([ADR-0153](decisions/0153-the-signature-pad.md)); works rows, rankings, counters, "Other", growing text areas and
+  cascading options in place (`fields-chunk.ts`, [ADR-0154](decisions/0154-the-field-behaviours.md)); its budget of every feature
   counts the largest language's words, as a page loads one
   ([ADR-0116](decisions/0116-the-runtimes-budget-counts-one-language.md)), and its build takes a terser pass besides
   the bundler's minifier ([ADR-0119](decisions/0119-a-terser-pass-for-the-website-runtime.md));

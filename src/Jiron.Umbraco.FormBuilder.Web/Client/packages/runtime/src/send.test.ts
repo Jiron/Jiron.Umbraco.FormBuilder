@@ -757,6 +757,27 @@ describe('a form whose files the page takes', () => {
   };
   const uploadsOf = (settled: Promise<boolean>): PageUploads => ({ settled: () => settled, uploaded: () => new Map() });
 
+  it('goes by post with a ranking below a parent, whose options only a post writes anew', async () => {
+    const server = serve(STORED);
+    const ranking = { key: 'k-rank', type: 'ranking', alias: 'rank', settings: {}, options: { parent: 'k-name' } };
+    const { press, posted } = wake({
+      model: {
+        ...MODEL,
+        form: {
+          ...MODEL.form,
+          pages: MODEL.form.pages.map((page) => ({
+            ...page,
+            groups: page.groups.map((group) => ({ ...group, fields: [...group.fields, ranking] })),
+          })),
+        },
+      },
+    });
+    press();
+    await until(() => expect(posted).toEqual(['submit']));
+
+    expect(server.entries()).toEqual([]);
+  });
+
   it('sends on the page, with the tokens its inputs hold, whatever the encoding a post would use', async () => {
     const server = serve(STORED);
     const { press, value, posted } = wake({

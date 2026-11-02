@@ -4,9 +4,9 @@
 @using Jiron.Umbraco.FormBuilder.Web.Rendering.Models
 @{
     var control = (ChoicesControlModel)Model.Control!;
-    void Choice(ChoiceModel choice)
+    void Choice(ChoiceModel choice, bool sample = false)
     {
-        <div class="@Model.Classes.Choice">
+        <div class="@Model.Classes.Choice" @FormBuilderHtml.Flag("data-jfb-sample", sample)>
             @if (choice.Image is { } image)
             {
                 <img src="@image.Url" alt="" width="@image.Width" height="@image.Height">
@@ -40,4 +40,21 @@ else
             </div>
         }
     </div>
+}
+@if (control.Cascade is { } cascade)
+{
+    <template data-jfb-cascade data-jfb-none="@cascade.None" data-jfb-unavailable="@cascade.Unavailable">
+        <div class="@control.CssClass">
+            @{ Choice(cascade.Sample, true); }
+            @if (control.Other is { } last)
+            {
+                Choice(last.Choice);
+                <div class="jfb-other">
+                    <label class="jfb-visually-hidden" for="@last.TextId">@last.TextLabel</label>
+                    <input class="@Model.Classes.Control" id="@last.TextId" name="@last.TextName" disabled="@Model.IsDisabled">
+                </div>
+            }
+        </div>
+        <p class="@Model.Classes.Help" id="@Model.Id"></p>
+    </template>
 }

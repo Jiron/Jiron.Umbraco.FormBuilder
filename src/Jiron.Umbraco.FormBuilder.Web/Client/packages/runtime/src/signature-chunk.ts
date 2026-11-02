@@ -124,7 +124,7 @@ export function enhanceSignatures(form: HTMLFormElement, model: FormModel, optio
     return token;
   }
 
-  for (const box of form.querySelectorAll<HTMLElement>('.jfb-signature')) {
+  const enhance = (box: HTMLElement): void => {
     const host = box.closest<HTMLElement>('[data-jfb-field]');
     const field = fields.find((each) => each.key === host?.dataset['jfbField']);
     const canvas = box.querySelector('canvas');
@@ -135,11 +135,13 @@ export function enhanceSignatures(form: HTMLFormElement, model: FormModel, optio
     const toTyped = box.querySelector<HTMLButtonElement>('[data-jfb-to-typed]');
     const toDrawn = box.querySelector<HTMLButtonElement>('[data-jfb-to-drawn]');
     if (!host || field === undefined || !canvas || !drawnWay || !typedWay || !typed || !clear || !toTyped || !toDrawn)
-      continue;
-    const typedName = typed.name;
-    const name = typedName.replace(/\.typed$/, '');
+      return;
+    // In an attribute, as a row added or moved in place names its controls anew.
+    typed.dataset['jfbName'] = typed.name;
+    const typedName = (): string => typed.dataset['jfbName'] ?? '';
+    const name = (): string => typedName().replace(/\.typed$/, '');
     const clearWord = clear.textContent;
-    const restored = options.restored?.get(name)?.[0];
+    const restored = options.restored?.get(name())?.[0];
     let strokes: number[][] = restored?.strokes?.map((stroke) => [...stroke]) ?? [];
     let cleared: number[][] | null = null;
     // A visitor who came to the name, the first thing the page shows without its runtime, stays there.
@@ -159,7 +161,7 @@ export function enhanceSignatures(form: HTMLFormElement, model: FormModel, optio
       typedWay.hidden = drawing;
       // Only the way on show answers: a name typed before stays in its input, but the page does not read it as one.
       if (drawing) typed.removeAttribute('name');
-      else typed.name = typedName;
+      else typed.name = typedName();
     };
 
     /** What the page reads as the field's answer: the token, or that one is on its way. */
@@ -173,9 +175,9 @@ export function enhanceSignatures(form: HTMLFormElement, model: FormModel, optio
       if (answer === null) {
         answer = form.ownerDocument.createElement('input');
         answer.type = 'hidden';
-        answer.name = name;
         box.append(answer);
       }
+      answer.name = name();
       answer.value = token ?? ON_ITS_WAY;
     };
 
@@ -252,7 +254,7 @@ export function enhanceSignatures(form: HTMLFormElement, model: FormModel, optio
     sends.push(async () => {
       // What changes while an image is on its way is what the visitor means: that goes instead.
       for (;;) {
-        if (answer === null || token !== null || host.closest('[data-jfb-hidden]') !== null) return;
+        if (answer === null || token !== null || !box.isConnected || host.closest('[data-jfb-hidden]') !== null) return;
         const at = changes;
         let image: Uint8Array;
         if (drawing) {
@@ -275,14 +277,18 @@ export function enhanceSignatures(form: HTMLFormElement, model: FormModel, optio
         }
       }
     });
-    held.push(() => (drawing && token !== null ? [name, { token, name: FILE_NAME, size, strokes }] : null));
+    held.push(() =>
+      drawing && token !== null && box.isConnected ? [name(), { token, name: FILE_NAME, size, strokes }] : null,
+    );
 
     sync();
     show();
     box.setAttribute('data-jfb-enhanced', '');
     // The rules decided before the field could answer.
     if (answer !== null) box.dispatchEvent(new Event('input', { bubbles: true }));
-  }
+  };
+
+  for (const box of form.querySelectorAll<HTMLElement>('.jfb-signature')) enhance(box);
 
   return {
     async settled(): Promise<boolean> {
@@ -295,6 +301,9 @@ export function enhanceSignatures(form: HTMLFormElement, model: FormModel, optio
         return file === null ? [] : [file];
       });
       return new Map(files.map(([name, file]) => [name, [file]]));
+    },
+    add(root: Element): void {
+      for (const box of root.querySelectorAll<HTMLElement>('.jfb-signature')) enhance(box);
     },
   };
 }

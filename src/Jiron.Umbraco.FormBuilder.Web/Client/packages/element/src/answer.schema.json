@@ -108,6 +108,26 @@
       ],
       "additionalProperties": false
     },
+    "ChoicesCascadeModel": {
+      "type": "object",
+      "properties": {
+        "sample": {
+          "$ref": "#/$defs/ChoiceModel"
+        },
+        "none": {
+          "type": "string"
+        },
+        "unavailable": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "sample",
+        "none",
+        "unavailable"
+      ],
+      "additionalProperties": false
+    },
     "ChoicesControl": {
       "type": "object",
       "properties": {
@@ -128,6 +148,9 @@
         },
         "other": {
           "$ref": "#/$defs/OtherChoiceModel"
+        },
+        "cascade": {
+          "$ref": "#/$defs/ChoicesCascadeModel"
         },
         "ends": {
           "$ref": "#/$defs/ScaleEndsModel"
@@ -179,12 +202,28 @@
         },
         "limit": {
           "type": "integer"
+        },
+        "left": {
+          "type": "string"
+        },
+        "leftOne": {
+          "type": "string"
+        },
+        "over": {
+          "type": "string"
+        },
+        "overOne": {
+          "type": "string"
         }
       },
       "required": [
         "text",
         "id",
-        "limit"
+        "limit",
+        "left",
+        "leftOne",
+        "over",
+        "overOne"
       ],
       "additionalProperties": false
     },
@@ -1470,13 +1509,25 @@
             "$ref": "#/$defs/RankingItemModel"
           }
         },
+        "name": {
+          "type": "string"
+        },
+        "ranked": {
+          "type": "integer"
+        },
+        "moved": {
+          "type": "string"
+        },
         "empty": {
           "type": "string"
         }
       },
       "required": [
         "kind",
-        "items"
+        "items",
+        "name",
+        "ranked",
+        "moved"
       ],
       "additionalProperties": false
     },
@@ -1549,6 +1600,21 @@
             "$ref": "#/$defs/RepeaterRowModel"
           }
         },
+        "template": {
+          "$ref": "#/$defs/RepeaterRowModel"
+        },
+        "least": {
+          "type": "integer"
+        },
+        "most": {
+          "type": "integer"
+        },
+        "legend": {
+          "type": "string"
+        },
+        "removed": {
+          "type": "string"
+        },
         "add": {
           "$ref": "#/$defs/RowButtonModel"
         },
@@ -1562,6 +1628,12 @@
       "required": [
         "kind",
         "rows",
+        "template",
+        "least",
+        "most",
+        "legend",
+        "removed",
+        "add",
         "rowCount",
         "fieldsCssClass"
       ],
@@ -1593,6 +1665,7 @@
         "index",
         "id",
         "legend",
+        "remove",
         "fields"
       ],
       "additionalProperties": false
@@ -1606,13 +1679,17 @@
         "text": {
           "type": "string"
         },
+        "isHidden": {
+          "type": "boolean"
+        },
         "context": {
           "type": "string"
         }
       },
       "required": [
         "value",
-        "text"
+        "text",
+        "isHidden"
       ],
       "additionalProperties": false
     },
@@ -1647,6 +1724,15 @@
         "prompt": {
           "type": "string"
         },
+        "cascades": {
+          "type": "boolean"
+        },
+        "none": {
+          "type": "string"
+        },
+        "unavailable": {
+          "type": "string"
+        },
         "options": {
           "type": "array",
           "items": {
@@ -1663,6 +1749,7 @@
       "required": [
         "kind",
         "multiple",
+        "cascades",
         "options"
       ],
       "additionalProperties": false
@@ -1677,6 +1764,15 @@
           "type": "integer"
         },
         "prompt": {
+          "type": "string"
+        },
+        "cascades": {
+          "type": "boolean"
+        },
+        "none": {
+          "type": "string"
+        },
+        "unavailable": {
           "type": "string"
         },
         "options": {
@@ -1694,6 +1790,7 @@
       },
       "required": [
         "multiple",
+        "cascades",
         "options"
       ],
       "additionalProperties": false

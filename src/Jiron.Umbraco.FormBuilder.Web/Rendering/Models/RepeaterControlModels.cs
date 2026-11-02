@@ -9,8 +9,23 @@ public sealed class RepeaterControlModel
     /// <summary>The rows, in order.</summary>
     public required IReadOnlyList<RepeaterRowModel> Rows { get; init; }
 
+    /// <summary>A row as a first render starts it, after the others, which the runtime adds in place (ADR-0154).</summary>
+    public required RepeaterRowModel Template { get; init; }
+
+    /// <summary>The least rows the group keeps.</summary>
+    public required int Least { get; init; }
+
+    /// <summary>The most rows the group takes.</summary>
+    public required int Most { get; init; }
+
+    /// <summary>A row's legend, {0} its number from 1.</summary>
+    public required string Legend { get; init; }
+
+    /// <summary>What the runtime says of a row removed, {0} its legend.</summary>
+    public required string Removed { get; init; }
+
     /// <summary>The button that adds a row; null once the group has its most rows.</summary>
-    public RowButtonModel? Add { get; init; }
+    public required RowButtonModel Add { get; init; }
 
     /// <summary>
     /// The hidden input that says how many rows the page shows (<c>jfb-rows-&lt;alias&gt;</c>), so a post without
@@ -38,7 +53,7 @@ public sealed class RepeaterRowModel
     public required string Legend { get; init; }
 
     /// <summary>The button that removes the row; null while the group has no more than its least rows.</summary>
-    public RowButtonModel? Remove { get; init; }
+    public required RowButtonModel Remove { get; init; }
 
     /// <summary>The row's fields, each named by its path, such as <c>guests[0].name</c>.</summary>
     public required IReadOnlyList<FieldViewModel> Fields { get; init; }
@@ -58,6 +73,9 @@ public sealed class RowButtonModel
     /// page opens where the visitor pressed (ADR-0101).
     /// </summary>
     public required string Action { get; init; }
+
+    /// <summary>Whether the group's limits hide it for now: at its most rows, or at its least (ADR-0154).</summary>
+    public bool IsHidden { get; init; }
 
     /// <summary>What its accessible name adds after its words, visually hidden: the row's legend for Remove; null for none.</summary>
     public string? Context { get; init; }

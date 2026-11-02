@@ -109,8 +109,21 @@ public sealed class FormRenderingRowsTests : RenderingTestBase
             Assert.That(guests.QuerySelector(".jfb-repeater")!.GetAttribute("id"), Is.EqualTo("jfb-1-guests"));
             Assert.That(guests.QuerySelector(".jfb-repeater")!.GetAttribute("tabindex"), Is.EqualTo("-1"), "the error summary's link moves the focus to the rows");
             Assert.That(Attributes(row), Is.EqualTo(new Dictionary<string, string> { ["class"] = "jfb-row", ["id"] = "jfb-1-guests-0", ["data-jfb-row"] = "0" }));
+            var box = guests.QuerySelector(".jfb-repeater")!;
+            Assert.That(
+                (box.GetAttribute("data-jfb-least"), box.GetAttribute("data-jfb-most"), box.GetAttribute("data-jfb-legend"), box.GetAttribute("data-jfb-removed")),
+                Is.EqualTo(("1", "3", "Guest {0}", "{0} removed.")),
+                "what the runtime needs to add and remove rows in place");
+            var template = ((AngleSharp.Html.Dom.IHtmlTemplateElement)box.QuerySelector(":scope > template")!).Content;
+            var next = template.QuerySelector(".jfb-row")!;
+            Assert.That(guests.QuerySelectorAll(".jfb-row"), Has.Length.EqualTo(1), "the row in the template is no row of the page");
+            Assert.That((next.Id, next.GetAttribute("data-jfb-row"), next.QuerySelector(":scope > legend")!.TextContent), Is.EqualTo(("jfb-1-guests-1", "1", "Guest 2")), "at the place after the others");
+            Assert.That(next.QuerySelector(":scope > button")!.GetAttribute("value"), Is.EqualTo("remove:guests:1"));
+            Assert.That(next.QuerySelector("#jfb-1-guests-1-diet")!.GetAttribute("value"), Is.EqualTo("Any"), "a row starts as a first render starts it");
+            Assert.That(next.QuerySelector("#jfb-1-guests-1-name")!.HasAttribute("required"), Is.True, "what the definition requires, as in the rows before it");
+            Assert.That(box.QuerySelector(":scope > template + button")!.GetAttribute("value"), Is.EqualTo("add:guests"), "Add comes after the rows and their template");
             Assert.That(row.QuerySelector(":scope > legend")!.TextContent, Is.EqualTo("Guest 1"), "the row label and the row's number");
-            Assert.That(row.QuerySelector(":scope > button"), Is.Null, "no Remove while the group has only its least rows");
+            Assert.That(row.QuerySelector(":scope > button")!.HasAttribute("hidden"), Is.True, "no Remove while the group has only its least rows, which the runtime shows once it has more");
             Assert.That(row.QuerySelector(":scope > div")!.GetAttribute("class"), Is.EqualTo("jfb-fields jfb-columns-2"), "the columns of the group the field is in");
             Assert.That(row.QuerySelectorAll("[data-jfb-field]").Select(child => (child.GetAttribute("data-jfb-field"), child.GetAttribute("data-jfb-alias"))), Is.EqualTo(new[]
             {
@@ -148,7 +161,7 @@ public sealed class FormRenderingRowsTests : RenderingTestBase
             Assert.That(rows.Select(row => row.QuerySelector(":scope > legend")!.TextContent), Is.EqualTo(new[] { "Guest 1", "Guest 2", "Guest 3" }));
             Assert.That(rows.Select(row => row.QuerySelector(":scope > button")!.OuterHtml), Is.EqualTo(new[] { 0, 1, 2 }.Select(row =>
                 $"""<button type="submit" class="jfb-button jfb-button-link" name="jfb-nav" value="remove:guests:{row}" formaction="/rows/#jfb-1-guests">Leave out<span class="jfb-visually-hidden"> Guest {row + 1}</span></button>""")), "Remove names its row, and opens the page at the group");
-            Assert.That(Field(form, "guests").QuerySelector(".jfb-repeater > button"), Is.Null, "no Add once the group has its most rows");
+            Assert.That(Field(form, "guests").QuerySelector(".jfb-repeater > button")!.HasAttribute("hidden"), Is.True, "no Add once the group has its most rows, which the runtime shows once it has fewer");
             Assert.That(form.QuerySelector("#jfb-1-guests-0-name")!.GetAttribute("value"), Is.EqualTo("Ada"));
             Assert.That(form.QuerySelector("#jfb-1-guests-1-name")!.GetAttribute("value"), Is.EqualTo("Sam"));
             Assert.That(form.QuerySelector("#jfb-1-guests-1-age option[selected]")!.GetAttribute("value"), Is.EqualTo("child"));

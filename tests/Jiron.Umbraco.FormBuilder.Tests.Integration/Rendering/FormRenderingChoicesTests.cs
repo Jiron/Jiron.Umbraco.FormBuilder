@@ -279,6 +279,8 @@ public sealed class FormRenderingChoicesTests : RenderingTestBase
             }), "the moves are submit buttons; one at an end is aria-disabled and stays in the tab order");
             Assert.That(rank.QuerySelectorAll("button").All(button => button.GetAttribute("type") == "submit" && button.GetAttribute("name") == "jfb-nav"), Is.True);
             Assert.That(rank.QuerySelector("ol.jfb-ranking")!.GetAttribute("role"), Is.EqualTo("list"), "a list the themes draw without markers says it is one");
+            var ranks = rank.QuerySelector("ol.jfb-ranking")!;
+            Assert.That((ranks.GetAttribute("data-jfb-name"), ranks.GetAttribute("data-jfb-ranked"), ranks.GetAttribute("data-jfb-moved")), Is.EqualTo(("rank", "2", "{0} moved to place {1}.")), "what the runtime needs to move it in place");
             Assert.That(rank.QuerySelectorAll("ol.jfb-ranking > li").Select(item => item.Id), Is.EqualTo(new[] { "jfb-1-rank-place-1", "jfb-1-rank-place-2", "jfb-1-rank-place-3" }));
             Assert.That(rank.QuerySelectorAll("button").Select(button => button.GetAttribute("formaction")), Is.EqualTo(new[]
             {
@@ -403,8 +405,18 @@ public sealed class FormRenderingChoicesTests : RenderingTestBase
             Assert.That(broken["available"]!.GetValue<bool>(), Is.False);
             Assert.That(Field(first, "broken").QuerySelector("fieldset > p.jfb-help#jfb-1-broken")?.TextContent, Is.EqualTo("The choices could not be loaded. Please try again later."), "a source that failed, which the error summary can still link to");
             Assert.That(Answered(cities), Is.Empty);
+            var cascade = (IHtmlTemplateElement)Field(first, "plug").QuerySelector("template[data-jfb-cascade]")!;
+            Assert.That((cascade.GetAttribute("data-jfb-none"), cascade.GetAttribute("data-jfb-unavailable")), Is.EqualTo(("There is nothing to choose from yet.", "The choices could not be loaded. Please try again later.")));
+            Assert.That(cascade.Content.QuerySelector("[data-jfb-sample] input")!.Id, Is.EqualTo("jfb-1-plug"), "the sample holds the field's id, the first choice's");
+            Assert.That(cascade.Content.QuerySelector("[data-jfb-sample] input")!.GetAttribute("type"), Is.EqualTo("radio"));
+            Assert.That(cascade.Content.QuerySelector("[data-jfb-sample] label")!.GetAttribute("for"), Is.EqualTo("jfb-1-plug"));
+            Assert.That(cascade.Content.QuerySelector("[data-jfb-sample] p")!.Id, Is.EqualTo(cascade.Content.QuerySelector("[data-jfb-sample] input")!.GetAttribute("aria-describedby")), "a description's place");
+            Assert.That(cascade.Content.QuerySelector("div ~ p")!.Id, Is.EqualTo("jfb-1-plug"), "the words for no options carry the field's id");
+            Assert.That(Field(first, "sizes").QuerySelector("template"), Is.Null, "no parent, nothing to follow");
+            Assert.That(Field(first, "countryOf").QuerySelector("select")!.HasAttribute("data-jfb-cascade"), Is.False);
+            Assert.That(Field(first, "countryOf").QuerySelector("select")!.HasAttribute("data-jfb-prompt"), Is.False, "only a list whose options come later keeps its prompt for them");
             Assert.That(Compact(Field(first, "city").QuerySelector("select")!.OuterHtml), Is.EqualTo(
-                """<select class="jfb-control" id="jfb-1-city" name="city" disabled="disabled"><option value="">There is nothing to choose from yet.</option></select>"""),
+                """<select class="jfb-control" id="jfb-1-city" name="city" data-jfb-cascade="" data-jfb-prompt="Choose one" data-jfb-none="There is nothing to choose from yet." data-jfb-unavailable="The choices could not be loaded. Please try again later." disabled="disabled"><option value="">There is nothing to choose from yet.</option></select>"""),
                 "a list below a parent not answered yet offers nothing, and posts nothing");
             Assert.That(first.QuerySelectorAll("[data-jfb-requires], [data-jfb-mark], [data-jfb-disabled], [data-jfb-required-note]").Select(element => element.OuterHtml), Is.Empty, "a form without rules carries no hooks for them");
 

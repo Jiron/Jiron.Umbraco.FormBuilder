@@ -9,6 +9,7 @@
 import type {
   ChoiceModel,
   ChoicesControl,
+  CounterModel,
   ErrorSummaryViewModel,
   FieldViewModel,
   FileUploadWordsModel,
@@ -17,12 +18,14 @@ import type {
   HoneypotModel,
   NavigationViewModel,
   NoticeViewModel,
+  OtherChoiceModel,
   OutcomeViewModel,
   PageViewModel,
   PartsControl,
   ProgressViewModel,
   RankingMoveModel,
   RepeaterControl,
+  RepeaterRowModel,
   RowButtonModel,
   SelectControl,
   ThemeClassesModel,
@@ -315,7 +318,7 @@ function writeControl(context: ViewContext, classes: ThemeClassesModel, field: F
       if (field.type !== 'text') return input;
       return [
         affixed(d, classes, input, control.prefix, control.suffix),
-        control.counter && el(d, 'p', { class: classes.counter, id: control.counter.id }, control.counter.text),
+        control.counter && counterOf(d, classes, control.counter),
       ];
     }
     case 'email': {
@@ -364,6 +367,7 @@ function writeControl(context: ViewContext, classes: ThemeClassesModel, field: F
         id: field.id,
         name: field.name,
         rows: control.rows,
+        'data-jfb-grow': flag(control.autoGrow),
         placeholder: field.placeholder,
         'data-jfb-text': placeholder,
         autocomplete: field.autocomplete,
@@ -374,10 +378,7 @@ function writeControl(context: ViewContext, classes: ThemeClassesModel, field: F
         'aria-describedby': field.describedBy,
       });
       area.textContent = field.value;
-      return [
-        area,
-        control.counter && el(d, 'p', { class: classes.counter, id: control.counter.id }, control.counter.text),
-      ];
+      return [area, control.counter && counterOf(d, classes, control.counter)];
     }
     case 'number': {
       if (control?.kind !== 'number') break;
@@ -692,7 +693,13 @@ function writeControl(context: ViewContext, classes: ThemeClassesModel, field: F
       return el(
         d,
         'ol',
-        { class: 'jfb-ranking', role: 'list' },
+        {
+          class: 'jfb-ranking',
+          role: 'list',
+          'data-jfb-name': control.name,
+          'data-jfb-ranked': control.ranked,
+          'data-jfb-moved': control.moved,
+        },
         control.items.map((item) =>
           el(
             d,
@@ -950,6 +957,23 @@ function writeControl(context: ViewContext, classes: ThemeClassesModel, field: F
 // The built-in types whose view writes no control or nothing at all where the model has none.
 const BUILT_IN = new Set(['divider', 'image', 'hidden']);
 
+/** A counter's line with what the runtime says as the text changes (ADR-0154). */
+const counterOf = (d: Document, classes: ThemeClassesModel, counter: CounterModel): HTMLElement =>
+  el(
+    d,
+    'p',
+    {
+      class: classes.counter,
+      id: counter.id,
+      'data-jfb-limit': counter.limit,
+      'data-jfb-left': counter.left,
+      'data-jfb-left-one': counter.leftOne,
+      'data-jfb-too-many': counter.over,
+      'data-jfb-too-many-one': counter.overOne,
+    },
+    counter.text,
+  );
+
 /** An input with its prefix and its suffix, as the text and number views write them. */
 function affixed(
   d: Document,
@@ -999,13 +1023,12 @@ function choices(
   field: FieldViewModel,
   control: ChoicesControl,
   single: boolean,
-): HTMLElement {
-  if (control.empty !== undefined) return el(d, 'p', { class: classes.help, id: field.id }, control.empty);
-  const choice = (each: ChoiceModel): HTMLElement =>
+): Child {
+  const choice = (each: ChoiceModel, sample = false): HTMLElement =>
     el(
       d,
       'div',
-      { class: classes.choice },
+      { class: classes.choice, 'data-jfb-sample': flag(sample) },
       each.image && el(d, 'img', { src: each.image.url, alt: '', width: each.image.width, height: each.image.height }),
       el(d, 'input', {
         class: classes.choiceInput,
@@ -1023,28 +1046,47 @@ function choices(
       each.description !== undefined && el(d, 'p', { class: classes.help, id: each.descriptionId }, each.description),
     );
   const other = control.other;
-  return el(
-    d,
-    'div',
-    { class: control.cssClass },
-    control.choices.map(choice),
-    other && [
-      choice(other.choice),
-      el(
-        d,
-        'div',
-        { class: 'jfb-other' },
-        el(d, 'label', { class: 'jfb-visually-hidden', for: other.textId }, other.textLabel),
-        el(d, 'input', {
-          class: classes.control,
-          id: other.textId,
-          name: other.textName,
-          value: shown(other.text),
-          disabled: field.isDisabled,
-        }),
-      ),
-    ],
-  );
+  const otherOf = (given: OtherChoiceModel, text: string | null): Child => [
+    choice(given.choice),
+    el(
+      d,
+      'div',
+      { class: 'jfb-other' },
+      el(d, 'label', { class: 'jfb-visually-hidden', for: given.textId }, given.textLabel),
+      el(d, 'input', {
+        class: classes.control,
+        id: given.textId,
+        name: given.textName,
+        value: text,
+        disabled: field.isDisabled,
+      }),
+    ),
+  ];
+  const cascade = control.cascade;
+  let template: HTMLTemplateElement | undefined;
+  if (cascade !== undefined) {
+    template = el(d, 'template', {
+      'data-jfb-cascade': flag(true),
+      'data-jfb-none': cascade.none,
+      'data-jfb-unavailable': cascade.unavailable,
+    }) as HTMLTemplateElement;
+    template.content.append(
+      el(d, 'div', { class: control.cssClass }, choice(cascade.sample, true), other && otherOf(other, null)),
+      el(d, 'p', { class: classes.help, id: field.id }),
+    );
+  }
+  return [
+    control.empty !== undefined
+      ? el(d, 'p', { class: classes.help, id: field.id }, control.empty)
+      : el(
+          d,
+          'div',
+          { class: control.cssClass },
+          control.choices.map((each) => choice(each)),
+          other && otherOf(other, shown(other.text)),
+        ),
+    template,
+  ];
 }
 
 /** `fields/dropdown`: a dropdown in its wrapper for the theme's chevron, or a list box with how to choose several. */
@@ -1058,6 +1100,10 @@ function dropdown(d: Document, classes: ThemeClassesModel, field: FieldViewModel
       name: field.name,
       multiple: control.multiple,
       size: control.size,
+      'data-jfb-cascade': flag(control.cascades === true),
+      'data-jfb-prompt': control.cascades === true ? control.prompt : null,
+      'data-jfb-none': control.cascades === true ? control.none : null,
+      'data-jfb-unavailable': control.cascades === true ? control.unavailable : null,
       autocomplete: field.autocomplete,
       required: field.isRequired,
       'data-jfb-requires': flag(field.hooks),
@@ -1146,49 +1192,67 @@ function repeater(
     el(
       d,
       'button',
-      { type: 'submit', class: classes.buttonLink, name: 'jfb-nav', value: button.value, disabled: field.isDisabled },
+      {
+        type: 'submit',
+        class: classes.buttonLink,
+        name: 'jfb-nav',
+        value: button.value,
+        disabled: field.isDisabled,
+        hidden: button.isHidden,
+      },
       button.text,
       button.context !== undefined && el(d, 'span', { class: 'jfb-visually-hidden' }, ` ${button.context}`),
     );
+  const rowOf = (row: RepeaterRowModel): HTMLElement =>
+    el(
+      d,
+      'fieldset',
+      { class: 'jfb-row', id: row.id, 'data-jfb-row': row.index },
+      el(d, 'legend', {}, row.legend),
+      remove(row.remove),
+      el(
+        d,
+        'div',
+        { class: control.fieldsCssClass },
+        row.fields.map((child) => writeField(context, classes, child)),
+      ),
+    );
+  const template = d.createElement('template');
+  template.content.append(rowOf(control.template));
   return el(
     d,
     'div',
-    { class: 'jfb-repeater', id: field.id, tabindex: '-1' },
+    {
+      class: 'jfb-repeater',
+      id: field.id,
+      tabindex: '-1',
+      'data-jfb-least': control.least,
+      'data-jfb-most': control.most,
+      'data-jfb-legend': control.legend,
+      'data-jfb-removed': control.removed,
+    },
     el(d, 'input', {
       type: 'hidden',
       name: control.rowCount.name,
       value: control.rowCount.value,
       disabled: field.isDisabled,
     }),
-    control.rows.map((row) =>
-      el(
-        d,
-        'fieldset',
-        { class: 'jfb-row', id: row.id, 'data-jfb-row': row.index },
-        el(d, 'legend', {}, row.legend),
-        row.remove && remove(row.remove),
-        el(
-          d,
-          'div',
-          { class: control.fieldsCssClass },
-          row.fields.map((child) => writeField(context, classes, child)),
-        ),
-      ),
+    control.rows.map(rowOf),
+    template,
+    el(
+      d,
+      'button',
+      {
+        type: 'submit',
+        class: classes.button,
+        name: 'jfb-nav',
+        value: control.add.value,
+        disabled: field.isDisabled,
+        hidden: control.add.isHidden,
+      },
+      el(d, 'span', { class: 'jfb-icon jfb-icon-add', 'aria-hidden': 'true' }),
+      control.add.text,
     ),
-    control.add &&
-      el(
-        d,
-        'button',
-        {
-          type: 'submit',
-          class: classes.button,
-          name: 'jfb-nav',
-          value: control.add.value,
-          disabled: field.isDisabled,
-        },
-        el(d, 'span', { class: 'jfb-icon jfb-icon-add', 'aria-hidden': 'true' }),
-        control.add.text,
-      ),
   );
 }
 

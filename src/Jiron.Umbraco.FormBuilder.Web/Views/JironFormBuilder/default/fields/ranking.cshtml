@@ -20,7 +20,7 @@
 }
 else
 {
-    <ol class="jfb-ranking" role="list">
+    <ol class="jfb-ranking" role="list" data-jfb-name="@control.Name" data-jfb-ranked="@control.Ranked" data-jfb-moved="@control.Moved">
         @foreach (var item in control.Items)
         {
             <li id="@item.Id">

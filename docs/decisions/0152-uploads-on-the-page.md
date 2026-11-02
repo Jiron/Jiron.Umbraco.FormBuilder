@@ -22,9 +22,8 @@ named as the field. The input: the page reads it as it reads every other answer,
 no second path.
 
 **A form of several pages,** whose Next posts until 6.5d: its tokens could not be claimed by the post, so that form keeps the
-browser's own input until the pages move to the browser. So does a form with a repeater or a ranking, whose buttons post until
-6.4o, a view without the template, whose file only a post can hold, and a form view without the send's parts, which cannot go from
-the page.
+browser's own input until the pages move to the browser. So does a view without the template, whose file only a post can hold, and
+a form view without the send's parts, which cannot go from the page.
 
 **How the browser's checks stay the server's:** by hand, or by a port held to the server by shared vectors, as the logic is
 (ADR-0005). The vectors.

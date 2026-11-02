@@ -18,6 +18,12 @@ const BUSY = 'data-jfb-busy';
 const ERROR = 'data-jfb-failed';
 const DROP = 'data-jfb-drop';
 
+/** The row of a repeatable group an element stands in, or null. */
+const placeIn = (element: Element): number | null => {
+  const row = element.closest<HTMLElement>('[data-jfb-row]')?.dataset['jfbRow'];
+  return row === undefined ? null : Number(row);
+};
+
 const extensionOf = (name: string): string => {
   const at = name.lastIndexOf('.');
   return at < 0 ? '' : name.slice(at + 1).toLowerCase();
@@ -40,7 +46,7 @@ interface Words {
 export function enhanceUploads(form: HTMLFormElement, model: FormModel, options: UploadOptions): PageUploads {
   const key = form.dataset['jfbForm'] ?? '';
   const running = new Set<Promise<void>>();
-  const held = new Map<string, Map<HTMLElement, UploadedFile>>();
+  const held = new Map<HTMLInputElement, Map<HTMLElement, UploadedFile>>();
   const fields = fieldsOf(model).flatMap((field) => [field, ...(field.fields ?? [])]);
   const number = new Intl.NumberFormat(model.culture, { maximumFractionDigits: 1 });
 
@@ -55,11 +61,11 @@ export function enhanceUploads(form: HTMLFormElement, model: FormModel, options:
   };
 
   /** The field's own words for an error, as the page words a check's. */
-  async function messageOf(field: ModelField, code: string): Promise<string> {
+  async function messageOf(field: ModelField, code: string, row: number | null): Promise<string> {
     const reading = readPage(form, model);
     const context = contextOf(model, reading, Date.now(), form.ownerDocument.URL);
     const words = await wordsFor(model.culture);
-    const [shown] = shownErrors(form, model, reading, [{ field: field.key, row: null, code }], context, words);
+    const [shown] = shownErrors(form, model, reading, [{ field: field.key, row, code }], context, words);
     return shown?.message ?? '';
   }
 
@@ -72,24 +78,25 @@ export function enhanceUploads(form: HTMLFormElement, model: FormModel, options:
   ): Promise<string | null> {
     const taken = input.accept.split(',').map((each) => each.trim().replace(/^\./, '').toLowerCase());
     const extension = extensionOf(file.name);
-    if (input.accept !== '' && !taken.includes(extension)) return messageOf(field, 'fileType');
+    const row = placeIn(input);
+    if (input.accept !== '' && !taken.includes(extension)) return messageOf(field, 'fileType', row);
     const most = field.settings?.['maxBytes'];
-    if (typeof most === 'number' && file.size > most) return messageOf(field, 'fileSize');
+    if (typeof most === 'number' && file.size > most) return messageOf(field, 'fileSize', row);
     const files = field.settings?.['maxFiles'];
-    if (typeof files === 'number' && files > 1 && count > files) return messageOf(field, 'fileCount');
+    if (typeof files === 'number' && files > 1 && count > files) return messageOf(field, 'fileCount', row);
     const head = new Uint8Array(await file.slice(0, HEAD_LENGTH).arrayBuffer());
     return isExecutable(head) || !matchesKind(extension, head) || hidesMarkup(extension, head)
-      ? messageOf(field, 'fileType')
+      ? messageOf(field, 'fileType', row)
       : null;
   }
 
-  for (const zone of form.querySelectorAll<HTMLElement>('.jfb-upload')) {
+  const enhance = (zone: HTMLElement): void => {
     const host = zone.closest<HTMLElement>('[data-jfb-field]');
     const input = zone.querySelector<HTMLInputElement>('input[type="file"]:not(.jfb-upload-camera)');
     const template = host?.querySelector<HTMLTemplateElement>('template[data-jfb-file]');
     const field = fields.find((each) => each.key === host?.dataset['jfbField']);
     const sample = template?.content.querySelector<HTMLElement>('li');
-    if (!host || !input || !template || field === undefined || !sample) continue;
+    if (!host || !input || !template || field === undefined || !sample) return;
     const data = template.dataset;
     const words: Words = {
       uploading: data['jfbUploading'] ?? '',
@@ -102,9 +109,8 @@ export function enhanceUploads(form: HTMLFormElement, model: FormModel, options:
       kb: data['jfbKb'] ?? '',
       mb: data['jfbMb'] ?? '',
     };
-    const name = input.name;
     const mine = new Map<HTMLElement, UploadedFile>();
-    held.set(name, mine);
+    held.set(input, mine);
     const single = !input.multiple;
     let list: HTMLElement | null = null;
 
@@ -134,7 +140,7 @@ export function enhanceUploads(form: HTMLFormElement, model: FormModel, options:
         } else {
           answer ??= row.appendChild(form.ownerDocument.createElement('input'));
           answer.type = 'hidden';
-          answer.name = name;
+          answer.name = (input as HTMLInputElement).name;
           answer.value = value;
         }
         zone.dispatchEvent(new Event('input', { bubbles: true }));
@@ -190,7 +196,8 @@ export function enhanceUploads(form: HTMLFormElement, model: FormModel, options:
         resolve();
       };
       const refused = async (code: string | undefined): Promise<void> => {
-        const text = code === 'later' ? words.later : await messageOf(field as ModelField, code ?? 'fileType');
+        const text =
+          code === 'later' ? words.later : await messageOf(field as ModelField, code ?? 'fileType', placeIn(zone));
         built.answers(null);
         built.show('refused', text);
         say(`${file.name}: ${text}`);
@@ -335,7 +342,7 @@ export function enhanceUploads(form: HTMLFormElement, model: FormModel, options:
       });
     }
 
-    for (const file of options.restored?.get(name) ?? []) {
+    for (const file of options.restored?.get(input.name) ?? []) {
       const built = rowOf(file.name);
       listOf().append(built.row);
       hold(built, file);
@@ -346,7 +353,9 @@ export function enhanceUploads(form: HTMLFormElement, model: FormModel, options:
       };
     }
     zone.setAttribute('data-jfb-enhanced', '');
-  }
+  };
+
+  for (const zone of form.querySelectorAll<HTMLElement>('.jfb-upload')) enhance(zone);
 
   return {
     async settled(): Promise<boolean> {
@@ -361,7 +370,12 @@ export function enhanceUploads(form: HTMLFormElement, model: FormModel, options:
       return false;
     },
     uploaded(): ReadonlyMap<string, readonly UploadedFile[]> {
-      return new Map([...held].map(([name, files]) => [name, [...files.values()]]));
+      return new Map(
+        [...held].filter(([input]) => input.isConnected).map(([input, files]) => [input.name, [...files.values()]]),
+      );
+    },
+    add(root: Element): void {
+      for (const zone of root.querySelectorAll<HTMLElement>('.jfb-upload')) enhance(zone);
     },
   };
 }

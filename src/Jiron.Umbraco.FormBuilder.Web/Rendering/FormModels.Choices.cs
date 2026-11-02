@@ -186,6 +186,9 @@ internal sealed partial class FormModels
             }), FormBuilderThemeSlots.Choices),
             Choices = choices,
             Other = other,
+            Cascade = field.Options?.Parent is null
+                ? null
+                : new ChoicesCascadeModel(new ChoiceModel { Id = id, Value = string.Empty, Label = string.Empty, Description = string.Empty }, build.Words.NoChoices, build.Words.ChoicesUnavailable),
             Empty = choices.Count == 0 && other is null ? NoOptions(build, available) : null,
         };
     }
@@ -257,6 +260,9 @@ internal sealed partial class FormModels
             Multiple = multiple,
             Size = multiple ? Math.Clamp(options.Count, 2, MostListLines) : null,
             Prompt = multiple ? null : settings.Text("prompt") is { Length: > 0 } prompt ? prompt : build.Words.Choose,
+            Cascades = field.Options?.Parent is not null,
+            None = build.Words.NoChoices,
+            Unavailable = build.Words.ChoicesUnavailable,
             Options = [.. options.Select(option => new SelectOptionModel(option.Value, option.Label, chosen.Contains(option.Value)))],
             Hint = multiple && options.Count > 0 ? new HintModel(build.Words.SeveralHint, id + "-hint") : null,
             Empty = options.Count == 0 ? NoOptions(build, available) : null,
@@ -396,7 +402,7 @@ internal sealed partial class FormModels
             });
         }
 
-        return new RankingControlModel { Items = items, Empty = items.Count == 0 ? NoOptions(build, available) : null };
+        return new RankingControlModel { Items = items, Name = alias, Ranked = ranked, Moved = build.Words.RankingMoved, Empty = items.Count == 0 ? NoOptions(build, available) : null };
 
         // The id of a ranking's place, counted from 0 here and from 1 in the id.
         static string Place(string id, int at) => id + "-place-" + (at + 1).ToString(CultureInfo.InvariantCulture);

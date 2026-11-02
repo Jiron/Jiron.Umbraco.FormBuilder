@@ -7,7 +7,7 @@
     var control = (SelectControlModel)Model.Control!;
     void Select()
     {
-        <select class="@Model.Classes.Select" id="@Model.Id" name="@Model.Name" multiple="@control.Multiple" size="@control.Size" autocomplete="@Model.Autocomplete" required="@Model.IsRequired" @FormBuilderHtml.Flag("data-jfb-requires", Model.Hooks) disabled="@(Model.IsDisabled || control.Empty is not null)" @FormBuilderHtml.Flag("data-jfb-disabled", Model.Hooks && control.Empty is not null) aria-invalid="@(Model.Error is null ? null : "true")" aria-describedby="@Model.DescribedBy">
+        <select class="@Model.Classes.Select" id="@Model.Id" name="@Model.Name" multiple="@control.Multiple" size="@control.Size" @FormBuilderHtml.Flag("data-jfb-cascade", control.Cascades) @FormBuilderHtml.Attribute("data-jfb-prompt", control.Cascades ? control.Prompt : null) @FormBuilderHtml.Attribute("data-jfb-none", control.Cascades ? control.None : null) @FormBuilderHtml.Attribute("data-jfb-unavailable", control.Cascades ? control.Unavailable : null) autocomplete="@Model.Autocomplete" required="@Model.IsRequired" @FormBuilderHtml.Flag("data-jfb-requires", Model.Hooks) disabled="@(Model.IsDisabled || control.Empty is not null)" @FormBuilderHtml.Flag("data-jfb-disabled", Model.Hooks && control.Empty is not null) aria-invalid="@(Model.Error is null ? null : "true")" aria-describedby="@Model.DescribedBy">
             @if (control.Empty is { } empty)
             {
                 <option value="">@empty</option>
