@@ -1,3 +1,4 @@
+using System.Collections.Frozen;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
@@ -75,11 +76,11 @@ internal sealed partial class EmailLayouts(IEmailLayoutRepository layouts, ILogg
     public static readonly Guid LetterKey = new("c41d7e92-0b6f-4a38-8e25-71f3a6d8b902");
 
     /// <summary>Every built-in layout, by its key.</summary>
-    public static readonly IReadOnlyDictionary<Guid, EmailLayoutDesign> BuiltIn = new Dictionary<Guid, EmailLayoutDesign>
+    public static readonly FrozenDictionary<Guid, EmailLayoutDesign> BuiltIn = new Dictionary<Guid, EmailLayoutDesign>
     {
         [CardKey] = new EmailLayoutDesign { Look = EmailLook.Card },
         [LetterKey] = new EmailLayoutDesign { Look = EmailLook.Letter },
-    };
+    }.ToFrozenDictionary();
 
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web)
     {

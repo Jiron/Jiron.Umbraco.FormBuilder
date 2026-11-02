@@ -129,6 +129,11 @@ internal sealed partial class OutboxPass(
         var left = false;
         foreach (var queue in queues)
         {
+            if (stopping.IsCancellationRequested)
+            {
+                break;
+            }
+
             try
             {
                 left |= await queue.PassAsync(_claimant, deadline, stopping);

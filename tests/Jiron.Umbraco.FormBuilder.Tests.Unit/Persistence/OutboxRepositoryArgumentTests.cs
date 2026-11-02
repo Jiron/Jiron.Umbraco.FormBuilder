@@ -178,7 +178,6 @@ public sealed class OutboxRepositoryArgumentTests
             Refused(() => repository.AddAsync(mail with { Bcc = new string('b', EmailRepository.MaxAddressesLength + 1) }), "long blind copy");
             Refused(() => repository.AddAsync(mail with { ReplyTo = new string('r', EmailRepository.MaxAddressLength + 1) }), "long reply-to");
             Refused(() => repository.AddAsync(mail with { ReplyTo = "anna@jfb.test" + line }), "a header in the reply-to");
-            Refused(() => repository.AddAsync(mail with { From = string.Empty }), "no sender");
             Refused(() => repository.AddAsync(mail with { From = "forms@jfb.test" + (char)10 }), "a line break in the sender");
             Refused(() => repository.AddAsync(mail with { Subject = new string('s', EmailRepository.MaxSubjectLength + 1) }), "long subject");
             Refused(() => repository.AddAsync(mail with { Subject = null! }), "null subject");

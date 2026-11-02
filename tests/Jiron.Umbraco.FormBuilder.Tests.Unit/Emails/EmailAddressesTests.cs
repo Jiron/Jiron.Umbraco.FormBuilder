@@ -28,7 +28,11 @@ public sealed class EmailAddressesTests
 
     [Test]
     public void AnAddressWithALoneSurrogate_IsNotOne() =>
-        Assert.That(EmailAddresses.IsOne("a" + (char)0xd800 + "@jfb.test"), Is.False);
+        Assert.Multiple(() =>
+        {
+            Assert.That(EmailAddresses.IsOne("a" + (char)0xd800 + "@jfb.test"), Is.False);
+            Assert.That(EmailAddresses.IsOne("a@jfb" + (char)0xdc00 + ".test"), Is.False);
+        });
 
     [Test]
     public void AnAddressTooLongForMail_IsNotOne() =>

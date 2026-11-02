@@ -191,6 +191,18 @@ public sealed class EmailRendererTests
         });
     }
 
+    [Test]
+    public void WhatALogoSays_IsEscaped()
+    {
+        var html = RenderHtml(Dressed with { LogoAlt = new Dictionary<string, string> { [""] = "\"><script>alert(1)</script>" } });
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(html, Does.Not.Contain("<script"));
+            Assert.DoesNotThrow(() => XDocument.Parse(html));
+        });
+    }
+
     [TestCase("javascript:alert(1)")]
     [TestCase("/logo.png")]
     [TestCase("ftp://jfb.test/logo.png")]
