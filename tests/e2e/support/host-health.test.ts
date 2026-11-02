@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { appendFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { after, test } from 'node:test';
 import {
   describeStall,
@@ -11,6 +11,7 @@ import {
   stalledDatabase,
   STARTUP_LINES,
   startupWorkDone,
+  stopThenRecordStall,
   waitForStartupWork,
 } from './host-health.ts';
 
@@ -143,4 +144,20 @@ test('the start-up wait ends at once on a hung database or a misplaced marker', 
     state: 'misordered',
   });
   assert.ok(Date.now() - started < 5_000, 'no wait for the time-out');
+});
+
+test('a host of one spec leaves the marker when it is stopped, and looks only once it has stopped', async () => {
+  const hung = logFile('[10:00:00 ERR] Something may be stalled on a hung database connection\n');
+  const fine = logFile('[10:00:00 INF] All is well\n');
+  const marker = join(dirname(hung), HANG_MARKER);
+  let markerWhileStopping = true;
+  await stopThenRecordStall(async () => {
+    markerWhileStopping = existsSync(marker);
+    await Promise.resolve();
+  }, hung)();
+  await stopThenRecordStall(() => Promise.resolve(), fine)();
+
+  assert.equal(markerWhileStopping, false);
+  assert.equal(existsSync(marker), true);
+  assert.equal(existsSync(join(dirname(fine), HANG_MARKER)), false);
 });

@@ -4,6 +4,7 @@ import { closeSync, cpSync, existsSync, mkdirSync, openSync, readFileSync, rmSyn
 import { connect } from 'node:net';
 import { join, relative, sep } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
+import { stopThenRecordStall } from './host-health.ts';
 import { clientDir, DEMO_URL, demoProject, e2eState, PORT_RANGE, repoRoot, TARGET_FRAMEWORK } from './paths.ts';
 
 /** Log lines that mean the host is ready: the demo's seeder and the Testing project's people seeder are done. */
@@ -272,7 +273,7 @@ export async function startHost(options: HostOptions): Promise<Host> {
     });
   }
 
-  return { baseUrl, mailDir, logFile, stateDir, stop };
+  return { baseUrl, mailDir, logFile, stateDir, stop: stopThenRecordStall(stop, logFile) };
 }
 
 /**

@@ -75,6 +75,17 @@ export function recordStall(logFile: string): StalledDatabase | null {
   return stall;
 }
 
+/**
+ * A host's stop that looks at its log afterwards, so that a host of one spec whose database hung leaves its marker as the
+ * run's host does, and the gate knows that failure for what it is.
+ */
+export function stopThenRecordStall(stop: () => Promise<void>, logFile: string): () => Promise<void> {
+  return async () => {
+    await stop();
+    recordStall(logFile);
+  };
+}
+
 /** True once both pieces of Umbraco's start-up work show in the log. */
 export function startupWorkDone(log: string): boolean {
   return STARTUP_LINES.every((line) => log.includes(line));

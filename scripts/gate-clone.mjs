@@ -184,6 +184,17 @@ function gate(root, hash, paths, keep) {
       rmSync(paths.results, { recursive: true, force: true });
       cpSync(results, paths.results, { recursive: true });
     }
+    // What each host logged, as the clone goes with its hosts' folders.
+    const hosts = join(paths.clone, '.local', 'e2e');
+    if (code !== 0 && existsSync(hosts)) {
+      for (const entry of readdirSync(hosts, { withFileTypes: true })) {
+        const hostLog = join(hosts, entry.name, 'host.log');
+        if (entry.isDirectory() && existsSync(hostLog)) {
+          mkdirSync(join(paths.results, 'hosts'), { recursive: true });
+          cpSync(hostLog, join(paths.results, 'hosts', `${entry.name}.log`));
+        }
+      }
+    }
   } finally {
     const verdict = existsSync(paths.log) ? verdictOf(readFileSync(paths.log, 'utf8')) : null;
     const seconds = Math.round((Date.now() - started) / 1000);
