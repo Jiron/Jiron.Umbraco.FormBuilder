@@ -2394,7 +2394,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - Blocked words, blocked email domains, maximum links, per-form strictness, and `IFormBuilderSpamCheck`.
     - The `Spam` state. "Not spam" runs the submitted actions then; on a form with email verification, 8.5 sends an unverified entry to `Unverified` instead.
   - Done when: tests cover each content rule, a custom `IFormBuilderSpamCheck`, and "not spam" running the submitted actions.
-- [ ] **7.1e The challenge in the runtime** (7.1 split in five, WORKLOG 2026-11-01)
+- [x] **7.1e The challenge in the runtime** (7.1 split in five, WORKLOG 2026-11-01) (2026-11-02, 3a0d4ca)
   - **Resumes (2026-11-01):** the owner raised the budget to 60 KB (ADR-0146); this step resumes at 7.4i, with every check below.
   - **Blocked (2026-11-01):** the runtime stands 2 bytes below the 40 KB of §4.12, a budget only the owner can change, and this part adds to it and builds on the sending of 6.4i (ADR-0120, `docs/OWNER-TODO.md`). The server's parts are 7.1a to 7.1d.
   - **Signals:** the `challenge` endpoint's use by the runtime as the first part of every upload (its use for JS posts, the honeypot's value and the wait in a `429`'s notice moved to 6.4i, whose sends need them, ADR-0120; this step's checks stay as they are).
