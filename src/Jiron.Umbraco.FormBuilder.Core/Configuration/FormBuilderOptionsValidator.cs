@@ -44,6 +44,7 @@ internal sealed class FormBuilderOptionsValidator(IHostFolders folders, IConfigu
         CheckFileLimits(options.Files, failures);
         CheckDefinitionLimits(options.Limits.Definitions, failures);
         CheckRateLimits(options.Limits, failures);
+        CheckMailLimits(options.Limits.Mail, failures);
         CheckSettingLocks(options.Designer.SettingLocks, failures);
         CheckLockedSections(options.LockedSections, failures);
         CheckHostGrants(options.Access.Grants, failures);
@@ -123,6 +124,22 @@ internal sealed class FormBuilderOptionsValidator(IHostFolders folders, IConfigu
     }
 
     // The rate limits within their bounds (ADR-0012, ADR-0137).
+    private static void CheckMailLimits(FormBuilderMailLimitsOptions mail, List<string> failures)
+    {
+        foreach (var (name, value) in new[] { (nameof(mail.PerRecipientPerDay), mail.PerRecipientPerDay), (nameof(mail.PerSitePerHour), mail.PerSitePerHour) })
+        {
+            if (value is < 1 or > FormBuilderMailLimitsOptions.HighestCount)
+            {
+                failures.Add(string.Create(CultureInfo.InvariantCulture, $"{Root}:Limits:Mail:{name} ({value}) must be 1 to {FormBuilderMailLimitsOptions.HighestCount}."));
+            }
+        }
+
+        if (mail.AttachmentBytes is < 1 or > FormBuilderMailLimitsOptions.HighestAttachmentBytes)
+        {
+            failures.Add(string.Create(CultureInfo.InvariantCulture, $"{Root}:Limits:Mail:AttachmentBytes ({mail.AttachmentBytes}) must be 1 to {FormBuilderMailLimitsOptions.HighestAttachmentBytes}."));
+        }
+    }
+
     private static void CheckRateLimits(FormBuilderLimitsOptions limits, List<string> failures)
     {
         if (limits.MaxTrackedClients is < FormBuilderLimitsOptions.LeastTrackedClients or > FormBuilderLimitsOptions.HighestRate)

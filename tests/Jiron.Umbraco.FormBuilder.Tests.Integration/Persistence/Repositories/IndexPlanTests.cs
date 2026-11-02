@@ -44,6 +44,22 @@ public sealed class IndexPlanTests : RepositoryTestBase
     }
 
     [Test]
+    public async Task TheMailLimits_CountThroughTheirIndexes_NotThroughAllKeptMail()
+    {
+        Assume.That(IsSqlite, Is.True, "plans are SQLite's");
+        var mail = new NewEmail(EmailKind.Action, "anna@jfb.test", "site@jfb.test", "S", "T", "en", RecipientKey: "anna@jfb.test");
+
+        var plans = await PlansAsync(() => GetRequiredService<IEmailRepository>().AddWithinLimitsAsync(mail, new EmailLimits(3, 200, TimeSpan.FromDays(30))));
+
+        var insert = plans.Single(plan => plan.Statement.StartsWith("INSERT", StringComparison.Ordinal)).Plan;
+        Assert.Multiple(() =>
+        {
+            Assert.That(insert, Has.Some.Contains("IX_jfbEmail_recipientKey_createdUtc (recipientKey=? AND createdUtc>?)"), "the recipient's day");
+            Assert.That(insert, Has.Some.Contains("IX_jfbEmail_createdUtc_recipientKey (createdUtc>?)"), "the site's hour");
+        });
+    }
+
+    [Test]
     public async Task TheFilesThatWaitForAScan_UseTheirIndex_AndTheUploadsComeInOrderFromIt()
     {
         Assume.That(IsSqlite, Is.True, "plans are SQLite's");

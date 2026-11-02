@@ -57,6 +57,12 @@ internal static class FormBuilderProblems
     /// <summary>An action whose type the site lacks (ADR-0158).</summary>
     public const string ActionTypeUnknownCode = "action_type_unknown";
 
+    /// <summary>The code of a test mail while Umbraco can send no mail (ADR-0159).</summary>
+    public const string EmailNotConfiguredCode = "email_not_configured";
+
+    /// <summary>The code of a test mail for a user without an address (ADR-0159).</summary>
+    public const string EmailNoAddressCode = "email_no_address";
+
     /// <summary>A test run that reaches what the action is set up to reach, and was not confirmed (section 4.4).</summary>
     public const string TestNeedsConfirmationCode = "test_needs_confirmation";
 
@@ -118,6 +124,14 @@ internal static class FormBuilderProblems
     /// <summary>An action whose type the site lacks (ADR-0158).</summary>
     public static FormBuilderProblemResult ActionTypeUnknown() =>
         Problem(StatusCodes.Status409Conflict, ActionTypeUnknownCode, "This site does not have the type of this action, so it cannot be tested.");
+
+    /// <summary>A test mail while no mail server or pickup folder is set up (ADR-0159).</summary>
+    public static FormBuilderProblemResult EmailNotConfigured() =>
+        Problem(StatusCodes.Status409Conflict, EmailNotConfiguredCode, "This site has no mail server or pickup folder set up, so it cannot send mail.");
+
+    /// <summary>A test mail for a user whose account has no address it can go to (ADR-0159).</summary>
+    public static FormBuilderProblemResult EmailNoAddress() =>
+        Problem(StatusCodes.Status409Conflict, EmailNoAddressCode, "Your account has no address a test mail can go to.");
 
     /// <summary>A test run that reaches what the action is set up to reach, without its confirmation (section 4.4).</summary>
     public static FormBuilderProblemResult ActionTestNeedsConfirmation() =>

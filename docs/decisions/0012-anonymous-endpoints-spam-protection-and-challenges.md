@@ -19,7 +19,8 @@
   ([ADR-0140](0140-content-rules-and-the-spam-folder.md)); what the puzzle's nonce is, what a wrong answer answers and the
   level's home built in 7.2a ([ADR-0141](0141-proof-of-work-on-the-server.md)); a provider's shape, where a page reads the
   site key, when a token is spent and a form whose provider cannot be shown built and amended in 7.2b
-  ([ADR-0142](0142-the-captcha-providers.md))
+  ([ADR-0142](0142-the-captcha-providers.md)); what the mail limits count and what "site" means there built in 8.2
+  ([ADR-0159](0159-mail-the-queue-the-layouts-and-the-limits.md))
 - Date: 2026-10-23
 - Roadmap step: 1.7b (decided); built in 6.1 (the public API and the pipeline), 6.6 (server keys), 7.1 (standard
   protection, content rules and the spam folder), 7.2 (proof of work and captchas), 8.x (mail limits) and 16.1 (the

@@ -44,7 +44,7 @@ public sealed partial class MigrationPlanTests : FormBuilderMigrationTestBase
                 Is.EqualTo(typeof(FormBuilderMigrationPlan)),
                 "the plan states IgnoreCurrentState itself (ADR-0003)");
             Assert.That(walked, Is.EqualTo(Steps), "the plan's transitions are its steps, in order");
-            Assert.That(Steps.Select(s => s.Step), Is.EqualTo(new[] { typeof(CreateSchemaV1), typeof(CreateDefaultSettingsV1), typeof(GrantFormsSectionV1), typeof(RequestReferenceRebuildV1), typeof(AddFileScanIndexV1), typeof(ChangeFileScanIndexV1) }));
+            Assert.That(Steps.Select(s => s.Step), Is.EqualTo(new[] { typeof(CreateSchemaV1), typeof(CreateDefaultSettingsV1), typeof(GrantFormsSectionV1), typeof(RequestReferenceRebuildV1), typeof(AddFileScanIndexV1), typeof(ChangeFileScanIndexV1), typeof(AddEmailTimeIndexV1) }));
             Assert.That(plan.FinalState, Is.EqualTo(FinalState));
             Assert.That(new TestPlan().FinalState, Is.EqualTo(plan.FinalState), "the tests' copy follows the plan");
             Assert.That(CreateSchemaV1.Tables.Select(t => t.Name), Is.EqualTo(FormBuilderTables.All), "the step creates every table in order");
@@ -69,7 +69,7 @@ public sealed partial class MigrationPlanTests : FormBuilderMigrationTestBase
                 Assert.That(schema.PrimaryKeys.GetValueOrDefault(table), Is.EqualTo(ExpectedSchemaV1.PrimaryKey(table)), $"primary key of {table}");
             }
 
-            Assert.That(schema.Indexes, Is.EqualTo(ExpectedSchemaV1.Indexes.Append("jfbEntryFile.IX_jfbEntryFile_scanState_entryId_id(scanState,entryId,id)").Order(StringComparer.Ordinal)), "indexes, the filtered ones included");
+            Assert.That(schema.Indexes, Is.EqualTo(ExpectedSchemaV1.Indexes.Append("jfbEntryFile.IX_jfbEntryFile_scanState_entryId_id(scanState,entryId,id)").Append("jfbEmail.IX_jfbEmail_createdUtc_recipientKey(createdUtc,recipientKey)").Order(StringComparer.Ordinal)), "indexes, the filtered ones included");
             Assert.That(schema.ForeignKeys, Is.EqualTo(ExpectedSchemaV1.ForeignKeys), "foreign keys");
         });
     }
@@ -209,6 +209,7 @@ public sealed partial class MigrationPlanTests : FormBuilderMigrationTestBase
             Assert.That(Count(FormBuilderTables.Setting), Is.EqualTo(CreateDefaultSettingsV1.Sections.Count));
             Assert.That(GroupsWithSection(), Is.EqualTo(Admins));
             Assert.That(Inspect().Indexes, Has.One.Contains(ChangeFileScanIndexV1.IndexName).And.None.Contains("IX_jfbEntryFile_scanState_id("), "the old index of the scans gives way");
+            Assert.That(Inspect().Indexes, Has.One.Contains(AddEmailTimeIndexV1.IndexName));
         });
     }
 

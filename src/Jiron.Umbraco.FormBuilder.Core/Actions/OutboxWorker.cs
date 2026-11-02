@@ -82,7 +82,7 @@ internal sealed class OutboxWake : IDisposable
     public void Dispose() => _changes?.Dispose();
 }
 
-/// <summary>Something a pass of the worker sends: the action runs now, the mail from 8.2 on (ADR-0007).</summary>
+/// <summary>Something a pass of the worker sends: the action runs, then the mail (ADR-0007).</summary>
 internal interface IOutboxQueue
 {
     /// <summary>The queue's name, for the log.</summary>

@@ -14,6 +14,9 @@ internal sealed class MemoryFileStore : IFormBuilderFileStore
     /// <summary>True to make every delete fail, as a disk that refuses would.</summary>
     public bool FailDeletes { get; set; }
 
+    /// <summary>True to make every read fail, as a disk that refuses would.</summary>
+    public bool FailReads { get; set; }
+
     /// <summary>Runs after each delete with the id it deleted, or null.</summary>
     public Func<string, Task>? AfterDelete { get; set; }
 
@@ -37,6 +40,11 @@ internal sealed class MemoryFileStore : IFormBuilderFileStore
     public Task<Stream?> OpenReadAsync(string id, CancellationToken cancellationToken = default)
     {
         FormBuilderFileId.ThrowIfInvalid(id);
+        if (FailReads)
+        {
+            throw new IOException("JFB_TEST: the disk refuses the read");
+        }
+
         return Task.FromResult<Stream?>(_files.TryGetValue(id, out var bytes) ? new MemoryStream(bytes, writable: false) : null);
     }
 

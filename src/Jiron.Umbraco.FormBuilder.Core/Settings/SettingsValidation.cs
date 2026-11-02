@@ -56,6 +56,9 @@ internal sealed class SettingsErrors(string section)
     /// <summary>The code of a blocked domain that is not a domain (ADR-0140).</summary>
     public const string DomainCode = "domain";
 
+    /// <summary>The code of a value that is not one mail address (ADR-0159).</summary>
+    public const string AddressCode = "address";
+
     /// <summary>The code of a field a site cannot override.</summary>
     public const string Scope = "scope";
 

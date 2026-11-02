@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Jiron.Umbraco.FormBuilder.Core.Actions;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Dtos;
 using Umbraco.Cms.Infrastructure.Persistence;
 
@@ -6,8 +7,8 @@ namespace Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 
 /// <inheritdoc />
 /// <remarks>
-/// A mail's one error column holds <c>code: message</c>, cut to its length; the code always fits (ADR-0040). The limits
-/// for visitor mail and the <see cref="EmailState.Limited"/> state come with 8.2 (ADR-0012).
+/// A mail's one error column holds <c>code: message</c>, cut to its length; the code always fits (ADR-0040). What is queued
+/// wakes this server's worker once it is committed (ADR-0007).
 /// </remarks>
 internal sealed class EmailRepository(FormBuilderDatabase database) : IEmailRepository
 {
@@ -29,11 +30,18 @@ internal sealed class EmailRepository(FormBuilderDatabase database) : IEmailRepo
     /// <summary>The longest error message the column holds; longer ones are cut.</summary>
     public const int MaxErrorMessageLength = 1000;
 
+    /// <summary>The error of a mail held back by the limit of its recipient.</summary>
+    public const string RecipientLimit = "recipient_limit";
+
+    /// <summary>The error of a mail held back by the limit of the site.</summary>
+    public const string SiteLimit = "site_limit";
+
     private static readonly string Queued = StoredNames.Of(EmailState.Queued);
     private static readonly string Sending = StoredNames.Of(EmailState.Sending);
     private static readonly string Sent = StoredNames.Of(EmailState.Sent);
     private static readonly string Failed = StoredNames.Of(EmailState.Failed);
     private static readonly string Uncertain = StoredNames.Of(EmailState.Uncertain);
+    private static readonly string Limited = StoredNames.Of(EmailState.Limited);
 
     /// <inheritdoc />
     public Task<StoredEmail?> AddAsync(NewEmail email, CancellationToken cancellationToken = default)
@@ -70,7 +78,91 @@ internal sealed class EmailRepository(FormBuilderDatabase database) : IEmailRepo
                     CreatedUtc = now,
                 };
                 await db.InsertRowAsync(row);
+                database.PublishAfterCommit(new OutboxQueuedNotification());
                 return await FindAsync(db, n, row.Id);
+            },
+            cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public Task<StoredEmail?> AddWithinLimitsAsync(NewEmail email, EmailLimits limits, CancellationToken cancellationToken = default)
+    {
+        CheckEmail(email);
+        ArgumentNullException.ThrowIfNull(limits);
+        Outbox.CheckKeep(limits.Keep);
+        if (email.RecipientKey is null)
+        {
+            throw new ArgumentException("A mail to an address a visitor typed has its recipient key.", nameof(email));
+        }
+
+        return database.WriteAsync(
+            async db =>
+            {
+                var n = new SqlNames(db);
+                if (email.EntryId is { } entryId && !await RowHolds.HoldEntryAsync(db, n, entryId))
+                {
+                    return null;
+                }
+
+                var now = database.UtcNow;
+                var emails = n.T(FormBuilderTables.Email);
+
+                // The columns that have a value: a null parameter in a select list has no type of its own on SQL Server.
+                (string Column, object? Value)[] values =
+                [
+                    ("kind", StoredNames.Of(email.Kind)),
+                    ("entryId", email.EntryId),
+                    ("actionRunId", email.ActionRunId),
+                    ("toAddresses", email.To),
+                    ("ccAddresses", email.Cc),
+                    ("bccAddresses", email.Bcc),
+                    ("replyToAddress", email.ReplyTo),
+                    ("fromAddress", email.From),
+                    ("subject", email.Subject),
+                    ("htmlBody", email.HtmlBody),
+                    ("textBody", email.TextBody),
+                    ("attachments", AttachmentsText(email.Attachments ?? [])),
+                    ("culture", email.Culture),
+                    ("recipientKey", email.RecipientKey),
+                    ("createdUtc", now),
+                ];
+                var given = values.Where(value => value.Value is not null).ToArray();
+                object?[] args =
+                [
+                    email.RecipientKey,
+                    now.AddDays(-1),
+                    now.AddHours(-1),
+                    limits.PerRecipientPerDay,
+                    limits.PerSitePerHour,
+                    now,
+                    RecipientLimit,
+                    SiteLimit,
+                    now + limits.Keep,
+                    .. given.Select(value => value.Value),
+                ];
+                const int FirstValue = 9;
+                var columns = string.Join(", ", given.Select(value => n.C(value.Column)));
+                var parameters = SqlArgs.Placeholders(FirstValue, given.Length);
+                var over = $"(mine.{n.C("sent")} >= @3 OR site.{n.C("sent")} >= @4)";
+                await db.ExecAsync(
+                    $"INSERT INTO {emails} ({columns}, {n.C("state")}, {n.C("nextAttemptUtc")}, {n.C("lastErrorCode")}, {n.C("purgeAfterUtc")}, {n.C("attempts")}) "
+                    + $"SELECT {parameters}, CASE WHEN {over} THEN '{Limited}' ELSE '{Queued}' END, CASE WHEN {over} THEN NULL ELSE @5 END, "
+                    + $"CASE WHEN mine.{n.C("sent")} >= @3 THEN @6 WHEN site.{n.C("sent")} >= @4 THEN @7 END, CASE WHEN {over} THEN @8 END, 0 "
+                    + $"FROM (SELECT COUNT(*) AS {n.C("sent")} FROM {emails}{n.LockingRead} WHERE {n.C("recipientKey")} = @0 AND {n.C("createdUtc")} > @1 AND {n.C("state")} <> '{Limited}') mine "
+                    + $"CROSS JOIN (SELECT COUNT(*) AS {n.C("sent")} FROM {emails}{n.LockingRead} WHERE {n.C("recipientKey")} IS NOT NULL AND {n.C("createdUtc")} > @2 AND {n.C("state")} <> '{Limited}') site",
+                    args);
+
+                // The range stays held until the unit ends, so the newest mail of this key is the one just added.
+                var row = await db.FirstOrNullAsync<EmailDto>(
+                    $"SELECT * FROM {emails} WHERE {n.C("recipientKey")} = @0 ORDER BY {n.C("id")} DESC {n.Page(0, 1)}",
+                    email.RecipientKey);
+                var stored = row is null ? null : FromDto(row);
+                if (stored?.State == EmailState.Queued)
+                {
+                    database.PublishAfterCommit(new OutboxQueuedNotification());
+                }
+
+                return stored;
             },
             cancellationToken);
     }
@@ -155,6 +247,19 @@ internal sealed class EmailRepository(FormBuilderDatabase database) : IEmailRepo
     }
 
     /// <inheritdoc />
+    public Task<bool> ReleaseAsync(long emailId, string token, TimeSpan delay, DeliveryError error, CancellationToken cancellationToken = default)
+    {
+        Outbox.CheckToken(token);
+        Outbox.CheckDelay(delay);
+        Outbox.CheckError(error);
+        return OutcomeAsync(
+            emailId,
+            token,
+            (n, now) => ($"{n.C("state")} = '{Queued}', {n.C("attempts")} = {n.C("attempts")} - 1, {n.C("nextAttemptUtc")} = @2, {n.C("lockedBy")} = NULL, {n.C("lockedUntilUtc")} = NULL, {n.C("lastErrorCode")} = @3, {n.C("lastErrorMessage")} = @4, {n.C("purgeAfterUtc")} = NULL", [now + delay, error.Code, Message(error)]),
+            cancellationToken);
+    }
+
+    /// <inheritdoc />
     public Task<bool> FailAsync(long emailId, string token, DeliveryError error, TimeSpan keep, CancellationToken cancellationToken = default)
     {
         Outbox.CheckToken(token);
@@ -219,6 +324,11 @@ internal sealed class EmailRepository(FormBuilderDatabase database) : IEmailRepo
                 if (changed == 0 && current is not null)
                 {
                     throw new FormBuilderConcurrencyException($"The mail was changed meanwhile (it was no longer {StoredNames.Describe(expected)}).");
+                }
+
+                if (changed == 1)
+                {
+                    database.PublishAfterCommit(new OutboxQueuedNotification());
                 }
 
                 return current;
@@ -333,7 +443,7 @@ internal sealed class EmailRepository(FormBuilderDatabase database) : IEmailRepo
         Require(email.Cc is null || Plain(email.Cc, MaxAddressesLength), $"A mail's copy recipients are 1 to {MaxAddressesLength} characters without control characters.");
         Require(email.Bcc is null || Plain(email.Bcc, MaxAddressesLength), $"A mail's blind copy recipients are 1 to {MaxAddressesLength} characters without control characters.");
         Require(email.ReplyTo is null || Plain(email.ReplyTo, MaxAddressLength), $"A mail's reply-to address is 1 to {MaxAddressLength} characters without control characters.");
-        Require(Plain(email.From, MaxAddressLength), $"A mail's sender is 1 to {MaxAddressLength} characters without control characters.");
+        Require(email.From is { Length: 0 } || Plain(email.From, MaxAddressLength), $"A mail's sender is empty, for Umbraco's own when it is sent, or at most {MaxAddressLength} characters without control characters.");
         Require(email.Subject is not null && email.Subject.Length <= MaxSubjectLength, $"A mail's subject holds at most {MaxSubjectLength} characters.");
         Require(email.TextBody is { Length: > 0 }, "A mail's text version is not empty (ADR-0007).");
         Require(email.HtmlBody is null || email.HtmlBody.Length > 0, "A mail's HTML body is null or not empty.");

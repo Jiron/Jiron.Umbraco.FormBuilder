@@ -74,7 +74,7 @@ database connection of its own. Its areas:
 | Logic | rules, validation, the pattern matcher, merge tags, calculations, text cleaning and folding | ADR-0005, ADR-0014, ADR-0030, ADR-0064, ADR-0068 |
 | Merge tags | the merge-tag service over the engine: the places and what each takes, the built-in sources (`field`, `entry` with `entry.answers` and `entry.url`, `form`, `query`, `context`, `date`, and `page`, `site`, `member` and `dictionary` over Umbraco's content, members, domains, languages and dictionary), the answers as each field type shows them with what each place masks or leaves out and the dictionary's texts for labels that name an item and the labels lists and other sources resolve for options, answer recall in visitor texts (only the fields before the text's page, group or field, by their current aliases, a site's type by its rule kind), a site's sources and filters with their start-up check, the culture formats written from .NET's data, and for a browser a template's values but recall's, the recall form cut down to what its texts need and the culture's formats as JSON | ADR-0014, ADR-0064, ADR-0065, ADR-0066, ADR-0067, ADR-0068, ADR-0077, ADR-0083, ADR-0085 |
 | Entries | the submission pipeline (`Submissions`: from a request by aliases to a stored entry with its receipt and outcome, below), states, values, files, events, notes, the entries query builder, and a consent's wording as shown, sanitised and hashed | ADR-0003, ADR-0070, ADR-0085, ADR-0088, §4.4 |
-| Actions and email | action types, action runs, the email outbox, the worker | ADR-0007 |
+| Actions and email | action types, action runs, the worker; the mail queue with its renderer, layouts, limits and test mail (`Email`, [ADR-0159](decisions/0159-mail-the-queue-the-layouts-and-the-limits.md)) | ADR-0007 |
 | Protection | the spam score, content rules, captcha provider contract, mail caps | ADR-0012 |
 | Files | the file store contract and the physical store, whose root is checked against the web root at start-up; the host's limits for files (`Files:MaxFileBytes`, `Files:MaxWaitingBytes`, `Files:MaxWaitingBytesPerAddress`, `Files:BlockedExtensions`); the uploads before a submission: the name cleaned, the first bytes checked against the kinds of file (`FileKinds`), the bytes counted, hashed and stored, a row without an entry; the bytes that may wait for an entry (`WaitingUploads`, ADR-0148); scanning in the background, what an entry holds first, and the quarantine (`FileScans`, ADR-0144, ADR-0148); an entry's files for a user, one or a form's in a ZIP under names that stay in their folder (`EntryFileDownloads`, `FileArchiveNames`, ADR-0145); a typed signature drawn as its PNG in the package's own hand (`TypedSignature`, `SignatureHand`, `PenCanvas`, `Png`), the name kept in an `iTXt` chunk | ADR-0006, ADR-0041, ADR-0087, ADR-0103, ADR-0148 |
 | Privacy | retention, holds, data subject tools, masking, IP handling | ADR-0009 |
@@ -592,7 +592,7 @@ Two layers ([ADR-0008](decisions/0008-settings-model.md)):
 - **Host configuration** (`JironFormBuilder` in `appsettings.json`): base paths, origins, server keys, whether a placed
   form writes its assets (`Rendering:IncludeAssetsAutomatically`), file roots and
   caps (`Files:MaxFileBytes`, `Files:MaxWaitingBytes`, `Files:MaxWaitingBytesPerAddress`, `Files:BlockedExtensions`), the rate limits (`Limits:Read`, `Challenge`, `Submit`,
-  `Upload`, `Events` and `Verify`, with `Limits:MaxTrackedClients` and `Limits:ServerKeyFactor`; [ADR-0137](decisions/0137-the-rate-limiter.md)),
+  `Upload`, `Events` and `Verify`, with `Limits:MaxTrackedClients` and `Limits:ServerKeyFactor`; [ADR-0137](decisions/0137-the-rate-limiter.md); the mail limits in `Limits:Mail`, [ADR-0159](decisions/0159-mail-the-queue-the-layouts-and-the-limits.md)),
   privacy permissions, captcha keys (`Captcha:RecaptchaV2`, `Captcha:RecaptchaV3` and `Captcha:Hcaptcha`, each with
   `SiteKey` and `SecretKey`, both or neither, and an optional `VerifyAddress`, and `Captcha:UseRecaptchaNet`;
   [ADR-0142](decisions/0142-the-captcha-providers.md)), the hosts the site calls (`Webhooks:AllowedHosts`, each on its scheme's
@@ -611,7 +611,7 @@ Two layers ([ADR-0008](decisions/0008-settings-model.md)):
 - **Backoffice sections** in `jfbSetting` ([ADR-0043](decisions/0043-backoffice-settings-sections.md)): one immutable
   record each, whose initializers are the defaults, with a validator, its schema migrations and a host rule, each
   arriving with the step that builds what it configures (so far `general` with the time zone, the new-form defaults
-  and how long draft saves stay in the History). `general`, `email` and `protection` are per site: a site row holds the top-level
+  and how long draft saves stay in the History, and `email` with the sender, the default layout and the team's addresses). `general`, `email` and `protection` are per site: a site row holds the top-level
   fields the site overrides (`null` meaning the default), and a `[GlobalOnly]` field, such as `general.newForms` or
   `general.history`, is shared by every site. A request that names no page holding the form meets the strictest of the sites'
   protection ([ADR-0147](decisions/0147-the-site-that-protects-a-form.md)). `files`, `privacy` and `integrations` are global;

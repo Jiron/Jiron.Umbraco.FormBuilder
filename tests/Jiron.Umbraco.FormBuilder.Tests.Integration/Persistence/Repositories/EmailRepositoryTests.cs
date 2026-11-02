@@ -21,6 +21,26 @@ public sealed class EmailRepositoryTests : RepositoryTestBase
     private static readonly DeliveryError Refused = new("smtp.550", "Mailbox unavailable.");
 
     [Test]
+    public async Task AClaimGivenBack_CountsNoAttempt_AndNeedsItsToken()
+    {
+        var entryId = await EntryAsync();
+        var stored = await Emails.AddAsync(Mail(entryId));
+        var token = (await Emails.ClaimAsync(stored!.Id, Server, TimeSpan.FromMinutes(5)))!.LockedBy!;
+
+        var wrong = await Emails.ReleaseAsync(stored.Id, Stale, TimeSpan.FromMinutes(1), Refused);
+        var right = await Emails.ReleaseAsync(stored.Id, token, TimeSpan.FromMinutes(1), Refused);
+
+        var released = (await Emails.GetAsync(stored.Id))!;
+        Assert.Multiple(() =>
+        {
+            Assert.That((wrong, right), Is.EqualTo((false, true)));
+            Assert.That((released.State, released.Attempts, released.LockedBy, released.LockedUntilUtc), Is.EqualTo((EmailState.Queued, 0, (string?)null, (DateTimeOffset?)null)));
+            Assert.That(released.LastError, Is.EqualTo(Refused));
+            Assert.That(released.NextAttemptUtc, Is.GreaterThan(released.CreatedUtc));
+        });
+    }
+
+    [Test]
     public async Task AMail_IsQueued_AsItWillBeSent()
     {
         var entryId = await EntryAsync();

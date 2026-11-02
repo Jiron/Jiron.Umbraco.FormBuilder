@@ -395,6 +395,15 @@ export type SaveFormDraftRequestModel = {
     comment?: string | null;
 };
 
+export type TestEmailRequestModel = {
+    site?: string | null;
+    layout?: string | null;
+};
+
+export type TestEmailResponseModel = {
+    to: string;
+};
+
 export type TrashEmptiedResponseModel = {
     deleted: LibraryDeletionResponseModel;
     left: number;
@@ -480,6 +489,39 @@ export type ActionTestTestResponses = {
 };
 
 export type ActionTestTestResponse = ActionTestTestResponses[keyof ActionTestTestResponses];
+
+export type TestEmailSendData = {
+    body?: TestEmailRequestModel;
+    path?: never;
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/email/test';
+};
+
+export type TestEmailSendErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+};
+
+export type TestEmailSendError = TestEmailSendErrors[keyof TestEmailSendErrors];
+
+export type TestEmailSendResponses = {
+    /**
+     * Accepted
+     */
+    202: TestEmailResponseModel;
+};
+
+export type TestEmailSendResponse = TestEmailSendResponses[keyof TestEmailSendResponses];
 
 export type EntryActionRunListData = {
     body?: never;

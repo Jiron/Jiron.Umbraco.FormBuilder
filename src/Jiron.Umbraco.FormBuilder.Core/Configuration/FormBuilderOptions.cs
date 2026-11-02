@@ -132,6 +132,9 @@ public sealed class FormBuilderLimitsOptions
     /// </summary>
     public DefinitionLimits Definitions { get; } = new();
 
+    /// <summary>How much mail may leave for addresses that visitors type, and how large a mail's attachments may be (ADR-0012, ADR-0159).</summary>
+    public FormBuilderMailLimitsOptions Mail { get; } = new();
+
     /// <summary>The highest a rate limit may be.</summary>
     public const int HighestRate = 10_000_000;
 
@@ -193,6 +196,31 @@ public sealed class FormBuilderRatePolicyOptions
 
     /// <summary>Requests per second to the whole site, from anyone; whatever the other limits do, this one holds.</summary>
     public int SitePerSecond { get; set; }
+}
+
+/// <summary>The limits of mail (section 4.10, ADR-0012, ADR-0159).</summary>
+public sealed class FormBuilderMailLimitsOptions
+{
+    /// <summary>The highest a limit of mail may be.</summary>
+    public const int HighestCount = 1_000_000;
+
+    /// <summary>The most bytes of attachments the host may allow on one mail.</summary>
+    public const long HighestAttachmentBytes = 100L * 1024 * 1024;
+
+    /// <summary>
+    /// How many mails one address that visitors type may get in 24 hours, across all forms: 1 to 1,000,000, 3 by default. Every
+    /// spelling of a mailbox counts as one. A mail over a limit is stored as limited and never sent.
+    /// </summary>
+    public int PerRecipientPerDay { get; set; } = 3;
+
+    /// <summary>How many mails may leave for addresses that visitors type in an hour, on this installation: 1 to 1,000,000, 200 by default.</summary>
+    public int PerSitePerHour { get; set; } = 200;
+
+    /// <summary>
+    /// How many bytes of attachments one mail may carry as they travel, a third more than the files: 1 to 104,857,600, 20 MB by
+    /// default, since mail servers refuse larger mail. A file past it is left out, and the mail goes without it.
+    /// </summary>
+    public long AttachmentBytes { get; set; } = 20L * 1024 * 1024;
 }
 
 /// <summary>Whether actions and email go out (section 4.4, ADR-0007).</summary>

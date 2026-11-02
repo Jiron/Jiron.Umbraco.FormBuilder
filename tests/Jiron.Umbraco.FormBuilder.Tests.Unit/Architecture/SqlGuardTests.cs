@@ -53,6 +53,15 @@ public sealed partial class SqlGuardTests
     }
 
     [Test]
+    public void TheMailLimits_CountWithALock_OnSqlServer()
+    {
+        // Without it two requests count the same mail and pass the limit together (ADR-0012).
+        var source = Sources().Single(source => source.File == "EmailRepository.cs").Text;
+
+        Assert.That(source.Split("COUNT(*) AS {n.C(\"sent\")} FROM {emails}{n.LockingRead} WHERE").Length - 1, Is.EqualTo(2));
+    }
+
+    [Test]
     public void EveryExistsCheck_IsOneTheScanReads()
     {
         var unread = Matches(Exists())

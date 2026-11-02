@@ -57,6 +57,9 @@ public sealed class FormBuilderOptionsTests
         {
             Assert.That(limits.MaxTrackedClients, Is.EqualTo(100_000));
             Assert.That(limits.ServerKeyFactor, Is.EqualTo(10));
+            Assert.That(limits.Mail.PerRecipientPerDay, Is.EqualTo(3));
+            Assert.That(limits.Mail.PerSitePerHour, Is.EqualTo(200));
+            Assert.That(limits.Mail.AttachmentBytes, Is.EqualTo(20L * 1024 * 1024));
             Assert.That(Of(limits.Read), Is.EqualTo(new[] { 120, 0, 0, 0, 200 }));
             Assert.That(Of(limits.Challenge), Is.EqualTo(new[] { 30, 0, 10, 0, 100 }));
             Assert.That(Of(limits.Submit), Is.EqualTo(new[] { 20, 100, 5, 600, 50 }));
@@ -70,6 +73,12 @@ public sealed class FormBuilderOptionsTests
     [TestCase("MaxTrackedClients", "10000001", "must be 1000 to 10000000")]
     [TestCase("ServerKeyFactor", "0", "must be 1 to 1000")]
     [TestCase("ServerKeyFactor", "1001", "must be 1 to 1000")]
+    [TestCase("Mail:PerRecipientPerDay", "0", "must be 1 to 1000000")]
+    [TestCase("Mail:PerRecipientPerDay", "1000001", "must be 1 to 1000000")]
+    [TestCase("Mail:PerSitePerHour", "0", "must be 1 to 1000000")]
+    [TestCase("Mail:PerSitePerHour", "1000001", "must be 1 to 1000000")]
+    [TestCase("Mail:AttachmentBytes", "0", "must be 1 to 104857600")]
+    [TestCase("Mail:AttachmentBytes", "104857601", "must be 1 to 104857600")]
     [TestCase("Read:PerAddressPerMinute", "-1", "must be 0 to 10000000")]
     [TestCase("Challenge:PerAddressPerHour", "10000001", "must be 0 to 10000000")]
     [TestCase("Submit:PerAddressAndFormPerMinute", "-1", "must be 0 to 10000000")]
@@ -86,6 +95,9 @@ public sealed class FormBuilderOptionsTests
     [TestCase("MaxTrackedClients", "1000")]
     [TestCase("MaxTrackedClients", "10000000")]
     [TestCase("ServerKeyFactor", "1000")]
+    [TestCase("Mail:PerRecipientPerDay", "1000000")]
+    [TestCase("Mail:PerSitePerHour", "1")]
+    [TestCase("Mail:AttachmentBytes", "104857600")]
     [TestCase("Submit:SitePerSecond", "0")]
     [TestCase("Submit:SitePerSecond", "10000000")]
     public void ARateLimitAtItsBounds_Passes(string key, string value) =>
@@ -511,7 +523,7 @@ public sealed class FormBuilderOptionsTests
 
     [TestCase("JironFormBuilder:Limit:Definitions:MaxFields", "JironFormBuilder:Limit is not a setting of Jiron Form Builder; the settings in JironFormBuilder are PublicApi, Rendering, Files, Actions, Limits, Designer, Access, Captcha, Privacy, Webhooks and LockedSections.")]
     [TestCase("JironFormBuilder:Limits:Definitions:MaxField", "JironFormBuilder:Limits:Definitions:MaxField is not a setting of Jiron Form Builder; the settings in JironFormBuilder:Limits:Definitions are MaxBytes, MaxPages, MaxGroups, MaxFields, MaxOptionsPerField, MaxActions, MaxOutcomes and MaxRules.")]
-    [TestCase("JironFormBuilder:Limits:Definition:MaxFields", "JironFormBuilder:Limits:Definition is not a setting of Jiron Form Builder; the settings in JironFormBuilder:Limits are Definitions, MaxTrackedClients, ServerKeyFactor, Read, Challenge, Submit, Upload, Events and Verify.")]
+    [TestCase("JironFormBuilder:Limits:Definition:MaxFields", "JironFormBuilder:Limits:Definition is not a setting of Jiron Form Builder; the settings in JironFormBuilder:Limits are Definitions, Mail, MaxTrackedClients, ServerKeyFactor, Read, Challenge, Submit, Upload, Events and Verify.")]
     [TestCase("JironFormBuilder:LockedSection:0", "JironFormBuilder:LockedSection is not a setting of Jiron Form Builder; the settings in JironFormBuilder are PublicApi, Rendering, Files, Actions, Limits, Designer, Access, Captcha, Privacy, Webhooks and LockedSections.")]
     [TestCase("JironFormBuilder:Designer:SettingLocks:0:Typ", "JironFormBuilder:Designer:SettingLocks:0:Typ is not a setting of Jiron Form Builder; the settings in JironFormBuilder:Designer:SettingLocks:0 are Kind, Type, Setting, Value and Hidden.")]
     [TestCase("JironFormBuilder:Files:Root:Folder", "JironFormBuilder:Files:Root is a single value, not a section.")]

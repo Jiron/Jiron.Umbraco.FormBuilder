@@ -130,6 +130,7 @@ public sealed partial class DatabaseDocsTests
         }
 
         indexes[FormBuilderTables.EntryFile].Add(ChangeFileScanIndexV1.IndexName);
+        indexes[FormBuilderTables.Email].Add(AddEmailTimeIndexV1.IndexName);
 
         return indexes;
     }

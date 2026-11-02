@@ -53,6 +53,7 @@ idempotent, so a rerun changes nothing.
 | `jfb-004-request-reference-rebuild` | `RequestReferenceRebuildV1` | Asks for a rebuild of the "used on" index: the row `references-rebuild` in `jfbKeyValue`, from the first document, where it is missing; a walk under way goes on where it was. The reference job does the walk (ADR-0131). |
 | `jfb-005-file-scan-index` | `AddFileScanIndexV1` | Adds `IX_jfbEntryFile_scanState_id`, for the files that wait for a scan ([ADR-0144](decisions/0144-cleanup-and-the-scanner.md)), where it is missing. |
 | `jfb-006-file-scan-order` | `ChangeFileScanIndexV1` | Replaces `IX_jfbEntryFile_scanState_id` with `IX_jfbEntryFile_scanState_entryId_id`, which also tells what an entry holds from uploads no entry took ([ADR-0148](decisions/0148-what-uploads-may-hold.md)). |
+| `jfb-007-email-time-index` | `AddEmailTimeIndexV1` | Adds `IX_jfbEmail_createdUtc_recipientKey`, so the site's mail limit reads the last hour and not all kept mail ([ADR-0159](decisions/0159-mail-the-queue-the-layouts-and-the-limits.md)), where it is missing. |
 
 A step that has shipped is never edited; a change to the schema is a new step with snapshot classes of its own. Step 1
 is frozen since the end of Phase 4, the tag `baseline/schema-v1`: `SchemaV1FreezeTests` pins the SHA-256 of a
@@ -596,6 +597,7 @@ action run's do, and `purgeAfterUtc` is set once the mail is final or uncertain 
 - `IX_jfbEmail_state_nextAttemptUtc`: what is due.
 - `IX_jfbEmail_entryId`: the mail of an entry.
 - `IX_jfbEmail_recipientKey_createdUtc`: the per-address limits.
+- `IX_jfbEmail_createdUtc_recipientKey`: the site's limit, which counts the last hour's mail to visitors.
 - `IX_jfbEmail_purgeAfterUtc`: the purge.
 
 ### `jfbOptionCapacity`

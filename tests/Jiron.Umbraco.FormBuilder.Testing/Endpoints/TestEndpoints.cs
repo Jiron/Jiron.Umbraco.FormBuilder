@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text.Json;
 using Jiron.Umbraco.FormBuilder.Core.Access;
+using Jiron.Umbraco.FormBuilder.Core.Email;
 using Jiron.Umbraco.FormBuilder.Core.Files;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
@@ -85,6 +86,9 @@ internal sealed class TestEndpointsStartupFilter(IOptions<FormBuilderTestingOpti
 /// same form's, instance's and entry's <c>jfb-sent</c> value, expired a minute ago (ADR-0123), so the browser tests see
 /// what an expired one shows without moving the clock that every test shares; <c>404</c> for a form the host does not
 /// have or a value that names nothing for it.</description></item>
+/// <item><description><c>POST /jfb-testing/mail-layouts {"marker": "...", "word": "..."}</c>: queues a mail in every layout's shape, each
+/// holding the word wherever text goes, with the subject <c>&lt;marker&gt; &lt;layout&gt;</c>, and answers those subjects, so the browser
+/// tests can render what arrives in the pickup folder (ADR-0159).</description></item>
 /// </list>
 /// Requests from another machine, and paths outside <c>/jfb-testing/</c>, go on to the site as if this did not exist.
 /// </summary>
@@ -108,6 +112,33 @@ internal sealed class TestEndpointsMiddleware(RequestDelegate next)
     }
 
     private sealed record ProtectionRequest(string? CaptchaConsent);
+
+    // One mail in every shape a mail can take, each holding this word wherever text goes, through the queue.
+    private static async Task MailLayoutsAsync(HttpContext context)
+    {
+        var body = await JsonSerializer.DeserializeAsync<MailLayoutsRequest>(context.Request.Body, Json, context.RequestAborted);
+        var marker = body?.Marker ?? Guid.NewGuid().ToString("N");
+        var word = body?.Word ?? new string('x', 300);
+        var services = context.RequestServices;
+        var outbox = services.GetRequiredService<EmailOutbox>();
+        var layouts = services.GetRequiredService<IEmailLayoutRepository>();
+        var keys = new Dictionary<string, Guid> { ["card"] = EmailLayouts.CardKey, ["letter"] = EmailLayouts.LetterKey };
+        foreach (var look in new[] { "card", "letter" })
+        {
+            var design = JsonSerializer.Serialize(new { look, header = new Dictionary<string, string> { [""] = $"<p>{word}</p>" }, footer = new Dictionary<string, string> { [""] = $"<p>{word}</p>" } }, Json);
+            keys[$"dressed-{look}"] = (await layouts.CreateAsync(new NewEmailLayout(Guid.NewGuid(), $"{marker}-{look}", $"{marker} {look}", design), context.RequestAborted)).Key;
+        }
+
+        var html = $"<h2>{word}</h2><p>{word} <a href=\"https://jfb.test/{word}\">{word}</a></p><ul><li>{word}</li></ul><blockquote>{word}</blockquote><pre>{word}</pre><p><code>{word}</code></p><table><tr><th>{word}</th><td>{word}</td></tr></table>";
+        foreach (var (name, key) in keys)
+        {
+            await outbox.QueueAsync(new OutgoingEmail { Kind = EmailKind.Test, To = ["layouts@jfb.test"], Subject = $"{marker} {name}", Body = html, Culture = "en", Layout = key }, context.RequestAborted);
+        }
+
+        await context.Response.WriteAsJsonAsync(new { subjects = keys.Keys.Select(name => $"{marker} {name}") }, Json, context.RequestAborted);
+    }
+
+    private sealed record MailLayoutsRequest(string? Marker, string? Word);
 
     /// <summary>Handles one request.</summary>
     public async Task InvokeAsync(HttpContext context)
@@ -138,6 +169,9 @@ internal sealed class TestEndpointsMiddleware(RequestDelegate next)
                 return;
             case "sent-expired" when HttpMethods.IsPost(context.Request.Method):
                 await SentExpiredAsync(context);
+                return;
+            case "mail-layouts" when HttpMethods.IsPost(context.Request.Method):
+                await MailLayoutsAsync(context);
                 return;
             default:
                 context.Response.StatusCode = StatusCodes.Status404NotFound;

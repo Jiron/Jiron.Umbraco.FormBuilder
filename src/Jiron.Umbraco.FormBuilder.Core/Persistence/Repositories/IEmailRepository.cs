@@ -50,7 +50,7 @@ internal enum EmailState
 /// <summary>A mail to queue, as it will be sent (ADR-0007): one body, HTML or plain text, with the text always there.</summary>
 /// <param name="Kind">What it is for.</param>
 /// <param name="To">The recipients, comma-separated, 1 to 4,000 characters.</param>
-/// <param name="From">The sender's name and address, never a visitor's (section 4.10).</param>
+/// <param name="From">The sender's name and address, never a visitor's (section 4.10); empty for Umbraco's own when it is sent.</param>
 /// <param name="Subject">The subject, at most 1,000 characters; line breaks are replaced when it is sent.</param>
 /// <param name="TextBody">The text version, always there (ADR-0007).</param>
 /// <param name="Culture">The culture it was written in, 1 to 32 characters.</param>
@@ -129,6 +129,12 @@ internal sealed record StoredEmail(
     DateTimeOffset? SentUtc,
     DateTimeOffset? PurgeAfterUtc);
 
+/// <summary>The limits of mail to an address a visitor typed (ADR-0012).</summary>
+/// <param name="PerRecipientPerDay">How many one recipient key may get in 24 hours.</param>
+/// <param name="PerSitePerHour">How many may leave for such addresses in an hour.</param>
+/// <param name="Keep">How long a mail held back is kept.</param>
+internal sealed record EmailLimits(int PerRecipientPerDay, int PerSitePerHour, TimeSpan Keep);
+
 /// <summary>
 /// The mail outbox in <c>jfbEmail</c> (ADR-0007, ADR-0040): every state change is one conditional statement that names
 /// the mail and its state, and for an attempt's outcome the token of its claim. The sender (8.2) owns the policy: the
@@ -141,6 +147,14 @@ internal interface IEmailRepository
     /// entry it belongs to does not exist.
     /// </summary>
     Task<StoredEmail?> AddAsync(NewEmail email, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Queues a mail to an address a visitor typed, within the limits (ADR-0012): the count and the insert are one statement,
+    /// holding a range lock on SQL Server, so parallel requests cannot pass them together. A mail over a limit is stored
+    /// <see cref="EmailState.Limited"/>, with the limit as its error, and never leaves. The mail as stored, or null when the
+    /// entry it belongs to does not exist. It needs its <see cref="NewEmail.RecipientKey"/>.
+    /// </summary>
+    Task<StoredEmail?> AddWithinLimitsAsync(NewEmail email, EmailLimits limits, CancellationToken cancellationToken = default);
 
     /// <summary>The mail with this id, or null.</summary>
     Task<StoredEmail?> GetAsync(long emailId, CancellationToken cancellationToken = default);
@@ -164,6 +178,12 @@ internal interface IEmailRepository
 
     /// <summary>Records a failed attempt to be tried again after <paramref name="delay"/>. False when the token no longer holds the mail.</summary>
     Task<bool> RetryAsync(long emailId, string token, TimeSpan delay, DeliveryError error, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gives back a claim that sent nothing, to be claimed again after <paramref name="delay"/>, without counting as an attempt.
+    /// False when the token no longer holds the mail.
+    /// </summary>
+    Task<bool> ReleaseAsync(long emailId, string token, TimeSpan delay, DeliveryError error, CancellationToken cancellationToken = default);
 
     /// <summary>Records a failure for good, kept for <paramref name="keep"/>. False when the token no longer holds the mail.</summary>
     Task<bool> FailAsync(long emailId, string token, DeliveryError error, TimeSpan keep, CancellationToken cancellationToken = default);

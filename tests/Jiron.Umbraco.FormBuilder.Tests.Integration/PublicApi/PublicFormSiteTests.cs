@@ -2,6 +2,7 @@ using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
+using Jiron.Umbraco.FormBuilder.Core.Email;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Core.Settings;
 using Jiron.Umbraco.FormBuilder.Core.Submissions;
@@ -130,6 +131,16 @@ public sealed class PublicFormSiteTests : PublicApiTestBase
         };
         var currentProtection = await Settings.GetAsync<ProtectionSettings>();
         await Settings.SaveAsync(protection, currentProtection.Version, Editor);
+        var email = new EmailSettings
+        {
+            SenderName = "JFB_TEST sender",
+            SenderAddress = "jfb-allowlist-sender@jfb.test",
+            DefaultLayout = EmailLayouts.LetterKey,
+            TeamRecipients = ["jfb-allowlist-team@jfb.test"],
+            ForwardAddresses = ["jfb-allowlist-forward@jfb.test"],
+        };
+        var currentEmail = await Settings.GetAsync<EmailSettings>();
+        await Settings.SaveAsync(email, currentEmail.Version, Editor);
         using var after = await GetAsync($"{Root}/forms/{key}");
         var set = await JsonAsync(after);
         var allowed = set.DeepClone();
@@ -146,10 +157,10 @@ public sealed class PublicFormSiteTests : PublicApiTestBase
         }
 
         var sections = typeof(GeneralSettings).Assembly.GetTypes().Where(type => typeof(ISettingsSection).IsAssignableFrom(type) && !type.IsInterface).ToList();
-        var unchanged = Leaves(filled, new GeneralSettings(), nameof(GeneralSettings)).Concat(Leaves(protection, new ProtectionSettings(), nameof(ProtectionSettings))).Where(leaf => leaf.Filled == leaf.Default).Select(leaf => leaf.Path).ToList();
+        var unchanged = Leaves(filled, new GeneralSettings(), nameof(GeneralSettings)).Concat(Leaves(protection, new ProtectionSettings(), nameof(ProtectionSettings))).Concat(Leaves(email, new EmailSettings(), nameof(EmailSettings))).Where(leaf => leaf.Filled == leaf.Default).Select(leaf => leaf.Path).ToList();
         Assert.Multiple(() =>
         {
-            Assert.That(sections, Is.EquivalentTo(new[] { typeof(GeneralSettings), typeof(ProtectionSettings) }), "a new section is filled here too");
+            Assert.That(sections, Is.EquivalentTo(new[] { typeof(GeneralSettings), typeof(ProtectionSettings), typeof(EmailSettings) }), "a new section is filled here too");
             Assert.That(unchanged, Is.Empty, "a new field is filled here too");
             Assert.That(set["timeZone"]!.GetValue<string>(), Is.EqualTo("Pacific/Chatham"), "visitors get the time zone");
             Assert.That(set["form"]!["settings"]!["requiredMarker"]!.GetValue<string>(), Is.EqualTo("none"), "the style of a form that inherits it");

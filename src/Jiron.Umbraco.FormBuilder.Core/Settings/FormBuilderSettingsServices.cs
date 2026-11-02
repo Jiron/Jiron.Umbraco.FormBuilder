@@ -1,3 +1,4 @@
+using Jiron.Umbraco.FormBuilder.Core.Email;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Umbraco.Cms.Core.DependencyInjection;
@@ -20,6 +21,7 @@ internal static class FormBuilderSettingsServices
         builder.CacheRefreshers().Add<FormBuilderSettingsCacheRefresher>();
 
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<ISettingsValidator<GeneralSettings>, GeneralSettingsValidator>());
+        builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<ISettingsValidator<EmailSettings>, EmailSettingsValidator>());
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<ISettingsHostRule<ProtectionSettings>, ImplicitCaptchaConsentRule>());
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<ISettingsValidator<ProtectionSettings>, ProtectionSettingsValidator>());
         return builder;
