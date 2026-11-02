@@ -82,10 +82,7 @@ internal sealed partial class EmailLayouts(IEmailLayoutRepository layouts, ILogg
         [LetterKey] = new EmailLayoutDesign { Look = EmailLook.Letter },
     }.ToFrozenDictionary();
 
-    private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web)
-    {
-        Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase, allowIntegerValues: false) },
-    };
+    private static readonly JsonSerializerOptions Json = Options();
 
     /// <summary>The layout with this key; null, an unknown key or one that cannot be read give the built-in card.</summary>
     public async Task<EmailLayoutDesign> FindAsync(Guid? key, CancellationToken cancellationToken)
@@ -115,6 +112,16 @@ internal sealed partial class EmailLayouts(IEmailLayoutRepository layouts, ILogg
             LogLayoutUnreadable(logger, wanted);
             return BuiltIn[CardKey];
         }
+    }
+
+    private static JsonSerializerOptions Options()
+    {
+        var options = new JsonSerializerOptions(JsonSerializerDefaults.Web)
+        {
+            Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase, allowIntegerValues: false) },
+        };
+        options.MakeReadOnly(populateMissingResolver: true);
+        return options;
     }
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Jiron Form Builder's email layout {Layout} no longer exists; the mail uses the built-in card")]
