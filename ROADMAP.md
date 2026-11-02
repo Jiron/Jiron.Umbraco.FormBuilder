@@ -2511,7 +2511,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - **Presets** ("Notify the team", "Confirm to the sender").
   - **The new-form default "notify the creator"** (§4.8; moved here from 4.5 because it needs this action, ADR-0044): a `general` setting for every site at once, which makes a form created from blank or from a template (ADR-0046) start with an email action to the form's creator, unless a template has one already.
   - Done when: tests pass, and an E2E run submits the demo contact form and finds two emails in the pickup folder with the right content, escaping and language. An abuse test also passes: a submission that puts a stranger's address in the email field and a link in the message gets the confirmation through only within the limits, and the link is not clickable in it. A test shows the recipient map choosing the address and the mapped addresses absent from the public projection. A form created from blank or from the Contact template starts with the action to its creator while the new-form default is on, and without it while it is off.
-- [ ] **8.4 Webhook, Slack and Teams**
+- [x] **8.4 Webhook, Slack and Teams** (2026-11-02, 64c98e1)
   - **The webhook:**
     - JSON, form-encoded or XML;
     - field mapping, metadata;
@@ -2520,6 +2520,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - **Slack and Teams:** presets with formatted text.
   - **Umbraco webhook events:** registration (§4.4).
   - Done when: tests pass against the stub on 5560, the SSRF refusal tests pass, and the signature verification samples are tested.
+  - **Not run on this machine:** the PHP sample. There is no PHP here, so `ThePhpSample` is skipped and a static test holds its constants; on CI's runner it runs, and fails without PHP. The C# and Node samples ran. `docs/OWNER-TODO.md` lists it under the first CI run (ADR-0161).
 - [ ] **8.5 Content and state actions, email verification and approval**
   - **Create or update content:**
     - document type, dynamic or picked parent, field-to-property mapping with type compatibility, publish or save;
