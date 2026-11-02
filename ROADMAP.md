@@ -2253,7 +2253,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
 - [x] **6.6f The element on a headless page** (6.6 split in four, WORKLOG 2026-10-31; then 6.6d in four, WORKLOG 2026-10-31) (2026-10-31, e878d5a)
   - **The static site on 5521** (ADR-0011, ADR-0031): the browser harness serves a static page there, cross-origin to the host and allowlisted, that loads the element from the host.
   - Done when: a static page on 5521 (cross-origin, allowlisted) renders a multi-page form through the element, with the honeypot out of view and out of the accessibility tree, and the runtime enhances it as on a Razor page (a rule shows a field, a check shows its error); a page on an origin that is not allowlisted renders nothing and says why in the console; axe is clean.
-- [ ] **6.6g The element's pages and sending** (6.6 split in four, WORKLOG 2026-10-31; then 6.6d in four, WORKLOG 2026-10-31)
+- [x] **6.6g The element's pages and sending** (6.6 split in four, WORKLOG 2026-10-31; then 6.6d in four, WORKLOG 2026-10-31) (2026-11-02, 3996aff)
   - **Resumes (2026-11-01):** the owner raised the budget to 60 KB (ADR-0146); this step resumes at 7.4i, with every check below.
   - **Blocked (2026-10-31):** the element's form moves through its pages and is sent by the runtime's paging (6.5d) and sending (6.4i), which wait for section 4.12's budget, which only the owner can change (ADR-0120, ADR-0128, `docs/OWNER-TODO.md`).
   - **Through the runtime:** the element's form is moved through its pages in the browser, each page checked on the server (`validate`) before the next, and sent, by the runtime's paging (6.5d) and sending (6.4i).
