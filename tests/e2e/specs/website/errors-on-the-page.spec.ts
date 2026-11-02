@@ -1,6 +1,7 @@
 import type { Browser, Locator, Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '../../fixtures.ts';
+import { pressOnThePage } from '../../support/form.ts';
 import { LANGUAGES, formPages, pathOf, type Language } from '../../support/demo-content.ts';
 
 // Errors on the page (ROADMAP 6.4e, ADR-0113), on the demo's contact and feedback forms in English and German: an
@@ -37,7 +38,7 @@ async function renderedByTheServer(browser: Browser, path: string, answers: Read
     await page.goto(path);
     for (const [name, value] of Object.entries(answers)) await formOn(page).locator(`[name="${name}"]`).fill(value);
     const loaded = page.waitForEvent('load');
-    await formOn(page).locator('button[data-jfb-nav="submit"]').click();
+    await pressOnThePage(formOn(page).locator('button[data-jfb-nav="submit"]'));
     await loaded;
     await expect(formOn(page).locator('[data-jfb-summary]'), 'the post was refused for its errors').toBeVisible();
     return await errorsOf(formOn(page));
@@ -118,7 +119,7 @@ for (const language of LANGUAGES) {
     page.on('request', (request) => {
       if (request.method() === 'POST') posts.push(request.url());
     });
-    await form.locator('button[data-jfb-nav="submit"]').click();
+    await pressOnThePage(form.locator('button[data-jfb-nav="submit"]'));
     const summary = form.locator(':scope > [data-jfb-summary]');
     await expect(summary).toBeFocused();
     expect(await errorsOf(form), "the server's errors for the same answers").toEqual(
@@ -171,7 +172,7 @@ for (const language of LANGUAGES) {
       await form.locator(`label[for="${(await input.getAttribute('id')) ?? ''}"]`).click();
       await expect(input).toBeChecked();
     }
-    await form.locator('button[data-jfb-nav="submit"]').click();
+    await pressOnThePage(form.locator('button[data-jfb-nav="submit"]'));
     await expect(page.locator('main [data-jfb-outcome]'), 'the answers were sent').toBeVisible();
     expect(watched.errors, 'nothing wrote an error to the console').toEqual([]);
   });

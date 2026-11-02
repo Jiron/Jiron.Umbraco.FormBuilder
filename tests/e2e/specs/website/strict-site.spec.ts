@@ -3,7 +3,7 @@ import { expect, test, type APIRequestContext, type Page, type Response } from '
 import { loginThroughApi } from '../../support/api-login.ts';
 import { formPages, pathOf } from '../../support/demo-content.ts';
 import { signInMember } from '../../support/demo-members.ts';
-import { fillForm, submitForm } from '../../support/form.ts';
+import { fillForm, submitForm, pressOnThePage } from '../../support/form.ts';
 import { waitForStartupWork } from '../../support/host-health.ts';
 import { hostEnvironment } from '../../support/host-env.ts';
 import { startHost, type Host } from '../../support/host.ts';
@@ -117,7 +117,7 @@ function chunksOf(page: Page): Set<string> {
 async function exercise(page: Page): Promise<void> {
   const form = page.locator('main form.jfb-form');
   await form.locator('input:not([type="hidden"]), textarea').first().focus();
-  await form.locator('button[data-jfb-nav="next"], button[data-jfb-nav="submit"]').first().click();
+  await pressOnThePage(form.locator('button[data-jfb-nav="next"], button[data-jfb-nav="submit"]').first());
   await expect(form.locator('[data-jfb-summary]')).toBeFocused();
   // The summary fades in (the theme's transition from @starting-style); axe measures what the visitor reads after it.
   await page.waitForFunction(() => document.getAnimations().every((animation) => animation.playState !== 'running'));

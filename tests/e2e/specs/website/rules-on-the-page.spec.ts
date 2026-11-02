@@ -1,6 +1,7 @@
 import type { Browser, Locator, Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '../../fixtures.ts';
+import { pressOnThePage } from '../../support/form.ts';
 import { LANGUAGES, formPages, pathOf, type Language } from '../../support/demo-content.ts';
 
 // The rules on the page (ROADMAP 6.4c, ADR-0111), on the demo's feedback form in English and German: the evenings
@@ -65,7 +66,7 @@ async function renderedByTheServer(browser: Browser, path: string, answers: read
     await page.goto(path);
     for (const [name, value] of answers) await choose(formOn(page), name, value);
     const loaded = page.waitForEvent('load');
-    await formOn(page).locator('button[data-jfb-nav="submit"]').click();
+    await pressOnThePage(formOn(page).locator('button[data-jfb-nav="submit"]'));
     await loaded;
     await expect(formOn(page).locator('[data-jfb-summary]'), 'the post was refused for its errors').toBeVisible();
     return await stateOf(formOn(page));

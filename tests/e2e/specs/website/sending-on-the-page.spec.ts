@@ -2,6 +2,7 @@ import type { Locator, Page, Route } from '@playwright/test';
 import { chromium } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '../../fixtures.ts';
+import { logicCome, pressOnThePage } from '../../support/form.ts';
 import { formPages, pathOf, type Language } from '../../support/demo-content.ts';
 
 // Sending on the page (ROADMAP 6.4i, ADR-0120, ADR-0022), on the demo's contact form: a send with JavaScript reaches
@@ -80,7 +81,7 @@ test('a send reaches the entries endpoint and its outcome takes the form place, 
   await fill(form);
   await listen(page);
   const answered = page.waitForResponse((response) => response.url().includes('/entries'));
-  await send(form).click();
+  await pressOnThePage(send(form));
   const answer = await answered;
 
   expect(answer.status(), await answer.text()).toBe(200);
@@ -107,7 +108,7 @@ test('the German page sends and words its states in German', async ({ page }) =>
   const form = formOn(page);
   await fill(form);
   await page.route(ENTRIES, (route) => route.fulfill({ status: 500, json: {} }));
-  await send(form).click();
+  await pressOnThePage(send(form));
 
   const notice = form.locator('[data-jfb-notice="server_error"]');
   await expect(notice).toBeVisible();
@@ -133,6 +134,7 @@ test('a second press during a slow send sends nothing, the button keeps its size
   const before = await button.boundingBox();
 
   await button.focus();
+  await logicCome(button);
   await button.press('Enter');
   await expect(button).toHaveAttribute('data-jfb-busy', '');
   await expect(button).toHaveAttribute('aria-disabled', 'true');
@@ -142,6 +144,7 @@ test('a second press during a slow send sends nothing, the button keeps its size
   expect([during?.width, during?.height], 'the button keeps its size').toEqual([before?.width, before?.height]);
   await axe(page, 'the busy button');
 
+  await logicCome(button);
   await button.press('Enter');
   // Playwright waits for an aria-disabled button to be enabled; a visitor's mouse does not.
   await button.click({ force: true });
@@ -174,7 +177,7 @@ for (const [name, code, answer, words] of [
     await fill(form);
     await listen(page);
     await page.route(ENTRIES, answer);
-    await send(form).click();
+    await pressOnThePage(send(form));
 
     const notice = form.locator(`[data-jfb-notice="${code}"]`);
     await expect(notice).toBeVisible();
@@ -195,7 +198,7 @@ for (const [name, code, answer, words] of [
     // The retry goes through and takes the notice with it, with the same submission id.
     await page.unroute(ENTRIES);
     const retried = page.waitForResponse((response) => response.url().includes('/entries'));
-    await send(form).click();
+    await pressOnThePage(send(form));
     expect((await retried).status()).toBe(200);
     await expect(page.locator('[data-jfb-outcome]')).toBeFocused();
   });
@@ -210,9 +213,9 @@ test('a retry after a failed send carries the same submission id', async ({ page
     ids.push((route.request().postDataJSON() as { submissionId: unknown }).submissionId);
     await route.fulfill({ status: 500, json: {} });
   });
-  await send(form).click();
+  await pressOnThePage(send(form));
   await expect(form.locator('[data-jfb-notice]')).toBeFocused();
-  await send(form).click();
+  await pressOnThePage(send(form));
   await expect.poll(() => ids.length).toBe(2);
 
   expect(ids[0]).toBe(ids[1]);
@@ -230,7 +233,7 @@ test("the server's errors of a 422 show in place, with the error summary, which 
       json: { code: 'validation_failed', errors: [{ code: 'email', path: 'email' }] },
     }),
   );
-  await send(form).click();
+  await pressOnThePage(send(form));
 
   const summary = form.locator(':scope > [data-jfb-summary]');
   await expect(summary).toBeFocused();
@@ -255,7 +258,7 @@ test('a redirect after a message counts down, with "Go now" and "Stay here"', as
     outcome: { kind: 'message', html: '<h2>Thank you, Mira</h2>', url: thanks, delaySeconds: 60 },
   };
   await page.route(ENTRIES, (route) => route.fulfill({ status: 200, json: answer }));
-  await send(form).click();
+  await pressOnThePage(send(form));
 
   const outcome = page.locator('[data-jfb-outcome]');
   await expect(outcome).toBeFocused();
@@ -290,7 +293,7 @@ test('a redirect after a message goes when its countdown ends', async ({ page })
       json: { receipt: {}, outcome: { kind: 'message', html: '<p>Hi</p>', url: thanks, delaySeconds: 1 } },
     }),
   );
-  await send(form).click();
+  await pressOnThePage(send(form));
 
   // A shorter delay has ten seconds, the time to reach "Stay here".
   await expect(page.locator('[data-jfb-countdown]')).toHaveText(/Taking you to the next page in (10|9) seconds\./);
@@ -313,7 +316,7 @@ test('a send from a plain-HTTP origin, where crypto.randomUUID() does not exist,
     const form = formOn(page);
     await fill(form);
     const answered = page.waitForResponse((response) => response.url().includes('/entries'));
-    await send(form).click();
+    await pressOnThePage(send(form));
     const answer = await answered;
 
     expect(answer.status(), await answer.text()).toBe(200);

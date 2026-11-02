@@ -1,6 +1,7 @@
 import type { APIRequestContext, Locator, Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '../../fixtures.ts';
+import { pressOnThePage } from '../../support/form.ts';
 import { formPages, pathOf } from '../../support/demo-content.ts';
 
 // The signature pad (ROADMAP 6.4n, ADR-0153), on the demo's room hire form, of one page with a required signature: a signature
@@ -96,7 +97,7 @@ async function filesOf(request: APIRequestContext, visitor: string): Promise<Sto
 
 async function send(page: Page, form: Locator): Promise<void> {
   const answered = page.waitForResponse((response) => response.url().endsWith('/entries'));
-  await form.locator('button[data-jfb-nav="submit"]').click();
+  await pressOnThePage(form.locator('button[data-jfb-nav="submit"]'));
   const answer = await answered;
   expect(answer.status(), await answer.text()).toBe(200);
   await expect(page.locator('main [data-jfb-outcome]')).toBeFocused();
@@ -190,7 +191,7 @@ test('no signature is an error at its field, whose summary link leads the keyboa
   const form = await ready(page);
   await fillTheRest(form, 'unsigned');
   const signature = signatureOf(form);
-  await form.locator('button[data-jfb-nav="submit"]').click();
+  await pressOnThePage(form.locator('button[data-jfb-nav="submit"]'));
 
   const error = signature.locator('.jfb-error');
   await expect(error).toHaveText('Add your signature, or type your name instead');
@@ -212,7 +213,7 @@ test('a name typed before is no answer once the visitor is back on the empty pad
   await signature.getByRole('button', { name: 'Type your name instead' }).click();
   await signature.locator('input[name="signature.typed"]').fill('Daniel Fernandes');
   await signature.getByRole('button', { name: 'Sign by hand instead' }).click();
-  await form.locator('button[data-jfb-nav="submit"]').click();
+  await pressOnThePage(form.locator('button[data-jfb-nav="submit"]'));
 
   await expect(signature.locator('.jfb-error')).toHaveText('Add your signature, or type your name instead');
 });
@@ -229,7 +230,7 @@ test('a signature the site cannot take shows the notice of a failed send, and th
     if (refuse) await route.fulfill({ status: 503, json: { code: 'uploads_full' } });
     else await route.continue();
   });
-  await form.locator('button[data-jfb-nav="submit"]').click();
+  await pressOnThePage(form.locator('button[data-jfb-nav="submit"]'));
   await expect(form.locator('[data-jfb-notice="server_error"]')).toBeFocused();
   await expect(form.locator('[name="contact.first"]'), 'the answers are kept').toHaveValue('Daniel');
 

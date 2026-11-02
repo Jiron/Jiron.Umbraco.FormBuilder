@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import type { APIRequestContext, Locator, Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '../../fixtures.ts';
+import { pressOnThePage } from '../../support/form.ts';
 import { LANGUAGES, formPages, pathOf, type Language } from '../../support/demo-content.ts';
 import { demoProject } from '../../support/paths.ts';
 
@@ -135,7 +136,7 @@ test('the room hire stores the cost the page showed for the answers sent', async
   await form.getByRole('button', { name: 'Type your name instead' }).click();
   await form.locator('[name="signature.typed"]').fill('Daniel Fernandes');
 
-  await form.locator('button[data-jfb-nav="submit"]').click();
+  await pressOnThePage(form.locator('button[data-jfb-nav="submit"]'));
   await expect(page.locator('main [data-jfb-outcome]')).toBeFocused();
   const entries = (await storedOf(request, 'roomHire', keyOf('roomHire', 'cost'))).slice(before);
   expect(entries, 'one entry, its cost the 75 the page showed').toEqual([[75]]);
@@ -148,7 +149,7 @@ test('a form without a calculation never loads the calculation language', async 
   // The contact form fills its query prefill as it shows, so its chunk may load before the visitor touches it.
   await form.locator('input, textarea').first().fill('Ada');
   await expect.poll(() => chunks, "the form's chunk").toContain('form');
-  await form.locator('button[data-jfb-nav="submit"]').click();
+  await pressOnThePage(form.locator('button[data-jfb-nav="submit"]'));
   await expect(form.locator('[data-jfb-summary]'), 'the runtime refused the send').toBeVisible();
   await page.waitForLoadState('networkidle');
   expect(chunks).toContain('form');

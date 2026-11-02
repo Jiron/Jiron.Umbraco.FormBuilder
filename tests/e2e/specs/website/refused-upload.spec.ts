@@ -2,7 +2,7 @@ import { spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { fillForm, press, submitForm } from '../../support/form.ts';
+import { fillForm, press, submitForm, pressOnThePage } from '../../support/form.ts';
 import { waitForStartupWork } from '../../support/host-health.ts';
 import { hostEnvironment } from '../../support/host-env.ts';
 import { startHost, type Host } from '../../support/host.ts';
@@ -255,7 +255,7 @@ test.describe('without JavaScript', () => {
     await form
       .locator('input[type="file"][name="cv"]')
       .setInputFiles({ name: 'cv.pdf', mimeType: 'application/pdf', buffer: Buffer.alloc(PAST_THE_DRAIN, 'x') });
-    await form.locator('button[data-jfb-nav="submit"]').click();
+    await pressOnThePage(form.locator('button[data-jfb-nav="submit"]'));
 
     await expect(page.locator('main [data-jfb-notice="too_large"]')).toBeVisible();
     expect(await pageProtocol(page)).toBe('h2');

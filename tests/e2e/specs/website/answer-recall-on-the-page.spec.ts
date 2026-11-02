@@ -1,6 +1,7 @@
 import type { Locator, Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '../../fixtures.ts';
+import { pressOnThePage } from '../../support/form.ts';
 import { LANGUAGES, formPages, pathOf, type Language } from '../../support/demo-content.ts';
 import { signInMember } from '../../support/demo-members.ts';
 
@@ -100,7 +101,7 @@ for (const language of LANGUAGES) {
     await expect(help, 'a help text that follows the workshop chosen').toHaveText(words.help(defaults.bikes));
     await axe(page, `${language}: the booking with its texts recalled`);
 
-    await form.locator('button[data-jfb-nav="submit"]').click();
+    await pressOnThePage(form.locator('button[data-jfb-nav="submit"]'));
     const summary = form.locator(':scope > [data-jfb-summary]');
     await expect(summary, 'the runtime refused the send for the question').toBeFocused();
     await expect(summary.locator('a'), "the summary's link names the question as it reads now").toHaveText([
@@ -137,7 +138,7 @@ test('a form without a text that recalls answers never loads the merge tags', as
   const form = formOn(page);
   await form.locator('textarea').first().fill('Ada');
   await expect.poll(() => chunks, "the form's chunk").toContain('form');
-  await form.locator('button[data-jfb-nav="submit"]').click();
+  await pressOnThePage(form.locator('button[data-jfb-nav="submit"]'));
   await expect(form.locator('[data-jfb-summary]'), 'the runtime refused the send').toBeVisible();
   await page.waitForLoadState('networkidle');
   expect(chunks).toContain('form');

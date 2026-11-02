@@ -1,5 +1,6 @@
 import type { Locator, Page } from '@playwright/test';
 import { expect, test } from '../../fixtures.ts';
+import { logicCome, pressOnThePage } from '../../support/form.ts';
 import { pageOf, pathOf } from '../../support/demo-content.ts';
 
 // What the themes draw for the keyboard and for a refused answer (ROADMAP 6.8d, ADR-0106, ADR-0108), on the demo's
@@ -157,7 +158,7 @@ for (const theme of THEMES) {
       expect(await border(), 'the scale before a send').not.toBe(ERROR[theme][scheme]);
       expect(await fill(), 'the rating before a send').not.toBe(ERROR[theme][scheme]);
       await form.locator('[name="displayName"]').fill('Mira Okafor');
-      await send(page).click();
+      await pressOnThePage(send(page));
       await expect(form.locator('.jfb-error-summary')).toBeVisible();
 
       await expect.poll(border, 'the scale, refused').toBe(ERROR[theme][scheme]);
@@ -200,7 +201,7 @@ for (const theme of THEMES) {
     });
     const form = formOn(page);
     await form.locator('[name="displayName"]').fill('Mira Okafor');
-    await send(page).click();
+    await pressOnThePage(send(page));
     const summary = form.locator('.jfb-error-summary');
     await expect(summary).toBeFocused();
     await expect
@@ -209,6 +210,7 @@ for (const theme of THEMES) {
 
     const label = form.locator('[data-jfb-alias="recommend"] > fieldset > legend');
     await form.locator('.jfb-error-summary a[href="#jfb-1-recommend"]').focus();
+    await logicCome(formOn(page));
     await page.keyboard.press('Enter');
     await expect(form.locator('#jfb-1-recommend')).toBeFocused();
     await expect
@@ -232,7 +234,7 @@ for (const theme of THEMES) {
       await page.goto(urlOf(theme, ''));
       const form = formOn(page);
       await form.locator('[name="displayName"]').fill('Mira Okafor');
-      await send(page).click();
+      await pressOnThePage(send(page));
       await expect(form.locator('.jfb-error-summary')).toBeVisible();
       // The last star: the chosen ones and those before them take the chosen colour whatever the error says.
       const star = form.locator('[data-jfb-alias="rating"] .jfb-choice > label').last();
@@ -255,7 +257,7 @@ for (const theme of [...THEMES, 'unstyled'] as const) {
       await page.goto(urlOf(theme, ''));
       const form = formOn(page);
       await form.locator('[name="displayName"]').fill('Mira Okafor');
-      await send(page).click();
+      await pressOnThePage(send(page));
       await expect(form.locator('.jfb-error-summary')).toBeVisible();
       expect(new URL(page.url()).hash, 'the post lands on the form').toBe('#jfb-1');
       await expect
@@ -277,9 +279,10 @@ for (const theme of [...THEMES, 'unstyled'] as const) {
           await page.goto(urlOf(theme, ''));
           const form = formOn(page);
           await form.locator('[name="displayName"]').fill('Mira Okafor');
-          await send(page).click();
+          await pressOnThePage(send(page));
           await expect(form.locator('.jfb-error-summary')).toBeVisible();
           await form.locator('.jfb-error-summary a[href="#jfb-1-room"]').focus();
+          await logicCome(formOn(page));
           await page.keyboard.press('Enter');
           const control = form.locator('#jfb-1-room');
           await expect
@@ -307,7 +310,7 @@ for (const theme of [...THEMES, 'unstyled'] as const) {
           await page.goto(urlOf(theme, ''));
           const form = formOn(page);
           await form.locator('[name="displayName"]').fill('Mira Okafor');
-          await send(page).click();
+          await pressOnThePage(send(page));
           await expect(form.locator('.jfb-error-summary')).toBeVisible();
 
           for (const alias of ['room', 'rating', 'recommend', 'opinions', 'contact']) {
@@ -315,6 +318,7 @@ for (const theme of [...THEMES, 'unstyled'] as const) {
               `[data-jfb-alias="${alias}"] > label, [data-jfb-alias="${alias}"] > fieldset > legend`,
             );
             await form.locator(`.jfb-error-summary a[href="#jfb-1-${alias}"]`).focus();
+            await logicCome(formOn(page));
             await page.keyboard.press('Enter');
             await expect
               .poll(async () => {
@@ -336,7 +340,7 @@ for (const theme of [...THEMES, 'unstyled'] as const) {
       await page.goto(urlOf(theme, ''));
       const form = formOn(page);
       await form.locator('[name="displayName"]').fill('Mira Okafor');
-      await send(page).click();
+      await pressOnThePage(send(page));
       await expect(form.locator('.jfb-error-summary')).toBeVisible();
       const legend = form.locator('[data-jfb-alias="recommend"] > fieldset > legend');
       await legend.evaluate((element: HTMLElement) => {
@@ -345,6 +349,7 @@ for (const theme of [...THEMES, 'unstyled'] as const) {
       });
 
       await form.locator('.jfb-error-summary a[href="#jfb-1-recommend"]').focus();
+      await logicCome(formOn(page));
       await page.keyboard.press('Enter');
 
       await expect

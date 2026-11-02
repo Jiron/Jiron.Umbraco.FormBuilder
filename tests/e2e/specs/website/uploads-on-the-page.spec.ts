@@ -1,6 +1,7 @@
 import type { APIRequestContext, Locator, Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '../../fixtures.ts';
+import { logicCome, pressOnThePage } from '../../support/form.ts';
 import { formPages, pathOf } from '../../support/demo-content.ts';
 
 // Uploads on the page (ROADMAP 6.4m, ADR-0152), on the demo's room hire form, whose photo has `thumbnails` and `camera` on and
@@ -184,17 +185,20 @@ test('a file that failed stays in its row as the visitor moves on, and stops the
   page.on('request', (request) => {
     if (request.url().endsWith('/entries')) entries.push(request.url());
   });
-  await form.locator('button[data-jfb-nav="submit"]').click();
+  // The hire's total is told a moment after its answers; it is not to speak over what this test listens for.
+  await expect(form.locator('[data-jfb-live]')).toContainText('Room hire');
+  await pressOnThePage(form.locator('button[data-jfb-nav="submit"]'));
   await expect(row.locator('[data-jfb-retry]')).toBeFocused();
   await expect(form.locator('[data-jfb-live]')).toContainText('The upload stopped');
   expect(entries, 'nothing goes without it').toEqual([]);
 
   cut = false;
+  await logicCome(form);
   await page.keyboard.press('Enter');
   await expect(row).not.toHaveAttribute('data-jfb-failed');
   await expect(form.locator('[data-jfb-live]')).toHaveText('plan.pdf is uploaded.');
   const answered = page.waitForResponse((response) => response.url().endsWith('/entries'));
-  await form.locator('button[data-jfb-nav="submit"]').click();
+  await pressOnThePage(form.locator('button[data-jfb-nav="submit"]'));
   const answer = await answered;
   expect(answer.status(), await answer.text()).toBe(200);
 });
@@ -245,7 +249,7 @@ test('a file goes up with its progress, and is sent with the entry', async ({ pa
     if (request.isNavigationRequest()) left.push(request.url());
   });
   const answered = page.waitForResponse((response) => response.url().includes('/entries'));
-  await form.locator('button[data-jfb-nav="submit"]').click();
+  await pressOnThePage(form.locator('button[data-jfb-nav="submit"]'));
   const answer = await answered;
 
   expect(answer.status(), await answer.text()).toBe(200);

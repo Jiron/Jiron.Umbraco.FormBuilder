@@ -1,7 +1,7 @@
 import type { Locator, Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '../../fixtures.ts';
-import { fillForm } from '../../support/form.ts';
+import { fillForm, logicCome } from '../../support/form.ts';
 import { pageOf, pathOf, formPages } from '../../support/demo-content.ts';
 
 // The keyboard pass over the themes (ROADMAP 6.8e), on the demo's specimen in every theme and both schemes. Every kind
@@ -429,7 +429,7 @@ for (const theme of THEMES) {
       await form.locator('[name="displayName"]').fill('Mira Okafor');
       await form.locator('[name="displayName"]').focus();
       // Enter before the logic has come is a post, whose page leaves the focus alone: this is the page's own refusal.
-      await page.waitForLoadState('networkidle');
+      await logicCome(form);
       await page.keyboard.press('Enter');
       const summary = form.locator('.jfb-error-summary');
       await expect(summary, 'the refusal takes the focus').toBeFocused();

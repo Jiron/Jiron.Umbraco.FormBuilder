@@ -4,7 +4,7 @@ import type { Locator, Page } from '@playwright/test';
 import { expect, test } from '../../fixtures.ts';
 import { axe } from '../../support/axe.ts';
 import { pageOf, pathOf } from '../../support/demo-content.ts';
-import { fillForm, press } from '../../support/form.ts';
+import { fillForm, press, pressOnThePage } from '../../support/form.ts';
 
 // The form picker on the demo (ROADMAP 6.7h, ADR-0136): the volunteer page shows the form its form block picks, and a
 // visitor who sends it with JavaScript lands on the picker's page after a send; an editor of Umbraco's own Editors
@@ -46,7 +46,7 @@ async function axeOnThePicker(page: Page, what: string): Promise<void> {
  */
 async function sendToTheThanksPage(page: Page, form: Locator): Promise<void> {
   const answered = page.waitForResponse((response) => response.url().includes('/entries'));
-  await form.locator('button[data-jfb-nav="submit"]').click();
+  await pressOnThePage(form.locator('button[data-jfb-nav="submit"]'));
   const answer = await answered;
   expect(answer.status(), 'sent with JavaScript').toBe(200);
   expect((answer.request().postDataJSON() as { placement?: string }).placement, "the picker's page").toBeTruthy();
@@ -159,7 +159,7 @@ test("a send with JavaScript carries the picker's page in its token, and a value
     element.setAttribute('data-jfb-placement', (given.endsWith('A') ? 'B' : 'A') + given.slice(1));
   });
   const refused = page.waitForResponse((response) => response.url().includes('/entries'));
-  await form.locator('button[data-jfb-nav="submit"]').click();
+  await pressOnThePage(form.locator('button[data-jfb-nav="submit"]'));
   const answer = await refused;
   expect(answer.status(), 'refused').toBe(400);
   await expect(page).toHaveURL(new RegExp(`${thanksPath}#?$`));

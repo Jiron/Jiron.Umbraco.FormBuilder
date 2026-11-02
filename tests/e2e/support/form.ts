@@ -12,6 +12,26 @@ import { setTimeout as delay } from 'node:timers/promises';
  */
 export type FieldValue = string | number | boolean | readonly string[] | { files: readonly string[] };
 
+/**
+ * Waits for the logic of the form around an element, which a first touch loads as its own chunk: until it has come a press
+ * is a post, as it should be, which is not what a spec of the page's own behaviour means to press. A busy machine shows the
+ * difference. Where no runtime runs this returns at once.
+ */
+export async function logicCome(inside: Locator): Promise<void> {
+  await inside.evaluate(async (element) => {
+    const form = element.closest('form');
+    const runtime = (window as { JironFormBuilder?: { get(form: Element): { values(): Promise<unknown> } | null } })
+      .JironFormBuilder;
+    if (form !== null) await runtime?.get(form)?.values();
+  });
+}
+
+/** Presses a button of a form on the page once the form's logic has come. */
+export async function pressOnThePage(button: Locator): Promise<void> {
+  await logicCome(button);
+  await button.click();
+}
+
 /** What sending a form led to. */
 export type SubmitResult = { state: 'sent'; outcome: string } | { state: 'errors'; errors: string[] };
 
