@@ -2415,7 +2415,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - Done when:
     - the field types the designer reads give the captcha placement as not configured, with its reason, on a site where no provider has keys, and as available once one has;
     - unit tests pass against the HTTP stub.
-- [ ] **7.2c Proof of work and the captchas in the runtime** (7.2 split in three, WORKLOG 2026-11-01)
+- [x] **7.2c Proof of work and the captchas in the runtime** (7.2 split in three, WORKLOG 2026-11-01) (2026-11-02, ba2f3d0)
   - **Resumes (2026-11-01):** the owner raised the budget to 60 KB (ADR-0146); this step resumes at 7.4i, with every check below.
   - **Blocked (2026-11-01):** the runtime stands 2 bytes below the 40 KB of §4.12, a budget only the owner can change, and this part adds to it and builds on the sending of 6.4i (ADR-0120, `docs/OWNER-TODO.md`). The server's parts are 7.2a and 7.2b.
   - **Proof of work:** solved in a Web Worker with a progress hint for slow devices.
