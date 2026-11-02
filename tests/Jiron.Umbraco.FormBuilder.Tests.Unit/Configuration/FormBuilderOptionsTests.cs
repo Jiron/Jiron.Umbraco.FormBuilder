@@ -509,10 +509,10 @@ public sealed class FormBuilderOptionsTests
     public void ACaptchaProvidersVerifyAddress_IsOne(string provider, string address, bool saved) =>
         Assert.That(HostOptions.Failures(new Dictionary<string, string?> { [$"{Root}:Captcha:{provider}:VerifyAddress"] = address }), saved ? Is.Empty : Is.EqualTo(new[] { $"{Root}:Captcha:{provider}:VerifyAddress must be an http or https address." }));
 
-    [TestCase("JironFormBuilder:Limit:Definitions:MaxFields", "JironFormBuilder:Limit is not a setting of Jiron Form Builder; the settings in JironFormBuilder are PublicApi, Rendering, Files, Limits, Designer, Access, Captcha, Webhooks and LockedSections.")]
+    [TestCase("JironFormBuilder:Limit:Definitions:MaxFields", "JironFormBuilder:Limit is not a setting of Jiron Form Builder; the settings in JironFormBuilder are PublicApi, Rendering, Files, Limits, Designer, Access, Captcha, Privacy, Webhooks and LockedSections.")]
     [TestCase("JironFormBuilder:Limits:Definitions:MaxField", "JironFormBuilder:Limits:Definitions:MaxField is not a setting of Jiron Form Builder; the settings in JironFormBuilder:Limits:Definitions are MaxBytes, MaxPages, MaxGroups, MaxFields, MaxOptionsPerField, MaxActions, MaxOutcomes and MaxRules.")]
     [TestCase("JironFormBuilder:Limits:Definition:MaxFields", "JironFormBuilder:Limits:Definition is not a setting of Jiron Form Builder; the settings in JironFormBuilder:Limits are Definitions, MaxTrackedClients, ServerKeyFactor, Read, Challenge, Submit, Upload, Events and Verify.")]
-    [TestCase("JironFormBuilder:LockedSection:0", "JironFormBuilder:LockedSection is not a setting of Jiron Form Builder; the settings in JironFormBuilder are PublicApi, Rendering, Files, Limits, Designer, Access, Captcha, Webhooks and LockedSections.")]
+    [TestCase("JironFormBuilder:LockedSection:0", "JironFormBuilder:LockedSection is not a setting of Jiron Form Builder; the settings in JironFormBuilder are PublicApi, Rendering, Files, Limits, Designer, Access, Captcha, Privacy, Webhooks and LockedSections.")]
     [TestCase("JironFormBuilder:Designer:SettingLocks:0:Typ", "JironFormBuilder:Designer:SettingLocks:0:Typ is not a setting of Jiron Form Builder; the settings in JironFormBuilder:Designer:SettingLocks:0 are Kind, Type, Setting, Value and Hidden.")]
     [TestCase("JironFormBuilder:Files:Root:Folder", "JironFormBuilder:Files:Root is a single value, not a section.")]
     [TestCase("JironFormBuilder:LockedSections:0:Name", "JironFormBuilder:LockedSections:0 is a single value, not a section.")]

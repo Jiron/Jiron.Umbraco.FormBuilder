@@ -290,15 +290,89 @@ describe('what the challenge tells a form', () => {
     expect(control('n').disabled).toBe(true);
   });
 
-  it('shows nothing on a form whose view does not ask, whatever the answer holds', async () => {
+  it('shows what the answer holds at the first touch too, on a page cached before the form asked for it', async () => {
     answering({ places: { [FIELD]: { a: 4 } }, member: { signedIn: true, groups: [] } });
     const form = open(false, SLOTS + NOTES);
     const { attach } = await import('./form');
     await attach(form, modelOf([SLOT, NOTE]));
-    await new Promise((resolve) => setTimeout(resolve, 20));
 
-    expect(label('a')).toBe('Morning');
-    expect(form.querySelector('[data-jfb-field="k-note"]')?.hasAttribute('hidden')).toBe(true);
+    await vi.waitFor(() => expect(label('a')).toBe('Morning 4 places left'));
+    await vi.waitFor(() => expect(form.querySelector('[data-jfb-field="k-note"]')?.hasAttribute('hidden')).toBe(false));
+  });
+
+  describe('of a captcha', () => {
+    const CHECK = {
+      provider: 'hcaptcha',
+      siteKey: 'k',
+      scriptAddress: 'https://check.example/own.js',
+      consent: 'explicit',
+    };
+    const AGREE: ModelField = {
+      key: 'k-agree',
+      type: 'consent',
+      alias: 'agree',
+      settings: { loadsCaptcha: true },
+      label: 'Agree',
+    };
+    const AGREEMENT =
+      '<div data-jfb-field="k-agree" data-jfb-alias="agree" data-jfb-type="consent"><input type="checkbox" id="agree" name="agree" value="true"><label for="agree">Agree</label></div>';
+    const sends = (): HTMLFormElement => {
+      const form = open(
+        true,
+        SLOTS +
+          AGREEMENT +
+          '</div></section><div class="jfb-navigation"><button type="submit" name="jfb-nav" value="submit" data-jfb-nav="submit" id="send">Send</button></div><div>',
+      );
+      form.setAttribute('action', '/page/#jfb-1');
+      return form;
+    };
+    const pressing = (form: HTMLFormElement): void => {
+      form.dispatchEvent(
+        new SubmitEvent('submit', { bubbles: true, cancelable: true, submitter: document.getElementById('send') }),
+      );
+    };
+
+    afterEach(() => {
+      Reflect.deleteProperty(window, 'JironFormBuilder');
+      document.head.innerHTML = '';
+    });
+
+    it('shows its notice, and a send without its token asks for it and sends nothing', async () => {
+      const asked = answering({ captcha: CHECK });
+      const form = sends();
+      Object.assign(window, {
+        JironFormBuilder: { consent: { has: () => false, grant: () => undefined, withdraw: () => undefined } },
+      });
+      const model = modelOf([SLOT]);
+      const { attach } = await import('./form');
+      await attach(form, model);
+      await vi.waitFor(() => expect(form.querySelector('.jfb-captcha p')).not.toBeNull());
+      control('a').checked = true;
+      pressing(form);
+
+      await vi.waitFor(() => expect(form.querySelector('.jfb-captcha .jfb-error')).not.toBeNull());
+      expect(asked.mock.calls.filter(([url]) => String(url).endsWith('/entries'))).toEqual([]);
+    });
+
+    it('takes the consent field that says it agrees', async () => {
+      answering({ captcha: CHECK });
+      const form = sends();
+      Object.assign(window, {
+        JironFormBuilder: { consent: { has: () => false, grant: () => undefined, withdraw: () => undefined } },
+      });
+      const model = modelOf([SLOT, AGREE]);
+      const { attach } = await import('./form');
+      await attach(form, {
+        ...model,
+        fields: { ...model.fields, 'k-agree': { kind: 'choice', canBeRequired: true, builtIn: true } },
+      });
+      await vi.waitFor(() => expect(form.querySelector('.jfb-captcha')).not.toBeNull());
+      expect(form.querySelector('.jfb-captcha p'), 'the field says it itself').toBeNull();
+
+      control('agree').checked = true;
+      control('agree').dispatchEvent(new Event('change', { bubbles: true }));
+      await vi.waitFor(() => expect(document.head.querySelector('script')).not.toBeNull());
+    });
   });
 
   it('asks once, for the sends to use', async () => {
@@ -331,6 +405,18 @@ describe('what the challenge tells a form', () => {
     await new Promise((resolve) => setTimeout(resolve, 20));
 
     expect(form.querySelector('.jfb-upload')?.hasAttribute('data-jfb-enhanced')).toBe(false);
+  });
+
+  it('tells nothing to a form whose answer holds nothing for it', async () => {
+    answering({});
+    const inputs: EventTarget[] = [];
+    const ruled = open(true, SLOTS + NOTES);
+    ruled.addEventListener('input', (event) => inputs.push(event.target as EventTarget));
+    const { attach } = await import('./form');
+    await attach(ruled, modelOf([SLOT, NOTE]));
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    expect(inputs).toEqual([]);
   });
 
   it('tells what follows the rules, as an answer does, on a form with rules only', async () => {
@@ -598,6 +684,24 @@ describe('what the challenge tells a form', () => {
 
       expect(await challenges.current()).toBe('kept');
       expect(asked).not.toHaveBeenCalled();
+    });
+
+    it('keeps the puzzle of the one it holds when it only listens', async () => {
+      let nonce = 'first';
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(() =>
+          Promise.resolve(new Response(JSON.stringify({ challenge: 'c1', proofOfWork: { nonce, bits: 8 } }))),
+        ),
+      );
+      const heard: Told[] = [];
+      const challenges = challengesOf(FORM(), '/jfb/api/v1', undefined, (told) => heard.push(told));
+      await challenges.current();
+      nonce = 'second';
+      challenges.listen();
+      await vi.waitFor(() => expect(heard).toHaveLength(2));
+
+      expect(challenges.puzzle()?.nonce).toBe('first');
     });
   });
 });

@@ -90,6 +90,17 @@ export const en: MessageWords = {
   optionFull: '{option} is now full. Choose another option.',
   placesLeft: { one: '{count} place left', other: '{count} places left' },
   noPlaces: 'Full',
+  captchaNotice: 'This form uses a spam check from an outside service, which loads only if you agree.',
+  captchaLoad: 'Load the check',
+  captchaManager:
+    'This form uses a spam check from an outside service, which loads once you agree in the cookie settings.',
+  captchaCookies:
+    'This form uses a spam check from an outside service, which loads once you agree to {category} cookies.',
+  captchaCategories: { preferences: 'preference', statistics: 'statistics', marketing: 'marketing' },
+  captchaCookieSettings: 'Change the cookie settings',
+  captchaMissing: 'Complete the check before you send the form.',
+  captchaFailed: 'The spam check could not load. You can still send the form.',
+  proofHint: 'Checking your browser, which can take a moment.',
   choiceFull: 'One of your choices is now full. Choose another option.',
   confirmation: 'Enter the same email address twice',
   digits: 'Enter a number with fewer digits',

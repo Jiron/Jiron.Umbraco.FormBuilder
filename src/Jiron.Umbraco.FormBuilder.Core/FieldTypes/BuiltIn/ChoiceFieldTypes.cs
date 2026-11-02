@@ -606,6 +606,10 @@ public sealed class ConsentFieldSettings
     [StringLength(20000)]
     [FormBuilderSetting("#jfbFieldSettings_consentText", SupportsMergeTags = true, Public = true)]
     public LocalizedHtml? Text { get; init; }
+
+    /// <summary>Whether ticking this consent is the visitor's agreement to load the form's captcha, in the <c>explicit</c> mode (section 4.10, ADR-0157).</summary>
+    [FormBuilderSetting("#jfbFieldSettings_consentLoadsCaptcha", Public = true)]
+    public bool? LoadsCaptcha { get; init; }
 }
 
 /// <summary>A country (<c>country</c>, section 4.3.2), named from the culture data of the browser and the server.</summary>

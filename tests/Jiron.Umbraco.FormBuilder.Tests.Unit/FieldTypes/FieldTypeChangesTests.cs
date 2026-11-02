@@ -43,7 +43,7 @@ public sealed class FieldTypeChangesTests
         yield return Change("text", "calculation", $"- | - | minLength,maxLength,prefix,suffix,counter | formula | Placeholder, Required, DefaultValue, Prefill, Autocomplete, PatternCheck, MatchesFieldCheck, UniquePerFormCheck | no | Required, MinLength, MaxLength | {TextOperators} | yes | no");
         yield return Change("scale", "rating", "lowLabel,highLabel | - | from,to | - | none | no | none | - | no | yes");
         yield return Change("checkbox", "consent", "- | text | - | - | DefaultValue, Prefill | no | none | - | no | no");
-        yield return Change("consent", "checkbox", "text | - | - | - | none | no | none | - | no | no");
+        yield return Change("consent", "checkbox", "text | - | loadsCaptcha | - | none | no | none | - | no | no");
         yield return Change("yesno", "radio", "- | - | yesLabel,noLabel,style | - | none | yes | none | - | no | yes");
         yield return Change("country", "dropdown", "- | - | allowed,top,default | - | none | yes | none | - | no | yes");
         yield return Change("text", "name", $"- | - | minLength,maxLength,prefix,suffix,counter | - | Placeholder, DefaultValue, Autocomplete, PatternCheck, MatchesFieldCheck, UniquePerFormCheck | no | MinLength, MaxLength | {AllTextOperators} | no | no");

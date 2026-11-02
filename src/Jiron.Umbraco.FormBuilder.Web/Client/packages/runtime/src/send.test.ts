@@ -12,6 +12,7 @@ import { bodyOf, senderOf, submissionId, type SendDetail } from './send';
 import { ENGLISH } from './testing';
 import type { PageUploads } from './uploads';
 import type { Paging } from './pages-chunk';
+import { firstBits, type Captcha } from './protect-chunk';
 import type { CheckPage } from './send';
 import { placeOf } from './validation';
 
@@ -113,6 +114,7 @@ interface Options {
   readonly model?: FormModel;
   readonly files?: PageUploads;
   readonly pages?: Paging;
+  readonly captcha?: Captcha;
 }
 
 function wake({
@@ -123,6 +125,7 @@ function wake({
   model = MODEL,
   files,
   pages,
+  captcha,
 }: Options = {}) {
   document.body.innerHTML =
     `<form id="jfb-1" class="jfb-form" lang="en-US" dir="ltr" data-jfb-form="f" data-jfb-contract="1" ${api} ${action} ${attributes}>` +
@@ -155,6 +158,7 @@ function wake({
     id: ID,
     go: (address) => gone.push(address),
     ...(files === undefined ? {} : { files }),
+    ...(captcha === undefined ? {} : { captcha: () => Promise.resolve(captcha) }),
   });
   pageErrorsOf(form, model, engineOf(model, null), () => NOW, deliver, pages);
   const value = (id: string): HTMLInputElement => document.getElementById(id) as HTMLInputElement;
@@ -782,6 +786,206 @@ describe("an entry already stored under the page's id, with other answers", () =
 
     expect(document.querySelector('[data-jfb-outcome] p')?.textContent).toBe('Thank you.');
     expect(posted).toEqual([]);
+  });
+});
+
+describe('a form at the proof-of-work level', () => {
+  const NONCE = 'abcdefabcdefabcdefabcdefabcdefab';
+  const solves = (nonce: string, answer: unknown): boolean =>
+    firstBits(`${nonce}:${String(answer)}`) >>> (32 - 8) === 0;
+  const puzzled = (nonce = NONCE) => json(200, { challenge: 'c1', proofOfWork: { nonce, bits: 8 } });
+
+  it('sends the answer to the puzzle of the challenge it holds', async () => {
+    const server = serve(STORED, () => puzzled());
+    const { form, press } = wake();
+    press();
+    await until(() => expect(form.isConnected).toBe(false));
+
+    expect(solves(NONCE, server.entries()[0]?.body['proofOfWork'])).toBe(true);
+  });
+
+  it('solves the new puzzle when its challenge was renewed', async () => {
+    let asked = 0;
+    let sends = 0;
+    const server = serve(
+      () => {
+        sends += 1;
+        return sends === 1 ? json(401, { code: 'challenge_required' }) : STORED();
+      },
+      () => {
+        asked += 1;
+        return puzzled(asked === 1 ? NONCE : 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb');
+      },
+    );
+    const { form, press } = wake();
+    press();
+    await until(() => expect(form.isConnected).toBe(false));
+
+    expect(solves(NONCE, server.entries()[0]?.body['proofOfWork'])).toBe(true);
+    expect(solves('bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', server.entries()[1]?.body['proofOfWork'])).toBe(true);
+  });
+
+  it('stays when its first challenge failed, as a post could not pass, and solves what the second one asks', async () => {
+    let asks = 0;
+    const server = serve(STORED, () => {
+      asks += 1;
+      return asks === 1 ? json(429, { code: 'rate_limited' }) : puzzled();
+    });
+    const { form, press, posted } = wake();
+    press();
+    await until(() => expect(form.isConnected).toBe(false));
+
+    expect(posted).toEqual([]);
+    expect(solves(NONCE, server.entries()[0]?.body['proofOfWork'])).toBe(true);
+  });
+
+  it('sends none on a form with no puzzle', async () => {
+    const server = serve(STORED);
+    const { form, press } = wake();
+    press();
+    await until(() => expect(form.isConnected).toBe(false));
+
+    expect(server.entries()[0]?.body).not.toHaveProperty('proofOfWork');
+  });
+});
+
+describe('a form with a captcha', () => {
+  const guard = (token: string | null, can = true) => {
+    const made = {
+      token: vi.fn(() => Promise.resolve(token)),
+      ask: vi.fn(() => can),
+      spent: vi.fn(),
+    };
+    return made;
+  };
+
+  it('sends the token, and spends nothing on an entry stored', async () => {
+    const server = serve(STORED);
+    const captcha = guard('tok');
+    const { form, press } = wake({ captcha });
+    press();
+    await until(() => expect(form.isConnected).toBe(false));
+
+    expect(server.entries()[0]?.body['captchaToken']).toBe('tok');
+    expect(captcha.spent).not.toHaveBeenCalled();
+    expect(captcha.ask).not.toHaveBeenCalled();
+  });
+
+  it('sends nothing without a token, and asks the visitor for it', async () => {
+    const server = serve(STORED);
+    const captcha = guard(null);
+    const { form, press, posted } = wake({ captcha });
+    press();
+    await until(() => expect(captcha.ask).toHaveBeenCalledOnce());
+
+    expect(server.entries()).toEqual([]);
+    expect(posted).toEqual([]);
+    expect(form.isConnected).toBe(true);
+    expect(document.getElementById('send')?.hasAttribute('aria-disabled')).toBe(false);
+  });
+
+  it('asks for a new one when the provider refused, instead of a post', async () => {
+    serve(() => json(403, { code: 'captcha_failed' }));
+    const captcha = guard('tok');
+    const { press, posted } = wake({ captcha });
+    press();
+    await until(() => expect(captcha.ask).toHaveBeenCalledOnce());
+
+    expect(captcha.spent).toHaveBeenCalledOnce();
+    expect(posted).toEqual([]);
+  });
+
+  it('goes by post where the visitor can do nothing about a missing token, keeping the answers', async () => {
+    const server = serve(STORED);
+    const captcha = guard(null, false);
+    const { press, posted } = wake({ captcha });
+    press();
+    await until(() => expect(posted).toEqual(['submit']));
+
+    expect(server.entries()).toEqual([]);
+  });
+
+  it('sends without one where it has no way to post, for the server to say', async () => {
+    const server = serve(() => json(403, { code: 'captcha_failed' }));
+    const captcha = guard(null, false);
+    const { form, press, posted } = wake({ captcha, action: '' });
+    press();
+    await until(() => expect(form.querySelector('[data-jfb-notice="server_error"]')).not.toBeNull());
+
+    expect(server.entries()[0]?.body).not.toHaveProperty('captchaToken');
+    expect(posted).toEqual([]);
+  });
+
+  it('goes by post when a refused token has no check to complete, as a score too low', async () => {
+    serve(() => json(403, { code: 'captcha_failed' }));
+    const captcha = guard('tok', false);
+    const { press, posted } = wake({ captcha });
+    press();
+    await until(() => expect(posted).toEqual(['submit']));
+
+    expect(captcha.spent).toHaveBeenCalledOnce();
+  });
+
+  it('gives up on a token that never comes, as a provider that went silent', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    try {
+      const server = serve(STORED);
+      const captcha = { ...guard(null, false), token: vi.fn(() => new Promise<null>(() => undefined)) };
+      const { press, posted } = wake({ captcha });
+      press();
+      await vi.waitFor(() => expect(captcha.token).toHaveBeenCalledOnce());
+      await vi.advanceTimersByTimeAsync(41_000);
+      await vi.waitFor(() => expect(posted).toEqual(['submit']));
+
+      expect(server.entries()).toEqual([]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('stays when its first challenge failed, as a post could not pass, and asks again', async () => {
+    let asks = 0;
+    const server = serve(STORED, () => {
+      asks += 1;
+      return asks === 1 ? json(429, { code: 'rate_limited' }) : json(200, { challenge: 'c2' });
+    });
+    const captcha = guard('tok');
+    const { form, press, posted } = wake({ captcha });
+    press();
+    await until(() => expect(form.isConnected).toBe(false));
+
+    expect(posted).toEqual([]);
+    expect(server.entries()[0]?.body).toMatchObject({ challenge: 'c2', captchaToken: 'tok' });
+  });
+
+  it('counts the token as spent on any other refusal', async () => {
+    serve(() => json(422, { code: 'validation_failed', errors: [{ code: 'required', path: 'name' }] }));
+    const captcha = guard('tok');
+    const { press, form } = wake({ captcha });
+    press();
+    await until(() => expect(captcha.spent).toHaveBeenCalledOnce());
+
+    expect(captcha.ask).not.toHaveBeenCalled();
+    expect(form.isConnected).toBe(true);
+  });
+
+  it('goes by post with a 403 of another code, as any other refusal does', async () => {
+    serve(() => json(403, { code: 'form_closed' }));
+    const captcha = guard('tok');
+    const { press, posted } = wake({ captcha });
+    press();
+    await until(() => expect(posted).toEqual(['submit']));
+
+    expect(captcha.ask).not.toHaveBeenCalled();
+  });
+
+  it('takes no token on a form with no captcha', async () => {
+    const server = serve(STORED);
+    const { form, press } = wake();
+    press();
+    await until(() => expect(form.isConnected).toBe(false));
+
+    expect(server.entries()[0]?.body).not.toHaveProperty('captchaToken');
   });
 });
 

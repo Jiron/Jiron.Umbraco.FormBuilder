@@ -1,8 +1,10 @@
 using System.Globalization;
 using System.Net;
 using AngleSharp.Dom;
+using Jiron.Umbraco.FormBuilder.Core.Configuration;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.OptionLists;
+using Jiron.Umbraco.FormBuilder.Core.Settings;
 using Jiron.Umbraco.FormBuilder.Core.Themes;
 using Jiron.Umbraco.FormBuilder.Tests.Integration.Support;
 using Jiron.Umbraco.FormBuilder.Web.Rendering;
@@ -184,8 +186,32 @@ public sealed class RenderEndpointTests : OutputCacheTestBase
             Assert.That(await AsksAsync("asksOwnFiltered", slot, ownFiltered), Is.True, "the endpoint tells its own options, whatever hangs on a parent");
             Assert.That(await AsksAsync("asksInRows", inRows), Is.True, "an option in a row has places");
             Assert.That(await AsksAsync("asksMember", forMembers), Is.True, "a rule looks at the member");
+            var captcha = await PublishFormAsync("asksCaptcha", definition => definition with { Settings = definition.Settings with { Protection = new FormProtectionSettings { Level = ProtectionLevel.Captcha, Captcha = new CaptchaChoice { Provider = "hcaptcha" } } } }, RequiredName);
+            Assert.That((await RenderAsync(captcha, "jfb-1", "/cache/", content, null)).Served.Document.QuerySelector("form#jfb-1")!.HasAttribute("data-jfb-asks"), Is.True, "its own captcha");
+            var keyless = await PublishFormAsync("asksKeyless", definition => definition with { Settings = definition.Settings with { Protection = new FormProtectionSettings { Level = ProtectionLevel.Captcha, Captcha = new CaptchaChoice { Provider = "recaptchaV2" } } } }, RequiredName);
+            Assert.That((await RenderAsync(keyless, "jfb-1", "/cache/", content, null)).Served.Document.QuerySelector("form#jfb-1")!.HasAttribute("data-jfb-asks"), Is.False, "a provider without its keys shows nothing");
+            var puzzle = await PublishFormAsync("asksPuzzle", definition => definition with { Settings = definition.Settings with { Protection = new FormProtectionSettings { Level = ProtectionLevel.ProofOfWork } } }, RequiredName);
+            Assert.That((await RenderAsync(puzzle, "jfb-1", "/cache/", content, null)).Served.Document.QuerySelector("form#jfb-1")!.HasAttribute("data-jfb-asks"), Is.False, "a puzzle waits for a send");
             var validated = await PublishFormAsync("asksValidated", definition => definition with { ValidationRules = [checkedForMembers] }, RequiredName);
             Assert.That((await RenderAsync(validated, "jfb-1", "/cache/", content, null)).Served.Document.QuerySelector("form#jfb-1")!.HasAttribute("data-jfb-asks"), Is.True, "a validation rule looks at the member");
+        });
+    }
+
+    [Test]
+    public async Task AForm_AsksAtOnce_ForACaptchaItInheritsFromItsSite_AndNotAboveALevelItSetsItself()
+    {
+        var content = (await PagesAsync(CachePage))[CachePage];
+        var settings = GetRequiredService<IFormBuilderSettingsService>();
+        var current = await settings.GetAsync<ProtectionSettings>();
+        _ = await settings.SaveAsync(new ProtectionSettings { Level = ProtectionLevel.Captcha, CaptchaProvider = "hcaptcha" }, current.Version, null);
+
+        var inherits = await PublishFormAsync("asksInherited", null, RequiredName);
+        var standard = await PublishFormAsync("asksOwnLevel", definition => definition with { Settings = definition.Settings with { Protection = new FormProtectionSettings { Level = ProtectionLevel.Standard } } }, RequiredName);
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That((await RenderAsync(inherits, "jfb-1", "/cache/", content, null)).Served.Document.QuerySelector("form#jfb-1")!.HasAttribute("data-jfb-asks"), Is.True);
+            Assert.That((await RenderAsync(standard, "jfb-1", "/cache/", content, null)).Served.Document.QuerySelector("form#jfb-1")!.HasAttribute("data-jfb-asks"), Is.False);
         });
     }
 
@@ -272,6 +298,11 @@ public sealed class RenderEndpointTests : OutputCacheTestBase
         ArgumentNullException.ThrowIfNull(builder);
         base.CustomTestSetup(builder);
         builder.Services.AddLogCapture();
+        builder.Services.Configure<FormBuilderOptions>(options =>
+        {
+            options.Captcha.Hcaptcha.SiteKey = "JFB_FAKE_site_key";
+            options.Captcha.Hcaptcha.SecretKey = "JFB_FAKE_secret_key";
+        });
         builder.Services.PostConfigure<RequestLocalizationOptions>(options =>
             options.RequestCultureProviders = [.. options.RequestCultureProviders.Where(provider => provider is not QueryStringRequestCultureProvider)]);
     }

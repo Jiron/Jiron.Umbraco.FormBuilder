@@ -470,6 +470,7 @@ codes, `no-store` except the form and the options, the OpenAPI document `jfb-pub
 [ADR-0089](decisions/0089-the-validate-and-receipt-endpoints.md),
 [ADR-0138](decisions/0138-the-challenge.md),
 [ADR-0156](decisions/0156-what-the-challenge-tells-the-page.md),
+[ADR-0157](decisions/0157-protection-on-the-page.md),
 [ADR-0139](decisions/0139-the-signals-and-the-score.md),
 [ADR-0141](decisions/0141-proof-of-work-on-the-server.md)).
 
@@ -673,7 +674,7 @@ receives entry events too.
 `IFormBuilderMergeTagService`, `IFormBuilderOptionService`.
 
 **The website:** `<jfb-assets nonce>`, `<jfb-render form picked assets theme context-*>` and the view component, the
-theme views and the markup contract (ADR-0015), `window.JironFormBuilder` (`init`, `get` with its `validate`, `submit`, `next`, `back` and `values`, `consent`), the DOM events
+theme views and the markup contract (ADR-0015), `window.JironFormBuilder` (`init`, `get` with its `validate`, `submit`, `next`, `back` and `values`, `consent` with `grant('captcha')`, `withdraw()` and `has('captcha')`, ADR-0157), the DOM events
 `jfb:ready`, `jfb:page`, `jfb:invalid`, `jfb:submitting`, `jfb:submitted`, `jfb:error`, and the `--jfb-*` custom
 properties.
 

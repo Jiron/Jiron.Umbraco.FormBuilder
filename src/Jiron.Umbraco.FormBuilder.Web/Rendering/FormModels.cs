@@ -85,6 +85,8 @@ internal sealed record FormRender(
 /// <param name="cultures">The culture formats a calculation's and a slider's numbers are written with.</param>
 /// <param name="protection">The site's Data Protection, which Umbraco's route token for a post without JavaScript takes.</param>
 /// <param name="placements">The tokens that carry a placement's page after a send through a page's send (ADR-0120).</param>
+/// <param name="submissionProtection">The settings that protect a form, which say whether it has a captcha.</param>
+/// <param name="requestPages">The page a render is for, whose site's settings apply.</param>
 /// <param name="logger">Where context values that are not taken are logged.</param>
 internal sealed partial class FormModels(
     FieldTypeRegistry types,
@@ -99,6 +101,8 @@ internal sealed partial class FormModels(
     MergeTagCultures cultures,
     IDataProtectionProvider protection,
     PlacementTokens placements,
+    SubmissionProtection submissionProtection,
+    FormPages requestPages,
     ILogger<FormModels> logger)
 {
     /// <summary>The longest context value a page may give (ADR-0088).</summary>
@@ -374,7 +378,7 @@ internal sealed partial class FormModels(
         var errors = Summary(build, settings.ValidationSummary, pages.FirstOrDefault(page => page.IsCurrent));
         var honeypot = FormHoneypot.NameOf(root.Key, root.Revision);
         return root.Model(
-            asksAtOnce: build.TellsPlaces || FormMemberConditions.Of(definition).Any,
+            asksAtOnce: build.TellsPlaces || FormMemberConditions.Of(definition).Any || await submissionProtection.ShowsCaptchaAsync(render.Form.Published.Form.Key, definition, () => requestPages.PageAsync(render.Content), cancellationToken),
             pages: pages,
             defaultButton: summaryPage is not null || pages.SelectMany(page => page.Groups).SelectMany(group => group.Fields).Any(field => field.Control is RankingControlModel or RepeaterControlModel)
                 ? navigation.Next ?? navigation.Submit

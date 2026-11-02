@@ -195,6 +195,8 @@ public sealed class PublicFormCaptchaTests : PublicApiTestBase
             Assert.That(captcha["siteKey"]!.GetValue<string>(), Is.EqualTo(SiteKey));
             Assert.That(captcha["scriptAddress"]!.GetValue<string>(), Is.EqualTo($"https://www.google.com/recaptcha/api.js?render={SiteKey}"));
             Assert.That(captcha["action"]!.GetValue<string>(), Is.EqualTo("submit"));
+            Assert.That(captcha["consent"]!.GetValue<string>(), Is.EqualTo("explicit"), "unless a site chose another");
+            Assert.That(captcha["category"], Is.Null, "no category to ask about");
             Assert.That(text, Does.Not.Contain(SecretKey));
             Assert.That(JsonNode.Parse(text)!["proofOfWork"], Is.Null, "the level has a captcha, not a puzzle");
         });
@@ -213,6 +215,24 @@ public sealed class PublicFormCaptchaTests : PublicApiTestBase
             Assert.That(captcha, Is.Null);
             Assert.That(answer.StatusCode, Is.EqualTo(HttpStatusCode.OK), await answer.Content.ReadAsStringAsync());
             Assert.That(_transport.Calls, Is.Zero);
+        });
+    }
+
+    [TestCase(nameof(CaptchaConsentMode.Cmp), "cmp", null)]
+    [TestCase(nameof(CaptchaConsentMode.Cookiebot), "cookiebot", "statistics")]
+    public async Task TheChallenge_TellsThePageTheSitesConsentMode(string mode, string told, string? category)
+    {
+        var current = await Settings.GetAsync<ProtectionSettings>();
+        _ = await Settings.SaveAsync(new ProtectionSettings { CaptchaConsent = Enum.Parse<CaptchaConsentMode>(mode), CookiebotCategory = "statistics" }, current.Version, null);
+
+        var key = await PublishAsync(change: Choosing(Scored));
+        using var answer = await SendAsync(HttpMethod.Post, $"{Root}/forms/{key}/challenge", request => request.Content = Json("{}"));
+        var captcha = JsonNode.Parse(await answer.Content.ReadAsStringAsync())!["captcha"]!;
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(captcha["consent"]!.GetValue<string>(), Is.EqualTo(told));
+            Assert.That(captcha["category"]?.GetValue<string>(), Is.EqualTo(category));
         });
     }
 

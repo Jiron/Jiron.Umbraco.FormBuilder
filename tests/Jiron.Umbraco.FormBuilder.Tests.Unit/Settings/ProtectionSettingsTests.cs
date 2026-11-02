@@ -1,6 +1,9 @@
 using System.Net;
+using System.Text.Json;
+using Jiron.Umbraco.FormBuilder.Core.Configuration;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Settings;
+using Microsoft.Extensions.Options;
 
 namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Settings;
 
@@ -48,6 +51,90 @@ public sealed class ProtectionSettingsTests
             Assert.That(strictest.BlockedRanges, Is.EqualTo(new[] { "203.0.113.0/24", "2001:db8::/32" }));
             Assert.That(strictest.BlockedWords, Is.EqualTo(new[] { "Casino", "pills" }), "each word once, as rules compare them");
             Assert.That(strictest.BlockedDomains, Is.EqualTo(new[] { "a.test", "b.test" }));
+        });
+    }
+
+    [Test]
+    public void TheCaptchasConsent_StartsExplicit_ForMarketing()
+    {
+        Assert.Multiple(() =>
+        {
+            Assert.That(new ProtectionSettings().CaptchaConsent, Is.EqualTo(CaptchaConsentMode.Explicit));
+            Assert.That(new ProtectionSettings().CookiebotCategory, Is.EqualTo("marketing"));
+        });
+    }
+
+    [TestCase("preferences", true)]
+    [TestCase("statistics", true)]
+    [TestCase("marketing", true)]
+    [TestCase("necessary", false)]
+    [TestCase("", false)]
+    public void ACookiebotCategory_IsOneOfThose_ItCanBeAskedAbout(string category, bool allowed) =>
+        Assert.That(Codes(new ProtectionSettings { CookiebotCategory = category }), Is.EqualTo(allowed ? Array.Empty<string>() : new[] { SettingsErrors.ProtectionLevelCode }));
+
+    [Test]
+    public void TheStrictest_AsksForConsent_UnlessEverySiteAgrees()
+    {
+        var cmp = new ProtectionSettings { CaptchaConsent = CaptchaConsentMode.Cmp, CookiebotCategory = "statistics" };
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(ProtectionSettings.Strictest([cmp, cmp]).CaptchaConsent, Is.EqualTo(CaptchaConsentMode.Cmp));
+            Assert.That(ProtectionSettings.Strictest([cmp, cmp]).CookiebotCategory, Is.EqualTo("statistics"));
+            Assert.That(ProtectionSettings.Strictest([cmp, new ProtectionSettings { CaptchaConsent = CaptchaConsentMode.Implicit }]).CaptchaConsent, Is.EqualTo(CaptchaConsentMode.Explicit));
+            Assert.That(ProtectionSettings.Strictest([cmp, cmp with { CookiebotCategory = "marketing" }]).CaptchaConsent, Is.EqualTo(CaptchaConsentMode.Explicit), "another category is another consent");
+        });
+    }
+
+    [TestCase(nameof(CaptchaConsentMode.Explicit), "\"explicit\"")]
+    [TestCase(nameof(CaptchaConsentMode.Cookiebot), "\"cookiebot\"")]
+    [TestCase(nameof(CaptchaConsentMode.Cmp), "\"cmp\"")]
+    [TestCase(nameof(CaptchaConsentMode.Implicit), "\"implicit\"")]
+    public void AConsentMode_IsStoredByItsName(string name, string stored)
+    {
+        var mode = Enum.Parse<CaptchaConsentMode>(name);
+        Assert.Multiple(() =>
+        {
+            Assert.That(JsonSerializer.Serialize(mode), Is.EqualTo(stored));
+            Assert.That(JsonSerializer.Deserialize<CaptchaConsentMode>(stored), Is.EqualTo(mode));
+        });
+    }
+
+    [Test]
+    public void TheImplicitMode_ReadsAsExplicit_UnlessTheHostAllowsIt()
+    {
+        var stored = new ProtectionSettings { CaptchaConsent = CaptchaConsentMode.Implicit };
+        var refusing = new ImplicitCaptchaConsentRule(Options.Create(new FormBuilderOptions()));
+        var allowing = new FormBuilderOptions();
+        allowing.Privacy.AllowImplicitCaptchaConsent = true;
+        var locks = new SettingsLocks();
+
+        var read = refusing.Apply(stored, locks);
+        var free = new SettingsLocks();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(read.CaptchaConsent, Is.EqualTo(CaptchaConsentMode.Explicit));
+            Assert.That(locks.All["captchaConsent"], Is.EqualTo(new SettingsLock(SettingsLockKind.Restricted, "JironFormBuilder:Privacy:AllowImplicitCaptchaConsent")));
+            Assert.That(refusing.Apply(new ProtectionSettings { CaptchaConsent = CaptchaConsentMode.Cmp }, new SettingsLocks()).CaptchaConsent, Is.EqualTo(CaptchaConsentMode.Cmp), "another mode stays");
+            Assert.That(new ImplicitCaptchaConsentRule(Options.Create(allowing)).Apply(stored, free).CaptchaConsent, Is.EqualTo(CaptchaConsentMode.Implicit));
+            Assert.That(free.All, Is.Empty);
+        });
+    }
+
+    [Test]
+    public void ASaveOfTheImplicitMode_IsRefused_WhereTheHostDoesNotAllowIt()
+    {
+        var rules = new[] { new ImplicitCaptchaConsentRule(Options.Create(new FormBuilderOptions())) };
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(
+                () => SettingsHostRules.CheckSave(new ProtectionSettings { CaptchaConsent = CaptchaConsentMode.Implicit }, new HashSet<string> { "captchaConsent" }, new FormBuilderOptions(), rules, new SettingsErrors("protection")),
+                Throws.TypeOf<FormBuilderSettingLockedException>());
+            Assert.That(
+                () => SettingsHostRules.CheckSave(new ProtectionSettings { CaptchaConsent = CaptchaConsentMode.Cookiebot }, new HashSet<string> { "captchaConsent" }, new FormBuilderOptions(), rules, new SettingsErrors("protection")),
+                Throws.Nothing);
         });
     }
 

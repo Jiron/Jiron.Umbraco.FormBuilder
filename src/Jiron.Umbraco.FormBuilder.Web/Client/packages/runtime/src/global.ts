@@ -21,6 +21,19 @@ export interface JironFormBuilderForm {
   values(): Promise<Readonly<Record<string, unknown>>>;
 }
 
+/**
+ * A visitor's consent to what a form loads from a third party, for a site's consent manager to give (ROADMAP section 4.10,
+ * ADR-0157). It lasts the page, as nothing stores it; `jfb:consent` on the document tells a form that it changed.
+ */
+export interface JironFormBuilderConsent {
+  /** Gives consent to a purpose, of which `captcha` is the one there is. */
+  grant(purpose: string): void;
+  /** Takes back the consent. */
+  withdraw(): void;
+  /** Whether the visitor has given consent to a purpose. */
+  has(purpose: string): boolean;
+}
+
 /** What the runtime offers the page as `window.JironFormBuilder` (ROADMAP section 4.9). */
 export interface JironFormBuilderGlobal {
   /** The version of the runtime on the page. */
@@ -29,6 +42,8 @@ export interface JironFormBuilderGlobal {
   init(root?: ParentNode): void;
   /** A form of the markup contract to work with; null for any other element. */
   get(form: Element): JironFormBuilderForm | null;
+  /** A visitor's consent, for a site's consent manager. */
+  readonly consent: JironFormBuilderConsent;
 }
 
 declare global {
@@ -47,6 +62,22 @@ export function installGlobal(
   init: (root?: ParentNode) => void,
   get: (form: Element) => JironFormBuilderForm | null,
 ): JironFormBuilderGlobal {
-  target.JironFormBuilder ??= Object.freeze({ version, init, get });
+  let given = false;
+  const set = (now: boolean): void => {
+    given = now;
+    document.dispatchEvent(new Event('jfb:consent'));
+  };
+  target.JironFormBuilder ??= Object.freeze({
+    version,
+    init,
+    get,
+    consent: Object.freeze({
+      grant: (purpose: string) => {
+        if (purpose === 'captcha') set(true);
+      },
+      withdraw: () => set(false),
+      has: (purpose: string) => given && purpose === 'captcha',
+    }),
+  });
   return target.JironFormBuilder;
 }

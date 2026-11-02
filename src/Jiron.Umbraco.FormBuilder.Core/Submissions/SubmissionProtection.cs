@@ -159,6 +159,42 @@ internal sealed partial class SubmissionProtection(
     }
 
     /// <summary>
+    /// Whether a page shows a form's captcha, so the form asks for it as the page loads (ADR-0157). Most forms inherit a site's
+    /// level that has no captcha, which the cached sections say with no read of what the page holds.
+    /// </summary>
+    /// <param name="formKey">The form.</param>
+    /// <param name="definition">Its definition.</param>
+    /// <param name="page">The page the render is for.</param>
+    /// <param name="cancellationToken">Cancels the reads.</param>
+    public async Task<bool> ShowsCaptchaAsync(Guid formKey, FormDefinition definition, Func<Task<RequestPage>> page, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(definition);
+        ArgumentNullException.ThrowIfNull(page);
+        var level = definition.Settings.Protection.Level;
+        if (level is not (ProtectionLevel.Inherit or ProtectionLevel.Captcha))
+        {
+            return false;
+        }
+
+        if (level == ProtectionLevel.Inherit)
+        {
+            var any = (await settings.GetAsync<ProtectionSettings>(null, cancellationToken)).Value.Level == ProtectionLevel.Captcha;
+            foreach (var site in any ? [] : await settings.SitesOfAsync<ProtectionSettings>(cancellationToken))
+            {
+                any |= (await settings.GetAsync<ProtectionSettings>(site, cancellationToken)).Value.Level == ProtectionLevel.Captcha;
+            }
+
+            if (!any)
+            {
+                return false;
+            }
+        }
+
+        var protects = await SettingsOfAsync(formKey, await page(), cancellationToken);
+        return captchas.Find(protects.CaptchaOf(definition)?.Provider)?.Client is not null;
+    }
+
+    /// <summary>
     /// What a submission's captcha comes to (ADR-0142): it passes on a form without one, and for a server key and a post
     /// without JavaScript, which have none to solve. A provider the site no longer has, or that lost its keys, cannot answer,
     /// and its page showed no captcha, so its visitor is not asked for a token they cannot have.

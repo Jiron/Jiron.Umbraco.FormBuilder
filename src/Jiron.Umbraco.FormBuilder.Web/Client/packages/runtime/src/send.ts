@@ -16,7 +16,9 @@ import type { Context, PostAnswer, ReadPost } from '@jfb/logic';
 import type { PageErrors, ServerProblem } from './errors';
 import { hostOf, markupOf, swapForm } from './changed';
 import { parseSanitised } from './html';
+import { wordsFor } from './messages';
 import type { Places } from './places';
+import type { Captcha, CaptchaTold, Puzzle } from './protect-chunk';
 import { optionsByPost, type PageUploads, type UploadedFile } from './uploads';
 import type { FormModel } from './model';
 import { readPage } from './page';
@@ -68,6 +70,8 @@ const BUSY = 'data-jfb-busy';
 const DISABLED = 'aria-disabled';
 /** How long a send waits for its answer: longer than the endpoint's own limit of 30 seconds. */
 const WAIT = 40_000;
+/** How long a puzzle takes before the page says it is looking for the answer. */
+const SLOW = 1_500;
 /** The form's attributes its outcome keeps, as the server's render of an outcome writes them. */
 const KEPT = ['class', 'id', 'data-jfb-form', 'data-jfb-contract', 'lang', 'dir'];
 /** The fewest seconds a redirect after a message counts down: a shorter time leaves none to reach "Stay here" (WCAG 2.2.1). */
@@ -107,7 +111,15 @@ export function bodyOf(
   post: ReadPost,
   query: Readonly<Record<string, string | readonly string[]>>,
   id: string,
-  extra: { content?: string; challenge?: string; honeypot?: string; placement?: string; instance?: string } = {},
+  extra: {
+    content?: string;
+    challenge?: string;
+    honeypot?: string;
+    placement?: string;
+    instance?: string;
+    captchaToken?: string;
+    proofOfWork?: string;
+  } = {},
 ): object {
   const values = valuesOf(post);
   return {
@@ -120,6 +132,8 @@ export function bodyOf(
     query,
     context: Object.fromEntries(post.context),
     challenge: extra.challenge,
+    captchaToken: extra.captchaToken,
+    proofOfWork: extra.proofOfWork,
     honeypot: extra.honeypot,
     placement: extra.placement,
   };
@@ -157,6 +171,8 @@ export interface SenderOptions {
   readonly files?: PageUploads;
   /** The challenge the page holds, shared with its uploads, whose tokens name it (ADR-0138). */
   readonly challenges?: Challenges;
+  /** The form's captcha, if the challenge named one by now (ADR-0157). */
+  readonly captcha?: () => Promise<Captcha | undefined> | undefined;
 }
 
 /** What a form that came in another's place keeps. */
@@ -175,12 +191,15 @@ export interface Challenges {
   renew(): Promise<string | null>;
   /** Asks only to hear what the answer tells now, and keeps the one it holds. */
   listen(): void;
+  /** The puzzle of the one it holds, which a send solves (ADR-0141). */
+  puzzle(): Puzzle | undefined;
 }
 
 /** What the challenge's answer holds besides the challenge: what cached markup cannot carry (ADR-0138, ADR-0156). */
 export interface Told {
   readonly places?: Places;
   readonly member?: Context['member'];
+  readonly captcha?: CaptchaTold;
 }
 
 /**
@@ -194,26 +213,35 @@ export function challengesOf(
   hear?: (told: Told) => void,
 ): Challenges {
   const content = form.dataset['jfbContent'] || undefined;
-  const ask = (previous?: string): Promise<string | null> =>
+  let puzzle: Puzzle | undefined;
+  const asked = (previous?: string): Promise<(Told & { challenge?: string; proofOfWork?: Puzzle }) | null> =>
     fetch(`${api}/forms/${form.dataset['jfbForm'] ?? ''}/challenge`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ previous, contentKey: content }),
       signal: AbortSignal.timeout(WAIT),
     })
-      .then((response) => (response.ok ? (response.json() as Promise<Told & { challenge?: string }>) : null))
+      .then((response) =>
+        response.ok ? (response.json() as Promise<Told & { challenge?: string; proofOfWork?: Puzzle }>) : null,
+      )
       .then((answer) => {
         if (answer !== null) hear?.(answer);
-        return answer?.challenge ?? null;
+        return answer;
       })
       .catch(() => null);
+  const ask = (previous?: string): Promise<string | null> =>
+    asked(previous).then((answer) => {
+      puzzle = answer?.proofOfWork;
+      return answer?.challenge ?? null;
+    });
   let held = given === undefined ? ask() : Promise.resolve(given);
   const listen = (): void => {
-    if (hear !== undefined) void ask();
+    if (hear !== undefined) void asked();
   };
   if (given !== undefined) listen();
   return {
     listen,
+    puzzle: () => puzzle,
     current: () => held,
     again: () => (held = ask()),
     renew: async () => {
@@ -223,6 +251,10 @@ export function challengesOf(
     },
   };
 }
+
+/** What a third party or a worker is given to answer, which may never come. */
+const within = <T>(work: Promise<T> | T): Promise<T | null> =>
+  Promise.race([work, new Promise<null>((resolve) => setTimeout(resolve, WAIT, null))]);
 
 /** A form's sender: one submission id for every send of the page, which makes a retry safe. */
 export function senderOf(form: HTMLFormElement, model: FormModel, options: SenderOptions = {}): Deliver {
@@ -369,6 +401,26 @@ export function senderOf(form: HTMLFormElement, model: FormModel, options: Sende
     let answer: Answer = {};
     let handedOver = false;
     let swapped: Awaited<ReturnType<typeof swapForm>> = null;
+    let guard: Captcha | undefined;
+    let captchaToken: string | null | undefined;
+    /** The answer to the puzzle of the challenge held, which a slow device says it is looking for. */
+    const solved = async (): Promise<string | undefined> => {
+      const puzzle = challenges.puzzle();
+      if (puzzle === undefined) return undefined;
+      const hint = setTimeout(() => {
+        void wordsFor(model.culture).then((words) => {
+          if (live !== null && primary.hasAttribute(BUSY)) live.textContent = words.proofHint;
+        });
+      }, SLOW);
+      try {
+        return (await within(import('./protect-chunk').then((chunk) => chunk.solve(puzzle)))) ?? undefined;
+      } catch {
+        return undefined;
+      } finally {
+        clearTimeout(hint);
+        if (live !== null) live.textContent = templates.dataset['jfbSending'] ?? '';
+      }
+    };
     try {
       // A file that failed has the focus by now, and the answers stay on the page.
       if ((await options.files?.settled()) === false) return true;
@@ -379,11 +431,14 @@ export function senderOf(form: HTMLFormElement, model: FormModel, options: Sende
       const send = async (): Promise<Response> => {
         const current = await challenges.current();
         if (current !== null) held.add(current);
+        const proofOfWork = await solved();
         return post(
           'entries',
           bodyOf(model, reading.post, query, id, {
             ...(content === undefined ? {} : { content }),
             ...(current === null ? {} : { challenge: current }),
+            ...(proofOfWork === undefined ? {} : { proofOfWork }),
+            ...(captchaToken === undefined || captchaToken === null ? {} : { captchaToken }),
             ...(honeypot ? { honeypot } : {}),
             ...(placement === undefined ? {} : { placement }),
             // A view's own id names no form the server wrote, so no copy can be asked for it.
@@ -395,7 +450,15 @@ export function senderOf(form: HTMLFormElement, model: FormModel, options: Sende
       // time, which the score holds against them (ADR-0139), so a form that can post goes that way, where no time counts.
       if ((await challenges.current()) === null) {
         const asked = await challenges.again();
-        handedOver = posts && asked !== null;
+        // Not one a post could not pass: it would land in Spam as a visitor with no script.
+        handedOver = posts && asked !== null && challenges.puzzle() === undefined && options.captcha?.() === undefined;
+      }
+      if (!handedOver) {
+        guard = await options.captcha?.();
+        captchaToken = await within(guard?.token());
+        if (captchaToken === null && guard?.ask() === true) return true;
+        // A provider no one can pass costs a check in Spam, never the answers.
+        handedOver = captchaToken === null && posts;
       }
       if (!handedOver) {
         let response = await send();
@@ -438,10 +501,13 @@ export function senderOf(form: HTMLFormElement, model: FormModel, options: Sende
       if (live !== null && live.textContent === templates.dataset['jfbSending']) live.textContent = '';
     }
     if (handedOver) return false;
+    // The provider's token counts once, whatever the answer was.
+    if (status !== 200) guard?.spent();
     if (swapped !== null) {
       await handOver(swapped);
       return true;
     }
+    if (status === 403 && answer.code === 'captcha_failed' && guard?.ask() === true) return true;
     // A stored entry is never sent again, whatever its answer holds.
     if (status === 200) {
       event('jfb:submitted');

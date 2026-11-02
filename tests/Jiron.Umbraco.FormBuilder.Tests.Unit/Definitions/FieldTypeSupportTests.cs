@@ -83,7 +83,7 @@ public sealed class FieldTypeSupportTests
         ["ranking"] = ("Choices", "Text", "Choices", "", "top", ""),
         ["checkbox"] = ("Choices", "Bool", "Checkbox", "", "text", ""),
         ["yesno"] = ("Choices", "Text", "Choice", "", "yesLabel noLabel style", ""),
-        ["consent"] = ("Choices", "Text", "Checkbox", "", "text", ""),
+        ["consent"] = ("Choices", "Text", "Checkbox", "", "text loadsCaptcha", ""),
         ["country"] = ("Choices", "Text", "Choice", "", "allowed top default", ""),
         ["name"] = ("People", "Json", null, "", "parts requiredParts", ""),
         ["address"] = ("People", "Json", null, "", "parts requiredParts", ""),

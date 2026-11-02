@@ -6,6 +6,7 @@ using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.OptionLists;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
+using Jiron.Umbraco.FormBuilder.Core.Settings;
 using Jiron.Umbraco.FormBuilder.Core.Submissions;
 using Jiron.Umbraco.FormBuilder.Web.Rendering;
 using Microsoft.AspNetCore.Http;
@@ -81,7 +82,7 @@ internal sealed class ChallengeRequests(ChallengeTokens tokens, IEntryRepository
         {
             Challenge = challenge,
             MinFillSeconds = FormChallenges.MinFillSeconds,
-            Captcha = Captcha(site.CaptchaOf(definition)),
+            Captcha = Captcha(site.CaptchaOf(definition), site),
             ProofOfWork = proofBits == 0 ? null : new ChallengeProofResponseModel { Nonce = ProofOfWork.NonceOf(tokens.Read(challenge, form.Form.Key, TimeSpan.Zero)!), Bits = proofBits },
             Places = await PlacesAsync(form, cancellationToken),
             Member = member is null ? null : await MemberAsync(members, definition),
@@ -90,9 +91,17 @@ internal sealed class ChallengeRequests(ChallengeTokens tokens, IEntryRepository
     }
 
     // What a page needs to show the form's captcha, and no secret; nothing when its provider cannot be shown.
-    private ChallengeCaptchaResponseModel? Captcha(CaptchaChoice? chosen) =>
+    private ChallengeCaptchaResponseModel? Captcha(CaptchaChoice? chosen, ProtectionSettings site) =>
         captchas.Find(chosen?.Provider)?.Client is { } client
-            ? new ChallengeCaptchaResponseModel { Provider = chosen!.Provider, SiteKey = client.SiteKey, ScriptAddress = client.ScriptAddress, Action = client.Action }
+            ? new ChallengeCaptchaResponseModel
+            {
+                Provider = chosen!.Provider,
+                SiteKey = client.SiteKey,
+                ScriptAddress = client.ScriptAddress,
+                Action = client.Action,
+                Consent = JsonNamingPolicy.CamelCase.ConvertName(site.CaptchaConsent.ToString()),
+                Category = site.CaptchaConsent == CaptchaConsentMode.Cookiebot ? site.CookiebotCategory : null,
+            }
             : null;
 
     // The places left, by the field's key and the option's value, of every option known without a visitor's answers: the
@@ -182,6 +191,12 @@ internal sealed record ChallengeCaptchaResponseModel
 
     /// <summary>The action a score-based provider's token is asked for; left out for the others.</summary>
     public string? Action { get; init; }
+
+    /// <summary>When the page may load the script: <c>explicit</c>, <c>cookiebot</c>, <c>cmp</c> or <c>implicit</c> (ADR-0157).</summary>
+    public required string Consent { get; init; }
+
+    /// <summary>In the <c>cookiebot</c> mode, the category whose consent loads the script; left out for the others.</summary>
+    public string? Category { get; init; }
 }
 
 /// <summary>A challenge's puzzle (ADR-0141): the number to find makes the SHA-256 of <c>nonce:number</c> start with so many zero bits.</summary>

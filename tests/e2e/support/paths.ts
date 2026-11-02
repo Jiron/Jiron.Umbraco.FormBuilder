@@ -61,6 +61,15 @@ export const REFUSAL_PORTS = { configuration: 5526, globalization: 5527 } as con
 export const CACHED_PORT = 5525;
 export const CACHED_BASE_URL = `http://127.0.0.1:${CACHED_PORT}`;
 
+/** The host of places-and-members (ROADMAP 7.1e), from Umbraco's output cache, beside the other specs' hosts. */
+export const PLACES_PORT = 5528;
+export const PLACES_BASE_URL = `http://127.0.0.1:${PLACES_PORT}`;
+
+/** The host of protection-on-the-page (ROADMAP 7.2c), with fake keys and a stub of its own to verify through. */
+export const PROTECTION_PORT = 5529;
+export const PROTECTION_BASE_URL = `http://127.0.0.1:${PROTECTION_PORT}`;
+export const PROTECTION_STUB_PORT = 5561;
+
 /**
  * The host of the refused uploads (ROADMAP 7.3d, ADR-0006): the plain port its start-up wait reads, and the port with HTTPS
  * and HTTP/2, under a certificate of the Testing project's that nothing trusts, so its browser ignores that.

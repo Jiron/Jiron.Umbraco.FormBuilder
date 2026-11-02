@@ -93,6 +93,17 @@ export const de: MessageWords = {
   optionFull: '{option} ist jetzt ausgebucht. Wählen Sie eine andere Option.',
   placesLeft: { one: '{count} Platz frei', other: '{count} Plätze frei' },
   noPlaces: 'Ausgebucht',
+  captchaNotice: 'Dieses Formular nutzt eine Spam-Prüfung eines externen Dienstes, die nur lädt, wenn Sie zustimmen.',
+  captchaLoad: 'Prüfung laden',
+  captchaManager:
+    'Dieses Formular nutzt eine Spam-Prüfung eines externen Dienstes, die lädt, sobald Sie in den Cookie-Einstellungen zustimmen.',
+  captchaCookies:
+    'Dieses Formular nutzt eine Spam-Prüfung eines externen Dienstes, die lädt, sobald Sie {category}-Cookies zustimmen.',
+  captchaCategories: { preferences: 'Präferenz', statistics: 'Statistik', marketing: 'Marketing' },
+  captchaCookieSettings: 'Cookie-Einstellungen ändern',
+  captchaMissing: 'Schließen Sie die Prüfung ab, bevor Sie das Formular senden.',
+  captchaFailed: 'Die Spam-Prüfung konnte nicht laden. Sie können das Formular trotzdem senden.',
+  proofHint: 'Ihr Browser wird geprüft, das kann einen Moment dauern.',
   choiceFull: 'Eine Ihrer gewählten Optionen ist jetzt ausgebucht. Wählen Sie eine andere Option.',
   confirmation: 'Geben Sie zweimal dieselbe E-Mail-Adresse ein',
   digits: 'Geben Sie eine Zahl mit weniger Ziffern ein',

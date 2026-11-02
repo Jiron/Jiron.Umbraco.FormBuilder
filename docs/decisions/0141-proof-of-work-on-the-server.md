@@ -35,7 +35,6 @@ when the challenge endpoint knows no page, and what difficulty to start at while
 
 ## Consequences
 
-- **Until 7.2c, a website form at this level takes no entry from a browser with JavaScript in practice,** since the runtime
-  posts by the no-JS path until sending is built (ADR-0120). Those posts reach Spam with `no_script`, and nothing is lost. A
-  headless site's own code can solve the puzzle today.
-- **Revisit** the default when 7.2c measures it.
+- **Since 7.2c the runtime solves the puzzle at a send** (ADR-0157). Until then, a website form at this level took no entry from
+  a browser with JavaScript in practice. A post without JavaScript still reaches Spam with `no_script`, and nothing is lost.
+- **Measured in 7.2c (ADR-0157):** at the default of 16 bits the page takes 140 to 200 ms on the demo machine from the press to the send, worker included, so the check's 2 seconds leave room for a device ten times slower. The default stays, as each further bit doubles what a slow phone waits.

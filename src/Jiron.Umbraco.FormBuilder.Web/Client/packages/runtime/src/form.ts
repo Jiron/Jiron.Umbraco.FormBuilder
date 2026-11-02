@@ -16,11 +16,12 @@ import { loadEngine, type PageEngine } from './engine';
 import { pageErrorsOf } from './errors';
 import type { FormModel } from './model';
 import { followSliders } from './outputs';
-import { readPage, type PageReading } from './page';
+import { allFieldsOf, readPage, type PageReading } from './page';
 import { showPlaces, type Places } from './places';
+import type { Captcha } from './protect-chunk';
 import { challengesOf, senderOf, valuesOf, type Carried, type Told } from './send';
 import { allOf, movesPages, takesUploads, type PageUploads, type UploadOptions } from './uploads';
-import type { ShownError } from './messages';
+import { wordsFor, type ShownError } from './messages';
 import { contextOf, rulesOf, tellMember, type PageRules } from './rules';
 import { checkPage, type CheckScope } from './validation';
 
@@ -109,23 +110,35 @@ async function wake(
     if (places !== undefined) await showPlaces(root, places, model.culture).catch(() => undefined);
   };
   let member: Told['member'];
+  let captcha: Promise<Captcha | undefined> | undefined;
   const hear = (told: Told): void => {
+    const tells = told.places ?? told.member ?? member;
+    const asked = told.captcha;
+    if (asked !== undefined)
+      captcha ??= Promise.all([import('./protect-chunk'), wordsFor(model.culture)])
+        .then(([chunk, words]) => {
+          const agreeing = allFieldsOf(model).find((field) => field.settings?.['loadsCaptcha'] === true);
+          return chunk.enhanceCaptcha(
+            form,
+            model.culture,
+            asked,
+            words,
+            form.querySelector(`input[type="checkbox"][name="${CSS.escape(agreeing?.alias ?? '')}"]`),
+          );
+        })
+        .catch(() => undefined);
     member = told.member;
     tellMember(model, member);
     places = told.places;
     // As an answer does: the rules decide again, and what follows them, the page and its buttons among them.
     void showIn(form).then(() => {
-      if (rules !== null) form.dispatchEvent(new Event('input', { bubbles: true }));
+      if (rules !== null && tells !== undefined) form.dispatchEvent(new Event('input', { bubbles: true }));
     });
   };
-  const asks = form.hasAttribute('data-jfb-asks');
   // An option the visitor moved off, or options written anew for a parent's answer.
   form.addEventListener('change', () => void showIn(form));
   const uploads = takesUploads(form, model);
-  const challenges =
-    api !== undefined && (asks || uploads)
-      ? challengesOf(form, api, carried?.challenge, asks ? hear : undefined)
-      : undefined;
+  const challenges = api === undefined ? undefined : challengesOf(form, api, carried?.challenge, hear);
   const uploading: UploadOptions | undefined =
     api === undefined || challenges === undefined || !uploads
       ? undefined
@@ -138,15 +151,13 @@ async function wake(
   const files: PageUploads | undefined =
     uploading === undefined
       ? undefined
-      : await Promise.all([
-          !holds(form, '.jfb-upload')
-            ? []
-            : import('./uploads-chunk').then((module) => [module.enhanceUploads(form, model, uploading)]),
-          !holds(form, '.jfb-signature')
-            ? []
-            : import('./signature-chunk').then((module) => [module.enhanceSignatures(form, model, uploading)]),
-        ])
-          .then((parts) => allOf(parts.flat()))
+      : await import('./files-chunk')
+          .then((module) =>
+            allOf([
+              ...(holds(form, '.jfb-upload') ? [module.enhanceUploads(form, model, uploading)] : []),
+              ...(holds(form, '.jfb-signature') ? [module.enhanceSignatures(form, model, uploading)] : []),
+            ]),
+          )
           .catch(() => undefined);
   if (
     form.querySelector('.jfb-repeater,.jfb-ranking,.jfb-counter,.jfb-other,[data-jfb-grow],[data-jfb-cascade]') !== null
@@ -168,6 +179,7 @@ async function wake(
     ...(carried === undefined ? {} : { id: carried.id, challenge: carried.challenge }),
     ...(files === undefined ? {} : { files }),
     ...(challenges === undefined ? {} : { challenges }),
+    captcha: () => captcha,
     rewake: (next, nextModel, carry) => {
       tellMember(nextModel, member);
       void attach(next, nextModel, defaults, carry);

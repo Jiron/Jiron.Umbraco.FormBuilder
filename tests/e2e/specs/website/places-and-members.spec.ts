@@ -6,7 +6,7 @@ import { logicCome, press, pressOnThePage } from '../../support/form.ts';
 import { waitForStartupWork } from '../../support/host-health.ts';
 import { hostEnvironment } from '../../support/host-env.ts';
 import { startHost, type Host } from '../../support/host.ts';
-import { CACHED_BASE_URL, CACHED_PORT } from '../../support/paths.ts';
+import { PLACES_BASE_URL, PLACES_PORT } from '../../support/paths.ts';
 import { readSecrets } from '../../support/users.ts';
 
 // What cached markup cannot carry (ROADMAP 7.1e, ADR-0156), on a host of its own whose pages come from Umbraco's output
@@ -17,15 +17,15 @@ import { readSecrets } from '../../support/users.ts';
 // WCAG 2.2 A or AA violation.
 
 test.describe.configure({ mode: 'serial', timeout: 120_000 });
-test.use({ baseURL: CACHED_BASE_URL });
+test.use({ baseURL: PLACES_BASE_URL });
 
 let host: Host | undefined;
 
 test.beforeAll(async () => {
   test.setTimeout(600_000);
   host = await startHost({
-    name: `host-${CACHED_PORT}`,
-    port: CACHED_PORT,
+    name: `host-${PLACES_PORT}`,
+    port: PLACES_PORT,
     env: {
       ...hostEnvironment(readSecrets(), { deliveryApi: false }),
       // The run's host holds the stub's port; this one needs no stub.
@@ -36,7 +36,7 @@ test.beforeAll(async () => {
     },
   });
   const wait = await waitForStartupWork(host.logFile);
-  if (wait.state !== 'done') throw new Error(`The cached host's start-up work ended as "${wait.state}".`);
+  if (wait.state !== 'done') throw new Error(`The host's start-up work ended as "${wait.state}".`);
 });
 
 test.afterAll(async () => {
@@ -80,7 +80,7 @@ async function upToTheEvenings(form: Locator, who: string): Promise<void> {
 
 /** Another visitor takes an evening, in a browser of their own. */
 async function anotherVisitorTakes(browser: Browser, value: string): Promise<void> {
-  const context = await browser.newContext({ baseURL: CACHED_BASE_URL });
+  const context = await browser.newContext({ baseURL: PLACES_BASE_URL });
   const page = await context.newPage();
   await page.goto(pathOfVolunteer());
   const form = formOn(page);
@@ -96,7 +96,7 @@ test('the places show before a touch on a page the cache serves, which holds non
   page,
 }) => {
   // Another visitor's visit renders the page, and the cache keeps it.
-  const first = await browser.newPage({ baseURL: CACHED_BASE_URL });
+  const first = await browser.newPage({ baseURL: PLACES_BASE_URL });
   expect((await first.goto(pathOfVolunteer()))?.ok()).toBe(true);
   await first.close();
 
@@ -160,7 +160,7 @@ test('a rule on the member shows for a signed-in member, on the page every visit
   page,
 }) => {
   const line = 'You are a member already';
-  const visitor = await browser.newPage({ baseURL: CACHED_BASE_URL });
+  const visitor = await browser.newPage({ baseURL: PLACES_BASE_URL });
   await visitor.goto(pathOfVolunteer());
   await expect(labelOf(formOn(visitor), 'tue')).toContainText('places left');
   await expect(formOn(visitor).getByText(line)).toBeHidden();

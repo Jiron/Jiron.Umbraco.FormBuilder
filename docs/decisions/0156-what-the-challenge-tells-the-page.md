@@ -15,7 +15,8 @@ the words come from, and what a full option does.
 
 - **A form that needs the answer asks as the page loads.** The runtime otherwise wakes at a form's first touch, by when a
   visitor has already read the options and a member has already seen the form without their field. The server writes
-  `data-jfb-asks` on a form with an option the answer would name, or with a rule that looks at the member, and the frame
+  `data-jfb-asks` on a form with an option the answer would name, with a rule that looks at the member, or with a captcha
+  (ADR-0157), and the frame
   wakes such a form at once. The attribute says what the form holds and nothing about the visitor, so the markup stays the
   same for everyone. Every other form keeps waking at the first touch, and costs a page nothing until then.
 - **The numbers are the runtime's to write.** They are in no markup, so a post without JavaScript shows none and the server
@@ -30,6 +31,8 @@ the words come from, and what a full option does.
   visitor's next change. A rule leaves a full option disabled when it shows the field (`data-jfb-disabled`), and an option
   the view disabled for another reason stays disabled whatever its places. An error link to a full first choice goes to the
   field's next control.
+- **The answer counts wherever it comes,** as the attribute only says when to ask: a page cached before an option got its places shows
+  them at the form's first touch (ADR-0157).
 - **Each answer counts.** A renewal tells the numbers again and the page shows them. A send refused for a full option has
   made them old, so the page asks once more only to hear them, whose token it drops, and keeps the challenge it holds, which
   the entry and its files name. A form put in another's place when it was published again does the same: an unused challenge

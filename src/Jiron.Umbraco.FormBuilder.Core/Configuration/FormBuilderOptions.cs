@@ -37,6 +37,9 @@ public sealed class FormBuilderOptions
     /// <summary>The keys of the captcha providers (ADR-0012, ADR-0142), which live only here.</summary>
     public FormBuilderCaptchaOptions Captcha { get; } = new();
 
+    /// <summary>What the host allows of the settings that touch a visitor's privacy (ADR-0008).</summary>
+    public FormBuilderPrivacyOptions Privacy { get; } = new();
+
     /// <summary>The other hosts Jiron Form Builder may call: JSON option lists now, webhooks later (ADR-0076).</summary>
     public FormBuilderWebhooksOptions Webhooks { get; } = new();
 
@@ -45,6 +48,16 @@ public sealed class FormBuilderOptions
     /// <c>privacy</c>, <c>access</c> (every grant and restriction) or <c>integrations</c>, in any case.
     /// </summary>
     public IList<string> LockedSections { get; } = [];
+}
+
+/// <summary>What the host allows of the settings that touch a visitor's privacy (ADR-0008).</summary>
+public sealed class FormBuilderPrivacyOptions
+{
+    /// <summary>
+    /// Whether a site may load a captcha's script without asking its visitors, the <c>implicit</c> consent mode (section 4.10,
+    /// ADR-0157). Off by default, and a stored <c>implicit</c> then reads as <c>explicit</c>.
+    /// </summary>
+    public bool AllowImplicitCaptchaConsent { get; set; }
 }
 
 /// <summary>The keys of the captcha providers (ADR-0012, ADR-0142). A provider without both of its keys is not configured.</summary>

@@ -54,7 +54,7 @@ shown at all.
 
 ## Consequences
 
-- The runtime's part, which loads the script after consent and posts the token, waits for its budget (7.2c).
+- The runtime's part, which loads the script after consent and posts the token, came with 7.2c (ADR-0157), with the consent modes of section 4.10.
 - Greying out a provider without keys is for the settings screens, which do not exist yet: `IsConfigured` is what they read.
   The form's protection screen comes with them.
 - A built-in provider is not a public type, so a site cannot derive from it; it writes its own against the interface, or asks

@@ -1,6 +1,10 @@
 using System.Net;
+using System.Text.Json.Serialization;
+using Jiron.Umbraco.FormBuilder.Core.Configuration;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
+using Jiron.Umbraco.FormBuilder.Core.Definitions.Serialization;
 using Jiron.Umbraco.FormBuilder.Logic;
+using Microsoft.Extensions.Options;
 
 namespace Jiron.Umbraco.FormBuilder.Core.Settings;
 
@@ -46,6 +50,12 @@ internal sealed record ProtectionSettings : ISettingsSection
     /// <summary>At the <c>captcha</c> level, the provider of the site's forms that inherit it (ADR-0142).</summary>
     public string? CaptchaProvider { get; init; }
 
+    /// <summary>When a page may load a captcha's script (section 4.10, ADR-0157): <c>explicit</c> by default.</summary>
+    public CaptchaConsentMode CaptchaConsent { get; init; } = CaptchaConsentMode.Explicit;
+
+    /// <summary>In the <c>cookiebot</c> mode, the category whose consent loads the script: <c>preferences</c>, <c>statistics</c> or <c>marketing</c>.</summary>
+    public string CookiebotCategory { get; init; } = "marketing";
+
     /// <summary>How many zero bits a puzzle of the site's forms asks for; each more doubles the work (ADR-0141).</summary>
     public int ProofBits { get; init; } = 16;
 
@@ -80,6 +90,8 @@ internal sealed record ProtectionSettings : ISettingsSection
         {
             Level = level,
             CaptchaProvider = sections.FirstOrDefault(section => section.Level == ProtectionLevel.Captcha)?.CaptchaProvider,
+            CaptchaConsent = sections.All(section => section.CaptchaConsent == sections[0].CaptchaConsent && section.CookiebotCategory == sections[0].CookiebotCategory) ? sections[0].CaptchaConsent : CaptchaConsentMode.Explicit,
+            CookiebotCategory = sections[0].CookiebotCategory,
             ProofBits = sections.Max(section => section.ProofBits),
             BlockedRanges = [.. sections.SelectMany(section => section.BlockedRanges).Distinct(StringComparer.Ordinal)],
             ContentRules = sections.Max(section => section.ContentRules),
@@ -181,6 +193,11 @@ internal sealed class ProtectionSettingsValidator : ISettingsValidator<Protectio
             errors.Add(nameof(ProtectionSettings.CaptchaProvider), SettingsErrors.ProtectionLevelCode, "A site names a captcha provider at the captcha level, and only there.");
         }
 
+        if (section.CookiebotCategory is not ("preferences" or "statistics" or "marketing"))
+        {
+            errors.Add(nameof(ProtectionSettings.CookiebotCategory), SettingsErrors.ProtectionLevelCode, "A Cookiebot category is preferences, statistics or marketing.");
+        }
+
         if (section.ProofBits is < ProtectionSettings.FewestProofBits or > ProtectionSettings.MostProofBits)
         {
             errors.Add(nameof(ProtectionSettings.ProofBits), SettingsErrors.Range, $"A puzzle asks for {ProtectionSettings.FewestProofBits} to {ProtectionSettings.MostProofBits} zero bits.");
@@ -215,5 +232,47 @@ internal sealed class ProtectionSettingsValidator : ISettingsValidator<Protectio
         {
             errors.Add(nameof(ProtectionSettings.MaxLinks), SettingsErrors.Range, $"The most links a site allows is from 0 to {ProtectionSettings.MostMaxLinks}.");
         }
+    }
+}
+
+/// <summary>When a page may load a captcha's script (section 4.10, ADR-0157).</summary>
+[JsonConverter(typeof(DefinitionEnumConverter<CaptchaConsentMode>))]
+internal enum CaptchaConsentMode
+{
+    /// <summary>Once the visitor agrees on the form: its notice's button, or a consent field that says so (<c>explicit</c>, the default).</summary>
+    Explicit,
+
+    /// <summary>Once Cookiebot has the visitor's consent to the site's chosen category (<c>cookiebot</c>).</summary>
+    Cookiebot,
+
+    /// <summary>Once the site's consent manager says so, through <c>JironFormBuilder.consent.grant('captcha')</c> (<c>cmp</c>).</summary>
+    Cmp,
+
+    /// <summary>With the form, where the host allows it (<c>implicit</c>, <c>Privacy:AllowImplicitCaptchaConsent</c>).</summary>
+    Implicit,
+}
+
+/// <summary>
+/// The host's rule on the captcha's consent (ADR-0008, ADR-0157): the <c>implicit</c> mode is refused unless the host allows
+/// it, and a stored one reads as the nearest allowed one, <c>explicit</c>.
+/// </summary>
+/// <param name="options">The host configuration.</param>
+internal sealed class ImplicitCaptchaConsentRule(IOptions<FormBuilderOptions> options) : ISettingsHostRule<ProtectionSettings>
+{
+    /// <summary>The configuration key behind the rule.</summary>
+    public const string ConfigurationKey = FormBuilderOptions.SectionName + ":Privacy:AllowImplicitCaptchaConsent";
+
+    /// <inheritdoc />
+    public ProtectionSettings Apply(ProtectionSettings section, SettingsLocks locks)
+    {
+        ArgumentNullException.ThrowIfNull(section);
+        ArgumentNullException.ThrowIfNull(locks);
+        if (options.Value.Privacy.AllowImplicitCaptchaConsent)
+        {
+            return section;
+        }
+
+        locks.Add("captchaConsent", SettingsLockKind.Restricted, ConfigurationKey);
+        return section.CaptchaConsent == CaptchaConsentMode.Implicit ? section with { CaptchaConsent = CaptchaConsentMode.Explicit } : section;
     }
 }

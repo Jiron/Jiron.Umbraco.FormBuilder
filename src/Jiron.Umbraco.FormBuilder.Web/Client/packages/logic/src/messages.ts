@@ -102,6 +102,17 @@ export interface MessageWords {
   /** How many places an option has left, and that it has none, in its label (ADR-0156). */
   readonly placesLeft: PluralWords;
   readonly noPlaces: string;
+  /** What a form with a third party's check says before it may load, and what it asks for at a send (ADR-0157). */
+  readonly captchaNotice: string;
+  readonly captchaLoad: string;
+  readonly captchaManager: string;
+  readonly captchaCookies: string;
+  readonly captchaCategories: Readonly<Record<string, string>>;
+  readonly captchaCookieSettings: string;
+  readonly captchaMissing: string;
+  readonly captchaFailed: string;
+  /** What a slow device shows while it solves a form's puzzle (ADR-0157). */
+  readonly proofHint: string;
   readonly choiceFull: string;
   readonly confirmation: string;
   readonly digits: string;

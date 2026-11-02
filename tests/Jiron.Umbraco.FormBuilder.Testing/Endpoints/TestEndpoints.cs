@@ -4,6 +4,7 @@ using Jiron.Umbraco.FormBuilder.Core.Access;
 using Jiron.Umbraco.FormBuilder.Core.Files;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
+using Jiron.Umbraco.FormBuilder.Core.Settings;
 using Jiron.Umbraco.FormBuilder.Core.Signatures;
 using Jiron.Umbraco.FormBuilder.Testing.Stub;
 using Jiron.Umbraco.FormBuilder.Testing.Time;
@@ -78,6 +79,8 @@ internal sealed class TestEndpointsStartupFilter(IOptions<FormBuilderTestingOpti
 /// stored values by the field's key, row and item (ADR-0100) and its files by the field's key, name, size and the name
 /// a typed signature holds (ADR-0102, ADR-0103), so the browser tests can compare what two paths stored for the same
 /// answers; <c>404</c> for a form the host does not have.</description></item>
+/// <item><description><c>POST /jfb-testing/protection {"captchaConsent": "cmp"}</c>: sets the protection settings' consent mode for
+/// a captcha (ADR-0157), which no screen sets yet; <c>204</c>.</description></item>
 /// <item><description><c>POST /jfb-testing/sent-expired {"form": "&lt;alias&gt;", "value": "&lt;jfb-sent value&gt;"}</c>: the
 /// same form's, instance's and entry's <c>jfb-sent</c> value, expired a minute ago (ADR-0123), so the browser tests see
 /// what an expired one shows without moving the clock that every test shares; <c>404</c> for a form the host does not
@@ -92,6 +95,19 @@ internal sealed class TestEndpointsMiddleware(RequestDelegate next)
     private const int MaxEntries = 500;
 
     private static readonly JsonSerializerOptions Json = JsonSerializerOptions.Web;
+
+    // The settings' consent mode for a captcha, kept with the rest of what is set.
+    private static async Task ProtectionAsync(HttpContext context)
+    {
+        var body = await JsonSerializer.DeserializeAsync<ProtectionRequest>(context.Request.Body, Json, context.RequestAborted);
+        var settings = context.RequestServices.GetRequiredService<IFormBuilderSettingsService>();
+        var current = await settings.GetAsync<ProtectionSettings>(null, context.RequestAborted);
+        var mode = Enum.Parse<CaptchaConsentMode>(body?.CaptchaConsent ?? nameof(CaptchaConsentMode.Explicit), ignoreCase: true);
+        _ = await settings.SaveAsync(current.Value with { CaptchaConsent = mode }, current.Version, null, context.RequestAborted);
+        context.Response.StatusCode = StatusCodes.Status204NoContent;
+    }
+
+    private sealed record ProtectionRequest(string? CaptchaConsent);
 
     /// <summary>Handles one request.</summary>
     public async Task InvokeAsync(HttpContext context)
@@ -116,6 +132,9 @@ internal sealed class TestEndpointsMiddleware(RequestDelegate next)
                 return;
             case "entries" when HttpMethods.IsGet(context.Request.Method):
                 await EntriesAsync(context);
+                return;
+            case "protection" when HttpMethods.IsPost(context.Request.Method):
+                await ProtectionAsync(context);
                 return;
             case "sent-expired" when HttpMethods.IsPost(context.Request.Method):
                 await SentExpiredAsync(context);
@@ -236,9 +255,16 @@ internal sealed class TestEndpointsMiddleware(RequestDelegate next)
             typed[file.StoredName] = await TypedNameAsync(store, file.StoredName, context.RequestAborted);
         }
 
+        var states = new Dictionary<long, string?>();
+        foreach (var id in ids)
+        {
+            states[id] = (await entries.GetByIdAsync(id, context.RequestAborted))?.State.ToString();
+        }
+
         var answer = ids.Order().Select(id => new
         {
             id,
+            state = states[id],
             values = values
                 .Where(value => value.EntryId == id)
                 .OrderBy(value => value.FieldId).ThenBy(value => value.RowIndex).ThenBy(value => value.ValueIndex)
