@@ -42,6 +42,9 @@ public sealed class ProgressViewModel
     /// <summary>How the progress shows.</summary>
     public required ProgressStyle Style { get; init; }
 
+    /// <summary>Whether the rules show one page only, so that it does not show until they show another.</summary>
+    public bool IsHidden { get; init; }
+
     /// <summary>The number of the current page among the shown pages, from 1.</summary>
     public required int Current { get; init; }
 
@@ -50,6 +53,12 @@ public sealed class ProgressViewModel
 
     /// <summary>The progress in words, such as "Step 2 of 3".</summary>
     public required string Text { get; init; }
+
+    /// <summary>Those words with their numbers to fill in (<c>data-jfb-words</c>), which the runtime writes as it moves through the pages (ADR-0155).</summary>
+    public string? Words { get; init; }
+
+    /// <summary>The words for a step whose page has no title, its number to fill in (<c>data-jfb-untitled</c>).</summary>
+    public string? UntitledWords { get; init; }
 
     /// <summary>The id of the text, which the bar names as its label.</summary>
     public required string TextId { get; init; }
@@ -69,6 +78,12 @@ public sealed record ProgressStepModel(string Title, bool IsCurrent, bool IsDone
 {
     /// <summary>The page's key.</summary>
     public Guid Page { get; init; }
+
+    /// <summary>Whether the rules hide the page, so that its step waits in a template (<c>data-jfb-steps</c>) for them to show it.</summary>
+    public bool IsHidden { get; init; }
+
+    /// <summary>Whether the page has no title, so that the step's words hold its number.</summary>
+    public bool IsUntitled { get; init; }
 
     /// <summary>
     /// Whether the page's title holds merge tags, so the step carries its hook and the runtime renders it again as the
@@ -200,6 +215,9 @@ public sealed record OutcomeCountdownModel(string One, string Other, string Stay
 /// <summary>What the runtime shows a send with (ADR-0120): the form view writes it into its templates, which stay inert.</summary>
 public sealed class FormSendingModel
 {
+    /// <summary>Every button of a form of several pages, of which the runtime shows those of the page it moves to (ADR-0155); null for a form of one.</summary>
+    public NavigationViewModel? Moves { get; init; }
+
     /// <summary>What the live region says while a send is on its way (<c>data-jfb-sending</c>).</summary>
     public required string SendingText { get; init; }
 

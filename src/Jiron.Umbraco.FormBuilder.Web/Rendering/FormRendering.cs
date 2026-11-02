@@ -129,10 +129,7 @@ internal sealed partial class FormRendering(
         }
 
         var instance = target?.Instance ?? FormInstances.Next(httpContext);
-        if (target is null)
-        {
-            await SentAsync(httpContext, formKey, instance, culture, cancellationToken);
-        }
+        await SentAsync(httpContext, formKey, instance, culture, cancellationToken);
 
         // A form that takes values from the member renders them for the member signed in, so their page is theirs (ADR-0124).
         Guid? member = null;
@@ -149,8 +146,8 @@ internal sealed partial class FormRendering(
         return new RenderedForm(view, model, formTheme);
     }
 
-    // The outcome of the entry a post without JavaScript sent, on the page it redirected to (ADR-0100): the token in
-    // jfb-sent names the form, the instance and the submission id, and the outcome is the receipt's; a token that names
+    // The outcome of the entry a post without JavaScript sent, on the page it redirected to (ADR-0100), or that a send on
+    // the page asks the render endpoint for, for the copy of its answers (ADR-0155): the token in jfb-sent names the form, the instance and the submission id, and the outcome is the receipt's; a token that names
     // nothing for this form and instance leaves the form as it is. The request carries jfb-sent, so the page is no-store.
     // A message that offers the copy of the answers shows them to the one GET that takes the entry's mark, and a line
     // in their place to any later view (ADR-0123).

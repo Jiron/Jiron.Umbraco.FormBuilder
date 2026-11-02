@@ -21,8 +21,9 @@ namespace Jiron.Umbraco.FormBuilder.Web.PublicApi;
 /// <param name="submissions">The submission pipeline.</param>
 /// <param name="tokens">The upload tokens, which the values of fields storing files post.</param>
 /// <param name="challenges">The challenges, which every request but a server key's posts (ADR-0138).</param>
+/// <param name="sent">The sent tokens, one of which a page's send gets for the copy of its answers (ADR-0155).</param>
 /// <param name="placements">The placements' tokens, which a page's send carries (ADR-0120).</param>
-internal sealed class EntryRequests(FormSubmissions submissions, UploadTokens tokens, ChallengeTokens challenges, PlacementTokens placements)
+internal sealed class EntryRequests(FormSubmissions submissions, UploadTokens tokens, ChallengeTokens challenges, SentTokens sent, PlacementTokens placements)
 {
     /// <summary>The most bytes a submission's body holds, and a page's.</summary>
     public const int MaxBodyBytes = 1_048_576;
@@ -52,7 +53,7 @@ internal sealed class EntryRequests(FormSubmissions submissions, UploadTokens to
 
         var invalid = new List<string>();
         return EntryBodies.Read(body.Bytes, formKey, invalid, placements) is { } submission
-            ? Answer(await submissions.SubmitAsync(submission with { Tokens = tokens, Challenges = challenges, Address = http.Connection.RemoteIpAddress, Member = await MemberAsync(http), ServerKey = ServerKeyRequest.NameOf(http) }, cancellationToken))
+            ? Answer(await submissions.SubmitAsync(submission with { Tokens = tokens, Challenges = challenges, Address = http.Connection.RemoteIpAddress, Member = await MemberAsync(http), ServerKey = ServerKeyRequest.NameOf(http) }, cancellationToken), formKey, EntryBodies.InstanceOf(body.Bytes))
             : FormBuilderPublicProblems.InvalidRequest([.. invalid]);
     }
 
@@ -163,7 +164,15 @@ internal sealed class EntryRequests(FormSubmissions submissions, UploadTokens to
     }
 
     // The pipeline's result as the public API answers it.
-    private static IActionResult Answer(SubmissionResult result)
+    private IActionResult Answer(SubmissionResult result, Guid formKey, string? instance)
+    {
+        // The page that sent it can ask for the copy of the answers, once, as a post's redirect does (ADR-0123, ADR-0155).
+        return Answer(result, instance is not null && result is { Receipt: { } receipt, Outcome: { Kind: OutcomeKind.Message, ShowAnswers: true } }
+            ? sent.Issue(formKey, receipt.SubmissionId, instance)
+            : null);
+    }
+
+    private static IActionResult Answer(SubmissionResult result, string? copy = null)
     {
         if (result is { Receipt: { } receipt, Outcome: { } outcome })
         {
@@ -182,6 +191,7 @@ internal sealed class EntryRequests(FormSubmissions submissions, UploadTokens to
                     Url = outcome.Url,
                     DelaySeconds = outcome is { Kind: OutcomeKind.Message, Url: not null } ? outcome.DelaySeconds : null,
                     ShowAnswers = outcome.ShowAnswers ? true : null,
+                    Copy = copy,
                 },
             };
             return new FileContentResult(JsonSerializer.SerializeToUtf8Bytes(model, Json), "application/json; charset=utf-8");
@@ -225,6 +235,9 @@ internal sealed record EntryRequestModel
     /// the site did not write for this form is refused. An outcome goes to that page once the entry is stored.
     /// </summary>
     public string? Placement { get; init; }
+
+    /// <summary>The form's id on the page that sends it, whose token for the copy of the answers the answer then holds (ADR-0155).</summary>
+    public string? Instance { get; init; }
 
     /// <summary>The form's public revision the page showed, as the form endpoint gives it.</summary>
     public required int Revision { get; init; }
@@ -365,4 +378,10 @@ internal sealed record EntryOutcomeResponseModel
 
     /// <summary>True when the message shows a copy of the answers; left out otherwise.</summary>
     public bool? ShowAnswers { get; init; }
+
+    /// <summary>
+    /// For the page that named its form's id: the token that the render endpoint takes as <c>jfb-sent</c> for the copy of the answers
+    /// (ADR-0155); left out otherwise.
+    /// </summary>
+    public string? Copy { get; init; }
 }

@@ -831,8 +831,31 @@ describe('which forms take a signature on the page', () => {
     expect(takesUploads(form(FIELD()), MODEL)).toBe(true);
   });
 
-  it('not a form of several pages, which the server pages until 6.5d', () => {
+  const MOVES =
+    '<template data-jfb-templates data-jfb-sending="Sending"><div><button data-jfb-nav="next"></button></div></template>';
+
+  it('a form of several pages whose view writes the buttons to move with', () => {
+    expect(takesUploads(form(FIELD(), 2, MOVES), MODEL)).toBe(true);
+  });
+
+  it('not a form of several pages whose view writes none, as its Next posts', () => {
     expect(takesUploads(form(FIELD(), 2), MODEL)).toBe(false);
+  });
+
+  it('not a form of several pages with a summary page, as the step onto it posts', () => {
+    const summing = { ...MODEL, form: { ...MODEL.form, settings: { summaryPage: true } } };
+
+    const posting = (pages: number): HTMLFormElement => {
+      const made = form(FIELD(), pages, MOVES);
+      made.setAttribute('action', '/x');
+      return made;
+    };
+    expect(takesUploads(posting(2), summing)).toBe(false);
+    expect(takesUploads(posting(1), summing), 'one page has no step onto it').toBe(true);
+    expect(
+      takesUploads(form(FIELD(), 2, MOVES), summing),
+      'without an address it moves there, as the page has no post',
+    ).toBe(true);
   });
 
   it.each([

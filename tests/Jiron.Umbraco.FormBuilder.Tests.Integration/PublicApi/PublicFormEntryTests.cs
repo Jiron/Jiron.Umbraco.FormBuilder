@@ -466,6 +466,40 @@ public sealed class PublicFormEntryTests : PublicApiTestBase
     }
 
     [Test]
+    public async Task ASendThatNamesItsForm_GetsTheTokenOfTheCopy_WhichTheRenderEndpointShowsOnce()
+    {
+        var key = await PublishAsync(change: definition => definition with { Outcomes = [Thanks with { ShowAnswers = true }] });
+        var plain = await PublishAsync(change: definition => definition with { Outcomes = [Thanks] });
+
+        using var named = await PostAsync(key, """{"revision":1,"instance":"jfb-1","values":{"name":"Ada"}}""");
+        using var unnamed = await PostAsync(key, """{"revision":1,"values":{"name":"Grace"}}""");
+        using var wrong = await PostAsync(key, """{"revision":1,"instance":"no id","values":{"name":"Mary"}}""");
+        using var noCopy = await PostAsync(plain, """{"revision":1,"instance":"jfb-1","values":{"name":"Ada"}}""");
+        var outcome = (await JsonAsync(named))["outcome"]!;
+        var token = Uri.EscapeDataString(outcome["copy"]!.GetValue<string>());
+        var address = $"{Root}/forms/{key}/render?instance=jfb-1&page=%2Fcontact%2F&jfb-sent={token}";
+        using var first = await SendAsync(HttpMethod.Get, address);
+        var firstHtml = await first.Content.ReadAsStringAsync();
+        using var later = await SendAsync(HttpMethod.Get, address);
+        var laterHtml = await later.Content.ReadAsStringAsync();
+        using var otherPlace = await SendAsync(HttpMethod.Get, $"{Root}/forms/{key}/render?instance=jfb-2&page=%2Fcontact%2F&jfb-sent={token}");
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(outcome["showAnswers"]!.GetValue<bool>(), Is.True);
+            Assert.That((await JsonAsync(unnamed))["outcome"]!.AsObject().ContainsKey("copy"), Is.False, "a request that names no form gets no token");
+            Assert.That(wrong.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest), "one that is no form's id is refused");
+            Assert.That((await JsonAsync(noCopy))["outcome"]!.AsObject().ContainsKey("copy"), Is.False, "an outcome without the copy has none");
+            Assert.That(first.StatusCode, Is.EqualTo(HttpStatusCode.OK), firstHtml);
+            Assert.That(firstHtml, Does.Contain("jfb-summary").And.Contain("Ada").And.Contain("data-jfb-print"), "the answers, as a post's outcome shows them");
+            Assert.That(first.Headers.CacheControl?.NoStore, Is.True, "answers are never stored on the way");
+            Assert.That(firstHtml, Does.Contain("href=\"/contact/#jfb-1\""), "the link to the form on the page that asked, not the endpoint");
+            Assert.That(laterHtml, Does.Not.Contain("jfb-summary").And.Contain("data-jfb-copy-shown"), "the answers show once, a line in their place");
+            Assert.That(await otherPlace.Content.ReadAsStringAsync(), Does.Not.Contain("data-jfb-copy"), "the token is for the form it named");
+        });
+    }
+
+    [Test]
     public async Task AMessageThatGoesOn_CarriesItsAddressAndDelay_AndWhetherItShowsTheAnswers()
     {
         var later = Thanks with { Redirect = new OutcomeRedirect { Url = "/next/{{ field.name }}", DelaySeconds = 5 }, ShowAnswers = true };

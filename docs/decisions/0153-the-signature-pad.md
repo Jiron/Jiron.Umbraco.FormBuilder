@@ -53,4 +53,4 @@ without JavaScript.
 - A signature changed while its image is on its way sends again, as what the visitor means by then.
 - A signature is sent at each changed attempt at a send; those no entry claims go with the orphan cleanup (ADR-0148).
 - A name in any script reads as itself in the browser's image and in its text chunk, so 11.2 shows the same words either way.
-- **Revisit** when 6.5d pages in the browser: the page-count condition goes.
+- 6.5d paged in the browser, and the page-count condition went (ADR-0155): a page's check makes the drawing's image, as a send does.

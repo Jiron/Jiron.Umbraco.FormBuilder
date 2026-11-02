@@ -15,13 +15,13 @@ const NOW = Date.UTC(2026, 9, 30, 9, 15, 0);
 const ID = '00112233-4455-4677-8899-aabbccddeeff';
 const NAME: ModelField = { key: 'k-name', type: 'text', alias: 'name', settings: {}, label: 'Name' };
 
-const modelOf = (revision: number): FormModel => ({
+const modelOf = (revision: number, settings: Record<string, unknown> = {}): FormModel => ({
   alias: 'contact',
   revision,
   culture: 'en-US',
   timeZone: 'UTC',
   open: true,
-  form: { key: 'f', settings: {}, pages: [{ key: 'p1', groups: [{ key: 'g1', fields: [NAME] }] }] },
+  form: { key: 'f', settings, pages: [{ key: 'p1', groups: [{ key: 'g1', fields: [NAME] }] }] },
   fields: { 'k-name': { kind: 'text', canBeRequired: true, builtIn: true } },
   consents: {},
   ...ENGLISH,
@@ -44,6 +44,8 @@ interface Shape {
   readonly changed?: boolean;
   readonly attributes?: string;
   readonly context?: string;
+  /** The form's settings, as a summary page's. */
+  readonly settings?: Record<string, unknown>;
 }
 
 const markup = ({
@@ -149,7 +151,7 @@ function wake(shape: Shape = { revision: 1 }, files?: PageUploads) {
     });
     pageErrorsOf(each, model, engineOf(model, null), () => NOW, deliver);
   };
-  wakeForm(form, modelOf(shape.revision));
+  wakeForm(form, modelOf(shape.revision, shape.settings));
   input('n1').value = 'Ana';
   const press = (): void => {
     const button = document.getElementById('send');
@@ -291,9 +293,67 @@ describe('a form published again meanwhile', () => {
   });
 });
 
+describe('a form of several pages', () => {
+  const OLD = '</div></section><section data-jfb-page="p2" hidden><div>';
+  const withMoves = (form: HTMLFormElement): void => {
+    form
+      .querySelector<HTMLTemplateElement>('template[data-jfb-templates]')
+      ?.content.append(
+        Object.assign(document.createElement('div'), { innerHTML: '<button data-jfb-nav="next"></button>' }),
+      );
+  };
+
+  it('whose view writes no buttons to move with goes by post, asking for nothing', async () => {
+    const server = serve(markup({ revision: 2, more: OLD }));
+    const { press, posted } = wake({ revision: 1, more: OLD });
+    press();
+    await until(() => expect(posted).toEqual(['submit']));
+
+    expect(server.renders()).toEqual([]);
+  });
+
+  it('with a summary page goes by post, as only a post writes its rows', async () => {
+    const server = serve(markup({ revision: 2, more: OLD }));
+    const { form, press, posted } = wake({ revision: 1, more: OLD, settings: { summaryPage: true } });
+    withMoves(form);
+    press();
+    await until(() => expect(posted).toEqual(['submit']));
+
+    expect(server.renders()).toEqual([]);
+  });
+
+  it("comes in the old one's place on the page the visitor was on", async () => {
+    const pages = '</div></section><section data-jfb-page="p2" hidden><div>';
+    const server = serve(markup({ revision: 2, more: pages }));
+    const { form, press } = wake({ revision: 1, more: pages });
+    withMoves(form);
+    form.querySelector<HTMLElement>('[data-jfb-page="p1"]')?.toggleAttribute('hidden', true);
+    form.querySelector<HTMLElement>('[data-jfb-page="p2"]')?.toggleAttribute('hidden', false);
+    press();
+    await until(() => expect(server.renders()).toHaveLength(1));
+    await until(() => expect(document.querySelector('[data-jfb-notice="form_changed"]')).not.toBeNull());
+
+    expect(document.querySelector('[data-jfb-page="p1"]')?.hasAttribute('hidden')).toBe(true);
+    expect(document.querySelector('[data-jfb-page="p2"]')?.hasAttribute('hidden')).toBe(false);
+  });
+
+  it('stays on a page its render hides, as that render knows no answers, for the rules to decide', async () => {
+    const pages = '</div></section><section data-jfb-page="p2" hidden data-jfb-hidden><div>';
+    const server = serve(markup({ revision: 2, more: pages }));
+    const { form, press } = wake({ revision: 1, more: OLD });
+    withMoves(form);
+    form.querySelector<HTMLElement>('[data-jfb-page="p1"]')?.toggleAttribute('hidden', true);
+    form.querySelector<HTMLElement>('[data-jfb-page="p2"]')?.toggleAttribute('hidden', false);
+    press();
+    await until(() => expect(server.renders()).toHaveLength(1));
+    await until(() => expect(document.querySelector('[data-jfb-notice="form_changed"]')).not.toBeNull());
+
+    expect(document.querySelector('[data-jfb-page="p2"]')?.hasAttribute('hidden')).toBe(false);
+  });
+});
+
 describe('what goes the way without JavaScript instead', () => {
   it.each([
-    ['a form the server pages', { more: '</div></section><section data-jfb-page="p2" hidden><div>' }],
     ['a form with rows', { more: '<div class="jfb-repeater"></div>' }],
     ['a form with a ranking', { more: '<ol class="jfb-ranking"></ol>' }],
   ])('%s, asking for nothing', async (_name, shape) => {

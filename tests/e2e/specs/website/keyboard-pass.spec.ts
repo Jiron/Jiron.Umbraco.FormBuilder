@@ -176,10 +176,9 @@ async function holdsLaterFocusShown(page: Page): Promise<void> {
   await holdsFocusShown(page, "a summary's link", '.jfb-error-summary a');
 
   await answerFirstPage(form);
-  const next = page.waitForEvent('load');
   await form.locator('.jfb-navigation .jfb-button-primary').click();
-  await next;
-  await holdsFocusShown(page, 'Back', '.jfb-navigation button');
+  await expect(form.locator('.jfb-navigation button[data-jfb-nav="back"]')).toBeVisible();
+  await holdsFocusShown(page, 'Back', '.jfb-navigation button[data-jfb-nav="back"]');
 }
 
 /** The checked value of a group of radio buttons. */

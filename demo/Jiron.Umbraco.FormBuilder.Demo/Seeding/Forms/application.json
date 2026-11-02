@@ -118,6 +118,12 @@
               "settings": { "style": "switch" }
             },
             {
+              "key": "d0000000-0000-4000-8000-00000000069f",
+              "type": "signature",
+              "alias": "signature",
+              "label": { "": "Your signature", "de": "Ihre Unterschrift" }
+            },
+            {
               "key": "d0000000-0000-4000-8000-000000000609",
               "type": "consent",
               "alias": "privacy",

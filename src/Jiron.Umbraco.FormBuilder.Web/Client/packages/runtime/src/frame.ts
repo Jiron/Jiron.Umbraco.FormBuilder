@@ -31,6 +31,7 @@ export interface Chunk {
 interface Session {
   validate(scope: 'send'): Promise<boolean>;
   submit(): boolean;
+  press(nav: 'next' | 'back'): boolean;
   values(): Readonly<Record<string, unknown>>;
 }
 
@@ -113,6 +114,8 @@ export function createFrame(load: () => Promise<Chunk>): Frame {
       return Object.freeze({
         validate: async () => (await (await sessionOf(form))?.validate('send')) ?? true,
         submit: async () => (await sessionOf(form))?.submit() ?? false,
+        next: async () => (await sessionOf(form))?.press('next') ?? false,
+        back: async () => (await sessionOf(form))?.press('back') ?? false,
         values: async () => (await sessionOf(form))?.values() ?? {},
       });
     },

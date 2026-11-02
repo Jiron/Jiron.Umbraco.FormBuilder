@@ -136,6 +136,42 @@ for (const language of LANGUAGES) {
   });
 }
 
+test('the element moves through its pages and sends, on a page with no post to go to', async ({ page }) => {
+  if (site === undefined) throw new Error('The static site did not start.');
+  const watched = await watch(page);
+  await page.goto(pageAt(site.url, 'en-US'));
+  const form = page.locator('jfb-form form.jfb-form');
+  await expect(form).toBeVisible();
+  const address = page.url();
+  await form.locator('[name="name"]').fill('Mira Okafor');
+  await form.locator('[name="email"]').fill('mira@visitor.jfb.test');
+  await form.locator('[name="role"][value="events"]').check();
+  const moved = form.evaluate(
+    (element) =>
+      new Promise<unknown>((resolve) =>
+        element.addEventListener('jfb:page', (event) => resolve((event as CustomEvent).detail), { once: true }),
+      ),
+  );
+  await page.getByRole('button', { name: 'Next' }).click();
+
+  expect(await moved).toMatchObject({ alias: 'volunteer', number: 2, total: 2 });
+  await expect(form.locator('[name="days"]').first()).toBeVisible();
+  await expect(form.locator('[name="name"]')).toBeHidden();
+  await axe(page, 'the second page of the element', true);
+
+  await page.getByRole('button', { name: 'Back' }).click();
+  await expect(form.locator('[name="name"]')).toHaveValue('Mira Okafor');
+  await page.getByRole('button', { name: 'Next' }).click();
+  await expect(form.locator('[name="days"]').first()).toBeVisible();
+
+  await form.locator('[name="days"][value="mon"]').check();
+  await form.locator('[data-jfb-alias="privacy"] input[type="checkbox"]').check();
+  await page.getByRole('button', { name: 'Sign me up' }).click();
+  await expect(page.locator('jfb-form [data-jfb-outcome]')).toBeFocused();
+  expect(page.url(), 'it never left the page').toBe(address);
+  expect(watched.errors).toEqual([]);
+});
+
 test('the element shows nothing on a page whose origin the API does not allow, and says why', async ({ page }) => {
   if (site === undefined) throw new Error('The static site did not start.');
   const watched = await watch(page);

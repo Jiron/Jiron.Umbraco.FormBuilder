@@ -22,6 +22,8 @@ declare global {
       get(form: Element): {
         validate(): Promise<boolean>;
         submit(): Promise<boolean>;
+        next(): Promise<boolean>;
+        back(): Promise<boolean>;
         values(): Promise<Readonly<Record<string, unknown>>>;
       } | null;
     };

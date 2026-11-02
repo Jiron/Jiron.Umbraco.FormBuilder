@@ -802,7 +802,7 @@ describe('which forms take their files on the page', () => {
     expect(takesUploads(formWith(1), modelOf())).toBe(true);
   });
 
-  it('not a form of several pages, which the server pages until 6.5d', () => {
+  it('not a form of several pages whose view writes no buttons to move with', () => {
     expect(takesUploads(formWith(2), modelOf())).toBe(false);
   });
 
@@ -827,5 +827,29 @@ describe('which forms take their files on the page', () => {
   it('not a form with no file field', () => {
     const text: ModelField = { key: 'k-text', type: 'text', alias: 'name', settings: {} };
     expect(takesUploads(formWith(1), modelOf([text]))).toBe(false);
+  });
+});
+
+describe('a file that failed, on a form of several pages (6.5d)', () => {
+  const failing = (): void => {
+    document.querySelector('.jfb-file')?.setAttribute('data-jfb-failed', '');
+  };
+
+  it('holds up the page that holds it', async () => {
+    const { form, uploads, choose } = wake();
+    choose(new File(['x'], 'plan.png', { type: 'image/png' }));
+    failing();
+    if (document.querySelector('.jfb-file') === null) return;
+
+    expect(await uploads.settled(form.querySelector('[data-jfb-page="p1"]') as Element)).toBe(false);
+  });
+
+  it('does not hold up a check of another page', async () => {
+    const { uploads, choose } = wake();
+    choose(new File(['x'], 'plan.png', { type: 'image/png' }));
+    failing();
+    const other = document.createElement('section');
+
+    expect(await uploads.settled(other)).toBe(true);
   });
 });

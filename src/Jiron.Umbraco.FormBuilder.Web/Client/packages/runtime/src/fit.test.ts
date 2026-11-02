@@ -1,7 +1,7 @@
 // Fitting a form to its page (ROADMAP 6.4l, ADR-0022): the ground check takes the first opaque background behind a form
 // and leaves a site's own class alone; the steps fold where a word of a name is wider than its step.
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { checkGround, foldSteps, type ReadColour } from './fit';
+import { checkGround, foldSteps, type ReadColour, followSteps } from './fit';
 
 /** Reads the colours these tests write, which is all a test's browser has. */
 const read: ReadColour = (css) => {
@@ -114,6 +114,17 @@ describe('the ground check', () => {
 });
 
 describe('step folding', () => {
+  it('folds anew when a rule changes the steps', async () => {
+    document.body.innerHTML = '<div class="steps"><ol><li><span>A</span></li></ol></div>';
+    const steps = document.querySelector('.steps') as HTMLElement;
+    steps.setAttribute('data-jfb-compact', '');
+    followSteps(steps);
+    steps.setAttribute('data-jfb-compact', '');
+    steps.querySelector('ol')?.append(document.createElement('li'));
+
+    await vi.waitFor(() => expect(steps.hasAttribute('data-jfb-compact')).toBe(false));
+  });
+
   const stepsOf = (...names: string[]): HTMLElement => {
     document.body.innerHTML = `<div class="jfb-progress-steps"><p>Step 1 of ${String(names.length)}</p><ol>${names
       .map((name) => `<li><span>${name}</span></li>`)

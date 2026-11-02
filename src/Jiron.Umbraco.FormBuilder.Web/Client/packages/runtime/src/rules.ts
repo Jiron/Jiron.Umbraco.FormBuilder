@@ -77,7 +77,9 @@ export function rulesOf(
 ): PageRules | null {
   const ruled = hasRules(engine.logic);
   if (!ruled && !engine.calculates && engine.texts === null) return null;
-  const current = form.querySelector('[data-jfb-page]:not([hidden])');
+  // The page that shows, which moves in the browser too (ADR-0155); one a rule just hid stays the page to come back to.
+  let current = form.querySelector('[data-jfb-page]:not([hidden])');
+  const pageNow = (): Element | null => (current = form.querySelector('[data-jfb-page]:not([hidden])') ?? current);
   const decide = (): { reading: PageReading; state: FormState } => {
     const reading = readPage(form, model);
     return {
@@ -90,7 +92,7 @@ export function rulesOf(
   const rounds = form.querySelectorAll('[data-jfb-page], [data-jfb-group], [data-jfb-field]').length + 1;
   const settle = (): FormState => {
     let decided = decide();
-    for (let round = 1; ruled && show(form, decided.state, current) && round < rounds; round++) decided = decide();
+    for (let round = 1; ruled && show(form, decided.state, pageNow()) && round < rounds; round++) decided = decide();
     showCalculations(form, model, decided.state);
     if (engine.texts !== null) showTexts(form, model, engine.texts(decided.reading, decided.state));
     return decided.state;

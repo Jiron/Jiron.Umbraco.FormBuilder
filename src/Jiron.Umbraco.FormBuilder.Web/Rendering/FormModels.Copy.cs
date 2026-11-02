@@ -27,7 +27,7 @@ internal sealed partial class FormModels
             Answers = copy.Entry is { } entry ? await CopiedAsync(render, root, entry, words, culture, cancellationToken) : null,
             PrintText = words.PrintAnswers,
             ShownText = words.CopyShown,
-            Again = new OutcomeLinkModel(AgainUrl(render.HttpContext.Request, root.Id), words.FillInAgain),
+            Again = new OutcomeLinkModel(AgainUrl(render.HttpContext, root.Id), words.FillInAgain),
         };
     }
 
@@ -131,9 +131,10 @@ internal sealed partial class FormModels
         recalled.TryGetValue((owner, name), out var shown) && shown.Length > 0 ? shown : null;
 
     // The page again at the form, without the token: the sent page's address holds no other query (ADR-0100).
-    private static string AgainUrl(HttpRequest request, string id)
+    private static string AgainUrl(HttpContext httpContext, string id)
     {
-        var path = (request.PathBase + request.Path).ToUriComponent();
+        // The render endpoint renders for the page that asked.
+        var path = FormRenderTargets.Get(httpContext)?.Page ?? (httpContext.Request.PathBase + httpContext.Request.Path).ToUriComponent();
         return (path.Length == 0 ? "/" : path) + "#" + id;
     }
 }

@@ -5,6 +5,7 @@ using Jiron.Umbraco.FormBuilder.Core.Entries;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.Submissions;
+using Jiron.Umbraco.FormBuilder.Web.Rendering;
 
 namespace Jiron.Umbraco.FormBuilder.Web.PublicApi;
 
@@ -44,6 +45,14 @@ internal static class EntryBodies
     /// <param name="placements">Reads the <c>placement</c> a page's send carries (ADR-0120); without them, that member is invalid.</param>
     public static SubmissionRequest? Read(byte[] body, Guid form, List<string> invalid, PlacementTokens? placements = null) =>
         Submission(body, form, page: false, invalid, placements) is ({ } request, _) ? request : null;
+
+    /// <summary>The form's id on the page that sent a submission, for the token of the copy of its answers (ADR-0155); null when it names none.</summary>
+    /// <param name="body">A submission's body, read already.</param>
+    public static string? InstanceOf(byte[] body)
+    {
+        using var document = JsonDocument.Parse(body);
+        return document.RootElement.TryGetProperty("instance", out var instance) ? JsonPaths.TryGetString(instance) : null;
+    }
 
     /// <summary>
     /// The answers a page's body holds for a form, and the page's key (ADR-0089): a submission's members with
@@ -201,6 +210,13 @@ internal static class EntryBodies
                     break;
                 case "submissionId" when !page:
                     submissionId = Key(value, name, invalid);
+                    break;
+                case "instance" when !page:
+                    if (value.ValueKind != JsonValueKind.Null && (JsonPaths.TryGetString(value) is not { } instance || !FormInstances.IsId(instance)))
+                    {
+                        invalid.Add(name);
+                    }
+
                     break;
                 case "pageKey" when page:
                     pageKey = Key(value, name, invalid);

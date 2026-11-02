@@ -244,6 +244,7 @@ export function enhanceFields(form: HTMLFormElement, model: FormModel, options: 
     if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) count(target);
     setTimeout(growShown);
   });
+  form.addEventListener('jfb:page', () => setTimeout(growShown));
   form.addEventListener('change', (event) => {
     const field = (event.target as Element).closest?.(FIELD);
     if (field) for (const box of field.querySelectorAll<HTMLElement>('.jfb-other')) other(box);

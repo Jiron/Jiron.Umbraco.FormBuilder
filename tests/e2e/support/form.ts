@@ -184,11 +184,17 @@ export async function submitForm(form: Locator, timeoutMs = 15_000): Promise<Sub
 /** Presses a button of the form's navigation and waits for the page it leads to, or for the errors the runtime shows. */
 export async function press(form: Locator, nav: 'next' | 'back'): Promise<void> {
   const page = form.page();
+  const shown = form.locator('[data-jfb-page]:not([hidden])').first();
+  const before = await shown.getAttribute('data-jfb-page');
   const loaded = page.waitForEvent('load', { timeout: 15_000 });
   const refused = expect(form.locator('[data-jfb-summary]')).toBeFocused({ timeout: 15_000 });
+  const moved = expect
+    .poll(() => shown.getAttribute('data-jfb-page', { timeout: 1_000 }).catch(() => before), { timeout: 15_000 })
+    .not.toBe(before);
   loaded.catch(() => undefined);
   refused.catch(() => undefined);
+  moved.catch(() => undefined);
   await form.locator(`.jfb-navigation button[data-jfb-nav="${nav}"]`).click();
-  // The post loads the page it leads to; the runtime keeps a page that needs answers and moves the focus to its errors.
-  await Promise.any([loaded, refused]);
+  // The post loads the page it leads to; the runtime moves on, or keeps a page that needs answers and moves the focus to its errors.
+  await Promise.any([loaded, refused, moved]);
 }

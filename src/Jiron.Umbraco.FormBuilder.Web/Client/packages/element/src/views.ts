@@ -77,6 +77,7 @@ export function writeForm(context: ViewContext, model: FormViewModel): HTMLEleme
     el(d, 'p', { class: classes.error, 'data-jfb-error': FLAG }),
     model.sending?.notices.map((each) => notice(d, each)),
     model.sending && outcome(d, classes, model.sending.outcome),
+    model.sending?.moves && navigation(d, classes, model.sending.moves),
   ]);
   const first = model.defaultButton;
   return el(
@@ -1258,38 +1259,52 @@ function repeater(
 
 /** `Progress.cshtml`: the bar with its text, or the steps, the current one marked. */
 function progress(d: Document, classes: ThemeClassesModel, model: ProgressViewModel): HTMLElement {
+  const stepOf = (step: ProgressViewModel['steps'][number]): HTMLElement =>
+    el(
+      d,
+      'li',
+      {
+        'data-jfb-step': step.page,
+        'aria-current': step.isCurrent ? 'step' : null,
+        'data-jfb-done': flag(step.isDone),
+      },
+      el(
+        d,
+        'span',
+        {
+          ...(step.recallsTitle ? { 'data-jfb-text': `${step.page} title`, 'data-jfb-fallback': step.fallback } : {}),
+          'data-jfb-numbered': flag(step.isUntitled === true),
+        },
+        step.title,
+      ),
+    );
+  const hidden = model.steps.filter((step) => step.isHidden === true);
+  let waiting: HTMLTemplateElement | undefined;
+  if (hidden.length > 0) {
+    waiting = el(d, 'template', { 'data-jfb-steps': FLAG }) as HTMLTemplateElement;
+    waiting.content.append(...hidden.map(stepOf));
+  }
   if (model.style === 'bar') {
     return el(
       d,
       'div',
-      { class: classes.progressBar },
-      el(d, 'p', { class: 'jfb-progress-text', id: model.textId }, model.text),
+      { class: classes.progressBar, hidden: flag(model.isHidden === true) },
+      el(d, 'p', { class: 'jfb-progress-text', id: model.textId, 'data-jfb-words': model.words }, model.text),
       el(d, 'progress', { max: model.total, value: model.current, 'aria-labelledby': model.textId }, model.text),
     );
   }
   return el(
     d,
     'div',
-    { class: classes.progressSteps },
-    el(d, 'p', { class: 'jfb-progress-text' }, model.text),
+    { class: classes.progressSteps, hidden: flag(model.isHidden === true) },
+    el(d, 'p', { class: 'jfb-progress-text', 'data-jfb-words': model.words }, model.text),
     el(
       d,
       'ol',
-      { role: 'list', 'aria-label': model.label },
-      model.steps.map((step) =>
-        el(
-          d,
-          'li',
-          { 'aria-current': step.isCurrent ? 'step' : null, 'data-jfb-done': flag(step.isDone) },
-          el(
-            d,
-            'span',
-            step.recallsTitle ? { 'data-jfb-text': `${step.page} title`, 'data-jfb-fallback': step.fallback } : {},
-            step.title,
-          ),
-        ),
-      ),
+      { role: 'list', 'aria-label': model.label, 'data-jfb-untitled': model.untitledWords },
+      model.steps.filter((step) => step.isHidden !== true).map(stepOf),
     ),
+    waiting,
   );
 }
 

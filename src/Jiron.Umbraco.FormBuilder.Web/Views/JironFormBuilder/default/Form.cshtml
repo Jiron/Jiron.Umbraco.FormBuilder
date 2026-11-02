@@ -20,6 +20,10 @@
                     @await Html.PartialAsync(Model.Views.Notice, refused)
                 }
                 @await Html.PartialAsync(Model.Views.Outcome, sending.Outcome)
+                if (sending.Moves is { } moves)
+                {
+                    @await Html.PartialAsync(Model.Views.Navigation, moves)
+                }
             }
         </template>
         @if (Model.DefaultButton is { } first)

@@ -5,12 +5,14 @@
 import type { ReadPost } from '@jfb/logic';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { engineOf, loadFormulas, loadTexts } from './engine';
-import { pageErrorsOf, type InvalidDetail } from './errors';
+import { pageErrorsOf, type InvalidDetail, type PageErrors } from './errors';
 import { wordsFor } from './messages';
 import type { FormModel, ModelField } from './model';
 import { bodyOf, senderOf, submissionId, type SendDetail } from './send';
 import { ENGLISH } from './testing';
 import type { PageUploads } from './uploads';
+import type { Paging } from './pages-chunk';
+import type { CheckPage } from './send';
 import { placeOf } from './validation';
 
 const NOW = Date.UTC(2026, 9, 30, 9, 15, 0);
@@ -110,6 +112,7 @@ interface Options {
   readonly templates?: string;
   readonly model?: FormModel;
   readonly files?: PageUploads;
+  readonly pages?: Paging;
 }
 
 function wake({
@@ -119,6 +122,7 @@ function wake({
   templates = TEMPLATES,
   model = MODEL,
   files,
+  pages,
 }: Options = {}) {
   document.body.innerHTML =
     `<form id="jfb-1" class="jfb-form" lang="en-US" dir="ltr" data-jfb-form="f" data-jfb-contract="1" ${api} ${action} ${attributes}>` +
@@ -152,7 +156,7 @@ function wake({
     go: (address) => gone.push(address),
     ...(files === undefined ? {} : { files }),
   });
-  pageErrorsOf(form, model, engineOf(model, null), () => NOW, deliver);
+  pageErrorsOf(form, model, engineOf(model, null), () => NOW, deliver, pages);
   const value = (id: string): HTMLInputElement => document.getElementById(id) as HTMLInputElement;
   value('n').value = 'Ana';
   const press = (): void => {
@@ -956,5 +960,376 @@ describe('what the page leaves to the post without JavaScript', () => {
     await until(() => expect(posted).toEqual(['submit']));
 
     expect(server.sent).toEqual([]);
+  });
+});
+
+/** Answers each request by its address, whatever its method, and keeps what was posted. */
+const posts: { url: string; body: Record<string, unknown> }[] = [];
+function route(answer: (url: string) => Response | Promise<Response>): void {
+  posts.length = 0;
+  vi.stubGlobal(
+    'fetch',
+    vi.fn((url: string, init?: RequestInit) => {
+      if (typeof init?.body === 'string') posts.push({ url, body: JSON.parse(init.body) as Record<string, unknown> });
+      return url.endsWith('/challenge')
+        ? Promise.resolve(json(200, { challenge: 'c1' }))
+        : Promise.resolve(answer(url));
+    }),
+  );
+}
+
+const STORES_FOR_CHECK: FormModel = {
+  ...MODEL,
+  fields: { ...MODEL.fields, 'k-note': { kind: 'files', canBeRequired: true, builtIn: true } },
+};
+
+describe("a page's check on the server (6.5d)", () => {
+  const check = (
+    form: HTMLFormElement,
+    errors: PageErrors = { server: () => Promise.resolve(false) } as unknown as PageErrors,
+  ) => {
+    const sender = senderOf(form, MODEL, { id: ID });
+    const button = document.getElementById('send') as HTMLButtonElement;
+    return { run: () => (sender.checkPage as CheckPage)(button, errors, 'p1'), button };
+  };
+  const bodyOfCheck = (): Record<string, unknown> => posts.find((each) => each.url.endsWith('/validate'))?.body ?? {};
+
+  it('goes on when the server passes the page, naming the page and no submission', async () => {
+    route(() => new Response(null, { status: 204 }));
+    const { form } = wake();
+    expect(await check(form).run()).toBe('on');
+
+    const body = bodyOfCheck();
+    expect(body['pageKey']).toBe('p1');
+    expect(body['values']).toMatchObject({ name: ['Ana'] });
+    expect(body).not.toHaveProperty('submissionId');
+    expect(body).not.toHaveProperty('instance');
+    expect(body).not.toHaveProperty('placement');
+    expect(body['revision']).toBe(MODEL.revision);
+  });
+
+  it('is busy while it asks, and not after', async () => {
+    let answer: (response: Response) => void = () => undefined;
+    route((url) =>
+      url.endsWith('/validate')
+        ? new Promise<Response>((resolve) => (answer = resolve))
+        : json(200, { challenge: 'c1' }),
+    );
+    const { form } = wake();
+    const { run, button } = check(form);
+    const going = run();
+    await until(() => expect(posts.some((each) => each.url.endsWith('/validate'))).toBe(true));
+    expect(button.hasAttribute('data-jfb-busy')).toBe(true);
+    expect(button.getAttribute('aria-disabled')).toBe('true');
+
+    answer(new Response(null, { status: 204 }));
+    await going;
+    expect(button.hasAttribute('data-jfb-busy')).toBe(false);
+    expect(button.hasAttribute('aria-disabled')).toBe(false);
+  });
+
+  it("shows the server's errors, and stays", async () => {
+    const errors = [{ code: 'required', path: 'name' }];
+    route(() => json(422, { code: 'validation_failed', errors }));
+    const { form } = wake();
+    const server = vi.fn(() => Promise.resolve(true));
+
+    expect(await check(form, { server } as unknown as PageErrors).run()).toBe('answered');
+    expect(server).toHaveBeenCalledWith(errors);
+  });
+
+  it('leaves errors it cannot show to the post', async () => {
+    route(() => json(422, { code: 'validation_failed', errors: [] }));
+    const { form } = wake();
+
+    expect(await check(form).run()).toBe('post');
+  });
+
+  it('renews an expired challenge once, and asks again', async () => {
+    let asked = 0;
+    route((url) => {
+      if (!url.endsWith('/validate')) return json(200, { challenge: 'c1' });
+      asked += 1;
+      return asked === 1 ? json(401, { code: 'challenge_required' }) : new Response(null, { status: 204 });
+    });
+    const { form } = wake();
+
+    expect(await check(form).run()).toBe('on');
+    expect(asked).toBe(2);
+  });
+
+  it.each([
+    ['too many checks', 429, 'rate_limited'],
+    ['a failed check', 500, 'server_error'],
+  ])('shows the notice of %s, and stays', async (_name, status, code) => {
+    route(() => json(status, { code: 'x' }));
+    const { form } = wake();
+
+    expect(await check(form).run()).toBe('answered');
+    expect(form.querySelector(`[data-jfb-notice="${code}"]`)).not.toBeNull();
+    expect(document.activeElement).toBe(form.querySelector('[data-jfb-notice]'));
+  });
+
+  it('shows the notice of no answer at all', async () => {
+    route((url) => (url.endsWith('/validate') ? Promise.reject(new Error('offline')) : json(200, { challenge: 'c1' })));
+    const { form } = wake();
+
+    expect(await check(form).run()).toBe('answered');
+    expect(form.querySelector('[data-jfb-notice="timeout"]')).not.toBeNull();
+  });
+
+  it('takes a second notice in the place of the first', async () => {
+    route(() => json(500, { code: 'x' }));
+    const { form } = wake();
+    const { run } = check(form);
+    await run();
+    await run();
+
+    expect(form.querySelectorAll('[data-jfb-notice]')).toHaveLength(1);
+  });
+
+  it.each([
+    ['form_closed', 403],
+    ['entry_limit_reached', 403],
+  ])('leaves %s to the post, which the server answers in full', async (code, status) => {
+    route(() => json(status, { code }));
+    const { form } = wake();
+
+    expect(await check(form).run()).toBe('post');
+  });
+
+  it('shows the notice of a failed check where no post can go', async () => {
+    route(() => json(403, { code: 'form_closed' }));
+    const { form } = wake({ action: '' });
+
+    expect(await check(form).run()).toBe('answered');
+    expect(form.querySelector('[data-jfb-notice="server_error"]')).not.toBeNull();
+  });
+
+  it('waits for what is on its way, and stays for a file that failed', async () => {
+    const validate = vi.fn(() => new Response(null, { status: 204 }));
+    route((url) => (url.endsWith('/validate') ? validate() : json(200, { challenge: 'c1' })));
+    const { form } = wake();
+    const sender = senderOf(form, STORES_FOR_CHECK, {
+      id: ID,
+      files: { settled: () => Promise.resolve(false), uploaded: () => new Map() },
+    });
+    const button = document.getElementById('send') as HTMLButtonElement;
+
+    expect(await (sender.checkPage as CheckPage)(button, {} as PageErrors, 'p1')).toBe('answered');
+    expect(validate).not.toHaveBeenCalled();
+  });
+
+  it('holds only to the files of the page it checks', async () => {
+    route(() => new Response(null, { status: 204 }));
+    const { form } = wake();
+    const settled = vi.fn(() => Promise.resolve(true));
+    const sender = senderOf(form, STORES_FOR_CHECK, { id: ID, files: { settled, uploaded: () => new Map() } });
+    await (sender.checkPage as CheckPage)(document.getElementById('send') as HTMLButtonElement, {} as PageErrors, 'p1');
+
+    expect(settled).toHaveBeenCalledWith(form.querySelector('[data-jfb-page="p1"]'));
+  });
+
+  it('is there only for a form that sends on the page', () => {
+    const { form } = wake({ templates: '' });
+    form.querySelector('template')?.remove();
+    const plain = wake({ attributes: 'enctype="multipart/form-data"', model: STORES_FOR_CHECK });
+
+    expect(senderOf(plain.form, STORES_FOR_CHECK, { id: ID }).checkPage).toBeUndefined();
+  });
+});
+
+describe('the copy of the answers after a send (6.5d)', () => {
+  const sentWith = (copy?: string): unknown => ({
+    receipt: { reference: 'R1' },
+    outcome: { kind: 'message', html: '<p>Thanks</p>', ...(copy === undefined ? {} : { copy }) },
+  });
+  const COPY =
+    '<div data-jfb-form="f"><div data-jfb-outcome>Thanks</div><dl class="the-answers"><dt>Name</dt><dd>Ana</dd></dl>' +
+    '<div data-jfb-copy><button type="button" data-jfb-print hidden>Print</button><a href="/again">Again</a></div></div>';
+
+  it('names the form on the page, whose id the token holds', async () => {
+    route(() => json(200, sentWith()));
+    const { press } = wake();
+    press();
+    await until(() => expect(posts.find((each) => each.url.endsWith('/entries'))).toBeDefined());
+
+    expect(posts.find((each) => each.url.endsWith('/entries'))?.body['instance']).toBe('jfb-1');
+  });
+
+  it("does not name a view's own id, which is no form the server wrote, so the send still goes", async () => {
+    route(() => json(200, sentWith()));
+    const { form, press } = wake();
+    form.id = 'my-form';
+    press();
+    await until(() => expect(posts.find((each) => each.url.endsWith('/entries'))).toBeDefined());
+
+    expect(posts.find((each) => each.url.endsWith('/entries'))?.body).not.toHaveProperty('instance');
+  });
+
+  it('comes from the render endpoint, below the outcome, its print button shown', async () => {
+    const asked: string[] = [];
+    route((url) => {
+      if (url.includes('/render')) {
+        asked.push(url);
+        return new Response(COPY, { status: 200 });
+      }
+      return url.endsWith('/entries') ? json(200, sentWith('token-1')) : json(200, { challenge: 'c1' });
+    });
+    const print = vi.spyOn(window, 'print').mockImplementation(() => undefined);
+    const { press } = wake();
+    press();
+    await until(() => expect(document.querySelector('.the-answers')).not.toBeNull());
+
+    expect(asked[0]).toContain('jfb-sent=token-1');
+    expect(asked[0]).toContain('instance=jfb-1');
+    expect(document.querySelectorAll('[data-jfb-outcome]')).toHaveLength(1);
+    expect(document.querySelector('[data-jfb-outcome]')?.nextElementSibling?.className).toBe('the-answers');
+    const button = document.querySelector<HTMLButtonElement>('[data-jfb-print]');
+    expect(button?.hidden).toBe(false);
+    button?.click();
+    expect(print).toHaveBeenCalled();
+    expect(document.activeElement, 'the focus stays on the outcome').toBe(document.querySelector('[data-jfb-outcome]'));
+  });
+
+  it('is not asked for without its token', async () => {
+    const asked: string[] = [];
+    route((url) => {
+      if (url.includes('/render')) asked.push(url);
+      return url.endsWith('/entries') ? json(200, sentWith()) : json(200, { challenge: 'c1' });
+    });
+    const { press } = wake();
+    press();
+    await until(() => expect(document.querySelector('[data-jfb-outcome]')).not.toBeNull());
+    await new Promise((resolve) => setTimeout(resolve, 5));
+
+    expect(asked).toEqual([]);
+  });
+
+  it('leaves the outcome alone when it cannot be had', async () => {
+    route((url) => {
+      if (url.includes('/render')) return new Response('', { status: 500 });
+      return url.endsWith('/entries') ? json(200, sentWith('token-1')) : json(200, { challenge: 'c1' });
+    });
+    const { press } = wake();
+    press();
+    await until(() => expect(document.querySelector('[data-jfb-outcome]')).not.toBeNull());
+    await new Promise((resolve) => setTimeout(resolve, 5));
+
+    expect(document.querySelector('[data-jfb-outcome]')?.textContent).toContain('Thanks');
+    expect(document.querySelector('[data-jfb-outcome]')?.nextElementSibling).toBeNull();
+  });
+});
+
+describe('the buttons of a form that moves on the page (6.5d)', () => {
+  const pagesOf = (over: Partial<Paging> = {}): Paging => ({
+    next: vi.fn(() => Promise.resolve(true)),
+    back: vi.fn(() => true),
+    reveal: vi.fn(),
+    ...over,
+  });
+  const pressNav = (form: HTMLFormElement, value: string): SubmitEvent => {
+    const button = Object.assign(document.createElement('button'), { type: 'submit', name: 'jfb-nav', value });
+    form.append(button);
+    const event = new SubmitEvent('submit', { bubbles: true, cancelable: true, submitter: button });
+    form.dispatchEvent(event);
+    return event;
+  };
+
+  it('Back moves on the page, and posts when there is none to go to', () => {
+    const moving = pagesOf();
+    const { form } = wake({ pages: moving });
+    expect(pressNav(form, 'back').defaultPrevented).toBe(true);
+    expect(moving.back).toHaveBeenCalled();
+
+    const stuck = wake({ pages: pagesOf({ back: () => false }) });
+    expect(pressNav(stuck.form, 'back').defaultPrevented).toBe(false);
+  });
+
+  it("Next goes to the pages once the page's own checks pass", async () => {
+    const moving = pagesOf();
+    const { form, posted } = wake({ pages: moving });
+    pressNav(form, 'next');
+    await until(() => expect(moving.next).toHaveBeenCalled());
+    await new Promise((resolve) => setTimeout(resolve, 5));
+
+    expect(posted).toEqual([]);
+  });
+
+  it('Next does not ask them when the page has an error', async () => {
+    const moving = pagesOf();
+    const { form, value } = wake({ pages: moving });
+    value('n').value = '';
+    pressNav(form, 'next');
+    await until(() => expect(form.querySelector('[data-jfb-summary]')).not.toBeNull());
+
+    expect(moving.next).not.toHaveBeenCalled();
+  });
+
+  it('Next posts when they leave it to the post', async () => {
+    const { form, posted } = wake({ pages: pagesOf({ next: () => Promise.resolve(false) }) });
+    pressNav(form, 'next');
+
+    await until(() => expect(posted).toEqual(['next']));
+  });
+
+  describe('a send whose errors lie on another page', () => {
+    const later: ModelField = { ...LATER, required: true };
+    const model: FormModel = {
+      ...MODEL,
+      form: {
+        ...MODEL.form,
+        pages: [
+          { key: 'p1', groups: [{ key: 'g1', fields: [NAME, NOTE] }] },
+          { key: 'p2', groups: [{ key: 'g2', fields: [later] }] },
+        ],
+      },
+    };
+    const moving = (): Paging =>
+      pagesOf({
+        reveal: vi.fn((element: Element) => {
+          for (const page of document.querySelectorAll<HTMLElement>('[data-jfb-page]'))
+            page.hidden = !page.contains(element);
+        }),
+      });
+    const shownInSummary = (form: HTMLFormElement): (string | null)[] =>
+      [...form.querySelectorAll(':scope > [data-jfb-summary] a')].map((link) => link.getAttribute('href'));
+
+    it('shows the page that holds them, with their summary, and sends nothing', async () => {
+      const pages = moving();
+      route(() => json(200, {}));
+      const { form, press, posted } = wake({ model, pages });
+      press();
+      await until(() => expect(shownInSummary(form)).toEqual(['#jfb-1-later']));
+
+      expect(pages.reveal).toHaveBeenCalledWith(form.querySelector('[data-jfb-field="k-later"]'));
+      expect(form.querySelector<HTMLElement>('[data-jfb-page="p2"]')?.hidden).toBe(false);
+      expect(posted).toEqual([]);
+      expect(posts.some((each) => each.url.endsWith('/entries'))).toBe(false);
+    });
+
+    it('shows the first page that holds one, with only its errors', async () => {
+      const pages = moving();
+      route(() => json(200, {}));
+      const { form, press, value } = wake({ model, pages });
+      value('n').value = '';
+      value('m').value = 'A note';
+      form.querySelector<HTMLElement>('[data-jfb-page="p1"]')?.toggleAttribute('hidden', true);
+      form.querySelector<HTMLElement>('[data-jfb-page="p2"]')?.toggleAttribute('hidden', false);
+      press();
+      await until(() => expect(shownInSummary(form)).toEqual(['#jfb-1-name']));
+
+      expect(pages.reveal).toHaveBeenCalledWith(form.querySelector('[data-jfb-field="k-name"]'));
+    });
+
+    it('goes to the post on a form that does not move on the page, as the server shows that page', async () => {
+      route(() => json(200, {}));
+      const { form, press, posted } = wake({ model });
+      press();
+      await until(() => expect(posts.length).toBeGreaterThan(0));
+
+      expect(shownInSummary(form)).toEqual([]);
+      expect(posted).toEqual([]);
+    });
   });
 });

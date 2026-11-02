@@ -14,7 +14,7 @@
  */
 import type { PostAnswer, ReadPost } from '@jfb/logic';
 import type { PageErrors, ServerProblem } from './errors';
-import { swapForm } from './changed';
+import { markupOf, swapForm } from './changed';
 import { parseSanitised } from './html';
 import { optionsByPost, type PageUploads, type UploadedFile } from './uploads';
 import type { FormModel } from './model';
@@ -28,8 +28,22 @@ export interface SendDetail {
   readonly code?: string;
 }
 
+/**
+ * Asks the server to check one page before the runtime moves on (ROADMAP 6.5d, ADR-0155): `on` when it passes, `answered` when
+ * the page shows why not, `post` to leave the press to the post.
+ */
+export type CheckPage = (
+  button: HTMLButtonElement,
+  errors: PageErrors,
+  page: string,
+) => Promise<'on' | 'answered' | 'post'>;
+
 /** Sends a form whose answers pass the page's checks: true when the page answered the press, false to post it. */
-export type Deliver = (button: HTMLButtonElement, errors: PageErrors) => Promise<boolean>;
+export interface Deliver {
+  (button: HTMLButtonElement, errors: PageErrors): Promise<boolean>;
+  /** A form that sends on the page checks its pages this way. */
+  readonly checkPage?: CheckPage;
+}
 
 /** The entries endpoint's outcome of an entry, as far as the page shows it (ADR-0088). */
 interface Outcome {
@@ -37,6 +51,8 @@ interface Outcome {
   readonly html?: string;
   readonly url?: string;
   readonly delaySeconds?: number;
+  /** The token that the render endpoint takes for the copy of the answers (ADR-0155). */
+  readonly copy?: string;
 }
 
 /** What the entries and receipt endpoints answer, as far as the page reads it. */
@@ -90,11 +106,12 @@ export function bodyOf(
   post: ReadPost,
   query: Readonly<Record<string, string | readonly string[]>>,
   id: string,
-  extra: { content?: string; challenge?: string; honeypot?: string; placement?: string } = {},
+  extra: { content?: string; challenge?: string; honeypot?: string; placement?: string; instance?: string } = {},
 ): object {
   const values = valuesOf(post);
   return {
     submissionId: id,
+    instance: extra.instance,
     revision: model.revision,
     culture: model.culture,
     contentKey: extra.content,
@@ -209,7 +226,97 @@ export function senderOf(form: HTMLFormElement, model: FormModel, options: Sende
   /** The challenges the page's sends went with, one of which its entry names. */
   const held = new Set<string>();
   let notice: Element | null | undefined;
-  return async (button, errors) => {
+
+  /** The theme's notice of a refused or failed asking, just above the buttons, which takes the focus. */
+  const showNotice = (primary: Element, code: string, retryAfter: string | null): boolean => {
+    notice = templates?.content.querySelector(`[data-jfb-notice="${code}"]`)?.cloneNode(true) as Element | undefined;
+    if (!(notice instanceof HTMLElement)) return false;
+    wordWait(notice, retryAfter);
+    (primary.parentElement ?? primary).before(notice);
+    notice.focus();
+    return true;
+  };
+
+  /** The form as it is now has come in this one's place, and takes over with what this one holds. */
+  const handOver = async (swapped: NonNullable<Awaited<ReturnType<typeof swapForm>>>): Promise<void> => {
+    swapped.form.dispatchEvent(
+      new CustomEvent<SendDetail>('jfb:error', {
+        bubbles: true,
+        detail: { key, alias: swapped.model.alias, code: 'form_changed' },
+      }),
+    );
+    const files = options.files?.uploaded();
+    options.rewake?.(swapped.form, swapped.model, {
+      id,
+      challenge: (await challenges?.current()) ?? null,
+      ...(files === undefined ? {} : { files }),
+    });
+  };
+
+  const checkPage: CheckPage = async (pressed, errors, page) => {
+    if (challenges === null) return 'post';
+    notice?.remove();
+    // Enter in a field presses the hidden button, which stands for this one.
+    const button = form.querySelector<HTMLElement>('[data-jfb-nav="next"]') ?? pressed;
+    button.setAttribute(BUSY, '');
+    button.setAttribute(DISABLED, 'true');
+    let status = 0;
+    let retryAfter: string | null = null;
+    let answer: Answer = {};
+    let swapped: Awaited<ReturnType<typeof swapForm>> = null;
+    try {
+      // A file that failed on another page has its say when the visitor gets there, or at the send.
+      const here = form.querySelector(`[data-jfb-page="${page}"]`) ?? undefined;
+      if ((await options.files?.settled(here)) === false) return 'answered';
+      const reading = readPage(form, model);
+      const query = contextOf(model, reading, Date.now(), form.ownerDocument.URL).query;
+      const honeypot = form.querySelector<HTMLInputElement>(':scope > .jfb-hp input')?.value;
+      // As a send's: a challenge made now says the form was filled in no time, so a form that can post goes that way.
+      if ((await challenges.current()) === null && (await challenges.again()) !== null && posts) return 'post';
+      const ask = async (): Promise<Response> => {
+        const challenge = (await challenges.current()) ?? undefined;
+        return post('validate', {
+          ...bodyOf(model, reading.post, query, id, {
+            ...(content === undefined ? {} : { content }),
+            ...(challenge === undefined ? {} : { challenge }),
+            ...(honeypot ? { honeypot } : {}),
+          }),
+          submissionId: undefined,
+          pageKey: page,
+        });
+      };
+      let response = await ask();
+      if (response.status === 401) {
+        await challenges.renew();
+        response = await ask();
+      }
+      status = response.status;
+      retryAfter = response.headers.get('Retry-After');
+      answer = ((await response.json().catch(() => null)) as Answer | null) ?? {};
+      if (status === 409 && answer.code === 'form_changed' && posts && api !== undefined) {
+        swapped = await swapForm(form, model, api);
+      }
+    } catch (failed) {
+      const refused = failed as { status?: number; retryAfter?: string | null };
+      if (refused.status !== undefined) {
+        status = refused.status;
+        retryAfter = refused.retryAfter ?? null;
+      }
+    } finally {
+      button.removeAttribute(BUSY);
+      button.removeAttribute(DISABLED);
+    }
+    if (swapped !== null) {
+      await handOver(swapped);
+      return 'answered';
+    }
+    if (status === 204) return 'on';
+    if (status === 422 && Array.isArray(answer.errors) && (await errors.server(answer.errors))) return 'answered';
+    const code = noticeOf(status, answer.code) ?? (posts ? null : 'server_error');
+    return code !== null && showNotice(button, code, retryAfter) ? 'answered' : 'post';
+  };
+
+  const deliver = async (button: HTMLButtonElement, errors: PageErrors): Promise<boolean> => {
     if (templates === null || challenges === null) return false;
     const primary = form.querySelector<HTMLElement>('[data-jfb-nav="submit"]') ?? button;
     const live = form.querySelector<HTMLElement>(':scope > [data-jfb-live]');
@@ -246,6 +353,8 @@ export function senderOf(form: HTMLFormElement, model: FormModel, options: Sende
             ...(current === null ? {} : { challenge: current }),
             ...(honeypot ? { honeypot } : {}),
             ...(placement === undefined ? {} : { placement }),
+            // A view's own id names no form the server wrote, so no copy can be asked for it.
+            ...(/^jfb-\d+$/.test(form.id) ? { instance: form.id } : {}),
           }),
         );
       };
@@ -297,37 +406,22 @@ export function senderOf(form: HTMLFormElement, model: FormModel, options: Sende
     }
     if (handedOver) return false;
     if (swapped !== null) {
-      swapped.form.dispatchEvent(
-        new CustomEvent<SendDetail>('jfb:error', {
-          bubbles: true,
-          detail: { key, alias: swapped.model.alias, code: 'form_changed' },
-        }),
-      );
-      const files = options.files?.uploaded();
-      options.rewake?.(swapped.form, swapped.model, {
-        id,
-        challenge: await challenges.current(),
-        ...(files === undefined ? {} : { files }),
-      });
+      await handOver(swapped);
       return true;
     }
     // A stored entry is never sent again, whatever its answer holds.
     if (status === 200) {
       event('jfb:submitted');
-      showOutcome(form, templates, go, answer.outcome ?? {}, answer.receipt?.reference);
+      showOutcome(form, model, templates, go, answer.outcome ?? {}, answer.receipt?.reference);
       return true;
     }
     if (status === 422 && Array.isArray(answer.errors) && (await errors.server(answer.errors))) return true;
     const code = noticeOf(status, answer.code) ?? (posts ? null : 'server_error');
     if (code === null) return false;
     event('jfb:error', code);
-    notice = templates.content.querySelector(`[data-jfb-notice="${code}"]`)?.cloneNode(true) as Element | undefined;
-    if (!(notice instanceof HTMLElement)) return false;
-    wordWait(notice, retryAfter);
-    (primary.parentElement ?? primary).before(notice);
-    notice.focus();
-    return true;
+    return showNotice(primary, code, retryAfter);
   };
+  return take ? Object.assign(deliver, { checkPage }) : deliver;
 }
 
 /** An address the page may go to: the web's, as the document resolves it; null for any other. */
@@ -348,6 +442,7 @@ function addressOf(url: string | undefined, document: Document): string | null {
  */
 function showOutcome(
   form: HTMLFormElement,
+  model: FormModel,
   templates: HTMLTemplateElement,
   go: (address: string) => void,
   outcome: Outcome,
@@ -401,4 +496,32 @@ function showOutcome(
   place.append(shown);
   form.replaceWith(place);
   shown.focus();
+  const api = form.dataset['jfbApi'];
+  if (outcome.copy !== undefined && api !== undefined)
+    showCopy(form, model, place, api, outcome.copy).catch(() => undefined);
+}
+
+/** The copy of the answers below the outcome (ADR-0123, ADR-0155), as the server writes it for a post; without it the outcome stands alone. */
+async function showCopy(
+  form: HTMLFormElement,
+  model: FormModel,
+  place: Element,
+  api: string,
+  token: string,
+): Promise<void> {
+  const rendered = await markupOf(form, model, api, token);
+  const copy = rendered?.querySelector('[data-jfb-outcome]');
+  while (copy?.nextElementSibling) place.append(copy.nextElementSibling);
+  const print = place.querySelector<HTMLButtonElement>('[data-jfb-print]');
+  if (print !== null) {
+    print.hidden = false;
+    print.addEventListener('click', () => form.ownerDocument.defaultView?.print());
+  }
+  // The form again is this very address, which a browser only scrolls to: it takes the page anew, as after a post.
+  place.querySelector('[data-jfb-copy] a')?.addEventListener('click', (event) => {
+    event.preventDefault();
+    const location = form.ownerDocument.defaultView?.location;
+    location?.assign((event.currentTarget as HTMLAnchorElement).href);
+    location?.reload();
+  });
 }

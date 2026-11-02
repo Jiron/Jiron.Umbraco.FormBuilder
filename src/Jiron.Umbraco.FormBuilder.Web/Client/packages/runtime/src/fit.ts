@@ -118,6 +118,9 @@ export function followSteps(steps: Element): void {
   };
   fold();
   void steps.ownerDocument.fonts?.ready.then(fold);
+  // A rule may show or hide a step (ADR-0155); folding changes no step, so it never answers itself.
+  const list = steps.querySelector(':scope > ol');
+  if (list !== null) new MutationObserver(fold).observe(list, { childList: true });
   if (typeof ResizeObserver === 'undefined') return;
   new ResizeObserver(() => {
     // Folding changes the steps' height and never their width, so it never answers itself.

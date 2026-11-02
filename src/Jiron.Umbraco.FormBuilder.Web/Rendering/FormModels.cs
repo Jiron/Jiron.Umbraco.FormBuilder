@@ -212,8 +212,9 @@ internal sealed partial class FormModels(
 
     // What the runtime shows a send with (ADR-0120, ADR-0022): the notices just above the buttons, whose rate limit's
     // text the runtime words as a post's (WaitNotice), and the outcome without its message or its reference's value.
-    private static FormSendingModel Sending(Root root, RenderingWords words) => new()
+    private static FormSendingModel Sending(Root root, RenderingWords words, NavigationViewModel? moves) => new()
     {
+        Moves = moves,
         SendingText = words.Sending,
         ThanksText = words.ThankYou,
         Notices =
@@ -377,7 +378,7 @@ internal sealed partial class FormModels(
             defaultButton: summaryPage is not null || pages.SelectMany(page => page.Groups).SelectMany(group => group.Fields).Any(field => field.Control is RankingControlModel or RepeaterControlModel)
                 ? navigation.Next ?? navigation.Submit
                 : null,
-            progress: Progress(settings, shownPages, current, build),
+            progress: Progress(settings, shown.Pages, shownPages, current, build),
             errors: errors.Count > 0
                 ? new ErrorSummaryViewModel { Classes = root.Classes, Heading = VisitorMessages.SummaryHeading(errors.Count, render.Culture), HeadingId = root.Id + "-summary", Errors = errors }
                 : null,
@@ -395,7 +396,7 @@ internal sealed partial class FormModels(
             postValues: PostValues(root, current, post, render.Redirect),
             contentKey: render.Content,
             placement: render.Redirect is { } placement ? placements.Issue(root.Key, placement) : null,
-            sending: Sending(root, words));
+            sending: Sending(root, words, shown.Pages.Count > 1 ? Moves(settings, words, root.Classes) : null));
     }
 
     // The visitor texts that hold tags, each rendered as the server renders it in its place for the answers the page
@@ -824,10 +825,10 @@ internal sealed partial class FormModels(
     // Umbraco's image media type holds its width and height as integer labels; none, or zero, is no size.
     private static int? Pixels(object? value) => value is int pixels && pixels > 0 ? pixels : null;
 
-    private static ProgressViewModel? Progress(PublicFormSettings settings, List<PublicPage> shownPages, PublicPage? current, Build build)
+    private static ProgressViewModel? Progress(PublicFormSettings settings, IReadOnlyList<PublicPage> allPages, List<PublicPage> shownPages, PublicPage? current, Build build)
     {
         var (root, words, culture) = (build.Root, build.Words, build.Culture);
-        if (shownPages.Count < 2 || current is null || settings.Progress == ProgressIndicator.None)
+        if (allPages.Count < 2 || current is null || settings.Progress == ProgressIndicator.None)
         {
             return null;
         }
@@ -837,19 +838,27 @@ internal sealed partial class FormModels(
         {
             Classes = build.Root.Classes,
             Style = settings.Progress == ProgressIndicator.Bar ? ProgressStyle.Bar : ProgressStyle.Steps,
+            IsHidden = shownPages.Count < 2,
             Current = at + 1,
             Total = shownPages.Count,
             Text = string.Format(culture, words.Step, at + 1, shownPages.Count),
+            Words = words.Step,
+            UntitledWords = words.Page,
             TextId = root.Id + "-progress",
             Label = words.Progress,
             Steps =
             [
-                .. shownPages.Select((page, index) =>
+                // A page the rules hide has its step too, in a template, for the runtime to show once a rule shows the page (ADR-0155).
+                .. allPages.Select(page =>
                 {
-                    var untitled = string.Format(culture, words.Page, index + 1);
-                    return new ProgressStepModel(build.Text(page.Key, "title", page.Title) ?? untitled, index == at, index < at)
+                    var index = shownPages.IndexOf(page);
+                    var untitled = string.Format(culture, words.Page, Math.Max(index, 0) + 1);
+                    var title = build.Text(page.Key, "title", page.Title);
+                    return new ProgressStepModel(title ?? untitled, index == at, index >= 0 && index < at)
                     {
                         Page = page.Key,
+                        IsHidden = index < 0,
+                        IsUntitled = title is null,
                         RecallsTitle = build.Recalls(page.Key, "title"),
                         Fallback = untitled,
                     };
@@ -872,6 +881,15 @@ internal sealed partial class FormModels(
             Submit = last ? new NavigationButtonModel(Text(settings.SubmitLabel) ?? words.Send, FormPostFields.Submit) : null,
         };
     }
+
+    // Every button of a form's pages, of which the runtime shows those of the page it moves to (ADR-0155).
+    private static NavigationViewModel Moves(PublicFormSettings settings, RenderingWords words, ThemeClassesModel classes) => new()
+    {
+        Classes = classes,
+        Back = new NavigationButtonModel(Text(settings.BackLabel) ?? words.Back, FormPostFields.Back),
+        Next = new NavigationButtonModel(Text(settings.NextLabel) ?? words.Next, FormPostFields.Next),
+        Submit = new NavigationButtonModel(Text(settings.SubmitLabel) ?? words.Send, FormPostFields.Submit),
+    };
 
     // The context values the page gives that the form lists, under the name the form lists them by (an attribute's name
     // is read in any letter case), each up to its limit; a name the form does not list, and a value too long, are

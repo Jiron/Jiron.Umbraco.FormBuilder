@@ -178,6 +178,7 @@ export type FileUploadWordsModel = {
 };
 
 export type FormSendingModel = {
+  moves?: NavigationViewModel;
   sendingText: string;
   thanksText: string;
   notices: NoticeViewModel[];
@@ -390,15 +391,20 @@ export type ProgressStepModel = {
   isCurrent: boolean;
   isDone: boolean;
   page: string;
+  isHidden: boolean;
+  isUntitled: boolean;
   recallsTitle: boolean;
   fallback: string;
 };
 
 export type ProgressViewModel = {
   style: "steps" | "bar";
+  isHidden: boolean;
   current: number;
   total: number;
   text: string;
+  words?: string;
+  untitledWords?: string;
   textId: string;
   label: string;
   steps: ProgressStepModel[];

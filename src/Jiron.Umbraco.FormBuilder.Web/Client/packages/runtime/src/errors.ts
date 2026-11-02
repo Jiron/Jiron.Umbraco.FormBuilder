@@ -22,6 +22,7 @@ import type { MessageWords } from '@jfb/logic';
 import type { PageEngine } from './engine';
 import { elementOf, wordsFor, type ShownError } from './messages';
 import type { FormModel } from './model';
+import type { Paging } from './pages-chunk';
 import type { Deliver } from './send';
 import { checkFields, checkPage, serverErrors, type CheckScope, type ServerProblem } from './validation';
 
@@ -73,6 +74,7 @@ export function pageErrorsOf(
   engine: PageEngine,
   clock: () => number = Date.now,
   deliver?: Deliver,
+  pages?: Paging,
 ): PageErrors {
   const changed = new WeakSet<HTMLElement>();
   const kept = keptOf(form);
@@ -188,7 +190,7 @@ export function pageErrorsOf(
     return merged;
   };
 
-  // Until 6.5 pages in the browser, the server shows the first page that holds an error.
+  // A form that posts between its pages leaves it to the server to show the first page that holds an error.
   const elsewhere = (errors: readonly ShownError[]): boolean =>
     errors.some((error) => {
       if (error.code === 'empty') return false;
@@ -196,22 +198,36 @@ export function pageErrorsOf(
       return field === null || offPage(field);
     });
 
+  /** The errors of the first page that holds one, which a form that moves on the page shows now; null to leave them to the post. */
+  const ofOnePage = (errors: readonly ShownError[]): readonly ShownError[] | null => {
+    if (!elsewhere(errors)) return errors;
+    const fields = errors.filter((error) => error.code !== 'empty').map(fieldAt);
+    if (pages === undefined || fields.includes(null)) return null;
+    const first = (fields as HTMLElement[]).reduce((one, other) =>
+      (one.compareDocumentPosition(other) & FOLLOWING) !== 0 ? one : other,
+    );
+    pages.reveal(first);
+    return errors.filter((error) => error.code === 'empty' || !offPage(fieldAt(error)));
+  };
+
   async function validate(scope: CheckScope): Promise<boolean> {
     const found = await safely(() => checkPage(form, model, engine, scope, clock));
     const words = found === null ? null : await safely(() => wordsFor(model.culture));
     if (found === null || words === null) return true;
     const here = found.filter((error) => error.code === 'empty' || fieldAt(error) !== null);
-    if (here.length === 0 || elsewhere(here)) return true;
-    present(withKept(here), scope, words);
+    const shown = here.length === 0 ? null : ofOnePage(here);
+    if (shown === null) return true;
+    present(withKept(shown), scope, words);
     return false;
   }
 
   async function server(problems: readonly ServerProblem[]): Promise<boolean> {
     const found = await safely(() => serverErrors(form, model, engine, problems, clock));
     const words = found === null ? null : await safely(() => wordsFor(model.culture));
-    if (found === null || words === null || found.length === 0 || elsewhere(found)) return false;
-    present(found, 'send', words);
-    for (const error of found) {
+    const shown = found === null || found.length === 0 ? null : ofOnePage(found);
+    if (shown === null || words === null) return false;
+    present(shown, 'send', words);
+    for (const error of shown) {
       const field = fieldAt(error);
       if (field !== null) kept.set(field, { target: error.target, link: error.link });
     }
@@ -269,11 +285,16 @@ export function pageErrorsOf(
     }
     const button = event.submitter;
     if (!(button instanceof HTMLButtonElement) || button.name !== NAV) return;
+    if (button.value === 'back' && pages?.back() === true) event.preventDefault();
     if (button.value !== 'submit' && button.value !== 'next') return;
     event.preventDefault();
     checking = true;
     void validate(button.value === 'next' ? 'page' : 'send')
-      .then((passes) => !passes || (button.value === 'submit' && deliver !== undefined && deliver(button, errors)))
+      .then((passes) => {
+        if (!passes) return true;
+        if (button.value === 'next') return pages?.next(button, errors) ?? false;
+        return deliver !== undefined && deliver(button, errors);
+      })
       .then(
         (answered) => {
           if (answered) {

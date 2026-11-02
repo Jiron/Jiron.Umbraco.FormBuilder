@@ -7,6 +7,7 @@
  * goes the way without JavaScript, whose answer does the same.
  */
 import { parseSanitised } from './html';
+import { movesPages } from './uploads';
 import type { FormModel } from './model';
 
 /** How long the page waits for the form as it is now: the endpoint's own limit, and a little. */
@@ -92,7 +93,12 @@ function modelIn(next: HTMLFormElement, form: HTMLFormElement): FormModel | null
 }
 
 /** The form as it is now, with its model, or null for what the page cannot put in the old one's place. */
-async function renderOf(form: HTMLFormElement, model: FormModel, api: string): Promise<HTMLFormElement | null> {
+export async function markupOf(
+  form: HTMLFormElement,
+  model: FormModel,
+  api: string,
+  sent?: string,
+): Promise<DocumentFragment | null> {
   const query = new URLSearchParams({
     instance: form.id,
     page: form.ownerDocument.location.pathname,
@@ -104,12 +110,11 @@ async function renderOf(form: HTMLFormElement, model: FormModel, api: string): P
   if (theme) query.set('theme', theme);
   const placement = form.dataset['jfbPlacement'];
   if (placement) query.set('placement', placement);
+  if (sent !== undefined) query.set('jfb-sent', sent);
   const response = await fetch(`${api}/forms/${form.dataset['jfbForm'] ?? ''}/render?${query.toString()}`, {
     signal: AbortSignal.timeout(WAIT),
   }).catch(() => null);
-  if (!response?.ok) return null;
-  const made = parseSanitised(form.ownerDocument, await response.text());
-  return made.querySelector<HTMLFormElement>('form[data-jfb-form]');
+  return response?.ok ? parseSanitised(form.ownerDocument, await response.text()) : null;
 }
 
 /**
@@ -121,15 +126,28 @@ export async function swapForm(
   model: FormModel,
   api: string,
 ): Promise<{ readonly form: HTMLFormElement; readonly model: FormModel } | null> {
-  if (form.querySelectorAll('[data-jfb-page]').length > 1 || form.querySelector('.jfb-repeater, .jfb-ranking') !== null)
+  // A summary page's rows and a view without the buttons to move with are for a post to write.
+  const several = form.querySelectorAll('[data-jfb-page]').length > 1;
+  if (
+    form.querySelector('.jfb-repeater, .jfb-ranking') !== null ||
+    (several && (model.form.settings?.summaryPage === true || !movesPages(form)))
+  )
     return null;
-  const next = await renderOf(form, model, api);
+  const next = (await markupOf(form, model, api))?.querySelector<HTMLFormElement>('form[data-jfb-form]');
   const nextModel = next ? modelIn(next, form) : null;
   const template = next
     ?.querySelector<HTMLTemplateElement>(':scope > template[data-jfb-templates]')
     ?.content.querySelector('[data-jfb-notice="form_changed"]');
   if (!next || nextModel === null || !template) return null;
   const unticked = copyAnswers(form, next);
+  // The visitor stays on the page they were on, if the form still has it: its render knows no answers, so its rules decide at the wake.
+  const at = form.querySelector<HTMLElement>('[data-jfb-page]:not([hidden])')?.dataset['jfbPage'];
+  const pages = [...next.querySelectorAll<HTMLElement>('[data-jfb-page]')];
+  if (pages.some((page) => page.dataset['jfbPage'] === at)) {
+    for (const page of pages) page.hidden = page.dataset['jfbPage'] !== at;
+    const named = next.querySelector<HTMLInputElement>(':scope > input[name="jfb-page"]');
+    if (named !== null && at !== undefined) named.value = at;
+  }
   const notice = template.cloneNode(true) as HTMLElement;
   const line = notice.querySelector<HTMLElement>('[data-jfb-one]');
   if (line !== null && unticked > 0) {

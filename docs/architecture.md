@@ -184,7 +184,7 @@ flowchart LR
   outcome in the form's place ([ADR-0120](decisions/0120-sending-waits-for-the-runtimes-budget.md)), and a form
   published again in the old one's place (`changed.ts`); fits a form to its page and offers `get(form)` (`fit.ts`,
   [ADR-0151](decisions/0151-fitting-the-page-and-the-js-api.md)); takes files on the page (`uploads-chunk.ts`, a chunk
-  only a form of one page with file fields loads), each checked first by `@jfb/logic/files`, the port the shared
+  only a form with file fields loads, unless the step onto its summary page posts), each checked first by `@jfb/logic/files`, the port the shared
   vectors hold to the server's, then sent with its progress, its token a hidden input of its row
   ([ADR-0152](decisions/0152-uploads-on-the-page.md)); signs on a pad or types a name (`signature-chunk.ts`, with
   `@jfb/logic/signature`, held to `TypedSignature` by shared vectors), the image going at a send
@@ -672,7 +672,7 @@ receives entry events too.
 `IFormBuilderMergeTagService`, `IFormBuilderOptionService`.
 
 **The website:** `<jfb-assets nonce>`, `<jfb-render form picked assets theme context-*>` and the view component, the
-theme views and the markup contract (ADR-0015), `window.JironFormBuilder` (`init`, `get`, `consent`), the DOM events
+theme views and the markup contract (ADR-0015), `window.JironFormBuilder` (`init`, `get` with its `validate`, `submit`, `next`, `back` and `values`, `consent`), the DOM events
 `jfb:ready`, `jfb:page`, `jfb:invalid`, `jfb:submitting`, `jfb:submitted`, `jfb:error`, and the `--jfb-*` custom
 properties.
 

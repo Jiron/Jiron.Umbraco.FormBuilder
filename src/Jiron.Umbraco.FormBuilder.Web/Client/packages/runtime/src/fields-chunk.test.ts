@@ -537,6 +537,17 @@ describe('a text area that grows', () => {
     expect(typed().style.blockSize).toBe('auto');
   });
 
+  it('grows once a move has brought its page into view', async () => {
+    const { form } = wake([FIELD], area(true));
+    shape(typed(), 0);
+    typed().dispatchEvent(new Event('input', { bubbles: true }));
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    shape(typed(), 300);
+    form.dispatchEvent(new CustomEvent('jfb:page', { bubbles: true }));
+
+    await until(() => expect(typed().style.blockSize).toBe('302px'));
+  });
+
   it.each(['input', 'change'])('grows once an %s elsewhere has shown it', async (kind) => {
     const { form } = wake([FIELD], area(true));
     shape(typed(), 0);

@@ -10,6 +10,13 @@ export interface JironFormBuilderForm {
    * form shows no such button now, as on a page before its last.
    */
   submit(): Promise<boolean>;
+  /**
+   * Presses the form's Next, with what a visitor's press does: the page's checks and the move, which `jfb:page` tells of. False
+   * when the form shows no such button now, as on its last page.
+   */
+  next(): Promise<boolean>;
+  /** Presses the form's Back, which `jfb:page` tells of. False when the form shows no such button now, as on its first page. */
+  back(): Promise<boolean>;
   /** The answers as the page would send them: each one's texts by its alias, a part as `alias.part`, a group's rows as objects. */
   values(): Promise<Readonly<Record<string, unknown>>>;
 }

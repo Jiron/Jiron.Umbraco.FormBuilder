@@ -64,4 +64,5 @@ a form view without the send's parts, which cannot go from the page.
   the server's `invalid` at the field asks for the file again.
 - A fallback post after an upload cannot claim the token, so its field asks again. That takes a refusal the page does not answer,
   with a file already up, and only asks the visitor to choose the file again.
-- **Revisit** when 6.5d pages in the browser: the page-count condition goes.
+- 6.5d paged in the browser, and the page-count condition went: a form of several pages takes its files on the page, unless the step
+  onto a summary page posts, or its view writes no buttons to move with (ADR-0155).

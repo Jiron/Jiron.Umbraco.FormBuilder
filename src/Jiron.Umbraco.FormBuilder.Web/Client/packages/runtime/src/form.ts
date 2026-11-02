@@ -17,7 +17,7 @@ import type { FormModel } from './model';
 import { followSliders } from './outputs';
 import { readPage, type PageReading } from './page';
 import { challengesOf, senderOf, valuesOf, type Carried } from './send';
-import { allOf, takesUploads, type PageUploads, type UploadOptions } from './uploads';
+import { allOf, movesPages, takesUploads, type PageUploads, type UploadOptions } from './uploads';
 import type { ShownError } from './messages';
 import { contextOf, rulesOf, type PageRules } from './rules';
 import { checkPage, type CheckScope } from './validation';
@@ -38,6 +38,8 @@ export interface FormSession {
   validate(scope: CheckScope): Promise<boolean>;
   /** Presses the form's send button; false when the form shows none now. */
   submit(): boolean;
+  /** Presses a button of the form's navigation: false when it shows no such button now. */
+  press(nav: 'next' | 'back'): boolean;
   /** The answers as the page would send them. */
   values(): Readonly<Record<string, unknown>>;
 }
@@ -139,17 +141,23 @@ async function wake(
       })
       .catch(() => undefined);
   }
-  const errors = pageErrorsOf(
-    form,
-    model,
-    engine,
-    Date.now,
-    senderOf(form, model, {
-      ...(carried === undefined ? {} : { id: carried.id, challenge: carried.challenge }),
-      ...(files === undefined || challenges === undefined ? {} : { files, challenges }),
-      rewake: (next, nextModel, carry) => void attach(next, nextModel, defaults, carry),
-    }),
-  );
+  const deliver = senderOf(form, model, {
+    ...(carried === undefined ? {} : { id: carried.id, challenge: carried.challenge }),
+    ...(files === undefined || challenges === undefined ? {} : { files, challenges }),
+    rewake: (next, nextModel, carry) => void attach(next, nextModel, defaults, carry),
+  });
+  const check = deliver.checkPage;
+  const pages =
+    check !== undefined && form.querySelectorAll('[data-jfb-page]').length > 1 && movesPages(form)
+      ? await import('./pages-chunk').then((module) => module.enhancePages(form, model, check)).catch(() => undefined)
+      : undefined;
+  const errors = pageErrorsOf(form, model, engine, Date.now, deliver, pages);
+  const press = (nav: string): boolean => {
+    const button = form.querySelector<HTMLButtonElement>(`button[data-jfb-nav="${nav}"]`);
+    if (button === null) return false;
+    form.requestSubmit(button);
+    return true;
+  };
   return {
     form,
     model,
@@ -158,12 +166,8 @@ async function wake(
     rules,
     check: (scope) => checkPage(form, model, engine, scope),
     validate: (scope) => errors.validate(scope),
-    submit: () => {
-      const button = form.querySelector<HTMLButtonElement>('button[data-jfb-nav="submit"]');
-      if (button === null) return false;
-      form.requestSubmit(button);
-      return true;
-    },
+    submit: () => press('submit'),
+    press,
     values: () => valuesOf(readPage(form, model).post),
   };
 }

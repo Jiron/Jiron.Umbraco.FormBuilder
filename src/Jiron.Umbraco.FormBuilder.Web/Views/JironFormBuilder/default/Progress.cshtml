@@ -2,23 +2,38 @@
 @model Jiron.Umbraco.FormBuilder.Web.Rendering.Models.ProgressViewModel
 @using Jiron.Umbraco.FormBuilder.Web.Rendering
 @using Jiron.Umbraco.FormBuilder.Web.Rendering.Models
+@{
+    void Step(ProgressStepModel step)
+    {
+        <li data-jfb-step="@step.Page" aria-current="@(step.IsCurrent ? "step" : null)" @FormBuilderHtml.Flag("data-jfb-done", step.IsDone)><span @FormBuilderHtml.Text(step) @FormBuilderHtml.Flag("data-jfb-numbered", step.IsUntitled)>@step.Title</span></li>
+    }
+}
 @* The steps' list has its role in so many words, since the themes draw it without markers, and a browser may then stop announcing it as a list. *@
 @if (Model.Style == ProgressStyle.Bar)
 {
-    <div class="@Model.Classes.ProgressBar">
-        <p class="jfb-progress-text" id="@Model.TextId">@Model.Text</p>
+    <div class="@Model.Classes.ProgressBar" hidden="@Model.IsHidden">
+        <p class="jfb-progress-text" id="@Model.TextId" @FormBuilderHtml.Attribute("data-jfb-words", Model.Words)>@Model.Text</p>
         <progress max="@Model.Total" value="@Model.Current" aria-labelledby="@Model.TextId">@Model.Text</progress>
     </div>
 }
 else
 {
-    <div class="@Model.Classes.ProgressSteps">
-        <p class="jfb-progress-text">@Model.Text</p>
-        <ol role="list" aria-label="@Model.Label">
-            @foreach (var step in Model.Steps)
+    <div class="@Model.Classes.ProgressSteps" hidden="@Model.IsHidden">
+        <p class="jfb-progress-text" @FormBuilderHtml.Attribute("data-jfb-words", Model.Words)>@Model.Text</p>
+        <ol role="list" aria-label="@Model.Label" @FormBuilderHtml.Attribute("data-jfb-untitled", Model.UntitledWords)>
+            @foreach (var step in Model.Steps.Where(step => !step.IsHidden))
             {
-                <li aria-current="@(step.IsCurrent ? "step" : null)" @FormBuilderHtml.Flag("data-jfb-done", step.IsDone)><span @FormBuilderHtml.Text(step)>@step.Title</span></li>
+                Step(step);
             }
         </ol>
+        @if (Model.Steps.Any(step => step.IsHidden))
+        {
+            <template data-jfb-steps>
+                @foreach (var step in Model.Steps.Where(step => step.IsHidden))
+                {
+                    Step(step);
+                }
+            </template>
+        }
     </div>
 }

@@ -358,9 +358,9 @@ export function enhanceUploads(form: HTMLFormElement, model: FormModel, options:
   for (const zone of form.querySelectorAll<HTMLElement>('.jfb-upload')) enhance(zone);
 
   return {
-    async settled(): Promise<boolean> {
+    async settled(within?: Element): Promise<boolean> {
       while (running.size > 0) await Promise.all(running);
-      const failed = form.querySelector<HTMLElement>(`.jfb-file[${ERROR}]`);
+      const failed = (within ?? form).querySelector<HTMLElement>(`.jfb-file[${ERROR}]`);
       if (failed === null) return true;
       const retry = failed.querySelector<HTMLElement>('[data-jfb-retry]:not([hidden])');
       (retry ?? failed.querySelector<HTMLElement>('[data-jfb-drop-file]'))?.focus();

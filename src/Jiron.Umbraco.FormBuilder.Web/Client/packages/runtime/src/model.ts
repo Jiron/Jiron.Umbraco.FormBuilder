@@ -114,6 +114,8 @@ export interface FormModel {
     readonly settings?: {
       readonly queryValues?: readonly string[] | null;
       readonly validationSummary?: boolean | null;
+      /** Whether the last page shows every answer before the send, which the server writes. */
+      readonly summaryPage?: boolean;
     } | null;
   };
   /** By each field's key, a repeatable group's child fields too. */

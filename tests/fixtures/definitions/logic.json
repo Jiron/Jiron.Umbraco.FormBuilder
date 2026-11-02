@@ -1211,6 +1211,20 @@
                   }
                 },
                 {
+                  "key": "d0000000-0000-4000-8000-00000000069f",
+                  "type": "signature",
+                  "alias": "signature",
+                  "span": 1,
+                  "label": "Your signature",
+                  "hideLabel": false,
+                  "required": false,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": []
+                },
+                {
                   "key": "d0000000-0000-4000-8000-000000000609",
                   "type": "consent",
                   "alias": "privacy",
@@ -1275,6 +1289,11 @@
       },
       "d0000000-0000-4000-8000-000000000608": {
         "kind": "choice",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-00000000069f": {
+        "kind": "files",
         "canBeRequired": true,
         "builtIn": true
       },
@@ -1412,6 +1431,17 @@
                   "kind": "choice",
                   "canBeRequired": true,
                   "alias": "startEarly",
+                  "calculation": null,
+                  "required": false,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                },
+                {
+                  "id": "d0000000-0000-4000-8000-00000000069f",
+                  "kind": "files",
+                  "canBeRequired": true,
+                  "alias": "signature",
                   "calculation": null,
                   "required": false,
                   "rules": [],

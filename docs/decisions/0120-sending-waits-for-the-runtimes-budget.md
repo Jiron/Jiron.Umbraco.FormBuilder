@@ -59,7 +59,7 @@ feature to **41.38 KB gzip** (1.49 KB more, about 4.3 KB of minified code), 1.38
 ### Sending as built so far, for when the step resumes
 
 - The sender takes over the press that the page's checks pass (`errors.ts` gives it the press); a press while one is
-  on its way sends nothing. `Next` posts as before until 6.5 pages in the browser.
+  on its way sends nothing. `Next` posted as before until 6.5d paged in the browser (ADR-0155).
 - The body is the page's post (`readPage`): each answer's texts by alias, each part as `alias.part`, a consent's
   wording among them, a group's rows as objects; the query values as the rules read them; the context values; the
   form's revision and culture; the page's content key; one submission id per page load.
