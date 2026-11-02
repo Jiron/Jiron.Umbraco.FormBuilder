@@ -2997,6 +2997,33 @@
             "allowedValues": []
           },
           "lock": null
+        },
+        {
+          "name": "loadsCaptcha",
+          "kind": "boolean",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": null,
+          "label": "#jfbFieldSettings_consentLoadsCaptcha",
+          "description": null,
+          "editor": "boolean",
+          "group": "essentials",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": null,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          },
+          "lock": null
         }
       ],
       "availability": {
