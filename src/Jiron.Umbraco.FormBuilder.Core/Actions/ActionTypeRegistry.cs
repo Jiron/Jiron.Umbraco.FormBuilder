@@ -137,6 +137,11 @@ internal sealed class ActionTypeStartupCheck(FormBuilderActionTypeCollection typ
         {
             problems = ActionTypeRegistry.Problems([.. types]);
         }
+        catch (OptionsValidationException)
+        {
+            // A type that needs the host configuration while it is created meets a refused one: that one's own check names the setting.
+            return ValidateOptionsResult.Skip;
+        }
         catch (InvalidOperationException exception)
         {
             // A type whose settings class cannot be read fails as it is created, and so does one the container cannot create.
