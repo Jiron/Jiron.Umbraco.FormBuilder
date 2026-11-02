@@ -91,10 +91,16 @@ for (const language of LANGUAGES) {
       ]);
 
     expect(new URL(page.url()).origin, 'a page of another origin than the host').not.toBe(new URL(E2E_BASE_URL).origin);
-    expect(stylesheets.map((url) => new URL(url).pathname)).toEqual([
-      '/jfb/assets/themes/base.css',
-      '/jfb/assets/themes/default.css',
-    ]);
+    // Which answers first is the network's; the order that counts is the links', which the cascade follows.
+    const themes = ['/jfb/assets/themes/base.css', '/jfb/assets/themes/default.css'];
+    expect(stylesheets.map((url) => new URL(url).pathname).sort()).toEqual(themes);
+    expect(
+      await page.evaluate(() =>
+        [...document.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]')].map(
+          (link) => new URL(link.href).pathname,
+        ),
+      ),
+    ).toEqual(themes);
     await expect(form).toHaveAttribute('lang', language.culture);
     await expect(page.getByRole('heading', { name: language.title })).toBeVisible();
     await expect(page.getByRole('textbox', { name: language.name })).toBeVisible();
