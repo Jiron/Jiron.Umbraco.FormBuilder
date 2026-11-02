@@ -171,6 +171,26 @@ public sealed class WebhookActionTests : ActionTestBase
     }
 
     [Test]
+    public async Task AnUnansweredField_IsLeftOutOfTheBody()
+    {
+        var (call, _) = await SentAsync(Settings(), """{"name":"Ada"}""");
+
+        Assert.That(JsonNode.Parse(call.Body)!["fields"]!.AsObject().Select(field => field.Key), Is.EqualTo(new[] { "name" }));
+    }
+
+    [Test]
+    public async Task WithoutMetadata_TheBodyHoldsOnlyTheAnswers()
+    {
+        var (call, _) = await SentAsync(Settings(""","metadata":false """));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(call.Body, Does.Contain("Ada"));
+            Assert.That(call.Body, Does.Not.Contain("\"delivery\"").And.Not.Contain("\"event\"").And.Not.Contain("submitted"));
+        });
+    }
+
+    [Test]
     public async Task WithoutAnswers_ItSaysOnlyWhatHappened()
     {
         var (call, _) = await SentAsync(Settings(""","withoutAnswers":true """));
