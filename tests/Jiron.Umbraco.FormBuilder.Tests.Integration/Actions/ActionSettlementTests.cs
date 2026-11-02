@@ -354,6 +354,22 @@ public sealed class ActionSettlementTests : ActionTestBase
     }
 
     [Test]
+    public async Task AnEntryLeftBehind_GoesWithTheBytesOfItsFiles()
+    {
+        var form = await PublishAsync(change: Stored(EntryStorage.Never), fields: [NameField, Upload]);
+        var (entry, stored) = await EntryWithFileAsync(form);
+        var part = GetRequiredService<IEnumerable<Core.Retention.IFormBuilderRetentionPart>>().OfType<NeverStoredEntryCleanup>().Single();
+
+        await part.RunAsync(Clock.GetUtcNow() + TimeSpan.FromSeconds(8), CancellationToken.None);
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(await Entries.GetByIdAsync(entry.Id), Is.Null);
+            Assert.That(Files.Ids, Does.Not.Contain(stored));
+        });
+    }
+
+    [Test]
     public async Task ARequestThatEndsBeforeItsOutcome_StillLetsTheEntryGo()
     {
         var outcome = new FormOutcome { Key = Guid.NewGuid(), Kind = OutcomeKind.Message, Message = new LocalizedHtml("<p>{{ waits.forever }}</p>") };
@@ -537,7 +553,11 @@ public sealed class ActionSettlementTests : ActionTestBase
             Values = [new NewEntryValue(field.Id, "report.pdf", FileId: file.Id)],
         }))!;
         var definition = await DefinitionOfAsync(entry);
-        await Runs.AddAsync(entry.Id, entry.FormVersionId, Guid.NewGuid(), SubmissionEntries.Runs(definition, [.. definition.Actions.Select(action => DefinitionLogic.Id(action.Key))]));
+        if (definition.Actions.Count > 0)
+        {
+            await Runs.AddAsync(entry.Id, entry.FormVersionId, Guid.NewGuid(), SubmissionEntries.Runs(definition, [.. definition.Actions.Select(action => DefinitionLogic.Id(action.Key))]));
+        }
+
         return (entry, id);
     }
 

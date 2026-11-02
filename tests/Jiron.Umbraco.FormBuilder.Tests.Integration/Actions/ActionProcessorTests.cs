@@ -567,6 +567,32 @@ public sealed class ActionProcessorTests : ActionTestBase
     }
 
     [Test]
+    public async Task APauseDuringAPass_LeavesTheRunsItHasNotClaimed()
+    {
+        var form = await ActionFormAsync(Action("pauses"));
+        Scripted.Scripts["pauses"] = (_, _) =>
+        {
+            Pause(true);
+            return Task.FromResult(ActionResult.Succeeded);
+        };
+        var entries = new List<StoredEntry>();
+        for (var i = 0; i < ActionRunQueue.AtATime + 2; i++)
+        {
+            entries.Add(await SubmitAsync(form));
+        }
+
+        await Pass.RunAsync(CancellationToken.None);
+
+        var waiting = 0;
+        foreach (var entry in entries)
+        {
+            waiting += (await Runs.ListForEntryAsync(entry.Id)).Count(run => run.Attempts == 0);
+        }
+
+        Assert.That(waiting, Is.GreaterThanOrEqualTo(2), "no more than the slots a pass had filled by then");
+    }
+
+    [Test]
     public async Task EachAttempt_TellsTheSitesHandlers_WhoseFailureChangesNothing()
     {
         var form = await ActionFormAsync(Action("works"), Action("fails"), Action("again"));
