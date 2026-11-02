@@ -219,7 +219,7 @@ test('explicit: nothing goes to the provider before the visitor agrees, then its
   await place.getByRole('button', { name: 'I am a person' }).click();
   await pressOnThePage(form.locator('button[data-jfb-nav="submit"]'));
   await expect(page.locator('main [data-jfb-outcome]')).toBeFocused();
-  expect(await stateOf(page, 'Clara Explicit'), 'the provider passed it').toBe('Submitted');
+  expect(await stateOf(page, 'Clara Explicit'), 'the provider passed it').toBe('Approved');
 });
 
 test('a check the provider refuses asks for a new one, keeping the answers, and the next one sends', async ({
@@ -248,7 +248,7 @@ test('a check the provider refuses asks for a new one, keeping the answers, and 
   await place.getByRole('button', { name: 'I am a person' }).click();
   await pressOnThePage(form.locator('button[data-jfb-nav="submit"]'));
   await expect(page.locator('main [data-jfb-outcome]')).toBeFocused();
-  expect(await stateOf(page, 'Rafa Refused')).toBe('Submitted');
+  expect(await stateOf(page, 'Rafa Refused')).toBe('Approved');
 });
 
 test("cmp: consent.grant('captcha') loads the provider's script, and after withdraw() the next page loads none", async ({
@@ -315,7 +315,7 @@ test('proof of work: solved in a worker in under 2 s at the default level, and t
     'in a worker',
   ).toBe(true);
 
-  expect(await stateOf(page, 'Pia Proof')).toBe('Submitted');
+  expect(await stateOf(page, 'Pia Proof')).toBe('Approved');
 });
 
 test('proof of work on a page of another origin is solved in slices, as no worker can start there', async ({
@@ -338,7 +338,7 @@ test('proof of work on a page of another origin is solved in slices, as no worke
     await pressOnThePage(form.locator('button[data-jfb-nav="submit"]'));
     await expect(page.locator('jfb-form [data-jfb-outcome]')).toBeFocused();
     expect(workers, 'none of its own').toEqual([]);
-    expect(await stateOf(page, 'Sol Slices')).toBe('Submitted');
+    expect(await stateOf(page, 'Sol Slices')).toBe('Approved');
   } finally {
     await site.stop();
   }
