@@ -42,6 +42,24 @@ internal static class FormBuilderProblems
     /// <summary>A file the form's entries do not hold (ADR-0145).</summary>
     public const string FileNotFoundCode = "file_not_found";
 
+    /// <summary>An action run, or the entry it is asked for, that the form does not hold (ADR-0158).</summary>
+    public const string ActionRunNotFoundCode = "action_run_not_found";
+
+    /// <summary>A retry of an uncertain run that was not confirmed, as its first attempt may have been delivered (section 4.4).</summary>
+    public const string RetryNeedsConfirmationCode = "retry_needs_confirmation";
+
+    /// <summary>A retry of a run that neither failed nor is uncertain (ADR-0158).</summary>
+    public const string RunNotRetryableCode = "run_not_retryable";
+
+    /// <summary>An action the form's draft does not hold (ADR-0158).</summary>
+    public const string ActionNotFoundCode = "action_not_found";
+
+    /// <summary>An action whose type the site lacks (ADR-0158).</summary>
+    public const string ActionTypeUnknownCode = "action_type_unknown";
+
+    /// <summary>A test run that reaches what the action is set up to reach, and was not confirmed (section 4.4).</summary>
+    public const string TestNeedsConfirmationCode = "test_needs_confirmation";
+
     /// <summary>A file a scanner quarantined (ADR-0144).</summary>
     public const string FileQuarantinedCode = "file_quarantined";
 
@@ -80,6 +98,30 @@ internal static class FormBuilderProblems
     /// <summary>A file the form's entries do not hold, or whose bytes are gone (ADR-0145).</summary>
     public static FormBuilderProblemResult FileNotFound() =>
         Problem(StatusCodes.Status404NotFound, FileNotFoundCode, "The form's entries hold no such file.");
+
+    /// <summary>An action run, or the entry it is asked for, that the form does not hold (ADR-0158).</summary>
+    public static FormBuilderProblemResult ActionRunNotFound() =>
+        Problem(StatusCodes.Status404NotFound, ActionRunNotFoundCode, "The form has no such entry or action run.");
+
+    /// <summary>A retry of an uncertain run without its confirmation (section 4.4).</summary>
+    public static FormBuilderProblemResult ActionRetryNeedsConfirmation() =>
+        Problem(StatusCodes.Status409Conflict, RetryNeedsConfirmationCode, "This action may already have been delivered. Confirm that it may go out a second time.");
+
+    /// <summary>A retry of a run that neither failed nor is uncertain (ADR-0158).</summary>
+    public static FormBuilderProblemResult ActionRunNotRetryable() =>
+        Problem(StatusCodes.Status409Conflict, RunNotRetryableCode, "Only an action that failed or may have been delivered can be retried.");
+
+    /// <summary>An action the form's draft does not hold (ADR-0158).</summary>
+    public static FormBuilderProblemResult ActionNotFound() =>
+        Problem(StatusCodes.Status404NotFound, ActionNotFoundCode, "The form's draft has no such action.");
+
+    /// <summary>An action whose type the site lacks (ADR-0158).</summary>
+    public static FormBuilderProblemResult ActionTypeUnknown() =>
+        Problem(StatusCodes.Status409Conflict, ActionTypeUnknownCode, "This site does not have the type of this action, so it cannot be tested.");
+
+    /// <summary>A test run that reaches what the action is set up to reach, without its confirmation (section 4.4).</summary>
+    public static FormBuilderProblemResult ActionTestNeedsConfirmation() =>
+        Problem(StatusCodes.Status409Conflict, TestNeedsConfirmationCode, "This test sends to the address the action is set up with. Confirm that it may.");
 
     /// <summary>A file a scanner quarantined, which nobody gets (ADR-0144).</summary>
     public static FormBuilderProblemResult FileQuarantined() =>

@@ -70,6 +70,9 @@ export const PROTECTION_PORT = 5532;
 export const PROTECTION_BASE_URL = `http://127.0.0.1:${PROTECTION_PORT}`;
 export const PROTECTION_STUB_PORT = 5561;
 
+/** The two hosts of the load-balancing suite, which CI starts on one SQL Server database (ROADMAP 8.1). */
+export const LB_PORTS = [5533, 5534] as const;
+
 /**
  * The host of the refused uploads (ROADMAP 7.3d, ADR-0006): the plain port its start-up wait reads, and the port with HTTPS
  * and HTTP/2, under a certificate of the Testing project's that nothing trusts, so its browser ignores that.

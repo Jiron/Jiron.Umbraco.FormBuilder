@@ -71,7 +71,7 @@ internal sealed record ManagementApiEndpoint(ApiDescription Description, IReadOn
     public string PathFor(Guid key)
     {
         var path = ManagementApiEndpoints.RouteValue().Replace(Template[Prefix.Length..], match =>
-            Description.ParameterDescriptions.FirstOrDefault(parameter => parameter.Source == BindingSource.Path && parameter.Name == match.Groups[1].Value)?.Type == typeof(int) ? "1" : key.ToString());
+            Description.ParameterDescriptions.FirstOrDefault(parameter => parameter.Source == BindingSource.Path && parameter.Name == match.Groups[1].Value)?.Type is { } routed && (routed == typeof(int) || routed == typeof(long)) ? "1" : key.ToString());
         var query = Description.ParameterDescriptions
             .Where(parameter => parameter.Source == BindingSource.Query && (parameter.Name == Key || IsRequired(parameter)))
             .Select(parameter => $"{parameter.Name}={(parameter.Name == Key ? key.ToString() : QueryValueOf(parameter.Type))}")

@@ -1,3 +1,4 @@
+using Jiron.Umbraco.FormBuilder.Core.Actions;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
@@ -17,6 +18,7 @@ namespace Jiron.Umbraco.FormBuilder.Core.Submissions;
 /// <param name="stats">The daily counts.</param>
 /// <param name="forms">The forms' versions, whose actions the entry was read with.</param>
 /// <param name="documents">Reads a version's definition.</param>
+/// <param name="settlement">Lets go of what no action can use any more (ADR-0158).</param>
 internal sealed class EntrySpamFolder(
     FormBuilderDatabase database,
     IEntryRepository entries,
@@ -24,7 +26,8 @@ internal sealed class EntrySpamFolder(
     IActionRunRepository runs,
     IDailyStatRepository stats,
     IFormRepository forms,
-    FormDocuments documents)
+    FormDocuments documents,
+    ActionSettlement settlement)
 {
     /// <summary>The kind of the event that records the move.</summary>
     public const string NotSpamEvent = "notSpam";
@@ -52,9 +55,11 @@ internal sealed class EntrySpamFolder(
         var timeline = await events.ListForEntryAsync(entry.Id, cancellationToken);
         var queued = unverified || definition is null ? [] : SubmissionEntries.Runs(definition, SubmissionEntries.ChosenActions(timeline));
         var change = Guid.NewGuid();
-        return await database.WriteAsync(
+        IReadOnlyList<StoredEntryFile> gone = [];
+        var taken = await database.WriteAsync(
             async _ =>
             {
+                gone = [];
                 var moved = await entries.ChangeStateAsync(entry.Id, EntryState.Spam, unverified ? EntryState.Unverified : EntryState.Submitted, userKey, cancellationToken);
                 if (moved is null)
                 {
@@ -68,8 +73,18 @@ internal sealed class EntrySpamFolder(
                 }
 
                 await stats.IncrementAsync(moved.FormId, [new DailyStatCount(SubmissionEntries.SubmissionsMetric)], cancellationToken);
+
+                // No action may run for it now: what was kept for one goes in this unit. A user's move can still be undone, so
+                // that waits with it (8.5, ADR-0023).
+                if (queued.Count == 0 && definition is not null && userKey is null)
+                {
+                    gone = await settlement.SettleInUnitAsync(moved.Id, definition, cancellationToken);
+                }
+
                 return moved;
             },
             cancellationToken);
+        await settlement.DeleteBytesAsync(gone);
+        return taken;
     }
 }

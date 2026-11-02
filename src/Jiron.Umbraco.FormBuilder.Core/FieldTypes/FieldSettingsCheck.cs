@@ -37,13 +37,16 @@ public sealed partial class FieldSettingsCheck
     public void Invalid(string setting, string message)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(message);
-        if (setting is null || !SettingPath().IsMatch(setting))
+        if (!IsSettingPath(setting))
         {
             throw new ArgumentException($"'{setting}' is no place in the settings: a setting's name, then .name or [index].", nameof(setting));
         }
 
         _problems.Add(DefinitionErrors.SettingInvalid, $"{_path}.{setting}", message);
     }
+
+    /// <summary>Whether a text is a place in the settings: a setting's name, then <c>.name</c> and <c>[index]</c>.</summary>
+    internal static bool IsSettingPath(string? setting) => setting is not null && SettingPath().IsMatch(setting);
 
     [GeneratedRegex(@"^[a-z][A-Za-z0-9]*(?:\.[a-z][A-Za-z0-9]*|\[(?:0|[1-9][0-9]{0,8})\])*$", RegexOptions.CultureInvariant)]
     private static partial Regex SettingPath();

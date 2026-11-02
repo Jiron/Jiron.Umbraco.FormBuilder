@@ -1,0 +1,192 @@
+using Jiron.Umbraco.FormBuilder.Core.Audit;
+using Jiron.Umbraco.FormBuilder.Core.Definitions;
+using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
+using Jiron.Umbraco.FormBuilder.Core.Forms;
+using Jiron.Umbraco.FormBuilder.Core.MergeTags;
+using Jiron.Umbraco.FormBuilder.Core.Persistence;
+using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
+
+namespace Jiron.Umbraco.FormBuilder.Core.Actions;
+
+/// <summary>How a request about an action run came out.</summary>
+internal enum ActionRunRetryStatus
+{
+    /// <summary>The run is queued again.</summary>
+    Queued,
+
+    /// <summary>The form, the entry or the run does not exist, or they do not belong together.</summary>
+    NotFound,
+
+    /// <summary>The run is uncertain and the request did not confirm it: its first attempt may have been delivered.</summary>
+    NeedsConfirmation,
+
+    /// <summary>The run did not fail and is not uncertain, so there is nothing to retry.</summary>
+    NotRetryable,
+}
+
+/// <summary>What a retry of an action run came to.</summary>
+/// <param name="Status">How it came out.</param>
+/// <param name="Run">The run as it is then; null when it was not found.</param>
+internal sealed record ActionRunRetry(ActionRunRetryStatus Status, StoredActionRun? Run);
+
+/// <summary>
+/// The action runs of an entry, and the retry from the deliveries log (section 4.4, ADR-0040, ADR-0158): a run that failed
+/// or is uncertain starts its attempts over, and an uncertain one only with a confirmation, because its first attempt may
+/// already have been delivered. Committing the retry wakes the worker.
+/// </summary>
+internal sealed class ActionRunRetries(FormBuilderDatabase database, IFormRepository forms, IEntryRepository entries, IActionRunRepository runs, IAuditRepository audit)
+{
+    /// <summary>The audit action of a retry; the details name the run and whether it was uncertain.</summary>
+    public const string RetriedAction = "entry.actionRetried";
+
+    /// <summary>An entry's runs in the order they were queued; null when the form has no such entry.</summary>
+    /// <param name="formKey">The form.</param>
+    /// <param name="entryKey">The entry.</param>
+    /// <param name="cancellationToken">Cancels the reads.</param>
+    public async Task<IReadOnlyList<StoredActionRun>?> ListAsync(Guid formKey, Guid entryKey, CancellationToken cancellationToken = default) =>
+        await EntryAsync(formKey, entryKey, cancellationToken) is { } entry ? await runs.ListForEntryAsync(entry.Id, cancellationToken) : null;
+
+    /// <summary>Queues a run again.</summary>
+    /// <param name="formKey">The form.</param>
+    /// <param name="entryKey">The entry.</param>
+    /// <param name="runId">The run.</param>
+    /// <param name="confirmed">Whether the user confirmed that an uncertain run may go out a second time.</param>
+    /// <param name="userKey">Who asks.</param>
+    /// <param name="cancellationToken">Cancels the unit of work.</param>
+    /// <exception cref="FormBuilderConcurrencyException">The run's state changed between the read and the retry.</exception>
+    public async Task<ActionRunRetry> RetryAsync(Guid formKey, Guid entryKey, long runId, bool confirmed, Guid userKey, CancellationToken cancellationToken = default)
+    {
+        if (await EntryAsync(formKey, entryKey, cancellationToken) is not { } entry
+            || await runs.GetAsync(runId, cancellationToken) is not { } run
+            || run.EntryId != entry.Id)
+        {
+            return new ActionRunRetry(ActionRunRetryStatus.NotFound, null);
+        }
+
+        if (run.State == ActionRunState.Uncertain && !confirmed)
+        {
+            return new ActionRunRetry(ActionRunRetryStatus.NeedsConfirmation, run);
+        }
+
+        if (run.State is not (ActionRunState.Failed or ActionRunState.Uncertain))
+        {
+            return new ActionRunRetry(ActionRunRetryStatus.NotRetryable, run);
+        }
+
+        return await database.WriteAsync(
+            async _ =>
+            {
+                var requeued = await runs.RequeueAsync(runId, run.State, cancellationToken);
+                if (requeued is null)
+                {
+                    return new ActionRunRetry(ActionRunRetryStatus.NotFound, null);
+                }
+
+                var details = new AuditDetails().Add("entry", entry.Key).Add("run", runId).Add("uncertain", run.State == ActionRunState.Uncertain);
+                await audit.AddAsync(new NewAuditEntry(RetriedAction, FormAudit.EntityType, formKey, userKey, details), cancellationToken);
+                return new ActionRunRetry(ActionRunRetryStatus.Queued, requeued);
+            },
+            cancellationToken);
+    }
+
+    private async Task<StoredEntry?> EntryAsync(Guid formKey, Guid entryKey, CancellationToken cancellationToken)
+    {
+        if (await entries.GetAsync(entryKey, cancellationToken) is not { } entry || await forms.GetByIdAsync(entry.FormId, cancellationToken) is not { } form)
+        {
+            return null;
+        }
+
+        return form.Key == formKey ? entry : null;
+    }
+}
+
+/// <summary>How a test run of an action came out.</summary>
+internal enum ActionTestStatus
+{
+    /// <summary>It ran; see the result.</summary>
+    Done,
+
+    /// <summary>The form's draft does not exist, or has no such action.</summary>
+    NotFound,
+
+    /// <summary>The site has no such action type.</summary>
+    UnknownType,
+
+    /// <summary>The type reaches what the action is set up to reach, and the request did not confirm that.</summary>
+    NeedsConfirmation,
+}
+
+/// <summary>What a request for a test run of an action came to.</summary>
+/// <param name="Status">How it came out.</param>
+/// <param name="Result">The type's result; null unless it ran.</param>
+internal sealed record ActionTest(ActionTestStatus Status, ActionTestResult? Result = null);
+
+/// <summary>
+/// Test runs of a draft's actions against a sample entry (section 4.4, ADR-0158): nothing is stored and no run changes. What
+/// a test run reaches is the type's, by its <see cref="ActionTypeDeclaration.Test"/>: a type that reaches what the action is
+/// set up to reach runs only after a confirmation.
+/// </summary>
+internal sealed class ActionTestRuns(IFormBuilderFormService forms, ActionTypeRegistry types, ActionSettingLocks locks, TimeProvider time)
+{
+    /// <summary>The code a type's failure stands under when it threw.</summary>
+    public const string FailedMessage = "The test could not finish.";
+
+    /// <summary>Runs the action of the form's draft against a sample entry.</summary>
+    /// <param name="formKey">The form.</param>
+    /// <param name="actionKey">The action in its draft.</param>
+    /// <param name="user">Who asks.</param>
+    /// <param name="confirmed">Whether the user confirmed that the test reaches what the action is set up to reach.</param>
+    /// <param name="cancellationToken">The request's cancellation.</param>
+    public async Task<ActionTest> TestAsync(Guid formKey, Guid actionKey, ActionTestUser user, bool confirmed, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(user);
+        if (await forms.GetDraftAsync(formKey, cancellationToken) is not { } draft
+            || draft.Definition is not { } definition
+            || definition.Actions.FirstOrDefault(action => action.Key == actionKey) is not { } action)
+        {
+            return new ActionTest(ActionTestStatus.NotFound);
+        }
+
+        if (types.Find(action.Type) is not { } type)
+        {
+            return new ActionTest(ActionTestStatus.UnknownType);
+        }
+
+        if (type.Declaration.Test == ActionTestKind.AfterConfirmation && !confirmed)
+        {
+            return new ActionTest(ActionTestStatus.NeedsConfirmation);
+        }
+
+        var context = new ActionTestContext
+        {
+            Action = locks.Apply(action),
+            User = user,
+            Scope = new MergeTagScope
+            {
+                Form = definition,
+                FormName = draft.Form.Name,
+                FormAlias = draft.Form.Alias,
+                Culture = string.Empty,
+                Entry = new MergeTagEntry { Key = Guid.Empty, Number = 0, State = "submitted", Submitted = time.GetUtcNow() },
+                Answers = SampleAnswers(definition),
+            },
+        };
+        using var limit = new CancellationTokenSource(type.Declaration.AttemptTimeout ?? ActionTypeRegistry.LongestAttempt, time);
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(limit.Token, cancellationToken);
+        try
+        {
+            return new ActionTest(ActionTestStatus.Done, await type.TestAsync(context, linked.Token).WaitAsync(linked.Token));
+        }
+        catch (Exception exception) when (exception is not OutOfMemoryException && !cancellationToken.IsCancellationRequested)
+        {
+            // Its message may hold a secret, so the editor reads only that it failed; the log of the type has the rest.
+            return new ActionTest(ActionTestStatus.Done, new ActionTestResult(ActionTestOutcome.Failed, FailedMessage));
+        }
+    }
+
+    // A made-up answer for each field that holds a value and takes text: the field's label, or its alias.
+    private static MergeTagAnswers SampleAnswers(FormDefinition definition) =>
+        new(definition.Pages.SelectMany(page => page.Groups).SelectMany(group => group.Fields).SelectMany(field => field.Fields.Prepend(field))
+            .Where(field => field.Alias is not null && field.Fields.Count == 0)
+            .Select(field => new MergeTagAnswer(field.Key, [new FieldValue(field.Label?.Default ?? field.Alias!)])));
+}

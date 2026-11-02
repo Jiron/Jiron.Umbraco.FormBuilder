@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Jiron.Umbraco.FormBuilder.Core.Actions;
 using Jiron.Umbraco.FormBuilder.Core.Audit;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Definitions.Exchange;
@@ -89,6 +90,7 @@ internal sealed partial class FormBuilderFormExchangeService(
     FormCreation creation,
     FormImportLists importLists,
     FormDefinitionSerializer serializer,
+    ActionTypeRegistry actionTypes,
     IFormBuilderMergeTagService mergeTags,
     TimeProvider time,
     FormBuilderChanges<FormBuilderFormExchangeService> changes,
@@ -236,7 +238,7 @@ internal sealed partial class FormBuilderFormExchangeService(
         // Always new keys (12.5 adds the import into an existing form); the theme and the option lists as this site has
         // them, the lists the import creates written with the form (ADR-0078).
         var themeNotes = new List<FormImportNote>();
-        var renewed = await WithThemeAsync(DefinitionKeys.Renew(envelope.Definition, serializer), themeNotes, cancellationToken);
+        var renewed = WithActionsThisSiteCanRun(await WithThemeAsync(DefinitionKeys.Renew(envelope.Definition, serializer), themeNotes, cancellationToken), themeNotes);
         for (var attempt = 1; ; attempt++)
         {
             var notes = new List<FormImportNote>(themeNotes);
@@ -346,6 +348,45 @@ internal sealed partial class FormBuilderFormExchangeService(
     }
 
     // A theme the site lacks gives way to the default theme (IA 4, ADR-0046).
+    // The definition with an action that this site cannot run switched off, each with a note (ADR-0046, ADR-0158): one whose
+    // type the site lacks, and one whose type says that the site lacks configuration it needs.
+    private FormDefinition WithActionsThisSiteCanRun(FormDefinition definition, List<FormImportNote> notes)
+    {
+        var actions = JsonPaths.Property(JsonPaths.Root, "actions");
+        var changed = definition.Actions.ToArray();
+        var any = false;
+        for (var i = 0; i < changed.Length; i++)
+        {
+            var action = changed[i];
+            var path = JsonPaths.Index(actions, i);
+            var lacking = actionTypes.Find(action.Type) is { } type
+                ? MissingConfiguration(type, action).Select(key => new FormImportNote(FormImportNotes.ActionConfigurationMissing, path, key)).ToList()
+                : [new FormImportNote(FormImportNotes.ActionTypeMissing, path, action.Type)];
+            if (lacking.Count > 0)
+            {
+                notes.AddRange(lacking);
+                changed[i] = action with { Enabled = false };
+                any = true;
+            }
+        }
+
+        return any ? definition with { Actions = changed } : definition;
+    }
+
+    // What the site lacks for an action. A file's settings were never held to the type's schema, and those that do not fit are
+    // the publish check's to refuse.
+    private static IReadOnlyList<string> MissingConfiguration(IFormBuilderActionType type, FormAction action)
+    {
+        try
+        {
+            return type.MissingConfiguration(action);
+        }
+        catch (JsonException)
+        {
+            return [];
+        }
+    }
+
     private async Task<FormDefinition> WithThemeAsync(FormDefinition definition, List<FormImportNote> notes, CancellationToken cancellationToken)
     {
         if (definition.Settings.Appearance.Theme is not { } theme || await themes.GetByAliasAsync(theme, cancellationToken) is not null)

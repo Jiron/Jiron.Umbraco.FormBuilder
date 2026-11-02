@@ -162,7 +162,7 @@ internal sealed record FormImport(FormInfo Form, IReadOnlyList<FormImportNote> N
 /// <summary>Something an import changed or could not resolve.</summary>
 /// <param name="Code">One of <see cref="FormImportNotes"/>.</param>
 /// <param name="Path">Where it is in the file.</param>
-/// <param name="Alias">The alias of the theme or option list it is about, or null when the file does not name one.</param>
+/// <param name="Alias">The alias of the theme, option list or action type it is about or the key of the configuration, or null when the file does not name one.</param>
 internal sealed record FormImportNote(string Code, string Path, string? Alias);
 
 /// <summary>The codes of an import's notes (ADR-0046).</summary>
@@ -185,6 +185,18 @@ internal static class FormImportNotes
     /// manage the library, or the list's kind's checks on this site refused it (ADR-0078). The fields keep its key.
     /// </summary>
     public const string OptionListMissing = "option_list_missing";
+
+    /// <summary>
+    /// The site lacks configuration the action needs, so it arrives switched off (ADR-0046, ADR-0158): the path names the
+    /// action, and the alias the configuration's key.
+    /// </summary>
+    public const string ActionConfigurationMissing = "action_configuration_missing";
+
+    /// <summary>
+    /// The site has no action type of the alias the note names, so the action arrives switched off (ADR-0158); publishing
+    /// refuses the form until it has one, or the action is removed.
+    /// </summary>
+    public const string ActionTypeMissing = "action_type_missing";
 }
 
 /// <summary>An export file (ADR-0046).</summary>

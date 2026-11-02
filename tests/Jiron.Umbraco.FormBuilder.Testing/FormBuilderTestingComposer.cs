@@ -1,5 +1,7 @@
 using System.Net;
+using Jiron.Umbraco.FormBuilder.Core.Composing;
 using Jiron.Umbraco.FormBuilder.Core.Outbound;
+using Jiron.Umbraco.FormBuilder.Testing.Actions;
 using Jiron.Umbraco.FormBuilder.Testing.Csp;
 using Jiron.Umbraco.FormBuilder.Testing.Endpoints;
 using Jiron.Umbraco.FormBuilder.Testing.People;
@@ -48,6 +50,16 @@ public sealed class FormBuilderTestingComposer : IComposer
         {
             builder.Services.Configure<KestrelServerOptions>(kestrel =>
                 kestrel.ConfigureHttpsDefaults(https => https.ServerCertificate = TestCertificate.Create(httpsKey, TimeProvider.System)));
+        }
+
+        if (section.GetValue<bool>(nameof(FormBuilderTestingOptions.StandInActionTypes)))
+        {
+            builder.JironFormBuilder().ActionTypes().Append<StandInEmailActionType>().Append<StandInWebhookActionType>();
+        }
+
+        if (!string.IsNullOrEmpty(section.GetValue<string>(nameof(FormBuilderTestingOptions.DeliveriesFile))))
+        {
+            builder.JironFormBuilder().ActionTypes().Append<RecordingActionType>();
         }
 
         if (section.GetValue<bool>(nameof(FormBuilderTestingOptions.Clock)))

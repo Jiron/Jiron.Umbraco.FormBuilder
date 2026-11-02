@@ -45,6 +45,10 @@ export default defineConfig({
       dependencies: ['website'],
       use: browser,
     },
+    // Two hosts on one SQL Server database in CI's load-balancing job; JFB_E2E_LB=1 proves the suite itself on one host.
+    ...(process.env['SA_PASSWORD'] || process.env['JFB_E2E_LB']
+      ? [{ name: 'lb', testDir: './specs/lb', use: browser }]
+      : []),
     {
       // Sites that must not start: each test runs the built demo in a process of its own and reads its log; no browser.
       name: 'startup',

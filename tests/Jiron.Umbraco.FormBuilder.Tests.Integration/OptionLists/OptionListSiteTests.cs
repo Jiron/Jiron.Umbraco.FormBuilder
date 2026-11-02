@@ -133,7 +133,7 @@ public sealed class OptionListSiteTests : RepositoryTestBase
             Assert.That(GetRequiredService<CacheRefresherCollection>()[FormBuilderOptionListCacheRefresher.UniqueId], Is.InstanceOf<FormBuilderOptionListCacheRefresher>());
             Assert.That(Options, Is.InstanceOf<FormBuilderOptionService>());
             Assert.That(GetRequiredService<FormBuilderOptionSourceCollection>().Select(source => source.GetType()), Is.EqualTo(StandardOptionSources.All));
-            Assert.That(GetRequiredService<IEnumerable<IFormPublishCheck>>().Select(check => check.GetType()), Is.EqualTo(new[] { typeof(StructuralPublishCheck), typeof(CaptchaPublishCheck), typeof(OptionSourcePublishCheck) }), "the structural validation first");
+            Assert.That(GetRequiredService<IEnumerable<IFormPublishCheck>>().Select(check => check.GetType()), Is.EqualTo(new[] { typeof(StructuralPublishCheck), typeof(CaptchaPublishCheck), typeof(OptionSourcePublishCheck), typeof(Core.Forms.ActionPublishCheck) }), "the structural validation first");
             Assert.That(german.Options.Select(option => option.Label).Take(2), Is.EqualTo(new[] { "Januar", "Februar" }));
         });
     }

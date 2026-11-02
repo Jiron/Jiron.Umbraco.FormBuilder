@@ -14,6 +14,15 @@ public sealed class FormBuilderTestingOptions
     public const string SectionName = "JironFormBuilderTesting";
 
     /// <summary>
+    /// Registers stand-ins under the aliases of the action types later steps bring, for hosts that test what forms do
+    /// with actions.
+    /// </summary>
+    public bool StandInActionTypes { get; set; }
+
+    /// <summary>A file every host of a test appends its deliveries to, which registers the action type that does so (ADR-0158).</summary>
+    public string? DeliveriesFile { get; set; }
+
+    /// <summary>
     /// True to answer the test-only paths under <c>/jfb-testing/</c>. Even then they answer only in the Development
     /// environment and only requests from this machine (<see cref="Endpoints.TestEndpointsGate"/>).
     /// </summary>

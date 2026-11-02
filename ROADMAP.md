@@ -1058,13 +1058,12 @@ A settings change raises a notification and a cache refresher: the saving server
 | Port | Use |
 | --- | --- |
 | 5500 | Demo site (`scripts/demo.ps1 start`) |
-| 5501 | Second demo instance on the same database (load-balancing smoke test, SQL Server in CI only) |
 | 5510 | Research sandbox (Phase 1) |
 | 5520 | E2E test host (fresh database per run) |
 | 5521 | Static page server for headless and cross-origin tests |
 | 5522 to 5529 | Extra E2E hosts for suites that need their own (privacy on 5522, load on 5523, resilience with restarts on 5524, the strict site behind the output cache and a strict CSP on 5525, 6.4k; the hosts that must refuse to start on 5526 and 5527, 4.4a, which never listen; refused uploads over HTTPS and HTTP/2 on 5528 and 5529, 7.3d), §3.3 |
 | 5530 | Install-test site (packages from the local feed) |
-| 5531 to 5539 | More E2E hosts that run beside the others (places and members on 5531, protection on the page on 5532) |
+| 5531 to 5539 | More E2E hosts that run beside the others (places and members on 5531, protection on the page on 5532, the two hosts of the load-balancing suite on 5533 and 5534, on one SQL Server database in CI) |
 | 5540 | Umbraco 18 sandbox (Phase 19) |
 | 5541 | Umbraco 18 demo (Phase 19) |
 | 5550 | Vite dev server for the client packages (`--port 5550 --strictPort`) |
@@ -2534,6 +2533,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - "not spam" on such a form sends an entry without `VerifiedUtc` to `Unverified` with the verification mail (§4.4).
   - **Manual approval:**
     - The approved and rejected triggers, with bulk and single changes.
+    - **Letting go after a user's change** (ADR-0158): a state change that leaves no trigger settles the entry, once its undo window is over when a user made it (8.1 leaves a user's "not spam" with no run unsettled for this).
   - Done when:
     - tests pass, and E2E double opt-in works from the pickup email, including a simulated link-scanner GET that verifies nothing; no action runs before the confirmation, and after it the submitted and verified actions run together in the order shown. A test shows that verification mail obeys the visitor-address limits (§4.10);
     - tests cover the approved and rejected triggers, for single and bulk changes;

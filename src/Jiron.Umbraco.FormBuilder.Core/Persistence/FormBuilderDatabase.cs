@@ -1,6 +1,7 @@
 using System.Collections.Immutable;
 using System.Runtime.CompilerServices;
 using Microsoft.Extensions.Logging;
+using Umbraco.Cms.Core.Notifications;
 using Umbraco.Cms.Infrastructure.Persistence;
 using Umbraco.Cms.Infrastructure.Scoping;
 
@@ -58,6 +59,18 @@ internal sealed partial class FormBuilderDatabase(
     /// its effects outside the database must wait for that owner.
     /// </summary>
     public bool InUnitOfWork => _inside.Value || scopeAccessor.AmbientScope is not null;
+
+    /// <summary>
+    /// Publishes a notification when the outermost scope around this unit commits, and never after a rollback (ADR-0007):
+    /// the wake of what the unit queued.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">No unit of work runs.</exception>
+    public void PublishAfterCommit(INotification notification)
+    {
+        ArgumentNullException.ThrowIfNull(notification);
+        var scope = scopeAccessor.AmbientScope ?? throw new InvalidOperationException("Only a unit of work has a commit to wait for.");
+        scope.Notifications.Publish(notification);
+    }
 
     /// <summary>
     /// Runs read-only work. A statement stopped through the unit's token, its caller's or an outer unit's, fails with

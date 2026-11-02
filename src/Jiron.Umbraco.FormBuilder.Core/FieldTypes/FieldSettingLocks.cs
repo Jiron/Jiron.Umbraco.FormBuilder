@@ -23,8 +23,8 @@ internal sealed record FieldSettingLock(string Type, FieldSettingDescriptor Sett
 /// The host's designer locks of field settings (<c>JironFormBuilder:Designer:SettingLocks</c> of kind <c>field</c>,
 /// ADR-0060), resolved against the site's field types. The site runs a form with the locks applied, and a draft save
 /// refuses a locked setting that an editor gives another value. Start-up refuses locks that do not fit the field types
-/// (<see cref="FieldSettingLockStartupCheck"/>), so a running site always resolves them; locks of kind <c>action</c> wait
-/// for the action types (8.1).
+/// (<see cref="FieldSettingLockStartupCheck"/>), so a running site always resolves them; locks of kind <c>action</c> are
+/// <see cref="Actions.ActionSettingLocks"/>'s.
 /// </summary>
 internal sealed class FieldSettingLocks
 {
@@ -50,7 +50,7 @@ internal sealed class FieldSettingLocks
     /// <summary>
     /// What keeps the locks from fitting the site's field types, each naming the lock's key and never its value: a type or
     /// a setting the site lacks, a value the setting refuses, or a required setting kept without a value. Locks of another
-    /// shape are the options' own validation's (ADR-0042), and those of kind <c>action</c> wait for 8.1.
+    /// shape are the options' own validation's (ADR-0042), and those of kind <c>action</c> have a check of their own.
     /// </summary>
     public static IReadOnlyList<string> Problems(IList<DesignerSettingLock> locks, FieldTypeRegistry registry)
     {
@@ -130,21 +130,45 @@ internal sealed class FieldSettingLocks
 
         foreach (var (field, path) in FieldsOf(definition))
         {
-            foreach (var settingLock in Of(field.Type))
+            var kept = before.TryGetValue(field.Key, out var earlier) && string.Equals(earlier.Type, field.Type, StringComparison.Ordinal) ? earlier.Settings : null;
+            if (FirstRefused(field.Settings, kept, Of(field.Type)) is { } settingLock)
             {
-                var name = settingLock.Setting.Name;
-                if (field.Settings is not { } settings || !settings.TryGetProperty(name, out var given)
-                    || ((settingLock.Value ?? settingLock.Setting.Default) is { } allowed && Same(settingLock.Setting, given, allowed))
-                    || (before.TryGetValue(field.Key, out var earlier) && string.Equals(earlier.Type, field.Type, StringComparison.Ordinal)
-                        && earlier.Settings is { } kept && kept.TryGetProperty(name, out var keptValue) && Same(settingLock.Setting, given, keptValue)))
-                {
-                    continue;
-                }
-
-                throw new FormBuilderSettingLockedException(JsonPaths.Property(JsonPaths.Property(path, "settings"), name), settingLock.ConfigurationKey);
+                throw new FormBuilderSettingLockedException(JsonPaths.Property(JsonPaths.Property(path, "settings"), settingLock.Setting.Name), settingLock.ConfigurationKey);
             }
         }
     }
+
+    /// <summary>
+    /// The first lock whose setting has a value of its own: neither the lock's (the setting's default, for a lock without
+    /// a value) nor the one kept from before the lock came; null when there is none. A setting left out is always fine.
+    /// </summary>
+    /// <param name="settings">The settings to save.</param>
+    /// <param name="kept">The settings the stored draft holds for the same element and type, or null.</param>
+    /// <param name="locks">The locks of the element's type.</param>
+    internal static FieldSettingLock? FirstRefused(SettingsObject? settings, SettingsObject? kept, ImmutableArray<FieldSettingLock> locks)
+    {
+        foreach (var settingLock in locks)
+        {
+            var name = settingLock.Setting.Name;
+            if (settings is null || !settings.TryGetProperty(name, out var given)
+                || ((settingLock.Value ?? settingLock.Setting.Default) is { } allowed && Same(settingLock.Setting, given, allowed))
+                || (kept is not null && kept.TryGetProperty(name, out var keptValue) && Same(settingLock.Setting, given, keptValue)))
+            {
+                continue;
+            }
+
+            return settingLock;
+        }
+
+        return null;
+    }
+
+    /// <summary>Whether a lock is of the kind, with a type, a setting and a value of the right shape.</summary>
+    internal static bool IsWellFormed(DesignerSettingLock settingLock, string kind) =>
+        string.Equals(settingLock.Kind, kind, StringComparison.OrdinalIgnoreCase)
+        && FormBuilderOptionsValidator.IsTypeAlias(settingLock.Type)
+        && FormBuilderOptionsValidator.IsSettingName(settingLock.Setting)
+        && settingLock.Value is not { Length: > FormBuilderOptionsValidator.MaxLockValueLength };
 
     private static FrozenDictionary<string, ImmutableArray<FieldSettingLock>> Build(IList<DesignerSettingLock> locks, FieldTypeRegistry registry)
     {
@@ -167,7 +191,7 @@ internal sealed class FieldSettingLocks
         for (var i = 0; i < locks.Count; i++)
         {
             // The options' own validation refuses a lock of another shape and a second lock of one setting (ADR-0042).
-            if (locks[i] is { } settingLock && IsFieldLock(settingLock) && seen.Add((settingLock.Type!, settingLock.Setting!))
+            if (locks[i] is { } settingLock && IsWellFormed(settingLock, DesignerSettingLock.FieldKind) && seen.Add((settingLock.Type!, settingLock.Setting!))
                 && Resolve(settingLock, string.Create(CultureInfo.InvariantCulture, $"{Root}:{i}"), registry, problems) is { } found)
             {
                 resolved.Add(found);
@@ -176,12 +200,6 @@ internal sealed class FieldSettingLocks
 
         return resolved;
     }
-
-    private static bool IsFieldLock(DesignerSettingLock settingLock) =>
-        string.Equals(settingLock.Kind, DesignerSettingLock.FieldKind, StringComparison.OrdinalIgnoreCase)
-        && FormBuilderOptionsValidator.IsTypeAlias(settingLock.Type)
-        && FormBuilderOptionsValidator.IsSettingName(settingLock.Setting)
-        && settingLock.Value is not { Length: > FormBuilderOptionsValidator.MaxLockValueLength };
 
     private static FieldSettingLock? Resolve(DesignerSettingLock settingLock, string key, FieldTypeRegistry registry, List<string> problems)
     {
@@ -195,28 +213,41 @@ internal sealed class FieldSettingLocks
             return null;
         }
 
+        return ResolveSetting(settingLock, key, "field type", "a field", type.SettingsSchema, problems);
+    }
+
+    /// <summary>A lock resolved against its type's settings; null, with what is wrong, when it does not fit.</summary>
+    /// <param name="settingLock">The lock, of the right shape.</param>
+    /// <param name="key">The lock's key.</param>
+    /// <param name="kind">What the type is, in words: <c>field type</c>.</param>
+    /// <param name="element">What has the settings, in words: <c>a field</c>.</param>
+    /// <param name="schema">The type's settings.</param>
+    /// <param name="problems">Where the problems go.</param>
+    internal static FieldSettingLock? ResolveSetting(DesignerSettingLock settingLock, string key, string kind, string element, FieldSettingsSchema schema, List<string> problems)
+    {
+        var alias = settingLock.Type!;
         var name = settingLock.Setting!;
-        var settings = type.SettingsSchema.Settings;
-        if (type.SettingsSchema.Find(name) is not { } setting)
+        var settings = schema.Settings;
+        if (schema.Find(name) is not { } setting)
         {
             problems.Add(settings.IsEmpty
-                ? $"{key}:Setting ('{name}') is not a setting of the field type '{alias}', which has no settings."
+                ? $"{key}:Setting ('{name}') is not a setting of the {kind} '{alias}', which has no settings."
                 : settings.FirstOrDefault(each => string.Equals(each.Name, name, StringComparison.OrdinalIgnoreCase)) is { } spelt
-                    ? $"{key}:Setting ('{name}') is not a setting of the field type '{alias}'; names are compared exactly, and it has '{spelt.Name}'."
-                    : $"{key}:Setting ('{name}') is not a setting of the field type '{alias}'; its settings are {Names(settings.Select(each => each.Name))}.");
+                    ? $"{key}:Setting ('{name}') is not a setting of the {kind} '{alias}'; names are compared exactly, and it has '{spelt.Name}'."
+                    : $"{key}:Setting ('{name}') is not a setting of the {kind} '{alias}'; its settings are {Names(settings.Select(each => each.Name))}.");
             return null;
         }
 
         JsonElement? value = null;
         if (settingLock.Value is { } text && !TryRead(setting, text, out value))
         {
-            problems.Add($"{key}:Value is not a value of the setting '{name}' of the field type '{alias}', which takes {Takes(setting)}.");
+            problems.Add($"{key}:Value is not a value of the setting '{name}' of the {kind} '{alias}', which takes {Takes(setting)}.");
             return null;
         }
 
         if (value is null && setting.Rules.Required)
         {
-            problems.Add($"{key} locks the required setting '{name}' of the field type '{alias}' without a value; a field cannot do without one, so give the lock its Value.");
+            problems.Add($"{key} locks the required setting '{name}' of the {kind} '{alias}' without a value; {element} cannot do without one, so give the lock its Value.");
             return null;
         }
 
@@ -333,19 +364,21 @@ internal sealed class FieldSettingLocks
     }
 
     // A field's settings with its type's locks applied; the same instance when they change nothing.
-    private SettingsObject? SettingsOf(FormField field)
+    private SettingsObject? SettingsOf(FormField field) => Applied(field.Settings, Of(field.Type));
+
+    /// <summary>Settings with their type's locks applied; the same instance when they change nothing.</summary>
+    internal static SettingsObject? Applied(SettingsObject? given, ImmutableArray<FieldSettingLock> locks)
     {
-        var locks = Of(field.Type);
         if (locks.IsEmpty)
         {
-            return field.Settings;
+            return given;
         }
 
         var locked = locks.Select(each => each.Setting.Name).ToHashSet(StringComparer.Ordinal);
         var json = Write(writer =>
         {
             writer.WriteStartObject();
-            if (field.Settings is { } settings)
+            if (given is { } settings)
             {
                 foreach (var property in settings.Value.EnumerateObject().Where(property => !locked.Contains(property.Name)))
                 {
@@ -366,7 +399,7 @@ internal sealed class FieldSettingLocks
         });
         using var document = JsonDocument.Parse(json);
         var applied = CanonicalJson.IsLeftOut(document.RootElement) ? null : SettingsObject.From(document.RootElement);
-        return Equals(applied, field.Settings) ? field.Settings : applied;
+        return Equals(applied, given) ? given : applied;
     }
 
     // Every field with its path, in document order: a group's fields, each followed by its child fields.

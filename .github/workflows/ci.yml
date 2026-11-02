@@ -229,7 +229,7 @@ jobs:
           path: ${{ github.workspace }}/.nuget/packages
           key: nuget-${{ runner.os }}-${{ hashFiles('global.json', 'Directory.Packages.props', 'NuGet.config', '**/*.csproj') }}
           restore-keys: nuget-${{ runner.os }}-
-      # Both demo instances (ports 5500 and 5501, ROADMAP 4.11) share this database.
+      # Both hosts of the suite (ports 5533 and 5534, ROADMAP 4.11) share this database.
       - name: Create the shared database
         run: docker exec "${{ job.services.mssql.id }}" /opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P "$SA_PASSWORD" -b -Q "CREATE DATABASE JfbLoadBalancing"
       - name: Install the browser tests
@@ -237,15 +237,10 @@ jobs:
         run: |
           npm ci --no-audit --no-fund
           npx playwright install --with-deps chromium
-      # Step 8.1 adds the `lb` project, its specs and the two hosts on the shared database. Until then the job
-      # proves the service and the database, and says that the suite is still to come.
+      # The `lb` project starts the two hosts itself: every run is delivered once, whichever server got the submission.
       - name: Load-balancing suite (Chromium)
-        if: ${{ hashFiles('tests/e2e/specs/lb/**') != '' }}
         working-directory: tests/e2e
         run: npx playwright test --project=lb
-      - name: The load-balancing suite comes with ROADMAP 8.1
-        if: ${{ hashFiles('tests/e2e/specs/lb/**') == '' }}
-        run: echo "::notice title=Load balancing::No load-balancing specs yet; ROADMAP step 8.1 fills in this job."
       - name: Upload the report and the logs
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7
@@ -254,6 +249,6 @@ jobs:
           path: |
             .local/e2e/report
             .local/e2e/results
-            .local/e2e/lb-5500/host.log
-            .local/e2e/lb-5501/host.log
+            .local/e2e/lb-5533/host.log
+            .local/e2e/lb-5534/host.log
           if-no-files-found: ignore

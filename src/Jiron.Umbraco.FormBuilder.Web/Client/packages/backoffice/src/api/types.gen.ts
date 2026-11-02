@@ -5,6 +5,43 @@ export type ClientOptions = {
     baseUrl: `${string}://${string}` | (string & {});
 };
 
+export type ActionConfirmationRequestModel = {
+    confirmed: boolean;
+};
+
+export type ActionRunResponseModel = {
+    id: number;
+    actionKey: string;
+    actionType: string;
+    trigger: string;
+    state: string;
+    attempts: number;
+    nextAttemptUtc?: string | null;
+    errorCode?: string | null;
+    errorMessage?: string | null;
+    createdUtc: string;
+    startedUtc?: string | null;
+    finishedUtc?: string | null;
+};
+
+export type ActionTestResponseModel = {
+    outcome: string;
+    message?: string | null;
+    preview: Array<string>;
+};
+
+export type ActionTypeResponseModel = {
+    alias: string;
+    name: string;
+    icon: string;
+    test: string;
+    settings: Array<FieldSettingResponseModel>;
+};
+
+export type ActionTypesResponseModel = {
+    types: Array<ActionTypeResponseModel>;
+};
+
 export type CommentVersionRequestModel = {
     comment?: string | null;
 };
@@ -376,6 +413,150 @@ export type FormReferencesResponseModelWritable = {
     items: Array<FormDocumentReferenceResponseModelWritable>;
     notShown: number;
 };
+
+export type ActionTypeListData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/action-type';
+};
+
+export type ActionTypeListErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+};
+
+export type ActionTypeListResponses = {
+    /**
+     * OK
+     */
+    200: ActionTypesResponseModel;
+};
+
+export type ActionTypeListResponse = ActionTypeListResponses[keyof ActionTypeListResponses];
+
+export type ActionTestTestData = {
+    body?: ActionConfirmationRequestModel;
+    path: {
+        key: string;
+        actionKey: string;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/form/{key}/action/{actionKey}/test';
+};
+
+export type ActionTestTestErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+};
+
+export type ActionTestTestError = ActionTestTestErrors[keyof ActionTestTestErrors];
+
+export type ActionTestTestResponses = {
+    /**
+     * OK
+     */
+    200: ActionTestResponseModel;
+};
+
+export type ActionTestTestResponse = ActionTestTestResponses[keyof ActionTestTestResponses];
+
+export type EntryActionRunListData = {
+    body?: never;
+    path: {
+        key: string;
+        entryKey: string;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/form/{key}/entry/{entryKey}/action-run';
+};
+
+export type EntryActionRunListErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type EntryActionRunListError = EntryActionRunListErrors[keyof EntryActionRunListErrors];
+
+export type EntryActionRunListResponses = {
+    /**
+     * OK
+     */
+    200: Array<ActionRunResponseModel>;
+};
+
+export type EntryActionRunListResponse = EntryActionRunListResponses[keyof EntryActionRunListResponses];
+
+export type EntryActionRunRetryData = {
+    body?: ActionConfirmationRequestModel;
+    path: {
+        key: string;
+        entryKey: string;
+        runId: number;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/form/{key}/entry/{entryKey}/action-run/{runId}/retry';
+};
+
+export type EntryActionRunRetryErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+};
+
+export type EntryActionRunRetryError = EntryActionRunRetryErrors[keyof EntryActionRunRetryErrors];
+
+export type EntryActionRunRetryResponses = {
+    /**
+     * OK
+     */
+    200: ActionRunResponseModel;
+};
+
+export type EntryActionRunRetryResponse = EntryActionRunRetryResponses[keyof EntryActionRunRetryResponses];
 
 export type EntryFileDownloadData = {
     body?: never;

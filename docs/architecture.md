@@ -528,10 +528,10 @@ permission each needs:
 | Forms and folders: delete for good | `design` and `deleteEntries` on everything it removes |
 | Empty the trash | any user of the section; it removes only what the user may delete for good |
 | Versions: list, get, diff, restore, pin, comment | `design` (a restore that changes the actions: `manageActions` too; one that makes a sensitive field no longer so: `viewSensitive` too, ADR-0150) |
-| Designer support: the registries (the field types, [ADR-0057](decisions/0057-field-types-endpoint-and-availability.md)) | any user of the section; they describe the site's code, the same for everyone |
+| Designer support: the registries (the field types, [ADR-0057](decisions/0057-field-types-endpoint-and-availability.md); the action types, [ADR-0158](decisions/0158-the-action-framework.md)) | any user of the section; they describe the site's code, the same for everyone |
 | Designer support: the form check, preview render, preview tickets | `design` |
 | Actions: edit, test against a sample entry | `manageActions` |
-| Entries: list, get, mark seen, notes, timeline, files, counts, the inbox and Spam | `viewEntries` |
+| Entries: list, get, mark seen, notes, timeline, files, action runs, counts, the inbox and Spam | `viewEntries` |
 | Entries: change state, edit, forward | `editEntries` |
 | Entries: delete, empty Spam | `deleteEntries` |
 | Exports | `export` |
@@ -684,10 +684,15 @@ when it was published again) and its `jfb:rendered` event.
 
 ## 9. Background work
 
-([ADR-0007](decisions/0007-background-work-outbox-and-email.md))
+([ADR-0007](decisions/0007-background-work-outbox-and-email.md), [ADR-0158](decisions/0158-the-action-framework.md))
 
 - **One worker per server** claims due action runs and mail by token, woken after each commit and by the outbox job;
   passes never overlap on a server, and servers share the work through their claims.
+- **An attempt** runs one action of a claimed run on the thread pool, within the type's time limit of at most a minute, and records
+  what came of it through its claim's token: a success; a failure with back-off (1, 3, 9, 27 minutes, then for good); or `Uncertain`
+  when it was cut off or its lease ran out, which the attempt's own late result can still replace.
+- **Settling an entry** runs in the unit that makes its last run final: the values kept only until the actions have run, and a whole
+  entry of a form that stores none, go once no run is open and no trigger can still fire.
 - **Distributed jobs**, each returning within 10 seconds and working in bounded batches, a minute apart or more:
   `Jiron.FormBuilder.Outbox` (wakes the worker), `Jiron.FormBuilder.Retention` (hourly, its parts in order within
   8 seconds: the draft-version cleanup, ADR-0045, then entries, mail and files, ADR-0009), statistics roll-ups and the
@@ -697,7 +702,8 @@ when it was published again) and its `jfb:rendered` event.
   up to 30 seconds (ADR-0148).
 - **Mail** goes through `IEmailSender` with the email type `JironFormBuilder`, gated by `CanSendRequiredEmail()`, one
   body per mail, capped for addresses visitors typed (ADR-0012).
-- **The pause switch** `JironFormBuilder:Actions:Paused` stops all claims and loses nothing.
+- **The pause switch** `JironFormBuilder:Actions:Paused` stops all claims and loses nothing. Unlike the other host options it takes
+  effect at once, and turning it off wakes the worker.
 
 ## 10. Threat model
 

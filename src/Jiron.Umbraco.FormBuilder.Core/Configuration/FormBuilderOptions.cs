@@ -25,6 +25,9 @@ public sealed class FormBuilderOptions
     /// <summary>Where uploaded files are kept, how large one may be, and which extensions no field takes.</summary>
     public FormBuilderFilesOptions Files { get; } = new();
 
+    /// <summary>Whether actions and email go out (section 4.4).</summary>
+    public FormBuilderActionsOptions Actions { get; } = new();
+
     /// <summary>Hard limits that editors cannot exceed.</summary>
     public FormBuilderLimitsOptions Limits { get; } = new();
 
@@ -190,6 +193,17 @@ public sealed class FormBuilderRatePolicyOptions
 
     /// <summary>Requests per second to the whole site, from anyone; whatever the other limits do, this one holds.</summary>
     public int SitePerSecond { get; set; }
+}
+
+/// <summary>Whether actions and email go out (section 4.4, ADR-0007).</summary>
+public sealed class FormBuilderActionsOptions
+{
+    /// <summary>
+    /// Holds back every action run and email: entries are still stored and nothing is lost, and all of it goes out once this
+    /// is off. It is meant for a copy of a live database restored onto a test server, and for incidents. Unlike the other
+    /// options, a change takes effect at once.
+    /// </summary>
+    public bool Paused { get; set; }
 }
 
 /// <summary>Locks on the settings that editors give fields and actions in the designer (section 4.8).</summary>

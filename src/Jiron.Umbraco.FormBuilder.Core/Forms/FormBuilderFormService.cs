@@ -1,4 +1,5 @@
 using Jiron.Umbraco.FormBuilder.Core.Access;
+using Jiron.Umbraco.FormBuilder.Core.Actions;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
@@ -135,6 +136,7 @@ internal sealed partial class FormBuilderFormService(
     FormDefinitionSerializer serializer,
     FieldTypeRegistry types,
     FieldSettingLocks locks,
+    ActionSettingLocks actionLocks,
     IEnumerable<IFormPublishCheck> publishChecks,
     FormRemoval removal,
     AccessSnapshotInvalidator snapshots,

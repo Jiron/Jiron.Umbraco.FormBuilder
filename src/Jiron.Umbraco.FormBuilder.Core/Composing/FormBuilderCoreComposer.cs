@@ -1,4 +1,5 @@
 using Jiron.Umbraco.FormBuilder.Core.Access;
+using Jiron.Umbraco.FormBuilder.Core.Actions;
 using Jiron.Umbraco.FormBuilder.Core.Configuration;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Definitions.Upgrades;
@@ -143,7 +144,10 @@ public sealed class FormBuilderCoreComposer : IComposer
         builder.Services.TryAddSingleton<SubmissionEntries>();
         builder.Services.TryAddSingleton<FormSubmissions>();
 
-        // The retention job (ADR-0045): the draft-version cleanup so far.
+        // The retention job (ADR-0045): the draft-version cleanup first.
         builder.AddFormBuilderRetention();
+
+        // The action framework (ADR-0007, ADR-0158): the action types, the worker with its job, and what settles an entry.
+        builder.AddFormBuilderActions();
     }
 }

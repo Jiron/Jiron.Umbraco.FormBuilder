@@ -52,7 +52,7 @@ public sealed class HostOptionsBootTests : UmbracoIntegrationTest
         {
             Assert.That(options.LockedSections, Is.EqualTo(new[] { "privacy" }));
             Assert.That(GetRequiredService<IEnumerable<IValidateOptions<FormBuilderOptions>>>().Single(), Is.InstanceOf<FormBuilderOptionsValidator>());
-            Assert.That(GetRequiredService<IEnumerable<IValidateOptions<FormBuilderStartupChecks>>>().Select(check => check.GetType()), Is.EquivalentTo(new[] { typeof(GlobalizationStartupCheck), typeof(FieldTypeStartupCheck), typeof(FieldSettingLockStartupCheck), typeof(MergeTagStartupCheck), typeof(OptionSourceStartupCheck), typeof(ThemeStartupCheck), typeof(ThemeStylesheetStartupCheck) }));
+            Assert.That(GetRequiredService<IEnumerable<IValidateOptions<FormBuilderStartupChecks>>>().Select(check => check.GetType()), Is.EquivalentTo(new[] { typeof(GlobalizationStartupCheck), typeof(FieldTypeStartupCheck), typeof(FieldSettingLockStartupCheck), typeof(Core.Actions.ActionTypeStartupCheck), typeof(Core.Actions.ActionSettingLockStartupCheck), typeof(MergeTagStartupCheck), typeof(OptionSourceStartupCheck), typeof(ThemeStartupCheck), typeof(ThemeStylesheetStartupCheck) }));
             Assert.That(GetRequiredService<FormBuilderThemes>().All.Select(theme => theme.Name), Is.EqualTo(new[] { "default", "unstyled", "bootstrap5" }), "the registry holds the built-in themes");
             Assert.That(() => GetRequiredService<IStartupValidator>().Validate(), Throws.Nothing);
         });

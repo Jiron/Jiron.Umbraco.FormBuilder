@@ -47,7 +47,9 @@ internal sealed partial class FormBuilderFormService
         }
 
         // A locked setting keeps the lock's value, or the one the draft held from before the lock came (ADR-0060).
-        locks.CheckSave(definition, draft is null ? null : serializer.ReadStored(draft.Definition).Definition);
+        var stored = draft is null ? null : serializer.ReadStored(draft.Definition).Definition;
+        locks.CheckSave(definition, stored);
+        actionLocks.CheckSave(definition, stored);
 
         await changes.CancelableAsync(new FormSavingNotification(definition, form.Alias, form.Name, isNew: false, userKey, new EventMessages()));
         var saved = await changes.WriteAsync(
@@ -98,7 +100,7 @@ internal sealed partial class FormBuilderFormService
 
         // Every check's problems together, at most as many as one read reports, over the draft as the site will run it:
         // with the host's designer locks applied (ADR-0060).
-        var running = locks.Apply(definition);
+        var running = actionLocks.Apply(locks.Apply(definition));
         var problems = new DefinitionProblems();
         foreach (var check in _publishChecks)
         {

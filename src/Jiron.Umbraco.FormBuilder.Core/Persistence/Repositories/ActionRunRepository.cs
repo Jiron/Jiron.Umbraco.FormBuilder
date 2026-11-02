@@ -1,3 +1,4 @@
+using Jiron.Umbraco.FormBuilder.Core.Actions;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Dtos;
 using Umbraco.Cms.Infrastructure.Persistence;
@@ -56,6 +57,8 @@ internal sealed class ActionRunRepository(FormBuilderDatabase database) : IActio
                     throw new FormBuilderConflictException(FormBuilderConflict.DuplicateKey, "The entry already has the runs of this change.");
                 }
 
+                // Its commit wakes this server's worker (ADR-0007).
+                database.PublishAfterCommit(new OutboxQueuedNotification());
                 var now = database.UtcNow;
                 var ids = new HashSet<long>();
                 // By position, so the ids follow the order too and the entry's list reads as the runs run.
@@ -212,6 +215,8 @@ internal sealed class ActionRunRepository(FormBuilderDatabase database) : IActio
                     now);
                 if (changed == 1)
                 {
+                    database.PublishAfterCommit(new OutboxQueuedNotification());
+
                     // The runs this one skipped when it failed for good wait for it again: the rest of its batch comes back with it.
                     await db.ExecAsync(
                         $"UPDATE {runs} SET {n.C("state")} = '{Pending}', {n.C("nextAttemptUtc")} = @2, {n.C("finishedUtc")} = NULL, {n.C("lastErrorCode")} = NULL WHERE {n.C("state")} = '{Skipped}' AND {n.C("lastErrorCode")} = @1 AND {n.C("entryId")} = (SELECT s.{n.C("entryId")} FROM {runs} s WHERE s.{n.C("id")} = @0) AND {Stopper(n, runs, "@0", Pending)}",

@@ -1,5 +1,6 @@
 using System.Buffers;
 using System.Text.Json;
+using Jiron.Umbraco.FormBuilder.Core.Actions;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Definitions.Serialization;
 using Jiron.Umbraco.FormBuilder.Core.Entries;
@@ -77,7 +78,8 @@ internal sealed class SubmissionEntries(
     FormPages pages,
     SiteTimeZones timeZones,
     MergeTagUmbraco umbraco,
-    SiteBaseUrl baseUrls)
+    SiteBaseUrl baseUrls,
+    ActionSettlement settlement)
 {
     /// <summary>The kind of the event that records a submission.</summary>
     public const string SubmittedEvent = "submitted";
@@ -116,8 +118,8 @@ internal sealed class SubmissionEntries(
         var verdict = submission.Verdict ?? SpamVerdict.None;
         var state = verdict.IsSpam ? EntryState.Spam : definition.Settings.Submission.Verification is null ? EntryState.Submitted : EntryState.Unverified;
         var queued = state is EntryState.Unverified or EntryState.Spam ? [] : Runs(definition, submission.Answers.State.Actions);
-        var kept = queued.Count > 0 || TriggerCanFire(definition, state);
-        var answers = kept ? submission.Answers.Answers : [.. submission.Answers.Answers.Where(answer => !KeptUntilActions(definition, answer.Field))];
+        var kept = queued.Count > 0 || ActionSettlement.TriggerCanFire(definition, state);
+        var answers = kept ? submission.Answers.Answers : [.. submission.Answers.Answers.Where(answer => !ActionSettlement.KeptUntilActions(definition, answer.Field))];
         var entry = new NewEntry
         {
             Key = Guid.NewGuid(),
@@ -147,6 +149,13 @@ internal sealed class SubmissionEntries(
                 // Its values are counted now, and the unit holds the form's row: these counts and answers are the last
                 // word. An entry that does not count holds no place and no answer, and takes none from another. As
                 // before the unit, a taken answer is told only to an entry the places let through (ADR-0091).
+                // A challenge whose entry is gone, on a form that stored none then, is spent too (ADR-0158). The unit holds the
+                // form's row, as the unit that lets such an entry go does, so one of the two always sees the other.
+                if (created.ChallengeId is { } challenge && await settlement.ChallengeUsedAsync(challenge, cancellationToken))
+                {
+                    throw new FormBuilderConflictException(FormBuilderConflict.ChallengeUsed, "The challenge made an entry that is gone since.");
+                }
+
                 if (EntryLimits.Counts(created.State, created.IsTest))
                 {
                     var full = await places.CountAsync(created.FormId, submission.Answers.Places, cancellationToken);
@@ -171,9 +180,21 @@ internal sealed class SubmissionEntries(
             return null;
         }
 
-        var receipt = await ReceiptAsync(stored, definition, submission.Page.Site, cancellationToken);
-        var rendered = await outcomes.RenderAsync(outcome, scope with { Entry = EntryOf(stored), Answers = submission.Answers.ForMergeTags }, submission.Redirect, cancellationToken);
-        return new SubmittedEntry(stored, receipt, rendered);
+        try
+        {
+            var receipt = await ReceiptAsync(stored, definition, submission.Page.Site, cancellationToken);
+            var rendered = await outcomes.RenderAsync(outcome, scope with { Entry = EntryOf(stored), Answers = submission.Answers.ForMergeTags }, submission.Redirect, cancellationToken);
+            return new SubmittedEntry(stored, receipt, rendered);
+        }
+        finally
+        {
+            // A form that stores no entries lets it go at once when no action can run for it (section 4.4, ADR-0158), with the
+            // receipt and the outcome made or not, and whether the visitor is still there or not.
+            if (queued.Count == 0 && definition.Settings.Submission.Store == EntryStorage.Never)
+            {
+                await settlement.SettleAsync(stored.Id, definition, CancellationToken.None);
+            }
+        }
     }
 
     /// <summary>
@@ -205,8 +226,25 @@ internal sealed class SubmissionEntries(
         return new EntryCopy(scope, Hidden(timeline), entry.SubmittedUtc);
     }
 
-    // An entry as its replay and its copy read it: the scope with the version it was submitted with, its page, its
-    // context values and its stored answers, with the fields the rules hid for it, and its timeline.
+    /// <summary>
+    /// What an action runs for (ADR-0158): the scope its replay renders in, with the version the entry was submitted with
+    /// and the form's name and alias now. Null when the form or the version is gone.
+    /// </summary>
+    /// <param name="entry">The entry.</param>
+    /// <param name="cancellationToken">Cancels the reads.</param>
+    public async Task<MergeTagScope?> ScopeAsync(StoredEntry entry, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(entry);
+        if (await forms.GetByIdAsync(entry.FormId, cancellationToken) is not { } form
+            || await forms.GetVersionByIdAsync(entry.FormVersionId, cancellationToken) is not { } version)
+        {
+            return null;
+        }
+
+        return (await ReadAsync(entry, locks.Apply(documents.Readable(version)), form.Name, form.Alias, cancellationToken)).Scope;
+    }
+
+    // An entry as its replay and its copy read it.
     private async Task<(MergeTagScope Scope, IReadOnlyList<StoredEntryEvent> Timeline)> ReadAsync(StoredEntry entry, PublishedForm form, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(entry);
@@ -214,14 +252,21 @@ internal sealed class SubmissionEntries(
         var definition = await forms.GetVersionByIdAsync(entry.FormVersionId, cancellationToken) is { } version
             ? locks.Apply(documents.Readable(version))
             : form.Definition;
+        return await ReadAsync(entry, definition, form.Form.Name, form.Form.Alias, cancellationToken);
+    }
+
+    // The scope with the version it was submitted with, its page, its context values and its stored answers, with the
+    // fields the rules hid for it, and its timeline.
+    private async Task<(MergeTagScope Scope, IReadOnlyList<StoredEntryEvent> Timeline)> ReadAsync(StoredEntry entry, FormDefinition definition, string formName, string formAlias, CancellationToken cancellationToken)
+    {
         var page = await pages.PageAsync(entry.ContentKey);
         var timeline = await events.ListForEntryAsync(entry.Id, cancellationToken);
         var answers = await store.ReadAsync(entry.Id, cancellationToken);
         var scope = new MergeTagScope
         {
             Form = definition,
-            FormName = form.Form.Name,
-            FormAlias = form.Form.Alias,
+            FormName = formName,
+            FormAlias = formAlias,
             Culture = entry.Culture,
             Site = page.Site,
             Page = page.Content,
@@ -241,27 +286,6 @@ internal sealed class SubmissionEntries(
             .Where(item => item.Action.Enabled && item.Action.Trigger == ActionTrigger.Submitted && chosen.Contains(DefinitionLogic.Id(item.Action.Key)))
             .Select(item => new NewActionRun(item.Action.Key, item.Action.Type, ActionTrigger.Submitted, item.Index, item.Action.StopOnFailure))];
     }
-
-    // Whether an action of the form may still run for an entry that queued none (section 4.4): any while it waits for
-    // its address to be confirmed, an approved or rejected one while it waits for approval, and an approved one when it
-    // is approved at once, which 8.5 queues.
-    private static bool TriggerCanFire(FormDefinition definition, EntryState state)
-    {
-        var enabled = definition.Actions.Where(action => action.Enabled).ToList();
-        if (state is EntryState.Unverified or EntryState.Spam)
-        {
-            return enabled.Count > 0;
-        }
-
-        return definition.Settings.Submission.Approval == ApprovalMode.Manual
-            ? enabled.Any(action => action.Trigger is ActionTrigger.Approved or ActionTrigger.Rejected)
-            : enabled.Any(action => action.Trigger == ActionTrigger.Approved);
-    }
-
-    // Whether the field keeps its value only until the actions have run.
-    private static bool KeptUntilActions(FormDefinition definition, Guid field) =>
-        definition.Pages.SelectMany(page => page.Groups).SelectMany(group => group.Fields).SelectMany(item => item.Fields.Prepend(item))
-            .FirstOrDefault(item => item.Key == field)?.Keep == FieldKeep.UntilActionsRun;
 
     // The receipt: the submission id, the reference in the version's format and the year in the site's time zone.
     private async Task<SubmissionReceipt> ReceiptAsync(StoredEntry entry, FormDefinition definition, Guid? site, CancellationToken cancellationToken)

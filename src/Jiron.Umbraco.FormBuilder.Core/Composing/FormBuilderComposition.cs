@@ -1,3 +1,4 @@
+using Jiron.Umbraco.FormBuilder.Core.Actions;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Core.Files;
 using Jiron.Umbraco.FormBuilder.Core.MergeTags;
@@ -21,6 +22,9 @@ public sealed class FormBuilderComposition
 
     /// <summary>The field types, the built-in ones among them.</summary>
     public FormBuilderFieldTypeCollectionBuilder FieldTypes() => Builder.WithCollectionBuilder<FormBuilderFieldTypeCollectionBuilder>();
+
+    /// <summary>The action types, the built-in ones among them (ADR-0158).</summary>
+    public FormBuilderActionTypeCollectionBuilder ActionTypes() => Builder.WithCollectionBuilder<FormBuilderActionTypeCollectionBuilder>();
 
     /// <summary>The site's own merge-tag sources, beside the built-in ones (ADR-0065).</summary>
     public FormBuilderMergeTagSourceCollectionBuilder MergeTagSources() => Builder.WithCollectionBuilder<FormBuilderMergeTagSourceCollectionBuilder>();
