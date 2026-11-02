@@ -107,7 +107,7 @@
               "required": true,
               "sensitive": true,
               "includeInEmails": false,
-              "keep": "untilActionsRun",
+              "keep": "always",
               "autocomplete": "email",
               "validation": [ { "kind": "uniquePerForm", "message": { "": "You are already registered." } } ],
               "settings": { "confirm": true, "confirmLabel": { "": "Email again" }, "domains": { "list": [ "example.com" ], "mode": "block" } }

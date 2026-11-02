@@ -1,3 +1,4 @@
+using System.Collections.Frozen;
 using System.Reflection;
 using Jiron.Umbraco.FormBuilder.Core.Composing;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Migrations;
@@ -39,6 +40,9 @@ public sealed class ProductDtoTests
         new object[] { typeof(Dtos.DailyStatDto), typeof(CreateSchemaV1.DailyStatDto) },
     ];
 
+    // The columns a later migration added, which the snapshot of schema v1 never holds; MigrationPlanTests checks they arrive.
+    private static readonly FrozenSet<(Type Row, string Column)> Added = new[] { (typeof(Dtos.EntryEventDto), "dueUtc DateTime?") }.ToFrozenSet();
+
     [TestCaseSource(nameof(Pairs))]
     public void AProductRow_HasTheColumnsOfItsTable(Type product, Type snapshot)
     {
@@ -47,7 +51,7 @@ public sealed class ProductDtoTests
             Assert.That(product.GetCustomAttribute<TableNameAttribute>()?.Value, Is.EqualTo(snapshot.GetCustomAttribute<TableNameAttribute>()?.Value), "table");
             Assert.That(Key(product), Is.EqualTo(Key(snapshot)), "primary key");
             Assert.That(product.GetCustomAttribute<ExplicitColumnsAttribute>(), Is.Not.Null, "only the columns it names");
-            Assert.That(Columns(product), Is.EqualTo(Columns(snapshot)), "columns, types and nullability");
+            Assert.That(Columns(product).Where(column => !Added.Contains((product, column))), Is.EqualTo(Columns(snapshot)), "columns, types and nullability");
         });
     }
 
