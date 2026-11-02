@@ -2472,7 +2472,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
 
 ### Phase 8: Actions and email
 
-- [ ] **8.1 The action framework**
+- [x] **8.1 The action framework** (2026-11-02, 585ce33)
   - **The model:** a registry with `FormBuilderActionTypeBase<TSettings>`, triggers, rules, order and "stop the rest if this fails". Publishing refuses an action type the site lacks (`unknown_type` at `actions[n].type`, ADR-0035) and runs each type's check of its own settings.
   - **The processor** (ADR-0007): one worker per server, woken after each commit through a scoped notification and a bounded channel of one, with claims by token, leases, back-off, the late finisher and the `Uncertain` state. The distributed job only wakes its server's worker and returns.
   - **Designer locks** of action settings, as 5.1 applies them to field settings (ADR-0042).
