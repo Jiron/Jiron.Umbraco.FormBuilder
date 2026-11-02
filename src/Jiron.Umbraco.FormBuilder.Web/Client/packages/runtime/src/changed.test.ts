@@ -9,6 +9,7 @@ import { wordsFor } from './messages';
 import type { FormModel, ModelField } from './model';
 import { senderOf, type SendDetail } from './send';
 import { ENGLISH } from './testing';
+import type { PageUploads, UploadedFile } from './uploads';
 
 const NOW = Date.UTC(2026, 9, 30, 9, 15, 0);
 const ID = '00112233-4455-4677-8899-aabbccddeeff';
@@ -113,7 +114,7 @@ function serve(
 
 const json = (status: number, body: unknown): Response => new Response(JSON.stringify(body), { status });
 
-function wake(shape: Shape = { revision: 1 }) {
+function wake(shape: Shape = { revision: 1 }, files?: PageUploads) {
   document.body.innerHTML = markup(shape);
   const form = document.querySelector('form') as HTMLFormElement;
   const posted: string[] = [];
@@ -124,7 +125,11 @@ function wake(shape: Shape = { revision: 1 }) {
   document.addEventListener('jfb:error', (event) => heard.push((event as CustomEvent<SendDetail>).detail), {
     once: true,
   });
-  const rewoken: { form: HTMLFormElement; model: FormModel; carried: { id: string; challenge: string | null } }[] = [];
+  const rewoken: {
+    form: HTMLFormElement;
+    model: FormModel;
+    carried: { id: string; challenge: string | null; files?: ReadonlyMap<string, readonly UploadedFile[]> };
+  }[] = [];
   const wakeForm = (
     each: HTMLFormElement,
     model: FormModel,
@@ -134,7 +139,8 @@ function wake(shape: Shape = { revision: 1 }) {
       posted.push(button instanceof HTMLButtonElement ? button.value : '');
     };
     const deliver = senderOf(each, model, {
-      ...(carried ?? { id: ID }),
+      ...(carried === undefined ? { id: ID } : { id: carried.id, challenge: carried.challenge }),
+      ...(files === undefined ? {} : { files }),
       go: () => undefined,
       rewake: (next, nextModel, carry) => {
         rewoken.push({ form: next, model: nextModel, carried: carry });
@@ -255,6 +261,16 @@ describe('a form published again meanwhile', () => {
     expect(server.entries()[1]?.body).toMatchObject({ submissionId: ID, revision: 2, challenge: 'c1' });
     expect(server.challenges(), 'the challenge is not asked for again').toHaveLength(1);
     await until(() => expect(document.querySelector('[data-jfb-outcome]')).not.toBeNull());
+  });
+
+  it('carries the files its server holds to the form in its place', async () => {
+    serve(markup({ revision: 2 }), () => json(409, { code: 'form_changed' }));
+    const held = new Map([['photo', [{ token: 't1', name: 'a.png', size: 3 }]]]);
+    const { press, rewoken } = wake({ revision: 1 }, { settled: () => Promise.resolve(), uploaded: () => held });
+    press();
+    await until(() => expect(rewoken).toHaveLength(1));
+
+    expect(rewoken[0]?.carried).toMatchObject({ id: ID, challenge: 'c1', files: held });
   });
 
   it('keeps what the page gave its form, which a render from elsewhere does not have', async () => {

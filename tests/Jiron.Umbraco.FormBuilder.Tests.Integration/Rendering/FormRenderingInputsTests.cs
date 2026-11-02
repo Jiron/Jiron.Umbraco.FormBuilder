@@ -50,6 +50,7 @@ public sealed class FormRenderingInputsTests : RenderingTestBase
     private static readonly Guid Autograph = K(0x5b);
     private static readonly Guid Guest = K(0x5c);
     private static readonly Guid Host = K(0x5d);
+    private static readonly Guid Snapshot = K(0x5e);
     private static readonly Guid Mood = K(0x60);
     private static readonly Guid Name = K(0x61);
     private static readonly Guid Rating = K(0x70);
@@ -230,9 +231,20 @@ public sealed class FormRenderingInputsTests : RenderingTestBase
             Assert.That(billing.QuerySelectorAll("option").Length, Is.EqualTo(BuiltInChecks.CountryCodes.Count + 1));
 
             var plan = Field(empty, "plan");
-            Assert.That(Compact(plan.InnerHtml), Does.EndWith(
-                """<div class="jfb-upload" data-jfb-dropzone=""><span class="jfb-icon jfb-icon-upload" aria-hidden="true"></span><div class="jfb-upload-actions"><input type="file" id="jfb-1-plan" name="plan" accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,.avif,.heic,.heif" data-jfb-requires=""></div></div>"""),
+            Assert.That(Control(empty, "plan").OuterHtml, Is.EqualTo(
+                """<input type="file" id="jfb-1-plan" name="plan" accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,.avif,.heic,.heif" data-jfb-requires="">"""),
                 "the native input with the extensions it takes, in the order of its groups");
+            var upload = plan.QuerySelector(".jfb-upload")!;
+            Assert.That((upload.HasAttribute("data-jfb-dropzone"), upload.HasAttribute("data-jfb-thumbnails")), Is.EqualTo((true, true)), "both are on by default");
+            Assert.That(Text(upload, "p"), Is.EqualTo("Drag a file here, or"));
+            Assert.That(upload.QuerySelector("label")!.GetAttribute("for"), Is.EqualTo("jfb-1-plan"));
+            Assert.That(upload.QuerySelector("label")!.TextContent, Is.EqualTo("Choose a file"));
+            Assert.That(plan.QuerySelector(".jfb-upload-camera"), Is.Null, "a camera only when the field asks for one");
+            var row = plan.QuerySelector("template[data-jfb-file]")!;
+            Assert.That(
+                new[] { "list", "uploading", "uploaded", "remove", "stop", "again", "stopped", "later" }.Select(word => row.GetAttribute("data-jfb-" + word)),
+                Is.EqualTo(new[] { "Your files", "{0}% uploaded", "{0} is uploaded.", "Remove {0}", "Stop uploading {0}", " to upload {0}", "The upload stopped before it finished.", "This form can't take files right now. Try again later. Your answers are kept." }),
+                "what the runtime says of a file comes with the page, in its language");
             Assert.That(plan.QuerySelector("label.jfb-label")!.GetAttribute("for"), Is.EqualTo("jfb-1-plan"));
 
             var signature = Field(empty, "signature");
@@ -370,7 +382,18 @@ public sealed class FormRenderingInputsTests : RenderingTestBase
 
             Assert.That(Field(first, "volume").QuerySelector(".jfb-range")!.InnerHtml.Trim(), Is.EqualTo("""<input type="range" id="jfb-1-volume" name="volume" min="0" max="100" step="1" value="50">"""), "a slider that does not show its value; its number is what a screen reader says");
             Assert.That(Control(first, "photos").OuterHtml, Is.EqualTo("""<input type="file" id="jfb-1-photos" name="photos" accept=".jpg,.jpeg,.png,.gif,.webp,.avif,.heic,.heif,.tif" multiple="multiple">"""), "its groups' extensions, then its own");
-            Assert.That(Field(first, "photos").QuerySelector(".jfb-upload")!.HasAttribute("data-jfb-dropzone"), Is.False);
+            var photos = Field(first, "photos").QuerySelector(".jfb-upload")!;
+            Assert.That(photos.HasAttribute("data-jfb-dropzone"), Is.False);
+            Assert.That(photos.QuerySelector("p"), Is.Null, "no zone to drag a file to");
+            Assert.That(photos.QuerySelector("label")!.TextContent, Is.EqualTo("Choose files"), "for a field that takes several");
+            var snapshot = Field(first, "snapshot").QuerySelector(".jfb-upload")!;
+            Assert.That(snapshot.HasAttribute("data-jfb-thumbnails"), Is.False, "thumbnails turned off");
+            Assert.That(Text(snapshot, "p"), Is.EqualTo("Drag files here, or"), "for a field that takes several");
+            Assert.That(snapshot.QuerySelector("input.jfb-upload-camera")!.OuterHtml, Is.EqualTo(
+                """<input type="file" class="jfb-upload-camera" id="jfb-1-snapshot-camera" accept="image/*" capture="environment">"""),
+                "it has no name, so only the runtime takes its picture and a post never holds it");
+            Assert.That(snapshot.QuerySelector("label.jfb-upload-camera")!.GetAttribute("for"), Is.EqualTo("jfb-1-snapshot-camera"));
+            Assert.That(snapshot.QuerySelector("label.jfb-upload-camera")!.TextContent, Is.EqualTo("Take a photo"));
             Assert.That(Control(first, "drawing").GetAttribute("accept"), Is.EqualTo(".pdf,.dwg"), "each extension once");
             Assert.That(Text(Field(first, "autograph"), "legend"), Is.EqualTo("Autograph"), "a signature that needs no answer, unmarked in this style");
             Assert.That(first.QuerySelectorAll("[data-jfb-field]").Select(field => field.GetAttribute("data-jfb-field")), Does.Not.Contain(Unseen.ToString("D")).And.Not.Contain(Placement.ToString("D")), "a calculation visitors do not see and a captcha's place on a form without a captcha render nothing");
@@ -476,7 +499,7 @@ public sealed class FormRenderingInputsTests : RenderingTestBase
                 Assert.That(field.QuerySelector("fieldset > legend.jfb-label") is not null, Is.EqualTo(grouped), $"{state}: {alias}'s fieldset and legend");
                 foreach (var control in field.QuerySelectorAll("input, select, output"))
                 {
-                    Assert.That(form.QuerySelectorAll($"label[for='{control.Id}']"), Has.Length.EqualTo(control.LocalName == "output" && alias == "hours" ? 0 : 1), $"{state}: {alias}'s {control.Id} has its label");
+                    Assert.That(form.QuerySelectorAll($"label[for='{control.Id}']"), Has.Length.EqualTo(control.LocalName == "output" && alias == "hours" ? 0 : type == "file" ? 2 : 1), $"{state}: {alias}'s {control.Id} has its label");
                 }
             }
 
@@ -588,6 +611,7 @@ public sealed class FormRenderingInputsTests : RenderingTestBase
                             Field(Volume, "volume", "slider", """{"showValue":false}""", rules: false),
                             Field(Photos, "photos", "file", """{"types":["images"],"extensions":["tif"],"maxFiles":5,"dropZone":false}""", rules: false),
                             Field(Drawing, "drawing", "file", """{"types":["pdf"],"extensions":["dwg","pdf"]}""", rules: false),
+                            Field(Snapshot, "snapshot", "file", """{"types":["images"],"maxFiles":2,"camera":true,"thumbnails":false}""", rules: false),
                             Field(Autograph, "autograph", "signature", "{}", rules: false),
                             Field(Unseen, "unseen", "calculation", """{"formula":"volume * 2","visible":false}""", rules: false),
                             new FormField { Key = Placement, Type = "captcha" },

@@ -2149,6 +2149,54 @@
                     "minLength": 0,
                     "rows": 4
                   }
+                },
+                {
+                  "key": "d0000000-0000-4000-8000-00000000030b",
+                  "type": "file",
+                  "alias": "photo",
+                  "span": 1,
+                  "label": "A photo, if it helps",
+                  "hideLabel": false,
+                  "required": false,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "camera": true,
+                    "dropZone": true,
+                    "maxBytes": 2097152,
+                    "maxFiles": 1,
+                    "thumbnails": true,
+                    "types": [
+                      "images"
+                    ]
+                  }
+                },
+                {
+                  "key": "d0000000-0000-4000-8000-00000000030c",
+                  "type": "file",
+                  "alias": "document",
+                  "span": 1,
+                  "label": "Or a document",
+                  "hideLabel": false,
+                  "required": false,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "camera": false,
+                    "dropZone": true,
+                    "maxFiles": 3,
+                    "thumbnails": false,
+                    "types": [
+                      "pdf",
+                      "images"
+                    ]
+                  }
                 }
               ]
             }
@@ -2205,6 +2253,16 @@
       },
       "d0000000-0000-4000-8000-000000000309": {
         "kind": "text",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-00000000030b": {
+        "kind": "files",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-00000000030c": {
+        "kind": "files",
         "canBeRequired": true,
         "builtIn": true
       }
@@ -2371,6 +2429,28 @@
                       ]
                     }
                   ],
+                  "fields": [],
+                  "rows": []
+                },
+                {
+                  "id": "d0000000-0000-4000-8000-00000000030b",
+                  "kind": "files",
+                  "canBeRequired": true,
+                  "alias": "photo",
+                  "calculation": null,
+                  "required": false,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                },
+                {
+                  "id": "d0000000-0000-4000-8000-00000000030c",
+                  "kind": "files",
+                  "canBeRequired": true,
+                  "alias": "document",
+                  "calculation": null,
+                  "required": false,
+                  "rules": [],
                   "fields": [],
                   "rows": []
                 }

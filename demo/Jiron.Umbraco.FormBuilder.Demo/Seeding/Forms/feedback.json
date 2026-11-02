@@ -3,7 +3,10 @@
   "key": "d0000000-0000-4000-8000-000000000003",
   "settings": {
     "submission": {
-      "submitLabel": { "": "Send feedback", "de": "Feedback senden" }
+      "submitLabel": {
+        "": "Send feedback",
+        "de": "Feedback senden"
+      }
     }
   },
   "pages": [
@@ -12,21 +15,53 @@
       "groups": [
         {
           "key": "d0000000-0000-4000-8000-000000000031",
-          "title": { "": "Your visits", "de": "Ihre Besuche" },
+          "title": {
+            "": "Your visits",
+            "de": "Ihre Besuche"
+          },
           "fields": [
             {
               "key": "d0000000-0000-4000-8000-000000000301",
               "type": "radio",
               "alias": "visits",
-              "label": { "": "How often do you visit us?", "de": "Wie oft besuchen Sie uns?" },
+              "label": {
+                "": "How often do you visit us?",
+                "de": "Wie oft besuchen Sie uns?"
+              },
               "required": true,
-              "settings": { "layout": "horizontal" },
+              "settings": {
+                "layout": "horizontal"
+              },
               "options": {
                 "items": [
-                  { "value": "weekly", "label": { "": "Every week", "de": "Jede Woche" } },
-                  { "value": "monthly", "label": { "": "Every month", "de": "Jeden Monat" } },
-                  { "value": "rarely", "label": { "": "A few times a year", "de": "Ein paar Mal im Jahr" } },
-                  { "value": "first", "label": { "": "This is my first visit", "de": "Dies ist mein erster Besuch" } }
+                  {
+                    "value": "weekly",
+                    "label": {
+                      "": "Every week",
+                      "de": "Jede Woche"
+                    }
+                  },
+                  {
+                    "value": "monthly",
+                    "label": {
+                      "": "Every month",
+                      "de": "Jeden Monat"
+                    }
+                  },
+                  {
+                    "value": "rarely",
+                    "label": {
+                      "": "A few times a year",
+                      "de": "Ein paar Mal im Jahr"
+                    }
+                  },
+                  {
+                    "value": "first",
+                    "label": {
+                      "": "This is my first visit",
+                      "de": "Dies ist mein erster Besuch"
+                    }
+                  }
                 ]
               }
             },
@@ -34,14 +69,43 @@
               "key": "d0000000-0000-4000-8000-000000000302",
               "type": "checkboxes",
               "alias": "uses",
-              "label": { "": "What do you come for?", "de": "Wofür kommen Sie?" },
-              "settings": { "other": true },
+              "label": {
+                "": "What do you come for?",
+                "de": "Wofür kommen Sie?"
+              },
+              "settings": {
+                "other": true
+              },
               "options": {
                 "items": [
-                  { "value": "books", "label": { "": "Borrowing books", "de": "Bücher ausleihen" } },
-                  { "value": "study", "label": { "": "A quiet place to study", "de": "Ein ruhiger Platz zum Lernen" } },
-                  { "value": "events", "label": { "": "Events and workshops", "de": "Veranstaltungen und Workshops" } },
-                  { "value": "children", "label": { "": "The children's corner", "de": "Die Kinderecke" } }
+                  {
+                    "value": "books",
+                    "label": {
+                      "": "Borrowing books",
+                      "de": "Bücher ausleihen"
+                    }
+                  },
+                  {
+                    "value": "study",
+                    "label": {
+                      "": "A quiet place to study",
+                      "de": "Ein ruhiger Platz zum Lernen"
+                    }
+                  },
+                  {
+                    "value": "events",
+                    "label": {
+                      "": "Events and workshops",
+                      "de": "Veranstaltungen und Workshops"
+                    }
+                  },
+                  {
+                    "value": "children",
+                    "label": {
+                      "": "The children's corner",
+                      "de": "Die Kinderecke"
+                    }
+                  }
                 ]
               }
             },
@@ -49,11 +113,26 @@
               "key": "d0000000-0000-4000-8000-000000000303",
               "type": "dropdown",
               "alias": "branch",
-              "label": { "": "Which branch do you visit most?", "de": "Welche Zweigstelle besuchen Sie am häufigsten?" },
+              "label": {
+                "": "Which branch do you visit most?",
+                "de": "Welche Zweigstelle besuchen Sie am häufigsten?"
+              },
               "options": {
                 "items": [
-                  { "value": "market", "label": { "": "Market Street", "de": "Marktstraße" } },
-                  { "value": "riverside", "label": { "": "Riverside", "de": "Am Fluss" } }
+                  {
+                    "value": "market",
+                    "label": {
+                      "": "Market Street",
+                      "de": "Marktstraße"
+                    }
+                  },
+                  {
+                    "value": "riverside",
+                    "label": {
+                      "": "Riverside",
+                      "de": "Am Fluss"
+                    }
+                  }
                 ]
               }
             }
@@ -61,48 +140,141 @@
         },
         {
           "key": "d0000000-0000-4000-8000-000000000032",
-          "title": { "": "What you think", "de": "Was Sie denken" },
+          "title": {
+            "": "What you think",
+            "de": "Was Sie denken"
+          },
           "fields": [
             {
               "key": "d0000000-0000-4000-8000-000000000304",
               "type": "rating",
               "alias": "lastVisit",
-              "label": { "": "How was your last visit?", "de": "Wie war Ihr letzter Besuch?" },
+              "label": {
+                "": "How was your last visit?",
+                "de": "Wie war Ihr letzter Besuch?"
+              },
               "required": true,
-              "settings": { "count": 5, "lowLabel": { "": "Poor", "de": "Schlecht" }, "highLabel": { "": "Excellent", "de": "Ausgezeichnet" } }
+              "settings": {
+                "count": 5,
+                "lowLabel": {
+                  "": "Poor",
+                  "de": "Schlecht"
+                },
+                "highLabel": {
+                  "": "Excellent",
+                  "de": "Ausgezeichnet"
+                }
+              }
             },
             {
               "key": "d0000000-0000-4000-8000-000000000305",
               "type": "grid",
               "alias": "happyWith",
-              "label": { "": "How happy are you with these?", "de": "Wie zufrieden sind Sie damit?" },
+              "label": {
+                "": "How happy are you with these?",
+                "de": "Wie zufrieden sind Sie damit?"
+              },
               "options": {
                 "items": [
-                  { "value": "1", "label": { "": "Not happy", "de": "Unzufrieden" } },
-                  { "value": "2", "label": { "": "Fine", "de": "In Ordnung" } },
-                  { "value": "3", "label": { "": "Happy", "de": "Zufrieden" } }
+                  {
+                    "value": "1",
+                    "label": {
+                      "": "Not happy",
+                      "de": "Unzufrieden"
+                    }
+                  },
+                  {
+                    "value": "2",
+                    "label": {
+                      "": "Fine",
+                      "de": "In Ordnung"
+                    }
+                  },
+                  {
+                    "value": "3",
+                    "label": {
+                      "": "Happy",
+                      "de": "Zufrieden"
+                    }
+                  }
                 ]
               },
               "rows": [
-                { "key": "d0000000-0000-4000-8000-000000000351", "label": { "": "The opening hours", "de": "Die Öffnungszeiten" } },
-                { "key": "d0000000-0000-4000-8000-000000000352", "label": { "": "The choice of books", "de": "Die Auswahl an Büchern" } },
-                { "key": "d0000000-0000-4000-8000-000000000353", "label": { "": "Help from our team", "de": "Die Hilfe unseres Teams" } }
+                {
+                  "key": "d0000000-0000-4000-8000-000000000351",
+                  "label": {
+                    "": "The opening hours",
+                    "de": "Die Öffnungszeiten"
+                  }
+                },
+                {
+                  "key": "d0000000-0000-4000-8000-000000000352",
+                  "label": {
+                    "": "The choice of books",
+                    "de": "Die Auswahl an Büchern"
+                  }
+                },
+                {
+                  "key": "d0000000-0000-4000-8000-000000000353",
+                  "label": {
+                    "": "Help from our team",
+                    "de": "Die Hilfe unseres Teams"
+                  }
+                }
               ]
             },
             {
               "key": "d0000000-0000-4000-8000-000000000306",
               "type": "ranking",
               "alias": "improve",
-              "label": { "": "What should we improve first?", "de": "Was sollen wir zuerst verbessern?" },
-              "help": { "": "Put your three most important first.", "de": "Ihre drei wichtigsten zuerst." },
-              "settings": { "top": 3 },
+              "label": {
+                "": "What should we improve first?",
+                "de": "Was sollen wir zuerst verbessern?"
+              },
+              "help": {
+                "": "Put your three most important first.",
+                "de": "Ihre drei wichtigsten zuerst."
+              },
+              "settings": {
+                "top": 3
+              },
               "options": {
                 "items": [
-                  { "value": "hours", "label": { "": "Longer opening hours", "de": "Längere Öffnungszeiten" } },
-                  { "value": "seats", "label": { "": "More quiet seats", "de": "Mehr ruhige Plätze" } },
-                  { "value": "children", "label": { "": "More events for children", "de": "Mehr Veranstaltungen für Kinder" } },
-                  { "value": "cafe", "label": { "": "A café", "de": "Ein Café" } },
-                  { "value": "wifi", "label": { "": "Faster Wi-Fi", "de": "Schnelleres WLAN" } }
+                  {
+                    "value": "hours",
+                    "label": {
+                      "": "Longer opening hours",
+                      "de": "Längere Öffnungszeiten"
+                    }
+                  },
+                  {
+                    "value": "seats",
+                    "label": {
+                      "": "More quiet seats",
+                      "de": "Mehr ruhige Plätze"
+                    }
+                  },
+                  {
+                    "value": "children",
+                    "label": {
+                      "": "More events for children",
+                      "de": "Mehr Veranstaltungen für Kinder"
+                    }
+                  },
+                  {
+                    "value": "cafe",
+                    "label": {
+                      "": "A café",
+                      "de": "Ein Café"
+                    }
+                  },
+                  {
+                    "value": "wifi",
+                    "label": {
+                      "": "Faster Wi-Fi",
+                      "de": "Schnelleres WLAN"
+                    }
+                  }
                 ]
               }
             },
@@ -110,21 +282,57 @@
               "key": "d0000000-0000-4000-8000-000000000307",
               "type": "yesno",
               "alias": "evenings",
-              "label": { "": "Would you come on a weekday evening, until 21:00?", "de": "Würden Sie werktags abends bis 21 Uhr kommen?" }
+              "label": {
+                "": "Would you come on a weekday evening, until 21:00?",
+                "de": "Würden Sie werktags abends bis 21 Uhr kommen?"
+              }
             },
             {
               "key": "d0000000-0000-4000-8000-00000000030a",
               "type": "checkboxes",
               "alias": "eveningDays",
-              "label": { "": "Which evenings would suit you?", "de": "Welche Abende passen Ihnen?" },
+              "label": {
+                "": "Which evenings would suit you?",
+                "de": "Welche Abende passen Ihnen?"
+              },
               "required": true,
               "options": {
                 "items": [
-                  { "value": "mon", "label": { "": "Monday", "de": "Montag" } },
-                  { "value": "tue", "label": { "": "Tuesday", "de": "Dienstag" } },
-                  { "value": "wed", "label": { "": "Wednesday", "de": "Mittwoch" } },
-                  { "value": "thu", "label": { "": "Thursday", "de": "Donnerstag" } },
-                  { "value": "fri", "label": { "": "Friday", "de": "Freitag" } }
+                  {
+                    "value": "mon",
+                    "label": {
+                      "": "Monday",
+                      "de": "Montag"
+                    }
+                  },
+                  {
+                    "value": "tue",
+                    "label": {
+                      "": "Tuesday",
+                      "de": "Dienstag"
+                    }
+                  },
+                  {
+                    "value": "wed",
+                    "label": {
+                      "": "Wednesday",
+                      "de": "Mittwoch"
+                    }
+                  },
+                  {
+                    "value": "thu",
+                    "label": {
+                      "": "Thursday",
+                      "de": "Donnerstag"
+                    }
+                  },
+                  {
+                    "value": "fri",
+                    "label": {
+                      "": "Friday",
+                      "de": "Freitag"
+                    }
+                  }
                 ]
               },
               "rules": [
@@ -133,7 +341,13 @@
                   "effect": "show",
                   "enabled": true,
                   "match": "all",
-                  "conditions": [{ "field": "d0000000-0000-4000-8000-000000000307", "op": "equals", "value": "yes" }]
+                  "conditions": [
+                    {
+                      "field": "d0000000-0000-4000-8000-000000000307",
+                      "op": "equals",
+                      "value": "yes"
+                    }
+                  ]
                 }
               ]
             },
@@ -141,24 +355,85 @@
               "key": "d0000000-0000-4000-8000-000000000308",
               "type": "scale",
               "alias": "recommend",
-              "label": { "": "How likely are you to recommend the library to a friend?", "de": "Wie wahrscheinlich empfehlen Sie die Bibliothek weiter?" },
-              "settings": { "from": 0, "to": 10, "lowLabel": { "": "Not likely", "de": "Unwahrscheinlich" }, "highLabel": { "": "Very likely", "de": "Sehr wahrscheinlich" } }
+              "label": {
+                "": "How likely are you to recommend the library to a friend?",
+                "de": "Wie wahrscheinlich empfehlen Sie die Bibliothek weiter?"
+              },
+              "settings": {
+                "from": 0,
+                "to": 10,
+                "lowLabel": {
+                  "": "Not likely",
+                  "de": "Unwahrscheinlich"
+                },
+                "highLabel": {
+                  "": "Very likely",
+                  "de": "Sehr wahrscheinlich"
+                }
+              }
             },
             {
               "key": "d0000000-0000-4000-8000-000000000309",
               "type": "textarea",
               "alias": "comments",
-              "label": { "": "Anything else you would like to tell us?", "de": "Möchten Sie uns sonst noch etwas sagen?" },
-              "settings": { "rows": 4, "counter": true, "maxLength": 2000 },
+              "label": {
+                "": "Anything else you would like to tell us?",
+                "de": "Möchten Sie uns sonst noch etwas sagen?"
+              },
+              "settings": {
+                "rows": 4,
+                "counter": true,
+                "maxLength": 2000
+              },
               "rules": [
                 {
                   "key": "d0000000-0000-4000-8000-000000003a09",
                   "effect": "require",
                   "enabled": true,
                   "match": "all",
-                  "conditions": [{ "field": "d0000000-0000-4000-8000-000000000308", "op": "lessThan", "value": "7" }]
+                  "conditions": [
+                    {
+                      "field": "d0000000-0000-4000-8000-000000000308",
+                      "op": "lessThan",
+                      "value": "7"
+                    }
+                  ]
                 }
               ]
+            },
+            {
+              "key": "d0000000-0000-4000-8000-00000000030b",
+              "type": "file",
+              "alias": "photo",
+              "label": {
+                "": "A photo, if it helps",
+                "de": "Ein Foto, falls es hilft"
+              },
+              "settings": {
+                "types": [
+                  "images"
+                ],
+                "maxBytes": 2097152,
+                "camera": true
+              }
+            },
+            {
+              "key": "d0000000-0000-4000-8000-00000000030c",
+              "type": "file",
+              "alias": "document",
+              "label": {
+                "": "Or a document",
+                "de": "Oder ein Dokument"
+              },
+              "settings": {
+                "types": [
+                  "pdf",
+                  "images"
+                ],
+                "maxFiles": 3,
+                "thumbnails": false,
+                "camera": false
+              }
             }
           ]
         }

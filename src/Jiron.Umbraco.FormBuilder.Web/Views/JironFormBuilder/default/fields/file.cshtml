@@ -3,8 +3,9 @@
 @using Jiron.Umbraco.FormBuilder.Web.Rendering.Models
 @using Jiron.Umbraco.FormBuilder.Web.Rendering
 @*
-    The files an earlier post stored, each a ticked box that posts its token, then the browser's own file input; the
-    runtime adds the drop zone's buttons and the chosen files (data-jfb-enhanced).
+    The files an earlier post stored, each a ticked box that posts its token, then the browser's own file input. The
+    drop zone's line and buttons show once the runtime runs (data-jfb-enhanced), and it makes each file's row of the
+    template below (ADR-0152).
 *@
 @{
     var control = (FileControlModel)Model.Control!;
@@ -21,9 +22,31 @@
         }
     </div>
 }
-<div class="jfb-upload" @FormBuilderHtml.Flag("data-jfb-dropzone", control.DropZone)>
+<div class="jfb-upload" @FormBuilderHtml.Flag("data-jfb-dropzone", control.DropZone) @FormBuilderHtml.Flag("data-jfb-thumbnails", control.Thumbnails)>
     <span class="jfb-icon jfb-icon-upload" aria-hidden="true"></span>
+    @if (control.Upload.Drag is { } drag)
+    {
+        <p>@drag</p>
+    }
     <div class="jfb-upload-actions">
         <input class="@Model.Classes.FileInput" type="file" id="@Model.Id" name="@Model.Name" accept="@control.Accept" multiple="@control.Multiple" required="@Model.IsRequired" @FormBuilderHtml.Flag("data-jfb-requires", Model.Hooks) disabled="@Model.IsDisabled" aria-invalid="@(Model.Error is null ? null : "true")" aria-describedby="@Model.DescribedBy">
+        <label class="@Model.Classes.Button" for="@Model.Id">@control.Upload.Choose</label>
+        @if (control.Camera is { } camera)
+        {
+            <input type="file" class="jfb-upload-camera" id="@camera.Id" accept="image/*" capture="environment" disabled="@Model.IsDisabled" aria-describedby="@Model.DescribedBy">
+            <label class="@Model.Classes.Button jfb-upload-camera" for="@camera.Id">@camera.Text</label>
+        }
     </div>
 </div>
+<template data-jfb-file data-jfb-list="@control.Upload.List" data-jfb-uploading="@control.Upload.Uploading" data-jfb-uploaded="@control.Upload.Uploaded" data-jfb-remove="@control.Upload.Remove" data-jfb-stop="@control.Upload.Stop" data-jfb-again="@control.Upload.TryAgainFor" data-jfb-stopped="@control.Upload.Stopped" data-jfb-later="@control.Upload.Later" data-jfb-kb="@control.Upload.Kilobytes" data-jfb-mb="@control.Upload.Megabytes">
+    <ul class="jfb-files" aria-label="@control.Upload.List"></ul>
+    <li class="jfb-file">
+        <span class="jfb-icon jfb-icon-file" aria-hidden="true"></span>
+        <strong></strong>
+        <p class="@Model.Classes.Help"></p>
+        <p class="@Model.Classes.Error"></p>
+        <progress max="100" value="0" aria-hidden="true"></progress>
+        <button type="button" class="@Model.Classes.ButtonLink" data-jfb-retry>@control.Upload.TryAgain<span class="jfb-visually-hidden"></span></button>
+        <button type="button" class="@Model.Classes.ButtonIcon" data-jfb-drop-file><span class="jfb-icon jfb-icon-remove" aria-hidden="true"></span><span class="jfb-visually-hidden"></span></button>
+    </li>
+</template>

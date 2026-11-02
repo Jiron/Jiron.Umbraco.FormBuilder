@@ -91,6 +91,20 @@ internal sealed record RenderingWords
             ChooseFilesAgain = "Choose your files again before you send.",
             NoRoomText = "This form can't take files right now. Try again later. Your answers are kept.",
             KeepFile = "Keep {0} ({1})",
+            ChooseFile = "Choose a file",
+            ChooseFiles = "Choose files",
+            TakePhoto = "Take a photo",
+            DragFile = "Drag a file here, or",
+            DragFiles = "Drag files here, or",
+            YourFiles = "Your files",
+            FileUploading = "{0}% uploaded",
+            FileUploaded = "{0} is uploaded.",
+            RemoveFile = "Remove {0}",
+            StopUploading = "Stop uploading {0}",
+            TryAgain = "Try again",
+            TryAgainFor = " to upload {0}",
+            UploadStopped = "The upload stopped before it finished.",
+            UploadLater = "This form can't take files right now. Try again later. Your answers are kept.",
             Kilobytes = "{0} KB",
             Megabytes = "{0} MB",
             Honeypot = "Leave this field empty",
@@ -175,6 +189,20 @@ internal sealed record RenderingWords
             ChooseFilesAgain = "W" + AUmlaut + "hlen Sie Ihre Dateien vor dem Senden erneut aus.",
             NoRoomText = "Dieses Formular kann gerade keine Dateien annehmen. Versuchen Sie es sp" + AUmlaut + "ter noch einmal. Ihre Antworten bleiben erhalten.",
             KeepFile = "{0} ({1}) behalten",
+            ChooseFile = "Datei ausw" + AUmlaut + "hlen",
+            ChooseFiles = "Dateien ausw" + AUmlaut + "hlen",
+            TakePhoto = "Foto aufnehmen",
+            DragFile = "Datei hierher ziehen oder",
+            DragFiles = "Dateien hierher ziehen oder",
+            YourFiles = "Ihre Dateien",
+            FileUploading = "{0} % hochgeladen",
+            FileUploaded = "{0} ist hochgeladen.",
+            RemoveFile = "{0} entfernen",
+            StopUploading = "Hochladen von {0} abbrechen",
+            TryAgain = "Erneut versuchen",
+            TryAgainFor = ", um {0} hochzuladen",
+            UploadStopped = "Das Hochladen wurde vor dem Ende abgebrochen.",
+            UploadLater = "Dieses Formular kann gerade keine Dateien annehmen. Versuchen Sie es sp" + AUmlaut + "ter noch einmal. Ihre Antworten bleiben erhalten.",
             Kilobytes = "{0} KB",
             Megabytes = "{0} MB",
             Honeypot = "Lassen Sie dieses Feld leer",
@@ -394,6 +422,48 @@ internal sealed record RenderingWords
 
     /// <summary>The text of a post with files when the site can take no more of them (ADR-0148).</summary>
     public required string NoRoomText { get; init; }
+
+    /// <summary>The button that chooses the one file a field takes, once the runtime runs.</summary>
+    public required string ChooseFile { get; init; }
+
+    /// <summary>The button that chooses several files.</summary>
+    public required string ChooseFiles { get; init; }
+
+    /// <summary>The button that takes a picture with the device's camera.</summary>
+    public required string TakePhoto { get; init; }
+
+    /// <summary>The line in a drop zone before the one file's button.</summary>
+    public required string DragFile { get; init; }
+
+    /// <summary>The line in a drop zone before the files' button.</summary>
+    public required string DragFiles { get; init; }
+
+    /// <summary>The name, for screen readers, of the list of a field's files.</summary>
+    public required string YourFiles { get; init; }
+
+    /// <summary>A file's state while it is on its way: {0} is how much of it, in percent.</summary>
+    public required string FileUploading { get; init; }
+
+    /// <summary>What the live region says once a file is there: {0} is its name.</summary>
+    public required string FileUploaded { get; init; }
+
+    /// <summary>The name, for screen readers, of the button that takes a file off the list: {0} is its name.</summary>
+    public required string RemoveFile { get; init; }
+
+    /// <summary>The name, for screen readers, of that button while the file is on its way: {0} is its name.</summary>
+    public required string StopUploading { get; init; }
+
+    /// <summary>The button that sends a file again whose upload stopped.</summary>
+    public required string TryAgain { get; init; }
+
+    /// <summary>What follows it, for screen readers: {0} is the file's name.</summary>
+    public required string TryAgainFor { get; init; }
+
+    /// <summary>A file's error when its upload stopped.</summary>
+    public required string UploadStopped { get; init; }
+
+    /// <summary>A file's error when the site cannot take a file now.</summary>
+    public required string UploadLater { get; init; }
 
     /// <summary>That notice's text after a post over a rate limit, with the seconds to wait, always two or more (ADR-0137).</summary>
     public required string WaitSecondsText { get; init; }

@@ -1,0 +1,896 @@
+{
+  "format": "jfb-vectors/1",
+  "suite": "file-kinds",
+  "defaults": {},
+  "fields": {},
+  "cases": [
+    {
+      "id": "jpg-a-jpeg",
+      "fileKind": {
+        "extension": "jpg",
+        "head": "ffd8ffe000104a46494600"
+      },
+      "expect": {
+        "executable": false,
+        "matches": true,
+        "hidesMarkup": false
+      }
+    },
+    {
+      "id": "jpeg-a-jpeg",
+      "fileKind": {
+        "extension": "jpeg",
+        "head": "ffd8ffe000104a46494600"
+      },
+      "expect": {
+        "executable": false,
+        "matches": true,
+        "hidesMarkup": false
+      }
+    },
+    {
+      "id": "jpg-a-png",
+      "fileKind": {
+        "extension": "jpg",
+        "head": "89504e470d0a1a0a0000000d"
+      },
+      "expect": {
+        "executable": false,
+        "matches": false,
+        "hidesMarkup": false
+      }
+    },
+    {
+      "id": "png-a-png",
+      "fileKind": {
+        "extension": "png",
+        "head": "89504e470d0a1a0a0000000d"
+      },
+      "expect": {
+        "executable": false,
+        "matches": true,
+        "hidesMarkup": false
+      }
+    },
+    {
+      "id": "png-a-pdf",
+      "fileKind": {
+        "extension": "png",
+        "head": "255044462d312e370a"
+      },
+      "expect": {
+        "executable": false,
+        "matches": false,
+        "hidesMarkup": false
+      }
+    },
+    {
+      "id": "gif-87",
+      "fileKind": {
+        "extension": "gif",
+        "head": "4749463837610100"
+      },
+      "expect": {
+        "executable": false,
+        "matches": true,
+        "hidesMarkup": false
+      }
+    },
+    {
+      "id": "gif-89",
+      "fileKind": {
+        "extension": "gif",
+        "head": "4749463839610100"
+      },
+      "expect": {
+        "executable": false,
+        "matches": true,
+        "hidesMarkup": false
+      }
+    },
+    {
+      "id": "gif-a-text",
+      "fileKind": {
+        "extension": "gif",
+        "head": "4749463930610100"
+      },
+      "expect": {
+        "executable": false,
+        "matches": false,
+        "hidesMarkup": false
+      }
+    },
+    {
+      "id": "webp-a-webp",
+      "fileKind": {
+        "extension": "webp",
+        "head": "52494646240000005745425056503820"
+      },
+      "expect": {
+        "executable": false,
+        "matches": true,
+        "hidesMarkup": false
+      }
+    },
+    {
+      "id": "webp-a-wave",
+      "fileKind": {
+        "extension": "webp",
+        "head": "524946462400000057415645666d7420"
+      },
+      "expect": {
+        "executable": false,
+        "matches": false,
+        "hidesMarkup": false
+      }
+    },
+    {
+      "id": "webp-too-short",
+      "fileKind": {
+        "extension": "webp",
+        "head": "5249464624"
+      },
+      "expect": {
+        "executable": false,
+        "matches": false,
+        "hidesMarkup": false
+      }
+    },
+    {
+      "id": "avif-major-brand",
+      "fileKind": {
+        "extension": "avif",
+        "head": "00000010667479706176696600000000"
+      },
+      "expect": {
+        "executable": false,
+        "matches": true,
+        "hidesMarkup": false
+      }
+    },
+    {
+      "id": "avif-compatible-brand",
+      "fileKind": {
+        "extension": "avif",
+        "head": "00000014667479706d6966310000000061766966"
+      },
+      "expect": {
+        "executable": false,
+        "matches": true,
+        "hidesMarkup": false
+      }
+    },
+    {
+      "id": "avif-a-heic",
+      "fileKind": {
+        "extension": "avif",
+        "head": "00000010667479706865696300000000"
+      },
+      "expect": {
+        "executable": false,
+        "matches": false,
+        "hidesMarkup": false
+      }
+    },
+    {
+      "id": "heic-major-brand",
+      "fileKind": {
+        "extension": "heic",
+        "head": "00000010667479706865696300000000"
+      },
+      "expect": {
+        "executable": false,
+        "matches": true,
+        "hidesMarkup": false
+      }
+    },
+    {
+      "id": "heif-mif1",
+      "fileKind": {
+        "extension": "heif",
+        "head": "00000010667479706d69663100000000"
+      },
+      "expect": {
+        "executable": false,
+        "matches": true,
+        "hidesMarkup": false
+      }
+    },
+    {
+      "id": "heic-a-video",
+      "fileKind": {
+        "extension": "heic",
+        "head": "000000146674797069736f6d000000006d703432"
+      },
+      "expect": {
+        "executable": false,
+        "matches": false,
+        "hidesMarkup": false
+      }
+    },
+    {
+      "id": "heic-too-short",
+      "fileKind": {
+        "extension": "heic",
+        "head": "0000001066747970"
+      },
+      "expect": {
+        "executable": false,
+        "matches": false,
+        "hidesMarkup": false
+      }
+    },
+    {
+      "id": "pdf-a-pdf",
+      "fileKind": {
+        "extension": "pdf",
+        "head": "255044462d312e370a"
+      },
+      "expect": {
+        "executable": false,
+        "matches": true,
+        "hidesMarkup": false
+      }
+    },
+    {
+      "id": "pdf-a-text",
+      "fileKind": {
+        "extension": "pdf",
+        "head": "4e616d653b416d6f756e740d0a"
+      },
+      "expect": {
+        "executable": false,
+        "matches": false,
+        "hidesMarkup": false
+      }
+    },
+    {
+      "id": "doc-a-compound-file",
+      "fileKind": {
+        "extension": "doc",
+        "head": "d0cf11e0a1b11ae10000"
+      },
+      "expect": {
+        "executable": false,
+        "matches": true,
+        "hidesMarkup": false
+      }
+    },
+    {
+      "id": "xls-a-compound-file",
+      "fileKind": {
+        "extension": "xls",
+        "head": "d0cf11e0a1b11ae10000"
+      },
+      "expect": {
+        "executable": false,
+        "matches": true,
+        "hidesMarkup": false
+      }
+    },
+    {
+      "id": "ppt-a-compound-file",
+      "fileKind": {
+        "extension": "ppt",
+        "head": "d0cf11e0a1b11ae10000"
+      },
+      "expect": {
+        "executable": false,
+        "matches": true,
+        "hidesMarkup": false
+      }
+    },
+    {
+      "id": "doc-a-zip",
+      "fileKind": {
+        "extension": "doc",
+        "head": "504b030414000600"
+      },
+      "expect": {
+        "executable": false,
+        "matches": false,
+        "hidesMarkup": false
+      }
+    },
+    {
+      "id": "docx-a-zip",
+      "fileKind": {
+        "extension": "docx",
+        "head": "504b030414000600"
+      },
+      "expect": {
+        "executable": false,
+        "matches": true,
+        "hidesMarkup": false
+      }
+    },
+    {
+      "id": "xlsx-a-zip",
+      "fileKind": {
+        "extension": "xlsx",
+        "head": "504b030414000600"
+      },
+      "expect": {
+        "executable": false,
+        "matches": true,
+        "hidesMarkup": false
+      }
+    },
+    {
+      "id": "pptx-a-zip",
+      "fileKind": {
+        "extension": "pptx",
+        "head": "504b030414000600"
+      },
+      "expect": {
+        "executable": false,
+        "matches": true,
+        "hidesMarkup": false
+      }
+    },
+    {
+      "id": "odt-a-zip",
+      "fileKind": {
+        "extension": "odt",
+        "head": "504b030414000600"
+      },
+      "expect": {
+        "executable": false,
+        "matches": true,
+        "hidesMarkup": false
+      }
+    },
+    {
+      "id": "ods-a-zip",
+      "fileKind": {
+        "extension": "ods",
+        "head": "504b030414000600"
+      },
+      "expect": {
+        "executable": false,
+        "matches": true,
+        "hidesMarkup": false
+      }
+    },
+    {
+      "id": "odp-a-zip",
+      "fileKind": {
+        "extension": "odp",
+        "head": "504b030414000600"
+      },
+      "expect": {
+        "executable": false,
+        "matches": true,
+        "hidesMarkup": false
+      }
+    },
+    {
+      "id": "docx-an-empty-zip",
+      "fileKind": {
+        "extension": "docx",
+        "head": "504b050600000000"
+      },
+      "expect": {
+        "executable": false,
+        "matches": false,
+        "hidesMarkup": false
+      }
+    },
+    {
+      "id": "rtf-a-rtf",
+      "fileKind": {
+        "extension": "rtf",
+        "head": "7b5c727466315c616e7369"
+      },
+      "expect": {
+        "executable": false,
+        "matches": true,
+        "hidesMarkup": false
+      }
+    },
+    {
+      "id": "txt-a-text",
+      "fileKind": {
+        "extension": "txt",
+        "head": "4e616d653b416d6f756e740d0a"
+      },
+      "expect": {
+        "executable": false,
+        "matches": true,
+        "hidesMarkup": false
+      }
+    },
+    {
+      "id": "csv-a-text",
+      "fileKind": {
+        "extension": "csv",
+        "head": "4e616d653b416d6f756e740d0a"
+      },
+      "expect": {
+        "executable": false,
+        "matches": true,
+        "hidesMarkup": false
+      }
+    },
+    {
+      "id": "txt-empty",
+      "fileKind": {
+        "extension": "txt",
+        "head": ""
+      },
+      "expect": {
+        "executable": false,
+        "matches": true,
+        "hidesMarkup": false
+      }
+    },
+    {
+      "id": "txt-utf16",
+      "fileKind": {
+        "extension": "txt",
+        "head": "fffe61006200"
+      },
+      "expect": {
+        "executable": false,
+        "matches": true,
+        "hidesMarkup": false
+      }
+    },
+    {
+      "id": "txt-utf16-big-endian",
+      "fileKind": {
+        "extension": "txt",
+        "head": "feff00610062"
+      },
+      "expect": {
+        "executable": false,
+        "matches": true,
+        "hidesMarkup": false
+      }
+    },
+    {
+      "id": "txt-with-a-nul",
+      "fileKind": {
+        "extension": "txt",
+        "head": "610062"
+      },
+      "expect": {
+        "executable": false,
+        "matches": false,
+        "hidesMarkup": false
+      }
+    },
+    {
+      "id": "zip-with-an-entry",
+      "fileKind": {
+        "extension": "zip",
+        "head": "504b030414000600"
+      },
+      "expect": {
+        "executable": false,
+        "matches": true,
+        "hidesMarkup": false
+      }
+    },
+    {
+      "id": "zip-empty",
+      "fileKind": {
+        "extension": "zip",
+        "head": "504b050600000000"
+      },
+      "expect": {
+        "executable": false,
+        "matches": true,
+        "hidesMarkup": false
+      }
+    },
+    {
+      "id": "zip-spanned",
+      "fileKind": {
+        "extension": "zip",
+        "head": "504b0708504b0304"
+      },
+      "expect": {
+        "executable": false,
+        "matches": true,
+        "hidesMarkup": false
+      }
+    },
+    {
+      "id": "zip-a-pdf",
+      "fileKind": {
+        "extension": "zip",
+        "head": "255044462d312e370a"
+      },
+      "expect": {
+        "executable": false,
+        "matches": false,
+        "hidesMarkup": false
+      }
+    },
+    {
+      "id": "7z-a-7z",
+      "fileKind": {
+        "extension": "7z",
+        "head": "377abcaf271c0004"
+      },
+      "expect": {
+        "executable": false,
+        "matches": true,
+        "hidesMarkup": false
+      }
+    },
+    {
+      "id": "rar-a-rar",
+      "fileKind": {
+        "extension": "rar",
+        "head": "526172211a0700"
+      },
+      "expect": {
+        "executable": false,
+        "matches": true,
+        "hidesMarkup": false
+      }
+    },
+    {
+      "id": "rar-5",
+      "fileKind": {
+        "extension": "rar",
+        "head": "526172211a070100"
+      },
+      "expect": {
+        "executable": false,
+        "matches": true,
+        "hidesMarkup": false
+      }
+    },
+    {
+      "id": "rar-a-zip",
+      "fileKind": {
+        "extension": "rar",
+        "head": "504b030414000600"
+      },
+      "expect": {
+        "executable": false,
+        "matches": false,
+        "hidesMarkup": false
+      }
+    },
+    {
+      "id": "gz-a-gz",
+      "fileKind": {
+        "extension": "gz",
+        "head": "1f8b08"
+      },
+      "expect": {
+        "executable": false,
+        "matches": true,
+        "hidesMarkup": false
+      }
+    },
+    {
+      "id": "tar-too-short",
+      "fileKind": {
+        "extension": "tar",
+        "head": "7573746172"
+      },
+      "expect": {
+        "executable": false,
+        "matches": false,
+        "hidesMarkup": false
+      }
+    },
+    {
+      "id": "an-extension-of-no-kind",
+      "fileKind": {
+        "extension": "dat",
+        "head": "255044462d312e370a"
+      },
+      "expect": {
+        "executable": false,
+        "matches": true,
+        "hidesMarkup": false
+      }
+    },
+    {
+      "id": "no-extension",
+      "fileKind": {
+        "extension": "",
+        "head": "255044462d312e370a"
+      },
+      "expect": {
+        "executable": false,
+        "matches": true,
+        "hidesMarkup": false
+      }
+    },
+    {
+      "id": "an-empty-pdf",
+      "fileKind": {
+        "extension": "pdf",
+        "head": ""
+      },
+      "expect": {
+        "executable": false,
+        "matches": false,
+        "hidesMarkup": false
+      }
+    },
+    {
+      "id": "a-windows-program-as-pdf",
+      "fileKind": {
+        "extension": "pdf",
+        "head": "4d5a90000300"
+      },
+      "expect": {
+        "executable": true,
+        "matches": false,
+        "hidesMarkup": false
+      }
+    },
+    {
+      "id": "a-windows-program-as-txt",
+      "fileKind": {
+        "extension": "txt",
+        "head": "4d5a90000300"
+      },
+      "expect": {
+        "executable": true,
+        "matches": false,
+        "hidesMarkup": false
+      }
+    },
+    {
+      "id": "an-elf-binary",
+      "fileKind": {
+        "extension": "pdf",
+        "head": "7f454c460201"
+      },
+      "expect": {
+        "executable": true,
+        "matches": false,
+        "hidesMarkup": false
+      }
+    },
+    {
+      "id": "a-mach-o-32",
+      "fileKind": {
+        "extension": "pdf",
+        "head": "feedface"
+      },
+      "expect": {
+        "executable": true,
+        "matches": false,
+        "hidesMarkup": false
+      }
+    },
+    {
+      "id": "a-mach-o-64",
+      "fileKind": {
+        "extension": "pdf",
+        "head": "feedfacf"
+      },
+      "expect": {
+        "executable": true,
+        "matches": false,
+        "hidesMarkup": false
+      }
+    },
+    {
+      "id": "a-mach-o-32-swapped",
+      "fileKind": {
+        "extension": "pdf",
+        "head": "cefaedfe"
+      },
+      "expect": {
+        "executable": true,
+        "matches": false,
+        "hidesMarkup": false
+      }
+    },
+    {
+      "id": "a-mach-o-64-swapped",
+      "fileKind": {
+        "extension": "pdf",
+        "head": "cffaedfe"
+      },
+      "expect": {
+        "executable": true,
+        "matches": false,
+        "hidesMarkup": false
+      }
+    },
+    {
+      "id": "a-universal-binary",
+      "fileKind": {
+        "extension": "pdf",
+        "head": "cafebabe"
+      },
+      "expect": {
+        "executable": true,
+        "matches": false,
+        "hidesMarkup": false
+      }
+    },
+    {
+      "id": "a-script",
+      "fileKind": {
+        "extension": "txt",
+        "head": "23212f62696e2f73680a"
+      },
+      "expect": {
+        "executable": true,
+        "matches": true,
+        "hidesMarkup": false
+      }
+    },
+    {
+      "id": "a-page-as-txt",
+      "fileKind": {
+        "extension": "txt",
+        "head": "3c21444f43545950452068746d6c3e3c703e"
+      },
+      "expect": {
+        "executable": false,
+        "matches": true,
+        "hidesMarkup": true
+      }
+    },
+    {
+      "id": "a-page-as-png",
+      "fileKind": {
+        "extension": "png",
+        "head": "3c68746d6c3e"
+      },
+      "expect": {
+        "executable": false,
+        "matches": false,
+        "hidesMarkup": true
+      }
+    },
+    {
+      "id": "a-page-after-spaces",
+      "fileKind": {
+        "extension": "txt",
+        "head": "20200a3c7363726970743e"
+      },
+      "expect": {
+        "executable": false,
+        "matches": true,
+        "hidesMarkup": true
+      }
+    },
+    {
+      "id": "a-page-as-utf16",
+      "fileKind": {
+        "extension": "txt",
+        "head": "fffe3c00730076006700"
+      },
+      "expect": {
+        "executable": false,
+        "matches": true,
+        "hidesMarkup": true
+      }
+    },
+    {
+      "id": "a-page-with-a-byte-order-mark",
+      "fileKind": {
+        "extension": "txt",
+        "head": "efbbbf3c3f786d6c20"
+      },
+      "expect": {
+        "executable": false,
+        "matches": true,
+        "hidesMarkup": true
+      }
+    },
+    {
+      "id": "a-server-script",
+      "fileKind": {
+        "extension": "txt",
+        "head": "3c3f706870206563686f20313b"
+      },
+      "expect": {
+        "executable": false,
+        "matches": true,
+        "hidesMarkup": true
+      }
+    },
+    {
+      "id": "a-server-page",
+      "fileKind": {
+        "extension": "csv",
+        "head": "3c25207820253e"
+      },
+      "expect": {
+        "executable": false,
+        "matches": true,
+        "hidesMarkup": true
+      }
+    },
+    {
+      "id": "text-that-mentions-a-page",
+      "fileKind": {
+        "extension": "txt",
+        "head": "536565203c68746d6c3e2068657265"
+      },
+      "expect": {
+        "executable": false,
+        "matches": true,
+        "hidesMarkup": false
+      }
+    },
+    {
+      "id": "a-page-inside-a-jpeg",
+      "fileKind": {
+        "extension": "jpg",
+        "head": "ffd8ffe0003c7363726970743e"
+      },
+      "expect": {
+        "executable": false,
+        "matches": true,
+        "hidesMarkup": true
+      }
+    },
+    {
+      "id": "an-svg-inside-a-pdf",
+      "fileKind": {
+        "extension": "pdf",
+        "head": "255044462d312e37203c5356473e"
+      },
+      "expect": {
+        "executable": false,
+        "matches": true,
+        "hidesMarkup": true
+      }
+    },
+    {
+      "id": "a-page-named-as-one",
+      "fileKind": {
+        "extension": "html",
+        "head": "3c68746d6c3e"
+      },
+      "expect": {
+        "executable": false,
+        "matches": true,
+        "hidesMarkup": false
+      }
+    },
+    {
+      "id": "an-svg-named-as-one",
+      "fileKind": {
+        "extension": "svg",
+        "head": "3c7376673e"
+      },
+      "expect": {
+        "executable": false,
+        "matches": true,
+        "hidesMarkup": false
+      }
+    },
+    {
+      "id": "a-page-of-no-kind",
+      "fileKind": {
+        "extension": "dat",
+        "head": "3c68746d6c3e"
+      },
+      "expect": {
+        "executable": false,
+        "matches": true,
+        "hidesMarkup": true
+      }
+    },
+    {
+      "id": "a-mention-of-no-kind",
+      "fileKind": {
+        "extension": "dat",
+        "head": "536565203c68746d6c3e2068657265"
+      },
+      "expect": {
+        "executable": false,
+        "matches": true,
+        "hidesMarkup": false
+      }
+    }
+  ]
+}

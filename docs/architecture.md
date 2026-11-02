@@ -180,7 +180,13 @@ flowchart LR
   (`defaults.ts`, in the merge tags' chunk) on the fields the server marks `data-jfb-default`, loaded as the form
   shows, before the rules first decide, with the address's query values the form allows, into the controls named as
   the field only and never over a control the visitor changed ([ADR-0118](decisions/0118-defaults-with-merge-tags-on-the-page.md)), a field prefilled from the
-  query taking the address's value first ([ADR-0124](decisions/0124-prefill.md)); its budget of every feature
+  query taking the address's value first ([ADR-0124](decisions/0124-prefill.md)); sends on the page (`send.ts`), its
+  outcome in the form's place ([ADR-0120](decisions/0120-sending-waits-for-the-runtimes-budget.md)), and a form
+  published again in the old one's place (`changed.ts`); fits a form to its page and offers `get(form)` (`fit.ts`,
+  [ADR-0151](decisions/0151-fitting-the-page-and-the-js-api.md)); takes files on the page (`uploads-chunk.ts`, a chunk
+  only a form of one page with file fields loads), each checked first by `@jfb/logic/files`, the port the shared
+  vectors hold to the server's, then sent with its progress, its token a hidden input of its row
+  ([ADR-0152](decisions/0152-uploads-on-the-page.md)); its budget of every feature
   counts the largest language's words, as a page loads one
   ([ADR-0116](decisions/0116-the-runtimes-budget-counts-one-language.md)), and its build takes a terser pass besides
   the bundler's minifier ([ADR-0119](decisions/0119-a-terser-pass-for-the-website-runtime.md));

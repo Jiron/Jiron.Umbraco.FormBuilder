@@ -10,6 +10,7 @@ import { wordsFor } from './messages';
 import type { FormModel, ModelField } from './model';
 import { bodyOf, senderOf, submissionId, type SendDetail } from './send';
 import { ENGLISH } from './testing';
+import type { PageUploads } from './uploads';
 import { placeOf } from './validation';
 
 const NOW = Date.UTC(2026, 9, 30, 9, 15, 0);
@@ -108,6 +109,7 @@ interface Options {
   readonly action?: string;
   readonly templates?: string;
   readonly model?: FormModel;
+  readonly files?: PageUploads;
 }
 
 function wake({
@@ -116,6 +118,7 @@ function wake({
   action = 'action="/contact/#jfb-1"',
   templates = TEMPLATES,
   model = MODEL,
+  files,
 }: Options = {}) {
   document.body.innerHTML =
     `<form id="jfb-1" class="jfb-form" lang="en-US" dir="ltr" data-jfb-form="f" data-jfb-contract="1" ${api} ${action} ${attributes}>` +
@@ -144,7 +147,11 @@ function wake({
   const invalid: InvalidDetail[] = [];
   form.addEventListener('jfb:invalid', (event) => invalid.push((event as CustomEvent<InvalidDetail>).detail));
   const gone: string[] = [];
-  const deliver = senderOf(form, model, { id: ID, go: (address) => gone.push(address) });
+  const deliver = senderOf(form, model, {
+    id: ID,
+    go: (address) => gone.push(address),
+    ...(files === undefined ? {} : { files }),
+  });
   pageErrorsOf(form, model, engineOf(model, null), () => NOW, deliver);
   const value = (id: string): HTMLInputElement => document.getElementById(id) as HTMLInputElement;
   value('n').value = 'Ana';
@@ -740,6 +747,50 @@ describe('a form with no address to post to, as the headless element writes', ()
     await until(() => expect(form.querySelector('[data-jfb-notice="server_error"]')).not.toBeNull());
 
     expect(posted).toEqual([]);
+  });
+});
+
+describe('a form whose files the page takes', () => {
+  const STORES: FormModel = {
+    ...MODEL,
+    fields: { ...MODEL.fields, 'k-note': { kind: 'files', canBeRequired: true, builtIn: true } },
+  };
+  const uploadsOf = (settled: Promise<void>): PageUploads => ({ settled: () => settled, uploaded: () => new Map() });
+
+  it('sends on the page, with the tokens its inputs hold, whatever the encoding a post would use', async () => {
+    const server = serve(STORED);
+    const { press, value, posted } = wake({
+      attributes: 'enctype="multipart/form-data"',
+      model: STORES,
+      files: uploadsOf(Promise.resolve()),
+    });
+    value('m').value = 'token-1';
+    press();
+    await until(() => expect(server.entries()).toHaveLength(1));
+
+    expect(server.entries()[0]?.body['values']).toMatchObject({ note: ['token-1'] });
+    expect(posted).toEqual([]);
+  });
+
+  it('waits for what is on its way, busy as ever, and takes a second press for nothing', async () => {
+    const server = serve(STORED);
+    let finish = (): void => undefined;
+    const settled = new Promise<void>((resolve) => {
+      finish = resolve;
+    });
+    const { form, press, value } = wake({ model: STORES, files: uploadsOf(settled) });
+    press();
+    await until(() => expect(form.querySelector('#send')?.getAttribute('aria-disabled')).toBe('true'));
+    press();
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(server.entries(), 'nothing goes while a file is on its way').toEqual([]);
+
+    value('m').value = 'token-2';
+    finish();
+    await until(() => expect(server.entries()).toHaveLength(1));
+    expect(server.entries()[0]?.body['values'], 'and it reads the page once they are there').toMatchObject({
+      note: ['token-2'],
+    });
   });
 });
 

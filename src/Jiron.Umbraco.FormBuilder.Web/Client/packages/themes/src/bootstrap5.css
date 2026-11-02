@@ -802,6 +802,104 @@
     }
   }
 
+  /* A form's files: a drop zone with Bootstrap's own edge, and a row for each file. */
+
+  & .jfb-upload[data-jfb-enhanced] {
+    display: grid;
+    gap: 0.5rem;
+    justify-items: center;
+    padding: 1rem;
+    text-align: center;
+    color: var(--bs-secondary-color);
+    border: var(--bs-border-width) dashed var(--bs-border-color);
+    border-radius: var(--bs-border-radius);
+  }
+
+  & .jfb-upload[data-jfb-drop] {
+    background: var(--bs-primary-bg-subtle);
+    border-color: var(--bs-primary);
+  }
+
+  & .jfb-upload > p {
+    margin: 0;
+  }
+
+  & :is(.jfb-icon-upload, .jfb-icon-file) {
+    display: inline-block;
+    inline-size: 1.5em;
+    block-size: 1.5em;
+    background: currentColor;
+  }
+
+  & .jfb-icon-upload {
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 13v8M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242'/%3E%3Cpath d='m8 17 4-4 4 4'/%3E%3C/svg%3E")
+      center / contain no-repeat;
+  }
+
+  & .jfb-icon-file {
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z'/%3E%3Cpath d='M14 2v5a1 1 0 0 0 1 1h5'/%3E%3C/svg%3E")
+      center / contain no-repeat;
+  }
+
+  /* Nothing can be dropped on a touch screen: no frame, only the buttons. */
+  @media (pointer: coarse) {
+    & .jfb-upload[data-jfb-enhanced] {
+      padding: 0;
+      border-color: transparent;
+    }
+  }
+
+  & .jfb-upload[data-jfb-enhanced] input:focus-visible + label {
+    outline: var(--_ring);
+    outline-offset: 2px;
+  }
+
+  & .jfb-files {
+    display: grid;
+    gap: 0.5rem;
+    margin-block: 0.5rem 0;
+  }
+
+  & .jfb-file {
+    display: grid;
+    grid-template-columns: 3rem minmax(0, 1fr) auto;
+    gap: 0 0.75rem;
+    align-items: center;
+    padding: 0.5rem;
+    border: var(--bs-border-width) solid var(--bs-border-color);
+    border-radius: var(--bs-border-radius);
+  }
+
+  & .jfb-file[data-jfb-error] {
+    border-color: var(--bs-form-invalid-border-color);
+  }
+
+  & .jfb-file > :first-child {
+    grid-row: span 3;
+    inline-size: 3rem;
+    max-block-size: 3rem;
+    object-fit: cover;
+  }
+
+  & .jfb-file > strong {
+    overflow-wrap: anywhere;
+  }
+
+  & .jfb-file > .jfb-button-link {
+    padding-inline: 0;
+  }
+
+  & .jfb-file > .jfb-button-icon {
+    grid-row: 1 / span 3;
+    grid-column: 3;
+  }
+
+  & .jfb-file > :is(p, progress, .jfb-button-link) {
+    grid-column: 2;
+    justify-self: start;
+    margin: 0;
+  }
+
   /* Busy while the answers are on their way: the label gives way to a turning ring, so the button keeps its size. */
 
   & .jfb-button-primary[data-jfb-busy] {

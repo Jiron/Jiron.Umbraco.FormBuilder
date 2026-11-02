@@ -134,12 +134,36 @@ export type FieldViewModel = {
   control?: CalculationControl | CaptchaControl | ChoicesControl | CustomControl | DateControl | FileControl | GridControl | HeadingControl | ImageControl | NumberControl | PartsControl | RankingControl | RepeaterControl | SelectControl | SignatureControl | SingleChoiceControl | SliderControl | TextControl | TextAreaControl | TextBlockControl;
 };
 
+export type FileCameraModel = {
+  id: string;
+  text: string;
+};
+
 export type FileControl = {
   kind: "file";
   accept: string;
   multiple: boolean;
   dropZone: boolean;
+  thumbnails: boolean;
+  upload: FileUploadWordsModel;
+  camera?: FileCameraModel;
   kept: KeptFileModel[];
+};
+
+export type FileUploadWordsModel = {
+  drag?: string;
+  choose: string;
+  list: string;
+  uploading: string;
+  uploaded: string;
+  remove: string;
+  stop: string;
+  tryAgain: string;
+  tryAgainFor: string;
+  stopped: string;
+  later: string;
+  kilobytes: string;
+  megabytes: string;
 };
 
 export type FormSendingModel = {

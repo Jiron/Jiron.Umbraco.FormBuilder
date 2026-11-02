@@ -192,6 +192,50 @@
   scroll-margin-block: 1rem;
 }
 
+/* The files of a form (ADR-0152): what only the runtime can work shows once it runs, and its own inputs stay reachable. */
+.jfb-form .jfb-upload:not([data-jfb-enhanced]) :is(label, p),
+.jfb-form .jfb-upload .jfb-upload-camera {
+  display: none;
+}
+
+.jfb-form .jfb-upload[data-jfb-enhanced] input[type='file'] {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@media (pointer: coarse) {
+  .jfb-form .jfb-upload > p {
+    display: none;
+  }
+
+  .jfb-form .jfb-upload[data-jfb-enhanced] label.jfb-upload-camera {
+    display: inline-block;
+  }
+
+  .jfb-form .jfb-upload[data-jfb-enhanced] input.jfb-upload-camera {
+    display: block;
+  }
+}
+
+.jfb-form .jfb-files {
+  padding: 0;
+  list-style: none;
+}
+
+/* A file's remove button holds only a symbol, so every theme shows it, as a ranking's moves; a theme may draw its own. */
+.jfb-form .jfb-icon-remove {
+  display: inline-block;
+  inline-size: 1.25em;
+  block-size: 1.25em;
+  background: currentColor;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6 6l12 12M18 6 6 18' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+}
+
 /* A form on its way: the primary button says so in any theme, and a theme's ring turns by the two steps below. */
 .jfb-form [data-jfb-busy] {
   cursor: progress;

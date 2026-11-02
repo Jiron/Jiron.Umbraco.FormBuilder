@@ -3,6 +3,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { hidesMarkup, isExecutable, matchesKind } from '../src/file-kinds.ts';
 import {
   checkField,
   checkRows,
@@ -59,6 +60,7 @@ interface VectorCase {
   readonly rows?: FormAnswers['rows'];
   readonly unreadable?: readonly string[];
   readonly unreadableRows?: FormAnswers['unreadableRows'];
+  readonly fileKind?: { readonly extension: string; readonly head: string };
   readonly condition?: Condition;
   readonly rule?: Rule;
   readonly number?: string;
@@ -224,6 +226,7 @@ const RUNNABLE = [
   'read',
   'rowCount',
   'post',
+  'fileKind',
 ] as const;
 
 const folder = vectorsFolder();
@@ -353,6 +356,15 @@ function run(file: VectorFile, vector: VectorCase): unknown {
         rows: Object.fromEntries([...read.rows].map(([alias, rows]) => [alias, rows.map(answers)])),
         context: Object.fromEntries(read.context),
         query: Object.fromEntries(read.query),
+      };
+    }
+    if (vector.fileKind !== undefined) {
+      const { extension, head } = vector.fileKind;
+      const bytes = Uint8Array.from(head.match(/../g) ?? [], (pair) => Number.parseInt(pair, 16));
+      return {
+        executable: isExecutable(bytes),
+        matches: matchesKind(extension, bytes),
+        hidesMarkup: hidesMarkup(extension, bytes),
       };
     }
     if (vector.message !== undefined) {

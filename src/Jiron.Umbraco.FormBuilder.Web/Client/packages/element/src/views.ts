@@ -11,6 +11,7 @@ import type {
   ChoicesControl,
   ErrorSummaryViewModel,
   FieldViewModel,
+  FileUploadWordsModel,
   FormViewModel,
   GroupViewModel,
   HoneypotModel,
@@ -830,8 +831,13 @@ function writeControl(context: ViewContext, classes: ThemeClassesModel, field: F
         el(
           d,
           'div',
-          { class: 'jfb-upload', 'data-jfb-dropzone': flag(control.dropZone) },
+          {
+            class: 'jfb-upload',
+            'data-jfb-dropzone': flag(control.dropZone),
+            'data-jfb-thumbnails': flag(control.thumbnails),
+          },
           el(d, 'span', { class: 'jfb-icon jfb-icon-upload', 'aria-hidden': 'true' }),
+          control.upload.drag !== undefined && el(d, 'p', {}, control.upload.drag),
           el(
             d,
             'div',
@@ -849,8 +855,27 @@ function writeControl(context: ViewContext, classes: ThemeClassesModel, field: F
               'aria-invalid': invalid(field),
               'aria-describedby': field.describedBy,
             }),
+            el(d, 'label', { class: classes.button, for: field.id }, control.upload.choose),
+            control.camera && [
+              el(d, 'input', {
+                type: 'file',
+                class: 'jfb-upload-camera',
+                id: control.camera.id,
+                accept: 'image/*',
+                capture: 'environment',
+                disabled: field.isDisabled,
+                'aria-describedby': field.describedBy,
+              }),
+              el(
+                d,
+                'label',
+                { class: `${classes.button} jfb-upload-camera`, for: control.camera.id },
+                control.camera.text,
+              ),
+            ],
           ),
         ),
+        fileTemplate(d, classes, control.upload),
       ];
     case 'repeater':
       if (control?.kind !== 'repeater') break;
@@ -1166,6 +1191,51 @@ function notice(d: Document, model: NoticeViewModel): HTMLElement {
     model.heading !== undefined && el(d, 'h2', {}, model.heading),
     html(d, model.text),
   );
+}
+
+/** The template of `fields/file.cshtml`: the list, a file's row and the words of its states (ADR-0152). */
+function fileTemplate(d: Document, classes: ThemeClassesModel, words: FileUploadWordsModel): HTMLElement {
+  const template = el(d, 'template', {
+    'data-jfb-file': FLAG,
+    'data-jfb-list': words.list,
+    'data-jfb-uploading': words.uploading,
+    'data-jfb-uploaded': words.uploaded,
+    'data-jfb-remove': words.remove,
+    'data-jfb-stop': words.stop,
+    'data-jfb-again': words.tryAgainFor,
+    'data-jfb-stopped': words.stopped,
+    'data-jfb-later': words.later,
+    'data-jfb-kb': words.kilobytes,
+    'data-jfb-mb': words.megabytes,
+  }) as HTMLTemplateElement;
+  append(template.content, [
+    el(d, 'ul', { class: 'jfb-files', 'aria-label': words.list }),
+    el(
+      d,
+      'li',
+      { class: 'jfb-file' },
+      el(d, 'span', { class: 'jfb-icon jfb-icon-file', 'aria-hidden': 'true' }),
+      el(d, 'strong', {}),
+      el(d, 'p', { class: classes.help }),
+      el(d, 'p', { class: classes.error }),
+      el(d, 'progress', { max: '100', value: '0', 'aria-hidden': 'true' }),
+      el(
+        d,
+        'button',
+        { type: 'button', class: classes.buttonLink, 'data-jfb-retry': FLAG },
+        words.tryAgain,
+        el(d, 'span', { class: 'jfb-visually-hidden' }),
+      ),
+      el(
+        d,
+        'button',
+        { type: 'button', class: classes.buttonIcon, 'data-jfb-drop-file': FLAG },
+        el(d, 'span', { class: 'jfb-icon jfb-icon-remove', 'aria-hidden': 'true' }),
+        el(d, 'span', { class: 'jfb-visually-hidden' }),
+      ),
+    ),
+  ]);
+  return template;
 }
 
 /** `Outcome.cshtml`, as the form's templates hold it: without its message, for the runtime to fill in after a send. */

@@ -163,8 +163,65 @@ public sealed class FileControlModel
     /// <summary>Whether files can be dropped on the field once the runtime runs (<c>data-jfb-dropzone</c>).</summary>
     public bool DropZone { get; init; }
 
+    /// <summary>Whether an image shows its thumbnail once the runtime lists it (<c>data-jfb-thumbnails</c>, ADR-0152).</summary>
+    public bool Thumbnails { get; init; }
+
+    /// <summary>What the runtime shows the field's files with (ADR-0152); the themes hide its buttons until it runs.</summary>
+    public required FileUploadWordsModel Upload { get; init; }
+
+    /// <summary>The camera's input and button, for a field that offers it on a touch screen; null otherwise.</summary>
+    public FileCameraModel? Camera { get; init; }
+
     /// <summary>The files an earlier post stored for the field (ADR-0102), each a ticked box above the input; none at first.</summary>
     public IReadOnlyList<KeptFileModel> Kept { get; init; } = [];
+}
+
+/// <summary>The input that takes a picture and its button (ADR-0152).</summary>
+/// <param name="Id">The input's id.</param>
+/// <param name="Text">The button's text, "Take a photo".</param>
+public sealed record FileCameraModel(string Id, string Text);
+
+/// <summary>What the runtime shows a field's files with (ADR-0152): the words of the drop zone, and of each file's states.</summary>
+public sealed class FileUploadWordsModel
+{
+    /// <summary>The line in a drop zone before the button; null for a field that takes no drop.</summary>
+    public string? Drag { get; init; }
+
+    /// <summary>The button that chooses a file or several.</summary>
+    public required string Choose { get; init; }
+
+    /// <summary>The name, for screen readers, of the list of files.</summary>
+    public required string List { get; init; }
+
+    /// <summary>A file's state on its way, {0} the percent (<c>data-jfb-uploading</c>).</summary>
+    public required string Uploading { get; init; }
+
+    /// <summary>What the live region says once a file is there, {0} its name (<c>data-jfb-uploaded</c>).</summary>
+    public required string Uploaded { get; init; }
+
+    /// <summary>The name of the button that takes a file off the list, {0} its name (<c>data-jfb-remove</c>).</summary>
+    public required string Remove { get; init; }
+
+    /// <summary>That button's name while the file is on its way, {0} its name (<c>data-jfb-stop</c>).</summary>
+    public required string Stop { get; init; }
+
+    /// <summary>The button that sends a file again.</summary>
+    public required string TryAgain { get; init; }
+
+    /// <summary>What follows it for screen readers, {0} the file's name (<c>data-jfb-again</c>).</summary>
+    public required string TryAgainFor { get; init; }
+
+    /// <summary>A file's error when its upload stopped (<c>data-jfb-stopped</c>).</summary>
+    public required string Stopped { get; init; }
+
+    /// <summary>A file's error when the site cannot take a file now (<c>data-jfb-later</c>).</summary>
+    public required string Later { get; init; }
+
+    /// <summary>A size below a megabyte, {0} the kilobytes (<c>data-jfb-kb</c>).</summary>
+    public required string Kilobytes { get; init; }
+
+    /// <summary>A size from a megabyte, {0} the megabytes (<c>data-jfb-mb</c>).</summary>
+    public required string Megabytes { get; init; }
 }
 
 /// <summary>

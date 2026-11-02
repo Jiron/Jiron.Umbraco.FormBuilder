@@ -512,6 +512,22 @@
       ],
       "additionalProperties": false
     },
+    "FileCameraModel": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "text"
+      ],
+      "additionalProperties": false
+    },
     "FileControl": {
       "type": "object",
       "properties": {
@@ -527,6 +543,15 @@
         "dropZone": {
           "type": "boolean"
         },
+        "thumbnails": {
+          "type": "boolean"
+        },
+        "upload": {
+          "$ref": "#/$defs/FileUploadWordsModel"
+        },
+        "camera": {
+          "$ref": "#/$defs/FileCameraModel"
+        },
         "kept": {
           "type": "array",
           "items": {
@@ -539,7 +564,68 @@
         "accept",
         "multiple",
         "dropZone",
+        "thumbnails",
+        "upload",
         "kept"
+      ],
+      "additionalProperties": false
+    },
+    "FileUploadWordsModel": {
+      "type": "object",
+      "properties": {
+        "drag": {
+          "type": "string"
+        },
+        "choose": {
+          "type": "string"
+        },
+        "list": {
+          "type": "string"
+        },
+        "uploading": {
+          "type": "string"
+        },
+        "uploaded": {
+          "type": "string"
+        },
+        "remove": {
+          "type": "string"
+        },
+        "stop": {
+          "type": "string"
+        },
+        "tryAgain": {
+          "type": "string"
+        },
+        "tryAgainFor": {
+          "type": "string"
+        },
+        "stopped": {
+          "type": "string"
+        },
+        "later": {
+          "type": "string"
+        },
+        "kilobytes": {
+          "type": "string"
+        },
+        "megabytes": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "choose",
+        "list",
+        "uploading",
+        "uploaded",
+        "remove",
+        "stop",
+        "tryAgain",
+        "tryAgainFor",
+        "stopped",
+        "later",
+        "kilobytes",
+        "megabytes"
       ],
       "additionalProperties": false
     },

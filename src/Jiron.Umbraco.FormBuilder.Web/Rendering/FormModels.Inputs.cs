@@ -96,6 +96,24 @@ internal sealed partial class FormModels
                         Accept = string.Join(',', FileFieldType.Extensions(typed).Select(extension => "." + extension)),
                         Multiple = typed.MaxFiles > 1,
                         DropZone = typed.DropZone,
+                        Thumbnails = typed.Thumbnails,
+                        Camera = typed.Camera ? new FileCameraModel(id + "-camera", build.Words.TakePhoto) : null,
+                        Upload = new FileUploadWordsModel
+                        {
+                            Drag = !typed.DropZone ? null : typed.MaxFiles > 1 ? build.Words.DragFiles : build.Words.DragFile,
+                            Choose = typed.MaxFiles > 1 ? build.Words.ChooseFiles : build.Words.ChooseFile,
+                            List = build.Words.YourFiles,
+                            Uploading = build.Words.FileUploading,
+                            Uploaded = build.Words.FileUploaded,
+                            Remove = build.Words.RemoveFile,
+                            Stop = build.Words.StopUploading,
+                            TryAgain = build.Words.TryAgain,
+                            TryAgainFor = build.Words.TryAgainFor,
+                            Stopped = build.Words.UploadStopped,
+                            Later = build.Words.UploadLater,
+                            Kilobytes = build.Words.Kilobytes,
+                            Megabytes = build.Words.Megabytes,
+                        },
                         Kept = [.. build.Files(field.Key).Select((file, at) => new KeptFileModel
                         {
                             Id = id + "-kept-" + (at + 1).ToString(CultureInfo.InvariantCulture),

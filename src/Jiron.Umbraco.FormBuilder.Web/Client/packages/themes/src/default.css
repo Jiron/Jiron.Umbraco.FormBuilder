@@ -1743,20 +1743,6 @@
     outline-offset: 2px;
   }
 
-  & .jfb-upload[data-jfb-enhanced] input[type='file'] {
-    position: absolute;
-    inline-size: 1px;
-    block-size: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
-  }
-
-  & .jfb-upload:not([data-jfb-enhanced]) :is(label, p),
-  & .jfb-upload-camera {
-    display: none;
-  }
-
   @media (pointer: coarse) {
     & .jfb-upload > p {
       display: none;
@@ -1778,17 +1764,11 @@
     & .jfb-upload[data-jfb-enhanced] label.jfb-upload-camera {
       display: inline-flex;
     }
-
-    & .jfb-upload[data-jfb-enhanced] input.jfb-upload-camera {
-      display: block;
-    }
   }
 
   & .jfb-files {
     display: grid;
     gap: var(--_s2);
-    padding: 0;
-    list-style: none;
   }
 
   & .jfb-file {

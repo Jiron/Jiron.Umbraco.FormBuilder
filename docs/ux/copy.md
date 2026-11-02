@@ -411,6 +411,10 @@ it is the example form's own wording, and the default follows the same pattern w
 | closed: one entry per member, already sent | **You have already booked** You booked a place on 3 November, and each member can book one workshop a month. To change your booking, write to events@lindenhall.example. | **Sie haben bereits gebucht** Sie haben am 3. November einen Platz gebucht, und jedes Mitglied kann einen Workshop pro Monat buchen. Um Ihre Buchung zu ändern, schreiben Sie an events@lindenhall.example. |
 | the signature's Clear, until the next stroke | Undo clear | Löschen zurücknehmen |
 | an upload that stopped (in the file's row) | The upload stopped before it finished. [Try again] | Das Hochladen wurde vor dem Ende abgebrochen. [Erneut versuchen] |
+| a file field, with the runtime (one file or several) | Drag a file here, or [Choose a file] · Drag files here, or [Choose files] · [Take a photo] | Datei hierher ziehen oder [Datei auswählen] · Dateien hierher ziehen oder [Dateien auswählen] · [Foto aufnehmen] |
+| a file on its way (in its row, and said once it is there) | 60% uploaded · cv.pdf is uploaded. | 60 % hochgeladen · cv.pdf ist hochgeladen. |
+| a file's button, for screen readers | Stop uploading cv.pdf · Remove cv.pdf | Hochladen von cv.pdf abbrechen · cv.pdf entfernen |
+| the site cannot take a file now (in its row) | This form can't take files right now. Try again later. Your answers are kept. | Dieses Formular kann gerade keine Dateien annehmen. Versuchen Sie es später noch einmal. Ihre Antworten bleiben erhalten. |
 | the honeypot's label, out of view and out of the accessibility tree, for a screen reader that reaches it anyway (ADR-0012) | Leave this field empty | Lassen Sie dieses Feld leer |
 
 ### The default error messages

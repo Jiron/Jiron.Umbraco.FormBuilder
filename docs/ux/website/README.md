@@ -72,9 +72,11 @@ should adopt:
 - **Files:** `jfb-upload` (`data-jfb-dropzone`; `data-jfb-drop` while a file is dragged over it), and
   `jfb-files` / `jfb-file` with `data-jfb-busy` while uploading and `data-jfb-error` when refused. Without
   JavaScript the native file input shows, and a file the form has already taken shows above it as a ticked box
-  (`jfb-choices jfb-files`, "Keep cv.pdf (39.1 KB)", ADR-0102). The runtime adds `data-jfb-enhanced` and the two label buttons "Choose
-  files" and "Take a photo"; the camera button and its input (`jfb-upload-camera`, `capture`) show only on touch
-  screens, where "Drag files here" is hidden.
+  (`jfb-choices jfb-files`, "Keep cv.pdf (39.1 KB)", ADR-0102). The view writes the line "Drag files here" and the label
+  buttons "Choose files" and "Take a photo", which the base rules show once the runtime sets `data-jfb-enhanced`
+  (ADR-0152); the camera button and its input (`jfb-upload-camera`, `capture`) are written only with the field's
+  `camera` on and show only on touch screens, where "Drag files here" is hidden. An image in a row shows its thumbnail
+  only with `thumbnails` on.
 - **The default button:** a page with other submit buttons before Next or Send (Remove, Change) starts with a
   visually hidden copy of its Next or Send button (`tabindex="-1"`, `aria-hidden="true"`), so Enter in a field
   means Next or Send.

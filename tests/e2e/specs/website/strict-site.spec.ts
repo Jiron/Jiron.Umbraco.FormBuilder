@@ -275,6 +275,31 @@ test('form_changed on a page the cache still serves: the published form comes in
   }
 });
 
+test('a file goes up under the policy, whose images keep their icon: img-src takes nothing from memory', async ({
+  page,
+}) => {
+  const violations = await violationsOf(page);
+  await page.goto(pathOfForm('feedback'));
+  const form = page.locator('main form.jfb-form');
+  await form.locator('input, select, textarea').first().focus();
+  const photo = form.locator('[data-jfb-alias="photo"]');
+  await expect(photo.locator('.jfb-upload')).toHaveAttribute('data-jfb-enhanced', '');
+  await photo.locator('input[name="photo"]').setInputFiles({
+    name: 'picture.png',
+    mimeType: 'image/png',
+    buffer: Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+      'base64',
+    ),
+  });
+
+  const row = photo.locator('.jfb-file');
+  await expect(row.locator('input[type="hidden"][name="photo"]')).toHaveCount(1);
+  await expect(row.locator('.jfb-icon-file')).toBeVisible();
+  await expect(row.locator('img')).toHaveCount(0);
+  expect((await violations()).filter((each) => !each.startsWith('img-src'))).toEqual([]);
+});
+
 test('nothing sets a cookie: neither the page, its chunks, the checks nor a post', async ({ page, context }) => {
   const setters: string[] = [];
   page.on('response', (response) => {

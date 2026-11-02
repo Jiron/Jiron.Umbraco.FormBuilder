@@ -7,7 +7,8 @@
  * chunk of their own for a form that has such a text (ADR-0115), and 6.4h fills in the default values that hold merge
  * tags before the rules first decide, from a chunk of its own that a form loads only when the server marked such a
  * field (ADR-0118); 6.4i sends a send that passes to the entries endpoint and shows its outcome in the form's place
- * (ADR-0120), and 6.4j puts a form published again meanwhile in the old one's place, which it wakes again here.
+ * (ADR-0120), 6.4j puts a form published again meanwhile in the old one's place, which it wakes again here, and 6.4m
+ * takes a form's files on the page, from a chunk of its own that a form with a file field loads (ADR-0152).
  */
 import type { Context } from '@jfb/logic';
 import { loadEngine, type PageEngine } from './engine';
@@ -15,7 +16,8 @@ import { pageErrorsOf } from './errors';
 import type { FormModel } from './model';
 import { followSliders } from './outputs';
 import { readPage, type PageReading } from './page';
-import { senderOf, valuesOf } from './send';
+import { challengesOf, senderOf, valuesOf, type Carried } from './send';
+import { takesUploads, type PageUploads } from './uploads';
 import type { ShownError } from './messages';
 import { contextOf, rulesOf, type PageRules } from './rules';
 import { checkPage, type CheckScope } from './validation';
@@ -69,7 +71,7 @@ export function attach(
   form: HTMLFormElement,
   model: FormModel,
   defaults: () => Promise<FillDefaults> = loadDefaults,
-  carried?: { readonly id: string; readonly challenge: string | null },
+  carried?: Carried,
 ): Promise<FormSession | null> {
   const session = wake(form, model, defaults, carried);
   sessions.set(form, session);
@@ -80,7 +82,7 @@ async function wake(
   form: HTMLFormElement,
   model: FormModel,
   defaults: () => Promise<FillDefaults>,
-  carried?: { readonly id: string; readonly challenge: string | null },
+  carried?: Carried,
 ): Promise<FormSession | null> {
   const loaded = await Promise.all([
     loadEngine(model),
@@ -91,13 +93,30 @@ async function wake(
   fill?.(form, model, contextOf(model, readPage(form, model), Date.now(), form.ownerDocument.URL));
   const rules = rulesOf(form, model, engine);
   followSliders(form, model);
+  const api = form.dataset['jfbApi'];
+  const challenges =
+    api !== undefined && takesUploads(form, model) ? challengesOf(form, api, carried?.challenge) : undefined;
+  const files: PageUploads | undefined =
+    api === undefined || challenges === undefined
+      ? undefined
+      : await import('./uploads-chunk')
+          .then((module) =>
+            module.enhanceUploads(form, model, {
+              api,
+              challenge: challenges.current,
+              renew: challenges.renew,
+              ...(carried?.files === undefined ? {} : { restored: carried.files }),
+            }),
+          )
+          .catch(() => undefined);
   const errors = pageErrorsOf(
     form,
     model,
     engine,
     Date.now,
     senderOf(form, model, {
-      ...carried,
+      ...(carried === undefined ? {} : { id: carried.id, challenge: carried.challenge }),
+      ...(files === undefined || challenges === undefined ? {} : { files, challenges }),
       rewake: (next, nextModel, carry) => void attach(next, nextModel, defaults, carry),
     }),
   );

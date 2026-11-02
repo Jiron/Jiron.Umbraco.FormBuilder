@@ -6,8 +6,8 @@
  * keeps its place and its focus, and the live region says so. The entry's outcome takes the form's place, and a
  * redirect the page's; the server's errors show as the page's own; a refused or failed send (`rate_limited`,
  * `server_error`, `timeout`) puts the theme's notice just above the buttons, with every answer kept. Any other answer,
- * a form that stores files until 6.4m sends them, and a view that writes none of the send's parts go the way without
- * JavaScript, which the server answers in full; a form with no address to post to (ADR-0128) shows the notice of a
+ * a form whose files the page cannot take (6.4m: on one page, its signature with 6.4n) and a view that writes none of the
+ * send's parts go the way without JavaScript, which the server answers in full; a form with no address to post to (ADR-0128) shows the notice of a
  * failed send instead. An entry already stored under the page's id is never sent again: its `409` shows that entry's
  * outcome. The notices, the outcome and their words are the server's render, in the theme's views and the page's
  * language, in the form's templates.
@@ -16,6 +16,7 @@ import type { PostAnswer, ReadPost } from '@jfb/logic';
 import type { PageErrors, ServerProblem } from './errors';
 import { swapForm } from './changed';
 import { parseSanitised } from './html';
+import type { PageUploads, UploadedFile } from './uploads';
 import type { FormModel } from './model';
 import { readPage } from './page';
 import { contextOf } from './rules';
@@ -133,11 +134,52 @@ export interface SenderOptions {
   /** Goes to an address. */
   readonly go?: (address: string) => void;
   /** Gives a form that came in this one's place its logic. */
-  readonly rewake?: (
-    form: HTMLFormElement,
-    model: FormModel,
-    carried: { id: string; challenge: string | null },
-  ) => void;
+  readonly rewake?: (form: HTMLFormElement, model: FormModel, carried: Carried) => void;
+  /** The form's uploads, when the page takes its files; a send waits for them (6.4m). */
+  readonly files?: PageUploads;
+  /** The challenge the page holds, shared with its uploads, whose tokens name it (ADR-0138). */
+  readonly challenges?: Challenges;
+}
+
+/** What a form that came in another's place keeps. */
+export interface Carried {
+  readonly id: string;
+  readonly challenge: string | null;
+  readonly files?: ReadonlyMap<string, readonly UploadedFile[]>;
+}
+
+/** The challenge a form holds: asked for when it wakes, asked again when that failed, renewed when it has expired. */
+export interface Challenges {
+  current(): Promise<string | null>;
+  /** Asks again, without the one before it: a first asking that failed. */
+  again(): Promise<string | null>;
+  /** Asks again with the one it holds, whose first time a renewal carries over. */
+  renew(): Promise<string | null>;
+}
+
+/** A form's challenge: asked for now, unless it came with one. */
+export function challengesOf(form: HTMLFormElement, api: string, given?: string | null): Challenges {
+  const content = form.dataset['jfbContent'] || undefined;
+  const ask = (previous?: string): Promise<string | null> =>
+    fetch(`${api}/forms/${form.dataset['jfbForm'] ?? ''}/challenge`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ previous, contentKey: content }),
+      signal: AbortSignal.timeout(WAIT),
+    })
+      .then((response) => (response.ok ? (response.json() as Promise<{ challenge?: string }>) : null))
+      .then((answer) => answer?.challenge ?? null)
+      .catch(() => null);
+  let held = given === undefined ? ask() : Promise.resolve(given);
+  return {
+    current: () => held,
+    again: () => (held = ask()),
+    renew: async () => {
+      const last = await held;
+      held = ask(last ?? undefined);
+      return held;
+    },
+  };
 }
 
 /** A form's sender: one submission id for every send of the page, which makes a retry safe. */
@@ -151,8 +193,8 @@ export function senderOf(form: HTMLFormElement, model: FormModel, options: Sende
   const sends = templates?.dataset['jfbSending'] !== undefined && api !== undefined;
   const take =
     sends &&
-    form.enctype !== 'multipart/form-data' &&
-    !Object.values(model.fields).some((field) => field.kind === 'files');
+    (options.files !== undefined ||
+      (form.enctype !== 'multipart/form-data' && !Object.values(model.fields).some((field) => field.kind === 'files')));
   const posts = form.hasAttribute('action');
   const post = (path: string, body: object): Promise<Response> =>
     fetch(`${api}/forms/${key}/${path}`, {
@@ -161,22 +203,13 @@ export function senderOf(form: HTMLFormElement, model: FormModel, options: Sende
       body: JSON.stringify(body),
       signal: AbortSignal.timeout(WAIT),
     });
-  /** Asks for a challenge, with the one before it, whose first time a renewal carries over; null when none came. */
-  const ask = (previous?: string): Promise<string | null> =>
-    post('challenge', { previous, contentKey: content })
-      .then((response) => (response.ok ? (response.json() as Promise<{ challenge?: string }>) : null))
-      .then((answer) => answer?.challenge ?? null)
-      .catch(() => null);
-  let challenge = !take
-    ? Promise.resolve(null)
-    : options.challenge === undefined
-      ? ask()
-      : Promise.resolve(options.challenge);
+  const challenges =
+    !take || api === undefined ? null : (options.challenges ?? challengesOf(form, api, options.challenge));
   /** The challenges the page's sends went with, one of which its entry names. */
   const held = new Set<string>();
   let notice: Element | null | undefined;
   return async (button, errors) => {
-    if (templates === null || !take) return false;
+    if (templates === null || challenges === null) return false;
     const primary = form.querySelector<HTMLElement>('[data-jfb-nav="submit"]') ?? button;
     const live = form.querySelector<HTMLElement>(':scope > [data-jfb-live]');
     const detail: SendDetail = { key, alias: model.alias };
@@ -196,12 +229,13 @@ export function senderOf(form: HTMLFormElement, model: FormModel, options: Sende
     let handedOver = false;
     let swapped: Awaited<ReturnType<typeof swapForm>> = null;
     try {
+      await options.files?.settled();
       const reading = readPage(form, model);
       const query = contextOf(model, reading, Date.now(), form.ownerDocument.URL).query;
       const honeypot = form.querySelector<HTMLInputElement>(':scope > .jfb-hp input')?.value;
       const placement = form.dataset['jfbPlacement'] || undefined;
       const send = async (): Promise<Response> => {
-        const current = await challenge;
+        const current = await challenges.current();
         if (current !== null) held.add(current);
         return post(
           'entries',
@@ -215,16 +249,15 @@ export function senderOf(form: HTMLFormElement, model: FormModel, options: Sende
       };
       // The page asks again when its first asking failed. A challenge made now says the visitor filled the form in no
       // time, which the score holds against them (ADR-0139), so a form that can post goes that way, where no time counts.
-      if ((await challenge) === null) {
-        challenge = ask();
-        handedOver = posts && (await challenge) !== null;
+      if ((await challenges.current()) === null) {
+        const asked = await challenges.again();
+        handedOver = posts && asked !== null;
       }
       if (!handedOver) {
         let response = await send();
         // A slow visitor's challenge has expired: the renewal carries its first time over.
         if (response.status === 401) {
-          const last = await challenge;
-          challenge = ask(last ?? undefined);
+          await challenges.renew();
           response = await send();
         }
         status = response.status;
@@ -262,7 +295,12 @@ export function senderOf(form: HTMLFormElement, model: FormModel, options: Sende
           detail: { key, alias: swapped.model.alias, code: 'form_changed' },
         }),
       );
-      options.rewake?.(swapped.form, swapped.model, { id, challenge: await challenge });
+      const files = options.files?.uploaded();
+      options.rewake?.(swapped.form, swapped.model, {
+        id,
+        challenge: await challenges.current(),
+        ...(files === undefined ? {} : { files }),
+      });
       return true;
     }
     // A stored entry is never sent again, whatever its answer holds.
