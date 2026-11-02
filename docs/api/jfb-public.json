@@ -1800,6 +1800,10 @@
           "showAnswers": {
             "type": "boolean",
             "nullable": true
+          },
+          "copy": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -1838,6 +1842,10 @@
             "nullable": true
           },
           "placement": {
+            "type": "string",
+            "nullable": true
+          },
+          "instance": {
             "type": "string",
             "nullable": true
           },

@@ -114,7 +114,7 @@ public sealed class RenderEndpointTests : OutputCacheTestBase
     }
 
     [Test]
-    public async Task Render_ShowsNoOutcome_EvenWithTheTokenOfASentPost()
+    public async Task Render_ShowsTheOutcome_ForTheTokenOfASend_AndOnlyInItsOwnInstance()
     {
         var key = await PublishFormAsync(CacheForm, null, RequiredName);
         var content = (await PagesAsync(CachePage))[CachePage];
@@ -123,12 +123,17 @@ public sealed class RenderEndpointTests : OutputCacheTestBase
         var token = sent.Location!.Split('?')[1].Split('#')[0];
 
         var rendered = await RenderAsync(key, "jfb-1", "/cache/", content, null, "&" + token);
+        var elsewhere = await RenderAsync(key, "jfb-2", "/cache/", content, null, "&" + token);
+        var forged = await RenderAsync(key, "jfb-1", "/cache/", content, null, "&jfb-sent=jfb-1.forged");
 
-        Assert.Multiple(async () =>
+        Assert.Multiple(() =>
         {
-            Assert.That((await ServedAsync(Client, sent.Location)).Document.QuerySelector("#jfb-1 [data-jfb-outcome]"), Is.Not.Null, "the token shows the outcome on the page");
-            Assert.That(rendered.Served.Document.QuerySelector("form#jfb-1"), Is.Not.Null);
-            Assert.That(rendered.Served.Document.QuerySelector("[data-jfb-outcome]"), Is.Null);
+            Assert.That(rendered.Served.Document.QuerySelector("#jfb-1 [data-jfb-outcome]"), Is.Not.Null, "the page's way to the outcome after a send (ADR-0155)");
+            Assert.That(rendered.Served.Document.QuerySelector("form#jfb-1"), Is.Null);
+            Assert.That(elsewhere.Served.Document.QuerySelector("[data-jfb-outcome]"), Is.Null, "the token names its instance");
+            Assert.That(elsewhere.Served.Document.QuerySelector("form#jfb-2"), Is.Not.Null);
+            Assert.That(forged.Served.Document.QuerySelector("[data-jfb-outcome]"), Is.Null);
+            Assert.That(forged.Served.Document.QuerySelector("form#jfb-1"), Is.Not.Null);
         });
     }
 
