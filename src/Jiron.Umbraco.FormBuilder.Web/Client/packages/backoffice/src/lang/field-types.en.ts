@@ -135,6 +135,7 @@ export default {
     yesnoNoLabel: 'Label of no',
     yesnoStyle: 'Style',
     consentText: 'Consent text',
+    consentLoadsCaptcha: 'Ticking this loads the captcha',
     countryAllowed: 'Allowed countries',
     countryTop: 'Countries shown first',
     countryDefault: 'Preselected country',

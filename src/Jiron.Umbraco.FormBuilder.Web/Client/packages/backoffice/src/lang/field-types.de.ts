@@ -135,6 +135,7 @@ export default {
     yesnoNoLabel: 'Beschriftung für Nein',
     yesnoStyle: 'Darstellung',
     consentText: 'Einwilligungstext',
+    consentLoadsCaptcha: 'Das Ankreuzen lädt das Captcha',
     countryAllowed: 'Erlaubte Länder',
     countryTop: 'Zuerst angezeigte Länder',
     countryDefault: 'Vorausgewähltes Land',
