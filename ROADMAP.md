@@ -2499,7 +2499,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - a long unbroken word stays inside a 375 px wide rendering of every layout (Playwright on the `.eml` HTML);
     - tests show the per-address and per-site limits on SQLite and SQL Server, with two spellings of one mailbox that differ only in non-ASCII capitals counting as one, and the "limited" state in the delivery log;
     - a test shows that no email leaves while sending is paused, and that all of them leave once it is not.
-- [ ] **8.3 The email action**
+- [x] **8.3 The email action** (2026-11-02, 3c8365f)
   - **Addressing:** the recipient kinds, CC/BCC, reply-to a field. An address a visitor typed gets a mail of its own, never a CC or BCC, so the limits of §4.10 count it (ADR-0159).
     - **A recipient map** (added in 1.1): the options of a choice field ("Sales", "Support") map to internal addresses, which stay out of the public projection (§4.3.1).
   - **Content:**
