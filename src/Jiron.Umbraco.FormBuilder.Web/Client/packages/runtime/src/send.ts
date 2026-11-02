@@ -6,7 +6,7 @@
  * keeps its place and its focus, and the live region says so. The entry's outcome takes the form's place, and a
  * redirect the page's; the server's errors show as the page's own; a refused or failed send (`rate_limited`,
  * `server_error`, `timeout`) puts the theme's notice just above the buttons, with every answer kept. Any other answer,
- * a form whose files the page cannot take (6.4m: on one page, its signature with 6.4n) and a view that writes none of the
+ * a form whose files the page cannot take (6.4m and 6.4n: only on one page) and a view that writes none of the
  * send's parts go the way without JavaScript, which the server answers in full; a form with no address to post to (ADR-0128) shows the notice of a
  * failed send instead. An entry already stored under the page's id is never sent again: its `409` shows that entry's
  * outcome. The notices, the outcome and their words are the server's render, in the theme's views and the page's
@@ -229,7 +229,8 @@ export function senderOf(form: HTMLFormElement, model: FormModel, options: Sende
     let handedOver = false;
     let swapped: Awaited<ReturnType<typeof swapForm>> = null;
     try {
-      await options.files?.settled();
+      // A file that failed has the focus by now, and the answers stay on the page.
+      if ((await options.files?.settled()) === false) return true;
       const reading = readPage(form, model);
       const query = contextOf(model, reading, Date.now(), form.ownerDocument.URL).query;
       const honeypot = form.querySelector<HTMLInputElement>(':scope > .jfb-hp input')?.value;
@@ -280,12 +281,18 @@ export function senderOf(form: HTMLFormElement, model: FormModel, options: Sende
           }
         }
       }
-    } catch {
-      // No answer came in time, or none at all.
+    } catch (failed) {
+      // No answer came in time, or none at all, or a signature's upload was refused, which says how.
+      const refused = failed as { status?: number; retryAfter?: string | null };
+      if (refused.status !== undefined) {
+        status = refused.status;
+        retryAfter = refused.retryAfter ?? null;
+      }
     } finally {
       primary.removeAttribute(BUSY);
       primary.removeAttribute(DISABLED);
-      if (live !== null) live.textContent = '';
+      // What a file that failed said stays to be read.
+      if (live !== null && live.textContent === templates.dataset['jfbSending']) live.textContent = '';
     }
     if (handedOver) return false;
     if (swapped !== null) {

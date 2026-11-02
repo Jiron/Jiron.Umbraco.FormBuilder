@@ -226,12 +226,12 @@ describe('the messages', () => {
 });
 
 describe('the checks', () => {
-  const errorsFor = (pages: ModelPage[], html: string, own: readonly string[] = []) => {
+  const errorsFor = (pages: ModelPage[], html: string, own: readonly string[] = [], onPage?: ReadonlySet<string>) => {
     const form = formOf(`<section data-jfb-page="p1"><div data-jfb-group="g1">${html}</div></section>`);
     const model = modelOf(pages, own);
     const reading = readPage(form, model);
     const context = contextOf(model, reading, NOW, form.ownerDocument.URL);
-    return errorsOf(model, reading, engineOf(model, FORMULAS).decide(reading.answers, context), context);
+    return errorsOf(model, reading, engineOf(model, FORMULAS).decide(reading.answers, context), context, onPage);
   };
   const page = (...fields: ModelField[]): ModelPage[] => [{ key: 'p1', groups: [{ key: 'g1', fields }] }];
 
@@ -258,6 +258,20 @@ describe('the checks', () => {
       <div data-jfb-field="k-total"></div>
       <input type="hidden" name="source">`;
     expect(errorsFor(fields, html)).toEqual([]);
+  });
+
+  it('hold a field whose files the page takes to its answer, a token or one on its way', () => {
+    const fields = page(field('k-cv', 'file', 'cv', { required: true, settings: { maxFiles: 1 } }));
+    const onPage = new Set(['k-cv']);
+    const of = (inputs: string): readonly unknown[] =>
+      errorsFor(fields, `<div data-jfb-field="k-cv"><input type="file">${inputs}</div>`, [], onPage);
+
+    expect(of('')).toEqual([{ field: 'k-cv', row: null, code: 'required' }]);
+    expect(of('<input type="hidden" name="cv" value="on-its-way">')).toEqual([]);
+    expect(of('<input type="hidden" name="cv" value="t1">')).toEqual([]);
+    expect(of('<input type="hidden" name="cv" value="t1"><input type="hidden" name="cv" value="t2">')).toEqual([
+      { field: 'k-cv', row: null, code: 'fileCount' },
+    ]);
   });
 
   it("hold a choice to its own options and those its parent's answer offers, and leave a list's or a source's to the server", () => {

@@ -3,7 +3,7 @@ import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '../../fixtures.ts';
 import { formPages, pathOf } from '../../support/demo-content.ts';
 
-// Uploads on the page (ROADMAP 6.4m, ADR-0152), on the demo's feedback form, whose photo has `thumbnails` and `camera` on and
+// Uploads on the page (ROADMAP 6.4m, ADR-0152), on the demo's room hire form, whose photo has `thumbnails` and `camera` on and
 // whose document has them off: an oversize file and a renamed program are refused before any upload request is sent, an
 // upload cut off by the server is a failed upload with a retry, a file goes up with its progress and is sent with the entry,
 // and axe finds nothing in any state.
@@ -33,9 +33,25 @@ const fileOf = (
   buffer: Buffer.concat([Buffer.from(head), Buffer.alloc(Math.max(0, size - head.length), 0x20)]),
 });
 
-const feedback = formPages().find((each) => each.form === 'feedback');
-if (feedback === undefined) throw new Error('The demo has no feedback page.');
-const PATH = pathOf(feedback.texts.en, 'en');
+const room = formPages().find((each) => each.form === 'roomHire');
+if (room === undefined) throw new Error('The demo has no room hire page.');
+const PATH = pathOf(room.texts.en, 'en');
+
+/** The answers the form needs besides its files, a name typed for the signature. */
+async function fillTheRest(form: Locator): Promise<void> {
+  await form.locator('[name="day"]').fill(new Date(Date.now() + 7 * 24 * 3_600_000).toISOString().slice(0, 10));
+  await form.locator('[name="from"]').fill('10:00');
+  await form.locator('input[name="room"][value="25"]').check();
+  await form.locator('[name="contact.first"]').fill('Daniel');
+  await form.locator('[name="contact.last"]').fill('Fernandes');
+  await form.locator('[name="email"]').fill('daniel@visitor.jfb.test');
+  await form.locator('[name="billing.street"]').fill('Main Street 1');
+  await form.locator('[name="billing.postcode"]').fill('10115');
+  await form.locator('[name="billing.city"]').fill('Berlin');
+  await form.locator('[name="billing.country"]').selectOption('DE');
+  await form.getByRole('button', { name: 'Type your name instead' }).click();
+  await form.locator('[name="signature.typed"]').fill('Daniel Fernandes');
+}
 
 const formOn = (page: Page): Locator => page.locator('main form.jfb-form');
 const photo = (form: Locator): Locator => form.locator('[data-jfb-alias="photo"]');
@@ -72,7 +88,7 @@ function uploadsOf(page: Page): string[] {
 }
 
 async function filesOf(request: APIRequestContext): Promise<{ name: string }[][]> {
-  const list = await request.get('/jfb-testing/entries', { params: { form: 'feedback' } });
+  const list = await request.get('/jfb-testing/entries', { params: { form: 'roomHire' } });
   expect(list.status()).toBe(200);
   return ((await list.json()) as { entries: { files: { name: string }[] }[] }).entries.map((entry) => entry.files);
 }
@@ -100,14 +116,14 @@ test('an oversize file and a renamed program are refused before any upload reque
     .locator('input[name="photo"]')
     .setInputFiles(fileOf('huge.png', 'image/png', PNG, 3 * 1024 * 1024));
   const big = photo(form).locator('.jfb-file');
-  await expect(big).toHaveAttribute('data-jfb-error', '');
+  await expect(big).toHaveAttribute('data-jfb-failed', '');
   await expect(big.locator('.jfb-error')).toContainText('2 MB');
 
   await documents(form)
     .locator('input[name="document"]')
     .setInputFiles(fileOf('invoice.pdf', 'application/pdf', PROGRAM));
   const program = documents(form).locator('.jfb-file');
-  await expect(program).toHaveAttribute('data-jfb-error', '');
+  await expect(program).toHaveAttribute('data-jfb-failed', '');
   await expect(program.locator('.jfb-error')).not.toBeEmpty();
   await expect(program.locator('[data-jfb-retry]')).toBeHidden();
   await axe(page, 'files refused');
@@ -132,15 +148,55 @@ test('an upload cut off by the server is a failed upload with a retry', async ({
     .setInputFiles(fileOf('plan.pdf', 'application/pdf', PDF));
 
   const row = documents(form).locator('.jfb-file');
-  await expect(row).toHaveAttribute('data-jfb-error', '');
+  await expect(row).toHaveAttribute('data-jfb-failed', '');
   await expect(row.locator('.jfb-error')).toHaveText('The upload stopped before it finished.');
   await expect(form.locator('[data-jfb-live]')).toContainText('The upload stopped');
   await axe(page, 'a stopped upload');
 
   await row.getByRole('button', { name: 'Try again to upload plan.pdf' }).click();
-  await expect(row).not.toHaveAttribute('data-jfb-error');
+  await expect(row).not.toHaveAttribute('data-jfb-failed');
   await expect(row.locator('input[type="hidden"][name="document"]')).toHaveCount(1);
   await expect(form.locator('[data-jfb-live]')).toHaveText('plan.pdf is uploaded.');
+});
+
+test('a file that failed stays in its row as the visitor moves on, and stops the send until it is dealt with', async ({
+  page,
+}) => {
+  const form = await ready(page);
+  let cut = true;
+  await page.route('**/jfb/api/v1/forms/*/uploads**', async (route) => {
+    // The signature's image goes at the send too, and goes on.
+    if (cut && route.request().postDataBuffer()?.includes('plan.pdf') === true) await route.abort('connectionreset');
+    else await route.continue();
+  });
+  await fillTheRest(form);
+  await documents(form)
+    .locator('input[name="document"]')
+    .setInputFiles(fileOf('plan.pdf', 'application/pdf', PDF));
+  const row = documents(form).locator('.jfb-file');
+  await expect(row).toHaveAttribute('data-jfb-failed', '');
+
+  await form.locator('[name="email"]').focus();
+  await form.locator('[name="email"]').blur();
+  await expect(row, 'leaving the field leaves it').toHaveAttribute('data-jfb-failed', '');
+
+  const entries: string[] = [];
+  page.on('request', (request) => {
+    if (request.url().endsWith('/entries')) entries.push(request.url());
+  });
+  await form.locator('button[data-jfb-nav="submit"]').click();
+  await expect(row.locator('[data-jfb-retry]')).toBeFocused();
+  await expect(form.locator('[data-jfb-live]')).toContainText('The upload stopped');
+  expect(entries, 'nothing goes without it').toEqual([]);
+
+  cut = false;
+  await page.keyboard.press('Enter');
+  await expect(row).not.toHaveAttribute('data-jfb-failed');
+  await expect(form.locator('[data-jfb-live]')).toHaveText('plan.pdf is uploaded.');
+  const answered = page.waitForResponse((response) => response.url().endsWith('/entries'));
+  await form.locator('button[data-jfb-nav="submit"]').click();
+  const answer = await answered;
+  expect(answer.status(), await answer.text()).toBe(200);
 });
 
 test('the site that cannot take a file now says to try later, with the other answers kept', async ({ page }) => {
@@ -148,7 +204,7 @@ test('the site that cannot take a file now says to try later, with the other ans
   await page.route('**/jfb/api/v1/forms/*/uploads**', (route) =>
     route.fulfill({ status: 503, headers: { 'Retry-After': '300' }, json: { code: 'uploads_full' } }),
   );
-  await form.locator('[name="comments"]').fill('Longer opening hours, please.');
+  await form.locator('[name="contact.first"]').fill('Daniel');
   await documents(form)
     .locator('input[name="document"]')
     .setInputFiles(fileOf('plan.pdf', 'application/pdf', PDF));
@@ -156,7 +212,7 @@ test('the site that cannot take a file now says to try later, with the other ans
   const row = documents(form).locator('.jfb-file');
   await expect(row.locator('.jfb-error')).toContainText('Try again later.');
   await expect(row.locator('[data-jfb-retry]')).toBeHidden();
-  await expect(form.locator('[name="comments"]')).toHaveValue('Longer opening hours, please.');
+  await expect(form.locator('[name="contact.first"]')).toHaveValue('Daniel');
 });
 
 test('a file goes up with its progress, and is sent with the entry', async ({ page, request }) => {
@@ -170,26 +226,20 @@ test('a file goes up with its progress, and is sent with the entry', async ({ pa
   });
   await documents(form)
     .locator('input[name="document"]')
-    .setInputFiles(fileOf('plan.pdf', 'application/pdf', PDF, 200_000));
+    .setInputFiles(fileOf('progress.pdf', 'application/pdf', PDF, 200_000));
   const row = documents(form).locator('.jfb-file');
   await expect(row).toHaveAttribute('data-jfb-busy', '');
   await expect(row.locator('.jfb-help')).toHaveText(/\d+% uploaded/);
   await expect(row.locator('progress')).toBeAttached();
-  await expect(row.getByRole('button', { name: 'Stop uploading plan.pdf' })).toBeVisible();
+  await expect(row.getByRole('button', { name: 'Stop uploading progress.pdf' })).toBeVisible();
   await axe(page, 'a file on its way');
   release();
   await expect(row).not.toHaveAttribute('data-jfb-busy');
   await expect(row.locator('.jfb-help')).toHaveText(/195\.3 KB/);
   await expect(row.locator('progress')).toBeHidden();
-  await expect(row.getByRole('button', { name: 'Remove plan.pdf' })).toBeVisible();
+  await expect(row.getByRole('button', { name: 'Remove progress.pdf' })).toBeVisible();
 
-  for (const [name, value] of [
-    ['visits', 'monthly'],
-    ['lastVisit', '4'],
-  ] as const) {
-    const input = form.locator(`input[name="${name}"][value="${value}"]`);
-    await form.locator(`label[for="${(await input.getAttribute('id')) ?? ''}"]`).click();
-  }
+  await fillTheRest(form);
   const left: string[] = [];
   page.on('request', (request) => {
     if (request.isNavigationRequest()) left.push(request.url());
@@ -204,7 +254,7 @@ test('a file goes up with its progress, and is sent with the entry', async ({ pa
   await expect(page.locator('main [data-jfb-outcome]')).toBeFocused();
   expect(left, 'the page stayed').toEqual([]);
   await expect
-    .poll(async () => (await filesOf(request)).flat().some((file) => file.name === 'plan.pdf'), { timeout: 15_000 })
+    .poll(async () => (await filesOf(request)).flat().some((file) => file.name === 'progress.pdf'), { timeout: 15_000 })
     .toBe(true);
 });
 

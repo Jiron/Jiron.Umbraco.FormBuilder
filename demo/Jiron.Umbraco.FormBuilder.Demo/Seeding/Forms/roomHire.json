@@ -114,6 +114,20 @@
               "settings": { "types": ["pdf", "images"] }
             },
             {
+              "key": "d0000000-0000-4000-8000-000000000431",
+              "type": "file",
+              "alias": "photo",
+              "label": { "": "A photo of what you plan, if it helps", "de": "Ein Foto Ihres Vorhabens, falls es hilft" },
+              "settings": { "types": ["images"], "maxBytes": 2097152, "camera": true }
+            },
+            {
+              "key": "d0000000-0000-4000-8000-000000000432",
+              "type": "file",
+              "alias": "document",
+              "label": { "": "Or a document", "de": "Oder ein Dokument" },
+              "settings": { "types": ["pdf", "images"], "maxFiles": 3, "thumbnails": false, "camera": false }
+            },
+            {
               "key": "d0000000-0000-4000-8000-000000000410",
               "type": "signature",
               "alias": "signature",

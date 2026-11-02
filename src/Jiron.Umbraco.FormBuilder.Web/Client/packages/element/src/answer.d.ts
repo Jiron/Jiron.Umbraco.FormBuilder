@@ -470,12 +470,24 @@ export type SelectOptionModel = {
 
 export type SignatureControl = {
   kind: "signature";
+  pad: SignaturePadModel;
   label: string;
   name: string;
   value: string;
   maxLength: number;
   help: string;
   helpId: string;
+};
+
+export type SignaturePadModel = {
+  width: number;
+  height: number;
+  help: string;
+  drawn: string;
+  clear: string;
+  undoClear: string;
+  typeInstead: string;
+  byHand: string;
 };
 
 export type SingleChoiceControl = {

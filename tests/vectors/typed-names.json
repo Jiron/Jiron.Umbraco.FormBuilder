@@ -1,0 +1,221 @@
+{
+  "format": "jfb-vectors/1",
+  "suite": "typed-names",
+  "defaults": {},
+  "fields": {},
+  "cases": [
+    {
+      "id": "a-name-as-it-is",
+      "typedName": {
+        "typed": "Ana Lima"
+      },
+      "expect": {
+        "name": "Ana Lima"
+      }
+    },
+    {
+      "id": "its-ends-trimmed",
+      "typedName": {
+        "typed": "  Ana Lima  "
+      },
+      "expect": {
+        "name": "Ana Lima"
+      }
+    },
+    {
+      "id": "a-run-of-spaces-one-space",
+      "typedName": {
+        "typed": "Ana \t\n  Lima"
+      },
+      "expect": {
+        "name": "Ana Lima"
+      }
+    },
+    {
+      "id": "a-no-break-space-a-space",
+      "typedName": {
+        "typed": "Ana\u00a0Lima"
+      },
+      "expect": {
+        "name": "Ana Lima"
+      }
+    },
+    {
+      "id": "an-ideographic-space-a-space",
+      "typedName": {
+        "typed": "Ana\u3000Lima"
+      },
+      "expect": {
+        "name": "Ana Lima"
+      }
+    },
+    {
+      "id": "composed",
+      "typedName": {
+        "typed": "Jose\u0301"
+      },
+      "expect": {
+        "name": "Jos\u00e9"
+      }
+    },
+    {
+      "id": "without-control-characters",
+      "typedName": {
+        "typed": "Ana\u0007 Lima\u007f"
+      },
+      "expect": {
+        "name": "Ana Lima"
+      }
+    },
+    {
+      "id": "without-a-direction-mark",
+      "typedName": {
+        "typed": "\u200eAna Lima"
+      },
+      "expect": {
+        "name": "Ana Lima"
+      }
+    },
+    {
+      "id": "a-space-after-a-mark-at-the-start-is-gone",
+      "typedName": {
+        "typed": "\u200e Ana"
+      },
+      "expect": {
+        "name": "Ana"
+      }
+    },
+    {
+      "id": "its-joiners-kept",
+      "typedName": {
+        "typed": "a\u200db\u200cc"
+      },
+      "expect": {
+        "name": "a\u200db\u200cc"
+      }
+    },
+    {
+      "id": "another-script-kept",
+      "typedName": {
+        "typed": "\u5c71\u7530"
+      },
+      "expect": {
+        "name": "\u5c71\u7530"
+      }
+    },
+    {
+      "id": "beyond-the-first-plane-kept",
+      "typedName": {
+        "typed": "Ana \ud83d\ude00"
+      },
+      "expect": {
+        "name": "Ana \ud83d\ude00"
+      }
+    },
+    {
+      "id": "nothing-is-no-name",
+      "typedName": {
+        "typed": ""
+      },
+      "expect": {
+        "name": null
+      }
+    },
+    {
+      "id": "only-spaces-is-no-name",
+      "typedName": {
+        "typed": " \t "
+      },
+      "expect": {
+        "name": null
+      }
+    },
+    {
+      "id": "only-marks-is-no-name",
+      "typedName": {
+        "typed": "\u200e\u0007"
+      },
+      "expect": {
+        "name": null
+      }
+    },
+    {
+      "id": "a-name-on-the-default-pad",
+      "typedPng": {
+        "image": "89504e470d0a1a0a0000000d49484452000003840000012c08060000009b9e7d910000000049454e44ae426082",
+        "name": "Ana Lima"
+      },
+      "expect": {
+        "png": "89504e470d0a1a0a0000000d49484452000003840000012c08060000009b9e7d910000001b695458746a66623a74797065642d6e616d650000000000416e61204c696d61edbc43240000000049454e44ae426082",
+        "name": "Ana Lima",
+        "width": 900,
+        "height": 300
+      }
+    },
+    {
+      "id": "a-name-with-a-letter-of-two-bytes",
+      "typedPng": {
+        "image": "89504e470d0a1a0a0000000d49484452000003840000012c08060000009b9e7d910000000049454e44ae426082",
+        "name": "Ana M\u00fcller"
+      },
+      "expect": {
+        "png": "89504e470d0a1a0a0000000d49484452000003840000012c08060000009b9e7d910000001e695458746a66623a74797065642d6e616d650000000000416e61204dc3bc6c6c657266c5de1c0000000049454e44ae426082",
+        "name": "Ana M\u00fcller",
+        "width": 900,
+        "height": 300
+      }
+    },
+    {
+      "id": "a-name-in-another-script",
+      "typedPng": {
+        "image": "89504e470d0a1a0a0000000d49484452000003840000012c08060000009b9e7d910000000049454e44ae426082",
+        "name": "\u5c71\u7530"
+      },
+      "expect": {
+        "png": "89504e470d0a1a0a0000000d49484452000003840000012c08060000009b9e7d9100000019695458746a66623a74797065642d6e616d650000000000e5b1b1e794b0f3b331cf0000000049454e44ae426082",
+        "name": "\u5c71\u7530",
+        "width": 900,
+        "height": 300
+      }
+    },
+    {
+      "id": "a-name-beyond-the-first-plane",
+      "typedPng": {
+        "image": "89504e470d0a1a0a0000000d49484452000003840000012c08060000009b9e7d910000000049454e44ae426082",
+        "name": "Ana \ud83d\ude00"
+      },
+      "expect": {
+        "png": "89504e470d0a1a0a0000000d49484452000003840000012c08060000009b9e7d910000001b695458746a66623a74797065642d6e616d650000000000416e6120f09f9880b5977a720000000049454e44ae426082",
+        "name": "Ana \ud83d\ude00",
+        "width": 900,
+        "height": 300
+      }
+    },
+    {
+      "id": "a-long-name-on-a-widened-image",
+      "typedPng": {
+        "image": "89504e470d0a1a0a0000000d4948445200000a8c0000012c0806000000f30403e00000000049454e44ae426082",
+        "name": "Ana LimaAna LimaAna LimaAna LimaAna LimaAna LimaAna LimaAna LimaAna LimaAna LimaAna LimaAna Lima"
+      },
+      "expect": {
+        "png": "89504e470d0a1a0a0000000d4948445200000a8c0000012c0806000000f30403e000000073695458746a66623a74797065642d6e616d650000000000416e61204c696d61416e61204c696d61416e61204c696d61416e61204c696d61416e61204c696d61416e61204c696d61416e61204c696d61416e61204c696d61416e61204c696d61416e61204c696d61416e61204c696d61416e61204c696d6178a3495a0000000049454e44ae426082",
+        "name": "Ana LimaAna LimaAna LimaAna LimaAna LimaAna LimaAna LimaAna LimaAna LimaAna LimaAna LimaAna Lima",
+        "width": 2700,
+        "height": 300
+      }
+    },
+    {
+      "id": "a-pad-of-its-own-size",
+      "typedPng": {
+        "image": "89504e470d0a1a0a0000000d4948445200000280000000c808060000007859500b0000000049454e44ae426082",
+        "name": "Ana"
+      },
+      "expect": {
+        "png": "89504e470d0a1a0a0000000d4948445200000280000000c808060000007859500b00000016695458746a66623a74797065642d6e616d650000000000416e61f45d5bcb0000000049454e44ae426082",
+        "name": "Ana",
+        "width": 640,
+        "height": 200
+      }
+    }
+  ]
+}

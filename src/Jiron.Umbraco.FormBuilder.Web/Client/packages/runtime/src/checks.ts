@@ -41,7 +41,13 @@ export interface PageError {
  * it, then each row's shown children's; for a field its type's error kinds, its own checks and the validation rules
  * whose message shows at it or at one of a grid's rows.
  */
-export function errorsOf(model: FormModel, reading: PageReading, state: FormState, context: Context): PageError[] {
+export function errorsOf(
+  model: FormModel,
+  reading: PageReading,
+  state: FormState,
+  context: Context,
+  onPage: ReadonlySet<string> = new Set(),
+): PageError[] {
   const hidden = new Set(state.hidden);
   const required = new Set(state.required);
   const others = othersOf(model, reading, state, hidden);
@@ -52,7 +58,7 @@ export function errorsOf(model: FormModel, reading: PageReading, state: FormStat
     if (group === undefined) {
       const from = errors.length;
       const read = reading.fields.get(field.key);
-      check(errors, model, field, read, null, required.has(field.key), others, context);
+      check(errors, model, field, read, null, required.has(field.key), others, context, onPage);
       messages(errors, state.messages, field, null);
       withParts(errors, from, model, field, read, required.has(field.key));
       continue;
@@ -72,7 +78,7 @@ export function errorsOf(model: FormModel, reading: PageReading, state: FormStat
         if (rowState.hidden.includes(child.key)) continue;
         const from = errors.length;
         const isRequired = rowState.required.includes(child.key);
-        check(errors, model, child, children.get(child.key), row, isRequired, rowOthers, context);
+        check(errors, model, child, children.get(child.key), row, isRequired, rowOthers, context, onPage);
         messages(errors, rowState.messages, child, row);
         withParts(errors, from, model, child, children.get(child.key), isRequired);
       }
@@ -91,6 +97,7 @@ function check(
   isRequired: boolean,
   others: Readonly<Record<string, readonly string[]>>,
   context: Context,
+  onPage: ReadonlySet<string>,
 ): void {
   const logic = Object.hasOwn(model.fields, field.key) ? model.fields[field.key] : undefined;
   const builtIn = logic?.builtIn === true;
@@ -100,9 +107,10 @@ function check(
     errors.push({ field: field.key, row, code: limit });
     return;
   }
-  // The server's to decide: a calculation's value, a value it resolves, and the files it was sent.
+  // The server's to decide: a calculation's value, a value it resolves, and the files it was sent, but for a field whose
+  // files the page takes, which reads them all (ADR-0152).
   if (field.type === 'calculation' && builtIn) return;
-  if (declared?.serverOnly === true || declared?.storage === 'file') return;
+  if (declared?.serverOnly === true || (declared?.storage === 'file' && !onPage.has(field.key))) return;
   const checked: CheckedField = {
     type: field.type,
     ...(logic?.kind == null ? {} : { kind: logic.kind as Kind }),

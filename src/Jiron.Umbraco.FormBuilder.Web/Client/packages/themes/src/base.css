@@ -192,6 +192,23 @@
   scroll-margin-block: 1rem;
 }
 
+/* A signature (ADR-0153): the pad and the way between it and the typed name show once the runtime runs. */
+.jfb-form .jfb-signature:not([data-jfb-enhanced]) :is([data-jfb-drawn], .jfb-signature-tools),
+.jfb-form .jfb-signature-way[hidden],
+.jfb-form .jfb-signature-tools [hidden] {
+  display: none;
+}
+
+.jfb-form .jfb-signature-pad {
+  display: block;
+  inline-size: 100%;
+  block-size: auto;
+  max-inline-size: 56rem;
+  touch-action: none;
+  cursor: crosshair;
+  border: 1px solid currentColor;
+}
+
 /* The files of a form (ADR-0152): what only the runtime can work shows once it runs, and its own inputs stay reachable. */
 .jfb-form .jfb-upload:not([data-jfb-enhanced]) :is(label, p),
 .jfb-form .jfb-upload .jfb-upload-camera {

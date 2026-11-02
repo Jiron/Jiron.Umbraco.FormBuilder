@@ -8,6 +8,7 @@
     "./calc": "./src/calc.ts",
     "./files": "./src/file-kinds.ts",
     "./recall": "./src/recall.ts",
+    "./signature": "./src/typed-name.ts",
     "./template": "./src/template.ts",
     "./lang/en": "./src/lang/messages.en.ts",
     "./lang/de": "./src/lang/messages.de.ts"

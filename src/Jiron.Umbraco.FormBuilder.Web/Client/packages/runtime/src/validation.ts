@@ -95,7 +95,17 @@ async function check(
     return [emptyError(form, model, words)];
   let errors = server
     ? scope.map((problem) => placeOf(model, problem)).filter((error) => error !== null)
-    : errorsOf(model, reading, state, context);
+    : errorsOf(
+        model,
+        reading,
+        state,
+        context,
+        new Set(
+          [...form.querySelectorAll('[data-jfb-enhanced]')].flatMap(
+            (each) => each.closest<HTMLElement>('[data-jfb-field]')?.dataset['jfbField'] ?? [],
+          ),
+        ),
+      );
   if (scope === 'page') {
     const key = form.querySelector<HTMLElement>('[data-jfb-page]:not([hidden])')?.dataset['jfbPage'];
     const page = model.form.pages.find((each) => each.key === key);

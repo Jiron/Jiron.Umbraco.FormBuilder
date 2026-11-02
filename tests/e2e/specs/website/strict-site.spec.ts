@@ -107,7 +107,7 @@ async function violationsOf(page: Page): Promise<() => Promise<string[]>> {
 function chunksOf(page: Page): Set<string> {
   const loaded = new Set<string>();
   page.on('response', (response) => {
-    const found = /\/runtime\/chunks\/([a-z.]+)-[A-Za-z0-9_-]{8}[.]js$/.exec(new URL(response.url()).pathname);
+    const found = /\/runtime\/chunks\/([a-z.-]+)-[A-Za-z0-9_-]{8}[.]js$/.exec(new URL(response.url()).pathname);
     if (found?.[1] !== undefined && response.ok()) loaded.add(found[1]);
   });
   return loaded;
@@ -168,7 +168,7 @@ test("a page the output cache serves runs the runtime and its chunks with script
   expect(policyOf(response)).toContain("script-src 'self';");
   expect(await page.locator('script[nonce]').count(), 'a cached page carries no nonce').toBe(0);
   await exercise(page);
-  expect([...chunks].sort()).toEqual(['calc', 'form', 'messages.en']);
+  expect([...chunks].sort()).toEqual(['calc', 'form', 'messages.en', 'signature-chunk', 'uploads-chunk']);
   expect(await violations()).toEqual([]);
   await axe(page, 'the room hire from the cache');
 });
@@ -214,7 +214,7 @@ for (const mode of ['nonce', 'strict-dynamic'] as const) {
       expect(chunks.has(feature), `${alias} loads its ${feature} chunk`).toBe(true);
       await axe(page, `${alias} with a nonce (${mode})`);
     }
-    expect([...chunks].sort()).toEqual(['calc', 'form', 'messages.en', 'recall']);
+    expect([...chunks].sort()).toEqual(['calc', 'form', 'messages.en', 'recall', 'signature-chunk', 'uploads-chunk']);
     expect(await violations()).toEqual([]);
   });
 }
@@ -279,7 +279,7 @@ test('a file goes up under the policy, whose images keep their icon: img-src tak
   page,
 }) => {
   const violations = await violationsOf(page);
-  await page.goto(pathOfForm('feedback'));
+  await page.goto(pathOfForm('roomHire'));
   const form = page.locator('main form.jfb-form');
   await form.locator('input, select, textarea').first().focus();
   const photo = form.locator('[data-jfb-alias="photo"]');

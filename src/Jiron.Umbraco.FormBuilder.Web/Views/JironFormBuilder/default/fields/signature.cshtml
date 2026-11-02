@@ -2,12 +2,25 @@
 @model Jiron.Umbraco.FormBuilder.Web.Rendering.Models.FieldViewModel
 @using Jiron.Umbraco.FormBuilder.Web.Rendering
 @using Jiron.Umbraco.FormBuilder.Web.Rendering.Models
-@* The name typed instead of a drawing, which counts as the signature; the runtime adds the pad and the way between them. *@
+@* The name typed instead of a drawing, which counts as the signature; the pad and the way between them show once the runtime runs (ADR-0153). *@
 @{
     var control = (SignatureControlModel)Model.Control!;
 }
 <div class="jfb-signature">
-    <p class="@Model.Classes.Help" id="@control.HelpId">@control.Help</p>
-    <label class="jfb-visually-hidden" for="@Model.Id">@control.Label</label>
-    <input class="@Model.Classes.Control" id="@Model.Id" name="@control.Name" value="@(control.Value.Length == 0 ? null : control.Value)" maxlength="@control.MaxLength" autocomplete="name" autocapitalize="words" spellcheck="false" required="@Model.IsRequired" @FormBuilderHtml.Flag("data-jfb-requires", Model.Hooks) disabled="@Model.IsDisabled" aria-invalid="@(Model.Error is null ? null : "true")" aria-describedby="@control.HelpId">
+    <div class="jfb-signature-way" data-jfb-drawn>
+        <p class="@Model.Classes.Help">@control.Pad.Help</p>
+        <canvas class="jfb-signature-pad" width="@control.Pad.Width" height="@control.Pad.Height" role="img" aria-label="@control.Pad.Drawn"></canvas>
+        <div class="jfb-signature-tools">
+            <button type="button" class="@Model.Classes.ButtonLink" disabled="@Model.IsDisabled" data-jfb-clear data-jfb-undo="@control.Pad.UndoClear">@control.Pad.Clear</button>
+            <button type="button" class="@Model.Classes.ButtonLink" disabled="@Model.IsDisabled" data-jfb-to-typed>@control.Pad.TypeInstead</button>
+        </div>
+    </div>
+    <div class="jfb-signature-way" data-jfb-typed>
+        <p class="@Model.Classes.Help" id="@control.HelpId">@control.Help</p>
+        <label class="jfb-visually-hidden" for="@Model.Id">@control.Label</label>
+        <input class="@Model.Classes.Control" id="@Model.Id" name="@control.Name" value="@(control.Value.Length == 0 ? null : control.Value)" maxlength="@control.MaxLength" autocomplete="name" autocapitalize="words" spellcheck="false" required="@Model.IsRequired" @FormBuilderHtml.Flag("data-jfb-requires", Model.Hooks) disabled="@Model.IsDisabled" aria-invalid="@(Model.Error is null ? null : "true")" aria-describedby="@control.HelpId">
+        <div class="jfb-signature-tools">
+            <button type="button" class="@Model.Classes.ButtonLink" disabled="@Model.IsDisabled" data-jfb-to-drawn>@control.Pad.ByHand</button>
+        </div>
+    </div>
 </div>

@@ -1811,28 +1811,23 @@
     margin: 0;
   }
 
-  & .jfb-file[data-jfb-error] {
+  & .jfb-file[data-jfb-failed] {
     border-color: var(--_error);
   }
 
   /* Signature: draw on the pad, or type a name instead (the keyboard and screen-reader path) */
 
-  & .jfb-signature {
+  & :is(.jfb-signature, .jfb-signature-way) {
     display: grid;
     gap: var(--_s2);
   }
 
   & .jfb-signature-pad {
-    display: block;
-    inline-size: 100%;
-    block-size: auto;
-    aspect-ratio: 3 / 1;
     background:
       linear-gradient(var(--_border), var(--_border)) var(--_s5) 75% / calc(100% - 2 * var(--_s5)) 1px no-repeat,
       var(--_surface);
     border: 1px solid var(--_border);
     border-radius: var(--_r-card);
-    touch-action: none;
   }
 
   & .jfb-signature-tools {
@@ -1847,7 +1842,7 @@
     margin-block-start: var(--_s1);
   }
 
-  & .jfb-signature > .jfb-help {
+  & .jfb-signature-way > .jfb-help {
     margin: 0;
   }
 

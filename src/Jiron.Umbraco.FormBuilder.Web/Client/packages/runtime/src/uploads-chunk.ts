@@ -4,18 +4,18 @@
  * how many the field takes and its first bytes, as the server checks them; one that passes goes to the `uploads` endpoint,
  * the challenge first, with its progress. Its token goes in a hidden input of the row, which the page reads as the field's
  * answer. A file the server refuses shows why; one the site cannot take now says to try later, and one that stopped, a reset
- * among them, offers "Try again". Nothing here stops a send but what the server would refuse: a send waits for the uploads on
- * their way, and the server checks the answers again.
+ * among them, offers "Try again". While a file is on its way its input says so, so a check counts the field as answered; a
+ * send waits for it, and stops at a file that failed, whose row takes the focus, until the visitor tries again or takes it off.
  */
 import { hidesMarkup, HEAD_LENGTH, isExecutable, matchesKind } from '@jfb/logic/files';
 import { shownErrors, wordsFor } from './messages';
 import type { FormModel, ModelField } from './model';
 import { fieldsOf, readPage } from './page';
 import { contextOf } from './rules';
-import type { PageUploads, UploadedFile, UploadOptions } from './uploads';
+import { ON_ITS_WAY, type PageUploads, type UploadedFile, type UploadOptions } from './uploads';
 
 const BUSY = 'data-jfb-busy';
-const ERROR = 'data-jfb-error';
+const ERROR = 'data-jfb-failed';
 const DROP = 'data-jfb-drop';
 
 const extensionOf = (name: string): string => {
@@ -125,6 +125,20 @@ export function enhanceUploads(form: HTMLFormElement, model: FormModel, options:
       const progress = part<HTMLProgressElement>('progress');
       const retry = part<HTMLButtonElement>('[data-jfb-retry]');
       const drop = part<HTMLButtonElement>('[data-jfb-drop-file]');
+      let answer: HTMLInputElement | null = null;
+      /** What the page reads as this file's answer: its token, that one is on its way, or nothing. */
+      const answers = (value: string | null): void => {
+        if (value === null) {
+          answer?.remove();
+          answer = null;
+        } else {
+          answer ??= row.appendChild(form.ownerDocument.createElement('input'));
+          answer.type = 'hidden';
+          answer.name = name;
+          answer.value = value;
+        }
+        zone.dispatchEvent(new Event('input', { bubbles: true }));
+      };
       part('strong').textContent = fileName;
       const dropName = drop.querySelector('.jfb-visually-hidden') as HTMLElement;
       (retry.querySelector('.jfb-visually-hidden') as HTMLElement).textContent = words.again.replace('{0}', fileName);
@@ -139,7 +153,7 @@ export function enhanceUploads(form: HTMLFormElement, model: FormModel, options:
         if (row.hasAttribute(ERROR)) error.textContent = text;
         else help.textContent = text;
       };
-      return { row, show, progress, retry, drop };
+      return { row, show, answers, progress, retry, drop };
     }
 
     const removeRow = (row: HTMLElement): void => {
@@ -154,11 +168,7 @@ export function enhanceUploads(form: HTMLFormElement, model: FormModel, options:
 
     /** The row of a file the server holds, with the input that posts its token. */
     function hold(built: ReturnType<typeof rowOf>, file: UploadedFile): void {
-      const token = form.ownerDocument.createElement('input');
-      token.type = 'hidden';
-      token.name = name;
-      token.value = file.token;
-      built.row.append(token);
+      built.answers(file.token);
       mine.set(built.row, file);
       built.show('done', sizeOf(file.size, words));
     }
@@ -170,15 +180,18 @@ export function enhanceUploads(form: HTMLFormElement, model: FormModel, options:
       running.add(promise);
       void promise.then(() => running.delete(promise));
       built.show('busy', words.uploading.replace('{0}', '0'));
+      built.answers(ON_ITS_WAY);
       built.progress.value = 0;
       const request = new XMLHttpRequest();
       const stopped = (): void => {
+        built.answers(null);
         built.show('stopped', words.stopped);
         say(`${file.name}: ${words.stopped}`);
         resolve();
       };
       const refused = async (code: string | undefined): Promise<void> => {
         const text = code === 'later' ? words.later : await messageOf(field as ModelField, code ?? 'fileType');
+        built.answers(null);
         built.show('refused', text);
         say(`${file.name}: ${text}`);
         resolve();
@@ -225,6 +238,7 @@ export function enhanceUploads(form: HTMLFormElement, model: FormModel, options:
       built.drop.onclick = (): void => {
         request.abort();
         removeRow(built.row);
+        zone.dispatchEvent(new Event('input', { bubbles: true }));
         input?.focus();
       };
       built.retry.onclick = (): void => {
@@ -263,8 +277,10 @@ export function enhanceUploads(form: HTMLFormElement, model: FormModel, options:
           (row as HTMLElement).querySelector<HTMLElement>('[data-jfb-drop-file]')?.click();
       const built = rowOf(file.name);
       listOf().append(built.row);
+      built.answers(ON_ITS_WAY);
       built.drop.onclick = (): void => {
         removeRow(built.row);
+        zone.dispatchEvent(new Event('input', { bubbles: true }));
         input?.focus();
       };
       // A file already refused or stopped holds no place in what the field takes.
@@ -272,9 +288,10 @@ export function enhanceUploads(form: HTMLFormElement, model: FormModel, options:
         file,
         input as HTMLInputElement,
         field as ModelField,
-        listOf().querySelectorAll(':scope > :not([data-jfb-error])').length,
+        listOf().querySelectorAll(':scope > :not([data-jfb-failed])').length,
       ).catch(() => null);
       if (refusal !== null) {
+        built.answers(null);
         built.show('refused', refusal);
         say(`${file.name}: ${refusal}`);
         return;
@@ -324,6 +341,7 @@ export function enhanceUploads(form: HTMLFormElement, model: FormModel, options:
       hold(built, file);
       built.drop.onclick = (): void => {
         removeRow(built.row);
+        zone.dispatchEvent(new Event('input', { bubbles: true }));
         input.focus();
       };
     }
@@ -331,8 +349,16 @@ export function enhanceUploads(form: HTMLFormElement, model: FormModel, options:
   }
 
   return {
-    async settled(): Promise<void> {
+    async settled(): Promise<boolean> {
       while (running.size > 0) await Promise.all(running);
+      const failed = form.querySelector<HTMLElement>(`.jfb-file[${ERROR}]`);
+      if (failed === null) return true;
+      const retry = failed.querySelector<HTMLElement>('[data-jfb-retry]:not([hidden])');
+      (retry ?? failed.querySelector<HTMLElement>('[data-jfb-drop-file]'))?.focus();
+      say(
+        `${failed.querySelector('strong')?.textContent ?? ''}: ${failed.querySelector('[class*="error"]')?.textContent ?? ''}`,
+      );
+      return false;
     },
     uploaded(): ReadonlyMap<string, readonly UploadedFile[]> {
       return new Map([...held].map(([name, files]) => [name, [...files.values()]]));

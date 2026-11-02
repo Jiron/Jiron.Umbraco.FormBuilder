@@ -17,7 +17,7 @@ import type { FormModel } from './model';
 import { followSliders } from './outputs';
 import { readPage, type PageReading } from './page';
 import { challengesOf, senderOf, valuesOf, type Carried } from './send';
-import { takesUploads, type PageUploads } from './uploads';
+import { allOf, takesUploads, type PageUploads, type UploadOptions } from './uploads';
 import type { ShownError } from './messages';
 import { contextOf, rulesOf, type PageRules } from './rules';
 import { checkPage, type CheckScope } from './validation';
@@ -96,18 +96,27 @@ async function wake(
   const api = form.dataset['jfbApi'];
   const challenges =
     api !== undefined && takesUploads(form, model) ? challengesOf(form, api, carried?.challenge) : undefined;
-  const files: PageUploads | undefined =
+  const uploading: UploadOptions | undefined =
     api === undefined || challenges === undefined
       ? undefined
-      : await import('./uploads-chunk')
-          .then((module) =>
-            module.enhanceUploads(form, model, {
-              api,
-              challenge: challenges.current,
-              renew: challenges.renew,
-              ...(carried?.files === undefined ? {} : { restored: carried.files }),
-            }),
-          )
+      : {
+          api,
+          challenge: challenges.current,
+          renew: challenges.renew,
+          ...(carried?.files === undefined ? {} : { restored: carried.files }),
+        };
+  const files: PageUploads | undefined =
+    uploading === undefined
+      ? undefined
+      : await Promise.all([
+          form.querySelector('.jfb-upload') === null
+            ? []
+            : import('./uploads-chunk').then((module) => [module.enhanceUploads(form, model, uploading)]),
+          form.querySelector('.jfb-signature') === null
+            ? []
+            : import('./signature-chunk').then((module) => [module.enhanceSignatures(form, model, uploading)]),
+        ])
+          .then((parts) => allOf(parts.flat()))
           .catch(() => undefined);
   const errors = pageErrorsOf(
     form,

@@ -70,7 +70,7 @@ should adopt:
   fieldset per row with `data-jfb-row`, ADR-0098); `jfb-signature`, `jfb-signature-pad` and
   `jfb-signature-tools`; `jfb-heading`, `jfb-text`, `jfb-divider` and `jfb-image` for content.
 - **Files:** `jfb-upload` (`data-jfb-dropzone`; `data-jfb-drop` while a file is dragged over it), and
-  `jfb-files` / `jfb-file` with `data-jfb-busy` while uploading and `data-jfb-error` when refused. Without
+  `jfb-files` / `jfb-file` with `data-jfb-busy` while uploading and `data-jfb-failed` when refused or stopped. Without
   JavaScript the native file input shows, and a file the form has already taken shows above it as a ticked box
   (`jfb-choices jfb-files`, "Keep cv.pdf (39.1 KB)", ADR-0102). The view writes the line "Drag files here" and the label
   buttons "Choose files" and "Take a photo", which the base rules show once the runtime sets `data-jfb-enhanced`
@@ -81,6 +81,9 @@ should adopt:
   visually hidden copy of its Next or Send button (`tabindex="-1"`, `aria-hidden="true"`), so Enter in a field
   means Next or Send.
 - **Single choices with help:** a single checkbox or switch puts its help after the choice, aligned with the label.
+- **The signature's pad** (ADR-0153): the view writes the pad and its tools beside the typed name, in two
+  `jfb-signature-way` blocks, which the base rules show once the runtime sets `data-jfb-enhanced`; a form the page
+  cannot take stays with the typed name.
 - **The typed signature:** the field's legend is the only visible label; the name input's own label is visually
   hidden, and the help says that typing counts as signing. The input takes up to 100 characters; without JavaScript
   the server draws the name as the signature (ADR-0103).

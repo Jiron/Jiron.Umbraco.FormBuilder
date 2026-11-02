@@ -755,14 +755,14 @@ describe('a form whose files the page takes', () => {
     ...MODEL,
     fields: { ...MODEL.fields, 'k-note': { kind: 'files', canBeRequired: true, builtIn: true } },
   };
-  const uploadsOf = (settled: Promise<void>): PageUploads => ({ settled: () => settled, uploaded: () => new Map() });
+  const uploadsOf = (settled: Promise<boolean>): PageUploads => ({ settled: () => settled, uploaded: () => new Map() });
 
   it('sends on the page, with the tokens its inputs hold, whatever the encoding a post would use', async () => {
     const server = serve(STORED);
     const { press, value, posted } = wake({
       attributes: 'enctype="multipart/form-data"',
       model: STORES,
-      files: uploadsOf(Promise.resolve()),
+      files: uploadsOf(Promise.resolve(true)),
     });
     value('m').value = 'token-1';
     press();
@@ -775,8 +775,8 @@ describe('a form whose files the page takes', () => {
   it('waits for what is on its way, busy as ever, and takes a second press for nothing', async () => {
     const server = serve(STORED);
     let finish = (): void => undefined;
-    const settled = new Promise<void>((resolve) => {
-      finish = resolve;
+    const settled = new Promise<boolean>((resolve) => {
+      finish = () => resolve(true);
     });
     const { form, press, value } = wake({ model: STORES, files: uploadsOf(settled) });
     press();
@@ -791,6 +791,93 @@ describe('a form whose files the page takes', () => {
     expect(server.entries()[0]?.body['values'], 'and it reads the page once they are there').toMatchObject({
       note: ['token-2'],
     });
+  });
+});
+
+describe('a form with a file that failed, or a signature that could not go', () => {
+  const STORES: FormModel = {
+    ...MODEL,
+    fields: { ...MODEL.fields, 'k-note': { kind: 'files', canBeRequired: true, builtIn: true } },
+  };
+
+  it('stops at the file, sends nothing and shows no notice, ready to be pressed again', async () => {
+    const server = serve(STORED);
+    let answer = false;
+    const { form, press, posted } = wake({
+      model: STORES,
+      files: { settled: () => Promise.resolve(answer), uploaded: () => new Map() },
+    });
+    press();
+    await until(() => expect(form.querySelector('#send')?.hasAttribute('aria-disabled')).toBe(false));
+    await new Promise((resolve) => setTimeout(resolve, 5));
+
+    expect(server.entries()).toEqual([]);
+    expect(posted).toEqual([]);
+    expect(form.querySelector('[data-jfb-notice]')).toBeNull();
+
+    answer = true;
+    press();
+    await until(() => expect(server.entries()).toHaveLength(1));
+  });
+
+  it('leaves what the file that failed said for a screen reader, and takes away only what it said itself', async () => {
+    serve(STORED);
+    const { form, press } = wake({
+      model: STORES,
+      files: {
+        settled: () => {
+          const live = form.querySelector('[data-jfb-live]');
+          if (live !== null) live.textContent = 'plan.pdf: It stopped.';
+          return Promise.resolve(false);
+        },
+        uploaded: () => new Map(),
+      },
+    });
+    press();
+    await until(() => expect(form.querySelector('[data-jfb-live]')?.textContent).toBe('plan.pdf: It stopped.'));
+    await new Promise((resolve) => setTimeout(resolve, 10));
+
+    expect(form.querySelector('[data-jfb-live]')?.textContent).toBe('plan.pdf: It stopped.');
+  });
+
+  it.each([
+    [429, 'rate_limited', '30'],
+    [503, 'server_error', null],
+    [0, 'timeout', null],
+  ])('a refusal of %i shows the notice %s, and sends nothing', async (status, code, retryAfter) => {
+    const server = serve(STORED);
+    const { form, press } = wake({
+      model: STORES,
+      files: { settled: () => Promise.reject({ status, retryAfter }), uploaded: () => new Map() },
+    });
+    press();
+    await until(() => expect(form.querySelector(`[data-jfb-notice="${code}"]`)).not.toBeNull());
+
+    expect(server.entries()).toEqual([]);
+  });
+
+  it("words the wait a signature's refusal names", async () => {
+    serve(STORED);
+    const { form, press } = wake({
+      model: STORES,
+      files: { settled: () => Promise.reject({ status: 429, retryAfter: '30' }), uploaded: () => new Map() },
+    });
+    press();
+    await until(() =>
+      expect(form.querySelector('[data-jfb-notice="rate_limited"] p')?.textContent).toBe(
+        'Wait 30 seconds, then send it again.',
+      ),
+    );
+  });
+
+  it('a failure that names no status is a send that got no answer', async () => {
+    serve(STORED);
+    const { form, press } = wake({
+      model: STORES,
+      files: { settled: () => Promise.reject(new Error('no picture')), uploaded: () => new Map() },
+    });
+    press();
+    await until(() => expect(form.querySelector('[data-jfb-notice="timeout"]')).not.toBeNull());
   });
 });
 

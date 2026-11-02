@@ -225,11 +225,45 @@ public sealed class FileUploadWordsModel
 }
 
 /// <summary>
+/// A signature's pad and the way between it and the typed name (ADR-0153), which the view writes and the base rules show once
+/// the runtime runs.
+/// </summary>
+public sealed class SignaturePadModel
+{
+    /// <summary>The pad's width in pixels, the image's.</summary>
+    public required int Width { get; init; }
+
+    /// <summary>The pad's height in pixels, the image's.</summary>
+    public required int Height { get; init; }
+
+    /// <summary>The line above the pad.</summary>
+    public required string Help { get; init; }
+
+    /// <summary>What a screen reader calls the pad.</summary>
+    public required string Drawn { get; init; }
+
+    /// <summary>The button that clears the pad.</summary>
+    public required string Clear { get; init; }
+
+    /// <summary>The same button until the next stroke (<c>data-jfb-undo</c>).</summary>
+    public required string UndoClear { get; init; }
+
+    /// <summary>The way from the pad to the typed name.</summary>
+    public required string TypeInstead { get; init; }
+
+    /// <summary>The way from the typed name to the pad.</summary>
+    public required string ByHand { get; init; }
+}
+
+/// <summary>
 /// The control of a signature (<c>signature</c>) without JavaScript: the name typed instead, which counts as the
 /// signature; the runtime adds the pad to draw on and the way back to typing.
 /// </summary>
 public sealed class SignatureControlModel
 {
+    /// <summary>The pad, which shows once the runtime runs (ADR-0153).</summary>
+    public required SignaturePadModel Pad { get; init; }
+
     /// <summary>The label of the typed name, for screen readers: the field's legend is the only label that shows.</summary>
     public required string Label { get; init; }
 

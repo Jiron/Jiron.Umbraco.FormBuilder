@@ -249,7 +249,13 @@ public sealed class FormRenderingInputsTests : RenderingTestBase
 
             var signature = Field(empty, "signature");
             Assert.That(Text(signature, "legend.jfb-label"), Is.EqualTo("Signature"));
-            Assert.That(Compact(signature.QuerySelector(".jfb-signature")!.InnerHtml), Is.EqualTo(
+            Assert.That(signature.QuerySelector("canvas.jfb-signature-pad")!.OuterHtml, Is.EqualTo("""<canvas class="jfb-signature-pad" width="900" height="300" role="img" aria-label="Your signature, drawn"></canvas>"""), "the default pad, which shows once the runtime runs");
+            Assert.That(signature.QuerySelector("[data-jfb-clear]")!.TextContent, Is.EqualTo("Clear"));
+            Assert.That(signature.QuerySelector("[data-jfb-clear]")!.GetAttribute("data-jfb-undo"), Is.EqualTo("Undo clear"));
+            Assert.That(signature.QuerySelector("[data-jfb-to-typed]")!.TextContent, Is.EqualTo("Type your name instead"));
+            Assert.That(signature.QuerySelector("[data-jfb-to-drawn]")!.TextContent, Is.EqualTo("Sign by hand instead"));
+            Assert.That(Text(signature, "[data-jfb-drawn] > p"), Is.EqualTo("Sign with your finger or the mouse, or type your name instead."));
+            Assert.That(Compact(signature.QuerySelector("[data-jfb-typed]")!.InnerHtml), Does.StartWith(
                 """<p class="jfb-help" id="jfb-1-signature-typed-help">Type your full name. It counts as your signature.</p><label class="jfb-visually-hidden" for="jfb-1-signature">Your full name</label><input class="jfb-control" id="jfb-1-signature" name="signature.typed" maxlength="100" autocomplete="name" autocapitalize="words" spellcheck="false" required="required" data-jfb-requires="" aria-describedby="jfb-1-signature-typed-help">"""),
                 "without JavaScript, the name typed instead; the legend is the only label that shows");
 
@@ -396,6 +402,8 @@ public sealed class FormRenderingInputsTests : RenderingTestBase
             Assert.That(snapshot.QuerySelector("label.jfb-upload-camera")!.TextContent, Is.EqualTo("Take a photo"));
             Assert.That(Control(first, "drawing").GetAttribute("accept"), Is.EqualTo(".pdf,.dwg"), "each extension once");
             Assert.That(Text(Field(first, "autograph"), "legend"), Is.EqualTo("Autograph"), "a signature that needs no answer, unmarked in this style");
+            var autograph = Field(first, "autograph").QuerySelector("canvas")!;
+            Assert.That((autograph.GetAttribute("width"), autograph.GetAttribute("height")), Is.EqualTo(("640", "200")), "a pad of the field's own size");
             Assert.That(first.QuerySelectorAll("[data-jfb-field]").Select(field => field.GetAttribute("data-jfb-field")), Does.Not.Contain(Unseen.ToString("D")).And.Not.Contain(Placement.ToString("D")), "a calculation visitors do not see and a captcha's place on a form without a captcha render nothing");
 
             Assert.That(Field(posted, "person").QuerySelectorAll("input[aria-invalid=true]"), Has.Length.EqualTo(4), "an error with every needed part given is about all of them");
@@ -612,7 +620,7 @@ public sealed class FormRenderingInputsTests : RenderingTestBase
                             Field(Photos, "photos", "file", """{"types":["images"],"extensions":["tif"],"maxFiles":5,"dropZone":false}""", rules: false),
                             Field(Drawing, "drawing", "file", """{"types":["pdf"],"extensions":["dwg","pdf"]}""", rules: false),
                             Field(Snapshot, "snapshot", "file", """{"types":["images"],"maxFiles":2,"camera":true,"thumbnails":false}""", rules: false),
-                            Field(Autograph, "autograph", "signature", "{}", rules: false),
+                            Field(Autograph, "autograph", "signature", """{"width":640,"height":200}""", rules: false),
                             Field(Unseen, "unseen", "calculation", """{"formula":"volume * 2","visible":false}""", rules: false),
                             new FormField { Key = Placement, Type = "captcha" },
                         ],

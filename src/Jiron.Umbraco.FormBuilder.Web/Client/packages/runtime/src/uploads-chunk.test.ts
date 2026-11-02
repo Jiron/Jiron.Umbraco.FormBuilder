@@ -6,7 +6,8 @@ import { wordsFor } from './messages';
 import type { FormModel, ModelField } from './model';
 import { entriesOf } from './page';
 import { ENGLISH } from './testing';
-import { takesUploads } from './uploads';
+import { ON_ITS_WAY, takesUploads } from './uploads';
+import { clearFieldError, showsErrors } from './display';
 import { enhanceUploads } from './uploads-chunk';
 
 const PDF = [0x25, 0x50, 0x44, 0x46, 0x2d, 0x31];
@@ -235,7 +236,7 @@ describe('a file that may go', () => {
     expect(renew).toHaveBeenCalledTimes(1);
     FakeRequest.made[1]?.answer(401, { code: 'challenge_required' });
     expect(renew, 'once').toHaveBeenCalledTimes(1);
-    expect(row().hasAttribute('data-jfb-error')).toBe(true);
+    expect(row().hasAttribute('data-jfb-failed')).toBe(true);
   });
 
   it('takes several, in their own rows', async () => {
@@ -337,7 +338,7 @@ describe('a file checked before it is sent', () => {
   ])('%s, sends nothing and says why', async (_name, file) => {
     const { choose, form } = wake();
     choose(file);
-    await until(() => expect(row().hasAttribute('data-jfb-error')).toBe(true));
+    await until(() => expect(row().hasAttribute('data-jfb-failed')).toBe(true));
 
     expect(FakeRequest.made).toEqual([]);
     expect(row().querySelector('.jfb-error')?.textContent).not.toBe('');
@@ -350,7 +351,7 @@ describe('a file checked before it is sent', () => {
   it('takes a program by its bytes, under an extension that names no kind', async () => {
     const { choose } = wake(FIELD(undefined, '.dat'));
     choose(fileOf('tool.dat', PROGRAM));
-    await until(() => expect(row().hasAttribute('data-jfb-error')).toBe(true));
+    await until(() => expect(row().hasAttribute('data-jfb-failed')).toBe(true));
 
     expect(FakeRequest.made).toEqual([]);
   });
@@ -381,18 +382,18 @@ describe('a file checked before it is sent', () => {
   it('counts no file already refused', async () => {
     const { choose } = wake();
     choose(fileOf('a.exe.pdf', [0x4d, 0x5a, 0x90, 0]));
-    await until(() => expect(row().hasAttribute('data-jfb-error')).toBe(true));
+    await until(() => expect(row().hasAttribute('data-jfb-failed')).toBe(true));
     choose(fileOf('b.pdf', PDF), fileOf('c.pdf', PDF));
     await until(() => expect(FakeRequest.made).toHaveLength(2));
 
-    expect(row(1).hasAttribute('data-jfb-error')).toBe(false);
-    expect(row(2).hasAttribute('data-jfb-error')).toBe(false);
+    expect(row(1).hasAttribute('data-jfb-failed')).toBe(false);
+    expect(row(2).hasAttribute('data-jfb-failed')).toBe(false);
   });
 
   it('counts how many the field takes', async () => {
     const { choose } = wake();
     choose(fileOf('a.pdf', PDF), fileOf('b.pdf', PDF), fileOf('c.pdf', PDF));
-    await until(() => expect(row(2).hasAttribute('data-jfb-error')).toBe(true));
+    await until(() => expect(row(2).hasAttribute('data-jfb-failed')).toBe(true));
 
     expect(FakeRequest.made).toHaveLength(2);
   });
@@ -431,7 +432,7 @@ describe('what the server answers', () => {
     choose(fileOf('plan.pdf', PDF));
     await until(() => expect(FakeRequest.made[0]?.body).toBeInstanceOf(FormData));
     FakeRequest.made[0]?.answer(status, { errors: [{ code, path: 'file' }] });
-    await until(() => expect(row().hasAttribute('data-jfb-error')).toBe(true));
+    await until(() => expect(row().hasAttribute('data-jfb-failed')).toBe(true));
     await until(() => expect(row().querySelector('.jfb-error')?.textContent).toMatch(words));
 
     expect(row().querySelector('[data-jfb-retry]')?.hasAttribute('hidden')).toBe(true);
@@ -443,7 +444,7 @@ describe('what the server answers', () => {
     await until(() => expect(FakeRequest.made[0]?.body).toBeInstanceOf(FormData));
     FakeRequest.made[0]?.fail();
 
-    expect(row().hasAttribute('data-jfb-error')).toBe(true);
+    expect(row().hasAttribute('data-jfb-failed')).toBe(true);
     expect(row().querySelector('.jfb-error')?.textContent).toBe('It stopped.');
     const retry = row().querySelector<HTMLButtonElement>('[data-jfb-retry]') as HTMLButtonElement;
     expect(retry.hasAttribute('hidden')).toBe(false);
@@ -452,7 +453,7 @@ describe('what the server answers', () => {
 
     retry.click();
     await until(() => expect(FakeRequest.made[1]?.body).toBeInstanceOf(FormData));
-    expect(row().hasAttribute('data-jfb-error')).toBe(false);
+    expect(row().hasAttribute('data-jfb-failed')).toBe(false);
     expect(document.activeElement, 'the focus stays in the row').toBe(row().querySelector('[data-jfb-drop-file]'));
     FakeRequest.made[1]?.answer(200, { token: 'again' });
     expect(entriesOf(form)).toContainEqual(['plan', 'again']);
@@ -465,6 +466,110 @@ describe('what the server answers', () => {
     FakeRequest.made[0]?.answer(500, {});
 
     expect(row().querySelector('.jfb-error')?.textContent).toBe('It stopped.');
+  });
+});
+
+describe('what the page reads while a file is on its way', () => {
+  const answers = (form: HTMLFormElement): string[] =>
+    [...form.querySelectorAll<HTMLInputElement>('input[type="hidden"][name="plan"]')].map((each) => each.value);
+
+  it('counts the field as answered from the moment it is chosen, and tells the rules and the errors each time', async () => {
+    const { choose, form } = wake();
+    const heard = vi.fn();
+    form.addEventListener('input', heard);
+    choose(fileOf('plan.pdf', PDF));
+
+    expect(answers(form)).toEqual([ON_ITS_WAY]);
+    expect(heard).toHaveBeenCalled();
+    await until(() => expect(FakeRequest.made[0]?.body).toBeInstanceOf(FormData));
+    heard.mockClear();
+    FakeRequest.made[0]?.answer(200, { token: 't1', name: 'plan.pdf', size: 9 });
+
+    expect(answers(form)).toEqual(['t1']);
+    expect(heard).toHaveBeenCalled();
+  });
+
+  it.each([
+    ['refused by the page', () => fileOf('invoice.pdf', PROGRAM), null],
+    ['cut off', () => fileOf('plan.pdf', PDF), 500],
+    ['refused by the server', () => fileOf('plan.pdf', PDF), 415],
+    ['refused for now', () => fileOf('plan.pdf', PDF), 503],
+  ])('holds nothing once it is %s, and tells them', async (_name, file, status) => {
+    const { choose, form } = wake();
+    choose(file());
+    if (status !== null) {
+      await until(() => expect(FakeRequest.made[0]?.body).toBeInstanceOf(FormData));
+      FakeRequest.made[0]?.answer(status, { errors: [{ code: 'fileType' }] });
+    }
+    await until(() => expect(answers(form)).toEqual([]));
+    await until(() => expect(row().hasAttribute('data-jfb-failed')).toBe(true));
+  });
+
+  it('counts it again while it is tried again', async () => {
+    const { choose, form } = wake();
+    choose(fileOf('plan.pdf', PDF));
+    await until(() => expect(FakeRequest.made[0]?.body).toBeInstanceOf(FormData));
+    FakeRequest.made[0]?.fail();
+    expect(answers(form)).toEqual([]);
+    row().querySelector<HTMLElement>('[data-jfb-retry]')?.click();
+
+    expect(answers(form)).toEqual([ON_ITS_WAY]);
+  });
+
+  it('tells them when a file goes off the list', async () => {
+    const { choose, form } = wake();
+    choose(fileOf('plan.pdf', PDF));
+    await until(() => expect(FakeRequest.made[0]?.body).toBeInstanceOf(FormData));
+    const heard = vi.fn();
+    form.addEventListener('input', heard);
+    row().querySelector<HTMLElement>('[data-jfb-drop-file]')?.click();
+
+    expect(answers(form)).toEqual([]);
+    expect(heard).toHaveBeenCalled();
+  });
+});
+
+describe("a failed row beside the field's own errors", () => {
+  it('is no error of the field, which a check would take away with its row', async () => {
+    const { choose, form } = wake();
+    choose(fileOf('plan.pdf', PDF));
+    await until(() => expect(FakeRequest.made[0]?.body).toBeInstanceOf(FormData));
+    FakeRequest.made[0]?.fail();
+
+    expect(showsErrors(form)).toBe(false);
+    clearFieldError(form.querySelector('[data-jfb-field]') as HTMLElement);
+    expect(row()).toBeDefined();
+    expect(row().isConnected).toBe(true);
+  });
+});
+
+describe('a send with a file that failed', () => {
+  it('stops at a file that can be tried again, whose retry takes the focus, and says why', async () => {
+    const { choose, uploads } = wake();
+    choose(fileOf('plan.pdf', PDF));
+    await until(() => expect(FakeRequest.made[0]?.body).toBeInstanceOf(FormData));
+    FakeRequest.made[0]?.fail();
+
+    await expect(uploads.settled()).resolves.toBe(false);
+    expect(document.activeElement).toBe(row().querySelector('[data-jfb-retry]'));
+    expect(liveText()).toBe('plan.pdf: It stopped.');
+  });
+
+  it('stops at a refused one, whose only way is off the list', async () => {
+    const { choose, uploads } = wake();
+    choose(fileOf('invoice.pdf', PROGRAM));
+
+    await expect(uploads.settled()).resolves.toBe(false);
+    expect(document.activeElement).toBe(row().querySelector('[data-jfb-drop-file]'));
+  });
+
+  it('goes on once it is off the list', async () => {
+    const { choose, uploads } = wake();
+    choose(fileOf('invoice.pdf', PROGRAM));
+    await uploads.settled();
+    row().querySelector<HTMLElement>('[data-jfb-drop-file]')?.click();
+
+    await expect(uploads.settled()).resolves.toBe(true);
   });
 });
 
@@ -486,7 +591,7 @@ describe('taking a file off the list', () => {
     await until(() => expect(FakeRequest.made[0]?.body).toBeInstanceOf(FormData));
     row().querySelector<HTMLElement>('[data-jfb-drop-file]')?.click();
 
-    await expect(uploads.settled()).resolves.toBeUndefined();
+    await expect(uploads.settled()).resolves.toBe(true);
   });
 
   it('sends nothing of one taken off while its challenge is on its way', async () => {
@@ -631,7 +736,7 @@ describe("a form that came in another one's place", () => {
 
 describe('which forms take their files on the page', () => {
   const formWith = (pages: number): HTMLFormElement => {
-    document.body.innerHTML = `<form>${'<section data-jfb-page="p"></section>'.repeat(pages)}</form>`;
+    document.body.innerHTML = `<form><template data-jfb-templates data-jfb-sending="Sending"></template>${'<section data-jfb-page="p"></section>'.repeat(pages)}</form>`;
     return document.querySelector('form') as HTMLFormElement;
   };
 
@@ -643,9 +748,22 @@ describe('which forms take their files on the page', () => {
     expect(takesUploads(formWith(2), modelOf())).toBe(false);
   });
 
-  it('not a form with a signature, until 6.4n', () => {
-    const signature: ModelField = { key: 'k-sign', type: 'signature', alias: 'sign', settings: {} };
-    expect(takesUploads(formWith(1), modelOf([FILE, signature]))).toBe(false);
+  it('not a view that writes no template for a file, whose file only a post can hold', () => {
+    const form = document.createElement('form');
+    form.innerHTML =
+      '<template data-jfb-templates data-jfb-sending="Sending"></template><div data-jfb-field="k-file"><input type="file" name="plan"></div>';
+
+    expect(takesUploads(form, modelOf())).toBe(false);
+  });
+
+  it('not a form with a field of a kind that stores files and that the page cannot read', () => {
+    const other: ModelField = { key: 'k-other', type: 'album', alias: 'album', settings: {} };
+    const model = modelOf([FILE, other]);
+    const stores = {
+      ...model,
+      fields: { ...model.fields, 'k-other': { kind: 'files', canBeRequired: true, builtIn: true } },
+    } satisfies FormModel;
+    expect(takesUploads(formWith(1), stores)).toBe(false);
   });
 
   it('not a form with no file field', () => {

@@ -266,7 +266,7 @@ describe('a form published again meanwhile', () => {
   it('carries the files its server holds to the form in its place', async () => {
     serve(markup({ revision: 2 }), () => json(409, { code: 'form_changed' }));
     const held = new Map([['photo', [{ token: 't1', name: 'a.png', size: 3 }]]]);
-    const { press, rewoken } = wake({ revision: 1 }, { settled: () => Promise.resolve(), uploaded: () => held });
+    const { press, rewoken } = wake({ revision: 1 }, { settled: () => Promise.resolve(true), uploaded: () => held });
     press();
     await until(() => expect(rewoken).toHaveLength(1));
 

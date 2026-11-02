@@ -123,16 +123,30 @@ internal sealed partial class FormModels
                     }, []);
                 }
 
-            case SignatureFieldType:
-                return (new SignatureControlModel
+            case SignatureFieldType signature:
                 {
-                    Label = build.Words.SignatureName,
-                    Name = build.Name(field) + "." + SignatureFieldType.TypedPart,
-                    Value = answers.Part(SignatureFieldType.TypedPart) is [var written, ..] ? written : string.Empty,
-                    MaxLength = TypedSignature.LongestName,
-                    Help = build.Words.SignatureTyped,
-                    HelpId = id + "-typed-help",
-                }, []);
+                    var typed = signature.ReadSettings(given);
+                    return (new SignatureControlModel
+                    {
+                        Label = build.Words.SignatureName,
+                        Name = build.Name(field) + "." + SignatureFieldType.TypedPart,
+                        Value = answers.Part(SignatureFieldType.TypedPart) is [var written, ..] ? written : string.Empty,
+                        MaxLength = TypedSignature.LongestName,
+                        Help = build.Words.SignatureTyped,
+                        HelpId = id + "-typed-help",
+                        Pad = new SignaturePadModel
+                        {
+                            Width = typed.Width ?? TypedSignature.DefaultWidth,
+                            Height = typed.Height ?? TypedSignature.DefaultHeight,
+                            Help = build.Words.SignatureHand,
+                            Drawn = build.Words.SignatureDrawn,
+                            Clear = build.Words.SignatureClear,
+                            UndoClear = build.Words.SignatureUndoClear,
+                            TypeInstead = build.Words.SignatureTypeInstead,
+                            ByHand = build.Words.SignatureByHand,
+                        },
+                    }, []);
+                }
 
             case CaptchaFieldType:
                 // The place renders only for a form that names its captcha (FieldAsync).

@@ -4,6 +4,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { hidesMarkup, isExecutable, matchesKind } from '../src/file-kinds.ts';
+import { cleanName, pngWithName } from '../src/typed-name.ts';
 import {
   checkField,
   checkRows,
@@ -61,6 +62,8 @@ interface VectorCase {
   readonly unreadable?: readonly string[];
   readonly unreadableRows?: FormAnswers['unreadableRows'];
   readonly fileKind?: { readonly extension: string; readonly head: string };
+  readonly typedName?: { readonly typed: string };
+  readonly typedPng?: { readonly image: string; readonly name: string };
   readonly condition?: Condition;
   readonly rule?: Rule;
   readonly number?: string;
@@ -227,6 +230,8 @@ const RUNNABLE = [
   'rowCount',
   'post',
   'fileKind',
+  'typedName',
+  'typedPng',
 ] as const;
 
 const folder = vectorsFolder();
@@ -356,6 +361,18 @@ function run(file: VectorFile, vector: VectorCase): unknown {
         rows: Object.fromEntries([...read.rows].map(([alias, rows]) => [alias, rows.map(answers)])),
         context: Object.fromEntries(read.context),
         query: Object.fromEntries(read.query),
+      };
+    }
+    if (vector.typedName !== undefined) return { name: cleanName(vector.typedName.typed) };
+    if (vector.typedPng !== undefined) {
+      const image = Uint8Array.from(vector.typedPng.image.match(/../g) ?? [], (pair) => Number.parseInt(pair, 16));
+      const png = pngWithName(image, new TextEncoder().encode(vector.typedPng.name));
+      const view = new DataView(png.buffer);
+      return {
+        png: Array.from(png, (byte) => byte.toString(16).padStart(2, '0')).join(''),
+        name: new TextDecoder().decode(png.subarray(33 + 8 + 'jfb:typed-name'.length + 5, 33 + 8 + view.getUint32(33))),
+        width: view.getUint32(16),
+        height: view.getUint32(20),
       };
     }
     if (vector.fileKind !== undefined) {

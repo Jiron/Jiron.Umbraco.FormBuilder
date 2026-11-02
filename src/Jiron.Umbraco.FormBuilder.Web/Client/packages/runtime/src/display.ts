@@ -96,6 +96,9 @@ export function showFieldError(form: HTMLFormElement, field: HTMLElement, error:
       if (error.parts.includes(part)) each.setAttribute('aria-invalid', 'true');
       else each.removeAttribute('aria-invalid');
     }
+  } else if (field.dataset['jfbType'] === 'signature') {
+    // As the server's view marks it; the themes draw the pad's error border from it.
+    for (const each of ownOf(field, '[data-jfb-typed] input')) each.setAttribute('aria-invalid', 'true');
   }
 }
 
@@ -161,8 +164,15 @@ export function removeSummary(form: HTMLFormElement): void {
 export function focusTarget(form: HTMLFormElement, id: string): boolean {
   const target = form.ownerDocument.getElementById(id);
   if (target === null || !form.contains(target)) return false;
-  const control = target.matches(FOCUSABLE) ? target : target.querySelector<HTMLElement>(FOCUSABLE);
-  if (control === null) return false;
+  const named = target.matches(FOCUSABLE) ? target : target.querySelector<HTMLElement>(FOCUSABLE);
+  if (named === null) return false;
+  // A signature on its pad hides the typed name the error names: the field's first control that shows takes the focus.
+  const shown = named.getClientRects().length > 0;
+  const control = shown
+    ? named
+    : ([...(target.closest(FIELD)?.querySelectorAll<HTMLElement>(FOCUSABLE) ?? [])].find(
+        (each) => each.getClientRects().length > 0,
+      ) ?? named);
   const label = target.closest(FIELD)?.querySelector(':scope > label, :scope > fieldset > legend') ?? control;
 
   label.scrollIntoView?.({ block: 'start', behavior: 'instant' });

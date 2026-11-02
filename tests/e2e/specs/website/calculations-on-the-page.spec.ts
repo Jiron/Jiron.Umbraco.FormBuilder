@@ -132,12 +132,11 @@ test('the room hire stores the cost the page showed for the answers sent', async
   await form.locator('[name="billing.postcode"]').fill('10115');
   await form.locator('[name="billing.city"]').fill('Berlin');
   await form.locator('[name="billing.country"]').selectOption('DE');
+  await form.getByRole('button', { name: 'Type your name instead' }).click();
   await form.locator('[name="signature.typed"]').fill('Daniel Fernandes');
 
-  const sent = page.waitForEvent('load');
   await form.locator('button[data-jfb-nav="submit"]').click();
-  await sent;
-  await expect(page.locator('main form.jfb-form [data-jfb-summary]')).toHaveCount(0);
+  await expect(page.locator('main [data-jfb-outcome]')).toBeFocused();
   const entries = (await storedOf(request, 'roomHire', keyOf('roomHire', 'cost'))).slice(before);
   expect(entries, 'one entry, its cost the 75 the page showed').toEqual([[75]]);
 });

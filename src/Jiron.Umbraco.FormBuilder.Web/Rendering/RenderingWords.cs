@@ -70,6 +70,12 @@ internal sealed record RenderingWords
             Country = "Country",
             SignatureName = "Your full name",
             SignatureTyped = "Type your full name. It counts as your signature.",
+            SignatureHand = "Sign with your finger or the mouse, or type your name instead.",
+            SignatureDrawn = "Your signature, drawn",
+            SignatureClear = "Clear",
+            SignatureUndoClear = "Undo clear",
+            SignatureTypeInstead = "Type your name instead",
+            SignatureByHand = "Sign by hand instead",
             ThankYou = "Thank you. We have received your message.",
             Continue = "Continue",
             GoNow = "Go now",
@@ -168,6 +174,12 @@ internal sealed record RenderingWords
             Country = "Land",
             SignatureName = "Ihr vollst" + AUmlaut + "ndiger Name",
             SignatureTyped = "Geben Sie Ihren vollst" + AUmlaut + "ndigen Namen ein. Er gilt als Ihre Unterschrift.",
+            SignatureHand = "Unterschreiben Sie mit dem Finger oder der Maus, oder geben Sie stattdessen Ihren Namen ein.",
+            SignatureDrawn = "Ihre Unterschrift, gezeichnet",
+            SignatureClear = "L" + OUmlaut + "schen",
+            SignatureUndoClear = "L" + OUmlaut + "schen zur" + UUmlaut + "cknehmen",
+            SignatureTypeInstead = "Stattdessen Namen eingeben",
+            SignatureByHand = "Stattdessen von Hand unterschreiben",
             ThankYou = "Vielen Dank. Wir haben Ihre Nachricht erhalten.",
             Continue = "Weiter",
             GoNow = "Jetzt weiter",
@@ -371,6 +383,24 @@ internal sealed record RenderingWords
 
     /// <summary>The line above that name, which says typing it counts as signing.</summary>
     public required string SignatureTyped { get; init; }
+
+    /// <summary>The line above the pad.</summary>
+    public required string SignatureHand { get; init; }
+
+    /// <summary>What a screen reader calls the pad.</summary>
+    public required string SignatureDrawn { get; init; }
+
+    /// <summary>The button that clears the pad.</summary>
+    public required string SignatureClear { get; init; }
+
+    /// <summary>The same button until the next stroke.</summary>
+    public required string SignatureUndoClear { get; init; }
+
+    /// <summary>The way from the pad to the typed name.</summary>
+    public required string SignatureTypeInstead { get; init; }
+
+    /// <summary>The way from the typed name to the pad.</summary>
+    public required string SignatureByHand { get; init; }
 
     /// <summary>The outcome of a form sent without an outcome of its own, or whose outcome could not be followed.</summary>
     public required string ThankYou { get; init; }

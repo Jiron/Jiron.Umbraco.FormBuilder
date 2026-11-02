@@ -22,8 +22,9 @@ named as the field. The input: the page reads it as it reads every other answer,
 no second path.
 
 **A form of several pages,** whose Next posts until 6.5d: its tokens could not be claimed by the post, so that form keeps the
-browser's own input until the pages move to the browser. A form with a signature does too, until 6.4n, as a typed name goes
-only by post.
+browser's own input until the pages move to the browser. So does a form with a repeater or a ranking, whose buttons post until
+6.4o, a view without the template, whose file only a post can hold, and a form view without the send's parts, which cannot go from
+the page.
 
 **How the browser's checks stay the server's:** by hand, or by a port held to the server by shared vectors, as the logic is
 (ADR-0005). The vectors.
@@ -44,9 +45,14 @@ only by post.
   the field's `camera` on, and shows only on a touch screen. An image shows its thumbnail only with `thumbnails` on, from the
   browser's memory (`blob:`); a site whose policy does not take that keeps the icon.
 - **A field for one file replaces its file** when another is chosen; a field for several refuses what is past its `maxFiles`.
-- **A send waits** for the uploads on their way, busy as ever. A file that failed stops nothing by itself: the server says whether
-  the field needs an answer. Taking a file off the list drops its token, and stops it when it is still on its way. A stored upload
-  no entry claims goes with the orphan cleanup (ADR-0148).
+- **A file on its way counts as an answer:** its row's hidden input says so from the moment it is chosen, and goes when the file
+  fails, and each change tells the rules and the errors. `values()` shows that marker for as long as the file is on its way.
+- **The page checks a field whose files it takes** (added in 6.4n): it reads them all, so a required one shows its error with the
+  others at the first press, not after the server's answer; a field the post takes stays the server's to check.
+- **A send waits** for the uploads on their way, busy as ever, and stops at a file that failed, whose row takes the focus, until
+  the visitor tries again or takes it off: a file left behind in silence would be worse than a press to answer (changed in 6.4n).
+  Taking a file off the list drops its token, and stops it when
+  it is still on its way. A stored upload no entry claims goes with the orphan cleanup (ADR-0148).
 - **`form_changed`** carries a form's held files to the form in its place (ADR-0120), with the same challenge, which their tokens
   name.
 
@@ -54,6 +60,9 @@ only by post.
 
 - The runtime with every feature grows by the uploads' chunk, and only a form with a file field loads it.
 - A site's strict policy needs `connect-src` for the API as for every send, and `img-src blob:` for thumbnails.
+- A failed file's row is marked `data-jfb-failed`: `data-jfb-error` is the error paragraph, which a field's check takes away.
+- An upload's token names its challenge: one held past the challenge's renewal (a page left open for a day) cannot be claimed, and
+  the server's `invalid` at the field asks for the file again.
 - A fallback post after an upload cannot claim the token, so its field asks again. That takes a refusal the page does not answer,
   with a file already up, and only asks the visitor to choose the file again.
 - **Revisit** when 6.5d pages in the browser: the page-count condition goes.

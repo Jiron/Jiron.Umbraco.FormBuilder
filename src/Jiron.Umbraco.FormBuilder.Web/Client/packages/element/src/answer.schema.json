@@ -1724,6 +1724,9 @@
         "kind": {
           "const": "signature"
         },
+        "pad": {
+          "$ref": "#/$defs/SignaturePadModel"
+        },
         "label": {
           "type": "string"
         },
@@ -1745,12 +1748,53 @@
       },
       "required": [
         "kind",
+        "pad",
         "label",
         "name",
         "value",
         "maxLength",
         "help",
         "helpId"
+      ],
+      "additionalProperties": false
+    },
+    "SignaturePadModel": {
+      "type": "object",
+      "properties": {
+        "width": {
+          "type": "integer"
+        },
+        "height": {
+          "type": "integer"
+        },
+        "help": {
+          "type": "string"
+        },
+        "drawn": {
+          "type": "string"
+        },
+        "clear": {
+          "type": "string"
+        },
+        "undoClear": {
+          "type": "string"
+        },
+        "typeInstead": {
+          "type": "string"
+        },
+        "byHand": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "width",
+        "height",
+        "help",
+        "drawn",
+        "clear",
+        "undoClear",
+        "typeInstead",
+        "byHand"
       ],
       "additionalProperties": false
     },
