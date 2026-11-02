@@ -45,6 +45,15 @@ internal static class FormBuilderProblems
     /// <summary>An action run, or the entry it is asked for, that the form does not hold (ADR-0158).</summary>
     public const string ActionRunNotFoundCode = "action_run_not_found";
 
+    /// <summary>The code of a change of state that names no entries, too many, or no state a user can choose.</summary>
+    public const string EntryStateInvalidCode = "entry_state_invalid";
+
+    /// <summary>The code of an Undo of a change the form does not hold.</summary>
+    public const string EntryChangeNotFoundCode = "entry_change_not_found";
+
+    /// <summary>The code of an Undo after the window.</summary>
+    public const string EntryUndoTooLateCode = "entry_undo_too_late";
+
     /// <summary>A retry of an uncertain run that was not confirmed, as its first attempt may have been delivered (section 4.4).</summary>
     public const string RetryNeedsConfirmationCode = "retry_needs_confirmation";
 
@@ -108,6 +117,18 @@ internal static class FormBuilderProblems
     /// <summary>An action run, or the entry it is asked for, that the form does not hold (ADR-0158).</summary>
     public static FormBuilderProblemResult ActionRunNotFound() =>
         Problem(StatusCodes.Status404NotFound, ActionRunNotFoundCode, "The form has no such entry or action run.");
+
+    /// <summary>A change of state that names no entries, too many, or no state a user can choose (ADR-0162).</summary>
+    public static FormBuilderProblemResult EntryStateInvalid() =>
+        Problem(StatusCodes.Status400BadRequest, EntryStateInvalidCode, "Name 1 to 500 entries and the state submitted, approved, rejected or spam.");
+
+    /// <summary>An Undo of a change the form does not hold (ADR-0162).</summary>
+    public static FormBuilderProblemResult EntryChangeNotFound() =>
+        Problem(StatusCodes.Status404NotFound, EntryChangeNotFoundCode, "The form has no such change.");
+
+    /// <summary>An Undo after the window (ADR-0023).</summary>
+    public static FormBuilderProblemResult EntryUndoTooLate() =>
+        Problem(StatusCodes.Status409Conflict, EntryUndoTooLateCode, "It's too late to undo this. Change the state back by hand if needed.");
 
     /// <summary>A retry of an uncertain run without its confirmation (section 4.4).</summary>
     public static FormBuilderProblemResult ActionRetryNeedsConfirmation() =>

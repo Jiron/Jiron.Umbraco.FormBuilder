@@ -61,6 +61,8 @@ public sealed class PermissionMatrixTests : ManagementApiTestBase
         ["GET field-type"] = (FormBuilderPermissions.None, FormBuilderAccessResourceKind.Global, null),
         ["GET action-type"] = (FormBuilderPermissions.None, FormBuilderAccessResourceKind.Global, null),
         ["POST form/{key}/action/{actionKey}/test"] = (FormBuilderPermissions.ManageActions, FormBuilderAccessResourceKind.Form, "key"),
+        ["POST form/{key}/entry-state"] = (FormBuilderPermissions.EditEntries, FormBuilderAccessResourceKind.Form, "key"),
+        ["POST form/{key}/entry-state/undo"] = (FormBuilderPermissions.EditEntries, FormBuilderAccessResourceKind.Form, "key"),
         ["GET form/{key}/entry/{entryKey}/action-run"] = (FormBuilderPermissions.ViewEntries, FormBuilderAccessResourceKind.Form, "key"),
         ["POST form/{key}/entry/{entryKey}/action-run/{runId}/retry"] = (FormBuilderPermissions.ManageActions, FormBuilderAccessResourceKind.Form, "key"),
         ["POST setup/form-block"] = (FormBuilderPermissions.ManageSettings, FormBuilderAccessResourceKind.Global, null),

@@ -102,6 +102,27 @@ export type DefinitionPropertyChangeResponseModel = {
     to?: unknown;
 };
 
+export type EntryStateMovedResponseModel = {
+    key: string;
+    state: string;
+};
+
+export type EntryStateRequestModel = {
+    entries: Array<string>;
+    state: string;
+};
+
+export type EntryStateResponseModel = {
+    changeKey: string;
+    undoUntilUtc: string | null;
+    moved: Array<EntryStateMovedResponseModel>;
+    unmoved: Array<string>;
+};
+
+export type EntryStateUndoRequestModel = {
+    changeKey: string;
+};
+
 export type FieldGroupResponseModel = {
     alias: string;
     name: string;
@@ -680,6 +701,80 @@ export type EntryFileArchiveResponses = {
 };
 
 export type EntryFileArchiveResponse = EntryFileArchiveResponses[keyof EntryFileArchiveResponses];
+
+export type EntryStateChangeData = {
+    body?: EntryStateRequestModel;
+    path: {
+        key: string;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/form/{key}/entry-state';
+};
+
+export type EntryStateChangeErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+};
+
+export type EntryStateChangeError = EntryStateChangeErrors[keyof EntryStateChangeErrors];
+
+export type EntryStateChangeResponses = {
+    /**
+     * OK
+     */
+    200: EntryStateResponseModel;
+};
+
+export type EntryStateChangeResponse = EntryStateChangeResponses[keyof EntryStateChangeResponses];
+
+export type EntryStateUndoData = {
+    body?: EntryStateUndoRequestModel;
+    path: {
+        key: string;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/form/{key}/entry-state/undo';
+};
+
+export type EntryStateUndoErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+};
+
+export type EntryStateUndoError = EntryStateUndoErrors[keyof EntryStateUndoErrors];
+
+export type EntryStateUndoResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type EntryStateUndoResponse = EntryStateUndoResponses[keyof EntryStateUndoResponses];
 
 export type FieldTypeListData = {
     body?: never;

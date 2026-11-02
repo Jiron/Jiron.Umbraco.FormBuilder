@@ -98,7 +98,7 @@ public sealed class PublicFormEntryTests : PublicApiTestBase
             Assert.That(Guid.TryParse(second["receipt"]!["submissionId"]!.GetValue<string>(), out var made) && made != Guid.Empty && made != submissionId, Is.True, "the server makes an id when none is posted");
             Assert.That(second["receipt"]!["reference"]!.GetValue<string>(), Is.EqualTo($"{year}-00002"));
 
-            Assert.That((entry.State, entry.IsTest, entry.Culture, entry.ContentKey), Is.EqualTo((EntryState.Submitted, false, "en-US", (Guid?)page)));
+            Assert.That((entry.State, entry.IsTest, entry.Culture, entry.ContentKey), Is.EqualTo((EntryState.Approved, false, "en-US", (Guid?)page)));
             Assert.That(entry.PageUrl, Is.EqualTo("/contact/"), "the page's path from its address, never from the visitor");
             Assert.That(entry.Context, Is.EqualTo("""{"campaign":"autumn"}"""), "only the context values the form lists, and no query value");
             Assert.That(entry.SubmissionHash, Does.Match("^[0-9a-f]{64}$"));
@@ -165,9 +165,9 @@ public sealed class PublicFormEntryTests : PublicApiTestBase
         Assert.That(stored, Is.EqualTo(new Dictionary<string, string>
         {
             ["any action, once the address is confirmed"] = "Unverified, kept, 0 runs",
-            ["an action on approval, approved at once"] = "Submitted, kept, 0 runs",
+            ["an action on approval, approved at once"] = "Approved, kept, 1 runs",
             ["an action on rejection, while it waits for approval"] = "Submitted, kept, 0 runs",
-            ["an action on rejection, approved at once"] = "Submitted, not kept, 0 runs",
+            ["an action on rejection, approved at once"] = "Approved, not kept, 0 runs",
         }), string.Join(" | ", stored));
     }
 

@@ -94,6 +94,26 @@ public sealed class EmailLimitsTests : EmailTestBase
     }
 
     [Test]
+    public async Task WhatTheSitesHourHeldBack_DoesNotCountAgainstIt()
+    {
+        MailLimits.PerSitePerHour = 1;
+        var sent = await Outbox.QueueAsync(Mail("a@jfb.test", toVisitor: true));
+        Clock.Advance(TimeSpan.FromMinutes(59));
+        var held = await Outbox.QueueAsync(Mail("b@jfb.test", toVisitor: true));
+
+        // The sent one is past its hour by now; the held one is not, and it never went.
+        Clock.Advance(TimeSpan.FromMinutes(2));
+        var next = await Outbox.QueueAsync(Mail("c@jfb.test", toVisitor: true));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(sent!.State, Is.EqualTo(EmailState.Queued));
+            Assert.That(held!.State, Is.EqualTo(EmailState.Limited));
+            Assert.That(next!.State, Is.EqualTo(EmailState.Queued));
+        });
+    }
+
+    [Test]
     public async Task ParallelRequests_CannotPassTheLimitTogether()
     {
         MailLimits.PerRecipientPerDay = 3;

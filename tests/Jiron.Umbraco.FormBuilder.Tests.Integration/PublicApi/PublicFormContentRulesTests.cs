@@ -70,7 +70,7 @@ public sealed class PublicFormContentRulesTests : PublicApiTestBase
         {
             Assert.That(entry.SpamScore, Is.EqualTo(score));
             Assert.That(entry.SpamReasons, Is.EqualTo(score == 0 ? string.Empty : "blocked_word"), "stored once");
-            Assert.That(entry.State, Is.EqualTo(EntryState.Submitted));
+            Assert.That(entry.State, Is.EqualTo(EntryState.Approved));
         });
     }
 
@@ -179,7 +179,7 @@ public sealed class PublicFormContentRulesTests : PublicApiTestBase
 
         Assert.Multiple(() =>
         {
-            Assert.That(entry.State, Is.EqualTo(blocked ? EntryState.Spam : EntryState.Submitted));
+            Assert.That(entry.State, Is.EqualTo(blocked ? EntryState.Spam : EntryState.Approved));
             Assert.That(entry.SpamScore, Is.EqualTo(blocked ? 100 : 0));
             Assert.That(entry.SpamReasons, Is.EqualTo(blocked ? "blocked_domain" : string.Empty));
         });
@@ -307,7 +307,7 @@ public sealed class PublicFormContentRulesTests : PublicApiTestBase
         {
             Assert.That(entry.SpamScore, Is.EqualTo(30));
             Assert.That(entry.SpamReasons, Is.EqualTo("known_sender"));
-            Assert.That(entry.State, Is.EqualTo(EntryState.Submitted));
+            Assert.That(entry.State, Is.EqualTo(EntryState.Approved));
             Assert.That(seen.Form, Is.EqualTo(key));
             Assert.That(seen.Culture, Is.EqualTo("en-US"));
             Assert.That(seen.IsFromServerKey, Is.True);
@@ -363,7 +363,7 @@ public sealed class PublicFormContentRulesTests : PublicApiTestBase
 
         Assert.Multiple(() =>
         {
-            Assert.That(entry.State, Is.EqualTo(EntryState.Submitted));
+            Assert.That(entry.State, Is.EqualTo(EntryState.Approved));
             Assert.That(entry.SpamScore, Is.Zero);
         });
     }

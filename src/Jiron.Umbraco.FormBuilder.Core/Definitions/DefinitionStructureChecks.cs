@@ -274,6 +274,10 @@ internal sealed partial class DefinitionStructureChecks
             {
                 Fail(DefinitionErrors.InvalidReference, fieldPath, "Email verification uses an email field outside repeatable groups.");
             }
+            else if (!entry.Unknown && entry.Field.Keep == FieldKeep.UntilActionsRun)
+            {
+                Fail(DefinitionErrors.InvalidReference, fieldPath, "Email verification needs its address kept until someone confirms, past any run of the actions.");
+            }
         }
 
         var availability = settings.Availability;

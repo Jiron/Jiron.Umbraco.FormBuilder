@@ -91,6 +91,7 @@ internal sealed class TestEndpointsStartupFilter(IOptions<FormBuilderTestingOpti
 /// <item><description><c>POST /jfb-testing/mail-layouts {"marker": "...", "word": "..."}</c>: queues a mail in every layout's shape, each
 /// holding the word wherever text goes, with the subject <c>&lt;marker&gt; &lt;layout&gt;</c>, and answers those subjects, so the browser
 /// tests can render what arrives in the pickup folder (ADR-0159).</description></item>
+/// <item><description><c>POST /jfb-testing/verification-form {"url": "..."}</c>: publishes a headless form that asks for its address to be confirmed (ROADMAP 8.5).</description></item>
 /// <item><description><c>POST /jfb-testing/webhook-form {"url": "..."}</c>: publishes a headless form whose webhook action calls this address (ROADMAP 8.4).</description></item>
 /// <item><description><c>GET /jfb-testing/mail-log?key=...</c>: the states of the mail one mailbox got, by any spelling of it (ADR-0159).</description></item>
 /// <item><description><c>GET /jfb-testing/mail-view?view=...</c>: what the site's view of a mail writes for a fixed model (ADR-0160).</description></item>
@@ -145,6 +146,52 @@ internal sealed class TestEndpointsMiddleware(RequestDelegate next)
     }
 
     private sealed record WebhookFormRequest(string? Url);
+
+    // A published headless form that asks for its address to be confirmed, with a webhook on submission and one on confirmation, each to its own
+    // path below this address, on a site that knows its own address.
+    private static async Task VerificationFormAsync(HttpContext context)
+    {
+        var body = await JsonSerializer.DeserializeAsync<WebhookFormRequest>(context.Request.Body, Json, context.RequestAborted);
+        var settingsService = context.RequestServices.GetRequiredService<IFormBuilderSettingsService>();
+        var general = await settingsService.GetAsync<GeneralSettings>(null, context.RequestAborted);
+        if (general.Value.BaseUrl is null)
+        {
+            _ = await settingsService.SaveAsync(general.Value with { BaseUrl = $"{context.Request.Scheme}://{context.Request.Host}" }, general.Version, null, context.RequestAborted);
+        }
+
+        var forms = context.RequestServices.GetRequiredService<IFormBuilderFormService>();
+        var created = await forms.CreateAsync(new NewFormRequest($"Opt-in {Guid.NewGuid():N}"), context.RequestAborted);
+        var draft = (await forms.GetDraftAsync(created.Key, cancellationToken: context.RequestAborted))!;
+        var definition = draft.Definition!;
+        var name = new FormField { Key = Guid.NewGuid(), Type = "text", Alias = "name", Label = new LocalizedText("Name") };
+        var email = new FormField { Key = Guid.NewGuid(), Type = "email", Alias = "email", Label = new LocalizedText("Email") };
+        FormAction Hook(string path, ActionTrigger trigger) => new()
+        {
+            Key = Guid.NewGuid(),
+            Type = "webhook",
+            Name = path,
+            Trigger = trigger,
+            Settings = SettingsObject.Parse(JsonSerializer.Serialize(new { url = $"{body?.Url}/{path}", secret = "$JironFormBuilder:Secrets:E2EWebhook" })),
+        };
+        var saved = (await forms.SaveDraftAsync(
+            created.Key,
+            draft.Form.ConcurrencyVersion,
+            definition with
+            {
+                Pages = [definition.Pages[0] with { Groups = [definition.Pages[0].Groups[0] with { Fields = [name, email] }] }],
+                Settings = definition.Settings with
+                {
+                    Developer = definition.Settings.Developer with { Headless = true },
+                    Submission = definition.Settings.Submission with { Verification = new EmailVerification { EmailField = email.Key, Days = 7 } },
+                },
+                Actions = [Hook("submitted", ActionTrigger.Submitted), Hook("verified", ActionTrigger.Verified)],
+            },
+            null,
+            null,
+            context.RequestAborted))!;
+        _ = await forms.PublishAsync(created.Key, saved.Form.ConcurrencyVersion, null, null, context.RequestAborted);
+        await context.Response.WriteAsJsonAsync(new { key = created.Key }, Json, context.RequestAborted);
+    }
 
     // One mail in every shape a mail can take, each holding this word wherever text goes, through the queue.
     private static async Task MailLayoutsAsync(HttpContext context)
@@ -228,6 +275,9 @@ internal sealed class TestEndpointsMiddleware(RequestDelegate next)
                 return;
             case "mail-view" when HttpMethods.IsGet(context.Request.Method):
                 await MailViewAsync(context);
+                return;
+            case "verification-form" when HttpMethods.IsPost(context.Request.Method):
+                await VerificationFormAsync(context);
                 return;
             case "webhook-form" when HttpMethods.IsPost(context.Request.Method):
                 await WebhookFormAsync(context);

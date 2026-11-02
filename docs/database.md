@@ -54,6 +54,7 @@ idempotent, so a rerun changes nothing.
 | `jfb-005-file-scan-index` | `AddFileScanIndexV1` | Adds `IX_jfbEntryFile_scanState_id`, for the files that wait for a scan ([ADR-0144](decisions/0144-cleanup-and-the-scanner.md)), where it is missing. |
 | `jfb-006-file-scan-order` | `ChangeFileScanIndexV1` | Replaces `IX_jfbEntryFile_scanState_id` with `IX_jfbEntryFile_scanState_entryId_id`, which also tells what an entry holds from uploads no entry took ([ADR-0148](decisions/0148-what-uploads-may-hold.md)). |
 | `jfb-007-email-time-index` | `AddEmailTimeIndexV1` | Adds `IX_jfbEmail_createdUtc_recipientKey`, so the site's mail limit reads the last hour and not all kept mail ([ADR-0159](decisions/0159-mail-the-queue-the-layouts-and-the-limits.md)), where it is missing. |
+| `jfb-008-entry-event-due` | `AddEntryEventDueV1` | Adds `jfbEntryEvent.dueUtc` and `IX_jfbEntryEvent_dueUtc`, so what a user's change leaves until its undo window is over is found by a queue (ADR-0162). |
 
 A step that has shipped is never edited; a change to the schema is a new step with snapshot classes of its own. Step 1
 is frozen since the end of Phase 4, the tag `baseline/schema-v1`: `SchemaV1FreezeTests` pins the SHA-256 of a
@@ -269,6 +270,7 @@ erDiagram
         guid userKey "null"
         guid changeKey "null"
         text details
+        datetime dueUtc "null"
     }
     jfbEntryNote {
         int id PK
@@ -566,10 +568,11 @@ entry's unit of work, insert-once (ADR-0070). No indexes besides the primary key
 
 The timeline of an entry: submitted, changed, forwarded, `notSpam` when someone takes it out of the spam folder (ADR-0140),
 `fileQuarantined` when a scanner finds malware in a file it holds (ADR-0144), and so on. `changeKey` ties together the events of one
-change by a user, a bulk change included, so it can be undone (ADR-0023).
+change by a user, a bulk change included, so it can be undone (ADR-0023). `dueUtc` says when something the event leaves to do falls due, and is cleared by whoever does it or by an Undo (ADR-0162).
 
 - `IX_jfbEntryEvent_entryId_occurredUtc`: an entry's timeline.
 - `IX_jfbEntryEvent_changeKey`: the events of one change.
+- `IX_jfbEntryEvent_dueUtc`: what has fallen due.
 
 ### `jfbEntryNote`
 

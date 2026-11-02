@@ -4,6 +4,7 @@ using Jiron.Umbraco.FormBuilder.Core.Email;
 using Jiron.Umbraco.FormBuilder.Core.Files;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
+using Jiron.Umbraco.FormBuilder.Core.Submissions;
 using Jiron.Umbraco.FormBuilder.Tests.Integration.Support;
 using Microsoft.Extensions.DependencyInjection;
 using MimeKit;
@@ -403,6 +404,37 @@ public sealed class EmailActionTests : EmailTestBase
         Assert.That(Written().Single().Attachments.OfType<MimePart>().Select(part => part.FileName), Is.EqualTo(new[] { "chosen.pdf" }));
     }
 
+    [TestCase(false, TestName = "A sensitive file stays out")]
+    [TestCase(true, TestName = "A sensitive file goes where the action names it")]
+    public async Task AnAttachedFile_OfASensitiveField_GoesOnlyWhereTheActionNamesIt(bool named)
+    {
+        var hidden = new FormField { Key = Guid.NewGuid(), Type = "file", Alias = "hiddenUpload", Label = new LocalizedText("Hidden"), Sensitive = true };
+        var more = $$""","attachments":["{{hidden.Key}}"]""" + (named ? $$""","includeSensitive":["{{hidden.Key}}"]""" : string.Empty);
+        var form = await PublishAsync(name: Guid.NewGuid().ToString("N"), change: definition => definition with { Actions = [Email(Texts(more: more))] }, fields: [NameField, hidden]);
+        var row = (await FormRows.GetAsync(form))!;
+        var field = (await FormRows.ListFieldsAsync(row.Id)).Single(item => item.Values.FieldKey == hidden.Key);
+        var file = await FileAsync(row.Id, hidden.Key, "hidden.pdf");
+        var entry = (await Entries.CreateAsync(new NewEntry
+        {
+            Key = Guid.NewGuid(),
+            FormId = row.Id,
+            FormVersionId = row.PublishedVersionId!.Value,
+            State = EntryState.Submitted,
+            SubmissionId = Guid.NewGuid(),
+            SubmissionHash = new string('a', 64),
+            Culture = "en-US",
+            FileIds = [file.Id],
+            Values = [new NewEntryValue(field.Id, "hidden.pdf", FileId: file.Id)],
+        }))!;
+        var action = (await Forms.GetDraftAsync(form))!.Definition!.Actions.Single();
+        await Runs.AddAsync(entry.Id, entry.FormVersionId, Guid.NewGuid(), [new NewActionRun(action.Key, action.Type, action.Trigger, 0, false)]);
+
+        await DrainAsync(entry.Id);
+        await SendDueAsync();
+
+        Assert.That(Written().Single().Attachments.OfType<MimePart>().Select(part => part.FileName), named ? Is.EqualTo(new[] { "hidden.pdf" }) : Is.Empty);
+    }
+
     [Test]
     public async Task ATestRun_ReachesOnlyWhoAsks_AndIsLoggedAsATest()
     {
@@ -554,16 +586,55 @@ public sealed class EmailActionTests : EmailTestBase
     }
 
     [Test]
+    public async Task AnUndoneApproval_SendsNoMail_AndOneThatStands_SendsItsMail()
+    {
+        var action = Email(Texts()) with { Trigger = ActionTrigger.Approved };
+        var form = await PublishAsync(
+            name: Guid.NewGuid().ToString("N"),
+            change: definition => definition with
+            {
+                Actions = [action],
+                Settings = definition.Settings with { Submission = definition.Settings.Submission with { Approval = ApprovalMode.Manual } },
+            },
+            fields: [NameField, EmailField, Message, Secret, Upload]);
+        var changes = GetRequiredService<EntryStateChanges>();
+        var undone = await SubmitAsync(form, """{"name":"Ada"}""");
+        var stands = await SubmitAsync(form, """{"name":"Ben"}""");
+
+        var change = await changes.ChangeAsync(form, [undone.Key], EntryState.Approved, Editor);
+        await changes.ChangeAsync(form, [stands.Key], EntryState.Approved, Editor);
+        await changes.UndoAsync(form, change.ChangeKey, Editor);
+        Clock.Advance(EntrySpamFolder.UndoWindow);
+        await DrainAsync(stands.Id);
+        await SendDueAsync();
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(await Emails.ListForEntryAsync(undone.Id), Is.Empty);
+            Assert.That((await Runs.ListForEntryAsync(undone.Id)).Single().LastError?.Code, Is.EqualTo(DeliveryError.Undone));
+            Assert.That(Written(), Has.Count.EqualTo(1));
+        });
+    }
+
+    [Test]
     public async Task ARunTriedAgain_DoesNotQueueItsMailTwice()
     {
         var form = await FormAsync(Email(Texts()));
         var entry = await SubmitAsync(form, """{"name":"Ada"}""");
         var run = (await DrainAsync(entry.Id)).Single();
-        await GetRequiredService<ActionRunRetries>().RetryAsync(form, entry.Key, run.Id, confirmed: true, Editor);
+        var action = (await Forms.GetDraftAsync(form))!.Definition!.Actions.Single();
+        var scope = (await GetRequiredService<SubmissionEntries>().ScopeAsync(entry))!;
 
-        await DrainAsync(entry.Id);
+        // What an attempt finds when its commit went through and it heard an error: its run is one the outbox holds to try again.
+        var again = await GetRequiredService<ActionTypeRegistry>().Find(action.Type)!.RunAsync(
+            new ActionRunContext { Action = action, Trigger = action.Trigger, Scope = scope, Attempt = 2, DeliveryKey = "again", RunId = run.Id, EntryId = entry.Id },
+            CancellationToken.None);
 
-        Assert.That(await Emails.ListForEntryAsync(entry.Id), Has.Count.EqualTo(1));
+        Assert.Multiple(async () =>
+        {
+            Assert.That(again.Kind, Is.EqualTo(ActionResultKind.Succeeded));
+            Assert.That(await Emails.ListForEntryAsync(entry.Id), Has.Count.EqualTo(1));
+        });
     }
 
     [Test]

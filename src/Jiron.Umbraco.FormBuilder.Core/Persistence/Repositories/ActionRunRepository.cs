@@ -250,6 +250,47 @@ internal sealed class ActionRunRepository(FormBuilderDatabase database) : IActio
             },
             cancellationToken);
 
+    /// <inheritdoc />
+    public Task<int> SkipChangeOfEntryAsync(Guid changeKey, long entryId, CancellationToken cancellationToken = default) =>
+        database.WriteAsync(
+            db =>
+            {
+                var n = new SqlNames(db);
+                return db.ExecAsync(
+                    $"UPDATE {n.T(FormBuilderTables.ActionRun)} SET {n.C("state")} = '{Skipped}', {n.C("finishedUtc")} = @2, {n.C("nextAttemptUtc")} = NULL, {n.C("lastErrorCode")} = @3, {n.C("lastErrorMessage")} = NULL WHERE {n.C("changeKey")} = @0 AND {n.C("entryId")} = @1 AND {n.C("state")} = '{Pending}' AND {n.C("attempts")} = 0",
+                    changeKey,
+                    entryId,
+                    database.UtcNow,
+                    DeliveryError.Superseded);
+            },
+            cancellationToken);
+
+    /// <inheritdoc />
+    public Task<int> SkipUnstartedOfEntryAsync(long entryId, CancellationToken cancellationToken = default) =>
+        database.WriteAsync(
+            db =>
+            {
+                var n = new SqlNames(db);
+                return db.ExecAsync(
+                    $"UPDATE {n.T(FormBuilderTables.ActionRun)} SET {n.C("state")} = '{Skipped}', {n.C("finishedUtc")} = @1, {n.C("nextAttemptUtc")} = NULL, {n.C("lastErrorCode")} = @2, {n.C("lastErrorMessage")} = NULL WHERE {n.C("entryId")} = @0 AND {n.C("state")} = '{Pending}' AND {n.C("attempts")} = 0",
+                    entryId,
+                    database.UtcNow,
+                    DeliveryError.Superseded);
+            },
+            cancellationToken);
+
+    /// <inheritdoc />
+    public Task<int> CountStartedAsync(Guid changeKey, CancellationToken cancellationToken = default) =>
+        database.ReadAsync(
+            db =>
+            {
+                var n = new SqlNames(db);
+                return db.ScalarAsync<int>(
+                    $"SELECT COUNT(*) FROM {n.T(FormBuilderTables.ActionRun)} WHERE {n.C("changeKey")} = @0 AND ({n.C("attempts")} > 0 OR {n.C("state")} <> '{Pending}')",
+                    changeKey);
+            },
+            cancellationToken);
+
     internal static StoredActionRun FromDto(ActionRunDto d) => new(
         d.Id,
         d.EntryId,

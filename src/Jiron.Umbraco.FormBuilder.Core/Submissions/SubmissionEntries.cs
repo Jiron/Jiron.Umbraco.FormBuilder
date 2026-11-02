@@ -81,7 +81,8 @@ internal sealed class SubmissionEntries(
     MergeTagUmbraco umbraco,
     SiteBaseUrl baseUrls,
     ActionSettlement settlement,
-    EntryEvents entryEvents)
+    EntryEvents entryEvents,
+    OutboxWake wake)
 {
     /// <summary>The kind of the event that records a submission.</summary>
     public const string SubmittedEvent = "submitted";
@@ -118,8 +119,8 @@ internal sealed class SubmissionEntries(
         ArgumentNullException.ThrowIfNull(scope);
         var definition = submission.Form.Definition;
         var verdict = submission.Verdict ?? SpamVerdict.None;
-        var state = verdict.IsSpam ? EntryState.Spam : definition.Settings.Submission.Verification is null ? EntryState.Submitted : EntryState.Unverified;
-        var queued = state is EntryState.Unverified or EntryState.Spam ? [] : Runs(definition, submission.Answers.State.Actions);
+        var state = verdict.IsSpam ? EntryState.Spam : definition.Settings.Submission.Verification is null ? ArrivalState(definition) : EntryState.Unverified;
+        var queued = state is EntryState.Unverified or EntryState.Spam ? [] : Runs(definition, submission.Answers.State.Actions, ArrivalTriggers(definition, verified: false));
         var kept = queued.Count > 0 || ActionSettlement.TriggerCanFire(definition, state);
         var answers = kept ? submission.Answers.Answers : [.. submission.Answers.Answers.Where(answer => !ActionSettlement.KeptUntilActions(definition, answer.Field))];
         var entry = new NewEntry
@@ -168,13 +169,18 @@ internal sealed class SubmissionEntries(
                     }
                 }
 
-                await events.AddAsync(new NewEntryEvent(created.Id, SubmittedEvent, Details: Details(outcome, submission.Answers.State.Hidden, verdict.IsSpam ? submission.Answers.State.Actions : null)), cancellationToken);
+                await events.AddAsync(new NewEntryEvent(created.Id, SubmittedEvent, Details: Details(outcome, submission.Answers.State.Hidden, KeepsChosenActions(definition, state) ? submission.Answers.State.Actions : null)), cancellationToken);
                 if (queued.Count > 0)
                 {
                     await runs.AddAsync(created.Id, created.FormVersionId, Guid.NewGuid(), queued, cancellationToken: cancellationToken);
                 }
 
                 await stats.IncrementAsync(created.FormId, [new DailyStatCount(verdict.IsSpam ? SpamMetric : SubmissionsMetric)], cancellationToken);
+                if (state == EntryState.Unverified)
+                {
+                    await events.AddAsync(new NewEntryEvent(created.Id, EntryVerification.RequestedEvent, DueIn: TimeSpan.Zero), cancellationToken);
+                    await events.AddAsync(new NewEntryEvent(created.Id, EntryVerification.ExpiresEvent, DueIn: EntryVerification.TimeOf(definition)), cancellationToken);
+                }
             },
             cancellationToken);
         if (stored is null)
@@ -182,16 +188,21 @@ internal sealed class SubmissionEntries(
             return null;
         }
 
-        // An entry that waits for a confirmation or sits in Spam is told of when it gets here (8.5, EntrySpamFolder).
-        if (stored.State == EntryState.Submitted)
+        if (stored.State == EntryState.Unverified)
         {
-            await PublishSubmittedAsync(stored, scope.FormAlias, entryEvents);
+            wake.Wake();
+        }
+
+        // An entry that waits for a confirmation or sits in Spam is told of when it gets here (8.5, EntrySpamFolder).
+        if (stored.State is EntryState.Submitted or EntryState.Approved)
+        {
+            await entryEvents.TellArrivedAsync(stored, scope.FormAlias);
         }
 
         try
         {
             var receipt = await ReceiptAsync(stored, definition, submission.Page.Site, cancellationToken);
-            var rendered = await outcomes.RenderAsync(outcome, scope with { Entry = EntryOf(stored), Answers = submission.Answers.ForMergeTags }, submission.Redirect, cancellationToken);
+            var rendered = await outcomes.RenderAsync(outcome, scope with { Entry = EntryOf(stored, definition), Answers = submission.Answers.ForMergeTags }, submission.Redirect, cancellationToken);
             return new SubmittedEntry(stored, receipt, rendered);
         }
         finally
@@ -205,25 +216,11 @@ internal sealed class SubmissionEntries(
         }
     }
 
-    /// <summary>Tells of an entry that is submitted now, for good (ROADMAP 8.4).</summary>
-    /// <param name="entry">The entry.</param>
-    /// <param name="formAlias">Its form's alias.</param>
-    /// <param name="entryEvents">Publishes it.</param>
-    public static Task PublishSubmittedAsync(StoredEntry entry, string formAlias, EntryEvents entryEvents)
-    {
-        ArgumentNullException.ThrowIfNull(entry);
-        ArgumentNullException.ThrowIfNull(entryEvents);
-        return entryEvents.PublishAsync(
-            on => new EntrySubmittedNotification
-            {
-                EntryKey = entry.Key,
-                EntryNumber = entry.Number,
-                State = StoredNames.Of(entry.State),
-                FormAlias = formAlias,
-                OccurredUtc = entry.SubmittedUtc,
-                FiresWebhooks = on,
-            });
-    }
+    // Whether a later change of the entry's state still needs what the rules chose as it came in: its runs do not all queue now.
+    private static bool KeepsChosenActions(FormDefinition definition, EntryState state) =>
+        state is EntryState.Spam or EntryState.Unverified
+        || (state == EntryState.Submitted && definition.Actions.Any(action => action.Enabled && action.Trigger != ActionTrigger.Submitted))
+        || (state == EntryState.Approved && definition.Actions.Any(action => action.Enabled && action.Trigger == ActionTrigger.Rejected));
 
     /// <summary>
     /// An entry's receipt and outcome again, for a retry of its answers: rendered with the version it was submitted
@@ -298,22 +295,39 @@ internal sealed class SubmissionEntries(
             Culture = entry.Culture,
             Site = page.Site,
             Page = page.Content,
-            Entry = EntryOf(entry),
+            Entry = EntryOf(entry, definition),
             Context = Context(entry.Context),
             Answers = answers?.ForMergeTags(Hidden(timeline)) ?? MergeTagAnswers.None,
         };
         return (scope, timeline);
     }
 
-    // The runs of the enabled actions the rules let run that fire on submission, in the form's order.
-    internal static List<NewActionRun> Runs(FormDefinition definition, IReadOnlyList<string> running)
+    // The runs of the enabled actions the rules let run that fire on these triggers, in the form's order.
+    internal static List<NewActionRun> Runs(FormDefinition definition, IReadOnlyList<string> running, params ActionTrigger[] triggers)
     {
         var chosen = running.ToHashSet(StringComparer.Ordinal);
         return [.. definition.Actions
             .Select((action, index) => (Action: action, Index: index))
-            .Where(item => item.Action.Enabled && item.Action.Trigger == ActionTrigger.Submitted && chosen.Contains(DefinitionLogic.Id(item.Action.Key)))
-            .Select(item => new NewActionRun(item.Action.Key, item.Action.Type, ActionTrigger.Submitted, item.Index, item.Action.StopOnFailure))];
+            .Where(item => item.Action.Enabled && triggers.Contains(item.Action.Trigger) && chosen.Contains(DefinitionLogic.Id(item.Action.Key)))
+            .Select(item => new NewActionRun(item.Action.Key, item.Action.Type, item.Action.Trigger, item.Index, item.Action.StopOnFailure))];
     }
+
+    // The triggers an entry fires as it arrives: approved too, on a form that does not wait for a person to approve (section 4.4).
+    internal static ActionTrigger[] ArrivalTriggers(FormDefinition definition, bool verified)
+    {
+        var automatic = definition.Settings.Submission.Approval == ApprovalMode.Automatic;
+        return (verified, automatic) switch
+        {
+            (true, true) => [ActionTrigger.Submitted, ActionTrigger.Verified, ActionTrigger.Approved],
+            (true, false) => [ActionTrigger.Submitted, ActionTrigger.Verified],
+            (false, true) => [ActionTrigger.Submitted, ActionTrigger.Approved],
+            _ => [ActionTrigger.Submitted],
+        };
+    }
+
+    // The state an entry reaches as it arrives.
+    internal static EntryState ArrivalState(FormDefinition definition) =>
+        definition.Settings.Submission.Approval == ApprovalMode.Automatic ? EntryState.Approved : EntryState.Submitted;
 
     // The receipt: the submission id, the reference in the version's format and the year in the site's time zone.
     private async Task<SubmissionReceipt> ReceiptAsync(StoredEntry entry, FormDefinition definition, Guid? site, CancellationToken cancellationToken)
@@ -343,11 +357,11 @@ internal sealed class SubmissionEntries(
     }
 
     // What a visitor's texts may say of an entry; one in Spam reads as any other, so a bot learns nothing (ADR-0012).
-    private static MergeTagEntry EntryOf(StoredEntry entry) => new()
+    private static MergeTagEntry EntryOf(StoredEntry entry, FormDefinition definition) => new()
     {
         Key = entry.Key,
         Number = entry.Number,
-        State = StoredNames.Of(entry.State == EntryState.Spam ? EntryState.Submitted : entry.State),
+        State = StoredNames.Of(entry.State != EntryState.Spam ? entry.State : definition.Settings.Submission.Verification is null ? ArrivalState(definition) : EntryState.Unverified),
         Submitted = entry.SubmittedUtc,
     };
 

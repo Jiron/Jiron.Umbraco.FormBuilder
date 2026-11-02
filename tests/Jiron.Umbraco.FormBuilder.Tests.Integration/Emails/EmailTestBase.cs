@@ -55,7 +55,7 @@ public abstract class EmailTestBase : ActionTestBase
         for (var pass = 0; pass < 20; pass++)
         {
             await Pass.RunAsync(CancellationToken.None);
-            if ((await Emails.DueAsync(1)).Count == 0)
+            if ((await Emails.DueAsync(1)).Count == 0 && (await Events.DueAsync(1)).Count == 0)
             {
                 return;
             }

@@ -1,5 +1,6 @@
 using System.Reflection;
 using Jiron.Umbraco.FormBuilder.Core.Configuration;
+using Jiron.Umbraco.FormBuilder.Core.Submissions;
 using Jiron.Umbraco.FormBuilder.Web.PublicApi.RateLimiting;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Mvc;
@@ -51,6 +52,7 @@ internal static class FormBuilderPublicApiServices
         builder.Services.TryAddSingleton<UploadTokens>();
         builder.Services.TryAddSingleton<ChallengeTokens>();
         builder.Services.TryAddSingleton<PlacementTokens>();
+        builder.Services.TryAddSingleton<IVerificationTokens, VerificationTokens>();
         builder.Services.TryAddSingleton<ChallengeRequests>();
         builder.Services.TryAddSingleton<UploadRequests>();
         builder.Services.TryAddSingleton<EntryRequests>();

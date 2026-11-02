@@ -262,6 +262,9 @@ internal sealed class EntryEventDto
 
     [Column("details")]
     public string Details { get; set; } = "{}";
+
+    [Column("dueUtc")]
+    public DateTime? DueUtc { get; set; }
 }
 
 /// <summary>A row of <c>jfbEntryNote</c>.</summary>

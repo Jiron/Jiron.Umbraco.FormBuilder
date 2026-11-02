@@ -22,6 +22,9 @@ internal sealed record DeliveryError(string Code, string? Message = null)
     /// <summary>The user's change that queued the run was undone (ADR-0023).</summary>
     public const string Undone = "undone";
 
+    /// <summary>A later move of the entry replaced the change that queued the run, or left it nothing to fit (ADR-0162).</summary>
+    public const string Superseded = "superseded";
+
     /// <summary>Whether <paramref name="code"/> is a code the columns hold as it is.</summary>
     public static bool IsCode(string? code) =>
         code is { Length: > 0 and <= MaxCodeLength } && code.All(c => c is (>= 'a' and <= 'z') or (>= '0' and <= '9') or '_' or '.' or '-');

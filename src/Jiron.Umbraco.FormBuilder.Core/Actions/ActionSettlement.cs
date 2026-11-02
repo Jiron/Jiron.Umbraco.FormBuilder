@@ -170,6 +170,7 @@ internal sealed partial class ActionSettlement(
         ArgumentNullException.ThrowIfNull(definition);
         if (await entries.GetByIdAsync(entryId, cancellationToken) is not { } entry
             || entry.State == EntryState.Draft
+            || await events.HasMoveDueAsync(entryId, cancellationToken)
             || (await emails.ListForEntryAsync(entryId, cancellationToken)).Any(mail => mail.State is EmailState.Queued or EmailState.Sending or EmailState.Uncertain)
             || (await runs.ListForEntryAsync(entryId, cancellationToken)).Any(run => run.State is ActionRunState.Pending or ActionRunState.Running or ActionRunState.Uncertain)
             || TriggerCanFire(definition, entry.State))

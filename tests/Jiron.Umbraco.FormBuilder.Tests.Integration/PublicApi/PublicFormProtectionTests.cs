@@ -70,7 +70,7 @@ public sealed class PublicFormProtectionTests : PublicApiTestBase
         {
             Assert.That(spam.StatusCode, Is.EqualTo(HttpStatusCode.OK), await spam.Content.ReadAsStringAsync());
             Assert.That(Shape(await JsonAsync(spam)), Is.EqualTo(Shape(await JsonAsync(clean))), "nothing tells them apart");
-            Assert.That(entries[0].State, Is.EqualTo(EntryState.Submitted));
+            Assert.That(entries[0].State, Is.EqualTo(EntryState.Approved));
             Assert.That(entries[0].SpamScore, Is.Zero);
             Assert.That(entries[0].SpamReasons, Is.Empty);
             Assert.That(await runs.ListForEntryAsync(entries[0].Id), Is.Not.Empty);
@@ -92,7 +92,7 @@ public sealed class PublicFormProtectionTests : PublicApiTestBase
 
         using var answer = await InTimeAsync(key, new JsonObject { ["revision"] = 1, ["values"] = new JsonObject { ["name"] = "Ada" }, ["honeypot"] = blank }.ToJsonString());
 
-        Assert.That((await StoredAsync(key)).Single().State, Is.EqualTo(EntryState.Submitted));
+        Assert.That((await StoredAsync(key)).Single().State, Is.EqualTo(EntryState.Approved));
     }
 
     [Test]
@@ -122,7 +122,7 @@ public sealed class PublicFormProtectionTests : PublicApiTestBase
         {
             Assert.That(entries[0].SpamScore, Is.EqualTo(60));
             Assert.That(entries[0].SpamReasons, Is.EqualTo("too_fast"));
-            Assert.That(entries[0].State, Is.EqualTo(EntryState.Submitted), "60 alone is no spam");
+            Assert.That(entries[0].State, Is.EqualTo(EntryState.Approved), "60 alone is no spam");
             Assert.That(entries[1].SpamScore, Is.Zero);
             Assert.That(entries[1].SpamReasons, Is.Empty);
         });
@@ -201,7 +201,7 @@ public sealed class PublicFormProtectionTests : PublicApiTestBase
         Assert.Multiple(async () =>
         {
             Assert.That(answer.StatusCode, Is.EqualTo(HttpStatusCode.OK), await answer.Content.ReadAsStringAsync());
-            Assert.That(entry.State, Is.EqualTo(blocked ? EntryState.Spam : EntryState.Submitted));
+            Assert.That(entry.State, Is.EqualTo(blocked ? EntryState.Spam : EntryState.Approved));
             Assert.That(entry.SpamReasons, Is.EqualTo(blocked ? "blocked_range" : string.Empty));
             Assert.That(entry.IpAddress, Is.Null, "matched against the request and never stored");
         });
@@ -242,7 +242,7 @@ public sealed class PublicFormProtectionTests : PublicApiTestBase
         Assert.Multiple(() =>
         {
             Assert.That(entries[0].State, Is.EqualTo(EntryState.Spam));
-            Assert.That(entries[1].State, Is.EqualTo(EntryState.Submitted), "a page of the other site that holds the form");
+            Assert.That(entries[1].State, Is.EqualTo(EntryState.Approved), "a page of the other site that holds the form");
         });
     }
 
@@ -293,7 +293,7 @@ public sealed class PublicFormProtectionTests : PublicApiTestBase
         var entries = await StoredAsync(key);
         Assert.Multiple(() =>
         {
-            Assert.That(entries[0].State, Is.EqualTo(EntryState.Submitted), "a key's request has no honeypot and no time");
+            Assert.That(entries[0].State, Is.EqualTo(EntryState.Approved), "a key's request has no honeypot and no time");
             Assert.That(entries[0].SpamScore, Is.Zero);
             Assert.That(entries[1].State, Is.EqualTo(EntryState.Spam));
             Assert.That(entries[1].SpamReasons, Is.EqualTo("blocked_range"));

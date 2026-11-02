@@ -133,6 +133,8 @@ public sealed class FormBuilderCoreComposer : IComposer
         builder.Services.TryAddSingleton<OptionPlaces>();
         builder.Services.TryAddSingleton<SubmissionProtection>();
         builder.Services.TryAddSingleton<EntrySpamFolder>();
+        builder.Services.TryAddSingleton<EntryStateChanges>();
+        builder.Services.TryAddSingleton<EntryVerification>();
         _ = builder.JironFormBuilder().SpamChecks();
         _ = builder.JironFormBuilder().CaptchaProviders();
         _ = builder.JironFormBuilder().FileScanners();

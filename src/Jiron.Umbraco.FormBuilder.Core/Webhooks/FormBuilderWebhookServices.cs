@@ -1,6 +1,8 @@
 using Jiron.Umbraco.FormBuilder.Core.Actions;
 using Jiron.Umbraco.FormBuilder.Core.Composing;
 using Jiron.Umbraco.FormBuilder.Core.Configuration;
+using Jiron.Umbraco.FormBuilder.Core.Persistence;
+using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Core.Settings;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -140,24 +142,57 @@ internal sealed partial class EntryEvents(IEventAggregator events, IFormBuilderS
     /// <summary>Publishes one, with whether webhooks fire for it.</summary>
     /// <typeparam name="T">The notification.</typeparam>
     /// <param name="make">Makes it, told whether webhooks fire.</param>
-    public async Task PublishAsync<T>(Func<bool, T> make)
+    public Task PublishAsync<T>(Func<bool, T> make)
         where T : EntryNotification
     {
         ArgumentNullException.ThrowIfNull(make);
+        return GuardedAsync(typeof(T).Name, on => events.PublishAsync(make(on), CancellationToken.None));
+    }
+
+    /// <summary>Tells of an entry that arrived: that it is submitted, then that it is approved when it was approved as it came in.</summary>
+    /// <param name="entry">The entry.</param>
+    /// <param name="formAlias">Its form's alias.</param>
+    public async Task TellArrivedAsync(StoredEntry entry, string formAlias)
+    {
+        ArgumentNullException.ThrowIfNull(entry);
+        await GuardedAsync(
+            nameof(TellArrivedAsync),
+            async on =>
+            {
+                await events.PublishAsync(new EntrySubmittedNotification { EntryKey = entry.Key, EntryNumber = entry.Number, State = StoredNames.Of(entry.State), FormAlias = formAlias, OccurredUtc = entry.SubmittedUtc, FiresWebhooks = on }, CancellationToken.None);
+                await PublishMovedAsync(entry, formAlias, on);
+            });
+    }
+
+    /// <summary>Tells of an entry that reached approved or rejected; of any other state, nothing.</summary>
+    /// <param name="entry">The entry.</param>
+    /// <param name="formAlias">Its form's alias.</param>
+    public Task TellMovedAsync(StoredEntry entry, string formAlias)
+    {
+        ArgumentNullException.ThrowIfNull(entry);
+        return GuardedAsync(nameof(TellMovedAsync), on => PublishMovedAsync(entry, formAlias, on));
+    }
+
+    private Task PublishMovedAsync(StoredEntry entry, string formAlias, bool on) => entry.State switch
+    {
+        EntryState.Approved => events.PublishAsync(new EntryApprovedNotification { EntryKey = entry.Key, EntryNumber = entry.Number, State = StoredNames.Of(entry.State), FormAlias = formAlias, OccurredUtc = entry.StateChangedUtc, FiresWebhooks = on }, CancellationToken.None),
+        EntryState.Rejected => events.PublishAsync(new EntryRejectedNotification { EntryKey = entry.Key, EntryNumber = entry.Number, State = StoredNames.Of(entry.State), FormAlias = formAlias, OccurredUtc = entry.StateChangedUtc, FiresWebhooks = on }, CancellationToken.None),
+        _ => Task.CompletedTask,
+    };
+
+    // Handlers hold up whoever made the change for a moment at most, and their failure is logged.
+    private async Task GuardedAsync(string what, Func<bool, Task> publish)
+    {
         try
         {
             await Task.Run(
-                    async () =>
-                    {
-                        var on = (await settings.GetAsync<IntegrationSettings>(cancellationToken: CancellationToken.None)).Value.UmbracoWebhookEvents;
-                        await events.PublishAsync(make(on), CancellationToken.None);
-                    },
+                    async () => await publish((await settings.GetAsync<IntegrationSettings>(cancellationToken: CancellationToken.None)).Value.UmbracoWebhookEvents),
                     CancellationToken.None)
                 .WaitAsync(Limit, time, CancellationToken.None);
         }
         catch (Exception exception) when (exception is not OutOfMemoryException)
         {
-            LogPublishFailed(logger, typeof(T).Name, exception);
+            LogPublishFailed(logger, what, exception);
         }
     }
 

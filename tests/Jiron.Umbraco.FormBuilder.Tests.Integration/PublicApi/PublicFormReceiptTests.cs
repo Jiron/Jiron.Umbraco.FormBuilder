@@ -86,7 +86,7 @@ public sealed class PublicFormReceiptTests : PublicApiTestBase
         foreach (var (id, state) in new[] { (spam, EntryState.Spam), (rejected, EntryState.Rejected), (draft, EntryState.Draft) })
         {
             var entry = (await Entries.GetBySubmissionAsync(row.Id, id))!;
-            Assert.That(await Entries.ChangeStateAsync(entry.Id, EntryState.Submitted, state, Editor), Is.Not.Null);
+            Assert.That(await Entries.ChangeStateAsync(entry.Id, entry.State, state, Editor), Is.Not.Null);
         }
 
         var answers = new Dictionary<string, string>();

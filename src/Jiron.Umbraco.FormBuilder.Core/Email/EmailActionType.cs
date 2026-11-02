@@ -349,7 +349,7 @@ internal sealed partial class EmailActionType(
             return new ActionTestResult(ActionTestOutcome.Failed, exception.Message);
         }
 
-        var stored = await outbox.QueueAsync(mail with { Kind = EmailKind.Test, EntryId = null, ActionRunId = null, Cc = [], Bcc = [], Attachments = [] }, cancellationToken);
+        var stored = await outbox.QueueAsync(mail with { Kind = EmailKind.Test, EntryId = null, ActionRunId = null }, cancellationToken);
         return stored is null
             ? new ActionTestResult(ActionTestOutcome.Failed, "The test mail could not be queued.")
             : new ActionTestResult(ActionTestOutcome.Sent, $"Sent to {context.User.Email}", [stored.Subject, stored.TextBody]);

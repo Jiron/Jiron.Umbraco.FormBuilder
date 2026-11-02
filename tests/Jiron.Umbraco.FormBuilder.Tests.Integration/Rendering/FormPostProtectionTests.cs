@@ -64,7 +64,7 @@ public sealed class FormPostProtectionTests : RenderingTestBase
         Assert.Multiple(() =>
         {
             Assert.That(sent.StatusCode, Is.EqualTo(HttpStatusCode.Redirect));
-            Assert.That(entry.State, Is.EqualTo(EntryState.Submitted));
+            Assert.That(entry.State, Is.EqualTo(EntryState.Approved));
             Assert.That(entry.SpamScore, Is.Zero);
             Assert.That(entry.SpamReasons, Is.Empty);
         });
@@ -214,7 +214,7 @@ public sealed class FormPostProtectionTests : RenderingTestBase
         {
             Assert.That(entry.State, Is.EqualTo(EntryState.Spam));
             Assert.That(entry.SpamReasons, Is.EqualTo("no_script"));
-            Assert.That(newest!.State, Is.EqualTo(EntryState.Submitted), "its page's site asks for nothing a post without JavaScript cannot do");
+            Assert.That(newest!.State, Is.EqualTo(EntryState.Approved), "its page's site asks for nothing a post without JavaScript cannot do");
         });
     }
 

@@ -202,6 +202,8 @@ export default {
   jfbActionTypes: {
     email: 'Email',
     webhook: 'Webhook',
+    content: 'Create or update content',
+    setState: 'Set state',
   },
   jfbActionPresets: {
     webhookSlack: 'Message to Slack',
@@ -210,6 +212,16 @@ export default {
     emailConfirmSender: 'Confirm to the sender',
   },
   jfbActionSettings: {
+    contentDocumentType: 'Document type',
+    contentParentSource: 'Where it goes',
+    contentParent: 'Parent, or the item it must stay under',
+    contentName: 'Name',
+    contentMapping: 'Properties',
+    contentPublish: 'Publish it',
+    contentUpdateExisting: 'Update an item of the same name',
+    contentMediaFolder: 'Media folder for files',
+    contentIncludeSensitive: 'Copy sensitive fields',
+    setStateState: 'State',
     webhookTarget: 'Where it goes',
     webhookUrl: 'Address',
     webhookFormat: 'Format',

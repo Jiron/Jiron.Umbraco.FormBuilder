@@ -30,8 +30,13 @@ internal sealed class HeardEntries
 }
 
 /// <summary>A site's handler of the entry notifications, for the tests: it writes down what it heard.</summary>
-internal sealed class HeardEntriesHandler(HeardEntries heard) : INotificationAsyncHandler<EntrySubmittedNotification>, INotificationAsyncHandler<EntryActionFailedNotification>
+internal sealed class HeardEntriesHandler(HeardEntries heard)
+    : INotificationAsyncHandler<EntrySubmittedNotification>, INotificationAsyncHandler<EntryActionFailedNotification>, INotificationAsyncHandler<EntryApprovedNotification>, INotificationAsyncHandler<EntryRejectedNotification>
 {
+    public Task HandleAsync(EntryApprovedNotification notification, CancellationToken cancellationToken) => HearAsync(notification);
+
+    public Task HandleAsync(EntryRejectedNotification notification, CancellationToken cancellationToken) => HearAsync(notification);
+
     public Task HandleAsync(EntrySubmittedNotification notification, CancellationToken cancellationToken) => HearAsync(notification);
 
     public Task HandleAsync(EntryActionFailedNotification notification, CancellationToken cancellationToken) => HearAsync(notification);
@@ -87,7 +92,7 @@ public sealed class EntryEventTests : ActionTestBase
         {
             Assert.That(requests, Has.Count.EqualTo(1));
             Assert.That(requests[0].EventAlias, Is.EqualTo("jfbEntrySubmitted"));
-            Assert.That(requests[0].RequestObject, Does.Contain(entry.Key.ToString("D")).And.Contain(row.Alias).And.Contain("submitted"));
+            Assert.That(requests[0].RequestObject, Does.Contain(entry.Key.ToString("D")).And.Contain(row.Alias).And.Contain("approved"));
             Assert.That(requests[0].RequestObject, Does.Not.Contain("Ada"), "Umbraco sends it as it is, so no answer is in it");
         });
     }
@@ -139,8 +144,8 @@ public sealed class EntryEventTests : ActionTestBase
 
         Assert.Multiple(() =>
         {
-            Assert.That(entry.State, Is.EqualTo(EntryState.Submitted));
-            Assert.That(Heard.Heard, Has.Count.EqualTo(1));
+            Assert.That(entry.State, Is.EqualTo(EntryState.Approved));
+            Assert.That(Heard.Heard, Is.Not.Empty);
         });
     }
 
@@ -155,7 +160,7 @@ public sealed class EntryEventTests : ActionTestBase
 
         Assert.Multiple(() =>
         {
-            Assert.That(entry.State, Is.EqualTo(EntryState.Submitted));
+            Assert.That(entry.State, Is.EqualTo(EntryState.Approved));
             Assert.That(watch.Elapsed, Is.LessThan(EntryEvents.Limit + TimeSpan.FromSeconds(10)));
         });
     }

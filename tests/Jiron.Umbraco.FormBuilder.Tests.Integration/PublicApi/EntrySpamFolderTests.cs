@@ -52,7 +52,11 @@ public sealed class EntrySpamFolderTests : PublicApiTestBase
     [Test]
     public async Task NotSpam_MovesTheEntryToSubmitted_AndRunsTheActionsTheRulesChose()
     {
-        var key = await PublishAsync(change: definition => definition with { Actions = [Always, OnlyForGrace, OnApproval] });
+        var key = await PublishAsync(change: definition => definition with
+        {
+            Actions = [Always, OnlyForGrace, OnApproval],
+            Settings = definition.Settings with { Submission = definition.Settings.Submission with { Approval = ApprovalMode.Manual } },
+        });
         var entry = await SpamAsync(key);
         var before = await Runs.ListForEntryAsync(entry.Id);
 

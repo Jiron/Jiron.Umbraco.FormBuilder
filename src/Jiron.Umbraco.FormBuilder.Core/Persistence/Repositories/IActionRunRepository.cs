@@ -154,4 +154,13 @@ internal interface IActionRunRepository
     /// <see cref="DeliveryError.Undone"/>; how many.
     /// </summary>
     Task<int> SkipChangeAsync(Guid changeKey, CancellationToken cancellationToken = default);
+
+    /// <summary>The same for one entry of a change, whose later move replaces what the change had waiting for it.</summary>
+    Task<int> SkipChangeOfEntryAsync(Guid changeKey, long entryId, CancellationToken cancellationToken = default);
+
+    /// <summary>Skips every run of an entry that has not started, as the entry reached a state they no longer fit (ADR-0162).</summary>
+    Task<int> SkipUnstartedOfEntryAsync(long entryId, CancellationToken cancellationToken = default);
+
+    /// <summary>How many of a change's runs have started, which an Undo can no longer call back.</summary>
+    Task<int> CountStartedAsync(Guid changeKey, CancellationToken cancellationToken = default);
 }

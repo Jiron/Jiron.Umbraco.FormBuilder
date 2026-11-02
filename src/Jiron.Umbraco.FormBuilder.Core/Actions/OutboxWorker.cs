@@ -74,6 +74,12 @@ internal sealed class OutboxWake : IDisposable
         }
     }
 
+    /// <summary>Asks for a pass at the end of a wait; the distributed job finds the work too if this server stops first.</summary>
+    /// <param name="wait">How long.</param>
+    /// <param name="time">The clock.</param>
+    public void WakeAfter(TimeSpan wait, TimeProvider time) =>
+        _ = Task.Delay(wait, time).ContinueWith(_ => Wake(), CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+
     /// <summary>Waits for the next wake.</summary>
     /// <param name="cancellationToken">Cancelled when the host stops.</param>
     public ValueTask<bool> WaitAsync(CancellationToken cancellationToken) => _channel.Reader.ReadAsync(cancellationToken);

@@ -586,7 +586,7 @@ public sealed class ActionSettlementTests : ActionTestBase
         var definition = await DefinitionOfAsync(entry);
         if (definition.Actions.Count > 0)
         {
-            await Runs.AddAsync(entry.Id, entry.FormVersionId, Guid.NewGuid(), SubmissionEntries.Runs(definition, [.. definition.Actions.Select(action => DefinitionLogic.Id(action.Key))]));
+            await Runs.AddAsync(entry.Id, entry.FormVersionId, Guid.NewGuid(), SubmissionEntries.Runs(definition, [.. definition.Actions.Select(action => DefinitionLogic.Id(action.Key))], ActionTrigger.Submitted));
         }
 
         return (entry, id);

@@ -95,7 +95,7 @@ public sealed class WebhookActionTests : ActionTestBase
             Assert.That(body["delivery"]!.GetValue<string>(), Is.EqualTo(call.Header("X-Jfb-Delivery")).And.Not.Empty);
             Assert.That(body["form"]!["alias"]!.GetValue<string>(), Is.Not.Empty);
             Assert.That(body["entry"]!["number"]!.GetValue<string>(), Is.EqualTo("1"));
-            Assert.That(body["entry"]!["state"]!.GetValue<string>(), Is.EqualTo("submitted"));
+            Assert.That(body["entry"]!["state"]!.GetValue<string>(), Is.EqualTo("approved"));
             Assert.That(body["fields"]!["name"]!.GetValue<string>(), Is.EqualTo("Ada"));
             Assert.That(body["fields"]!["message"]!.GetValue<string>(), Is.EqualTo("Hello"));
             Assert.That(call.Header("X-Jfb-Signature"), Is.Null, "no secret names itself, so nothing is signed");

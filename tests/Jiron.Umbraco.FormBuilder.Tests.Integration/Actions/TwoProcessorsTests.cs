@@ -254,5 +254,11 @@ public sealed class TwoProcessorsTests : ActionTestBase
         public Task<StoredActionRun?> RequeueAsync(long runId, ActionRunState expected, CancellationToken cancellationToken = default) => inner.RequeueAsync(runId, expected, cancellationToken);
 
         public Task<int> SkipChangeAsync(Guid changeKey, CancellationToken cancellationToken = default) => inner.SkipChangeAsync(changeKey, cancellationToken);
+
+        public Task<int> SkipChangeOfEntryAsync(Guid changeKey, long entryId, CancellationToken cancellationToken = default) => inner.SkipChangeOfEntryAsync(changeKey, entryId, cancellationToken);
+
+        public Task<int> SkipUnstartedOfEntryAsync(long entryId, CancellationToken cancellationToken = default) => inner.SkipUnstartedOfEntryAsync(entryId, cancellationToken);
+
+        public Task<int> CountStartedAsync(Guid changeKey, CancellationToken cancellationToken = default) => inner.CountStartedAsync(changeKey, cancellationToken);
     }
 }

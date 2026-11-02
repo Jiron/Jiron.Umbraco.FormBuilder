@@ -121,9 +121,9 @@ public sealed class PublicFormUniqueTests : PublicApiTestBase
         using var first = await PostAsync(key, Body(ada, "ada@example.com"));
         using var retry = await PostAsync(key, Body(ada, "ada@example.com"));
         await StepAsync("the answer is taken");
-        await MoveAsync(ada, EntryState.Submitted, EntryState.Spam);
+        await MoveAsync(ada, EntryState.Approved, EntryState.Spam);
         var second = await StepAsync("an entry marked as spam gave it back");
-        await MoveAsync(second, EntryState.Submitted, EntryState.Rejected);
+        await MoveAsync(second, EntryState.Approved, EntryState.Rejected);
         var third = await StepAsync("a rejected entry gave it back");
         Assert.That(await Entries.DeleteAsync(await IdAsync(third)), Is.True);
         await StepAsync("a deleted entry gave it back");

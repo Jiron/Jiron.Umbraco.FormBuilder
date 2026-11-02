@@ -113,10 +113,10 @@ public sealed class PublicFormPlacesTests : PublicApiTestBase
         using var first = await PostAsync(key, Body(ada, "Ada", "a"));
         using var retry = await PostAsync(key, Body(ada, "Ada", "a"));
         await StepAsync("the place is taken", Guid.NewGuid(), "Grace");
-        await MoveAsync(ada, EntryState.Submitted, EntryState.Rejected);
+        await MoveAsync(ada, EntryState.Approved, EntryState.Rejected);
         var grace = Guid.NewGuid();
         await StepAsync("a rejected entry gave it back", grace, "Grace");
-        await MoveAsync(grace, EntryState.Submitted, EntryState.Spam);
+        await MoveAsync(grace, EntryState.Approved, EntryState.Spam);
         var hedy = Guid.NewGuid();
         await StepAsync("an entry marked as spam gave it back", hedy, "Hedy");
         Assert.That(await Entries.DeleteAsync(await IdAsync(hedy)), Is.True);
