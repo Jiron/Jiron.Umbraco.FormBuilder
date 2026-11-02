@@ -241,7 +241,7 @@ public sealed class ElementFixtureTests : RenderingTestBase
                         Key = K(0x4b),
                         Fields =
                         [
-                            Field(K(0x4c), "radio", "room", "Room", null) with { Required = true, Options = new FieldOptions { Items = [new FieldOption { Value = "single", Label = new LocalizedText("Single") }, new FieldOption { Value = "double", Label = new LocalizedText("Double"), Description = new LocalizedText("For two") }] } },
+                            Field(K(0x4c), "radio", "room", "Room", null) with { Required = true, Options = new FieldOptions { Items = [new FieldOption { Value = "single", Label = new LocalizedText("Single"), Places = 5 }, new FieldOption { Value = "double", Label = new LocalizedText("Double"), Description = new LocalizedText("For two") }] } },
                             Field(K(0x4e), "checkboxes", "extras", "Extras", null) with { Required = true, Options = new FieldOptions { Items = [new FieldOption { Value = "breakfast", Label = new LocalizedText("Breakfast") }, new FieldOption { Value = "parking", Label = new LocalizedText("Parking") }] } },
                             Field(K(0x4f), "grid", "rate", "Rate", """{"multiple":true}""") with
                             {

@@ -22,6 +22,25 @@
               "autocomplete": "name"
             },
             {
+              "key": "d0000000-0000-4000-8000-00000000089d",
+              "type": "paragraph",
+              "settings": {
+                "html": {
+                  "": "<p>You are a member already: thank you. Sign up all the same, and we plan your help with you.</p>",
+                  "de": "<p>Sie sind schon Mitglied: danke. Melden Sie sich trotzdem an, dann planen wir Ihre Hilfe mit Ihnen.</p>"
+                }
+              },
+              "rules": [
+                {
+                  "key": "d0000000-0000-4000-8000-0000000008a5",
+                  "effect": "show",
+                  "enabled": true,
+                  "match": "all",
+                  "conditions": [{ "context": "memberSignedIn", "op": "isChecked" }]
+                }
+              ]
+            },
+            {
               "key": "d0000000-0000-4000-8000-000000000802",
               "type": "email",
               "alias": "email",
@@ -82,6 +101,18 @@
                   { "value": "wed", "label": { "": "Wednesday", "de": "Mittwoch" } },
                   { "value": "fri", "label": { "": "Friday", "de": "Freitag" } },
                   { "value": "sat", "label": { "": "Saturday", "de": "Samstag" } }
+                ]
+              }
+            },
+            {
+              "key": "d0000000-0000-4000-8000-00000000089e",
+              "type": "radio",
+              "alias": "evening",
+              "label": { "": "Which evening would you like to meet us?", "de": "An welchem Abend lernen wir uns kennen?" },
+              "options": {
+                "items": [
+                  { "value": "tue", "label": { "": "Tuesday", "de": "Dienstag" }, "places": 12 },
+                  { "value": "thu", "label": { "": "Thursday", "de": "Donnerstag" }, "places": 1 }
                 ]
               }
             },

@@ -88,6 +88,8 @@ export const en: MessageWords = {
   filesLargerThan: 'One of the files is larger than {size}. Choose a smaller one.',
   filesAtMost: { one: 'Choose only {max} file', other: 'Choose at most {max} files' },
   optionFull: '{option} is now full. Choose another option.',
+  placesLeft: { one: '{count} place left', other: '{count} places left' },
+  noPlaces: 'Full',
   choiceFull: 'One of your choices is now full. Choose another option.',
   confirmation: 'Enter the same email address twice',
   digits: 'Enter a number with fewer digits',

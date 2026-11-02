@@ -374,6 +374,7 @@ internal sealed partial class FormModels(
         var errors = Summary(build, settings.ValidationSummary, pages.FirstOrDefault(page => page.IsCurrent));
         var honeypot = FormHoneypot.NameOf(root.Key, root.Revision);
         return root.Model(
+            asksAtOnce: build.TellsPlaces || FormMemberConditions.Of(definition).Any,
             pages: pages,
             defaultButton: summaryPage is not null || pages.SelectMany(page => page.Groups).SelectMany(group => group.Fields).Any(field => field.Control is RankingControlModel or RepeaterControlModel)
                 ? navigation.Next ?? navigation.Submit
@@ -1022,7 +1023,8 @@ internal sealed partial class FormModels(
             HoneypotModel? honeypot = null,
             Guid? contentKey = null,
             string? placement = null,
-            FormSendingModel? sending = null) => new()
+            FormSendingModel? sending = null,
+            bool asksAtOnce = false) => new()
             {
                 Key = Key,
                 Alias = Alias,
@@ -1057,6 +1059,7 @@ internal sealed partial class FormModels(
                 ContentKey = contentKey,
                 Placement = placement,
                 Sending = sending,
+                AsksAtOnce = asksAtOnce,
             };
     }
 
@@ -1100,6 +1103,25 @@ internal sealed partial class FormModels(
         PageFacts facts,
         bool hooks)
     {
+        // Whether an option shown has places, which the challenge tells a page of (ADR-0156).
+        public bool TellsPlaces
+        {
+            get => Outer?.TellsPlaces ?? _tellsPlaces;
+            set
+            {
+                if (Outer is { } outer)
+                {
+                    outer.TellsPlaces = value;
+                }
+                else
+                {
+                    _tellsPlaces = value;
+                }
+            }
+        }
+
+        private bool _tellsPlaces;
+
         // The prefix of a visitor text that is a field's setting, such as settings.text.
         private const string SettingPrefix = "settings.";
 

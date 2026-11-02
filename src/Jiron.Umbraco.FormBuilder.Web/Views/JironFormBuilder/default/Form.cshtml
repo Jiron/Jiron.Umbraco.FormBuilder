@@ -4,7 +4,7 @@
 @using Jiron.Umbraco.FormBuilder.Web.Rendering.Models
 @if (Model.Display == FormDisplay.Form)
 {
-    <form class="@Model.CssClass" id="@Model.Id" data-jfb-form="@Model.Key" data-jfb-revision="@Model.Revision" data-jfb-api="@Model.ApiBase" @FormBuilderHtml.Attribute("data-jfb-content", Model.ContentKey?.ToString("D")) @FormBuilderHtml.Attribute("data-jfb-placement", Model.Placement) data-jfb-contract="@FormViewModel.ContractVersion" lang="@Model.Culture" dir="@Model.Direction" method="post" action="@Model.Action" enctype="@Model.EncodingType" novalidate>
+    <form class="@Model.CssClass" id="@Model.Id" data-jfb-form="@Model.Key" data-jfb-revision="@Model.Revision" data-jfb-api="@Model.ApiBase" @FormBuilderHtml.Attribute("data-jfb-content", Model.ContentKey?.ToString("D")) @FormBuilderHtml.Attribute("data-jfb-placement", Model.Placement) @FormBuilderHtml.Flag("data-jfb-asks", Model.AsksAtOnce) data-jfb-contract="@FormViewModel.ContractVersion" lang="@Model.Culture" dir="@Model.Direction" method="post" action="@Model.Action" enctype="@Model.EncodingType" novalidate>
         <script type="application/json" data-jfb-model>@Model.ModelData</script>
         @* What the runtime shows errors (ADR-0113) and a send (ADR-0120) with: the theme's summary for one link, its error paragraph, its notices and its outcome; a template's content is inert. *@
         <template data-jfb-templates @FormBuilderHtml.Attribute("data-jfb-sending", Model.Sending?.SendingText) @FormBuilderHtml.Attribute("data-jfb-thanks", Model.Sending?.ThanksText)>

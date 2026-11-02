@@ -198,6 +198,7 @@ export type FormViewModel = {
   apiBase: string;
   contentKey?: string;
   placement?: string;
+  asksAtOnce: boolean;
   modelData: string;
   pages: PageViewModel[];
   progress?: ProgressViewModel;

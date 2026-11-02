@@ -240,6 +240,17 @@ describe('the frame', () => {
     expect(loaded.attached.map(([element]) => element.id)).toEqual(['jfb-1']);
   });
 
+  it('loads the logic at once for a form that asks at once, what a cached page cannot carry', async () => {
+    const loaded = chunk();
+    const asking = form('jfb-1');
+    asking.setAttribute('data-jfb-asks', '');
+    document.body.append(asking, form('jfb-2'));
+    createFrame(loaded.load).init();
+    await settled();
+
+    expect(loaded.attached.map(([element]) => element.id)).toEqual(['jfb-1']);
+  });
+
   it.each(['focusin', 'pointerdown', 'input', 'change'])('loads the logic on %s', async (type) => {
     const loaded = chunk();
     document.body.append(form('jfb-1'));

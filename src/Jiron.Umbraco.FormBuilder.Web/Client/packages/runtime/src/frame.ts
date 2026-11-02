@@ -2,7 +2,8 @@
  * The runtime's frame (ROADMAP 6.4b, ADR-0110): it finds the forms of the markup contract (ADR-0015), reads each one's
  * model data and enhances it once, and loads the chunk with the logic on a form's first interaction, so a page whose
  * visitor never touches a form loads the frame alone; a form with a default value for the page to fill in loads it at
- * once, so the default is there before the visitor touches the form (ADR-0118). A form of another contract version,
+ * once, so the default is there before the visitor touches the form (ADR-0118), as does a form whose view says it asks
+ * at once, for what only the challenge's answer can tell a cached page (ADR-0156). A form of another contract version,
  * with model data this runtime cannot read, or whose chunk cannot load, is left to the post without JavaScript. Below
  * an outcome, it reveals the print button of the copy of the answers and binds it to the browser's print (ADR-0123). It
  * fits every form root to its page (6.4l), and gives a site's code a form to work with (`get`, section 4.9).
@@ -87,7 +88,7 @@ export function createFrame(load: () => Promise<Chunk>): Frame {
     };
     wakes.set(form, touched);
     for (const type of TOUCHES) form.addEventListener(type, touched);
-    if (form.querySelector('[data-jfb-default]') !== null) touched();
+    if (form.querySelector('[data-jfb-default]') !== null || form.hasAttribute('data-jfb-asks')) touched();
     form.dispatchEvent(
       new CustomEvent<ReadyDetail>('jfb:ready', {
         bubbles: true,

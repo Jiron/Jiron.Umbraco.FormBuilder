@@ -710,6 +710,63 @@ describe("an entry already stored under the page's id, with other answers", () =
     expect(document.querySelector('[data-jfb-outcome] h2')?.textContent).toBe('Stored');
   });
 
+  describe('a retry after a lost answer, whose challenge has expired by then', () => {
+    /** The first send's answer is lost, the second's challenge has expired, the third finds the entry. */
+    const lostThenStored = (receipt: (challenge: unknown) => Response): { asked: unknown[]; sends: () => number } => {
+      let tries = 0;
+      serve(() => {
+        tries += 1;
+        if (tries === 1) throw new TypeError('the answer was lost');
+        return tries === 2 ? json(401, { code: 'challenge_required' }) : DUPLICATE();
+      });
+      const asked: unknown[] = [];
+      const entries = globalThis.fetch;
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async (url: string, init: RequestInit) => {
+          if (!url.endsWith('/receipt')) return entries(url, init);
+          const body = JSON.parse(init.body as string) as { challenge: unknown };
+          asked.push(body.challenge);
+          return receipt(body.challenge);
+        }),
+      );
+      return { asked, sends: () => tries };
+    };
+
+    it("asks the receipt with the entry's own challenge and shows the original outcome", async () => {
+      const { asked, sends } = lostThenStored((challenge) =>
+        challenge === 'c1'
+          ? json(200, { receipt: { reference: 'REQ-7' }, outcome: { kind: 'message', html: '<h2>Stored</h2>' } })
+          : json(404, { code: 'not_found' }),
+      );
+      const { form, press, posted } = wake();
+      press();
+      await until(() => expect(form.querySelector('[data-jfb-notice="timeout"]')).not.toBeNull());
+      press();
+      await until(() => expect(form.isConnected).toBe(false));
+
+      expect(sends()).toBe(3);
+      expect(asked).toEqual(['c1']);
+      expect(document.querySelector('[data-jfb-outcome] h2')?.textContent).toBe('Stored');
+      expect(document.querySelector('[data-jfb-outcome] strong')?.textContent).toBe('REQ-7');
+      expect(posted).toEqual([]);
+    });
+
+    it("shows it as sent past the receipt's grace, where every challenge misses, and never sends it again", async () => {
+      const { asked, sends } = lostThenStored(() => json(404, { code: 'not_found' }));
+      const { form, press, posted } = wake();
+      press();
+      await until(() => expect(form.querySelector('[data-jfb-notice="timeout"]')).not.toBeNull());
+      press();
+      await until(() => expect(form.isConnected).toBe(false));
+
+      expect(sends()).toBe(3);
+      expect(asked).toEqual(['c1', 'c2']);
+      expect(document.querySelector('[data-jfb-outcome] p')?.textContent).toBe('Thank you.');
+      expect(posted).toEqual([]);
+    });
+  });
+
   it("says the page's thank-you when no receipt comes, and still never posts", async () => {
     serve(DUPLICATE);
     const entries = globalThis.fetch;

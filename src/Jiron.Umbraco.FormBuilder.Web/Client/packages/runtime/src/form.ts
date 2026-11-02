@@ -8,7 +8,8 @@
  * tags before the rules first decide, from a chunk of its own that a form loads only when the server marked such a
  * field (ADR-0118); 6.4i sends a send that passes to the entries endpoint and shows its outcome in the form's place
  * (ADR-0120), 6.4j puts a form published again meanwhile in the old one's place, which it wakes again here, and 6.4m
- * takes a form's files on the page, from a chunk of its own that a form with a file field loads (ADR-0152).
+ * takes a form's files on the page, from a chunk of its own that a form with a file field loads (ADR-0152); 7.1e shows
+ * what the challenge's answer tells of the places left and the member (ADR-0156).
  */
 import type { Context } from '@jfb/logic';
 import { loadEngine, type PageEngine } from './engine';
@@ -16,10 +17,11 @@ import { pageErrorsOf } from './errors';
 import type { FormModel } from './model';
 import { followSliders } from './outputs';
 import { readPage, type PageReading } from './page';
-import { challengesOf, senderOf, valuesOf, type Carried } from './send';
+import { showPlaces, type Places } from './places';
+import { challengesOf, senderOf, valuesOf, type Carried, type Told } from './send';
 import { allOf, movesPages, takesUploads, type PageUploads, type UploadOptions } from './uploads';
 import type { ShownError } from './messages';
-import { contextOf, rulesOf, type PageRules } from './rules';
+import { contextOf, rulesOf, tellMember, type PageRules } from './rules';
 import { checkPage, type CheckScope } from './validation';
 
 /** An enhanced form with its logic. */
@@ -102,10 +104,30 @@ async function wake(
   const rules = rulesOf(form, model, engine);
   followSliders(form, model);
   const api = form.dataset['jfbApi'];
+  let places: Places | undefined;
+  const showIn = async (root: ParentNode): Promise<void> => {
+    if (places !== undefined) await showPlaces(root, places, model.culture).catch(() => undefined);
+  };
+  let member: Told['member'];
+  const hear = (told: Told): void => {
+    member = told.member;
+    tellMember(model, member);
+    places = told.places;
+    // As an answer does: the rules decide again, and what follows them, the page and its buttons among them.
+    void showIn(form).then(() => {
+      if (rules !== null) form.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+  };
+  const asks = form.hasAttribute('data-jfb-asks');
+  // An option the visitor moved off, or options written anew for a parent's answer.
+  form.addEventListener('change', () => void showIn(form));
+  const uploads = takesUploads(form, model);
   const challenges =
-    api !== undefined && takesUploads(form, model) ? challengesOf(form, api, carried?.challenge) : undefined;
+    api !== undefined && (asks || uploads)
+      ? challengesOf(form, api, carried?.challenge, asks ? hear : undefined)
+      : undefined;
   const uploading: UploadOptions | undefined =
-    api === undefined || challenges === undefined
+    api === undefined || challenges === undefined || !uploads
       ? undefined
       : {
           api,
@@ -135,6 +157,7 @@ async function wake(
           api,
           added: (row) => {
             files?.add?.(row);
+            void showIn(row);
             fill?.(form, model, contextOf(model, readPage(form, model), Date.now(), form.ownerDocument.URL));
           },
         });
@@ -143,8 +166,12 @@ async function wake(
   }
   const deliver = senderOf(form, model, {
     ...(carried === undefined ? {} : { id: carried.id, challenge: carried.challenge }),
-    ...(files === undefined || challenges === undefined ? {} : { files, challenges }),
-    rewake: (next, nextModel, carry) => void attach(next, nextModel, defaults, carry),
+    ...(files === undefined ? {} : { files }),
+    ...(challenges === undefined ? {} : { challenges }),
+    rewake: (next, nextModel, carry) => {
+      tellMember(nextModel, member);
+      void attach(next, nextModel, defaults, carry);
+    },
   });
   const check = deliver.checkPage;
   const pages =

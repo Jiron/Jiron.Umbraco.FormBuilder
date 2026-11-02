@@ -5052,6 +5052,33 @@
                   }
                 },
                 {
+                  "key": "d0000000-0000-4000-8000-00000000089d",
+                  "type": "paragraph",
+                  "span": 1,
+                  "hideLabel": false,
+                  "required": false,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [
+                    {
+                      "key": "d0000000-0000-4000-8000-0000000008a5",
+                      "effect": "show",
+                      "match": "all",
+                      "conditions": [
+                        {
+                          "context": "memberSignedIn",
+                          "op": "isChecked"
+                        }
+                      ]
+                    }
+                  ],
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "html": "\u003Cp\u003EYou are a member already: thank you. Sign up all the same, and we plan your help with you.\u003C/p\u003E"
+                  }
+                },
+                {
                   "key": "d0000000-0000-4000-8000-000000000802",
                   "type": "email",
                   "alias": "email",
@@ -5198,6 +5225,39 @@
                   }
                 },
                 {
+                  "key": "d0000000-0000-4000-8000-00000000089e",
+                  "type": "radio",
+                  "alias": "evening",
+                  "span": 1,
+                  "label": "Which evening would you like to meet us?",
+                  "hideLabel": false,
+                  "required": false,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "options": {
+                    "items": [
+                      {
+                        "value": "tue",
+                        "label": "Tuesday",
+                        "parentValues": []
+                      },
+                      {
+                        "value": "thu",
+                        "label": "Thursday",
+                        "parentValues": []
+                      }
+                    ],
+                    "fromSource": false
+                  },
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "layout": "inherit",
+                    "other": false
+                  }
+                },
+                {
                   "key": "d0000000-0000-4000-8000-00000000089f",
                   "type": "file",
                   "alias": "reference",
@@ -5250,6 +5310,10 @@
         "canBeRequired": true,
         "builtIn": true
       },
+      "d0000000-0000-4000-8000-00000000089d": {
+        "canBeRequired": false,
+        "builtIn": true
+      },
       "d0000000-0000-4000-8000-000000000802": {
         "kind": "text",
         "canBeRequired": true,
@@ -5267,6 +5331,11 @@
       },
       "d0000000-0000-4000-8000-000000000805": {
         "kind": "choices",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-00000000089e": {
+        "kind": "choice",
         "canBeRequired": true,
         "builtIn": true
       },
@@ -5299,6 +5368,29 @@
                   "calculation": null,
                   "required": true,
                   "rules": [],
+                  "fields": [],
+                  "rows": []
+                },
+                {
+                  "id": "d0000000-0000-4000-8000-00000000089d",
+                  "kind": null,
+                  "canBeRequired": false,
+                  "alias": null,
+                  "calculation": null,
+                  "required": false,
+                  "rules": [
+                    {
+                      "effect": "show",
+                      "enabled": true,
+                      "match": "all",
+                      "conditions": [
+                        {
+                          "context": "memberSignedIn",
+                          "op": "isChecked"
+                        }
+                      ]
+                    }
+                  ],
                   "fields": [],
                   "rows": []
                 },
@@ -5367,6 +5459,17 @@
                   "alias": "days",
                   "calculation": null,
                   "required": true,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                },
+                {
+                  "id": "d0000000-0000-4000-8000-00000000089e",
+                  "kind": "choice",
+                  "canBeRequired": true,
+                  "alias": "evening",
+                  "calculation": null,
+                  "required": false,
                   "rules": [],
                   "fields": [],
                   "rows": []

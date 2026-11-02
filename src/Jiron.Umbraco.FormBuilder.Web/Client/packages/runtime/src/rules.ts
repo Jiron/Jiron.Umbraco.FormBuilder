@@ -27,10 +27,17 @@ const CONTROLS = 'input, select, textarea, button';
 
 /**
  * The context of a render as far as a page knows it, as the server's render gives the rules one: the site's clock to
- * the second and its time zone, the page's culture, no member (a cached page is the same for every visitor), and the
- * query values of the names the form lists: those the page carries on after a post, or else its address's, as the
+ * the second and its time zone, the page's culture, the member the challenge told of (a cached page is the same for
+ * every visitor, so there is none before it, ADR-0156), and the query values of the names the form lists: those the page carries on after a post, or else its address's, as the
  * pipeline reads a first post's.
  */
+const members = new WeakMap<FormModel, Context['member'] | undefined>();
+
+/** Keeps what the challenge told of the member for the form's rules, which it asks only about what they look at. */
+export const tellMember = (model: FormModel, member: Context['member'] | undefined): void => {
+  members.set(model, member);
+};
+
 export function contextOf(model: FormModel, reading: PageReading, now: number, address: string): Context {
   const listed = model.form.settings?.queryValues ?? [];
   let query: ReadonlyMap<string, readonly string[]> = reading.post.query;
@@ -47,7 +54,7 @@ export function contextOf(model: FormModel, reading: PageReading, now: number, a
     now: new Date(Math.floor(now / 1000) * 1000).toISOString().slice(0, 19) + 'Z',
     timeZone: model.timeZone,
     culture: model.culture,
-    member: { signedIn: false, groups: [] },
+    member: members.get(model) ?? { signedIn: false, groups: [] },
     query: holdQuery(query, listed),
     hidden: [],
   };

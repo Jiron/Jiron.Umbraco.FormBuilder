@@ -744,6 +744,19 @@ describe('its error', () => {
     expect(document.activeElement).toBe(toTyped);
     expect(clear.hidden).toBe(true);
   });
+
+  it('moves on from a choice that takes no focus, as one that is full, to the next of its field', () => {
+    document.body.innerHTML =
+      '<form><div data-jfb-field="k"><input type="radio" id="full" name="r" value="a" disabled>' +
+      '<input type="radio" id="free" name="r" value="b"></div>' +
+      '<div data-jfb-field="m"><input type="radio" id="only" name="q" value="a" disabled></div></form>';
+    const form = document.querySelector('form') as HTMLFormElement;
+    vi.spyOn(Element.prototype, 'getClientRects').mockImplementation(() => [{}] as unknown as DOMRectList);
+
+    expect(focusTarget(form, 'full')).toBe(true);
+    expect(document.activeElement).toBe(document.getElementById('free'));
+    expect(focusTarget(form, 'only'), 'none to move on to').toBe(false);
+  });
 });
 
 describe('a signature in a row added or moved in place', () => {

@@ -12,10 +12,11 @@
  * outcome. The notices, the outcome and their words are the server's render, in the theme's views and the page's
  * language, in the form's templates.
  */
-import type { PostAnswer, ReadPost } from '@jfb/logic';
+import type { Context, PostAnswer, ReadPost } from '@jfb/logic';
 import type { PageErrors, ServerProblem } from './errors';
 import { hostOf, markupOf, swapForm } from './changed';
 import { parseSanitised } from './html';
+import type { Places } from './places';
 import { optionsByPost, type PageUploads, type UploadedFile } from './uploads';
 import type { FormModel } from './model';
 import { readPage } from './page';
@@ -172,10 +173,26 @@ export interface Challenges {
   again(): Promise<string | null>;
   /** Asks again with the one it holds, whose first time a renewal carries over. */
   renew(): Promise<string | null>;
+  /** Asks only to hear what the answer tells now, and keeps the one it holds. */
+  listen(): void;
 }
 
-/** A form's challenge: asked for now, unless it came with one. */
-export function challengesOf(form: HTMLFormElement, api: string, given?: string | null): Challenges {
+/** What the challenge's answer holds besides the challenge: what cached markup cannot carry (ADR-0138, ADR-0156). */
+export interface Told {
+  readonly places?: Places;
+  readonly member?: Context['member'];
+}
+
+/**
+ * A form's challenge: asked for now, unless it came with one. `hear` takes what each answer tells; a form that came with
+ * its challenge asks once all the same to hear it, and keeps the one it came with, which its files name.
+ */
+export function challengesOf(
+  form: HTMLFormElement,
+  api: string,
+  given?: string | null,
+  hear?: (told: Told) => void,
+): Challenges {
   const content = form.dataset['jfbContent'] || undefined;
   const ask = (previous?: string): Promise<string | null> =>
     fetch(`${api}/forms/${form.dataset['jfbForm'] ?? ''}/challenge`, {
@@ -184,11 +201,19 @@ export function challengesOf(form: HTMLFormElement, api: string, given?: string 
       body: JSON.stringify({ previous, contentKey: content }),
       signal: AbortSignal.timeout(WAIT),
     })
-      .then((response) => (response.ok ? (response.json() as Promise<{ challenge?: string }>) : null))
-      .then((answer) => answer?.challenge ?? null)
+      .then((response) => (response.ok ? (response.json() as Promise<Told & { challenge?: string }>) : null))
+      .then((answer) => {
+        if (answer !== null) hear?.(answer);
+        return answer?.challenge ?? null;
+      })
       .catch(() => null);
   let held = given === undefined ? ask() : Promise.resolve(given);
+  const listen = (): void => {
+    if (hear !== undefined) void ask();
+  };
+  if (given !== undefined) listen();
   return {
+    listen,
     current: () => held,
     again: () => (held = ask()),
     renew: async () => {
@@ -237,6 +262,12 @@ export function senderOf(form: HTMLFormElement, model: FormModel, options: Sende
     (primary.parentElement ?? primary).before(notice);
     notice.focus();
     return true;
+  };
+
+  /** The answers the server refused on the page; one that a full option caused has made the page's numbers old. */
+  const refused = (errors: PageErrors, answer: Answer): Promise<boolean> => {
+    if (answer.errors?.some((each) => each.code === 'full')) challenges?.listen();
+    return errors.server(answer.errors ?? []);
   };
 
   /** The form as it is now has come in this one's place, and takes over with what this one holds. */
@@ -313,7 +344,7 @@ export function senderOf(form: HTMLFormElement, model: FormModel, options: Sende
       return 'answered';
     }
     if (status === 204) return 'on';
-    if (status === 422 && Array.isArray(answer.errors) && (await errors.server(answer.errors))) return 'answered';
+    if (status === 422 && Array.isArray(answer.errors) && (await refused(errors, answer))) return 'answered';
     const code = noticeOf(status, answer.code) ?? (posts ? null : 'server_error');
     return code !== null && showNotice(button, code, retryAfter) ? 'answered' : 'post';
   };
@@ -417,7 +448,7 @@ export function senderOf(form: HTMLFormElement, model: FormModel, options: Sende
       showOutcome(form, model, templates, go, answer.outcome ?? {}, answer.receipt?.reference);
       return true;
     }
-    if (status === 422 && Array.isArray(answer.errors) && (await errors.server(answer.errors))) return true;
+    if (status === 422 && Array.isArray(answer.errors) && (await refused(errors, answer))) return true;
     const code = noticeOf(status, answer.code) ?? (posts ? null : 'server_error');
     if (code === null) return false;
     event('jfb:error', code);

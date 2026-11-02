@@ -164,8 +164,11 @@ export function removeSummary(form: HTMLFormElement): void {
 export function focusTarget(form: HTMLFormElement, id: string): boolean {
   const target = form.ownerDocument.getElementById(id);
   if (target === null || !form.contains(target)) return false;
-  const named = target.matches(FOCUSABLE) ? target : target.querySelector<HTMLElement>(FOCUSABLE);
-  if (named === null) return false;
+  // A choice that is full takes no focus: the field's next control does.
+  const named = target.matches(FOCUSABLE)
+    ? target
+    : (target.querySelector<HTMLElement>(FOCUSABLE) ?? target.closest(FIELD)?.querySelector<HTMLElement>(FOCUSABLE));
+  if (named == null) return false;
   // A signature on its pad hides the typed name the error names: the field's first control that shows takes the focus.
   const shown = named.getClientRects().length > 0;
   const control = shown

@@ -1,7 +1,7 @@
 namespace Jiron.Umbraco.FormBuilder.Core.Definitions;
 
 /// <summary>
-/// What a form's rules ask of the member (section 4.3.3): whether any looks at the member at all, and which groups they
+/// What a form's rules and validation rules ask of the member (section 4.3.3): whether any looks at the member at all, and which groups they
 /// name. The challenge answers with no more than this, because cached markup holds nothing per visitor (ADR-0012).
 /// </summary>
 /// <param name="Any">Whether a rule looks at the member.</param>
@@ -19,6 +19,11 @@ internal sealed record FormMemberConditions(bool Any, IReadOnlySet<string> Group
         var any = false;
         var groups = new HashSet<string>(StringComparer.Ordinal);
         foreach (var rule in Rules(definition))
+        {
+            Walk(rule.Conditions, ref any, groups);
+        }
+
+        foreach (var rule in definition.ValidationRules)
         {
             Walk(rule.Conditions, ref any, groups);
         }

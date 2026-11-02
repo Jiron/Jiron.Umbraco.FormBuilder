@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Net;
 using AngleSharp.Dom;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
+using Jiron.Umbraco.FormBuilder.Core.OptionLists;
 using Jiron.Umbraco.FormBuilder.Core.Themes;
 using Jiron.Umbraco.FormBuilder.Tests.Integration.Support;
 using Jiron.Umbraco.FormBuilder.Web.Rendering;
@@ -134,6 +135,57 @@ public sealed class RenderEndpointTests : OutputCacheTestBase
             Assert.That(elsewhere.Served.Document.QuerySelector("form#jfb-2"), Is.Not.Null);
             Assert.That(forged.Served.Document.QuerySelector("[data-jfb-outcome]"), Is.Null);
             Assert.That(forged.Served.Document.QuerySelector("form#jfb-1"), Is.Not.Null);
+        });
+    }
+
+    [Test]
+    public async Task AForm_AsksAtOnce_ForThePlacesOfItsOptions_OrARuleOnTheMember_AndOtherwiseNot()
+    {
+        var content = (await PagesAsync(CachePage))[CachePage];
+        var seats = Guid.Parse("71c00000-0000-4000-8000-000000000001");
+        await GetRequiredService<OptionListService>().CreateAsync(seats, new OptionListInput("seats", "Seats", OptionListKind.Manual, Items: """[{"value":"s","places":1},{"value":"m"}]"""));
+        var plainList = Guid.Parse("71c00000-0000-4000-8000-000000000002");
+        await GetRequiredService<OptionListService>().CreateAsync(plainList, new OptionListInput("rooms", "Rooms", OptionListKind.Manual, Items: """[{"value":"s"},{"value":"m"}]"""));
+        var fits = Guid.Parse("71c00000-0000-4000-8000-000000000003");
+        await GetRequiredService<OptionListService>().CreateAsync(fits, new OptionListInput("fits", "Fits", OptionListKind.Manual, Items: """[{"value":"slim","places":1,"parentValues":["s"]}]"""));
+        var slot = new FormField
+        {
+            Key = Guid.Parse("71c00000-0000-4000-8000-000000000011"),
+            Type = "radio",
+            Alias = "slot",
+            Label = new LocalizedText("Slot"),
+            Options = new FieldOptions { Items = [new FieldOption { Value = "a", Label = new LocalizedText("A") }] },
+        };
+        var limited = slot with { Options = new FieldOptions { Items = [new FieldOption { Value = "a", Label = new LocalizedText("A"), Places = 3 }] } };
+        var fromList = slot with { Type = "dropdown", Options = new FieldOptions { Source = OptionSource.List, OptionList = seats } };
+        var fromPlainList = slot with { Type = "dropdown", Options = new FieldOptions { Source = OptionSource.List, OptionList = plainList } };
+        var filtered = slot with { Key = Guid.Parse("71c00000-0000-4000-8000-000000000012"), Type = "dropdown", Alias = "fit", Options = new FieldOptions { Source = OptionSource.List, OptionList = fits, Parent = slot.Key } };
+        var ranked = slot with { Type = "ranking", Options = new FieldOptions { Source = OptionSource.List, OptionList = seats } };
+        var forMembers = RequiredName with { Rules = [new FormRule { Key = Guid.Parse("71c00000-0000-4000-8000-000000000021"), Effect = RuleEffect.Hide, Conditions = [new RuleCondition { Context = "memberSignedIn", Operator = "isChecked" }] }] };
+
+        var ownFiltered = filtered with { Options = new FieldOptions { Items = [new FieldOption { Value = "slim", Label = new LocalizedText("Slim"), ParentValues = ["a"], Places = 2 }], Parent = slot.Key } };
+        var inRows = new FormField { Key = Guid.Parse("71c00000-0000-4000-8000-000000000013"), Type = "repeater", Alias = "rows", Label = new LocalizedText("Rows"), Fields = [limited] };
+        var checkedForMembers = new FormValidationRule { Key = Guid.Parse("71c00000-0000-4000-8000-000000000022"), Field = RequiredName.Key, Conditions = [new RuleCondition { Context = "memberSignedIn", Operator = "isChecked" }] };
+
+        async Task<bool> AsksAsync(string alias, params FormField[] fields)
+        {
+            var rendered = await RenderAsync(await PublishFormAsync(alias, null, fields), "jfb-1", "/cache/", content, null);
+            return rendered.Served.Document.QuerySelector("form#jfb-1")!.HasAttribute("data-jfb-asks");
+        }
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(await AsksAsync("asksNothing", RequiredName, slot), Is.False, "nothing the challenge tells");
+            Assert.That(await AsksAsync("asksPlaces", limited), Is.True, "its own option has places");
+            Assert.That(await AsksAsync("asksList", fromList), Is.True, "an option of its list has places");
+            Assert.That(await AsksAsync("asksPlainList", fromPlainList), Is.False, "no option of its list has");
+            Assert.That(await AsksAsync("asksFiltered", slot, filtered), Is.False, "the endpoint tells no option that hangs on a parent's answer");
+            Assert.That(await AsksAsync("asksRanked", ranked), Is.False, "a ranking's options take no places");
+            Assert.That(await AsksAsync("asksOwnFiltered", slot, ownFiltered), Is.True, "the endpoint tells its own options, whatever hangs on a parent");
+            Assert.That(await AsksAsync("asksInRows", inRows), Is.True, "an option in a row has places");
+            Assert.That(await AsksAsync("asksMember", forMembers), Is.True, "a rule looks at the member");
+            var validated = await PublishFormAsync("asksValidated", definition => definition with { ValidationRules = [checkedForMembers] }, RequiredName);
+            Assert.That((await RenderAsync(validated, "jfb-1", "/cache/", content, null)).Served.Document.QuerySelector("form#jfb-1")!.HasAttribute("data-jfb-asks"), Is.True, "a validation rule looks at the member");
         });
     }
 

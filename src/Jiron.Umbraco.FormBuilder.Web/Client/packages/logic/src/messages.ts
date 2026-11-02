@@ -99,6 +99,9 @@ export interface MessageWords {
   readonly filesLargerThan: string;
   readonly filesAtMost: PluralWords;
   readonly optionFull: string;
+  /** How many places an option has left, and that it has none, in its label (ADR-0156). */
+  readonly placesLeft: PluralWords;
+  readonly noPlaces: string;
   readonly choiceFull: string;
   readonly confirmation: string;
   readonly digits: string;

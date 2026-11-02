@@ -743,6 +743,9 @@
         "placement": {
           "type": "string"
         },
+        "asksAtOnce": {
+          "type": "boolean"
+        },
         "modelData": {
           "type": "string"
         },
@@ -806,6 +809,7 @@
         "cssClass",
         "display",
         "apiBase",
+        "asksAtOnce",
         "modelData",
         "pages",
         "isRequiredNoteHidden",

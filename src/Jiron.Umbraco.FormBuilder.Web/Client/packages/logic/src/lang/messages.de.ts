@@ -91,6 +91,8 @@ export const de: MessageWords = {
   filesLargerThan: 'Eine der Dateien ist größer als {size}. Wählen Sie eine kleinere.',
   filesAtMost: { one: 'Wählen Sie nur {max} Datei', other: 'Wählen Sie höchstens {max} Dateien' },
   optionFull: '{option} ist jetzt ausgebucht. Wählen Sie eine andere Option.',
+  placesLeft: { one: '{count} Platz frei', other: '{count} Plätze frei' },
+  noPlaces: 'Ausgebucht',
   choiceFull: 'Eine Ihrer gewählten Optionen ist jetzt ausgebucht. Wählen Sie eine andere Option.',
   confirmation: 'Geben Sie zweimal dieselbe E-Mail-Adresse ein',
   digits: 'Geben Sie eine Zahl mit weniger Ziffern ein',

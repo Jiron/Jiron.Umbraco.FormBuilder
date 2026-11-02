@@ -428,7 +428,7 @@ sequenceDiagram
   participant S as Submission pipeline (Core)
   participant D as Database
   participant W as Worker on this server
-  V->>P: challenge (first interaction)
+  V->>P: challenge (first interaction, or the page's load for a form with places or a rule on the member)
   P-->>V: signed challenge, places, member values
   V->>P: entries {submissionId, revision, values, consents, challenge}
   P->>S: CORS, body and time limits checked
@@ -469,6 +469,7 @@ codes, `no-store` except the form and the options, the OpenAPI document `jfb-pub
 [ADR-0088](decisions/0088-the-submission-pipeline-and-the-entries-endpoint.md),
 [ADR-0089](decisions/0089-the-validate-and-receipt-endpoints.md),
 [ADR-0138](decisions/0138-the-challenge.md),
+[ADR-0156](decisions/0156-what-the-challenge-tells-the-page.md),
 [ADR-0139](decisions/0139-the-signals-and-the-score.md),
 [ADR-0141](decisions/0141-proof-of-work-on-the-server.md)).
 

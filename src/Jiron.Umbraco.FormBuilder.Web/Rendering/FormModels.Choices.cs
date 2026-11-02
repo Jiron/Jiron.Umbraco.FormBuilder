@@ -416,6 +416,8 @@ internal sealed partial class FormModels
     {
         // Publishing gives each type that asks here its options; a grid without them has a scale and does not ask.
         var options = field.Options!;
+        var counts = types.FindType(field.Type)?.Declaration.Features.HasFlag(FieldFeatures.Places) == true;
+        build.TellsPlaces |= counts && !options.FromSource && build.Definition(field.Key).Options?.Items.Any(item => item.Places is not null) == true;
         if (!options.FromSource && options.Parent is null)
         {
             return ([.. options.Items.Select(item => new ShownOption(item.Value, Shown(item.Label?.Default, item.Value), Shown(item.Description?.Default, null), item.Image))], true);
@@ -423,6 +425,7 @@ internal sealed partial class FormModels
 
         var render = build.Render;
         var resolved = await cascading.GetAsync(render.Form.Published.Definition, build.Definition(field.Key), key => build.ShownAnswers(key), render.Culture, render.Shown.Scope.Page, cancellationToken);
+        build.TellsPlaces |= counts && options.FromSource && resolved.Options.Any(option => option.Places is not null);
         return ([.. resolved.Options.Select(option => new ShownOption(option.Value, Shown(option.Label, option.Value), Shown(option.Description, null), option.Image))], resolved.IsAvailable);
     }
 

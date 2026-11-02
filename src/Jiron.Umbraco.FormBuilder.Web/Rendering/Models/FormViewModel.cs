@@ -70,6 +70,12 @@ public sealed class FormViewModel
     /// </summary>
     public string? Placement { get; init; }
 
+    /// <summary>
+    /// Whether the runtime asks for the challenge as the page loads rather than at the first touch (<c>data-jfb-asks</c>,
+    /// ADR-0156): the form has places left to show or a rule that looks at the member, which cached markup cannot carry.
+    /// </summary>
+    public bool AsksAtOnce { get; init; }
+
     /// <summary>The model data: the form endpoint's answer as JSON, written so no text in it can end its element.</summary>
     public required IHtmlContent ModelData { get; init; }
 
