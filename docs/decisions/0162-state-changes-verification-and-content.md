@@ -31,7 +31,7 @@ An entry moves through states by hand, by a rule, by a confirmation and on its o
 - A due item that fails waits 5 minutes for its next try, so it cannot hold up what comes after it.
 - This server also sets a timer for the end of the window, so the wait is 10 seconds and not the distributed job's interval.
 
-**An Undo is all or nothing.** It holds the form, then clears the change's events and checks its runs in one unit. It answers too late and changes nothing when the window is over, it was undone already, an entry has moved on since, the queue got to one of the events, or one of its runs has started. An Undo that overwrote a colleague's later decision would be worse than one that says it is too late. The time the answer promises is taken before the first move, so it holds for every entry of a bulk change.
+**An Undo is all or nothing.** It holds the form, then clears the change's events and checks its runs in one unit. It answers too late and changes nothing when the window is over, it was undone already, an entry has moved on since, the queue got to one of the events, one of its runs has started, or its move replaced work still waiting. That last one has no way back: the replaced work is gone, so the answer to such a change names no undo time at all. An Undo that overwrote a colleague's later decision would be worse than one that says it is too late. The time the answer promises is taken before the first move, so it holds for every entry of a bulk change.
 
 **Daily counts cannot go down**, so a person's move out of Spam counts a submission only once its window is over, and a system's at once. An entry that was counted before someone marked it as spam is not counted again.
 
@@ -39,7 +39,7 @@ An entry moves through states by hand, by a rule, by a confirmation and on its o
 
 **Email verification** stays a form setting, and its mail is a system mail.
 
-- The request for the mail and the time the entry expires are events due in the entry's own unit: at creation, when it leaves Spam, and for a new link. A server that stops after the commit loses neither. Expiry does not depend on a mail having gone: an entry whose mail never could go still leaves on time, and the latest expiry decides.
+- The request for the mail and the time the entry expires are events due in the entry's own unit: at creation, in the claim that takes it out of Spam, and for a new link. A server that stops after the commit loses neither. Expiry does not depend on a mail having gone: an entry whose mail never could go still leaves on time, and the latest expiry decides.
 - The mail goes through the visitor limits of ADR-0159, in one unit with the claim of its event. A failure leaves the event for a later try. Its link needs the site's own address and never a request's (section 4.10), so a site that does not know its address sends no mail with a dead link, and says so in the log.
 - The address field cannot be kept only until the actions have run, as it has to outlast them. Publishing refuses that.
 - The token is Data Protection's, as the placements' are: it names an entry and a time and can be neither read nor made up, across load-balanced servers.
@@ -53,7 +53,7 @@ An entry moves through states by hand, by a rule, by a confirmation and on its o
 - Publishing holds a mapping to what a property can store, by field type and property editor, and the run converts an answer to what the editor stores. An answer it cannot convert fails the run for good, with nothing saved. A fixed value on a non-text editor has to be valid when the form is published, and holds no merge tags.
 - The keys of the item and its media come from the run's delivery key, so a retry finds what an attempt before it created, instead of making a second one.
 - A document type that varies by culture gets the entry's language, or the site's default where the site does not have that one, and publishes only that culture. Names are cut to the 255 characters an item holds.
-- A file goes to media only where the mapping names its field, under the same rules as a mail's attachment (ADR-0144), and a run waits while a mapped file's scan is pending on a site with a scanner. Umbraco's own list of allowed file types applies. A sensitive field only goes where the action names it (ADR-0014); otherwise its property stays empty, with no mask and no file.
+- A file goes to media only where the mapping names its field, under the same rules as a mail's attachment (ADR-0144), and a run waits while a mapped file's scan is pending on a site with a scanner. Umbraco's own list of allowed file types applies. A sensitive field, or a child of a sensitive repeatable group, only goes where the action names it or its group (ADR-0014); otherwise its property stays empty, with no mask and no file. Files go last, so an answer that fails the run leaves nothing in the media library.
 - Updating a same-named child is off by default, as what a visitor typed can choose the item. A site turns it on only where that is what it wants.
 
 ## Consequences

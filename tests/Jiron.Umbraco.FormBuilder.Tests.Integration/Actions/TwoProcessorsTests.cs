@@ -259,6 +259,6 @@ public sealed class TwoProcessorsTests : ActionTestBase
 
         public Task<int> SkipUnstartedOfEntryAsync(long entryId, CancellationToken cancellationToken = default) => inner.SkipUnstartedOfEntryAsync(entryId, cancellationToken);
 
-        public Task<int> CountStartedAsync(Guid changeKey, CancellationToken cancellationToken = default) => inner.CountStartedAsync(changeKey, cancellationToken);
+        public Task<int> CountOfChangeAsync(Guid changeKey, CancellationToken cancellationToken = default) => inner.CountOfChangeAsync(changeKey, cancellationToken);
     }
 }

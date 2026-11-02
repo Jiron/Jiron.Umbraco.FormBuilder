@@ -69,8 +69,19 @@ internal sealed class EntryStateChanges(
     /// <summary>What a state change's event says, as JSON.</summary>
     /// <param name="from">The state it left.</param>
     /// <param name="to">The state it reached.</param>
-    public static string Details(EntryState from, EntryState to) =>
-        JsonSerializer.Serialize(new { from = StoredNames.Of(from), to = StoredNames.Of(to) });
+    /// <param name="replaced">Whether the move took the place of work still waiting, which an Undo could not bring back.</param>
+    public static string Details(EntryState from, EntryState to, bool replaced = false) => replaced
+        ? JsonSerializer.Serialize(new { from = StoredNames.Of(from), to = StoredNames.Of(to), replaced })
+        : JsonSerializer.Serialize(new { from = StoredNames.Of(from), to = StoredNames.Of(to) });
+
+    /// <summary>Whether a move took the place of work still waiting, so nothing puts things back as they were.</summary>
+    /// <param name="move">The event.</param>
+    public static bool Replaced(StoredEntryEvent move)
+    {
+        ArgumentNullException.ThrowIfNull(move);
+        using var details = JsonDocument.Parse(move.Details);
+        return details.RootElement.TryGetProperty("replaced", out var replaced) && replaced.GetBoolean();
+    }
 
     /// <summary>What a user's move writes to the audit log.</summary>
     /// <param name="entry">The entry.</param>
@@ -131,7 +142,8 @@ internal sealed class EntryStateChanges(
         }
 
         wake.WakeAfter(EntrySpamFolder.UndoWindow, time);
-        return new EntryChange(change, started + EntrySpamFolder.UndoWindow, moved, unmoved);
+        var undoable = !(await events.ListForChangeAsync(change, cancellationToken)).Any(item => item.Kind == ChangedEvent && Replaced(item));
+        return new EntryChange(change, undoable ? started + EntrySpamFolder.UndoWindow : null, moved, unmoved);
     }
 
     /// <summary>Whether an entry is in a state now.</summary>
@@ -171,6 +183,7 @@ internal sealed class EntryStateChanges(
 
         if (timeline.Any(item => item.Kind == UndoneEvent)
             || moves.Any(move => time.GetUtcNow() >= move.OccurredUtc + EntrySpamFolder.UndoWindow)
+            || moves.Any(Replaced)
             || found.Any(item => StoredNames.Parse<EntryState>(DetailOf(item.Event, "to")) != item.Entry.State))
         {
             return EntryUndoStatus.TooLate;
@@ -184,12 +197,13 @@ internal sealed class EntryStateChanges(
                     await RowHolds.HoldFormAsync(db, new SqlNames(db), form.Id);
 
                     // The queue claims what a move left to do, and a run's claim counts as started: past the window, however close the clocks were.
-                    if (await events.CancelDueAsync(changeKey, cancellationToken) != moves.Count || await runs.CountStartedAsync(changeKey, cancellationToken) > 0)
+                    // The counts come from the statements that call them back, so one claimed between a read and a write counts too.
+                    if (await events.CancelDueAsync(changeKey, cancellationToken) != moves.Count
+                        || await runs.SkipChangeAsync(changeKey, cancellationToken) != await runs.CountOfChangeAsync(changeKey, cancellationToken))
                     {
                         throw new UndoTooLateException();
                     }
 
-                    await runs.SkipChangeAsync(changeKey, cancellationToken);
                     foreach (var (move, entry) in found)
                     {
                         var before = StoredNames.Parse<EntryState>(DetailOf(move, "from"));
@@ -264,8 +278,8 @@ internal sealed class EntryStateChanges(
                         return null;
                     }
 
-                    await ReplaceWaitingAsync(row, to, cancellationToken);
-                    await events.AddAsync(new NewEntryEvent(row.Id, ChangedEvent, userKey, change, Details(entry.State, to), userKey is null ? null : EntrySpamFolder.UndoWindow), cancellationToken);
+                    var replaced = await ReplaceWaitingAsync(row, to, cancellationToken);
+                    await events.AddAsync(new NewEntryEvent(row.Id, ChangedEvent, userKey, change, Details(entry.State, to, replaced), userKey is null ? null : EntrySpamFolder.UndoWindow), cancellationToken);
                     if (queued.Count > 0)
                     {
                         await runs.AddAsync(row.Id, row.FormVersionId, change, queued, userKey is null ? default : EntrySpamFolder.UndoWindow, cancellationToken);
@@ -300,18 +314,23 @@ internal sealed class EntryStateChanges(
     }
 
     // A change that no longer stands sends nothing: what an earlier move still has waiting goes, and an entry that ends up rejected or
-    // in Spam starts nothing it has not started yet. What is already on its way goes on, as it may have arrived.
-    private async Task ReplaceWaitingAsync(StoredEntry entry, EntryState to, CancellationToken cancellationToken)
+    // in Spam starts nothing it has not started yet. What is already on its way goes on, as it may have arrived. True when anything went,
+    // which an Undo of this move could not bring back, so it says it is too late rather than leave an entry without what it waited for.
+    private async Task<bool> ReplaceWaitingAsync(StoredEntry entry, EntryState to, CancellationToken cancellationToken)
     {
+        var replaced = false;
         foreach (var earlier in await events.CancelMovesDueAsync(entry.Id, cancellationToken))
         {
+            replaced = true;
             await runs.SkipChangeOfEntryAsync(earlier, entry.Id, cancellationToken);
         }
 
-        if (to is EntryState.Rejected or EntryState.Spam)
+        if (to is EntryState.Rejected or EntryState.Spam && await runs.SkipUnstartedOfEntryAsync(entry.Id, cancellationToken) > 0)
         {
-            await runs.SkipUnstartedOfEntryAsync(entry.Id, cancellationToken);
+            replaced = true;
         }
+
+        return replaced;
     }
 
     private async Task<FormDefinition?> DefinitionAsync(StoredEntry entry, CancellationToken cancellationToken)
@@ -410,6 +429,8 @@ internal sealed partial class EntryChangeQueue(
         var definition = await DefinitionAsync(entry, cancellationToken);
         var counted = due.Kind == EntrySpamFolder.NotSpamEvent && EntrySpamFolder.CountsAsNew(await events.ListForEntryAsync(entry.Id, cancellationToken), due.Id);
         IReadOnlyList<StoredEntryFile> gone = [];
+        var reached = StoredNames.Parse<EntryState>(EntryStateChanges.DetailOf(due, "to"));
+        var stands = false;
         var claimed = await database.WriteAsync(
             async db =>
             {
@@ -420,6 +441,14 @@ internal sealed partial class EntryChangeQueue(
                 if (!await events.ClaimDueAsync(due.Id, cancellationToken))
                 {
                     return false;
+                }
+
+                stands = (await entries.GetByIdAsync(entry.Id, cancellationToken))?.State == reached;
+
+                // In the claim's unit: a claim that went through with no mail and no expiry would leave the entry waiting for good.
+                if (stands && reached == EntryState.Unverified && due.Kind == EntrySpamFolder.NotSpamEvent)
+                {
+                    await verification.RequestAsync(entry, definition, cancellationToken);
                 }
 
                 if (counted)
@@ -438,14 +467,13 @@ internal sealed partial class EntryChangeQueue(
         await settlement.DeleteBytesAsync(gone);
 
         // What it reached is told only while it stands; a later move has told or will tell of its own.
-        if (!claimed || StoredNames.Parse<EntryState>(EntryStateChanges.DetailOf(due, "to")) != entry.State)
+        if (!claimed || !stands)
         {
             return;
         }
 
-        if (due.Kind == EntrySpamFolder.NotSpamEvent && entry.State == EntryState.Unverified)
+        if (reached == EntryState.Unverified)
         {
-            await verification.RequestAsync(entry, definition, cancellationToken);
             wake.Wake();
         }
         else if (due.Kind == EntrySpamFolder.NotSpamEvent)

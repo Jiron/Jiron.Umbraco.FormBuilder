@@ -359,6 +359,24 @@ public sealed class EntryStateChangeTests : ActionTestBase
     }
 
     [Test]
+    public async Task AChangeThatReplacedWork_CannotBeUndone_AndTheAnswerSaysSo()
+    {
+        var form = await WaitingFormAsync(Action("on approval", ActionTrigger.Approved));
+        var entry = await SubmitAsync(form);
+        await Changes.ChangeAsync(form, [entry.Key], EntryState.Approved, User);
+
+        var second = await Changes.ChangeAsync(form, [entry.Key], EntryState.Rejected, User);
+        var undone = await Changes.UndoAsync(form, second.ChangeKey, User);
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(second.UndoUntilUtc, Is.Null);
+            Assert.That(undone, Is.EqualTo(EntryUndoStatus.TooLate));
+            Assert.That((await Entries.GetByIdAsync(entry.Id))!.State, Is.EqualTo(EntryState.Rejected));
+        });
+    }
+
+    [Test]
     public async Task Undo_OfAChangeSomeoneMovedOnFrom_ChangesNothing()
     {
         var form = await WaitingFormAsync(Action("on rejection", ActionTrigger.Rejected));

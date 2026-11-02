@@ -418,6 +418,20 @@ public sealed partial class EntryVerificationTests : EmailTestBase
     }
 
     [Test]
+    public async Task AUsersNotSpam_AsksForItsMailAndItsExpiry_AsTheQueueClaimsIt()
+    {
+        var form = await FormAsync();
+        var entry = await SpamAsync(form);
+
+        await GetRequiredService<EntryStateChanges>().ChangeAsync(form, [entry.Key], EntryState.Submitted, Guid.NewGuid());
+        Clock.Advance(EntrySpamFolder.UndoWindow);
+        await GetRequiredService<IEnumerable<IOutboxQueue>>().OfType<EntryChangeQueue>().Single().PassAsync("test", DateTimeOffset.MaxValue, CancellationToken.None);
+
+        var due = (await Events.ListForEntryAsync(entry.Id)).Select(item => item.Kind).ToList();
+        Assert.That(due, Does.Contain(EntryVerification.ExpiresEvent).And.Contain(EntryVerification.RequestedEvent), "both come in the claim's own unit");
+    }
+
+    [Test]
     public async Task ALinkPastItsTime_ConfirmsNothing_AndANewOneDoes()
     {
         var form = await FormAsync(Action("first"));

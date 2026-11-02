@@ -397,8 +397,8 @@ public sealed class PublicFormProtectionTests : PublicApiTestBase
 
         Assert.Multiple(async () =>
         {
-            Assert.That((await JsonAsync(spam))["outcome"]!["html"]!.GetValue<string>(), Is.EqualTo("<p>submitted</p>"));
-            Assert.That((await JsonAsync(replay))["outcome"]!["html"]!.GetValue<string>(), Is.EqualTo("<p>submitted</p>"), "and again in its retry");
+            Assert.That((await JsonAsync(spam))["outcome"]!["html"]!.GetValue<string>(), Is.EqualTo("<p>approved</p>"));
+            Assert.That((await JsonAsync(replay))["outcome"]!["html"]!.GetValue<string>(), Is.EqualTo("<p>approved</p>"), "and again in its retry");
             Assert.That((await StoredAsync(key)).Single().State, Is.EqualTo(EntryState.Spam));
         });
     }

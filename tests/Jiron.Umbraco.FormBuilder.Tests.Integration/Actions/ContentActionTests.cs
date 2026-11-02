@@ -480,6 +480,74 @@ public sealed class ContentActionTests : ActionTestBase
     }
 
     [Test]
+    public async Task ARunThatFailsOnAnAnswer_LeavesNothingInTheMediaLibrary()
+    {
+        var age = new FormField { Key = Guid.NewGuid(), Type = "number", Alias = "age", Label = new LocalizedText("Age") };
+        var form = await PublishAsync(
+            name: Guid.NewGuid().ToString("N"),
+            change: definition => definition with { Actions = [Create($$"""{"documentType":"{{TypeAlias}}","name":"Both","mapping":[{"property":"files","field":"{{Upload.Key}}"},{"property":"count","field":"{{age.Key}}"}]}""")] },
+            fields: [NameField, Upload, age]);
+        var row = (await FormRows.GetAsync(form))!;
+        var uploadField = (await FormRows.ListFieldsAsync(row.Id)).Single(item => item.Values.FieldKey == Upload.Key);
+        var ageField = (await FormRows.ListFieldsAsync(row.Id)).Single(item => item.Values.FieldKey == age.Key);
+        var file = await FileAsync(row.Id, "clean.pdf", FileScanStates.Clean);
+        var entry = (await Entries.CreateAsync(new NewEntry
+        {
+            Key = Guid.NewGuid(),
+            FormId = row.Id,
+            FormVersionId = row.PublishedVersionId!.Value,
+            State = EntryState.Approved,
+            SubmissionId = Guid.NewGuid(),
+            SubmissionHash = new string('a', 64),
+            Culture = "en-US",
+            FileIds = [file.Id],
+            Values = [new NewEntryValue(uploadField.Id, "clean.pdf", FileId: file.Id), new NewEntryValue(ageField.Id, "99999999999")],
+        }))!;
+
+        var result = await RunDirectlyAsync(form, (await GetRequiredService<IFormBuilderFormService>().GetDraftAsync(form))!.Definition!.Actions.Single(), scope => scope, entry);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Code, Is.EqualTo(ContentActionType.Refused));
+            Assert.That(Media.GetRootMedia(), Is.Empty);
+        });
+    }
+
+    [Test]
+    public async Task AChildOfASensitiveGroup_IsNotCopied_UntilTheActionNamesTheGroup()
+    {
+        var child = new FormField { Key = Guid.NewGuid(), Type = "number", Alias = "count", Label = new LocalizedText("Count") };
+        var group = new FormField { Key = Guid.NewGuid(), Type = "repeater", Alias = "rows", Label = new LocalizedText("Rows"), Sensitive = true, Fields = [child] };
+        var mapping = $$"""{"documentType":"{{TypeAlias}}","name":"Group","mapping":[{"property":"count","field":"{{child.Key}}"}]""";
+        var without = await PublishAsync(name: Guid.NewGuid().ToString("N"), change: definition => definition with { Actions = [Create(mapping + "}")] }, fields: [NameField, group]);
+        var named = await PublishAsync(name: Guid.NewGuid().ToString("N"), change: definition => definition with { Actions = [Create(mapping + $$""","includeSensitive":["{{group.Key}}"]}""")] }, fields: [NameField, group]);
+
+        await DrainAsync((await SubmitAsync(without, """{"name":"Ada","rows":[{"count":"4"}]}""")).Id);
+        var left = OnlyItem().GetValue<int?>("count");
+        Contents.Delete(OnlyItem());
+        await DrainAsync((await SubmitAsync(named, """{"name":"Ada","rows":[{"count":"4"}]}""")).Id);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(left, Is.Null.Or.Zero);
+            Assert.That(OnlyItem().GetValue<int>("count"), Is.EqualTo(4));
+        });
+    }
+
+    [Test]
+    public async Task ATrashedParent_FailsTheRun()
+    {
+        var parent = Contents.Create("Inbox", Constants.System.Root, TypeAlias);
+        Contents.Save(parent);
+        var form = await FormAsync(Create(Settings($$""","parent":"{{parent.Key}}" """)));
+        Contents.MoveToRecycleBin(parent);
+
+        var run = (await DrainAsync((await SubmitAsync(form, """{"name":"Ada","message":"Hello"}""")).Id)).Single();
+
+        Assert.That(run.LastError?.Code, Is.EqualTo(ContentActionType.TargetMissing));
+    }
+
+    [Test]
     public async Task ASensitiveFile_StaysOutOfTheMediaLibrary_UntilTheActionNamesIt()
     {
         var hidden = new FormField { Key = Guid.NewGuid(), Type = "file", Alias = "hiddenUpload", Label = new LocalizedText("Hidden"), Sensitive = true };

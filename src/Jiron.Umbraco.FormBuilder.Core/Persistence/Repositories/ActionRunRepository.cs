@@ -280,13 +280,13 @@ internal sealed class ActionRunRepository(FormBuilderDatabase database) : IActio
             cancellationToken);
 
     /// <inheritdoc />
-    public Task<int> CountStartedAsync(Guid changeKey, CancellationToken cancellationToken = default) =>
+    public Task<int> CountOfChangeAsync(Guid changeKey, CancellationToken cancellationToken = default) =>
         database.ReadAsync(
             db =>
             {
                 var n = new SqlNames(db);
                 return db.ScalarAsync<int>(
-                    $"SELECT COUNT(*) FROM {n.T(FormBuilderTables.ActionRun)} WHERE {n.C("changeKey")} = @0 AND ({n.C("attempts")} > 0 OR {n.C("state")} <> '{Pending}')",
+                    $"SELECT COUNT(*) FROM {n.T(FormBuilderTables.ActionRun)} WHERE {n.C("changeKey")} = @0",
                     changeKey);
             },
             cancellationToken);

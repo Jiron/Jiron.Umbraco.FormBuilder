@@ -161,6 +161,6 @@ internal interface IActionRunRepository
     /// <summary>Skips every run of an entry that has not started, as the entry reached a state they no longer fit (ADR-0162).</summary>
     Task<int> SkipUnstartedOfEntryAsync(long entryId, CancellationToken cancellationToken = default);
 
-    /// <summary>How many of a change's runs have started, which an Undo can no longer call back.</summary>
-    Task<int> CountStartedAsync(Guid changeKey, CancellationToken cancellationToken = default);
+    /// <summary>How many runs a change queued, which an Undo holds against how many it could still call back.</summary>
+    Task<int> CountOfChangeAsync(Guid changeKey, CancellationToken cancellationToken = default);
 }

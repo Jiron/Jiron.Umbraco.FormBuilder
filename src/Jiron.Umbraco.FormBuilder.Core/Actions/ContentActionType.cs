@@ -266,7 +266,8 @@ internal sealed partial class ContentActionType(
             item.SetCultureName(name, culture);
         }
 
-        foreach (var mapping in mappings)
+        // Files last: an answer that fails the run should leave nothing in the media library.
+        foreach (var mapping in mappings.OrderBy(mapping => IsFileMapping(mapping, scope.Form)))
         {
             if (!await SetAsync(item, mapping, culture, settings, context, scope, cancellationToken))
             {
@@ -303,6 +304,18 @@ internal sealed partial class ContentActionType(
 
     private static string Cut(string name) =>
         name.Length <= MaxNameLength ? name : name[..(char.IsHighSurrogate(name[MaxNameLength - 1]) ? MaxNameLength - 1 : MaxNameLength)];
+
+    private static bool IsFileMapping(ContentMapping mapping, FormDefinition form) =>
+        mapping.Field is { } key && DefinitionKeys.Fields(form).Any(field => field.Key == key && field.Type == FileFieldType);
+
+    // Whether the action may copy a field: not a sensitive one, or a sensitive repeatable group's, unless it names the one or the other (ADR-0014).
+    private static bool MayCopy(FormField field, FormDefinition form, ContentActionSettings settings)
+    {
+        var group = form.Pages.SelectMany(page => page.Groups).SelectMany(group => group.Fields).FirstOrDefault(each => each.Fields.Any(child => child.Key == field.Key));
+        return (!field.Sensitive && group?.Sensitive != true)
+            || settings.IncludeSensitive.Contains(field.Key)
+            || (group is not null && settings.IncludeSensitive.Contains(group.Key));
+    }
 
     private static bool IsText(string editor) =>
         editor is Constants.PropertyEditors.Aliases.TextBox or Constants.PropertyEditors.Aliases.TextArea or Constants.PropertyEditors.Aliases.Label;
@@ -452,13 +465,13 @@ internal sealed partial class ContentActionType(
     {
         ContentParentSource.Page => WithinReach(scope.Page, settings.Parent),
         ContentParentSource.SiteRoot => WithinReach(scope.Site, settings.Parent),
-        _ when settings.Parent is { } picked => content.GetById(picked) is null ? null : picked,
+        _ when settings.Parent is { } picked => content.GetById(picked) is null or { Trashed: true } ? null : picked,
         _ => Guid.Empty,
     };
 
     private Guid? WithinReach(Guid? key, Guid? limit)
     {
-        if (key is not { } target || limit is not { } top || content.GetById(target) is not { } item || content.GetById(top) is not { } reach)
+        if (key is not { } target || limit is not { } top || content.GetById(target) is not { Trashed: false } item || content.GetById(top) is not { } reach)
         {
             return null;
         }
@@ -474,7 +487,7 @@ internal sealed partial class ContentActionType(
         }
 
         var mapped = DefinitionKeys.Fields(context.Scope.Form)
-            .Where(field => field.Type == FileFieldType && (!field.Sensitive || settings.IncludeSensitive.Contains(field.Key)) && mappings.Any(mapping => mapping.Field == field.Key))
+            .Where(field => field.Type == FileFieldType && MayCopy(field, context.Scope.Form, settings) && mappings.Any(mapping => mapping.Field == field.Key))
             .Select(field => field.Key)
             .ToHashSet();
         return mapped.Count > 0 && (await entries.ListFilesAsync(entry, cancellationToken)).Any(file => mapped.Contains(file.FieldKey) && file.ScanState == FileScanStates.Pending);
@@ -496,7 +509,7 @@ internal sealed partial class ContentActionType(
         if (mapping.Field is { } key && DefinitionKeys.Fields(scope.Form).FirstOrDefault(field => field.Key == key) is { } field)
         {
             // A sensitive answer that nobody named stays out altogether: no mask in the item, and no file in the media library.
-            if (field.Sensitive && !settings.IncludeSensitive.Contains(key))
+            if (!MayCopy(field, scope.Form, settings))
             {
                 return true;
             }

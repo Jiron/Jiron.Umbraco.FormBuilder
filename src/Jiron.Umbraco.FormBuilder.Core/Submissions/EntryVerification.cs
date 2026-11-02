@@ -313,8 +313,9 @@ internal sealed partial class EntryVerification(
         var files = await entries.ListFilesAsync(entry.Id, cancellationToken);
         var form = await forms.GetByIdAsync(entry.FormId, cancellationToken);
         var deleted = await database.WriteAsync(
-            async _ =>
+            async db =>
             {
+                await RowHolds.HoldFormAsync(db, new SqlNames(db), entry.FormId);
                 if (!await events.ClaimDueAsync(due.Id, cancellationToken) || later)
                 {
                     return false;
