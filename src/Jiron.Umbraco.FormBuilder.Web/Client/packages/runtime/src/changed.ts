@@ -2,9 +2,10 @@
  * A form published again while its visitor filled it in (ROADMAP 6.4j, ADR-0004, ADR-0120): the page asks the `render`
  * endpoint for the form as it is now, in the page's theme, culture and placement, copies the answers over by each
  * control's name, leaves a consent whose wording changed unticked, puts the form in place of the old one and moves the
- * focus to the theme's notice, which says so. The page is never reloaded. What this cannot carry over, as a form the
- * server pages, with rows or a ranking until 6.5d and 6.4o bring them to the page, and a form that takes no entry now,
- * goes the way without JavaScript, whose answer does the same.
+ * focus to the theme's notice, which says so. The page is never reloaded. The headless element writes the form as it is
+ * now itself (ADR-0128). What this cannot carry over, as a form with rows or a ranking, a form without the buttons to move
+ * with, a summary page that a post writes and a form that takes no entry now, goes the way without JavaScript, whose answer
+ * does the same; in the element, which has no such way, the visitor reads the notice of a failed send.
  */
 import { parseSanitised } from './html';
 import { movesPages } from './uploads';
@@ -92,6 +93,10 @@ function modelIn(next: HTMLFormElement, form: HTMLFormElement): FormModel | null
   }
 }
 
+/** The headless element a form is in, which writes the form as it is now itself (ADR-0128). */
+export const hostOf = (form: Element): { fresh(): Promise<HTMLFormElement | null> } | null =>
+  form.closest('jfb-form') as { fresh(): Promise<HTMLFormElement | null> } | null;
+
 /** The form as it is now, with its model, or null for what the page cannot put in the old one's place. */
 export async function markupOf(
   form: HTMLFormElement,
@@ -130,10 +135,13 @@ export async function swapForm(
   const several = form.querySelectorAll('[data-jfb-page]').length > 1;
   if (
     form.querySelector('.jfb-repeater, .jfb-ranking') !== null ||
-    (several && (model.form.settings?.summaryPage === true || !movesPages(form)))
+    (several && ((model.form.settings?.summaryPage === true && form.hasAttribute('action')) || !movesPages(form)))
   )
     return null;
-  const next = (await markupOf(form, model, api))?.querySelector<HTMLFormElement>('form[data-jfb-form]');
+  const host = hostOf(form);
+  const next = host
+    ? await host.fresh()
+    : (await markupOf(form, model, api))?.querySelector<HTMLFormElement>('form[data-jfb-form]');
   const nextModel = next ? modelIn(next, form) : null;
   const template = next
     ?.querySelector<HTMLTemplateElement>(':scope > template[data-jfb-templates]')

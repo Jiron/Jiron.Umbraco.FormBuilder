@@ -136,14 +136,22 @@ for (const language of LANGUAGES) {
   });
 }
 
-test('the element moves through its pages and sends, on a page with no post to go to', async ({ page }) => {
+test('the element moves through its pages, each checked on the server, and sends with its file, on a page with no post to go to', async ({
+  page,
+  request,
+}) => {
   if (site === undefined) throw new Error('The static site did not start.');
   const watched = await watch(page);
   await page.goto(pageAt(site.url, 'en-US'));
   const form = page.locator('jfb-form form.jfb-form');
   await expect(form).toBeVisible();
   const address = page.url();
-  await form.locator('[name="name"]').fill('Mira Okafor');
+  const mark = `Mira ${Date.now().toString(36)}`;
+  const checks: unknown[] = [];
+  page.on('request', (each) => {
+    if (each.url().endsWith('/validate')) checks.push(each.postDataJSON());
+  });
+  await form.locator('[name="name"]').fill(mark);
   await form.locator('[name="email"]').fill('mira@visitor.jfb.test');
   await form.locator('[name="role"][value="events"]').check();
   const moved = form.evaluate(
@@ -155,21 +163,72 @@ test('the element moves through its pages and sends, on a page with no post to g
   await page.getByRole('button', { name: 'Next' }).click();
 
   expect(await moved).toMatchObject({ alias: 'volunteer', number: 2, total: 2 });
+  expect(checks, 'the page was checked before the next').toHaveLength(1);
   await expect(form.locator('[name="days"]').first()).toBeVisible();
   await expect(form.locator('[name="name"]')).toBeHidden();
   await axe(page, 'the second page of the element', true);
 
   await page.getByRole('button', { name: 'Back' }).click();
-  await expect(form.locator('[name="name"]')).toHaveValue('Mira Okafor');
+  await expect(form.locator('[name="name"]')).toHaveValue(mark);
   await page.getByRole('button', { name: 'Next' }).click();
   await expect(form.locator('[name="days"]').first()).toBeVisible();
 
   await form.locator('[name="days"][value="mon"]').check();
   await form.locator('[data-jfb-alias="privacy"] input[type="checkbox"]').check();
+  const uploaded = page.waitForResponse((response) => response.url().includes('/uploads'));
+  await form
+    .locator('input[type="file"][name="reference"]')
+    .setInputFiles({ name: 'reference.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.7\n') });
+  expect((await uploaded).ok(), 'a file goes up across origins').toBe(true);
+  await expect(form.locator('[data-jfb-alias="reference"] .jfb-file')).toContainText('reference.pdf');
+  await axe(page, 'the element with a file', true);
+
   await page.getByRole('button', { name: 'Sign me up' }).click();
   await expect(page.locator('jfb-form [data-jfb-outcome]')).toBeFocused();
+  await axe(page, 'the element after its send', true);
   expect(page.url(), 'it never left the page').toBe(address);
   expect(watched.errors).toEqual([]);
+
+  const entries = await request.get('/jfb-testing/entries', { params: { form: 'volunteer' } });
+  const stored = ((await entries.json()) as { entries: { values: unknown; files: { name: string }[] }[] }).entries.find(
+    (each) => JSON.stringify(each.values).includes(mark),
+  );
+  expect(stored?.files.map((file) => file.name)).toEqual(['reference.pdf']);
+});
+
+test('the element comes anew when its form was published again, on the page the visitor was on, with the answers', async ({
+  page,
+}) => {
+  if (site === undefined) throw new Error('The static site did not start.');
+  await page.goto(pageAt(site.url, 'en-US'));
+  const form = page.locator('jfb-form form.jfb-form');
+  await expect(form).toBeVisible();
+  await form.locator('[name="name"]').fill('Mira Okafor');
+  await form.locator('[name="email"]').fill('mira@visitor.jfb.test');
+  await form.locator('[name="role"][value="events"]').check();
+  await page.getByRole('button', { name: 'Next' }).click();
+  await expect(form.locator('[name="days"]').first()).toBeVisible();
+  await form.locator('[name="days"][value="mon"]').check();
+  await form.locator('[data-jfb-alias="privacy"] input[type="checkbox"]').check();
+
+  // A later version of the form is what the server would answer to: the check it has moved on from is all this needs.
+  await page.route('**/jfb/api/v1/forms/*/entries', (route) =>
+    route.fulfill({
+      status: 409,
+      json: { code: 'form_changed' },
+      headers: { 'access-control-allow-origin': site?.url ?? '*' },
+    }),
+  );
+  await page.getByRole('button', { name: 'Sign me up' }).click();
+  await expect(form.locator('[data-jfb-notice="form_changed"]')).toBeFocused();
+  await page.unroute('**/jfb/api/v1/forms/*/entries');
+  await expect(form.locator('[name="days"][value="mon"]'), 'the page the visitor was on').toBeVisible();
+  await expect(form.locator('[name="days"][value="mon"]')).toBeChecked();
+  await expect(form.locator('[name="name"]'), 'with the answers').toHaveValue('Mira Okafor');
+  await axe(page, 'the element after its form changed', true);
+
+  await page.getByRole('button', { name: 'Sign me up' }).click();
+  await expect(page.locator('jfb-form [data-jfb-outcome]')).toBeFocused();
 });
 
 test('the element shows nothing on a page whose origin the API does not allow, and says why', async ({ page }) => {

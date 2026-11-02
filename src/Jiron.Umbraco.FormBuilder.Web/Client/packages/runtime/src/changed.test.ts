@@ -46,6 +46,8 @@ interface Shape {
   readonly context?: string;
   /** The form's settings, as a summary page's. */
   readonly settings?: Record<string, unknown>;
+  /** Where the form is by the time it wakes, as in the headless element. */
+  readonly place?: (form: HTMLFormElement) => void;
 }
 
 const markup = ({
@@ -151,6 +153,7 @@ function wake(shape: Shape = { revision: 1 }, files?: PageUploads) {
     });
     pageErrorsOf(each, model, engineOf(model, null), () => NOW, deliver);
   };
+  shape.place?.(form);
   wakeForm(form, modelOf(shape.revision, shape.settings));
   input('n1').value = 'Ana';
   const press = (): void => {
@@ -349,6 +352,97 @@ describe('a form of several pages', () => {
     await until(() => expect(document.querySelector('[data-jfb-notice="form_changed"]')).not.toBeNull());
 
     expect(document.querySelector('[data-jfb-page="p2"]')?.hasAttribute('hidden')).toBe(false);
+  });
+});
+
+describe('a form in the headless element', () => {
+  const inElement = (fresh: () => Promise<HTMLFormElement | null>, more = ''): ReturnType<typeof wake> =>
+    wake({
+      revision: 1,
+      more,
+      place: (form) => {
+        const host = document.createElement('jfb-form') as HTMLElement & { fresh?: typeof fresh };
+        host.fresh = fresh;
+        form.replaceWith(host);
+        form.removeAttribute('action');
+        host.append(form);
+      },
+    });
+  const written = (): HTMLFormElement => {
+    const holder = document.createElement('div');
+    holder.innerHTML = markup({ revision: 2 });
+    const form = holder.querySelector('form') as HTMLFormElement;
+    form.removeAttribute('action');
+    return form;
+  };
+
+  it('comes from the element, with the answers kept and the notice, asking the endpoint for no render', async () => {
+    const server = serve(markup({ revision: 2 }));
+    const fresh = vi.fn(() => Promise.resolve(written()));
+    const { press } = inElement(fresh);
+    input('n1').value = 'Ana';
+    press();
+    await until(() => expect(document.querySelector('[data-jfb-notice="form_changed"]')).not.toBeNull());
+
+    expect(fresh).toHaveBeenCalledOnce();
+    expect(server.renders()).toEqual([]);
+    expect(input('n1').value).toBe('Ana');
+    expect(document.querySelector('jfb-form form')?.getAttribute('data-jfb-revision')).toBe('2');
+    expect(document.activeElement).toBe(document.querySelector('[data-jfb-notice="form_changed"]'));
+  });
+
+  it('comes on the page the visitor was on with a summary page, which the runtime writes where no post can', async () => {
+    const pages = '</div></section><section data-jfb-page="p2" hidden><div>';
+    const holder = document.createElement('div');
+    holder.innerHTML = markup({ revision: 2, more: pages });
+    const next = holder.querySelector('form') as HTMLFormElement;
+    next.removeAttribute('action');
+    serve(markup({ revision: 2 }));
+    const made = wake({
+      revision: 1,
+      more: pages,
+      settings: { summaryPage: true },
+      place: (form) => {
+        const host = document.createElement('jfb-form') as HTMLElement & { fresh?: () => Promise<HTMLFormElement> };
+        host.fresh = () => Promise.resolve(next);
+        form.replaceWith(host);
+        form.removeAttribute('action');
+        host.append(form);
+        form
+          .querySelector<HTMLTemplateElement>('template[data-jfb-templates]')
+          ?.content.append(
+            Object.assign(document.createElement('div'), { innerHTML: '<button data-jfb-nav="next"></button>' }),
+          );
+      },
+    });
+    made.form.querySelector<HTMLElement>('[data-jfb-page="p1"]')?.toggleAttribute('hidden', true);
+    made.form.querySelector<HTMLElement>('[data-jfb-page="p2"]')?.toggleAttribute('hidden', false);
+    made.press();
+    await until(() => expect(next.isConnected).toBe(true));
+
+    expect(next.querySelector('[data-jfb-page="p1"]')?.hasAttribute('hidden')).toBe(true);
+    expect(next.querySelector('[data-jfb-page="p2"]')?.hasAttribute('hidden')).toBe(false);
+    expect(made.posted).toEqual([]);
+  });
+
+  it('shows the notice of a failed send for a form with rows, which it cannot carry over', async () => {
+    serve(markup({ revision: 2 }));
+    const fresh = vi.fn(() => Promise.resolve(written()));
+    const { press, form, posted } = inElement(fresh, '<div class="jfb-repeater"></div>');
+    press();
+    await until(() => expect(form.querySelector('[data-jfb-notice="server_error"]')).not.toBeNull());
+
+    expect(fresh).not.toHaveBeenCalled();
+    expect(posted).toEqual([]);
+  });
+
+  it('shows the notice of a failed send when the element has none to give', async () => {
+    serve(markup({ revision: 2 }));
+    const { press, form, posted } = inElement(() => Promise.resolve(null));
+    press();
+    await until(() => expect(form.querySelector('[data-jfb-notice="server_error"]')).not.toBeNull());
+
+    expect(posted).toEqual([]);
   });
 });
 

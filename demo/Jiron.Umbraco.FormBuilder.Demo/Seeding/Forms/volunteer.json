@@ -86,6 +86,13 @@
               }
             },
             {
+              "key": "d0000000-0000-4000-8000-00000000089f",
+              "type": "file",
+              "alias": "reference",
+              "label": { "": "A reference, if you have one", "de": "Ein Zeugnis, falls Sie eines haben" },
+              "settings": { "types": ["pdf"] }
+            },
+            {
               "key": "d0000000-0000-4000-8000-000000000806",
               "type": "consent",
               "alias": "privacy",

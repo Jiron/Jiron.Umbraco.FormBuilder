@@ -191,24 +191,7 @@ export class JfbFormElement extends HTMLElement {
     });
     await Promise.all(answer.assets.styles.map((style) => stylesheet(document, new URL(style, origin).href)));
     if (render !== this.#render) return;
-    this.replaceChildren(
-      writeForm(
-        {
-          document,
-          api: base,
-          onCustom: (type) => {
-            const said = told.get(document) ?? new Set<string>();
-            told.set(document, said);
-            if (said.has(type)) return;
-            said.add(type);
-            console.warn(
-              `jfb-form: a field of type '${type}' has no control in the element, so it shows no answer (ADR-0128).`,
-            );
-          },
-        },
-        answer.form,
-      ),
-    );
+    this.replaceChildren(this.#write(answer, base));
     try {
       (await runtime)?.init(this);
     } catch (error) {
@@ -217,6 +200,40 @@ export class JfbFormElement extends HTMLElement {
     if (render !== this.#render) return;
     this.dispatchEvent(
       new CustomEvent('jfb:rendered', { bubbles: true, detail: { form: answer.form.key, instance: answer.form.id } }),
+    );
+  }
+
+  /**
+   * The form as it is now, not yet on the page, for the runtime to put in the old one's place with the answers kept, when it
+   * was published again while its visitor filled it in (ADR-0128): null when it cannot be had or takes no entry now.
+   */
+  async fresh(): Promise<HTMLFormElement | null> {
+    const url = this.#instance === undefined ? null : answerUrl(this, this.#instance);
+    const base = this.getAttribute('api')?.replace(/\/+$/, '');
+    if (url === null || base === undefined) return null;
+    const answer = await fetchAnswer(url, base);
+    if ('code' in answer || answer.contract !== ANSWER_CONTRACT) return null;
+    const form = this.#write(answer, base);
+    return form instanceof HTMLFormElement ? form : null;
+  }
+
+  #write(answer: JfbElementAnswer, base: string): HTMLElement {
+    const document = this.ownerDocument;
+    return writeForm(
+      {
+        document,
+        api: base,
+        onCustom: (type) => {
+          const said = told.get(document) ?? new Set<string>();
+          told.set(document, said);
+          if (said.has(type)) return;
+          said.add(type);
+          console.warn(
+            `jfb-form: a field of type '${type}' has no control in the element, so it shows no answer (ADR-0128).`,
+          );
+        },
+      },
+      answer.form,
     );
   }
 

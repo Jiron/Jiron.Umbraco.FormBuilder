@@ -14,7 +14,7 @@
  */
 import type { PostAnswer, ReadPost } from '@jfb/logic';
 import type { PageErrors, ServerProblem } from './errors';
-import { markupOf, swapForm } from './changed';
+import { hostOf, markupOf, swapForm } from './changed';
 import { parseSanitised } from './html';
 import { optionsByPost, type PageUploads, type UploadedFile } from './uploads';
 import type { FormModel } from './model';
@@ -214,6 +214,8 @@ export function senderOf(form: HTMLFormElement, model: FormModel, options: Sende
     (options.files !== undefined ||
       (form.enctype !== 'multipart/form-data' && !Object.values(model.fields).some((field) => field.kind === 'files')));
   const posts = form.hasAttribute('action');
+  /** Whether the form as it is now can come in this one's place: one with an address, or in the element, which writes it. */
+  const comesAnew = posts || hostOf(form) !== null;
   const post = (path: string, body: object): Promise<Response> =>
     fetch(`${api}/forms/${key}/${path}`, {
       method: 'POST',
@@ -293,7 +295,7 @@ export function senderOf(form: HTMLFormElement, model: FormModel, options: Sende
       status = response.status;
       retryAfter = response.headers.get('Retry-After');
       answer = ((await response.json().catch(() => null)) as Answer | null) ?? {};
-      if (status === 409 && answer.code === 'form_changed' && posts && api !== undefined) {
+      if (status === 409 && answer.code === 'form_changed' && comesAnew && api !== undefined) {
         swapped = await swapForm(form, model, api);
       }
     } catch (failed) {
@@ -375,7 +377,7 @@ export function senderOf(form: HTMLFormElement, model: FormModel, options: Sende
         retryAfter = response.headers.get('Retry-After');
         answer = ((await response.json().catch(() => null)) as Answer | null) ?? {};
         // Published again meanwhile: the form as it is now comes in this one's place.
-        if (status === 409 && answer.code === 'form_changed' && posts && api !== undefined) {
+        if (status === 409 && answer.code === 'form_changed' && comesAnew && api !== undefined) {
           swapped = await swapForm(form, model, api);
         }
         // The page's id holds an entry with other answers: one whose answer was lost, whatever was changed since.

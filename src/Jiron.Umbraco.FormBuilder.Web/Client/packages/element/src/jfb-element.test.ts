@@ -287,6 +287,85 @@ describe('<jfb-form>', () => {
     );
   });
 
+  it('gives the form as it is now, under the same id and not yet on the page, for the runtime to put in place', async () => {
+    const requests = serve();
+    const rendered = collect('jfb:rendered');
+    const made = element() as JfbFormElement;
+    await vi.waitFor(() => expect(rendered).toHaveLength(1));
+    const shown = made.querySelector('form');
+
+    const fresh = await made.fresh();
+
+    expect(fresh?.localName).toBe('form');
+    expect(fresh?.id).toBe(shown?.id);
+    expect(fresh?.isConnected).toBe(false);
+    expect(made.querySelector('form'), 'the one on the page stays until the runtime has put the answers over').toBe(
+      shown,
+    );
+    expect(requests).toHaveLength(2);
+    expect(rendered, 'nothing rendered yet').toHaveLength(1);
+  });
+
+  it('gives none when it cannot be had', async () => {
+    let answering = true;
+    serve((url) => (answering ? json(answerFor(instanceOf(url))) : json({ code: 'form_not_found' }, 404)));
+    const rendered = collect('jfb:rendered');
+    const made = element() as JfbFormElement;
+    await vi.waitFor(() => expect(rendered).toHaveLength(1));
+    answering = false;
+
+    expect(await made.fresh()).toBeNull();
+    expect(made.querySelector('form'), 'what shows stays').not.toBeNull();
+  });
+
+  it('gives none of another contract', async () => {
+    let contract = ANSWER_CONTRACT;
+    serve((url) =>
+      json(
+        answerFor(instanceOf(url), (answer) => {
+          (answer as { contract: number }).contract = contract;
+        }),
+      ),
+    );
+    const rendered = collect('jfb:rendered');
+    const made = element() as JfbFormElement;
+    await vi.waitFor(() => expect(rendered).toHaveLength(1));
+    contract = ANSWER_CONTRACT + 1;
+
+    expect(await made.fresh()).toBeNull();
+  });
+
+  it('gives none of a form that takes no entry now', async () => {
+    const closed = must(
+      LANGUAGES.flatMap(([, cases]) => cases).find((each) => each.name === 'closed'),
+      "the fixture's closed form",
+    );
+    let open = true;
+    serve((url) =>
+      json(
+        answerFor(instanceOf(url), (answer) => {
+          if (!open) answer.form = closed.answer.form;
+        }),
+      ),
+    );
+    const rendered = collect('jfb:rendered');
+    const made = element() as JfbFormElement;
+    await vi.waitFor(() => expect(rendered).toHaveLength(1));
+    open = false;
+
+    expect(await made.fresh()).toBeNull();
+  });
+
+  it('gives none and asks for nothing before it was ever on a page', async () => {
+    const requests = serve();
+    const made = document.createElement('jfb-form') as JfbFormElement;
+    made.setAttribute('api', 'https://cms.example/jfb/api/v1');
+    made.setAttribute('form', paged.answer.form.key);
+
+    expect(await made.fresh()).toBeNull();
+    expect(requests).toEqual([]);
+  });
+
   it('renders again when an attribute changes, with its own instance id, and drops the answers that came too late', async () => {
     const answers: ((response: Response) => void)[] = [];
     const requests = serve(() => new Promise<Response>((resolve) => answers.push(resolve)));

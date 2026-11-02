@@ -81,5 +81,10 @@ classes, the marks or the navigation.
 - A change to a view model changes the element's types and the schema in the same commit; a change to a Razor view
   fails the fixture until the element's template follows.
 - The runtime enhances the element's form as it enhances a Razor page's, so the rules, checks and texts work there
-  as they do on Razor pages; moving through pages and sending come with the runtime's steps that build them (6.5d,
-  6.4i).
+  as they do on Razor pages; it moves through its pages, each checked on the server before the next, and sends with
+  its files by the same code (6.5d, 6.4i, 6.4m), and a summary page is the runtime's to write, as no post can.
+- **Published again:** the element's `fresh()` writes the form as it is now, not yet on the page, and the runtime puts
+  it in the old one's place on the page the visitor was on, with the answers kept and the notice, as it does on a Razor
+  page with the render endpoint's markup. A form with rows or a ranking, whose answers it cannot carry over, shows the
+  notice of a failed send instead, as a form with no address cannot post; so does a form that cannot be had or takes no
+  entry now.

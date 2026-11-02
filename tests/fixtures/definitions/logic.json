@@ -5198,6 +5198,29 @@
                   }
                 },
                 {
+                  "key": "d0000000-0000-4000-8000-00000000089f",
+                  "type": "file",
+                  "alias": "reference",
+                  "span": 1,
+                  "label": "A reference, if you have one",
+                  "hideLabel": false,
+                  "required": false,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "camera": false,
+                    "dropZone": true,
+                    "maxFiles": 1,
+                    "thumbnails": true,
+                    "types": [
+                      "pdf"
+                    ]
+                  }
+                },
+                {
                   "key": "d0000000-0000-4000-8000-000000000806",
                   "type": "consent",
                   "alias": "privacy",
@@ -5244,6 +5267,11 @@
       },
       "d0000000-0000-4000-8000-000000000805": {
         "kind": "choices",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-00000000089f": {
+        "kind": "files",
         "canBeRequired": true,
         "builtIn": true
       },
@@ -5339,6 +5367,17 @@
                   "alias": "days",
                   "calculation": null,
                   "required": true,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                },
+                {
+                  "id": "d0000000-0000-4000-8000-00000000089f",
+                  "kind": "files",
+                  "canBeRequired": true,
+                  "alias": "reference",
+                  "calculation": null,
+                  "required": false,
                   "rules": [],
                   "fields": [],
                   "rows": []

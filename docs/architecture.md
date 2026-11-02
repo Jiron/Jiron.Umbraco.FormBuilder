@@ -677,7 +677,8 @@ theme views and the markup contract (ADR-0015), `window.JironFormBuilder` (`init
 properties.
 
 **Headless:** the projection's TypeScript types and JSON schema, and `<jfb-form api form culture content theme
-context-*>` with its `render()` and its `jfb:rendered` event.
+context-*>` with its `render()`, its `fresh()` (the form as it is now, for the runtime to put in the old one's place
+when it was published again) and its `jfb:rendered` event.
 
 ## 9. Background work
 
