@@ -96,8 +96,8 @@ internal sealed class FormMergeTagSource : IFiniteMergeTagSource
 /// <summary>
 /// <c>entry.number</c>, <c>entry.reference</c>, <c>entry.date</c>, <c>entry.state</c> and <c>entry.url</c>, empty
 /// before the visitor submits, the date and the reference's year in the site's time zone, the link to the entry in the
-/// backoffice from the site's base URL (ADR-0067); and <c>entry.answers</c>, the list of the answers the scope holds
-/// (ADR-0066).
+/// backoffice from the site's base URL (ADR-0067); <c>entry.answers</c>, the list of the answers the scope holds
+/// (ADR-0066); and <c>entry.table</c>, the same with the fields without an answer, unless the action leaves them out (ADR-0160).
 /// </summary>
 /// <param name="clock">The site's time zone.</param>
 /// <param name="cultures">The culture formats.</param>
@@ -105,7 +105,7 @@ internal sealed class FormMergeTagSource : IFiniteMergeTagSource
 /// <param name="baseUrls">The sites' base URLs.</param>
 internal sealed class EntryMergeTagSource(MergeTagClock clock, MergeTagCultures cultures, MergeTagAnswerTexts answers, SiteBaseUrl baseUrls) : IFiniteMergeTagSource
 {
-    private static readonly ImmutableArray<string> Known = ["number", "reference", "date", "state", "url", "answers"];
+    private static readonly ImmutableArray<string> Known = ["number", "reference", "date", "state", "url", "answers", "table"];
 
     /// <inheritdoc />
     public string Name => "entry";
@@ -124,9 +124,10 @@ internal sealed class EntryMergeTagSource(MergeTagClock clock, MergeTagCultures 
             return null;
         }
 
-        if (request.Path == "answers")
+        if (request.Path is "answers" or "table")
         {
-            return answers.Answers(request.Scope, request.Place, await answers.TextsAsync(request.Scope, answers.Fields(request.Scope.Form), cancellationToken));
+            var unanswered = request.Path == "table" && !request.Scope.TableSkipsUnanswered;
+            return answers.Answers(request.Scope, request.Place, await answers.TextsAsync(request.Scope, answers.Fields(request.Scope.Form), cancellationToken), unanswered);
         }
 
         if (request.Scope.Entry is not { } entry)

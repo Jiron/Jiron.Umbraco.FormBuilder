@@ -38,7 +38,7 @@ public sealed class PublicFormProtectionTests : PublicApiTestBase
 
     private static readonly FormField Email = Field("email", "email") with { Validation = [new UniquePerFormCheck()] };
     private static readonly FormField Note = Field("note", "textarea") with { Keep = FieldKeep.UntilActionsRun };
-    private static readonly FormAction Notify = new() { Key = Guid.Parse("71c00000-0000-4000-8000-000000000001"), Type = "email", Name = "Notify" };
+    private static readonly FormAction Notify = new() { Key = Guid.Parse("71c00000-0000-4000-8000-000000000001"), Type = "testing.mail", Name = "Notify" };
 
     private StoppedClock _clock = null!;
     private string? _address;

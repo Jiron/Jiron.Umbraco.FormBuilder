@@ -3931,6 +3931,22 @@
         },
         "additionalProperties": false
       },
+      "ActionPresetResponseModel": {
+        "required": [
+          "name",
+          "settings"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "settings": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
       "ActionRunResponseModel": {
         "required": [
           "actionKey",
@@ -4022,6 +4038,7 @@
           "alias",
           "icon",
           "name",
+          "presets",
           "settings",
           "test"
         ],
@@ -4045,6 +4062,16 @@
               "oneOf": [
                 {
                   "$ref": "#/components/schemas/FieldSettingResponseModel"
+                }
+              ]
+            }
+          },
+          "presets": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/ActionPresetResponseModel"
                 }
               ]
             }

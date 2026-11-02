@@ -259,13 +259,12 @@ public sealed class ActionSettlementTests : ActionTestBase
     }
 
     [Test]
-    public async Task AFormThatStoresNoEntries_KeepsTheEntryUntilItsRunsAreFinal_ThenLetsItGoWithItsFilesAndUnsentMail()
+    public async Task AFormThatStoresNoEntries_KeepsTheEntryUntilItsRunsAreFinal_ThenLetsItGoWithItsFiles()
     {
         var failing = true;
         var form = await PublishAsync(change: definition => Stored(EntryStorage.Never)(definition) with { Actions = [Action("flaky")] }, fields: [NameField, Upload]);
         Scripted.Scripts["flaky"] = (_, _) => Task.FromResult(failing ? ActionResult.TryAgain("http_503") : ActionResult.Succeeded);
         var (entry, stored) = await EntryWithFileAsync(form);
-        await GetRequiredService<IEmailRepository>().AddAsync(new NewEmail(EmailKind.Action, "team@example.com", "site@example.com", "Hello", "Hello", "en-US", EntryId: entry.Id));
 
         await DrainAsync(entry.Id);
         var whileRetrying = await Entries.GetByIdAsync(entry.Id);
@@ -281,7 +280,39 @@ public sealed class ActionSettlementTests : ActionTestBase
             Assert.That(await Entries.GetByIdAsync(entry.Id), Is.Null);
             Assert.That(Files.Ids, Does.Not.Contain(stored));
             Assert.That(await Runs.ListForEntryAsync(entry.Id), Is.Empty);
-            Assert.That(await GetRequiredService<IEmailRepository>().DueAsync(10), Is.Empty, "its queued mail goes with it");
+        });
+    }
+
+    [Test]
+    public async Task AFormThatStoresNoEntries_KeepsTheEntryAndItsFiles_UntilItsMailHasLeftOrFailed()
+    {
+        var form = await PublishAsync(change: definition => Stored(EntryStorage.Never)(definition) with { Actions = [Action("fine")] }, fields: [NameField, Upload]);
+        var (entry, stored) = await EntryWithFileAsync(form);
+        var emails = GetRequiredService<IEmailRepository>();
+        var mail = await emails.AddAsync(new NewEmail(EmailKind.Action, "team@example.com", "site@example.com", "Hello", "Hello", "en-US", EntryId: entry.Id));
+        var settlement = GetRequiredService<ActionSettlement>();
+
+        // This host has no mail server, so the pass leaves the mail queued.
+        await DrainAsync(entry.Id);
+        var whileQueued = await Entries.GetByIdAsync(entry.Id);
+        var fileWhileQueued = Files.Ids.Contains(stored);
+        var token = (await emails.ClaimAsync(mail!.Id, "server", TimeSpan.FromMinutes(5)))!.LockedBy!;
+        await settlement.AfterMailAsync(entry.Id);
+        var whileSending = await Entries.GetByIdAsync(entry.Id);
+        await emails.CutOffAsync(mail.Id, token, new DeliveryError("cut"), TimeSpan.FromDays(30));
+        await settlement.AfterMailAsync(entry.Id);
+        var whileUncertain = await Entries.GetByIdAsync(entry.Id);
+        await emails.FailAsync(mail.Id, token, new DeliveryError("failed"), TimeSpan.FromDays(30));
+        await settlement.AfterMailAsync(entry.Id);
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(whileQueued, Is.Not.Null);
+            Assert.That(fileWhileQueued, Is.True);
+            Assert.That(whileSending, Is.Not.Null);
+            Assert.That(whileUncertain, Is.Not.Null);
+            Assert.That(await Entries.GetByIdAsync(entry.Id), Is.Null);
+            Assert.That(Files.Ids, Does.Not.Contain(stored));
         });
     }
 

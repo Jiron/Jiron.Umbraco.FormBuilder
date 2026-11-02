@@ -211,6 +211,8 @@ internal sealed partial class ActionAttempts(
                 Scope = scope,
                 Attempt = run.Attempts,
                 DeliveryKey = $"{entry.Key:N}.{run.ActionKey:N}.{run.ChangeKey:N}",
+                RunId = run.Id,
+                EntryId = entry.Id,
             }, null);
         }
         catch (FormBuilderValidationException)

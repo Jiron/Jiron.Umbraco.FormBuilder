@@ -1,9 +1,14 @@
+using System.Text;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using Jiron.Umbraco.FormBuilder.Core.Actions;
 using Jiron.Umbraco.FormBuilder.Core.Composing;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
+using Jiron.Umbraco.FormBuilder.Core.Email;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
+using Jiron.Umbraco.FormBuilder.Testing;
 using Jiron.Umbraco.FormBuilder.Tests.Integration.Actions;
 using Umbraco.Cms.Tests.Common.Testing;
 
@@ -39,6 +44,37 @@ public sealed class ActionApiTests : ManagementApiTestBase
             Assert.That(scripted["icon"]!.GetValue<string>(), Is.EqualTo("icon-script"));
             Assert.That(scripted["test"]!.GetValue<string>(), Is.EqualTo("afterConfirmation"));
             Assert.That(scripted["settings"]![0]!["name"]!.GetValue<string>(), Is.EqualTo("target"));
+        });
+    }
+
+    [Test]
+    public async Task TheBuiltInActionTypes_AreServedAsTheReviewedSnapshotHolds()
+    {
+        var answer = await CallAsync("noAccess", HttpMethod.Get, "action-type");
+        var builtIn = new JsonArray([.. answer.Body!["types"]!.AsArray().Where(type => type!["alias"]!.GetValue<string>() is EmailActionType.Alias).Select(type => type!.DeepClone())]);
+        var served = builtIn.ToJsonString(new JsonSerializerOptions { WriteIndented = true }).ReplaceLineEndings("\n") + "\n";
+        var path = RepositoryRoot.Path(typeof(ActionApiTests).Assembly, "docs", "api", "action-types.json");
+        if (Environment.GetEnvironmentVariable("JFB_UPDATE_SNAPSHOTS") == "1")
+        {
+            await File.WriteAllTextAsync(path, served, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+            Assert.Fail($"JFB_UPDATE_SNAPSHOTS=1: wrote {path}. Review the diff, check the backoffice's dictionaries, commit it, and run again without it.");
+        }
+
+        Assert.That((await File.ReadAllTextAsync(path)).ReplaceLineEndings("\n"), Is.EqualTo(served), "the action types changed: run with JFB_UPDATE_SNAPSHOTS=1 and review the diff");
+    }
+
+    [Test]
+    public async Task TheEmailType_OffersItsPresets()
+    {
+        var answer = await CallAsync("noAccess", HttpMethod.Get, "action-type");
+
+        var email = answer.Body!["types"]!.AsArray().Single(type => type!["alias"]!.GetValue<string>() == EmailActionType.Alias)!;
+        var presets = email["presets"]!.AsArray();
+        Assert.Multiple(() =>
+        {
+            Assert.That(email["test"]!.GetValue<string>(), Is.EqualTo("toCurrentUser"));
+            Assert.That(presets.Select(preset => preset!["name"]!.GetValue<string>()), Is.EqualTo(new[] { "#jfbActionPresets_emailNotifyTeam", "#jfbActionPresets_emailConfirmSender" }));
+            Assert.That(presets.All(preset => JsonNode.Parse(preset!["settings"]!.GetValue<string>())!["subject"] is not null), Is.True);
         });
     }
 

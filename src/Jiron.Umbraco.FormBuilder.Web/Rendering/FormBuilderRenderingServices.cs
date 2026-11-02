@@ -1,4 +1,5 @@
 using Jiron.Umbraco.FormBuilder.Core.Configuration;
+using Jiron.Umbraco.FormBuilder.Core.Email;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -25,6 +26,7 @@ internal static class FormBuilderRenderingServices
     /// </summary>
     public static IUmbracoBuilder AddFormBuilderRendering(this IUmbracoBuilder builder)
     {
+        builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IFormBuilderEmailView, RazorEmailView>());
         ArgumentNullException.ThrowIfNull(builder);
         builder.Services.TryAddSingleton<WebsiteAssets>();
         builder.Services.TryAddSingleton<WebsiteAssetsMiddleware>();

@@ -240,7 +240,8 @@ internal sealed partial class FormBuilderMergeTagService(MergeTagRegistry regist
         try
         {
             var rest = path.Length > name.Length ? path[(name.Length + 1)..] : string.Empty;
-            return await source.ResolveAsync(new MergeTagSourceRequest(rest, scope, place, context), cancellationToken);
+            var value = await source.ResolveAsync(new MergeTagSourceRequest(rest, scope, place, context), cancellationToken);
+            return scope.BreaksVisitorLinks && VisitorLinks.CanHoldVisitorText(name, rest) ? VisitorLinks.Broken(value) : value;
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {

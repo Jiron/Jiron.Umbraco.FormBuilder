@@ -9,6 +9,11 @@ export type ActionConfirmationRequestModel = {
     confirmed: boolean;
 };
 
+export type ActionPresetResponseModel = {
+    name: string;
+    settings: string;
+};
+
 export type ActionRunResponseModel = {
     id: number;
     actionKey: string;
@@ -36,6 +41,7 @@ export type ActionTypeResponseModel = {
     icon: string;
     test: string;
     settings: Array<FieldSettingResponseModel>;
+    presets: Array<ActionPresetResponseModel>;
 };
 
 export type ActionTypesResponseModel = {

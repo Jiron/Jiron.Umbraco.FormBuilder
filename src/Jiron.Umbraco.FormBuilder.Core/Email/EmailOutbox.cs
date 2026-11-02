@@ -38,6 +38,9 @@ internal sealed record OutgoingEmail
     /// <summary>The blind copy recipients: fixed addresses, never one a visitor typed.</summary>
     public IReadOnlyList<string> Bcc { get; init; } = [];
 
+    /// <summary>The address it comes from instead of the site's, left out when it is not one; never one a visitor typed.</summary>
+    public string? From { get; init; }
+
     /// <summary>The reply-to address, left out when it is not one.</summary>
     public string? ReplyTo { get; init; }
 
@@ -132,7 +135,7 @@ internal sealed partial class EmailOutbox(
         return new NewEmail(
             email.Kind,
             string.Join(", ", to),
-            Sender(site),
+            Sender(site, email.From),
             subject,
             text,
             Culture(email.Culture),
@@ -167,9 +170,9 @@ internal sealed partial class EmailOutbox(
 
     // The site's sender, with its name on Umbraco's address when it has no address of its own; empty when there is neither,
     // and Umbraco then says so when it is sent: the health check names it, and the mail waits in the log for a retry.
-    private string Sender(EmailSettings site)
+    private string Sender(EmailSettings site, string? own)
     {
-        var address = site.SenderAddress ?? (EmailAddresses.IsOne(global.CurrentValue.Smtp?.From) ? global.CurrentValue.Smtp!.From : null);
+        var address = (EmailAddresses.IsOne(own) ? own : null) ?? site.SenderAddress ?? (EmailAddresses.IsOne(global.CurrentValue.Smtp?.From) ? global.CurrentValue.Smtp!.From : null);
         return address is null ? string.Empty : EmailHeaders.Sender(site.SenderName, address);
     }
 

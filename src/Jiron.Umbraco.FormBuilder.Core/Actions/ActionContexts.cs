@@ -30,6 +30,12 @@ public sealed record ActionRunContext
     /// was cut off may have arrived.
     /// </summary>
     public required string DeliveryKey { get; init; }
+
+    /// <summary>The run, for what it records under it, such as mail in the deliveries log.</summary>
+    public long? RunId { get; init; }
+
+    /// <summary>The stored entry, for what it records under it; null when nothing is stored, as in a test run.</summary>
+    public long? EntryId { get; init; }
 }
 
 /// <summary>The user who asks for a test run.</summary>

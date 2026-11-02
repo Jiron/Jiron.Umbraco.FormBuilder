@@ -30,8 +30,12 @@ public abstract class StandInActionType(string alias)
     protected override Task<ActionResult> RunAsync(StandInSettings settings, ActionRunContext context, CancellationToken cancellationToken) => Task.FromResult(ActionResult.Succeeded);
 }
 
-/// <summary>An action type under the alias <c>email</c> for hosts that test what forms do with actions, until 8.3 brings the real one.</summary>
-public sealed class StandInEmailActionType() : StandInActionType("email");
+/// <summary>An action type for hosts that test what forms do with actions, whatever a mail would say: it sends nothing.</summary>
+public sealed class StandInEmailActionType() : StandInActionType(Alias)
+{
+    /// <summary>The type's alias.</summary>
+    public const string Alias = "testing.mail";
+}
 
 /// <summary>An action type under the alias <c>webhook</c>, until 8.4 brings the real one; see <see cref="StandInEmailActionType"/>.</summary>
 public sealed class StandInWebhookActionType() : StandInActionType("webhook");

@@ -62,7 +62,7 @@ public sealed class FormCopyServiceTests : RepositoryTestBase
     private static readonly FormAction Notify = new()
     {
         Key = Key(6),
-        Type = "email",
+        Type = "testing.mail",
         Name = "Notify sales",
         Rules = [new FormRule { Key = Key(7), Effect = RuleEffect.Run, Conditions = [new RuleCondition { Field = Key(2), Operator = "equals", Value = new ConditionOperand.Text("sales") }] }],
         Settings = SettingsObject.Parse($$"""{"replyTo":"{{Key(1)}}","to":["sales@example.com"]}"""),
@@ -227,7 +227,7 @@ public sealed class FormCopyServiceTests : RepositoryTestBase
     {
         const string Subject = "A quote for {{ field.topic }} ({{ field.email }})";
         var source = await Service.CreateAsync(new NewFormRequest("Quote", UserKey: Editor));
-        var quote = new FormAction { Key = Guid.NewGuid(), Type = "email", Name = "Quote", Settings = SettingsObject.Parse(new JsonObject { ["subject"] = Subject }.ToJsonString()) };
+        var quote = new FormAction { Key = Guid.NewGuid(), Type = "testing.mail", Name = "Quote", Settings = SettingsObject.Parse(new JsonObject { ["subject"] = Subject }.ToJsonString()) };
         await SaveAsync(source, WithFields(await DraftAsync(source), Email with { Key = Guid.NewGuid() }, Topic with { Key = Guid.NewGuid(), Rules = [] }) with { Actions = [quote] });
         var target = await Service.CreateAsync(new NewFormRequest("Newsletter", UserKey: Editor));
         var saved = await SaveAsync(target, WithFields(await DraftAsync(target), Email with { Key = Guid.NewGuid() }));

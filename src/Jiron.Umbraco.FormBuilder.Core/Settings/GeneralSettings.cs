@@ -101,6 +101,9 @@ internal sealed record NewFormDefaults
 {
     /// <summary>A required consent field at the end of the last group of the last page, or null for none (the default).</summary>
     public NewFormConsent? Consent { get; init; }
+
+    /// <summary>Whether a new form starts with an email action to its creator, unless a template brings one; off by default (ADR-0160).</summary>
+    public bool NotifyCreator { get; init; }
 }
 
 /// <summary>

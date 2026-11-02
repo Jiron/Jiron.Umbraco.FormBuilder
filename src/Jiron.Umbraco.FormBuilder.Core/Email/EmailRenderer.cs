@@ -66,10 +66,10 @@ internal sealed partial class EmailRenderer
     private readonly HtmlSanitizer _sanitizer;
     private readonly HtmlParser _parser = new();
 
-    /// <summary>A renderer with the mail's sanitiser: the editors' allowlist, plus the tables of an entry's answers.</summary>
+    /// <summary>A renderer with the mail's sanitiser: the editors' allowlist, plus the tables of an entry's answers and what wraps them.</summary>
     public EmailRenderer()
     {
-        string[] tables = ["table", "caption", "thead", "tbody", "tfoot", "tr", "th", "td"];
+        string[] tables = ["div", "table", "caption", "thead", "tbody", "tfoot", "tr", "th", "td"];
         string[] cells = ["colspan", "rowspan", "scope"];
         _sanitizer = new HtmlSanitizer(new HtmlSanitizerOptions
         {

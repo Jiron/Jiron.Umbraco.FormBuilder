@@ -84,6 +84,7 @@ internal sealed partial class EmailAttempts(
     IEntryRepository entries,
     IFormBuilderFileStore files,
     IEnumerable<IFormBuilderFileScanner> scanners,
+    ActionSettlement settlement,
     IOptionsMonitor<FormBuilderOptions> options,
     TimeProvider time,
     ILogger<EmailAttempts> logger)
@@ -233,11 +234,13 @@ internal sealed partial class EmailAttempts(
     private async Task RecordAsync(StoredEmail mail, Outcome outcome)
     {
         var token = mail.LockedBy ?? throw new ArgumentException("A claimed mail has its token.", nameof(mail));
+        var settle = false;
         try
         {
             if (outcome.Kind == OutcomeKind.Sent)
             {
                 await emails.SentAsync(mail.Id, token, EmailOutbox.Keep, CancellationToken.None);
+                settle = true;
             }
             else if (outcome.Kind == OutcomeKind.CutOff)
             {
@@ -246,6 +249,7 @@ internal sealed partial class EmailAttempts(
             else if (mail.Attempts >= ActionAttempts.MaxAttempts)
             {
                 await emails.FailAsync(mail.Id, token, new DeliveryError(ActionAttempts.Threw, outcome.Code), EmailOutbox.Keep, CancellationToken.None);
+                settle = true;
             }
             else
             {
@@ -257,6 +261,11 @@ internal sealed partial class EmailAttempts(
         {
             // The lease runs out, and the mail becomes uncertain: nothing sends it twice.
             LogRecordFailed(logger, mail.Id, exception);
+        }
+
+        if (settle && mail.EntryId is { } entry)
+        {
+            await settlement.AfterMailAsync(entry);
         }
     }
 

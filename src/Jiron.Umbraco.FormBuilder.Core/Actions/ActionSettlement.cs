@@ -15,8 +15,8 @@ namespace Jiron.Umbraco.FormBuilder.Core.Actions;
 /// <summary>
 /// What goes once an entry's actions are through (section 4.4, ADR-0158): the fields kept only until the actions have run,
 /// with the entry event that records it, and a whole entry of a form that stores none
-/// (<c>settings.submission.store: never</c>), its files too. Both wait until every run of the entry is final and no trigger
-/// can still fire for it. The check runs in the unit that makes the last run final, which holds the entry's row first, so
+/// (<c>settings.submission.store: never</c>), its files too. Both wait until every run of the entry is final, its mail has
+/// left or failed, as a mail still reads the files it attaches, and no trigger can still fire for it. The check runs in the unit that makes the last run final, which holds the entry's row first, so
 /// two last runs on two servers cannot both miss it and a crash cannot leave the values behind.
 /// </summary>
 internal sealed partial class ActionSettlement(
@@ -138,6 +138,26 @@ internal sealed partial class ActionSettlement(
     }
 
     /// <summary>
+    /// Settles the entry of a mail that has left or failed, which may have been the last thing it waited for. It never decides what
+    /// came of the mail, so a failure is logged.
+    /// </summary>
+    /// <param name="entryId">The entry.</param>
+    public async Task AfterMailAsync(long entryId)
+    {
+        try
+        {
+            if (await entries.GetByIdAsync(entryId, CancellationToken.None) is { } entry && await DefinitionOfAsync(entry.FormVersionId) is { } definition)
+            {
+                await SettleAsync(entryId, definition, CancellationToken.None);
+            }
+        }
+        catch (Exception exception) when (exception is not OutOfMemoryException)
+        {
+            LogSettleAfterMailFailed(logger, entryId, exception);
+        }
+    }
+
+    /// <summary>
     /// Settles an entry inside the caller's unit, which has written first and holds the entry's row: what goes, when
     /// nothing can run for it any more. The files it returns are the caller's to delete after the commit
     /// (<see cref="DeleteBytesAsync"/>).
@@ -150,6 +170,7 @@ internal sealed partial class ActionSettlement(
         ArgumentNullException.ThrowIfNull(definition);
         if (await entries.GetByIdAsync(entryId, cancellationToken) is not { } entry
             || entry.State == EntryState.Draft
+            || (await emails.ListForEntryAsync(entryId, cancellationToken)).Any(mail => mail.State is EmailState.Queued or EmailState.Sending or EmailState.Uncertain)
             || (await runs.ListForEntryAsync(entryId, cancellationToken)).Any(run => run.State is ActionRunState.Pending or ActionRunState.Running or ActionRunState.Uncertain)
             || TriggerCanFire(definition, entry.State))
         {
@@ -249,6 +270,9 @@ internal sealed partial class ActionSettlement(
         await events.AddAsync(new NewEntryEvent(entry.Id, ValuesRemovedEvent, Details: JsonSerializer.Serialize(new { fields = kept.Select(key => key.ToString("D")).Order(StringComparer.Ordinal) })), cancellationToken);
         return gone;
     }
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Entry {Entry} could not be settled after its mail; the retention job looks again")]
+    private static partial void LogSettleAfterMailFailed(ILogger logger, long entry, Exception exception);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "The bytes of file {File} could not be deleted after its entry let it go")]
     private static partial void LogBytesFailed(ILogger logger, Guid file, Exception exception);

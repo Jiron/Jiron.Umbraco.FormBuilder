@@ -76,6 +76,7 @@ ws        = { " " | tab } ;
 | `field.<repeater>.<child>` | the child's answers across the rows, as a list |
 | `entry.number`, `entry.reference`, `entry.date`, `entry.state`, `entry.url` | the entry's number, reference, submission time, state, and its link in the backoffice (for team mail) |
 | `entry.answers` | every visible answered field: a table in HTML, `Label: answer` lines in text |
+| `entry.table` | the same with the fields without an answer, unless the action leaves them out ([ADR-0160](0160-the-email-action.md)) |
 | `form.name`, `form.alias` | the form |
 | `page.name`, `page.url`, `page.<propertyAlias>`, `page.up.<propertyAlias>` | the content page the form is on: its name, its absolute URL (Umbraco's address of the page, a domain's for a page under one, otherwise after the site's base URL; ADR-0067), a property's value, or the nearest ancestor's |
 | `member.name`, `member.email`, `member.<propertyAlias>` | the signed-in member; a property only when the member type lets the member see it and does not mark it sensitive (ADR-0067) |

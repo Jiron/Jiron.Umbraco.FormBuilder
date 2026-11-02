@@ -1,5 +1,6 @@
 using System.Collections.Frozen;
 using Jiron.Umbraco.FormBuilder.Core.Actions;
+using Jiron.Umbraco.FormBuilder.Core.Composing;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Core.Retention;
 using Microsoft.Extensions.DependencyInjection;
@@ -21,6 +22,7 @@ internal static class FormBuilderEmailServices
         builder.Services.TryAddSingleton<EmailOutbox>();
         builder.Services.TryAddSingleton<EmailAttempts>();
         builder.Services.TryAddSingleton<TestEmails>();
+        builder.JironFormBuilder().ActionTypes().Append<EmailActionType>();
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IOutboxQueue, EmailQueue>());
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IFormBuilderRetentionPart, EmailPurge>());
         return builder;

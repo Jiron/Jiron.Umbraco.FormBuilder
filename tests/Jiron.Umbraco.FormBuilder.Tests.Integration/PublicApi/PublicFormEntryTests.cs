@@ -45,8 +45,8 @@ public sealed class PublicFormEntryTests : PublicApiTestBase
         Message = new LocalizedHtml("""<p onclick="steal()">Thanks, {{ field.name }}.</p>"""),
     };
 
-    private static readonly FormAction Notify = new() { Key = Guid.Parse("30000000-0000-4000-8000-000000000188"), Type = "email", Name = "Notify" };
-    private static readonly FormAction Archived = new() { Key = Guid.Parse("30000000-0000-4000-8000-000000000288"), Type = "email", Name = "Archived", Enabled = false };
+    private static readonly FormAction Notify = new() { Key = Guid.Parse("30000000-0000-4000-8000-000000000188"), Type = "testing.mail", Name = "Notify" };
+    private static readonly FormAction Archived = new() { Key = Guid.Parse("30000000-0000-4000-8000-000000000288"), Type = "testing.mail", Name = "Archived", Enabled = false };
 
     private IEntryRepository Entries => GetRequiredService<IEntryRepository>();
 
@@ -109,7 +109,7 @@ public sealed class PublicFormEntryTests : PublicApiTestBase
             Assert.That(entry.SearchText, Does.Contain("ada lovelace").And.Contain("ada@example.com").And.Contain("a note"));
             Assert.That(entry.SearchText, Does.Not.Contain("hidden"), "a sensitive answer is not searchable");
             Assert.That(events.Select(each => (each.Kind, each.Details, each.UserKey)), Is.EqualTo(new[] { (SubmissionEntries.SubmittedEvent, $$"""{"outcome":"{{Thanks.Key}}","hidden":[]}""", (Guid?)null) }), "the outcome the rules chose, and nothing they hid (ADR-0123)");
-            Assert.That(runs.Select(run => (run.ActionKey, run.ActionType, run.Trigger, run.State)), Is.EqualTo(new[] { (Notify.Key, "email", ActionTrigger.Submitted, ActionRunState.Pending) }), "the enabled action only");
+            Assert.That(runs.Select(run => (run.ActionKey, run.ActionType, run.Trigger, run.State)), Is.EqualTo(new[] { (Notify.Key, "testing.mail", ActionTrigger.Submitted, ActionRunState.Pending) }), "the enabled action only");
             Assert.That(stats.Select(stat => (stat.Metric, stat.Dimension, stat.Value)), Is.EqualTo(new[] { (SubmissionEntries.SubmissionsMetric, string.Empty, 2L) }));
         });
     }
@@ -137,7 +137,7 @@ public sealed class PublicFormEntryTests : PublicApiTestBase
     [Test]
     public async Task AnAnswerKeptUntilTheActionsRun_IsStored_WhileAnActionMayStillRun()
     {
-        var onApproval = new FormAction { Key = Guid.NewGuid(), Type = "email", Name = "On approval", Trigger = ActionTrigger.Approved };
+        var onApproval = new FormAction { Key = Guid.NewGuid(), Type = "testing.mail", Name = "On approval", Trigger = ActionTrigger.Approved };
         var onRejection = onApproval with { Key = Guid.NewGuid(), Name = "On rejection", Trigger = ActionTrigger.Rejected };
         FormDefinition Submission(FormDefinition definition, Func<FormSubmissionSettings, FormSubmissionSettings> change) =>
             definition with { Settings = definition.Settings with { Submission = change(definition.Settings.Submission) } };

@@ -68,6 +68,15 @@ public sealed record MergeTagScope
     /// tags and in <c>entry.answers</c>; anywhere else a sensitive field stays masked or left out. None by default.
     /// </summary>
     public IReadOnlySet<Guid> IncludedSensitive { get; init => field = value ?? NoFields; } = NoFields;
+
+    /// <summary>Whether <c>entry.table</c> leaves out the fields without an answer, as an action can ask.</summary>
+    internal bool TableSkipsUnanswered { get; init; }
+
+    /// <summary>
+    /// Whether what a visitor could have typed is written so that no mail client makes a link of it (section 4.10, ADR-0160): in
+    /// mail to an address a visitor typed, which a bot could otherwise use to send a link in the site's name.
+    /// </summary>
+    internal bool BreaksVisitorLinks { get; init; }
 }
 
 /// <summary>An entry as merge tags see it (ADR-0014): its key, number, state and when it was submitted.</summary>

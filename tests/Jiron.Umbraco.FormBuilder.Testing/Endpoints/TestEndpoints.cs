@@ -4,6 +4,7 @@ using Jiron.Umbraco.FormBuilder.Core.Access;
 using Jiron.Umbraco.FormBuilder.Core.Email;
 using Jiron.Umbraco.FormBuilder.Core.Files;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
+using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Core.Settings;
 using Jiron.Umbraco.FormBuilder.Core.Signatures;
@@ -89,6 +90,8 @@ internal sealed class TestEndpointsStartupFilter(IOptions<FormBuilderTestingOpti
 /// <item><description><c>POST /jfb-testing/mail-layouts {"marker": "...", "word": "..."}</c>: queues a mail in every layout's shape, each
 /// holding the word wherever text goes, with the subject <c>&lt;marker&gt; &lt;layout&gt;</c>, and answers those subjects, so the browser
 /// tests can render what arrives in the pickup folder (ADR-0159).</description></item>
+/// <item><description><c>GET /jfb-testing/mail-log?key=...</c>: the states of the mail one mailbox got, by any spelling of it (ADR-0159).</description></item>
+/// <item><description><c>GET /jfb-testing/mail-view?view=...</c>: what the site's view of a mail writes for a fixed model (ADR-0160).</description></item>
 /// </list>
 /// Requests from another machine, and paths outside <c>/jfb-testing/</c>, go on to the site as if this did not exist.
 /// </summary>
@@ -140,6 +143,26 @@ internal sealed class TestEndpointsMiddleware(RequestDelegate next)
 
     private sealed record MailLayoutsRequest(string? Marker, string? Word);
 
+    // The states of the mail one mailbox got, as the deliveries log has them, by any spelling of it.
+    private static async Task MailLogAsync(HttpContext context)
+    {
+        var key = EmailAddresses.KeyOf(context.Request.Query["key"].ToString());
+        var database = context.RequestServices.GetRequiredService<FormBuilderDatabase>();
+        var states = await database.ReadAsync(
+            db => db.FetchListAsync<string>("SELECT state FROM jfbEmail WHERE recipientKey = @0", key),
+            context.RequestAborted);
+        await context.Response.WriteAsJsonAsync(new { states }, Json, context.RequestAborted);
+    }
+
+    // A site's view of a mail, written on no request of its own, as the worker writes it.
+    private static async Task MailViewAsync(HttpContext context)
+    {
+        var views = context.RequestServices.GetRequiredService<IEnumerable<IFormBuilderEmailView>>();
+        var model = new EmailViewModel { Subject = "S", Culture = "en", FormName = "<Contact>", EntryNumber = 7, Answers = "Name: <Ada>" };
+        var written = await Task.Run(() => views.First().RenderAsync(context.Request.Query["view"].ToString(), model, CancellationToken.None));
+        await context.Response.WriteAsJsonAsync(new { written }, Json, context.RequestAborted);
+    }
+
     /// <summary>Handles one request.</summary>
     public async Task InvokeAsync(HttpContext context)
     {
@@ -169,6 +192,12 @@ internal sealed class TestEndpointsMiddleware(RequestDelegate next)
                 return;
             case "sent-expired" when HttpMethods.IsPost(context.Request.Method):
                 await SentExpiredAsync(context);
+                return;
+            case "mail-log" when HttpMethods.IsGet(context.Request.Method):
+                await MailLogAsync(context);
+                return;
+            case "mail-view" when HttpMethods.IsGet(context.Request.Method):
+                await MailViewAsync(context);
                 return;
             case "mail-layouts" when HttpMethods.IsPost(context.Request.Method):
                 await MailLayoutsAsync(context);

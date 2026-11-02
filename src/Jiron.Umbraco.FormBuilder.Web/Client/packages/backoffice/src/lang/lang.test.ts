@@ -39,6 +39,7 @@ function keysIn(value: unknown, found = new Set<string>()): Set<string> {
 }
 
 const served = keysIn(JSON.parse(readFileSync(join(repositoryRoot(), 'docs', 'api', 'field-types.json'), 'utf8')));
+keysIn(JSON.parse(readFileSync(join(repositoryRoot(), 'docs', 'api', 'action-types.json'), 'utf8')), served);
 
 /** The `#jfbPicker_` keys the form picker's checks send, read from their source. */
 const pickerKeys = new Set(

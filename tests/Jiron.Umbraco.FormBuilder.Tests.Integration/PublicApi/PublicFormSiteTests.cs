@@ -111,7 +111,7 @@ public sealed class PublicFormSiteTests : PublicApiTestBase
             NextLabel = new Dictionary<string, string> { [""] = "Next for the allowlist" },
             BackLabel = new Dictionary<string, string> { [""] = "Back for the allowlist" },
             Theme = "bootstrap5",
-            NewForms = new NewFormDefaults { Consent = new NewFormConsent { Label = new Dictionary<string, string> { [""] = "JFB_TEST consent label" }, Text = new Dictionary<string, string> { [""] = "<p>JFB_TEST consent text</p>" } } },
+            NewForms = new NewFormDefaults { NotifyCreator = true, Consent = new NewFormConsent { Label = new Dictionary<string, string> { [""] = "JFB_TEST consent label" }, Text = new Dictionary<string, string> { [""] = "<p>JFB_TEST consent text</p>" } } },
             History = new HistorySettings { DraftDays = 7, DraftCount = 3 },
         };
         var current = await Settings.GetAsync<GeneralSettings>();

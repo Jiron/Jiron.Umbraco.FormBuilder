@@ -80,5 +80,36 @@
         }
       ]
     }
+  ],
+  "actions": [
+    {
+      "key": "d0000000-0000-4000-8000-000000000201",
+      "type": "email",
+      "name": "Notify the team",
+      "settings": {
+        "to": [ "team@lindenhall.example" ],
+        "replyToField": "d0000000-0000-4000-8000-000000000102",
+        "includeSensitive": [ "d0000000-0000-4000-8000-000000000102", "d0000000-0000-4000-8000-000000000103" ],
+        "withoutUnanswered": true,
+        "subject": { "": "New message from {{ field.name }}", "de": "Neue Nachricht von {{ field.name }}" },
+        "body": {
+          "": "<p>A new message came in through the contact form.</p>{{ entry.table }}",
+          "de": "<p>Über das Kontaktformular ist eine neue Nachricht eingegangen.</p>{{ entry.table }}"
+        }
+      }
+    },
+    {
+      "key": "d0000000-0000-4000-8000-000000000202",
+      "type": "email",
+      "name": "Confirm to the sender",
+      "settings": {
+        "toField": "d0000000-0000-4000-8000-000000000102",
+        "subject": { "": "We have your message", "de": "Wir haben Ihre Nachricht erhalten" },
+        "body": {
+          "": "<p>Hello {{ field.name }},</p><p>thank you for writing to us. We answer within two working days. You wrote:</p><blockquote>{{ field.message }}</blockquote>",
+          "de": "<p>Guten Tag {{ field.name }},</p><p>danke für Ihre Nachricht. Wir antworten innerhalb von zwei Werktagen. Sie schrieben:</p><blockquote>{{ field.message }}</blockquote>"
+        }
+      }
+    }
   ]
 }

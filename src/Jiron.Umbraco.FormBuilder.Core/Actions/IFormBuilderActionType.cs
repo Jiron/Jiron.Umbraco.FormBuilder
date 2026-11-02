@@ -16,6 +16,11 @@ public enum ActionTestKind
     AfterConfirmation,
 }
 
+/// <summary>A ready-made start for an action of a type, which the designer offers (ADR-0160).</summary>
+/// <param name="Name">The name the designer shows: plain text, or a key of the backoffice's localisation that starts with <c>#</c>.</param>
+/// <param name="Settings">The settings an action starts with, as a JSON object; the editor adds what the form must say itself.</param>
+public sealed record ActionPreset(string Name, string Settings);
+
 /// <summary>What an action type is (section 4.9, ADR-0158): its alias, how the designer shows it and how a test run of it behaves.</summary>
 public sealed record ActionTypeDeclaration
 {
@@ -34,6 +39,9 @@ public sealed record ActionTypeDeclaration
 
     /// <summary>How a test run of the type behaves; by default it reaches nobody.</summary>
     public ActionTestKind Test { get; init; } = ActionTestKind.DryRun;
+
+    /// <summary>The ready-made starts the designer offers; none by default.</summary>
+    public IReadOnlyList<ActionPreset> Presets { get; init; } = [];
 
     /// <summary>
     /// How long one attempt of the type may take, at most one minute (ADR-0007): null for that minute. An attempt past it

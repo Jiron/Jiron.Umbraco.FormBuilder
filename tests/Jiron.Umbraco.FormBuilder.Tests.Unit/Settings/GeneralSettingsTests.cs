@@ -223,7 +223,7 @@ public sealed class GeneralSettingsTests
 
         Assert.Multiple(() =>
         {
-            Assert.That(JsonNode.DeepEquals(JsonNode.Parse(json), JsonNode.Parse("""{"timeZone":"UTC","requiredMarker":"optional","newForms":{"consent":{"label":{"":"I agree","de":"Ich stimme zu"},"text":{"":"<p>Yes.</p>"}}},"history":{"draftDays":90,"draftCount":50}}""")), Is.True, json);
+            Assert.That(JsonNode.DeepEquals(JsonNode.Parse(json), JsonNode.Parse("""{"timeZone":"UTC","requiredMarker":"optional","newForms":{"consent":{"label":{"":"I agree","de":"Ich stimme zu"},"text":{"":"<p>Yes.</p>"}},"notifyCreator":false},"history":{"draftDays":90,"draftCount":50}}""")), Is.True, json);
             Assert.That(read.NewForms.Consent!.Label, Is.EqualTo(section.NewForms.Consent!.Label));
             Assert.That(read.NewForms.Consent.Text, Is.EqualTo(section.NewForms.Consent.Text));
         });

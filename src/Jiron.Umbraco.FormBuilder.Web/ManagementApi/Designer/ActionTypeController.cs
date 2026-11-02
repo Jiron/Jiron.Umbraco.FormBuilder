@@ -90,6 +90,9 @@ internal sealed record ActionTypeResponseModel
     /// <summary>Its settings, in the order they are shown, each with the host's lock of it.</summary>
     public required IReadOnlyList<FieldSettingResponseModel> Settings { get; init; }
 
+    /// <summary>The ready-made starts the designer offers, each with its name and its settings as JSON.</summary>
+    public required IReadOnlyList<ActionPresetResponseModel> Presets { get; init; }
+
     /// <summary>The model of a type, with the host's locks of its settings.</summary>
     public static ActionTypeResponseModel Of(IFormBuilderActionType type, IReadOnlyList<FieldSettingLock> locks)
     {
@@ -106,8 +109,19 @@ internal sealed record ActionTypeResponseModel
                 _ => "dryRun",
             },
             Settings = FieldSettingResponseModel.Of(type.SettingsSchema.Settings, locks),
+            Presets = [.. type.Declaration.Presets.Select(preset => new ActionPresetResponseModel { Name = preset.Name, Settings = preset.Settings })],
         };
     }
+}
+
+/// <summary>A ready-made start for an action (ADR-0160).</summary>
+public sealed class ActionPresetResponseModel
+{
+    /// <summary>The name to show: plain text, or a <c>#</c> key of the backoffice's localisation.</summary>
+    public required string Name { get; init; }
+
+    /// <summary>The settings an action starts with, as a JSON object.</summary>
+    public required string Settings { get; init; }
 }
 
 /// <summary>A request that may need the user's confirmation.</summary>

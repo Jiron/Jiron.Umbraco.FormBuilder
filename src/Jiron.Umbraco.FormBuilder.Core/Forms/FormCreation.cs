@@ -2,6 +2,7 @@ using System.Text.Json.Nodes;
 using Jiron.Umbraco.FormBuilder.Core.Audit;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Definitions.Exchange;
+using Jiron.Umbraco.FormBuilder.Core.Email;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Core.Settings;
@@ -81,7 +82,31 @@ internal sealed partial class FormCreation(
     {
         ArgumentNullException.ThrowIfNull(definition);
         var general = await settings.GetAsync<GeneralSettings>(cancellationToken: cancellationToken);
-        if (general.Value.NewForms?.Consent is not { } consent
+        return WithNotifyCreator(WithConsent(definition, general.Value.NewForms?.Consent), general.Value.NewForms?.NotifyCreator == true);
+    }
+
+    // The email action to the form's creator, unless the form has an email action, and so long as the form stays one a save takes.
+    private FormDefinition WithNotifyCreator(FormDefinition definition, bool notify)
+    {
+        if (!notify || definition.Actions.Any(action => action.Type == EmailActionType.Alias))
+        {
+            return definition;
+        }
+
+        var action = new FormAction
+        {
+            Key = Guid.NewGuid(),
+            Type = EmailActionType.Alias,
+            Name = "Notify the creator",
+            Settings = EmailActionType.NotifyCreatorSettings(),
+        };
+        var withAction = definition with { Actions = [.. definition.Actions, action] };
+        return serializer.CheckSave(withAction).Count == 0 ? withAction : definition;
+    }
+
+    private FormDefinition WithConsent(FormDefinition definition, NewFormConsent? wanted)
+    {
+        if (wanted is not { } consent
             || definition.Pages.Count == 0
             || definition.Pages[^1].Groups.Count == 0
             || DefinitionKeys.Fields(definition).Any(field => field.Type == ConsentType || string.Equals(field.Alias, NewFormConsent.FieldAlias, StringComparison.OrdinalIgnoreCase)))

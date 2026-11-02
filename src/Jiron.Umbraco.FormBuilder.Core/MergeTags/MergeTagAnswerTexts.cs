@@ -199,9 +199,10 @@ internal sealed partial class MergeTagAnswerTexts(
 
     /// <summary>
     /// <c>entry.answers</c>: every answered field the rules did not hide, in the order of the form, as <c>Label: answer</c>
-    /// lines, and as a table in HTML; what the place leaves out is not listed (ADR-0014).
+    /// lines, and as a table in HTML; what the place leaves out is not listed (ADR-0014). With <paramref name="unanswered"/>,
+    /// <c>entry.table</c>: the fields without an answer are listed too, with nothing beside them.
     /// </summary>
-    public MergeTagValue Answers(MergeTagScope scope, MergeTagPlace place, ScopeTexts texts)
+    public MergeTagValue Answers(MergeTagScope scope, MergeTagPlace place, ScopeTexts texts, bool unanswered = false)
     {
         var listed = new List<(string Label, string? Answer, IReadOnlyList<string> Rows)>();
         foreach (var field in scope.Form.Pages.SelectMany(page => page.Groups).SelectMany(group => group.Fields).Where(HoldsValue))
@@ -220,14 +221,22 @@ internal sealed partial class MergeTagAnswerTexts(
                 {
                     listed.Add(showing == Showing.Masked ? (label, Masked, []) : (label, null, rows));
                 }
+                else if (unanswered)
+                {
+                    listed.Add((label, string.Empty, []));
+                }
             }
             else if (scope.Answers.Find(field.Key) is { } answer)
             {
                 var answerText = showing == Showing.Masked ? Masked : Joined(Texts(field, answer, scope.Culture, listing: true, texts, shared: false));
-                if (answerText.Length > 0)
+                if (answerText.Length > 0 || unanswered)
                 {
                     listed.Add((label, answerText, []));
                 }
+            }
+            else if (unanswered)
+            {
+                listed.Add((label, string.Empty, []));
             }
         }
 
@@ -248,7 +257,12 @@ internal sealed partial class MergeTagAnswerTexts(
             html.Append("<tr><th scope=\"row\">").Append(MergeTagEngine.HtmlText(label)).Append("</th><td>");
             if (answer is not null)
             {
-                text.Append(label).Append(": ").Append(answer);
+                text.Append(label).Append(':');
+                if (answer.Length > 0)
+                {
+                    text.Append(' ').Append(answer);
+                }
+
                 html.Append(MergeTagEngine.HtmlText(answer));
             }
             else

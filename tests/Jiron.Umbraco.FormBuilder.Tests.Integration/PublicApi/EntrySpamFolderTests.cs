@@ -18,17 +18,17 @@ public sealed class EntrySpamFolderTests : PublicApiTestBase
 {
     private const string Spammy = """{"revision":1,"values":{"name":"Ada"},"honeypot":"Buy now"}""";
 
-    private static readonly FormAction Always = new() { Key = Guid.Parse("71d00000-0000-4000-8000-000000000001"), Type = "email", Name = "Always" };
+    private static readonly FormAction Always = new() { Key = Guid.Parse("71d00000-0000-4000-8000-000000000001"), Type = "testing.mail", Name = "Always" };
 
     private static readonly FormAction OnlyForGrace = new()
     {
         Key = Guid.Parse("71d00000-0000-4000-8000-000000000002"),
-        Type = "email",
+        Type = "testing.mail",
         Name = "Only for Grace",
         Rules = [new FormRule { Key = Guid.NewGuid(), Effect = RuleEffect.Run, Conditions = [new RuleCondition { Field = NameField.Key, Operator = "equals", Value = new ConditionOperand.Text("Grace") }] }],
     };
 
-    private static readonly FormAction OnApproval = new() { Key = Guid.Parse("71d00000-0000-4000-8000-000000000003"), Type = "email", Name = "On approval", Trigger = ActionTrigger.Approved };
+    private static readonly FormAction OnApproval = new() { Key = Guid.Parse("71d00000-0000-4000-8000-000000000003"), Type = "testing.mail", Name = "On approval", Trigger = ActionTrigger.Approved };
 
     private static readonly FormField Seat = new()
     {
