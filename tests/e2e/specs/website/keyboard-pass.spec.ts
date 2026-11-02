@@ -428,6 +428,8 @@ for (const theme of THEMES) {
       const before = await order();
       await form.locator('[name="displayName"]').fill('Mira Okafor');
       await form.locator('[name="displayName"]').focus();
+      // Enter before the logic has come is a post, whose page leaves the focus alone: this is the page's own refusal.
+      await page.waitForLoadState('networkidle');
       await page.keyboard.press('Enter');
       const summary = form.locator('.jfb-error-summary');
       await expect(summary, 'the refusal takes the focus').toBeFocused();
