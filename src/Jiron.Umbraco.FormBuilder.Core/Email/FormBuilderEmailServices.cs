@@ -1,3 +1,4 @@
+using System.Collections.Frozen;
 using Jiron.Umbraco.FormBuilder.Core.Actions;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Core.Retention;
@@ -68,11 +69,11 @@ internal enum TestEmailStatus
 /// <param name="sender">Umbraco's sender, which says whether mail can leave.</param>
 internal sealed class TestEmails(EmailOutbox outbox, IEmailSender sender)
 {
-    private static readonly Dictionary<string, (string Subject, string Body)> Words = new(StringComparer.OrdinalIgnoreCase)
+    private static readonly FrozenDictionary<string, (string Subject, string Body)> Words = new Dictionary<string, (string Subject, string Body)>(StringComparer.OrdinalIgnoreCase)
     {
         ["en"] = ("Test email from Jiron Form Builder", "<p>This is a test email. Your site can send mail, and this is how it looks.</p>"),
         ["de"] = ("Test-E-Mail von Jiron Form Builder", "<p>Dies ist eine Test-E-Mail. Ihre Website kann E-Mails senden, und so sehen sie aus.</p>"),
-    };
+    }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>Queues a test mail to this address.</summary>
     /// <param name="address">The asking user's address.</param>

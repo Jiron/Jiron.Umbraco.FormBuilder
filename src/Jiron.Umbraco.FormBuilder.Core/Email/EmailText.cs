@@ -1,3 +1,4 @@
+using System.Collections.Frozen;
 using System.Text;
 using AngleSharp.Dom;
 using AngleSharp.Html.Parser;
@@ -10,10 +11,7 @@ namespace Jiron.Umbraco.FormBuilder.Core.Email;
 /// </summary>
 internal static class EmailText
 {
-    private static readonly HashSet<string> Blocks = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "p", "h1", "h2", "h3", "h4", "h5", "h6", "blockquote", "pre", "ul", "ol", "table", "div", "hr", "caption",
-    };
+    private static readonly FrozenSet<string> Blocks = new[] { "p", "h1", "h2", "h3", "h4", "h5", "h6", "blockquote", "pre", "ul", "ol", "table", "div", "hr", "caption" }.ToFrozenSet(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>The text of these rich texts, in order, each only when it says something.</summary>
     public static string Of(HtmlParser parser, params string[] parts)
