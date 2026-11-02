@@ -2227,7 +2227,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - from context values.
   - Save and resume needs the email outbox, so it comes in 8.6.
   - Done when: a tamper test proves that a posted value for a hidden member-prefilled field is ignored; Playwright shows a field prefilled from the signed-in member, from an allowed query value and from a context value, and a query value the form does not allow left out.
-- [ ] **6.5d Moving through pages in the browser** (6.5 split in four, WORKLOG 2026-10-30)
+- [x] **6.5d Moving through pages in the browser** (6.5 split in four, WORKLOG 2026-10-30) (2026-11-02, c3f789b)
   - **Resumes (2026-11-01):** the owner raised the budget to 60 KB (ADR-0146); this step resumes at 7.4i, with every check below.
   - **Blocked (2026-10-30):** paging in the browser adds to the website runtime past section 4.12's budget, which only the owner can change, and the copy after a JS submission comes from 6.4i's sending, which waits with it (ADR-0120, `docs/OWNER-TODO.md`).
   - **Moving through pages in the browser:** each page checked on the server (`validate`) before the runtime moves on, the JS API's `next()` and `back()` and the `jfb:page` event (§4.9), moved from 6.4 in its split.
