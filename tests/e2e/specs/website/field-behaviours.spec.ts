@@ -195,6 +195,7 @@ test.describe('the feedback form', () => {
     const id = (await comments.getAttribute('id')) ?? '';
     const counter = form.locator(`#${id}-count`);
     const limit = Number(await counter.getAttribute('data-jfb-limit'));
+    await expect(counter).toHaveText(`Up to ${limit.toLocaleString('en-US')} characters`);
     await comments.fill('Twelve chars');
     await expect(counter).toHaveText(`${(limit - 12).toLocaleString('en-US')} characters left`);
     await expect(counter).not.toHaveAttribute('data-jfb-over');

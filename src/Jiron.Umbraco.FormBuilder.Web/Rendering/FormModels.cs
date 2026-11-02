@@ -940,7 +940,7 @@ internal sealed partial class FormModels(
     private static AffixModel? Affix(string? text, string id) => string.IsNullOrEmpty(text) ? null : new AffixModel(text, id);
 
     private static CounterModel Counter(Build build, string id, int limit) =>
-        new(string.Format(build.Culture, build.Words.Counter, limit), id + "-count", limit, build.Words.CounterLeft, build.Words.CounterLeftOne, build.Words.CounterOver, build.Words.CounterOverOne);
+        new(string.Format(build.Culture, build.Words.Counter, limit.ToString("N0", build.Culture)), id + "-count", limit, build.Words.CounterLeft, build.Words.CounterLeftOne, build.Words.CounterOver, build.Words.CounterOverOne);
 
     private static IReadOnlyList<string> Ids(AffixModel? prefix, AffixModel? suffix, CounterModel? counter) =>
         [.. new[] { prefix?.Id, suffix?.Id, counter?.Id }.OfType<string>()];

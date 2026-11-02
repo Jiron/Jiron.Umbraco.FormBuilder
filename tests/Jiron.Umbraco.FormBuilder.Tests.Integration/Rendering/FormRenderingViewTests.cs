@@ -82,6 +82,7 @@ public sealed class FormRenderingViewTests : RenderingTestBase
             Assert.That(Text(Field(form, "about"), "p.jfb-counter"), Is.EqualTo("Up to 200 characters"));
             Assert.That(Control(form, "about").HasAttribute("data-jfb-grow"), Is.False, "its rows stay with autoGrow off");
             Assert.That(Control(form, "story").HasAttribute("data-jfb-grow"), Is.True, "autoGrow is on by default");
+            Assert.That(Text(Field(form, "story"), "p.jfb-counter"), Is.EqualTo("Up to 1,500 characters"), "in the page's numbers, as the runtime goes on");
             Assert.That(Control(form, "guests").OuterHtml, Is.EqualTo("""<input class="jfb-control" type="number" id="jfb-1-guests" name="guests" inputmode="numeric" min="1" max="40" step="1" data-jfb-requires="" aria-describedby="jfb-1-guests-suffix">"""));
             Assert.That(Text(Field(form, "guests"), "#jfb-1-guests-suffix"), Is.EqualTo("people"));
             Assert.That(Control(form, "budget").OuterHtml, Is.EqualTo("""<input class="jfb-control" type="text" id="jfb-1-budget" name="budget" inputmode="decimal" data-jfb-requires="" aria-describedby="jfb-1-budget-prefix">"""), "a number with places is typed as text");
@@ -319,7 +320,7 @@ public sealed class FormRenderingViewTests : RenderingTestBase
                         Fields =
                         [
                             Typed(Key(0x06), "textarea", "about", "About you", """{"rows":3,"counter":true,"maxLength":200,"autoGrow":false}""") with { DefaultValue = FieldDefaultValue.Of("First line") },
-                            Typed(Key(0x7e), "textarea", "story", "Your story", """{"rows":2}"""),
+                            Typed(Key(0x7e), "textarea", "story", "Your story", """{"rows":2,"counter":true,"maxLength":1500}"""),
                             Typed(Key(0x07), "number", "guests", "Guests", """{"min":"1","max":"40","step":"1","suffix":{"":"people"}}"""),
                             Typed(Key(0x08), "number", "budget", "Budget", """{"decimals":2,"min":"0","prefix":{"":"EUR"}}"""),
                             Typed(Key(0x09), "number", "temperature", "Temperature"),

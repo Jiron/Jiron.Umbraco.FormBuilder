@@ -103,4 +103,7 @@ And Bootstrap had to reach the demo and the tests without being shipped.
   with a short scroll; the browser test reads where it lands with reduced motion, since the place is the same.
 - Stock Bootstrap's red and grey reach AA on its white body only (4.53:1 and 4.69:1); on a tinted ground they do not.
   The demo takes Bootstrap's body colours for that reason.
+- Bootstrap's own border colour shows a control at about 1.3:1, below WCAG 1.4.11. The theme borders text boxes, lists, radio buttons,
+  boxes and the signature pad with `--bs-tertiary-color`, which holds 3:1 in both colour modes (6.4p), so they stand a little darker
+  than a site's own Bootstrap controls.
 - **Revisit** when Bootstrap 6 changes its variables or classes: a `bootstrap6` theme would sit beside this one.

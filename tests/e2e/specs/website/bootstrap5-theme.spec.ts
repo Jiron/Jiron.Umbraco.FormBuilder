@@ -2,7 +2,7 @@ import type { Locator, Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { join } from 'node:path';
 import { expect, test } from '../../fixtures.ts';
-import { pageOf, pathOf } from '../../support/demo-content.ts';
+import { formPages, pageOf, pathOf } from '../../support/demo-content.ts';
 import { repoRoot } from '../../support/paths.ts';
 
 // The bootstrap5 theme on the demo's specimen, a form with a field of every type (ROADMAP 6.3d, ADR-0015, ADR-0108).
@@ -174,6 +174,40 @@ test("the theme reads Bootstrap's own variables, in its colour modes", async ({ 
     )
     .toEqual(['solid', 'none']);
 });
+
+/** How a control's border stands against the page, its transparency worked through. */
+const borderRatio = (control: Locator): Promise<number> =>
+  control.evaluate((element) => {
+    const channels = (colour: string): number[] => (colour.match(/[\d.]+/g) ?? []).map(Number);
+    const ground = channels(getComputedStyle(document.body).backgroundColor);
+    const [red = 0, green = 0, blue = 0, alpha = 1] = channels(getComputedStyle(element).borderTopColor);
+    const shown = [red, green, blue].map((part, at) => part * alpha + (ground[at] ?? 0) * (1 - alpha));
+    const light = (colour: readonly number[]): number => {
+      const [r = 0, g = 0, b = 0] = colour.map((part) => {
+        const each = part / 255;
+        return each <= 0.04045 ? each / 12.92 : ((each + 0.055) / 1.055) ** 2.4;
+      });
+      return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    };
+    const [high, low] = [light(shown), light(ground)].sort((a, b) => b - a) as [number, number];
+    return (high + 0.05) / (low + 0.05);
+  });
+
+for (const scheme of ['', 'dark']) {
+  test(`what shows a control is one holds 3:1 in ${scheme === '' ? 'light' : scheme}`, async ({ page }) => {
+    await page.goto(`${SPECIMEN}?theme=bootstrap5&scheme=${scheme}`);
+    const form = page.locator('main form.jfb-form');
+    for (const selector of ['[name="displayName"]', '[name="branch"]', '[name="format"]', '[name="reminder"]']) {
+      expect(await borderRatio(form.locator(selector).first()), selector).toBeGreaterThanOrEqual(3);
+    }
+    const roomHire = formPages().find((each) => each.form === 'roomHire');
+    if (roomHire === undefined) throw new Error('The demo has no room hire.');
+    await page.goto(`${pathOf(roomHire.texts.en, 'en')}?theme=bootstrap5&scheme=${scheme}`);
+    // This spec keeps the runtime away, which shows the pad; its border is drawn all the same.
+    await expect(form.locator('.jfb-signature-pad')).toBeAttached();
+    expect(await borderRatio(form.locator('.jfb-signature-pad')), 'the signature pad').toBeGreaterThanOrEqual(3);
+  });
+}
 
 test('cards, buttons and stars choose as drawn, fields side by side line up, and a grid shows its columns once', async ({
   page,
