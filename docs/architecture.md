@@ -211,7 +211,12 @@ flowchart LR
   workspace (`src/designer`, ADR-0167): Umbraco's named detail workspace over the draft endpoint (`FormDetailRepository`
   with its store), whose views and footer actions show by the user's permissions on the open form, and the editor model,
   pure functions over the definition and the selection with an undo history (`editor-model.ts`, `history.ts`), whose
-  moves the form engine's own `hasCycle` from `@jfb/logic` checks.
+  moves the form engine's own `hasCycle` from `@jfb/logic` checks. From 9.3b the Design view (`form-design.view.ts`,
+  ADR-0168) holds the palette (`palette/`, with the Paste questions dialog) and the canvas (`canvas/`): each field a
+  `jfb-canvas-field` that is the field's wrapper, written by the element's own views (`@jfb/element/views`) from the
+  view models `preview/field-models.ts` builds from the draft, with the words, classes and stylesheets of the
+  management API's `canvas` endpoint; the template gallery shows a template with the same drawing
+  (`preview/form-preview.element.ts`).
 
 ## 2. The definition model
 

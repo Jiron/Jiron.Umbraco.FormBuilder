@@ -89,7 +89,7 @@ report, and the model lets such a change through. Beside it the model refuses wh
 check does: another repeatable group, a type a form holds once, and the field the email check reads. Reordering inside one container
 never makes a cycle, so the earlier editor's "earlier fields only" has no place here.
 
-**The Design view in 9.3a is option 1.** It is replaced by 9.3b's canvas, palette and inspector.
+**The Design view in 9.3a is option 1.** It is replaced by 9.3b's canvas and palette, beside which 9.4's inspector opens.
 
 ## Consequences
 

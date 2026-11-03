@@ -177,8 +177,10 @@ their permissions allow (section 11). A form opens on Design for users with `des
 ### 5.1 Design
 
 **Layout:** the palette on the left, the canvas in the middle, the inspector on the right. The canvas shows the form
-as visitors will see it, in its theme. The chosen width is the form's own width: Desktop 960 px, Tablet 768 px,
-Phone 375 px. The canvas leaves out the visitor's step progress, since the steps across its top stand in for it.
+as visitors with JavaScript will see it, drawn as the website draws it, in the default theme on a white sheet; Preview
+shows it in the form's own theme on the site's page (ADR-0168). A repeatable group shows its first row. The chosen
+width is the form's own width: Desktop 960 px, Tablet 768 px, Phone 375 px. The canvas leaves out the visitor's step
+progress, since the steps across its top stand in for it.
 
 - **At 1024 px and wider,** the palette stays open beside the canvas, and both panels can be collapsed to rails.
 - **Between 620 and 1024 px,** the palette stays open until an element is selected. Then it folds to a rail (its
@@ -188,8 +190,8 @@ Phone 375 px. The canvas leaves out the visitor's step progress, since the steps
 - **When the canvas has less room than the chosen width,** it shows the form as it reflows in that room, as a
   visitor's narrow window would (columns stack), and "Narrowed to fit" beside the width switch says so. It never
   scales the form down: text stays readable, and collapsing the inspector gives the canvas its width back.
-- **At 620 px,** the canvas takes the width. The palette opens over it from an insert point or a page's "Add field",
-  and the inspector opens over it when an element is selected; Esc closes either.
+- **At 620 px** (and in any workspace up to 700 px), the canvas takes the width. The palette opens over it from an
+  insert point or a page's "Add field", and the inspector opens over it when an element is selected; Esc closes either.
 - **The header** keeps its name, state chip and link on one line; when room runs out, the views fold, from the last
   one and never the open view, into the form's own "…" ("Views and more actions for Contact us"), so the header always
   has one "…". If that isn't enough, the link ("Used on 3 pages") moves into the same "…".
