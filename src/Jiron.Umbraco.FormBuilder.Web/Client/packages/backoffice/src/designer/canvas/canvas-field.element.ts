@@ -5,8 +5,16 @@
 // (a hidden field, a heading without text) shows a quiet note in its place, so it can still be found and selected. A
 // repeatable group shows its first row with each of its fields as a canvas field of its own, so they can be chosen.
 // Its handle, "Move Email address", drags it and, with Alt+Up and Alt+Down, moves it (ADR-0016, ADR-0169); Move to...
-// in its bar opens the dialog of places, and a move the form refuses says why at the field.
-import { html, LitElement, nothing, render, type PropertyValues } from '@umbraco-cms/backoffice/external/lit';
+// in its bar opens the dialog of places, and a move the form refuses says why at the field. The bar's "..." starts a new
+// page after the field and copies its alias (ADR-0170); a field without a text in the language shown carries a chip.
+import {
+  html,
+  LitElement,
+  nothing,
+  render,
+  type PropertyValues,
+  type TemplateResult,
+} from '@umbraco-cms/backoffice/external/lit';
 import type { FieldViewModel, ThemeClassesModel } from '@jfb/element/answer';
 import { writeField } from '@jfb/element/views';
 import { asEnhanced } from '../preview/field-models';
@@ -21,6 +29,8 @@ export type FieldRequest =
   | { readonly kind: 'editLabel'; readonly key: string }
   | { readonly kind: 'label'; readonly key: string; readonly text: string | null }
   | { readonly kind: 'moveTo'; readonly key: string }
+  | { readonly kind: 'newPageAfter'; readonly key: string }
+  | { readonly kind: 'copyAlias'; readonly key: string }
   | { readonly kind: 'drag'; readonly key: string; readonly event: PointerEvent; readonly handle: Element };
 
 /** The event a field's request travels in, up to the canvas. */
@@ -44,6 +54,11 @@ export interface FieldWords {
   readonly duplicateNamed: string;
   readonly delete: string;
   readonly deleteNamed: string;
+  /** The "..."'s name: "More actions". */
+  readonly more: string;
+  readonly newPageAfter: string;
+  /** Copy alias, for a field with an alias. */
+  readonly copyAlias?: string;
   /** What the label's box says while it is edited in place. */
   readonly labelBox: string;
   /** The note in the place of a field visitors don't see: "Hidden field: visitors don't see it". */
@@ -65,12 +80,64 @@ export interface FieldState {
   readonly labelText: string;
   /** Whether the palette is open for the insert point below it, which then stays in sight. */
   readonly insertActive: boolean;
+  /** Whether the field after it is selected, whose bar lies over the insert point below it. */
+  readonly beforeSelected?: boolean;
   /** A repeatable group's fields, drawn in its first row. */
   readonly children?: readonly FieldState[];
   /** Whether the palette is open for the place before a repeatable group's first field. */
   readonly firstActive?: boolean;
   /** Why the form refused its last move, shown at the field until the next change. */
   readonly refusal?: string | null;
+  /** The chip on a field without a text in the language shown: "No German text yet". */
+  readonly untranslated?: string | null;
+}
+
+/**
+ * The "..." of a selected element's bar and its menu. The menu takes the focus as it opens, Escape closes it and gives
+ * the focus back to the "...", and a choice closes it first.
+ */
+export function moreMenu(
+  id: string,
+  name: string,
+  items: readonly { readonly label: string; readonly act: () => void }[],
+): TemplateResult {
+  return html`<button type="button" class="bo-more-element" popovertarget=${id} aria-label=${name}>
+      <uui-symbol-more></uui-symbol-more>
+    </button>
+    <uui-popover-container
+      id=${id}
+      placement="bottom-end"
+      @toggle=${(event: ToggleEvent) => {
+        if (event.newState === 'open') (event.target as HTMLElement).querySelector<HTMLElement>('button')?.focus();
+      }}
+      @keydown=${(event: KeyboardEvent) => {
+        if (event.key !== 'Escape') return;
+        // The menu closes, and the Design view's Escape, which clears the selection, waits for the next one.
+        event.stopPropagation();
+        event.preventDefault();
+        const menu = event.currentTarget as HTMLElement & { hidePopover?: () => void };
+        menu.hidePopover?.();
+        (menu.getRootNode() as ParentNode).querySelector<HTMLElement>(`[popovertarget="${id}"]`)?.focus();
+      }}
+    >
+      <div class="bo-menu">
+        ${items.map(
+          (item) =>
+            html`<button
+              type="button"
+              @click=${(event: Event) => {
+                (
+                  (event.currentTarget as HTMLElement).closest('uui-popover-container') as
+                    (HTMLElement & { hidePopover?: () => void }) | null
+                )?.hidePopover?.();
+                item.act();
+              }}
+            >
+              <span>${item.label}</span>
+            </button>`,
+        )}
+      </div>
+    </uui-popover-container>`;
 }
 
 /** The element down a path of children, each step the first child that matches its selector. */
@@ -264,11 +331,13 @@ export class CanvasFieldElement extends LitElement {
             type="button"
             class="bo-insert bo-insert-first"
             ?data-active=${state.firstActive === true}
+            ?data-beside-tools=${state.children?.[0]?.selected === true}
             aria-label=${state.words.insertFirst ?? state.words.insertHere}
             @click=${() => this.#request({ kind: 'insertFirst', container })}
           >
             <span class="bo-pill"
-              ><uui-icon name="icon-add" aria-hidden="true"></uui-icon>${state.words.insertHere}</span
+              ><uui-icon name="icon-add" aria-hidden="true"></uui-icon
+              ><span class="bo-pill-text">${state.words.insertHere}</span></span
             >
           </button>`,
       point,
@@ -340,6 +409,7 @@ export class CanvasFieldElement extends LitElement {
           data-key=${key}
           data-control="select"
           aria-label=${words.name}
+          aria-describedby=${state.untranslated && !state.selected ? `jfb-chip-${key}` : nothing}
           aria-current=${state.selected ? 'true' : 'false'}
           ?hidden=${state.editing && this.#editingIn}
           @click=${() => this.#request({ kind: 'select', key })}
@@ -360,6 +430,11 @@ export class CanvasFieldElement extends LitElement {
         </button>
         ${state.refusal ? html`<p class="bo-refusal" aria-hidden="true">${state.refusal}</p>` : nothing}
         ${
+          state.untranslated && !state.selected
+            ? html`<span class="bo-chip" id=${`jfb-chip-${key}`}>${state.untranslated}</span>`
+            : nothing
+        }
+        ${
           state.selected && !(state.editing && this.#editingIn)
             ? html`<div class="bo-tools">
                 <button
@@ -367,22 +442,31 @@ export class CanvasFieldElement extends LitElement {
                   aria-label=${words.moveToNamed}
                   @click=${() => this.#request({ kind: 'moveTo', key })}
                 >
-                  <uui-icon name="icon-navigation" aria-hidden="true"></uui-icon>${words.moveTo}
+                  <uui-icon name="icon-navigation" aria-hidden="true"></uui-icon
+                  ><span class="bo-tool-text">${words.moveTo}</span>
                 </button>
                 <button
                   type="button"
                   aria-label=${words.duplicateNamed}
                   @click=${() => this.#request({ kind: 'duplicate', key })}
                 >
-                  <uui-icon name="icon-documents" aria-hidden="true"></uui-icon>${words.duplicate}
+                  <uui-icon name="icon-documents" aria-hidden="true"></uui-icon
+                  ><span class="bo-tool-text">${words.duplicate}</span>
                 </button>
                 <button
                   type="button"
                   aria-label=${words.deleteNamed}
                   @click=${() => this.#request({ kind: 'delete', key })}
                 >
-                  <uui-icon name="icon-trash" aria-hidden="true"></uui-icon>${words.delete}
+                  <uui-icon name="icon-trash" aria-hidden="true"></uui-icon
+                  ><span class="bo-tool-text">${words.delete}</span>
                 </button>
+                ${moreMenu(`jfb-more-${key}`, words.more, [
+                  { label: words.newPageAfter, act: () => this.#request({ kind: 'newPageAfter', key }) },
+                  ...(words.copyAlias
+                    ? [{ label: words.copyAlias, act: () => this.#request({ kind: 'copyAlias', key }) }]
+                    : []),
+                ])}
               </div>`
             : nothing
         }
@@ -390,10 +474,14 @@ export class CanvasFieldElement extends LitElement {
           type="button"
           class="bo-insert bo-insert-after"
           ?data-active=${state.insertActive}
+          ?data-beside-tools=${state.beforeSelected === true}
           aria-label=${words.insertAfter}
           @click=${() => this.#request({ kind: 'insertAfter', key })}
         >
-          <span class="bo-pill"><uui-icon name="icon-add" aria-hidden="true"></uui-icon>${words.insertHere}</span>
+          <span class="bo-pill"
+            ><uui-icon name="icon-add" aria-hidden="true"></uui-icon
+            ><span class="bo-pill-text">${words.insertHere}</span></span
+          >
         </button>
       `,
       this.#chrome,

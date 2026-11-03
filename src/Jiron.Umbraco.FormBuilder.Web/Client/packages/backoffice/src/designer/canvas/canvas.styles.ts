@@ -82,6 +82,29 @@ export const canvasChrome = css`
     margin-inline-start: auto;
   }
 
+  .bo-language {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--uui-size-space-2);
+    font-size: var(--uui-type-small-size);
+  }
+
+  .bo-language select {
+    min-height: 36px;
+    padding: 0 var(--uui-size-space-3);
+    border: 1px solid var(--jfb-bo-color-control-border);
+    border-radius: var(--uui-border-radius);
+    background: var(--uui-color-surface);
+    color: var(--uui-color-text);
+    font: inherit;
+    font-size: var(--uui-type-default-size);
+  }
+
+  .bo-language select:focus-visible {
+    outline: 2px solid var(--bo-focus);
+    outline-offset: 2px;
+  }
+
   .bo-menu {
     display: grid;
     min-width: 200px;
@@ -182,6 +205,7 @@ export const canvasChrome = css`
 
   /* The visitor's page: white, whatever the backoffice's theme, as the default theme's light scheme expects. */
   .bo-sheet {
+    container: bo-sheet / inline-size;
     box-sizing: border-box;
     inline-size: min(100%, calc(var(--bo-width) + 2 * var(--bo-sheet-padding)));
     margin-inline: auto;
@@ -268,14 +292,41 @@ export const canvasChrome = css`
       0 0 0 6px var(--bo-focus);
   }
 
-  /* A field in a group with columns holds the space below it inside its box; the outline stays around the field. */
+  /*
+   * A field in a group with columns holds the space below it inside its box; the outline stays around the field. Its
+   * box is too narrow for a bar with words and a pill beside it: the bar shows its icons, an insert point its "+" alone.
+   */
   @container jfb-form (min-width: 480px) {
     :is(.jfb-columns-2, .jfb-columns-3, .jfb-columns-4) > .jfb-fields > .bo-field > .bo-chrome > .bo-select {
       inset-block-end: calc(var(--jfb-space-5, 24px) - 8px);
     }
 
     :is(.jfb-columns-2, .jfb-columns-3, .jfb-columns-4) > .jfb-fields > .bo-field > .bo-chrome > .bo-insert-after {
+      justify-content: flex-start;
       inset-block-start: calc(100% - var(--jfb-space-5, 24px));
+      padding-inline-start: 28px;
+    }
+
+    :is(.jfb-columns-2, .jfb-columns-3, .jfb-columns-4)
+      > .jfb-fields
+      > .bo-field
+      > .bo-chrome
+      > .bo-insert-after
+      > .bo-pill {
+      padding: 3px;
+    }
+
+    :is(.jfb-columns-2, .jfb-columns-3, .jfb-columns-4)
+      > .jfb-fields
+      > .bo-field
+      > .bo-chrome
+      > :is(.bo-insert-after, .bo-tools)
+      :is(.bo-pill-text, .bo-tool-text) {
+      display: none;
+    }
+
+    :is(.jfb-columns-2, .jfb-columns-3, .jfb-columns-4) > .jfb-fields > .bo-field > .bo-chrome > .bo-tools > button {
+      padding: 0 8px;
     }
   }
 
@@ -302,7 +353,22 @@ export const canvasChrome = css`
     background: none;
     color: var(--bo-on-accent);
     font: 600 12px/1.5 var(--uui-font-family);
+    white-space: nowrap;
     cursor: pointer;
+  }
+
+  /*
+   * On a narrow sheet, as beside the inspector in a view up to 1024 px, the bar's buttons show their icons alone: the
+   * German bar with its words needs about 380 px, clear of the handle and the "+" of the insert point above.
+   */
+  @container bo-sheet (max-width: 430px) {
+    .jfb-form .bo-tools .bo-tool-text {
+      display: none;
+    }
+
+    .jfb-form .bo-tools > button {
+      padding: 0 8px;
+    }
   }
 
   .jfb-form .bo-tools button:hover {
@@ -316,6 +382,43 @@ export const canvasChrome = css`
 
   .jfb-form .bo-tools uui-icon {
     font-size: 14px;
+  }
+
+  /* The bar's "..." opens its menu in the top layer, in Umbraco's colours like the toolbar's. */
+  .jfb-form .bo-tools .bo-menu button {
+    justify-content: flex-start;
+    min-height: 36px;
+    padding: 0 var(--uui-size-space-4);
+    color: var(--uui-color-text);
+    font: 400 14px/1.4 var(--uui-font-family);
+  }
+
+  .jfb-form .bo-tools .bo-menu button:hover {
+    background: var(--uui-color-surface-emphasis);
+  }
+
+  .jfb-form .bo-tools .bo-menu button:focus-visible {
+    outline: 2px solid var(--bo-focus);
+    outline-offset: -2px;
+  }
+
+  /* A field without a text in the language shown: a quiet chip at its top end, gone while it is selected. */
+  .jfb-form .bo-chip {
+    position: absolute;
+    inset-block-start: -11px;
+    inset-inline-end: 8px;
+    z-index: 3;
+    max-inline-size: calc(100% - 48px);
+    overflow: hidden;
+    padding: 1px 8px;
+    border: 1px solid #d9b44a;
+    border-radius: 999px;
+    background: #fff6d9;
+    color: #533d00;
+    font: 600 11px/1.5 var(--uui-font-family);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    pointer-events: none;
   }
 
   /* An insert point: a line across the gap with "Add a field here" on it, in sight on hover and on focus. */
@@ -384,6 +487,20 @@ export const canvasChrome = css`
 
   .jfb-form .bo-insert-first {
     inset-block-start: -24px;
+  }
+
+  /* The insert point right above the selected element lies under its bar: the "+" alone, at its start by the handle. */
+  .jfb-form .bo-insert[data-beside-tools] {
+    justify-content: flex-start;
+    padding-inline-start: 28px;
+  }
+
+  .jfb-form .bo-insert[data-beside-tools] > .bo-pill {
+    padding: 3px;
+  }
+
+  .jfb-form .bo-insert[data-beside-tools] .bo-pill-text {
+    display: none;
   }
 
   .jfb-form .bo-row-start {
@@ -524,10 +641,11 @@ export const canvasChrome = css`
     user-select: none;
   }
 
+  /* Above the gap it shares with the insert point below the field before it, which it covers only while it shows. */
   .jfb-form .bo-handle-group {
     inset-block-end: calc(100% + 12px);
     inset-inline-start: -12px;
-    z-index: 2;
+    z-index: 4;
   }
 
   :host(:not([data-dragging])) .jfb-form .bo-select:is(:hover, :focus-visible, [aria-current='true']) ~ .bo-handle,
@@ -586,7 +704,7 @@ export const canvasChrome = css`
 
   /* While something is dragged, the line alone says where it lands: the selection, its tools, the handles (above),
      the insert points and a refusal's note step back until the drop. */
-  :host([data-dragging]) .jfb-form :is(.bo-tools, .bo-insert, .bo-refusal) {
+  :host([data-dragging]) .jfb-form :is(.bo-tools, .bo-insert, .bo-refusal, .bo-chip) {
     visibility: hidden;
   }
 

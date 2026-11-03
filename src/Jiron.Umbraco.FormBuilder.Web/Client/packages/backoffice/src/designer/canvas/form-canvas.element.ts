@@ -3,8 +3,9 @@
 // the width switch with Undo and Redo in its menu, and the pages as steps with Add page and After sending. Every page, group
 // and field selects itself; an insert point between fields and the Add field at the end of a page open the palette
 // for that place. Fields, groups and pages are dragged by their handles and steps, and the palette's types onto the
-// page (ADR-0016, ADR-0169). The canvas changes nothing itself: it says what was asked in a request, which the Design
-// view does.
+// page (ADR-0016, ADR-0169). On a site with more than one language the toolbar switches the language the canvas and
+// the inspector show, and a field without a text in it carries a chip (ADR-0170). The canvas changes nothing itself:
+// it says what was asked in a request, which the Design view does.
 import { html, nothing, repeat, type PropertyValues, type TemplateResult } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import type { FieldViewModel } from '@jfb/element/answer';
@@ -18,7 +19,8 @@ import type { CanvasLook } from '../preview/look';
 import { fragmentOf, safeHtml, showsText } from '../preview/rich-text';
 import { modifierTerm } from '../moves/keys';
 import { CanvasDrag, type DragSource } from './canvas-drag';
-import { FIELD_REQUEST, type FieldRequest, type FieldState, type FieldWords } from './canvas-field.element';
+import { untranslated } from '../inspector/inspector-model';
+import { FIELD_REQUEST, moreMenu, type FieldRequest, type FieldState, type FieldWords } from './canvas-field.element';
 import './canvas-field.element';
 import { canvasChrome } from './canvas.styles';
 import { CANVAS_WIDTHS, type CanvasWidth } from './widths';
@@ -38,6 +40,7 @@ export type CanvasRequest =
   | { readonly kind: 'paste' }
   | { readonly kind: 'changeOutcome' }
   | { readonly kind: 'shortcuts' }
+  | { readonly kind: 'culture'; readonly culture: string }
   | { readonly kind: 'drop'; readonly source: DragSource; readonly place: Place }
   | { readonly kind: 'refused'; readonly source: DragSource; readonly reason: string };
 
@@ -369,26 +372,47 @@ export class FormCanvasElement extends UmbLitElement {
     return this.localize.term('jfbDesigner_unseenEmpty', type);
   }
 
-  #field(field: DesignField, context: PreviewContext, columns: number): TemplateResult {
+  #field(field: DesignField, context: PreviewContext, columns: number, next: string | undefined): TemplateResult {
     return html`<jfb-canvas-field
-      .state=${this.#state(field, context, columns, null)}
+      .state=${this.#state(field, context, columns, null, next)}
       .classes=${context.look.classes}
     ></jfb-canvas-field>`;
   }
 
   // A field's state on the canvas, a repeatable group's with its own fields'; `container` is the repeatable group a
-  // field is in, whose insert points count within it.
-  #state(field: DesignField, context: PreviewContext, columns: number, container: DesignField | null): FieldState {
+  // field is in, whose insert points count within it, and `next` the key of the field after it there.
+  #state(
+    field: DesignField,
+    context: PreviewContext,
+    columns: number,
+    container: DesignField | null,
+    next: string | undefined,
+  ): FieldState {
     const model = this.#model(field, context, columns);
     const label = this.#fieldLabel(field, context.culture);
     const words = this.#wordsOf(field, context, model, label);
-    const children = field.fields?.map((child) => this.#state(child, context, columns, field));
+    const children = field.fields?.map((child, at) =>
+      this.#state(child, context, columns, field, field.fields?.[at + 1]?.key),
+    );
     const selected = this.selection === field.key;
     const editing = this.editing === field.key;
     const insertActive = this.#insertsAfter(field, container);
+    const beforeSelected = next !== undefined && next === this.selection;
     const refusal = this.refusal?.key === field.key ? this.refusal.text : null;
     const firstActive = this.insertAt?.container === field.key && this.insertAt.index === 0;
-    const parts = [model, words, selected, editing, insertActive, refusal, firstActive, ...(children ?? [])];
+    const chip = this.#untranslated(field, context.culture);
+    const parts = [
+      model,
+      words,
+      selected,
+      editing,
+      insertActive,
+      beforeSelected,
+      refusal,
+      firstActive,
+      chip,
+      ...(children ?? []),
+    ];
     const kept = this.#states.get(field);
     if (kept && kept.parts.length === parts.length && kept.parts.every((part, at) => part === parts[at]))
       return kept.state;
@@ -401,15 +425,43 @@ export class FormCanvasElement extends UmbLitElement {
       // What the canvas shows, in its culture, which is where an edit goes back to.
       labelText: field.type === 'heading' ? label : textIn(field.label, context.culture),
       insertActive,
+      beforeSelected,
       refusal,
+      untranslated: chip,
       ...(children ? { children, firstActive } : {}),
     };
     this.#states.set(field, { parts, state });
     return state;
   }
 
+  /** The site's default language, whose texts visitors see where the language shown has none. */
+  #defaultCulture(): string {
+    return this.look?.languages.find((language) => language.isDefault)?.culture ?? this.#culture();
+  }
+
+  // A language's name in the user's own: "German", for de-DE in an English backoffice.
+  #languageName(culture: string): string {
+    try {
+      return (
+        new Intl.DisplayNames([this.localize.lang()], { type: 'language' }).of(culture.split('-')[0] ?? culture) ??
+        culture
+      );
+    } catch {
+      return this.look?.languages.find((language) => language.culture === culture)?.name ?? culture;
+    }
+  }
+
+  // The chip of a field without a text in the language shown, where that is not the default.
+  #untranslated(field: DesignField, culture: string): string | null {
+    if (culture.toLowerCase() === this.#defaultCulture().toLowerCase()) return null;
+    const type = Object.hasOwn(this.types, field.type) ? this.types[field.type] : undefined;
+    return untranslated(field, type, culture)
+      ? this.localize.term('jfbDesigner_untranslated', this.#languageName(culture))
+      : null;
+  }
+
   #wordsOf(field: DesignField, context: PreviewContext, model: FieldViewModel | null, label: string): FieldWords {
-    const parts = [context, model, this.localize.lang()];
+    const parts = [context, model, this.localize.lang(), field.alias];
     const kept = this.#words.get(field);
     if (kept && kept.parts.every((part, at) => part === parts[at])) return kept.words;
     const words: FieldWords = {
@@ -423,6 +475,9 @@ export class FormCanvasElement extends UmbLitElement {
       duplicateNamed: this.localize.term('jfbDesigner_duplicateNamed', label),
       delete: this.localize.term('jfbDesigner_delete'),
       deleteNamed: this.localize.term('jfbDesigner_deleteNamed', label),
+      more: this.localize.term('jfbDesigner_moreElement'),
+      newPageAfter: this.localize.term('jfbDesigner_newPageAfter'),
+      ...(field.alias ? { copyAlias: this.localize.term('jfbDesigner_copyAlias') } : {}),
       labelBox: this.localize.term('jfbDesigner_labelBox'),
       unseen: this.#unseen(field, model),
       ...(field.fields
@@ -453,16 +508,17 @@ export class FormCanvasElement extends UmbLitElement {
     return false;
   }
 
-  #tools(key: string, name: string, moveTo = false): TemplateResult {
+  #tools(key: string, name: string, group = false): TemplateResult {
     return html`<div class="bo-tools">
       ${
-        moveTo
+        group
           ? html`<button
               type="button"
               aria-label=${this.localize.term('jfbDesigner_moveToNamed', name)}
               @click=${() => this.#ask({ kind: 'moveTo', key })}
             >
-              <uui-icon name="icon-navigation" aria-hidden="true"></uui-icon>${this.localize.term('jfbDesigner_moveTo')}
+              <uui-icon name="icon-navigation" aria-hidden="true"></uui-icon
+              ><span class="bo-tool-text">${this.localize.term('jfbDesigner_moveTo')}</span>
             </button>`
           : nothing
       }
@@ -471,15 +527,27 @@ export class FormCanvasElement extends UmbLitElement {
         aria-label=${this.localize.term('jfbDesigner_duplicateNamed', name)}
         @click=${() => this.#ask({ kind: 'duplicate', key })}
       >
-        <uui-icon name="icon-documents" aria-hidden="true"></uui-icon>${this.localize.term('jfbDesigner_duplicate')}
+        <uui-icon name="icon-documents" aria-hidden="true"></uui-icon
+        ><span class="bo-tool-text">${this.localize.term('jfbDesigner_duplicate')}</span>
       </button>
       <button
         type="button"
         aria-label=${this.localize.term('jfbDesigner_deleteNamed', name)}
         @click=${() => this.#ask({ kind: 'delete', key })}
       >
-        <uui-icon name="icon-trash" aria-hidden="true"></uui-icon>${this.localize.term('jfbDesigner_delete')}
+        <uui-icon name="icon-trash" aria-hidden="true"></uui-icon
+        ><span class="bo-tool-text">${this.localize.term('jfbDesigner_delete')}</span>
       </button>
+      ${
+        group
+          ? moreMenu(`jfb-more-${key}`, this.localize.term('jfbDesigner_moreElement'), [
+              {
+                label: this.localize.term('jfbDesigner_newPageAfter'),
+                act: () => this.#ask({ kind: 'newPageAfter', key }),
+              },
+            ])
+          : nothing
+      }
     </div>`;
   }
 
@@ -524,12 +592,13 @@ export class FormCanvasElement extends UmbLitElement {
               type="button"
               class="bo-insert bo-insert-first"
               ?data-active=${firstActive}
+              ?data-beside-tools=${first.key === this.selection}
               aria-label=${this.localize.term('jfbDesigner_insertBefore', this.#fieldLabel(first, culture))}
               @click=${() => this.#ask({ kind: 'insertFirst', container: group.key })}
             >
               <span class="bo-pill"
                 ><uui-icon name="icon-add" aria-hidden="true"></uui-icon
-                >${this.localize.term('jfbDesigner_insertHere')}</span
+                ><span class="bo-pill-text">${this.localize.term('jfbDesigner_insertHere')}</span></span
               >
             </button>`
           : html`<button
@@ -545,7 +614,7 @@ export class FormCanvasElement extends UmbLitElement {
       ${repeat(
         group.fields,
         (field) => field.key,
-        (field) => this.#field(field, context, columns),
+        (field, at) => this.#field(field, context, columns, group.fields[at + 1]?.key),
       )}
     </div>`;
     const classes = `${groupClasses(group)} bo-group${selected ? ' bo-selected' : ''}`;
@@ -677,6 +746,7 @@ export class FormCanvasElement extends UmbLitElement {
         )}
       </div>
       ${this._narrowed ? html`<span class="bo-narrowed">${this.localize.term('jfbDesigner_narrowed')}</span>` : nothing}
+      ${this.#languages()}
       <uui-button
         class="bo-more"
         compact
@@ -699,6 +769,26 @@ export class FormCanvasElement extends UmbLitElement {
         </div>
       </uui-popover-container>
     </div>`;
+  }
+
+  // The language the canvas and the inspector show, on a site with more than one.
+  #languages(): TemplateResult | typeof nothing {
+    const languages = this.look?.languages ?? [];
+    if (languages.length < 2) return nothing;
+    const shown = this.#culture().toLowerCase();
+    return html`<label class="bo-language">
+      <span>${this.localize.term('jfbDesigner_language')}</span>
+      <select
+        @change=${(event: Event) => this.#ask({ kind: 'culture', culture: (event.target as HTMLSelectElement).value })}
+      >
+        ${languages.map(
+          (language) =>
+            html`<option value=${language.culture} ?selected=${language.culture.toLowerCase() === shown}>
+              ${language.name}
+            </option>`,
+        )}
+      </select>
+    </label>`;
   }
 
   #menu(kind: 'undo' | 'redo' | 'shortcuts') {

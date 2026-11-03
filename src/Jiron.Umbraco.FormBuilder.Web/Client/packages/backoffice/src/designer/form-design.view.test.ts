@@ -3,7 +3,10 @@
 // selection or at the end of the page; a label edited in place; a delete that Ctrl+Z takes back; a new page shown;
 // pasted questions as fields; Esc; and a refusal said in words. Its moves (ROADMAP 9.3c): a drop with Undo, a palette
 // type dropped, a refusal shown at the element, Alt+Up and Alt+Down with the focus kept, Up and Down between elements,
-// Move to... and the Keyboard shortcuts. A stand-in workspace drives the real undo history.
+// Move to... and the Keyboard shortcuts. The inspector (ROADMAP 9.4a): beside the canvas with the selection, its changes
+// as edits that typing in one box makes one step, the palette folded beside it up to 1024 px, an alias that entries know
+// changed only after a question, the element's "...", the language the canvas shows, and the keys from inside it. A
+// stand-in workspace drives the real undo history.
 import { FORMULAS } from '@jfb/logic/calc';
 import { UMB_NOTIFICATION_CONTEXT } from '@umbraco-cms/backoffice/notification';
 import { UmbObjectState } from '@umbraco-cms/backoffice/observable-api';
@@ -21,13 +24,32 @@ import { builtInTypes, englishLook } from './preview/fixtures';
 import type { UndoNotificationData } from '../ui/undo-notification.element';
 
 // What the dialogs answer, and each dialog opened with what it was given.
-const opened = vi.hoisted(() => ({ value: undefined as unknown, dialogs: [] as { alias: string; data: unknown }[] }));
-// Whether what the canvas draws with can be read.
-const reading = vi.hoisted(() => ({ fails: false }));
+const opened = vi.hoisted(() => ({
+  value: undefined as unknown,
+  dialogs: [] as { alias: string; data: unknown }[],
+  confirmed: false,
+}));
+// Whether what the canvas draws with can be read, the cultures it was asked for, and whether the site has German too.
+const reading = vi.hoisted(() => ({
+  fails: false,
+  cultures: [] as (string | undefined)[],
+  german: false,
+  late: null as string | null,
+}));
 
 vi.mock('./preview/look', async (original) => ({
   ...(await original<typeof import('./preview/look')>()),
-  readLook: async () => (reading.fails ? undefined : englishLook),
+  readLook: async (_host: unknown, culture?: string) => {
+    reading.cultures.push(culture);
+    if (culture !== undefined && culture === reading.late) await new Promise((done) => setTimeout(done, 40));
+    if (reading.fails) return undefined;
+    if (!reading.german) return englishLook;
+    const languages = [
+      { culture: 'en-US', name: 'English (United States)', isDefault: true },
+      { culture: 'de-DE', name: 'Deutsch (Deutschland)', isDefault: false },
+    ];
+    return { ...englishLook, languages, culture: culture ?? 'en-US' };
+  },
   themeSheets: async () => [],
 }));
 
@@ -37,9 +59,15 @@ vi.mock('@umbraco-cms/backoffice/modal', async (original) => ({
     opened.dialogs.push({ alias: String(token), data: args?.data });
     return opened.value;
   },
+  umbConfirmModal: async (_host: unknown, data: unknown) => {
+    opened.dialogs.push({ alias: 'confirm', data });
+    if (!opened.confirmed) throw new Error('cancelled');
+  },
 }));
 
-const { FormDesignViewElement, isNarrow, mediaOf, readWidth } = await import('./form-design.view');
+const { FormDesignViewElement, isCrowded, isNarrow, mediaOf, readWidth } = await import('./form-design.view');
+const { INSPECTOR_REQUEST } = await import('./inspector/inspector.element');
+const { MOVE_TO_MODAL_ALIAS } = await import('./moves/move-to.modal.token');
 
 const field = (key: string, type = 'text') => ({ key, type, alias: key, label: { '': key } });
 
@@ -80,8 +108,12 @@ class StandIn {
   getEntityType = () => 'jfb-form';
   getEditorState = (): EditorState => this.#history.state;
 
-  edit(edit: Edit, said: string): Edit {
-    const result = this.#history.apply(edit, said);
+  /** The aliases entries know, by field: changing one asks first. */
+  readonly kept: Record<string, string> = {};
+  keptAliasOf = (key: string): string | null => this.kept[key] ?? null;
+
+  edit(edit: Edit, said: string, merge?: string): Edit {
+    const result = this.#history.apply(edit, said, merge);
     if (result.ok && said) this.said.push(said);
     this.#editor.setValue(this.#view());
     return result;
@@ -153,6 +185,10 @@ beforeEach(() => {
   reading.fails = false;
   opened.value = undefined;
   opened.dialogs = [];
+  opened.confirmed = false;
+  reading.cultures = [];
+  reading.german = false;
+  reading.late = null;
 });
 
 /** What the live region says once its frame has passed. */
@@ -737,5 +773,336 @@ describe('the moves', () => {
     const handle = document.createElement('button');
     await pick({ kind: 'drag', type: 'phone', label: 'Phone', event, handle });
     expect(dragNew).toHaveBeenCalledWith(event, handle, 'phone', 'Phone');
+  });
+});
+
+describe('the inspector in the Design view', () => {
+  const inspectorOf = (view: HTMLElement) =>
+    shadow(view).querySelector<HTMLElement & { mode?: string }>('jfb-designer-inspector');
+  const tell = async (view: HTMLElement & { updateComplete: Promise<unknown> }, detail: unknown) => {
+    view.dispatchEvent(new CustomEvent(INSPECTOR_REQUEST, { detail, bubbles: true, composed: true }));
+    await settle(view);
+  };
+  const relabel = (label: string) => (element: Record<string, unknown>) => ({ ...element, label: { '': label } });
+
+  it('folds the palette beside it in a view up to 1024 px, and not in a wider or a narrow one', () => {
+    expect([620, 700, 701, 1024, 1025].map(isCrowded)).toEqual([false, false, true, true, false]);
+  });
+
+  it('shows the selected element beside the canvas, and none without a selection', async () => {
+    const { view, ask } = await viewOf();
+    expect(inspectorOf(view)).toBeNull();
+    await ask({ kind: 'select', key: 'email' });
+    const inspector = must(inspectorOf(view), 'the inspector');
+    expect([inspector.getAttribute('mode'), (inspector as unknown as { selection: string }).selection]).toEqual([
+      'docked',
+      'email',
+    ]);
+    await ask({ kind: 'select', key: 'name' });
+    expect((inspector as unknown as { selection: string }).selection).toBe('name');
+  });
+
+  it('makes its changes edits, typing in one box one step to undo, and says a refusal', async () => {
+    const { view, workspace, ask, state, toasts } = await viewOf();
+    await ask({ kind: 'select', key: 'name' });
+    await tell(view, {
+      kind: 'change',
+      key: 'name',
+      update: relabel('N'),
+      said: 'Changed Label',
+      merge: 'name:label:1',
+    });
+    await tell(view, {
+      kind: 'change',
+      key: 'name',
+      update: relabel('Na'),
+      said: 'Changed Label',
+      merge: 'name:label:1',
+    });
+    await tell(view, {
+      kind: 'change',
+      key: 'name',
+      update: relabel('Nam'),
+      said: 'Changed Label',
+      merge: 'name:label:1',
+    });
+    expect(locate(state().definition, 'name')?.element.label).toEqual({ '': 'Nam' });
+    expect(workspace.undo()).toBe('Changed Label');
+    expect(locate(state().definition, 'name')?.element.label).toEqual({ '': 'name' });
+    await tell(view, {
+      kind: 'change',
+      key: 'name',
+      update: (element: Record<string, unknown>) => ({ ...element, alias: 'email' }),
+      said: 'Changed Alias',
+      merge: undefined,
+    });
+    expect(await heard(view)).toBe('Another field has that alias.');
+    expect(toasts.shown.at(-1)?.data.message).toBe('Another field has that alias.');
+    await tell(view, {
+      kind: 'change',
+      key: 'name',
+      update: (element: unknown) => element,
+      said: 'x',
+      merge: undefined,
+    });
+    expect(toasts.shown).toHaveLength(1);
+  });
+
+  it('changes an alias no entry knows at once, and keeps nothing of the one before', async () => {
+    const { view, ask, state } = await viewOf();
+    await ask({ kind: 'select', key: 'name' });
+    const revert = vi.fn();
+    await tell(view, { kind: 'alias', key: 'name', alias: 'fullName', revert });
+    const changed = locate(state().definition, 'name')?.element;
+    expect([changed?.alias, changed?.formerAliases]).toEqual(['fullName', undefined]);
+    expect(opened.dialogs).toEqual([]);
+    expect(revert).not.toHaveBeenCalled();
+    expect(await heard(view)).toBe('Changed Alias');
+  });
+
+  it('asks before changing an alias that entries know, keeps it as a former alias, and gives it up when it comes back', async () => {
+    const { view, ask, state, workspace } = await viewOf();
+    workspace.kept['name'] = 'name';
+    await ask({ kind: 'select', key: 'name' });
+    const revert = vi.fn();
+    await tell(view, { kind: 'alias', key: 'name', alias: 'fullName', revert });
+    expect(opened.dialogs.map((dialog) => dialog.alias)).toEqual(['confirm']);
+    expect(opened.dialogs[0]?.data).toMatchObject({ headline: 'Change the alias?', confirmLabel: 'Change the alias' });
+    expect(revert).toHaveBeenCalledOnce();
+    expect(locate(state().definition, 'name')?.element.alias).toBe('name');
+
+    opened.confirmed = true;
+    await tell(view, { kind: 'alias', key: 'name', alias: 'fullName', revert });
+    expect(locate(state().definition, 'name')?.element.formerAliases).toEqual(['name']);
+    await tell(view, { kind: 'alias', key: 'name', alias: 'givenName', revert });
+    expect(opened.dialogs).toHaveLength(2);
+    const twice = locate(state().definition, 'name')?.element;
+    expect([twice?.alias, twice?.formerAliases]).toEqual(['givenName', ['name']]);
+    await tell(view, { kind: 'alias', key: 'name', alias: 'name', revert });
+    const back = locate(state().definition, 'name')?.element;
+    expect([back?.alias, back?.formerAliases]).toEqual(['name', undefined]);
+  });
+
+  it('folds to its rail and opens again, and Close lets the element go with the focus on it', async () => {
+    const { view, canvas, ask, state } = await viewOf();
+    await ask({ kind: 'select', key: 'email' });
+    await tell(view, { kind: 'fold' });
+    expect(inspectorOf(view)?.getAttribute('mode')).toBe('rail');
+    await tell(view, { kind: 'unfold' });
+    expect(inspectorOf(view)?.getAttribute('mode')).toBe('docked');
+    await tell(view, { kind: 'close' });
+    await settle(view);
+    expect(state().selection).toBeNull();
+    expect(inspectorOf(view)).toBeNull();
+    expect(focusedIn(canvas)).toBe('email select');
+  });
+
+  it('folds the palette to its rail beside it up to 1024 px, opens it over the canvas from there, and back once the selection goes', async () => {
+    const { view, ask, pick, press } = await viewOf();
+    Object.assign(view, { _crowded: true });
+    await settle(view);
+    const palette = () => shadow(view).querySelector('jfb-designer-palette')?.getAttribute('mode');
+    expect(palette()).toBe('docked');
+    await ask({ kind: 'select', key: 'email' });
+    expect(palette()).toBe('rail');
+    await pick({ kind: 'unfold' });
+    expect(palette()).toBe('overlay');
+    expect(shadow(view).querySelector('.scrim')).not.toBeNull();
+    await press('Escape');
+    expect(palette()).toBe('rail');
+    await tell(view, { kind: 'fold' });
+    expect(palette()).toBe('docked');
+    await tell(view, { kind: 'unfold' });
+    await ask({ kind: 'select', key: 'email' });
+    await press('Escape');
+    expect(palette()).toBe('docked');
+  });
+
+  it('opens over a narrow canvas with the focus on its heading, the canvas out of reach', async () => {
+    const { view, canvas, ask } = await viewOf();
+    Object.assign(view, { _narrow: true });
+    await settle(view);
+    await ask({ kind: 'select', key: 'email' });
+    await settle(view);
+    const inspector = must(inspectorOf(view), 'the inspector');
+    expect(inspector.getAttribute('mode')).toBe('overlay');
+    expect(canvas.hasAttribute('inert')).toBe(true);
+    expect(shadow(inspector).activeElement?.localName).toBe('h2');
+  });
+
+  it('takes the focus to its heading over a narrow canvas once a pick has closed the palette over it', async () => {
+    const { view, ask, pick } = await viewOf();
+    Object.assign(view, { _narrow: true });
+    await settle(view);
+    await ask({ kind: 'addField', page: 'p1' });
+    // A browser moves no focus into an inert element; jsdom does, so where the heading took it is read at the call.
+    const reached: boolean[] = [];
+    const focusHeading = vi
+      .spyOn(
+        must(customElements.get('jfb-designer-inspector'), 'the inspector').prototype as { focusHeading(): void },
+        'focusHeading',
+      )
+      .mockImplementation(function (this: HTMLElement) {
+        reached.push(!this.closest('[inert]') && !this.hasAttribute('inert'));
+      });
+    try {
+      await pick({ kind: 'field', type: 'phone' });
+      await settle(view);
+      expect(inspectorOf(view)?.getAttribute('mode')).toBe('overlay');
+      expect(reached).toContain(true);
+    } finally {
+      focusHeading.mockRestore();
+    }
+  });
+
+  it('starts a new page after an element from its "..." and copies a field\'s alias', async () => {
+    const { view, ask, state } = await viewOf();
+    await ask({ kind: 'select', key: 'name' });
+    await ask({ kind: 'newPageAfter', key: 'name' });
+    expect(
+      state().definition.pages.map((page) => page.groups.flatMap((group) => group.fields.map((each) => each.key))),
+    ).toEqual([['name'], ['email'], ['note']]);
+    expect(locate(state().definition, state().selection ?? '')?.kind).toBe('page');
+    expect(await heard(view)).toBe('Started a new page after name');
+    await ask({ kind: 'newPageAfter', key: 'g2' });
+    expect(state().definition.pages).toHaveLength(4);
+
+    const writeText = vi.fn(async () => undefined);
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+    await tell(view, { kind: 'element', action: 'copyAlias', key: 'email' });
+    expect(writeText).toHaveBeenCalledWith('email');
+    expect(await heard(view)).toBe('Copied email');
+  });
+
+  it('says when the clipboard refuses an alias, and copies nothing for a group', async () => {
+    const { view, toasts } = await viewOf();
+    const writeText = vi.fn(async () => {
+      throw new Error('denied');
+    });
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+    await tell(view, { kind: 'element', action: 'copyAlias', key: 'name' });
+    expect(toasts.shown.at(-1)?.data.message).toBe("The alias couldn't be copied.");
+    await tell(view, { kind: 'element', action: 'copyAlias', key: 'g1' });
+    expect(writeText).toHaveBeenCalledOnce();
+  });
+
+  it('acts from its bar over a narrow canvas: Move to..., Duplicate and Delete', async () => {
+    const { view, ask, state } = await viewOf();
+    await ask({ kind: 'select', key: 'email' });
+    await tell(view, { kind: 'element', action: 'duplicate', key: 'email' });
+    expect(state().definition.pages[0]?.groups[0]?.fields).toHaveLength(3);
+    await tell(view, { kind: 'element', action: 'delete', key: 'email' });
+    expect(locate(state().definition, 'email')).toBeUndefined();
+    await tell(view, { kind: 'element', action: 'moveTo', key: 'name' });
+    expect(opened.dialogs.at(-1)?.alias).toBe(MOVE_TO_MODAL_ALIAS);
+  });
+
+  it('shows the language chosen on a site with two, in the canvas and the inspector', async () => {
+    reading.german = true;
+    const { view, ask, canvas } = await viewOf();
+    await ask({ kind: 'select', key: 'name' });
+    await ask({ kind: 'culture', culture: 'de-DE' });
+    await settle(view);
+    expect(reading.cultures).toEqual([undefined, 'de-DE']);
+    expect((canvas as unknown as { look: { culture: string } }).look.culture).toBe('de-DE');
+    expect((inspectorOf(view) as unknown as { culture: string }).culture).toBe('de-DE');
+  });
+
+  it('keeps the element shortcuts out of the inspector, where Delete in a box would take the field, and Escape lets go', async () => {
+    const { view, canvas, ask, state } = await viewOf();
+    await ask({ kind: 'select', key: 'email' });
+    const inspector = must(inspectorOf(view), 'the inspector');
+    const sectionButton = must(shadow(inspector).querySelector<HTMLButtonElement>('.section-head button'), 'a section');
+    await pressOn(view, sectionButton, 'Delete');
+    await pressOn(view, sectionButton, 'd', { ctrlKey: true });
+    await pressOn(view, sectionButton, 'ArrowUp', { altKey: true });
+    expect(locate(state().definition, 'email')?.index).toBe(1);
+    expect(state().definition.pages[0]?.groups[0]?.fields).toHaveLength(2);
+    const select = document.createElement('select');
+    shadow(inspector).append(select);
+    await pressOn(view, select, 'Escape');
+    expect(state().selection).toBe('email');
+    await pressOn(view, sectionButton, 'Escape');
+    expect(state().selection).toBeNull();
+    await settle(view);
+    expect(focusedIn(canvas)).toBe('email select');
+  });
+
+  it('undoes from the inspector without taking the focus out of it', async () => {
+    const { view, ask, state } = await viewOf();
+    await ask({ kind: 'select', key: 'name' });
+    await tell(view, {
+      kind: 'change',
+      key: 'name',
+      update: relabel('Full name'),
+      said: 'Changed Label',
+      merge: undefined,
+    });
+    const inspector = must(inspectorOf(view), 'the inspector');
+    const sectionButton = must(shadow(inspector).querySelector<HTMLButtonElement>('.section-head button'), 'a section');
+    await pressOn(view, sectionButton, 'z', { ctrlKey: true });
+    expect(locate(state().definition, 'name')?.element.label).toEqual({ '': 'name' });
+    expect(shadow(inspector).activeElement).toBe(sectionButton);
+    await pressOn(view, sectionButton, 'y', { ctrlKey: true });
+    expect(locate(state().definition, 'name')?.element.label).toEqual({ '': 'Full name' });
+    expect(shadow(inspector).activeElement).toBe(sectionButton);
+  });
+
+  it("edits a label in place in another language as that language's text, and leaves the default's words alone", async () => {
+    reading.german = true;
+    const { view, ask, state } = await viewOf();
+    await ask({ kind: 'culture', culture: 'de-DE' });
+    await ask({ kind: 'label', key: 'name', text: 'Ihr Name' });
+    expect(locate(state().definition, 'name')?.element.label).toEqual({ '': 'name', 'de-DE': 'Ihr Name' });
+    // Enter on the English words as the canvas showed them writes no German text.
+    await ask({ kind: 'label', key: 'email', text: 'email' });
+    expect(locate(state().definition, 'email')?.element.label).toEqual({ '': 'email' });
+    await settle(view);
+  });
+
+  it('undoes from a switch or a list box in it, and folds with the focus on the rail', async () => {
+    const { view, ask, state } = await viewOf();
+    await ask({ kind: 'select', key: 'name' });
+    await tell(view, {
+      kind: 'change',
+      key: 'name',
+      update: relabel('Full name'),
+      said: 'Changed Label',
+      merge: undefined,
+    });
+    const inspector = must(inspectorOf(view), 'the inspector');
+    const required = must(shadow(inspector).querySelector<HTMLInputElement>('#prop-required'), 'Required');
+    await pressOn(view, required, 'z', { ctrlKey: true });
+    expect(locate(state().definition, 'name')?.element.label).toEqual({ '': 'name' });
+    const list = document.createElement('select');
+    shadow(inspector).append(list);
+    await pressOn(view, list, 'y', { ctrlKey: true });
+    expect(locate(state().definition, 'name')?.element.label).toEqual({ '': 'Full name' });
+    const box = document.createElement('input');
+    shadow(inspector).append(box);
+    await pressOn(view, box, 'z', { ctrlKey: true });
+    expect(locate(state().definition, 'name')?.element.label).toEqual({ '': 'Full name' });
+
+    const forgot = vi.spyOn(inspector as unknown as { forget: () => void }, 'forget');
+    await pressOn(view, required, 'z', { ctrlKey: true });
+    expect(forgot).toHaveBeenCalledOnce();
+
+    await tell(view, { kind: 'fold' });
+    await settle(view);
+    expect(shadow(inspector).activeElement?.getAttribute('label')).toBe('Open the inspector');
+    await tell(view, { kind: 'unfold' });
+    await settle(view);
+    expect(shadow(inspector).activeElement?.localName).toBe('h2');
+  });
+
+  it('shows the language chosen last when an answer for one chosen before it comes later', async () => {
+    reading.german = true;
+    reading.late = 'de-DE';
+    const { view, ask, canvas } = await viewOf();
+    void ask({ kind: 'culture', culture: 'de-DE' });
+    await ask({ kind: 'culture', culture: 'en-US' });
+    await new Promise((done) => setTimeout(done, 80));
+    await settle(view);
+    expect((canvas as unknown as { look: { culture: string } }).look.culture).toBe('en-US');
   });
 });

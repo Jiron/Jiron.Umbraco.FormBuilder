@@ -104,11 +104,14 @@ describe('a drawing as visitors with JavaScript see it', () => {
 describe('a text of a definition', () => {
   const texts = { '': 'Email address', de: 'E-Mail-Adresse', 'fr-CH': 'Adresse e-mail' };
 
-  it('is the culture, then its language, then the default, in any letter case', () => {
+  it('is the culture, then its more general cultures, then the default, in any letter case, as the server resolves it', () => {
     expect(textIn(texts, 'de')).toBe('E-Mail-Adresse');
     expect(textIn(texts, 'de-AT')).toBe('E-Mail-Adresse');
     expect(textIn(texts, 'FR-ch')).toBe('Adresse e-mail');
-    expect(textIn(texts, 'fr')).toBe('Adresse e-mail');
+    expect(textIn(texts, 'fr')).toBe('Email address');
+    expect(textIn(texts, 'fr-FR')).toBe('Email address');
+    expect(textIn({ '': 'Color', 'en-GB': 'Colour' }, 'en-US')).toBe('Color');
+    expect(textIn({ '': 'Name', 'sr-Latn': 'Ime' }, 'sr-Latn-RS')).toBe('Ime');
     expect(textIn(texts, 'nl')).toBe('Email address');
   });
 

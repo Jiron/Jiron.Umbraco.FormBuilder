@@ -44,25 +44,23 @@ export interface PreviewContext {
 }
 
 /**
- * Which of a text's cultures is read in a culture: the culture itself, its language, then the default (`''`); any
- * letter case. A change made to what was read goes back there.
+ * Which of a text's cultures is read in a culture, as the server resolves it: the culture itself, then its more general
+ * cultures (`de-CH`, then `de`), then the default (`''`); any letter case. Another culture of the same language
+ * (`de-DE` for `de-CH`) never stands in. A change made to what was read goes back there.
  */
 export function keyIn(texts: LocalizedText | null | undefined, culture: string): string {
   if (!texts) return '';
-  const wanted = culture.toLowerCase();
-  const language = wanted.split('-')[0] ?? wanted;
   const keys = Object.keys(texts);
-  return (
-    keys.find((key) => key.toLowerCase() === wanted) ??
-    keys.find((key) => {
-      const own = key.toLowerCase();
-      return own !== '' && (own === language || own.split('-')[0] === language);
-    }) ??
-    ''
-  );
+  for (let candidate = culture.toLowerCase(); candidate !== '';) {
+    const found = keys.find((key) => key.toLowerCase() === candidate);
+    if (found !== undefined) return found;
+    const dash = candidate.lastIndexOf('-');
+    candidate = dash < 0 ? '' : candidate.slice(0, dash);
+  }
+  return '';
 }
 
-/** A text in a culture: the culture itself, its language, then the default; any letter case. */
+/** A text in a culture: the culture itself, its more general cultures, then the default; any letter case. */
 export function textIn(texts: LocalizedText | null | undefined, culture: string): string {
   return texts ? (texts[keyIn(texts, culture)] ?? '') : '';
 }

@@ -39,6 +39,9 @@ const WORDS: FieldWords = {
   duplicateNamed: 'Duplicate Email address',
   delete: 'Delete',
   deleteNamed: 'Delete Email address',
+  more: 'More actions',
+  newPageAfter: 'Start a new page after this',
+  copyAlias: 'Copy alias',
   labelBox: 'Label',
   unseen: 'Hidden field: not shown to visitors',
   insertFirst: 'Add a field here, before Guest name',
@@ -106,22 +109,52 @@ describe('a field on the canvas', () => {
     ]);
   });
 
-  it('says it is selected, and shows Move to..., Duplicate and Delete while it is, each named with the field', async () => {
+  it('says it is selected, and shows Move to..., Duplicate, Delete and its "..." while it is, each named with the field', async () => {
     const { element, requests } = await fieldOf(stateOf(email, { selected: true }));
     expect(element.hasAttribute('selected')).toBe(true);
     expect(controls(element).querySelector('.bo-select')?.getAttribute('aria-current')).toBe('true');
-    const tools = [...controls(element).querySelectorAll<HTMLButtonElement>('.bo-tools button')];
+    const tools = [...controls(element).querySelectorAll<HTMLButtonElement>('.bo-tools > button')];
     expect(tools.map((tool) => [tool.getAttribute('aria-label'), text(tool)])).toEqual([
       ['Move to..., Email address', 'Move to...'],
       ['Duplicate Email address', 'Duplicate'],
       ['Delete Email address', 'Delete'],
+      ['More actions', ''],
     ]);
+    const menu = must(controls(element).querySelector('.bo-tools uui-popover-container'), 'the menu');
+    expect(tools[3]?.getAttribute('popovertarget')).toBe(menu.id);
+    expect(menu.id).toBe('jfb-more-e');
     for (const tool of tools) tool.click();
+    const items = [...menu.querySelectorAll<HTMLButtonElement>('button')];
+    expect(items.map((item) => text(item))).toEqual(['Start a new page after this', 'Copy alias']);
+    for (const item of items) item.click();
     expect(requests).toEqual([
       { kind: 'moveTo', key: 'e' },
       { kind: 'duplicate', key: 'e' },
       { kind: 'delete', key: 'e' },
+      { kind: 'newPageAfter', key: 'e' },
+      { kind: 'copyAlias', key: 'e' },
     ]);
+  });
+
+  it('offers Copy alias only for a field with an alias', async () => {
+    const words: FieldWords = Object.fromEntries(
+      Object.entries(WORDS).filter(([name]) => name !== 'copyAlias'),
+    ) as unknown as FieldWords;
+    const { element } = await fieldOf({ ...stateOf(email, { selected: true }), words });
+    expect([...controls(element).querySelectorAll('.bo-menu button')].map((item) => text(item))).toEqual([
+      'Start a new page after this',
+    ]);
+  });
+
+  it('carries the chip of a field without a text in the language shown, as its description too, but not while selected', async () => {
+    const { element } = await fieldOf(stateOf(email, { untranslated: 'No German text yet' }));
+    const chip = must(controls(element).querySelector('.bo-chip'), 'the chip');
+    expect(text(chip)).toBe('No German text yet');
+    expect(controls(element).querySelector('.bo-select')?.getAttribute('aria-describedby')).toBe(chip.id);
+    element.state = stateOf(email, { untranslated: 'No German text yet', selected: true });
+    await element.updateComplete;
+    expect(controls(element).querySelector('.bo-chip')).toBeNull();
+    expect(controls(element).querySelector('.bo-select')?.hasAttribute('aria-describedby')).toBe(false);
   });
 
   it('has a handle named with the field, which a press drags and a click selects', async () => {
@@ -329,18 +362,75 @@ describe('the canvas', () => {
     ]);
     expect(root.querySelector('.bo-select-page')?.getAttribute('aria-label')).toBe('Your details, page');
     expect(
-      [...root.querySelectorAll('.bo-group > .bo-tools button')].map((tool) => tool.getAttribute('aria-label')),
-    ).toEqual(['Move to\u2026, About you', 'Duplicate About you', 'Delete About you']);
+      [...root.querySelectorAll('.bo-group > .bo-tools > button')].map((tool) => tool.getAttribute('aria-label')),
+    ).toEqual(['Move to\u2026, About you', 'Duplicate About you', 'Delete About you', 'More actions']);
+    const groupMenu = [...root.querySelectorAll<HTMLButtonElement>('.bo-group > .bo-tools .bo-menu button')];
+    expect(groupMenu.map((item) => text(item))).toEqual(['Start a new page after this']);
+    groupMenu[0]?.click();
+    expect(root.querySelector('.bo-page > .bo-tools uui-popover-container')).toBeNull();
     const empty = must(root.querySelector<HTMLButtonElement>('.bo-empty-group'), "the empty group's place");
     expect(empty.getAttribute('aria-label')).toBe('Add a field here, in Group 2');
     empty.click();
     root.querySelector<HTMLButtonElement>('.bo-insert-first')?.click();
     root.querySelector<HTMLButtonElement>('.bo-add-field')?.click();
     expect(requests).toEqual([
+      { kind: 'newPageAfter', key: 'g1' },
       { kind: 'insertFirst', container: 'g2' },
       { kind: 'insertFirst', container: 'g1' },
       { kind: 'addField', page: 'p1' },
     ]);
+  });
+
+  it('shows the insert point right above the selected field as its "+" alone, out from under its bar', async () => {
+    const short = (key: string, label: string): DesignField => ({
+      key,
+      type: 'text',
+      alias: key,
+      label: { '': label },
+    });
+    const { element, root } = await canvasOf({
+      pages: [
+        {
+          key: 'p',
+          groups: [
+            {
+              key: 'g',
+              fields: [
+                short('a', 'A'),
+                short('b', 'B'),
+                {
+                  key: 'r',
+                  type: 'repeater',
+                  alias: 'r',
+                  label: { '': 'R' },
+                  fields: [short('c', 'C'), short('d', 'D')],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+      outcomes: [],
+    });
+    const beside = async (selection: string) => {
+      element.selection = selection;
+      await settle(element);
+      for (const field of all<CanvasFieldElement>(element, 'jfb-canvas-field')) await settle(field);
+      return [...root.querySelectorAll('[data-beside-tools]')].map(
+        (point) =>
+          point.closest('jfb-canvas-field, [data-fields]')?.getAttribute('key') ??
+          `first of ${point.closest('[data-fields]')?.getAttribute('data-fields')}`,
+      );
+    };
+    expect(await beside('b')).toEqual(['a']);
+    expect(await beside('a')).toEqual(['first of g']);
+    expect(await beside('r')).toEqual(['b']);
+    expect(await beside('c')).toEqual(['first of r']);
+    expect(await beside('d')).toEqual(['c']);
+    // Its words stay its name for screen readers.
+    expect(
+      root.querySelector('jfb-canvas-field[key="c"] > .bo-chrome > .bo-insert-after')?.getAttribute('aria-label'),
+    ).toBe('Add a field here, after C');
   });
 
   it('points a new form to the palette and to pasting questions, and an empty later page to New page', async () => {
@@ -454,6 +544,8 @@ describe('the canvas', () => {
       { kind: 'moveTo', key: 'e' },
       { kind: 'duplicate', key: 'e' },
       { kind: 'delete', key: 'e' },
+      { kind: 'newPageAfter', key: 'e' },
+      { kind: 'copyAlias', key: 'e' },
     ]);
     element.focusElement('n');
     expect(root.activeElement?.closest('jfb-canvas-field')?.getAttribute('key')).toBe('n');

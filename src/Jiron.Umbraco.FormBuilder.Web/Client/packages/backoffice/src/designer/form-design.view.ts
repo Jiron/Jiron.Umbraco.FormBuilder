@@ -4,11 +4,14 @@
 // link that names a field (`?field=`, ADR-0166) opens the view on that field's page with the field selected. Moves
 // (ADR-0016, ADR-0169) come from a drop, Move to... and Alt+Up and Alt+Down; each says where the element is now, a move
 // the form refuses says why at the element, and the focus stays on the element moved. Up and Down go through the
-// elements of the page, and ? opens the Keyboard shortcuts.
+// elements of the page, and ? opens the Keyboard shortcuts. The inspector (ADR-0170) shows the selected element beside
+// the canvas, or over it up to 700 px; up to 1024 px the palette folds to its rail while it does. Its changes are edits
+// too, typing in one box one step to undo, and an alias that entries know changes only after a question.
 import { css, html, nothing, type PropertyValues } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import { UmbMediaUrlRepository } from '@umbraco-cms/backoffice/media';
 import { umbOpenModal } from '@umbraco-cms/backoffice/modal';
+import { confirmText } from '../ui/confirm';
 import { UMB_NOTIFICATION_CONTEXT } from '@umbraco-cms/backoffice/notification';
 import type { FieldGroupResponseModel, FieldTypeResponseModel } from '../api';
 import { jfbBackofficeTokens, jfbVisuallyHidden } from '../styles/tokens';
@@ -56,8 +59,17 @@ import {
 } from './palette/palette.element';
 import './palette/palette.element';
 import { PASTE_QUESTIONS_MODAL } from './palette/paste-questions.modal.token';
-import { keyIn, textIn } from './preview/field-models';
+import { textIn } from './preview/field-models';
+import { ownText, withKey, withText } from './inspector/setting-values';
 import { readLook, themeSheets, type CanvasLook } from './preview/look';
+import {
+  INSPECTOR_REQUEST,
+  type ElementAction,
+  type InspectorMode,
+  type InspectorRequest,
+} from './inspector/inspector.element';
+import './inspector/inspector.element';
+import type { InspectorElement } from './inspector/inspector.element';
 
 /**
  * Up to this width, the palette opens over the canvas; wider, it stays beside it (IA 5.1). The narrowest workspace,
@@ -68,7 +80,29 @@ export const NARROW = 700;
 /** Whether a view this wide puts the palette over the canvas. */
 export const isNarrow = (width: number) => width <= NARROW;
 
+/**
+ * Up to this width, beside the inspector, the palette folds to its rail while an element is selected, so the canvas
+ * keeps its width (IA 5.1); clearing the selection opens it again.
+ */
+export const CROWDED = 1024;
+
+/** Whether a view this wide, but not narrow, folds the palette while an element is selected. */
+export const isCrowded = (width: number) => width > NARROW && width <= CROWDED;
+
 const WIDTH_KEY = 'jfb.designer.width';
+
+/** The types of an `input` that takes no text, whose keys the Design view's shortcuts may use. */
+const NOT_TEXT: ReadonlySet<string> = new Set([
+  'checkbox',
+  'radio',
+  'button',
+  'submit',
+  'reset',
+  'range',
+  'color',
+  'file',
+  'image',
+]);
 
 /** The control of an element the focus goes back to: the button that selects it, its handle, or a page's step. */
 type Control = 'select' | 'handle' | 'step';
@@ -126,6 +160,9 @@ export class FormDesignViewElement extends UmbLitElement {
     _folded: { state: true },
     _open: { state: true },
     _narrow: { state: true },
+    _crowded: { state: true },
+    _inspectorFolded: { state: true },
+    _culture: { state: true },
     _recent: { state: true },
     _said: { state: true },
     _failed: { state: true },
@@ -139,7 +176,8 @@ export class FormDesignViewElement extends UmbLitElement {
       :host {
         position: relative;
         display: grid;
-        grid-template-columns: auto minmax(0, 1fr);
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        grid-template-rows: minmax(0, 1fr);
         height: 100%;
         /* The view takes the width it is given, so it can measure when that is too narrow for the docked palette. */
         min-width: 0;
@@ -147,6 +185,8 @@ export class FormDesignViewElement extends UmbLitElement {
       }
 
       jfb-designer-palette {
+        grid-column: 1;
+        grid-row: 1;
         width: 264px;
         min-height: 0;
       }
@@ -168,9 +208,36 @@ export class FormDesignViewElement extends UmbLitElement {
         grid-template-columns: minmax(0, 1fr);
       }
 
-      jfb-form-canvas {
+      jfb-form-canvas,
+      .failed {
+        grid-column: 2;
+        grid-row: 1;
         min-width: 0;
         min-height: 0;
+      }
+
+      :host([narrow]) :is(jfb-form-canvas, .failed) {
+        grid-column: 1;
+      }
+
+      jfb-designer-inspector {
+        grid-column: 3;
+        grid-row: 1;
+        width: 320px;
+        min-height: 0;
+      }
+
+      jfb-designer-inspector[mode='rail'] {
+        width: 56px;
+      }
+
+      /* Over a narrow canvas the inspector takes the view, with the element's bar in its header. */
+      jfb-designer-inspector[mode='overlay'] {
+        position: absolute;
+        inset: 0;
+        z-index: 10;
+        width: auto;
+        border-inline-start: 0;
       }
 
       /* Over the canvas while the palette lies on it: a click on it closes the palette. */
@@ -231,6 +298,11 @@ export class FormDesignViewElement extends UmbLitElement {
   declare private _folded: boolean;
   declare private _open: boolean;
   declare private _narrow: boolean;
+  /** Whether the view is up to 1024 px wide, but not narrow: the palette folds while an element is selected. */
+  declare private _crowded: boolean;
+  declare private _inspectorFolded: boolean;
+  /** The language the canvas and the inspector show; null for the site's default. */
+  declare private _culture: string | null;
   declare private _recent: readonly string[];
   declare private _said: string;
   /** Whether what the canvas draws with could not be read. */
@@ -258,8 +330,11 @@ export class FormDesignViewElement extends UmbLitElement {
     list: [],
   };
   #resize = new ResizeObserver(([entry]) => {
-    const narrow = entry ? isNarrow(entry.contentRect.width) : false;
+    const width = entry?.contentRect.width;
+    const narrow = width !== undefined && isNarrow(width);
+    const crowded = width !== undefined && isCrowded(width);
     if (narrow !== this._narrow) this._narrow = narrow;
+    if (crowded !== this._crowded) this._crowded = crowded;
   });
 
   constructor() {
@@ -275,6 +350,9 @@ export class FormDesignViewElement extends UmbLitElement {
     this._folded = false;
     this._open = false;
     this._narrow = false;
+    this._crowded = false;
+    this._inspectorFolded = false;
+    this._culture = null;
     this._recent = readRecent();
     this._said = '';
     this._failed = false;
@@ -288,6 +366,10 @@ export class FormDesignViewElement extends UmbLitElement {
     void this.#readLook();
     this.addEventListener(CANVAS_REQUEST, (event) => void this.#onCanvas((event as CustomEvent<CanvasRequest>).detail));
     this.addEventListener(PALETTE_PICK, (event) => void this.#onPalette((event as CustomEvent<PalettePick>).detail));
+    this.addEventListener(
+      INSPECTOR_REQUEST,
+      (event) => void this.#onInspector((event as CustomEvent<InspectorRequest>).detail),
+    );
     this.addEventListener('keydown', (event) => this.#onKey(event));
   }
 
@@ -303,7 +385,10 @@ export class FormDesignViewElement extends UmbLitElement {
 
   async #readLook() {
     this._failed = false;
-    const look = await readLook(this);
+    const wanted = this._culture;
+    const look = await readLook(this, wanted ?? undefined);
+    // A language chosen meanwhile wins over the answer for the one before it.
+    if (wanted !== this._culture) return;
     if (!look) {
       this._failed = true;
       return;
@@ -354,8 +439,17 @@ export class FormDesignViewElement extends UmbLitElement {
     return this.shadowRoot?.querySelector('jfb-designer-palette') ?? null;
   }
 
+  get #inspector(): InspectorElement | null {
+    return this.shadowRoot?.querySelector('jfb-designer-inspector') ?? null;
+  }
+
   async #focus(key: string, control: Control = 'select') {
     await this.updateComplete;
+    // Over a narrow canvas the selected element is the inspector's, and the canvas under it is out of reach.
+    if (this.#inspectorMode() === 'overlay' && this._view?.state.selection === key) {
+      this.#inspector?.focusHeading();
+      return;
+    }
     const canvas = this.#canvas;
     if (!canvas) return;
     await canvas.updateComplete;
@@ -465,9 +559,15 @@ export class FormDesignViewElement extends UmbLitElement {
     );
   }
 
+  /** Whether the palette opens over the canvas: in a narrow view, or folded beside the inspector. */
+  #paletteOverlays(): boolean {
+    return this._narrow || this.#crowded();
+  }
+
   #openPalette() {
-    if (this._narrow && !this._open) this.#opener = deepFocus();
-    if (this._narrow) this._open = true;
+    const over = this.#paletteOverlays();
+    if (over && !this._open) this.#opener = deepFocus();
+    if (over) this._open = true;
     else this._folded = false;
     this.#palette?.focusSearch();
     void this.updateComplete.then(() => this.#palette?.focusSearch());
@@ -481,7 +581,14 @@ export class FormDesignViewElement extends UmbLitElement {
     this.#addTo = null;
     const opener = this.#opener;
     this.#opener = null;
-    if (!giveBack || !open) return;
+    if (!open) return;
+    if (!giveBack) {
+      // A pick over a narrow canvas selected what it added, whose inspector the palette kept out of reach until now.
+      void this.updateComplete.then(() => {
+        if (this.#inspectorMode() === 'overlay' && this._view?.state.selection) this.#inspector?.focusHeading();
+      });
+      return;
+    }
     void this.updateComplete.then(() => {
       if (opener?.isConnected) opener.focus();
       else this.#canvas?.shadowRoot?.querySelector<HTMLElement>('#jfb-canvas-form')?.focus();
@@ -581,6 +688,167 @@ export class FormDesignViewElement extends UmbLitElement {
       case 'shortcuts':
         await this.#shortcuts();
         return;
+      case 'newPageAfter':
+        await this.#newPageAfter(request.key);
+        return;
+      case 'copyAlias':
+        await this.#copyAlias(request.key);
+        return;
+      case 'culture':
+        this._culture = request.culture;
+        await this.#readLook();
+        return;
+    }
+  }
+
+  // What the inspector asks: a change of the element it shows, its fold, its Close, and the element's own actions.
+  async #onInspector(request: InspectorRequest) {
+    switch (request.kind) {
+      case 'change':
+        await this.#inspected(request.key, request.update, request.said, request.merge);
+        return;
+      case 'alias':
+        await this.#realias(request.key, request.alias, request.revert);
+        return;
+      // The focus moves once the view has drawn the inspector's new mode: the button pressed is gone by then.
+      case 'fold':
+        this._inspectorFolded = true;
+        void this.updateComplete.then(() => this.#inspector?.focusUnfold());
+        return;
+      case 'unfold':
+        this._inspectorFolded = false;
+        void this.updateComplete.then(() => this.#inspector?.focusHeading());
+        return;
+      case 'close':
+        this.#letGo();
+        return;
+      case 'element':
+        await this.#act(request.action, request.key);
+        return;
+    }
+  }
+
+  // A change from the inspector: an edit like any other, which leaves the focus in the box typed in and says nothing
+  // aloud, since the box says it already.
+  async #inspected(key: string, update: Parameters<typeof change>[2], said: string, merge: string | undefined) {
+    const context = this.#context;
+    const state = this.#state();
+    if (!context || !state) return;
+    this.#shownLink = true;
+    this._refusal = null;
+    const result = context.edit(change(state, key, update, context.model), said, merge);
+    if (result.ok) this.#closeUndo();
+    else await this.#refuse(result.refusal);
+  }
+
+  // An alias the inspector checked. Where entries hold answers under the alias the field is saved with, the change
+  // asks first and keeps that alias for the merge tags that use it (section 4.3.1); one changed back gives it up.
+  async #realias(key: string, alias: string, revert: () => void) {
+    const context = this.#context;
+    const found = (() => {
+      const state = this.#state();
+      return state ? locate(state.definition, key) : undefined;
+    })();
+    if (!context || found?.kind !== 'field') return;
+    const kept = context.keptAliasOf(key);
+    const before = found.element.alias ?? '';
+    if (kept && before === kept && alias !== kept) {
+      const sure = await confirmText(this, {
+        headline: this.localize.term('jfbInspector_aliasConfirmHeadline'),
+        content: this.localize.term('jfbInspector_aliasConfirmText', kept, alias),
+        confirmLabel: this.localize.term('jfbInspector_aliasConfirm'),
+        color: 'warning',
+      }).then(
+        () => true,
+        () => false,
+      );
+      if (!sure) {
+        revert();
+        return;
+      }
+    }
+    // The field as it is once the question is answered: the form may have changed meanwhile.
+    const state = this.#state();
+    const now = state ? locate(state.definition, key) : undefined;
+    if (!state || now?.kind !== 'field') return;
+    const former = [...(now.element.formerAliases ?? [])].filter((one) => one !== alias);
+    if (kept && alias !== kept && !former.includes(kept)) former.push(kept);
+    const edit = change<DesignField>(
+      state,
+      key,
+      (field) =>
+        withKey<unknown>({ ...field, alias }, 'formerAliases', former.length > 0 ? former : undefined) as DesignField,
+      context.model,
+    );
+    const result = context.edit(
+      edit,
+      this.localize.term('jfbInspector_saidChanged', this.localize.term('jfbInspector_property_alias')),
+    );
+    if (result.ok) {
+      this.#closeUndo();
+      this.#say(this.localize.term('jfbInspector_saidChanged', this.localize.term('jfbInspector_property_alias')));
+    } else {
+      revert();
+      await this.#refuse(result.refusal);
+    }
+  }
+
+  // Close, and Escape in the inspector: the selection goes, and the focus goes back to the element on the canvas.
+  #letGo() {
+    const state = this.#state();
+    const key = state?.selection;
+    if (!state || !key) return;
+    this.#context?.edit(select(state, null), '');
+    void this.#focus(key);
+  }
+
+  // The selected element's actions, from the inspector's bar or the element's "...".
+  async #act(action: ElementAction, key: string) {
+    switch (action) {
+      case 'moveTo':
+        await this.#moveTo(key);
+        return;
+      case 'duplicate':
+        await this.#onCanvas({ kind: 'duplicate', key });
+        return;
+      case 'delete':
+        await this.#delete(key);
+        return;
+      case 'newPageAfter':
+        await this.#newPageAfter(key);
+        return;
+      case 'copyAlias':
+        await this.#copyAlias(key);
+        return;
+    }
+  }
+
+  // Start a new page after this: what follows the element on its page moves onto a new page, which is selected.
+  async #newPageAfter(key: string) {
+    const state = this.#state();
+    const model = this.#context?.model;
+    const found = state ? locate(state.definition, key) : undefined;
+    if (!state || !model || !found || found.kind === 'page') return;
+    const name = this.#label(key);
+    await this.#apply(
+      splitPage(state, { container: found.container.key, index: found.index + 1 }, model),
+      this.localize.term('jfbDesigner_saidNewPage', name),
+    );
+  }
+
+  // Copy alias: the field's alias to the clipboard, said when it is there.
+  async #copyAlias(key: string) {
+    const state = this.#state();
+    const found = state ? locate(state.definition, key) : undefined;
+    const alias = found?.kind === 'field' ? found.element.alias : null;
+    if (!alias) return;
+    try {
+      await navigator.clipboard.writeText(alias);
+      this.#say(this.localize.term('jfbDesigner_saidCopied', alias));
+    } catch {
+      (await this.#notifications())?.peek('warning', {
+        data: { message: this.localize.term('jfbDesigner_copyFailed') },
+      });
     }
   }
 
@@ -748,20 +1016,21 @@ export class FormDesignViewElement extends UmbLitElement {
       return;
     }
     const culture = this._look?.culture ?? '';
+    const standard = this._look?.languages.find((language) => language.isDefault)?.culture ?? culture;
+    const isDefault = culture.toLowerCase() === standard.toLowerCase();
+    // In another language than the default, the default's words kept as the canvas showed them are no text of that
+    // language's own: the field stays as it was.
+    const written = (texts: LocalizedText | null | undefined) =>
+      !isDefault && !ownText(texts, culture) && kept === textIn(texts, culture)
+        ? texts
+        : withText(texts, culture, kept, isDefault);
     const edit = change<DesignField>(
       state,
       key,
       (field) => {
-        if (field.type !== 'heading')
-          return { ...field, label: { ...(field.label ?? {}), [keyIn(field.label, culture)]: kept } };
-        const text = (field['settings'] as { text?: LocalizedText } | undefined)?.text ?? {};
-        return {
-          ...field,
-          settings: {
-            ...((field['settings'] as object | undefined) ?? {}),
-            text: { ...text, [keyIn(text, culture)]: kept },
-          },
-        };
+        if (field.type !== 'heading') return { ...field, label: written(field.label) ?? null };
+        const settings = (field['settings'] as Readonly<Record<string, unknown>> | undefined) ?? {};
+        return { ...field, settings: { ...settings, text: written(settings['text'] as LocalizedText | undefined) } };
       },
       model,
     );
@@ -812,11 +1081,13 @@ export class FormDesignViewElement extends UmbLitElement {
     });
   }
 
-  #travel(way: 'undo' | 'redo') {
+  /** Undoes or redoes the last change, focusing what it restored; `stay` leaves the focus where it is. */
+  #travel(way: 'undo' | 'redo', stay = false) {
     const context = this.#context;
     if (!context) return;
     const said = way === 'undo' ? context.undo() : context.redo();
     if (said === undefined) return;
+    this.#inspector?.forget();
     this.#closeUndo();
     this._refusal = null;
     this.#say(this.localize.term(way === 'undo' ? 'jfbDesigner_saidUndone' : 'jfbDesigner_saidRedone', said));
@@ -826,7 +1097,7 @@ export class FormDesignViewElement extends UmbLitElement {
     if (selection) {
       const index = definition.pages.findIndex((page) => page.key === pageOf(definition, selection)?.key);
       if (index >= 0) this._shown = index;
-      void this.#focus(selection);
+      if (!stay) void this.#focus(selection);
     } else if (dropped) {
       void this.#focusAddField();
     } else {
@@ -857,8 +1128,12 @@ export class FormDesignViewElement extends UmbLitElement {
         this.#palette?.focusUnfold();
         return;
       case 'unfold':
-        this._folded = false;
-        this.#palette?.focusSearch();
+        // Folded beside the inspector, the palette opens over the canvas; folded by its own button, beside it again.
+        if (this.#crowded()) this.#openPalette();
+        else {
+          this._folded = false;
+          this.#palette?.focusSearch();
+        }
         return;
       case 'close':
         this.#closePalette(true);
@@ -955,17 +1230,36 @@ export class FormDesignViewElement extends UmbLitElement {
   #onKey(event: KeyboardEvent) {
     // While a drag lasts the form stays as it is: the drag takes Escape itself.
     if (isDragging()) return;
-    const target = event.composedPath()[0] as HTMLElement | undefined;
-    const typing =
-      target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target?.isContentEditable;
+    const path = event.composedPath();
+    const target = path[0] as HTMLElement | undefined;
+    // A box that takes text has its own Undo; a list box takes Escape, a switch neither.
+    const entry =
+      (target instanceof HTMLInputElement && !NOT_TEXT.has(target.type)) ||
+      target instanceof HTMLTextAreaElement ||
+      target?.isContentEditable === true;
+    const typing = entry || target instanceof HTMLSelectElement;
+    const inInspector = path.some((node) => node instanceof HTMLElement && node.localName === 'jfb-designer-inspector');
     const ctrl = event.ctrlKey || event.metaKey;
     const key = event.key.toLowerCase();
     const state = this.#state();
     const selection = state?.selection ?? null;
     if (key === 'escape') {
+      // An open menu closes itself and gives the focus back to its button.
+      if (path.some((node) => node instanceof HTMLElement && node.matches('[popover]:popover-open'))) return;
       if (this._open) this.#closePalette(true);
       else if (this._insertAt) this._insertAt = null;
+      else if (state && selection && !typing && inInspector) this.#letGo();
       else if (state && selection && !typing) this.#context?.edit(select(state, null), '');
+      else return;
+      event.preventDefault();
+      return;
+    }
+    if (entry) return;
+    if (inInspector) {
+      // From the inspector, Undo and Redo leave the focus where it is, ? lists the shortcuts, and nothing else acts.
+      if (ctrl && key === 'z' && !event.shiftKey) this.#travel('undo', true);
+      else if (ctrl && (key === 'y' || (key === 'z' && event.shiftKey))) this.#travel('redo', true);
+      else if (event.key === '?' && !ctrl && !event.altKey) void this.#shortcuts();
       else return;
       event.preventDefault();
       return;
@@ -1021,14 +1315,28 @@ export class FormDesignViewElement extends UmbLitElement {
     return this.#typeList.list;
   }
 
+  /** Whether the palette folds for the inspector: an element is selected in a view up to 1024 px. */
+  #crowded(): boolean {
+    return this._crowded && !this._narrow && Boolean(this._view?.state.selection) && !this._inspectorFolded;
+  }
+
   #mode(): PaletteMode {
     if (this._narrow) return 'overlay';
+    if (this.#crowded()) return this._open ? 'overlay' : 'rail';
     return this._folded ? 'rail' : 'docked';
+  }
+
+  #inspectorMode(): InspectorMode {
+    if (this._narrow) return 'overlay';
+    return this._inspectorFolded ? 'rail' : 'docked';
   }
 
   override render() {
     const view = this._view;
     const mode = this.#mode();
+    const selection = view?.state.selection ?? null;
+    const inspector = this.#inspectorMode();
+    const inspects = selection !== null && this._look !== undefined && !this._failed;
     // A button, not a link: Umbraco's router takes every link's click for a move to another place.
     return html`<button
         type="button"
@@ -1055,7 +1363,7 @@ export class FormDesignViewElement extends UmbLitElement {
       ${this._failed ? this.#failed() : nothing}
       <jfb-form-canvas
         ?hidden=${this._failed}
-        ?inert=${mode === 'overlay' && this._open}
+        ?inert=${(mode === 'overlay' && this._open) || (inspects && inspector === 'overlay')}
         .definition=${view?.state.definition ?? { pages: [] }}
         .selection=${view?.state.selection ?? null}
         .shown=${this._shown}
@@ -1071,6 +1379,19 @@ export class FormDesignViewElement extends UmbLitElement {
         .refusalOf=${this.#refusalOf}
         .refusal=${this._refusal}
       ></jfb-form-canvas>
+      ${
+        inspects
+          ? html`<jfb-designer-inspector
+              ?inert=${mode === 'overlay' && this._open}
+              .definition=${view?.state.definition ?? { pages: [] }}
+              .selection=${selection}
+              .types=${this._types}
+              .culture=${this._look?.culture ?? ''}
+              .languages=${this._look?.languages ?? []}
+              mode=${inspector}
+            ></jfb-designer-inspector>`
+          : nothing
+      }
       <div class="visually-hidden" role="status" aria-live="polite">${this._said}</div>`;
   }
 }

@@ -78,4 +78,27 @@ describe('the history', () => {
     history.reset(START);
     expect([history.canUndo, history.canRedo, history.state]).toEqual([false, false, START]);
   });
+
+  it('keeps changes that go on with the one before as one step, until anything else comes between', () => {
+    const history = new EditorHistory({ definition: { pages: [] }, selection: null });
+    const typed = (title: string) => ({
+      ok: true as const,
+      state: { definition: { pages: [], title }, selection: null },
+    });
+    history.apply(typed('E'), 'Renamed', 'label');
+    history.apply(typed('Em'), 'Renamed', 'label');
+    history.apply(typed('Ema'), 'Renamed', 'label');
+    expect(history.undo()).toBe('Renamed');
+    expect(history.state.definition['title']).toBeUndefined();
+    expect(history.canUndo).toBe(false);
+
+    history.apply(typed('A'), 'Renamed', 'label');
+    history.apply({ ok: true, state: { definition: history.state.definition, selection: 'x' } }, '');
+    history.apply(typed('AB'), 'Renamed', 'label');
+    history.apply(typed('ABC'), 'Changed help', 'help');
+    history.undo();
+    expect(history.state.definition['title']).toBe('AB');
+    history.undo();
+    expect(history.state.definition['title']).toBe('A');
+  });
 });
