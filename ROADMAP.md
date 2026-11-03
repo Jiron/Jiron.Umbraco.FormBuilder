@@ -2541,7 +2541,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - tests cover the approved and rejected triggers, for single and bulk changes;
     - tests with fake time show that the runs a user's state change queues (approve, reject, not spam; single and bulk) start only after the undo window, that Undo inside the window restores every entry's state, gives places back or takes them again, and leaves those runs `Skipped` with `undone` and no email sent, that Undo after the window is refused with `409`, and that changes made by a rule, a "set state" action, verification or automatic approval run at once (ADR-0023);
     - tests show "not spam" on a verification form sending an entry without `VerifiedUtc` to `Unverified` with its mail, and a value kept only until the actions have run surviving while its entry is `Unverified`, in `Spam` or waiting for approval (also when the form has only `submitted`, only `verified` or only `approved` actions), used by the runs that follow, and gone after the last one.
-- [ ] **8.6a Save and resume on the server, and phase review**
+- [x] **8.6a Save and resume on the server, and phase review** (2026-11-03, eea784d)
   - **The flow (ADR-0163):**
     - the `drafts` and `resume` endpoints (§4.6), with the `Draft` state and the resume email through the outbox;
     - the token in the URL fragment, never sent to the server in a query string;
