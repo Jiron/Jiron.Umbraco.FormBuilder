@@ -52,6 +52,7 @@ describe("a field's sections", () => {
       validation: [
         'setting:minLength',
         'setting:maxLength',
+        'pattern',
         'unique',
         'matches',
         'message:required',

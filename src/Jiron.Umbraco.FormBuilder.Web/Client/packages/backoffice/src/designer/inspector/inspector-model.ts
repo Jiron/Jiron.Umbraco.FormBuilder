@@ -54,6 +54,7 @@ export type Item =
   | { readonly kind: 'prefill' }
   | { readonly kind: 'keep' }
   | { readonly kind: 'message'; readonly message: string }
+  | { readonly kind: 'pattern' }
   | { readonly kind: 'unique' }
   | { readonly kind: 'matches' }
   /** Where a choice field's options come from, and its own options (9.4b). */
@@ -97,6 +98,7 @@ export function fieldSections(type: FieldTypeResponseModel, groupColumns: number
   essentials.push(...shownSettings(type, 'essentials'));
 
   const validation: Item[] = [...shownSettings(type, 'validation')];
+  if (has('patternCheck')) validation.push({ kind: 'pattern' });
   if (has('uniquePerFormCheck')) validation.push({ kind: 'unique' });
   if (has('matchesFieldCheck')) validation.push({ kind: 'matches' });
   validation.push(...type.messages.map((message): Item => ({ kind: 'message', message })));

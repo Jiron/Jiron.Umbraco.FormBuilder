@@ -534,3 +534,94 @@ describe('merge tags in the inspector (ADR-0173)', () => {
     expect(none.root.querySelector('jfb-merge-tag-picker')).toBeNull();
   });
 });
+
+describe("a field's pattern in the inspector (ADR-0173)", () => {
+  const CODE = '[A-Z]{2}[0-9]{4}';
+  const open = () => localStorage.setItem('jfb.designer.inspector.open', JSON.stringify(['validation']));
+
+  it('is written as the first pattern rule, in its place among the checks, and gone when emptied', async () => {
+    open();
+    const { root, requests } = await inspectorOf('name');
+    const box = must(root.querySelector<HTMLInputElement>('#prop-pattern'), 'the pattern');
+    expect(text(root.querySelector('label[for="prop-pattern"]'))).toBe('Must match a pattern');
+    expect(box.getAttribute('aria-describedby')).toBe('prop-pattern-help');
+    expect(root.querySelector('#prop-pattern-sample')).toBeNull();
+    type(box, CODE);
+    expect(applied(requests[0], NAME)['validation']).toEqual([{ kind: 'pattern', pattern: CODE }]);
+    expect(requests[0]?.kind === 'change' && requests[0].merge).toMatch(/^name:pattern\.pattern:\d+$/);
+    expect(requests[0]?.kind === 'change' && requests[0].said).toBe('Changed Must match a pattern');
+
+    const checks = [
+      { kind: 'uniquePerForm' },
+      { kind: 'pattern', pattern: 'x', message: { '': 'No' } },
+      { kind: 'pattern', pattern: 'y' },
+    ];
+    const several = await inspectorOf('name', {}, { ...NAME, validation: checks });
+    const first = must(several.root.querySelector<HTMLInputElement>('#prop-pattern'), 'the pattern');
+    expect(first.value).toBe('x');
+    type(first, CODE);
+    expect(applied(several.requests[0], { ...NAME, validation: checks })['validation']).toEqual([
+      { kind: 'uniquePerForm' },
+      { kind: 'pattern', pattern: CODE, message: { '': 'No' } },
+      { kind: 'pattern', pattern: 'y' },
+    ]);
+    type(first, '');
+    expect(applied(several.requests[1], { ...NAME, validation: checks })['validation']).toEqual([
+      { kind: 'uniquePerForm' },
+      { kind: 'pattern', pattern: 'y' },
+    ]);
+    const only = { ...NAME, validation: [{ kind: 'pattern', pattern: CODE }] };
+    expect(applied(several.requests[1], only)).not.toHaveProperty('validation');
+  });
+
+  it("says when the site's matcher doesn't take the pattern, and then tries no answer against it", async () => {
+    open();
+    const unsafe = { ...NAME, validation: [{ kind: 'pattern', pattern: '(?=a)a' }] };
+    const { root } = await inspectorOf('name', {}, unsafe);
+    const box = must(root.querySelector<HTMLInputElement>('#prop-pattern'), 'the pattern');
+    expect(box.getAttribute('aria-invalid')).toBe('true');
+    expect(box.getAttribute('aria-describedby')).toBe('prop-pattern-help prop-pattern-why');
+    expect(text(root.querySelector('#prop-pattern-why'))).toContain("doesn't take this pattern");
+    expect(must(root.querySelector<HTMLInputElement>('#prop-pattern-sample'), 'the sample').disabled).toBe(true);
+  });
+
+  it('tries an answer typed in Try it as the site would, saves none of it, and forgets it on another element', async () => {
+    open();
+    const coded = { ...NAME, validation: [{ kind: 'pattern', pattern: CODE }] };
+    const { element, root, requests } = await inspectorOf('name', {}, coded, GUESTS);
+    const sample = must(root.querySelector<HTMLInputElement>('#prop-pattern-sample'), 'the sample');
+    const result = () => must(root.querySelector<HTMLElement>('#prop-pattern-result'), 'the result');
+    expect([sample.getAttribute('aria-describedby'), result().getAttribute('role')]).toEqual([
+      'prop-pattern-result',
+      'status',
+    ]);
+    expect(text(result())).toBe('Type an answer to see whether the pattern takes it. It is not saved.');
+    type(sample, 'AB1234');
+    await settle(element);
+    expect([text(result()), result().dataset['result']]).toEqual(['The pattern takes this answer.', 'match']);
+    type(sample, 'AB12345');
+    await settle(element);
+    expect([text(result()), result().dataset['result']]).toEqual(["The pattern doesn't take this answer.", 'miss']);
+    expect(requests).toEqual([]);
+    element.selection = 'guests';
+    await settle(element);
+    element.selection = 'name';
+    await settle(element);
+    expect(must(root.querySelector<HTMLInputElement>('#prop-pattern-sample'), 'the sample').value).toBe('');
+  });
+
+  it('keeps a message of its own in the language edited, and is summed up by the pattern itself', async () => {
+    const coded = { ...NAME, validation: [{ kind: 'pattern', pattern: CODE }] };
+    const { root, requests } = await inspectorOf('name', {}, coded);
+    expect(text(sectionButton(root, 'validation'))).toBe(`Validation Must match a pattern: ${CODE}`);
+    sectionButton(root, 'validation').click();
+    await settle(root.host as InspectorElement);
+    const message = must(root.querySelector<HTMLInputElement>('#prop-pattern-message'), 'the message');
+    expect(message.placeholder).toBe('The standard message');
+    type(message, 'Use two letters, then four digits.');
+    expect(applied(requests[0], coded)['validation']).toEqual([
+      { kind: 'pattern', pattern: CODE, message: { '': 'Use two letters, then four digits.' } },
+    ]);
+    expect(requests[0]?.kind === 'change' && requests[0].merge).toMatch(/^name:pattern\.message:\d+$/);
+  });
+});

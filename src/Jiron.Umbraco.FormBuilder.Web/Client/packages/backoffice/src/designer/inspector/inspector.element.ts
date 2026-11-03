@@ -4,6 +4,7 @@
 // the language the canvas shows, and says so where that is not the default. Every change goes to the Design view as a
 // request, which makes it an edit of the form: typing in one box is one step to undo. Beside the canvas it folds to a
 // rail; over a narrow canvas it carries the element's own bar.
+import { compilePattern, LogicError, type Pattern } from '@jfb/logic';
 import { html, nothing, type PropertyValues, type TemplateResult } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import type { FieldSettingResponseModel, FieldTypeResponseModel } from '../../api';
@@ -104,6 +105,16 @@ function keepOpen(open: ReadonlySet<SectionId>) {
   }
 }
 
+/** A pattern compiled by the site's matcher, or null for one outside its subset, which checks nothing (ADR-0005). */
+function patternOf(pattern: string): Pattern | null {
+  try {
+    return compilePattern(pattern);
+  } catch (error) {
+    if (error instanceof LogicError) return null;
+    throw error;
+  }
+}
+
 /** An element with one property set, or taken away for undefined. */
 function withProperty<T extends Element>(element: T, name: string, value: unknown): T {
   return withKey<unknown>(element, name, value) as T;
@@ -132,6 +143,7 @@ export class InspectorElement extends UmbLitElement {
     _open: { state: true },
     _more: { state: true },
     _problems: { state: true },
+    _sample: { state: true },
   };
 
   static override styles = [jfbBackofficeTokens, jfbVisuallyHidden, inspectorStyles];
@@ -149,6 +161,8 @@ export class InspectorElement extends UmbLitElement {
   declare private _more: ReadonlySet<SectionId>;
   /** Why a box's last value couldn't be kept, in words, by the box's id, until it can or another element is chosen. */
   declare private _problems: ReadonlyMap<string, string>;
+  /** The answer typed into the pattern's tester, never saved; it goes with the element it was typed for. */
+  declare private _sample: string;
 
   /** Counts the focus's visits to the inspector's boxes, so typing in a box again later is a step of its own. */
   #visit = 0;
@@ -165,6 +179,7 @@ export class InspectorElement extends UmbLitElement {
     this._open = readOpen();
     this._more = new Set();
     this._problems = new Map();
+    this._sample = '';
     this.addEventListener('focusin', () => this.#visit++);
   }
 
@@ -185,6 +200,7 @@ export class InspectorElement extends UmbLitElement {
 
   protected override willUpdate(changed: PropertyValues) {
     super.willUpdate(changed);
+    if (changed.has('selection')) this._sample = '';
     if (changed.has('selection') || changed.has('culture')) this._problems = new Map();
   }
 
@@ -551,6 +567,8 @@ export class InspectorElement extends UmbLitElement {
       case 'unique':
       case 'matches':
         return subject.kind === 'field' ? this.#check(subject.field, item.kind, name) : nothing;
+      case 'pattern':
+        return subject.kind === 'field' ? this.#pattern(subject.field, name) : nothing;
       case 'setting': {
         if (subject.kind !== 'field' || !subject.type) return nothing;
         const value = valueOf(settingsOf(subject.field), item.setting);
@@ -818,6 +836,112 @@ export class InspectorElement extends UmbLitElement {
   }
 
   // The checks no type owns that 9.4a edits: each answer once per form, and an answer that matches another field's.
+  // "Must match a pattern" (ADR-0173): the field's first pattern rule, its message, and a box to try an answer in, which
+  // says at once whether the pattern takes it, through the matcher the site uses (ADR-0005). A pattern the matcher
+  // doesn't take is said under its box. The rule goes where it was among the field's checks; others stay as they are.
+  #pattern(field: DesignField, name: string): TemplateResult {
+    const id = 'prop-pattern';
+    const checks = (field['validation'] as readonly Readonly<Record<string, unknown>>[] | undefined) ?? [];
+    const check = checks.find((each) => each['kind'] === 'pattern');
+    const pattern = typeof check?.['pattern'] === 'string' ? check['pattern'] : '';
+    const put = (next: Readonly<Record<string, unknown>> | undefined, typed: string) =>
+      this.#change(
+        field.key,
+        (one) => {
+          const all =
+            ((one as Readonly<Record<string, unknown>>)['validation'] as
+              readonly Readonly<Record<string, unknown>>[] | undefined) ?? [];
+          const at = all.findIndex((each) => each['kind'] === 'pattern');
+          const kept = all.filter((_each, index) => index !== at);
+          if (next) kept.splice(at < 0 ? kept.length : at, 0, next);
+          return withProperty(one, 'validation', kept.length > 0 ? kept : undefined);
+        },
+        name,
+        typed,
+      );
+    const compiled = pattern === '' ? null : patternOf(pattern);
+    const unsafe = pattern !== '' && compiled === null;
+    const said = check?.['message'] as LocalizedText | undefined;
+    const result =
+      this._sample === ''
+        ? this.#term('patternTryHelp')
+        : compiled?.test(this._sample)
+          ? this.#term('patternMatches')
+          : this.#term('patternFails');
+    return html`<div class="item item-stack">
+      <div class="item">
+        <label class="label" for=${id}>${name}</label>
+        <p class="help" id=${`${id}-help`}>${this.#term('help_pattern')}</p>
+        <input
+          type="text"
+          id=${id}
+          class="code"
+          autocomplete="off"
+          spellcheck="false"
+          aria-describedby=${unsafe ? `${id}-help ${id}-why` : `${id}-help`}
+          aria-invalid=${unsafe ? 'true' : 'false'}
+          .value=${boxValue(pattern)}
+          @input=${(event: Event) => {
+            const written = (event.target as HTMLInputElement).value;
+            put(
+              written === '' ? undefined : { ...(check ?? {}), kind: 'pattern', pattern: written },
+              'pattern.pattern',
+            );
+          }}
+        />
+        ${unsafe ? html`<p class="why" id=${`${id}-why`}>${this.#term('patternUnsafe')}</p>` : nothing}
+      </div>
+      ${
+        check
+          ? html`<div class="item">
+                <label class="label" for=${`${id}-message`}>${this.#term('checkMessage')}</label>
+                <input
+                  type="text"
+                  id=${`${id}-message`}
+                  autocomplete="off"
+                  lang=${this.culture || nothing}
+                  placeholder=${this.#isDefault ? this.#term('messageStandard') : this.#placeholderOf(said)}
+                  .value=${boxValue(this.#textOf(said))}
+                  @input=${(event: Event) => {
+                    const written = withText(
+                      said,
+                      this.culture,
+                      (event.target as HTMLInputElement).value,
+                      this.#isDefault,
+                    );
+                    put(
+                      withKey<unknown>(check, 'message', written) as Readonly<Record<string, unknown>>,
+                      'pattern.message',
+                    );
+                  }}
+                />
+              </div>
+              <div class="item">
+                <label class="label" for=${`${id}-sample`}>${this.#term('patternTry')}</label>
+                <input
+                  type="text"
+                  id=${`${id}-sample`}
+                  autocomplete="off"
+                  spellcheck="false"
+                  aria-describedby=${`${id}-result`}
+                  ?disabled=${unsafe}
+                  .value=${this._sample}
+                  @input=${(event: Event) => (this._sample = (event.target as HTMLInputElement).value)}
+                />
+                <p
+                  class="help"
+                  id=${`${id}-result`}
+                  role="status"
+                  data-result=${this._sample === '' ? 'none' : compiled?.test(this._sample) ? 'match' : 'miss'}
+                >
+                  ${result}
+                </p>
+              </div>`
+          : nothing
+      }
+    </div>`;
+  }
+
   #check(field: DesignField, kind: 'unique' | 'matches', name: string): TemplateResult {
     const wire = kind === 'unique' ? 'uniquePerForm' : 'matchesField';
     const checks = (field['validation'] as readonly Readonly<Record<string, unknown>>[] | undefined) ?? [];
@@ -936,6 +1060,12 @@ export class InspectorElement extends UmbLitElement {
         return own[item.kind === 'plain' ? item.property : item.kind] !== undefined ? name : null;
       case 'message':
         return (own['messages'] as Readonly<Record<string, unknown>> | undefined)?.[item.message] ? name : null;
+      case 'pattern': {
+        const check = ((own['validation'] as readonly Readonly<Record<string, unknown>>[] | undefined) ?? []).find(
+          (each) => each['kind'] === 'pattern',
+        );
+        return typeof check?.['pattern'] === 'string' ? `${name}: ${check['pattern']}` : null;
+      }
       case 'unique':
       case 'matches': {
         const wire = item.kind === 'unique' ? 'uniquePerForm' : 'matchesField';
