@@ -39,6 +39,12 @@ export default defineConfig({
       use: browser,
     },
     {
+      // The Forms section in the backoffice, signed in as each persona (ADR-0165).
+      name: 'backoffice',
+      testDir: './specs/backoffice',
+      use: browser,
+    },
+    {
       // What uses up a limit of the one host, after every spec that could meet it (ADR-0137).
       name: 'limits',
       testDir: './specs/limits',
