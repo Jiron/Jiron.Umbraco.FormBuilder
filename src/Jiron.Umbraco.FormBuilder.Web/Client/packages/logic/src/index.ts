@@ -54,6 +54,7 @@ export { LogicError, type LogicErrorCode } from './errors.ts';
 export {
   evaluateForm,
   hasCalculations,
+  hasCycle,
   type FormAnswers,
   type FormState,
   type LogicAction,

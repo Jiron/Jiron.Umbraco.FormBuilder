@@ -361,6 +361,40 @@ const push = (map: Map<string, string[]>, key: string, value: string): void => {
   else list.push(value);
 };
 
+/**
+ * Whether the form's elements wait on one another in a circle, which `evaluateForm` refuses as `cycle`: what holds an
+ * element, the fields its show or hide rule looks at and, given the calculation language, the fields its formula names.
+ * The designer asks it before it moves anything (ADR-0016). A formula that does not read names nothing here, as the
+ * form check says what is wrong with it; a form that is not one at all (`invalid_form`) throws, as it does there.
+ */
+export function hasCycle(form: LogicForm, formulas: Formulas | null = null): boolean {
+  const { nodes, subjects, aliases } = index(form);
+  for (const element of nodes) {
+    if (element.calculation === null || formulas === null) continue;
+    let tree: Calculation;
+    try {
+      tree = formulas.parse(element.calculation.formula);
+    } catch {
+      continue;
+    }
+    element.formula = { tree, named: namedIn(tree), decimals: 0 };
+  }
+  try {
+    order(nodes, subjects, aliases);
+    return false;
+  } catch (error) {
+    if (error instanceof LogicError && error.code === 'cycle') return true;
+    throw error;
+  }
+}
+
+/** The aliases a calculation names, whatever their fields' kinds. */
+function namedIn(calculation: Calculation): string[] {
+  if (typeof calculation === 'string') return [];
+  if (isField(calculation)) return [calculation.field];
+  return calculation.args.flatMap(namedIn);
+}
+
 /** Whether a form has a calculation, which only the calculation language works out. */
 export function hasCalculations(form: LogicForm): boolean {
   const calculates = (field: LogicField): boolean =>
