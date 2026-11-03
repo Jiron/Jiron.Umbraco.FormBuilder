@@ -373,7 +373,8 @@ export class InspectorElement extends UmbLitElement {
         const own = element as DesignField;
         const current = settingsOf(own);
         const write = (target: FieldSettingResponseModel, before: unknown, value: unknown) =>
-          target.kind === 'localizedText' && (typeof value === 'string' || value === undefined)
+          (target.kind === 'localizedText' || target.kind === 'localizedHtml') &&
+          (typeof value === 'string' || value === undefined)
             ? withText(before as LocalizedText | undefined, culture, (value as string | undefined) ?? '', isDefault)
             : value;
         if (inner === undefined) return withSetting(own, top, write(top, current[top.name], parsed.value));

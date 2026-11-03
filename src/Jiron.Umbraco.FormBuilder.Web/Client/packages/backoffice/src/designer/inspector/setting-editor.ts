@@ -11,6 +11,7 @@ import type { FieldSettingResponseModel } from '../../api';
 import type { LocalizedText } from '../definition';
 import { textIn } from '../preview/field-models';
 import { boxValue } from './box-value';
+import './rich-text.element';
 import {
   ownText,
   parseChoices,
@@ -69,6 +70,21 @@ export function problemText(term: EditorContext['term'], problem: Problem): stri
 
 const asText = (value: unknown) => (value === undefined || value === null ? '' : String(value));
 
+/** Rich text as one line of its words, for a summary: its tags gone, its spaces folded, its first 80 characters. */
+export function plainOf(html: string): string {
+  const words = html
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&amp;/g, '&')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return words.length > 80 ? `${words.slice(0, 79)}${String.fromCharCode(0x2026)}` : words;
+}
+
 /** A date's limit in words: "2026-12-31", "2 weeks from today", "3 days before today". */
 export function boundText(term: EditorContext['term'], bound: DateBound): string {
   switch (bound.kind) {
@@ -108,6 +124,8 @@ export function settingText(
       return boundText(context.term, readDateBound(value));
     case 'localizedText':
       return textIn(value as LocalizedText | undefined, context.culture);
+    case 'localizedHtml':
+      return plainOf(textIn(value as LocalizedText | undefined, context.culture));
     case 'mediaPicker':
     case 'contentPicker':
     case 'documentPicker':
@@ -253,6 +271,8 @@ export function settingEditor(
     case 'documentTypePicker':
     case 'dataTypePicker':
       return picker(context, setting, value, path);
+    case 'localizedHtml':
+      return richText(context, setting, value, path);
     default:
       return nothing;
   }
@@ -317,6 +337,29 @@ function picker(context: EditorContext, setting: FieldSettingResponseModel, valu
         ></umb-input-document>`;
     }
   });
+}
+
+// Rich text in the language edited, on the inspector's own editor (ADR-0173): its label and help above it, said to
+// screen readers as its name and description, and "Insert merge tag" under it where the setting takes tags.
+function richText(context: EditorContext, setting: FieldSettingResponseModel, value: unknown, path: string) {
+  const id = boxId(path);
+  const texts = value as LocalizedText | undefined;
+  const isDefault = context.culture === context.defaultCulture;
+  const label = context.say(setting.label);
+  return html`<div class="item">
+    <p class="label" id=${`${id}-label`}>${label}</p>
+    ${setting.description ? html`<p class="help">${context.say(setting.description)}</p>` : nothing}
+    <jfb-rich-text
+      id=${id}
+      .label=${label}
+      .description=${setting.description ? context.say(setting.description) : ''}
+      .language=${context.culture}
+      .placeholder=${isDefault ? '' : textIn(texts, context.defaultCulture)}
+      .value=${isDefault ? textIn(texts, context.culture) : ownText(texts, context.culture)}
+      .change=${(text: string, done: boolean) => context.set(path, setting, { ok: true, value: text }, done)}
+    ></jfb-rich-text>
+    ${setting.supportsMergeTags ? (context.mergeTags?.(setting, path) ?? nothing) : nothing}
+  </div>`;
 }
 
 // The host's value, read-only, with the configuration key that sets it (ADR-0060).

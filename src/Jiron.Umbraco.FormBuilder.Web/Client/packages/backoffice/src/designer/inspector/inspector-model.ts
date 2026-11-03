@@ -15,8 +15,8 @@ export type SectionId = (typeof SECTIONS)[number];
 export const MOST_SHOWN = 7;
 
 /**
- * The setting editors the inspector draws: the plain ones (9.4a), and Umbraco's pickers (9.4c, ADR-0173); options are an
- * item of their own (9.4b).
+ * The setting editors the inspector draws: the plain ones (9.4a), Umbraco's pickers and rich text (9.4c, ADR-0173);
+ * options are an item of their own (9.4b).
  */
 export const PLAIN_EDITORS: ReadonlySet<string> = new Set([
   'wholeNumber',
@@ -35,6 +35,7 @@ export const PLAIN_EDITORS: ReadonlySet<string> = new Set([
   'documentPicker',
   'documentTypePicker',
   'dataTypePicker',
+  'localizedHtml',
 ]);
 
 /** A field's texts the inspector edits in each language. */

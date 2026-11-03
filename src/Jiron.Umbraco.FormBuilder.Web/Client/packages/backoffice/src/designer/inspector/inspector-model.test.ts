@@ -144,13 +144,14 @@ describe("a field's sections", () => {
     expect(shape(fieldSections(typeOf('text'), 1))['essentials']).not.toContain('options');
   });
 
-  it('show only settings the plain editors draw', () => {
+  it('show only settings the inspector draws: plain ones, rich text and pickers (ADR-0173)', () => {
     for (const type of Object.values(builtInTypes))
       for (const section of fieldSections(type, 1))
         for (const item of section.items)
           if (item.kind === 'setting')
             expect(PLAIN_EDITORS.has(item.setting.editor), `${type.alias}.${item.setting.name}`).toBe(true);
-    expect(shape(fieldSections(typeOf('paragraph'), 1))['essentials'] ?? []).not.toContain('setting:html');
+    expect(shape(fieldSections(typeOf('paragraph'), 1))['essentials'] ?? []).toContain('setting:html');
+    expect(shape(fieldSections(typeOf('image'), 1))['essentials'] ?? []).toContain('setting:media');
   });
 
   it("take a list of answers as a default where the field takes several: choices, files, a dropdown's Multiple", () => {
