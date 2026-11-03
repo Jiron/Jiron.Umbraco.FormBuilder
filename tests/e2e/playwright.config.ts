@@ -51,6 +51,15 @@ export default defineConfig({
       dependencies: ['website'],
       use: browser,
     },
+    {
+      // Interactions measured against section 4.12's budgets: alone, after every other project, so nothing else shares
+      // the machine while they are measured (ADR-0169).
+      name: 'budgets',
+      testDir: './specs/budgets',
+      dependencies: ['smoke', 'website', 'backoffice', 'limits', 'startup'],
+      workers: 1,
+      use: browser,
+    },
     // Two hosts on one SQL Server database in CI's load-balancing job; JFB_E2E_LB=1 proves the suite itself on one host.
     ...(process.env['SA_PASSWORD'] || process.env['JFB_E2E_LB']
       ? [{ name: 'lb', testDir: './specs/lb', use: browser }]
