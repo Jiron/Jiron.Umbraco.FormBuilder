@@ -324,6 +324,34 @@ public sealed class FolderRepositoryTests : RepositoryTestBase
         });
     }
 
+    [Test]
+    public async Task OnlyAnEmptyFolderOutsideTheTrash_IsDeletedAtOnce_WhateverItsCallerChecked()
+    {
+        var withFolder = await CreateFolderAsync("With a folder");
+        var inside = await CreateFolderAsync("Inside", withFolder.Id);
+        var withForm = await CreateFolderAsync("With a form");
+        await CreateFormAsync("held", withForm.Id);
+        var withTrashedForm = await CreateFolderAsync("With a trashed form");
+        var trashedForm = await CreateFormAsync("gone", withTrashedForm.Id);
+        await Forms.TrashAsync(trashedForm.Id, trashedForm.ConcurrencyVersion, Editor);
+        var empty = await CreateFolderAsync("Empty");
+        var trashed = await CreateFolderAsync("Trashed");
+        await Folders.TrashAsync(trashed.Id, Editor);
+
+        // The service checks emptiness first; the statement checks it again, for a form or folder added meanwhile.
+        Assert.Multiple(async () =>
+        {
+            AssertConflict(() => Folders.DeleteEmptyAsync(withFolder.Id), FormBuilderConflict.FolderNotEmpty);
+            AssertConflict(() => Folders.DeleteEmptyAsync(withForm.Id), FormBuilderConflict.FolderNotEmpty);
+            AssertConflict(() => Folders.DeleteEmptyAsync(withTrashedForm.Id), FormBuilderConflict.FolderNotEmpty);
+            AssertConflict(() => Folders.DeleteEmptyAsync(trashed.Id), FormBuilderConflict.Trashed);
+            Assert.That(await Folders.DeleteEmptyAsync(empty.Id), Is.True);
+            Assert.That(await Folders.DeleteEmptyAsync(empty.Id), Is.False, "deleted already");
+            Assert.That(await Folders.GetByIdAsync(inside.Id), Is.Not.Null);
+            Assert.That(await Folders.GetByIdAsync(withForm.Id), Is.Not.Null);
+        });
+    }
+
     private static void AssertConflict<T>(Func<Task<T>> change, FormBuilderConflict conflict) =>
         Assert.That(
             async () => await change(),

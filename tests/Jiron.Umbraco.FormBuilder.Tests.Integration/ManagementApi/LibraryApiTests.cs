@@ -2,8 +2,11 @@ using System.Net;
 using System.Text.Json.Nodes;
 using Jiron.Umbraco.FormBuilder.Core.Access;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
+using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
+using Jiron.Umbraco.FormBuilder.Testing.Time;
+using Microsoft.Extensions.DependencyInjection;
 using Umbraco.Cms.Tests.Common.Testing;
 
 namespace Jiron.Umbraco.FormBuilder.Tests.Integration.ManagementApi;
@@ -23,6 +26,16 @@ public sealed class LibraryApiTests : ManagementApiTestBase
     private Guid _hr;
 
     private IFormBuilderFormService Forms => GetRequiredService<IFormBuilderFormService>();
+
+    /// <inheritdoc />
+    protected override void CustomTestSetup(IUmbracoBuilder builder)
+    {
+        ArgumentNullException.ThrowIfNull(builder);
+        base.CustomTestSetup(builder);
+        var clock = new TestClock();
+        builder.Services.AddSingleton(clock);
+        builder.Services.AddUnique<TimeProvider>(clock);
+    }
 
     // Events is an ordinary folder; HR is restricted to the HR team, who may design there but not manage actions.
     [SetUp]
@@ -177,17 +190,38 @@ public sealed class LibraryApiTests : ManagementApiTestBase
     [Test]
     public async Task TheFieldSearch_FindsPublishedFieldsOfFormsTheUserSees_ByLabelOrAlias()
     {
+        var rating = new FormField
+        {
+            Key = Guid.NewGuid(),
+            Type = "grid",
+            Alias = "rating",
+            Label = new LocalizedText("Service rating"),
+            Options = new FieldOptions { Items = [new FieldOption { Value = "good", Label = new LocalizedText("Good") }] },
+            Rows = [new GridRow { Key = Guid.NewGuid(), Label = new LocalizedText("Speed") }, new GridRow { Key = Guid.NewGuid(), Label = new LocalizedText("Price") }],
+        };
         var spring = await FormAsync("Spring", _events);
-        await DesignAsync(spring, [Text("colour", "Favourite colour")], publish: true);
-        await DesignAsync(spring, [Text("colour", "Favourite colour"), Text("shoe", "Shoe size")]);
+        await DesignAsync(spring, [Text("colour", "Favourite colour"), rating, Text("glove", "Glove size")], publish: true);
+        await DesignAsync(spring, [Text("colour", "Favourite colour"), rating, Text("dob", "Date of birth")], publish: true);
+        await DesignAsync(spring, [Text("colour", "Favourite colour"), rating, Text("dob", "Date of birth"), Text("shoe", "Shoe size")]);
+        // A preview entry gives a field only the draft has a row of its own (ADR-0003); a search does not find it.
+        var springRow = (await GetRequiredService<IFormRepository>().GetAsync(spring))!;
+        await GetRequiredService<IFormRepository>().AddFieldAsync(springRow.Id, new CatalogueFieldValues(Guid.NewGuid(), "hint", "Hint for the preview", "text", FieldStorageKind.Text, false, 9, null, null, null));
         var payroll = await FormAsync("Payroll", _hr);
         await DesignAsync(payroll, [Text("band", "Salary band")], publish: true);
+        var summer = await FormAsync("Summer", _events);
+        await DesignAsync(summer, [Text("hat", "Hat size")], publish: true);
+        await Forms.UnpublishAsync(summer, await VersionAsync(summer), null);
 
         var byLabel = await CallAsync(Designer, HttpMethod.Get, "form/search/field?text=Colour");
         var byAlias = await CallAsync(Designer, HttpMethod.Get, "form/search/field?text=COLOUR");
         var draftOnly = await CallAsync(Designer, HttpMethod.Get, "form/search/field?text=shoe");
         var hidden = await CallAsync(Designer, HttpMethod.Get, "form/search/field?text=salary");
         var hrSees = await CallAsync("hr", HttpMethod.Get, "form/search/field?text=salary");
+        var grid = await CallAsync(Designer, HttpMethod.Get, "form/search/field?text=rating");
+        var aliasOnly = await CallAsync(Designer, HttpMethod.Get, "form/search/field?text=DOB");
+        var dropped = await CallAsync(Designer, HttpMethod.Get, "form/search/field?text=glove");
+        var preview = await CallAsync(Designer, HttpMethod.Get, "form/search/field?text=hint");
+        var unpublished = await CallAsync(Designer, HttpMethod.Get, "form/search/field?text=hat");
         await TrashFormAsync(spring);
         var trashed = await CallAsync(Designer, HttpMethod.Get, "form/search/field?text=colour");
 
@@ -202,6 +236,11 @@ public sealed class LibraryApiTests : ManagementApiTestBase
             Assert.That(draftOnly.Body!["total"]!.GetValue<int>(), Is.Zero, "a field only the draft has is found once it is published");
             Assert.That(hidden.Body!["total"]!.GetValue<int>(), Is.Zero, "the designer does not see Payroll");
             Assert.That(hrSees.Body!["total"]!.GetValue<int>(), Is.EqualTo(1));
+            Assert.That(grid.Body!["items"]!.AsArray().Select(item => item!["label"]!.GetValue<string>()), Is.EqualTo(new[] { "Service rating" }), "a grid once, not its rows, which share its alias");
+            Assert.That(unpublished.Body!["total"]!.GetValue<int>(), Is.Zero, "visitors get nothing of an unpublished form");
+            Assert.That(aliasOnly.Body!["items"]!.AsArray().Select(item => item!["label"]!.GetValue<string>()), Is.EqualTo(new[] { "Date of birth" }), "by its alias alone");
+            Assert.That(dropped.Body!["total"]!.GetValue<int>(), Is.Zero, "a field the last publish dropped");
+            Assert.That(preview.Body!["total"]!.GetValue<int>(), Is.Zero, "a row a preview entry wrote for the draft");
             Assert.That(trashed.Body!["total"]!.GetValue<int>(), Is.Zero, "a form in the trash is not searched");
         });
     }
@@ -215,6 +254,12 @@ public sealed class LibraryApiTests : ManagementApiTestBase
         var autumn = await FormAsync("Autumn", inner);
         await DesignAsync(spring, [Text("name", "Name")], publish: true);
         await DesignAsync(autumn, [Text("name", "Name")], publish: true);
+        // An entry from before the last days counts no more. The clock goes back for it only, as the API's sign-ins
+        // take their time from it too.
+        var clock = GetRequiredService<TestClock>();
+        clock.SetNow(DateTimeOffset.UtcNow.AddDays(-LibraryLists.RecentDays).AddHours(-1));
+        await EntryAsync(spring, EntryState.Submitted);
+        clock.Reset();
         await EntryAsync(spring, EntryState.Submitted);
         await EntryAsync(spring, EntryState.Approved);
         await EntryAsync(spring, EntryState.Spam);
@@ -252,7 +297,8 @@ public sealed class LibraryApiTests : ManagementApiTestBase
         await TrashFormAsync(payroll);
 
         var bin = await CallAsync(Designer, HttpMethod.Get, "library/trash");
-        var holdings = await CallAsync(Designer, HttpMethod.Get, $"form/{spring}/holdings");
+        var holdings = await CallAsync("admin", HttpMethod.Get, $"form/{spring}/holdings");
+        var designerHoldings = await CallAsync(Designer, HttpMethod.Get, $"form/{spring}/holdings");
         var adminEmpties = await CallAsync("admin", HttpMethod.Get, "trash/holdings");
         var designerEmpties = await CallAsync(Designer, HttpMethod.Get, "trash/holdings");
 
@@ -263,6 +309,7 @@ public sealed class LibraryApiTests : ManagementApiTestBase
             Assert.That(Row(bin, spring)!["updatedBy"]!.GetValue<string>(), Is.EqualTo(Designer), "who put it there");
             Assert.That(Row(bin, spring)!["trashedUtc"], Is.Not.Null);
             Assert.That(holdings.Body!.ToJsonString(), Is.EqualTo("""{"folders":0,"forms":1,"entries":2,"files":1,"left":0}"""), "every entry, spam too, and every file");
+            Assert.That(designerHoldings.Body!.ToJsonString(), Is.EqualTo("""{"folders":0,"forms":1,"entries":null,"files":null,"left":0}"""), "the designer may neither view nor delete its entries");
             Assert.That(adminEmpties.Body!.ToJsonString(), Is.EqualTo("""{"folders":0,"forms":2,"entries":2,"files":1,"left":0}"""));
             Assert.That(designerEmpties.Body!.ToJsonString(), Is.EqualTo("""{"folders":0,"forms":0,"entries":0,"files":0,"left":2}"""), "the designer may delete no entries");
         });

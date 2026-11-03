@@ -389,8 +389,8 @@ export type HealthResponseModel = {
 export type HoldingsResponseModel = {
     folders: number;
     forms: number;
-    entries: number;
-    files: number;
+    entries: number | null;
+    files: number | null;
     left: number;
 };
 

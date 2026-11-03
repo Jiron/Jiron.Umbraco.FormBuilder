@@ -48,8 +48,10 @@ For new forms with actions:
   - `GET library/items?folderKey=` and `GET library/trash` (the screens' rows: the item, when and by whom it last changed, as a name, and its
     entries of the last 30 days that the user may view, a folder summing the forms below it; null where the user may view none);
   - `GET form/{key}/holdings` and `GET trash/holdings` (what a permanent delete takes; the trash's is what emptying would delete for this user,
-    through the same partition emptying uses, with how many top items would stay);
-  - `GET form/search/field` (fields of live versions, of forms outside the trash that the user sees, by label or alias).
+    through the same partition emptying uses, with how many top items would stay; a form's counts are null for a user who may neither
+    view nor delete its entries, as a folder's list leaves them out);
+  - `GET form/search/field` (fields of live versions, of published forms outside the trash that the user sees, by label or alias; a grid
+    once, without the rows the catalogue keeps under its alias).
 - **New forms with actions need `manageActions` where they land (option 2):** a duplicate with actions, an import of a file with actions, and
   a form from a template with actions. Otherwise the answer is `403` naming the permission, before anything is written.
 - **The import's check (option 2)** returns the file's name, alias, version and date, what it holds (pages, fields with a repeater's

@@ -86,7 +86,8 @@ internal sealed class FormController(
 
     /// <summary>
     /// What a form holds that its permanent delete takes (ADR-0166): its entries, in any state, and its uploaded files; a
-    /// restore brings them back with it.
+    /// restore brings them back with it. The counts are for who may view the form's entries or delete them; for anyone else
+    /// they are null, as a folder's list leaves them out.
     /// </summary>
     /// <param name="key">The form.</param>
     /// <param name="cancellationToken">The request's cancellation.</param>
@@ -95,10 +96,17 @@ internal sealed class FormController(
     [FormBuilderPermission(FormBuilderPermissions.Design, On = FormBuilderAccessResourceKind.Form, Key = "key")]
     [ProducesResponseType(typeof(HoldingsResponseModel), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Holdings(Guid key, CancellationToken cancellationToken = default) =>
-        await lists.HoldingsAsync(key, cancellationToken) is { } held
-            ? Ok(new HoldingsResponseModel { Folders = 0, Forms = 1, Entries = held.Entries, Files = held.Files, Left = 0 })
-            : FormBuilderProblems.NotFound(FormBuilderAccessResourceKind.Form);
+    public async Task<IActionResult> Holdings(Guid key, CancellationToken cancellationToken = default)
+    {
+        if (RequestAccess.Form is not { } form || await lists.HoldingsAsync(key, cancellationToken) is not { } held)
+        {
+            return FormBuilderProblems.NotFound(FormBuilderAccessResourceKind.Form);
+        }
+
+        var permissions = await access.GetForFormAsync(RequestAccess.User, FormAccessTarget.Of(form), cancellationToken);
+        var counts = (permissions & (FormBuilderPermissions.ViewEntries | FormBuilderPermissions.DeleteEntries)) != FormBuilderPermissions.None;
+        return Ok(new HoldingsResponseModel { Folders = 0, Forms = 1, Entries = counts ? held.Entries : null, Files = counts ? held.Files : null, Left = 0 });
+    }
 
     /// <summary>A form that the user sees: its name, its state and the user's permissions on it.</summary>
     /// <param name="key">The form.</param>

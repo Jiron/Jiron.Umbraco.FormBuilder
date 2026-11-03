@@ -29,11 +29,15 @@ internal sealed partial class FormRepository
                 var n = new SqlNames(db);
                 var a = new SqlArgs();
                 var pattern = a.Add("%" + SqlNames.Escape(text.Trim()) + "%");
+                // Fields visitors get now: of a form outside the trash with a published version, in the catalogue's live rows,
+                // and no grid's row, which the catalogue keeps under its grid's alias and type.
                 var where = new List<string>
                 {
                     $"f.{n.C("trashedUtc")} IS NULL",
+                    $"f.{n.C("publishedVersionId")} IS NOT NULL",
                     $"c.{n.C("firstVersionNumber")} IS NOT NULL",
                     $"c.{n.C("lastVersionNumber")} IS NULL",
+                    $"NOT EXISTS (SELECT 1 FROM {n.T(FormBuilderTables.FormField)} g WHERE g.{n.C("formId")} = c.{n.C("formId")} AND g.{n.C("fieldKey")} = c.{n.C("parentFieldKey")} AND g.{n.C("alias")} = c.{n.C("alias")} AND g.{n.C("fieldType")} = c.{n.C("fieldType")})",
                     $"(c.{n.C("label")} LIKE {pattern} {SqlNames.EscapeClause} OR c.{n.C("alias")} LIKE {pattern} {SqlNames.EscapeClause})",
                 };
                 if (AccessSql.FormClause(visibility, n, "f.", a.Add) is { } access)

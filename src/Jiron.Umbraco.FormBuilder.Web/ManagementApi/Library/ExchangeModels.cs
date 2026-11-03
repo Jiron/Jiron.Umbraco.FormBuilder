@@ -236,11 +236,11 @@ internal sealed record HoldingsResponseModel
     /// <summary>The forms that go.</summary>
     public required int Forms { get; init; }
 
-    /// <summary>Their entries, in any state.</summary>
-    public required long Entries { get; init; }
+    /// <summary>Their entries, in any state; null for a form whose entries the user may neither view nor delete.</summary>
+    public required long? Entries { get; init; }
 
-    /// <summary>Their uploaded files.</summary>
-    public required long Files { get; init; }
+    /// <summary>Their uploaded files; null where the entries are.</summary>
+    public required long? Files { get; init; }
 
     /// <summary>How many of the trash's top items stay, because the user may not delete them; 0 for a form.</summary>
     public required int Left { get; init; }
