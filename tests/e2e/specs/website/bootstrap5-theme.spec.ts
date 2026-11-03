@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { expect, test } from '../../fixtures.ts';
 import { formPages, pageOf, pathOf } from '../../support/demo-content.ts';
 import { repoRoot } from '../../support/paths.ts';
+import { sideBySide, sinkMarkup } from '../../support/sink.ts';
 
 // The bootstrap5 theme on the demo's specimen, a form with a field of every type (ROADMAP 6.3d, ADR-0015, ADR-0108).
 // The demo loads its copy of Bootstrap 5.3.8 on a page whose forms show in bootstrap5, as a Bootstrap site loads its
@@ -255,6 +256,19 @@ test('cards, buttons and stars choose as drawn, fields side by side line up, and
   await page.setViewportSize({ width: 375, height: 900 });
   await expect(form.locator('.jfb-matrix-head'), 'on a phone each answer names its column').toBeHidden();
   await expect(form.locator('.jfb-matrix label span').first()).toBeVisible();
+});
+
+test('fields drawn as a fieldset share the rows of fields beside them, and each part keeps its own height', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto(`${SPECIMEN}?theme=bootstrap5&scheme=`);
+  // The server's sink in the specimen's place; the specimen's columns hold no fieldset.
+  await pageForm(page).evaluate((form, html) => (form.outerHTML = html), sinkMarkup('sink-bootstrap5'));
+  const parts = await sideBySide(pageForm(page));
+  expect(parts.sliderHelp, "the slider's help beside the signature's").toBe(parts.signatureHelp);
+  expect(parts.countryTop, "the country's help beside the file's").toBe(parts.fileTop);
+  expect(parts.country, 'the country list as high as a list, beside a taller drop frame').toBeLessThan(parts.file / 2);
 });
 
 test("a field's legend reads as a label and a group's as a heading, and a long scale wraps into even rows on a phone", async ({

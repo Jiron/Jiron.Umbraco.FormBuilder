@@ -387,11 +387,18 @@
       grid-template-rows: subgrid;
     }
 
+    /* Each part keeps its own height: a list beside a taller drop frame stays as high as a list. */
+    & :is(.jfb-columns-2, .jfb-columns-3, .jfb-columns-4) > .jfb-fields > .jfb-field > :not(fieldset),
+    & :is(.jfb-columns-2, .jfb-columns-3, .jfb-columns-4) > .jfb-fields > .jfb-field > fieldset > * {
+      align-self: start;
+    }
+
+    /* A field drawn as a fieldset takes all its rows above; only a label or legend without help takes two. */
     &
       :is(.jfb-columns-2, .jfb-columns-3, .jfb-columns-4)
       > .jfb-fields
       > .jfb-field
-      > :first-child:not(:has(+ .jfb-help)),
+      > :first-child:not(fieldset, :has(+ .jfb-help)),
     &
       :is(.jfb-columns-2, .jfb-columns-3, .jfb-columns-4)
       > .jfb-fields

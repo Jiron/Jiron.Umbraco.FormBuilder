@@ -2,6 +2,7 @@ import type { Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '../../fixtures.ts';
 import { pageOf, pathOf } from '../../support/demo-content.ts';
+import { sideBySide, sinkMarkup } from '../../support/sink.ts';
 
 // The default theme on the demo's specimen, a form with a field of every type (ROADMAP 6.3b, ADR-0022, ADR-0106). In
 // light, dark and right to left, at a phone's and a desktop's width, empty and with the errors of an empty post, axe
@@ -152,6 +153,19 @@ test("fields side by side line up their controls, and an option's description st
       return { own: help.top - label.bottom, next: next.top - help.bottom };
     });
   expect(gaps.own, "the description is nearer its option's label than the next option").toBeLessThan(gaps.next);
+});
+
+test('fields drawn as a fieldset share the rows of fields beside them, and each part keeps its own height', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto(`${SPECIMEN}?theme=default`);
+  // The server's sink in the specimen's place; the specimen's columns hold no fieldset.
+  await pageForm(page).evaluate((form, html) => (form.outerHTML = html), sinkMarkup('sink'));
+  const parts = await sideBySide(pageForm(page));
+  expect(parts.sliderHelp, "the slider's help beside the signature's").toBe(parts.signatureHelp);
+  expect(parts.countryTop, "the country's help beside the file's").toBe(parts.fileTop);
+  expect(parts.country, 'the country list as high as a list, beside a taller drop frame').toBeLessThan(parts.file / 2);
 });
 
 test('a choice drawn as a button sinks when pressed, as a button does', async ({ page }) => {
