@@ -69,6 +69,9 @@ export default {
     unseenPicture: (type: string) => `${type}: its picture can't be shown here`,
     unseenEmpty: (type: string) => `${type}: no text yet`,
     unseenGone: (type: string) => `This site has no field type "${type}" any more.`,
+    canvasFailed: "The canvas couldn't be loaded.",
+    tryAgain: 'Try again',
+    previewFailed: "The preview couldn't be loaded.",
 
     paletteHeading: 'Add a field',
     paletteSearch: 'Search fields',

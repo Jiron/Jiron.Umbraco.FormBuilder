@@ -70,6 +70,9 @@ export default {
     unseenPicture: (type: string) => `${type}: das Bild kann hier nicht gezeigt werden`,
     unseenEmpty: (type: string) => `${type}: noch kein Text`,
     unseenGone: (type: string) => `Diese Website hat keinen Feldtyp „${type}“ mehr.`,
+    canvasFailed: 'Die Arbeitsfläche konnte nicht geladen werden.',
+    tryAgain: 'Erneut versuchen',
+    previewFailed: 'Die Vorschau konnte nicht geladen werden.',
 
     paletteHeading: 'Feld hinzufügen',
     paletteSearch: 'Felder suchen',

@@ -31,6 +31,7 @@ export class FormPreviewElement extends UmbLitElement {
     look: { attribute: false },
     types: { attribute: false },
     _sheets: { state: true },
+    _failed: { state: true },
   };
 
   static override styles = [
@@ -50,6 +51,10 @@ export class FormPreviewElement extends UmbLitElement {
         color: #1d2433;
       }
 
+      .failed {
+        margin: 0;
+      }
+
       .loading {
         display: grid;
         place-items: center;
@@ -64,10 +69,13 @@ export class FormPreviewElement extends UmbLitElement {
   /** The field types by alias; read from the server when no one gives them. */
   declare types: Readonly<Record<string, FieldTypeResponseModel>> | undefined;
   declare private _sheets: readonly CSSStyleSheet[];
+  /** Whether what the preview draws with could not be read. */
+  declare private _failed: boolean;
 
   constructor() {
     super();
     this._sheets = [];
+    this._failed = false;
   }
 
   override connectedCallback() {
@@ -80,6 +88,7 @@ export class FormPreviewElement extends UmbLitElement {
     const [look, types] = await Promise.all([this.look ?? readLook(this, culture), this.types ?? readTypes(this)]);
     this.look ??= look;
     this.types ??= types;
+    this._failed = !look || !types;
     if (look) this._sheets = await themeSheets(look.stylesheets);
   }
 
@@ -97,6 +106,7 @@ export class FormPreviewElement extends UmbLitElement {
 
   override render() {
     const { look, types } = this;
+    if (this._failed) return html`<p class="failed">${this.localize.term('jfbDesigner_previewFailed')}</p>`;
     if (!look || !types) return html`<div class="loading"><uui-loader></uui-loader></div>`;
     const culture = this.localize.lang() || look.culture;
     const definition = normalise(this.definition);

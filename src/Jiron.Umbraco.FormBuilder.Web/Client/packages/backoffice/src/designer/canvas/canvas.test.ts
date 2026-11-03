@@ -156,6 +156,26 @@ describe('a field on the canvas', () => {
     expect(other.requests).toEqual([{ kind: 'label', key: 'e', text: null }]);
   });
 
+  it('shows a label written for screen readers only while it is edited', async () => {
+    const hidden = { ...email, hideLabel: true };
+    const { element } = await fieldOf(stateOf(hidden, { editing: true }));
+    const label = must(element.querySelector('label.jfb-label'), 'the label');
+    expect([
+      label.classList.contains('jfb-visually-hidden'),
+      label.querySelector('input.bo-label-box') !== null,
+    ]).toEqual([false, true]);
+    const shown = await fieldOf(stateOf(hidden));
+    expect(shown.element.querySelector('label.jfb-label')?.classList.contains('jfb-visually-hidden')).toBe(true);
+  });
+
+  it('ends an edit at once where no label shows, and keeps the button that selects the field', async () => {
+    const heading: DesignField = { key: 'h', type: 'heading', settings: { text: {} } };
+    const { element, requests } = await fieldOf(stateOf(heading, { editing: true }));
+    await Promise.resolve();
+    expect(requests).toEqual([{ kind: 'label', key: 'h', text: null }]);
+    expect(controls(element).querySelector('.bo-select')?.hasAttribute('hidden')).toBe(false);
+  });
+
   it('shows a note in the place of a field visitors do not see', async () => {
     const { element } = await fieldOf(stateOf({ key: 'h', type: 'hidden', alias: 'source', label: { '': 'Source' } }));
     expect(element.classList.contains('bo-unseen')).toBe(true);
@@ -332,6 +352,33 @@ describe('the canvas', () => {
       '',
     ]);
     expect(fields[2]?.querySelector('img')?.getAttribute('src')).toBe('/media/hall.jpg');
+  });
+
+  it("shows a page's groups once it has more than one, or a group with its own title, though none holds a field", async () => {
+    const two = await canvasOf({
+      pages: [
+        {
+          key: 'p',
+          groups: [
+            { key: 'g1', fields: [] },
+            { key: 'g2', fields: [] },
+          ],
+        },
+      ],
+    });
+    expect(two.root.querySelector('.bo-empty')).toBeNull();
+    expect(two.root.querySelectorAll('.bo-empty-group')).toHaveLength(2);
+    const titled = await canvasOf({
+      pages: [{ key: 'p', groups: [{ key: 'g', title: { '': 'About you' }, fields: [] }] }],
+    });
+    expect(titled.root.querySelector('.bo-empty')).toBeNull();
+    expect(titled.root.querySelector('fieldset.bo-group > legend')?.textContent).toBe('About you');
+  });
+
+  it("gives the focus to the page's Add field for an element it doesn't draw", async () => {
+    const { element, root } = await canvasOf({ pages: [{ key: 'p', groups: [{ key: 'g', fields: [] }] }] });
+    element.focusElement('g');
+    expect(root.activeElement?.classList.contains('bo-add-field')).toBe(true);
   });
 
   it("shows After sending as visitors see it, the message's markup without anything that runs, with Change", async () => {

@@ -3,9 +3,10 @@
 // selection or at the end of the page; a label edited in place; a delete that Ctrl+Z takes back; a new page shown;
 // pasted questions as fields; Esc; and a refusal said in words. A stand-in workspace drives the real undo history.
 import { FORMULAS } from '@jfb/logic/calc';
+import { UMB_NOTIFICATION_CONTEXT } from '@umbraco-cms/backoffice/notification';
 import { UmbObjectState } from '@umbraco-cms/backoffice/observable-api';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import { must, registerEnglish, settle, shadow, testHost } from '../testing';
+import { must, registerEnglish, settle, shadow, testHost, text } from '../testing';
 import type { FormCanvasElement } from './canvas/form-canvas.element';
 import { CANVAS_REQUEST, type CanvasRequest } from './canvas/form-canvas.element';
 import { FORM_WORKSPACE_CONTEXT } from './constants';
@@ -15,12 +16,15 @@ import { traitsOf, type EditorView } from './form-workspace.context';
 import { EditorHistory } from './history';
 import { PALETTE_PICK, type PalettePick } from './palette/palette.element';
 import { builtInTypes, englishLook } from './preview/fixtures';
+import type { UndoNotificationData } from '../ui/undo-notification.element';
 
 const opened = vi.hoisted(() => ({ value: undefined as unknown }));
+// Whether what the canvas draws with can be read.
+const reading = vi.hoisted(() => ({ fails: false }));
 
 vi.mock('./preview/look', async (original) => ({
   ...(await original<typeof import('./preview/look')>()),
-  readLook: async () => englishLook,
+  readLook: async () => (reading.fails ? undefined : englishLook),
   themeSheets: async () => [],
 }));
 
@@ -90,11 +94,26 @@ class StandIn {
   }
 }
 
+/** Umbraco's toasts, each kept with what it was given and whether it was closed. */
+class Toasts {
+  readonly shown: { data: UndoNotificationData; closed: boolean }[] = [];
+  host: Element | undefined;
+  getHostElement = () => this.host;
+  peek(_color: string, options: { data: UndoNotificationData }) {
+    const toast = { data: options.data, closed: false };
+    this.shown.push(toast);
+    return { close: () => (toast.closed = true) };
+  }
+}
+
 async function viewOf(definition = DEFINITION) {
   const workspace = new StandIn(definition);
+  const toasts = new Toasts();
   const host = testHost();
   workspace.host = host;
+  toasts.host = host;
   host.provideContext(FORM_WORKSPACE_CONTEXT, workspace as never);
+  host.provideContext(UMB_NOTIFICATION_CONTEXT, toasts as never);
   const view = new FormDesignViewElement();
   host.append(view);
   await settle(view);
@@ -118,12 +137,15 @@ async function viewOf(definition = DEFINITION) {
     };
     return (element.fields ?? []).map((each) => each.key);
   };
-  return { workspace, view, canvas, ask, pick, press, state, keys };
+  return { workspace, toasts, view, canvas, ask, pick, press, state, keys };
 }
 
 beforeAll(registerEnglish);
 
-beforeEach(() => localStorage.clear());
+beforeEach(() => {
+  localStorage.clear();
+  reading.fails = false;
+});
 
 afterEach(() => {
   document.body.replaceChildren();
@@ -161,6 +183,50 @@ describe("the view's settings", () => {
       ],
     };
     expect(mediaOf(definition)).toEqual(['m1', 'm2']);
+  });
+});
+
+describe('the palette over the canvas', () => {
+  it('leaves the canvas out of reach while it is open, and Esc gives the focus back to what opened it', async () => {
+    const { view, canvas, ask, press } = await viewOf();
+    Object.assign(view, { _narrow: true });
+    await settle(view);
+    expect(shadow(view).querySelector('jfb-designer-palette')).toBeNull();
+    canvas.focusAddField();
+    await ask({ kind: 'addField', page: 'p1' });
+    expect(shadow(view).querySelector('jfb-designer-palette')?.getAttribute('mode')).toBe('overlay');
+    expect(canvas.hasAttribute('inert')).toBe(true);
+    await press('Escape');
+    expect(shadow(view).querySelector('jfb-designer-palette')).toBeNull();
+    expect(canvas.hasAttribute('inert')).toBe(false);
+    expect(shadow(canvas).activeElement?.classList.contains('bo-add-field')).toBe(true);
+  });
+
+  it('closes with a click beside it', async () => {
+    const { view, ask } = await viewOf();
+    Object.assign(view, { _narrow: true });
+    await settle(view);
+    await ask({ kind: 'addField', page: 'p1' });
+    must(shadow(view).querySelector<HTMLElement>('.scrim'), 'the scrim').click();
+    await settle(view);
+    expect(shadow(view).querySelector('jfb-designer-palette')).toBeNull();
+  });
+});
+
+describe("the view's look", () => {
+  it('says when it cannot be read, and reads it again with Try again', async () => {
+    reading.fails = true;
+    const { view } = await viewOf();
+    const failed = must(shadow(view).querySelector('.failed'), 'the failure');
+    expect([failed.getAttribute('role'), text(failed.querySelector('p'))]).toEqual([
+      'alert',
+      "The canvas couldn't be loaded.",
+    ]);
+    reading.fails = false;
+    must(failed.querySelector('uui-button'), 'Try again').dispatchEvent(new Event('click'));
+    await settle(view);
+    await settle(view);
+    expect(shadow(view).querySelector('.failed')).toBeNull();
   });
 });
 
@@ -284,6 +350,53 @@ describe('the canvas requests', () => {
       label: { '': 'Do you need step-free access?' },
     });
     expect(workspace.said).toEqual(['Added 2 fields']);
+  });
+
+  it('offer Undo after a delete, which takes back that delete only while it is the last change', async () => {
+    const { ask, keys, toasts } = await viewOf();
+    await ask({ kind: 'delete', key: 'email' });
+    await toasts.shown[0]?.data.undo();
+    expect(keys('g1')).toEqual(['name', 'email']);
+
+    // Another change closes the toast, and its Undo leaves that change alone.
+    await ask({ kind: 'delete', key: 'email' });
+    await ask({ kind: 'duplicate', key: 'name' });
+    expect(toasts.shown[1]?.closed).toBe(true);
+    await toasts.shown[1]?.data.undo();
+    expect(keys('g1')).toEqual(['name', 'new1']);
+  });
+
+  it('let go of a selection the canvas no longer draws, and give the focus to Add field', async () => {
+    const { ask, state, canvas } = await viewOf({
+      pages: [{ key: 'p1', groups: [{ key: 'g1', fields: [field('name')] }] }],
+    });
+    await ask({ kind: 'delete', key: 'name' });
+    expect(state().selection).toBeNull();
+    expect(shadow(canvas).activeElement?.classList.contains('bo-add-field')).toBe(true);
+  });
+
+  it("edit a label in the culture the canvas shows it in, and not a heading's that has no text", async () => {
+    const { ask, state, canvas } = await viewOf({
+      pages: [
+        {
+          key: 'p1',
+          groups: [
+            {
+              key: 'g1',
+              fields: [
+                { ...field('email', 'email'), label: { '': 'Email', en: 'Your email' } },
+                { key: 'h', type: 'heading', settings: { text: {} } },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+    await ask({ kind: 'editLabel', key: 'email' });
+    await ask({ kind: 'label', key: 'email', text: 'Email address' });
+    expect(locate(state().definition, 'email')?.element).toMatchObject({ label: { '': 'Email', en: 'Email address' } });
+    await ask({ kind: 'editLabel', key: 'h' });
+    expect(canvas.editing).toBeNull();
   });
 
   it('switch the width and keep it in this browser', async () => {

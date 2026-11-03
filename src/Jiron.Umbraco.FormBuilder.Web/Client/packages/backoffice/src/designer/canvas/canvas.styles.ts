@@ -201,9 +201,16 @@ export const canvasChrome = css`
     position: relative;
   }
 
-  .jfb-form .bo-field > .bo-chrome {
+  /*
+   * The field's whole box, whatever the theme aligns its parts by: a theme's start alignment would size this layer to
+   * its contents, which lie outside the flow, and leave it no height. Its class named twice outranks a theme's rule for the
+   * parts of fields side by side.
+   */
+  .jfb-form .jfb-fields > .bo-field.bo-field > .bo-chrome {
     position: absolute;
     inset: 0;
+    align-self: stretch;
+    justify-self: stretch;
     margin: 0;
     pointer-events: none;
   }

@@ -37,6 +37,22 @@ export type CanvasRequest =
 /** The event a request travels in. */
 export const CANVAS_REQUEST = 'jfb-canvas-request';
 
+/**
+ * Whether a page shows one sentence in place of its groups: it has no field and at most one group, without a title or
+ * a text of its own. Its Add field stands for that group, so the group has no button of its own.
+ */
+export function pageIsBare(page: DesignPage, culture: string): boolean {
+  return (
+    page.groups.length <= 1 &&
+    page.groups.every(
+      (group) =>
+        group.fields.length === 0 &&
+        !textIn(group.title, culture) &&
+        !showsText(safeHtml(textIn(group['description'] as LocalizedText | undefined, culture))),
+    )
+  );
+}
+
 export class FormCanvasElement extends UmbLitElement {
   static override properties = {
     definition: { attribute: false },
@@ -102,6 +118,7 @@ export class FormCanvasElement extends UmbLitElement {
 
   override disconnectedCallback() {
     this.#resize.disconnect();
+    this.#observed = null;
     super.disconnectedCallback();
   }
 
@@ -115,7 +132,9 @@ export class FormCanvasElement extends UmbLitElement {
       field.scrollIntoView({ block: 'nearest' });
       return;
     }
-    root?.querySelector<HTMLElement>(`[data-select="${key}"]`)?.focus();
+    const control = root?.querySelector<HTMLElement>(`[data-select="${key}"]`);
+    if (control) control.focus();
+    else this.focusAddField();
   }
 
   /** Moves the focus to the Add field of the page shown. */
@@ -256,7 +275,8 @@ export class FormCanvasElement extends UmbLitElement {
       words,
       selected: this.selection === field.key,
       editing: this.editing === field.key,
-      labelText: field.type === 'heading' ? label : textIn(field.label, ''),
+      // What the canvas shows, in its culture, which is where an edit goes back to.
+      labelText: field.type === 'heading' ? label : textIn(field.label, context.culture),
       insertActive: this.#insertsAfter(field, container),
       ...(children
         ? { children, firstActive: this.insertAt?.container === field.key && this.insertAt.index === 0 }
@@ -365,7 +385,7 @@ export class FormCanvasElement extends UmbLitElement {
     const description = safeHtml(textIn(page['description'] as LocalizedText | undefined, culture));
     const name = this.#pageName(page, index, culture);
     const selected = this.selection === page.key;
-    const noFields = page.groups.every((group) => group.fields.length === 0);
+    const bare = pageIsBare(page, culture);
     const formEmpty = this.definition.pages.every((each) => each.groups.every((group) => group.fields.length === 0));
     const last = index === this.definition.pages.length - 1;
     const navigation = writeNavigation(document, context.look.classes, {
@@ -388,7 +408,7 @@ export class FormCanvasElement extends UmbLitElement {
         ${title ? html`<h2 class="jfb-title" inert>${title}</h2>` : nothing}
         ${showsText(description) ? html`<div class="jfb-intro" inert>${fragmentOf(description)}</div>` : nothing}
         ${
-          noFields
+          bare
             ? html`<p class="bo-empty">
                 ${
                   formEmpty
@@ -401,7 +421,7 @@ export class FormCanvasElement extends UmbLitElement {
               </p>`
             : nothing
         }
-        ${noFields ? nothing : page.groups.map((group, at) => this.#group(group, at, context))}
+        ${bare ? nothing : page.groups.map((group, at) => this.#group(group, at, context))}
         <button type="button" class="bo-add-field" @click=${() => this.#ask({ kind: 'addField', page: page.key })}>
           <uui-icon name="icon-add" aria-hidden="true"></uui-icon>${this.localize.term('jfbDesigner_addField')}
         </button>

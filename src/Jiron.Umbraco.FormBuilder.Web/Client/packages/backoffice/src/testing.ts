@@ -1,6 +1,7 @@
 // Helpers for the elements' tests (Vitest in jsdom, ADR-0134): the English texts registered as the backoffice
 // registers a dictionary, a host element that provides contexts, a promise to answer by hand, and a wait for the work
 // an element starts.
+import { html } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import { umbLocalizationManager } from '@umbraco-cms/backoffice/localization-api';
 import en from './lang/en';
@@ -22,8 +23,15 @@ export function registerEnglish(): void {
   umbLocalizationManager.registerLocalization(flat as never);
 }
 
-/** An element that hosts controllers and contexts for the element under test, which goes inside it. */
-export class TestHostElement extends UmbLitElement {}
+/**
+ * An element that hosts controllers and contexts for the element under test, which goes inside it, into its slot as a
+ * page's element would: jsdom gives the focus to nothing a shadow host leaves unslotted.
+ */
+export class TestHostElement extends UmbLitElement {
+  override render() {
+    return html`<slot></slot>`;
+  }
+}
 if (!customElements.get('jfb-test-host')) customElements.define('jfb-test-host', TestHostElement);
 
 /** A host in the document, ready to provide contexts. */

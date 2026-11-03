@@ -10,12 +10,13 @@ import { UMB_NOTIFICATION_CONTEXT } from '@umbraco-cms/backoffice/notification';
 import type { FieldGroupResponseModel, FieldTypeResponseModel } from '../api';
 import { jfbBackofficeTokens, jfbVisuallyHidden } from '../styles/tokens';
 import { UNDO_DURATION_MS, UNDO_NOTIFICATION, type UndoNotificationData } from '../ui/undo-notification.element';
-import { CANVAS_REQUEST, type CanvasRequest, type CanvasShown } from './canvas/form-canvas.element';
+import { CANVAS_REQUEST, pageIsBare, type CanvasRequest, type CanvasShown } from './canvas/form-canvas.element';
 import { CANVAS_WIDTHS, type CanvasWidth } from './canvas/widths';
 import type { FormCanvasElement } from './canvas/form-canvas.element';
 import './canvas/form-canvas.element';
 import { FORM_WORKSPACE_CONTEXT } from './constants';
 import { locate, pageOf, type DesignDefinition, type DesignField, type LocalizedText } from './definition';
+import type { EditorState } from './editor-model';
 import {
   change,
   duplicate,
@@ -39,7 +40,7 @@ import {
 } from './palette/palette.element';
 import './palette/palette.element';
 import { PASTE_QUESTIONS_MODAL } from './palette/paste-questions.modal.token';
-import { textIn } from './preview/field-models';
+import { keyIn, textIn } from './preview/field-models';
 import { readLook, themeSheets, type CanvasLook } from './preview/look';
 
 /**
@@ -52,6 +53,13 @@ export const NARROW = 700;
 export const isNarrow = (width: number) => width <= NARROW;
 
 const WIDTH_KEY = 'jfb.designer.width';
+
+/** The element that has the focus, followed into the shadow roots it lies in. */
+function deepFocus(): HTMLElement | null {
+  let found = document.activeElement;
+  while (found?.shadowRoot?.activeElement) found = found.shadowRoot.activeElement;
+  return found instanceof HTMLElement ? found : null;
+}
 
 /** The canvas width this browser chose last; Desktop at first. */
 export function readWidth(): CanvasWidth {
@@ -94,6 +102,7 @@ export class FormDesignViewElement extends UmbLitElement {
     _narrow: { state: true },
     _recent: { state: true },
     _said: { state: true },
+    _failed: { state: true },
   };
 
   static override styles = [
@@ -137,6 +146,26 @@ export class FormDesignViewElement extends UmbLitElement {
         min-height: 0;
       }
 
+      /* Over the canvas while the palette lies on it: a click on it closes the palette. */
+      .scrim {
+        position: absolute;
+        inset: 0;
+        z-index: 9;
+        background: color-mix(in srgb, var(--uui-color-text) 16%, transparent);
+      }
+
+      .failed {
+        display: grid;
+        gap: var(--uui-size-space-4);
+        align-content: start;
+        justify-items: start;
+        padding: var(--uui-size-space-6);
+      }
+
+      .failed p {
+        margin: 0;
+      }
+
       .skip {
         position: absolute;
         inset-block-start: var(--uui-size-space-2);
@@ -177,6 +206,8 @@ export class FormDesignViewElement extends UmbLitElement {
   declare private _narrow: boolean;
   declare private _recent: readonly string[];
   declare private _said: string;
+  /** Whether what the canvas draws with could not be read. */
+  declare private _failed: boolean;
 
   #context: FormWorkspaceContext | undefined;
   /** The page the palette adds to when it was opened from a page's Add field and the page has no group. */
@@ -184,6 +215,11 @@ export class FormDesignViewElement extends UmbLitElement {
   /** Whether the selection a link named was brought into sight. */
   #shownLink = false;
   #mediaRead = new Set<string>();
+  #mediaUrls: UmbMediaUrlRepository | undefined;
+  /** The toast that offers Undo after a delete, closed by the next change: its Undo would take back another. */
+  #undoToast: { close(): void } | undefined;
+  /** What opened the palette over the canvas, where the focus goes back when it closes without a pick. */
+  #opener: HTMLElement | null = null;
   #resize = new ResizeObserver(([entry]) => {
     const narrow = entry ? isNarrow(entry.contentRect.width) : false;
     if (narrow !== this._narrow) this._narrow = narrow;
@@ -204,6 +240,7 @@ export class FormDesignViewElement extends UmbLitElement {
     this._narrow = false;
     this._recent = readRecent();
     this._said = '';
+    this._failed = false;
     this.consumeContext(FORM_WORKSPACE_CONTEXT, (context) => {
       this.#context = context;
       this.observe(context?.editor, (view) => this.#viewChanged(view), 'editor');
@@ -227,8 +264,12 @@ export class FormDesignViewElement extends UmbLitElement {
   }
 
   async #readLook() {
+    this._failed = false;
     const look = await readLook(this);
-    if (!look) return;
+    if (!look) {
+      this._failed = true;
+      return;
+    }
     this._look = look;
     this._sheets = await themeSheets(look.stylesheets);
   }
@@ -251,7 +292,8 @@ export class FormDesignViewElement extends UmbLitElement {
     const wanted = mediaOf(definition).filter((key) => !this.#mediaRead.has(key));
     if (wanted.length === 0) return;
     for (const key of wanted) this.#mediaRead.add(key);
-    const { data } = await new UmbMediaUrlRepository(this).requestItems(wanted);
+    this.#mediaUrls ??= new UmbMediaUrlRepository(this);
+    const { data } = await this.#mediaUrls.requestItems(wanted);
     const found = Object.fromEntries((data ?? []).flatMap((item) => (item.url ? [[item.unique, item.url]] : [])));
     if (Object.keys(found).length > 0) this._media = { ...this._media, ...found };
   }
@@ -309,15 +351,41 @@ export class FormDesignViewElement extends UmbLitElement {
       await this.#refuse(result.refusal, type);
       return false;
     }
+    this.#closeUndo();
     if (said) this.#say(said);
-    const selection = result.state.selection;
+    const { selection, dropped } = this.#settle(result.state);
     if (selection) {
       const page = pageOf(result.state.definition, selection);
       const index = result.state.definition.pages.findIndex((each) => each.key === page?.key);
       if (index >= 0) this._shown = index;
       await this.#focus(selection);
+    } else if (dropped) {
+      await this.#focusAddField();
     }
     return true;
+  }
+
+  // A page without fields draws its one bare group as the page's sentence, so a selection on that group, which a
+  // delete of the page's last field leaves, is let go: Delete would take a group the user can't see.
+  #settle(state: EditorState): { selection: string | null; dropped: boolean } {
+    const selection = state.selection;
+    if (!selection) return { selection: null, dropped: false };
+    const found = locate(state.definition, selection);
+    if (found?.kind !== 'group' || !pageIsBare(found.container, this._look?.culture ?? ''))
+      return { selection, dropped: false };
+    this.#context?.edit(select(state, null), '');
+    return { selection: null, dropped: true };
+  }
+
+  async #focusAddField() {
+    await this.updateComplete;
+    await this.#canvas?.updateComplete;
+    this.#canvas?.focusAddField();
+  }
+
+  #closeUndo() {
+    this.#undoToast?.close();
+    this.#undoToast = undefined;
   }
 
   #state() {
@@ -346,16 +414,26 @@ export class FormDesignViewElement extends UmbLitElement {
   }
 
   #openPalette() {
+    if (this._narrow && !this._open) this.#opener = deepFocus();
     if (this._narrow) this._open = true;
     else this._folded = false;
     this.#palette?.focusSearch();
     void this.updateComplete.then(() => this.#palette?.focusSearch());
   }
 
-  #closePalette() {
+  /** Closes the palette over the canvas; without a pick, the focus goes back to what opened it. */
+  #closePalette(giveBack = false) {
+    const open = this._open;
     this._open = false;
     this._insertAt = null;
     this.#addTo = null;
+    const opener = this.#opener;
+    this.#opener = null;
+    if (!giveBack || !open) return;
+    void this.updateComplete.then(() => {
+      if (opener?.isConnected) opener.focus();
+      else this.#canvas?.shadowRoot?.querySelector<HTMLElement>('#jfb-canvas-form')?.focus();
+    });
   }
 
   async #onCanvas(request: CanvasRequest) {
@@ -448,10 +526,15 @@ export class FormDesignViewElement extends UmbLitElement {
     const found = state ? locate(state.definition, key) : undefined;
     if (found?.kind !== 'field') return false;
     const type = Object.hasOwn(this._types, found.element.type) ? this._types[found.element.type] : undefined;
-    if (found.element.type === 'heading') return true;
+    const culture = this._look?.culture ?? '';
+    if (found.element.type === 'heading')
+      return textIn((found.element['settings'] as { text?: LocalizedText } | undefined)?.text, culture).length > 0;
     if (!type?.holdsValue || found.element.type === 'hidden') return false;
     const own = (found.element['settings'] as { text?: LocalizedText } | undefined)?.text;
-    return !((found.element.type === 'checkbox' || found.element.type === 'consent') && textIn(own, '').length > 0);
+    return !(
+      (found.element.type === 'checkbox' || found.element.type === 'consent') &&
+      textIn(own, culture).length > 0
+    );
   }
 
   async #relabel(key: string, text: string | null) {
@@ -463,19 +546,22 @@ export class FormDesignViewElement extends UmbLitElement {
       await this.#focus(key);
       return;
     }
+    const culture = this._look?.culture ?? '';
     const edit = change<DesignField>(
       state,
       key,
-      (field) =>
-        field.type === 'heading'
-          ? {
-              ...field,
-              settings: {
-                ...((field['settings'] as object | undefined) ?? {}),
-                text: { ...((field['settings'] as { text?: LocalizedText } | undefined)?.text ?? {}), '': kept },
-              },
-            }
-          : { ...field, label: { ...(field.label ?? {}), '': kept } },
+      (field) => {
+        if (field.type !== 'heading')
+          return { ...field, label: { ...(field.label ?? {}), [keyIn(field.label, culture)]: kept } };
+        const text = (field['settings'] as { text?: LocalizedText } | undefined)?.text ?? {};
+        return {
+          ...field,
+          settings: {
+            ...((field['settings'] as object | undefined) ?? {}),
+            text: { ...text, [keyIn(text, culture)]: kept },
+          },
+        };
+      },
       model,
     );
     if (!(await this.#apply(edit, this.localize.term('jfbDesigner_saidRenamed', kept)))) await this.#focus(key);
@@ -489,12 +575,15 @@ export class FormDesignViewElement extends UmbLitElement {
     const name = this.#label(key);
     const done = await this.#apply(removeElement(state, key), this.localize.term('jfbDesigner_saidDeleted', name));
     if (!done) return;
+    const deleted = this.#state();
     const data: UndoNotificationData = {
       message: this.localize.term(`jfbDesigner_deleted_${found.kind}`, name),
       undoLabel: this.localize.term('jfbDesigner_undo'),
-      undo: async () => this.#travel('undo'),
+      undo: async () => {
+        if (this.#state() === deleted) this.#travel('undo');
+      },
     };
-    (await this.#notifications())?.peek('positive', {
+    this.#undoToast = (await this.#notifications())?.peek('positive', {
       elementName: UNDO_NOTIFICATION,
       duration: UNDO_DURATION_MS,
       data,
@@ -506,12 +595,17 @@ export class FormDesignViewElement extends UmbLitElement {
     if (!context) return;
     const said = way === 'undo' ? context.undo() : context.redo();
     if (said === undefined) return;
+    this.#closeUndo();
     this.#say(this.localize.term(way === 'undo' ? 'jfbDesigner_saidUndone' : 'jfbDesigner_saidRedone', said));
-    const { definition, selection } = context.getEditorState();
+    const state = context.getEditorState();
+    const { definition } = state;
+    const { selection, dropped } = this.#settle(state);
     if (selection) {
       const index = definition.pages.findIndex((page) => page.key === pageOf(definition, selection)?.key);
       if (index >= 0) this._shown = index;
       void this.#focus(selection);
+    } else if (dropped) {
+      void this.#focusAddField();
     }
   }
 
@@ -535,13 +629,14 @@ export class FormDesignViewElement extends UmbLitElement {
     switch (pick.kind) {
       case 'fold':
         this._folded = true;
+        this.#palette?.focusUnfold();
         return;
       case 'unfold':
         this._folded = false;
         this.#palette?.focusSearch();
         return;
       case 'close':
-        this.#closePalette();
+        this.#closePalette(true);
         return;
       case 'unavailable':
         (await this.#notifications())?.peek('warning', { data: { message: pick.reason } });
@@ -638,7 +733,7 @@ export class FormDesignViewElement extends UmbLitElement {
     const state = this.#state();
     const selection = state?.selection ?? null;
     if (key === 'escape') {
-      if (this._open) this.#closePalette();
+      if (this._open) this.#closePalette(true);
       else if (this._insertAt) this._insertAt = null;
       else if (state && selection && !typing) this.#context?.edit(select(state, null), '');
       else return;
@@ -653,6 +748,17 @@ export class FormDesignViewElement extends UmbLitElement {
     else if (event.key === 'Delete' && selection) void this.#delete(selection);
     else return;
     event.preventDefault();
+  }
+
+  #failed() {
+    return html`<div class="failed" role="alert">
+      <p>${this.localize.term('jfbDesigner_canvasFailed')}</p>
+      <uui-button
+        look="secondary"
+        label=${this.localize.term('jfbDesigner_tryAgain')}
+        @click=${() => void this.#readLook()}
+      ></uui-button>
+    </div>`;
   }
 
   #mode(): PaletteMode {
@@ -672,6 +778,11 @@ export class FormDesignViewElement extends UmbLitElement {
         ${this.localize.term('jfbDesigner_skipToForm')}
       </button>
       ${
+        mode === 'overlay' && this._open
+          ? html`<div class="scrim" @click=${() => this.#closePalette(true)}></div>`
+          : nothing
+      }
+      ${
         mode !== 'overlay' || this._open
           ? html`<jfb-designer-palette
               .types=${Object.values(this._types)}
@@ -681,7 +792,10 @@ export class FormDesignViewElement extends UmbLitElement {
             ></jfb-designer-palette>`
           : nothing
       }
+      ${this._failed ? this.#failed() : nothing}
       <jfb-form-canvas
+        ?hidden=${this._failed}
+        ?inert=${mode === 'overlay' && this._open}
         .definition=${view?.state.definition ?? { pages: [] }}
         .selection=${view?.state.selection ?? null}
         .shown=${this._shown}

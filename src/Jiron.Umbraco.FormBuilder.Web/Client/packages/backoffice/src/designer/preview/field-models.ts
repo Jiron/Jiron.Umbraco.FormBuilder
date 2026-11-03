@@ -43,18 +43,28 @@ export interface PreviewContext {
   readonly showRows?: boolean;
 }
 
-/** A text in a culture: the culture itself, its language, then the default; any letter case. */
-export function textIn(texts: LocalizedText | null | undefined, culture: string): string {
+/**
+ * Which of a text's cultures is read in a culture: the culture itself, its language, then the default (`''`); any
+ * letter case. A change made to what was read goes back there.
+ */
+export function keyIn(texts: LocalizedText | null | undefined, culture: string): string {
   if (!texts) return '';
   const wanted = culture.toLowerCase();
   const language = wanted.split('-')[0] ?? wanted;
-  const entries = Object.entries(texts).map(([key, text]) => [key.toLowerCase(), text] as const);
+  const keys = Object.keys(texts);
   return (
-    entries.find(([key]) => key === wanted)?.[1] ??
-    entries.find(([key]) => key !== '' && (key === language || key.split('-')[0] === language))?.[1] ??
-    texts[''] ??
+    keys.find((key) => key.toLowerCase() === wanted) ??
+    keys.find((key) => {
+      const own = key.toLowerCase();
+      return own !== '' && (own === language || own.split('-')[0] === language);
+    }) ??
     ''
   );
+}
+
+/** A text in a culture: the culture itself, its language, then the default; any letter case. */
+export function textIn(texts: LocalizedText | null | undefined, culture: string): string {
+  return texts ? (texts[keyIn(texts, culture)] ?? '') : '';
 }
 
 /** A field's settings with the type's defaults and the host's locked values, read as the server reads them. */

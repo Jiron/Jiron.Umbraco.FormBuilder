@@ -1,5 +1,6 @@
 // The Paste questions dialog (docs/ux/information-architecture.md section 5.1): one question per line, then the fields
 // it will add with the type guessed for each, which the editor changes afterwards; the primary button says how many.
+// The box is the browser's own, so its label and its help reach screen readers.
 import { css, html, nothing } from '@umbraco-cms/backoffice/external/lit';
 import { UmbModalBaseElement } from '@umbraco-cms/backoffice/modal';
 import { jfbBackofficeTokens } from '../../styles/tokens';
@@ -24,9 +25,32 @@ export class PasteQuestionsModalElement extends UmbModalBaseElement<PasteQuestio
         color: var(--jfb-bo-color-text-muted);
       }
 
-      uui-textarea {
+      label {
+        display: block;
+        font-weight: 700;
+      }
+
+      textarea {
+        box-sizing: border-box;
         width: 100%;
-        --uui-textarea-min-height: 140px;
+        min-height: 140px;
+        padding: var(--uui-size-space-3) var(--uui-size-space-4);
+        border: 1px solid var(--uui-color-border-standalone, var(--uui-color-border));
+        border-radius: var(--uui-border-radius);
+        background: var(--uui-color-surface);
+        color: var(--uui-color-text);
+        font: inherit;
+        line-height: 1.5;
+        resize: vertical;
+      }
+
+      textarea:hover {
+        border-color: var(--uui-color-border-emphasis);
+      }
+
+      textarea:focus-visible {
+        outline: 2px solid var(--uui-color-focus);
+        outline-offset: 1px;
       }
 
       h3 {
@@ -93,15 +117,15 @@ export class PasteQuestionsModalElement extends UmbModalBaseElement<PasteQuestio
     const questions = this.#questions();
     const lines = this._text.split(/\r?\n/).filter((line) => line.trim().length > 0).length;
     return html`<uui-dialog-layout headline=${this.localize.term('jfbDesigner_pasteHeadline')}>
-      <uui-label for="questions">${this.localize.term('jfbDesigner_pasteLabel')}</uui-label>
+      <label for="questions">${this.localize.term('jfbDesigner_pasteLabel')}</label>
       <p class="help" id="questions-help">${this.localize.term('jfbDesigner_pasteHelp')}</p>
-      <uui-textarea
+      <textarea
         id="questions"
-        label=${this.localize.term('jfbDesigner_pasteLabel')}
         aria-describedby="questions-help"
+        spellcheck="true"
         .value=${this._text}
         @input=${(event: Event) => (this._text = (event.target as HTMLTextAreaElement).value)}
-      ></uui-textarea>
+      ></textarea>
       ${
         questions.length > 0
           ? html`<h3 id="fields">${this.localize.term('jfbDesigner_pasteFields')}</h3>

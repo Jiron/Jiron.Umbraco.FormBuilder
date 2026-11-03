@@ -167,14 +167,14 @@ describe('the Paste questions dialog', () => {
     element.data = { types: { text: 'Short text', email: 'Email', yesno: 'Yes or no', textarea: 'Long text' } };
     document.body.append(element);
     await settle(element);
-    const area = must(shadow(element).querySelector('uui-textarea'), 'the questions');
-    (area as unknown as { value: string }).value = questions;
+    const area = must(shadow(element).querySelector<HTMLTextAreaElement>('textarea#questions'), 'the questions');
+    area.value = questions;
     area.dispatchEvent(new Event('input'));
     await settle(element);
     return { element, root: shadow(element) };
   }
 
-  it('lists the fields it will add, each with its guessed type, and says how many', async () => {
+  it('labels its box and gives it its help, then lists the fields it will add with their types and how many', async () => {
     const { root } = await dialogOf(
       'Your name\nEmail address\n\nDo you need step-free access?\nAnything else we should know?',
     );
@@ -186,6 +186,12 @@ describe('the Paste questions dialog', () => {
       ['Do you need step-free access?', 'Yes or no'],
       ['Anything else we should know?', 'Long text'],
     ]);
+    const area = must(root.querySelector('textarea'), 'the questions');
+    expect([text(root.querySelector(`label[for="${area.id}"]`)), area.getAttribute('aria-describedby')]).toEqual([
+      'Your questions',
+      'questions-help',
+    ]);
+    expect(text(root.querySelector('#questions-help'))).toMatch(/^One question per line/);
     const add = must(root.querySelector('uui-button[look="primary"]'), 'Add');
     expect([add.getAttribute('label'), add.hasAttribute('disabled')]).toEqual(['Add 4 fields', false]);
   });

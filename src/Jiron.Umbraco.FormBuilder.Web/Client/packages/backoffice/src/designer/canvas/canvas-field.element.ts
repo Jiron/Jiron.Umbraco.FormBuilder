@@ -102,6 +102,8 @@ export class CanvasFieldElement extends LitElement {
 
   /** What the field was last written from, so that a render that changes nothing leaves the markup alone. */
   #written: { model: FieldViewModel | null; editing: boolean; classes: ThemeClassesModel | undefined } | undefined;
+  /** Whether the label is being edited in place, which hides the button that selects the field. */
+  #editingIn = false;
   readonly #chrome = document.createElement('div');
   /** A repeatable group's fields, kept from one writing to the next. */
   readonly #nested = new Map<string, CanvasFieldElement>();
@@ -182,8 +184,10 @@ export class CanvasFieldElement extends LitElement {
     const live: Element[] = [];
     const rowFields = state.children ? this.#rowFields() : null;
     if (rowFields) live.push(rowFields);
-    const target = state.editing ? labelTarget(this, model) : null;
+    const target = state.editing && seen ? labelTarget(this, model) : null;
     if (target) live.push(target);
+    this.#editingIn = target !== null;
+    if (state.editing && !target) queueMicrotask(() => this.#request({ kind: 'label', key: state.key, text: null }));
     this.#makeInert(live);
     this.#placeChildren(state);
     if (target) this.#editIn(target, state);
@@ -283,6 +287,7 @@ export class CanvasFieldElement extends LitElement {
     box.setAttribute('aria-label', state.words.labelBox);
     box.setAttribute('autocomplete', 'off');
     const mark = childAt(target, '.jfb-mark');
+    target.classList.remove('jfb-visually-hidden');
     target.replaceChildren(box, ...(mark ? [' ', mark] : []));
     let done = false;
     const finish = (keep: boolean) => {
@@ -322,12 +327,12 @@ export class CanvasFieldElement extends LitElement {
           class="bo-select"
           aria-label=${words.name}
           aria-current=${state.selected ? 'true' : 'false'}
-          ?hidden=${state.editing}
+          ?hidden=${state.editing && this.#editingIn}
           @click=${() => this.#request({ kind: 'select', key })}
           @dblclick=${() => this.#request({ kind: 'editLabel', key })}
         ></button>
         ${
-          state.selected && !state.editing
+          state.selected && !(state.editing && this.#editingIn)
             ? html`<div class="bo-tools">
                 <button
                   type="button"

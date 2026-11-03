@@ -217,6 +217,11 @@ export class PaletteElement extends UmbLitElement {
     void this.updateComplete.then(() => this.shadowRoot?.querySelector<HTMLElement>('uui-input')?.focus());
   }
 
+  /** Moves the focus to the rail's button that opens the palette, as folding it does: the button pressed is gone. */
+  focusUnfold() {
+    void this.updateComplete.then(() => this.shadowRoot?.querySelector<HTMLElement>('uui-button')?.focus());
+  }
+
   #pick(pick: PalettePick) {
     this.dispatchEvent(new CustomEvent<PalettePick>(PALETTE_PICK, { detail: pick, bubbles: true, composed: true }));
   }
