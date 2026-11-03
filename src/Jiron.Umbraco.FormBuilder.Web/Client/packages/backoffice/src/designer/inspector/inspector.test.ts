@@ -539,6 +539,42 @@ describe('merge tags in the inspector (ADR-0173)', () => {
   });
 });
 
+describe("Umbraco's pickers in the inspector (ADR-0173)", () => {
+  it("take as many items as a list's rule allows, or one, and write a list's keys or the one key", async () => {
+    const image = must(builtInTypes['image'], 'the image type');
+    const media = must(
+      image.settings.find((setting) => setting.name === 'media'),
+      'the picture',
+    );
+    const gallery = {
+      ...image,
+      alias: 'gallery',
+      settings: [
+        { ...media, name: 'pictures', kind: 'list', itemKind: 'key', rules: { ...media.rules, maximumCount: 3 } },
+        media,
+      ],
+    };
+    const field: DesignField = { key: 'g1', type: 'gallery', alias: 'pictures' };
+    const { root, requests } = await inspectorOf('g1', { types: { ...builtInTypes, gallery } }, field);
+    const pickers = [...root.querySelectorAll('umb-input-media')] as (HTMLElement & { max: number })[];
+    expect(pickers.map((picker) => [picker.id, picker.max])).toEqual([
+      ['setting-pictures', 3],
+      ['setting-media', 1],
+    ]);
+    const pick = (picker: HTMLElement | undefined, selection: string[]) => {
+      Object.assign(must(picker, 'a picker'), { selection });
+      picker?.dispatchEvent(new Event('change'));
+    };
+    pick(pickers[0], ['a', 'b']);
+    expect(applied(requests.at(-1), field)['settings']).toEqual({ pictures: ['a', 'b'] });
+    pick(pickers[1], ['c']);
+    expect(applied(requests.at(-1), field)['settings']).toEqual({ media: 'c' });
+    expect(must(root.querySelector('#setting-pictures')?.parentElement, 'its group').getAttribute('role')).toBe(
+      'group',
+    );
+  });
+});
+
 describe('rich text in the inspector (ADR-0173)', () => {
   const CONSENT: DesignField = {
     key: 'c',
@@ -557,6 +593,10 @@ describe('rich text in the inspector (ADR-0173)', () => {
     ]);
     const paragraph = await inspectorOf('p1', {}, { key: 'p1', type: 'paragraph', alias: 'intro' });
     expect(must(paragraph.root.querySelector('jfb-rich-text'), 'the paragraph').inline).toBe(false);
+    // Each takes tags through the picker under it, of its own place, for its own element.
+    const tagged = await inspectorOf('c', { form: 'form1' }, CONSENT);
+    const picker = must(tagged.root.querySelector('jfb-rich-text + jfb-merge-tag-picker'), 'the tag picker');
+    expect([picker.place, picker.owner]).toEqual(['consentText', 'c']);
   });
 
   it("shows the default language's words, without their markup, as another language's hint", async () => {
