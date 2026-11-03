@@ -140,6 +140,11 @@ internal interface IActionRunRepository
     /// <summary>Turns the running runs whose lease ran out into <see cref="ActionRunState.Uncertain"/>, keeping their tokens; how many.</summary>
     Task<int> ExpireLeasesAsync(CancellationToken cancellationToken = default);
 
+    /// <summary>How many runs have failed for good since a time, which the health check reads (ADR-0165).</summary>
+    /// <param name="since">The earliest time a counted run finished.</param>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    Task<int> CountFailedSinceAsync(DateTimeOffset since, CancellationToken cancellationToken = default);
+
     /// <summary>
     /// Retries a run from the deliveries log (section 4.4): from the state the user saw, <see cref="ActionRunState.Failed"/>
     /// or <see cref="ActionRunState.Uncertain"/>, back to pending and due now, with its attempts at 0 and its token

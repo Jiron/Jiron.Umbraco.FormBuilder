@@ -8,7 +8,7 @@ internal static class FormBuilderEntryServices
 {
     /// <summary>
     /// Registers the reader of a submission's answers, the consent wordings and the store that writes an entry's answers
-    /// and reads them back typed.
+    /// and reads them back typed, and the Overview's newest entries.
     /// </summary>
     public static IUmbracoBuilder AddFormBuilderEntries(this IUmbracoBuilder builder)
     {
@@ -16,6 +16,7 @@ internal static class FormBuilderEntryServices
         builder.Services.TryAddSingleton<SubmissionReader>();
         builder.Services.TryAddSingleton<ConsentWordings>();
         builder.Services.TryAddSingleton<EntryAnswerStore>();
+        builder.Services.TryAddSingleton<RecentEntries>();
         return builder;
     }
 }

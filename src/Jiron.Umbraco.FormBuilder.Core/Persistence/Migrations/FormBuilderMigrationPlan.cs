@@ -35,6 +35,9 @@ internal sealed class FormBuilderMigrationPlan : PackageMigrationPlan
     /// <summary>The state after an entry's event can say when something is left to do (ADR-0162).</summary>
     public const string StateEntryEventDue = "jfb-008-entry-event-due";
 
+    /// <summary>The state after the index that finds the newest entries of every form (ADR-0165).</summary>
+    public const string StateEntryTimeIndex = "jfb-009-entry-time-index";
+
     /// <summary>The steps in order, with the state each one leaves. The tests build their copies of the plan from it.</summary>
     internal static readonly IReadOnlyList<(string State, Type Step)> Steps =
     [
@@ -46,6 +49,7 @@ internal sealed class FormBuilderMigrationPlan : PackageMigrationPlan
         (StateFileScanOrder, typeof(ChangeFileScanIndexV1)),
         (StateEmailTimeIndex, typeof(AddEmailTimeIndexV1)),
         (StateEntryEventDue, typeof(AddEntryEventDueV1)),
+        (StateEntryTimeIndex, typeof(AddEntryTimeIndexV1)),
     ];
 
     /// <summary>Creates the plan with Jiron Form Builder's package id, name and plan name.</summary>

@@ -26,6 +26,15 @@ internal interface IFormBuilderAccessService
     /// <summary>The user's permissions on a folder, for what happens in it; null for the root.</summary>
     Task<FormBuilderPermissions> GetForFolderAsync(AccessUser user, Guid? folderKey, CancellationToken cancellationToken = default);
 
+    /// <summary>What the user holds anywhere: globally, or on any folder or form (ADR-0165).</summary>
+    Task<FormBuilderPermissions> GetAnywhereAsync(AccessUser user, CancellationToken cancellationToken = default);
+
+    /// <summary>What the user holds on the root or on some folder, which creating a form takes; a grant on one form gives none of it.</summary>
+    Task<FormBuilderPermissions> GetOnFoldersAsync(AccessUser user, CancellationToken cancellationToken = default);
+
+    /// <summary>The user groups other than the administrators that hold the permission anywhere.</summary>
+    Task<IReadOnlyList<Guid>> ListGroupsHoldingAsync(FormBuilderPermissions permission, CancellationToken cancellationToken = default);
+
     /// <summary>The user's permissions on a form.</summary>
     Task<FormBuilderPermissions> GetForFormAsync(AccessUser user, FormAccessTarget form, CancellationToken cancellationToken = default);
 
@@ -136,6 +145,18 @@ internal sealed partial class FormBuilderAccessService(
     /// <inheritdoc />
     public async Task<FormBuilderPermissions> GetGlobalAsync(AccessUser user, CancellationToken cancellationToken = default) =>
         (await GetSnapshotAsync(cancellationToken)).Global(user);
+
+    /// <inheritdoc />
+    public async Task<FormBuilderPermissions> GetAnywhereAsync(AccessUser user, CancellationToken cancellationToken = default) =>
+        (await GetSnapshotAsync(cancellationToken)).Anywhere(user);
+
+    /// <inheritdoc />
+    public async Task<FormBuilderPermissions> GetOnFoldersAsync(AccessUser user, CancellationToken cancellationToken = default) =>
+        (await GetSnapshotAsync(cancellationToken)).OnFolders(user);
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<Guid>> ListGroupsHoldingAsync(FormBuilderPermissions permission, CancellationToken cancellationToken = default) =>
+        (await GetSnapshotAsync(cancellationToken)).GroupsHolding(permission);
 
     /// <inheritdoc />
     public async Task<FormBuilderPermissions> GetForFolderAsync(AccessUser user, Guid? folderKey, CancellationToken cancellationToken = default) =>

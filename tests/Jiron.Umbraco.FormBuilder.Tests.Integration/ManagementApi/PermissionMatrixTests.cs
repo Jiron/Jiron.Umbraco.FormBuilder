@@ -26,6 +26,10 @@ public sealed class PermissionMatrixTests : ManagementApiTestBase
     /// <summary>What each endpoint needs: its permissions (none: any user of the section) and where, with the key's name.</summary>
     private static readonly Dictionary<string, (FormBuilderPermissions Needs, FormBuilderAccessResourceKind On, string? Key)> Declared = new()
     {
+        ["GET me"] = (FormBuilderPermissions.None, FormBuilderAccessResourceKind.Global, null),
+        ["GET setup/checklist"] = (FormBuilderPermissions.None, FormBuilderAccessResourceKind.Global, null),
+        ["GET setup/health"] = (FormBuilderPermissions.None, FormBuilderAccessResourceKind.Global, null),
+        ["GET entry/recent"] = (FormBuilderPermissions.None, FormBuilderAccessResourceKind.Global, null),
         ["GET tree/root"] = (FormBuilderPermissions.None, FormBuilderAccessResourceKind.Global, null),
         ["GET tree/children"] = (FormBuilderPermissions.None, FormBuilderAccessResourceKind.Folder, "parentKey"),
         ["GET folder/{key}"] = (FormBuilderPermissions.None, FormBuilderAccessResourceKind.Folder, "key"),

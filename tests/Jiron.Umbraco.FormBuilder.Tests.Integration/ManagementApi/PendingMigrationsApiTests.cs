@@ -4,8 +4,10 @@ using Jiron.Umbraco.FormBuilder.Core.Persistence.Migrations;
 using Jiron.Umbraco.FormBuilder.Testing.People;
 using Jiron.Umbraco.FormBuilder.Tests.Integration.Access;
 using Jiron.Umbraco.FormBuilder.Tests.Integration.Support;
+using Jiron.Umbraco.FormBuilder.Web.Setup;
 using Microsoft.Extensions.DependencyInjection;
 using Umbraco.Cms.Core;
+using Umbraco.Cms.Core.HealthChecks;
 using Umbraco.Cms.Infrastructure.Install;
 using Umbraco.Cms.Tests.Common.Testing;
 
@@ -38,14 +40,21 @@ public sealed class PendingMigrationsApiTests : ConfiguredTestServerTestBase
         var anonymous = await api.CallAsync(null, HttpMethod.Get, "tree/root");
         var pending = await CallEachAsync(api, endpoints, "while pending");
 
+        var check = GetRequiredService<HealthCheckCollection>().OfType<MigrationsHealthCheck>().Single();
+        var whilePending = (await check.GetStatusAsync()).Single();
+
         var results = await GetRequiredService<PackageMigrationRunner>().RunPackagePlansAsync([FormBuilderConstants.MigrationPlanName]);
         Assert.That(results.Single().Successful, Is.True, results.Single().Exception?.ToString());
         GetRequiredService<IFormBuilderMigrationState>().Invalidate();
+        var onceRun = (await check.GetStatusAsync()).Single();
         var after = await CallEachAsync(api, endpoints, "after the plan ran");
 
         Assert.Multiple(() =>
         {
             Assert.That(endpoints, Is.Not.Empty);
+            Assert.That(whilePending.ResultType, Is.EqualTo(StatusResultType.Warning), "the health check fails while the plan is behind");
+            Assert.That(whilePending.Message, Does.Contain("migrations are pending"));
+            Assert.That(onceRun.ResultType, Is.EqualTo(StatusResultType.Success), "and passes once it has run");
             Assert.That(anonymous.Status, Is.EqualTo(HttpStatusCode.Unauthorized), "the sign-in comes first");
             Assert.That(pending.Values, Is.All.EqualTo("503 migrations_pending, retry after 10 s"), string.Join("\n", pending));
             Assert.That(after.Values, Is.All.Not.StartsWith("503").And.Not.StartsWith("5"), string.Join("\n", after));

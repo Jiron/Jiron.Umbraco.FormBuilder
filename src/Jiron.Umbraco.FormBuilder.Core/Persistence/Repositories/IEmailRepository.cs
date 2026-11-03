@@ -159,6 +159,12 @@ internal interface IEmailRepository
     /// </summary>
     Task<StoredEmail?> AddWithinLimitsAsync(NewEmail email, EmailLimits limits, CancellationToken cancellationToken = default);
 
+    /// <summary>How many mails have failed for good since a time, which the health check reads (ADR-0165).</summary>
+    /// <param name="since">The earliest time a counted mail failed.</param>
+    /// <param name="keep">How long a failed mail is kept, as <see cref="FailAsync"/> was told: the row holds when it goes, and so when it failed.</param>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    Task<int> CountFailedSinceAsync(DateTimeOffset since, TimeSpan keep, CancellationToken cancellationToken = default);
+
     /// <summary>The mail with this id, or null.</summary>
     Task<StoredEmail?> GetAsync(long emailId, CancellationToken cancellationToken = default);
 

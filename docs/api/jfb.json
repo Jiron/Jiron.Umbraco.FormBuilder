@@ -235,6 +235,41 @@
         ]
       }
     },
+    "/umbraco/jfb/management/api/v1/entry/recent": {
+      "get": {
+        "tags": [
+          "Entries"
+        ],
+        "operationId": "RecentEntryList",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/RecentEntriesResponseModel"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The resource is protected and requires an authentication token"
+          },
+          "403": {
+            "description": "The authenticated user does not have access to this resource"
+          }
+        },
+        "security": [
+          {
+            "Backoffice-User": []
+          }
+        ]
+      }
+    },
     "/umbraco/jfb/management/api/v1/form/{key}/entry/{entryKey}/action-run": {
       "get": {
         "tags": [
@@ -3139,6 +3174,76 @@
         ]
       }
     },
+    "/umbraco/jfb/management/api/v1/me": {
+      "get": {
+        "tags": [
+          "Setup"
+        ],
+        "operationId": "MePermissions",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/MyPermissionsResponseModel"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The resource is protected and requires an authentication token"
+          },
+          "403": {
+            "description": "The authenticated user does not have access to this resource"
+          }
+        },
+        "security": [
+          {
+            "Backoffice-User": []
+          }
+        ]
+      }
+    },
+    "/umbraco/jfb/management/api/v1/setup/checklist": {
+      "get": {
+        "tags": [
+          "Setup"
+        ],
+        "operationId": "SetupChecklist",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ChecklistResponseModel"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The resource is protected and requires an authentication token"
+          },
+          "403": {
+            "description": "The authenticated user does not have access to this resource"
+          }
+        },
+        "security": [
+          {
+            "Backoffice-User": []
+          }
+        ]
+      }
+    },
     "/umbraco/jfb/management/api/v1/setup/form-block": {
       "post": {
         "tags": [
@@ -3154,6 +3259,41 @@
                   "oneOf": [
                     {
                       "$ref": "#/components/schemas/FormBlockTypesResponseModel"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The resource is protected and requires an authentication token"
+          },
+          "403": {
+            "description": "The authenticated user does not have access to this resource"
+          }
+        },
+        "security": [
+          {
+            "Backoffice-User": []
+          }
+        ]
+      }
+    },
+    "/umbraco/jfb/management/api/v1/setup/health": {
+      "get": {
+        "tags": [
+          "Setup"
+        ],
+        "operationId": "SetupHealth",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/HealthResponseModel"
                     }
                   ]
                 }
@@ -4283,6 +4423,54 @@
         },
         "additionalProperties": false
       },
+      "ChecklistItemResponseModel": {
+        "required": [
+          "canDo",
+          "done",
+          "step"
+        ],
+        "type": "object",
+        "properties": {
+          "step": {
+            "type": "string"
+          },
+          "done": {
+            "type": "boolean"
+          },
+          "canDo": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ChecklistResponseModel": {
+        "required": [
+          "complete",
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/ChecklistItemResponseModel"
+                }
+              ]
+            }
+          },
+          "complete": {
+            "type": "boolean"
+          },
+          "previewForm": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "CommentVersionRequestModel": {
         "type": "object",
         "properties": {
@@ -5399,6 +5587,49 @@
         },
         "additionalProperties": false
       },
+      "HealthFindingResponseModel": {
+        "required": [
+          "code",
+          "coversEmail",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "link": {
+            "type": "string",
+            "nullable": true
+          },
+          "coversEmail": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "HealthResponseModel": {
+        "required": [
+          "findings"
+        ],
+        "type": "object",
+        "properties": {
+          "findings": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/HealthFindingResponseModel"
+                }
+              ]
+            }
+          }
+        },
+        "additionalProperties": false
+      },
       "LibraryChangeResponseModel": {
         "required": [
           "folders",
@@ -5539,6 +5770,28 @@
           },
           "widenAccess": {
             "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "MyPermissionsResponseModel": {
+        "required": [
+          "anywhere",
+          "global"
+        ],
+        "type": "object",
+        "properties": {
+          "global": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "anywhere": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         },
         "additionalProperties": false
@@ -5716,6 +5969,65 @@
         },
         "additionalProperties": false
       },
+      "RecentEntriesResponseModel": {
+        "required": [
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/RecentEntryResponseModel"
+                }
+              ]
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "RecentEntryResponseModel": {
+        "required": [
+          "formKey",
+          "formName",
+          "key",
+          "number",
+          "submitted",
+          "unseen"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "formKey": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "formName": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string",
+            "nullable": true
+          },
+          "number": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "submitted": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "unseen": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
       "RenameFolderRequestModel": {
         "required": [
           "name"
@@ -5880,6 +6192,9 @@
     },
     {
       "name": "Email"
+    },
+    {
+      "name": "Entries"
     },
     {
       "name": "Entry action run"

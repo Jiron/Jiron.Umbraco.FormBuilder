@@ -109,6 +109,40 @@ public sealed class AccessSnapshotTests
     }
 
     [Test]
+    public void Anywhere_HoldsWhatAGroupWasGrantedOnOneFolderOrForm_AndOnFolders_NotWhatOneFormGives()
+    {
+        var snapshot = Snapshot(
+            Grant(Viewers, PermissionTarget.Global, Export),
+            Grant(Viewers, PermissionTarget.Folder, View, Hr.Key),
+            Grant(Designers, PermissionTarget.Form, Design, Contact));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(snapshot.Anywhere(User(Viewers)), Is.EqualTo(Export | View));
+            Assert.That(snapshot.Anywhere(User(Designers)), Is.EqualTo(Design));
+            Assert.That(snapshot.OnFolders(User(Viewers)), Is.EqualTo(Export | View));
+            Assert.That(snapshot.OnFolders(User(Designers)), Is.EqualTo(FormBuilderPermissions.None), "a grant on one form creates nothing");
+            Assert.That(snapshot.Anywhere(User(HrTeam)), Is.EqualTo(FormBuilderPermissions.None));
+            Assert.That(snapshot.Anywhere(User(false, Viewers)), Is.EqualTo(FormBuilderPermissions.None), "without the section");
+            Assert.That(snapshot.Anywhere(Administrator()), Is.EqualTo(PermissionRules.All));
+            Assert.That(snapshot.OnFolders(Administrator()), Is.EqualTo(PermissionRules.All));
+        });
+    }
+
+    [Test]
+    public void GroupsHolding_LooksEverywhere_AndLeavesTheAdministratorsOut()
+    {
+        var snapshot = Snapshot(
+            Grant(Constants.Security.AdminGroupKey, PermissionTarget.Global, View),
+            Grant(Viewers, PermissionTarget.Global, View),
+            Grant(HrTeam, PermissionTarget.Folder, View, Hr.Key),
+            Grant(PayrollTeam, PermissionTarget.Form, View, Contact),
+            Grant(Designers, PermissionTarget.Global, Design));
+
+        Assert.That(snapshot.GroupsHolding(View), Is.EquivalentTo(new[] { Viewers, HrTeam, PayrollTeam }));
+    }
+
+    [Test]
     public void TheGlobalOnlyPermissions_StayGlobal()
     {
         var snapshot = Snapshot(Grant(Designers, PermissionTarget.Global, Design | FormBuilderPermissions.ManageActions | FormBuilderPermissions.ManageLibrary));

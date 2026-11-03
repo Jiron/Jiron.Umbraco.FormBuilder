@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using Jiron.Umbraco.FormBuilder.Core.Actions;
 using Jiron.Umbraco.FormBuilder.Core.Email;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
+using Jiron.Umbraco.FormBuilder.Core.Settings;
 using Umbraco.Cms.Core.Mail;
 using Umbraco.Cms.Core.Models.Email;
 using Umbraco.Cms.Tests.Common.Testing;
@@ -117,6 +118,53 @@ public sealed class EmailAttemptTests : EmailTestBase
         Clock.Advance(TimeSpan.FromDays(1));
         await Pass.RunAsync(CancellationToken.None);
         Assert.That(Sender.Calls, Has.Count.EqualTo(ActionAttempts.MaxAttempts), "failed is final until a retry from the log");
+    }
+
+    [Test]
+    public async Task AMailThatRunsOutOfAttempts_TellsTheTeam_ThroughTheQueue()
+    {
+        const string team = "team@jfb.test";
+        var settings = GetRequiredService<IFormBuilderSettingsService>();
+        var current = await settings.GetAsync<EmailSettings>();
+        await settings.SaveAsync(current.Value with { TeamRecipients = [team] }, current.Version, Editor);
+        var entry = await SubmitAsync(await PublishAsync(name: "Registration"));
+        var mail = await Outbox.QueueAsync(Mail("visitor@jfb.test") with { EntryId = entry.Id });
+        Sender.Script = message => message.To.Contains(team) ? Task.CompletedTask : throw new InvalidOperationException("No mailbox");
+
+        for (var attempt = 0; attempt <= ActionAttempts.MaxAttempts; attempt++)
+        {
+            await Pass.RunAsync(CancellationToken.None);
+            Clock.Advance(TimeSpan.FromHours(1));
+        }
+
+        var told = Sender.Calls.Where(call => call.Message.To.Contains(team)).ToList();
+        Assert.Multiple(async () =>
+        {
+            Assert.That((await Emails.GetAsync(mail!.Id))!.State, Is.EqualTo(EmailState.Failed));
+            Assert.That(told, Has.Count.EqualTo(1));
+            Assert.That(told[0].Message.Body, Does.Contain("Registration").And.Contain(typeof(InvalidOperationException).FullName));
+        });
+    }
+
+    [Test]
+    public async Task AFailedMail_CountsFromWhenItFailed_NotFromWhenItWasQueued()
+    {
+        var mail = await Outbox.QueueAsync(Mail());
+        var claimed = (await Emails.ClaimAsync(mail!.Id, "test", TimeSpan.FromMinutes(1)))!;
+        Clock.Advance(TimeSpan.FromDays(3));
+        var before = await Emails.CountFailedSinceAsync(Clock.GetUtcNow() - TimeSpan.FromHours(24), EmailOutbox.Keep);
+
+        await Emails.FailAsync(mail.Id, claimed.LockedBy!, new DeliveryError(ActionAttempts.Threw), EmailOutbox.Keep);
+        var fresh = await Emails.CountFailedSinceAsync(Clock.GetUtcNow() - TimeSpan.FromHours(24), EmailOutbox.Keep);
+        Clock.Advance(TimeSpan.FromHours(25));
+        var old = await Emails.CountFailedSinceAsync(Clock.GetUtcNow() - TimeSpan.FromHours(24), EmailOutbox.Keep);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(before, Is.Zero);
+            Assert.That(fresh, Is.EqualTo(1), "queued three days ago, failed now");
+            Assert.That(old, Is.Zero);
+        });
     }
 
     [Test]

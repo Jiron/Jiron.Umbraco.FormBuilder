@@ -1,3 +1,5 @@
+using Jiron.Umbraco.FormBuilder.Core.Access;
+
 namespace Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 
 /// <summary>Where an entry is in the review workflow (section 4.4).</summary>
@@ -380,6 +382,15 @@ internal interface IEntryRepository
     /// <see cref="FormBuilderConflict.MissingFile"/>.
     /// </summary>
     Task<StoredEntry?> CreateAsync(NewEntry entry, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// The newest entries of the forms a user may view, outside the trash (ADR-0165): what has arrived, so not a draft, an
+    /// entry waiting for its visitor's address, spam or a test.
+    /// </summary>
+    /// <param name="visibility">The forms the user may view entries of.</param>
+    /// <param name="take">How many entries to answer with.</param>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    Task<IReadOnlyList<StoredEntry>> ListRecentAsync(FormVisibility visibility, int take, CancellationToken cancellationToken = default);
 
     /// <summary>How many of a form's entries count toward its entry limit (<see cref="EntryLimits"/>, ADR-0088).</summary>
     /// <param name="formId">The form.</param>

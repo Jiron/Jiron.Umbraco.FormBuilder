@@ -39,6 +39,7 @@ internal static class FormBuilderActionServices
         builder.Services.TryAddSingleton<ActionRunRetries>();
         builder.Services.TryAddSingleton<ActionTestRuns>();
         builder.Services.TryAddSingleton<OutboxWake>();
+        builder.Services.TryAddSingleton<JobHeartbeat>();
         builder.Services.TryAddSingleton<OutboxPass>();
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IOutboxQueue, ActionRunQueue>());
         builder.AddFormBuilderEmail();

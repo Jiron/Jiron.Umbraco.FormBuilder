@@ -701,6 +701,8 @@ public sealed class FormReferenceApiTests : ManagementApiTestBase
 
         public Task<int> DeleteFormAsync(int formId, CancellationToken cancellationToken = default) => inner.DeleteFormAsync(formId, cancellationToken);
 
+        public Task<bool> AnyAsync(CancellationToken cancellationToken = default) => inner.AnyAsync(cancellationToken);
+
         public Task<int> ReplaceContentAsync(Guid contentKey, IReadOnlyCollection<ContentFormReference> references, CancellationToken cancellationToken = default) =>
             inner.ReplaceContentAsync(contentKey, references, cancellationToken);
 

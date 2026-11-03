@@ -168,6 +168,19 @@ internal sealed class EmailRepository(FormBuilderDatabase database) : IEmailRepo
     }
 
     /// <inheritdoc />
+    public Task<int> CountFailedSinceAsync(DateTimeOffset since, TimeSpan keep, CancellationToken cancellationToken = default) =>
+        database.ReadAsync(
+            db =>
+            {
+                var n = new SqlNames(db);
+                return db.ScalarAsync<int>(
+                    $"SELECT COUNT(*) FROM {n.T(FormBuilderTables.Email)} WHERE {n.C("state")} = @0 AND {n.C("purgeAfterUtc")} >= @1",
+                    Failed,
+                    FormBuilderDbTime.Write(since + keep));
+            },
+            cancellationToken);
+
+    /// <inheritdoc />
     public Task<StoredEmail?> GetAsync(long emailId, CancellationToken cancellationToken = default) =>
         database.ReadAsync(db => FindAsync(db, new SqlNames(db), emailId), cancellationToken);
 

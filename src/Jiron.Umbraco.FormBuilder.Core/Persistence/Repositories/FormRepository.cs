@@ -108,6 +108,42 @@ internal sealed partial class FormRepository(FormBuilderDatabase database) : IFo
     }
 
     /// <inheritdoc />
+    public Task<FormSetupFacts> GetSetupFactsAsync(CancellationToken cancellationToken = default) =>
+        database.ReadAsync(
+            async db =>
+            {
+                var n = new SqlNames(db);
+                var table = n.T(FormBuilderTables.Form);
+                var forms = await db.ScalarAsync<int>($"SELECT COUNT(*) FROM {table} WHERE {n.C("trashedUtc")} IS NULL");
+                var entries = await db.ScalarAsync<int>($"SELECT COUNT(*) FROM {table} WHERE {n.C("lastEntryNumber")} > 0");
+                return new FormSetupFacts(forms > 0, entries > 0);
+            },
+            cancellationToken);
+
+    /// <inheritdoc />
+    public Task<StoredForm?> GetNewestAsync(FormVisibility visibility, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(visibility);
+        return database.ReadAsync(
+            async db =>
+            {
+                var n = new SqlNames(db);
+                var args = new SqlArgs();
+                var where = $"{n.C("trashedUtc")} IS NULL";
+                if (AccessSql.FormClause(visibility, n, string.Empty, args.Add) is { } access)
+                {
+                    where += $" AND {access}";
+                }
+
+                var rows = await db.FetchListAsync<FormDto>(
+                    $"SELECT * FROM {n.T(FormBuilderTables.Form)} WHERE {where} ORDER BY {n.C("createdUtc")} DESC, {n.C("id")} DESC {n.Page(0, 1)}",
+                    args.Values);
+                return rows.Count == 0 ? null : FromDto(rows[0]);
+            },
+            cancellationToken);
+    }
+
+    /// <inheritdoc />
     public Task<Page<StoredForm>> ListAsync(FormFilter filter, PageRequest page, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(filter);

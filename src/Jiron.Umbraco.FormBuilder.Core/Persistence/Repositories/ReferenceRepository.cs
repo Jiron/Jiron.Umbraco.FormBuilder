@@ -48,6 +48,9 @@ internal interface IReferenceRepository
     /// <summary>The keys of the content items that name a form, each once, in key order; none for a form that does not exist.</summary>
     Task<IReadOnlyList<Guid>> ContentOfAsync(Guid formKey, CancellationToken cancellationToken = default);
 
+    /// <summary>Whether any page uses a form.</summary>
+    Task<bool> AnyAsync(CancellationToken cancellationToken = default);
+
     /// <summary>Whether a content item names a form.</summary>
     Task<bool> HoldsAsync(Guid formKey, Guid contentKey, CancellationToken cancellationToken = default);
 
@@ -73,6 +76,16 @@ internal sealed class ReferenceRepository(FormBuilderDatabase database) : IRefer
 
     /// <inheritdoc cref="MaxPropertyAliasLength" />
     public const int MaxCultureLength = 32;
+
+    /// <inheritdoc />
+    public Task<bool> AnyAsync(CancellationToken cancellationToken = default) =>
+        database.ReadAsync(
+            async db =>
+            {
+                var n = new SqlNames(db);
+                return await db.ScalarAsync<int>($"SELECT COUNT(*) FROM {n.T(FormBuilderTables.Reference)}") > 0;
+            },
+            cancellationToken);
 
     /// <inheritdoc />
     /// <remarks>The primary key starts with the form, so the delete reads only the form's rows.</remarks>

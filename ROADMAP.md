@@ -2574,12 +2574,12 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
 
     The section's pathname is `jfb-forms`, the one `entry.url` links name (`BackofficeLinks.SectionPathname`, added in 5.3e, ADR-0067).
 
-    Menu items appear only for users with the matching permission. Items whose screens come in later phases appear with those phases.
+    Menu items appear only for users with the matching permission. Every item is there from this step, and one whose screen comes in a later phase opens one sentence in its place until then (ADR-0165, so that each role's menus are real from the start; 13.4 checks that none is left).
   - **The dashboard:**
     - the setup checklist of §4.13, each item with a detector on the server that knows when it is done;
     - recent entries;
     - health warnings.
-  - **Health checks** (also on Umbraco's Health Check dashboard): email can be sent (Umbraco's gate, and a From address, which the gate does not check, ADR-0007), the uploads folder is not web-accessible and, on a site with more than one server, not the default folder on each server's own disk (the start-up error of 4.8c, ADR-0041), the Data Protection key ring is persisted (needed for challenges across restarts and servers), jobs are running, deliveries are failing, sending is paused (§4.4), the mirror has conflicts, the migrations are pending (ADR-0033: the dashboard then says so too, and why Jiron Form Builder is paused), a site has no base URL, so its mails carry no links (added in 5.3e, ADR-0008, ADR-0067), and the "used on" index, whose action asks for a rebuild and which says while one is under way (added in 6.7c, ADR-0017, ADR-0131).
+  - **Health checks** (also on Umbraco's Health Check dashboard): email can be sent (Umbraco's gate, and a From address, which the gate does not check, ADR-0007), the uploads folder is not web-accessible and, on a site with more than one server, not the default folder on each server's own disk (the start-up error of 4.8c, ADR-0041), the Data Protection key ring is persisted (needed for challenges across restarts and servers), jobs are running, deliveries are failing, sending is paused (§4.4), the migrations are pending (ADR-0033: the dashboard then says so too, and why Jiron Form Builder is paused), a site has no base URL, so its mails carry no links (added in 5.3e, ADR-0008, ADR-0067), and the "used on" index, whose action asks for a rebuild and which says while one is under way (added in 6.7c, ADR-0017, ADR-0131).
   - **Plumbing:**
     - en/de localisation infrastructure, the generated API client, and the global search provider;
     - the safe confirm helper (§4.10), with the source test that bans direct use of Umbraco's confirm modal.
@@ -2601,7 +2601,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
     - import as a new copy (the result shows the import's notes: a theme or option list the site lacks), export JSON (12.5 adds "replace" and the mirror).
   - **Trash:** trash, restore, empty trash. The confirmations of trash and of delete name the pages that use the form, from `referenced-by` (6.7c, added in 6.8i by the Phase 6 wiring sweep).
   - **Search:** forms by name and alias, and fields across all forms by label or alias (from the field catalogue, §4.5).
-  - Done when: Playwright journeys for each action pass, including finding a form by one of its field labels, a form used on a page named by both confirmations, the Duplicate dialog of a restricted form saying what the copy's access will be, and an import whose notes are shown, and the client stores have unit tests.
+  - Done when: the Overview's Choose a template… opens the gallery (it opens the Templates item until then, ADR-0165), Playwright journeys for each action pass, including finding a form by one of its field labels, a form used on a page named by both confirmations, the Duplicate dialog of a restricted form saying what the copy's access will be, and an import whose notes are shown, and the client stores have unit tests.
 - [ ] **9.3a The designer: workspace and editor model**
   - **The workspace:** the form workspace with the views Design, Settings, Actions, Entries, Insights and History (views without content yet show a short "coming with …" empty state, replaced by their steps). The name and status are in the header; Save draft and Publish in the footer.
   - **The editor model** is pure TypeScript with unit tests (the Ligata.Forms lesson, §3.1):
@@ -2835,7 +2835,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
   - Done when: Playwright passes for both screens, including the confirmation before an `Uncertain` retry and the paused notice, and the permission matrix covers the new endpoints.
 - [ ] **12.5 Forms as files, import and export**
   - **Import and export:** the JSON import UI, with "new copy" or "replace".
-  - **Mirror mode (D25):** write on publish, import on start-up, and detect conflicts (both file and database changed: keep the database, warn in the health check). Documented.
+  - **Mirror mode (D25):** write on publish, import on start-up, and detect conflicts (both file and database changed: keep the database, warn in the health check, a probe of its own as 9.1's are, ADR-0165). Documented.
   - Done when: integration tests cover the mirror round trip and the conflict case.
 - [ ] **12.6 Phase review**
   - UX review as in 9.6 for the library and settings screens, plus the handover note.
@@ -2878,6 +2878,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
     - A subagent acts as a privacy reviewer (GDPR, TDDDG, revDSG, UWG §7 double opt-in, the European Accessibility Act) against the running demo and the docs. Fix what it finds, and record open legal judgements in OWNER-TODO.
     - Write the handover note.
   - Done when:
+    - a test finds that no workspace of the section still shows the stand-in of 9.1 (ADR-0165);
     - committed, and a test compares the storage keys and requests the runtime makes with the facts sheet;
     - pushed, with the phase-review gate.
 

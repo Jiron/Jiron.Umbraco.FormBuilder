@@ -251,6 +251,8 @@ public sealed class TwoProcessorsTests : ActionTestBase
 
         public Task<int> ExpireLeasesAsync(CancellationToken cancellationToken = default) => inner.ExpireLeasesAsync(cancellationToken);
 
+        public Task<int> CountFailedSinceAsync(DateTimeOffset since, CancellationToken cancellationToken = default) => inner.CountFailedSinceAsync(since, cancellationToken);
+
         public Task<StoredActionRun?> RequeueAsync(long runId, ActionRunState expected, CancellationToken cancellationToken = default) => inner.RequeueAsync(runId, expected, cancellationToken);
 
         public Task<int> SkipChangeAsync(Guid changeKey, CancellationToken cancellationToken = default) => inner.SkipChangeAsync(changeKey, cancellationToken);

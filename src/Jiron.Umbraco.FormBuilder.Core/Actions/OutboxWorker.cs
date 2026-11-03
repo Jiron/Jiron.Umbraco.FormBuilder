@@ -1,6 +1,8 @@
+using System.Globalization;
 using System.Threading.Channels;
 using Jiron.Umbraco.FormBuilder.Core.Configuration;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Migrations;
+using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -207,7 +209,7 @@ internal sealed partial class OutboxWorker(OutboxWake wake, IServiceProvider ser
 /// The safety net of the outbox (D8, ADR-0007): one server of the cluster runs it every minute. It only wakes its server's
 /// worker and returns, because Umbraco's runner holds every other distributed job of the server while it waits.
 /// </summary>
-internal sealed class FormBuilderOutboxJob(OutboxWake wake, IRuntimeState runtimeState, IFormBuilderMigrationState migrationState) : IDistributedBackgroundJob
+internal sealed class FormBuilderOutboxJob(OutboxWake wake, JobHeartbeat heartbeat, IRuntimeState runtimeState, IFormBuilderMigrationState migrationState) : IDistributedBackgroundJob
 {
     /// <summary>The job's name in Umbraco's job table.</summary>
     public const string JobName = "Jiron.FormBuilder.Outbox";
@@ -227,6 +229,47 @@ internal sealed class FormBuilderOutboxJob(OutboxWake wake, IRuntimeState runtim
         if (runtimeState.Level == RuntimeLevel.Run && !await migrationState.IsPendingAsync(cancellationToken))
         {
             wake.Wake();
+            await heartbeat.BeatAsync(cancellationToken);
         }
     }
+}
+
+/// <summary>
+/// When the jobs last ran (ADR-0165), which the health check reads: one server runs them, and any server may be asked. The
+/// row changes at most once in <see cref="BeatEvery"/>, as a job that runs every minute should not write every minute.
+/// </summary>
+/// <param name="values">The key-value store.</param>
+/// <param name="time">The clock.</param>
+internal sealed class JobHeartbeat(IKeyValueRepository values, TimeProvider time)
+{
+    /// <summary>The longest a server waits before it writes the time again.</summary>
+    public static readonly TimeSpan BeatEvery = TimeSpan.FromMinutes(5);
+
+    /// <summary>The key of the row.</summary>
+    public const string Key = "jfb.jobs.last-run";
+
+    private long _lastBeat;
+
+    /// <summary>When this server started to wait for the jobs, which counts as their last run until they have one.</summary>
+    public DateTimeOffset Started { get; } = time.GetUtcNow();
+
+    /// <summary>Writes the time, unless this server did a short while ago.</summary>
+    /// <param name="cancellationToken">Cancels the write.</param>
+    public async Task BeatAsync(CancellationToken cancellationToken = default)
+    {
+        var now = time.GetUtcNow();
+        if (now.UtcTicks - Interlocked.Read(ref _lastBeat) >= BeatEvery.Ticks)
+        {
+            await values.SetAsync(Key, now.ToString("O", CultureInfo.InvariantCulture), cancellationToken);
+            Interlocked.Exchange(ref _lastBeat, now.UtcTicks);
+        }
+    }
+
+    /// <summary>
+    /// When the jobs last ran on any server, or when this server started if that is later: a site that was idle or down has missed
+    /// nothing until a run has had the time to come.
+    /// </summary>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    public async Task<DateTimeOffset> LastRunAsync(CancellationToken cancellationToken = default) =>
+        DateTimeOffset.TryParse(await values.GetAsync(Key, cancellationToken), CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var last) && last > Started ? last : Started;
 }

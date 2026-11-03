@@ -1,4 +1,6 @@
+using Jiron.Umbraco.FormBuilder.Core.Access;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Dtos;
+using Jiron.Umbraco.FormBuilder.Core.Persistence.Queries;
 
 namespace Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 
@@ -8,6 +10,36 @@ internal sealed partial class EntryRepository
 {
     /// <inheritdoc />
     /// <remarks>By number, which the index on the form and the number serves without a sort.</remarks>
+    public Task<IReadOnlyList<StoredEntry>> ListRecentAsync(FormVisibility visibility, int take, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(visibility);
+        CheckTake(take);
+        return database.ReadAsync<IReadOnlyList<StoredEntry>>(
+            async db =>
+            {
+                var n = new SqlNames(db);
+                var args = new SqlArgs();
+                var where = new List<string>
+                {
+                    $"f.{n.C("trashedUtc")} IS NULL",
+                    $"e.{n.C("isTest")} = {args.Add(false)}",
+                    $"e.{n.C("state")} IN ({args.Add(StoredNames.Of(EntryState.Submitted))}, {args.Add(StoredNames.Of(EntryState.Approved))}, {args.Add(StoredNames.Of(EntryState.Rejected))})",
+                };
+                if (AccessSql.FormClause(visibility, n, "f.", args.Add) is { } access)
+                {
+                    where.Add(access);
+                }
+
+                var rows = await db.FetchListAsync<EntryDto>(
+                    $"SELECT e.* FROM {n.T(FormBuilderTables.Entry)} e INNER JOIN {n.T(FormBuilderTables.Form)} f ON f.{n.C("id")} = e.{n.C("formId")} "
+                    + $"WHERE {string.Join(" AND ", where)} ORDER BY e.{n.C("submittedUtc")} DESC, e.{n.C("id")} DESC {n.Page(0, take)}",
+                    args.Values);
+                return rows.Select(FromDto).ToList();
+            },
+            cancellationToken);
+    }
+
+    /// <inheritdoc />
     public Task<IReadOnlyList<long>> ListIdsAsync(int formId, int take, CancellationToken cancellationToken = default)
     {
         CheckTake(take);

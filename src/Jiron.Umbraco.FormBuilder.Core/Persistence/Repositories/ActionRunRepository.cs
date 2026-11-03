@@ -182,6 +182,19 @@ internal sealed class ActionRunRepository(FormBuilderDatabase database) : IActio
     }
 
     /// <inheritdoc />
+    public Task<int> CountFailedSinceAsync(DateTimeOffset since, CancellationToken cancellationToken = default) =>
+        database.ReadAsync(
+            db =>
+            {
+                var n = new SqlNames(db);
+                return db.ScalarAsync<int>(
+                    $"SELECT COUNT(*) FROM {n.T(FormBuilderTables.ActionRun)} WHERE {n.C("state")} = @0 AND {n.C("finishedUtc")} >= @1",
+                    StoredNames.Of(ActionRunState.Failed),
+                    FormBuilderDbTime.Write(since));
+            },
+            cancellationToken);
+
+    /// <inheritdoc />
     public Task<int> ExpireLeasesAsync(CancellationToken cancellationToken = default) =>
         database.WriteAsync(
             db =>

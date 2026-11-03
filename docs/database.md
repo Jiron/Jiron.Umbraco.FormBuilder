@@ -55,6 +55,7 @@ idempotent, so a rerun changes nothing.
 | `jfb-006-file-scan-order` | `ChangeFileScanIndexV1` | Replaces `IX_jfbEntryFile_scanState_id` with `IX_jfbEntryFile_scanState_entryId_id`, which also tells what an entry holds from uploads no entry took ([ADR-0148](decisions/0148-what-uploads-may-hold.md)). |
 | `jfb-007-email-time-index` | `AddEmailTimeIndexV1` | Adds `IX_jfbEmail_createdUtc_recipientKey`, so the site's mail limit reads the last hour and not all kept mail ([ADR-0159](decisions/0159-mail-the-queue-the-layouts-and-the-limits.md)), where it is missing. |
 | `jfb-008-entry-event-due` | `AddEntryEventDueV1` | Adds `jfbEntryEvent.dueUtc` and `IX_jfbEntryEvent_dueUtc`, so what a user's change leaves until its undo window is over is found by a queue (ADR-0162). |
+| `jfb-009-entry-time-index` | `AddEntryTimeIndexV1` | Adds `IX_jfbEntry_submittedUtc`, so the Overview's newest entries across forms don't sort all of a site's entries ([ADR-0165](decisions/0165-the-section-shell.md)), where it is missing. |
 
 A step that has shipped is never edited; a change to the schema is a new step with snapshot classes of its own. Step 1
 is frozen since the end of Phase 4, the tag `baseline/schema-v1`: `SchemaV1FreezeTests` pins the SHA-256 of a
@@ -516,6 +517,7 @@ Resume tokens and challenges are stored only as hashes and ids.
 - `IX_jfbEntry_formId_challengeId`: unique, over the entries that have a challenge (filtered).
 - `IX_jfbEntry_resumeTokenHash`: unique, over the entries that have a resume token (filtered).
 - `IX_jfbEntry_formId_submittedUtc`, `IX_jfbEntry_formId_state_submittedUtc`: the entry lists.
+- `IX_jfbEntry_submittedUtc`: the newest entries across forms, for the Overview.
 - `IX_jfbEntry_formVersionId`: the versions entries point at, so pruning a draft save checks without a scan.
 - `IX_jfbEntry_memberKey`: a member's entries, for privacy requests.
 - `IX_jfbEntry_purgeAfterUtc`: retention.

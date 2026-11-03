@@ -82,6 +82,41 @@ internal sealed class AccessSnapshot
     }
 
     /// <summary>
+    /// What the user holds anywhere (ADR-0165): globally, or on any folder or form, which decides what the section shows
+    /// them. A folder's or a form's permissions come from such a grant or from the root's, so these are all there are.
+    /// </summary>
+    public FormBuilderPermissions Anywhere(AccessUser user)
+    {
+        ArgumentNullException.ThrowIfNull(user);
+        return Evaluate(
+            user,
+            PermissionRules.All,
+            groups => groups.Aggregate(
+                OwnGlobal(groups),
+                (permissions, grants) => grants.Folders.Values.Concat(grants.Forms.Values).Aggregate(permissions, (held, own) => held | own)));
+    }
+
+    /// <summary>
+    /// What the user holds on the root or on some folder, without what a grant on one form gives: what it takes to create a form
+    /// somewhere.
+    /// </summary>
+    public FormBuilderPermissions OnFolders(AccessUser user)
+    {
+        ArgumentNullException.ThrowIfNull(user);
+        return Evaluate(
+            user,
+            PermissionRules.All,
+            groups => groups.Aggregate(OwnGlobal(groups), (permissions, grants) => grants.Folders.Values.Aggregate(permissions, (held, own) => held | own)));
+    }
+
+    /// <summary>The user groups other than the administrators, who hold everything, that hold a permission anywhere.</summary>
+    public IReadOnlyList<Guid> GroupsHolding(FormBuilderPermissions permission) =>
+        [.. _groups
+            .Where(group => group.Key != Constants.Security.AdminGroupKey
+                && group.Value.Folders.Values.Concat(group.Value.Forms.Values).Aggregate(group.Value.Global, (held, own) => held | own).HasFlag(permission))
+            .Select(group => group.Key)];
+
+    /// <summary>
     /// The user's permissions on a folder (null: the root), for what happens in it: the folder's own grants, plus what
     /// its parent gives unless it is restricted. A folder the snapshot does not know gives only its own grants.
     /// </summary>

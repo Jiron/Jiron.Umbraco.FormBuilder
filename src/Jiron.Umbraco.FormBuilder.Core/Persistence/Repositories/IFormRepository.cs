@@ -134,6 +134,11 @@ internal sealed record NewForm(
 /// <param name="UserKey">Who changes it, or null when Jiron Form Builder does.</param>
 internal sealed record FormUpdate(int Id, int ExpectedConcurrencyVersion, string Alias, string Name, int? FolderId, bool IsRestricted, Guid? UserKey);
 
+/// <summary>What the setup checklist asks of the forms (ADR-0165).</summary>
+/// <param name="AnyForm">Whether a form exists outside the trash.</param>
+/// <param name="AnyEntry">Whether a form ever received an entry.</param>
+internal sealed record FormSetupFacts(bool AnyForm, bool AnyEntry);
+
 /// <summary>Which forms a list holds.</summary>
 internal sealed record FormFilter
 {
@@ -233,6 +238,18 @@ internal interface IFormRepository
 
     /// <summary>A form by id, or null.</summary>
     Task<StoredForm?> GetByIdAsync(int id, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Whether any form exists outside the trash, and whether any form ever received an entry, a test or a deleted one
+    /// included, which the setup checklist reads (ADR-0165).
+    /// </summary>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    Task<FormSetupFacts> GetSetupFactsAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>The form created last among those given, outside the trash; null for none.</summary>
+    /// <param name="visibility">The forms to look at.</param>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    Task<StoredForm?> GetNewestAsync(FormVisibility visibility, CancellationToken cancellationToken = default);
 
     /// <summary>A form by alias in any letter case (ADR-0033), trashed ones included, or null.</summary>
     Task<StoredForm?> GetByAliasAsync(string alias, CancellationToken cancellationToken = default);

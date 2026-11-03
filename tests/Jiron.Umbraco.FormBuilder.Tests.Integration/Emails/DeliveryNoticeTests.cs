@@ -2,6 +2,7 @@ using Jiron.Umbraco.FormBuilder.Core.Actions;
 using Jiron.Umbraco.FormBuilder.Core.Email;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Core.Settings;
+using Jiron.Umbraco.FormBuilder.Tests.Integration.Actions;
 using MimeKit;
 using Umbraco.Cms.Tests.Common.Testing;
 
@@ -25,10 +26,10 @@ public sealed class DeliveryNoticeTests : EmailTestBase
     private async Task<StoredEntry> FailingEntryAsync(Guid form, string answer = "Ada Lovelace") =>
         await SubmitAsync(form, $$"""{"name":"{{answer}}"}""");
 
-    private Task<Guid> FailingFormAsync()
+    private Task<Guid> FailingFormAsync(string name = "Contact us")
     {
         Scripted.Scripts["never"] = (_, _) => Task.FromResult(ActionResult.Failed("refused"));
-        return ActionFormAsync(Action("never"));
+        return PublishAsync(name: name, change: definition => definition with { Actions = [Action("never")] });
     }
 
     [Test]
@@ -45,7 +46,7 @@ public sealed class DeliveryNoticeTests : EmailTestBase
         {
             Assert.That(notice.To.Mailboxes.Single().Address, Is.EqualTo(Team));
             Assert.That(notice.Subject, Does.StartWith("A delivery failed"));
-            Assert.That(((TextPart)notice.Body!).Text, Does.Contain("refused").And.Not.Contain("Ada"));
+            Assert.That(((TextPart)notice.Body!).Text, Does.Contain("refused").And.Contain(ScriptedActionType.Alias).And.Not.Contain("Ada"));
         });
     }
 
@@ -53,13 +54,13 @@ public sealed class DeliveryNoticeTests : EmailTestBase
     public async Task ManyFailures_TellTheTeamOnceAnHour_PerForm()
     {
         await SetTeamAsync(Team);
-        var form = await FailingFormAsync();
+        var form = await FailingFormAsync("Form one");
 
         await DrainAsync((await FailingEntryAsync(form)).Id);
         await DrainAsync((await FailingEntryAsync(form, "Ben")).Id);
         await SendDueAsync();
         var inTheHour = Written().Count;
-        await DrainAsync((await FailingEntryAsync(await FailingFormAsync(), "Cy")).Id);
+        await DrainAsync((await FailingEntryAsync(await FailingFormAsync("Form two"), "Cy")).Id);
         await SendDueAsync();
         var anotherForm = Written().Count;
         Clock.Advance(DeliveryNotices.Pause);

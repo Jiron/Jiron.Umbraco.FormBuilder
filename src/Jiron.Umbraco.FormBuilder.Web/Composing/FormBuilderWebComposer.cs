@@ -4,6 +4,7 @@ using Jiron.Umbraco.FormBuilder.Web.ManagementApi;
 using Jiron.Umbraco.FormBuilder.Web.Picker;
 using Jiron.Umbraco.FormBuilder.Web.PublicApi;
 using Jiron.Umbraco.FormBuilder.Web.Rendering;
+using Jiron.Umbraco.FormBuilder.Web.Setup;
 using Umbraco.Cms.Core.Composing;
 using Umbraco.Cms.Core.DependencyInjection;
 using Umbraco.Extensions;
@@ -27,5 +28,6 @@ public sealed class FormBuilderWebComposer : IComposer
         builder.AddFormBuilderPublicApi();
         builder.AddFormBuilderRendering();
         builder.AddFormBuilderPicker();
+        builder.AddFormBuilderSetup();
     }
 }
