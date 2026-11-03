@@ -2610,7 +2610,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
     - undo/redo;
     - the rule-safety checks that refuse moves breaking a rule.
   - Done when: Vitest covers every editor-model operation, and the workspace loads and saves a form through the API. Playwright renames a form in the workspace's header, which is where forms are renamed (ADR-0166), and opens a field's result of the header search, which selects that field (`?field=`, ADR-0166).
-- [ ] **9.3b The designer: canvas and palette**
+- [x] **9.3b The designer: canvas and palette** (2026-11-03, f04448e)
   - **The canvas:** pages as steps, groups with columns, fields rendered by small Lit preview elements per type, insert points, and canvas widths for phone, tablet and desktop.
   - **The palette:** search, groups, recently used.
   - **Inline label editing.**
