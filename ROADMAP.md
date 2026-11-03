@@ -2616,7 +2616,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
   - **Inline label editing.**
   - **Paste a list of questions** (added in 1.1): one line per question becomes a text field with that label, ready to change type.
   - Done when: Playwright builds a three-page form with the mouse and adds five fields from a pasted list, and screenshots are reviewed in `docs/ux/review-9.3.md`. The template gallery's preview (9.2) draws its fields with these preview elements, and a test finds no other drawing of a field in the backoffice package (ADR-0166).
-- [ ] **9.3c The designer: drag and drop and keyboard**
+- [x] **9.3c The designer: drag and drop and keyboard** (2026-11-03, bee8e10)
   - **Moving:**
     - drag and drop per ADR-0016, across groups and pages;
     - "Move to…" for keyboard users;
