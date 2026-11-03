@@ -10,6 +10,7 @@ using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Microsoft.Extensions.Logging;
 using Umbraco.Cms.Core.Events;
+using Umbraco.Cms.Core.Services.Navigation;
 
 namespace Jiron.Umbraco.FormBuilder.Core.Forms;
 
@@ -71,6 +72,13 @@ internal interface IFormBuilderFormExchangeService
     Task<FormImport> ImportAsync(ImportFormRequest request, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// What an import of the file would make, without making it (ADR-0166): what the file holds and the notes the import
+    /// would give, as this site and the user stand now. Nothing is written.
+    /// </summary>
+    /// <exception cref="FormBuilderValidationException">The file is refused, with every problem and its path in the file.</exception>
+    Task<FormImportCheck> CheckImportAsync(ImportFormRequest request, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// The export file of a form's draft, or of the version with this number (ADR-0046), with the library option lists
     /// it names. Null when the form or the version does not exist.
     /// </summary>
@@ -92,6 +100,7 @@ internal sealed partial class FormBuilderFormExchangeService(
     FormDefinitionSerializer serializer,
     ActionTypeRegistry actionTypes,
     IFormBuilderMergeTagService mergeTags,
+    IDocumentNavigationQueryService navigation,
     TimeProvider time,
     FormBuilderChanges<FormBuilderFormExchangeService> changes,
     ILogger<FormBuilderFormExchangeService> logger)
@@ -110,6 +119,8 @@ internal sealed partial class FormBuilderFormExchangeService(
     public const string ActionsCopiedAction = "form.actionsCopied";
 
     private static readonly string FilePath = JsonPaths.Property(JsonPaths.Root, "definition");
+
+    private static readonly string FileNamePath = JsonPaths.Property(JsonPaths.Property(JsonPaths.Root, "form"), "name");
 
     /// <inheritdoc />
     public async Task<FormInfo?> DuplicateAsync(Guid key, DuplicateFormRequest request, CancellationToken cancellationToken = default)
@@ -229,19 +240,15 @@ internal sealed partial class FormBuilderFormExchangeService(
         changes.EnsureOwnUnit(FormChecks.OwnUnit);
         var requestedName = request.Name is null ? null : FormChecks.Name(request.Name);
         FormChecks.Alias(request.Alias);
-        var read = FormExportFormat.Read(request.Json, serializer);
-        var envelope = read.Envelope ?? throw new FormBuilderValidationException(read.Problems);
-        var name = requestedName ?? FormChecks.Name(envelope.Name, JsonPaths.Property(JsonPaths.Property(JsonPaths.Root, "form"), "name"));
+        var (envelope, renewed, siteNotes) = await ReadImportAsync(request.Json, cancellationToken);
+        var name = requestedName ?? FormChecks.Name(envelope.Name, FileNamePath);
         var wanted = FormAliases.IsValid(envelope.Alias) ? envelope.Alias : FormAliases.FromName(name);
         var folder = await LibraryFolders.OutsideTrashAsync(folders, request.FolderKey, cancellationToken);
 
-        // Always new keys (12.5 adds the import into an existing form); the theme and the option lists as this site has
-        // them, the lists the import creates written with the form (ADR-0078).
-        var themeNotes = new List<FormImportNote>();
-        var renewed = WithActionsThisSiteCanRun(await WithThemeAsync(DefinitionKeys.Renew(envelope.Definition, serializer), themeNotes, cancellationToken), themeNotes);
+        // The lists the import creates are written with the form (ADR-0078).
         for (var attempt = 1; ; attempt++)
         {
-            var notes = new List<FormImportNote>(themeNotes);
+            var notes = new List<FormImportNote>(siteNotes);
             var lists = await importLists.PlanAsync(renewed, envelope.OptionLists, request.UserKey, notes, cancellationToken);
             documents.CheckSaveable(lists.Definition);
             var codes = NoteCodes(notes);
@@ -272,6 +279,17 @@ internal sealed partial class FormBuilderFormExchangeService(
                 throw new FormBuilderConflictException(taken.Conflict.Conflict, taken.Conflict.Message, taken);
             }
         }
+    }
+
+    /// <inheritdoc />
+    public async Task<FormImportCheck> CheckImportAsync(ImportFormRequest request, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        var (envelope, renewed, notes) = await ReadImportAsync(request.Json, cancellationToken);
+        FormChecks.Name(envelope.Name, FileNamePath);
+        var lists = await importLists.PlanAsync(renewed, envelope.OptionLists, request.UserKey, notes, cancellationToken);
+        documents.CheckSaveable(lists.Definition);
+        return new FormImportCheck(envelope.Name, envelope.Alias, envelope.PackageVersion, envelope.ExportedUtc, DefinitionCounts.Of(lists.Definition), notes);
     }
 
     /// <inheritdoc />
@@ -347,12 +365,39 @@ internal sealed partial class FormBuilderFormExchangeService(
         return (saved.Name, stored.Definition ?? throw new FormBuilderValidationException(stored.Problems), false);
     }
 
+    // The file read, always with new keys (12.5 adds the import into an existing form), and what this site lacks of it: the
+    // theme, what its actions need and the pages its outcomes send visitors to; the option lists come with the plan,
+    // which an import makes again when it retries.
+    private async Task<(FormExportEnvelope Envelope, FormDefinition Definition, List<FormImportNote> Notes)> ReadImportAsync(string json, CancellationToken cancellationToken)
+    {
+        var read = FormExportFormat.Read(json, serializer);
+        var envelope = read.Envelope ?? throw new FormBuilderValidationException(read.Problems);
+        var notes = new List<FormImportNote>();
+        var renewed = WithActionsThisSiteCanRun(await WithThemeAsync(DefinitionKeys.Renew(envelope.Definition, serializer), notes, cancellationToken), notes);
+        PagesThisSiteLacks(renewed, notes);
+        return (envelope, renewed, notes);
+    }
+
+    // An outcome that sends visitors to a page this site lacks, or holds in its recycle bin, keeps the page's key until the
+    // editor chooses another; the note says so (ADR-0166).
+    private void PagesThisSiteLacks(FormDefinition definition, List<FormImportNote> notes)
+    {
+        var outcomes = JsonPaths.Property(FilePath, "outcomes");
+        for (var i = 0; i < definition.Outcomes.Count; i++)
+        {
+            if (definition.Outcomes[i].Redirect?.Content is { } page && !navigation.TryGetParentKey(page, out _))
+            {
+                notes.Add(new FormImportNote(FormImportNotes.PageMissing, JsonPaths.Index(outcomes, i), null));
+            }
+        }
+    }
+
     // A theme the site lacks gives way to the default theme (IA 4, ADR-0046).
     // The definition with an action that this site cannot run switched off, each with a note (ADR-0046, ADR-0158): one whose
     // type the site lacks, and one whose type says that the site lacks configuration it needs.
     private FormDefinition WithActionsThisSiteCanRun(FormDefinition definition, List<FormImportNote> notes)
     {
-        var actions = JsonPaths.Property(JsonPaths.Root, "actions");
+        var actions = JsonPaths.Property(FilePath, "actions");
         var changed = definition.Actions.ToArray();
         var any = false;
         for (var i = 0; i < changed.Length; i++)

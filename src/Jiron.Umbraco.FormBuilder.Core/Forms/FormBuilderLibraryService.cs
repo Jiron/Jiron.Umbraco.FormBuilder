@@ -35,7 +35,23 @@ internal sealed record LibraryItem(
     bool IsPublished,
     DateTimeOffset? TrashedUtc,
     bool HasChildren,
-    FormBuilderPermissions Permissions);
+    FormBuilderPermissions Permissions)
+{
+    /// <summary>When it last changed; for an item in the trash, when it went there, which changes nothing else.</summary>
+    public DateTimeOffset UpdatedUtc { get; init; }
+
+    /// <summary>Who changed it last, or null when Jiron Form Builder did; for an item in the trash, who put it there.</summary>
+    public Guid? UpdatedByUserKey { get; init; }
+
+    /// <summary>
+    /// Whether a form has an entry nobody has opened yet, for a user who may view its entries (ADR-0166); false for a
+    /// folder, and for a user who may not.
+    /// </summary>
+    public bool HasUnseenEntries { get; init; }
+
+    /// <summary>The name of a search result's folder, or null at the root; null outside search results.</summary>
+    public string? FolderName { get; init; }
+}
 
 /// <summary>
 /// The form library as one user sees it (ADR-0048, ADR-0050): the items of a folder, the trash, and whether the user may
@@ -74,12 +90,16 @@ internal interface IFormBuilderLibraryService
     /// <exception cref="FormBuilderConcurrencyException">A form in the trash changed meanwhile; what is deleted stays deleted.</exception>
     /// <exception cref="FormBuilderCancelledException">A handler cancelled the delete.</exception>
     Task<TrashEmptied> EmptyTrashAsync(AccessUser user, Guid? userKey, CancellationToken cancellationToken = default);
+
+    /// <summary>What <see cref="EmptyTrashAsync"/> would delete for the user, deleting nothing (ADR-0166).</summary>
+    Task<TrashPreview> PreviewEmptyTrashAsync(AccessUser user, CancellationToken cancellationToken = default);
 }
 
 /// <inheritdoc />
 internal sealed class FormBuilderLibraryService(
     IFolderRepository folders,
     IFormRepository forms,
+    IEntryRepository entries,
     IFormBuilderAccessService access,
     IFormBuilderFolderService folderService)
     : IFormBuilderLibraryService
@@ -132,16 +152,15 @@ internal sealed class FormBuilderLibraryService(
     {
         ArgumentNullException.ThrowIfNull(user);
         ArgumentException.ThrowIfNullOrWhiteSpace(text);
-        var keys = (await folders.ListAllAsync(cancellationToken)).ToDictionary(folder => folder.Id, folder => folder.Key);
+        var all = await folders.ListAllAsync(cancellationToken);
+        var keys = all.ToDictionary(folder => folder.Id, folder => folder.Key);
+        var names = all.ToDictionary(folder => folder.Id, folder => folder.Name);
         var filter = new FormFilter { AllFolders = true, Trashed = false, Search = text, Visibility = await access.GetFormVisibilityAsync(user, cancellationToken: cancellationToken) };
         var found = await forms.ListAsync(filter, page, cancellationToken);
-        var items = new List<LibraryItem>(found.Items.Count);
-        foreach (var form in found.Items)
-        {
-            items.Add(await FormItemAsync(user, form, keys, cancellationToken));
-        }
-
-        return new Page<LibraryItem>(items, found.Total);
+        var items = await FormItemsAsync(user, found.Items, keys, cancellationToken);
+        return new Page<LibraryItem>(
+            [.. items.Zip(found.Items, (item, form) => item with { FolderName = form.FolderId is { } folderId ? names.GetValueOrDefault(folderId) : null })],
+            found.Total);
     }
 
     /// <inheritdoc />
@@ -170,6 +189,15 @@ internal sealed class FormBuilderLibraryService(
         return folderService.EmptyTrashAsync(
             async (candidate, token) => await MissingToDeleteAsync(user, candidate, token) == FormBuilderPermissions.None,
             userKey,
+            cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public Task<TrashPreview> PreviewEmptyTrashAsync(AccessUser user, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(user);
+        return folderService.PreviewEmptyTrashAsync(
+            async (candidate, token) => await MissingToDeleteAsync(user, candidate, token) == FormBuilderPermissions.None,
             cancellationToken);
     }
 
@@ -206,35 +234,49 @@ internal sealed class FormBuilderLibraryService(
                     false,
                     folder.TrashedUtc,
                     hasFolders || withForms.Contains(folder.Id),
-                    await access.GetForFolderAsync(user, folder.Key, cancellationToken)));
+                    await access.GetForFolderAsync(user, folder.Key, cancellationToken))
+                {
+                    UpdatedUtc = folder.UpdatedUtc,
+                    UpdatedByUserKey = folder.UpdatedByUserKey,
+                });
             }
         }
 
         if (formTake > 0)
         {
-            foreach (var form in formPage.Items)
-            {
-                items.Add(await FormItemAsync(user, form, keys, cancellationToken));
-            }
+            items.AddRange(await FormItemsAsync(user, formPage.Items, keys, cancellationToken));
         }
 
         return new Page<LibraryItem>(items, shown.Count + formPage.Total);
     }
 
-    // A form as the user sees it, named by the key of its folder.
-    private async Task<LibraryItem> FormItemAsync(AccessUser user, StoredForm form, Dictionary<int, Guid> folderKeys, CancellationToken cancellationToken)
+    // Forms as the user sees them, each named by the key of its folder; those whose entries the user may view say whether
+    // one is unseen, read for all of them at once.
+    private async Task<List<LibraryItem>> FormItemsAsync(AccessUser user, IReadOnlyList<StoredForm> list, Dictionary<int, Guid> folderKeys, CancellationToken cancellationToken)
     {
-        var folderKey = form.FolderId is { } folderId && folderKeys.TryGetValue(folderId, out var key) ? key : (Guid?)null;
-        return new LibraryItem(
-            LibraryItemKind.Form,
-            form.Key,
-            form.Name,
-            form.Alias,
-            folderKey,
-            form.IsRestricted,
-            form.PublishedVersionId is not null,
-            form.TrashedUtc,
-            false,
-            await access.GetForFormAsync(user, new FormAccessTarget(form.Key, folderKey, form.IsRestricted), cancellationToken));
+        var items = new List<LibraryItem>(list.Count);
+        foreach (var form in list)
+        {
+            var folderKey = form.FolderId is { } folderId && folderKeys.TryGetValue(folderId, out var key) ? key : (Guid?)null;
+            items.Add(new LibraryItem(
+                LibraryItemKind.Form,
+                form.Key,
+                form.Name,
+                form.Alias,
+                folderKey,
+                form.IsRestricted,
+                form.PublishedVersionId is not null,
+                form.TrashedUtc,
+                false,
+                await access.GetForFormAsync(user, new FormAccessTarget(form.Key, folderKey, form.IsRestricted), cancellationToken))
+            {
+                UpdatedUtc = form.UpdatedUtc,
+                UpdatedByUserKey = form.UpdatedByUserKey,
+            });
+        }
+
+        var viewed = list.Where((_, index) => (items[index].Permissions & FormBuilderPermissions.ViewEntries) != FormBuilderPermissions.None).Select(form => form.Id).ToList();
+        var unseen = viewed.Count == 0 ? new HashSet<int>() : await entries.ListFormIdsWithUnseenAsync(viewed, cancellationToken);
+        return [.. items.Select((item, index) => unseen.Contains(list[index].Id) ? item with { HasUnseenEntries = true } : item)];
     }
 }

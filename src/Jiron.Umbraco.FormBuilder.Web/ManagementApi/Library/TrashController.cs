@@ -31,6 +31,21 @@ internal sealed class TrashController(IFormBuilderLibraryService library) : Form
     public async Task<IActionResult> List([FromQuery, Range(0, int.MaxValue)] int skip = 0, [FromQuery, Range(1, PageRequest.MaxTake)] int take = 100, CancellationToken cancellationToken = default) =>
         Ok(TreeController.Paged(await library.ListTrashAsync(RequestAccess.User, new PageRequest(skip, take), cancellationToken)));
 
+    /// <summary>
+    /// What emptying the trash would delete for the user, deleting nothing (ADR-0166): the folders and forms, their
+    /// entries and files, and how many top items would stay.
+    /// </summary>
+    /// <param name="cancellationToken">The request's cancellation.</param>
+    [HttpGet("holdings")]
+    [MapToApiVersion("1.0")]
+    [FormBuilderSection]
+    [ProducesResponseType(typeof(HoldingsResponseModel), StatusCodes.Status200OK)]
+    public async Task<IActionResult> Holdings(CancellationToken cancellationToken = default)
+    {
+        var preview = await library.PreviewEmptyTrashAsync(RequestAccess.User, cancellationToken);
+        return Ok(new HoldingsResponseModel { Folders = preview.Folders, Forms = preview.Forms, Entries = preview.Entries, Files = preview.Files, Left = preview.Left });
+    }
+
     /// <summary>Empties the trash of what the user may delete for good, and says how many top items stayed.</summary>
     /// <param name="cancellationToken">The request's cancellation.</param>
     [HttpDelete]

@@ -48,6 +48,11 @@ export type ActionTypesResponseModel = {
     types: Array<ActionTypeResponseModel>;
 };
 
+export type ActionsCopiedResponseModel = {
+    target: FormSavedResponseModel;
+    actions: Array<CopiedActionResponseModel>;
+};
+
 export type ChecklistItemResponseModel = {
     step: string;
     done: boolean;
@@ -64,9 +69,28 @@ export type CommentVersionRequestModel = {
     comment?: string | null;
 };
 
+export type CopiedActionResponseModel = {
+    sourceKey: string;
+    key: string;
+    unmapped: Array<UnmappedReferenceResponseModel>;
+    mergeTags: Array<UnmappedMergeTagResponseModel>;
+};
+
+export type CopyActionsRequestModel = {
+    targetKey: string;
+    concurrencyVersion: number;
+    actionKeys?: Array<string> | null;
+};
+
 export type CreateFolderRequestModel = {
     name: string;
     parentKey?: string | null;
+};
+
+export type CreateFormFromTemplateRequestModel = {
+    templateKey: string;
+    name?: string | null;
+    folderKey?: string | null;
 };
 
 export type CreateFormRequestModel = {
@@ -102,6 +126,14 @@ export type DefinitionChangeSummaryResponseModel = {
     alias?: string | null;
 };
 
+export type DefinitionCountsResponseModel = {
+    pages: number;
+    fields: number;
+    rules: number;
+    outcomes: number;
+    actions: number;
+};
+
 export type DefinitionProblemResponseModel = {
     code: string;
     path: string;
@@ -112,6 +144,11 @@ export type DefinitionPropertyChangeResponseModel = {
     path: Array<string>;
     from?: unknown;
     to?: unknown;
+};
+
+export type DuplicateFormRequestModel = {
+    name: string;
+    includeActions: boolean;
 };
 
 export type EntryStateMovedResponseModel = {
@@ -138,6 +175,16 @@ export type EntryStateUndoRequestModel = {
 export type FieldGroupResponseModel = {
     alias: string;
     name: string;
+};
+
+export type FieldMatchResponseModel = {
+    formKey: string;
+    formName: string;
+    folderName?: string | null;
+    fieldKey: string;
+    alias: string;
+    label: string;
+    fieldType: string;
 };
 
 export type FieldSettingChoiceResponseModel = {
@@ -272,6 +319,11 @@ export type FormDraftResponseModel = {
     hasUnpublishedChanges: boolean;
 };
 
+export type FormImportedResponseModel = {
+    form: FormResponseModel;
+    notes: Array<ImportNoteResponseModel>;
+};
+
 export type FormReferencesResponseModel = {
     total: number;
     items: Array<FormDocumentReferenceResponseModel>;
@@ -334,6 +386,35 @@ export type HealthResponseModel = {
     findings: Array<HealthFindingResponseModel>;
 };
 
+export type HoldingsResponseModel = {
+    folders: number;
+    forms: number;
+    entries: number;
+    files: number;
+    left: number;
+};
+
+export type ImportCheckResponseModel = {
+    name: string;
+    alias: string;
+    packageVersion: string;
+    exportedUtc: string;
+    holds: DefinitionCountsResponseModel;
+    notes: Array<ImportNoteResponseModel>;
+};
+
+export type ImportFormRequestModel = {
+    json: string;
+    name?: string | null;
+    folderKey?: string | null;
+};
+
+export type ImportNoteResponseModel = {
+    code: string;
+    path: string;
+    alias?: string | null;
+};
+
 export type LibraryChangeResponseModel = {
     folders: Array<string>;
     forms: Array<string>;
@@ -357,6 +438,16 @@ export type LibraryItemResponseModel = {
     isTrashed: boolean;
     hasChildren: boolean;
     permissions: Array<string>;
+    hasUnseenEntries: boolean;
+    folderName?: string | null;
+};
+
+export type LibraryRowResponseModel = {
+    item: LibraryItemResponseModel;
+    updatedUtc: string;
+    updatedBy?: string | null;
+    trashedUtc?: string | null;
+    recentEntries?: number | null;
 };
 
 export type MoveFolderRequestModel = {
@@ -375,6 +466,11 @@ export type MyPermissionsResponseModel = {
     anywhere: Array<string>;
 };
 
+export type PagedFieldMatchResponseModel = {
+    total: number;
+    items: Array<FieldMatchResponseModel>;
+};
+
 export type PagedFormVersionEntryResponseModel = {
     total: number;
     items: Array<FormVersionEntryResponseModel>;
@@ -385,9 +481,19 @@ export type PagedLibraryItemResponseModel = {
     items: Array<LibraryItemResponseModel>;
 };
 
+export type PagedLibraryRowResponseModel = {
+    total: number;
+    items: Array<LibraryRowResponseModel>;
+};
+
 export type PagedPickerItemResponseModel = {
     total: number;
     items: Array<PickerItemResponseModel>;
+};
+
+export type PagedTemplateResponseModel = {
+    total: number;
+    items: Array<TemplateResponseModel>;
 };
 
 export type PickerItemResponseModel = {
@@ -464,6 +570,16 @@ export type SaveFormDraftRequestModel = {
     comment?: string | null;
 };
 
+export type TemplateResponseModel = {
+    key: string;
+    builtIn: boolean;
+    alias?: string | null;
+    name: string;
+    description?: string | null;
+    holds: DefinitionCountsResponseModel;
+    definition: unknown;
+};
+
 export type TestEmailRequestModel = {
     site?: string | null;
     layout?: string | null;
@@ -476,6 +592,18 @@ export type TestEmailResponseModel = {
 export type TrashEmptiedResponseModel = {
     deleted: LibraryDeletionResponseModel;
     left: number;
+};
+
+export type UnmappedMergeTagResponseModel = {
+    path: string;
+    tag: string;
+    at: number;
+};
+
+export type UnmappedReferenceResponseModel = {
+    path: string;
+    sourceKey: string;
+    alias?: string | null;
 };
 
 export type FormDocumentReferenceResponseModelWritable = {
@@ -1315,6 +1443,49 @@ export type FormRenameResponses = {
 
 export type FormRenameResponse = FormRenameResponses[keyof FormRenameResponses];
 
+export type FormExchangeCopyActionsData = {
+    body?: CopyActionsRequestModel;
+    path: {
+        key: string;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/form/{key}/copy-actions';
+};
+
+export type FormExchangeCopyActionsErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+};
+
+export type FormExchangeCopyActionsError = FormExchangeCopyActionsErrors[keyof FormExchangeCopyActionsErrors];
+
+export type FormExchangeCopyActionsResponses = {
+    /**
+     * OK
+     */
+    200: ActionsCopiedResponseModel;
+};
+
+export type FormExchangeCopyActionsResponse = FormExchangeCopyActionsResponses[keyof FormExchangeCopyActionsResponses];
+
 export type FormDraftData = {
     body?: never;
     path: {
@@ -1392,6 +1563,125 @@ export type FormSaveDraftResponses = {
 };
 
 export type FormSaveDraftResponse = FormSaveDraftResponses[keyof FormSaveDraftResponses];
+
+export type FormExchangeDuplicateData = {
+    body?: DuplicateFormRequestModel;
+    path: {
+        key: string;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/form/{key}/duplicate';
+};
+
+export type FormExchangeDuplicateErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+};
+
+export type FormExchangeDuplicateError = FormExchangeDuplicateErrors[keyof FormExchangeDuplicateErrors];
+
+export type FormExchangeDuplicateResponses = {
+    /**
+     * Created
+     */
+    201: FormResponseModel;
+};
+
+export type FormExchangeDuplicateResponse = FormExchangeDuplicateResponses[keyof FormExchangeDuplicateResponses];
+
+export type FormExchangeExportData = {
+    body?: never;
+    path: {
+        key: string;
+    };
+    query?: {
+        version?: number;
+    };
+    url: '/umbraco/jfb/management/api/v1/form/{key}/export';
+};
+
+export type FormExchangeExportErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type FormExchangeExportError = FormExchangeExportErrors[keyof FormExchangeExportErrors];
+
+export type FormExchangeExportResponses = {
+    /**
+     * OK
+     */
+    200: Blob | File;
+};
+
+export type FormExchangeExportResponse = FormExchangeExportResponses[keyof FormExchangeExportResponses];
+
+export type FormHoldingsData = {
+    body?: never;
+    path: {
+        key: string;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/form/{key}/holdings';
+};
+
+export type FormHoldingsErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type FormHoldingsError = FormHoldingsErrors[keyof FormHoldingsErrors];
+
+export type FormHoldingsResponses = {
+    /**
+     * OK
+     */
+    200: HoldingsResponseModel;
+};
+
+export type FormHoldingsResponse = FormHoldingsResponses[keyof FormHoldingsResponses];
 
 export type FormMoveData = {
     body?: MoveFormRequestModel;
@@ -1638,6 +1928,125 @@ export type FormUnpublishResponses = {
 
 export type FormUnpublishResponse = FormUnpublishResponses[keyof FormUnpublishResponses];
 
+export type FormExchangeFromTemplateData = {
+    body?: CreateFormFromTemplateRequestModel;
+    path?: never;
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/form/from-template';
+};
+
+export type FormExchangeFromTemplateErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+};
+
+export type FormExchangeFromTemplateError = FormExchangeFromTemplateErrors[keyof FormExchangeFromTemplateErrors];
+
+export type FormExchangeFromTemplateResponses = {
+    /**
+     * Created
+     */
+    201: FormResponseModel;
+};
+
+export type FormExchangeFromTemplateResponse = FormExchangeFromTemplateResponses[keyof FormExchangeFromTemplateResponses];
+
+export type FormExchangeImportData = {
+    body?: ImportFormRequestModel;
+    path?: never;
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/form/import';
+};
+
+export type FormExchangeImportErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+};
+
+export type FormExchangeImportError = FormExchangeImportErrors[keyof FormExchangeImportErrors];
+
+export type FormExchangeImportResponses = {
+    /**
+     * Created
+     */
+    201: FormImportedResponseModel;
+};
+
+export type FormExchangeImportResponse = FormExchangeImportResponses[keyof FormExchangeImportResponses];
+
+export type FormExchangeCheckImportData = {
+    body?: ImportFormRequestModel;
+    path?: never;
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/form/import/check';
+};
+
+export type FormExchangeCheckImportErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type FormExchangeCheckImportError = FormExchangeCheckImportErrors[keyof FormExchangeCheckImportErrors];
+
+export type FormExchangeCheckImportResponses = {
+    /**
+     * OK
+     */
+    200: ImportCheckResponseModel;
+};
+
+export type FormExchangeCheckImportResponse = FormExchangeCheckImportResponses[keyof FormExchangeCheckImportResponses];
+
 export type FormSearchData = {
     body?: never;
     path?: never;
@@ -1674,6 +2083,120 @@ export type FormSearchResponses = {
 };
 
 export type FormSearchResponse = FormSearchResponses[keyof FormSearchResponses];
+
+export type FormSearchFieldsData = {
+    body?: never;
+    path?: never;
+    query: {
+        text: string;
+        skip?: number;
+        take?: number;
+    };
+    url: '/umbraco/jfb/management/api/v1/form/search/field';
+};
+
+export type FormSearchFieldsErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+};
+
+export type FormSearchFieldsError = FormSearchFieldsErrors[keyof FormSearchFieldsErrors];
+
+export type FormSearchFieldsResponses = {
+    /**
+     * OK
+     */
+    200: PagedFieldMatchResponseModel;
+};
+
+export type FormSearchFieldsResponse = FormSearchFieldsResponses[keyof FormSearchFieldsResponses];
+
+export type LibraryListItemsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        folderKey?: string;
+        skip?: number;
+        take?: number;
+    };
+    url: '/umbraco/jfb/management/api/v1/library/items';
+};
+
+export type LibraryListItemsErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type LibraryListItemsError = LibraryListItemsErrors[keyof LibraryListItemsErrors];
+
+export type LibraryListItemsResponses = {
+    /**
+     * OK
+     */
+    200: PagedLibraryRowResponseModel;
+};
+
+export type LibraryListItemsResponse = LibraryListItemsResponses[keyof LibraryListItemsResponses];
+
+export type LibraryListTrashData = {
+    body?: never;
+    path?: never;
+    query?: {
+        skip?: number;
+        take?: number;
+    };
+    url: '/umbraco/jfb/management/api/v1/library/trash';
+};
+
+export type LibraryListTrashErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+};
+
+export type LibraryListTrashError = LibraryListTrashErrors[keyof LibraryListTrashErrors];
+
+export type LibraryListTrashResponses = {
+    /**
+     * OK
+     */
+    200: PagedLibraryRowResponseModel;
+};
+
+export type LibraryListTrashResponse = LibraryListTrashResponses[keyof LibraryListTrashResponses];
 
 export type PickerChildrenData = {
     body?: never;
@@ -1969,6 +2492,42 @@ export type SetupHealthResponses = {
 
 export type SetupHealthResponse = SetupHealthResponses[keyof SetupHealthResponses];
 
+export type TemplateListData = {
+    body?: never;
+    path?: never;
+    query?: {
+        skip?: number;
+        take?: number;
+    };
+    url: '/umbraco/jfb/management/api/v1/template';
+};
+
+export type TemplateListErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+};
+
+export type TemplateListError = TemplateListErrors[keyof TemplateListErrors];
+
+export type TemplateListResponses = {
+    /**
+     * OK
+     */
+    200: PagedTemplateResponseModel;
+};
+
+export type TemplateListResponse = TemplateListResponses[keyof TemplateListResponses];
+
 export type TrashEmptyData = {
     body?: never;
     path?: never;
@@ -2037,6 +2596,33 @@ export type TrashListResponses = {
 };
 
 export type TrashListResponse = TrashListResponses[keyof TrashListResponses];
+
+export type TrashHoldingsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/trash/holdings';
+};
+
+export type TrashHoldingsErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+};
+
+export type TrashHoldingsResponses = {
+    /**
+     * OK
+     */
+    200: HoldingsResponseModel;
+};
+
+export type TrashHoldingsResponse = TrashHoldingsResponses[keyof TrashHoldingsResponses];
 
 export type TreeChildrenData = {
     body?: never;

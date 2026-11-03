@@ -232,7 +232,7 @@ public sealed class FolderApiTests : ManagementApiTestBase
 
         Assert.Multiple(async () =>
         {
-            Assert.That(live.Outcome, Is.EqualTo("409 not_trashed"));
+            Assert.That(live.Outcome, Is.EqualTo("409 folder_not_empty"), "a folder outside the trash goes only when it holds nothing (ADR-0166)");
             Assert.That((designer.Outcome, designer.Body?["permission"]?.GetValue<string>()), Is.EqualTo(("403 forbidden", "deleteEntries")));
             Assert.That((cleaner.Outcome, cleaner.Body?["permission"]?.GetValue<string>()), Is.EqualTo(("403 forbidden", "design")), "Personnel below Archive is not the cleaner's");
             Assert.That(stillThere, Is.Not.Null, "a refused delete removes nothing");

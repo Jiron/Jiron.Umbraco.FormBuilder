@@ -33,6 +33,7 @@ internal sealed class FormController(
     IFormBuilderFormService forms,
     IFormBuilderFolderService folders,
     IFormBuilderLibraryService library,
+    LibraryLists lists,
     IFormBuilderAccessService access,
     IAuthorizationService authorization,
     FormDefinitionSerializer serializer,
@@ -58,6 +59,46 @@ internal sealed class FormController(
         [FromQuery, Range(1, PageRequest.MaxTake)] int take = 100,
         CancellationToken cancellationToken = default) =>
         Ok(TreeController.Paged(await library.SearchFormsAsync(RequestAccess.User, text, new PageRequest(skip, take), cancellationToken)));
+
+    /// <summary>
+    /// The fields of the live versions of the forms outside the trash that the user sees whose label or alias contains the
+    /// text, by label (ADR-0166): the field catalogue holds what was published, so a field only a draft has is found once
+    /// it is published.
+    /// </summary>
+    /// <param name="text">What the label or the alias contains, in any letter case.</param>
+    /// <param name="skip">How many fields to pass over.</param>
+    /// <param name="take">How many fields to answer with, 1 to 500.</param>
+    /// <param name="cancellationToken">The request's cancellation.</param>
+    [HttpGet("search/field")]
+    [MapToApiVersion("1.0")]
+    [FormBuilderSection]
+    [ProducesResponseType(typeof(PagedViewModel<FieldMatchResponseModel>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> SearchFields(
+        [FromQuery, Required, StringLength(MaxSearchLength)] string text,
+        [FromQuery, Range(0, int.MaxValue)] int skip = 0,
+        [FromQuery, Range(1, PageRequest.MaxTake)] int take = 100,
+        CancellationToken cancellationToken = default)
+    {
+        var found = await lists.SearchFieldsAsync(RequestAccess.User, text, new PageRequest(skip, take), cancellationToken);
+        return Ok(new PagedViewModel<FieldMatchResponseModel> { Total = found.Total, Items = [.. found.Items.Select(FieldMatchResponseModel.Of)] });
+    }
+
+    /// <summary>
+    /// What a form holds that its permanent delete takes (ADR-0166): its entries, in any state, and its uploaded files; a
+    /// restore brings them back with it.
+    /// </summary>
+    /// <param name="key">The form.</param>
+    /// <param name="cancellationToken">The request's cancellation.</param>
+    [HttpGet("{key:guid}/holdings")]
+    [MapToApiVersion("1.0")]
+    [FormBuilderPermission(FormBuilderPermissions.Design, On = FormBuilderAccessResourceKind.Form, Key = "key")]
+    [ProducesResponseType(typeof(HoldingsResponseModel), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Holdings(Guid key, CancellationToken cancellationToken = default) =>
+        await lists.HoldingsAsync(key, cancellationToken) is { } held
+            ? Ok(new HoldingsResponseModel { Folders = 0, Forms = 1, Entries = held.Entries, Files = held.Files, Left = 0 })
+            : FormBuilderProblems.NotFound(FormBuilderAccessResourceKind.Form);
 
     /// <summary>A form that the user sees: its name, its state and the user's permissions on it.</summary>
     /// <param name="key">The form.</param>

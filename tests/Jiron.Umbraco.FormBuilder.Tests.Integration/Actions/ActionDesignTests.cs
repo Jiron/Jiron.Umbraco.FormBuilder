@@ -155,8 +155,8 @@ public sealed class ActionDesignTests : ActionTestBase
             Assert.That(draft.Definition!.Actions.Select(action => action.Enabled), Is.All.False);
             Assert.That(imported.Notes, Is.EqualTo(new[]
             {
-                new FormImportNote(FormImportNotes.ActionConfigurationMissing, "$.actions[0]", "JironFormBuilder:Secrets:Slack"),
-                new FormImportNote(FormImportNotes.ActionConfigurationMissing, "$.actions[1]", "JironFormBuilder:Secrets:Slack"),
+                new FormImportNote(FormImportNotes.ActionConfigurationMissing, "$.definition.actions[0]", "JironFormBuilder:Secrets:Slack"),
+                new FormImportNote(FormImportNotes.ActionConfigurationMissing, "$.definition.actions[1]", "JironFormBuilder:Secrets:Slack"),
             }));
         });
     }
@@ -206,7 +206,7 @@ public sealed class ActionDesignTests : ActionTestBase
         Assert.Multiple(() =>
         {
             Assert.That(draft.Definition!.Actions.Single().Enabled, Is.False);
-            Assert.That(imported.Notes, Is.EqualTo(new[] { new FormImportNote(FormImportNotes.ActionTypeMissing, "$.actions[0]", "acme.nothing") }));
+            Assert.That(imported.Notes, Is.EqualTo(new[] { new FormImportNote(FormImportNotes.ActionTypeMissing, "$.definition.actions[0]", "acme.nothing") }));
             Assert.That(async () => await Forms.PublishAsync(imported.Form.Key, draft.Form.ConcurrencyVersion, null, Editor), Throws.TypeOf<FormBuilderValidationException>());
         });
     }

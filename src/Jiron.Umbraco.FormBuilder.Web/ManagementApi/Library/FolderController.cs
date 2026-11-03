@@ -164,18 +164,33 @@ internal sealed class FolderController(
 
     /// <summary>
     /// Deletes a folder in the trash for good, with the folders below it, the forms in them and their entries. It needs
-    /// <c>design</c> and <c>deleteEntries</c> on all of it; otherwise nothing goes.
+    /// <c>design</c> and <c>deleteEntries</c> on all of it; otherwise nothing goes. A folder outside the trash goes only when
+    /// it holds nothing, in the trash or out (<c>folder_not_empty</c> otherwise), and needs <c>design</c> on it (ADR-0166).
     /// </summary>
     /// <param name="key">The folder.</param>
     /// <param name="cancellationToken">The request's cancellation.</param>
     [HttpDelete("{key:guid}")]
     [MapToApiVersion("1.0")]
-    [FormBuilderPermission(FormBuilderLibraryService.ToDelete, On = FormBuilderAccessResourceKind.Folder, Key = "key")]
+    [FormBuilderPermission(FormBuilderPermissions.Design, On = FormBuilderAccessResourceKind.Folder, Key = "key")]
     [ProducesResponseType(typeof(LibraryDeletionResponseModel), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Delete(Guid key, CancellationToken cancellationToken = default)
     {
+        if (RequestAccess.Folder is { TrashedUtc: null })
+        {
+            return await folders.DeleteEmptyAsync(key, RequestAccess.User.Key, cancellationToken) is { } emptied
+                ? Ok(LibraryDeletionResponseModel.Of(emptied))
+                : FormBuilderProblems.NotFound(FormBuilderAccessResourceKind.Folder);
+        }
+
+        // In the trash, the folder itself first, as its declaration said before an empty folder could go at once.
+        var onFolder = FormBuilderLibraryService.ToDelete & ~await access.GetForFolderAsync(RequestAccess.User, key, cancellationToken);
+        if (onFolder != FormBuilderPermissions.None)
+        {
+            return FormBuilderProblems.Missing(PermissionRules.Each.First(permission => (onFolder & permission) != FormBuilderPermissions.None));
+        }
+
         if (await folders.GetDeletionCandidateAsync(key, cancellationToken) is not { } candidate)
         {
             return FormBuilderProblems.NotFound(FormBuilderAccessResourceKind.Folder);

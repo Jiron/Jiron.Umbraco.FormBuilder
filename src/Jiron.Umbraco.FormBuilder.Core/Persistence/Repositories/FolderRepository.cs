@@ -114,6 +114,13 @@ internal interface IFolderRepository
     /// while it holds folders or forms.
     /// </summary>
     Task<bool> DeleteAsync(int id, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Deletes an empty folder outside the trash (ADR-0166): one that holds no folder and no form, in the trash or out.
+    /// False when it does not exist. Refused with <see cref="FormBuilderConflict.Trashed"/> in the trash, and with
+    /// <see cref="FormBuilderConflict.FolderNotEmpty"/> while it holds anything.
+    /// </summary>
+    Task<bool> DeleteEmptyAsync(int id, CancellationToken cancellationToken = default);
 }
 
 /// <inheritdoc />
@@ -346,6 +353,30 @@ internal sealed class FolderRepository(FormBuilderDatabase database) : IFolderRe
                 {
                     null => false,
                     { TrashedUtc: null } => throw LibraryTrash.NotTrashed("folder"),
+                    _ => throw new FormBuilderConflictException(FormBuilderConflict.FolderNotEmpty, "The folder still holds folders or forms."),
+                };
+            },
+            cancellationToken);
+
+    /// <inheritdoc />
+    public Task<bool> DeleteEmptyAsync(int id, CancellationToken cancellationToken = default) =>
+        database.WriteAsync(
+            async db =>
+            {
+                var n = new SqlNames(db);
+                var table = n.T(FormBuilderTables.Folder);
+                var deleted = await db.ExecAsync(
+                    $"DELETE FROM {table} WHERE {n.C("id")} = @0 AND {n.C("trashedUtc")} IS NULL AND NOT EXISTS (SELECT 1 FROM {table} c{n.LockingRead} WHERE c.{n.C("parentId")} = @0) AND NOT EXISTS (SELECT 1 FROM {n.T(FormBuilderTables.Form)} f{n.LockingRead} WHERE f.{n.C("folderId")} = @0)",
+                    id);
+                if (deleted == 1)
+                {
+                    return true;
+                }
+
+                return await FindAsync(db, "id", id) switch
+                {
+                    null => false,
+                    { TrashedUtc: not null } => throw LibraryTrash.Trashed("folder"),
                     _ => throw new FormBuilderConflictException(FormBuilderConflict.FolderNotEmpty, "The folder still holds folders or forms."),
                 };
             },

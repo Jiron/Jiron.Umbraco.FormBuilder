@@ -14,6 +14,7 @@ const item = (change: Partial<LibraryItemResponseModel>): LibraryItemResponseMod
   isTrashed: false,
   hasChildren: false,
   permissions: [],
+  hasUnseenEntries: false,
   ...change,
 });
 

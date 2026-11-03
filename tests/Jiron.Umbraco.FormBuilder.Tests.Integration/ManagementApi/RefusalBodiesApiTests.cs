@@ -21,7 +21,8 @@ public sealed class RefusalBodiesApiTests : ManagementApiTestBase
     [Test]
     public async Task EachKindOfRefusal_AnswersWithItsProblem_AndItsCode()
     {
-        var live = await FolderAsync("Live");
+        var live = await FormAsync("Live");
+        var liveVersion = (await GetRequiredService<IFormBuilderFormService>().GetAsync(live))!.ConcurrencyVersion;
         var unreadable = new StringContent("{ \"name\": ", Encoding.UTF8, new MediaTypeHeaderValue("application/json"));
 
         var answers = new Dictionary<string, ApiAnswer>
@@ -31,7 +32,7 @@ public sealed class RefusalBodiesApiTests : ManagementApiTestBase
             ["403 no_section"] = await CallAsync("outsider", HttpMethod.Get, "tree/root"),
             ["403 forbidden"] = await CallAsync("viewer", HttpMethod.Post, "folder", new { name = "Plans" }),
             ["404 folder_not_found"] = await CallAsync("admin", HttpMethod.Get, $"folder/{Guid.NewGuid()}"),
-            ["409 not_trashed"] = await CallAsync("admin", HttpMethod.Delete, $"folder/{live}"),
+            ["409 not_trashed"] = await CallAsync("admin", HttpMethod.Delete, $"form/{live}?concurrencyVersion={liveVersion}"),
             ["409 cancelled"] = await CallAsync("admin", HttpMethod.Post, "folder", new { name = RefusedName }),
         };
 

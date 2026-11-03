@@ -84,6 +84,9 @@ internal static class FormBuilderProblems
     /// <summary>The code of a data type that does not exist or is no form picker's.</summary>
     public const string DataTypeNotFoundCode = "data_type_not_found";
 
+    /// <summary>The code of a template that is neither built in nor saved on this site (ADR-0166).</summary>
+    public const string TemplateNotFoundCode = "template_not_found";
+
     /// <summary>How long a client waits before asking again while the plan has not run.</summary>
     public static readonly TimeSpan RetryAfter = TimeSpan.FromSeconds(10);
 
@@ -169,6 +172,10 @@ internal static class FormBuilderProblems
     /// <summary>A data type that does not exist, or one that is no form picker's (ADR-0133).</summary>
     public static FormBuilderProblemResult DataTypeNotFound() =>
         Problem(StatusCodes.Status404NotFound, DataTypeNotFoundCode, "The form picker's data type does not exist.");
+
+    /// <summary>A template that is neither built in nor saved on this site (ADR-0166).</summary>
+    public static FormBuilderProblemResult TemplateNotFound() =>
+        Problem(StatusCodes.Status404NotFound, TemplateNotFoundCode, "The template does not exist.");
 
     /// <summary>The user sees the item but lacks <paramref name="permission"/>, which the answer names.</summary>
     public static FormBuilderProblemResult Missing(FormBuilderPermissions permission, IDictionary<string, object?>? extensions = null)

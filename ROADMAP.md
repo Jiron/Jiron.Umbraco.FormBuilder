@@ -2609,13 +2609,13 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
     - insert, move, duplicate and remove;
     - undo/redo;
     - the rule-safety checks that refuse moves breaking a rule.
-  - Done when: Vitest covers every editor-model operation, and the workspace loads and saves a form through the API.
+  - Done when: Vitest covers every editor-model operation, and the workspace loads and saves a form through the API. Playwright renames a form in the workspace's header, which is where forms are renamed (ADR-0166), and opens a field's result of the header search, which selects that field (`?field=`, ADR-0166).
 - [ ] **9.3b The designer: canvas and palette**
   - **The canvas:** pages as steps, groups with columns, fields rendered by small Lit preview elements per type, insert points, and canvas widths for phone, tablet and desktop.
   - **The palette:** search, groups, recently used.
   - **Inline label editing.**
   - **Paste a list of questions** (added in 1.1): one line per question becomes a text field with that label, ready to change type.
-  - Done when: Playwright builds a three-page form with the mouse and adds five fields from a pasted list, and screenshots are reviewed in `docs/ux/review-9.3.md`.
+  - Done when: Playwright builds a three-page form with the mouse and adds five fields from a pasted list, and screenshots are reviewed in `docs/ux/review-9.3.md`. The template gallery's preview (9.2) draws its fields with these preview elements, and a test finds no other drawing of a field in the backoffice package (ADR-0166).
 - [ ] **9.3c The designer: drag and drop and keyboard**
   - **Moving:**
     - drag and drop per ADR-0016, across groups and pages;
@@ -2697,7 +2697,8 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
     - **Verification** is no action of its own: the Verified trigger's list says that it needs the form's email verification setting (10.1) and links to it.
   - Done when:
     - Playwright configures an email action from a preset, and a test-run email lands in the pickup folder;
-    - Playwright configures and test-runs each type (webhooks against the stub on 5560).
+    - Playwright configures and test-runs each type (webhooks against the stub on 5560);
+    - Playwright follows a link of 9.2's copy-actions result, which opens the target's Actions view with the copied action selected (`?action=`, ADR-0166).
 - [ ] **10.3 Preview, publishing and history**
   - **Preview:** a modal with the draft rendered by the chosen theme in an iframe (from a preview endpoint), device widths, light and dark, and a culture switch. Test submissions are marked `IsTest`. **Fill with sample answers** (added in 1.1) fills every field with valid values in one click, so editors can try rules and outcomes quickly.
   - **Publish:** a summary of the changes against the live version, and draft and unpublished badges.

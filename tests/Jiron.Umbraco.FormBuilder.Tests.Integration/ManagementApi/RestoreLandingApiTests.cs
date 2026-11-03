@@ -158,4 +158,7 @@ internal sealed class HookedFolderRepository(IFolderRepository inner) : IFolderR
 
     /// <inheritdoc />
     public Task<bool> DeleteAsync(int id, CancellationToken cancellationToken = default) => inner.DeleteAsync(id, cancellationToken);
+
+    /// <inheritdoc />
+    public Task<bool> DeleteEmptyAsync(int id, CancellationToken cancellationToken = default) => inner.DeleteEmptyAsync(id, cancellationToken);
 }

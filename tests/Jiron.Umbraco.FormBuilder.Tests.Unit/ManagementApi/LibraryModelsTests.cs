@@ -19,7 +19,7 @@ public sealed class LibraryModelsTests
     {
         var parent = Guid.NewGuid();
         var folder = LibraryItemResponseModel.Of(new LibraryItem(LibraryItemKind.Folder, Guid.NewGuid(), "Events", null, parent, true, false, Trashed, true, FormBuilderPermissions.Design | FormBuilderPermissions.ViewEntries));
-        var form = LibraryItemResponseModel.Of(new LibraryItem(LibraryItemKind.Form, Guid.NewGuid(), "Contact", "contact", null, false, true, null, false, FormBuilderPermissions.None));
+        var form = LibraryItemResponseModel.Of(new LibraryItem(LibraryItemKind.Form, Guid.NewGuid(), "Contact", "contact", null, false, true, null, false, FormBuilderPermissions.None) { HasUnseenEntries = true, FolderName = "Events" });
 
         Assert.Multiple(() =>
         {
@@ -29,6 +29,8 @@ public sealed class LibraryModelsTests
             Assert.That((form.Kind, form.Name, form.Alias, form.ParentKey), Is.EqualTo(("form", "Contact", "contact", (Guid?)null)));
             Assert.That((form.IsRestricted, form.IsPublished, form.IsTrashed, form.HasChildren), Is.EqualTo((false, true, false, false)));
             Assert.That(form.Permissions, Is.Empty);
+            Assert.That((form.HasUnseenEntries, form.FolderName), Is.EqualTo((true, "Events")));
+            Assert.That((folder.HasUnseenEntries, folder.FolderName), Is.EqualTo((false, (string?)null)));
             Assert.That(() => LibraryItemResponseModel.Of(null!), Throws.ArgumentNullException);
         });
     }

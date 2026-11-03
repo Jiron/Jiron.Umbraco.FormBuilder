@@ -1,5 +1,8 @@
+using Jiron.Umbraco.FormBuilder.Core.Access;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Dtos;
+using Jiron.Umbraco.FormBuilder.Core.Persistence.Queries;
+using NPoco;
 using Umbraco.Cms.Infrastructure.Persistence;
 
 namespace Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
@@ -14,6 +17,40 @@ internal sealed partial class FormRepository
     /// <summary>The longest field type alias the column holds.</summary>
     public const int MaxTypeLength = 128;
 
+
+    /// <inheritdoc />
+    public Task<Page<FoundField>> SearchFieldsAsync(string text, FormVisibility visibility, PageRequest page, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(text);
+        ArgumentNullException.ThrowIfNull(visibility);
+        return database.ReadAsync(
+            async db =>
+            {
+                var n = new SqlNames(db);
+                var a = new SqlArgs();
+                var pattern = a.Add("%" + SqlNames.Escape(text.Trim()) + "%");
+                var where = new List<string>
+                {
+                    $"f.{n.C("trashedUtc")} IS NULL",
+                    $"c.{n.C("firstVersionNumber")} IS NOT NULL",
+                    $"c.{n.C("lastVersionNumber")} IS NULL",
+                    $"(c.{n.C("label")} LIKE {pattern} {SqlNames.EscapeClause} OR c.{n.C("alias")} LIKE {pattern} {SqlNames.EscapeClause})",
+                };
+                if (AccessSql.FormClause(visibility, n, "f.", a.Add) is { } access)
+                {
+                    where.Add(access);
+                }
+
+                var from = $"FROM {n.T(FormBuilderTables.FormField)} c INNER JOIN {n.T(FormBuilderTables.Form)} f ON f.{n.C("id")} = c.{n.C("formId")} WHERE {string.Join(" AND ", where)}";
+                var total = await db.ScalarAsync<long>($"SELECT COUNT(*) {from}", a.Values);
+                var rows = await db.FetchListAsync<FoundFieldRow>(
+                    $"SELECT f.{n.C("key")} AS formKey, f.{n.C("name")} AS formName, f.{n.C("folderId")} AS folderId, c.{n.C("fieldKey")} AS fieldKey, c.{n.C("alias")} AS alias, c.{n.C("label")} AS label, c.{n.C("fieldType")} AS fieldType "
+                    + $"{from} ORDER BY c.{n.C("label")}, f.{n.C("name")}, c.{n.C("id")} {n.Page(page.Skip, page.Take)}",
+                    a.Values);
+                return new Page<FoundField>([.. rows.Select(row => new FoundField(row.FormKey, row.FormName, row.FolderId, row.FieldKey, row.Alias, row.Label, row.FieldType))], total);
+            },
+            cancellationToken);
+    }
 
     /// <inheritdoc />
     public Task<IReadOnlyList<CatalogueField>> ListFieldsAsync(int formId, CancellationToken cancellationToken = default) =>
@@ -169,5 +206,30 @@ internal sealed partial class FormRepository
                 throw new ArgumentException($"A catalogue field's {what} holds {min} to {max} characters.", nameof(field));
             }
         }
+    }
+
+    [ExplicitColumns]
+    private sealed class FoundFieldRow
+    {
+        [Column("formKey")]
+        public Guid FormKey { get; set; }
+
+        [Column("formName")]
+        public string FormName { get; set; } = string.Empty;
+
+        [Column("folderId")]
+        public int? FolderId { get; set; }
+
+        [Column("fieldKey")]
+        public Guid FieldKey { get; set; }
+
+        [Column("alias")]
+        public string Alias { get; set; } = string.Empty;
+
+        [Column("label")]
+        public string Label { get; set; } = string.Empty;
+
+        [Column("fieldType")]
+        public string FieldType { get; set; } = string.Empty;
     }
 }

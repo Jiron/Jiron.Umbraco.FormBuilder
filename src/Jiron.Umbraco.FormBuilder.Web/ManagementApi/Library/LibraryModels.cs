@@ -36,6 +36,12 @@ internal sealed record LibraryItemResponseModel
     /// <summary>The permissions the user holds on it, by their stable names.</summary>
     public required IReadOnlyList<string> Permissions { get; init; }
 
+    /// <summary>Whether a form has an entry nobody has opened yet, for a user who may view its entries; otherwise false.</summary>
+    public required bool HasUnseenEntries { get; init; }
+
+    /// <summary>The name of a search result's folder, or null at the root and outside search results.</summary>
+    public string? FolderName { get; init; }
+
     /// <summary>The model of an item.</summary>
     public static LibraryItemResponseModel Of(LibraryItem item)
     {
@@ -52,6 +58,75 @@ internal sealed record LibraryItemResponseModel
             IsTrashed = item.TrashedUtc is not null,
             HasChildren = item.HasChildren,
             Permissions = PermissionRules.NamesOf(item.Permissions),
+            HasUnseenEntries = item.HasUnseenEntries,
+            FolderName = item.FolderName,
+        };
+    }
+}
+
+/// <summary>A row of a folder's list or of the trash's (ADR-0166): the item with when and by whom it last changed.</summary>
+internal sealed record LibraryRowResponseModel
+{
+    /// <summary>The folder or form.</summary>
+    public required LibraryItemResponseModel Item { get; init; }
+
+    /// <summary>When it last changed; for an item in the trash, when it went there.</summary>
+    public required DateTimeOffset UpdatedUtc { get; init; }
+
+    /// <summary>
+    /// The name of the backoffice user who changed it last, or who put it in the trash; null when Jiron Form Builder did,
+    /// or the user is gone.
+    /// </summary>
+    public string? UpdatedBy { get; init; }
+
+    /// <summary>When it went to the trash, or null outside it.</summary>
+    public DateTimeOffset? TrashedUtc { get; init; }
+
+    /// <summary>
+    /// The entries of the last 30 days that the user may view: a form's, or those of the forms below a folder; null for a
+    /// form whose entries the user may not view, for a folder without such a form below it, and in the trash.
+    /// </summary>
+    public long? RecentEntries { get; init; }
+}
+
+/// <summary>A field the header search found (ADR-0166).</summary>
+internal sealed record FieldMatchResponseModel
+{
+    /// <summary>The form's key.</summary>
+    public required Guid FormKey { get; init; }
+
+    /// <summary>The form's name.</summary>
+    public required string FormName { get; init; }
+
+    /// <summary>The name of the form's folder, or null at the root.</summary>
+    public string? FolderName { get; init; }
+
+    /// <summary>The field's key.</summary>
+    public required Guid FieldKey { get; init; }
+
+    /// <summary>The field's alias.</summary>
+    public required string Alias { get; init; }
+
+    /// <summary>The field's label in the default culture.</summary>
+    public required string Label { get; init; }
+
+    /// <summary>The field's type alias.</summary>
+    public required string FieldType { get; init; }
+
+    /// <summary>The model of a match.</summary>
+    public static FieldMatchResponseModel Of(FieldMatch match)
+    {
+        ArgumentNullException.ThrowIfNull(match);
+        var field = match.Field;
+        return new FieldMatchResponseModel
+        {
+            FormKey = field.FormKey,
+            FormName = field.FormName,
+            FolderName = match.FolderName,
+            FieldKey = field.FieldKey,
+            Alias = field.Alias,
+            Label = field.Label,
+            FieldType = field.FieldType,
         };
     }
 }

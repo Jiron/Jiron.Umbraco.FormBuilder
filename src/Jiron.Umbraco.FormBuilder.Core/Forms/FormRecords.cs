@@ -197,7 +197,22 @@ internal static class FormImportNotes
     /// refuses the form until it has one, or the action is removed.
     /// </summary>
     public const string ActionTypeMissing = "action_type_missing";
+
+    /// <summary>
+    /// An outcome sends visitors to a page this site does not have, or has in its recycle bin (ADR-0166): the path names
+    /// the outcome, which keeps the page's key until the editor chooses one of this site's pages.
+    /// </summary>
+    public const string PageMissing = "page_missing";
 }
+
+/// <summary>What an import would make, before it makes it (ADR-0166): what the file holds, and the import's notes.</summary>
+/// <param name="Name">The form's name in the file.</param>
+/// <param name="Alias">The form's alias in the file.</param>
+/// <param name="PackageVersion">The version of Jiron Form Builder that wrote the file.</param>
+/// <param name="ExportedUtc">When it was written.</param>
+/// <param name="Counts">What its definition holds.</param>
+/// <param name="Notes">What the import would change or could not resolve, as <see cref="FormImport.Notes"/> says it.</param>
+internal sealed record FormImportCheck(string Name, string Alias, string PackageVersion, DateTimeOffset ExportedUtc, DefinitionCounts Counts, IReadOnlyList<FormImportNote> Notes);
 
 /// <summary>An export file (ADR-0046).</summary>
 /// <param name="FileName">Its name: the form's alias with <c>.json</c>.</param>

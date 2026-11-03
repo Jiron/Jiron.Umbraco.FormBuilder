@@ -64,3 +64,11 @@ internal sealed record DeletionCandidate(IReadOnlyList<Guid> FolderKeys, IReadOn
 /// <param name="Deleted">What went.</param>
 /// <param name="Left">The top items of the trash that stayed: folders with what is below them, and forms on their own.</param>
 internal sealed record TrashEmptied(LibraryDeletion Deleted, int Left);
+
+/// <summary>What emptying the trash would delete for good, and leave (ADR-0166).</summary>
+/// <param name="Folders">The folders that would go.</param>
+/// <param name="Forms">The forms that would go.</param>
+/// <param name="Entries">The entries of those forms, in any state.</param>
+/// <param name="Files">The uploaded files of those forms.</param>
+/// <param name="Left">How many of the trash's top items would stay.</param>
+internal sealed record TrashPreview(int Folders, int Forms, long Entries, long Files, int Left);

@@ -357,6 +357,11 @@ internal readonly record struct OptionPlace(Guid FieldKey, string Value);
 /// <param name="Date">The stored date, in UTC, or null.</param>
 internal readonly record struct AnswerValue(Guid FieldKey, string? Text, double? Number, DateTime? Date);
 
+/// <summary>What forms hold that a permanent delete of them takes (ADR-0166).</summary>
+/// <param name="Entries">Their entries, in any state.</param>
+/// <param name="Files">Their uploaded files: those of entries, and those that wait for an entry.</param>
+internal readonly record struct EntryHoldings(long Entries, long Files);
+
 /// <summary>
 /// The entries of <c>jfbEntry</c> with their values (<c>jfbEntryValue</c>) and files (<c>jfbEntryFile</c>), one aggregate
 /// (ADR-0003, ADR-0038). Lists, filters and search are the entries query builder's (4.3d); the consent wordings the
@@ -391,6 +396,31 @@ internal interface IEntryRepository
     /// <param name="take">How many entries to answer with.</param>
     /// <param name="cancellationToken">Cancels the read.</param>
     Task<IReadOnlyList<StoredEntry>> ListRecentAsync(FormVisibility visibility, int take, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// How many entries each of these forms received since a moment (ADR-0166): those the recent list holds, so no draft,
+    /// entry waiting for its visitor's address, spam or test. A form without any is left out.
+    /// </summary>
+    /// <param name="formIds">The forms, any number.</param>
+    /// <param name="since">From when, inclusive.</param>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    Task<IReadOnlyDictionary<int, long>> CountSinceAsync(IReadOnlyCollection<int> formIds, DateTimeOffset since, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Which of these forms have an entry nobody has opened yet (ADR-0166): one the recent list holds whose first view is
+    /// not on record.
+    /// </summary>
+    /// <param name="formIds">The forms, any number.</param>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    Task<IReadOnlySet<int>> ListFormIdsWithUnseenAsync(IReadOnlyCollection<int> formIds, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// How many entries, in any state, and uploaded files, with an entry or waiting for one, these forms hold (ADR-0166): what
+    /// a permanent delete of them takes, as its confirmation says.
+    /// </summary>
+    /// <param name="formIds">The forms, any number.</param>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    Task<EntryHoldings> CountHeldAsync(IReadOnlyCollection<int> formIds, CancellationToken cancellationToken = default);
 
     /// <summary>How many of a form's entries count toward its entry limit (<see cref="EntryLimits"/>, ADR-0088).</summary>
     /// <param name="formId">The form.</param>

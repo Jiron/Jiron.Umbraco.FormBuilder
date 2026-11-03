@@ -216,6 +216,16 @@ internal sealed record CatalogueFieldValues(
 /// <param name="Values">The field.</param>
 internal sealed record CatalogueField(int Id, int FormId, CatalogueFieldValues Values);
 
+/// <summary>A field of a form's live version, as the header search finds it (ADR-0166).</summary>
+/// <param name="FormKey">The form's key.</param>
+/// <param name="FormName">The form's name.</param>
+/// <param name="FolderId">The form's folder, or null at the root.</param>
+/// <param name="FieldKey">The field's key.</param>
+/// <param name="Alias">The field's alias.</param>
+/// <param name="Label">The field's label in the default culture.</param>
+/// <param name="FieldType">The field's type alias.</param>
+internal sealed record FoundField(Guid FormKey, string FormName, int? FolderId, Guid FieldKey, string Alias, string Label, string FieldType);
+
 /// <summary>
 /// A form with its versions and its field catalogue, the one aggregate of <c>jfbForm</c>, <c>jfbFormVersion</c> and
 /// <c>jfbFormField</c>. Every change to the form's row (create, save, publish, rename, move, trash) raises
@@ -407,6 +417,17 @@ internal interface IFormRepository
 
     /// <summary>A form's catalogue, in column order.</summary>
     Task<IReadOnlyList<CatalogueField>> ListFieldsAsync(int formId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// The fields of the live versions of forms outside the trash whose label or alias contains the text, in any letter
+    /// case, of the forms a user may see (ADR-0166): by label, then by the form's name. The catalogue holds what was
+    /// published, so a field only a draft has is found once it is published.
+    /// </summary>
+    /// <param name="text">What the label or the alias contains.</param>
+    /// <param name="visibility">The forms the user may see.</param>
+    /// <param name="page">Which part of the list.</param>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    Task<Page<FoundField>> SearchFieldsAsync(string text, FormVisibility visibility, PageRequest page, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Adds a field to a form's catalogue. Null when the form does not exist. Refused with
