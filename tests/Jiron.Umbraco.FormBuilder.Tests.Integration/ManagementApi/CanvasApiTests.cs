@@ -73,6 +73,21 @@ public sealed class CanvasApiTests : ManagementApiTestBase
     }
 
     [Test]
+    public async Task TheSitesLanguages_ComeWithTheDefaultFirst_HoweverUmbracoListsThem()
+    {
+        // Swedish, made the default, comes after English by its code and by when it was made.
+        var languages = GetRequiredService<ILanguageService>();
+        var created = await languages.CreateAsync(new Language("sv-SE", "Swedish") { IsDefault = true }, Constants.Security.SuperUserKey);
+        Assert.That(created.Success, Is.True, created.Status.ToString());
+
+        var served = (await CallAsync("designer", HttpMethod.Get, Canvas)).Body!;
+
+        Assert.That(
+            served["languages"]!.AsArray().Select(each => (Text(each!["culture"]), each["isDefault"]!.GetValue<bool>())),
+            Is.EqualTo(new[] { ("sv-SE", true), ("en-US", false) }));
+    }
+
+    [Test]
     public async Task TheMarker_IsTheSitesStyle()
     {
         var settings = GetRequiredService<IFormBuilderSettingsService>();
