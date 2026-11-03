@@ -268,6 +268,7 @@ test('fields drawn as a fieldset share the rows of fields beside them, and each 
   const parts = await sideBySide(pageForm(page));
   expect(parts.sliderHelp, "the slider's help beside the signature's").toBe(parts.signatureHelp);
   expect(parts.countryTop, "the country's help beside the file's").toBe(parts.fileTop);
+  expect(parts.email, 'the email box as high as a box, beside a long text').toBeLessThan(parts.textarea / 2);
   expect(parts.country, 'the country list as high as a list, beside a taller drop frame').toBeLessThan(parts.file / 2);
 });
 

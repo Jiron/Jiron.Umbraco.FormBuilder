@@ -18,8 +18,8 @@ export function sinkMarkup(name: 'sink' | 'sink-bootstrap5'): string {
 
 /**
  * Where the parts of fields side by side in the sink sit, read in one frame: the tops of the slider's and the
- * signature's help, which share a row, and the heights of the country list and the file's drop frame beside it, the
- * frame as the runtime leaves it.
+ * signature's help, which share a row, and the heights of an email box beside a long text and of the country list beside
+ * the file's drop frame, the frame as the runtime leaves it.
  */
 export async function sideBySide(form: Locator) {
   return form.evaluate((element) => {
@@ -30,12 +30,14 @@ export async function sideBySide(form: Locator) {
       return found.getBoundingClientRect();
     };
     return {
-      sliderHelp: Math.round(box('.jfb-field-slider > .jfb-help').top),
-      signatureHelp: Math.round(box('.jfb-field-signature > fieldset > .jfb-help').top),
-      countryTop: Math.round(box('.jfb-field-country > .jfb-help').top),
-      fileTop: Math.round(box('.jfb-field-file > .jfb-help').top),
-      country: Math.round(box('.jfb-field-country select').height),
-      file: Math.round(box('.jfb-field-file .jfb-upload').height),
+      sliderHelp: Math.round(box('[data-jfb-alias="kSlider"] > .jfb-help').top),
+      signatureHelp: Math.round(box('[data-jfb-alias="kSignature"] > fieldset > .jfb-help').top),
+      countryTop: Math.round(box('[data-jfb-alias="kCountry"] > .jfb-help').top),
+      fileTop: Math.round(box('[data-jfb-alias="kFile"] > .jfb-help').top),
+      email: Math.round(box('[data-jfb-alias="kEmail"] input').height),
+      textarea: Math.round(box('[data-jfb-alias="kTextarea"] textarea').height),
+      country: Math.round(box('[data-jfb-alias="kCountry"] select').height),
+      file: Math.round(box('[data-jfb-alias="kFile"] .jfb-upload').height),
     };
   });
 }
