@@ -508,8 +508,8 @@ describe('merge tags in the inspector (ADR-0173)', () => {
     const heading: DesignField = { key: 'h', type: 'heading', alias: 'title', settings: { text: { '': 'Hello !' } } };
     const { root, requests } = await inspectorOf('h', { form: 'form1' }, heading);
     const pickers = [...root.querySelectorAll('jfb-merge-tag-picker')];
-    expect(pickers.map((picker) => [picker.place, picker.form, picker.culture])).toEqual([
-      ['visitorText', 'form1', 'en-US'],
+    expect(pickers.map((picker) => [picker.place, picker.form, picker.culture, picker.owner])).toEqual([
+      ['visitorText', 'form1', 'en-US', 'h'],
     ]);
     const box = must(root.querySelector<HTMLInputElement>('#setting-text'), 'the text');
     box.setSelectionRange(6, 6);
@@ -527,11 +527,39 @@ describe('merge tags in the inspector (ADR-0173)', () => {
       [...root.querySelectorAll('jfb-merge-tag-picker')].find((each) => each.place === 'defaultValue'),
       'the default value picker',
     );
+    expect(picker.owner).toBe('name');
     picker.insert('{{ query.ref }}');
     expect(applied(requests.at(-1), NAME)['defaultValue']).toBe('{{ query.ref }}');
 
     const none = await inspectorOf('h', {}, { key: 'h', type: 'heading', alias: 'title' });
     expect(none.root.querySelector('jfb-merge-tag-picker')).toBeNull();
+  });
+});
+
+describe('rich text in the inspector (ADR-0173)', () => {
+  const CONSENT: DesignField = {
+    key: 'c',
+    type: 'consent',
+    alias: 'agree',
+    settings: { text: { '': 'I agree to the <a href="/privacy"><strong>terms</strong></a> &amp; rules.' } },
+  };
+
+  it("is one line of words in a consent's label, and paragraphs and lists in a paragraph", async () => {
+    const consent = await inspectorOf('c', {}, CONSENT);
+    const wording = must(consent.root.querySelector('jfb-rich-text'), 'the wording');
+    expect([wording.id, wording.inline, wording.value]).toEqual([
+      'setting-text',
+      true,
+      'I agree to the <a href="/privacy"><strong>terms</strong></a> &amp; rules.',
+    ]);
+    const paragraph = await inspectorOf('p1', {}, { key: 'p1', type: 'paragraph', alias: 'intro' });
+    expect(must(paragraph.root.querySelector('jfb-rich-text'), 'the paragraph').inline).toBe(false);
+  });
+
+  it("shows the default language's words, without their markup, as another language's hint", async () => {
+    const { root } = await inspectorOf('c', { culture: 'de-DE' }, CONSENT);
+    const wording = must(root.querySelector('jfb-rich-text'), 'the wording');
+    expect([wording.value, wording.placeholder]).toEqual(['', 'I agree to the terms & rules.']);
   });
 });
 
@@ -565,13 +593,24 @@ describe("a field's pattern in the inspector (ADR-0173)", () => {
       { kind: 'pattern', pattern: CODE, message: { '': 'No' } },
       { kind: 'pattern', pattern: 'y' },
     ]);
+    // Emptied, the rule stays with its message while the box is typed in, so the next keys edit it, not the next rule.
     type(first, '');
     expect(applied(several.requests[1], { ...NAME, validation: checks })['validation']).toEqual([
+      { kind: 'uniquePerForm' },
+      { kind: 'pattern', pattern: '', message: { '': 'No' } },
+      { kind: 'pattern', pattern: 'y' },
+    ]);
+    type(first, '', true);
+    expect(applied(several.requests.at(-1), { ...NAME, validation: checks })['validation']).toEqual([
       { kind: 'uniquePerForm' },
       { kind: 'pattern', pattern: 'y' },
     ]);
     const only = { ...NAME, validation: [{ kind: 'pattern', pattern: CODE }] };
-    expect(applied(several.requests[1], only)).not.toHaveProperty('validation');
+    expect(applied(several.requests.at(-1), only)).not.toHaveProperty('validation');
+    // A field without a rule, whose box is emptied, sends nothing.
+    const before = requests.length;
+    type(box, '', true);
+    expect(requests).toHaveLength(before);
   });
 
   it("says when the site's matcher doesn't take the pattern, and then tries no answer against it", async () => {
@@ -583,6 +622,11 @@ describe("a field's pattern in the inspector (ADR-0173)", () => {
     expect(box.getAttribute('aria-describedby')).toBe('prop-pattern-help prop-pattern-why');
     expect(text(root.querySelector('#prop-pattern-why'))).toContain("doesn't take this pattern");
     expect(must(root.querySelector<HTMLInputElement>('#prop-pattern-sample'), 'the sample').disabled).toBe(true);
+    const result = must(root.querySelector<HTMLElement>('#prop-pattern-result'), 'the result');
+    expect([text(result), result.dataset['result']]).toEqual([
+      'Answers can be tried once the pattern is one the site takes.',
+      'waits',
+    ]);
   });
 
   it('tries an answer typed in Try it as the site would, saves none of it, and forgets it on another element', async () => {

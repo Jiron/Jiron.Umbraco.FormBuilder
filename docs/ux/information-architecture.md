@@ -220,6 +220,21 @@ progress, since the steps across its top stand in for it.
     themselves, or a grid's rows and columns ([ADR-0172](../decisions/0172-the-option-editor-and-the-option-sources.md)).
     The option list picker ends with "Create an option list…" for users with `manageLibrary`, which makes one in a
     sidebar without leaving the form.
+  - **Rich text** (a paragraph) is edited in place with a small toolbar: Bold, Italic, Link, Bulleted list and
+    Numbered list, each saying whether it is on. A consent's and a checkbox's text, which sit in the visitor's label,
+    are one line: Bold, Italic and Link. A link takes a web, email or phone address or a path on the site, and may open
+    in a new tab.
+  - **Umbraco's items** (an image's picture, the page whose children are a field's options) are chosen with Umbraco's
+    own pickers; the site's document types and its data types that hold values, which Umbraco shows only to users of
+    its Settings section, are ticked or chosen from the site's own list.
+  - **Texts made for merge tags** (a heading, a paragraph, a consent's wording, a field's default value) have "Insert
+    merge tag" under their box: a search, then the tags this text may use by source, the answers of the fields
+    before it first by their labels; a choice puts the tag where the caret was, and the focus leaving the list closes
+    it. A label, help or placeholder takes a typed tag only
+    ([ADR-0173](../decisions/0173-rich-text-merge-tags-pickers-and-patterns-in-the-inspector.md)).
+- **Validation** adds, for text, email, phone and web address fields, **Must match a pattern**: the pattern, its
+  message, and **Try it**, which says at once whether a typed answer matches, as the site will check it. A pattern the
+  site's matcher refuses is said under its box; the answer tried is never saved.
 - **Validation, Rules, Appearance and Advanced** (closed, remembered per user):
   - a closed section shows a one-line summary of what is set ("Maximum length: 200"), or "Nothing changed";
   - a section shows at most seven settings before "More options".

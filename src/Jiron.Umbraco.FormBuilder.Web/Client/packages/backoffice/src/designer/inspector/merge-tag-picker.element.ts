@@ -1,6 +1,7 @@
 // "Insert merge tag" under a text that takes tags (ROADMAP 9.4c, ADR-0173): a button that opens a panel with a search
 // box and the paths the place may use in the draft as it is, read each time it opens, grouped by their source. A path
-// pressed is handed to the box as its tag and the panel closes; Escape closes it and gives the focus back to the button.
+// pressed is handed to the box as its tag and the panel closes; Escape closes it and gives the focus back to the button,
+// and the focus leaving it closes it, so it never covers the box the focus went to.
 import { css, html, nothing, type TemplateResult } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import type { MergeTagPathResponseModel } from '../../api';
@@ -13,6 +14,7 @@ export class MergeTagPickerElement extends UmbLitElement {
   static override properties = {
     place: {},
     form: {},
+    owner: {},
     culture: {},
     definition: { attribute: false },
     insert: { attribute: false },
@@ -24,6 +26,8 @@ export class MergeTagPickerElement extends UmbLitElement {
   declare place: MergeTagPlace;
   /** The form's key, whose draft the paths come from. */
   declare form: string;
+  /** The key of the element whose text it is: a visitor text recalls only the answers before it. */
+  declare owner: string;
   /** The language the labels are shown in. */
   declare culture: string;
   /** The draft as the designer holds it now. */
@@ -35,11 +39,14 @@ export class MergeTagPickerElement extends UmbLitElement {
   declare private _query: string;
 
   readonly #id = `jfb-merge-tags-${++opened}`;
+  // Which opening the paths being read are for: an answer to an earlier one is dropped.
+  #reading = 0;
 
   constructor() {
     super();
     this.place = 'visitorText';
     this.form = '';
+    this.owner = '';
     this.culture = '';
     this.definition = () => ({ pages: [] });
     this.insert = () => undefined;
@@ -66,7 +73,9 @@ export class MergeTagPickerElement extends UmbLitElement {
     this._failed = false;
     this._paths = null;
     void this.updateComplete.then(() => this.renderRoot.querySelector<HTMLInputElement>('input')?.focus());
-    const paths = await readMergeTagPaths(this, this.form, this.place, this.culture, this.definition());
+    const reading = ++this.#reading;
+    const paths = await readMergeTagPaths(this, this.form, this.place, this.culture, this.definition(), this.owner);
+    if (reading !== this.#reading) return;
     this._failed = paths === undefined;
     this._paths = paths ?? [];
   }
@@ -91,6 +100,11 @@ export class MergeTagPickerElement extends UmbLitElement {
         placement="bottom-start"
         @toggle=${(event: ToggleEvent) => {
           if (event.newState === 'open') void this.#open();
+        }}
+        @focusout=${(event: FocusEvent) => {
+          const to = event.relatedTarget;
+          if (to instanceof Node && (this.renderRoot.contains(to) || this.contains(to))) return;
+          this.#close(false);
         }}
         @keydown=${(event: KeyboardEvent) => {
           if (event.key !== 'Escape') return;

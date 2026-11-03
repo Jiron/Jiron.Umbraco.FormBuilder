@@ -36,6 +36,7 @@ export const PLAIN_EDITORS: ReadonlySet<string> = new Set([
   'documentTypePicker',
   'dataTypePicker',
   'localizedHtml',
+  'inlineHtml',
 ]);
 
 /** A field's texts the inspector edits in each language. */

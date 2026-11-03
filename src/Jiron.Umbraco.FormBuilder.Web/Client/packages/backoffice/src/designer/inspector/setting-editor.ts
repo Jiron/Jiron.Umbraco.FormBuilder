@@ -2,9 +2,7 @@
 // the browser's own boxes so each is labelled, described and said as screen readers expect. A box keeps what was typed
 // while it can't be kept, says why under it once the box is left, and hands each value it can keep to the inspector; a
 // locked setting shows its value and the configuration key behind it, read-only, and a hidden one shows nothing.
-import '@umbraco-cms/backoffice/data-type';
 import '@umbraco-cms/backoffice/document';
-import '@umbraco-cms/backoffice/document-type';
 import { html, nothing, type TemplateResult } from '@umbraco-cms/backoffice/external/lit';
 import '@umbraco-cms/backoffice/media';
 import type { FieldSettingResponseModel } from '../../api';
@@ -125,6 +123,7 @@ export function settingText(
     case 'localizedText':
       return textIn(value as LocalizedText | undefined, context.culture);
     case 'localizedHtml':
+    case 'inlineHtml':
       return plainOf(textIn(value as LocalizedText | undefined, context.culture));
     case 'mediaPicker':
     case 'contentPicker':
@@ -268,10 +267,12 @@ export function settingEditor(
     case 'mediaPicker':
     case 'contentPicker':
     case 'documentPicker':
+      return picker(context, setting, value, path);
     case 'documentTypePicker':
     case 'dataTypePicker':
-      return picker(context, setting, value, path);
+      return siteChoice(context, setting, value, path);
     case 'localizedHtml':
+    case 'inlineHtml':
       return richText(context, setting, value, path);
     default:
       return nothing;
@@ -282,6 +283,74 @@ export function settingEditor(
 export function pickedKeys(setting: FieldSettingResponseModel, value: unknown): string[] {
   if (setting.kind === 'list') return Array.isArray(value) ? value.map(asText).filter((key) => key !== '') : [];
   return typeof value === 'string' && value !== '' ? [value] : [];
+}
+
+// The site's document types and data types, which Umbraco's own pickers show only to users of its Settings section,
+// come with the setting as its choices (ADR-0173): ticks where it takes several, a select where it takes one. One the
+// site no longer has stays shown while it is picked, so it can be taken away.
+function siteChoice(context: EditorContext, setting: FieldSettingResponseModel, value: unknown, path: string) {
+  const id = boxId(path);
+  const picked = pickedKeys(setting, value);
+  const known = new Set(setting.choices.map((choice) => choice.value));
+  const choices = [
+    ...setting.choices.map((choice) => ({ value: choice.value, label: context.say(choice.label) })),
+    ...picked.filter((key) => !known.has(key)).map((key) => ({ value: key, label: context.term('pickedGone') })),
+  ];
+  if (setting.kind !== 'list')
+    return frame(context, setting, path, (described) =>
+      choices.length === 0
+        ? html`<p class="help" id=${id}>${context.term('siteChoicesNone')}</p>`
+        : html`<select
+            id=${id}
+            aria-describedby=${described ?? nothing}
+            @change=${(event: Event) => {
+              const chosen = (event.target as HTMLSelectElement).value;
+              context.set(path, setting, { ok: true, value: chosen === '' ? undefined : chosen }, true);
+            }}
+          >
+            <option value="" ?disabled=${setting.rules.required} ?selected=${picked.length === 0}>
+              ${context.term('pickedNone')}
+            </option>
+            ${choices.map(
+              (choice) =>
+                html`<option value=${choice.value} ?selected=${picked[0] === choice.value}>${choice.label}</option>`,
+            )}
+          </select>`,
+    );
+  const problem = context.problems.get(id);
+  const help = setting.description ? `${id}-help` : undefined;
+  const why = problem ? `${id}-why` : undefined;
+  return html`<fieldset
+    class="item item-group"
+    id=${id}
+    aria-describedby=${[help, why].filter(Boolean).join(' ') || nothing}
+  >
+    <legend class="label">${context.say(setting.label)}</legend>
+    ${help ? html`<p class="help" id=${help}>${context.say(setting.description)}</p>` : nothing}
+    ${choices.length === 0 ? html`<p class="help">${context.term('siteChoicesNone')}</p>` : nothing}
+    ${choices.map(
+      (choice, at) =>
+        html`<div class="item-switch">
+          <input
+            type="checkbox"
+            id=${`${id}-${at}`}
+            .checked=${picked.includes(choice.value)}
+            @change=${(event: Event) => {
+              // The boxes as they are now, ticked faster than the field comes back drawn anew.
+              const boxes = [
+                ...((event.target as HTMLElement)
+                  .closest('fieldset')
+                  ?.querySelectorAll<HTMLInputElement>('input[type="checkbox"]') ?? []),
+              ];
+              const next = choices.map((each) => each.value).filter((_each, index) => boxes[index]?.checked);
+              context.set(path, setting, parseChoices(setting, next), true);
+            }}
+          />
+          <label for=${`${id}-${at}`}>${choice.label}</label>
+        </div>`,
+    )}
+    ${problem ? html`<p class="why" id=${why ?? ''}>${problem}</p>` : nothing}
+  </fieldset>`;
 }
 
 // Umbraco's own items, picked with Umbraco's own inputs (ADR-0173): each shows the items' names and opens Umbraco's
@@ -295,52 +364,42 @@ function picker(context: EditorContext, setting: FieldSettingResponseModel, valu
     const chosen = [...((event.target as { selection?: readonly string[] }).selection ?? [])];
     context.set(path, setting, { ok: true, value: several ? chosen : chosen[0] }, true);
   };
-  return frame(context, setting, path, (described) => {
-    const label = context.say(setting.label);
-    switch (setting.editor) {
-      case 'mediaPicker':
-        return html`<umb-input-media
-          id=${id}
-          aria-label=${label}
-          aria-describedby=${described ?? nothing}
-          .selection=${selection}
-          .max=${max}
-          @change=${pick}
-        ></umb-input-media>`;
-      case 'documentTypePicker':
-        return html`<umb-input-document-type
-          id=${id}
-          aria-label=${label}
-          aria-describedby=${described ?? nothing}
-          .documentTypesOnly=${true}
-          .selection=${selection}
-          .max=${max}
-          @change=${pick}
-        ></umb-input-document-type>`;
-      case 'dataTypePicker':
-        return html`<umb-data-type-input
-          id=${id}
-          aria-label=${label}
-          aria-describedby=${described ?? nothing}
-          .selection=${selection}
-          .max=${max}
-          @change=${pick}
-        ></umb-data-type-input>`;
-      default:
-        return html`<umb-input-document
-          id=${id}
-          aria-label=${label}
-          aria-describedby=${described ?? nothing}
-          .selection=${selection}
-          .max=${max}
-          @change=${pick}
-        ></umb-input-document>`;
-    }
-  });
+  const label = context.say(setting.label);
+  const help = setting.description ? `${id}-help` : undefined;
+  const problem = context.problems.get(id);
+  const described = [help, problem ? `${id}-why` : undefined].filter(Boolean).join(' ') || undefined;
+  // Umbraco's input is no form control a label names: a group named by the label holds it, so its own Choose and Remove
+  // are said with the setting they belong to.
+  return html`<div class="item">
+    <p class="label" id=${`${id}-label`}>${label}</p>
+    ${help ? html`<p class="help" id=${help}>${context.say(setting.description)}</p>` : nothing}
+    <div role="group" aria-labelledby=${`${id}-label`} aria-describedby=${described ?? nothing}>
+      ${(() => {
+        switch (setting.editor) {
+          case 'mediaPicker':
+            return html`<umb-input-media
+              id=${id}
+              .selection=${selection}
+              .max=${max}
+              @change=${pick}
+            ></umb-input-media>`;
+          default:
+            return html`<umb-input-document
+              id=${id}
+              .selection=${selection}
+              .max=${max}
+              @change=${pick}
+            ></umb-input-document>`;
+        }
+      })()}
+    </div>
+    ${problem ? html`<p class="why" id=${`${id}-why`}>${problem}</p>` : nothing}
+  </div>`;
 }
 
 // Rich text in the language edited, on the inspector's own editor (ADR-0173): its label and help above it, said to
-// screen readers as its name and description, and "Insert merge tag" under it where the setting takes tags.
+// screen readers as its name and description, and "Insert merge tag" under it where the setting takes tags. A text in a
+// label is one line of words (inline); another language shows the default's words, without their markup, as its hint.
 function richText(context: EditorContext, setting: FieldSettingResponseModel, value: unknown, path: string) {
   const id = boxId(path);
   const texts = value as LocalizedText | undefined;
@@ -354,8 +413,9 @@ function richText(context: EditorContext, setting: FieldSettingResponseModel, va
       .label=${label}
       .description=${setting.description ? context.say(setting.description) : ''}
       .language=${context.culture}
-      .placeholder=${isDefault ? '' : textIn(texts, context.defaultCulture)}
+      .placeholder=${isDefault ? '' : plainOf(textIn(texts, context.defaultCulture))}
       .value=${isDefault ? textIn(texts, context.culture) : ownText(texts, context.culture)}
+      .inline=${setting.editor === 'inlineHtml'}
       .change=${(text: string, done: boolean) => context.set(path, setting, { ok: true, value: text }, done)}
     ></jfb-rich-text>
     ${setting.supportsMergeTags ? (context.mergeTags?.(setting, path) ?? nothing) : nothing}

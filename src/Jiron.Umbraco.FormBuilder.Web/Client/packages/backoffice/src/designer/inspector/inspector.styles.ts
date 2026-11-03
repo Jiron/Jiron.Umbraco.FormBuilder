@@ -194,6 +194,17 @@ export const inspectorStyles = css`
     color: var(--jfb-bo-color-danger-text);
   }
 
+  /* Try it's answer, said in the colour of what it means as well as in words. */
+  .help[data-result='match'] {
+    color: var(--jfb-bo-color-positive-text);
+    font-weight: 600;
+  }
+
+  .help[data-result='miss'] {
+    color: var(--jfb-bo-color-danger-text);
+    font-weight: 600;
+  }
+
   input:not([type='checkbox']),
   select,
   textarea {
@@ -234,7 +245,10 @@ export const inspectorStyles = css`
     border-width: 2px;
   }
 
+  /* As specific as the boxes' own rule above, whose font would win otherwise: an alias, a formula, a pattern. */
   .code,
+  input.code,
+  textarea.code,
   code {
     font-family: var(--jfb-bo-font-mono);
   }

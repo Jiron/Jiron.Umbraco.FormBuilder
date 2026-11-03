@@ -11,13 +11,14 @@ import { must, registerEnglish, settle, testHost, text } from '../../testing';
 const server = vi.hoisted(() => ({
   asked: [] as unknown[][],
   answer: undefined as MergeTagPathResponseModel[] | undefined,
+  pending: undefined as Promise<MergeTagPathResponseModel[]> | undefined,
 }));
 
 vi.mock('./merge-tags', async (original) => ({
   ...(await original<typeof import('./merge-tags')>()),
   readMergeTagPaths: async (...args: unknown[]) => {
     server.asked.push(args.slice(1));
-    return server.answer;
+    return server.pending ?? server.answer;
   },
 }));
 
@@ -48,6 +49,7 @@ async function pickerOf() {
     culture: 'de-DE',
     definition: () => definition,
     insert: (tag: string) => inserted.push(tag),
+    owner: 'heading-1',
   });
   testHost().append(element);
   await settle(element);
@@ -67,7 +69,7 @@ describe('the merge tag picker', () => {
     const { shadow, open, definition } = await pickerOf();
     expect(text(shadow.querySelector('.open'))).toBe('Insert merge tag');
     await open();
-    expect(server.asked).toEqual([['form1', 'consentText', 'de-DE', definition]]);
+    expect(server.asked).toEqual([['form1', 'consentText', 'de-DE', definition, 'heading-1']]);
     expect([...shadow.querySelectorAll('.heading')].map((heading) => text(heading))).toEqual([
       'The form',
       'The page',
@@ -101,6 +103,40 @@ describe('the merge tag picker', () => {
     search.value = 'zzz';
     search.dispatchEvent(new Event('input'));
     await new Promise((done) => setTimeout(done, 0));
+    expect(text(shadow.querySelector('.note'))).toBe('No merge tag matches.');
+  });
+
+  it('closes when the focus leaves it, and drops an answer to an earlier opening', async () => {
+    server.answer = consent;
+    const { element, shadow, open } = await pickerOf();
+    const panel = must(
+      shadow.querySelector<HTMLElement & { hidePopover: () => void }>('uui-popover-container'),
+      'panel',
+    );
+    let hidden = 0;
+    panel.hidePopover = () => void hidden++;
+    await open();
+    const search = must(shadow.querySelector<HTMLInputElement>('input[type="search"]'), 'the search');
+    search.dispatchEvent(
+      new FocusEvent('focusout', { bubbles: true, composed: true, relatedTarget: shadow.querySelector('.path') }),
+    );
+    expect(hidden).toBe(0);
+    const outside = document.createElement('button');
+    testHost().append(outside);
+    search.dispatchEvent(new FocusEvent('focusout', { bubbles: true, composed: true, relatedTarget: outside }));
+    expect(hidden).toBe(1);
+
+    let answer: (paths: MergeTagPathResponseModel[]) => void = () => undefined;
+    server.answer = undefined;
+    const slow = new Promise<MergeTagPathResponseModel[]>((done) => (answer = done));
+    server.pending = slow;
+    await open();
+    server.pending = undefined;
+    server.answer = [];
+    await open();
+    answer(consent ?? []);
+    await new Promise((done) => setTimeout(done, 0));
+    await settle(element);
     expect(text(shadow.querySelector('.note'))).toBe('No merge tag matches.');
   });
 

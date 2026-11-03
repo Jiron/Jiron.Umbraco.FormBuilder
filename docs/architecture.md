@@ -233,7 +233,16 @@ flowchart LR
   (the library's lists with a count), and asks `form/{key}/options` for a draft field's options in the language shown,
   which the Design view hands the canvas for a field whose options come from elsewhere. The canvas's images (an image
   field's, an option card's) come from Umbraco's imaging, which a user of the Content section may ask, as Umbraco's
-  media picker does for its thumbnails.
+  media picker does for its thumbnails. From 9.4c (ADR-0173): `inspector/rich-text.element.ts` (`jfb-rich-text`, on
+  the Tiptap Umbraco's bundle exports, with only the marks and nodes the server's sanitiser keeps) for `localizedHtml`
+  settings, and one line of it for `inlineHtml` (a text in a label); Umbraco's own inputs for content and media
+  (`umb-input-document`, `umb-input-media`), and ticks or a select for document types and data types, which the option
+  sources endpoint serves as the settings' choices (`OptionKind.SiteChoicesAsync`); `inspector/merge-tag-picker.element.ts`
+  under the texts made for tags, over the helpers of `inspector/merge-tags.ts`, which asks the management API's
+  `form/{key}/merge-tag-paths` for the paths of a place in the draft the designer holds, for the element whose text it
+  is (`DraftMergeTagPaths` in Core: a field's path labelled in the language asked, a visitor text's answers only those
+  before it); and "Must match a pattern" in Validation, whose "Try it" runs `@jfb/logic`'s `compilePattern`,
+  the browser's twin of the server's matcher.
 
 ## 2. The definition model
 

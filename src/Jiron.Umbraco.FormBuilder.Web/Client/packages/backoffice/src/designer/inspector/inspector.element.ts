@@ -329,16 +329,17 @@ export class InspectorElement extends UmbLitElement {
       defaultCulture: this.#defaultCulture,
       problems: this._problems,
       set: (path, setting, parsed, done) => this.#setSetting(field, type, path, setting, parsed, done),
-      mergeTags: (setting, path) => this.#tagPicker(placeOf(type.alias, setting.name), boxId(path)),
+      mergeTags: (setting, path) => this.#tagPicker(placeOf(type.alias, setting.name), boxId(path), field.key),
     };
   }
 
-  // "Insert merge tag" for the box with this id, its tags of this place (ADR-0173).
-  #tagPicker(place: MergeTagPlace, id: string): TemplateResult | typeof nothing {
+  // "Insert merge tag" for the box with this id, its tags of this place, in the text of this element (ADR-0173).
+  #tagPicker(place: MergeTagPlace, id: string, owner: string): TemplateResult | typeof nothing {
     if (!this.form) return nothing;
     return html`<jfb-merge-tag-picker
       .place=${place}
       .form=${this.form}
+      .owner=${owner}
       .culture=${this.culture}
       .definition=${() => this.definition}
       .insert=${(tag: string) => this.#insertTag(id, tag)}
@@ -679,7 +680,7 @@ export class InspectorElement extends UmbLitElement {
             'defaultValue',
           ),
         '',
-        this.#tagPicker('defaultValue', id),
+        this.#tagPicker('defaultValue', id, key),
       );
     const lines = Array.isArray(value) ? value.map(String).join('\n') : typeof value === 'string' ? value : '';
     return html`<div class="item">
@@ -704,7 +705,7 @@ export class InspectorElement extends UmbLitElement {
         }}
       ></textarea>
       <p class="help" id=${`${id}-help`}>${this.#term('oneALine')}</p>
-      ${this.#tagPicker('defaultValue', id)}
+      ${this.#tagPicker('defaultValue', id, key)}
     </div>`;
   }
 
@@ -839,6 +840,7 @@ export class InspectorElement extends UmbLitElement {
   // "Must match a pattern" (ADR-0173): the field's first pattern rule, its message, and a box to try an answer in, which
   // says at once whether the pattern takes it, through the matcher the site uses (ADR-0005). A pattern the matcher
   // doesn't take is said under its box. The rule goes where it was among the field's checks; others stay as they are.
+  // A box emptied keeps its rule, message and all, until it is left empty, so the next rule is never edited instead.
   #pattern(field: DesignField, name: string): TemplateResult {
     const id = 'prop-pattern';
     const checks = (field['validation'] as readonly Readonly<Record<string, unknown>>[] | undefined) ?? [];
@@ -862,12 +864,19 @@ export class InspectorElement extends UmbLitElement {
     const compiled = pattern === '' ? null : patternOf(pattern);
     const unsafe = pattern !== '' && compiled === null;
     const said = check?.['message'] as LocalizedText | undefined;
-    const result =
-      this._sample === ''
-        ? this.#term('patternTryHelp')
-        : compiled?.test(this._sample)
-          ? this.#term('patternMatches')
-          : this.#term('patternFails');
+    const outcome = unsafe
+      ? 'waits'
+      : this._sample === '' || compiled === null
+        ? 'none'
+        : compiled.test(this._sample)
+          ? 'match'
+          : 'miss';
+    const result = {
+      waits: this.#term('patternTryWaits'),
+      none: this.#term('patternTryHelp'),
+      match: this.#term('patternMatches'),
+      miss: this.#term('patternFails'),
+    }[outcome];
     return html`<div class="item item-stack">
       <div class="item">
         <label class="label" for=${id}>${name}</label>
@@ -883,10 +892,11 @@ export class InspectorElement extends UmbLitElement {
           .value=${boxValue(pattern)}
           @input=${(event: Event) => {
             const written = (event.target as HTMLInputElement).value;
-            put(
-              written === '' ? undefined : { ...(check ?? {}), kind: 'pattern', pattern: written },
-              'pattern.pattern',
-            );
+            if (written !== '' || check)
+              put({ ...(check ?? {}), kind: 'pattern', pattern: written }, 'pattern.pattern');
+          }}
+          @change=${(event: Event) => {
+            if ((event.target as HTMLInputElement).value === '' && check) put(undefined, 'pattern.pattern');
           }}
         />
         ${unsafe ? html`<p class="why" id=${`${id}-why`}>${this.#term('patternUnsafe')}</p>` : nothing}
@@ -924,18 +934,11 @@ export class InspectorElement extends UmbLitElement {
                   autocomplete="off"
                   spellcheck="false"
                   aria-describedby=${`${id}-result`}
-                  ?disabled=${unsafe}
+                  ?disabled=${unsafe || pattern === ''}
                   .value=${this._sample}
                   @input=${(event: Event) => (this._sample = (event.target as HTMLInputElement).value)}
                 />
-                <p
-                  class="help"
-                  id=${`${id}-result`}
-                  role="status"
-                  data-result=${this._sample === '' ? 'none' : compiled?.test(this._sample) ? 'match' : 'miss'}
-                >
-                  ${result}
-                </p>
+                <p class="help" id=${`${id}-result`} role="status" data-result=${outcome}>${result}</p>
               </div>`
           : nothing
       }

@@ -160,17 +160,40 @@ describe('the option editor', () => {
     expect(options()).toEqual({ source: 'countries', config: { countries: ['CH', 'DE'] } });
   });
 
-  it("picks the pages' root and their document types, or a data type, with Umbraco's own pickers (ADR-0173)", async () => {
+  it("picks the pages' root with Umbraco's content picker, and their types and a data type from the site's (ADR-0173)", async () => {
     const picked = (box: Element, selection: string[]) => {
       Object.assign(box, { selection });
       box.dispatchEvent(new Event('change'));
     };
-    const content = await editorOf({ ...RADIO, options: { source: 'content', config: {} } });
+    // The site's page types come with the setting as its choices, as the endpoint serves them.
+    const sources = {
+      ...optionSources,
+      kinds: optionSources.kinds.map((kind) => ({
+        ...kind,
+        settings: kind.settings.map((setting) =>
+          setting.name === 'documentTypes'
+            ? {
+                ...setting,
+                choices: [
+                  { value: 'type-1', label: 'Article' },
+                  { value: 'type-2', label: 'Event' },
+                ],
+              }
+            : setting,
+        ),
+      })),
+    };
+    const content = await editorOf({ ...RADIO, options: { source: 'content', config: {} } }, { sources });
     const root = must(content.element.querySelector('umb-input-document#setting-config-root'), 'the root');
     expect((root as unknown as { max: number }).max).toBe(1);
     picked(root, ['page-1']);
-    const types = must(content.element.querySelector('umb-input-document-type#setting-config-documentTypes'), 'types');
-    picked(types, ['type-1', 'type-2']);
+    const types = must(content.element.querySelector('fieldset#setting-config-documentTypes'), 'types');
+    expect(text(types.querySelector('legend'))).toBe('Document types');
+    expect(types.getAttribute('aria-describedby')).toBe('setting-config-documentTypes-help');
+    const ticks = () => [...types.querySelectorAll<HTMLInputElement>('input[type="checkbox"]')];
+    expect(ticks().map((tick) => text(types.querySelector(`label[for="${tick.id}"]`)))).toEqual(['Article', 'Event']);
+    ticks()[1]?.click();
+    ticks()[0]?.click();
     expect(content.options()).toEqual({
       source: 'content',
       config: { root: 'page-1', documentTypes: ['type-1', 'type-2'] },
@@ -178,11 +201,52 @@ describe('the option editor', () => {
     picked(root, []);
     expect(content.options()?.['config']).toEqual({ documentTypes: ['type-1', 'type-2'] });
 
-    const dataType = await editorOf({ ...RADIO, options: { source: 'dataType', config: {} } });
-    picked(must(dataType.element.querySelector('umb-data-type-input#setting-config-dataType'), 'the data type'), [
-      'd1',
+    // A type the site no longer has stays ticked, to be taken away.
+    const gone = await editorOf(
+      { ...RADIO, options: { source: 'content', config: { documentTypes: ['type-9'] } } },
+      { sources },
+    );
+    const goneTicks = [...gone.element.querySelectorAll<HTMLInputElement>('#setting-config-documentTypes input')];
+    expect(
+      goneTicks.map((tick) => [tick.checked, text(gone.element.querySelector(`label[for="${tick.id}"]`))]),
+    ).toEqual([
+      [false, 'Article'],
+      [false, 'Event'],
+      [true, 'One the site no longer has'],
     ]);
-    expect(dataType.options()).toEqual({ source: 'dataType', config: { dataType: 'd1' } });
+    goneTicks[2]?.click();
+    expect(gone.options()).toEqual({ source: 'content', config: {} });
+
+    // The data types that hold values, as the snapshot serves Umbraco's own; one is needed, so "None chosen" can't be.
+    const dataType = await editorOf({ ...RADIO, options: { source: 'dataType', config: {} } });
+    const select = must(
+      dataType.element.querySelector<HTMLSelectElement>('select#setting-config-dataType'),
+      'data type',
+    );
+    expect([...select.options].map((option) => [text(option), option.disabled])).toEqual([
+      ['None chosen', true],
+      ['Checkbox list', false],
+      ['Dropdown', false],
+      ['Dropdown multiple', false],
+      ['Radiobox', false],
+    ]);
+    expect(select.value).toBe('');
+    choose(select, '0b6a45e7-44ba-430d-9da5-4e46060b9e03');
+    expect(dataType.options()).toEqual({
+      source: 'dataType',
+      config: { dataType: '0b6a45e7-44ba-430d-9da5-4e46060b9e03' },
+    });
+
+    // A site without any says so.
+    const none = {
+      ...optionSources,
+      kinds: optionSources.kinds.map((kind) => ({
+        ...kind,
+        settings: kind.settings.map((setting) => ({ ...setting, choices: [] })),
+      })),
+    };
+    const empty = await editorOf({ ...RADIO, options: { source: 'dataType', config: {} } }, { sources: none });
+    expect(text(empty.element.querySelector('#setting-config-dataType'))).toBe('The site has none to choose from.');
   });
 
   it('adds, labels, pastes, moves and removes its own options, saying what each did', async () => {

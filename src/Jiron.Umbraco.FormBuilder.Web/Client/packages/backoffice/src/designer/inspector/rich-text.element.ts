@@ -1,8 +1,12 @@
-// Rich text in the inspector (ROADMAP 9.4c, ADR-0173): a consent's wording, a paragraph, a checkbox's text. It edits on
-// the Tiptap that Umbraco ships, with only what the server's sanitiser keeps and such a text needs: paragraphs and line
-// breaks, bold, italic, links, bulleted and numbered lists. The toolbar's buttons say whether they are on; a link is
-// edited in a small panel under it, its address one the sanitiser keeps. Typing hands the text on as it goes and once
-// more when the box is left; while it has the focus, Ctrl+Z undoes its own typing. A merge tag goes in where the caret is.
+// Rich text in the inspector (ROADMAP 9.4c, ADR-0173): a paragraph, and a consent's or a checkbox's text, which sits in
+// the visitor's label and so is one line of words (inline). It edits on the Tiptap that Umbraco ships, with only what
+// the server's sanitiser keeps and such a text needs: paragraphs and line breaks, bold, italic, links, bulleted and
+// numbered lists; an inline text bold, italic, links and line breaks only, written without a paragraph around it. The
+// toolbar is one stop for the keyboard, its buttons reached with the arrow keys and saying whether they are on; a link
+// is edited in a small panel under it, its address one the sanitiser keeps. Typing hands the text on as it goes and
+// once more when the box is left; while it has the focus, Ctrl+Z undoes its own typing. A text set from outside, after
+// the designer's Undo, in another language or for another field, starts afresh, with nothing of the last one to undo.
+// A merge tag goes in where the caret is.
 import { css, html, nothing, type PropertyValues, type TemplateResult } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import {
@@ -10,6 +14,7 @@ import {
   BulletList,
   Document,
   Editor,
+  Extension,
   HardBreak,
   Italic,
   Link,
@@ -21,13 +26,19 @@ import {
   UndoRedo,
 } from '@umbraco-cms/backoffice/tiptap';
 
-/** Whether an address is one a link may lead to: http, https, mailto or tel, or a path on the site. */
+/**
+ * Whether an address is one a link may lead to: http, https, mailto or tel, or a path on the site, which starts with one
+ * slash and never two or a backslash, as browsers read those as another site.
+ */
 export const isLinkAddress = (address: string): boolean =>
-  /^(https?:\/\/[^\s]+|mailto:[^\s]+|tel:[+0-9][0-9 ()./-]*|\/[^\s]*)$/i.test(address.trim());
+  /^(https?:\/\/[^\s]+|mailto:[^\s]+|tel:[+0-9][0-9 ()./-]*|\/(?![/\\])[^\s]*)$/i.test(address.trim());
 
 /** The marks and lists the toolbar turns on and off, in its order. */
 const TOOLS = ['bold', 'italic', 'link', 'bulletList', 'orderedList'] as const;
 type Tool = (typeof TOOLS)[number];
+
+/** The tools of an inline text, which holds no lists. */
+const INLINE_TOOLS: readonly Tool[] = ['bold', 'italic', 'link'];
 
 const ICONS: Readonly<Record<Tool, string>> = {
   bold: 'icon-bold',
@@ -37,6 +48,18 @@ const ICONS: Readonly<Record<Tool, string>> = {
   orderedList: 'icon-ordered-list',
 };
 
+/** A document of one paragraph, which an inline text is written in. */
+const OneParagraph = Document.extend({ content: 'paragraph' });
+
+/** An inline text takes no new paragraph: Enter does nothing there, and Shift+Enter breaks the line. */
+const NoNewParagraph = Extension.create({
+  name: 'jfbNoNewParagraph',
+  addKeyboardShortcuts: () => ({ Enter: () => true }),
+});
+
+/** An inline text's words, without the paragraph the editor writes around them. */
+const unwrapped = (html: string) => /^<p>([\s\S]*)<\/p>$/.exec(html)?.[1] ?? html;
+
 export class RichTextElement extends UmbLitElement {
   static override properties = {
     value: { attribute: false },
@@ -44,10 +67,12 @@ export class RichTextElement extends UmbLitElement {
     description: {},
     language: {},
     placeholder: {},
+    inline: { type: Boolean, reflect: true },
     change: { attribute: false },
     _on: { state: true },
     _linking: { state: true },
     _linkProblem: { state: true },
+    _toolAt: { state: true },
   };
 
   /** The text as HTML, in the language edited. */
@@ -58,15 +83,21 @@ export class RichTextElement extends UmbLitElement {
   declare description: string;
   /** The language the text is written in. */
   declare language: string;
-  /** The default language's text, shown faintly where this language has none. */
+  /** The default language's text as plain words, shown faintly where this language has none. */
   declare placeholder: string;
-  /** Hands the text on: while typing, and `done` once the box is left. */
+  /** Whether the text sits in a label: one line of words, without paragraphs or lists. */
+  declare inline: boolean;
+  /** Hands the text on: while typing, and `done` once the box is left after typing. */
   declare change: (html: string, done: boolean) => void;
   declare private _on: ReadonlySet<Tool>;
   declare private _linking: { readonly address: string; readonly newTab: boolean; readonly existing: boolean } | null;
   declare private _linkProblem: boolean;
+  /** The toolbar's one stop for the keyboard. */
+  declare private _toolAt: number;
 
   #editor: Editor | undefined;
+  /** Whether the text was typed in since the box got the focus, so leaving it hands it on. */
+  #typed = false;
 
   constructor() {
     super();
@@ -75,63 +106,97 @@ export class RichTextElement extends UmbLitElement {
     this.description = '';
     this.language = '';
     this.placeholder = '';
+    this.inline = false;
     this.change = () => undefined;
     this._on = new Set();
     this._linking = null;
     this._linkProblem = false;
+    this._toolAt = 0;
   }
 
   #term = (key: string, ...args: unknown[]) => this.localize.term(`jfbInspector_richText_${key}`, ...args);
 
-  /** The text as HTML, empty when nothing is written. */
+  get #tools(): readonly Tool[] {
+    return this.inline ? INLINE_TOOLS : TOOLS;
+  }
+
+  /** The text as HTML, empty when nothing is written; an inline text without its paragraph. */
   #html(): string {
     const editor = this.#editor;
-    return !editor || editor.isEmpty ? '' : editor.getHTML();
+    if (!editor || editor.isEmpty) return '';
+    return this.inline ? unwrapped(editor.getHTML()) : editor.getHTML();
+  }
+
+  #hand(done: boolean) {
+    if (done) this.#typed = false;
+    this.change(this.#html(), done);
   }
 
   /** Puts text in where the caret is, such as a merge tag, and gives the box the focus. */
   insertText(text: string) {
     this.#editor?.chain().focus().insertContent({ type: 'text', text }).run();
-    this.change(this.#html(), true);
+    this.#hand(true);
   }
 
   protected override firstUpdated(changed: PropertyValues) {
     super.firstUpdated(changed);
+    this.#create();
+  }
+
+  override connectedCallback() {
+    super.connectedCallback();
+    // Moved in the page: drawn before, its editor went when it left.
+    if (this.hasUpdated && !this.#editor) void this.updateComplete.then(() => this.#create());
+  }
+
+  // A new editor on the value: its own history, nothing of a text it showed before.
+  #create() {
+    this.#editor?.destroy();
+    this.#editor = undefined;
+    this.#typed = false;
     const element = this.renderRoot.querySelector<HTMLElement>('.content');
-    if (!element) return;
+    if (!element || !this.isConnected) return;
     this.#editor = new Editor({
       element,
       injectCSS: false,
       extensions: [
-        Document,
+        ...(this.inline ? [OneParagraph, NoNewParagraph] : [Document]),
         Paragraph,
         Text,
         HardBreak,
         Bold,
         Italic,
-        BulletList,
-        OrderedList,
-        ListItem,
-        Link.configure({ openOnClick: false, autolink: false, linkOnPaste: false }),
+        ...(this.inline ? [] : [BulletList, OrderedList, ListItem]),
+        // A link opens in a new tab only when the editor asks; the server adds what such a link needs (ADR-0084).
+        Link.configure({
+          openOnClick: false,
+          autolink: false,
+          linkOnPaste: false,
+          HTMLAttributes: { target: null, rel: null },
+        }),
         UndoRedo,
         Placeholder.configure({ placeholder: () => this.placeholder }),
       ],
       content: this.value,
       editorProps: { attributes: this.#attributes() },
-      onUpdate: () => this.change(this.#html(), false),
+      onUpdate: () => {
+        this.#typed = true;
+        this.#hand(false);
+      },
       onBlur: ({ event }) => {
-        // Leaving for the toolbar or the link's panel is no leaving.
+        // Leaving for the toolbar or the link's panel is no leaving, and a visit without typing changes nothing.
         if (event.relatedTarget instanceof Node && this.renderRoot.contains(event.relatedTarget)) return;
-        this.change(this.#html(), true);
+        if (this.#typed) this.#hand(true);
       },
       onTransaction: () => this.#refresh(),
     });
+    this.#refresh();
   }
 
   #attributes(): Record<string, string> {
     return {
       role: 'textbox',
-      'aria-multiline': 'true',
+      'aria-multiline': this.inline ? 'false' : 'true',
       'aria-label': this.label,
       ...(this.description ? { 'aria-description': this.description } : {}),
       ...(this.language ? { lang: this.language } : {}),
@@ -143,11 +208,14 @@ export class RichTextElement extends UmbLitElement {
     super.updated(changed);
     const editor = this.#editor;
     if (!editor) return;
+    // The form's text, after Undo, in another language or for another field: never while it is being typed, so the
+    // caret stays.
+    if (changed.has('inline') || (changed.has('value') && !editor.isFocused && this.value !== this.#html())) {
+      this.#create();
+      return;
+    }
     if (['label', 'description', 'language', 'placeholder'].some((name) => changed.has(name)))
       editor.setOptions({ editorProps: { attributes: this.#attributes() } });
-    // The form's text, after Undo or another language: never while it is being typed, so the caret stays.
-    if (changed.has('value') && !editor.isFocused && this.value !== this.#html())
-      editor.commands.setContent(this.value, { emitUpdate: false });
   }
 
   override disconnectedCallback() {
@@ -159,7 +227,7 @@ export class RichTextElement extends UmbLitElement {
   #refresh() {
     const editor = this.#editor;
     if (!editor) return;
-    const on = new Set(TOOLS.filter((tool) => editor.isActive(tool)));
+    const on = new Set(this.#tools.filter((tool) => editor.isActive(tool)));
     if (on.size !== this._on.size || [...on].some((tool) => !this._on.has(tool))) this._on = on;
   }
 
@@ -179,6 +247,27 @@ export class RichTextElement extends UmbLitElement {
     }
   }
 
+  // The toolbar's arrow keys, Home and End move its one stop, as a toolbar's do.
+  #moveTool(event: KeyboardEvent) {
+    const count = this.#tools.length;
+    const to =
+      event.key === 'ArrowRight'
+        ? (this._toolAt + 1) % count
+        : event.key === 'ArrowLeft'
+          ? (this._toolAt - 1 + count) % count
+          : event.key === 'Home'
+            ? 0
+            : event.key === 'End'
+              ? count - 1
+              : null;
+    if (to === null) return;
+    event.preventDefault();
+    this._toolAt = to;
+    void this.updateComplete.then(() =>
+      this.renderRoot.querySelector<HTMLElement>(`[data-tool="${this.#tools[to] ?? ''}"]`)?.focus(),
+    );
+  }
+
   #applyLink(form: HTMLFormElement) {
     const editor = this.#editor;
     if (!editor) return;
@@ -194,13 +283,13 @@ export class RichTextElement extends UmbLitElement {
       chain.insertContent({ type: 'text', text: address, marks: [{ type: 'link', attrs: attributes }] }).run();
     else chain.setLink(attributes).run();
     this.#closeLink();
-    this.change(this.#html(), true);
+    this.#hand(true);
   }
 
   #removeLink() {
     this.#editor?.chain().focus().extendMarkRange('link').unsetLink().run();
     this.#closeLink();
-    this.change(this.#html(), true);
+    this.#hand(true);
   }
 
   #closeLink(focusTool = false) {
@@ -211,16 +300,28 @@ export class RichTextElement extends UmbLitElement {
   }
 
   protected override render(): TemplateResult {
+    const tools = this.#tools;
+    const at = Math.min(this._toolAt, tools.length - 1);
     return html`<div class="frame">
-      <div class="toolbar" role="toolbar" aria-label=${this.#term('toolbar', this.label)}>
-        ${TOOLS.map(
-          (tool) =>
+      <div
+        class="toolbar"
+        role="toolbar"
+        aria-label=${this.#term('toolbar', this.label)}
+        @keydown=${(event: KeyboardEvent) => this.#moveTool(event)}
+      >
+        ${tools.map(
+          (tool, index) =>
             html`<button
               type="button"
               data-tool=${tool}
-              aria-pressed=${this._on.has(tool) ? 'true' : 'false'}
+              tabindex=${index === at ? '0' : '-1'}
+              ?data-on=${this._on.has(tool)}
+              aria-pressed=${tool === 'link' ? nothing : this._on.has(tool) ? 'true' : 'false'}
+              aria-expanded=${tool === 'link' ? (this._linking ? 'true' : 'false') : nothing}
+              aria-controls=${tool === 'link' && this._linking ? 'link-panel' : nothing}
               aria-label=${this.#term(tool)}
               title=${this.#term(tool)}
+              @focus=${() => (this._toolAt = index)}
               @mousedown=${(event: MouseEvent) => event.preventDefault()}
               @click=${() => this.#press(tool)}
             >
@@ -229,13 +330,23 @@ export class RichTextElement extends UmbLitElement {
         )}
       </div>
       ${this._linking ? this.#linkPanel(this._linking) : nothing}
-      <div class="content"></div>
+      <div
+        class="content"
+        @click=${(event: MouseEvent) => {
+          // A link in the text is edited, never followed: the backoffice's router would leave the form for it.
+          if (event.composedPath().some((each) => each instanceof HTMLAnchorElement)) {
+            event.preventDefault();
+            event.stopPropagation();
+          }
+        }}
+      ></div>
     </div>`;
   }
 
   #linkPanel(link: NonNullable<RichTextElement['_linking']>): TemplateResult {
     return html`<form
       class="link"
+      id="link-panel"
       @submit=${(event: Event) => {
         event.preventDefault();
         this.#applyLink(event.currentTarget as HTMLFormElement);
@@ -320,7 +431,7 @@ export class RichTextElement extends UmbLitElement {
       background: var(--uui-color-surface-emphasis);
     }
 
-    .toolbar button[aria-pressed='true'] {
+    .toolbar button[data-on] {
       background: var(--uui-color-selected);
       color: var(--uui-color-selected-contrast);
     }
@@ -337,6 +448,10 @@ export class RichTextElement extends UmbLitElement {
       outline: none;
       white-space: pre-wrap;
       overflow-wrap: break-word;
+    }
+
+    :host([inline]) .content .editor {
+      min-block-size: 0;
     }
 
     .content .editor > :first-child {
@@ -418,7 +533,7 @@ export class RichTextElement extends UmbLitElement {
     }
 
     @media (forced-colors: active) {
-      .toolbar button[aria-pressed='true'] {
+      .toolbar button[data-on] {
         outline: 2px solid Highlight;
       }
     }

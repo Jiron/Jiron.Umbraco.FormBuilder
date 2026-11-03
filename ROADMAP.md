@@ -2700,7 +2700,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
   - **The other action editors:**
     - **Webhook:** a mapping table, a signature help text and a test.
     - **Slack and Teams.**
-    - **Content:** document type and property mapping.
+    - **Content:** document type and property mapping; the site's document types come with the setting as its choices, as the option sources serve them (ADR-0173), since Umbraco lists them only to users of its Settings section.
     - **Set state.**
     - **Verification** is no action of its own: the Verified trigger's list says that it needs the form's email verification setting (10.1) and links to it.
   - Done when:

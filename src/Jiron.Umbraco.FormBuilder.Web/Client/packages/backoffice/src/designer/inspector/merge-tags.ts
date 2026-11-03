@@ -67,17 +67,21 @@ export function groupPaths(paths: readonly MergeTagPathResponseModel[], words: P
   return [...groups.values()];
 }
 
-/** The paths a place's tags may use in the draft as the designer holds it; undefined when they can't be read. */
+/**
+ * The paths a place's tags may use in the draft as the designer holds it, for the text of an element (a visitor text
+ * recalls only the answers before it); undefined when they can't be read.
+ */
 export async function readMergeTagPaths(
   host: UmbControllerHost,
   form: string,
   place: MergeTagPlace,
   culture: string,
   definition: DesignDefinition,
+  owner = '',
 ): Promise<MergeTagPathResponseModel[] | undefined> {
   const { data } = await tryExecute(
     host,
-    mergeTagPathList({ path: { key: form }, body: { place, culture, definition } }),
+    mergeTagPathList({ path: { key: form }, body: { place, culture, definition, ...(owner ? { owner } : {}) } }),
     { disableNotifications: true },
   );
   return data?.paths;
