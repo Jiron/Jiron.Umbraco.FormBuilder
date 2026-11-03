@@ -983,6 +983,43 @@ Umbraco's media picker, which the canvas's card shows; and adds, pastes, marks, 
 columns, each saved and read back. The designer persona's group may pick from the whole media library for that
 (`TestUserGroup.MediaRootAccess`, held by `TestPeopleTests`).
 
+The inspector's richer editors (9.4c, ADR-0173): `inspector/merge-tags.test.ts` holds the place of each text (a
+consent's wording its own), a tag put where the caret was over what is selected, and the paths grouped by source in the
+server's order, a field by its label and the site's own sources under one heading, found by words or path in any letter
+case; `inspector/merge-tag-picker.test.ts` the panel: the place's paths asked with the draft as it is, in the language
+shown, for the element whose text it is, a search with nothing found said, the tag pressed handed on, a failed read
+said, Escape giving the focus back, the panel closed when the focus leaves it, and an answer to an earlier opening
+dropped; `inspector/rich-text.test.ts` its names, a tag at the caret handed on as done, a list turned on from its
+button that says so, a link address the sanitiser wouldn't keep, or a "path" another site's (`//`, `/\`), refused and
+one kept opening in a new tab with nothing else on it, nothing handed on for a visit without typing, a text set from
+outside started afresh so Ctrl+Z can't bring back the last one, its editor back after a move, the toolbar one stop for
+the keyboard with its arrow keys and Link saying its panel is open, an inline text as one line without lists or a
+paragraph, and the form's text shown again after Undo; `inspector/inspector-model.test.ts` rich text, pickers and "Must
+match a pattern" among the items drawn; `inspector/option-editor.test.ts` the content kind's root with Umbraco's
+picker, its document types ticked from the site's (one the site no longer has kept to untick), a data type chosen from
+the site's lists with none not to be chosen, and a site without any saying so; and `inspector/inspector.test.ts` a tag
+put into a heading's text and a default value of its own place, for the element's own text, none without a form; a
+consent's wording inline and a paragraph's not, another language's hint the default's words without markup; and a
+field's pattern: the first rule written in its place among the checks, kept with its message while its box is emptied
+and gone when the box is left empty, a pattern the matcher refuses said with "Try it" waiting, "Try it" answering as
+the site would without a change sent and forgotten on another element, and the rule's message.
+`MergeTagPathApiTests` holds `POST form/{key}/merge-tag-paths` to `docs/api/merge-tag-paths.json` for a form with
+fields, a repeatable group's among them, and the Testing project's site source in `visitorText` and `consentText`, with
+labels in German, a culture that is none read as the default texts, a visitor text offered only the answers before its
+owner (none for the first field, not its own group's for a child, all for a key the form lacks), an unknown place and
+an unreadable draft refused, and a viewer refused; `OptionSourceApiTests` serves the site's page types (no element
+type) and its data types that hold values as the choices of the settings that name them, by name; `FieldTypeApiTests`
+holds a consent's and a checkbox's text to the `inlineHtml` editor in `docs/api/field-types.json`; `lang.test.ts`
+holds every built-in path to an English and a German text. In the browser, `specs/backoffice/designer-editors.spec.ts`
+puts a field's tag into a heading through the picker, which offers the name before it and not the email address after
+it, and writes a consent's wording as one line with the form's tag put in at the caret, bold words and a link, an
+address the sanitiser wouldn't keep refused first; picks an image's picture with Umbraco's media picker, which the
+canvas shows; tries a pattern in the mono font against answers in "Try it", after one the matcher refuses, before it is
+kept with its message; and gives a dropdown the pages under the demo's home page, picked with Umbraco's content picker,
+then only those of the legal pages' type, ticked from the site's, which the canvas lists; each is saved and read back.
+The designer persona's group may browse the whole content tree for that (`TestUserGroup.ContentRootAccess`: the root
+as its start node and Umbraco's Browse permission, held by `TestPeopleTests`).
+
 ## The public API tests
 
 `Tests.Integration/PublicApi/` calls the public API anonymously on a real site that boots its runtime, with forms
