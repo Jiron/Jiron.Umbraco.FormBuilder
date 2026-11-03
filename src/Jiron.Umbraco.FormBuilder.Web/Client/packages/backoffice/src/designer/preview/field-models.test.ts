@@ -124,6 +124,9 @@ describe('a slider', () => {
     expect(sliderStart('0', '60', '5')).toBe('30');
     expect(sliderStart('0', '10', '4')).toBe('4');
     expect(sliderStart('0', '12', '8')).toBe('8');
+    // Two steps exactly as near: the higher, as a browser's range input takes.
+    expect(sliderStart('0', '4', '4')).toBe('4');
+    expect(sliderStart('0', '30', '10')).toBe('20');
     expect(sliderStart('0.5', '2.5', '0.25')).toBe('1.50');
     expect(sliderStart('0.1', '0.3', '0.1')).toBe('0.2');
   });

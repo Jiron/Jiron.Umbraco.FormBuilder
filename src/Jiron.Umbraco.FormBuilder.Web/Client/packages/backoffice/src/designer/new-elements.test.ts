@@ -213,9 +213,10 @@ describe('pasted questions', () => {
     ]);
   });
 
-  it(`are the first ${MOST_PASTED} lines at most, and a short text where the guessed type is not offered`, () => {
-    const many = Array.from({ length: MOST_PASTED + 5 }, (_, at) => `Question ${at}`).join('\n');
-    expect(questionsOf(many, all)).toHaveLength(MOST_PASTED);
+  it('are the first 50 lines at most, and a short text where the guessed type is not offered', () => {
+    const many = Array.from({ length: 55 }, (_, at) => `Question ${at + 1}`).join('\n');
+    const questions = questionsOf(many, all);
+    expect([MOST_PASTED, questions.length, questions.at(-1)?.label]).toEqual([50, 50, 'Question 50']);
     expect(questionsOf('Email address', new Set(['text']))).toEqual([{ label: 'Email address', type: 'text' }]);
   });
 

@@ -24,7 +24,7 @@ const FIELD_CLASSES =
 describe('the drawing of a field', () => {
   it("goes through the element's views, which only the preview and the canvas import", () => {
     const importers = sources
-      .filter((source) => /from '@jfb\/element\/views'/.test(source.text))
+      .filter((source) => /['"]@jfb\/element\/views['"]/.test(source.text))
       .map((source) => source.file);
     expect(importers.sort()).toEqual([
       'designer/canvas/canvas-field.element.ts',

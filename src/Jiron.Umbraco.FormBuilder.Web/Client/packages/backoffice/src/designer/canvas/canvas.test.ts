@@ -102,9 +102,10 @@ describe('a field on the canvas', () => {
     ]);
   });
 
-  it('shows Duplicate and Delete while it is selected, each named with the field', async () => {
+  it('says it is selected, and shows Duplicate and Delete while it is, each named with the field', async () => {
     const { element, requests } = await fieldOf(stateOf(email, { selected: true }));
     expect(element.hasAttribute('selected')).toBe(true);
+    expect(controls(element).querySelector('.bo-select')?.getAttribute('aria-current')).toBe('true');
     const tools = [...controls(element).querySelectorAll<HTMLButtonElement>('.bo-tools button')];
     expect(tools.map((tool) => [tool.getAttribute('aria-label'), text(tool)])).toEqual([
       ['Duplicate Email address', 'Duplicate'],
