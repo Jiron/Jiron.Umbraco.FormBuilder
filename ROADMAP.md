@@ -2561,7 +2561,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
 
 Build from the Phase 2 designs. Every screen in this phase and the next must pass the measurable rules of §4.13 before its step is done.
 
-- [ ] **9.1 Section, shell and setup**
+- [x] **9.1 Section, shell and setup** (2026-11-03, 4bdec12)
   - **The section:** `Jiron.FormBuilder.Section` ("Forms") with its sidebar:
     - the **Forms** tree;
     - **Entries:** Inbox (the entries of every form), Spam;
