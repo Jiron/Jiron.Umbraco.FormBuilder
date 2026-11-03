@@ -2628,7 +2628,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
 
     The canvas reconciles its children instead of replacing them (§3.3). Lost focus was a finding in three of Tandem's phase reviews.
   - Done when: Playwright builds a three-page form **with the keyboard only** and asserts the focused element after every operation, and a 300-field form stays within the §4.12 budget.
-- [ ] **9.4a The inspector: its frame, sections and plain settings** (split from 9.4, see WORKLOG)
+- [x] **9.4a The inspector: its frame, sections and plain settings** (2026-11-03, c1a8307)
   - **A generic settings renderer** from type schemas, with the editors for text, number (whole and decimal), switch, select (a choice), lists, nested settings, times, date bounds and a formula as text; the richer editors come in 9.4b and 9.4c.
   - **Sections:** Essentials, Validation, Rules, Appearance, Advanced (§4.13).
   - **Beside the canvas** (added in 9.3b, ADR-0168): between 620 and 1024 px the palette folds to its rail while an element is selected, so the canvas keeps its width beside the inspector, and opens again when the selection clears (IA 5.1).
