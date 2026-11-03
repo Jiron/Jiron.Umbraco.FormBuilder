@@ -17,11 +17,12 @@ import {
   formRestore,
   trashEmpty,
   trashHoldings,
+  type HoldingsResponseModel,
 } from '../../api';
 import { confirmText } from '../../ui/confirm';
 import { changed, codeOf, placeOf, RECYCLE_BIN, sayRefusal } from '../library-changes';
 import { RESTORE_MODAL } from '../modals/tokens';
-import { NAMED_PAGES, usedOn } from '../rows';
+import { NAMED_PAGES, usedOn, type UsedOn } from '../rows';
 
 /** Takes a form or folder out of the Recycle Bin, once its sidebar says where it goes. */
 export async function restore(host: UmbClassInterface, kind: 'form' | 'folder', key: string): Promise<boolean> {
@@ -64,27 +65,56 @@ export async function restore(host: UmbClassInterface, kind: 'form' | 'folder', 
   return true;
 }
 
+/**
+ * What a form's delete for good asks: what goes with it, with numbers, and the pages that still pick it. The numbers come
+ * only for who may view or delete its entries; without them there is nothing to ask, as the delete takes the entries and
+ * needs Delete entries.
+ */
+export function deleteFormQuestion(
+  localize: Pick<UmbLocalizationController, 'term'>,
+  held: HoldingsResponseModel,
+  pages: UsedOn,
+): { content: string; confirmLabel: string } | { refusal: string } {
+  if (held.entries === null || held.files === null) {
+    return {
+      refusal: localize.term('jfbLibrary_missingPermission', localize.term('jfbLibrary_permission_deleteEntries')),
+    };
+  }
+
+  const content = [
+    localize.term('jfbLibrary_deleteFormText', held.entries, held.files),
+    pages.count > 0 ? localize.term('jfbLibrary_deleteFormInUse', pages.count, pages.names.join(', '), pages.more) : '',
+    localize.term('jfbLibrary_cannotUndo'),
+  ].filter(Boolean);
+  return { content: content.join(' '), confirmLabel: localize.term('jfbLibrary_deleteFormConfirm', held.entries) };
+}
+
 /** Deletes a form in the Recycle Bin for good, once asked with its entries, files and the pages that still pick it. */
 export async function deleteForm(host: UmbClassInterface, key: string): Promise<boolean> {
   const localize = new UmbLocalizationController(host);
   const { data: form } = await tryExecute(host, formGet({ path: { key } }));
   if (!form) return false;
-  const [{ data: held }, { data: references }] = await Promise.all([
+  const [{ data: held, error: unheld }, { data: references }] = await Promise.all([
     tryExecute(host, formHoldings({ path: { key } }), { disableNotifications: true }),
     tryExecute(host, formReferenceList({ path: { key }, query: { take: NAMED_PAGES } }), {
       disableNotifications: true,
     }),
   ]);
-  const pages = usedOn(references);
-  const content = [
-    localize.term('jfbLibrary_deleteFormText', held?.entries ?? 0, held?.files ?? 0),
-    pages.count > 0 ? localize.term('jfbLibrary_deleteFormInUse', pages.count, pages.names.join(', '), pages.more) : '',
-    localize.term('jfbLibrary_cannotUndo'),
-  ].filter(Boolean);
+  if (!held) {
+    await sayRefusal(host, unheld);
+    return false;
+  }
+
+  const question = deleteFormQuestion(localize, held, usedOn(references));
+  if ('refusal' in question) {
+    (await host.getContext(UMB_NOTIFICATION_CONTEXT))?.peek('warning', { data: { message: question.refusal } });
+    return false;
+  }
+
   await confirmText(host, {
     headline: localize.term('jfbLibrary_deleteFormHeadline', form.name),
-    content: content.join(' '),
-    confirmLabel: localize.term('jfbLibrary_deleteFormConfirm', held?.entries ?? 0),
+    content: question.content,
+    confirmLabel: question.confirmLabel,
     color: 'danger',
   });
   const { error } = await tryExecute(
@@ -137,7 +167,7 @@ export async function emptyBin(host: UmbClassInterface): Promise<boolean> {
   }
 
   const content = [
-    localize.term('jfbLibrary_emptyText', held.forms, held.entries, held.files),
+    localize.term('jfbLibrary_emptyText', held.forms, held.entries, held.files, held.folders),
     held.left > 0 ? localize.term('jfbLibrary_emptyLeft', held.left) : '',
     localize.term('jfbLibrary_cannotUndo'),
   ].filter(Boolean);

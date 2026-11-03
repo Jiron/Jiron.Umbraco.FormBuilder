@@ -273,6 +273,44 @@ describe('the import', () => {
     expect(store.state).toMatchObject({ step: 'refused', reason: { kind: 'forbidden', permission: 'manageActions' } });
   });
 
+  it('refuses a file that does not read as unreadable, without asking the server', async () => {
+    const calls = { check: vi.fn(), import: vi.fn(), refusal: (): ImportRefusal => ({ kind: 'failed' }) };
+    const store = new ImportStore(calls, vi.fn());
+    await store.choose({ name: 'gone.json', size: 10, text: () => Promise.reject(new Error('the file went away')) });
+    expect(store.state).toMatchObject({ step: 'refused', reason: { kind: 'unreadable', message: undefined } });
+    expect(calls.check).not.toHaveBeenCalled();
+  });
+
+  it('drops the check of a file that another followed, and of one before a reset', async () => {
+    let answer: (value: { data: ImportCheckResponseModel }) => void = () => undefined;
+    const calls = {
+      check: vi.fn(
+        (json: string) =>
+          new Promise<{ data: ImportCheckResponseModel }>((resolve) => {
+            if (json === 'first') answer = resolve;
+            else resolve({ data: { ...check, name: 'Second' } });
+          }),
+      ),
+      import: vi.fn(),
+      refusal: (): ImportRefusal => ({ kind: 'failed' }),
+    };
+    const store = new ImportStore(calls, vi.fn());
+
+    const first = store.choose(file('first'));
+    await vi.waitFor(() => expect(calls.check).toHaveBeenCalledTimes(1));
+    await store.choose(file('second'));
+    answer({ data: check });
+    await first;
+    expect(store.state).toMatchObject({ step: 'checked', check: { name: 'Second' } });
+
+    const third = store.choose(file('first'));
+    await vi.waitFor(() => expect(calls.check).toHaveBeenCalledTimes(3));
+    store.reset();
+    answer({ data: check });
+    await third;
+    expect(store.state).toEqual({ step: 'choose' });
+  });
+
   it('imports nothing before a file is checked', async () => {
     const calls = { check: vi.fn(), import: vi.fn(), refusal: (): ImportRefusal => ({ kind: 'failed' }) };
     await new ImportStore(calls, vi.fn()).import();

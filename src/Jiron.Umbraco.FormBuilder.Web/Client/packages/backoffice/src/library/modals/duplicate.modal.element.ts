@@ -1,6 +1,6 @@
 // "Duplicate..." (docs/ux/information-architecture.md, section 3; ADR-0046, ADR-0166): the copy's name, whether it takes the
-// form's actions (only when the form has some and the user may manage them), and for a restricted form the one thing that
-// surprises: the copy takes its folder's access instead of the form's restriction.
+// form's actions (only when the form has some and the user may manage them where the copy lands), and for a restricted form
+// the one thing that surprises: the copy takes its folder's access instead of the form's restriction.
 import { css, html, nothing } from '@umbraco-cms/backoffice/external/lit';
 import { UmbModalBaseElement } from '@umbraco-cms/backoffice/modal';
 import { tryExecute } from '@umbraco-cms/backoffice/resources';
@@ -15,6 +15,7 @@ export class DuplicateModalElement extends UmbModalBaseElement<DuplicateModalDat
     _name: { state: true },
     _actions: { state: true },
     _includeActions: { state: true },
+    _counting: { state: true },
     _blank: { state: true },
   };
 
@@ -45,6 +46,8 @@ export class DuplicateModalElement extends UmbModalBaseElement<DuplicateModalDat
   /** How many actions the form's draft has; 0 until known. */
   declare private _actions: number;
   declare private _includeActions: boolean;
+  /** Whether the actions are still being counted; the copy waits for it, so that it does not leave them out unasked. */
+  declare private _counting: boolean;
   declare private _blank: boolean;
 
   override connectedCallback() {
@@ -54,16 +57,19 @@ export class DuplicateModalElement extends UmbModalBaseElement<DuplicateModalDat
     this._actions = 0;
     this._includeActions = true;
     this._blank = false;
-    if (form?.permissions.includes('manageActions')) void this.#countActions(form.key);
+    this._counting = Boolean(form && this.data?.mayTakeActions);
+    if (form && this._counting) void this.#countActions(form.key);
   }
 
   async #countActions(key: string) {
     const { data } = await tryExecute(this, formDraft({ path: { key } }), { disableNotifications: true });
     this._actions = ((data?.definition as { actions?: unknown[] } | null | undefined)?.actions ?? []).length;
+    this._counting = false;
   }
 
   #confirm(event?: Event) {
     event?.preventDefault();
+    if (this._counting) return;
     const name = this._name.trim();
     if (!name) {
       this._blank = true;
@@ -77,7 +83,9 @@ export class DuplicateModalElement extends UmbModalBaseElement<DuplicateModalDat
   override render() {
     const form = this.data?.form;
     if (!form) return nothing;
-    const where = this.data?.folderName ?? this.localize.term('jfbLibrary_topOfForms');
+    const where =
+      this.data?.folderName ??
+      this.localize.term(this.data?.inFolder ? 'jfbLibrary_sameFolder' : 'jfbLibrary_topOfForms');
     return html`<uui-dialog-layout headline=${this.localize.term('jfbLibrary_duplicateHeadline', form.name)}>
       <form @submit=${this.#confirm}>
         <uui-label for="name" required>${this.localize.term('jfbLibrary_copysName')}</uui-label>
@@ -112,6 +120,7 @@ export class DuplicateModalElement extends UmbModalBaseElement<DuplicateModalDat
         look="primary"
         color="positive"
         label=${this.localize.term('jfbLibrary_duplicate')}
+        ?disabled=${this._counting}
         @click=${() => this.#confirm()}
       ></uui-button>
     </uui-dialog-layout>`;

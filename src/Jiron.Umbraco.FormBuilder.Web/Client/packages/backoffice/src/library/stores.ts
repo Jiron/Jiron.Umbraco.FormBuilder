@@ -166,14 +166,17 @@ export interface ImportCalls {
 /** The import: choose a file, see what it holds and what it can't bring, then import it as a new copy. */
 export class ImportStore {
   state: ImportState = { step: 'choose' };
+  /** Counts the files chosen, so that the answer for one that another followed is dropped. */
+  #generation = 0;
 
   constructor(
     private readonly calls: ImportCalls,
     private readonly changed: () => void,
   ) {}
 
-  /** Reads a file and checks it on the server, which writes nothing. */
+  /** Reads a file and checks it on the server, which writes nothing; a file that does not read is refused as unreadable. */
   async choose(file: { name: string; size: number; text: () => Promise<string> }): Promise<void> {
+    const generation = ++this.#generation;
     if (file.size > MAX_IMPORT_BYTES) {
       this.#set({
         step: 'refused',
@@ -183,9 +186,20 @@ export class ImportStore {
       return;
     }
 
-    const chosen: ChosenFile = { name: file.name, size: file.size, text: await file.text() };
+    const read = await file.text().then(
+      (text) => text,
+      () => undefined,
+    );
+    if (generation !== this.#generation) return;
+    const chosen: ChosenFile = { name: file.name, size: file.size, text: read ?? '' };
+    if (read === undefined) {
+      this.#set({ step: 'refused', file: chosen, reason: { kind: 'unreadable', message: undefined } });
+      return;
+    }
+
     this.#set({ step: 'checking', file: chosen });
     const { data, error } = await this.calls.check(chosen.text);
+    if (generation !== this.#generation) return;
     this.#set(
       data
         ? { step: 'checked', file: chosen, check: data }
@@ -208,6 +222,7 @@ export class ImportStore {
 
   /** Back to choosing a file. */
   reset(): void {
+    this.#generation++;
     this.#set({ step: 'choose' });
   }
 

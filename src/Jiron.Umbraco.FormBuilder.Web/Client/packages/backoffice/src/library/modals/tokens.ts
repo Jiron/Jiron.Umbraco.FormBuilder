@@ -28,8 +28,12 @@ export const FOLDER_NAME_MODAL = new UmbModalToken<FolderNameModalData, FolderNa
 /** A copy of a form: its name, and whether it takes the actions. */
 export interface DuplicateModalData {
   form: FormResponseModel;
-  /** The name of the folder the copy lands in, or null at the top of Forms. */
+  /** The name of the folder the copy lands in; null at the top of Forms, or for a folder that did not read. */
   folderName: string | null;
+  /** Whether the copy lands in a folder, not at the top of Forms. */
+  inFolder: boolean;
+  /** Whether the user may manage actions where the copy lands, so that it may take the form's. */
+  mayTakeActions: boolean;
 }
 
 export interface DuplicateModalValue {

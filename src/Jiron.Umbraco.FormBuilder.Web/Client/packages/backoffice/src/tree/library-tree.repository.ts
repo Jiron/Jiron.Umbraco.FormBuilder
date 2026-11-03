@@ -60,16 +60,29 @@ export function treeItemOf(item: LibraryItemResponseModel): LibraryTreeItem {
 /** What the base expects of an answer, which holds either the page or the error. */
 export type TreePage = UmbDataSourceResponse<UmbTargetPagedModel<LibraryItemResponseModel>>;
 
+/**
+ * A page of items as the tree takes it, changed as asked. A page that drops items is the last one: a picker that asks for
+ * folders only drops forms, which come after every folder, so what stays ends with it, and the tree asks for no more.
+ */
+export function pageOf(
+  data: PagedLibraryItemResponseModel,
+  change: (items: LibraryItemResponseModel[]) => LibraryItemResponseModel[],
+  skip: number,
+): UmbTargetPagedModel<LibraryItemResponseModel> {
+  const items = change(data.items);
+  return { items, total: items.length < data.items.length ? skip + items.length : data.total };
+}
+
 /** Reads a page of items as the tree base takes it; a picker that asks for folders only gets the folders. */
 export async function readPage(
   host: UmbControllerHost,
   request: Promise<{ data?: PagedLibraryItemResponseModel | undefined }>,
   change: (items: LibraryItemResponseModel[]) => LibraryItemResponseModel[] = (items) => items,
+  skip = 0,
 ): Promise<TreePage> {
   const { data, error } = await tryExecute(host, request);
   if (!data) return { error: error as Error };
-  const items = change(data.items);
-  return { data: { items, total: data.total - (data.items.length - items.length) } };
+  return { data: pageOf(data, change, skip) };
 }
 
 const onlyFolders = (args: { foldersOnly?: boolean }) => (items: LibraryItemResponseModel[]) =>
@@ -79,7 +92,12 @@ class LibraryTreeDataSource extends UmbTreeServerDataSourceBase<LibraryItemRespo
   constructor(host: UmbControllerHost) {
     super(host, {
       getRootItems: (args: UmbTreeRootItemsRequestArgs) =>
-        readPage(host, treeRoot({ query: { skip: args.skip ?? 0, take: args.take ?? 100 } }), onlyFolders(args)),
+        readPage(
+          host,
+          treeRoot({ query: { skip: args.skip ?? 0, take: args.take ?? 100 } }),
+          onlyFolders(args),
+          args.skip ?? 0,
+        ),
       getChildrenOf: (args: UmbTreeChildrenOfRequestArgs) =>
         readPage(
           host,
@@ -87,6 +105,7 @@ class LibraryTreeDataSource extends UmbTreeServerDataSourceBase<LibraryItemRespo
             ? treeRoot({ query: { skip: args.skip ?? 0, take: args.take ?? 100 } })
             : treeChildren({ query: { parentKey: args.parent.unique, skip: args.skip ?? 0, take: args.take ?? 100 } }),
           onlyFolders(args),
+          args.skip ?? 0,
         ),
       // The tree opens from the root; a workspace that shows where it sits comes with 9.3a.
       getAncestorsOf: () => Promise.resolve({ data: [] }),

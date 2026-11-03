@@ -229,6 +229,14 @@ export class TemplateGalleryModalElement extends UmbModalBaseElement<NewFormModa
     this._submitModal();
   }
 
+  // Preview and All templates swap what the sidebar shows, and the button pressed goes with it: the focus moves to the
+  // way back, or to the chosen card.
+  async #showPreview(on: boolean) {
+    this._previewing = on;
+    await this.updateComplete;
+    this.shadowRoot?.querySelector<HTMLElement>(on ? '.back' : '.card[aria-checked="true"]')?.focus();
+  }
+
   // The cards are one radio group: the arrow keys move the choice and the focus, as a radio group's do.
   #onKey(event: KeyboardEvent) {
     const by =
@@ -316,7 +324,7 @@ export class TemplateGalleryModalElement extends UmbModalBaseElement<NewFormModa
               class="back"
               look="secondary"
               label=${this.localize.term('jfbLibrary_allTemplates')}
-              @click=${() => (this._previewing = false)}
+              @click=${() => void this.#showPreview(false)}
             ></uui-button>`
           : nothing
       }
@@ -356,7 +364,7 @@ export class TemplateGalleryModalElement extends UmbModalBaseElement<NewFormModa
             ? html`<uui-button
                 look="secondary"
                 label=${this.localize.term('jfbLibrary_preview')}
-                @click=${() => (this._previewing = true)}
+                @click=${() => void this.#showPreview(true)}
               ></uui-button>`
             : nothing
         }

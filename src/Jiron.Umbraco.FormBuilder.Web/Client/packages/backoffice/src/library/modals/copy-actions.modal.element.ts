@@ -39,6 +39,11 @@ export class CopyActionsModalElement extends UmbModalBaseElement<CopyActionsModa
   static override styles = [
     jfbBackofficeTokens,
     css`
+      /* It takes the focus only as the result takes the place of the button pressed; it does nothing. */
+      .result:focus {
+        outline: none;
+      }
+
       uui-box + uui-box {
         margin-top: var(--uui-size-space-5);
       }
@@ -170,6 +175,8 @@ export class CopyActionsModalElement extends UmbModalBaseElement<CopyActionsModa
 
     this._result = data;
     this.updateValue({ targetKey: target.key });
+    // The result takes the place of the choice, and of the button pressed: the focus goes to what it says.
+    void this.updateComplete.then(() => this.shadowRoot?.querySelector<HTMLElement>('.result')?.focus());
     await changed(this, placeOf(target.folderKey));
   }
 
@@ -190,11 +197,17 @@ export class CopyActionsModalElement extends UmbModalBaseElement<CopyActionsModa
     const names = new Map((this._actions ?? []).map((action) => [action.key, action.name]));
     const troubled = result.actions.filter((copy) => copy.unmapped.length + copy.mergeTags.length > 0);
     return html`<uui-box>
-      <p role="status">${this.localize.term('jfbLibrary_copied', result.actions.length, target.name)}</p>
+      <p class="result" role="status" tabindex="-1">
+        ${this.localize.term('jfbLibrary_copied', result.actions.length, target.name)}
+      </p>
       ${
         troubled.length === 0
-          ? html`<p class="muted">${this.localize.term('jfbLibrary_copiedClean', target.name)}</p>`
-          : html`<p>${this.localize.term('jfbLibrary_copiedNeedsFixing', target.name)}</p>
+          ? html`<p class="muted">
+              ${this.localize.term('jfbLibrary_copiedClean', result.actions.length, target.name)}
+            </p>`
+          : html`<p>
+                ${this.localize.term('jfbLibrary_copiedNeedsFixing', result.actions.length, troubled.length, target.name)}
+              </p>
               <ul>
                 ${troubled.map(
                   (copy) =>

@@ -4,8 +4,13 @@ import { UmbRequestReloadChildrenOfEntityEvent } from '@umbraco-cms/backoffice/e
 import type { UmbLocalizationController } from '@umbraco-cms/backoffice/localization-api';
 import { UmbApiError } from '@umbraco-cms/backoffice/resources';
 import { describe, expect, it } from 'vitest';
-import { FOLDER_ENTITY_TYPE, LIBRARY_ROOT_ENTITY_TYPE } from '../section/entity-types';
-import { codeOf, placeOf, RECYCLE_BIN, refusalText, reloadChildren } from './library-changes';
+import {
+  FOLDER_ENTITY_TYPE,
+  LIBRARY_ROOT_ENTITY_TYPE,
+  screenPath,
+  TRASHED_FOLDER_ENTITY_TYPE,
+} from '../section/entity-types';
+import { codeOf, placeOf, RECYCLE_BIN, refusalText, reloadChildren, screenAfterGone } from './library-changes';
 
 describe('a change', () => {
   it('reloads the children of each place it touched once', () => {
@@ -23,6 +28,24 @@ describe('a change', () => {
 
   it("reloads nothing without the backoffice's action events", () => {
     expect(() => reloadChildren(undefined, RECYCLE_BIN)).not.toThrow();
+  });
+});
+
+describe('a folder gone for good', () => {
+  const at = (entityType: string, key: string) => `/umbraco/${screenPath(entityType, key)}`;
+
+  it('leaves its own open screen for the folder it was in, or the top level', () => {
+    expect(screenAfterGone(at(FOLDER_ENTITY_TYPE, 'gone'), placeOf('gone'), placeOf('parent'))).toBe(
+      screenPath(FOLDER_ENTITY_TYPE, 'parent'),
+    );
+    expect(screenAfterGone(at(FOLDER_ENTITY_TYPE, 'gone'), placeOf('gone'), placeOf(null))).toBe(
+      screenPath(LIBRARY_ROOT_ENTITY_TYPE),
+    );
+  });
+
+  it('leaves any other screen as it is', () => {
+    expect(screenAfterGone(at(FOLDER_ENTITY_TYPE, 'other'), placeOf('gone'), placeOf(null))).toBeUndefined();
+    expect(screenAfterGone(at(TRASHED_FOLDER_ENTITY_TYPE, 'gone'), placeOf('gone'), placeOf(null))).toBeUndefined();
   });
 });
 

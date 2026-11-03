@@ -26,6 +26,7 @@ export default {
   jfbLibrary: {
     recycleBin: 'Papierkorb',
     topOfForms: 'der obersten Ebene von „Formulare“',
+    sameFolder: 'demselben Ordner',
     untitledForm: 'Unbenanntes Formular',
     notPublished: 'nicht veröffentlicht',
     restricted: 'Eingeschränkt',
@@ -114,6 +115,7 @@ export default {
     restore: 'Wiederherstellen',
     restoreToTop: (name: string) => `${name} kehrt in die oberste Ebene von „Formulare“ zurück.`,
     restoreToFolder: (name: string, folder: string) => `${name} kehrt in den Ordner ${folder} zurück.`,
+    restoreToWhereItWas: (name: string) => `${name} kehrt an seinen bisherigen Platz zurück.`,
     restoreFolderTrashed: (name: string, folder: string) =>
       `Der Ordner ${folder} liegt auch im Papierkorb, deshalb kehrt ${name} in die oberste Ebene von „Formulare“ zurück.`,
     restoreFormComesBack: (entries: number) =>
@@ -146,8 +148,11 @@ export default {
     cannotUndo: 'Das lässt sich nicht rückgängig machen.',
 
     emptyHeadline: 'Papierkorb leeren?',
-    emptyText: (forms: number, entries: number, files: number) => {
-      if (forms === 0) return 'Dabei werden die Ordner darin endgültig gelöscht.';
+    emptyText: (forms: number, entries: number, files: number, folders: number) => {
+      if (forms === 0)
+        return folders === 1
+          ? 'Dabei wird der Ordner darin endgültig gelöscht.'
+          : `Dabei werden die ${number(folders)} Ordner darin endgültig gelöscht.`;
       const one = forms === 1;
       const gone = one ? 'Dabei wird 1 Formular' : `Dabei werden ${number(forms)} Formulare`;
       if (entries === 0) return `${gone} endgültig gelöscht. ${one ? 'Es hat' : 'Sie haben'} keine Einträge.`;
@@ -199,9 +204,12 @@ export default {
     noActionsToCopy: (source: string) => `${source} hat keine Aktionen, die sich kopieren lassen.`,
     copyCount: (actions: number) => (actions === 1 ? '1 Aktion kopieren' : `${number(actions)} Aktionen kopieren`),
     copied: (actions: number, target: string) => `${count(actions, 'Aktion', 'Aktionen')} nach ${target} kopiert.`,
-    copiedClean: (target: string) => `Sie finden in ${target} alles, was sie brauchen.`,
-    copiedNeedsFixing: (target: string) =>
-      `Einige nennen etwas, das ${target} nicht hat. Beheben Sie das, bevor Sie ${target} veröffentlichen:`,
+    copiedClean: (actions: number, target: string) =>
+      actions === 1
+        ? `Sie findet in ${target} alles, was sie braucht.`
+        : `Sie finden in ${target} alles, was sie brauchen.`,
+    copiedNeedsFixing: (actions: number, troubled: number, target: string) =>
+      `${actions === 1 ? 'Sie nennt' : troubled === actions ? 'Sie nennen' : 'Einige nennen'} etwas, das ${target} nicht hat. Beheben Sie das, bevor Sie ${target} veröffentlichen:`,
     copyLacksField: (alias: string, target: string) => `${target} hat kein Feld „${alias}“.`,
     copyLacksElement: (target: string) => `Eine Seite, Gruppe oder ein Feld, das sie nennt, fehlt in ${target}.`,
     copyLacksTag: (tag: string, target: string) => `Der Platzhalter ${tag} findet in ${target} nichts.`,

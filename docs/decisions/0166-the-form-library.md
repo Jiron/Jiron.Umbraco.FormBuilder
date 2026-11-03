@@ -53,7 +53,8 @@ For new forms with actions:
   - `GET form/search/field` (fields of live versions, of published forms outside the trash that the user sees, by label or alias; a grid
     once, without the rows the catalogue keeps under its alias).
 - **New forms with actions need `manageActions` where they land (option 2):** a duplicate with actions, an import of a file with actions, and
-  a form from a template with actions. Otherwise the answer is `403` naming the permission, before anything is written.
+  a form from a template with actions. Otherwise the answer is `403` naming the permission, before anything is written. The duplicate
+  dialog offers the actions by the same rule: by the permissions of the form's folder, or at the top level by the user's own.
 - **The import's check (option 2)** returns the file's name, alias, version and date, what it holds (pages, fields with a repeater's
   children, rules, outcomes, actions) and the notes. A new note, `page_missing`, says that an outcome sends visitors to a page this site lacks or
   holds in its recycle bin; the outcome keeps the key until the editor chooses one. Every note's path now points into the file

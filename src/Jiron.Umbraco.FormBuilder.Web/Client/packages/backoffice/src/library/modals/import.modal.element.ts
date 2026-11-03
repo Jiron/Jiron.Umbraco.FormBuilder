@@ -7,7 +7,7 @@ import { folderGet, formExchangeCheckImport, formExchangeImport, type ImportChec
 import { jfbBackofficeTokens, jfbVisuallyHidden } from '../../styles/tokens';
 import { codeOf, permissionOf } from '../library-changes';
 import { dayText, isGoodNews, noteTexts, type NoteWords } from '../rows';
-import { ImportStore, type ChosenFile, type ImportRefusal } from '../stores';
+import { ImportStore, type ChosenFile, type ImportRefusal, type ImportState } from '../stores';
 import type { NewFormModalData, NewFormModalValue } from './tokens';
 
 /** The first problem a refused file names, or the refusal's own words. */
@@ -59,6 +59,11 @@ export class ImportModalElement extends UmbModalBaseElement<NewFormModalData, Ne
       .file__name {
         font-weight: 700;
         overflow-wrap: anywhere;
+      }
+
+      /* It takes the focus only to keep it in place, as the file's answers redraw it; it does nothing. */
+      .file__name:focus {
+        outline: none;
       }
 
       .muted {
@@ -142,6 +147,9 @@ export class ImportModalElement extends UmbModalBaseElement<NewFormModalData, Ne
     return this.data?.folderKey ?? null;
   }
 
+  /** The step the sidebar last showed. */
+  #shown: ImportState['step'] = 'choose';
+
   #changed() {
     const state = this.#store.state;
     if (state.step === 'imported') {
@@ -150,7 +158,13 @@ export class ImportModalElement extends UmbModalBaseElement<NewFormModalData, Ne
       return;
     }
 
+    const from = this.#shown;
+    this.#shown = state.step;
     this.requestUpdate();
+    // A chosen file takes the place of the button that chose it, and each answer redraws it: the focus stays on its name.
+    if (state.step !== from && state.step !== 'choose' && state.step !== 'importing') {
+      void this.updateComplete.then(() => this.shadowRoot?.querySelector<HTMLElement>('.file__name')?.focus());
+    }
   }
 
   #choose() {
@@ -187,7 +201,8 @@ export class ImportModalElement extends UmbModalBaseElement<NewFormModalData, Ne
     }).format(bytes < 1024 * 1024 ? Math.max(1, Math.round(bytes / 1024)) : bytes / (1024 * 1024));
   }
 
-  #file(file: ChosenFile, check?: ImportCheckResponseModel) {
+  // The chosen file; another may be chosen once this one's check or import has its answer.
+  #file(file: ChosenFile, check?: ImportCheckResponseModel, busy = false) {
     const culture = this.localize.lang() || 'en';
     const exported = check
       ? this.localize.term(
@@ -203,14 +218,18 @@ export class ImportModalElement extends UmbModalBaseElement<NewFormModalData, Ne
       <div class="file">
         <uui-icon name="icon-document"></uui-icon>
         <div class="file__text">
-          <div class="file__name">${file.name}</div>
+          <div class="file__name" tabindex="-1">${file.name}</div>
           <div class="muted">${exported}</div>
         </div>
-        <uui-button
-          look="outline"
-          label=${this.localize.term('jfbLibrary_chooseAnotherFile')}
-          @click=${this.#choose}
-        ></uui-button>
+        ${
+          busy
+            ? nothing
+            : html`<uui-button
+                look="outline"
+                label=${this.localize.term('jfbLibrary_chooseAnotherFile')}
+                @click=${this.#choose}
+              ></uui-button>`
+        }
       </div>
     </uui-box>`;
   }
@@ -285,13 +304,13 @@ export class ImportModalElement extends UmbModalBaseElement<NewFormModalData, Ne
           </p>
         </uui-box>`;
       case 'checking':
-        return html`${this.#file(state.file)}
+        return html`${this.#file(state.file, undefined, true)}
           <uui-box><p aria-busy="true">${this.localize.term('jfbLibrary_readingFile')}</p></uui-box>`;
       case 'refused':
         return html`${this.#file(state.file)}${this.#refusal(state.reason)}`;
       case 'checked':
       case 'importing':
-        return html`${this.#file(state.file, state.check)}${this.#holds(state.check)}${this.#notes(state.check)}
+        return html`${this.#file(state.file, state.check, state.step === 'importing')}${this.#holds(state.check)}${this.#notes(state.check)}
           <p class="muted">
             ${this.localize.term('jfbLibrary_arrivesAsDraft', this._folderName ?? this.localize.term('jfbLibrary_topOfForms'))}
           </p>`;

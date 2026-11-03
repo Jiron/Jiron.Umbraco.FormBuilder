@@ -124,9 +124,9 @@ async function pageThatPicks(api: APIRequestContext, formKey: string, name: stri
 const treeRow = (page: Page, name: string): Locator =>
   page.locator(`umb-section-sidebar uui-menu-item[label="${name.replace(/"/g, '\\"')}"]`).filter({ visible: true });
 
-/** Chooses an action in the menu a "..." opened. */
+/** Chooses an action in the menu a "..." opened; a menu opened before may linger hidden. */
 const chooseAction = (page: Page, action: string) =>
-  page.locator(`umb-entity-action-list uui-menu-item[label="${action}"]`).click();
+  page.locator(`umb-entity-action-list uui-menu-item[label="${action}"]`).filter({ visible: true }).click();
 
 /** Opens a tree item's "..." and chooses an action. */
 async function treeAction(page: Page, name: string, action: string): Promise<void> {
@@ -287,11 +287,26 @@ test('a folder is made, renamed in its own name, and deleted once empty', async 
   await naming.getByRole('button', { name: 'Rename' }).click();
   await expect(treeRow(page, renamed)).toBeVisible();
 
-  await treeAction(page, renamed, 'Delete\u2026');
-  const confirm = page.locator('umb-confirm-modal');
-  await expect(confirm).toContainText(`Delete ${renamed}?`);
-  await confirm.getByRole('button', { name: 'Delete folder' }).click();
+  // Its screen's name renames it on Enter, and deleting it from there opens the screen of the place it was in.
+  const again = `${renamed} B`;
+  await treeRow(page, renamed).click();
+  const field = page.locator('jfb-folder-list').getByRole('textbox', { name: 'Folder name' });
+  await expect(field).toHaveValue(renamed);
+  await field.fill(again);
+  await field.press('Enter');
+  await expect(treeRow(page, again)).toBeVisible();
   await expect(treeRow(page, renamed)).toHaveCount(0);
+
+  await page
+    .locator('jfb-folder-list')
+    .getByRole('button', { name: `More actions for ${again}` })
+    .click();
+  await chooseAction(page, 'Delete\u2026');
+  const confirm = page.locator('umb-confirm-modal');
+  await expect(confirm).toContainText(`Delete ${again}?`);
+  await confirm.getByRole('button', { name: 'Delete folder' }).click();
+  await expect(treeRow(page, again)).toHaveCount(0);
+  await expect(page).toHaveURL(/\/workspace\/jfb-library-root$/);
 });
 
 test('a form moves into a folder chosen in the tree picker', async ({ page, loginAs, apiAs }) => {
@@ -361,7 +376,7 @@ test('actions copied to a form without their fields list each reference with a l
 
   await expect(sidebar).toContainText(`2 actions copied to ${target}.`);
   await expect(sidebar).toContainText(
-    `Some of them name things ${target} doesn't have. Fix them before you publish ${target}:`,
+    `They name things ${target} doesn't have. Fix them before you publish ${target}:`,
   );
   // Said once for each action, however often an action names the field.
   await expect(sidebar.getByText(`${target} has no field "email".`)).toHaveCount(2);

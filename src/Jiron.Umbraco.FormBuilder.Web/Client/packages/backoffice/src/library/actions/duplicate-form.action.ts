@@ -4,10 +4,25 @@
 import { UmbEntityActionBase } from '@umbraco-cms/backoffice/entity-action';
 import { umbOpenModal } from '@umbraco-cms/backoffice/modal';
 import { tryExecute } from '@umbraco-cms/backoffice/resources';
-import { folderGet, formExchangeDuplicate, formGet } from '../../api';
+import { folderGet, formExchangeDuplicate, formGet, type FolderResponseModel } from '../../api';
 import { screenPath, FORM_ENTITY_TYPE } from '../../section/entity-types';
+import { myPermissions } from '../../section/my-permissions';
+import type { MyPermissions } from '../../section/sidebar';
 import { changed, open, placeOf, sayRefusal } from '../library-changes';
 import { DUPLICATE_MODAL } from '../modals/tokens';
+
+/**
+ * Whether the copy may take the form's actions where it lands, as the server checks: manageActions in the form's folder,
+ * or at the top level among the user's own permissions. A folder that did not read says no; the copy comes without them.
+ */
+export function mayTakeActions(
+  folderKey: string | null | undefined,
+  folder: Pick<FolderResponseModel, 'permissions'> | undefined,
+  mine: Pick<MyPermissions, 'global'> | undefined,
+): boolean {
+  const held = folderKey ? folder?.permissions : mine?.global;
+  return held?.includes('manageActions') ?? false;
+}
 
 export class DuplicateFormAction extends UmbEntityActionBase<never> {
   override async execute() {
@@ -19,7 +34,16 @@ export class DuplicateFormAction extends UmbEntityActionBase<never> {
       ? (await tryExecute(this, folderGet({ path: { key: form.folderKey } }), { disableNotifications: true })).data
       : undefined;
 
-    const value = await umbOpenModal(this, DUPLICATE_MODAL, { data: { form, folderName: folder?.name ?? null } });
+    const mine = form.folderKey ? undefined : await myPermissions(this);
+
+    const value = await umbOpenModal(this, DUPLICATE_MODAL, {
+      data: {
+        form,
+        folderName: folder?.name ?? null,
+        inFolder: Boolean(form.folderKey),
+        mayTakeActions: mayTakeActions(form.folderKey, folder, mine),
+      },
+    });
     const { data: copy, error } = await tryExecute(
       this,
       formExchangeDuplicate({ path: { key }, body: { name: value.name, includeActions: value.includeActions } }),

@@ -9,6 +9,8 @@ import type { RestoreModalData, RestoreModalValue } from './tokens';
 
 /** Where a restore lands, as its sidebar says it: the folder's name, or the top of Forms because the folder is in the bin too. */
 interface Landing {
+  /** Whether the item goes back into a folder; its name is null for a folder that did not read. */
+  inFolder: boolean;
   folderName: string | null;
   folderTrashed: boolean;
   entries: number | null;
@@ -64,13 +66,19 @@ export class RestoreModalElement extends UmbModalBaseElement<RestoreModalData, R
     const folder = folderKey
       ? (await tryExecute(this, folderGet({ path: { key: folderKey } }), { disableNotifications: true })).data
       : undefined;
-    this._landing = { folderName: folder?.name ?? null, folderTrashed: Boolean(folder?.trashedUtc), entries };
+    this._landing = {
+      inFolder: Boolean(folderKey),
+      folderName: folder?.name ?? null,
+      folderTrashed: Boolean(folder?.trashedUtc),
+      entries,
+    };
   }
 
   #where(): string {
     const landing = this._landing;
     const name = this.data?.name ?? '';
-    if (!landing?.folderName) return this.localize.term('jfbLibrary_restoreToTop', name);
+    if (!landing?.inFolder) return this.localize.term('jfbLibrary_restoreToTop', name);
+    if (!landing.folderName) return this.localize.term('jfbLibrary_restoreToWhereItWas', name);
     return landing.folderTrashed
       ? this.localize.term('jfbLibrary_restoreFolderTrashed', name, landing.folderName)
       : this.localize.term('jfbLibrary_restoreToFolder', name, landing.folderName);

@@ -6,7 +6,12 @@ import { UmbRequestReloadChildrenOfEntityEvent } from '@umbraco-cms/backoffice/e
 import { UmbLocalizationController } from '@umbraco-cms/backoffice/localization-api';
 import { UMB_NOTIFICATION_CONTEXT } from '@umbraco-cms/backoffice/notification';
 import { UmbApiError } from '@umbraco-cms/backoffice/resources';
-import { FOLDER_ENTITY_TYPE, LIBRARY_ROOT_ENTITY_TYPE, RECYCLE_BIN_ENTITY_TYPE } from '../section/entity-types';
+import {
+  FOLDER_ENTITY_TYPE,
+  LIBRARY_ROOT_ENTITY_TYPE,
+  RECYCLE_BIN_ENTITY_TYPE,
+  screenPath,
+} from '../section/entity-types';
 
 /** An entity a change touched: a folder by its key, or the root (null). */
 export interface Place {
@@ -45,6 +50,19 @@ export function reloadChildren(events: EventTarget | undefined, ...places: Place
 /** Opens a screen of the backoffice by its address below the backoffice's root. */
 export function open(path: string): void {
   history.pushState(null, '', new URL(path, document.baseURI).href);
+}
+
+/** The screen to open instead of a gone item's, when that is the one at this path: the screen of the place it was in. */
+export function screenAfterGone(pathname: string, gone: Place, to: Place): string | undefined {
+  return pathname.includes(screenPath(gone.entityType, gone.unique ?? undefined))
+    ? screenPath(to.entityType, to.unique ?? undefined)
+    : undefined;
+}
+
+/** Leaves the screen of an item that went for good, if it is open, for the place it was in. */
+export function leaveGone(gone: Place, to: Place): void {
+  const next = screenAfterGone(location.pathname, gone, to);
+  if (next) open(next);
 }
 
 /** A refusal's stable code, or undefined for an answer that is none. */

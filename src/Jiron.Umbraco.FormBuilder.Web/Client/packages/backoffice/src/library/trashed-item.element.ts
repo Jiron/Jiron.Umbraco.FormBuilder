@@ -18,6 +18,7 @@ export class TrashedItemElement extends UmbLitElement {
     _name: { state: true },
     _since: { state: true },
     _gone: { state: true },
+    _loaded: { state: true },
   };
 
   static override styles = [
@@ -53,6 +54,8 @@ export class TrashedItemElement extends UmbLitElement {
   declare private _name: string;
   declare private _since: string | undefined;
   declare private _gone: boolean;
+  /** Whether the item's first answer came: until then the screen says it is loading, and names nothing. */
+  declare private _loaded: boolean;
 
   constructor() {
     super();
@@ -60,6 +63,7 @@ export class TrashedItemElement extends UmbLitElement {
     this.entityType = TRASHED_FOLDER_ENTITY_TYPE;
     this._name = '';
     this._gone = false;
+    this._loaded = false;
     this.consumeContext(UMB_ACTION_EVENT_CONTEXT, (events) => {
       this.#events?.removeEventListener(UmbRequestReloadChildrenOfEntityEvent.TYPE, this.#onChange);
       this.#events = events;
@@ -77,7 +81,10 @@ export class TrashedItemElement extends UmbLitElement {
   }
 
   protected override willUpdate(changed: PropertyValues) {
-    if (changed.has('unique')) void this.#load();
+    if (changed.has('unique')) {
+      this._loaded = false;
+      void this.#load();
+    }
   }
 
   async #load() {
@@ -88,6 +95,7 @@ export class TrashedItemElement extends UmbLitElement {
         ? await tryExecute(this, folderGet({ path: { key } }), { disableNotifications: true })
         : await tryExecute(this, formGet({ path: { key } }), { disableNotifications: true });
     if (key !== this.unique) return;
+    this._loaded = true;
     this._gone = !data;
     this._name = data?.name ?? '';
     this._since = data?.trashedUtc
@@ -99,6 +107,12 @@ export class TrashedItemElement extends UmbLitElement {
   }
 
   override render() {
+    if (!this._loaded) {
+      return html`<umb-body-layout>
+        <uui-box><p aria-busy="true">${this.localize.term('jfbLibrary_loading')}</p></uui-box>
+      </umb-body-layout>`;
+    }
+
     return html`<umb-body-layout>
       <div class="header" slot="header">
         <h2>${this._name}</h2>

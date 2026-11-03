@@ -97,6 +97,16 @@ router took the export's download link for a navigation (the link no longer join
 nothing, because Umbraco had let go of the action (the action now hands Undo what it held); and a cancelled dialog behind a screen's
 button left an unhandled rejection.
 
+A reader who had not written the code then found fourteen more, all fixed with tests. The ones a user would see: a delete for good
+asked with "no entries" when the counts had not come, and now says the permission it needs instead; the duplicate offered actions by
+the form's permissions, not by those where the copy lands, and could be confirmed before the actions were counted; a folder deleted
+from its own screen left that screen saying it failed, and now its parent's screen opens; a folder that did not read was "the top
+level of Forms" in the restore and duplicate sentences, and is now "where it was" and "the same folder"; Preview, All templates, a
+chosen file and a copy's result each removed the focused button and left the focus on nothing, and now take it with them; sentences
+about one copied action or one folder in the bin spoke of "them"; a trashed item's screen said "not in the Recycle Bin" while it
+loaded; and a form named like a dictionary key showed a translation in the tree. The field search also found fields of unpublished
+forms and each row of a grid, and an import chosen while another was checked could show the first one's answer.
+
 ## What stays open, and where
 
 - **Renaming a form** is the form's header, with 9.3a; **Save as template…** comes with 12.3 and **Permissions…** with 12.4a.

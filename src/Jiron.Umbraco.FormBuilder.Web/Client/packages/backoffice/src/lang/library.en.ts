@@ -20,6 +20,7 @@ export default {
   jfbLibrary: {
     recycleBin: 'Recycle Bin',
     topOfForms: 'the top level of Forms',
+    sameFolder: 'the same folder',
     untitledForm: 'Untitled form',
     notPublished: 'not published',
     restricted: 'Restricted',
@@ -103,6 +104,7 @@ export default {
     restore: 'Restore',
     restoreToTop: (name: string) => `${name} comes back at the top level of Forms.`,
     restoreToFolder: (name: string, folder: string) => `${name} goes back to ${folder}.`,
+    restoreToWhereItWas: (name: string) => `${name} goes back where it was.`,
     restoreFolderTrashed: (name: string, folder: string) =>
       `Its folder, ${folder}, is in the Recycle Bin too, so ${name} comes back at the top level of Forms.`,
     restoreFormComesBack: (entries: number) => `Its ${count(entries, 'entry comes', 'entries come')} back with it.`,
@@ -127,8 +129,11 @@ export default {
     cannotUndo: "You can't undo this.",
 
     emptyHeadline: 'Empty the Recycle Bin?',
-    emptyText: (forms: number, entries: number, files: number) => {
-      if (forms === 0) return 'This deletes the folders in it for good.';
+    emptyText: (forms: number, entries: number, files: number, folders: number) => {
+      if (forms === 0)
+        return folders === 1
+          ? 'This deletes the folder in it for good.'
+          : `This deletes the ${count(folders, 'folder', 'folders')} in it for good.`;
       const gone = `This deletes ${count(forms, 'form', 'forms')} for good`;
       const their = forms === 1 ? 'its' : 'their';
       if (entries === 0) return `${gone}. ${forms === 1 ? 'It has' : 'They have'} no entries.`;
@@ -180,9 +185,14 @@ export default {
     noActionsToCopy: (source: string) => `${source} has no actions to copy.`,
     copyCount: (actions: number) => (actions === 1 ? 'Copy 1 action' : `Copy ${number(actions)} actions`),
     copied: (actions: number, target: string) => `${count(actions, 'action', 'actions')} copied to ${target}.`,
-    copiedClean: (target: string) => `They find everything they use in ${target}.`,
-    copiedNeedsFixing: (target: string) =>
-      `Some of them name things ${target} doesn't have. Fix them before you publish ${target}:`,
+    copiedClean: (actions: number, target: string) =>
+      actions === 1 ? `It finds everything it uses in ${target}.` : `They find everything they use in ${target}.`,
+    copiedNeedsFixing: (actions: number, troubled: number, target: string) =>
+      actions === 1
+        ? `It names things ${target} doesn't have. Fix it before you publish ${target}:`
+        : troubled === actions
+          ? `They name things ${target} doesn't have. Fix them before you publish ${target}:`
+          : `Some of them name things ${target} doesn't have. Fix those before you publish ${target}:`,
     copyLacksField: (alias: string, target: string) => `${target} has no field "${alias}".`,
     copyLacksElement: (target: string) => `A page, group or field it names isn't in ${target}.`,
     copyLacksTag: (tag: string, target: string) => `The merge tag ${tag} finds nothing in ${target}.`,

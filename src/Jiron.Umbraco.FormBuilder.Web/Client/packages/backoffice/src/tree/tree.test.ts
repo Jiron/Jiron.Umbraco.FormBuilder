@@ -12,7 +12,8 @@ import {
 } from '../section/entity-types';
 import { RESTRICTED_FLAG, UNSEEN_FLAG } from './aliases';
 import { fieldResultOf, resultOf, type InWords } from './form-search.provider';
-import { treeItemOf } from './library-tree.repository';
+import { nameOf } from './library-tree-item.element';
+import { pageOf, treeItemOf } from './library-tree.repository';
 
 const item = (change: Partial<LibraryItemResponseModel>): LibraryItemResponseModel => ({
   key: 'k',
@@ -28,6 +29,46 @@ const item = (change: Partial<LibraryItemResponseModel>): LibraryItemResponseMod
 });
 
 const inWords: InWords = (name, place) => `${name}, in ${place}`;
+
+describe("a tree item's name", () => {
+  const localize = (text: string) => (text.startsWith('#') ? `[${text.slice(1)}]` : text);
+
+  it("is a root's in the user's language, and an editor's as it stands", () => {
+    expect(nameOf({ entityType: RECYCLE_BIN_ENTITY_TYPE, name: '#jfbLibrary_recycleBin' }, localize)).toBe(
+      '[jfbLibrary_recycleBin]',
+    );
+    expect(nameOf({ entityType: LIBRARY_ROOT_ENTITY_TYPE, name: '#jfbSection_forms' }, localize)).toBe(
+      '[jfbSection_forms]',
+    );
+    expect(nameOf({ entityType: FORM_ENTITY_TYPE, name: '#actions_create' }, localize)).toBe('#actions_create');
+    expect(nameOf({ entityType: FOLDER_ENTITY_TYPE, name: '#general_name' }, localize)).toBe('#general_name');
+    expect(nameOf(undefined, localize)).toBe('');
+  });
+});
+
+describe("a folders-only picker's page", () => {
+  const folders = (items: LibraryItemResponseModel[]) => items.filter((entry) => entry.kind === 'folder');
+  const page = (kinds: ('folder' | 'form')[], total: number) => ({
+    items: kinds.map((kind, index) => item({ key: `${kind}${index}`, kind })),
+    total,
+  });
+
+  it('ends where the forms start, which come after every folder', () => {
+    expect(pageOf(page(['folder', 'folder', 'form'], 140), folders, 0)).toMatchObject({ total: 2 });
+    expect(pageOf(page(['folder', 'form', 'form'], 140), folders, 100)).toMatchObject({ total: 101 });
+  });
+
+  it('keeps the total of a page of folders only, so that the next page comes', () => {
+    expect(pageOf(page(['folder', 'folder'], 140), folders, 0)).toEqual({
+      items: [item({ key: 'folder0', kind: 'folder' }), item({ key: 'folder1', kind: 'folder' })],
+      total: 140,
+    });
+  });
+
+  it('is the whole page for the tree itself', () => {
+    expect(pageOf(page(['folder', 'form'], 7), (items) => items, 5)).toMatchObject({ total: 7 });
+  });
+});
 
 describe('a tree item', () => {
   it('is a published form at the root, without marks', () => {

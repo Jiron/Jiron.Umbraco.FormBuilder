@@ -61,10 +61,10 @@ describe('deleting a form for good', () => {
 
 describe('emptying the Recycle Bin', () => {
   it("says copy.md's example", () => {
-    expect(EN.emptyText(3, 412, 12)).toBe(
+    expect(EN.emptyText(3, 412, 12, 1)).toBe(
       'This deletes 3 forms for good, with their 412 entries and 12 uploaded files.',
     );
-    expect(DE.emptyText(3, 412, 12)).toBe(
+    expect(DE.emptyText(3, 412, 12, 1)).toBe(
       'Dabei werden 3 Formulare mit ihren 412 Einträgen und 12 hochgeladenen Dateien endgültig gelöscht.',
     );
     expect(EN.emptyConfirm).toBe('Empty recycle bin');
@@ -72,14 +72,38 @@ describe('emptying the Recycle Bin', () => {
   });
 
   it('says one form, no entries, only folders, and what stays', () => {
-    expect(EN.emptyText(1, 1, 0)).toBe('This deletes 1 form for good, with its 1 entry.');
-    expect(DE.emptyText(1, 1, 1)).toBe(
+    expect(EN.emptyText(1, 1, 0, 0)).toBe('This deletes 1 form for good, with its 1 entry.');
+    expect(DE.emptyText(1, 1, 1, 0)).toBe(
       'Dabei wird 1 Formular mit seinem Eintrag und 1 hochgeladenen Datei endgültig gelöscht.',
     );
-    expect(EN.emptyText(2, 0, 0)).toBe('This deletes 2 forms for good. They have no entries.');
-    expect(DE.emptyText(0, 0, 0)).toBe('Dabei werden die Ordner darin endgültig gelöscht.');
+    expect(EN.emptyText(2, 0, 0, 2)).toBe('This deletes 2 forms for good. They have no entries.');
+    expect(DE.emptyText(0, 0, 0, 2)).toBe('Dabei werden die 2 Ordner darin endgültig gelöscht.');
+    expect(EN.emptyText(0, 0, 0, 1)).toBe('This deletes the folder in it for good.');
+    expect(EN.emptyText(0, 0, 0, 3)).toBe('This deletes the 3 folders in it for good.');
+    expect(DE.emptyText(0, 0, 0, 1)).toBe('Dabei wird der Ordner darin endgültig gelöscht.');
     expect(EN.emptyLeft(1)).toBe('1 item you may not delete stays in it.');
     expect(DE.emptyLeft(4)).toBe('4 Elemente, die Sie nicht löschen dürfen, bleiben darin.');
+  });
+});
+
+describe('copied actions', () => {
+  it('speak of one action, all of them, or some', () => {
+    expect(EN.copiedClean(1, 'Spring')).toBe('It finds everything it uses in Spring.');
+    expect(EN.copiedClean(3, 'Spring')).toBe('They find everything they use in Spring.');
+    expect(DE.copiedClean(1, 'Spring')).toBe('Sie findet in Spring alles, was sie braucht.');
+    expect(EN.copiedNeedsFixing(1, 1, 'Spring')).toBe(
+      "It names things Spring doesn't have. Fix it before you publish Spring:",
+    );
+    expect(EN.copiedNeedsFixing(2, 2, 'Spring')).toBe(
+      "They name things Spring doesn't have. Fix them before you publish Spring:",
+    );
+    expect(EN.copiedNeedsFixing(3, 1, 'Spring')).toBe(
+      "Some of them name things Spring doesn't have. Fix those before you publish Spring:",
+    );
+    expect(DE.copiedNeedsFixing(3, 1, 'Spring')).toBe(
+      'Einige nennen etwas, das Spring nicht hat. Beheben Sie das, bevor Sie Spring veröffentlichen:',
+    );
+    expect(DE.copiedNeedsFixing(1, 1, 'Spring')).toMatch(/^Sie nennt etwas/);
   });
 });
 

@@ -6,7 +6,7 @@ import { umbOpenModal } from '@umbraco-cms/backoffice/modal';
 import { tryExecute } from '@umbraco-cms/backoffice/resources';
 import { folderCreate, folderDelete, folderGet, folderRename } from '../../api';
 import { confirmText } from '../../ui/confirm';
-import { changed, placeOf, sayRefusal } from '../library-changes';
+import { changed, leaveGone, placeOf, sayRefusal } from '../library-changes';
 import { FOLDER_NAME_MODAL } from '../modals/tokens';
 
 /** Asks for a new folder's name and creates it in a folder, or at the top of Forms. */
@@ -71,5 +71,6 @@ export async function deleteFolder(host: UmbClassInterface, key: string): Promis
   }
 
   await changed(host, placeOf(folder.parentKey));
+  leaveGone(placeOf(key), placeOf(folder.parentKey));
   return true;
 }
