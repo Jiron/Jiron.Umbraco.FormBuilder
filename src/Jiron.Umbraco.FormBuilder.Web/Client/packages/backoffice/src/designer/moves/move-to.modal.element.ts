@@ -114,10 +114,12 @@ export class MoveToModalElement extends UmbModalBaseElement<MoveToModalData, Mov
     requestAnimationFrame(() => this.shadowRoot?.querySelector<HTMLInputElement>('input:not([disabled])')?.focus());
   }
 
-  #move() {
-    if (!this._chosen) return;
+  /** Moves to the place chosen; false while none is. */
+  #move(): boolean {
+    if (!this._chosen) return false;
     this.updateValue({ key: this._chosen });
     this._submitModal();
+    return true;
   }
 
   #place(place: MoveToPlace, index: string) {
@@ -148,9 +150,7 @@ export class MoveToModalElement extends UmbModalBaseElement<MoveToModalData, Mov
     return html`<uui-dialog-layout headline=${this.localize.term('jfbDesigner_moveToHeadline', name)}>
       <fieldset
         @keydown=${(event: KeyboardEvent) => {
-          if (event.key !== 'Enter' || !this._chosen) return;
-          event.preventDefault();
-          this.#move();
+          if (event.key === 'Enter' && this.#move()) event.preventDefault();
         }}
       >
         <legend>${this.localize.term('jfbDesigner_moveToLead')}</legend>

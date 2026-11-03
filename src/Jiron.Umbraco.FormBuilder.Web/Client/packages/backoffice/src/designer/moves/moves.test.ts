@@ -162,11 +162,34 @@ describe('the places Move to... offers', () => {
     expect(sections[1]?.places[0]?.edit).toEqual({ ok: false, refusal: 'unchanged' });
   });
 
-  it('never offers a repeatable group a place inside itself', () => {
+  it('never offers a repeatable group a place inside itself, nor in what it holds', () => {
     const places = moveToPlaces(state, 'kids', contextOf()).flatMap((section) =>
       section.places.map((place) => place.key),
     );
     expect(places).toEqual(['contact', 'notes']);
+    // A draft from elsewhere may hold a repeatable group in another; the model refuses to make one.
+    const nested: EditorState = {
+      definition: {
+        pages: [
+          {
+            key: 'one',
+            groups: [
+              {
+                key: 'contact',
+                fields: [
+                  field('outer', 'repeater', { fields: [field('inner', 'repeater', { fields: [field('x')] })] }),
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      selection: null,
+    };
+    const offered = moveToPlaces(nested, 'outer', contextOf()).flatMap((section) =>
+      section.places.map((place) => place.key),
+    );
+    expect(offered).toEqual(['contact']);
   });
 
   it('gives a group the pages, and a page none', () => {
@@ -176,6 +199,9 @@ describe('the places Move to... offers', () => {
       ['one', 'page', true],
       ['two', 'page', false],
     ]);
+    // To the end of the page.
+    const two = pages?.places[1]?.edit;
+    expect(two?.ok && two.state.definition.pages[1]?.groups.map((group) => group.key)).toEqual(['notes', 'contact']);
     expect(moveToPlaces(state, 'one', contextOf())).toEqual([]);
     expect(moveToPlaces(state, 'nowhere', contextOf())).toEqual([]);
   });
