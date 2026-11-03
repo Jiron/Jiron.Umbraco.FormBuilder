@@ -202,8 +202,8 @@ progress, since the steps across its top stand in for it.
 | --- | --- | --- |
 | Toolbar | the canvas width (Phone · Tablet · Desktop), the language (only on sites with more than one), and the form check badge | "…": Undo · Redo · Rules overview · Keyboard shortcuts · Translate with AI… (add-on) |
 | The steps | the pages by name across the top of the canvas (an unnamed page reads "Page 1"), then "Add page" (an empty page at the end, whose empty state says that the palette's Layout › New page splits a page instead), then **After sending** | Clicking a step shows that page. After sending shows the outcome as visitors will see it, read-only, with "Change", which opens that outcome's editor in the Settings view. |
-| Canvas | groups with their columns, and fields as visitors see them. An insert point, a button "Add a field here" in the gap above each element and below a group's last one, appears on hover and on keyboard focus, and every page ends with a visible "Add field", which opens the palette for the end of that page, or moves the focus to its search where it is already open. Rules show as small chips on the elements they affect, except on the selected element, whose rules are in the inspector. | An insert point opens the palette for that point, whose Layout › New page starts a page there. On the selected element: its handle ("Move Email address") and Move to… · Duplicate · Delete · "…" (Change type… · Start a new page after this · Save group as template… for groups · Copy alias). At 620 px they sit in the header of the inspector, which then covers the canvas. |
-| Palette | search, "Recently used", then **Layout** (Group: a set of fields, with optional columns; New page: starts a page at that point and moves what follows onto it), the field types in groups, the site's saved groups, and "Paste questions…" at the end | A click inserts at the chosen point, or after the selected element, or at the end of the current page; dragging places it. |
+| Canvas | groups with their columns, and fields as visitors see them. An insert point, a button "Add a field here" in the gap above each element and below a group's last one, appears on hover and on keyboard focus, and every page ends with a visible "Add field", which opens the palette for the end of that page, or moves the focus to its search where it is already open. Rules show as small chips on the elements they affect, except on the selected element, whose rules are in the inspector. | An insert point opens the palette for that point, whose Layout › New page starts a page there. Every field and group has a handle ("Move Email address") at its top left, shown on hover, on focus and while it is selected, which drags it; a page is dragged by its step, and a step takes a dropped field or group at that page's end (ADR-0169). On the selected element: Move to… · Duplicate · Delete · "…" (Change type… · Start a new page after this · Save group as template… for groups · Copy alias). At 620 px they sit in the header of the inspector, which then covers the canvas. |
+| Palette | search, "Recently used", then **Layout** (Group: a set of fields, with optional columns; New page: starts a page at that point and moves what follows onto it), the field types in groups, the site's saved groups, and "Paste questions…" at the end | A click inserts at the chosen point, or after the selected element, or at the end of the current page; dragging a type from the palette beside the canvas places it. |
 | Inspector | opens when an element is selected: the element's type at the top ("Email field"), then the sections; the label is the first field of Essentials | see below |
 
 **The inspector's sections,** each under a header that is a button opening or closing it (`aria-expanded`):
@@ -230,15 +230,21 @@ progress, since the steps across its top stand in for it.
 - each field is a button that selects it (Enter or Space), and each page step is a button; Esc clears the
   selection, closes the palette or cancels a drag;
 - **F2** or a double click edits the selected field's label in place: Enter keeps it, Esc puts the old one back;
-- **Ctrl+D** duplicates, **Delete** deletes, **Alt+Up** and **Alt+Down** move the field one place, and **?** lists
-  every shortcut in a dialog with only Close;
-- **Move to…** lists the groups by page and puts the field at the end of the chosen group;
-- after a delete, the focus moves to the field that took its place.
+- **Up** and **Down** go through the page's elements in reading order; **Ctrl+D** duplicates, **Delete** deletes, **F2**
+  edits a label, and **Alt+Up** and **Alt+Down** move one place, a field into the next group at the end of its own and
+  a group into the next page, each acting on the element the focus is on, else on the selection; **?** lists every
+  shortcut in a dialog with only Close (ADR-0169);
+- **Move to…** lists the groups and repeatable groups by page (for a group, the pages) and puts the element at the
+  end of the chosen one; places the form refuses are listed with why and can't be chosen;
+- a move the form refuses says why at the element (while dragging, at the line), never in a toast;
+- the focus stays on the moved element after every move, goes to the field that took its place after a delete, and to
+  what Undo or Redo restored.
 
 **Undo and redo** have no buttons of their own:
 
 - every designer change can be undone with Ctrl+Z and redone with Ctrl+Y;
-- deleting or moving something shows a toast with **Undo**;
+- deleting something, or moving it by a drop or Move to…, shows a toast with **Undo**; keyboard moves, one after
+  another, are said instead (ADR-0169);
 - both are in "…" with their shortcuts.
 
 **Paste questions…** opens a dialog: one question per line, then the fields it will add with the type guessed for

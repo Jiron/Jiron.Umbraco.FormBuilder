@@ -116,9 +116,90 @@ through in bootstrap5, whose lists keep their height in a stretched wrapper; the
 beside a long text to a box's height, which both themes would stretch. The canvas's controls losing their height under a
 theme's alignment made the two-column journey fail, as the reader had expected.
 
+# Step 9.3c: the moves
+
+ROADMAP 9.3c makes the canvas move things: a handle on every field and group, pages dragged by their steps, palette types dropped on
+the page, refusals explained where they happen, Move to…, Alt+Up and Alt+Down across groups and pages, Up and Down between
+elements, the Keyboard shortcuts dialog, and a focus that stays where it belongs
+([ADR-0169](../decisions/0169-the-designers-moves.md), on ADR-0016's engine). The three design skills ran on the result as for 9.3b.
+
+## What was looked at (9.3c)
+
+The same e2e host in Edge, as the designer, with a contact form, a blank form built with the keyboard only, a form with two repeatable
+groups and a form of 300 fields.
+
+| Shot | What it shows |
+| --- | --- |
+| [a handle](review-9.3/moves-handle-1440.png) | the tab at the top left of the field under the pointer, its frame dashed |
+| [a move refused](review-9.3/moves-refusal-in-place-1440.png) | Alt+Up on the first field: "It can't move any further." beside its handle, the tools on the right |
+| [a drag](review-9.3/moves-drag-line-1440.png) · [the drop](review-9.3/moves-dropped-1440.png) | the dashed slot where the field was, the line with its round ends, the copy with its name; the selection, its tools and the insert points stepped back. Then the field in its new place, selected, and "Field moved." with Undo |
+| [a refused drop](review-9.3/moves-drag-refused-1440.png) | a repeatable group dragged into another's row: the line in the refusal colour, the reason under the copy |
+| [Move to…](review-9.3/moves-move-to-1440.png) | "To the end of", the places by page, where it is now, the other repeatable group off with its reason, Move off until a place is chosen |
+| [the shortcuts](review-9.3/moves-shortcuts-1440.png) | what the keys act on, then each shortcut with its keys, and Close |
+| [a page by its step](review-9.3/moves-page-drag-1440.png) | the step's slot, the upright line before Page 1, the copy |
+| [at 920 px](review-9.3/moves-selected-920.png) | the narrowest workspace: the handle on the left and the bar on the right of the selected field |
+
+**Checks that ran on the last look:**
+
+- **Axe** on the Design view after the keyboard build and after the mouse moves, on Move to… and on the shortcuts, in
+  `designer-moves.spec.ts`: none (the first run found Move to…'s name, "Move Date to…", didn't hold its visible text; it is
+  "Move to…, Date" now, WCAG 2.5.3).
+- **The bundled detector** on the canvas, its field, its styles, the drag, the two dialogs and the palette: `[]` for each.
+- **The journeys:** a form of three pages built with the keyboard only, the focused element asserted after every operation; fields,
+  a group, a page, a palette type and a refused drop with the mouse, Escape, and a palette type dropped on an empty page.
+- **The budget:** a form of 300 fields in the `budgets` project, measured alone: the slowest interaction 80 ms from the input to
+  the next paint (Event Timing), and no frame over 50 ms (Long Animation Frames). The first measure found up to 168 ms: every
+  selection drew all hundred fields of the page again, and the handle's `:has()` rule was checked for every field at every move
+  of the mouse; a field's state is now kept while it is unchanged, and the handle shows by sibling rules (ADR-0169).
+
+## design-taste-frontend (9.3c)
+
+The same read as 9.3b: Operate mode inside Umbraco's own system, dials 2 / 2 / 5. What it asks of the moves held: one accent (the
+handle, the line and the selection share Umbraco's), one radius scale (the handle's and the tools' tabs alike), and every state
+composed: hover, focus, selected, dragging, refused, dropped, and an empty page that still takes a drop.
+
+## impeccable (9.3c)
+
+| Finding | What was done |
+| --- | --- |
+| While a field was dragged, the selected field's frame and tools stayed up; dropped at the top of the selected field, the line ran along its frame and could not be seen | the selection's frame, its tools, the handles, the insert points and any refusal step back while a drag lasts: the line is the one accent |
+| The dragged field's own handle stayed above its slot | it goes with the rest |
+| The reason sat under the line, where the copy that follows the pointer covered it; over a step there was no line, so no reason; near the top edge it was cut off | the reason follows the pointer under the copy, the same in every case |
+| The line between two steps stood upright with both round ends at its top | one at each end |
+| A long reason in German ran past its pill | it wraps within 320 px |
+
+Kept as they are: the handle covers the bottom corner of the field above, as the tools do on the right (inside the frame it would
+cover the label); a refusal note may grow upwards on a narrow field, below the tools, until the next change.
+
+## emil-design-eng (9.3c)
+
+| Before | After | Why |
+| --- | --- | --- |
+| — | a drop settles over 150 ms with `cubic-bezier(0.23, 1, 0.32, 1)` from where the copy was, as a transform | the one move the eye must follow from the hand to the page; a strong ease-out answers at once, on the compositor |
+| — | keyboard moves, Move to… and Undo: no motion | repeated all day, one after another; motion would make them late (ADR-0016) |
+| a line that eases from place to place (considered) | the line jumps | it follows the hand: any easing lags behind it |
+| a drag that started on any press | 6 px first, and a finger moving up or down over a step or a type scrolls | a click stays a click, and a scroll stays a scroll |
+| pressing and moving a handle, a step or a type selected text around it | none of them selects text | a drag that paints a selection looks broken |
+| — | reduced motion: no settle; forced colours: the handle, the line, the slot and the notes in system colours | the same information without colour or motion |
+
+## The reader's review (9.3c)
+
+| Finding | What was done |
+| --- | --- |
+| F2, Ctrl+D and Alt+Up/Down on a field that had the focus but not the selection: after the edit, or after Undo, the focus went to nothing, and with it the view's keys | what a key or a drop acts on is selected first, so Undo goes back to it with the focus; Undo that leaves nothing selected gives the focus to Add field |
+| Nothing could be dropped on a page that shows only its sentence, the most natural first drag | the sentence stands for the page's one group: a field dropped anywhere on the page goes there; the mouse journey drops a type on a new page |
+| Over a step the reason didn't show, and near an edge it was cut off | the reason follows the pointer |
+| In columns, a field dragged out of a row of two made the other look alone, so hovering its own place moved it | a row is judged with the dragged field still counted |
+| The shortcuts said "what is selected" though the keys act on the focused element; "or" between two keys was hidden from screen readers; the German "where it is now" read oddly | the dialog says once that the keys act on the field, group or page you are on; "or" is said; "(hier ist es jetzt)" |
+| Move to… read a refusal's reason twice | it is the place's description only |
+| A refusal note could cover Move to… on a narrow field | it stays below the tools and leaves them their room |
+| The keys worked during a drag | they change nothing until it ends |
+| Escape was taken from the page before a drag began, and the release after an Escape clicked the handle | Escape is the drag's only once it has begun, and that release clicks nothing |
+| A page let go anywhere went to the end of the steps | it lands only near the steps |
+| A journey's check could never fail (`arrayContaining`) | it waits for the moved field to be first |
+
 ## Left for later steps
 
-- **9.3c** adds drag and drop, Move to…, the arrow keys and the `?` overlay, with focus kept after every move.
 - **9.4** opens the inspector beside the canvas, and with it the palette's fold to a rail while an element is selected between 620
   and 1024 px (added to 9.4).
 - **10.3** shows the form in its own theme in Preview.

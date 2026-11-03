@@ -907,6 +907,27 @@ with Esc and a click beside it giving the focus back, and a look that can't be r
 preview import the views, only the models and the canvas's label finder name a field's classes, and the gallery shows
 a template with the preview.
 
+**The designer's moves** (ROADMAP 9.3c, [ADR-0169](../docs/decisions/0169-the-designers-moves.md)):
+`drag/drop-place.test.ts` holds where a point lands among boxes in reading order (columns too), the line that shows it
+and the container under it; `drag/pointer-drag.test.ts` the drag itself: a click under 6 px, a drop that swallows its
+click, Escape that goes no further, a lost pointer, one drag at a time, the main button only, and the autoscroll near
+the edges and below the bottom, not above or beside; `canvas/canvas-drag.test.ts` the canvas's drags over a laid-out
+page: a field between fields, a group among groups, a new field, a page among the steps with an upright line, a refusal
+at the line asked once per place and said on the drop, a step's page end and the page shown after 600 ms, Escape, and
+the settle (once, from where the copy was, none with reduced motion); `moves/moves.test.ts` a drop's edit, where an
+element is, the ends of pages and groups, Move to…'s places with their refusals and the keys' names;
+`moves/dialogs.test.ts` Move to…'s radio buttons by page with a refusal's reason, the focus on the first place, Move
+only once chosen and Enter, and the shortcuts with Close only. `canvas/canvas.test.ts` adds each element's handle, a
+refusal at a field, group or page, the order Up and Down go through and the focus on a handle or a step;
+`palette/palette.test.ts` a type pressed to drag, beside the canvas only; `form-design.view.test.ts` drops with Undo,
+a palette type dropped, refusals at the element without a toast, Alt+Up and Alt+Down across pages with the focus kept on
+its control, Delete, Ctrl+D and F2 on the focused element with Undo giving the focus back, Up and Down, Move to… with
+Cancel, and `?`. In the browser, `specs/backoffice/designer-moves.spec.ts` builds a form of three pages with the
+keyboard only and asserts the focused element after every operation, moves fields, a group and a page with the mouse
+with a refused drop and palette types, one on an empty page; and the `budgets` project, alone after every other one,
+holds a form of 300 fields to 100 ms per interaction (Event Timing) and per frame (Long Animation Frames) in
+`specs/budgets/designer.spec.ts`.
+
 ## The public API tests
 
 `Tests.Integration/PublicApi/` calls the public API anonymously on a real site that boots its runtime, with forms

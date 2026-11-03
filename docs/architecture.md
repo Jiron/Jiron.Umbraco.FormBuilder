@@ -216,7 +216,11 @@ flowchart LR
   `jfb-canvas-field` that is the field's wrapper, written by the element's own views (`@jfb/element/views`) from the
   view models `preview/field-models.ts` builds from the draft, with the words, classes and stylesheets of the
   management API's `canvas` endpoint; the template gallery shows a template with the same drawing
-  (`preview/form-preview.element.ts`).
+  (`preview/form-preview.element.ts`). From 9.3c the moves (ADR-0016, ADR-0169): the backoffice's one pointer drag
+  (`drag/pointer-drag.ts`) and its drop arithmetic (`drag/drop-place.ts`), put on the canvas by `canvas/canvas-drag.ts`
+  for fields, groups, pages by their steps and the palette's types, each place's refusal asked of the editor model; and
+  in `moves/` the pure helpers the Design view moves with (a drop's edit, where an element is, Move to…'s places), the
+  Move to… and Keyboard shortcuts dialogs, and the keys' names.
 
 ## 2. The definition model
 
