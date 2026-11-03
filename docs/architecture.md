@@ -581,9 +581,10 @@ does not exist and one the user does not see), each permission through its polic
 last the request (`400 invalid_request`). An action without one declaration is refused. One exception filter turns the
 services' refusals into answers with the codes of `FormBuilderErrorCodes`: `400` with every problem, `409` for
 conflicts, a cancelled change, a locked setting or a stale version, `503 query_timeout`. Every refusal is
-`application/problem+json` with a title for editors. The document `jfb` names its operations `<controller><action>`;
-its snapshot `docs/api/jfb.json` is the source of the backoffice's client (`packages/backoffice/src/api`, one function
-per operation), and tests keep the two in step.
+`application/problem+json` with a title for editors and the type `about:blank`, without which Umbraco's client drops
+the status and the code. The document `jfb` names its operations `<controller><action>`; its snapshot
+`docs/api/jfb.json` is the source of the backoffice's client (`packages/backoffice/src/api`, one function per
+operation), and tests keep the two in step.
 
 ## 7. Settings
 

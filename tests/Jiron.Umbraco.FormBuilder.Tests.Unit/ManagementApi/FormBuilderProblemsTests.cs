@@ -123,7 +123,8 @@ public sealed class FormBuilderProblemsTests
         Assert.Multiple(() =>
         {
             Assert.That((http.Response.StatusCode, http.Response.ContentType, result.StatusCode), Is.EqualTo((403, "application/problem+json", (int?)403)));
-            Assert.That(body!.AsObject().Select(property => property.Key), Is.EqualTo(new[] { "title", "status", "detail", "code", "permission" }), "camel case, the extensions at the top");
+            Assert.That(body!.AsObject().Select(property => property.Key), Is.EqualTo(new[] { "type", "title", "status", "detail", "code", "permission" }), "camel case, the extensions at the top");
+            Assert.That(body["type"]!.GetValue<string>(), Is.EqualTo("about:blank"), "which Umbraco's client needs to read it as a problem");
             Assert.That((body["detail"]!.GetValue<string>(), body["code"]!.GetValue<string>(), body["permission"]!.GetValue<string>()), Is.EqualTo(("It needs the permission 'design'.", "forbidden", "design")));
         });
     }

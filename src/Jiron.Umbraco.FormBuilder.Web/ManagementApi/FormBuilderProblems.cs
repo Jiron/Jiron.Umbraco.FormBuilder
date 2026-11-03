@@ -33,6 +33,9 @@ internal static class FormBuilderProblems
     /// <summary>The request's route, query or body holds values the endpoint cannot read.</summary>
     public const string InvalidRequestCode = "invalid_request";
 
+    /// <summary>The type of every problem: none beyond its status and its code (RFC 9457).</summary>
+    public const string AboutBlank = "about:blank";
+
     /// <summary>A move would give a group more access, and was not confirmed.</summary>
     public const string WidensAccessCode = "widens_access";
 
@@ -268,10 +271,14 @@ internal static class FormBuilderProblems
         };
     }
 
-    /// <summary>A ProblemDetails answer with its code.</summary>
+    /// <summary>
+    /// A ProblemDetails answer with its code. Its type is <c>about:blank</c>, which RFC 9457 assumes when a problem has none; it is
+    /// written all the same, because Umbraco's client reads an answer as a problem only when the member is there, and otherwise
+    /// drops the status and the code (ADR-0166).
+    /// </summary>
     public static FormBuilderProblemResult Problem(int status, string code, string title, string? detail = null, IDictionary<string, object?>? extensions = null)
     {
-        var problem = new ProblemDetails { Status = status, Title = title, Detail = detail };
+        var problem = new ProblemDetails { Type = AboutBlank, Status = status, Title = title, Detail = detail };
         problem.Extensions["code"] = code;
         foreach (var (name, value) in extensions ?? new Dictionary<string, object?>())
         {

@@ -73,6 +73,9 @@ For new forms with actions:
 - **The copy-actions result** links each reference it could not map to the target's Actions view with the copy selected (`?action=<key>`),
   which 10.2 honours.
 - **The gallery's preview** draws the template's pages and fields from its definition with plain controls; 9.3b's preview elements replace them.
+- **Every management API refusal says `"type": "about:blank"`.** RFC 9457 assumes that value when a problem has no type, so nothing
+  changes in meaning; but Umbraco's client reads an error as a problem only when the member is there, and otherwise turns it into a
+  status-0 error without the code, which left the screens with "That didn't work" for every refusal. The browser journeys showed it.
 
 ## Consequences
 
