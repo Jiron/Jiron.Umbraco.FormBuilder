@@ -894,12 +894,16 @@ inert, under a button that selects it and an insert point; Duplicate and Delete 
 kept when drawn again; its label edited in place; a note for a field visitors don't see; a repeatable group's first
 row with its own fields) and the canvas (steps, the page in the default theme, the groups' and pages' buttons, a new
 form's and an empty page's sentences, an image's two notes, After sending without anything that runs, the widths and
-the menu, and the requests it passes on). `palette/palette.test.ts` holds the palette's search, groups, recently used
-types, modes and the paste dialog; `new-elements.test.ts` new fields, groups and pages, aliases and the types pasted
+the menu, and the requests it passes on; a label for screen readers only shown while edited, an edit that ends where no
+label shows, a page's groups once it has more than one or a titled one, and the focus given to Add field for what it
+doesn't draw). `palette/palette.test.ts` holds the palette's search, groups, recently used types, modes and the paste
+dialog with its label and help; `new-elements.test.ts` new fields, groups and pages, aliases and the types pasted
 questions suggest in English and German; `form-design.view.test.ts` the Design view through a stand-in workspace: picks
 from the palette at the right place, refusals said, New page, labels in place, delete with Ctrl+Z and Ctrl+Y, Ctrl+D,
 Delete and Esc, Add page, pasted questions, the width kept per browser, the media an image needs, and the width up to
-which the palette opens over the canvas. `drawing.test.ts` finds no other drawing of a field: only the canvas and the
+which the palette opens over the canvas; the toast's Undo taking back its delete only while it is the last change, a
+selection let go with the focus on Add field, a label edited in the canvas's culture, the canvas inert under the palette
+with Esc and a click beside it giving the focus back, and a look that can't be read with Try again. `drawing.test.ts` finds no other drawing of a field: only the canvas and the
 preview import the views, only the models and the canvas's label finder name a field's classes, and the gallery shows
 a template with the preview.
 

@@ -74,16 +74,21 @@ For the theme:
   IA 5.1 is updated to say so.
 - **Widths.** Desktop 960 px, Tablet 768 px and Phone 375 px are the form's own widths; with less room the form reflows, never
   scaled, and "Narrowed to fit" says so (IA 5.1). The chosen width is kept per browser.
-- **The palette** stays beside the canvas in a view wider than 700 px and folds to a rail by its own button; up to 700 px it opens
-  over the canvas from Add field or an insert point, and Esc closes it. The narrowest workspace, 620 px, lies in that range:
+- **The palette** stays beside the canvas in a view wider than 700 px and folds to a rail by its own button, which takes the
+  focus; up to 700 px it opens over the canvas from Add field or an insert point, the canvas out of reach until it closes, and
+  Esc, Close or a click beside it close it and give the focus back to what opened it. The narrowest workspace, 620 px, lies in that range:
   Umbraco's own header keeps the view from getting narrower, so a threshold below 620 px would never be met. The palette's fold to a
   rail while an element is selected (IA 5.1, between 620 and 1024 px) comes with the inspector in 9.4, which it makes room for.
   Recently used keeps the last three types per browser.
 - **Pasted questions** become fields, one per line (up to 50), each with the type its words suggest in English or German (an email
   address, a phone number, "How many…", a yes-or-no question…) and shown in a table before they are added in one undoable step.
-- **Inline labels.** Double-click or F2 edits a label in place; Enter keeps it, Escape puts the old one back, and an empty label
-  leaves the field as it was.
-- **Keyboard.** Delete (with an Undo toast), Ctrl+D, Ctrl+Z, Ctrl+Y and Esc work now; 9.3c adds the moves and the `?` overlay. The
+- **Inline labels.** Double-click or F2 edits a label in place, in the culture the canvas shows it in, a label written for
+  screen readers only showing while it is edited; Enter keeps it, Escape puts the old one back, and an empty label leaves the
+  field as it was. Where no label shows (a heading without text), the edit ends at once.
+- **A page without fields** shows one sentence in place of its one group while that group has no title or text of its own, and
+  its groups once it has more; a selection left on a group the canvas doesn't draw is let go, and the focus goes to Add field.
+- **Keyboard.** Delete (with an Undo toast, whose Undo takes back that delete only while it is the last change), Ctrl+D,
+  Ctrl+Z, Ctrl+Y and Esc work now; 9.3c adds the moves and the `?` overlay. The
   skip link past the palette is a button, since Umbraco's router takes a link's click for a move to another place.
 
 ## Consequences

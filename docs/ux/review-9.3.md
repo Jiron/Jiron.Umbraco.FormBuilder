@@ -19,7 +19,7 @@ made through the APIs.
 | [a new form](review-9.3/empty-form-1440.png) | one sentence pointing to the palette and to pasting questions, Add field, and Send |
 | [pasting questions](review-9.3/paste-1440.png) · [the result](review-9.3/pasted-1440.png) | one line per question, the guessed types in a table before anything is added; the five fields, the last one selected |
 | [an empty later page](review-9.3/empty-page-1440.png) | the new page selected with its Duplicate and Delete, its own sentence, Send and Back |
-| [the contact form](review-9.3/designer-1440.png) · [a field selected](review-9.3/selected-1440.png) | the default theme on a white sheet, the steps, the width switch; the selected field's outline and its two tools |
+| [the contact form](review-9.3/designer-1440.png) · [a field selected](review-9.3/selected-1440.png) · [in two columns](review-9.3/selected-columns-1440.png) | the default theme on a white sheet, the steps, the width switch; the selected field's outline and its two tools |
 | [an insert point](review-9.3/insert-point-1440.png) | "Add a field here" on the line between two fields, on hover and on focus |
 | [a label in place](review-9.3/label-in-place-1440.png) | the label's box where the label was, its text chosen |
 | [the canvas's "…"](review-9.3/menu-1440.png) | Undo and Redo with their shortcuts, off while there is nothing to undo |
@@ -28,7 +28,7 @@ made through the APIs.
 | [the palette folded](review-9.3/palette-rail-1440.png) | the rail with its expand button and search; the canvas takes the room, and "Narrowed to fit" goes |
 | [Delete with Undo](review-9.3/delete-undo-1440.png) | the toast, and the selection on the next field |
 | [every field: choices](review-9.3/sink-choices-1440.png) · [rows](review-9.3/sink-rows-1440.png) · [files](review-9.3/sink-files-1440.png) · [a repeatable group](review-9.3/sink-repeater-1440.png) | two columns whose labels, help and controls line up; the drop frame and the pad as visitors with JavaScript see them; the group's first row with its own fields |
-| [at 920 px](review-9.3/designer-920.png) · [the palette over the canvas](review-9.3/palette-over-920.png) | the narrowest workspace: the canvas alone, the palette opened from Add field with the insert point it will fill |
+| [at 920 px](review-9.3/designer-920.png) · [the palette over the canvas](review-9.3/palette-over-920.png) | the narrowest workspace: the canvas alone; the palette opened from Add field over a scrim, with the insert point it will fill |
 | [dark](review-9.3/designer-dark-1440.png) · [high contrast](review-9.3/designer-high-contrast-1440.png) | Umbraco's two other themes around the visitor's white sheet |
 | [the gallery](review-9.3/gallery-1440.png) | a template drawn by the same preview as the canvas |
 
@@ -39,9 +39,9 @@ made through the APIs.
   none.
 - **The bundled detector** (`impeccable detect --json`) on the canvas, a canvas field, their styles, the palette, the paste dialog,
   the Design view and the preview: `[]` for each.
-- **The journeys** of `designer.spec.ts`: a form of three pages built with the mouse, five fields from a pasted list, and the
-  narrowest workspace with its skip link, its palette over the canvas and Delete with Undo; the gallery's journeys in
-  `library.spec.ts`.
+- **The journeys** of `designer.spec.ts`: a form of three pages built with the mouse, five fields from a pasted list, fields
+  side by side each selected by a click, and the narrowest workspace with its skip link, its palette over the canvas and
+  Delete with Undo; the gallery's journeys in `library.spec.ts`.
 - **The themes' specs** lay the server's sink out in the default and the bootstrap5 theme and check that fields side by side share
   their rows (the finding below).
 
@@ -85,6 +85,36 @@ Kept as they are:
 | — | the insert point fades in over 120 ms with a strong ease-out, and not at all for reduced motion | it appears on every hover between fields, tens of times a minute: fast, and only opacity |
 | — | selecting, editing a label in place, switching widths and pages: no motion | keyboard-heavy actions repeated all day; animation would make them feel late |
 | — | the toast is Umbraco's own | the backoffice's notifications move as Umbraco's do |
+
+## A reader's review
+
+A reader who had not built the step read its diff for defects. Each finding below was traced in the code, fixed and given a
+test:
+
+| Finding | What was done |
+| --- | --- |
+| The delete toast's Undo took back whatever came last: a delete, then Ctrl+D, then Undo removed the duplicate and left the field deleted | the toast's Undo takes back its delete only while that is still the last change, and the next change closes the toast |
+| The theme's new start alignment reached the canvas's control layer, which then had no height in a group of two columns | the layer covers its field whatever a theme aligns the parts by; a journey selects both fields of a two-column group by a click ([the shot](review-9.3/selected-columns-1440.png)) |
+| F2 on a heading without text hid the field's button and left nothing to edit or focus | a heading without text is not edited in place, and an edit where no label shows ends at once |
+| Deleting a page's last field left the selection on a group the canvas doesn't draw, and the focus on nothing | the selection is let go and the focus goes to Add field; a page with more than one group, or a titled one, shows its groups |
+| Closing the palette over the canvas, or folding the palette, dropped the focus, and with it the view's shortcuts | Esc, Close and a click beside the palette give the focus back to what opened it; folding puts it on the rail |
+| Tab from the palette over the canvas went on to controls lying under it | the canvas is out of reach while the palette lies on it, under a light scrim ([the shot](review-9.3/palette-over-920.png)) |
+| A label written for screen readers only was edited inside its one-pixel box | it shows while it is edited |
+| The edit box started from and wrote the default text while the canvas showed another culture's | it starts from and writes back the text the canvas shows |
+| The paste dialog's help never reached screen readers through UUI's box | the dialog uses the browser's own box with its label and help ([the shot](review-9.3/paste-1440.png)) |
+| A canvas or gallery preview that couldn't be loaded showed a loader for ever | each says so; the canvas offers Try again |
+| A canvas put back in the page stopped measuring its width; each image read made another media repository | both fixed |
+
+## The tamper round
+
+Each check was tampered with in a throwaway clone, and a named test had to fail: 18 changes to the designer's code against its
+Vitest files (four first slipped through and their tests now name the value: a selected field's `aria-current`, a slider's start
+between two steps as near, the 50 pasted lines, an import of the views without `from`), 6 to the canvas endpoint against its
+integration tests and the permission matrix (three first did not compile and were written again so that they did), and 6
+built into the client against the journeys and the themes' specs. Holding a theme's parts to their own heights first slipped
+through in bootstrap5, whose lists keep their height in a stretched wrapper; the themes' specs now also hold an email box
+beside a long text to a box's height, which both themes would stretch. The canvas's controls losing their height under a
+theme's alignment made the two-column journey fail, as the reader had expected.
 
 ## Left for later steps
 
