@@ -21,6 +21,7 @@ public sealed partial class SqlGuardTests
         ("ActionRunRepository.cs", "{runs} p{(locking ? n.LockingRead : string.Empty)", "the due list only proposes; the claim makes the same check with a locking read (ADR-0040, ActionRunSqlTests)"),
         ("EntryRepository.Unique.cs", "EXISTS (SELECT 1 FROM {held})", "the held answers read each table with a lock in the submission's unit; the read before it only proposes (ADR-0091, UniqueAnswerSqlTests)"),
         ("ReferenceRepository.cs", "SELECT 1 FROM {nodes} WHERE", "the rebuild's last part reads Umbraco's nodes: a page's rows are written after its node is committed, so a plain read sees every node a row names, and a lock would hold Umbraco's own saves (ADR-0131)"),
+        ("FormRepository.Catalogue.cs", "FROM {n.T(FormBuilderTables.FormField)} g WHERE", "the field search leaves a grid's rows out of what it lists; nothing is written after it, and a lock would hold the designer's saves (ADR-0166)"),
     ];
 
     // Common table expressions a check may read: their own reads carry the hint.
