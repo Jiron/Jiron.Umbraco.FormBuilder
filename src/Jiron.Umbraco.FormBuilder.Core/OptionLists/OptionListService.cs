@@ -39,6 +39,14 @@ internal sealed record OptionListResult(StoredOptionList? List, IReadOnlyList<De
 /// <param name="IsReadable">Whether the kind, the configuration and the items all read and keep the kind's checks.</param>
 internal sealed record OptionListEntry(StoredOptionList Row, OptionKind? Kind, SettingsObject? Config, IReadOnlyList<FieldOption> Items, bool IsReadable);
 
+/// <summary>A library list as the inspector's source picker offers it (ADR-0172).</summary>
+/// <param name="Key">The key a field's <c>options.list</c> names it by.</param>
+/// <param name="Alias">Its alias.</param>
+/// <param name="Name">Its name.</param>
+/// <param name="Kind">Its kind, or null when this version does not have it.</param>
+/// <param name="Count">How many options a manual or uploaded list holds; null for a list that resolves them.</param>
+internal sealed record OptionListSummary(Guid Key, string Alias, string Name, OptionKind? Kind, int? Count);
+
 /// <summary>
 /// The library's option lists (ADR-0073): each change holds a list to its kind's checks and drops what every server
 /// kept of it; a read keeps the list, read once per server while it is missing, until it changes. The library's
@@ -75,6 +83,45 @@ internal sealed partial class OptionListService(
             RowDuration,
             cancellationToken);
         return kept as OptionListEntry;
+    }
+
+    /// <summary>
+    /// Every list by name, as the inspector's source picker offers them (ADR-0172): its kind, null for a kind this
+    /// version lacks, and for a list that holds its options how many it holds. Nothing is resolved, so a list whose
+    /// source is slow never holds the picker back.
+    /// </summary>
+    public async Task<IReadOnlyList<OptionListSummary>> ListAsync(CancellationToken cancellationToken = default)
+    {
+        var summaries = new List<OptionListSummary>();
+        for (long skip = 0; ; skip += PageRequest.MaxTake)
+        {
+            var page = await repository.ListAsync(null, new PageRequest(skip, PageRequest.MaxTake), cancellationToken);
+            summaries.AddRange(page.Items.Select(Summary));
+            if (page.Items.Count < PageRequest.MaxTake || skip + page.Items.Count >= page.Total)
+            {
+                return summaries;
+            }
+        }
+    }
+
+    // A list's summary: the items counted as the array's elements, without reading them, for a kind that holds them.
+    private OptionListSummary Summary(StoredOptionList row)
+    {
+        var kind = row.Kind is { } stored ? kinds.Find(stored) : null;
+        return new OptionListSummary(row.Key, row.Alias, row.Name, kind, kind is { HasItems: true } ? Count(row.Items) : null);
+    }
+
+    private static int? Count(string items)
+    {
+        try
+        {
+            using var document = JsonDocument.Parse(items);
+            return document.RootElement.ValueKind == JsonValueKind.Array ? document.RootElement.GetArrayLength() : null;
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
     }
 
     /// <summary>

@@ -199,7 +199,7 @@ public sealed class FormBuilderProblemsTests
         new FormBuilderControllerFeatureProvider().PopulateFeature([], feature);
         new FormBuilderControllerFeatureProvider().PopulateFeature([], feature);
 
-        Assert.That(feature.Controllers.Select(type => type.Name).Order(), Is.EqualTo(new[] { "ActionTestController", "ActionTypeController", "CanvasController", "EntryActionRunController", "EntryFileController", "EntryStateController", "FieldTypeController", "FolderController", "FormController", "FormExchangeController", "FormReferenceController", "LibraryListController", "MeController", "PickerController", "RecentEntryController", "SetupController", "TemplateController", "TestEmailController", "TrashController", "TreeController", "VersionController" }), "once each, never the abstract base");
+        Assert.That(feature.Controllers.Select(type => type.Name).Order(), Is.EqualTo(new[] { "ActionTestController", "ActionTypeController", "CanvasController", "DraftOptionsController", "EntryActionRunController", "EntryFileController", "EntryStateController", "FieldTypeController", "FolderController", "FormController", "FormExchangeController", "FormReferenceController", "LibraryListController", "MeController", "OptionListController", "OptionSourceController", "PickerController", "RecentEntryController", "SetupController", "TemplateController", "TestEmailController", "TrashController", "TreeController", "VersionController" }), "once each, never the abstract base");
     }
 
     private static ParameterDescriptor Parameter(string name, Type type, BindingSource? source = null) =>

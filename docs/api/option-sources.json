@@ -1,0 +1,411 @@
+{
+  "kinds": [
+    {
+      "kind": "content",
+      "settings": [
+        {
+          "name": "root",
+          "kind": "key",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": null,
+          "label": "#jfbOptionListSettings_contentRoot",
+          "description": "#jfbOptionListSettings_contentRootHelp",
+          "editor": "contentPicker",
+          "group": "essentials",
+          "supportsMergeTags": false,
+          "isPublic": false,
+          "rules": {
+            "required": false,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": null,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          },
+          "lock": null
+        },
+        {
+          "name": "descendants",
+          "kind": "boolean",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": false,
+          "label": "#jfbOptionListSettings_contentDescendants",
+          "description": null,
+          "editor": "boolean",
+          "group": "essentials",
+          "supportsMergeTags": false,
+          "isPublic": false,
+          "rules": {
+            "required": false,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": null,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          },
+          "lock": null
+        },
+        {
+          "name": "documentTypes",
+          "kind": "list",
+          "itemKind": "key",
+          "choices": [],
+          "settings": [],
+          "default": null,
+          "label": "#jfbOptionListSettings_contentDocumentTypes",
+          "description": "#jfbOptionListSettings_contentDocumentTypesHelp",
+          "editor": "documentTypePicker",
+          "group": "essentials",
+          "supportsMergeTags": false,
+          "isPublic": false,
+          "rules": {
+            "required": false,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": null,
+            "minimumCount": null,
+            "maximumCount": 1000,
+            "allowedValues": []
+          },
+          "lock": null
+        },
+        {
+          "name": "valueFrom",
+          "kind": "text",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": "key",
+          "label": "#jfbOptionListSettings_contentValueFrom",
+          "description": "#jfbOptionListSettings_contentValueFromHelp",
+          "editor": "text",
+          "group": "essentials",
+          "supportsMergeTags": false,
+          "isPublic": false,
+          "rules": {
+            "required": false,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": 2000,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          },
+          "lock": null
+        },
+        {
+          "name": "labelFrom",
+          "kind": "text",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": "name",
+          "label": "#jfbOptionListSettings_contentLabelFrom",
+          "description": "#jfbOptionListSettings_contentLabelFromHelp",
+          "editor": "text",
+          "group": "essentials",
+          "supportsMergeTags": false,
+          "isPublic": false,
+          "rules": {
+            "required": false,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": 2000,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          },
+          "lock": null
+        },
+        {
+          "name": "order",
+          "kind": "choice",
+          "itemKind": null,
+          "choices": [
+            {
+              "value": "tree",
+              "label": "#jfbOptionListChoices_contentOrderTree"
+            },
+            {
+              "value": "label",
+              "label": "#jfbOptionListChoices_contentOrderLabel"
+            }
+          ],
+          "settings": [],
+          "default": "tree",
+          "label": "#jfbOptionListSettings_contentOrder",
+          "description": null,
+          "editor": "choice",
+          "group": "essentials",
+          "supportsMergeTags": false,
+          "isPublic": false,
+          "rules": {
+            "required": false,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": null,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          },
+          "lock": null
+        }
+      ]
+    },
+    {
+      "kind": "dataType",
+      "settings": [
+        {
+          "name": "dataType",
+          "kind": "key",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": null,
+          "label": "#jfbOptionListSettings_dataType",
+          "description": "#jfbOptionListSettings_dataTypeHelp",
+          "editor": "dataTypePicker",
+          "group": "essentials",
+          "supportsMergeTags": false,
+          "isPublic": false,
+          "rules": {
+            "required": true,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": null,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          },
+          "lock": null
+        }
+      ]
+    },
+    {
+      "kind": "url",
+      "settings": [
+        {
+          "name": "url",
+          "kind": "text",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": null,
+          "label": "#jfbOptionListSettings_url",
+          "description": "#jfbOptionListSettings_urlHelp",
+          "editor": "text",
+          "group": "essentials",
+          "supportsMergeTags": false,
+          "isPublic": false,
+          "rules": {
+            "required": true,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": 2048,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          },
+          "lock": null
+        },
+        {
+          "name": "listPath",
+          "kind": "text",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": "$",
+          "label": "#jfbOptionListSettings_urlListPath",
+          "description": "#jfbOptionListSettings_urlListPathHelp",
+          "editor": "text",
+          "group": "essentials",
+          "supportsMergeTags": false,
+          "isPublic": false,
+          "rules": {
+            "required": false,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": 256,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          },
+          "lock": null
+        },
+        {
+          "name": "valueFrom",
+          "kind": "text",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": "$.value",
+          "label": "#jfbOptionListSettings_urlValueFrom",
+          "description": "#jfbOptionListSettings_urlValueFromHelp",
+          "editor": "text",
+          "group": "essentials",
+          "supportsMergeTags": false,
+          "isPublic": false,
+          "rules": {
+            "required": false,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": 256,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          },
+          "lock": null
+        },
+        {
+          "name": "labelFrom",
+          "kind": "text",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": "$.label",
+          "label": "#jfbOptionListSettings_urlLabelFrom",
+          "description": "#jfbOptionListSettings_urlLabelFromHelp",
+          "editor": "text",
+          "group": "essentials",
+          "supportsMergeTags": false,
+          "isPublic": false,
+          "rules": {
+            "required": false,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": 256,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          },
+          "lock": null
+        }
+      ]
+    },
+    {
+      "kind": "countries",
+      "settings": [
+        {
+          "name": "countries",
+          "kind": "list",
+          "itemKind": "text",
+          "choices": [],
+          "settings": [],
+          "default": null,
+          "label": "#jfbOptionListSettings_countries",
+          "description": "#jfbOptionListSettings_countriesHelp",
+          "editor": "list",
+          "group": "essentials",
+          "supportsMergeTags": false,
+          "isPublic": false,
+          "rules": {
+            "required": false,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": 2000,
+            "minimumCount": null,
+            "maximumCount": 1000,
+            "allowedValues": []
+          },
+          "lock": null
+        }
+      ]
+    },
+    {
+      "kind": "code",
+      "settings": [
+        {
+          "name": "source",
+          "kind": "text",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": null,
+          "label": "#jfbOptionListSettings_source",
+          "description": "#jfbOptionListSettings_sourceHelp",
+          "editor": "text",
+          "group": "essentials",
+          "supportsMergeTags": false,
+          "isPublic": false,
+          "rules": {
+            "required": true,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": 2000,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          },
+          "lock": null
+        }
+      ]
+    }
+  ],
+  "sources": [
+    {
+      "name": "months",
+      "label": "#jfbOptionSources_months"
+    },
+    {
+      "name": "weekdays",
+      "label": "#jfbOptionSources_weekdays"
+    },
+    {
+      "name": "agreement",
+      "label": "#jfbOptionSources_agreement"
+    },
+    {
+      "name": "satisfaction",
+      "label": "#jfbOptionSources_satisfaction"
+    },
+    {
+      "name": "yesNoNotSure",
+      "label": "#jfbOptionSources_yesNoNotSure"
+    }
+  ]
+}

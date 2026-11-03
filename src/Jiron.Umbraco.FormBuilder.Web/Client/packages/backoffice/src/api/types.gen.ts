@@ -165,6 +165,13 @@ export type DefinitionPropertyChangeResponseModel = {
     to?: unknown;
 };
 
+export type DraftOptionsRequestModel = {
+    field: string;
+    type: string;
+    options: unknown;
+    culture: string;
+};
+
 export type DuplicateFormRequestModel = {
     name: string;
     includeActions: boolean;
@@ -486,6 +493,33 @@ export type MyPermissionsResponseModel = {
     anywhere: Array<string>;
 };
 
+export type OptionKindResponseModel = {
+    kind: string;
+    settings: Array<FieldSettingResponseModel>;
+};
+
+export type OptionListItemResponseModel = {
+    key: string;
+    alias: string;
+    name: string;
+    kind?: string | null;
+    count?: number | null;
+};
+
+export type OptionListsResponseModel = {
+    items: Array<OptionListItemResponseModel>;
+};
+
+export type OptionSourceResponseModel = {
+    name: string;
+    label: string;
+};
+
+export type OptionSourcesResponseModel = {
+    kinds: Array<OptionKindResponseModel>;
+    sources: Array<OptionSourceResponseModel>;
+};
+
 export type PagedFieldMatchResponseModel = {
     total: number;
     items: Array<FieldMatchResponseModel>;
@@ -569,6 +603,20 @@ export type RenameFormRequestModel = {
     concurrencyVersion: number;
     name: string;
     alias?: string | null;
+};
+
+export type ResolvedOptionResponseModel = {
+    value: string;
+    label?: string | null;
+    description?: string | null;
+    image?: string | null;
+    places?: number | null;
+    parentValues: Array<string>;
+};
+
+export type ResolvedOptionsResponseModel = {
+    options: Array<ResolvedOptionResponseModel>;
+    isAvailable: boolean;
 };
 
 export type RestoreFolderRequestModel = {
@@ -2246,6 +2294,99 @@ export type LibraryListTrashResponses = {
 };
 
 export type LibraryListTrashResponse = LibraryListTrashResponses[keyof LibraryListTrashResponses];
+
+export type DraftOptionsResolveData = {
+    body?: DraftOptionsRequestModel;
+    path: {
+        key: string;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/form/{key}/options';
+};
+
+export type DraftOptionsResolveErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type DraftOptionsResolveError = DraftOptionsResolveErrors[keyof DraftOptionsResolveErrors];
+
+export type DraftOptionsResolveResponses = {
+    /**
+     * OK
+     */
+    200: ResolvedOptionsResponseModel;
+};
+
+export type DraftOptionsResolveResponse = DraftOptionsResolveResponses[keyof DraftOptionsResolveResponses];
+
+export type OptionListListData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/option-list';
+};
+
+export type OptionListListErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+};
+
+export type OptionListListResponses = {
+    /**
+     * OK
+     */
+    200: OptionListsResponseModel;
+};
+
+export type OptionListListResponse = OptionListListResponses[keyof OptionListListResponses];
+
+export type OptionSourceListData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/option-source';
+};
+
+export type OptionSourceListErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+};
+
+export type OptionSourceListResponses = {
+    /**
+     * OK
+     */
+    200: OptionSourcesResponseModel;
+};
+
+export type OptionSourceListResponse = OptionSourceListResponses[keyof OptionSourceListResponses];
 
 export type PickerChildrenData = {
     body?: never;
