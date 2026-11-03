@@ -8,6 +8,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import { SIDEBAR } from '../section/sidebar';
 import de from './de';
 import en from './en';
 
@@ -102,6 +103,36 @@ describe('the dictionaries', () => {
   it("hold every key the form picker's checks send, and no other in its area", () => {
     expect(pickerKeys.size).toBeGreaterThanOrEqual(5);
     expect(termsOf(en).filter((term) => term.startsWith('jfbPicker_'))).toEqual([...pickerKeys].sort());
+  });
+
+  it("hold the section's and the Overview's keys that their code uses, and no other in those areas", () => {
+    const folders = ['section', 'overview', 'tree'].map((folder) =>
+      join(dirname(fileURLToPath(import.meta.url)), '..', folder),
+    );
+    const sources = folders.flatMap((folder) =>
+      readdirSync(folder)
+        .filter((file) => file.endsWith('.ts') && !file.endsWith('.test.ts'))
+        .map((file) => readFileSync(join(folder, file), 'utf8')),
+    );
+    const used = new Set(
+      sources.flatMap((source) =>
+        [...source.matchAll(/(?:'|#)(jfb(?:Section|Overview)_[A-Za-z_]+)'/g)].map((match) => match[1]),
+      ),
+    );
+    // The keys code builds: an item's and a group's label, and a step's texts and a finding's link.
+    for (const group of SIDEBAR) {
+      used.add(`jfbSection_${group.id}`);
+      for (const item of group.items) used.add(`jfbSection_${item.id}`);
+    }
+
+    for (const step of ['email', 'form', 'testEntry', 'formBlock', 'access']) {
+      for (const part of ['step', 'help', 'action']) used.add(`jfbOverview_${part}_${step}`);
+    }
+
+    for (const link of ['settingsEmail', 'settingsGeneral', 'deliveries']) used.add(`jfbOverview_open_${link}`);
+    expect(termsOf(en).filter((term) => term.startsWith('jfbSection_') || term.startsWith('jfbOverview_'))).toEqual(
+      [...used].sort(),
+    );
   });
 
   it("hold the form picker screens' keys that their elements use, and no other in that area", () => {

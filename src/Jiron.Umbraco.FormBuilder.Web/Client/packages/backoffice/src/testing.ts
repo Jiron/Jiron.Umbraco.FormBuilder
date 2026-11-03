@@ -6,7 +6,12 @@ import { umbLocalizationManager } from '@umbraco-cms/backoffice/localization-api
 import en from './lang/en';
 
 /** Umbraco's own words the elements use, as Umbraco's English dictionary has them. */
-const umbracoTerms = { general_choose: 'Choose', general_close: 'Close', general_remove: 'Remove' };
+const umbracoTerms = {
+  general_cancel: 'Cancel',
+  general_choose: 'Choose',
+  general_close: 'Close',
+  general_remove: 'Remove',
+};
 
 /** Registers the English dictionary, `<area>_<key>` as the backoffice flattens it, with Umbraco's words above. */
 export function registerEnglish(): void {

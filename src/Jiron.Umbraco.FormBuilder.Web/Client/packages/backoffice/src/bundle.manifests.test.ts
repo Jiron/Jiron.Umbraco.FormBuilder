@@ -101,7 +101,7 @@ describe('the form picker (ADR-0134)', () => {
   });
 
   it("registers the sidebar under its token's alias and the block label's component as jfbFormName", () => {
-    const [modal] = byType('modal');
+    const modal = byType('modal').find((each) => each.alias === FORM_PICKER_MODAL.toString());
     const [ufm] = byType('ufmComponent');
 
     expect(modal?.alias).toBe(FORM_PICKER_MODAL.toString());
@@ -110,7 +110,7 @@ describe('the form picker (ADR-0134)', () => {
 
   it('loads each element and the component from its own module', { timeout: 60_000 }, async () => {
     const [ui] = byType('propertyEditorUi');
-    const [modal] = byType('modal');
+    const modal = byType('modal').find((each) => each.alias === FORM_PICKER_MODAL.toString());
     const [ufm] = byType('ufmComponent');
 
     const load = (loader: (() => Promise<Record<string, unknown>>) | undefined, what: string) => must(loader, what)();

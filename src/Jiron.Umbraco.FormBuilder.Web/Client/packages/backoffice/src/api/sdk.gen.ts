@@ -3,7 +3,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { ActionTestTestData, ActionTestTestErrors, ActionTestTestResponses, ActionTypeListData, ActionTypeListErrors, ActionTypeListResponses, EntryActionRunListData, EntryActionRunListErrors, EntryActionRunListResponses, EntryActionRunRetryData, EntryActionRunRetryErrors, EntryActionRunRetryResponses, EntryFileArchiveData, EntryFileArchiveErrors, EntryFileArchiveResponses, EntryFileDownloadData, EntryFileDownloadErrors, EntryFileDownloadResponses, EntryStateChangeData, EntryStateChangeErrors, EntryStateChangeResponses, EntryStateUndoData, EntryStateUndoErrors, EntryStateUndoResponses, FieldTypeListData, FieldTypeListErrors, FieldTypeListResponses, FolderCreateData, FolderCreateErrors, FolderCreateResponses, FolderDeleteData, FolderDeleteErrors, FolderDeleteResponses, FolderGetData, FolderGetErrors, FolderGetResponses, FolderMoveData, FolderMoveErrors, FolderMoveResponses, FolderRenameData, FolderRenameErrors, FolderRenameResponses, FolderRestoreData, FolderRestoreErrors, FolderRestoreResponses, FolderTrashData, FolderTrashErrors, FolderTrashResponses, FormCreateData, FormCreateErrors, FormCreateResponses, FormDeleteData, FormDeleteErrors, FormDeleteResponses, FormDraftData, FormDraftErrors, FormDraftResponses, FormGetData, FormGetErrors, FormGetResponses, FormMoveData, FormMoveErrors, FormMoveResponses, FormPublishData, FormPublishErrors, FormPublishResponses, FormReferenceListData, FormReferenceListErrors, FormReferenceListResponses, FormRenameData, FormRenameErrors, FormRenameResponses, FormRestoreData, FormRestoreErrors, FormRestoreResponses, FormSaveDraftData, FormSaveDraftErrors, FormSaveDraftResponses, FormSearchData, FormSearchErrors, FormSearchResponses, FormTrashData, FormTrashErrors, FormTrashResponses, FormUnpublishData, FormUnpublishErrors, FormUnpublishResponses, PickerChildrenData, PickerChildrenErrors, PickerChildrenResponses, PickerFoldersData, PickerFoldersErrors, PickerFoldersResponses, PickerFormsData, PickerFormsErrors, PickerFormsResponses, PickerSearchData, PickerSearchErrors, PickerSearchResponses, PickerThemesData, PickerThemesErrors, PickerThemesResponses, SetupCreateFormBlockData, SetupCreateFormBlockErrors, SetupCreateFormBlockResponses, TestEmailSendData, TestEmailSendErrors, TestEmailSendResponses, TrashEmptyData, TrashEmptyErrors, TrashEmptyResponses, TrashListData, TrashListErrors, TrashListResponses, TreeChildrenData, TreeChildrenErrors, TreeChildrenResponses, TreeRootData, TreeRootErrors, TreeRootResponses, VersionCommentData, VersionCommentErrors, VersionCommentResponses, VersionCompareData, VersionCompareErrors, VersionCompareResponses, VersionGetData, VersionGetErrors, VersionGetResponses, VersionListData, VersionListErrors, VersionListResponses, VersionPinData, VersionPinErrors, VersionPinResponses, VersionRestoreData, VersionRestoreErrors, VersionRestoreResponses } from './types.gen';
+import type { ActionTestTestData, ActionTestTestErrors, ActionTestTestResponses, ActionTypeListData, ActionTypeListErrors, ActionTypeListResponses, EntryActionRunListData, EntryActionRunListErrors, EntryActionRunListResponses, EntryActionRunRetryData, EntryActionRunRetryErrors, EntryActionRunRetryResponses, EntryFileArchiveData, EntryFileArchiveErrors, EntryFileArchiveResponses, EntryFileDownloadData, EntryFileDownloadErrors, EntryFileDownloadResponses, EntryStateChangeData, EntryStateChangeErrors, EntryStateChangeResponses, EntryStateUndoData, EntryStateUndoErrors, EntryStateUndoResponses, FieldTypeListData, FieldTypeListErrors, FieldTypeListResponses, FolderCreateData, FolderCreateErrors, FolderCreateResponses, FolderDeleteData, FolderDeleteErrors, FolderDeleteResponses, FolderGetData, FolderGetErrors, FolderGetResponses, FolderMoveData, FolderMoveErrors, FolderMoveResponses, FolderRenameData, FolderRenameErrors, FolderRenameResponses, FolderRestoreData, FolderRestoreErrors, FolderRestoreResponses, FolderTrashData, FolderTrashErrors, FolderTrashResponses, FormCreateData, FormCreateErrors, FormCreateResponses, FormDeleteData, FormDeleteErrors, FormDeleteResponses, FormDraftData, FormDraftErrors, FormDraftResponses, FormGetData, FormGetErrors, FormGetResponses, FormMoveData, FormMoveErrors, FormMoveResponses, FormPublishData, FormPublishErrors, FormPublishResponses, FormReferenceListData, FormReferenceListErrors, FormReferenceListResponses, FormRenameData, FormRenameErrors, FormRenameResponses, FormRestoreData, FormRestoreErrors, FormRestoreResponses, FormSaveDraftData, FormSaveDraftErrors, FormSaveDraftResponses, FormSearchData, FormSearchErrors, FormSearchResponses, FormTrashData, FormTrashErrors, FormTrashResponses, FormUnpublishData, FormUnpublishErrors, FormUnpublishResponses, MePermissionsData, MePermissionsErrors, MePermissionsResponses, PickerChildrenData, PickerChildrenErrors, PickerChildrenResponses, PickerFoldersData, PickerFoldersErrors, PickerFoldersResponses, PickerFormsData, PickerFormsErrors, PickerFormsResponses, PickerSearchData, PickerSearchErrors, PickerSearchResponses, PickerThemesData, PickerThemesErrors, PickerThemesResponses, RecentEntryListData, RecentEntryListErrors, RecentEntryListResponses, SetupChecklistData, SetupChecklistErrors, SetupChecklistResponses, SetupCreateFormBlockData, SetupCreateFormBlockErrors, SetupCreateFormBlockResponses, SetupHealthData, SetupHealthErrors, SetupHealthResponses, TestEmailSendData, TestEmailSendErrors, TestEmailSendResponses, TrashEmptyData, TrashEmptyErrors, TrashEmptyResponses, TrashListData, TrashListErrors, TrashListResponses, TreeChildrenData, TreeChildrenErrors, TreeChildrenResponses, TreeRootData, TreeRootErrors, TreeRootResponses, VersionCommentData, VersionCommentErrors, VersionCommentResponses, VersionCompareData, VersionCompareErrors, VersionCompareResponses, VersionGetData, VersionGetErrors, VersionGetResponses, VersionListData, VersionListErrors, VersionListResponses, VersionPinData, VersionPinErrors, VersionPinResponses, VersionRestoreData, VersionRestoreErrors, VersionRestoreResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -43,6 +43,12 @@ export const testEmailSend = <ThrowOnError extends boolean = false>(options?: Op
         'Content-Type': 'application/json',
         ...options?.headers
     }
+});
+
+export const recentEntryList = <ThrowOnError extends boolean = false>(options?: Options<RecentEntryListData, ThrowOnError>): RequestResult<RecentEntryListResponses, RecentEntryListErrors, ThrowOnError> => (options?.client ?? client).get<RecentEntryListResponses, RecentEntryListErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/jfb/management/api/v1/entry/recent',
+    ...options
 });
 
 export const entryActionRunList = <ThrowOnError extends boolean = false>(options: Options<EntryActionRunListData, ThrowOnError>): RequestResult<EntryActionRunListResponses, EntryActionRunListErrors, ThrowOnError> => (options.client ?? client).get<EntryActionRunListResponses, EntryActionRunListErrors, ThrowOnError>({
@@ -297,9 +303,27 @@ export const pickerThemes = <ThrowOnError extends boolean = false>(options?: Opt
     ...options
 });
 
+export const mePermissions = <ThrowOnError extends boolean = false>(options?: Options<MePermissionsData, ThrowOnError>): RequestResult<MePermissionsResponses, MePermissionsErrors, ThrowOnError> => (options?.client ?? client).get<MePermissionsResponses, MePermissionsErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/jfb/management/api/v1/me',
+    ...options
+});
+
+export const setupChecklist = <ThrowOnError extends boolean = false>(options?: Options<SetupChecklistData, ThrowOnError>): RequestResult<SetupChecklistResponses, SetupChecklistErrors, ThrowOnError> => (options?.client ?? client).get<SetupChecklistResponses, SetupChecklistErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/jfb/management/api/v1/setup/checklist',
+    ...options
+});
+
 export const setupCreateFormBlock = <ThrowOnError extends boolean = false>(options?: Options<SetupCreateFormBlockData, ThrowOnError>): RequestResult<SetupCreateFormBlockResponses, SetupCreateFormBlockErrors, ThrowOnError> => (options?.client ?? client).post<SetupCreateFormBlockResponses, SetupCreateFormBlockErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/umbraco/jfb/management/api/v1/setup/form-block',
+    ...options
+});
+
+export const setupHealth = <ThrowOnError extends boolean = false>(options?: Options<SetupHealthData, ThrowOnError>): RequestResult<SetupHealthResponses, SetupHealthErrors, ThrowOnError> => (options?.client ?? client).get<SetupHealthResponses, SetupHealthErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/jfb/management/api/v1/setup/health',
     ...options
 });
 

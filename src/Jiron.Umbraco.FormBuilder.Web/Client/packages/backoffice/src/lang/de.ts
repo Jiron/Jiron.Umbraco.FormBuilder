@@ -3,5 +3,6 @@ import type { UmbLocalizationDictionary } from '@umbraco-cms/backoffice/localiza
 import fieldTypes from './field-types.de';
 import formPicker from './form-picker.de';
 import picker from './picker.de';
+import section from './section.de';
 
-export default { ...fieldTypes, ...picker, ...formPicker } satisfies UmbLocalizationDictionary;
+export default { ...fieldTypes, ...picker, ...formPicker, ...section } satisfies UmbLocalizationDictionary;

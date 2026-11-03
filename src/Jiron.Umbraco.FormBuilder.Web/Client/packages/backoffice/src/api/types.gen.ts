@@ -48,6 +48,18 @@ export type ActionTypesResponseModel = {
     types: Array<ActionTypeResponseModel>;
 };
 
+export type ChecklistItemResponseModel = {
+    step: string;
+    done: boolean;
+    canDo: boolean;
+};
+
+export type ChecklistResponseModel = {
+    items: Array<ChecklistItemResponseModel>;
+    complete: boolean;
+    previewForm?: string | null;
+};
+
 export type CommentVersionRequestModel = {
     comment?: string | null;
 };
@@ -311,6 +323,17 @@ export type FormVersionResponseModel = {
     isLive: boolean;
 };
 
+export type HealthFindingResponseModel = {
+    code: string;
+    message: string;
+    link?: string | null;
+    coversEmail: boolean;
+};
+
+export type HealthResponseModel = {
+    findings: Array<HealthFindingResponseModel>;
+};
+
 export type LibraryChangeResponseModel = {
     folders: Array<string>;
     forms: Array<string>;
@@ -345,6 +368,11 @@ export type MoveFormRequestModel = {
     concurrencyVersion: number;
     folderKey?: string | null;
     widenAccess: boolean;
+};
+
+export type MyPermissionsResponseModel = {
+    global: Array<string>;
+    anywhere: Array<string>;
 };
 
 export type PagedFormVersionEntryResponseModel = {
@@ -391,6 +419,20 @@ export type ProblemDetails = {
 export type PublishFormRequestModel = {
     concurrencyVersion: number;
     comment?: string | null;
+};
+
+export type RecentEntriesResponseModel = {
+    items: Array<RecentEntryResponseModel>;
+};
+
+export type RecentEntryResponseModel = {
+    key: string;
+    formKey: string;
+    formName: string;
+    title?: string | null;
+    number: number;
+    submitted: string;
+    unseen: boolean;
 };
 
 export type RenameFolderRequestModel = {
@@ -549,6 +591,33 @@ export type TestEmailSendResponses = {
 };
 
 export type TestEmailSendResponse = TestEmailSendResponses[keyof TestEmailSendResponses];
+
+export type RecentEntryListData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/entry/recent';
+};
+
+export type RecentEntryListErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+};
+
+export type RecentEntryListResponses = {
+    /**
+     * OK
+     */
+    200: RecentEntriesResponseModel;
+};
+
+export type RecentEntryListResponse = RecentEntryListResponses[keyof RecentEntryListResponses];
 
 export type EntryActionRunListData = {
     body?: never;
@@ -1792,6 +1861,60 @@ export type PickerThemesResponses = {
 
 export type PickerThemesResponse = PickerThemesResponses[keyof PickerThemesResponses];
 
+export type MePermissionsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/me';
+};
+
+export type MePermissionsErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+};
+
+export type MePermissionsResponses = {
+    /**
+     * OK
+     */
+    200: MyPermissionsResponseModel;
+};
+
+export type MePermissionsResponse = MePermissionsResponses[keyof MePermissionsResponses];
+
+export type SetupChecklistData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/setup/checklist';
+};
+
+export type SetupChecklistErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+};
+
+export type SetupChecklistResponses = {
+    /**
+     * OK
+     */
+    200: ChecklistResponseModel;
+};
+
+export type SetupChecklistResponse = SetupChecklistResponses[keyof SetupChecklistResponses];
+
 export type SetupCreateFormBlockData = {
     body?: never;
     path?: never;
@@ -1818,6 +1941,33 @@ export type SetupCreateFormBlockResponses = {
 };
 
 export type SetupCreateFormBlockResponse = SetupCreateFormBlockResponses[keyof SetupCreateFormBlockResponses];
+
+export type SetupHealthData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/setup/health';
+};
+
+export type SetupHealthErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+};
+
+export type SetupHealthResponses = {
+    /**
+     * OK
+     */
+    200: HealthResponseModel;
+};
+
+export type SetupHealthResponse = SetupHealthResponses[keyof SetupHealthResponses];
 
 export type TrashEmptyData = {
     body?: never;
