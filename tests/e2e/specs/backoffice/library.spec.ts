@@ -149,7 +149,7 @@ test("the Overview's Choose a template\u2026 opens the gallery, whose template b
 
   const gallery = page.locator('jfb-template-gallery-modal');
   await expect(gallery.getByRole('radio', { name: /^Contact/ })).toHaveAttribute('aria-checked', 'true');
-  await expect(gallery.locator('jfb-template-preview .label')).toHaveText(['Name', 'Email address', 'Message']);
+  await expect(gallery.locator('jfb-form-preview .jfb-label')).toHaveText(['Name', 'Email address', 'Message']);
   await gallery.getByRole('button', { name: 'Use template' }).click();
   await expect(page).toHaveURL(/section\/jfb-forms\/workspace\/jfb-form\/edit\/[0-9a-f-]{36}$/);
 });
@@ -183,7 +183,7 @@ test('axe finds nothing in a folder, an empty folder, the gallery or the import 
 
   await page.locator('jfb-folder-list').getByRole('button', { name: 'Choose a template\u2026' }).click();
   const gallery = page.locator('jfb-template-gallery-modal');
-  await expect(gallery.locator('jfb-template-preview')).toBeVisible();
+  await expect(gallery.locator('jfb-form-preview')).toBeVisible();
   await axeInside(page, 'jfb-template-gallery-modal');
   await gallery.getByRole('button', { name: 'Cancel' }).click();
 
