@@ -97,6 +97,44 @@ public sealed class EntryEventTests : ActionTestBase
         });
     }
 
+    [TestCase("Approved", "jfbEntryApproved")]
+    [TestCase("Rejected", "jfbEntryRejected")]
+    public async Task AStateChange_ReachesAWebhookOnItsEvent(string state, string alias)
+    {
+        await GetRequiredService<IWebhookService>().CreateAsync(new Webhook("https://hooks.jfb.test/entries", true, null, [alias]));
+        var form = await PublishAsync(
+            name: Guid.NewGuid().ToString("N"),
+            change: definition => definition with { Settings = definition.Settings with { Submission = definition.Settings.Submission with { Approval = ApprovalMode.Manual } } });
+        var entry = await SubmitAsync(form, """{"name":"Ada Lovelace"}""");
+
+        await GetRequiredService<EntryStateChanges>().ChangeAsync(form, [entry.Key], Enum.Parse<EntryState>(state), null);
+
+        var request = (await GetRequiredService<IWebhookRequestService>().GetAllAsync()).Single();
+        Assert.Multiple(() =>
+        {
+            Assert.That(request.EventAlias, Is.EqualTo(alias));
+            Assert.That(request.RequestObject, Does.Contain(entry.Key.ToString("D")).And.Contain(state.ToLowerInvariant()));
+            Assert.That(request.RequestObject, Does.Not.Contain("Ada"));
+        });
+    }
+
+    [Test]
+    public async Task AnActionThatFailsForGood_ReachesAWebhookOnItsEvent_WithItsTypeAndCode()
+    {
+        await GetRequiredService<IWebhookService>().CreateAsync(new Webhook("https://hooks.jfb.test/entries", true, null, ["jfbActionFailed"]));
+        Scripted.Scripts["never"] = (_, _) => Task.FromResult(ActionResult.Failed("refused"));
+        var entry = await SubmitAsync(await FormAsync(Failing("never")), """{"name":"Ada Lovelace"}""");
+
+        await DrainAsync(entry.Id);
+
+        var request = (await GetRequiredService<IWebhookRequestService>().GetAllAsync()).Single();
+        Assert.Multiple(() =>
+        {
+            Assert.That(request.EventAlias, Is.EqualTo("jfbActionFailed"));
+            Assert.That(request.RequestObject, Does.Contain("refused").And.Not.Contain("Ada"));
+        });
+    }
+
     [Test]
     public async Task WithTheSettingOff_NoWebhookFires_AndASitesHandlerStillHears()
     {

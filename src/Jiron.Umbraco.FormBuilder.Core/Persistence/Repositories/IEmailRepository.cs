@@ -23,6 +23,9 @@ internal enum EmailKind
 
     /// <summary>An entry forwarded by a user.</summary>
     Forward,
+
+    /// <summary>A notice to the team of a delivery that failed for good.</summary>
+    Notice,
 }
 
 /// <summary>Where a mail is (ADR-0007).</summary>

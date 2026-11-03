@@ -85,6 +85,7 @@ internal sealed partial class EmailAttempts(
     IFormBuilderFileStore files,
     IEnumerable<IFormBuilderFileScanner> scanners,
     ActionSettlement settlement,
+    DeliveryNotices notices,
     IOptionsMonitor<FormBuilderOptions> options,
     TimeProvider time,
     ILogger<EmailAttempts> logger)
@@ -249,6 +250,7 @@ internal sealed partial class EmailAttempts(
             else if (mail.Attempts >= ActionAttempts.MaxAttempts)
             {
                 await emails.FailAsync(mail.Id, token, new DeliveryError(ActionAttempts.Threw, outcome.Code), EmailOutbox.Keep, CancellationToken.None);
+                await notices.TellOfMailAsync(mail with { LastError = new DeliveryError(ActionAttempts.Threw, outcome.Code) });
                 settle = true;
             }
             else

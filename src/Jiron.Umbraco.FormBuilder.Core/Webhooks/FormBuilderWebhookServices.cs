@@ -1,6 +1,7 @@
 using Jiron.Umbraco.FormBuilder.Core.Actions;
 using Jiron.Umbraco.FormBuilder.Core.Composing;
 using Jiron.Umbraco.FormBuilder.Core.Configuration;
+using Jiron.Umbraco.FormBuilder.Core.Email;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Core.Settings;
@@ -202,8 +203,9 @@ internal sealed partial class EntryEvents(IEventAggregator events, IFormBuilderS
 
 /// <summary>Tells of an action that failed for good.</summary>
 /// <param name="entryEvents">Publishes it.</param>
+/// <param name="notices">Tells the team recipients.</param>
 /// <param name="time">The clock.</param>
-internal sealed class ActionFailedEventHandler(EntryEvents entryEvents, TimeProvider time) : INotificationAsyncHandler<ActionRunFailedNotification>
+internal sealed class ActionFailedEventHandler(EntryEvents entryEvents, DeliveryNotices notices, TimeProvider time) : INotificationAsyncHandler<ActionRunFailedNotification>
 {
     /// <inheritdoc />
     public async Task HandleAsync(ActionRunFailedNotification notification, CancellationToken cancellationToken)
@@ -226,6 +228,7 @@ internal sealed class ActionFailedEventHandler(EntryEvents entryEvents, TimeProv
                 Code = notification.Code,
                 FiresWebhooks = on,
             });
+        await notices.TellOfActionAsync(notification.Context, notification.Type, notification.Code);
     }
 }
 
