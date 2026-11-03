@@ -2602,7 +2602,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
   - **Trash:** trash, restore, empty trash. The confirmations of trash and of delete name the pages that use the form, from `referenced-by` (6.7c, added in 6.8i by the Phase 6 wiring sweep).
   - **Search:** forms by name and alias, and fields across all forms by label or alias (from the field catalogue, §4.5).
   - Done when: the Overview's Choose a template… opens the gallery (it opens the Templates item until then, ADR-0165), Playwright journeys for each action pass, including finding a form by one of its field labels, a form used on a page named by both confirmations, the Duplicate dialog of a restricted form saying what the copy's access will be, and an import whose notes are shown, and the client stores have unit tests.
-- [ ] **9.3a The designer: workspace and editor model**
+- [x] **9.3a The designer: workspace and editor model** (2026-11-03, 2a8fc56)
   - **The workspace:** the form workspace with the views Design, Settings, Actions, Entries, Insights and History (views without content yet show a short "coming with …" empty state, replaced by their steps). The name and status are in the header; Save draft and Publish in the footer.
   - **The editor model** is pure TypeScript with unit tests (the Ligata.Forms lesson, §3.1):
     - selection;
