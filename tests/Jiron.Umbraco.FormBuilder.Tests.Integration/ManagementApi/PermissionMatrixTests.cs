@@ -80,6 +80,7 @@ public sealed class PermissionMatrixTests : ManagementApiTestBase
         ["GET option-source"] = (FormBuilderPermissions.None, FormBuilderAccessResourceKind.Global, null),
         ["GET option-list"] = (FormBuilderPermissions.None, FormBuilderAccessResourceKind.Global, null),
         ["POST form/{key}/options"] = (FormBuilderPermissions.Design, FormBuilderAccessResourceKind.Form, "key"),
+        ["POST form/{key}/merge-tag-paths"] = (FormBuilderPermissions.Design, FormBuilderAccessResourceKind.Form, "key"),
         ["POST form/{key}/action/{actionKey}/test"] = (FormBuilderPermissions.ManageActions, FormBuilderAccessResourceKind.Form, "key"),
         ["POST form/{key}/entry-state"] = (FormBuilderPermissions.EditEntries, FormBuilderAccessResourceKind.Form, "key"),
         ["POST form/{key}/entry-state/undo"] = (FormBuilderPermissions.EditEntries, FormBuilderAccessResourceKind.Form, "key"),

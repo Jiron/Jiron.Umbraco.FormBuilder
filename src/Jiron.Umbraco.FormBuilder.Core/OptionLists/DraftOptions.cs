@@ -1,7 +1,6 @@
 using System.Collections.Frozen;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
-using System.Text.RegularExpressions;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Definitions.Serialization;
 
@@ -14,7 +13,7 @@ namespace Jiron.Umbraco.FormBuilder.Core.OptionLists;
 /// check first: one that fails them, half typed in the inspector, is unavailable without a source being asked or a
 /// failure logged.
 /// </summary>
-internal sealed partial class DraftOptions(IFormBuilderOptionService service, OptionKindRegistry kinds)
+internal sealed class DraftOptions(IFormBuilderOptionService service, OptionKindRegistry kinds)
 {
     // The model's own metadata, which the context keeps: strict, as a definition is read.
     private static JsonTypeInfo<FieldOptions> Info => (JsonTypeInfo<FieldOptions>)DefinitionJsonContext.Default.GetTypeInfo(typeof(FieldOptions))!;
@@ -56,13 +55,9 @@ internal sealed partial class DraftOptions(IFormBuilderOptionService service, Op
             }
         }
 
-        // A culture is a name such as de-CH; anything else asks for the default language's texts.
-        var asked = CultureName().IsMatch(culture) ? culture : string.Empty;
+        var asked = AskedCulture.Of(culture);
         return await service.GetAsync(new FormField { Key = field, Type = type, Options = shown }, new FormBuilderOptionContext(asked), cancellationToken);
     }
-
-    [GeneratedRegex("^[A-Za-z]{2,8}(-[A-Za-z0-9]{1,8}){0,3}$", RegexOptions.CultureInvariant)]
-    private static partial Regex CultureName();
 
     private OptionKind? KindOf(OptionSource source) => source switch
     {

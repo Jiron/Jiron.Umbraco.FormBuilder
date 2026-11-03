@@ -477,6 +477,23 @@ export type LibraryRowResponseModel = {
     recentEntries?: number | null;
 };
 
+export type MergeTagPathResponseModel = {
+    path: string;
+    source: string;
+    isSiteSource: boolean;
+    label?: string | null;
+};
+
+export type MergeTagPathsRequestModel = {
+    place: string;
+    culture: string;
+    definition: unknown;
+};
+
+export type MergeTagPathsResponseModel = {
+    paths: Array<MergeTagPathResponseModel>;
+};
+
 export type MoveFolderRequestModel = {
     parentKey?: string | null;
     widenAccess: boolean;
@@ -2294,6 +2311,45 @@ export type LibraryListTrashResponses = {
 };
 
 export type LibraryListTrashResponse = LibraryListTrashResponses[keyof LibraryListTrashResponses];
+
+export type MergeTagPathListData = {
+    body?: MergeTagPathsRequestModel;
+    path: {
+        key: string;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/form/{key}/merge-tag-paths';
+};
+
+export type MergeTagPathListErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type MergeTagPathListError = MergeTagPathListErrors[keyof MergeTagPathListErrors];
+
+export type MergeTagPathListResponses = {
+    /**
+     * OK
+     */
+    200: MergeTagPathsResponseModel;
+};
+
+export type MergeTagPathListResponse = MergeTagPathListResponses[keyof MergeTagPathListResponses];
 
 export type DraftOptionsResolveData = {
     body?: DraftOptionsRequestModel;

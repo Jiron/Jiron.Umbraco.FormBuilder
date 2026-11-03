@@ -1,0 +1,114 @@
+{
+  "visitorText": [
+    {
+      "path": "field.name",
+      "source": "field",
+      "isSiteSource": false,
+      "label": "Your name"
+    },
+    {
+      "path": "field.email",
+      "source": "field",
+      "isSiteSource": false,
+      "label": "Email address"
+    },
+    {
+      "path": "field.guests",
+      "source": "field",
+      "isSiteSource": false,
+      "label": "Guests"
+    },
+    {
+      "path": "field.guests.guestName",
+      "source": "field",
+      "isSiteSource": false,
+      "label": "Guest name"
+    },
+    {
+      "path": "form.name",
+      "source": "form",
+      "isSiteSource": false,
+      "label": null
+    },
+    {
+      "path": "form.alias",
+      "source": "form",
+      "isSiteSource": false,
+      "label": null
+    },
+    {
+      "path": "page.name",
+      "source": "page",
+      "isSiteSource": false,
+      "label": null
+    },
+    {
+      "path": "page.url",
+      "source": "page",
+      "isSiteSource": false,
+      "label": null
+    },
+    {
+      "path": "site.name",
+      "source": "site",
+      "isSiteSource": false,
+      "label": null
+    },
+    {
+      "path": "site.url",
+      "source": "site",
+      "isSiteSource": false,
+      "label": null
+    },
+    {
+      "path": "date.now",
+      "source": "date",
+      "isSiteSource": false,
+      "label": null
+    },
+    {
+      "path": "greeting.text",
+      "source": "greeting",
+      "isSiteSource": true,
+      "label": "Greeting"
+    }
+  ],
+  "consentText": [
+    {
+      "path": "form.name",
+      "source": "form",
+      "isSiteSource": false,
+      "label": null
+    },
+    {
+      "path": "form.alias",
+      "source": "form",
+      "isSiteSource": false,
+      "label": null
+    },
+    {
+      "path": "page.name",
+      "source": "page",
+      "isSiteSource": false,
+      "label": null
+    },
+    {
+      "path": "page.url",
+      "source": "page",
+      "isSiteSource": false,
+      "label": null
+    },
+    {
+      "path": "site.name",
+      "source": "site",
+      "isSiteSource": false,
+      "label": null
+    },
+    {
+      "path": "site.url",
+      "source": "site",
+      "isSiteSource": false,
+      "label": null
+    }
+  ]
+}

@@ -28,7 +28,8 @@ internal static class FormBuilderMergeTagServices
     }
 
     /// <summary>
-    /// Registers the service over the collections of the site's own sources and filters, and the start-up check of both.
+    /// Registers the service over the collections of the site's own sources and filters, the start-up check of both, and the
+    /// paths the inspector's tag picker offers (ADR-0173).
     /// The Umbraco sources read Umbraco's content, members, languages, dictionary and domains, which the site registers.
     /// </summary>
     public static IServiceCollection AddMergeTagService(this IServiceCollection services)
@@ -52,6 +53,7 @@ internal static class FormBuilderMergeTagServices
                 provider.GetRequiredService<MergeTagDictionary>()),
             provider.GetRequiredService<SiteMergeTagExtensions>()));
         services.TryAddSingleton<IFormBuilderMergeTagService, FormBuilderMergeTagService>();
+        services.TryAddSingleton<DraftMergeTagPaths>();
         services.TryAddEnumerable(ServiceDescriptor.Singleton<IValidateOptions<FormBuilderStartupChecks>, MergeTagStartupCheck>());
         return services;
     }
