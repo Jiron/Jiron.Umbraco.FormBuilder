@@ -26,6 +26,19 @@
                 }
             }
         </template>
+        @if (Model.Resume is { } resume)
+        {
+            <template data-jfb-resume data-jfb-sent="@resume.SentText" data-jfb-saving="@resume.SavingText" data-jfb-invalid="@resume.InvalidText" data-jfb-failed="@resume.FailedText" data-jfb-expired="@resume.ExpiredText" data-jfb-restored="@resume.RestoredText">
+                <button type="button" class="@Model.Classes.ButtonLink" data-jfb-save-open>@resume.OpenLabel</button>
+                <div class="jfb-save" data-jfb-save hidden>
+                    <label class="@Model.Classes.Label" for="@(Model.Id)-save">@resume.EmailLabel</label>
+                    <input class="@Model.Classes.Control" type="email" id="@(Model.Id)-save" autocomplete="email" spellcheck="false" required>
+                    <button type="button" class="@Model.Classes.Button" data-jfb-save-send>@resume.SendLabel</button>
+                    <button type="button" class="@Model.Classes.ButtonLink" data-jfb-save-close>@resume.CloseLabel</button>
+                    <p class="@Model.Classes.Help" role="status"></p>
+                </div>
+            </template>
+        }
         @if (Model.DefaultButton is { } first)
         {
             <button type="submit" class="jfb-visually-hidden" name="jfb-nav" value="@first.Value" tabindex="-1" aria-hidden="true">@first.Label</button>

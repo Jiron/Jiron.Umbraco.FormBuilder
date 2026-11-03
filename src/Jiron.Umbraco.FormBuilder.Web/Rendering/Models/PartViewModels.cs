@@ -231,6 +231,40 @@ public sealed class FormSendingModel
     public required OutcomeViewModel Outcome { get; init; }
 }
 
+/// <summary>What a form that can be saved for later shows and says (ADR-0163).</summary>
+public sealed class FormResumeModel
+{
+    /// <summary>The control's words.</summary>
+    public required string OpenLabel { get; init; }
+
+    /// <summary>The label of the address.</summary>
+    public required string EmailLabel { get; init; }
+
+    /// <summary>The button that sends the link.</summary>
+    public required string SendLabel { get; init; }
+
+    /// <summary>The button that goes back to the form.</summary>
+    public required string CloseLabel { get; init; }
+
+    /// <summary>While it saves.</summary>
+    public required string SavingText { get; init; }
+
+    /// <summary>Once it is saved, with the days the link works.</summary>
+    public required string SentText { get; init; }
+
+    /// <summary>When the address will not do.</summary>
+    public required string InvalidText { get; init; }
+
+    /// <summary>When it could not be saved.</summary>
+    public required string FailedText { get; init; }
+
+    /// <summary>When a link is too old, or was used.</summary>
+    public required string ExpiredText { get; init; }
+
+    /// <summary>When the answers are back.</summary>
+    public required string RestoredText { get; init; }
+}
+
 /// <summary>
 /// The copy of the answers below an outcome (ADR-0123): the entry's answers, shown once, as the summary page writes them
 /// without "Change", or on a later view a line in their place; then the print button and the link to the form again.

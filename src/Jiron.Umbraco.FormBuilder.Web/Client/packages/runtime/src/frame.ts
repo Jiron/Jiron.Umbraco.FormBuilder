@@ -52,6 +52,16 @@ export interface Frame {
   get(form: Element): JironFormBuilderForm | null;
 }
 
+/** Whether the address or this tab names a saved form to take up (ADR-0163). */
+function comesBack(form: HTMLFormElement): boolean {
+  if (form.ownerDocument.location.hash.includes('jfb-resume=')) return true;
+  try {
+    return sessionStorage.getItem(`jfb-resume:${form.dataset['jfbForm'] ?? ''}`) !== null;
+  } catch {
+    return false;
+  }
+}
+
 /** A frame that loads its chunk through `load`, once for every form of the page. */
 export function createFrame(load: () => Promise<Chunk>): Frame {
   const enhanced = new WeakSet<Element>();
@@ -88,7 +98,12 @@ export function createFrame(load: () => Promise<Chunk>): Frame {
     };
     wakes.set(form, touched);
     for (const type of TOUCHES) form.addEventListener(type, touched);
-    if (form.querySelector('[data-jfb-default]') !== null || form.hasAttribute('data-jfb-asks')) touched();
+    if (
+      form.querySelector('[data-jfb-default]') !== null ||
+      form.hasAttribute('data-jfb-asks') ||
+      (model.form.settings?.resume === true && comesBack(form))
+    )
+      touched();
     form.dispatchEvent(
       new CustomEvent<ReadyDetail>('jfb:ready', {
         bubbles: true,

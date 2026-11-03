@@ -187,6 +187,22 @@
   }
 }
 
+/* Save and continue later: below the buttons, one thing to a line. */
+.jfb-form .jfb-save {
+  display: grid;
+  justify-items: start;
+  gap: 0.5rem;
+  margin-block-start: 0.75rem;
+}
+
+.jfb-form .jfb-save[hidden] {
+  display: none;
+}
+
+.jfb-form .jfb-save input {
+  max-inline-size: 100%;
+}
+
 /* What takes the focus after a send stands clear of the edge of the screen it scrolls to. */
 .jfb-form :is(.jfb-outcome, .jfb-notice, .jfb-error-summary) {
   scroll-margin-block: 1rem;

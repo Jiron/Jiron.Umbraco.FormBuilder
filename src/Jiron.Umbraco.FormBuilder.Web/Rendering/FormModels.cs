@@ -401,8 +401,24 @@ internal sealed partial class FormModels(
             postValues: PostValues(root, current, post, render.Redirect),
             contentKey: render.Content,
             placement: render.Redirect is { } placement ? placements.Issue(root.Key, placement) : null,
-            sending: Sending(root, words, shown.Pages.Count > 1 ? Moves(settings, words, root.Classes) : null));
+            sending: Sending(root, words, shown.Pages.Count > 1 ? Moves(settings, words, root.Classes) : null),
+            resume: settings.Submission.Resume is { } resume ? Resume(words, resume.Days, render.Content is not null) : null);
     }
+
+    // What a form that can be saved for later shows (ADR-0163); one with no page to come back to has nowhere for a link to go.
+    private static FormResumeModel? Resume(RenderingWords words, int days, bool hasPage) => !hasPage ? null : new()
+    {
+        OpenLabel = words.SaveLater,
+        EmailLabel = words.SaveEmail,
+        SendLabel = words.SaveSend,
+        CloseLabel = words.SaveClose,
+        SavingText = words.Saving,
+        SentText = string.Format(CultureInfo.InvariantCulture, words.SaveSent, days),
+        InvalidText = words.SaveInvalid,
+        FailedText = words.SaveFailed,
+        ExpiredText = words.ResumeExpired,
+        RestoredText = words.ResumeRestored,
+    };
 
     // The visitor texts that hold tags, each rendered as the server renders it in its place for the answers the page
     // holds (ADR-0068, ADR-0095), by its owner and name.
@@ -1028,6 +1044,7 @@ internal sealed partial class FormModels(
             Guid? contentKey = null,
             string? placement = null,
             FormSendingModel? sending = null,
+            FormResumeModel? resume = null,
             bool asksAtOnce = false) => new()
             {
                 Key = Key,
@@ -1063,6 +1080,7 @@ internal sealed partial class FormModels(
                 ContentKey = contentKey,
                 Placement = placement,
                 Sending = sending,
+                Resume = resume,
                 AsksAtOnce = asksAtOnce,
             };
     }

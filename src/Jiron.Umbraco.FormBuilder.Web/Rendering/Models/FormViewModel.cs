@@ -101,6 +101,12 @@ public sealed class FormViewModel
     public FormSendingModel? Sending { get; init; }
 
     /// <summary>
+    /// What the runtime offers on a form that can be saved for later (ADR-0163): its control and what it says. A form without it, or a
+    /// view that leaves it out, offers none.
+    /// </summary>
+    public FormResumeModel? Resume { get; init; }
+
+    /// <summary>
     /// A copy of the current page's Next or Send button at the form's start, hidden from sight and from screen readers,
     /// for a form with submit buttons before its navigation (a ranking's moves), so Enter in a field means Next or Send
     /// (ADR-0096); null for any other form.

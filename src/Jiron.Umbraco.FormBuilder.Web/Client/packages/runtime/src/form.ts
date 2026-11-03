@@ -175,7 +175,9 @@ async function wake(
       })
       .catch(() => undefined);
   }
+  let draft: string | null = null;
   const deliver = senderOf(form, model, {
+    draft: () => draft,
     ...(carried === undefined ? {} : { id: carried.id, challenge: carried.challenge }),
     ...(files === undefined ? {} : { files }),
     ...(challenges === undefined ? {} : { challenges }),
@@ -190,6 +192,20 @@ async function wake(
     check !== undefined && form.querySelectorAll('[data-jfb-page]').length > 1 && movesPages(form)
       ? await import('./pages-chunk').then((module) => module.enhancePages(form, model, check)).catch(() => undefined)
       : undefined;
+  if (model.form.settings?.resume === true && api !== undefined && challenges !== undefined)
+    await import('./resume-chunk')
+      .then((module) =>
+        module.enhanceResume(form, model, {
+          api,
+          challenges,
+          captcha: () => captcha,
+          held: (token) => {
+            draft = token;
+          },
+          ...(pages === undefined ? {} : { reveal: pages.reveal }),
+        }),
+      )
+      .catch(() => undefined);
   const errors = pageErrorsOf(form, model, engine, Date.now, deliver, pages);
   const press = (nav: string): boolean => {
     const button = form.querySelector<HTMLButtonElement>(`button[data-jfb-nav="${nav}"]`);

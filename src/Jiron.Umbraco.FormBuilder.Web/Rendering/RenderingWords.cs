@@ -89,6 +89,16 @@ internal sealed record RenderingWords
             CountdownOne = "Taking you to the next page in {0} second.",
             CountdownOther = "Taking you to the next page in {0} seconds.",
             Sending = "Sending your answers",
+            SaveLater = "Save and continue later",
+            SaveEmail = "Your email address",
+            SaveSend = "Email me a link",
+            SaveClose = "Keep going",
+            Saving = "Saving your answers",
+            SaveSent = "We sent you a link. It works for {0} days. Files, consents and sensitive answers are not saved.",
+            SaveInvalid = "Enter an email address",
+            SaveFailed = "Your answers could not be saved. Please try again.",
+            ResumeExpired = "This link no longer works. Your saved answers are gone.",
+            ResumeRestored = "Your saved answers are back. Check them, and add any files and consents again.",
             ConnectionText = "Check your connection, then send again. Your answers are kept.",
             ServerErrorText = "Something went wrong on our side. Send again in a moment. Your answers are kept.",
             ChangedHeading = "This form was updated while you filled it in",
@@ -199,6 +209,16 @@ internal sealed record RenderingWords
             CountdownOne = "In {0} Sekunde geht es weiter zur n" + AUmlaut + "chsten Seite.",
             CountdownOther = "In {0} Sekunden geht es weiter zur n" + AUmlaut + "chsten Seite.",
             Sending = "Ihre Antworten werden gesendet",
+            SaveLater = "Speichern und sp" + AUmlaut + "ter fortfahren",
+            SaveEmail = "Ihre E-Mail-Adresse",
+            SaveSend = "Link per E-Mail senden",
+            SaveClose = "Weiter ausf" + UUmlaut + "llen",
+            Saving = "Ihre Antworten werden gespeichert",
+            SaveSent = "Wir haben Ihnen einen Link gesendet. Er gilt {0} Tage. Dateien, Einwilligungen und vertrauliche Antworten werden nicht gespeichert.",
+            SaveInvalid = "Geben Sie eine E-Mail-Adresse ein",
+            SaveFailed = "Ihre Antworten konnten nicht gespeichert werden. Bitte versuchen Sie es erneut.",
+            ResumeExpired = "Dieser Link gilt nicht mehr. Ihre gespeicherten Antworten sind nicht mehr vorhanden.",
+            ResumeRestored = "Ihre gespeicherten Antworten sind wieder da. Pr" + UUmlaut + "fen Sie sie und f" + UUmlaut + "gen Sie Dateien und Einwilligungen erneut hinzu.",
             ConnectionText = "Pr" + UUmlaut + "fen Sie die Verbindung und senden Sie erneut. Ihre Antworten bleiben erhalten.",
             ServerErrorText = "Bei uns ist etwas schiefgegangen. Senden Sie gleich noch einmal. Ihre Antworten bleiben erhalten.",
             ChangedHeading = "Dieses Formular wurde ge" + AUmlaut + "ndert, w" + AUmlaut + "hrend Sie es ausgef" + UUmlaut + "llt haben",
@@ -452,6 +472,36 @@ internal sealed record RenderingWords
 
     /// <summary>What the live region says while a send is on its way (ADR-0022).</summary>
     public required string Sending { get; init; }
+
+    /// <summary>The control that saves a form for later (ADR-0163).</summary>
+    public required string SaveLater { get; init; }
+
+    /// <summary>The label of the address its link goes to.</summary>
+    public required string SaveEmail { get; init; }
+
+    /// <summary>The button that sends the link.</summary>
+    public required string SaveSend { get; init; }
+
+    /// <summary>The button that goes back to the form.</summary>
+    public required string SaveClose { get; init; }
+
+    /// <summary>While it saves.</summary>
+    public required string Saving { get; init; }
+
+    /// <summary>Once it is saved; <c>{0}</c> takes the days the link works.</summary>
+    public required string SaveSent { get; init; }
+
+    /// <summary>When the address will not do.</summary>
+    public required string SaveInvalid { get; init; }
+
+    /// <summary>When it could not be saved.</summary>
+    public required string SaveFailed { get; init; }
+
+    /// <summary>When a link is too old, or was used.</summary>
+    public required string ResumeExpired { get; init; }
+
+    /// <summary>When the saved answers are back.</summary>
+    public required string ResumeRestored { get; init; }
 
     /// <summary>The notice's text when a send got no answer in time, or none at all.</summary>
     public required string ConnectionText { get; init; }
