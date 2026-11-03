@@ -5,11 +5,13 @@ import fieldTypes from './field-types.de';
 import formPicker from './form-picker.de';
 import inspector from './inspector.de';
 import library from './library.de';
+import options from './options.de';
 import picker from './picker.de';
 import section from './section.de';
 
 export default {
   ...fieldTypes,
+  ...options,
   ...picker,
   ...formPicker,
   ...section,

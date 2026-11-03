@@ -7,11 +7,13 @@ import fieldTypes from './field-types.en';
 import formPicker from './form-picker.en';
 import inspector from './inspector.en';
 import library from './library.en';
+import options from './options.en';
 import picker from './picker.en';
 import section from './section.en';
 
 export default {
   ...fieldTypes,
+  ...options,
   ...picker,
   ...formPicker,
   ...section,

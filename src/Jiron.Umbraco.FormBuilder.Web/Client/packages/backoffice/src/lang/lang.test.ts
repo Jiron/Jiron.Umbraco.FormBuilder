@@ -1,6 +1,7 @@
 // The backoffice's dictionaries (ADR-0057): English and German hold the same keys, each a text that is not blank (or
 // a function of the values that gives one); they hold every `#` key the management API serves for the built-in field
-// types, as docs/api/field-types.json (the snapshot an integration test holds the endpoint to) has them; they hold
+// types, action types and option sources, as docs/api/field-types.json, action-types.json and option-sources.json (the
+// snapshots integration tests hold the endpoints to) have them (ADR-0172); they hold
 // every `#jfbPicker_` key the form picker's checks send (ADR-0129), and its area no other; the form picker's screens
 // (ADR-0134, ADR-0135) hold the keys their elements and manifests use, and no other; and the field types' areas hold no
 // key nothing uses.
@@ -42,6 +43,10 @@ function keysIn(value: unknown, found = new Set<string>()): Set<string> {
 
 const served = keysIn(JSON.parse(readFileSync(join(repositoryRoot(), 'docs', 'api', 'field-types.json'), 'utf8')));
 keysIn(JSON.parse(readFileSync(join(repositoryRoot(), 'docs', 'api', 'action-types.json'), 'utf8')), served);
+const optionKeys = keysIn(
+  JSON.parse(readFileSync(join(repositoryRoot(), 'docs', 'api', 'option-sources.json'), 'utf8')),
+);
+optionKeys.forEach((key) => served.add(key));
 
 /** The `#jfbPicker_` keys the form picker's checks send, read from their source. */
 const pickerKeys = new Set(
@@ -78,6 +83,9 @@ const fieldTypeAreas = [
   'jfbFieldSettings',
   'jfbFieldChoices',
   'jfbFieldTypeAvailability',
+  'jfbOptionListSettings',
+  'jfbOptionListChoices',
+  'jfbOptionSources',
 ];
 
 /** Keys the server sends that the built-in types' snapshot cannot show: FieldTypeAvailabilityService.CheckFailed. */
@@ -99,6 +107,12 @@ describe('the dictionaries', () => {
   it('hold every key the built-in field types are served with', () => {
     expect(served.size).toBeGreaterThan(150);
     expect([...served].filter((key) => !termsOf(en).includes(key))).toEqual([]);
+  });
+
+  it('hold every key the option sources are served with, in English and German alike (ADR-0172)', () => {
+    expect(optionKeys.size).toBeGreaterThanOrEqual(30);
+    for (const dictionary of [en, de])
+      expect([...optionKeys].filter((key) => !termsOf(dictionary).includes(key))).toEqual([]);
   });
 
   it("hold every key the form picker's checks send, and no other in its area", () => {
