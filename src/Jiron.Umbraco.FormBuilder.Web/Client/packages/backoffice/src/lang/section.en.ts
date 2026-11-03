@@ -6,12 +6,6 @@ export default {
     overview: 'Overview',
     noForms: "You can't see any forms yet. An administrator can give your user group access in Settings › Access.",
     comingScreen: 'This screen is still being built.',
-    trash: 'Trash',
-    trashHeadline: (name: string) => `Move ${name} to the Recycle Bin?`,
-    trashText: (name: string) => `${name} stops showing on the website until you restore it.`,
-    trashConfirm: 'Move to Recycle Bin',
-    trashNotAllowed: (name: string) =>
-      `You may not change ${name}. An administrator can give your user group access in Settings › Access.`,
     entries: 'Entries',
     inbox: 'Inbox',
     spam: 'Spam',

@@ -7,12 +7,6 @@ export default {
     noForms:
       'Sie sehen noch keine Formulare. Wer Administratorrechte hat, kann Ihrer Benutzergruppe unter Einstellungen › Zugriff Zugang geben.',
     comingScreen: 'Diese Seite wird noch gebaut.',
-    trash: 'In den Papierkorb',
-    trashHeadline: (name: string) => `${name} in den Papierkorb verschieben?`,
-    trashText: (name: string) => `${name} erscheint nicht mehr auf der Website, bis Sie es wiederherstellen.`,
-    trashConfirm: 'In den Papierkorb',
-    trashNotAllowed: (name: string) =>
-      `Sie dürfen ${name} nicht ändern. Wer Administratorrechte hat, kann Ihrer Benutzergruppe unter Einstellungen › Zugriff Zugang geben.`,
     entries: 'Einträge',
     inbox: 'Posteingang',
     spam: 'Spam',

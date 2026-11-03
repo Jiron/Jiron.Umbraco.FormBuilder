@@ -19,6 +19,7 @@ import { myPermissions } from '../section/my-permissions';
 import { jfbBackofficeTokens, jfbVisuallyHidden } from '../styles/tokens';
 import { doneCount, findingsToShow, receivedText, stepViews, type StepView } from './checklist';
 import { FORM_BLOCK_MODAL } from './form-block-modal.element';
+import { createFromTemplate } from '../library/actions/new-form';
 
 /** A block that loads by itself: on its way, there, or failed. */
 type Loaded<T> = { state: 'loading' } | { state: 'failed' } | { state: 'ready'; value: T };
@@ -324,13 +325,11 @@ export class OverviewElement extends UmbLitElement {
     );
   }
 
-  /** The screen a step opens; the form block's step opens a dialog instead. */
+  /** The screen a step opens; the form's step opens the template gallery and the form block's a dialog instead (ADR-0166). */
   #stepPath(step: string, checklist: ChecklistResponseModel): string | undefined {
     switch (step) {
       case 'email':
         return screenPath('jfb-settings-email');
-      case 'form':
-        return screenPath('jfb-templates');
       case 'testEntry':
         return checklist.previewForm ? screenPath(FORM_ENTITY_TYPE, checklist.previewForm) : undefined;
       case 'access':
@@ -340,11 +339,21 @@ export class OverviewElement extends UmbLitElement {
     }
   }
 
+  /** What a step without a screen does: the form's opens the gallery, whose form then opens; the form block's its dialog. */
+  #stepAction(step: string) {
+    if (step === 'form')
+      void createFromTemplate(this, null).then(
+        () => this.#loadChecklist(),
+        () => undefined,
+      );
+    else void this.#openFormBlock();
+  }
+
   #renderStepName(view: StepView, name: string, path: string | undefined) {
     if (view.state !== 'open') return html`<span class="step__name">${name}</span>`;
-    return path
-      ? html`<a class="step__name" href=${path}>${name}</a>`
-      : html`<button type="button" class="link step__name" @click=${this.#openFormBlock}>${name}</button>`;
+    if (path) return html`<a class="step__name" href=${path}>${name}</a>`;
+    const act = () => this.#stepAction(view.step);
+    return html`<button type="button" class="link step__name" @click=${act}>${name}</button>`;
   }
 
   /** The email step says what is wrong where Health leaves it out; any other says what it is for. */
@@ -380,7 +389,7 @@ export class OverviewElement extends UmbLitElement {
               look="outline"
               label=${action}
               href=${path ?? nothing}
-              @click=${path ? nothing : this.#openFormBlock}
+              @click=${path ? nothing : () => this.#stepAction(view.step)}
             ></uui-button>`
           : nothing
       }

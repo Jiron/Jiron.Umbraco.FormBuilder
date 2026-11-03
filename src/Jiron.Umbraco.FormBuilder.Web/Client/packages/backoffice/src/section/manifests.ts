@@ -1,11 +1,11 @@
 // The Forms section (ADR-0021, ADR-0165): the section with its one dashboard, the sidebar of docs/ux/information-architecture.md
 // and a workspace behind each item. The table in sidebar.ts holds the items; screens that later phases build replace
 // their workspace's element here, and show coming-screen.element until then.
+import { manifests as library } from '../library/manifests';
 import { manifests as overview } from '../overview/manifests';
 import { manifests as tree } from '../tree/manifests';
 import {
   ENTRY_ENTITY_TYPE,
-  FOLDER_ENTITY_TYPE,
   FORM_ENTITY_TYPE,
   LIBRARY_ROOT_ENTITY_TYPE,
   SECTION_ALIAS,
@@ -100,10 +100,9 @@ export const manifests: UmbExtensionManifest[] = [
   },
   { type: 'menu', alias: FORMS_MENU_ALIAS, name: 'Jiron Form Builder forms menu' },
   ...SIDEBAR.flatMap(groupManifests),
-  comingScreen('root', LIBRARY_ROOT_ENTITY_TYPE),
   comingScreen('form', FORM_ENTITY_TYPE),
-  comingScreen('folder', FOLDER_ENTITY_TYPE),
   comingScreen('entry', ENTRY_ENTITY_TYPE),
   ...tree(FORMS_MENU_ALIAS, SECTION_ALIAS),
+  ...library,
   ...overview,
 ];

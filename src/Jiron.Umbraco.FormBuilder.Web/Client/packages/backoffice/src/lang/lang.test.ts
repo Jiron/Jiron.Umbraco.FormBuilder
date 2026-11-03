@@ -135,6 +135,49 @@ describe('the dictionaries', () => {
     );
   });
 
+  it("hold the library's keys that its code uses, and no other in that area", () => {
+    const folders = ['library', 'library/actions', 'library/modals', 'tree', 'ui', 'overview', 'section'].map(
+      (folder) => join(dirname(fileURLToPath(import.meta.url)), '..', folder),
+    );
+    const sources = folders.flatMap((folder) =>
+      readdirSync(folder)
+        .filter((file) => file.endsWith('.ts') && !file.endsWith('.test.ts'))
+        .map((file) => readFileSync(join(folder, file), 'utf8')),
+    );
+    const used = new Set(
+      sources.flatMap((source) => [...source.matchAll(/(?:'|#)(jfbLibrary_[A-Za-z_]+)'/g)].map((match) => match[1])),
+    );
+    // The keys code builds: each "..." action's and create option's label, a refusal's permission, a built-in template's texts.
+    for (const id of ['Reload', 'RenameFolder', 'Move', 'DeleteFolder', 'Duplicate', 'CopyActions', 'Export']) {
+      used.add(`jfbLibrary_action${id}`);
+    }
+    for (const id of ['Trash', 'EmptyBin', 'Restore', 'DeleteForGood']) used.add(`jfbLibrary_action${id}`);
+    for (const id of ['Form', 'FromTemplate', 'Import', 'Folder']) {
+      used.add(`jfbLibrary_option${id}`);
+      used.add(`jfbLibrary_option${id}Description`);
+    }
+    for (const permission of [
+      'design',
+      'manageActions',
+      'viewEntries',
+      'viewSensitive',
+      'editEntries',
+      'deleteEntries',
+      'export',
+      'manageLibrary',
+      'manageSettings',
+      'managePermissions',
+      'privacyTools',
+    ]) {
+      used.add(`jfbLibrary_permission_${permission}`);
+    }
+    for (const template of ['contact']) {
+      used.add(`jfbLibrary_template_${template}`);
+      used.add(`jfbLibrary_template_${template}Description`);
+    }
+    expect(termsOf(en).filter((term) => term.startsWith('jfbLibrary_'))).toEqual([...used].sort());
+  });
+
   it("hold the form picker screens' keys that their elements use, and no other in that area", () => {
     expect(screenKeys.size).toBeGreaterThanOrEqual(20);
     expect(termsOf(en).filter((term) => term.startsWith('jfbFormPicker_'))).toEqual([...screenKeys].sort());

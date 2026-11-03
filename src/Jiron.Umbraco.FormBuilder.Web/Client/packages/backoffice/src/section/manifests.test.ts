@@ -78,9 +78,14 @@ describe('the section', () => {
     expect(new Set(workspaces).size).toBe(workspaces.length);
   });
 
-  it('loads every workspace element that still stands in for its screen', async () => {
+  it('loads every workspace element, each a defined custom element that Umbraco can construct', async () => {
     const loaded = await Promise.all(byType('workspace').map((workspace) => workspace.element?.()));
     expect(loaded.every((module) => module?.['element'])).toBe(true);
+    // Umbraco makes a workspace's element with "new"; a class no tag is defined for throws "Illegal constructor" there.
+    for (const module of loaded) {
+      const Element = module?.['element'] as CustomElementConstructor;
+      expect(() => new Element(), Element.name).not.toThrow();
+    }
   });
 });
 

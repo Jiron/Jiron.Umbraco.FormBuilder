@@ -32,10 +32,17 @@ describe('confirm dialogs', () => {
     expect(unsafe).toEqual([]);
   });
 
-  it('are used where the section asks before trashing what people named', () => {
+  it('are used where the library asks before something people named is trashed, widened or lost', () => {
     const using = sources(root)
-      .filter((path) => readFileSync(path, 'utf8').includes('confirmText(this'))
+      .filter((path) => /confirmText\((this|host),/.test(readFileSync(path, 'utf8')))
       .map((path) => relative(root, path).split(sep).join('/'));
-    expect(using).toEqual(expect.arrayContaining(['tree/trash-form.action.ts']));
+    expect(using).toEqual(
+      expect.arrayContaining([
+        'library/actions/trash-form.action.ts',
+        'library/actions/move.action.ts',
+        'library/actions/folder-actions.ts',
+        'library/actions/trash-actions.ts',
+      ]),
+    );
   });
 });

@@ -866,6 +866,20 @@ the English dictionary (`src/testing.ts`):
 | `form-name.ufm.test.ts` | the block label: the picked form's name without a data type's limits, several names joined as English joins a list with "(not available)" for one that is gone, the label following the block's value, nothing for no value or a failed lookup, and the component rendering its element with the token's alias when Umbraco calls `render` without the instance |
 | `picked-keys.test.ts` | the stored value: keys in order, each once, in lower case; none for no value; written as the server reads them |
 
+**The form library** (`packages/backoffice/src/library`, `tree` and `lang`; ROADMAP 9.2, [ADR-0166](../docs/decisions/0166-the-form-library.md)):
+`stores.test.ts` drives the client stores with hand-answered calls: a list's first page, the next one without a row twice,
+a failure and a load again, an older answer dropped after a newer one and the rows kept on screen meanwhile; the
+gallery choosing its first template, searching names and descriptions in the user's language, a choice the search hides
+giving way, the arrow keys wrapping at both ends; the import refusing a file over 5 MB unread, checking, importing,
+and saying the server's reason or a missing permission. `rows.test.ts` holds the days, changes and entries of a row
+(by culture), an import's notes said once each in file order, and the pages a form is on (five named, the rest
+counted). `template-preview.test.ts` reads a definition's texts by culture and draws the built-in contact template for
+the eye only (`inert`, `aria-hidden`), its fields said once for screen readers. `tree/tree.test.ts` holds the tree's
+items (the trashed ones under the Recycle Bin or their trashed folder, the restricted and unseen marks as flags, a form
+without a published version muted) and the header search's results for forms and fields. `lang/library.test.ts` holds
+the confirmations to the examples of `docs/ux/copy.md` and their counts of one, none and more names than are listed, in
+English and German; `lang.test.ts` holds the `jfbLibrary` area to exactly the keys the library's code uses.
+
 ## The public API tests
 
 `Tests.Integration/PublicApi/` calls the public API anonymously on a real site that boots its runtime, with forms
