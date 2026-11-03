@@ -88,6 +88,8 @@ describe('the option editor', () => {
       ['items', 'This field'],
       ['list', 'An option list'],
       ['code', 'A standard list'],
+      ['content', 'Pages of the site'],
+      ['dataType', 'A data type'],
       ['countries', 'The country list'],
       ['url', 'A JSON address'],
     ]);
@@ -156,6 +158,31 @@ describe('the option editor', () => {
     expect(text(element.querySelector('label[for="setting-config-countries"]'))).toBe('Countries');
     type(countries, 'CH\nDE');
     expect(options()).toEqual({ source: 'countries', config: { countries: ['CH', 'DE'] } });
+  });
+
+  it("picks the pages' root and their document types, or a data type, with Umbraco's own pickers (ADR-0173)", async () => {
+    const picked = (box: Element, selection: string[]) => {
+      Object.assign(box, { selection });
+      box.dispatchEvent(new Event('change'));
+    };
+    const content = await editorOf({ ...RADIO, options: { source: 'content', config: {} } });
+    const root = must(content.element.querySelector('umb-input-document#setting-config-root'), 'the root');
+    expect((root as unknown as { max: number }).max).toBe(1);
+    picked(root, ['page-1']);
+    const types = must(content.element.querySelector('umb-input-document-type#setting-config-documentTypes'), 'types');
+    picked(types, ['type-1', 'type-2']);
+    expect(content.options()).toEqual({
+      source: 'content',
+      config: { root: 'page-1', documentTypes: ['type-1', 'type-2'] },
+    });
+    picked(root, []);
+    expect(content.options()?.['config']).toEqual({ documentTypes: ['type-1', 'type-2'] });
+
+    const dataType = await editorOf({ ...RADIO, options: { source: 'dataType', config: {} } });
+    picked(must(dataType.element.querySelector('umb-data-type-input#setting-config-dataType'), 'the data type'), [
+      'd1',
+    ]);
+    expect(dataType.options()).toEqual({ source: 'dataType', config: { dataType: 'd1' } });
   });
 
   it('adds, labels, pastes, moves and removes its own options, saying what each did', async () => {

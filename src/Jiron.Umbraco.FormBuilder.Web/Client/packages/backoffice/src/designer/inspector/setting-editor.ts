@@ -2,7 +2,11 @@
 // the browser's own boxes so each is labelled, described and said as screen readers expect. A box keeps what was typed
 // while it can't be kept, says why under it once the box is left, and hands each value it can keep to the inspector; a
 // locked setting shows its value and the configuration key behind it, read-only, and a hidden one shows nothing.
+import '@umbraco-cms/backoffice/data-type';
+import '@umbraco-cms/backoffice/document';
+import '@umbraco-cms/backoffice/document-type';
 import { html, nothing, type TemplateResult } from '@umbraco-cms/backoffice/external/lit';
+import '@umbraco-cms/backoffice/media';
 import type { FieldSettingResponseModel } from '../../api';
 import type { LocalizedText } from '../definition';
 import { textIn } from '../preview/field-models';
@@ -35,6 +39,8 @@ export interface EditorContext {
    * left, when a problem is shown.
    */
   readonly set: (path: string, setting: FieldSettingResponseModel, parsed: Parsed, done: boolean) => void;
+  /** "Insert merge tag" under the box of a setting that takes tags, which puts a tag into it (ADR-0173). */
+  readonly mergeTags?: (setting: FieldSettingResponseModel, path: string) => TemplateResult | typeof nothing;
 }
 
 /** The units of a date's limit from today, in their order. */
@@ -102,6 +108,14 @@ export function settingText(
       return boundText(context.term, readDateBound(value));
     case 'localizedText':
       return textIn(value as LocalizedText | undefined, context.culture);
+    case 'mediaPicker':
+    case 'contentPicker':
+    case 'documentPicker':
+    case 'documentTypePicker':
+    case 'dataTypePicker': {
+      const count = pickedKeys(setting, value).length;
+      return count === 0 ? context.term('pickedNone') : context.term('picked', count);
+    }
     case 'nested': {
       const own = (value && typeof value === 'object' ? value : {}) as Record<string, unknown>;
       return setting.settings
@@ -131,6 +145,7 @@ function frame(
     <label class="label" for=${id}>${context.say(setting.label)}</label>
     ${help ? html`<p class="help" id=${help}>${context.say(setting.description)}</p>` : nothing}
     ${box(described, problem !== undefined)} ${problem ? html`<p class="why" id=${why ?? ''}>${problem}</p>` : nothing}
+    ${setting.supportsMergeTags ? (context.mergeTags?.(setting, path) ?? nothing) : nothing}
   </div>`;
 }
 
@@ -232,9 +247,76 @@ export function settingEditor(
             @change=${(event: Event) => typed((event.target as HTMLInputElement).value, true)}
           />`,
       );
+    case 'mediaPicker':
+    case 'contentPicker':
+    case 'documentPicker':
+    case 'documentTypePicker':
+    case 'dataTypePicker':
+      return picker(context, setting, value, path);
     default:
       return nothing;
   }
+}
+
+/** The keys a picker's setting holds: a list's, or the one of a single key. */
+export function pickedKeys(setting: FieldSettingResponseModel, value: unknown): string[] {
+  if (setting.kind === 'list') return Array.isArray(value) ? value.map(asText).filter((key) => key !== '') : [];
+  return typeof value === 'string' && value !== '' ? [value] : [];
+}
+
+// Umbraco's own items, picked with Umbraco's own inputs (ADR-0173): each shows the items' names and opens Umbraco's
+// picker; a list's setting takes as many as its rule allows, any other one item.
+function picker(context: EditorContext, setting: FieldSettingResponseModel, value: unknown, path: string) {
+  const id = boxId(path);
+  const several = setting.kind === 'list';
+  const selection = pickedKeys(setting, value);
+  const max = several ? (setting.rules.maximumCount ?? Number.POSITIVE_INFINITY) : 1;
+  const pick = (event: Event) => {
+    const chosen = [...((event.target as { selection?: readonly string[] }).selection ?? [])];
+    context.set(path, setting, { ok: true, value: several ? chosen : chosen[0] }, true);
+  };
+  return frame(context, setting, path, (described) => {
+    const label = context.say(setting.label);
+    switch (setting.editor) {
+      case 'mediaPicker':
+        return html`<umb-input-media
+          id=${id}
+          aria-label=${label}
+          aria-describedby=${described ?? nothing}
+          .selection=${selection}
+          .max=${max}
+          @change=${pick}
+        ></umb-input-media>`;
+      case 'documentTypePicker':
+        return html`<umb-input-document-type
+          id=${id}
+          aria-label=${label}
+          aria-describedby=${described ?? nothing}
+          .documentTypesOnly=${true}
+          .selection=${selection}
+          .max=${max}
+          @change=${pick}
+        ></umb-input-document-type>`;
+      case 'dataTypePicker':
+        return html`<umb-data-type-input
+          id=${id}
+          aria-label=${label}
+          aria-describedby=${described ?? nothing}
+          .selection=${selection}
+          .max=${max}
+          @change=${pick}
+        ></umb-data-type-input>`;
+      default:
+        return html`<umb-input-document
+          id=${id}
+          aria-label=${label}
+          aria-describedby=${described ?? nothing}
+          .selection=${selection}
+          .max=${max}
+          @change=${pick}
+        ></umb-input-document>`;
+    }
+  });
 }
 
 // The host's value, read-only, with the configuration key that sets it (ADR-0060).

@@ -33,9 +33,11 @@ import {
 } from './inspector-model';
 import { boxValue } from './box-value';
 import { inspectorStyles } from './inspector.styles';
+import './merge-tag-picker.element';
+import { placeOf, withTag, type MergeTagPlace } from './merge-tags';
 import './option-editor.element';
 import { itemsOf, optionsOf, parentsBefore, rowsOf, showsCards, sourceOf } from './option-values';
-import { problemText, settingEditor, settingText, type EditorContext } from './setting-editor';
+import { boxId, problemText, settingEditor, settingText, type EditorContext } from './setting-editor';
 import {
   ownText,
   same,
@@ -125,6 +127,7 @@ export class InspectorElement extends UmbLitElement {
     types: { attribute: false },
     culture: { attribute: false },
     languages: { attribute: false },
+    form: { attribute: false },
     mode: { reflect: true },
     _open: { state: true },
     _more: { state: true },
@@ -139,6 +142,8 @@ export class InspectorElement extends UmbLitElement {
   /** The language the canvas shows, which the inspector edits texts in. */
   declare culture: string;
   declare languages: readonly SiteLanguage[];
+  /** The form's key, whose draft the tag picker's paths come from; none, no picker. */
+  declare form: string;
   declare mode: InspectorMode;
   declare private _open: ReadonlySet<SectionId>;
   declare private _more: ReadonlySet<SectionId>;
@@ -155,6 +160,7 @@ export class InspectorElement extends UmbLitElement {
     this.types = {};
     this.culture = '';
     this.languages = [];
+    this.form = '';
     this.mode = 'docked';
     this._open = readOpen();
     this._more = new Set();
@@ -307,7 +313,36 @@ export class InspectorElement extends UmbLitElement {
       defaultCulture: this.#defaultCulture,
       problems: this._problems,
       set: (path, setting, parsed, done) => this.#setSetting(field, type, path, setting, parsed, done),
+      mergeTags: (setting, path) => this.#tagPicker(placeOf(type.alias, setting.name), boxId(path)),
     };
+  }
+
+  // "Insert merge tag" for the box with this id, its tags of this place (ADR-0173).
+  #tagPicker(place: MergeTagPlace, id: string): TemplateResult | typeof nothing {
+    if (!this.form) return nothing;
+    return html`<jfb-merge-tag-picker
+      .place=${place}
+      .form=${this.form}
+      .culture=${this.culture}
+      .definition=${() => this.definition}
+      .insert=${(tag: string) => this.#insertTag(id, tag)}
+    ></jfb-merge-tag-picker>`;
+  }
+
+  // A tag put into a box where its caret was, the box given the focus with the caret after the tag, and the change sent
+  // as the box sends one: a setting's box as a value it may keep, a property's as typing.
+  #insertTag(id: string, tag: string) {
+    const box = this.shadowRoot?.getElementById(id);
+    if (box instanceof HTMLInputElement || box instanceof HTMLTextAreaElement) {
+      const end = box.value.length;
+      const { text, caret } = withTag(box.value, box.selectionStart ?? end, box.selectionEnd ?? end, tag);
+      box.value = text;
+      box.focus();
+      box.setSelectionRange(caret, caret);
+      box.dispatchEvent(new Event(id.startsWith('setting-') ? 'change' : 'input', { bubbles: true }));
+    } else if (box && 'insertText' in box) {
+      (box as unknown as { insertText: (text: string) => void }).insertText(tag);
+    }
   }
 
   // A setting's new value, at its path: a nested setting's own value sits in its parent's object.
@@ -584,7 +619,14 @@ export class InspectorElement extends UmbLitElement {
     </div>`;
   }
 
-  #plain(id: string, name: string, value: string, write: (text: string) => void, help = ''): TemplateResult {
+  #plain(
+    id: string,
+    name: string,
+    value: string,
+    write: (text: string) => void,
+    help = '',
+    after: TemplateResult | typeof nothing = nothing,
+  ): TemplateResult {
     return html`<div class="item">
       <label class="label" for=${id}>${name}</label>
       <input
@@ -596,7 +638,7 @@ export class InspectorElement extends UmbLitElement {
         .value=${boxValue(value)}
         @input=${(event: Event) => write((event.target as HTMLInputElement).value)}
       />
-      ${help ? html`<p class="help" id=${`${id}-help`}>${help}</p>` : nothing}
+      ${help ? html`<p class="help" id=${`${id}-help`}>${help}</p>` : nothing} ${after}
     </div>`;
   }
 
@@ -606,13 +648,19 @@ export class InspectorElement extends UmbLitElement {
     const value = subject.field['defaultValue'];
     const id = 'prop-defaultValue';
     if (!many)
-      return this.#plain(id, name, typeof value === 'string' ? value : '', (text) =>
-        this.#change(
-          key,
-          (one) => withProperty(one, 'defaultValue', text === '' ? undefined : text),
-          name,
-          'defaultValue',
-        ),
+      return this.#plain(
+        id,
+        name,
+        typeof value === 'string' ? value : '',
+        (text) =>
+          this.#change(
+            key,
+            (one) => withProperty(one, 'defaultValue', text === '' ? undefined : text),
+            name,
+            'defaultValue',
+          ),
+        '',
+        this.#tagPicker('defaultValue', id),
       );
     const lines = Array.isArray(value) ? value.map(String).join('\n') : typeof value === 'string' ? value : '';
     return html`<div class="item">
@@ -637,6 +685,7 @@ export class InspectorElement extends UmbLitElement {
         }}
       ></textarea>
       <p class="help" id=${`${id}-help`}>${this.#term('oneALine')}</p>
+      ${this.#tagPicker('defaultValue', id)}
     </div>`;
   }
 

@@ -14,7 +14,10 @@ export type SectionId = (typeof SECTIONS)[number];
 /** How many items a section shows before "More options". */
 export const MOST_SHOWN = 7;
 
-/** The setting editors 9.4a draws; rich text and pickers come in 9.4c, and options are an item of their own (9.4b). */
+/**
+ * The setting editors the inspector draws: the plain ones (9.4a), and Umbraco's pickers (9.4c, ADR-0173); options are an
+ * item of their own (9.4b).
+ */
 export const PLAIN_EDITORS: ReadonlySet<string> = new Set([
   'wholeNumber',
   'number',
@@ -27,6 +30,11 @@ export const PLAIN_EDITORS: ReadonlySet<string> = new Set([
   'time',
   'dateBound',
   'formula',
+  'mediaPicker',
+  'contentPicker',
+  'documentPicker',
+  'documentTypePicker',
+  'dataTypePicker',
 ]);
 
 /** A field's texts the inspector edits in each language. */

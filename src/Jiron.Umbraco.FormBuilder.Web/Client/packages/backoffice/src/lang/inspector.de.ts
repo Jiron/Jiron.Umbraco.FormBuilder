@@ -119,6 +119,8 @@ export default {
     on: 'An',
     off: 'Aus',
     lockedDefault: 'Wie vorgegeben',
+    picked: (count: number) => (count === 1 ? '1 gewählt' : `${count} gewählt`),
+    pickedNone: 'Nichts gewählt',
     lockedBy: 'Festgelegt in der Konfiguration der Website:',
     boundKind: 'Art der Grenze',
     boundDate: 'Datum',

@@ -117,6 +117,8 @@ export default {
     on: 'On',
     off: 'Off',
     lockedDefault: 'As it comes',
+    picked: (count: number) => (count === 1 ? '1 chosen' : `${count} chosen`),
+    pickedNone: 'None chosen',
     lockedBy: "Set by the site's configuration:",
     boundKind: 'Kind of limit',
     boundDate: 'Date',

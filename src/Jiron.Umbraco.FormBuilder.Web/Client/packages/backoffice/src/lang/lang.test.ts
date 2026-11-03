@@ -115,6 +115,24 @@ describe('the dictionaries', () => {
       expect([...optionKeys].filter((key) => !termsOf(dictionary).includes(key))).toEqual([]);
   });
 
+  it('name every built-in merge tag path and source the tag picker is served, in English and German alike (ADR-0173)', () => {
+    const served = JSON.parse(
+      readFileSync(join(repositoryRoot(), 'docs', 'api', 'merge-tag-paths.json'), 'utf8'),
+    ) as Record<string, { path: string; source: string; isSiteSource: boolean }[]>;
+    const builtIn = Object.values(served)
+      .flat()
+      .filter((each) => !each.isSiteSource);
+    const wanted = new Set([
+      ...builtIn.map((each) => `jfbMergeTags_source_${each.source}`),
+      ...builtIn
+        .filter((each) => each.source !== 'field')
+        .map((each) => `jfbMergeTags_path_${each.path.replaceAll('.', '_')}`),
+    ]);
+    expect(wanted.size).toBeGreaterThanOrEqual(10);
+    for (const dictionary of [en, de])
+      expect([...wanted].filter((key) => !termsOf(dictionary).includes(key))).toEqual([]);
+  });
+
   it("hold every key the form picker's checks send, and no other in its area", () => {
     expect(pickerKeys.size).toBeGreaterThanOrEqual(5);
     expect(termsOf(en).filter((term) => term.startsWith('jfbPicker_'))).toEqual([...pickerKeys].sort());

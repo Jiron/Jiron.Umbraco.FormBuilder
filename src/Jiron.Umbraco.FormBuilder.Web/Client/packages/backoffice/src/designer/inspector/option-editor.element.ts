@@ -1,6 +1,6 @@
 // The inspector's option editor (ROADMAP 9.4b, IA 5.1, ADR-0172): where a choice field's options come from, its own
-// options, and a grid's rows. "Options from" picks the field itself, an option list, a standard list, the country list
-// or a JSON address; a kind's configuration is drawn by the generic renderer over its served schema. Each own option
+// options, and a grid's rows. "Options from" picks the field itself, an option list, a standard list, pages of the
+// site, a data type (ADR-0173), the country list or a JSON address; a kind's configuration is drawn by the generic renderer over its served schema. Each own option
 // is a row with its handle, its label in the language shown and a button for its details: what entries store, a place
 // limit, a description and an image on cards, and the answers of the field it depends on that it is shown for. A row
 // moves by its handle with the pointer, or with Alt+Up and Alt+Down, which says where it went; "Paste options..." adds
@@ -49,8 +49,8 @@ import { ownText, valueOf, withKey, withText, type Parsed } from './setting-valu
 /** How the editor hands a change to the inspector: the field's update, what Undo calls it, and a typed box. */
 export type OptionChange = (update: (field: DesignField) => DesignField, name: string, typed?: string) => void;
 
-/** The kinds "Options from" offers in this step, in its order; content and a data type come with their pickers. */
-const OFFERED: readonly OptionSourceKind[] = ['items', 'list', 'code', 'countries', 'url'];
+/** The kinds "Options from" offers, in its order (IA 5.1, ADR-0173). */
+const OFFERED: readonly OptionSourceKind[] = ['items', 'list', 'code', 'content', 'dataType', 'countries', 'url'];
 
 /** Where a drag of a row is: the row taken and the place it would go, before the row at `to`. */
 interface RowDrag {

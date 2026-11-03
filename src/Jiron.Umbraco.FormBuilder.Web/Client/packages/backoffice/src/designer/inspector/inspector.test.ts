@@ -502,3 +502,35 @@ describe("a choice field's options in the inspector", () => {
     expect(must(editor.querySelector<HTMLSelectElement>('#options-parent'), 'Depends on').value).toBe('size');
   });
 });
+
+describe('merge tags in the inspector (ADR-0173)', () => {
+  it("put a tag into a heading's text where the caret was, as a value it keeps", async () => {
+    const heading: DesignField = { key: 'h', type: 'heading', alias: 'title', settings: { text: { '': 'Hello !' } } };
+    const { root, requests } = await inspectorOf('h', { form: 'form1' }, heading);
+    const pickers = [...root.querySelectorAll('jfb-merge-tag-picker')];
+    expect(pickers.map((picker) => [picker.place, picker.form, picker.culture])).toEqual([
+      ['visitorText', 'form1', 'en-US'],
+    ]);
+    const box = must(root.querySelector<HTMLInputElement>('#setting-text'), 'the text');
+    box.setSelectionRange(6, 6);
+    must(pickers[0], 'the picker').insert('{{ form.name }}');
+    expect(applied(requests.at(-1), heading)['settings']).toEqual({ text: { '': 'Hello {{ form.name }}!' } });
+    expect(root.activeElement).toBe(box);
+    expect(box.selectionStart).toBe(21);
+  });
+
+  it("put a tag into a field's default value, of its own place, and offer none without a form", async () => {
+    const { root, requests } = await inspectorOf('name', { form: 'form1' });
+    sectionButton(root, 'advanced').click();
+    await settle(root.host as InspectorElement);
+    const picker = must(
+      [...root.querySelectorAll('jfb-merge-tag-picker')].find((each) => each.place === 'defaultValue'),
+      'the default value picker',
+    );
+    picker.insert('{{ query.ref }}');
+    expect(applied(requests.at(-1), NAME)['defaultValue']).toBe('{{ query.ref }}');
+
+    const none = await inspectorOf('h', {}, { key: 'h', type: 'heading', alias: 'title' });
+    expect(none.root.querySelector('jfb-merge-tag-picker')).toBeNull();
+  });
+});

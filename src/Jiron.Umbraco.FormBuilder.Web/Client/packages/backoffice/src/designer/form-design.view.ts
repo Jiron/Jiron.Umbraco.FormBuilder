@@ -1454,6 +1454,7 @@ export class FormDesignViewElement extends UmbLitElement {
               .types=${this._types}
               .culture=${this._look?.culture ?? ''}
               .languages=${this._look?.languages ?? []}
+              .form=${this.#context?.getUnique() ?? ''}
               mode=${inspector}
             ></jfb-designer-inspector>`
           : nothing
