@@ -45,6 +45,7 @@ public sealed class TestPeople(
             Name = string.IsNullOrWhiteSpace(group.Name) ? group.Alias : group.Name,
             Icon = "icon-users",
             HasAccessToAllLanguages = true,
+            StartMediaId = group.MediaRootAccess ? Constants.System.Root : null,
         };
         foreach (var section in group.Sections)
         {

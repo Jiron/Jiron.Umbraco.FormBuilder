@@ -9,6 +9,7 @@ using Jiron.Umbraco.FormBuilder.Tests.Integration.Support;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Notifications;
 using Umbraco.Cms.Core.Security;
 using Umbraco.Cms.Core.Services;
@@ -54,6 +55,7 @@ public sealed class TestPeopleTests : FormBuilderMigrationTestBase
             Assert.That(user.IsApproved, Is.True);
             Assert.That(user.Groups.Select(g => g.Alias), Is.EquivalentTo(new[] { "jfbDesigners", "editor" }));
             Assert.That(group!.AllowedSections, Is.EquivalentTo(new[] { "content" }));
+            Assert.That(group.StartMediaId, Is.EqualTo(Constants.System.Root), "the whole media library, to pick a card's image from");
             Assert.That(signsIn, Is.True);
         });
     }
@@ -321,7 +323,7 @@ public sealed class TestPeopleTests : FormBuilderMigrationTestBase
 
     private static TestUserGroup DesignersGroup()
     {
-        var group = new TestUserGroup { Alias = "jfbDesigners", Name = "Form designers" };
+        var group = new TestUserGroup { Alias = "jfbDesigners", Name = "Form designers", MediaRootAccess = true };
         group.Sections.Add("content");
         return group;
     }

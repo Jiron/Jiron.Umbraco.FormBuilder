@@ -955,6 +955,34 @@ on 5535 whose configuration locks the text type's maximum length and hides its p
 its value and key and the other gone. The integration tests `CanvasApiTests` and `LibraryApiTests` hold the site's
 languages, the default first however Umbraco lists them, and a draft's `hasEntries`.
 
+The option editor (ROADMAP 9.4b, [ADR-0172](../docs/decisions/0172-the-option-editor-and-the-option-sources.md)):
+`inspector/option-values.test.ts` holds the option model: where options come from, a source changed with its parent
+kept, a value from a label or the next free one, pasted lines with repeats folded as the server folds them and split
+at every line break the server reads, cuts that never fall inside a character, the server's default limits, rows
+pasted with keys of their own, keys for repeated values, a move, cards by the field's layout or the form's, and the
+fields before one that it may depend on; `inspector/option-editor.test.ts` the element: the kinds the site serves in
+"Options from", a library list with its count or kind, a standard list, a kind's settings at `options.config` with their
+defaults, Depends on with Shown for, its answers cleared for a new parent and a gone one kept to untick, the own options
+added, labelled, pasted and removed with what each says, the focus on what was moved, added, removed or given a new
+value once the field comes back, Alt+Up and Alt+Down on a handle kept from the canvas, details (Stored as with its two
+problems, places, a description and an image chosen in a stand-in media picker on cards), another language's own words,
+and a grid's rows with Needs an answer said once. `inspector/inspector-model.test.ts` puts the options in Essentials and
+a grid's rows before its columns, and counts their texts toward a field without a text in a language; `inspector/inspector.test.ts` hands the editor a parent now after the field and the
+form's cards; `inspector/option-data.test.ts` keeps an answer by form, field, options and culture, but not one that
+failed or found its source unavailable; `form-design.view.test.ts` asks the server once for the options of a field
+that takes them from elsewhere and again once its changes pause, and the canvas shows what it answers, or nothing for
+an unavailable source; and it reads the canvas's images once through Umbraco's imaging, a card showing its option's. `OptionSourceApiTests` holds the three endpoints: the kinds
+with their settings and the standard lists against `docs/api/option-sources.json`, the library's lists by name with a
+count, and a draft's options resolved in the culture asked (its own, a list, a standard list, the countries named, a
+source the site lacks, a culture that is none) for designers only. `lang.test.ts` finds every `#` key those kinds and
+sources are served with in English and German. In the browser, `specs/backoffice/designer-options.spec.ts` gives a
+dropdown the demo's "Library branches" and another the months, depending on it, with the canvas showing what they
+resolve in English and German; pastes a radio field's options, moves them by drag and with Alt+Up, refuses a value and a
+place limit before keeping them; gives an option on the form's cards a description and the demo's picture through
+Umbraco's media picker, which the canvas's card shows; and adds, pastes, marks, moves and removes a grid's rows and
+columns, each saved and read back. The designer persona's group may pick from the whole media library for that
+(`TestUserGroup.MediaRootAccess`, held by `TestPeopleTests`).
+
 ## The public API tests
 
 `Tests.Integration/PublicApi/` calls the public API anonymously on a real site that boots its runtime, with forms

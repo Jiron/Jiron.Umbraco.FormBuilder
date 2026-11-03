@@ -56,6 +56,8 @@ export function hostEnvironment(secrets: E2ESecrets, options: { deliveryApi: boo
     group.permissions.forEach(
       (permission, p) => (env[`JironFormBuilderTesting__UserGroups__${g}__Permissions__${p}`] = permission),
     );
+    if ('mediaRootAccess' in group && group.mediaRootAccess)
+      env[`JironFormBuilderTesting__UserGroups__${g}__MediaRootAccess`] = 'true';
   });
 
   RESTRICTED_FOLDERS.forEach((folder, f) => {

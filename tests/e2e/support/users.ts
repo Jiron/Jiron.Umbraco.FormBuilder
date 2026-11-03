@@ -37,8 +37,8 @@ export interface Account {
 
 /**
  * The user groups the test host creates before the users: one per persona, each with the Forms section and its global
- * permissions (ADR-0013). Designers also get Content, where they place forms on pages (6.7); the others work in the
- * Forms section only.
+ * permissions (ADR-0013). Designers also get Content, where they place forms on pages (6.7), and the whole media
+ * library, which a card's image is picked from (9.4b); the others work in the Forms section only.
  */
 export const USER_GROUPS = [
   {
@@ -46,6 +46,7 @@ export const USER_GROUPS = [
     name: 'Form designers',
     sections: ['content', FORMS_SECTION],
     permissions: ['design', 'manageActions', 'manageLibrary'],
+    mediaRootAccess: true,
   },
   {
     alias: 'jfbEntryHandlers',

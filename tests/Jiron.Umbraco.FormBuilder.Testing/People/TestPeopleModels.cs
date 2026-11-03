@@ -13,6 +13,12 @@ public sealed class TestUserGroup
     public IList<string> Sections { get; } = [];
 
     /// <summary>
+    /// Whether the group may pick from the whole media library, as a designer choosing a card's image does; none of it
+    /// by default, as Umbraco's own new groups.
+    /// </summary>
+    public bool MediaRootAccess { get; set; }
+
+    /// <summary>
     /// The group's global Jiron Form Builder permissions by name, for example <c>viewEntries</c> (ADR-0013); the seed
     /// sets the group's global grant to exactly these, none by default.
     /// </summary>

@@ -51,7 +51,8 @@ Every run generates new passwords into `.local/credentials.json` under `e2e`; th
 | `outsider`       | Umbraco's `writer`                     | Content        | none, without the Forms section                                 |
 | `editor`         | Umbraco's `editor`                     | Content, Media | none, without the Forms section; places forms on pages (6.7h)   |
 
-The host seeds the grants and the restricted folder `HR` at the root on every start (`support/users.ts`, ADR-0049);
+The designers' group may also pick from the whole media library, as a card's image is chosen (9.4b). The host seeds
+the grants and the restricted folder `HR` at the root on every start (`support/users.ts`, ADR-0049);
 `specs/smoke/access.spec.ts` reads every persona's effective permissions from `/jfb-testing/access`. Two members, in
 the demo's member group, may open the members area.
 
