@@ -90,7 +90,7 @@ public sealed class FormBuilderAuthorizationTests
 
         Assert.Multiple(() =>
         {
-            Assert.That(new FormBuilderAccessDenial(handler, FormBuilderDenialKind.NoSection, FormBuilderPermissions.None).Message, Is.EqualTo("The user has no access to the Forms section."));
+            Assert.That(new FormBuilderAccessDenial(handler, FormBuilderDenialKind.NoSection, FormBuilderPermissions.None).Message, Is.EqualTo("The user has no access to the Form Builder section."));
             Assert.That(notFound.Message, Is.EqualTo("The user cannot see the folder or form."));
             Assert.That(new FormBuilderAccessDenial(handler, FormBuilderDenialKind.MissingPermission, FormBuilderPermissions.Export).Message, Is.EqualTo("The user lacks the permission 'export'."));
             Assert.That((notFound.Kind, notFound.Permission, notFound.Handler), Is.EqualTo((FormBuilderDenialKind.NotFound, FormBuilderPermissions.Design, handler)));

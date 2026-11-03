@@ -63,14 +63,14 @@ public sealed class FormBuilderProblemsTests
 
         Assert.Multiple(() =>
         {
-            Assert.That(Describe(FormBuilderProblems.NoSection()), Is.EqualTo("403 no_section You do not have access to the Forms section. |  | {}"));
+            Assert.That(Describe(FormBuilderProblems.NoSection()), Is.EqualTo("403 no_section You do not have access to the Form Builder section. |  | {}"));
             Assert.That(Describe(missing), Is.EqualTo("""403 forbidden You do not have the permission to do this. | It needs the permission 'deleteEntries'. | {"permission":"deleteEntries"}"""));
             Assert.That(Describe(FormBuilderProblems.Forbidden()), Is.EqualTo("403 forbidden You do not have the permission to do this. |  | {}"));
             Assert.That(Describe(FormBuilderProblems.NotFound(FormBuilderAccessResourceKind.Form)), Is.EqualTo("404 form_not_found The form does not exist. |  | {}"));
             Assert.That(Describe(FormBuilderProblems.NotFound(FormBuilderAccessResourceKind.Folder)), Is.EqualTo("404 folder_not_found The folder does not exist. |  | {}"));
             Assert.That(Describe(pending), Is.EqualTo("503 migrations_pending Jiron Form Builder is being set up on this site. Try again in a moment. |  | {}"));
             Assert.That(http.Response.Headers.RetryAfter.ToString(), Is.EqualTo("10"));
-            Assert.That(Describe(FormBuilderProblems.Refused(noSection, FormBuilderAccessResourceKind.Folder)), Is.EqualTo("403 no_section You do not have access to the Forms section. |  | {}"), "a policy that found no section");
+            Assert.That(Describe(FormBuilderProblems.Refused(noSection, FormBuilderAccessResourceKind.Folder)), Is.EqualTo("403 no_section You do not have access to the Form Builder section. |  | {}"), "a policy that found no section");
             Assert.That(Describe(FormBuilderProblems.Refused(AuthorizationResult.Failed(), FormBuilderAccessResourceKind.Folder)), Is.EqualTo("403 forbidden You do not have the permission to do this. |  | {}"), "a refusal without a denial fails closed");
             Assert.That(Describe(FormBuilderProblems.Missing(FormBuilderPermissions.ManagePermissions, new Dictionary<string, object?> { ["gains"] = Array.Empty<string>() })), Does.EndWith("""{"gains":[],"permission":"managePermissions"}"""));
         });

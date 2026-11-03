@@ -68,7 +68,7 @@ public sealed class SiteTimeZonesTests
             Assert.That(zones, Is.All.EqualTo(TimeZoneInfo.Utc));
             Assert.That(warnings, Is.EqualTo(new[] { 1, 1, 1, 2, 2 }), "again an hour after the first");
             Assert.That(_logger.Entries.Select(entry => entry.Level), Is.All.EqualTo(LogLevel.Warning));
-            Assert.That(_logger.Entries[0].Message, Is.EqualTo($"The setting general.timeZone of the site {Shop} names the time zone 'Mars/Olympus_Mons', which this server cannot resolve, so its forms run in UTC. Choose the site's time zone again in the Forms section's settings."));
+            Assert.That(_logger.Entries[0].Message, Is.EqualTo($"The setting general.timeZone of the site {Shop} names the time zone 'Mars/Olympus_Mons', which this server cannot resolve, so its forms run in UTC. Choose the site's time zone again in the Form Builder section's settings."));
         });
     }
 

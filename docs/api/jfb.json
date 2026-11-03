@@ -2,7 +2,7 @@
   "openapi": "3.0.4",
   "info": {
     "title": "Jiron Form Builder management API",
-    "description": "The Forms section's API: backoffice users of the section, each call by its Jiron Form Builder permission.",
+    "description": "The Form Builder section's API: backoffice users of the section, each call by its Jiron Form Builder permission.",
     "version": "1.0"
   },
   "paths": {

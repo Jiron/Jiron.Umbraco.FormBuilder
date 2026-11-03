@@ -108,7 +108,7 @@ One line that says where something stands, next to the thing it is about.
 | --- | --- | --- |
 | an action's card, after a failed delivery | Failed at 14:02. Next try at 14:30. | Fehlgeschlagen um 14:02. Nächster Versuch um 14:30. |
 | beside the canvas width switch, when the canvas has less room than the chosen width | Narrowed to fit | An den Platz angepasst |
-| above the permission matrix, for a user group without the section | Translators can't open Forms yet. Add the section to their user group | Übersetzer können Formulare noch nicht öffnen. Bereich zu ihrer Benutzergruppe hinzufügen |
+| above the permission matrix, for a user group without the section | Translators can't open Form Builder yet. Add the section to their user group | Übersetzer können Form Builder noch nicht öffnen. Bereich zu ihrer Benutzergruppe hinzufügen |
 | above the permission matrix, once, for the fixed Administrators column | Administrators hold every permission everywhere, because they could grant themselves any. | Die Gruppe Administratoren hat überall jede Berechtigung, weil ihre Mitglieder sich jede selbst geben könnten. |
 | a form's header, when no page picks it | Not used on any page | Auf keiner Seite verwendet |
 | the inspector, while the designer shows another language | Editing the German texts. Where one is empty, visitors see the English text. | Sie bearbeiten die deutschen Texte. Wo einer fehlt, sehen Besucher den englischen. |

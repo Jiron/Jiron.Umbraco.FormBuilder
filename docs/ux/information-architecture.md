@@ -1,6 +1,6 @@
 # Information architecture
 
-This is where everything lives in the **Forms** section: its menus, trees, workspaces and views, what each screen is
+This is where everything lives in the **Form Builder** section: its menus, trees, workspaces and views, what each screen is
 for, its one primary action and its secondary actions, and who sees what. The wireframes of step 2.2 draw these
 screens, and Phases 9 to 14 build them. The words are in [copy.md](copy.md), the most common tasks and their click
 paths in [top-tasks.md](top-tasks.md), and the reasons for the section's shape in
@@ -43,7 +43,7 @@ paths in [top-tasks.md](top-tasks.md), and the reasons for the section's shape i
 ## 1. The section at a glance
 
 ```text
-Forms                       the section in Umbraco's top bar
+Form Builder                the section in Umbraco's top bar (ADR-0171)
 ├── Overview                the start page: setup checklist, health, recent entries, forms at a glance
 ├── the forms tree          under Umbraco's sidebar header "Forms" with "+" and "…"; the Recycle Bin last
 ├── Entries                 Inbox · Spam
@@ -55,7 +55,9 @@ Forms                       the section in Umbraco's top bar
 
 Outside the section: a **Forms** tab in Umbraco's header search, the form picker and the form block in the content
 editor, a **Form entries** view on the member workspace, and the health checks on Umbraco's Health Check dashboard
-(section 10).
+(section 10). The section's name in the top bar is the owner's choice and stays "Form Builder" in German, a name as
+the product's is; inside it, the tree and the search tab, which hold forms, keep "Forms" (ADR-0171). Where other
+documents of this repository say "the Forms section", they mean this section.
 
 ### The sidebar
 
@@ -638,8 +640,8 @@ the Actions view say who can retry it (5.3).
 
 ² Read-only where a restricted folder's own grant gives the designer `design` without `manageActions` (5.3).
 
-**The outsider,** a backoffice user without the Forms section, sees no Forms section, no Forms search tab and no Form
-entries view. Every management endpoint refuses them (ADR-0013), and the form picker in the content editor still works
+**The outsider,** a backoffice user without the Form Builder section, sees no such section, no Forms search tab and no
+Form entries view. Every management endpoint refuses them (ADR-0013), and the form picker in the content editor still works
 for them: it shows only the names of published forms that are not restricted.
 
 ## 12. How the design skills shaped this

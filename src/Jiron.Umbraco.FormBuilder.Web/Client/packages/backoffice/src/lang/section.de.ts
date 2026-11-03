@@ -2,6 +2,8 @@
 // docs/ux/information-architecture.md, Abschnitt 1.
 export default {
   jfbSection: {
+    // Der Name des Bereichs in Umbracos oberer Leiste ist ein Name und bleibt unübersetzt (ADR-0171).
+    section: 'Form Builder',
     forms: 'Formulare',
     overview: 'Übersicht',
     noForms:

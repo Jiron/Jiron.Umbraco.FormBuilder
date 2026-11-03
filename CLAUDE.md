@@ -1,6 +1,6 @@
 # Jiron.Umbraco.FormBuilder: rules for Claude
 
-Jiron Form Builder is a form builder for Umbraco 17. Editors design forms in a **Forms** section of the backoffice (pages, groups, fields, rules, actions), visitors fill them in on the website (Razor or headless), and teams work with the entries (review, approve, export, privacy tools). It is free to use, including commercially, under the PolyForm Perimeter License 1.0.1 ([LICENSE.md](LICENSE.md)). The plan is [ROADMAP.md](ROADMAP.md). Work through it in order and keep its checkboxes current.
+Jiron Form Builder is a form builder for Umbraco 17. Editors design forms in a **Form Builder** section of the backoffice (pages, groups, fields, rules, actions), visitors fill them in on the website (Razor or headless), and teams work with the entries (review, approve, export, privacy tools). It is free to use, including commercially, under the PolyForm Perimeter License 1.0.1 ([LICENSE.md](LICENSE.md)). The plan is [ROADMAP.md](ROADMAP.md). Work through it in order and keep its checkboxes current.
 
 ## Binding rules
 
@@ -85,7 +85,7 @@ Jiron Form Builder is a form builder for Umbraco 17. Editors design forms in a *
 ## Conventions
 
 - **Names:**
-  - NuGet and namespace root: `Jiron.Umbraco.FormBuilder`. Display name: **Jiron Form Builder**. Backoffice section label: **Forms**.
+  - NuGet and namespace root: `Jiron.Umbraco.FormBuilder`. Display name: **Jiron Form Builder**. Backoffice section label: **Form Builder** (the owner, 2026-11-03, ADR-0171; its forms tree stays "Forms").
   - Extension aliases: `Jiron.FormBuilder.*`. Database tables: `jfb*`. App settings section: `JironFormBuilder`.
   - **HTTP:**
     - public API: `/jfb/api/v1`, never under `/umbraco`;

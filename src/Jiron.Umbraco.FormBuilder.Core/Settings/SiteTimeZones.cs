@@ -45,6 +45,6 @@ internal sealed partial class SiteTimeZones(IFormBuilderSettingsService settings
         return TimeZoneInfo.Utc;
     }
 
-    [LoggerMessage(Level = LogLevel.Warning, Message = "The setting {Setting} of the site {SiteKey} names the time zone '{TimeZone}', which this server cannot resolve, so its forms run in UTC. Choose the site's time zone again in the Forms section's settings.")]
+    [LoggerMessage(Level = LogLevel.Warning, Message = "The setting {Setting} of the site {SiteKey} names the time zone '{TimeZone}', which this server cannot resolve, so its forms run in UTC. Choose the site's time zone again in the Form Builder section's settings.")]
     private static partial void LogUnresolved(ILogger logger, string setting, Guid? siteKey, string timeZone);
 }

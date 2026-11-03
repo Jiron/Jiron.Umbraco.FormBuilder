@@ -65,7 +65,7 @@ internal sealed class ConfigureFormBuilderManagementApiSwagger : IConfigureOptio
         {
             Title = "Jiron Form Builder management API",
             Version = "1.0",
-            Description = "The Forms section's API: backoffice users of the section, each call by its Jiron Form Builder permission.",
+            Description = "The Form Builder section's API: backoffice users of the section, each call by its Jiron Form Builder permission.",
         });
         options.OperationFilter<FormBuilderBackOfficeSecurityRequirements>();
     }

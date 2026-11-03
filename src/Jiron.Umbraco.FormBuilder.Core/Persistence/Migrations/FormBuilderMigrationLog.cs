@@ -23,12 +23,12 @@ internal static partial class FormBuilderMigrationLog
     [LoggerMessage(Level = LogLevel.Information, Message = "Jiron Form Builder migration: {Added} global settings rows added")]
     public static partial void DefaultSettings(ILogger logger, int added);
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "Jiron Form Builder migration: the Forms section was granted before, skipped")]
+    [LoggerMessage(Level = LogLevel.Information, Message = "Jiron Form Builder migration: the Form Builder section was granted before, skipped")]
     public static partial void SectionGrantedBefore(ILogger logger);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Jiron Form Builder migration: Forms granted to user group {Alias}")]
     public static partial void SectionGranted(ILogger logger, string alias);
 
-    [LoggerMessage(Level = LogLevel.Warning, Message = "Jiron Form Builder migration: user group {Alias} does not exist; nobody was granted the Forms section")]
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Jiron Form Builder migration: user group {Alias} does not exist; nobody was granted the Form Builder section")]
     public static partial void GroupMissing(ILogger logger, string alias);
 }

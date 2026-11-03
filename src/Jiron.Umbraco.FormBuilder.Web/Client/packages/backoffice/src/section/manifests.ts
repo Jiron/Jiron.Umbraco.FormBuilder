@@ -1,4 +1,4 @@
-// The Forms section (ADR-0021, ADR-0165): the section with its one dashboard, the sidebar of docs/ux/information-architecture.md
+// The Form Builder section (ADR-0021, ADR-0165, ADR-0171): the section with its one dashboard, the sidebar of docs/ux/information-architecture.md
 // and a workspace behind each item. The table in sidebar.ts holds the items; screens that later phases build replace
 // their workspace's element here, and show coming-screen.element until then.
 import { manifests as designer } from '../designer/manifests';
@@ -65,7 +65,7 @@ export const manifests: UmbExtensionManifest[] = [
     alias: SECTION_ALIAS,
     name: 'Jiron Form Builder section',
     weight: 50,
-    meta: { label: '#jfbSection_forms', pathname: SECTION_PATHNAME },
+    meta: { label: '#jfbSection_section', pathname: SECTION_PATHNAME },
     conditions: [{ alias: 'Umb.Condition.SectionUserPermission', match: SECTION_ALIAS }],
   },
   {

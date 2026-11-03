@@ -40,7 +40,7 @@ From §1.2. Each works in a different situation:
 ## Product Purpose
 
 Jiron Form Builder is a form builder for Umbraco 17 sites, installed as a NuGet package (§1.1). Editors design
-forms in a **Forms** section of the backoffice, visitors fill them in on the website (Razor or headless), and the
+forms in a **Form Builder** section of the backoffice, visitors fill them in on the website (Razor or headless), and the
 site's team works with the entries. Success means that an editor builds and publishes a working form in minutes,
 that no entry is ever lost, and that each team member finds their daily task in a few clicks.
 
@@ -78,7 +78,7 @@ PolyForm Perimeter License 1.0.1: "free and source-available", never "open sourc
 
 ## Brand Commitments
 
-- **Names:** the display name is **Jiron Form Builder**, and the backoffice section is labelled **Forms** (D1).
+- **Names:** the display name is **Jiron Form Builder**, and the backoffice section is labelled **Form Builder** (D1, ADR-0171), its forms tree **Forms**.
 - **The voice** is plain, friendly and direct, in sentence case, with verbs on buttons (`docs/ux/copy.md`).
 - **Calm screens** are the owner's first UX requirement (D18): one primary action per view; at most three visible
   secondary actions; each fact said once per screen; nothing squashed on narrow screens.

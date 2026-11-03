@@ -13,7 +13,7 @@ The project has two UI surfaces:
 
 - **The website form**, the default theme that visitors fill in on a customer's site
   (`docs/ux/website/assets/theme.css` and `base.css`, shipped in ROADMAP step 6.3). Most of this file describes it.
-- **The backoffice**, the Forms section in Umbraco. See "The backoffice" at the end of the Overview.
+- **The backoffice**, the Form Builder section in Umbraco. See "The backoffice" at the end of the Overview.
 
 ## Overview
 
@@ -47,7 +47,7 @@ illustration, no decorative gradients and no decorative icons.
 
 ### The backoffice
 
-The backoffice (the Forms section in Umbraco) uses Umbraco's own UUI components and tokens, by their UUI names, so
+The backoffice (the Form Builder section in Umbraco) uses Umbraco's own UUI components and tokens, by their UUI names, so
 the screens feel native to Umbraco and follow the editor's light, dark or high-contrast theme. The few tokens of our
 own (`--jfb-bo-*`) fill gaps UUI does not cover, mixed from UUI's tokens so they follow the theme too. Both sets are
 listed in the backoffice section of

@@ -1,7 +1,9 @@
-// The Forms section's shell and Overview in English (ADR-0021, ADR-0165). The sidebar's labels come from
-// docs/ux/information-architecture.md, section 1.
+// The Form Builder section's shell and Overview in English (ADR-0021, ADR-0165, ADR-0171). The sidebar's labels come
+// from docs/ux/information-architecture.md, section 1.
 export default {
   jfbSection: {
+    // The section's name in Umbraco's top bar, the owner's choice (ADR-0171); its forms tree stays "Forms".
+    section: 'Form Builder',
     forms: 'Forms',
     overview: 'Overview',
     noForms: "You can't see any forms yet. An administrator can give your user group access in Settings › Access.",

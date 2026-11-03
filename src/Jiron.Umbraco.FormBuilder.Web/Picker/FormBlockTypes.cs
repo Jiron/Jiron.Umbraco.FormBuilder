@@ -82,7 +82,7 @@ internal sealed class FormBlockTypes(
         {
             Alias = ElementTypeAlias,
             Name = ElementTypeName,
-            Description = "A form of Jiron Form Builder, picked from the Forms section.",
+            Description = "A form of Jiron Form Builder, picked from the Form Builder section.",
             Icon = "icon-autofill",
             IsElement = true,
         };

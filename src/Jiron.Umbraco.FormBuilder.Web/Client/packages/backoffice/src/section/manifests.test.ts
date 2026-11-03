@@ -52,6 +52,14 @@ describe('the section', () => {
     );
     expect(section?.meta?.['pathname']).toBe(SECTION_PATHNAME);
     expect(section?.meta?.['pathname']).toBe(serverConstant(links, 'SectionPathname'));
+    // Named "Form Builder" in Umbraco's top bar, in every language, while its forms tree stays "Forms" (ADR-0171).
+    expect(section?.meta?.['label']).toBe('#jfbSection_section');
+    expect([en.jfbSection.section, de.jfbSection.section, en.jfbSection.forms, de.jfbSection.forms]).toEqual([
+      'Form Builder',
+      'Form Builder',
+      'Forms',
+      'Formulare',
+    ]);
     expect(section?.conditions).toEqual([{ alias: 'Umb.Condition.SectionUserPermission', match: SECTION_ALIAS }]);
   });
 

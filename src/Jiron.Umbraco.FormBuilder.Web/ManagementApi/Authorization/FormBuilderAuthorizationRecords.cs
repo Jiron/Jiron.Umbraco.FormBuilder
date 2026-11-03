@@ -91,7 +91,7 @@ internal sealed class FormBuilderAccessDenial(IAuthorizationHandler handler, For
 
     private static string MessageOf(FormBuilderDenialKind kind, FormBuilderPermissions permission) => kind switch
     {
-        FormBuilderDenialKind.NoSection => "The user has no access to the Forms section.",
+        FormBuilderDenialKind.NoSection => "The user has no access to the Form Builder section.",
         FormBuilderDenialKind.NotFound => "The user cannot see the folder or form.",
         _ => $"The user lacks the permission '{PermissionRules.NameOf(permission)}'.",
     };

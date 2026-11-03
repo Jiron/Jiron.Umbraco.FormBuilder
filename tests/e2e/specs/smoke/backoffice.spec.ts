@@ -28,6 +28,8 @@ for (const role of ROLES) {
       .evaluateAll((tabs) => tabs.map((tab) => tab.getAttribute('label')));
     // Only the admin group opens Settings in a fresh install; Content shows for the personas whose groups open it.
     expect(labels.includes('Settings'), 'Settings').toBe(role === 'admin');
+    // The section is "Form Builder" in the top bar for every persona that has it (ADR-0171).
+    expect(labels.includes('Form Builder'), 'Form Builder').toBe(!WITHOUT_FORMS.has(role));
     if (role !== 'admin')
       expect(labels.includes('Content'), 'Content').toBe(WITHOUT_FORMS.has(role) || sectionsOf(role).has('content'));
   });

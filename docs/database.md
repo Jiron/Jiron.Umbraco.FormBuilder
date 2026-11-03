@@ -49,7 +49,7 @@ idempotent, so a rerun changes nothing.
 | --- | --- | --- |
 | `jfb-001-create-schema` | `CreateSchemaV1` | Creates every table below that is missing, its keys, and the filtered indexes. |
 | `jfb-002-default-settings` | `CreateDefaultSettingsV1` | Adds the global row of each settings section (General, Email, Protection, Files, Privacy, Integrations) at version 1, holding no values: the defaults live in code. |
-| `jfb-003-grant-forms-section` | `GrantFormsSectionV1` | Gives Umbraco's administrators group the Forms section, once. A flag in `jfbKeyValue` records it, so an administrator who removes the section later is not overruled. |
+| `jfb-003-grant-forms-section` | `GrantFormsSectionV1` | Gives Umbraco's administrators group the Form Builder section, once. A flag in `jfbKeyValue` records it, so an administrator who removes the section later is not overruled. |
 | `jfb-004-request-reference-rebuild` | `RequestReferenceRebuildV1` | Asks for a rebuild of the "used on" index: the row `references-rebuild` in `jfbKeyValue`, from the first document, where it is missing; a walk under way goes on where it was. The reference job does the walk (ADR-0131). |
 | `jfb-005-file-scan-index` | `AddFileScanIndexV1` | Adds `IX_jfbEntryFile_scanState_id`, for the files that wait for a scan ([ADR-0144](decisions/0144-cleanup-and-the-scanner.md)), where it is missing. |
 | `jfb-006-file-scan-order` | `ChangeFileScanIndexV1` | Replaces `IX_jfbEntryFile_scanState_id` with `IX_jfbEntryFile_scanState_entryId_id`, which also tells what an entry holds from uploads no entry took ([ADR-0148](decisions/0148-what-uploads-may-hold.md)). |
@@ -454,7 +454,7 @@ erDiagram
 
 ### `jfbKeyValue`
 
-One-time flags and small markers, such as the record that the Forms section was granted, or the hashes of mirrored
+One-time flags and small markers, such as the record that the Form Builder section was granted, or the hashes of mirrored
 definition files. No indexes besides the primary key on `key`.
 
 ### `jfbFolder`

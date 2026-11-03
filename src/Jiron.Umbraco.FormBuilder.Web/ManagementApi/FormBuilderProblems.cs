@@ -98,7 +98,7 @@ internal static class FormBuilderProblems
 
     /// <summary>The user lacks the Forms section.</summary>
     public static FormBuilderProblemResult NoSection() =>
-        Problem(StatusCodes.Status403Forbidden, NoSectionCode, "You do not have access to the Forms section.");
+        Problem(StatusCodes.Status403Forbidden, NoSectionCode, "You do not have access to the Form Builder section.");
 
     /// <summary>Jiron Form Builder's tables are not ready; the answer says when to ask again.</summary>
     public static FormBuilderProblemResult MigrationsPending(HttpContext http)
