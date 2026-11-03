@@ -53,6 +53,18 @@ export type ActionsCopiedResponseModel = {
     actions: Array<CopiedActionResponseModel>;
 };
 
+export type CanvasResponseModel = {
+    culture: string;
+    words: {
+        [key: string]: string;
+    };
+    classes: {
+        [key: string]: string;
+    };
+    stylesheets: Array<string>;
+    requiredMarker: string;
+};
+
 export type ChecklistItemResponseModel = {
     step: string;
     done: boolean;
@@ -686,6 +698,35 @@ export type ActionTestTestResponses = {
 };
 
 export type ActionTestTestResponse = ActionTestTestResponses[keyof ActionTestTestResponses];
+
+export type CanvasGetData = {
+    body?: never;
+    path?: never;
+    query?: {
+        culture?: string;
+    };
+    url: '/umbraco/jfb/management/api/v1/canvas';
+};
+
+export type CanvasGetErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+};
+
+export type CanvasGetResponses = {
+    /**
+     * OK
+     */
+    200: CanvasResponseModel;
+};
+
+export type CanvasGetResponse = CanvasGetResponses[keyof CanvasGetResponses];
 
 export type TestEmailSendData = {
     body?: TestEmailRequestModel;

@@ -109,6 +109,24 @@ public sealed class ElementFixtureTests : RenderingTestBase
         await MatchFixtureAsync($"element-{language}.json", cases, "the server's first renders changed");
     }
 
+    /// <summary>
+    /// The sink's definition as the designer reads its draft, in <c>tests/fixtures/rendering/designer-sink.json</c>: the
+    /// backoffice's preview tests build each field's view model from it and hold what the element's views write to the
+    /// server's markup of the sink in the fixture above (ADR-0168). The form's key is the sink's there; its
+    /// outcomes, which no preview draws and whose key is new on each run, are left out.
+    /// </summary>
+    [Test]
+    public async Task TheSinksDraft_IsTheDefinitionTheDesignersPreviewsAreHeldTo()
+    {
+        GetRequiredService<TestClock>().SetNow(Now);
+        var key = await PublishFormAsync("elementSink", definition => Headless(BuiltInSink(definition)), NameField);
+        var definition = (await Forms.GetDraftAsync(key))?.Definition ?? throw new AssertionException("the sink has no draft");
+
+        var written = JsonNode.Parse(Fixed(FormDefinitionSerializer.WriteString(definition), key, K(0x10)))!.AsObject();
+        written.Remove("outcomes");
+        await MatchFixtureAsync("designer-sink.json", [new JsonObject { ["name"] = "sink", ["definition"] = written }], "the sink's definition changed");
+    }
+
     /// <inheritdoc />
     protected override void CustomTestSetup(IUmbracoBuilder builder)
     {

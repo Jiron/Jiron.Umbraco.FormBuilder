@@ -1,0 +1,1849 @@
+{
+  "cases": [
+    {
+      "name": "sink",
+      "definition": {
+        "schemaVersion": 1,
+        "key": "30000000-0000-4000-8000-0000006f0010",
+        "settings": {
+          "submission": {
+            "summaryPage": false,
+            "progress": "steps",
+            "store": "always",
+            "approval": "automatic"
+          },
+          "availability": {
+            "members": "anyone",
+            "onePerMember": false
+          },
+          "protection": {
+            "level": "captcha",
+            "captcha": {
+              "provider": "hcaptcha"
+            },
+            "contentRules": "inherit"
+          },
+          "privacy": {
+            "ip": "inherit",
+            "insights": true
+          },
+          "appearance": {
+            "requiredMarker": "inherit",
+            "validationSummary": true,
+            "choiceLayout": "vertical"
+          },
+          "developer": {
+            "headless": true
+          }
+        },
+        "pages": [
+          {
+            "key": "30000000-0000-4000-8000-00000062f202",
+            "groups": [
+              {
+                "key": "30000000-0000-4000-8000-00000062f203",
+                "columns": 2,
+                "style": "plain",
+                "fields": [
+                  {
+                    "key": "30000000-0000-4000-8000-00000062f201",
+                    "type": "text",
+                    "alias": "hide",
+                    "span": 1,
+                    "label": {
+                      "": "Hide"
+                    },
+                    "hideLabel": false,
+                    "required": false,
+                    "sensitive": false,
+                    "includeInEmails": true,
+                    "keep": "always"
+                  },
+                  {
+                    "key": "30000000-0000-4000-8000-00000062f210",
+                    "type": "text",
+                    "alias": "kText",
+                    "span": 1,
+                    "label": {
+                      "": "kText"
+                    },
+                    "hideLabel": false,
+                    "help": {
+                      "": "Help for kText"
+                    },
+                    "required": false,
+                    "sensitive": false,
+                    "includeInEmails": true,
+                    "keep": "always",
+                    "rules": [
+                      {
+                        "key": "30000000-0000-4000-8000-00000062f310",
+                        "effect": "hide",
+                        "enabled": true,
+                        "match": "all",
+                        "conditions": [
+                          {
+                            "field": "30000000-0000-4000-8000-00000062f201",
+                            "op": "equals",
+                            "value": "yes"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "key": "30000000-0000-4000-8000-00000062f211",
+                    "type": "textarea",
+                    "alias": "kTextarea",
+                    "span": 1,
+                    "label": {
+                      "": "kTextarea"
+                    },
+                    "hideLabel": false,
+                    "help": {
+                      "": "Help for kTextarea"
+                    },
+                    "required": false,
+                    "sensitive": false,
+                    "includeInEmails": true,
+                    "keep": "always",
+                    "rules": [
+                      {
+                        "key": "30000000-0000-4000-8000-00000062f311",
+                        "effect": "hide",
+                        "enabled": true,
+                        "match": "all",
+                        "conditions": [
+                          {
+                            "field": "30000000-0000-4000-8000-00000062f201",
+                            "op": "equals",
+                            "value": "yes"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "key": "30000000-0000-4000-8000-00000062f212",
+                    "type": "email",
+                    "alias": "kEmail",
+                    "span": 1,
+                    "label": {
+                      "": "kEmail"
+                    },
+                    "hideLabel": false,
+                    "help": {
+                      "": "Help for kEmail"
+                    },
+                    "required": false,
+                    "sensitive": false,
+                    "includeInEmails": true,
+                    "keep": "always",
+                    "rules": [
+                      {
+                        "key": "30000000-0000-4000-8000-00000062f312",
+                        "effect": "hide",
+                        "enabled": true,
+                        "match": "all",
+                        "conditions": [
+                          {
+                            "field": "30000000-0000-4000-8000-00000062f201",
+                            "op": "equals",
+                            "value": "yes"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "key": "30000000-0000-4000-8000-00000062f213",
+                    "type": "number",
+                    "alias": "kNumber",
+                    "span": 1,
+                    "label": {
+                      "": "kNumber"
+                    },
+                    "hideLabel": false,
+                    "help": {
+                      "": "Help for kNumber"
+                    },
+                    "required": false,
+                    "sensitive": false,
+                    "includeInEmails": true,
+                    "keep": "always",
+                    "rules": [
+                      {
+                        "key": "30000000-0000-4000-8000-00000062f313",
+                        "effect": "hide",
+                        "enabled": true,
+                        "match": "all",
+                        "conditions": [
+                          {
+                            "field": "30000000-0000-4000-8000-00000062f201",
+                            "op": "equals",
+                            "value": "yes"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "key": "30000000-0000-4000-8000-00000062f214",
+                    "type": "phone",
+                    "alias": "kPhone",
+                    "span": 1,
+                    "label": {
+                      "": "kPhone"
+                    },
+                    "hideLabel": false,
+                    "help": {
+                      "": "Help for kPhone"
+                    },
+                    "required": false,
+                    "sensitive": false,
+                    "includeInEmails": true,
+                    "keep": "always",
+                    "rules": [
+                      {
+                        "key": "30000000-0000-4000-8000-00000062f314",
+                        "effect": "hide",
+                        "enabled": true,
+                        "match": "all",
+                        "conditions": [
+                          {
+                            "field": "30000000-0000-4000-8000-00000062f201",
+                            "op": "equals",
+                            "value": "yes"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "key": "30000000-0000-4000-8000-00000062f215",
+                    "type": "url",
+                    "alias": "kUrl",
+                    "span": 1,
+                    "label": {
+                      "": "kUrl"
+                    },
+                    "hideLabel": false,
+                    "help": {
+                      "": "Help for kUrl"
+                    },
+                    "required": false,
+                    "sensitive": false,
+                    "includeInEmails": true,
+                    "keep": "always",
+                    "rules": [
+                      {
+                        "key": "30000000-0000-4000-8000-00000062f315",
+                        "effect": "hide",
+                        "enabled": true,
+                        "match": "all",
+                        "conditions": [
+                          {
+                            "field": "30000000-0000-4000-8000-00000062f201",
+                            "op": "equals",
+                            "value": "yes"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "key": "30000000-0000-4000-8000-00000062f216",
+                    "type": "date",
+                    "alias": "kDate",
+                    "span": 1,
+                    "label": {
+                      "": "kDate"
+                    },
+                    "hideLabel": false,
+                    "help": {
+                      "": "Help for kDate"
+                    },
+                    "required": false,
+                    "sensitive": false,
+                    "includeInEmails": true,
+                    "keep": "always",
+                    "rules": [
+                      {
+                        "key": "30000000-0000-4000-8000-00000062f316",
+                        "effect": "hide",
+                        "enabled": true,
+                        "match": "all",
+                        "conditions": [
+                          {
+                            "field": "30000000-0000-4000-8000-00000062f201",
+                            "op": "equals",
+                            "value": "yes"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "key": "30000000-0000-4000-8000-00000062f217",
+                    "type": "time",
+                    "alias": "kTime",
+                    "span": 1,
+                    "label": {
+                      "": "kTime"
+                    },
+                    "hideLabel": false,
+                    "help": {
+                      "": "Help for kTime"
+                    },
+                    "required": false,
+                    "sensitive": false,
+                    "includeInEmails": true,
+                    "keep": "always",
+                    "rules": [
+                      {
+                        "key": "30000000-0000-4000-8000-00000062f317",
+                        "effect": "hide",
+                        "enabled": true,
+                        "match": "all",
+                        "conditions": [
+                          {
+                            "field": "30000000-0000-4000-8000-00000062f201",
+                            "op": "equals",
+                            "value": "yes"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "key": "30000000-0000-4000-8000-00000062f218",
+                    "type": "datetime",
+                    "alias": "kDatetime",
+                    "span": 1,
+                    "label": {
+                      "": "kDatetime"
+                    },
+                    "hideLabel": false,
+                    "help": {
+                      "": "Help for kDatetime"
+                    },
+                    "required": false,
+                    "sensitive": false,
+                    "includeInEmails": true,
+                    "keep": "always",
+                    "rules": [
+                      {
+                        "key": "30000000-0000-4000-8000-00000062f318",
+                        "effect": "hide",
+                        "enabled": true,
+                        "match": "all",
+                        "conditions": [
+                          {
+                            "field": "30000000-0000-4000-8000-00000062f201",
+                            "op": "equals",
+                            "value": "yes"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "key": "30000000-0000-4000-8000-00000062f219",
+                    "type": "dropdown",
+                    "alias": "kDropdown",
+                    "span": 1,
+                    "label": {
+                      "": "kDropdown"
+                    },
+                    "hideLabel": false,
+                    "help": {
+                      "": "Help for kDropdown"
+                    },
+                    "required": false,
+                    "sensitive": false,
+                    "includeInEmails": true,
+                    "keep": "always",
+                    "rules": [
+                      {
+                        "key": "30000000-0000-4000-8000-00000062f319",
+                        "effect": "hide",
+                        "enabled": true,
+                        "match": "all",
+                        "conditions": [
+                          {
+                            "field": "30000000-0000-4000-8000-00000062f201",
+                            "op": "equals",
+                            "value": "yes"
+                          }
+                        ]
+                      }
+                    ],
+                    "options": {
+                      "source": "items",
+                      "items": [
+                        {
+                          "value": "a",
+                          "label": {
+                            "": "Alpha"
+                          }
+                        },
+                        {
+                          "value": "b",
+                          "label": {
+                            "": "Beta"
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "key": "30000000-0000-4000-8000-00000062f21a",
+                    "type": "radio",
+                    "alias": "kRadio",
+                    "span": 1,
+                    "label": {
+                      "": "kRadio"
+                    },
+                    "hideLabel": false,
+                    "help": {
+                      "": "Help for kRadio"
+                    },
+                    "required": false,
+                    "sensitive": false,
+                    "includeInEmails": true,
+                    "keep": "always",
+                    "rules": [
+                      {
+                        "key": "30000000-0000-4000-8000-00000062f31a",
+                        "effect": "hide",
+                        "enabled": true,
+                        "match": "all",
+                        "conditions": [
+                          {
+                            "field": "30000000-0000-4000-8000-00000062f201",
+                            "op": "equals",
+                            "value": "yes"
+                          }
+                        ]
+                      }
+                    ],
+                    "options": {
+                      "source": "items",
+                      "items": [
+                        {
+                          "value": "a",
+                          "label": {
+                            "": "Alpha"
+                          }
+                        },
+                        {
+                          "value": "b",
+                          "label": {
+                            "": "Beta"
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "key": "30000000-0000-4000-8000-00000062f21b",
+                    "type": "checkboxes",
+                    "alias": "kCheckboxes",
+                    "span": 1,
+                    "label": {
+                      "": "kCheckboxes"
+                    },
+                    "hideLabel": false,
+                    "help": {
+                      "": "Help for kCheckboxes"
+                    },
+                    "required": false,
+                    "sensitive": false,
+                    "includeInEmails": true,
+                    "keep": "always",
+                    "rules": [
+                      {
+                        "key": "30000000-0000-4000-8000-00000062f31b",
+                        "effect": "hide",
+                        "enabled": true,
+                        "match": "all",
+                        "conditions": [
+                          {
+                            "field": "30000000-0000-4000-8000-00000062f201",
+                            "op": "equals",
+                            "value": "yes"
+                          }
+                        ]
+                      }
+                    ],
+                    "options": {
+                      "source": "items",
+                      "items": [
+                        {
+                          "value": "a",
+                          "label": {
+                            "": "Alpha"
+                          }
+                        },
+                        {
+                          "value": "b",
+                          "label": {
+                            "": "Beta"
+                          }
+                        }
+                      ]
+                    },
+                    "settings": {
+                      "other": true
+                    }
+                  },
+                  {
+                    "key": "30000000-0000-4000-8000-00000062f21c",
+                    "type": "grid",
+                    "alias": "kGrid",
+                    "span": 1,
+                    "label": {
+                      "": "kGrid"
+                    },
+                    "hideLabel": false,
+                    "help": {
+                      "": "Help for kGrid"
+                    },
+                    "required": false,
+                    "sensitive": false,
+                    "includeInEmails": true,
+                    "keep": "always",
+                    "rules": [
+                      {
+                        "key": "30000000-0000-4000-8000-00000062f31c",
+                        "effect": "hide",
+                        "enabled": true,
+                        "match": "all",
+                        "conditions": [
+                          {
+                            "field": "30000000-0000-4000-8000-00000062f201",
+                            "op": "equals",
+                            "value": "yes"
+                          }
+                        ]
+                      }
+                    ],
+                    "options": {
+                      "source": "items",
+                      "items": [
+                        {
+                          "value": "a",
+                          "label": {
+                            "": "Alpha"
+                          }
+                        },
+                        {
+                          "value": "b",
+                          "label": {
+                            "": "Beta"
+                          }
+                        }
+                      ]
+                    },
+                    "rows": [
+                      {
+                        "key": "30000000-0000-4000-8000-00000062f290",
+                        "label": {
+                          "": "The room"
+                        },
+                        "required": false
+                      }
+                    ]
+                  },
+                  {
+                    "key": "30000000-0000-4000-8000-00000062f21d",
+                    "type": "ranking",
+                    "alias": "kRanking",
+                    "span": 1,
+                    "label": {
+                      "": "kRanking"
+                    },
+                    "hideLabel": false,
+                    "help": {
+                      "": "Help for kRanking"
+                    },
+                    "required": false,
+                    "sensitive": false,
+                    "includeInEmails": true,
+                    "keep": "always",
+                    "rules": [
+                      {
+                        "key": "30000000-0000-4000-8000-00000062f31d",
+                        "effect": "hide",
+                        "enabled": true,
+                        "match": "all",
+                        "conditions": [
+                          {
+                            "field": "30000000-0000-4000-8000-00000062f201",
+                            "op": "equals",
+                            "value": "yes"
+                          }
+                        ]
+                      }
+                    ],
+                    "options": {
+                      "source": "items",
+                      "items": [
+                        {
+                          "value": "a",
+                          "label": {
+                            "": "Alpha"
+                          }
+                        },
+                        {
+                          "value": "b",
+                          "label": {
+                            "": "Beta"
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "key": "30000000-0000-4000-8000-00000062f21e",
+                    "type": "checkbox",
+                    "alias": "kCheckbox",
+                    "span": 1,
+                    "label": {
+                      "": "kCheckbox"
+                    },
+                    "hideLabel": false,
+                    "help": {
+                      "": "Help for kCheckbox"
+                    },
+                    "required": false,
+                    "sensitive": false,
+                    "includeInEmails": true,
+                    "keep": "always",
+                    "rules": [
+                      {
+                        "key": "30000000-0000-4000-8000-00000062f31e",
+                        "effect": "hide",
+                        "enabled": true,
+                        "match": "all",
+                        "conditions": [
+                          {
+                            "field": "30000000-0000-4000-8000-00000062f201",
+                            "op": "equals",
+                            "value": "yes"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "key": "30000000-0000-4000-8000-00000062f21f",
+                    "type": "yesno",
+                    "alias": "kYesno",
+                    "span": 1,
+                    "label": {
+                      "": "kYesno"
+                    },
+                    "hideLabel": false,
+                    "help": {
+                      "": "Help for kYesno"
+                    },
+                    "required": false,
+                    "sensitive": false,
+                    "includeInEmails": true,
+                    "keep": "always",
+                    "rules": [
+                      {
+                        "key": "30000000-0000-4000-8000-00000062f31f",
+                        "effect": "hide",
+                        "enabled": true,
+                        "match": "all",
+                        "conditions": [
+                          {
+                            "field": "30000000-0000-4000-8000-00000062f201",
+                            "op": "equals",
+                            "value": "yes"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "key": "30000000-0000-4000-8000-00000062f220",
+                    "type": "consent",
+                    "alias": "kConsent",
+                    "span": 1,
+                    "label": {
+                      "": "kConsent"
+                    },
+                    "hideLabel": false,
+                    "help": {
+                      "": "Help for kConsent"
+                    },
+                    "required": false,
+                    "sensitive": false,
+                    "includeInEmails": true,
+                    "keep": "always",
+                    "rules": [
+                      {
+                        "key": "30000000-0000-4000-8000-00000062f320",
+                        "effect": "hide",
+                        "enabled": true,
+                        "match": "all",
+                        "conditions": [
+                          {
+                            "field": "30000000-0000-4000-8000-00000062f201",
+                            "op": "equals",
+                            "value": "yes"
+                          }
+                        ]
+                      }
+                    ],
+                    "settings": {
+                      "text": {
+                        "": "<p>I agree to the terms.</p>"
+                      }
+                    }
+                  },
+                  {
+                    "key": "30000000-0000-4000-8000-00000062f221",
+                    "type": "rating",
+                    "alias": "kRating",
+                    "span": 1,
+                    "label": {
+                      "": "kRating"
+                    },
+                    "hideLabel": false,
+                    "help": {
+                      "": "Help for kRating"
+                    },
+                    "required": false,
+                    "sensitive": false,
+                    "includeInEmails": true,
+                    "keep": "always",
+                    "rules": [
+                      {
+                        "key": "30000000-0000-4000-8000-00000062f321",
+                        "effect": "hide",
+                        "enabled": true,
+                        "match": "all",
+                        "conditions": [
+                          {
+                            "field": "30000000-0000-4000-8000-00000062f201",
+                            "op": "equals",
+                            "value": "yes"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "key": "30000000-0000-4000-8000-00000062f222",
+                    "type": "scale",
+                    "alias": "kScale",
+                    "span": 1,
+                    "label": {
+                      "": "kScale"
+                    },
+                    "hideLabel": false,
+                    "help": {
+                      "": "Help for kScale"
+                    },
+                    "required": false,
+                    "sensitive": false,
+                    "includeInEmails": true,
+                    "keep": "always",
+                    "rules": [
+                      {
+                        "key": "30000000-0000-4000-8000-00000062f322",
+                        "effect": "hide",
+                        "enabled": true,
+                        "match": "all",
+                        "conditions": [
+                          {
+                            "field": "30000000-0000-4000-8000-00000062f201",
+                            "op": "equals",
+                            "value": "yes"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "key": "30000000-0000-4000-8000-00000062f223",
+                    "type": "slider",
+                    "alias": "kSlider",
+                    "span": 1,
+                    "label": {
+                      "": "kSlider"
+                    },
+                    "hideLabel": false,
+                    "help": {
+                      "": "Help for kSlider"
+                    },
+                    "required": false,
+                    "sensitive": false,
+                    "includeInEmails": true,
+                    "keep": "always",
+                    "rules": [
+                      {
+                        "key": "30000000-0000-4000-8000-00000062f323",
+                        "effect": "hide",
+                        "enabled": true,
+                        "match": "all",
+                        "conditions": [
+                          {
+                            "field": "30000000-0000-4000-8000-00000062f201",
+                            "op": "equals",
+                            "value": "yes"
+                          }
+                        ]
+                      }
+                    ],
+                    "settings": {
+                      "max": "60",
+                      "min": "0",
+                      "step": "5"
+                    }
+                  },
+                  {
+                    "key": "30000000-0000-4000-8000-00000062f224",
+                    "type": "signature",
+                    "alias": "kSignature",
+                    "span": 1,
+                    "label": {
+                      "": "kSignature"
+                    },
+                    "hideLabel": false,
+                    "help": {
+                      "": "Help for kSignature"
+                    },
+                    "required": false,
+                    "sensitive": false,
+                    "includeInEmails": true,
+                    "keep": "always",
+                    "rules": [
+                      {
+                        "key": "30000000-0000-4000-8000-00000062f324",
+                        "effect": "hide",
+                        "enabled": true,
+                        "match": "all",
+                        "conditions": [
+                          {
+                            "field": "30000000-0000-4000-8000-00000062f201",
+                            "op": "equals",
+                            "value": "yes"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "key": "30000000-0000-4000-8000-00000062f225",
+                    "type": "name",
+                    "alias": "kName",
+                    "span": 1,
+                    "label": {
+                      "": "kName"
+                    },
+                    "hideLabel": false,
+                    "help": {
+                      "": "Help for kName"
+                    },
+                    "required": false,
+                    "sensitive": false,
+                    "includeInEmails": true,
+                    "keep": "always",
+                    "rules": [
+                      {
+                        "key": "30000000-0000-4000-8000-00000062f325",
+                        "effect": "hide",
+                        "enabled": true,
+                        "match": "all",
+                        "conditions": [
+                          {
+                            "field": "30000000-0000-4000-8000-00000062f201",
+                            "op": "equals",
+                            "value": "yes"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "key": "30000000-0000-4000-8000-00000062f226",
+                    "type": "address",
+                    "alias": "kAddress",
+                    "span": 1,
+                    "label": {
+                      "": "kAddress"
+                    },
+                    "hideLabel": false,
+                    "help": {
+                      "": "Help for kAddress"
+                    },
+                    "required": false,
+                    "sensitive": false,
+                    "includeInEmails": true,
+                    "keep": "always",
+                    "rules": [
+                      {
+                        "key": "30000000-0000-4000-8000-00000062f326",
+                        "effect": "hide",
+                        "enabled": true,
+                        "match": "all",
+                        "conditions": [
+                          {
+                            "field": "30000000-0000-4000-8000-00000062f201",
+                            "op": "equals",
+                            "value": "yes"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "key": "30000000-0000-4000-8000-00000062f227",
+                    "type": "country",
+                    "alias": "kCountry",
+                    "span": 1,
+                    "label": {
+                      "": "kCountry"
+                    },
+                    "hideLabel": false,
+                    "help": {
+                      "": "Help for kCountry"
+                    },
+                    "required": false,
+                    "sensitive": false,
+                    "includeInEmails": true,
+                    "keep": "always",
+                    "rules": [
+                      {
+                        "key": "30000000-0000-4000-8000-00000062f327",
+                        "effect": "hide",
+                        "enabled": true,
+                        "match": "all",
+                        "conditions": [
+                          {
+                            "field": "30000000-0000-4000-8000-00000062f201",
+                            "op": "equals",
+                            "value": "yes"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "key": "30000000-0000-4000-8000-00000062f228",
+                    "type": "file",
+                    "alias": "kFile",
+                    "span": 1,
+                    "label": {
+                      "": "kFile"
+                    },
+                    "hideLabel": false,
+                    "help": {
+                      "": "Help for kFile"
+                    },
+                    "required": false,
+                    "sensitive": false,
+                    "includeInEmails": true,
+                    "keep": "always",
+                    "rules": [
+                      {
+                        "key": "30000000-0000-4000-8000-00000062f328",
+                        "effect": "hide",
+                        "enabled": true,
+                        "match": "all",
+                        "conditions": [
+                          {
+                            "field": "30000000-0000-4000-8000-00000062f201",
+                            "op": "equals",
+                            "value": "yes"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "key": "30000000-0000-4000-8000-00000062f229",
+                    "type": "hidden",
+                    "alias": "kHidden",
+                    "span": 1,
+                    "label": {
+                      "": "kHidden"
+                    },
+                    "hideLabel": false,
+                    "required": false,
+                    "sensitive": false,
+                    "includeInEmails": true,
+                    "keep": "always",
+                    "rules": [
+                      {
+                        "key": "30000000-0000-4000-8000-00000062f329",
+                        "effect": "hide",
+                        "enabled": true,
+                        "match": "all",
+                        "conditions": [
+                          {
+                            "field": "30000000-0000-4000-8000-00000062f201",
+                            "op": "equals",
+                            "value": "yes"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "key": "30000000-0000-4000-8000-00000062f22a",
+                    "type": "calculation",
+                    "alias": "kCalculation",
+                    "span": 1,
+                    "label": {
+                      "": "kCalculation"
+                    },
+                    "hideLabel": false,
+                    "help": {
+                      "": "Help for kCalculation"
+                    },
+                    "required": false,
+                    "sensitive": false,
+                    "includeInEmails": true,
+                    "keep": "always",
+                    "rules": [
+                      {
+                        "key": "30000000-0000-4000-8000-00000062f32a",
+                        "effect": "hide",
+                        "enabled": true,
+                        "match": "all",
+                        "conditions": [
+                          {
+                            "field": "30000000-0000-4000-8000-00000062f201",
+                            "op": "equals",
+                            "value": "yes"
+                          }
+                        ]
+                      }
+                    ],
+                    "settings": {
+                      "formula": "kNumber * 2"
+                    }
+                  },
+                  {
+                    "key": "30000000-0000-4000-8000-00000062f22b",
+                    "type": "repeater",
+                    "alias": "kRepeater",
+                    "span": 1,
+                    "label": {
+                      "": "kRepeater"
+                    },
+                    "hideLabel": false,
+                    "help": {
+                      "": "Help for kRepeater"
+                    },
+                    "required": false,
+                    "sensitive": false,
+                    "includeInEmails": true,
+                    "keep": "always",
+                    "rules": [
+                      {
+                        "key": "30000000-0000-4000-8000-00000062f32b",
+                        "effect": "hide",
+                        "enabled": true,
+                        "match": "all",
+                        "conditions": [
+                          {
+                            "field": "30000000-0000-4000-8000-00000062f201",
+                            "op": "equals",
+                            "value": "yes"
+                          }
+                        ]
+                      }
+                    ],
+                    "fields": [
+                      {
+                        "key": "30000000-0000-4000-8000-00000062f240",
+                        "type": "text",
+                        "alias": "rText",
+                        "span": 1,
+                        "label": {
+                          "": "rText"
+                        },
+                        "hideLabel": false,
+                        "help": {
+                          "": "Help for rText"
+                        },
+                        "required": false,
+                        "sensitive": false,
+                        "includeInEmails": true,
+                        "keep": "always"
+                      },
+                      {
+                        "key": "30000000-0000-4000-8000-00000062f241",
+                        "type": "textarea",
+                        "alias": "rTextarea",
+                        "span": 1,
+                        "label": {
+                          "": "rTextarea"
+                        },
+                        "hideLabel": false,
+                        "help": {
+                          "": "Help for rTextarea"
+                        },
+                        "required": false,
+                        "sensitive": false,
+                        "includeInEmails": true,
+                        "keep": "always"
+                      },
+                      {
+                        "key": "30000000-0000-4000-8000-00000062f242",
+                        "type": "email",
+                        "alias": "rEmail",
+                        "span": 1,
+                        "label": {
+                          "": "rEmail"
+                        },
+                        "hideLabel": false,
+                        "help": {
+                          "": "Help for rEmail"
+                        },
+                        "required": false,
+                        "sensitive": false,
+                        "includeInEmails": true,
+                        "keep": "always"
+                      },
+                      {
+                        "key": "30000000-0000-4000-8000-00000062f243",
+                        "type": "number",
+                        "alias": "rNumber",
+                        "span": 1,
+                        "label": {
+                          "": "rNumber"
+                        },
+                        "hideLabel": false,
+                        "help": {
+                          "": "Help for rNumber"
+                        },
+                        "required": false,
+                        "sensitive": false,
+                        "includeInEmails": true,
+                        "keep": "always"
+                      },
+                      {
+                        "key": "30000000-0000-4000-8000-00000062f244",
+                        "type": "phone",
+                        "alias": "rPhone",
+                        "span": 1,
+                        "label": {
+                          "": "rPhone"
+                        },
+                        "hideLabel": false,
+                        "help": {
+                          "": "Help for rPhone"
+                        },
+                        "required": false,
+                        "sensitive": false,
+                        "includeInEmails": true,
+                        "keep": "always"
+                      },
+                      {
+                        "key": "30000000-0000-4000-8000-00000062f245",
+                        "type": "url",
+                        "alias": "rUrl",
+                        "span": 1,
+                        "label": {
+                          "": "rUrl"
+                        },
+                        "hideLabel": false,
+                        "help": {
+                          "": "Help for rUrl"
+                        },
+                        "required": false,
+                        "sensitive": false,
+                        "includeInEmails": true,
+                        "keep": "always"
+                      },
+                      {
+                        "key": "30000000-0000-4000-8000-00000062f246",
+                        "type": "date",
+                        "alias": "rDate",
+                        "span": 1,
+                        "label": {
+                          "": "rDate"
+                        },
+                        "hideLabel": false,
+                        "help": {
+                          "": "Help for rDate"
+                        },
+                        "required": false,
+                        "sensitive": false,
+                        "includeInEmails": true,
+                        "keep": "always"
+                      },
+                      {
+                        "key": "30000000-0000-4000-8000-00000062f247",
+                        "type": "time",
+                        "alias": "rTime",
+                        "span": 1,
+                        "label": {
+                          "": "rTime"
+                        },
+                        "hideLabel": false,
+                        "help": {
+                          "": "Help for rTime"
+                        },
+                        "required": false,
+                        "sensitive": false,
+                        "includeInEmails": true,
+                        "keep": "always"
+                      },
+                      {
+                        "key": "30000000-0000-4000-8000-00000062f248",
+                        "type": "datetime",
+                        "alias": "rDatetime",
+                        "span": 1,
+                        "label": {
+                          "": "rDatetime"
+                        },
+                        "hideLabel": false,
+                        "help": {
+                          "": "Help for rDatetime"
+                        },
+                        "required": false,
+                        "sensitive": false,
+                        "includeInEmails": true,
+                        "keep": "always"
+                      },
+                      {
+                        "key": "30000000-0000-4000-8000-00000062f249",
+                        "type": "dropdown",
+                        "alias": "rDropdown",
+                        "span": 1,
+                        "label": {
+                          "": "rDropdown"
+                        },
+                        "hideLabel": false,
+                        "help": {
+                          "": "Help for rDropdown"
+                        },
+                        "required": false,
+                        "sensitive": false,
+                        "includeInEmails": true,
+                        "keep": "always",
+                        "options": {
+                          "source": "items",
+                          "items": [
+                            {
+                              "value": "a",
+                              "label": {
+                                "": "Alpha"
+                              }
+                            },
+                            {
+                              "value": "b",
+                              "label": {
+                                "": "Beta"
+                              }
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "key": "30000000-0000-4000-8000-00000062f24a",
+                        "type": "radio",
+                        "alias": "rRadio",
+                        "span": 1,
+                        "label": {
+                          "": "rRadio"
+                        },
+                        "hideLabel": false,
+                        "help": {
+                          "": "Help for rRadio"
+                        },
+                        "required": false,
+                        "sensitive": false,
+                        "includeInEmails": true,
+                        "keep": "always",
+                        "options": {
+                          "source": "items",
+                          "items": [
+                            {
+                              "value": "a",
+                              "label": {
+                                "": "Alpha"
+                              }
+                            },
+                            {
+                              "value": "b",
+                              "label": {
+                                "": "Beta"
+                              }
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "key": "30000000-0000-4000-8000-00000062f24b",
+                        "type": "checkboxes",
+                        "alias": "rCheckboxes",
+                        "span": 1,
+                        "label": {
+                          "": "rCheckboxes"
+                        },
+                        "hideLabel": false,
+                        "help": {
+                          "": "Help for rCheckboxes"
+                        },
+                        "required": false,
+                        "sensitive": false,
+                        "includeInEmails": true,
+                        "keep": "always",
+                        "options": {
+                          "source": "items",
+                          "items": [
+                            {
+                              "value": "a",
+                              "label": {
+                                "": "Alpha"
+                              }
+                            },
+                            {
+                              "value": "b",
+                              "label": {
+                                "": "Beta"
+                              }
+                            }
+                          ]
+                        },
+                        "settings": {
+                          "other": true
+                        }
+                      },
+                      {
+                        "key": "30000000-0000-4000-8000-00000062f24c",
+                        "type": "grid",
+                        "alias": "rGrid",
+                        "span": 1,
+                        "label": {
+                          "": "rGrid"
+                        },
+                        "hideLabel": false,
+                        "help": {
+                          "": "Help for rGrid"
+                        },
+                        "required": false,
+                        "sensitive": false,
+                        "includeInEmails": true,
+                        "keep": "always",
+                        "options": {
+                          "source": "items",
+                          "items": [
+                            {
+                              "value": "a",
+                              "label": {
+                                "": "Alpha"
+                              }
+                            },
+                            {
+                              "value": "b",
+                              "label": {
+                                "": "Beta"
+                              }
+                            }
+                          ]
+                        },
+                        "rows": [
+                          {
+                            "key": "30000000-0000-4000-8000-00000062f291",
+                            "label": {
+                              "": "The room"
+                            },
+                            "required": false
+                          }
+                        ]
+                      },
+                      {
+                        "key": "30000000-0000-4000-8000-00000062f24d",
+                        "type": "ranking",
+                        "alias": "rRanking",
+                        "span": 1,
+                        "label": {
+                          "": "rRanking"
+                        },
+                        "hideLabel": false,
+                        "help": {
+                          "": "Help for rRanking"
+                        },
+                        "required": false,
+                        "sensitive": false,
+                        "includeInEmails": true,
+                        "keep": "always",
+                        "options": {
+                          "source": "items",
+                          "items": [
+                            {
+                              "value": "a",
+                              "label": {
+                                "": "Alpha"
+                              }
+                            },
+                            {
+                              "value": "b",
+                              "label": {
+                                "": "Beta"
+                              }
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "key": "30000000-0000-4000-8000-00000062f24e",
+                        "type": "checkbox",
+                        "alias": "rCheckbox",
+                        "span": 1,
+                        "label": {
+                          "": "rCheckbox"
+                        },
+                        "hideLabel": false,
+                        "help": {
+                          "": "Help for rCheckbox"
+                        },
+                        "required": false,
+                        "sensitive": false,
+                        "includeInEmails": true,
+                        "keep": "always"
+                      },
+                      {
+                        "key": "30000000-0000-4000-8000-00000062f24f",
+                        "type": "yesno",
+                        "alias": "rYesno",
+                        "span": 1,
+                        "label": {
+                          "": "rYesno"
+                        },
+                        "hideLabel": false,
+                        "help": {
+                          "": "Help for rYesno"
+                        },
+                        "required": false,
+                        "sensitive": false,
+                        "includeInEmails": true,
+                        "keep": "always"
+                      },
+                      {
+                        "key": "30000000-0000-4000-8000-00000062f250",
+                        "type": "consent",
+                        "alias": "rConsent",
+                        "span": 1,
+                        "label": {
+                          "": "rConsent"
+                        },
+                        "hideLabel": false,
+                        "help": {
+                          "": "Help for rConsent"
+                        },
+                        "required": false,
+                        "sensitive": false,
+                        "includeInEmails": true,
+                        "keep": "always",
+                        "settings": {
+                          "text": {
+                            "": "<p>I agree to the terms.</p>"
+                          }
+                        }
+                      },
+                      {
+                        "key": "30000000-0000-4000-8000-00000062f251",
+                        "type": "rating",
+                        "alias": "rRating",
+                        "span": 1,
+                        "label": {
+                          "": "rRating"
+                        },
+                        "hideLabel": false,
+                        "help": {
+                          "": "Help for rRating"
+                        },
+                        "required": false,
+                        "sensitive": false,
+                        "includeInEmails": true,
+                        "keep": "always"
+                      },
+                      {
+                        "key": "30000000-0000-4000-8000-00000062f252",
+                        "type": "scale",
+                        "alias": "rScale",
+                        "span": 1,
+                        "label": {
+                          "": "rScale"
+                        },
+                        "hideLabel": false,
+                        "help": {
+                          "": "Help for rScale"
+                        },
+                        "required": false,
+                        "sensitive": false,
+                        "includeInEmails": true,
+                        "keep": "always"
+                      },
+                      {
+                        "key": "30000000-0000-4000-8000-00000062f253",
+                        "type": "slider",
+                        "alias": "rSlider",
+                        "span": 1,
+                        "label": {
+                          "": "rSlider"
+                        },
+                        "hideLabel": false,
+                        "help": {
+                          "": "Help for rSlider"
+                        },
+                        "required": false,
+                        "sensitive": false,
+                        "includeInEmails": true,
+                        "keep": "always",
+                        "settings": {
+                          "max": "60",
+                          "min": "0",
+                          "step": "5"
+                        }
+                      },
+                      {
+                        "key": "30000000-0000-4000-8000-00000062f254",
+                        "type": "signature",
+                        "alias": "rSignature",
+                        "span": 1,
+                        "label": {
+                          "": "rSignature"
+                        },
+                        "hideLabel": false,
+                        "help": {
+                          "": "Help for rSignature"
+                        },
+                        "required": false,
+                        "sensitive": false,
+                        "includeInEmails": true,
+                        "keep": "always"
+                      },
+                      {
+                        "key": "30000000-0000-4000-8000-00000062f255",
+                        "type": "name",
+                        "alias": "rName",
+                        "span": 1,
+                        "label": {
+                          "": "rName"
+                        },
+                        "hideLabel": false,
+                        "help": {
+                          "": "Help for rName"
+                        },
+                        "required": false,
+                        "sensitive": false,
+                        "includeInEmails": true,
+                        "keep": "always"
+                      },
+                      {
+                        "key": "30000000-0000-4000-8000-00000062f256",
+                        "type": "address",
+                        "alias": "rAddress",
+                        "span": 1,
+                        "label": {
+                          "": "rAddress"
+                        },
+                        "hideLabel": false,
+                        "help": {
+                          "": "Help for rAddress"
+                        },
+                        "required": false,
+                        "sensitive": false,
+                        "includeInEmails": true,
+                        "keep": "always"
+                      },
+                      {
+                        "key": "30000000-0000-4000-8000-00000062f257",
+                        "type": "country",
+                        "alias": "rCountry",
+                        "span": 1,
+                        "label": {
+                          "": "rCountry"
+                        },
+                        "hideLabel": false,
+                        "help": {
+                          "": "Help for rCountry"
+                        },
+                        "required": false,
+                        "sensitive": false,
+                        "includeInEmails": true,
+                        "keep": "always"
+                      },
+                      {
+                        "key": "30000000-0000-4000-8000-00000062f258",
+                        "type": "file",
+                        "alias": "rFile",
+                        "span": 1,
+                        "label": {
+                          "": "rFile"
+                        },
+                        "hideLabel": false,
+                        "help": {
+                          "": "Help for rFile"
+                        },
+                        "required": false,
+                        "sensitive": false,
+                        "includeInEmails": true,
+                        "keep": "always"
+                      },
+                      {
+                        "key": "30000000-0000-4000-8000-00000062f259",
+                        "type": "hidden",
+                        "alias": "rHidden",
+                        "span": 1,
+                        "label": {
+                          "": "rHidden"
+                        },
+                        "hideLabel": false,
+                        "required": false,
+                        "sensitive": false,
+                        "includeInEmails": true,
+                        "keep": "always"
+                      },
+                      {
+                        "key": "30000000-0000-4000-8000-00000062f25a",
+                        "type": "calculation",
+                        "alias": "rCalculation",
+                        "span": 1,
+                        "label": {
+                          "": "rCalculation"
+                        },
+                        "hideLabel": false,
+                        "help": {
+                          "": "Help for rCalculation"
+                        },
+                        "required": false,
+                        "sensitive": false,
+                        "includeInEmails": true,
+                        "keep": "always",
+                        "settings": {
+                          "formula": "rNumber * 2"
+                        }
+                      },
+                      {
+                        "key": "30000000-0000-4000-8000-00000062f25b",
+                        "type": "heading",
+                        "span": 1,
+                        "hideLabel": false,
+                        "required": false,
+                        "sensitive": false,
+                        "includeInEmails": true,
+                        "keep": "always",
+                        "settings": {
+                          "text": {
+                            "": "Before you send"
+                          }
+                        }
+                      },
+                      {
+                        "key": "30000000-0000-4000-8000-00000062f25c",
+                        "type": "paragraph",
+                        "span": 1,
+                        "hideLabel": false,
+                        "required": false,
+                        "sensitive": false,
+                        "includeInEmails": true,
+                        "keep": "always",
+                        "settings": {
+                          "html": {
+                            "": "<p>We reply within a day.</p>"
+                          }
+                        }
+                      },
+                      {
+                        "key": "30000000-0000-4000-8000-00000062f25d",
+                        "type": "divider",
+                        "span": 1,
+                        "hideLabel": false,
+                        "required": false,
+                        "sensitive": false,
+                        "includeInEmails": true,
+                        "keep": "always"
+                      },
+                      {
+                        "key": "30000000-0000-4000-8000-00000062f25e",
+                        "type": "image",
+                        "span": 1,
+                        "hideLabel": false,
+                        "required": false,
+                        "sensitive": false,
+                        "includeInEmails": true,
+                        "keep": "always",
+                        "settings": {
+                          "alt": {
+                            "": "A missing picture"
+                          },
+                          "media": "30000000-0000-4000-8000-00000062f2a0"
+                        }
+                      }
+                    ],
+                    "settings": {
+                      "maxRows": 2,
+                      "minRows": 1
+                    }
+                  },
+                  {
+                    "key": "30000000-0000-4000-8000-00000062f22c",
+                    "type": "heading",
+                    "span": 1,
+                    "hideLabel": false,
+                    "required": false,
+                    "sensitive": false,
+                    "includeInEmails": true,
+                    "keep": "always",
+                    "rules": [
+                      {
+                        "key": "30000000-0000-4000-8000-00000062f32c",
+                        "effect": "hide",
+                        "enabled": true,
+                        "match": "all",
+                        "conditions": [
+                          {
+                            "field": "30000000-0000-4000-8000-00000062f201",
+                            "op": "equals",
+                            "value": "yes"
+                          }
+                        ]
+                      }
+                    ],
+                    "settings": {
+                      "text": {
+                        "": "Before you send"
+                      }
+                    }
+                  },
+                  {
+                    "key": "30000000-0000-4000-8000-00000062f22d",
+                    "type": "paragraph",
+                    "span": 1,
+                    "hideLabel": false,
+                    "required": false,
+                    "sensitive": false,
+                    "includeInEmails": true,
+                    "keep": "always",
+                    "rules": [
+                      {
+                        "key": "30000000-0000-4000-8000-00000062f32d",
+                        "effect": "hide",
+                        "enabled": true,
+                        "match": "all",
+                        "conditions": [
+                          {
+                            "field": "30000000-0000-4000-8000-00000062f201",
+                            "op": "equals",
+                            "value": "yes"
+                          }
+                        ]
+                      }
+                    ],
+                    "settings": {
+                      "html": {
+                        "": "<p>We reply within a day.</p>"
+                      }
+                    }
+                  },
+                  {
+                    "key": "30000000-0000-4000-8000-00000062f22e",
+                    "type": "divider",
+                    "span": 1,
+                    "hideLabel": false,
+                    "required": false,
+                    "sensitive": false,
+                    "includeInEmails": true,
+                    "keep": "always",
+                    "rules": [
+                      {
+                        "key": "30000000-0000-4000-8000-00000062f32e",
+                        "effect": "hide",
+                        "enabled": true,
+                        "match": "all",
+                        "conditions": [
+                          {
+                            "field": "30000000-0000-4000-8000-00000062f201",
+                            "op": "equals",
+                            "value": "yes"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "key": "30000000-0000-4000-8000-00000062f22f",
+                    "type": "image",
+                    "span": 1,
+                    "hideLabel": false,
+                    "required": false,
+                    "sensitive": false,
+                    "includeInEmails": true,
+                    "keep": "always",
+                    "rules": [
+                      {
+                        "key": "30000000-0000-4000-8000-00000062f32f",
+                        "effect": "hide",
+                        "enabled": true,
+                        "match": "all",
+                        "conditions": [
+                          {
+                            "field": "30000000-0000-4000-8000-00000062f201",
+                            "op": "equals",
+                            "value": "yes"
+                          }
+                        ]
+                      }
+                    ],
+                    "settings": {
+                      "alt": {
+                        "": "A missing picture"
+                      },
+                      "media": "30000000-0000-4000-8000-00000062f2a0"
+                    }
+                  }
+                ]
+              },
+              {
+                "key": "30000000-0000-4000-8000-00000062f204",
+                "columns": 1,
+                "style": "plain",
+                "rules": [
+                  {
+                    "key": "30000000-0000-4000-8000-00000062f3ff",
+                    "effect": "hide",
+                    "enabled": true,
+                    "match": "all",
+                    "conditions": [
+                      {
+                        "field": "30000000-0000-4000-8000-00000062f201",
+                        "op": "equals",
+                        "value": "yes"
+                      }
+                    ]
+                  }
+                ],
+                "fields": [
+                  {
+                    "key": "30000000-0000-4000-8000-00000062f230",
+                    "type": "captcha",
+                    "span": 1,
+                    "hideLabel": false,
+                    "required": false,
+                    "sensitive": false,
+                    "includeInEmails": true,
+                    "keep": "always"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

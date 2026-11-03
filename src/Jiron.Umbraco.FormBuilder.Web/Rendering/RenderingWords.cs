@@ -1,4 +1,6 @@
 using System.Collections.Frozen;
+using System.Reflection;
+using System.Text.Json;
 
 namespace Jiron.Umbraco.FormBuilder.Web.Rendering;
 
@@ -15,6 +17,9 @@ internal sealed record RenderingWords
     private const char OUmlaut = (char)0xF6;
     private const char UUmlaut = (char)0xFC;
     private const char SharpS = (char)0xDF;
+
+    // The words' properties in the order they are declared.
+    private static readonly PropertyInfo[] Properties = [.. typeof(RenderingWords).GetProperties(BindingFlags.Public | BindingFlags.Instance).Where(property => property.PropertyType == typeof(string)).OrderBy(property => property.MetadataToken)];
 
     private static readonly FrozenDictionary<string, RenderingWords> Words = new Dictionary<string, RenderingWords>(StringComparer.OrdinalIgnoreCase)
     {
@@ -566,6 +571,21 @@ internal sealed record RenderingWords
 
     /// <summary>The line in the copy's place on a later view of the page after sending.</summary>
     public required string CopyShown { get; init; }
+
+    /// <summary>
+    /// The words by their names in camel case, in the order they are declared, for the designer's canvas, which draws a
+    /// form with them (ADR-0168).
+    /// </summary>
+    public IReadOnlyDictionary<string, string> ByName()
+    {
+        var words = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var property in Properties)
+        {
+            words[JsonNamingPolicy.CamelCase.ConvertName(property.Name)] = (string)property.GetValue(this)!;
+        }
+
+        return words;
+    }
 
     /// <summary>The words of a culture, of its more general culture, or English.</summary>
     /// <param name="culture">The culture, such as <c>de-CH</c>.</param>
