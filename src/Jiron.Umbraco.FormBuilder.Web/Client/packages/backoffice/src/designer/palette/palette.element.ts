@@ -1,7 +1,8 @@
 // The palette (ROADMAP 9.3b, docs/ux/information-architecture.md section 5.1): search, Recently used, Layout (Group, New
 // page), the field types in their groups, and Paste questions... at the end. A pick goes to the Design view, which puts
 // it at the open insert point, after the selected element or at the end of the page shown. Beside the canvas it can
-// fold to a rail; on a narrow window it opens over the canvas with a heading and Close, and Esc closes it.
+// fold to a rail; on a narrow window it opens over the canvas with a heading and Close, and Esc closes it. Beside the
+// canvas, a type can also be dragged onto the page, where it lands as a field (ADR-0169).
 import { css, html, nothing, type TemplateResult } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import type { FieldGroupResponseModel, FieldTypeResponseModel } from '../../api';
@@ -10,6 +11,13 @@ import { jfbBackofficeTokens, jfbVisuallyHidden } from '../../styles/tokens';
 /** What the palette asks for. */
 export type PalettePick =
   | { readonly kind: 'field'; readonly type: string }
+  | {
+      readonly kind: 'drag';
+      readonly type: string;
+      readonly label: string;
+      readonly event: PointerEvent;
+      readonly handle: Element;
+    }
   | { readonly kind: 'group' }
   | { readonly kind: 'page' }
   | { readonly kind: 'paste' }
@@ -151,6 +159,12 @@ export class PaletteElement extends UmbLitElement {
         background: var(--uui-color-surface-emphasis);
       }
 
+      /* A type dragged sideways onto the page; the list still scrolls up and down under a finger. */
+      .item[data-drags] {
+        touch-action: pan-y;
+        user-select: none;
+      }
+
       .item:active {
         transform: scale(0.98);
       }
@@ -231,12 +245,18 @@ export class PaletteElement extends UmbLitElement {
   }
 
   #item(icon: string, label: string, pick: PalettePick, unavailable?: string): TemplateResult {
+    // Over the canvas, the palette hides the page a type would be dropped on: there a click adds it.
+    const type = pick.kind === 'field' && !unavailable && this.mode !== 'overlay' ? pick.type : null;
     return html`<li>
       <button
         type="button"
         class="item"
         aria-disabled=${unavailable ? 'true' : 'false'}
         title=${unavailable ?? nothing}
+        ?data-drags=${type !== null}
+        @pointerdown=${(event: PointerEvent) => {
+          if (type) this.#pick({ kind: 'drag', type, label, event, handle: event.currentTarget as Element });
+        }}
         @click=${() => this.#pick(unavailable ? { kind: 'unavailable', reason: unavailable } : pick)}
       >
         <uui-icon name=${icon} aria-hidden="true"></uui-icon><span>${label}</span>

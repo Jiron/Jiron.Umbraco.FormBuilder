@@ -2,7 +2,9 @@
 // the default theme, one page at a time at the chosen width, with the designer's controls laid over it. Above it sit
 // the width switch with Undo and Redo in its menu, and the pages as steps with Add page and After sending. Every page, group
 // and field selects itself; an insert point between fields and the Add field at the end of a page open the palette
-// for that place. The canvas changes nothing itself: it says what was asked in a request, which the Design view does.
+// for that place. Fields, groups and pages are dragged by their handles and steps, and the palette's types onto the
+// page (ADR-0016, ADR-0169). The canvas changes nothing itself: it says what was asked in a request, which the Design
+// view does.
 import { html, nothing, repeat, type PropertyValues, type TemplateResult } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import type { FieldViewModel } from '@jfb/element/answer';
@@ -14,6 +16,8 @@ import type { Place } from '../editor-model';
 import { fieldModel, formSettings, groupClasses, textIn, type PreviewContext } from '../preview/field-models';
 import type { CanvasLook } from '../preview/look';
 import { fragmentOf, safeHtml, showsText } from '../preview/rich-text';
+import { modifierTerm } from '../moves/keys';
+import { CanvasDrag, type DragSource } from './canvas-drag';
 import { FIELD_REQUEST, type FieldRequest, type FieldState, type FieldWords } from './canvas-field.element';
 import './canvas-field.element';
 import { canvasChrome } from './canvas.styles';
@@ -32,7 +36,19 @@ export type CanvasRequest =
   | { readonly kind: 'undo' }
   | { readonly kind: 'redo' }
   | { readonly kind: 'paste' }
-  | { readonly kind: 'changeOutcome' };
+  | { readonly kind: 'changeOutcome' }
+  | { readonly kind: 'shortcuts' }
+  | { readonly kind: 'drop'; readonly source: DragSource; readonly place: Place }
+  | { readonly kind: 'refused'; readonly source: DragSource; readonly reason: string };
+
+/** Why the form can't take what is dragged at a place, in words; null where it can. */
+export type RefusalOf = (source: DragSource, place: Place | null) => string | null;
+
+/** Why the form refused an element's last move, shown at the element until the next change. */
+export interface InPlaceRefusal {
+  readonly key: string;
+  readonly text: string;
+}
 
 /** The event a request travels in. */
 export const CANVAS_REQUEST = 'jfb-canvas-request';
@@ -67,6 +83,8 @@ export class FormCanvasElement extends UmbLitElement {
     editing: { attribute: false },
     canUndo: { attribute: false },
     canRedo: { attribute: false },
+    refusalOf: { attribute: false },
+    refusal: { attribute: false },
     _narrowed: { state: true },
   };
 
@@ -88,12 +106,21 @@ export class FormCanvasElement extends UmbLitElement {
   declare editing: string | null;
   declare canUndo: boolean;
   declare canRedo: boolean;
+  /** Asked while something is dragged: why the form can't take it where it would land. */
+  declare refusalOf: RefusalOf;
+  declare refusal: InPlaceRefusal | null;
   declare private _narrowed: boolean;
 
   #resize = new ResizeObserver(() => this.#measure());
   #observed: Element | null = null;
   /** Each field's view model, kept while the field and what it is built with stay the same. */
   #models = new WeakMap<DesignField, { context: PreviewContext; columns: number; model: FieldViewModel | null }>();
+  /**
+   * Each field's words and state, kept while what they are made of stays the same: a field a change didn't touch gets
+   * the same state, so it isn't drawn again, and a selection or a move on a form of 300 fields stays quick (section 4.12).
+   */
+  #words = new WeakMap<DesignField, { readonly parts: readonly unknown[]; readonly words: FieldWords }>();
+  #states = new WeakMap<DesignField, { readonly parts: readonly unknown[]; readonly state: FieldState }>();
   #previewContext: { key: readonly unknown[]; context: PreviewContext & ReturnType<typeof formSettings> } | undefined;
 
   constructor() {
@@ -109,11 +136,104 @@ export class FormCanvasElement extends UmbLitElement {
     this.editing = null;
     this.canUndo = false;
     this.canRedo = false;
+    this.refusalOf = () => null;
+    this.refusal = null;
     this._narrowed = false;
     this.addEventListener(FIELD_REQUEST, (event) => {
       event.stopPropagation();
-      this.#ask((event as CustomEvent<FieldRequest>).detail);
+      const request = (event as CustomEvent<FieldRequest>).detail;
+      if (request.kind === 'drag') this.#dragField(request.event, request.handle, request.key);
+      else this.#ask(request);
     });
+  }
+
+  readonly #drag = new CanvasDrag({
+    root: () => this.renderRoot as ShadowRoot,
+    shownPage: () => (typeof this.shown === 'number' ? (this.definition.pages[this.shown]?.key ?? null) : null),
+    pageEnd: (source, page) => this.#pageEnd(source, page),
+    refusalOf: (source, place) => this.refusalOf(source, place),
+    show: (page) => {
+      const index = this.definition.pages.findIndex((each) => each.key === page);
+      if (index >= 0) this.#ask({ kind: 'show', shown: index });
+    },
+    drop: (source, place) => {
+      this.#ask({ kind: 'drop', source, place });
+      // The Design view changes the form as it hears the request, and the fields write themselves before the next
+      // frame: what was dropped is where it lands by then.
+      requestAnimationFrame(() => this.#drag.settle(this.selection));
+    },
+    refused: (source, reason) => this.#ask({ kind: 'refused', source, reason }),
+  });
+
+  /** Follows a press on one of the palette's types, which a drag onto the page adds where it lands. */
+  dragNew(event: PointerEvent, handle: Element, type: string, label: string) {
+    this.#drag.start(event, handle, { kind: 'new', type, label });
+  }
+
+  #dragField(event: PointerEvent, handle: Element, key: string) {
+    const field = this.#find(key);
+    this.#drag.start(event, handle, {
+      kind: 'field',
+      key,
+      label: field ? this.#fieldLabel(field, this.#culture()) : key,
+    });
+  }
+
+  #culture(): string {
+    return this.look?.culture ?? '';
+  }
+
+  #find(key: string): DesignField | undefined {
+    const visit = (fields: readonly DesignField[]): DesignField | undefined => {
+      for (const field of fields) {
+        if (field.key === key) return field;
+        const inside = visit(field.fields ?? []);
+        if (inside) return inside;
+      }
+      return undefined;
+    };
+    for (const page of this.definition.pages)
+      for (const group of page.groups) {
+        const found = visit(group.fields);
+        if (found) return found;
+      }
+    return undefined;
+  }
+
+  // Where a drop on a page's step lands: a field at the end of the page's last group, a group at the page's end.
+  #pageEnd(source: DragSource, key: string): Place | null {
+    const page = this.definition.pages.find((each) => each.key === key);
+    if (!page) return null;
+    if (source.kind === 'group') return { container: page.key, index: page.groups.length };
+    const group = page.groups.at(-1);
+    return group ? { container: group.key, index: group.fields.length } : null;
+  }
+
+  /** The elements of the page shown in the order the keyboard goes through them: the page, each group, its fields. */
+  #order(): string[] {
+    const index = typeof this.shown === 'number' ? Math.min(this.shown, this.definition.pages.length - 1) : -1;
+    const page = index >= 0 ? this.definition.pages[index] : undefined;
+    if (!page) return [];
+    const keys = [page.key];
+    const fields = (list: readonly DesignField[]) => {
+      for (const field of list) {
+        keys.push(field.key);
+        fields(field.fields ?? []);
+      }
+    };
+    const bare = pageIsBare(page, this.#culture());
+    for (const group of page.groups) {
+      if (!bare) keys.push(group.key);
+      fields(group.fields);
+    }
+    return keys;
+  }
+
+  /** Moves the focus from an element to the one before or after it on the page shown; nothing past either end. */
+  focusNext(key: string, by: 1 | -1) {
+    const order = this.#order();
+    const next = order[order.indexOf(key) + by];
+    if (order.includes(key) && next) this.focusElement(next);
   }
 
   override disconnectedCallback() {
@@ -122,18 +242,29 @@ export class FormCanvasElement extends UmbLitElement {
     super.disconnectedCallback();
   }
 
-  /** Moves the focus to an element's control: a field's or a group's button, a page's step. */
-  focusElement(key: string) {
+  /**
+   * Moves the focus to an element's control: the button that selects a field, group or page, or its handle; a page's
+   * step after a page moved by it. An element the canvas doesn't draw gives the focus to the page's Add field.
+   */
+  focusElement(key: string, control: 'select' | 'handle' | 'step' = 'select') {
     const root = this.shadowRoot;
-    const field = root?.querySelector<HTMLElement & { focusField?: () => void }>(`jfb-canvas-field[key="${key}"]`);
+    if (control === 'step') {
+      root?.querySelector<HTMLElement>(`.bo-step[data-page="${key}"]`)?.focus();
+      return;
+    }
+    const field = root?.querySelector<HTMLElement & { focusField?: (control: 'select' | 'handle') => void }>(
+      `jfb-canvas-field[key="${key}"]`,
+    );
     // A field the canvas shows is found in its group or in its repeatable group's row.
     if (field?.focusField) {
-      field.focusField();
+      field.focusField(control);
       field.scrollIntoView({ block: 'nearest' });
       return;
     }
-    const control = root?.querySelector<HTMLElement>(`[data-select="${key}"]`);
-    if (control) control.focus();
+    const found =
+      (control === 'handle' ? root?.querySelector<HTMLElement>(`[data-handle="${key}"]`) : null) ??
+      root?.querySelector<HTMLElement>(`[data-select="${key}"]`);
+    if (found) found.focus();
     else this.focusAddField();
   }
 
@@ -250,10 +381,44 @@ export class FormCanvasElement extends UmbLitElement {
   #state(field: DesignField, context: PreviewContext, columns: number, container: DesignField | null): FieldState {
     const model = this.#model(field, context, columns);
     const label = this.#fieldLabel(field, context.culture);
+    const words = this.#wordsOf(field, context, model, label);
+    const children = field.fields?.map((child) => this.#state(child, context, columns, field));
+    const selected = this.selection === field.key;
+    const editing = this.editing === field.key;
+    const insertActive = this.#insertsAfter(field, container);
+    const refusal = this.refusal?.key === field.key ? this.refusal.text : null;
+    const firstActive = this.insertAt?.container === field.key && this.insertAt.index === 0;
+    const parts = [model, words, selected, editing, insertActive, refusal, firstActive, ...(children ?? [])];
+    const kept = this.#states.get(field);
+    if (kept && kept.parts.length === parts.length && kept.parts.every((part, at) => part === parts[at]))
+      return kept.state;
+    const state: FieldState = {
+      key: field.key,
+      model,
+      words,
+      selected,
+      editing,
+      // What the canvas shows, in its culture, which is where an edit goes back to.
+      labelText: field.type === 'heading' ? label : textIn(field.label, context.culture),
+      insertActive,
+      refusal,
+      ...(children ? { children, firstActive } : {}),
+    };
+    this.#states.set(field, { parts, state });
+    return state;
+  }
+
+  #wordsOf(field: DesignField, context: PreviewContext, model: FieldViewModel | null, label: string): FieldWords {
+    const parts = [context, model, this.localize.lang()];
+    const kept = this.#words.get(field);
+    if (kept && kept.parts.every((part, at) => part === parts[at])) return kept.words;
     const words: FieldWords = {
       name: this.localize.term('jfbDesigner_fieldName', label, this.#typeName(field.type)),
       insertHere: this.localize.term('jfbDesigner_insertHere'),
       insertAfter: this.localize.term('jfbDesigner_insertAfter', label),
+      move: this.localize.term('jfbDesigner_move', label),
+      moveTo: this.localize.term('jfbDesigner_moveTo'),
+      moveToNamed: this.localize.term('jfbDesigner_moveToNamed', label),
       duplicate: this.localize.term('jfbDesigner_duplicate'),
       duplicateNamed: this.localize.term('jfbDesigner_duplicateNamed', label),
       delete: this.localize.term('jfbDesigner_delete'),
@@ -268,20 +433,8 @@ export class FormCanvasElement extends UmbLitElement {
           }
         : {}),
     };
-    const children = field.fields?.map((child) => this.#state(child, context, columns, field));
-    return {
-      key: field.key,
-      model,
-      words,
-      selected: this.selection === field.key,
-      editing: this.editing === field.key,
-      // What the canvas shows, in its culture, which is where an edit goes back to.
-      labelText: field.type === 'heading' ? label : textIn(field.label, context.culture),
-      insertActive: this.#insertsAfter(field, container),
-      ...(children
-        ? { children, firstActive: this.insertAt?.container === field.key && this.insertAt.index === 0 }
-        : {}),
-    };
+    this.#words.set(field, { parts, words });
+    return words;
   }
 
   // Whether the open insert point is the one below a field, in its group or its repeatable group.
@@ -300,8 +453,19 @@ export class FormCanvasElement extends UmbLitElement {
     return false;
   }
 
-  #tools(key: string, name: string): TemplateResult {
+  #tools(key: string, name: string, moveTo = false): TemplateResult {
     return html`<div class="bo-tools">
+      ${
+        moveTo
+          ? html`<button
+              type="button"
+              aria-label=${this.localize.term('jfbDesigner_moveToNamed', name)}
+              @click=${() => this.#ask({ kind: 'moveTo', key })}
+            >
+              <uui-icon name="icon-navigation" aria-hidden="true"></uui-icon>${this.localize.term('jfbDesigner_moveTo')}
+            </button>`
+          : nothing
+      }
       <button
         type="button"
         aria-label=${this.localize.term('jfbDesigner_duplicateNamed', name)}
@@ -332,13 +496,28 @@ export class FormCanvasElement extends UmbLitElement {
         type="button"
         class="bo-select bo-select-group"
         data-select=${group.key}
+        data-key=${group.key}
+        data-control="select"
         aria-label=${this.localize.term('jfbDesigner_groupName', name)}
         aria-current=${selected ? 'true' : 'false'}
         @click=${() => this.#ask({ kind: 'select', key: group.key })}
       ></button>
-      ${selected ? this.#tools(group.key, name) : nothing}`;
+      <button
+        type="button"
+        class="bo-handle bo-handle-group"
+        data-handle=${group.key}
+        data-key=${group.key}
+        data-control="handle"
+        aria-label=${this.localize.term('jfbDesigner_move', name)}
+        @pointerdown=${(event: PointerEvent) =>
+          this.#drag.start(event, event.currentTarget as Element, { kind: 'group', key: group.key, label: name })}
+        @click=${() => this.#ask({ kind: 'select', key: group.key })}
+      >
+        <uui-icon name="icon-grip" aria-hidden="true"></uui-icon>
+      </button>
+      ${this.#refusalAt(group.key)} ${selected ? this.#tools(group.key, name, true) : nothing}`;
     const help = showsText(description) ? html`<div class="jfb-help" inert>${fragmentOf(description)}</div>` : nothing;
-    const fields = html`<div class="jfb-fields">
+    const fields = html`<div class="jfb-fields" data-fields=${group.key}>
       ${
         first
           ? html`<button
@@ -371,12 +550,12 @@ export class FormCanvasElement extends UmbLitElement {
     </div>`;
     const classes = `${groupClasses(group)} bo-group${selected ? ' bo-selected' : ''}`;
     return title
-      ? html`<fieldset class=${classes}>
+      ? html`<fieldset class=${classes} data-group=${group.key}>
           ${select}
           <legend inert>${title}</legend>
           ${help}${fields}
         </fieldset>`
-      : html`<div class=${classes}>${select}${help}${fields}</div>`;
+      : html`<div class=${classes} data-group=${group.key}>${select}${help}${fields}</div>`;
   }
 
   #page(page: DesignPage, index: number, context: PreviewContext & ReturnType<typeof formSettings>): TemplateResult {
@@ -395,21 +574,24 @@ export class FormCanvasElement extends UmbLitElement {
         : { next: { label: context.next || this.#word('next'), value: 'next' } }),
     });
     navigation.inert = true;
-    return html`<section class="jfb-page bo-page${selected ? ' bo-selected' : ''}">
+    return html`<section class="jfb-page bo-page${selected ? ' bo-selected' : ''}" data-groups=${page.key}>
         <button
           type="button"
           class="bo-select bo-select-page"
           data-select=${page.key}
+          data-key=${page.key}
+          data-control="select"
           aria-label=${this.localize.term('jfbDesigner_pageName', name)}
           aria-current=${selected ? 'true' : 'false'}
           @click=${() => this.#ask({ kind: 'select', key: page.key })}
         ></button>
-        ${selected ? this.#tools(page.key, name) : nothing}
+        ${this.#refusalAt(page.key)} ${selected ? this.#tools(page.key, name) : nothing}
         ${title ? html`<h2 class="jfb-title" inert>${title}</h2>` : nothing}
         ${showsText(description) ? html`<div class="jfb-intro" inert>${fragmentOf(description)}</div>` : nothing}
         ${
           bare
-            ? html`<p class="bo-empty">
+            ? // The page's one group lies behind its sentence: a field dropped on the page goes into it.
+              html`<p class="bo-empty" data-fields=${page.groups[0]?.key ?? nothing}>
                 ${
                   formEmpty
                     ? html`${this.localize.term('jfbDesigner_emptyFormBefore')}
@@ -421,12 +603,27 @@ export class FormCanvasElement extends UmbLitElement {
               </p>`
             : nothing
         }
-        ${bare ? nothing : page.groups.map((group, at) => this.#group(group, at, context))}
+        ${
+          bare
+            ? nothing
+            : repeat(
+                page.groups,
+                (group) => group.key,
+                (group, at) => this.#group(group, at, context),
+              )
+        }
         <button type="button" class="bo-add-field" @click=${() => this.#ask({ kind: 'addField', page: page.key })}>
           <uui-icon name="icon-add" aria-hidden="true"></uui-icon>${this.localize.term('jfbDesigner_addField')}
         </button>
       </section>
       ${navigation}`;
+  }
+
+  // Why the form refused a group's or a page's last move, beside its handle.
+  #refusalAt(key: string) {
+    return this.refusal?.key === key
+      ? html`<p class="bo-refusal" aria-hidden="true">${this.refusal.text}</p>`
+      : nothing;
   }
 
   #word(name: string): string {
@@ -465,6 +662,7 @@ export class FormCanvasElement extends UmbLitElement {
   }
 
   #toolbar(): TemplateResult {
+    const held = this.localize.term(modifierTerm());
     return html`<div class="bo-bar">
       <div class="bo-widths" role="group" aria-label=${this.localize.term('jfbDesigner_canvasWidth')}>
         ${(Object.keys(CANVAS_WIDTHS) as CanvasWidth[]).map(
@@ -490,17 +688,20 @@ export class FormCanvasElement extends UmbLitElement {
       <uui-popover-container id="jfb-canvas-more" placement="bottom-end">
         <div class="bo-menu">
           <button type="button" ?disabled=${!this.canUndo} @click=${() => this.#menu('undo')}>
-            <span>${this.localize.term('jfbDesigner_undo')}</span><kbd>Ctrl+Z</kbd>
+            <span>${this.localize.term('jfbDesigner_undo')}</span><kbd>${held}+Z</kbd>
           </button>
           <button type="button" ?disabled=${!this.canRedo} @click=${() => this.#menu('redo')}>
-            <span>${this.localize.term('jfbDesigner_redo')}</span><kbd>Ctrl+Y</kbd>
+            <span>${this.localize.term('jfbDesigner_redo')}</span><kbd>${held}+Y</kbd>
+          </button>
+          <button type="button" @click=${() => this.#menu('shortcuts')}>
+            <span>${this.localize.term('jfbDesigner_shortcuts')}</span><kbd>?</kbd>
           </button>
         </div>
       </uui-popover-container>
     </div>`;
   }
 
-  #menu(kind: 'undo' | 'redo') {
+  #menu(kind: 'undo' | 'redo' | 'shortcuts') {
     this.shadowRoot?.querySelector<HTMLElement & { hidePopover?: () => void }>('#jfb-canvas-more')?.hidePopover?.();
     this.#ask({ kind });
   }
@@ -512,7 +713,16 @@ export class FormCanvasElement extends UmbLitElement {
           html`<button
             type="button"
             class="bo-step"
+            data-page=${page.key}
+            data-key=${page.key}
+            data-control="step"
             aria-current=${this.shown === index ? 'step' : 'false'}
+            @pointerdown=${(event: PointerEvent) =>
+              this.#drag.start(event, event.currentTarget as Element, {
+                kind: 'page',
+                key: page.key,
+                label: this.#pageName(page, index, culture),
+              })}
             @click=${() => this.#ask({ kind: 'show', shown: index })}
           >
             ${this.#pageName(page, index, culture)}

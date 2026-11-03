@@ -1,7 +1,8 @@
 // The canvas (ROADMAP 9.3b, ADR-0168): a field drawn by the element's views with nothing of it taking input, the
 // designer's controls over it with their names, its label edited in place, a repeatable group's own fields, a note for
 // a field visitors don't see; and the canvas around them: the steps, a page's groups and its end, the empty states,
-// After sending, the width switch and the requests each control sends.
+// After sending, the width switch and the requests each control sends. Its moves (ROADMAP 9.3c): each element's
+// handle, a refusal shown at the element, the order Up and Down go through, and the focus on a handle or a step.
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { all, must, registerEnglish, settle, shadow, testHost, text } from '../../testing';
 import type { DesignDefinition, DesignField } from '../definition';
@@ -31,6 +32,9 @@ const WORDS: FieldWords = {
   name: 'Email address, email field',
   insertHere: 'Add a field here',
   insertAfter: 'Add a field here, after Email address',
+  move: 'Move Email address',
+  moveTo: 'Move to...',
+  moveToNamed: 'Move to..., Email address',
   duplicate: 'Duplicate',
   duplicateNamed: 'Duplicate Email address',
   delete: 'Delete',
@@ -102,20 +106,52 @@ describe('a field on the canvas', () => {
     ]);
   });
 
-  it('says it is selected, and shows Duplicate and Delete while it is, each named with the field', async () => {
+  it('says it is selected, and shows Move to..., Duplicate and Delete while it is, each named with the field', async () => {
     const { element, requests } = await fieldOf(stateOf(email, { selected: true }));
     expect(element.hasAttribute('selected')).toBe(true);
     expect(controls(element).querySelector('.bo-select')?.getAttribute('aria-current')).toBe('true');
     const tools = [...controls(element).querySelectorAll<HTMLButtonElement>('.bo-tools button')];
     expect(tools.map((tool) => [tool.getAttribute('aria-label'), text(tool)])).toEqual([
+      ['Move to..., Email address', 'Move to...'],
       ['Duplicate Email address', 'Duplicate'],
       ['Delete Email address', 'Delete'],
     ]);
     for (const tool of tools) tool.click();
     expect(requests).toEqual([
+      { kind: 'moveTo', key: 'e' },
       { kind: 'duplicate', key: 'e' },
       { kind: 'delete', key: 'e' },
     ]);
+  });
+
+  it('has a handle named with the field, which a press drags and a click selects', async () => {
+    const { element, requests } = await fieldOf(stateOf(email));
+    const handle = must(controls(element).querySelector<HTMLButtonElement>(':scope > .bo-handle'), 'the handle');
+    expect([handle.getAttribute('aria-label'), handle.dataset['key'], handle.dataset['control']]).toEqual([
+      'Move Email address',
+      'e',
+      'handle',
+    ]);
+    const select = must(controls(element).querySelector<HTMLButtonElement>(':scope > .bo-select'), 'the select');
+    expect([select.dataset['key'], select.dataset['control']]).toEqual(['e', 'select']);
+    const press = new MouseEvent('pointerdown', { bubbles: true }) as PointerEvent;
+    handle.dispatchEvent(press);
+    handle.click();
+    expect(requests).toEqual([
+      { kind: 'drag', key: 'e', event: press, handle },
+      { kind: 'select', key: 'e' },
+    ]);
+    element.focusField('handle');
+    expect(document.activeElement).toBe(handle);
+  });
+
+  it('hides its handle while its label is edited, and shows why a move was refused beside it', async () => {
+    const editing = await fieldOf(stateOf(email, { selected: true, editing: true }));
+    expect(controls(editing.element).querySelector<HTMLElement>('.bo-handle')?.hidden).toBe(true);
+    document.body.replaceChildren();
+    const refused = await fieldOf(stateOf(email, { refusal: "It can't move any further." }));
+    const note = must(controls(refused.element).querySelector('.bo-refusal'), 'the note');
+    expect([text(note), note.getAttribute('aria-hidden')]).toEqual(["It can't move any further.", 'true']);
   });
 
   it('keeps its written markup and its buttons, which may hold the focus, when it is drawn again from the same model', async () => {
@@ -195,6 +231,8 @@ describe('a field on the canvas', () => {
       stateOf(repeater, { children: [stateOf(guest, { selected: true })], firstActive: true }),
     );
     const row = must(element.querySelector('fieldset.jfb-row > .jfb-fields'), "the row's fields");
+    // A drag drops fields into it as into a group.
+    expect(row.getAttribute('data-fields')).toBe('r');
     const nested = [...row.querySelectorAll<CanvasFieldElement>(':scope > jfb-canvas-field')];
     expect(nested.map((field) => field.key)).toEqual(['g']);
     expect(element.nestedField('g')).toBe(nested[0]);
@@ -290,7 +328,9 @@ describe('the canvas', () => {
       ['Group 2, group', 'false'],
     ]);
     expect(root.querySelector('.bo-select-page')?.getAttribute('aria-label')).toBe('Your details, page');
-    expect(root.querySelectorAll('.bo-group > .bo-tools button')).toHaveLength(2);
+    expect(
+      [...root.querySelectorAll('.bo-group > .bo-tools button')].map((tool) => tool.getAttribute('aria-label')),
+    ).toEqual(['Move to\u2026, About you', 'Duplicate About you', 'Delete About you']);
     const empty = must(root.querySelector<HTMLButtonElement>('.bo-empty-group'), "the empty group's place");
     expect(empty.getAttribute('aria-label')).toBe('Add a field here, in Group 2');
     empty.click();
@@ -409,11 +449,119 @@ describe('the canvas', () => {
   it('passes on what its fields ask, and moves the focus to an element', async () => {
     const { element, requests, root } = await canvasOf(DEFINITION, { selection: 'e' });
     const field = must(root.querySelector<CanvasFieldElement>('jfb-canvas-field[key="e"]'), 'the field');
-    field.querySelector<HTMLButtonElement>('.bo-tools button')?.click();
-    expect(requests).toEqual([{ kind: 'duplicate', key: 'e' }]);
+    for (const tool of field.querySelectorAll<HTMLButtonElement>('.bo-tools button')) tool.click();
+    expect(requests).toEqual([
+      { kind: 'moveTo', key: 'e' },
+      { kind: 'duplicate', key: 'e' },
+      { kind: 'delete', key: 'e' },
+    ]);
     element.focusElement('n');
     expect(root.activeElement?.closest('jfb-canvas-field')?.getAttribute('key')).toBe('n');
     element.focusElement('g1');
     expect(root.activeElement?.getAttribute('data-select')).toBe('g1');
+  });
+
+  it('gives a field a change did not touch the same state, so only the fields it changes are drawn again', async () => {
+    const { element, root } = await canvasOf(DEFINITION, { selection: 'e' });
+    const field = (key: string) => must(root.querySelector<CanvasFieldElement>(`jfb-canvas-field[key="${key}"]`), key);
+    const [e, n] = [field('e').state, field('n').state];
+    element.selection = 'n';
+    await settle(element);
+    expect(field('n').state).not.toBe(n);
+    expect(field('n').state?.selected).toBe(true);
+    expect(field('e').state).not.toBe(e);
+    element.refusal = { key: 'e', text: 'No.' };
+    await settle(element);
+    const kept = field('n').state;
+    element.insertAt = { container: 'g2', index: 0 };
+    await settle(element);
+    expect(field('n').state).toBe(kept);
+    expect(field('e').state?.words).toBe(e?.words);
+  });
+
+  it("gives each group a handle named with it, each step its page's key, and shows a refusal at a group or a page", async () => {
+    const { element, requests, root } = await canvasOf(DEFINITION, { refusal: { key: 'g1', text: 'No.' } });
+    const handles = [...root.querySelectorAll<HTMLButtonElement>('.bo-handle-group')];
+    expect(
+      handles.map((handle) => [handle.getAttribute('aria-label'), handle.dataset['key'], handle.dataset['control']]),
+    ).toEqual([
+      ['Move About you', 'g1', 'handle'],
+      ['Move Group 2', 'g2', 'handle'],
+    ]);
+    handles[0]?.click();
+    expect(requests).toEqual([{ kind: 'select', key: 'g1' }]);
+    const steps = [...root.querySelectorAll<HTMLButtonElement>('.bo-step[data-page]')];
+    expect(steps.map((step) => [step.dataset['key'], step.dataset['control']])).toEqual([
+      ['p1', 'step'],
+      ['p2', 'step'],
+    ]);
+    expect(text(root.querySelector('[data-group="g1"] > .bo-refusal'))).toBe('No.');
+    element.refusal = { key: 'p1', text: 'Not here.' };
+    await settle(element);
+    expect(text(root.querySelector('.bo-page > .bo-refusal'))).toBe('Not here.');
+    expect(root.querySelectorAll('.bo-refusal')).toHaveLength(1);
+    expect(root.querySelector('[data-groups="p1"]')).not.toBeNull();
+    expect(root.querySelector('.jfb-fields[data-fields="g2"]')).not.toBeNull();
+  });
+
+  it('moves the focus through the page with Up and Down in reading order: the page, each group, its fields', async () => {
+    const { element, root } = await canvasOf(DEFINITION);
+    const focused = () => {
+      const found = root.activeElement as HTMLElement | null;
+      return found?.dataset['key'] ?? found?.closest('jfb-canvas-field')?.getAttribute('key') ?? 'none';
+    };
+    element.focusNext('p1', 1);
+    expect(focused()).toBe('g1');
+    element.focusNext('g1', 1);
+    expect(focused()).toBe('e');
+    element.focusNext('n', 1);
+    expect(focused()).toBe('g2');
+    element.focusNext('g2', 1);
+    expect(focused()).toBe('g2');
+    element.focusNext('p1', -1);
+    expect(focused()).toBe('g2');
+    // An element of another page is not on the way.
+    element.focusNext('g3', 1);
+    expect(focused()).toBe('g2');
+  });
+
+  it("takes a field dropped on a page that shows only its sentence into the page's one group", async () => {
+    const { root } = await canvasOf({ pages: [{ key: 'p', groups: [{ key: 'g', fields: [] }] }] });
+    expect(root.querySelector('.bo-empty')?.getAttribute('data-fields')).toBe('g');
+  });
+
+  it("leaves out the bare page's one group on the way", async () => {
+    const { element, root } = await canvasOf({ pages: [{ key: 'p', groups: [{ key: 'g', fields: [] }] }] });
+    element.focusElement('p');
+    element.focusNext('p', 1);
+    expect((root.activeElement as HTMLElement | null)?.dataset['key']).toBe('p');
+  });
+
+  it("gives the focus to an element's handle, or to a page's step", async () => {
+    const { element, root } = await canvasOf(DEFINITION, { shown: 0 });
+    element.focusElement('e', 'handle');
+    expect([
+      (root.activeElement as HTMLElement).dataset['key'],
+      (root.activeElement as HTMLElement).dataset['control'],
+    ]).toEqual(['e', 'handle']);
+    element.focusElement('g1', 'handle');
+    expect((root.activeElement as HTMLElement).dataset['handle']).toBe('g1');
+    element.focusElement('p2', 'step');
+    expect([
+      (root.activeElement as HTMLElement).dataset['key'],
+      (root.activeElement as HTMLElement).dataset['control'],
+    ]).toEqual(['p2', 'step']);
+  });
+
+  it('opens the Keyboard shortcuts from its menu, and names the keys as this keyboard has them', async () => {
+    const { requests, root } = await canvasOf(DEFINITION);
+    const items = [...root.querySelectorAll<HTMLButtonElement>('.bo-menu button')];
+    expect(items.map((item) => [text(item.querySelector('span')), text(item.querySelector('kbd'))])).toEqual([
+      ['Undo', 'Ctrl+Z'],
+      ['Redo', 'Ctrl+Y'],
+      ['Keyboard shortcuts', '?'],
+    ]);
+    items[2]?.click();
+    expect(requests).toEqual([{ kind: 'shortcuts' }]);
   });
 });

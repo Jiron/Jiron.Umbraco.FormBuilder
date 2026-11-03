@@ -1,6 +1,7 @@
 // The palette and the Paste questions dialog (ROADMAP 9.3b): Recently used as this browser keeps it, Layout, the types in
 // their groups in the backoffice's words, search that narrows them, what each pick asks for, an unavailable type's
-// reason, the palette's ways of showing; and the dialog's fields to add with their guessed types and its count.
+// reason, the palette's ways of showing, a type pressed to drag it onto the page (9.3c); and the dialog's fields to add
+// with their guessed types and its count.
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -141,6 +142,36 @@ describe('the palette', () => {
       { kind: 'paste' },
       { kind: 'unavailable', reason: 'No captcha provider has its keys.' },
     ]);
+  });
+
+  it('passes on a press on an available type beside the canvas to drag it; none over the canvas or for others', async () => {
+    const captchaless = served.types.map((type) =>
+      type.alias === 'captcha' ? { ...type, availability: { isAvailable: false, reason: 'No keys.' } } : type,
+    );
+    const press = async (mode: 'docked' | 'overlay', name: string) => {
+      const { element, picks } = await paletteOf({ types: captchaless, mode });
+      const item = must(
+        all<HTMLButtonElement>(element, '.item').find((each) => text(each).startsWith(name)),
+        name,
+      );
+      const event = new MouseEvent('pointerdown', { bubbles: true }) as PointerEvent;
+      item.dispatchEvent(event);
+      return { picks, item, event };
+    };
+    const email = await press('docked', 'Email');
+    expect(email.picks).toEqual([
+      { kind: 'drag', type: 'email', label: 'Email', event: email.event, handle: email.item },
+    ]);
+    expect(email.item.hasAttribute('data-drags')).toBe(true);
+    for (const [mode, name] of [
+      ['overlay', 'Email'],
+      ['docked', 'Captcha'],
+      ['docked', 'Group'],
+    ] as const) {
+      const other = await press(mode, name);
+      expect(other.picks, `${name} ${mode}`).toEqual([]);
+      expect(other.item.hasAttribute('data-drags')).toBe(false);
+    }
   });
 
   it('folds to a rail and opens again, and over the canvas has a heading and Close', async () => {

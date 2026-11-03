@@ -1,7 +1,10 @@
 // The Design view (ROADMAP 9.3b, docs/ux/information-architecture.md section 5.1): the palette beside the canvas. It
 // takes the canvas's and the palette's requests and makes each an edit of the editor model through the workspace, says
 // what happened for screen readers, offers Undo after a delete, and moves the focus to what an edit left selected. A
-// link that names a field (`?field=`, ADR-0166) opens the view on that field's page with the field selected.
+// link that names a field (`?field=`, ADR-0166) opens the view on that field's page with the field selected. Moves
+// (ADR-0016, ADR-0169) come from a drop, Move to... and Alt+Up and Alt+Down; each says where the element is now, a move
+// the form refuses says why at the element, and the focus stays on the element moved. Up and Down go through the
+// elements of the page, and ? opens the Keyboard shortcuts.
 import { css, html, nothing, type PropertyValues } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import { UmbMediaUrlRepository } from '@umbraco-cms/backoffice/media';
@@ -10,8 +13,16 @@ import { UMB_NOTIFICATION_CONTEXT } from '@umbraco-cms/backoffice/notification';
 import type { FieldGroupResponseModel, FieldTypeResponseModel } from '../api';
 import { jfbBackofficeTokens, jfbVisuallyHidden } from '../styles/tokens';
 import { UNDO_DURATION_MS, UNDO_NOTIFICATION, type UndoNotificationData } from '../ui/undo-notification.element';
-import { CANVAS_REQUEST, pageIsBare, type CanvasRequest, type CanvasShown } from './canvas/form-canvas.element';
+import type { DragSource } from './canvas/canvas-drag';
+import {
+  CANVAS_REQUEST,
+  pageIsBare,
+  type CanvasRequest,
+  type CanvasShown,
+  type InPlaceRefusal,
+} from './canvas/form-canvas.element';
 import { CANVAS_WIDTHS, type CanvasWidth } from './canvas/widths';
+import { isDragging } from './drag/pointer-drag';
 import type { FormCanvasElement } from './canvas/form-canvas.element';
 import './canvas/form-canvas.element';
 import { FORM_WORKSPACE_CONTEXT } from './constants';
@@ -21,14 +32,19 @@ import {
   change,
   duplicate,
   insert,
+  move,
   removeElement,
   select,
   splitPage,
+  step,
   type Edit,
   type Place,
   type Refusal,
 } from './editor-model';
 import type { EditorView, FormWorkspaceContext } from './form-workspace.context';
+import { MOVE_TO_MODAL, type MoveToModalData } from './moves/move-to.modal.token';
+import { dropEdit, endOf, moveToPlaces, positionOf, type MovePlace } from './moves/moves';
+import { SHORTCUTS_MODAL } from './moves/shortcuts.modal.token';
 import { addFields, addGroup, newField, newPage, placeFor } from './new-elements';
 import {
   keepRecent,
@@ -53,6 +69,16 @@ export const NARROW = 700;
 export const isNarrow = (width: number) => width <= NARROW;
 
 const WIDTH_KEY = 'jfb.designer.width';
+
+/** The control of an element the focus goes back to: the button that selects it, its handle, or a page's step. */
+type Control = 'select' | 'handle' | 'step';
+
+/** What an edit is applied with: the type a refusal names, what the live region says instead, the control focused. */
+interface Applied {
+  readonly type?: string;
+  readonly announce?: (state: EditorState) => string;
+  readonly control?: Control;
+}
 
 /** The element that has the focus, followed into the shadow roots it lies in. */
 function deepFocus(): HTMLElement | null {
@@ -103,6 +129,7 @@ export class FormDesignViewElement extends UmbLitElement {
     _recent: { state: true },
     _said: { state: true },
     _failed: { state: true },
+    _refusal: { state: true },
   };
 
   static override styles = [
@@ -208,11 +235,13 @@ export class FormDesignViewElement extends UmbLitElement {
   declare private _said: string;
   /** Whether what the canvas draws with could not be read. */
   declare private _failed: boolean;
+  /** Why the form refused the last move, shown at the element until the next change. */
+  declare private _refusal: InPlaceRefusal | null;
 
   #context: FormWorkspaceContext | undefined;
   /** The page the palette adds to when it was opened from a page's Add field and the page has no group. */
   #addTo: string | null = null;
-  /** Whether the selection a link named was brought into sight. */
+  /** Whether the selection a link named was brought into sight, or the user changed something first. */
   #shownLink = false;
   #mediaRead = new Set<string>();
   #mediaUrls: UmbMediaUrlRepository | undefined;
@@ -220,6 +249,14 @@ export class FormDesignViewElement extends UmbLitElement {
   #undoToast: { close(): void } | undefined;
   /** What opened the palette over the canvas, where the focus goes back when it closes without a pick. */
   #opener: HTMLElement | null = null;
+  /** The palette's types, the same list while the types stay the same, so the palette isn't drawn again for nothing. */
+  #typeList: {
+    readonly of: Readonly<Record<string, FieldTypeResponseModel>>;
+    readonly list: FieldTypeResponseModel[];
+  } = {
+    of: {},
+    list: [],
+  };
   #resize = new ResizeObserver(([entry]) => {
     const narrow = entry ? isNarrow(entry.contentRect.width) : false;
     if (narrow !== this._narrow) this._narrow = narrow;
@@ -241,6 +278,7 @@ export class FormDesignViewElement extends UmbLitElement {
     this._recent = readRecent();
     this._said = '';
     this._failed = false;
+    this._refusal = null;
     this.consumeContext(FORM_WORKSPACE_CONTEXT, (context) => {
       this.#context = context;
       this.observe(context?.editor, (view) => this.#viewChanged(view), 'editor');
@@ -316,12 +354,12 @@ export class FormDesignViewElement extends UmbLitElement {
     return this.shadowRoot?.querySelector('jfb-designer-palette') ?? null;
   }
 
-  async #focus(key: string) {
+  async #focus(key: string, control: Control = 'select') {
     await this.updateComplete;
     const canvas = this.#canvas;
     if (!canvas) return;
     await canvas.updateComplete;
-    canvas.focusElement(key);
+    canvas.focusElement(key, control);
   }
 
   // Umbraco's toasts; none where the backoffice has no notification context, so a toast never stops an edit.
@@ -335,30 +373,44 @@ export class FormDesignViewElement extends UmbLitElement {
     requestAnimationFrame(() => (this._said = text));
   }
 
+  #refusalText(refusal: Refusal, type?: string): string {
+    return this.localize.term(`jfbDesigner_refusal_${refusal}`, type ?? '');
+  }
+
   async #refuse(refusal: Refusal, type?: string) {
     if (refusal === 'unchanged') return;
-    const message = this.localize.term(`jfbDesigner_refusal_${refusal}`, type ?? '');
+    const message = this.#refusalText(refusal, type);
     this.#say(message);
     (await this.#notifications())?.peek('warning', { data: { message } });
   }
 
+  // A move the form refuses says why at the element and to screen readers, without a toast, until the next change.
+  #refuseInPlace(key: string | null, text: string) {
+    this._refusal = key ? { key, text } : null;
+    this.#say(text);
+  }
+
   /** Applies an edit, says it, and moves the focus to what it left selected. */
-  async #apply(edit: Edit, said: string, type?: string): Promise<boolean> {
+  async #apply(edit: Edit, said: string, applied: Applied = {}): Promise<boolean> {
     const context = this.#context;
     if (!context) return false;
+    // The user's own first change ends the wait for a link's selection, so its focus is never taken.
+    this.#shownLink = true;
+    this._refusal = null;
     const result = context.edit(edit, said);
     if (!result.ok) {
-      await this.#refuse(result.refusal, type);
+      await this.#refuse(result.refusal, applied.type);
       return false;
     }
     this.#closeUndo();
-    if (said) this.#say(said);
+    const announced = applied.announce?.(result.state) ?? said;
+    if (announced) this.#say(announced);
     const { selection, dropped } = this.#settle(result.state);
     if (selection) {
       const page = pageOf(result.state.definition, selection);
       const index = result.state.definition.pages.findIndex((each) => each.key === page?.key);
       if (index >= 0) this._shown = index;
-      await this.#focus(selection);
+      await this.#focus(selection, applied.control);
     } else if (dropped) {
       await this.#focusAddField();
     }
@@ -517,7 +569,156 @@ export class FormDesignViewElement extends UmbLitElement {
       case 'changeOutcome':
         this.#toSettings();
         return;
+      case 'drop':
+        await this.#drop(request.source, request.place);
+        return;
+      case 'refused':
+        this.#refuseInPlace(request.source.kind === 'new' ? null : request.source.key, request.reason);
+        return;
+      case 'moveTo':
+        await this.#moveTo(request.key);
+        return;
+      case 'shortcuts':
+        await this.#shortcuts();
+        return;
     }
+  }
+
+  #newFieldOf(alias: string): DesignField | null {
+    const type = Object.hasOwn(this._types, alias) ? this._types[alias] : undefined;
+    const model = this.#context?.model;
+    if (!type || !model) return null;
+    return newField(type, this.localize.string(type.name), model.newKey, this.#newWords());
+  }
+
+  /**
+   * Why the form can't take what is dragged where it would land, asked as the pointer goes from place to place; it
+   * changes nothing. A drop where it already is is no refusal: it just stays.
+   */
+  readonly #refusalOf = (source: DragSource, place: Place | null): string | null => {
+    const state = this.#state();
+    const model = this.#context?.model;
+    if (!state || !model) return null;
+    if (!place) return this.#refusalText('wrongPlace');
+    const edit = dropEdit(state, source, place, model, (type) => this.#newFieldOf(type));
+    if (!edit || edit.ok || edit.refusal === 'unchanged') return null;
+    return this.#refusalText(edit.refusal, source.kind === 'new' ? source.label : undefined);
+  };
+
+  // A drop where the form takes it: what is dragged moves there, or a field of the type dragged is added there.
+  async #drop(source: DragSource, place: Place) {
+    const state = source.kind === 'new' ? this.#state() : this.#selectFirst(source.key);
+    const model = this.#context?.model;
+    if (!state || !model) return;
+    const edit = dropEdit(state, source, place, model, (type) => this.#newFieldOf(type));
+    if (!edit) return;
+    if (source.kind !== 'new') {
+      // A page dragged by its step keeps the focus on its step.
+      await this.#moved(source.key, edit, { toast: true, control: source.kind === 'page' ? 'step' : 'select' });
+      return;
+    }
+    const said = this.localize.term('jfbDesigner_saidAdded', source.label);
+    if (await this.#apply(edit, said, { type: source.label })) this._recent = keepRecent(source.type);
+  }
+
+  /**
+   * Makes a move: it says where the element is now and, after a drop or Move to..., a toast offers Undo. Keyboard
+   * moves come one after another with Ctrl+Z at hand, so they get none.
+   */
+  async #moved(key: string, edit: Edit, how: { readonly toast: boolean; readonly control?: Control }) {
+    const done = await this.#apply(edit, this.localize.term('jfbDesigner_saidMoved', this.#label(key)), {
+      // Named after the move: a page or group without a title is named by its place.
+      announce: (state) => this.#whereNow(state, key, this.#label(key)),
+      ...(how.control ? { control: how.control } : {}),
+    });
+    if (!done || !how.toast) return;
+    const kind = positionOf(this.#state()?.definition ?? { pages: [] }, key)?.kind;
+    if (kind) await this.#offerUndo(this.localize.term(`jfbDesigner_moved_${kind}`));
+  }
+
+  #pageRef(definition: DesignDefinition, index: number): string {
+    return this.localize.term(
+      'jfbDesigner_pageRef',
+      index + 1,
+      textIn(definition.pages[index]?.title, this._look?.culture ?? ''),
+    );
+  }
+
+  // Where an element is after a move: "Moved. Phone: position 1 of 5 in Address, Page 1: About you."
+  #whereNow(state: EditorState, key: string, name: string): string {
+    const at = positionOf(state.definition, key);
+    if (!at) return this.localize.term('jfbDesigner_saidMoved', name);
+    if (at.kind === 'page') return this.localize.term('jfbDesigner_saidMovedPage', name, at.position, at.count);
+    const page = this.#pageRef(state.definition, at.page);
+    if (at.kind === 'group') return this.localize.term('jfbDesigner_saidMovedGroup', name, at.position, at.count, page);
+    const container = at.container ? this.#label(at.container) : '';
+    return this.localize.term('jfbDesigner_saidMovedField', name, at.position, at.count, container, page);
+  }
+
+  // Alt+Up and Alt+Down: one place up or down, into the next group or page at the end of its own; the focus stays on
+  // the control the keys were pressed on. A move the form refuses says why at the element.
+  async #step(key: string, by: 1 | -1, control: Control) {
+    const state = this.#selectFirst(key);
+    const model = this.#context?.model;
+    if (!state || !model) return;
+    const edit = step(state, key, by, model);
+    if (!edit.ok) {
+      if (edit.refusal !== 'unchanged') this.#refuseInPlace(key, this.#refusalText(edit.refusal));
+      return;
+    }
+    await this.#moved(key, edit, { toast: false, control });
+  }
+
+  #placeName(place: MovePlace): string {
+    const state = this.#state();
+    const own =
+      place.kind === 'page' && state
+        ? this.#pageRef(
+            state.definition,
+            state.definition.pages.findIndex((page) => page.key === place.key),
+          )
+        : place.kind === 'repeater' && place.within
+          ? this.localize.term('jfbDesigner_moveToInside', this.#label(place.key), this.#label(place.within))
+          : this.#label(place.key);
+    return place.current ? this.localize.term('jfbDesigner_moveToHere', own) : own;
+  }
+
+  // Move to...: the places the element can go to the end of, each the form refuses with why. The move is made on the
+  // form as it is when the dialog closes; Cancel gives the focus back to the element.
+  async #moveTo(key: string) {
+    const state = this.#state();
+    const model = this.#context?.model;
+    if (!state || !model) return;
+    const name = this.#label(key);
+    const sections = moveToPlaces(state, key, model);
+    if (sections.length === 0) return;
+    const data: MoveToModalData = {
+      name,
+      sections: sections.map((section) => ({
+        heading: section.page >= 0 ? this.#pageRef(state.definition, section.page) : null,
+        places: section.places.map((place) => ({
+          key: place.key,
+          name: this.#placeName(place),
+          refusal: !place.edit.ok && place.edit.refusal !== 'unchanged' ? this.#refusalText(place.edit.refusal) : null,
+          disabled: !place.edit.ok,
+          inside: place.kind === 'repeater',
+        })),
+      })),
+    };
+    const value = await umbOpenModal(this, MOVE_TO_MODAL, { data }).catch(() => undefined);
+    const now = this.#state();
+    const end = value && now ? endOf(now.definition, value.key) : null;
+    if (!now || !end) {
+      await this.#focus(key);
+      return;
+    }
+    await this.#moved(key, move(now, key, end, model), { toast: true });
+  }
+
+  async #shortcuts() {
+    const opener = deepFocus();
+    await umbOpenModal(this, SHORTCUTS_MODAL).catch(() => undefined);
+    if (opener?.isConnected) opener.focus();
   }
 
   // Whether a field's label can be edited in place: a field with a label, a heading's text, one box without its own text.
@@ -568,19 +769,40 @@ export class FormDesignViewElement extends UmbLitElement {
   }
 
   async #delete(key: string) {
-    const state = this.#state();
-    if (!state) return;
-    const found = locate(state.definition, key);
-    if (!found) return;
+    const state = this.#selectFirst(key);
+    const found = state ? locate(state.definition, key) : undefined;
+    if (!state || !found) return;
     const name = this.#label(key);
     const done = await this.#apply(removeElement(state, key), this.localize.term('jfbDesigner_saidDeleted', name));
-    if (!done) return;
-    const deleted = this.#state();
+    if (done) await this.#offerUndo(this.localize.term(`jfbDesigner_deleted_${found.kind}`, name));
+  }
+
+  /**
+   * Selects the element a key or a drop acts on before it changes, so the step Undo goes back to holds it selected and
+   * the focus returns to it. Selecting is no step of its own.
+   */
+  #selectFirst(key: string): EditorState | undefined {
+    const state = this.#state();
+    if (state && state.selection !== key && locate(state.definition, key)) this.#context?.edit(select(state, key), '');
+    return this.#state();
+  }
+
+  // After an undo or a redo that leaves nothing selected, a focus whose element went goes to the page's Add field.
+  async #keepFocus() {
+    await this.updateComplete;
+    await this.#canvas?.updateComplete;
+    const now = deepFocus();
+    if (!now || now === document.body) this.#canvas?.focusAddField();
+  }
+
+  // A toast with Undo for the change just made, closed by the next one: its Undo would take back another.
+  async #offerUndo(message: string) {
+    const made = this.#state();
     const data: UndoNotificationData = {
-      message: this.localize.term(`jfbDesigner_deleted_${found.kind}`, name),
+      message,
       undoLabel: this.localize.term('jfbDesigner_undo'),
       undo: async () => {
-        if (this.#state() === deleted) this.#travel('undo');
+        if (this.#state() === made) this.#travel('undo');
       },
     };
     this.#undoToast = (await this.#notifications())?.peek('positive', {
@@ -596,6 +818,7 @@ export class FormDesignViewElement extends UmbLitElement {
     const said = way === 'undo' ? context.undo() : context.redo();
     if (said === undefined) return;
     this.#closeUndo();
+    this._refusal = null;
     this.#say(this.localize.term(way === 'undo' ? 'jfbDesigner_saidUndone' : 'jfbDesigner_saidRedone', said));
     const state = context.getEditorState();
     const { definition } = state;
@@ -606,6 +829,8 @@ export class FormDesignViewElement extends UmbLitElement {
       void this.#focus(selection);
     } else if (dropped) {
       void this.#focusAddField();
+    } else {
+      void this.#keepFocus();
     }
   }
 
@@ -644,6 +869,9 @@ export class FormDesignViewElement extends UmbLitElement {
       case 'paste':
         await this.#paste();
         return;
+      case 'drag':
+        this.#canvas?.dragNew(pick.event, pick.handle, pick.type, pick.label);
+        return;
       case 'field': {
         const type = Object.hasOwn(this._types, pick.type) ? this._types[pick.type] : undefined;
         const target = this.#target();
@@ -653,7 +881,7 @@ export class FormDesignViewElement extends UmbLitElement {
         const done = await this.#apply(
           addFields(state, [field], target.place, target.page, model),
           this.localize.term('jfbDesigner_saidAdded', name),
-          name,
+          { type: name },
         );
         if (done) {
           this._recent = keepRecent(pick.type);
@@ -725,6 +953,8 @@ export class FormDesignViewElement extends UmbLitElement {
   }
 
   #onKey(event: KeyboardEvent) {
+    // While a drag lasts the form stays as it is: the drag takes Escape itself.
+    if (isDragging()) return;
     const target = event.composedPath()[0] as HTMLElement | undefined;
     const typing =
       target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target?.isContentEditable;
@@ -741,13 +971,38 @@ export class FormDesignViewElement extends UmbLitElement {
       return;
     }
     if (typing) return;
-    if (ctrl && key === 'z' && !event.shiftKey) this.#travel('undo');
+    // The keys act on the element the focus is on, which Up and Down move to, else on the selection.
+    const control = this.#controlOf(event);
+    const acted = control?.key ?? selection;
+    const vertical = event.key === 'ArrowUp' ? -1 : event.key === 'ArrowDown' ? 1 : 0;
+    if (vertical !== 0 && !ctrl && !event.shiftKey) {
+      if (event.altKey) {
+        if (!acted) return;
+        void this.#step(acted, vertical, control?.control ?? 'select');
+      } else if (control && control.control !== 'step') this.#canvas?.focusNext(control.key, vertical);
+      else return;
+      event.preventDefault();
+      return;
+    }
+    if (event.key === '?' && !ctrl && !event.altKey) void this.#shortcuts();
+    else if (ctrl && key === 'z' && !event.shiftKey) this.#travel('undo');
     else if (ctrl && (key === 'y' || (key === 'z' && event.shiftKey))) this.#travel('redo');
-    else if (ctrl && key === 'd' && selection) void this.#onCanvas({ kind: 'duplicate', key: selection });
-    else if (event.key === 'F2' && selection) void this.#onCanvas({ kind: 'editLabel', key: selection });
-    else if (event.key === 'Delete' && selection) void this.#delete(selection);
+    else if (ctrl && key === 'd' && acted && this.#selectFirst(acted))
+      void this.#onCanvas({ kind: 'duplicate', key: acted });
+    else if (event.key === 'F2' && acted && this.#selectFirst(acted))
+      void this.#onCanvas({ kind: 'editLabel', key: acted });
+    else if (event.key === 'Delete' && acted) void this.#delete(acted);
     else return;
     event.preventDefault();
+  }
+
+  // The canvas control a key was pressed on: the button that selects an element, its handle, or a page's step.
+  #controlOf(event: Event): { key: string; control: Control } | null {
+    const target = event.composedPath()[0];
+    if (!(target instanceof HTMLElement)) return null;
+    const key = target.dataset['key'];
+    const control = target.dataset['control'];
+    return key && (control === 'select' || control === 'handle' || control === 'step') ? { key, control } : null;
   }
 
   #failed() {
@@ -759,6 +1014,11 @@ export class FormDesignViewElement extends UmbLitElement {
         @click=${() => void this.#readLook()}
       ></uui-button>
     </div>`;
+  }
+
+  #paletteTypes(): FieldTypeResponseModel[] {
+    if (this.#typeList.of !== this._types) this.#typeList = { of: this._types, list: Object.values(this._types) };
+    return this.#typeList.list;
   }
 
   #mode(): PaletteMode {
@@ -785,7 +1045,7 @@ export class FormDesignViewElement extends UmbLitElement {
       ${
         mode !== 'overlay' || this._open
           ? html`<jfb-designer-palette
-              .types=${Object.values(this._types)}
+              .types=${this.#paletteTypes()}
               .groups=${this._groups}
               .recent=${this._recent}
               mode=${mode}
@@ -808,6 +1068,8 @@ export class FormDesignViewElement extends UmbLitElement {
         .editing=${this._editing}
         .canUndo=${view?.canUndo ?? false}
         .canRedo=${view?.canRedo ?? false}
+        .refusalOf=${this.#refusalOf}
+        .refusal=${this._refusal}
       ></jfb-form-canvas>
       <div class="visually-hidden" role="status" aria-live="polite">${this._said}</div>`;
   }

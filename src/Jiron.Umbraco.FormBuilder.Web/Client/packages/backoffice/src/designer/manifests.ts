@@ -10,6 +10,8 @@ import {
   FORM_PERMISSION_CONDITION,
   FORM_WORKSPACE_ALIAS,
 } from './constants';
+import { MOVE_TO_MODAL_ALIAS } from './moves/move-to.modal.token';
+import { SHORTCUTS_MODAL_ALIAS } from './moves/shortcuts.modal.token';
 import { PASTE_QUESTIONS_MODAL_ALIAS } from './palette/paste-questions.modal.token';
 import { PUBLISH_MODAL_ALIAS } from './publish.modal.token';
 
@@ -67,6 +69,18 @@ export const manifests: UmbExtensionManifest[] = [
     alias: PASTE_QUESTIONS_MODAL_ALIAS,
     name: 'Jiron Form Builder paste questions dialog',
     element: (() => import('./palette/paste-questions.modal.element')) as never,
+  },
+  {
+    type: 'modal',
+    alias: MOVE_TO_MODAL_ALIAS,
+    name: 'Jiron Form Builder move to dialog',
+    element: (() => import('./moves/move-to.modal.element')) as never,
+  },
+  {
+    type: 'modal',
+    alias: SHORTCUTS_MODAL_ALIAS,
+    name: 'Jiron Form Builder keyboard shortcuts dialog',
+    element: (() => import('./moves/shortcuts.modal.element')) as never,
   },
   ...VIEWS.map((view, index): UmbExtensionManifest => ({
     type: 'workspaceView',

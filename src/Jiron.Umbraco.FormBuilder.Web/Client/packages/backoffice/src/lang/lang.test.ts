@@ -187,14 +187,17 @@ describe('the dictionaries', () => {
     const used = new Set(
       sources.flatMap((source) => [...source.matchAll(/(?:'|#)(jfbDesigner_[A-Za-z_]+)'/g)].map((match) => match[1])),
     );
-    // The keys code builds: each view's label, each state's chip, each canvas width, what a delete's toast says of each
-    // kind of element, and why the editor model refused an edit.
+    // The keys code builds: each view's label, each state's chip, each canvas width, what a delete's and a move's toast
+    // says of each kind of element, and why the editor model refused an edit.
     for (const view of ['design', 'settings', 'actions', 'entries', 'insights', 'history']) {
       used.add(`jfbDesigner_view_${view}`);
     }
     for (const state of ['draft', 'published', 'pending', 'unpublished']) used.add(`jfbDesigner_state_${state}`);
     for (const width of Object.keys(CANVAS_WIDTHS)) used.add(`jfbDesigner_width_${width}`);
-    for (const kind of ['page', 'group', 'field']) used.add(`jfbDesigner_deleted_${kind}`);
+    for (const kind of ['page', 'group', 'field']) {
+      used.add(`jfbDesigner_deleted_${kind}`);
+      used.add(`jfbDesigner_moved_${kind}`);
+    }
     const refusals =
       readFileSync(join(folder, 'editor-model.ts'), 'utf8').match(/export type Refusal =([^;]+);/)?.[1] ?? '';
     for (const [, refusal] of refusals.matchAll(/'([a-zA-Z]+)'/g))

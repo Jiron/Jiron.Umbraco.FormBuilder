@@ -4,6 +4,8 @@
 // field, the insert point below it and, while it is selected, its Duplicate and Delete. A field a visitor doesn't see
 // (a hidden field, a heading without text) shows a quiet note in its place, so it can still be found and selected. A
 // repeatable group shows its first row with each of its fields as a canvas field of its own, so they can be chosen.
+// Its handle, "Move Email address", drags it and, with Alt+Up and Alt+Down, moves it (ADR-0016, ADR-0169); Move to...
+// in its bar opens the dialog of places, and a move the form refuses says why at the field.
 import { html, LitElement, nothing, render, type PropertyValues } from '@umbraco-cms/backoffice/external/lit';
 import type { FieldViewModel, ThemeClassesModel } from '@jfb/element/answer';
 import { writeField } from '@jfb/element/views';
@@ -17,7 +19,9 @@ export type FieldRequest =
   | { readonly kind: 'duplicate'; readonly key: string }
   | { readonly kind: 'delete'; readonly key: string }
   | { readonly kind: 'editLabel'; readonly key: string }
-  | { readonly kind: 'label'; readonly key: string; readonly text: string | null };
+  | { readonly kind: 'label'; readonly key: string; readonly text: string | null }
+  | { readonly kind: 'moveTo'; readonly key: string }
+  | { readonly kind: 'drag'; readonly key: string; readonly event: PointerEvent; readonly handle: Element };
 
 /** The event a field's request travels in, up to the canvas. */
 export const FIELD_REQUEST = 'jfb-field-request';
@@ -30,6 +34,11 @@ export interface FieldWords {
   readonly insertHere: string;
   /** Its name for screen readers: "Add a field here, after Email address". */
   readonly insertAfter: string;
+  /** The handle's name: "Move Email address". */
+  readonly move: string;
+  readonly moveTo: string;
+  /** Move to...'s name for screen readers, its visible text first: "Move to..., Email address". */
+  readonly moveToNamed: string;
   readonly duplicate: string;
   /** Duplicate's name for screen readers: "Duplicate Email address". */
   readonly duplicateNamed: string;
@@ -60,6 +69,8 @@ export interface FieldState {
   readonly children?: readonly FieldState[];
   /** Whether the palette is open for the place before a repeatable group's first field. */
   readonly firstActive?: boolean;
+  /** Why the form refused its last move, shown at the field until the next change. */
+  readonly refusal?: string | null;
 }
 
 /** The element down a path of children, each step the first child that matches its selector. */
@@ -124,9 +135,9 @@ export class CanvasFieldElement extends LitElement {
     return document.createElement('div');
   }
 
-  /** Moves the focus to the button that selects the field. */
-  focusField() {
-    (childAt(this.#chrome, '.bo-select') as HTMLElement | null)?.focus();
+  /** Moves the focus to the button that selects the field, or to its handle. */
+  focusField(control: 'select' | 'handle' = 'select') {
+    (childAt(this.#chrome, control === 'handle' ? '.bo-handle' : '.bo-select') as HTMLElement | null)?.focus();
   }
 
   /** The canvas field of a field in this repeatable group, when it shows one. */
@@ -206,6 +217,7 @@ export class CanvasFieldElement extends LitElement {
   #placeChildren(state: FieldState) {
     const fields = state.children ? this.#rowFields() : null;
     if (!fields || !state.children) return;
+    fields.setAttribute('data-fields', state.key);
     const kept = new Set(state.children.map((child) => child.key));
     for (const [key, nested] of this.#nested) {
       if (kept.has(key)) continue;
@@ -325,15 +337,38 @@ export class CanvasFieldElement extends LitElement {
         <button
           type="button"
           class="bo-select"
+          data-key=${key}
+          data-control="select"
           aria-label=${words.name}
           aria-current=${state.selected ? 'true' : 'false'}
           ?hidden=${state.editing && this.#editingIn}
           @click=${() => this.#request({ kind: 'select', key })}
           @dblclick=${() => this.#request({ kind: 'editLabel', key })}
         ></button>
+        <button
+          type="button"
+          class="bo-handle"
+          data-key=${key}
+          data-control="handle"
+          aria-label=${words.move}
+          ?hidden=${state.editing && this.#editingIn}
+          @pointerdown=${(event: PointerEvent) =>
+            this.#request({ kind: 'drag', key, event, handle: event.currentTarget as Element })}
+          @click=${() => this.#request({ kind: 'select', key })}
+        >
+          <uui-icon name="icon-grip" aria-hidden="true"></uui-icon>
+        </button>
+        ${state.refusal ? html`<p class="bo-refusal" aria-hidden="true">${state.refusal}</p>` : nothing}
         ${
           state.selected && !(state.editing && this.#editingIn)
             ? html`<div class="bo-tools">
+                <button
+                  type="button"
+                  aria-label=${words.moveToNamed}
+                  @click=${() => this.#request({ kind: 'moveTo', key })}
+                >
+                  <uui-icon name="icon-navigation" aria-hidden="true"></uui-icon>${words.moveTo}
+                </button>
                 <button
                   type="button"
                   aria-label=${words.duplicateNamed}

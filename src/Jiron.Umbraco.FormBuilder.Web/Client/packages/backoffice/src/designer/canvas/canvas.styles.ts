@@ -141,6 +141,12 @@ export const canvasChrome = css`
     cursor: pointer;
   }
 
+  /* A page's step drags it among the steps; the steps still scroll the page up and down under a finger. */
+  .bo-step[data-page] {
+    touch-action: pan-y;
+    user-select: none;
+  }
+
   .bo-step:hover {
     background: var(--uui-color-surface-emphasis);
   }
@@ -489,6 +495,232 @@ export const canvasChrome = css`
     outline-offset: 1px;
   }
 
+  /*
+   * The handle, "Move Email address": a tab on the frame's top left corner, as the selected element's tools are on its
+   * right, shown on hover, on keyboard focus and while selected (ADR-0016). It drags the element; Alt+Up and Alt+Down on
+   * it move it one place. A field in a repeatable group shows its own, not the group's. Hidden, it takes no pointer, so
+   * it never catches a click meant for the field above it. Its own button and itself say when it shows, as siblings:
+   * a rule that asks whether a field holds the pointer would be checked for every field at every move of the mouse.
+   */
+  .jfb-form .bo-handle {
+    position: absolute;
+    inset-block-end: calc(100% + 8px);
+    inset-inline-start: -8px;
+    z-index: 4;
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 6px 6px 0 0;
+    background: var(--bo-accent);
+    color: var(--bo-on-accent);
+    opacity: 0;
+    pointer-events: none;
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+  }
+
+  .jfb-form .bo-handle-group {
+    inset-block-end: calc(100% + 12px);
+    inset-inline-start: -12px;
+    z-index: 2;
+  }
+
+  :host(:not([data-dragging])) .jfb-form .bo-select:is(:hover, :focus-visible, [aria-current='true']) ~ .bo-handle,
+  :host(:not([data-dragging])) .jfb-form .bo-handle:is(:hover, :focus-visible) {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .jfb-form .bo-handle:focus-visible {
+    outline: 2px solid var(--bo-focus);
+    outline-offset: 2px;
+  }
+
+  .jfb-form .bo-field .bo-field > .bo-chrome > .bo-handle {
+    z-index: 7;
+  }
+
+  /*
+   * Why the form refused the element's last move, beside its handle until the next change. It stays below the selected
+   * element's tools and leaves them their room on the right, growing upwards on a narrow element.
+   */
+  .jfb-form .bo-refusal {
+    position: absolute;
+    inset-block-end: calc(100% + 8px);
+    inset-inline-start: 24px;
+    z-index: 3;
+    max-inline-size: max(140px, min(320px, calc(100% - 300px)));
+    margin: 0;
+    padding: 4px 10px;
+    border-radius: 6px;
+    background: var(--uui-color-danger);
+    color: var(--uui-color-danger-contrast);
+    font: 600 12px/1.5 var(--uui-font-family);
+  }
+
+  .jfb-form .bo-group > .bo-refusal {
+    inset-block-end: calc(100% + 12px);
+    inset-inline-start: 20px;
+  }
+
+  .jfb-form .bo-page > .bo-refusal {
+    inset-block: -16px auto;
+    inset-inline-start: 16px;
+  }
+
+  /*
+   * A drag, in the top layer above everything else: a dashed slot keeps the dragged element's place, a line shows
+   * where it would land, in the colour of a refusal with the reason beside it where the form doesn't take it, and a
+   * copy with its name follows the pointer. The line jumps from place to place: it follows the pointer.
+   */
+  :host([data-dragging]),
+  :host([data-dragging]) * {
+    cursor: grabbing;
+    user-select: none;
+  }
+
+  /* While something is dragged, the line alone says where it lands: the selection, its tools, the handles (above),
+     the insert points and a refusal's note step back until the drop. */
+  :host([data-dragging]) .jfb-form :is(.bo-tools, .bo-insert, .bo-refusal) {
+    visibility: hidden;
+  }
+
+  :host([data-dragging]) .jfb-form .bo-select {
+    outline: none;
+    box-shadow: none;
+  }
+
+  .bo-drag {
+    position: fixed;
+    inset: 0;
+    width: auto;
+    height: auto;
+    max-width: none;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    overflow: visible;
+    pointer-events: none;
+  }
+
+  .bo-marks {
+    position: fixed;
+    inset: 0;
+  }
+
+  .bo-slot,
+  .bo-line,
+  .bo-follow {
+    position: fixed;
+    inset-block-start: 0;
+    inset-inline-start: 0;
+  }
+
+  /* The copy, and why the form refuses the place under it: they follow the pointer, never cut off by an area's edge. */
+  .bo-follow {
+    display: grid;
+    justify-items: start;
+    gap: 6px;
+  }
+
+  .bo-slot {
+    box-sizing: border-box;
+    border: 1px dashed var(--jfb-bo-color-control-border);
+    border-radius: 8px;
+    background: var(--uui-color-surface-emphasis);
+  }
+
+  .bo-line {
+    background: var(--bo-accent);
+  }
+
+  .bo-line::before,
+  .bo-line::after {
+    content: '';
+    position: absolute;
+    inset-block-start: -3px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: inherit;
+  }
+
+  .bo-line::before {
+    inset-inline-start: -4px;
+  }
+
+  .bo-line::after {
+    inset-inline-end: -4px;
+  }
+
+  /* Between the steps the line stands upright, its dots at its top and bottom. */
+  .bo-line[data-upright]::before,
+  .bo-line[data-upright]::after {
+    inset-inline-start: -3px;
+    inset-inline-end: auto;
+  }
+
+  .bo-line[data-upright]::before {
+    inset-block-start: -4px;
+  }
+
+  .bo-line[data-upright]::after {
+    inset-block-start: auto;
+    inset-block-end: -4px;
+  }
+
+  .bo-line[data-refused] {
+    background: var(--uui-color-danger);
+  }
+
+  .bo-why {
+    max-inline-size: min(320px, 90vw);
+    margin: 0;
+    padding: 4px 10px;
+    border-radius: 6px;
+    background: var(--uui-color-danger);
+    color: var(--uui-color-danger-contrast);
+    font: 600 12px/1.5 var(--uui-font-family);
+  }
+
+  .bo-why:empty,
+  .bo-slot[hidden],
+  .bo-line[hidden] {
+    display: none;
+  }
+
+  .bo-ghost {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    max-inline-size: 280px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    background: var(--uui-color-surface);
+    box-shadow: var(--uui-shadow-depth-3);
+    color: var(--uui-color-text);
+    font: 700 14px/1.4 var(--uui-font-family);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .bo-step[data-drop] {
+    outline: 2px solid var(--bo-accent);
+    outline-offset: 3px;
+  }
+
+  .bo-step[data-drop='refused'] {
+    outline-color: var(--uui-color-danger);
+  }
+
   .bo-after {
     display: grid;
     gap: var(--uui-size-space-5);
@@ -513,6 +745,32 @@ export const canvasChrome = css`
 
     .jfb-form .bo-insert::before {
       border-top-color: CanvasText;
+    }
+
+    .jfb-form .bo-handle {
+      border: 1px solid ButtonText;
+      background: ButtonFace;
+      color: ButtonText;
+    }
+
+    .bo-line,
+    .bo-line[data-refused] {
+      background: Highlight;
+    }
+
+    .bo-slot {
+      border-color: CanvasText;
+    }
+
+    .jfb-form .bo-refusal,
+    .bo-why,
+    .bo-ghost {
+      border: 1px solid CanvasText;
+    }
+
+    .bo-step[data-drop],
+    .bo-step[data-drop='refused'] {
+      outline-color: Highlight;
     }
   }
 `;
