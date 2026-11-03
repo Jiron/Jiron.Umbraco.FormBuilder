@@ -87,7 +87,9 @@ Six questions came up:
   of the fields before its owner. Held to `docs/api/merge-tag-paths.json`
   for a form with fields and the Testing project's site source in `visitorText` and `consentText`; the backoffice's
   dictionaries check holds every built-in path in it to an English and a German text.
-- **The tag picker** ("Insert merge tag", copy.md) opens a popover under its box: a search box, then the paths by
+- **The tag picker** ("Insert merge tag", copy.md) opens a panel under its box, in the inspector's own flow (a popover
+  measured itself before its paths came and ran past the window's bottom; in the flow nothing lies over the boxes below
+  and the inspector scrolls it): a search box, then the paths by
   source (Fields by their labels first), each a button that inserts `{{ path }}` at the caret and gives the focus back to
   the box. Escape closes it and gives the focus back to its button, and the focus leaving it closes it, so it never
   covers the box the focus went to.

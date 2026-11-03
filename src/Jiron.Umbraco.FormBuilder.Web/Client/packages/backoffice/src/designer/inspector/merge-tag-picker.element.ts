@@ -1,7 +1,8 @@
-// "Insert merge tag" under a text that takes tags (ROADMAP 9.4c, ADR-0173): a button that opens a panel with a search
-// box and the paths the place may use in the draft as it is, read each time it opens, grouped by their source. A path
-// pressed is handed to the box as its tag and the panel closes; Escape closes it and gives the focus back to the button,
-// and the focus leaving it closes it, so it never covers the box the focus went to.
+// "Insert merge tag" under a text that takes tags (ROADMAP 9.4c, ADR-0173): a button that opens a panel under it, in
+// the inspector's own flow, so nothing lies over the boxes below and the inspector scrolls it as anything else, with a
+// search box and the paths the place may use in the draft as it is, read each time it opens, grouped by their source. A
+// path pressed is handed to the box as its tag and the panel closes; Escape closes it and gives the focus back to the
+// button, and the focus leaving it closes it.
 import { css, html, nothing, type TemplateResult } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import type { MergeTagPathResponseModel } from '../../api';
@@ -21,6 +22,7 @@ export class MergeTagPickerElement extends UmbLitElement {
     _paths: { state: true },
     _failed: { state: true },
     _query: { state: true },
+    _open: { state: true },
   };
 
   declare place: MergeTagPlace;
@@ -37,6 +39,7 @@ export class MergeTagPickerElement extends UmbLitElement {
   declare private _paths: MergeTagPathResponseModel[] | null;
   declare private _failed: boolean;
   declare private _query: string;
+  declare private _open: boolean;
 
   readonly #id = `jfb-merge-tags-${++opened}`;
   // Which opening the paths being read are for: an answer to an earlier one is dropped.
@@ -53,6 +56,7 @@ export class MergeTagPickerElement extends UmbLitElement {
     this._paths = null;
     this._failed = false;
     this._query = '';
+    this._open = false;
   }
 
   #term = (key: string, ...args: unknown[]) => this.localize.term(`jfbMergeTags_${key}`, ...args);
@@ -64,11 +68,8 @@ export class MergeTagPickerElement extends UmbLitElement {
     return said && said !== term ? said : undefined;
   }
 
-  get #panel() {
-    return this.renderRoot.querySelector<HTMLElement & { hidePopover?: () => void }>(`#${this.#id}`);
-  }
-
   async #open() {
+    this._open = true;
     this._query = '';
     this._failed = false;
     this._paths = null;
@@ -81,8 +82,9 @@ export class MergeTagPickerElement extends UmbLitElement {
   }
 
   #close(focusButton: boolean) {
-    this.#panel?.hidePopover?.();
-    if (focusButton) this.renderRoot.querySelector<HTMLElement>('.open')?.focus();
+    this._open = false;
+    this.#reading++;
+    if (focusButton) void this.updateComplete.then(() => this.renderRoot.querySelector<HTMLElement>('.open')?.focus());
   }
 
   #pick(path: string) {
@@ -92,40 +94,47 @@ export class MergeTagPickerElement extends UmbLitElement {
 
   protected override render(): TemplateResult {
     const name = this.#term('insert');
-    return html`<button type="button" class="open" popovertarget=${this.#id}>
+    return html`<button
+        type="button"
+        class="open"
+        aria-expanded=${this._open ? 'true' : 'false'}
+        aria-controls=${this._open ? this.#id : nothing}
+        @click=${() => (this._open ? this.#close(false) : void this.#open())}
+      >
         <uui-icon name="icon-brackets" aria-hidden="true"></uui-icon>${name}
       </button>
-      <uui-popover-container
-        id=${this.#id}
-        placement="bottom-start"
-        @toggle=${(event: ToggleEvent) => {
-          if (event.newState === 'open') void this.#open();
-        }}
-        @focusout=${(event: FocusEvent) => {
-          const to = event.relatedTarget;
-          if (to instanceof Node && (this.renderRoot.contains(to) || this.contains(to))) return;
-          this.#close(false);
-        }}
-        @keydown=${(event: KeyboardEvent) => {
-          if (event.key !== 'Escape') return;
-          // The panel closes, and the Design view's Escape, which clears the selection, waits for the next one.
-          event.stopPropagation();
-          event.preventDefault();
-          this.#close(true);
-        }}
-      >
-        <div class="panel" role="dialog" aria-label=${name}>
-          <input
-            type="search"
-            aria-label=${this.#term('find')}
-            placeholder=${this.#term('find')}
-            autocomplete="off"
-            .value=${this._query}
-            @input=${(event: Event) => (this._query = (event.target as HTMLInputElement).value)}
-          />
-          ${this.#list()}
-        </div>
-      </uui-popover-container>`;
+      ${this._open ? this.#panelOf(name) : nothing}`;
+  }
+
+  #panelOf(name: string): TemplateResult {
+    return html`<div
+      class="panel"
+      id=${this.#id}
+      role="group"
+      aria-label=${name}
+      @focusout=${(event: FocusEvent) => {
+        const to = event.relatedTarget;
+        if (to instanceof Node && (this.renderRoot.contains(to) || this.contains(to))) return;
+        this.#close(false);
+      }}
+      @keydown=${(event: KeyboardEvent) => {
+        if (event.key !== 'Escape') return;
+        // The panel closes, and the Design view's Escape, which clears the selection, waits for the next one.
+        event.stopPropagation();
+        event.preventDefault();
+        this.#close(true);
+      }}
+    >
+      <input
+        type="search"
+        aria-label=${this.#term('find')}
+        placeholder=${this.#term('find')}
+        autocomplete="off"
+        .value=${this._query}
+        @input=${(event: Event) => (this._query = (event.target as HTMLInputElement).value)}
+      />
+      ${this.#list()}
+    </div>`;
   }
 
   #list(): TemplateResult {
@@ -195,14 +204,13 @@ export class MergeTagPickerElement extends UmbLitElement {
       display: grid;
       gap: var(--uui-size-space-2);
       box-sizing: border-box;
-      inline-size: min(300px, calc(100vw - 32px));
-      max-block-size: min(420px, 60vh);
+      max-block-size: min(320px, 50vh);
       overflow: auto;
+      margin-block-start: var(--uui-size-space-2);
       padding: var(--uui-size-space-3);
       border: 1px solid var(--uui-color-border);
       border-radius: var(--uui-border-radius);
       background: var(--uui-color-surface);
-      box-shadow: var(--uui-shadow-depth-3);
       color: var(--uui-color-text);
     }
 

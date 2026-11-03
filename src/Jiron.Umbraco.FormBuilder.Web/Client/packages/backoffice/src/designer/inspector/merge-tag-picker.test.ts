@@ -54,22 +54,39 @@ async function pickerOf() {
   testHost().append(element);
   await settle(element);
   const shadow = must(element.shadowRoot, 'its shadow root');
+  const button = must(shadow.querySelector<HTMLButtonElement>('.open'), 'the button');
+  // Opens the panel, closing it first when it is open, as pressing the button twice does.
   const open = async () => {
-    const panel = must(shadow.querySelector('uui-popover-container'), 'the panel');
-    panel.dispatchEvent(Object.assign(new Event('toggle'), { newState: 'open' }));
+    if (shadow.querySelector('.panel')) {
+      button.click();
+      await settle(element);
+    }
+    button.click();
     await new Promise((done) => setTimeout(done, 0));
     await settle(element);
   };
-  return { element, shadow, inserted, definition, open };
+  const search = () => must(shadow.querySelector<HTMLInputElement>('input[type="search"]'), 'the search');
+  const type = async (value: string) => {
+    search().value = value;
+    search().dispatchEvent(new Event('input'));
+    await settle(element);
+  };
+  return { element, shadow, inserted, definition, open, button, search, type };
 }
 
 describe('the merge tag picker', () => {
   it("asks for the place's paths in the draft as it is, in the language shown, and shows them by source", async () => {
     server.answer = consent;
-    const { shadow, open, definition } = await pickerOf();
-    expect(text(shadow.querySelector('.open'))).toBe('Insert merge tag');
+    const { shadow, open, definition, button } = await pickerOf();
+    expect(text(button)).toBe('Insert merge tag');
+    expect(button.getAttribute('aria-expanded')).toBe('false');
+    expect(shadow.querySelector('.panel')).toBeNull();
     await open();
     expect(server.asked).toEqual([['form1', 'consentText', 'de-DE', definition, 'heading-1']]);
+    const panel = must(shadow.querySelector('.panel'), 'the panel');
+    expect([button.getAttribute('aria-expanded'), button.getAttribute('aria-controls')]).toEqual(['true', panel.id]);
+    expect([panel.getAttribute('role'), panel.getAttribute('aria-label')]).toEqual(['group', 'Insert merge tag']);
+    expect(shadow.activeElement).toBe(shadow.querySelector('input[type="search"]'));
     expect([...shadow.querySelectorAll('.heading')].map((heading) => text(heading))).toEqual([
       'The form',
       'The page',
@@ -88,48 +105,44 @@ describe('the merge tag picker', () => {
 
   it('finds paths by what is typed, says when none matches, and inserts the one pressed', async () => {
     server.answer = consent;
-    const { element, shadow, open, inserted } = await pickerOf();
+    const { element, shadow, open, inserted, type, search } = await pickerOf();
     await open();
-    const search = must(shadow.querySelector<HTMLInputElement>('input[type="search"]'), 'the search');
-    search.value = 'address';
-    search.dispatchEvent(new Event('input'));
-    await settle(element);
+    await type('address');
     expect([...shadow.querySelectorAll('.path span')].map((label) => text(label))).toEqual([
       'Address of the page',
       'Address of the site',
     ]);
     must(shadow.querySelector<HTMLElement>('.path'), 'the first path').click();
+    await settle(element);
     expect(inserted).toEqual(['{{ page.url }}']);
-    search.value = 'zzz';
-    search.dispatchEvent(new Event('input'));
-    await new Promise((done) => setTimeout(done, 0));
+    expect(shadow.querySelector('.panel')).toBeNull();
+    await open();
+    await type('zzz');
     expect(text(shadow.querySelector('.note'))).toBe('No merge tag matches.');
+    // Opened again, it starts with an empty search and every path.
+    await open();
+    expect(search().value).toBe('');
+    expect(shadow.querySelectorAll('.path')).toHaveLength(6);
   });
 
   it('closes when the focus leaves it, and drops an answer to an earlier opening', async () => {
     server.answer = consent;
-    const { element, shadow, open } = await pickerOf();
-    const panel = must(
-      shadow.querySelector<HTMLElement & { hidePopover: () => void }>('uui-popover-container'),
-      'panel',
-    );
-    let hidden = 0;
-    panel.hidePopover = () => void hidden++;
+    const { element, shadow, open, search, button } = await pickerOf();
     await open();
-    const search = must(shadow.querySelector<HTMLInputElement>('input[type="search"]'), 'the search');
-    search.dispatchEvent(
+    search().dispatchEvent(
       new FocusEvent('focusout', { bubbles: true, composed: true, relatedTarget: shadow.querySelector('.path') }),
     );
-    expect(hidden).toBe(0);
+    await settle(element);
+    expect(shadow.querySelector('.panel')).not.toBeNull();
     const outside = document.createElement('button');
     testHost().append(outside);
-    search.dispatchEvent(new FocusEvent('focusout', { bubbles: true, composed: true, relatedTarget: outside }));
-    expect(hidden).toBe(1);
+    search().dispatchEvent(new FocusEvent('focusout', { bubbles: true, composed: true, relatedTarget: outside }));
+    await settle(element);
+    expect([shadow.querySelector('.panel'), button.getAttribute('aria-expanded')]).toEqual([null, 'false']);
 
     let answer: (paths: MergeTagPathResponseModel[]) => void = () => undefined;
     server.answer = undefined;
-    const slow = new Promise<MergeTagPathResponseModel[]>((done) => (answer = done));
-    server.pending = slow;
+    server.pending = new Promise<MergeTagPathResponseModel[]>((done) => (answer = done));
     await open();
     server.pending = undefined;
     server.answer = [];
@@ -142,12 +155,14 @@ describe('the merge tag picker', () => {
 
   it("says when the paths can't be read, and gives the focus back to its button on Escape", async () => {
     server.answer = undefined;
-    const { shadow, open } = await pickerOf();
+    const { element, shadow, open, search, button } = await pickerOf();
     await open();
     expect(text(shadow.querySelector('.note'))).toBe("The merge tags couldn't be read.");
     const escape = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, composed: true, cancelable: true });
-    must(shadow.querySelector('input'), 'the search').dispatchEvent(escape);
+    search().dispatchEvent(escape);
+    await settle(element);
     expect(escape.defaultPrevented).toBe(true);
-    expect(shadow.activeElement).toBe(shadow.querySelector('.open'));
+    expect(shadow.querySelector('.panel')).toBeNull();
+    expect(shadow.activeElement).toBe(button);
   });
 });

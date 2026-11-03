@@ -84,7 +84,7 @@ test("a field's tag goes into a heading through the picker, and a consent's word
   await heading.click();
   await heading.press('End');
   await inspector.getByRole('button', { name: 'Insert merge tag' }).click();
-  const tags = page.getByRole('dialog', { name: 'Insert merge tag' });
+  const tags = page.getByRole('group', { name: 'Insert merge tag' });
   // The heading recalls the answers before it: the name, not the email address after it.
   await expect(tags.getByRole('list', { name: 'Answers' }).getByRole('button')).toHaveText([
     'Your name {{ field.name }}',

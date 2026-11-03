@@ -3,9 +3,19 @@
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { MergeTagPathResponseModel } from '../../api';
-import { groupPaths, placeOf, tagOf, withTag, type PathWords } from './merge-tags';
+import { groupPaths, placeOf, readMergeTagPaths, tagOf, withTag, type PathWords } from './merge-tags';
+
+// What the read sends, through a stand-in for the generated client and Umbraco's request helper.
+const sent = vi.hoisted(() => [] as unknown[]);
+vi.mock('@umbraco-cms/backoffice/resources', () => ({
+  tryExecute: async (_host: unknown, request: Promise<unknown>) => {
+    sent.push(await request);
+    return { data: { paths: [] } };
+  },
+}));
+vi.mock('../../api', () => ({ mergeTagPathList: (options: unknown) => Promise.resolve(options) }));
 
 const root = join(dirname(fileURLToPath(import.meta.url)), ...Array<string>(8).fill('..'));
 const served = JSON.parse(readFileSync(join(root, 'docs', 'api', 'merge-tag-paths.json'), 'utf8')) as Record<
@@ -52,6 +62,22 @@ describe("the picker's paths", () => {
       { path: 'form.alias', label: 'form.alias' },
     ]);
     expect(groups.at(-1)?.paths).toEqual([{ path: 'greeting.text', label: 'Greeting' }]);
+    const own = groupPaths(
+      [
+        { path: 'greeting.text', source: 'greeting', isSiteSource: true, label: 'Greeting' },
+        { path: 'weather.today', source: 'weather', isSiteSource: true, label: 'Today' },
+      ],
+      words,
+    );
+    expect(own).toEqual([
+      {
+        heading: "The site's own",
+        paths: [
+          { path: 'greeting.text', label: 'Greeting' },
+          { path: 'weather.today', label: 'Today' },
+        ],
+      },
+    ]);
   });
 
   it('are found by their words or their path, in any letter case, a source with none left gone', () => {
@@ -60,6 +86,21 @@ describe("the picker's paths", () => {
       'field.guests.guestName',
     ]);
     expect(groupPaths(visitor, words, 'site.u').map((group) => group.heading)).toEqual(['The site']);
+    expect(groupPaths(visitor, words, 'FORM.NAME').flatMap((group) => group.paths)).toEqual([
+      { path: 'form.name', label: 'Name of the form' },
+    ]);
     expect(groupPaths(visitor, words, 'nothing like it')).toEqual([]);
+  });
+});
+
+describe('the paths read', () => {
+  it('are asked for the element whose text it is, or for a text after every field', async () => {
+    const definition = { pages: [] };
+    await readMergeTagPaths({} as never, 'form1', 'visitorText', 'de-DE', definition, 'heading-1');
+    await readMergeTagPaths({} as never, 'form1', 'consentText', '', definition);
+    expect(sent).toEqual([
+      { path: { key: 'form1' }, body: { place: 'visitorText', culture: 'de-DE', definition, owner: 'heading-1' } },
+      { path: { key: 'form1' }, body: { place: 'consentText', culture: '', definition } },
+    ]);
   });
 });

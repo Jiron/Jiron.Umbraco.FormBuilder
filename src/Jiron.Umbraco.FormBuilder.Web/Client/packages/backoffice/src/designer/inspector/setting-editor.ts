@@ -68,10 +68,15 @@ export function problemText(term: EditorContext['term'], problem: Problem): stri
 
 const asText = (value: unknown) => (value === undefined || value === null ? '' : String(value));
 
-/** Rich text as one line of its words, for a summary: its tags gone, its spaces folded, its first 80 characters. */
+/**
+ * Rich text as one line of its words, for a summary or a hint: a paragraph, a list item or a line break a space, any
+ * other tag gone without one, so a link's words keep the full stop after them; its spaces folded, its first 80
+ * characters.
+ */
 export function plainOf(html: string): string {
   const words = html
-    .replace(/<[^>]*>/g, ' ')
+    .replace(/<\/?(p|li|ul|ol|br|h[2-6]|blockquote|hr)\b[^>]*>/gi, ' ')
+    .replace(/<[^>]*>/g, '')
     .replace(/&nbsp;/g, ' ')
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')

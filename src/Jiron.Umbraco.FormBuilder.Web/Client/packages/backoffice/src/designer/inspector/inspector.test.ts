@@ -515,6 +515,9 @@ describe('merge tags in the inspector (ADR-0173)', () => {
     box.setSelectionRange(6, 6);
     must(pickers[0], 'the picker').insert('{{ form.name }}');
     expect(applied(requests.at(-1), heading)['settings']).toEqual({ text: { '': 'Hello {{ form.name }}!' } });
+    // A step of its own, which Undo takes back alone.
+    const last = requests.at(-1);
+    expect(last?.kind === 'change' ? last.merge : 'none').toBeUndefined();
     expect(root.activeElement).toBe(box);
     expect(box.selectionStart).toBe(21);
   });
@@ -541,7 +544,7 @@ describe('rich text in the inspector (ADR-0173)', () => {
     key: 'c',
     type: 'consent',
     alias: 'agree',
-    settings: { text: { '': 'I agree to the <a href="/privacy"><strong>terms</strong></a> &amp; rules.' } },
+    settings: { text: { '': 'I agree to the <a href="/privacy"><strong>terms</strong></a>, &amp; the rules.' } },
   };
 
   it("is one line of words in a consent's label, and paragraphs and lists in a paragraph", async () => {
@@ -550,7 +553,7 @@ describe('rich text in the inspector (ADR-0173)', () => {
     expect([wording.id, wording.inline, wording.value]).toEqual([
       'setting-text',
       true,
-      'I agree to the <a href="/privacy"><strong>terms</strong></a> &amp; rules.',
+      'I agree to the <a href="/privacy"><strong>terms</strong></a>, &amp; the rules.',
     ]);
     const paragraph = await inspectorOf('p1', {}, { key: 'p1', type: 'paragraph', alias: 'intro' });
     expect(must(paragraph.root.querySelector('jfb-rich-text'), 'the paragraph').inline).toBe(false);
@@ -559,7 +562,13 @@ describe('rich text in the inspector (ADR-0173)', () => {
   it("shows the default language's words, without their markup, as another language's hint", async () => {
     const { root } = await inspectorOf('c', { culture: 'de-DE' }, CONSENT);
     const wording = must(root.querySelector('jfb-rich-text'), 'the wording');
-    expect([wording.value, wording.placeholder]).toEqual(['', 'I agree to the terms & rules.']);
+    expect([wording.value, wording.placeholder]).toEqual(['', 'I agree to the terms, & the rules.']);
+    const paragraph = await inspectorOf(
+      'p1',
+      { culture: 'de-DE' },
+      { key: 'p1', type: 'paragraph', alias: 'intro', settings: { html: { '': '<p>One</p><ul><li>Two</li></ul>' } } },
+    );
+    expect(must(paragraph.root.querySelector('jfb-rich-text'), 'the paragraph').placeholder).toBe('One Two');
   });
 });
 
