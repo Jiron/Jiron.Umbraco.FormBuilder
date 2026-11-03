@@ -1196,6 +1196,9 @@ describe('options from elsewhere', () => {
       await settle(view);
     };
     try {
+      // Not after a pause either.
+      await paused();
+      expect(resolving.asked).toHaveLength(1);
       const weekdays = { source: 'code', config: { source: 'weekdays' } };
       change({ source: 'code', config: { source: 'week' } });
       await settle(view);

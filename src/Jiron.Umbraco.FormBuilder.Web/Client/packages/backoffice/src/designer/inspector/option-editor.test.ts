@@ -378,6 +378,16 @@ describe('the option editor', () => {
     expect((document.activeElement as HTMLInputElement).value).toBe('crimson');
   });
 
+  it("offers Depends on only for a type whose options may follow another field's answer, and not a grid's columns", async () => {
+    const parent: DesignField = { key: 'p', type: 'dropdown', alias: 'size', options: { items: [{ value: 's' }] } };
+    const grid: DesignField = { key: 'g', type: 'grid', alias: 'rating', options: { items: [{ value: 'poor' }] } };
+    const columns = await editorOf(grid, { parents: [parent] });
+    expect(columns.element.querySelector('#options-parent')).toBeNull();
+    const radio = await editorOf(RADIO, { parents: [parent] });
+    expect(radio.element.querySelector('#options-parent')).not.toBeNull();
+    expect((await editorOf(RADIO)).element.querySelector('#options-parent')).toBeNull();
+  });
+
   it('depends on a choice field before it, each own option shown for the answers ticked', async () => {
     const parent: DesignField = {
       key: 'p',

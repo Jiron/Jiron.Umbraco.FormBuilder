@@ -6,6 +6,7 @@ import type { DesignDefinition, DesignField } from '../definition';
 import { builtInTypes } from '../preview/fixtures';
 import {
   cut,
+  isValue,
   itemsOf,
   LINE_LENGTH,
   MOST_OPTIONS,
@@ -119,6 +120,20 @@ describe("a field's options", () => {
     expect(showsCards({ key: 'k', type: 'ranking', settings: { layout: 'cards' } }, ranking, form('cards'))).toBe(
       false,
     );
+  });
+
+  it('store a value of 1 to 200 characters, as cleaning leaves it, without spaces at either end', () => {
+    expect(isValue('red')).toBe(true);
+    expect(isValue('x'.repeat(200))).toBe(true);
+    expect(isValue('x'.repeat(201))).toBe(false);
+    expect(isValue('')).toBe(false);
+    expect(isValue(' red')).toBe(false);
+    expect(isValue('red ')).toBe(false);
+  });
+
+  it('leave out "items" as the source, which is where options come from unless the field says otherwise', () => {
+    const own: DesignField = { key: 'o', type: 'radio', options: { source: 'items', items: [] } };
+    expect(withItems(own, [{ value: 'red' }])['options']).toEqual({ items: [{ value: 'red' }] });
   });
 
   it('move, change one property, and leave an empty list out', () => {
