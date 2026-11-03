@@ -123,13 +123,13 @@ public sealed class EmailAttemptTests : EmailTestBase
     [Test]
     public async Task AMailThatRunsOutOfAttempts_TellsTheTeam_ThroughTheQueue()
     {
-        const string team = "team@jfb.test";
+        const string Team = "team@jfb.test";
         var settings = GetRequiredService<IFormBuilderSettingsService>();
         var current = await settings.GetAsync<EmailSettings>();
-        await settings.SaveAsync(current.Value with { TeamRecipients = [team] }, current.Version, Editor);
+        await settings.SaveAsync(current.Value with { TeamRecipients = [Team] }, current.Version, Editor);
         var entry = await SubmitAsync(await PublishAsync(name: "Registration"));
         var mail = await Outbox.QueueAsync(Mail("visitor@jfb.test") with { EntryId = entry.Id });
-        Sender.Script = message => message.To.Contains(team) ? Task.CompletedTask : throw new InvalidOperationException("No mailbox");
+        Sender.Script = message => message.To.Contains(Team) ? Task.CompletedTask : throw new InvalidOperationException("No mailbox");
 
         for (var attempt = 0; attempt <= ActionAttempts.MaxAttempts; attempt++)
         {
@@ -137,7 +137,7 @@ public sealed class EmailAttemptTests : EmailTestBase
             Clock.Advance(TimeSpan.FromHours(1));
         }
 
-        var told = Sender.Calls.Where(call => call.Message.To.Contains(team)).ToList();
+        var told = Sender.Calls.Where(call => call.Message.To.Contains(Team)).ToList();
         Assert.Multiple(async () =>
         {
             Assert.That((await Emails.GetAsync(mail!.Id))!.State, Is.EqualTo(EmailState.Failed));
