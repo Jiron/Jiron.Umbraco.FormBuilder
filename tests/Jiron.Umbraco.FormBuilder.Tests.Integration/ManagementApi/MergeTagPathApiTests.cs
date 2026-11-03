@@ -79,6 +79,38 @@ public sealed class MergeTagPathApiTests : ManagementApiTestBase
     }
 
     [Test]
+    public async Task AVisitorText_IsOfferedOnlyTheAnswersOfTheFieldsBeforeIt()
+    {
+        var (form, definition) = await FormAsync();
+        var fields = definition["pages"]![0]!["groups"]![0]!["fields"]!.AsArray();
+        var heading = fields.Single(field => field!["alias"]!.GetValue<string>() == "title")!["key"]!.GetValue<string>();
+        var name = fields.Single(field => field!["alias"]!.GetValue<string>() == "name")!["key"]!.GetValue<string>();
+        var guests = fields.Single(field => field!["alias"]!.GetValue<string>() == "guests")!;
+        var child = guests["fields"]![0]!["key"]!.GetValue<string>();
+
+        var answers = async (string place, string owner) =>
+        {
+            var answer = await CallAsync("designer", HttpMethod.Post, $"form/{form}/merge-tag-paths", new { place, culture = "en-US", definition, owner });
+            Assert.That(answer.Outcome, Is.EqualTo("200"), answer.ToString());
+            return Paths(answer.Body!["paths"]!.AsArray()).Where(path => path.StartsWith("field.", StringComparison.Ordinal)).ToList();
+        };
+
+        var afterHeading = await answers("visitorText", heading);
+        var afterName = await answers("visitorText", name);
+        var inGroup = await answers("visitorText", child);
+        var unknown = await answers("visitorText", Guid.NewGuid().ToString());
+        var defaults = await answers("consentText", heading);
+        Assert.Multiple(() =>
+        {
+            Assert.That(afterHeading, Is.EqualTo(new[] { "field.name", "field.email" }), "the heading comes after the name and the email, before the guests");
+            Assert.That(afterName, Is.Empty, "the first field's text recalls nothing");
+            Assert.That(inGroup, Does.Contain("field.email").And.Not.Contain("field.guests.guestName"), "nor does a child its own group's");
+            Assert.That(unknown, Does.Contain("field.guests.guestName"), "a key the form lacks: after every field");
+            Assert.That(defaults, Is.Empty, "a consent's wording takes no answers, wherever it is");
+        });
+    }
+
+    [Test]
     public async Task AnUnknownPlace_OrADefinitionThatDoesNotRead_IsRefused()
     {
         var (form, definition) = await FormAsync();

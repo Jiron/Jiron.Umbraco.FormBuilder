@@ -488,6 +488,7 @@ export type MergeTagPathsRequestModel = {
     place: string;
     culture: string;
     definition: unknown;
+    owner?: string | null;
 };
 
 export type MergeTagPathsResponseModel = {

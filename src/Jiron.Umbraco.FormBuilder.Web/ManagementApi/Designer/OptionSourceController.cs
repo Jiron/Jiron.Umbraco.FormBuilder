@@ -12,8 +12,10 @@ namespace Jiron.Umbraco.FormBuilder.Web.ManagementApi.Designer;
 
 /// <summary>
 /// Where a choice field's options may come from (ADR-0073, ADR-0172): the kinds a field may configure, each with its
-/// configuration's settings schema as the field types endpoint serves a type's, and the site's code sources. Any user of
-/// the Forms section may ask: the registries describe the site's code, the same for everyone.
+/// configuration's settings schema as the field types endpoint serves a type's, and the site's code sources. A setting
+/// that names the site's own items offers them as its choices (ADR-0173): the document types a page may have, the data
+/// types that hold a list of values. Any user of the Forms section may ask: the registries describe the site's code, and
+/// the types' names its structure, not its content.
 /// </summary>
 [ApiVersion("1.0")]
 [BackOfficeRoute(FormBuilderManagementApi.Route + "/option-source")]
@@ -25,7 +27,8 @@ internal sealed class OptionSourceController(OptionKindRegistry kinds, OptionSou
     [MapToApiVersion("1.0")]
     [FormBuilderSection]
     [ProducesResponseType(typeof(OptionSourcesResponseModel), StatusCodes.Status200OK)]
-    public IActionResult List() => Ok(OptionSourcesResponseModel.Of(kinds, sources));
+    public async Task<IActionResult> List(CancellationToken cancellationToken = default) =>
+        Ok(await OptionSourcesResponseModel.OfAsync(kinds, sources, cancellationToken));
 }
 
 /// <summary>
@@ -91,14 +94,30 @@ internal sealed record OptionSourcesResponseModel
     /// <summary>The site's code sources, in the registry's order.</summary>
     public required IReadOnlyList<OptionSourceResponseModel> Sources { get; init; }
 
-    /// <summary>The model of the site's kinds and sources.</summary>
-    public static OptionSourcesResponseModel Of(OptionKindRegistry kinds, OptionSourceRegistry sources)
+    /// <summary>The model of the site's kinds, with the site's items as the choices of the settings that name them, and sources.</summary>
+    public static async Task<OptionSourcesResponseModel> OfAsync(OptionKindRegistry kinds, OptionSourceRegistry sources, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(kinds);
         ArgumentNullException.ThrowIfNull(sources);
+        var served = new List<OptionKindResponseModel>();
+        foreach (var kind in kinds.All.Where(kind => kind.OnField))
+        {
+            var choices = await kind.SiteChoicesAsync(cancellationToken);
+            served.Add(new OptionKindResponseModel
+            {
+                Kind = kind.Name,
+                Settings =
+                [
+                    .. FieldSettingResponseModel.Of(kind.Schema.Settings, []).Select(setting => choices.TryGetValue(setting.Name, out var items)
+                        ? setting with { Choices = [.. items.Select(item => new FieldSettingChoiceResponseModel(item.Value, item.Label))] }
+                        : setting),
+                ],
+            });
+        }
+
         return new OptionSourcesResponseModel
         {
-            Kinds = [.. kinds.All.Where(kind => kind.OnField).Select(kind => new OptionKindResponseModel { Kind = kind.Name, Settings = FieldSettingResponseModel.Of(kind.Schema.Settings, []) })],
+            Kinds = served,
             Sources = [.. sources.Ordered.Select(source => new OptionSourceResponseModel { Name = source.Name, Label = source.Label })],
         };
     }

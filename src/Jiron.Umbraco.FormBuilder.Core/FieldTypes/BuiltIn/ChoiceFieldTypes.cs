@@ -457,9 +457,9 @@ public sealed class CheckboxFieldType() : FormBuilderFieldTypeBase<CheckboxField
 /// <summary>The settings of a single checkbox (ADR-0002).</summary>
 public sealed class CheckboxFieldSettings
 {
-    /// <summary>The text beside the box, which may hold links.</summary>
+    /// <summary>The text beside the box, which may hold links; it sits in the box's label, so it is one line of words.</summary>
     [StringLength(20000)]
-    [FormBuilderSetting("#jfbFieldSettings_checkboxText", Public = true)]
+    [FormBuilderSetting("#jfbFieldSettings_checkboxText", Editor = "inlineHtml", Public = true)]
     public LocalizedHtml? Text { get; init; }
 }
 
@@ -604,7 +604,7 @@ public sealed class ConsentFieldSettings
     /// <summary>The consent text, which may link to the privacy page and use merge tags that are the same for every visitor (ADR-0014).</summary>
     [Required]
     [StringLength(20000)]
-    [FormBuilderSetting("#jfbFieldSettings_consentText", SupportsMergeTags = true, Public = true)]
+    [FormBuilderSetting("#jfbFieldSettings_consentText", Editor = "inlineHtml", SupportsMergeTags = true, Public = true)]
     public LocalizedHtml? Text { get; init; }
 
     /// <summary>Whether ticking this consent is the visitor's agreement to load the form's captcha, in the <c>explicit</c> mode (section 4.10, ADR-0157).</summary>

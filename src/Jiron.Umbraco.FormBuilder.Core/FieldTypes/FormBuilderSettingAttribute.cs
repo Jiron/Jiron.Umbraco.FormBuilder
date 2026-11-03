@@ -25,7 +25,8 @@ public sealed class FormBuilderSettingAttribute : Attribute
     /// <summary>
     /// The editor the designer shows, by its alias; by default the one of the setting's kind (its name in camel case, such
     /// as <c>boolean</c> or <c>localizedText</c>). A key or free JSON has no default and names its editor, for example
-    /// <c>mediaPicker</c>. A <c>jfbSettingEditor</c> manifest can supply an editor of its own (15.1).
+    /// <c>mediaPicker</c>. Rich text shown in a label names <c>inlineHtml</c>: one line of bold, italic and links, without
+    /// paragraphs or lists. A <c>jfbSettingEditor</c> manifest can supply an editor of its own (15.1).
     /// </summary>
     public string? Editor { get; set; }
 

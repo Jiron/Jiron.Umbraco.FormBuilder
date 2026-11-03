@@ -183,7 +183,24 @@
           "name": "dataType",
           "kind": "key",
           "itemKind": null,
-          "choices": [],
+          "choices": [
+            {
+              "value": "fbaf13a8-4036-41f2-93a3-974f678c312a",
+              "label": "Checkbox list"
+            },
+            {
+              "value": "0b6a45e7-44ba-430d-9da5-4e46060b9e03",
+              "label": "Dropdown"
+            },
+            {
+              "value": "f38f0ac7-1d27-439c-9f3f-089cd8825a53",
+              "label": "Dropdown multiple"
+            },
+            {
+              "value": "bb5f57c9-ce2b-4bb9-b697-4caca783a805",
+              "label": "Radiobox"
+            }
+          ],
           "settings": [],
           "default": null,
           "label": "#jfbOptionListSettings_dataType",

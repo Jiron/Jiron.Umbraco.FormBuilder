@@ -51,7 +51,7 @@ internal sealed class MergeTagPathController(DraftMergeTagPaths paths, FormDefin
             throw new FormBuilderValidationException(read.Problems);
         }
 
-        var found = await paths.PathsAsync(definition, place, request.Culture);
+        var found = await paths.PathsAsync(definition, place, request.Culture, request.Owner);
         return Ok(new MergeTagPathsResponseModel { Paths = [.. found.Select(MergeTagPathResponseModel.Of)] });
     }
 }
@@ -67,6 +67,12 @@ internal sealed record MergeTagPathsRequestModel
 
     /// <summary>The draft's definition as the designer holds it, read as a draft save reads it.</summary>
     public required JsonElement Definition { get; init; }
+
+    /// <summary>
+    /// The key of the page, group or field whose text it is: a visitor text recalls only the answers of the fields before
+    /// it. None for a text after every field.
+    /// </summary>
+    public Guid? Owner { get; init; }
 }
 
 /// <summary>The paths of a place.</summary>

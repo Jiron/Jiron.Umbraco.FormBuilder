@@ -23,6 +23,15 @@ internal sealed partial class ContentOptionKind(OptionListUmbraco umbraco) : Opt
     public const string PageName = "name";
 
     /// <inheritdoc />
+    /// <remarks>The document types a page may have, by name, as <c>documentTypes</c> offers them.</remarks>
+    public override ValueTask<IReadOnlyDictionary<string, IReadOnlyList<FieldSettingChoice>>> SiteChoicesAsync(CancellationToken cancellationToken)
+    {
+        IReadOnlyList<FieldSettingChoice> types = [.. umbraco.PageTypes().Select(type => new FieldSettingChoice(type.Key.ToString(), type.Name ?? type.Alias))];
+        return ValueTask.FromResult<IReadOnlyDictionary<string, IReadOnlyList<FieldSettingChoice>>>(
+            new Dictionary<string, IReadOnlyList<FieldSettingChoice>>(StringComparer.Ordinal) { ["documentTypes"] = types });
+    }
+
+    /// <inheritdoc />
     protected override void CheckSettings(ContentOptionListSettings settings, OptionKindCheck check)
     {
         if (settings.ValueFrom != PageKey && settings.ValueFrom != PageName && !PropertyAlias().IsMatch(settings.ValueFrom))

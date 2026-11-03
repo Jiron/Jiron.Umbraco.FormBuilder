@@ -7634,7 +7634,12 @@
           "culture": {
             "type": "string"
           },
-          "definition": {}
+          "definition": {},
+          "owner": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          }
         },
         "additionalProperties": false
       },

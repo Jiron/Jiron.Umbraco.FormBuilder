@@ -5,6 +5,12 @@ using System.Text.Json.Nodes;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.OptionLists;
 using Jiron.Umbraco.FormBuilder.Testing;
+using Umbraco.Cms.Core;
+using Umbraco.Cms.Core.Models;
+using Umbraco.Cms.Core.PropertyEditors;
+using Umbraco.Cms.Core.Serialization;
+using Umbraco.Cms.Core.Services;
+using Umbraco.Cms.Core.Strings;
 using Umbraco.Cms.Tests.Common.Testing;
 
 namespace Jiron.Umbraco.FormBuilder.Tests.Integration.ManagementApi;
@@ -36,12 +42,53 @@ public sealed class OptionSourceApiTests : ManagementApiTestBase
         var served = body.ToJsonString(new JsonSerializerOptions { WriteIndented = true, Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping }).ReplaceLineEndings("\n") + "\n";
         if (Environment.GetEnvironmentVariable("JFB_UPDATE_SNAPSHOTS") == "1")
         {
-            await File.WriteAllTextAsync(SnapshotPath, served, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+            await System.IO.File.WriteAllTextAsync(SnapshotPath, served, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
             Assert.Fail($"JFB_UPDATE_SNAPSHOTS=1: wrote {SnapshotPath}. Review the diff, commit it, and run again without the variable.");
         }
 
-        Assert.That(File.Exists(SnapshotPath), Is.True, $"the reviewed snapshot {SnapshotPath}; run with JFB_UPDATE_SNAPSHOTS=1");
-        Assert.That((await File.ReadAllTextAsync(SnapshotPath)).ReplaceLineEndings("\n"), Is.EqualTo(served), "the kinds or the sources changed: run with JFB_UPDATE_SNAPSHOTS=1 and review the diff");
+        Assert.That(System.IO.File.Exists(SnapshotPath), Is.True, $"the reviewed snapshot {SnapshotPath}; run with JFB_UPDATE_SNAPSHOTS=1");
+        Assert.That((await System.IO.File.ReadAllTextAsync(SnapshotPath)).ReplaceLineEndings("\n"), Is.EqualTo(served), "the kinds or the sources changed: run with JFB_UPDATE_SNAPSHOTS=1 and review the diff");
+    }
+
+    [Test]
+    public async Task TheSitesPageTypes_AndItsDataTypesThatHoldValues_AreTheChoicesOfTheSettingsThatNameThem_ByName()
+    {
+        var strings = GetRequiredService<IShortStringHelper>();
+        var contentTypes = GetRequiredService<IContentTypeService>();
+        var article = new ContentType(strings, -1) { Alias = "jfbArticle", Name = "Article" };
+        var block = new ContentType(strings, -1) { Alias = "jfbBlock", Name = "A block", IsElement = true };
+        var about = new ContentType(strings, -1) { Alias = "jfbAbout", Name = "about page" };
+        foreach (var type in new[] { article, block, about })
+        {
+            Assert.That((await contentTypes.CreateAsync(type, Constants.Security.SuperUserKey)).Success, Is.True);
+        }
+
+        var editors = GetRequiredService<PropertyEditorCollection>();
+        var sizes = new DataType(editors[Constants.PropertyEditors.Aliases.DropDownListFlexible]!, GetRequiredService<IConfigurationEditorJsonSerializer>())
+        {
+            Name = "AAA sizes",
+            ConfigurationData = new Dictionary<string, object> { ["items"] = new[] { "S", "M" } },
+        };
+        var dataTypes = GetRequiredService<IDataTypeService>();
+        Assert.That((await dataTypes.CreateAsync(sizes, Constants.Security.SuperUserKey)).Success, Is.True);
+
+        var answer = await CallAsync("noAccess", HttpMethod.Get, "option-source");
+
+        Assert.That(answer.Outcome, Is.EqualTo("200"), answer.ToString());
+        IEnumerable<(string Value, string Label)> Choices(string kind, string setting) =>
+            answer.Body!["kinds"]!.AsArray().Single(each => each!["kind"]!.GetValue<string>() == kind)!["settings"]!.AsArray()
+                .Single(each => each!["name"]!.GetValue<string>() == setting)!["choices"]!.AsArray()
+                .Select(choice => (choice!["value"]!.GetValue<string>(), choice["label"]!.GetValue<string>()));
+        var lists = (await dataTypes.GetAllAsync())
+            .Where(type => type.EditorAlias is Constants.PropertyEditors.Aliases.DropDownListFlexible or Constants.PropertyEditors.Aliases.CheckBoxList or Constants.PropertyEditors.Aliases.RadioButtonList)
+            .ToList();
+        Assert.Multiple(() =>
+        {
+            Assert.That(Choices("content", "documentTypes"), Is.EqualTo(new[] { (about.Key.ToString(), "about page"), (article.Key.ToString(), "Article") }), "pages' types by name in any letter case; no element type");
+            Assert.That(Choices("dataType", "dataType").First(), Is.EqualTo((sizes.Key.ToString(), "AAA sizes")), "by name");
+            Assert.That(Choices("dataType", "dataType").Select(choice => choice.Value), Is.EquivalentTo(lists.Select(type => type.Key.ToString())), "every dropdown, checkbox list and radio button list, and nothing else");
+            Assert.That(Choices("content", "root"), Is.Empty, "a page is picked in Umbraco's content picker");
+        });
     }
 
     [Test]

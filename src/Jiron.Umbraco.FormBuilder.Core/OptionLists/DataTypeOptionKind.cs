@@ -33,6 +33,17 @@ internal sealed class DataTypeOptionKind(OptionListUmbraco umbraco) : OptionKind
     }
 
     /// <inheritdoc />
+    /// <remarks>The data types that hold a list of values, by name, as <c>dataType</c> offers them.</remarks>
+    public override async ValueTask<IReadOnlyDictionary<string, IReadOnlyList<FieldSettingChoice>>> SiteChoicesAsync(CancellationToken cancellationToken)
+    {
+        IReadOnlyList<FieldSettingChoice> lists =
+        [
+            .. (await umbraco.DataTypesAsync()).Where(type => Values(type) is not null).Select(type => new FieldSettingChoice(type.Key.ToString(), type.Name ?? type.EditorAlias)),
+        ];
+        return new Dictionary<string, IReadOnlyList<FieldSettingChoice>>(StringComparer.Ordinal) { ["dataType"] = lists };
+    }
+
+    /// <inheritdoc />
     /// <remarks>A data type that is gone, or that became another kind of editor, makes the source fail.</remarks>
     protected override async ValueTask<IReadOnlyList<FormBuilderOption>> ResolveAsync(DataTypeOptionListSettings settings, OptionKindRequest request, CancellationToken cancellationToken)
     {

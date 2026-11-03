@@ -52,8 +52,16 @@ internal sealed class OptionListUmbraco(
     /// <summary>A document type by its key; null when there is none.</summary>
     public IContentType? DocumentType(Guid key) => contentTypes.Get(key);
 
+    /// <summary>The document types a page may have, by name: element types, which no page has, left out.</summary>
+    public IReadOnlyList<IContentType> PageTypes() =>
+        [.. contentTypes.GetAll().Where(type => !type.IsElement).OrderBy(type => type.Name ?? type.Alias, StringComparer.CurrentCultureIgnoreCase)];
+
     /// <summary>A data type by its key; null when there is none.</summary>
     public Task<IDataType?> DataTypeAsync(Guid key) => dataTypes.GetAsync(key);
+
+    /// <summary>Every data type, by name.</summary>
+    public async Task<IReadOnlyList<IDataType>> DataTypesAsync() =>
+        [.. (await dataTypes.GetAllAsync()).OrderBy(type => type.Name ?? string.Empty, StringComparer.CurrentCultureIgnoreCase)];
 
     /// <summary>The culture Umbraco reads variants in: the one asked for, or Umbraco's default language for none.</summary>
     public async Task<string> CultureAsync(string culture) => culture.Length > 0 ? culture : await languages.GetDefaultIsoCodeAsync();

@@ -19,6 +19,13 @@ public sealed class TestUserGroup
     public bool MediaRootAccess { get; set; }
 
     /// <summary>
+    /// Whether the group may browse the whole content tree (its root as the start node, and Umbraco's Browse
+    /// permission), as a designer choosing the page whose children are a field's options does; none of it by default,
+    /// as Umbraco's own new groups.
+    /// </summary>
+    public bool ContentRootAccess { get; set; }
+
+    /// <summary>
     /// The group's global Jiron Form Builder permissions by name, for example <c>viewEntries</c> (ADR-0013); the seed
     /// sets the group's global grant to exactly these, none by default.
     /// </summary>

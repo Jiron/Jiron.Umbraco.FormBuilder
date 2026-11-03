@@ -153,6 +153,19 @@ internal abstract class OptionKind
     /// <param name="cancellationToken">Cancelled when the page or the submission is.</param>
     public abstract ValueTask<IReadOnlyList<FormBuilderOption>> ResolveAsync(OptionKindRequest request, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// The site's items a setting of the configuration may name, by the setting's name, as the values a designer picks
+    /// from (ADR-0173): a content list's document types and a data type list's data types, which Umbraco's own pickers
+    /// show only to users of its Settings section. None by default.
+    /// </summary>
+    /// <param name="cancellationToken">Cancelled when the request is.</param>
+    public virtual ValueTask<IReadOnlyDictionary<string, IReadOnlyList<FieldSettingChoice>>> SiteChoicesAsync(CancellationToken cancellationToken) =>
+        ValueTask.FromResult(NoChoices);
+
+    /// <summary>No setting with the site's items.</summary>
+    protected static IReadOnlyDictionary<string, IReadOnlyList<FieldSettingChoice>> NoChoices { get; } =
+        FrozenDictionary<string, IReadOnlyList<FieldSettingChoice>>.Empty;
+
     /// <summary>The kind's own check of a configuration that keeps its schema.</summary>
     protected abstract void CheckSettings(SettingsObject? config, OptionKindCheck check);
 

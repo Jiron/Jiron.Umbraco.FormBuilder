@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using Umbraco.Cms.Core;
+using Umbraco.Cms.Core.Actions;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Models.ContentEditing;
 using Umbraco.Cms.Core.Models.Membership;
@@ -46,6 +47,8 @@ public sealed class TestPeople(
             Icon = "icon-users",
             HasAccessToAllLanguages = true,
             StartMediaId = group.MediaRootAccess ? Constants.System.Root : null,
+            StartContentId = group.ContentRootAccess ? Constants.System.Root : null,
+            Permissions = group.ContentRootAccess ? new HashSet<string> { ActionBrowse.ActionLetter } : new HashSet<string>(),
         };
         foreach (var section in group.Sections)
         {
