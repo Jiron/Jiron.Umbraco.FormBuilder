@@ -6,6 +6,7 @@ import { UmbApiError } from '@umbraco-cms/backoffice/resources';
 import { describe, expect, it } from 'vitest';
 import {
   FOLDER_ENTITY_TYPE,
+  FORM_ENTITY_TYPE,
   LIBRARY_ROOT_ENTITY_TYPE,
   screenPath,
   TRASHED_FOLDER_ENTITY_TYPE,
@@ -31,7 +32,7 @@ describe('a change', () => {
   });
 });
 
-describe('a folder gone for good', () => {
+describe('an item gone for good', () => {
   const at = (entityType: string, key: string) => `/umbraco/${screenPath(entityType, key)}`;
 
   it('leaves its own open screen for the folder it was in, or the top level', () => {
@@ -40,6 +41,13 @@ describe('a folder gone for good', () => {
     );
     expect(screenAfterGone(at(FOLDER_ENTITY_TYPE, 'gone'), placeOf('gone'), placeOf(null))).toBe(
       screenPath(LIBRARY_ROOT_ENTITY_TYPE),
+    );
+  });
+
+  it("leaves a trashed form's own screen for its folder's", () => {
+    const form = { entityType: FORM_ENTITY_TYPE, unique: 'f' };
+    expect(screenAfterGone(at(FORM_ENTITY_TYPE, 'f'), form, placeOf('folder'))).toBe(
+      screenPath(FOLDER_ENTITY_TYPE, 'folder'),
     );
   });
 

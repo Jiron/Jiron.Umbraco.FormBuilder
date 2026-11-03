@@ -26,6 +26,7 @@ interface Manifest {
   meta?: Record<string, unknown>;
   conditions?: { alias: string; needs?: Needs[]; none?: boolean; match?: string }[];
   element?: () => Promise<Record<string, unknown>>;
+  api?: () => Promise<Record<string, unknown>>;
 }
 
 const all = manifests as unknown as Manifest[];
@@ -79,13 +80,25 @@ describe('the section', () => {
   });
 
   it('loads every workspace element, each a defined custom element that Umbraco can construct', async () => {
-    const loaded = await Promise.all(byType('workspace').map((workspace) => workspace.element?.()));
+    const plain = byType('workspace').filter((workspace) => workspace.kind !== 'routable');
+    const loaded = await Promise.all(plain.map((workspace) => workspace.element?.()));
+    // A routable workspace has a context, whose route makes its editor element.
+    loaded.push(await import('../designer/form-workspace-editor.element'));
     expect(loaded.every((module) => module?.['element'])).toBe(true);
     // Umbraco makes a workspace's element with "new"; a class no tag is defined for throws "Illegal constructor" there.
     for (const module of loaded) {
       const Element = module?.['element'] as CustomElementConstructor;
       expect(() => new Element(), Element.name).not.toThrow();
     }
+  });
+
+  it("gives the form its routable workspace, whose context the workspace's api is", async () => {
+    const routable = byType('workspace').filter((workspace) => workspace.kind === 'routable');
+    expect(routable.map((workspace) => [workspace.alias, workspace.meta?.['entityType']])).toEqual([
+      ['Jiron.FormBuilder.Workspace.Form', FORM_ENTITY_TYPE],
+    ]);
+    const context = await routable[0]?.api?.();
+    expect(typeof context?.['api']).toBe('function');
   });
 });
 

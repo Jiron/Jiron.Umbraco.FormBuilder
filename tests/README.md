@@ -121,7 +121,9 @@ and the most rows a group takes held to the served field types, and the query va
 is held by a fixture rather than vectors, since it is made from a whole form: `Forms/LogicModelFixtureTests.cs`
 writes `tests/fixtures/definitions/logic.json` (the form endpoint's answer and Core's `DefinitionLogic` model of the
 full definition fixture and each demo form; `JFB_UPDATE_SNAPSHOTS=1` writes it and fails), and
-`packages/logic/test/projection.test.ts` makes the same model from each answer with `logicFormOf`. The checks and
+`packages/logic/test/projection.test.ts` makes the same model from each answer with `logicFormOf`; the designer's move
+check (9.3a, [ADR-0167](../docs/decisions/0167-the-form-workspace-and-the-editor-model.md)) runs the engine's own
+ordering, and `packages/logic/test/cycles.test.ts` holds `hasCycle` to what `evaluateForm` refuses. The checks and
 messages on the page (6.4d, [ADR-0112](../docs/decisions/0112-checks-and-messages-on-the-page.md)) are held to the
 server's own pages: `Rendering/ErrorFixtureTests.cs` posts a form of every check the browser makes, in the default
 theme and, with asterisks, in `bootstrap5`, and a form of two pages, as a browser without JavaScript does, in English

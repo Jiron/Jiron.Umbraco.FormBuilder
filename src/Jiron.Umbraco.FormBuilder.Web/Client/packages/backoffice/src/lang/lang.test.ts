@@ -178,6 +178,22 @@ describe('the dictionaries', () => {
     expect(termsOf(en).filter((term) => term.startsWith('jfbLibrary_'))).toEqual([...used].sort());
   });
 
+  it("hold the form workspace's keys that its code uses, and no other in that area", () => {
+    const folder = join(dirname(fileURLToPath(import.meta.url)), '..', 'designer');
+    const sources = readdirSync(folder)
+      .filter((file) => file.endsWith('.ts') && !file.endsWith('.test.ts'))
+      .map((file) => readFileSync(join(folder, file), 'utf8'));
+    const used = new Set(
+      sources.flatMap((source) => [...source.matchAll(/(?:'|#)(jfbDesigner_[A-Za-z_]+)'/g)].map((match) => match[1])),
+    );
+    // The keys code builds: each view's label and each state's chip.
+    for (const view of ['design', 'settings', 'actions', 'entries', 'insights', 'history']) {
+      used.add(`jfbDesigner_view_${view}`);
+    }
+    for (const state of ['draft', 'published', 'pending', 'unpublished']) used.add(`jfbDesigner_state_${state}`);
+    expect(termsOf(en).filter((term) => term.startsWith('jfbDesigner_'))).toEqual([...used].sort());
+  });
+
   it("hold the form picker screens' keys that their elements use, and no other in that area", () => {
     expect(screenKeys.size).toBeGreaterThanOrEqual(20);
     expect(termsOf(en).filter((term) => term.startsWith('jfbFormPicker_'))).toEqual([...screenKeys].sort());

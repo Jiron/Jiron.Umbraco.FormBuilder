@@ -8,7 +8,8 @@ import { tryExecute } from '@umbraco-cms/backoffice/resources';
 import { formGet, formReferenceList, formRestore, formTrash } from '../../api';
 import { confirmText } from '../../ui/confirm';
 import { UNDO_DURATION_MS, UNDO_NOTIFICATION, type UndoNotificationData } from '../../ui/undo-notification.element';
-import { placeOf, RECYCLE_BIN, refusalText, reloadChildren, sayRefusal } from '../library-changes';
+import { FORM_ENTITY_TYPE } from '../../section/entity-types';
+import { leaveGone, placeOf, RECYCLE_BIN, refusalText, reloadChildren, sayRefusal } from '../library-changes';
 import { NAMED_PAGES, usedOn } from '../rows';
 
 export class TrashFormAction extends UmbEntityActionBase<never> {
@@ -55,6 +56,8 @@ export class TrashFormAction extends UmbEntityActionBase<never> {
 
     const events = await this.getContext(UMB_ACTION_EVENT_CONTEXT);
     reloadChildren(events, placeOf(form.folderKey), RECYCLE_BIN);
+    // Trashed from its own screen, the form leaves it for its folder's.
+    leaveGone({ entityType: FORM_ENTITY_TYPE, unique: key }, placeOf(form.folderKey));
     // Undo runs after Umbraco has let go of this action, so it uses what the action holds now, not its contexts.
     const data: UndoNotificationData = {
       message: this.#localize.term('jfbLibrary_trashed', form.name),

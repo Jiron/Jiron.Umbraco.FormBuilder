@@ -207,7 +207,11 @@ flowchart LR
   (ADR-0135): Umbraco's toggle for one form or several, `jfb-form-picker-allowed` for the allowed folders and forms
   (the same rows, and the sidebar, for folders in its folder mode), `jfb-form-picker-theme` for the theme, and
   Umbraco's document picker for the page after a send; the property and the allowed folders and forms share their rows
-  through `picked-rows.ts`. The backoffice's own tokens are in `src/styles/tokens.ts`.
+  through `picked-rows.ts`. The backoffice's own tokens are in `src/styles/tokens.ts`. From 9.3a it holds the form
+  workspace (`src/designer`, ADR-0167): Umbraco's named detail workspace over the draft endpoint (`FormDetailRepository`
+  with its store), whose views and footer actions show by the user's permissions on the open form, and the editor model,
+  pure functions over the definition and the selection with an undo history (`editor-model.ts`, `history.ts`), whose
+  moves the form engine's own `hasCycle` from `@jfb/logic` checks.
 
 ## 2. The definition model
 
