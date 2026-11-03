@@ -254,13 +254,14 @@ public sealed class LibraryApiTests : ManagementApiTestBase
         var autumn = await FormAsync("Autumn", inner);
         await DesignAsync(spring, [Text("name", "Name")], publish: true);
         await DesignAsync(autumn, [Text("name", "Name")], publish: true);
-        // An entry from before the last days counts no more. The clock goes back for it only, as the API's sign-ins
-        // take their time from it too.
+        // The last 30 days count: an entry of 31 days ago no more, one of 29 days ago still. The clock goes back for
+        // them only, as the API's sign-ins take their time from it too.
         var clock = GetRequiredService<TestClock>();
-        clock.SetNow(DateTimeOffset.UtcNow.AddDays(-LibraryLists.RecentDays).AddHours(-1));
+        clock.SetNow(DateTimeOffset.UtcNow.AddDays(-31));
+        await EntryAsync(spring, EntryState.Submitted);
+        clock.SetNow(DateTimeOffset.UtcNow.AddDays(-29));
         await EntryAsync(spring, EntryState.Submitted);
         clock.Reset();
-        await EntryAsync(spring, EntryState.Submitted);
         await EntryAsync(spring, EntryState.Approved);
         await EntryAsync(spring, EntryState.Spam);
         await EntryAsync(spring, EntryState.Submitted, isTest: true);
