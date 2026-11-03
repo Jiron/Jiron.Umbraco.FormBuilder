@@ -3,6 +3,10 @@
   "private": true,
   "type": "module",
   "description": "The <jfb-form> web component for headless sites (ROADMAP section 4.2, ADR-0015): no runtime dependencies, embedded in the Web assembly and served from /jfb/assets/element/.",
+  "exports": {
+    "./views": "./src/views.ts",
+    "./answer": "./src/answer.d.ts"
+  },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
     "build": "vite build"

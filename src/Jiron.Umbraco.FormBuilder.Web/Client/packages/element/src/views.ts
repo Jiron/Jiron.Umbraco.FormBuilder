@@ -76,8 +76,8 @@ export function writeForm(context: ViewContext, model: FormViewModel): HTMLEleme
     model.errorSummaryTemplate && errorSummary(d, classes, model.errorSummaryTemplate),
     el(d, 'p', { class: classes.error, 'data-jfb-error': FLAG }),
     model.sending?.notices.map((each) => notice(d, each)),
-    model.sending && outcome(d, classes, model.sending.outcome),
-    model.sending?.moves && navigation(d, classes, model.sending.moves),
+    model.sending && writeOutcome(d, classes, model.sending.outcome),
+    model.sending?.moves && writeNavigation(d, classes, model.sending.moves),
   ]);
   const first = model.defaultButton;
   return el(
@@ -125,15 +125,18 @@ export function writeForm(context: ViewContext, model: FormViewModel): HTMLEleme
         html(d, model.requiredNote),
       ),
     model.pages.map((page) => writePage(context, classes, page)),
-    model.navigation && navigation(d, classes, model.navigation),
+    model.navigation && writeNavigation(d, classes, model.navigation),
     model.contextValues.map((input) => el(d, 'input', { type: 'hidden', name: input.name, value: input.value })),
     model.honeypot && honeypot(d, model.honeypot),
     el(d, 'div', { 'data-jfb-live': FLAG, 'aria-live': 'polite' }),
   );
 }
 
-/** `Page.cshtml`: one page, hidden unless it is the visitor's, with its title, its text and its groups. */
-function writePage(context: ViewContext, classes: ThemeClassesModel, page: PageViewModel): HTMLElement {
+/**
+ * `Page.cshtml`: one page, hidden unless it is the visitor's, with its title, its text and its groups. The template
+ * gallery's preview draws each page of a template with it (ADR-0168).
+ */
+export function writePage(context: ViewContext, classes: ThemeClassesModel, page: PageViewModel): HTMLElement {
   const d = context.document;
   return el(
     d,
@@ -228,8 +231,11 @@ function writeGroup(context: ViewContext, classes: ThemeClassesModel, group: Gro
   );
 }
 
-/** `Field.cshtml`: the wrapper of every field, with its label or legend, its help, its control and its error. */
-function writeField(context: ViewContext, classes: ThemeClassesModel, field: FieldViewModel): HTMLElement {
+/**
+ * `Field.cshtml`: the wrapper of every field, with its label or legend, its help, its control and its error. The
+ * designer's canvas draws each field with it too, from a view model it builds from the draft (ADR-0168).
+ */
+export function writeField(context: ViewContext, classes: ThemeClassesModel, field: FieldViewModel): HTMLElement {
   const d = context.document;
   const labelClass = field.hideLabel ? `${classes.label} jfb-visually-hidden` : classes.label;
   const help =
@@ -1380,8 +1386,11 @@ function fileTemplate(d: Document, classes: ThemeClassesModel, words: FileUpload
   return template;
 }
 
-/** `Outcome.cshtml`, as the form's templates hold it: without its message, for the runtime to fill in after a send. */
-function outcome(d: Document, classes: ThemeClassesModel, model: OutcomeViewModel): HTMLElement {
+/**
+ * `Outcome.cshtml`, as the form's templates hold it: without its message, for the runtime to fill in after a send. The
+ * designer shows a form's outcome after sending with it, its message in place (ADR-0168).
+ */
+export function writeOutcome(d: Document, classes: ThemeClassesModel, model: OutcomeViewModel): HTMLElement {
   return el(
     d,
     'div',
@@ -1429,8 +1438,11 @@ function errorSummary(d: Document, classes: ThemeClassesModel, model: ErrorSumma
   );
 }
 
-/** `Navigation.cshtml`: Next or Send first, so Enter in a field means it, then Back with its icon. */
-function navigation(d: Document, classes: ThemeClassesModel, model: NavigationViewModel): HTMLElement {
+/**
+ * `Navigation.cshtml`: Next or Send first, so Enter in a field means it, then Back with its icon. The designer's canvas
+ * ends each page with it (ADR-0168).
+ */
+export function writeNavigation(d: Document, classes: ThemeClassesModel, model: NavigationViewModel): HTMLElement {
   const button = (each: { label: string; value: string }, primary: boolean): HTMLElement =>
     el(
       d,
