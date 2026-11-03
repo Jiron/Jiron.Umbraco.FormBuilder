@@ -29,7 +29,8 @@ export class RecycleBinElement extends UmbLitElement {
         height: 100%;
       }
 
-      h1 {
+      /* A screen's title: Umbraco's sidebars that open over it head themselves with an h3. */
+      h2 {
         margin: 0;
         font-size: var(--jfb-bo-type-display);
       }
@@ -204,7 +205,7 @@ export class RecycleBinElement extends UmbLitElement {
   override render() {
     const filled = this.#list.rows.state === 'ready' && this.#list.rows.value.length > 0;
     return html`<umb-body-layout>
-      <h1 slot="header">${this.localize.term('jfbLibrary_recycleBin')}</h1>
+      <h2 slot="header">${this.localize.term('jfbLibrary_recycleBin')}</h2>
       ${this.#body()}
       ${
         filled

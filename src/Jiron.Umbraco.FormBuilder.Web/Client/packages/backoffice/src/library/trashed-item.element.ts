@@ -35,7 +35,8 @@ export class TrashedItemElement extends UmbLitElement {
         min-width: 0;
       }
 
-      h1 {
+      /* A screen's title: Umbraco's sidebars that open over it head themselves with an h3. */
+      h2 {
         margin: 0;
         font-size: var(--jfb-bo-type-display);
         overflow-wrap: anywhere;
@@ -100,7 +101,7 @@ export class TrashedItemElement extends UmbLitElement {
   override render() {
     return html`<umb-body-layout>
       <div class="header" slot="header">
-        <h1>${this._name}</h1>
+        <h2>${this._name}</h2>
         ${
           this._gone
             ? ''

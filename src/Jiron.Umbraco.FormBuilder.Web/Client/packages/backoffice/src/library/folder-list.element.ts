@@ -52,7 +52,8 @@ export class FolderListElement extends UmbLitElement {
         font-weight: 700;
       }
 
-      h1 {
+      /* A screen's title: Umbraco's sidebars that open over it head themselves with an h3. */
+      h2 {
         margin: 0;
         font-size: var(--jfb-bo-type-display);
       }
@@ -318,7 +319,7 @@ export class FolderListElement extends UmbLitElement {
                 if (event.key === 'Escape') (event.target as HTMLInputElement).value = this._name;
               }}
             ></uui-input>`
-          : html`<h1>${this._name}</h1>`
+          : html`<h2>${this._name}</h2>`
       }
       <jfb-entity-menu entity-type=${this.entityType} .unique=${this.unique} label=${more}></jfb-entity-menu>
     </div>`;
