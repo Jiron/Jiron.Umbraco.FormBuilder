@@ -8,7 +8,9 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 const src = join(dirname(fileURLToPath(import.meta.url)), '..');
+// A folder whose name starts with a dot is another test's scratch (the API check's), which may go while this one reads.
 const sources = readdirSync(src, { recursive: true, encoding: 'utf8' })
+  .filter((file) => !file.split(/[\\/]/).some((part) => part.startsWith('.')))
   .filter((file) => file.endsWith('.ts') && !file.endsWith('.test.ts') && !file.startsWith('api'))
   .map((file) => ({
     file: relative(src, join(src, file)).split('\\').join('/'),
