@@ -226,7 +226,14 @@ flowchart LR
   `setting-editor.ts` and whose values `setting-values.ts` reads, checks as the server does and writes back; it sends
   each change to the Design view as an edit of the editor model, typing in one box one step of the undo history. The
   canvas endpoint serves the site's languages, which the toolbar switches between, and the draft endpoint whether the
-  form has entries, which an alias change asks about first.
+  form has entries, which an alias change asks about first. From 9.4b the option editor (ADR-0172):
+  `inspector/option-editor.element.ts` in Essentials, with "Options from", a field's own options and a grid's rows, over
+  the pure helpers of `inspector/option-values.ts`; `inspector/option-data.ts` reads the management API's
+  `option-source` (the kinds a field may name with their settings schemas, and the standard lists) and `option-list`
+  (the library's lists with a count), and asks `form/{key}/options` for a draft field's options in the language shown,
+  which the Design view hands the canvas for a field whose options come from elsewhere. The canvas's images (an image
+  field's, an option card's) come from Umbraco's imaging, which a user of the Content section may ask, as Umbraco's
+  media picker does for its thumbnails.
 
 ## 2. The definition model
 
@@ -376,7 +383,11 @@ Text        LocalizedText: culture → text, "" is the default; "#key" reads the
   while the address fails, and with no copy, none for a minute before the address is called again
   ([ADR-0081](decisions/0081-what-visitors-and-failures-cost-the-option-lists.md)). A file list holds what
   `OptionFileReader` read from an uploaded CSV or TXT file as its
-  items, as a manual list does.
+  items, as a manual list does. The designer reads the kinds and standard lists (`GET option-source`) and the
+  library's lists (`GET option-list`) for any user of the section, and a draft field's options (`POST
+  form/{key}/options`, `DraftOptions`) with Design permission on the form: resolved in the culture asked as the site
+  does, its kind's checks first, a cascading field's without its parent, so the canvas shows every option it may offer
+  ([ADR-0172](decisions/0172-the-option-editor-and-the-option-sources.md)).
 - **The public projection** is built from an allowlist of public types (`Core.Definitions.Projection`) and carries no
   actions, outcomes, recipients, option-source configuration, privacy settings or switched-off rules; its SHA-256 is
   `PublicHash`. The visitor form (each text in the page's culture, as the definition endpoint answers) has its JSON

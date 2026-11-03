@@ -215,9 +215,11 @@ progress, since the steps across its top stand in for it.
 - **Essentials** (open): label, help text, **Required**, placeholder.
   - **File fields** add the allowed types and the largest file. Its help names the site's limit; for users with
     `manageSettings` it adds "Change the site's limit", a sidebar holding that one setting of Settings › Files.
-  - **Choice fields** add "Options from" (this field, an option list, content, a data type, a JSON address, the
-    country list) and the options themselves. The option list picker ends with "Create an option list…" for users with
-    `manageLibrary`, which makes one in a sidebar without leaving the form.
+  - **Choice fields** add "Options from" (this field, an option list, a standard list, content, a data type, a JSON
+    address, the country list), "Depends on" for a field whose options follow another's answer, and the options
+    themselves, or a grid's rows and columns ([ADR-0172](../decisions/0172-the-option-editor-and-the-option-sources.md)).
+    The option list picker ends with "Create an option list…" for users with `manageLibrary`, which makes one in a
+    sidebar without leaving the form.
 - **Validation, Rules, Appearance and Advanced** (closed, remembered per user):
   - a closed section shows a one-line summary of what is set ("Maximum length: 200"), or "Nothing changed";
   - a section shows at most seven settings before "More options".

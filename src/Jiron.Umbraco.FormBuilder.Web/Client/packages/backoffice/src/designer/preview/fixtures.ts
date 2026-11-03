@@ -1,10 +1,11 @@
 // The fixtures the preview tests draw with (ADR-0168), one source each: the canvas endpoint's answer in
-// docs/api/canvas.json, the field types in docs/api/field-types.json, the sink's draft in
+// docs/api/canvas.json, the field types in docs/api/field-types.json, the option sources in
+// docs/api/option-sources.json, the sink's draft in
 // tests/fixtures/rendering/designer-sink.json and the server's markup of the same sink in element-en.json.
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import type { CanvasResponseModel, FieldTypesResponseModel } from '../../api';
+import type { CanvasResponseModel, FieldTypesResponseModel, OptionSourcesResponseModel } from '../../api';
 import { normalise, type DesignDefinition } from '../definition';
 import { lookOf, type CanvasLook } from './look';
 
@@ -21,6 +22,9 @@ export const englishLook: CanvasLook = lookOf({
 export const builtInTypes = Object.fromEntries(
   json<FieldTypesResponseModel>('docs', 'api', 'field-types.json').types.map((type) => [type.alias, type]),
 );
+
+/** The kinds a field may take its options from and the standard lists, as docs/api/option-sources.json has them. */
+export const optionSources = json<OptionSourcesResponseModel>('docs', 'api', 'option-sources.json');
 
 /** The sink: a field of every built-in type, a repeatable group holding one of each, and a captcha. */
 export const sink: DesignDefinition = normalise(

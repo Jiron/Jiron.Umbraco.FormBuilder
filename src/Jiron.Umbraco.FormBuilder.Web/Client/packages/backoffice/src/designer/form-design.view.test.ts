@@ -15,7 +15,7 @@ import { must, registerEnglish, settle, shadow, testHost, text } from '../testin
 import type { FormCanvasElement } from './canvas/form-canvas.element';
 import { CANVAS_REQUEST, type CanvasRequest } from './canvas/form-canvas.element';
 import { FORM_WORKSPACE_CONTEXT } from './constants';
-import { locate, type DesignDefinition } from './definition';
+import { locate, type DesignDefinition, type DesignField } from './definition';
 import type { Edit, EditorState } from './editor-model';
 import { traitsOf, type EditorView } from './form-workspace.context';
 import { EditorHistory } from './history';
@@ -65,7 +65,38 @@ vi.mock('@umbraco-cms/backoffice/modal', async (original) => ({
   },
 }));
 
-const { FormDesignViewElement, isCrowded, isNarrow, mediaOf, readWidth } = await import('./form-design.view');
+/** What the server resolves a draft's options to, and each ask: the form, the field, its options and the culture. */
+const resolving = vi.hoisted(() => ({
+  asked: [] as { form: string; field: string; options: unknown; culture: string }[],
+  answer: { options: [{ value: '1', label: 'January', parentValues: [] }], isAvailable: true } as {
+    options: { value: string; label?: string; parentValues: string[] }[];
+    isAvailable: boolean;
+  },
+}));
+
+vi.mock('./inspector/option-data', () => ({
+  readOptionSources: async () => ({ kinds: [], sources: [] }),
+  readOptionLists: async () => [],
+  resolveOptions: async (_host: unknown, form: string, field: DesignField, culture: string) => {
+    resolving.asked.push({ form, field: field.key, options: field['options'], culture });
+    return resolving.answer;
+  },
+}));
+
+/** The media items Umbraco's imaging was asked for, each answered with a URL of its own. */
+const imaging = vi.hoisted(() => ({ asked: [] as string[][] }));
+
+vi.mock('@umbraco-cms/backoffice/imaging', () => ({
+  UmbImagingRepository: class {
+    async requestResizedItems(keys: string[]) {
+      imaging.asked.push(keys);
+      return { data: keys.map((key) => ({ unique: key, url: `/media/${key}.svg` })) };
+    }
+  },
+}));
+
+const { FormDesignViewElement, isCrowded, isNarrow, mediaOf, OPTIONS_PAUSE, readWidth } =
+  await import('./form-design.view');
 const { INSPECTOR_REQUEST } = await import('./inspector/inspector.element');
 const { MOVE_TO_MODAL_ALIAS } = await import('./moves/move-to.modal.token');
 
@@ -106,6 +137,7 @@ class StandIn {
   host: Element | undefined;
   getHostElement = () => this.host;
   getEntityType = () => 'jfb-form';
+  getUnique = () => 'form1';
   getEditorState = (): EditorState => this.#history.state;
 
   /** The aliases entries know, by field: changing one asks first. */
@@ -1104,5 +1136,126 @@ describe('the inspector in the Design view', () => {
     await new Promise((done) => setTimeout(done, 80));
     await settle(view);
     expect((canvas as unknown as { look: { culture: string } }).look.culture).toBe('en-US');
+  });
+});
+
+describe('options from elsewhere', () => {
+  it("shows a field's options as the server resolves the draft's, asked again only when they change", async () => {
+    resolving.asked.length = 0;
+    const months = { source: 'code', config: { source: 'months' } };
+    const definition: DesignDefinition = {
+      pages: [
+        {
+          key: 'p1',
+          groups: [
+            {
+              key: 'g1',
+              fields: [
+                { key: 'm', type: 'dropdown', alias: 'month', label: { '': 'Month' }, options: months },
+                field('name'),
+              ],
+            },
+          ],
+        },
+      ],
+    };
+    const { view, canvas, ask, state } = await viewOf(definition);
+    await settle(view);
+    const shown = async () => {
+      const found = must(
+        shadow(canvas).querySelector<HTMLElement & { updateComplete: Promise<unknown> }>('jfb-canvas-field[key="m"]'),
+        'the month',
+      );
+      await settle(found);
+      return [...found.querySelectorAll('option')].map((option) => text(option));
+    };
+    expect(resolving.asked).toEqual([{ form: 'form1', field: 'm', options: months, culture: 'en-US' }]);
+    expect(await shown()).toContain('January');
+
+    // Selecting another field asks nothing again; a change of the source does, once the changes pause.
+    await ask({ kind: 'select', key: 'name' });
+    expect(resolving.asked).toHaveLength(1);
+    resolving.answer = { options: [{ value: 'mon', label: 'Monday', parentValues: [] }], isAvailable: true };
+    const change = (options: unknown) =>
+      view.dispatchEvent(
+        new CustomEvent(INSPECTOR_REQUEST, {
+          detail: {
+            kind: 'change',
+            key: 'm',
+            update: (element: DesignField) => ({ ...element, options }),
+            said: 'Changed Options from',
+            merge: undefined,
+          },
+          bubbles: true,
+          composed: true,
+        }),
+      );
+    const paused = async () => {
+      await new Promise((done) => setTimeout(done, OPTIONS_PAUSE + 50));
+      await settle(view);
+      await settle(view);
+    };
+    try {
+      const weekdays = { source: 'code', config: { source: 'weekdays' } };
+      change({ source: 'code', config: { source: 'week' } });
+      await settle(view);
+      change(weekdays);
+      await settle(view);
+      expect(resolving.asked).toHaveLength(1);
+      await paused();
+      expect(resolving.asked.map((each) => each.options)).toEqual([months, weekdays]);
+      expect(await shown()).toContain('Monday');
+      expect(locate(state().definition, 'm')?.element['options']).toEqual(weekdays);
+
+      // A source the server can't give options from shows none, whatever the answer holds.
+      resolving.answer = { options: [{ value: 'x', label: 'Stale', parentValues: [] }], isAvailable: false };
+      change({ source: 'code', config: { source: 'gone' } });
+      await paused();
+      expect(resolving.asked).toHaveLength(3);
+      const left = await shown();
+      expect(left).not.toContain('Stale');
+      expect(left).not.toContain('Monday');
+    } finally {
+      resolving.answer = { options: [{ value: '1', label: 'January', parentValues: [] }], isAvailable: true };
+    }
+  });
+});
+
+describe("the canvas's images", () => {
+  it("are read through Umbraco's imaging, once, and a card shows its option's", async () => {
+    imaging.asked.length = 0;
+    const definition: DesignDefinition = {
+      pages: [
+        {
+          key: 'p1',
+          groups: [
+            {
+              key: 'g1',
+              fields: [
+                {
+                  key: 'r',
+                  type: 'radio',
+                  alias: 'room',
+                  label: { '': 'Room' },
+                  settings: { layout: 'cards' },
+                  options: { items: [{ value: 'hall', label: { '': 'Hall' }, image: 'm1' }] },
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+    const { view, canvas } = await viewOf(definition);
+    await vi.waitFor(async () => {
+      const card = must(
+        shadow(canvas).querySelector<HTMLElement & { updateComplete: Promise<unknown> }>('jfb-canvas-field[key="r"]'),
+        'the room',
+      );
+      await settle(card);
+      expect(card.querySelector('img')?.getAttribute('src')).toBe('/media/m1.svg');
+    });
+    await settle(view);
+    expect(imaging.asked).toEqual([['m1']]);
   });
 });

@@ -6,10 +6,12 @@
 // the form refuses says why at the element, and the focus stays on the element moved. Up and Down go through the
 // elements of the page, and ? opens the Keyboard shortcuts. The inspector (ADR-0170) shows the selected element beside
 // the canvas, or over it up to 700 px; up to 1024 px the palette folds to its rail while it does. Its changes are edits
-// too, typing in one box one step to undo, and an alias that entries know changes only after a question.
+// too, typing in one box one step to undo, and an alias that entries know changes only after a question. A field that
+// takes its options from elsewhere shows them as the server resolves the draft's (ADR-0172).
 import { css, html, nothing, type PropertyValues } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
-import { UmbMediaUrlRepository } from '@umbraco-cms/backoffice/media';
+import { ImageCropModeModel } from '@umbraco-cms/backoffice/external/backend-api';
+import { UmbImagingRepository } from '@umbraco-cms/backoffice/imaging';
 import { umbOpenModal } from '@umbraco-cms/backoffice/modal';
 import { confirmText } from '../ui/confirm';
 import { UMB_NOTIFICATION_CONTEXT } from '@umbraco-cms/backoffice/notification';
@@ -29,7 +31,9 @@ import { isDragging } from './drag/pointer-drag';
 import type { FormCanvasElement } from './canvas/form-canvas.element';
 import './canvas/form-canvas.element';
 import { FORM_WORKSPACE_CONTEXT } from './constants';
-import { locate, pageOf, type DesignDefinition, type DesignField, type LocalizedText } from './definition';
+import { allFields, locate, pageOf, type DesignDefinition, type DesignField, type LocalizedText } from './definition';
+import { resolveOptions } from './inspector/option-data';
+import type { ResolvedOption } from './preview/field-models';
 import type { EditorState } from './editor-model';
 import {
   change,
@@ -90,6 +94,15 @@ export const CROWDED = 1024;
 export const isCrowded = (width: number) => width > NARROW && width <= CROWDED;
 
 const WIDTH_KEY = 'jfb.designer.width';
+
+/**
+ * How long the canvas waits after a field's options change before it asks for them: typing in a source's settings
+ * changes them with each key, and a half-typed address must not be fetched.
+ */
+export const OPTIONS_PAUSE = 400;
+
+/** How wide an image the canvas asks for: no sheet is wider. */
+const MEDIA_WIDTH = 1200;
 
 /** The types of an `input` that takes no text, whose keys the Design view's shortcuts may use. */
 const NOT_TEXT: ReadonlySet<string> = new Set([
@@ -153,6 +166,7 @@ export class FormDesignViewElement extends UmbLitElement {
     _look: { state: true },
     _sheets: { state: true },
     _media: { state: true },
+    _resolved: { state: true },
     _shown: { state: true },
     _width: { state: true },
     _insertAt: { state: true },
@@ -291,6 +305,8 @@ export class FormDesignViewElement extends UmbLitElement {
   declare private _look: CanvasLook | undefined;
   declare private _sheets: readonly CSSStyleSheet[];
   declare private _media: Readonly<Record<string, string>>;
+  /** The options of fields that take them from elsewhere, as the server resolved the draft's, by field (ADR-0172). */
+  declare private _resolved: ReadonlyMap<string, readonly ResolvedOption[]>;
   declare private _shown: CanvasShown;
   declare private _width: CanvasWidth;
   declare private _insertAt: Place | null;
@@ -316,7 +332,11 @@ export class FormDesignViewElement extends UmbLitElement {
   /** Whether the selection a link named was brought into sight, or the user changed something first. */
   #shownLink = false;
   #mediaRead = new Set<string>();
-  #mediaUrls: UmbMediaUrlRepository | undefined;
+  /** What each field's options were last asked for as, so a field is asked again only when they or the language change. */
+  #optionsAsked = new Map<string, string>();
+  /** The asks waiting for the typing to pause, by field. */
+  #optionsWaiting = new Map<string, ReturnType<typeof setTimeout>>();
+  #imaging: UmbImagingRepository | undefined;
   /** The toast that offers Undo after a delete, closed by the next change: its Undo would take back another. */
   #undoToast: { close(): void } | undefined;
   /** What opened the palette over the canvas, where the focus goes back when it closes without a pick. */
@@ -343,6 +363,7 @@ export class FormDesignViewElement extends UmbLitElement {
     this._groups = [];
     this._sheets = [];
     this._media = {};
+    this._resolved = new Map();
     this._shown = 0;
     this._width = readWidth();
     this._insertAt = null;
@@ -380,6 +401,8 @@ export class FormDesignViewElement extends UmbLitElement {
 
   override disconnectedCallback() {
     this.#resize.disconnect();
+    for (const waiting of this.#optionsWaiting.values()) clearTimeout(waiting);
+    this.#optionsWaiting.clear();
     super.disconnectedCallback();
   }
 
@@ -394,6 +417,7 @@ export class FormDesignViewElement extends UmbLitElement {
       return;
     }
     this._look = look;
+    if (this._view) this.#readOptions(this._view.state.definition);
     this._sheets = await themeSheets(look.stylesheets);
   }
 
@@ -409,14 +433,55 @@ export class FormDesignViewElement extends UmbLitElement {
       if (index >= 0) this._shown = index;
     }
     void this.#readMedia(view.state.definition);
+    this.#readOptions(view.state.definition);
+  }
+
+  // The options of each field that takes them from elsewhere, as the server resolves the draft's in the canvas's
+  // language (ADR-0172); a field is asked again only when its options or the language change, once the changes pause,
+  // and an answer for what it no longer holds is dropped. A source that can't give its options shows none.
+  #readOptions(definition: DesignDefinition) {
+    const form = this.#context?.getUnique();
+    const culture = this._look?.culture;
+    if (!form || culture === undefined) return;
+    for (const field of allFields(definition)) {
+      const source = (field['options'] as { source?: string } | undefined)?.source;
+      if (source === undefined || source === 'items') continue;
+      const asked = JSON.stringify([field.type, field['options'], culture]);
+      const before = this.#optionsAsked.get(field.key);
+      if (before === asked) continue;
+      this.#optionsAsked.set(field.key, asked);
+      clearTimeout(this.#optionsWaiting.get(field.key));
+      const ask = () => {
+        this.#optionsWaiting.delete(field.key);
+        void resolveOptions(this, form, field, culture).then((answer) => {
+          if (this.#optionsAsked.get(field.key) !== asked) return;
+          const options = answer?.isAvailable ? answer.options : [];
+          this._resolved = new Map(this._resolved).set(field.key, options);
+          const images = options.flatMap((option) => (option.image ? [option.image] : []));
+          if (images.length > 0) void this.#readMediaKeys(images);
+        });
+      };
+      // A field's first options are asked for at once.
+      if (before === undefined) ask();
+      else this.#optionsWaiting.set(field.key, setTimeout(ask, OPTIONS_PAUSE));
+    }
   }
 
   async #readMedia(definition: DesignDefinition) {
-    const wanted = mediaOf(definition).filter((key) => !this.#mediaRead.has(key));
+    await this.#readMediaKeys(mediaOf(definition));
+  }
+
+  async #readMediaKeys(keys: readonly string[]) {
+    const wanted = keys.filter((key) => !this.#mediaRead.has(key));
     if (wanted.length === 0) return;
     for (const key of wanted) this.#mediaRead.add(key);
-    this.#mediaUrls ??= new UmbMediaUrlRepository(this);
-    const { data } = await this.#mediaUrls.requestItems(wanted);
+    // Through Umbraco's imaging, which a user of the Content section may ask as a media picker's thumbnails do; its
+    // media URLs need the Media section. An image at most the canvas's widest sheet across.
+    this.#imaging ??= new UmbImagingRepository(this);
+    const { data } = await this.#imaging.requestResizedItems(wanted, {
+      width: MEDIA_WIDTH,
+      mode: ImageCropModeModel.MAX,
+    });
     const found = Object.fromEntries((data ?? []).flatMap((item) => (item.url ? [[item.unique, item.url]] : [])));
     if (Object.keys(found).length > 0) this._media = { ...this._media, ...found };
   }
@@ -1371,6 +1436,7 @@ export class FormDesignViewElement extends UmbLitElement {
         .sheets=${this._sheets}
         .types=${this._types}
         .mediaUrls=${this._media}
+        .resolvedOptions=${this._resolved}
         .width=${this._width}
         .insertAt=${this._insertAt}
         .editing=${this._editing}

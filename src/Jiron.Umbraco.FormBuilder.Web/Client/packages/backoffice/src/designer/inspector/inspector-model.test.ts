@@ -135,6 +135,15 @@ describe("a field's sections", () => {
     expect(shape(fieldSections(locked, 1))['validation']).toContain('setting:maxLength');
   });
 
+  it('give a choice field its options in Essentials, and a grid its rows before its columns (ADR-0172)', () => {
+    for (const alias of ['dropdown', 'radio', 'checkboxes', 'ranking'])
+      expect(shape(fieldSections(typeOf(alias), 1))['essentials'], alias).toContain('options');
+    const grid = shape(fieldSections(typeOf('grid'), 1))['essentials'] ?? [];
+    expect(grid.indexOf('rows')).toBeGreaterThanOrEqual(0);
+    expect(grid.indexOf('rows')).toBeLessThan(grid.indexOf('options'));
+    expect(shape(fieldSections(typeOf('text'), 1))['essentials']).not.toContain('options');
+  });
+
   it('show only settings the plain editors draw', () => {
     for (const type of Object.values(builtInTypes))
       for (const section of fieldSections(type, 1))
@@ -198,5 +207,18 @@ describe('a field without a text in a language', () => {
     const formatted: DesignField = { key: 'c', type: 'calculation', settings: { format: { prefix: { '': '$' } } } };
     expect(untranslated(formatted, calculation, 'de-DE')).toBe(true);
     expect(untranslated(formatted, undefined, 'de-DE')).toBe(false);
+  });
+
+  it("counts a field's own options, their descriptions and a grid's rows (ADR-0172)", () => {
+    const radio = typeOf('radio');
+    const label = { '': 'Colour', 'de-DE': 'Farbe' };
+    const red = { value: 'red', label: { '': 'Red', 'de-DE': 'Rot' } };
+    const field = (items: unknown[]): DesignField => ({ key: 'r', type: 'radio', label, options: { items } });
+    expect(untranslated(field([red]), radio, 'de-DE')).toBe(false);
+    expect(untranslated(field([red, { value: 'blue', label: { '': 'Blue' } }]), radio, 'de-DE')).toBe(true);
+    expect(untranslated(field([{ ...red, description: { '': 'Warm' } }]), radio, 'de-DE')).toBe(true);
+    expect(untranslated(field([{ value: 'x' }]), radio, 'de-DE')).toBe(false);
+    const grid: DesignField = { key: 'g', type: 'grid', label, rows: [{ key: 'k', label: { '': 'The talks' } }] };
+    expect(untranslated(grid, typeOf('grid'), 'de-DE')).toBe(true);
   });
 });

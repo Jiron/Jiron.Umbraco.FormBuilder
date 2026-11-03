@@ -139,6 +139,7 @@ Use Umbraco's own words where Umbraco has the same action, so the section feels 
 | create the block that puts forms on pages | Create a form block type… | Formular-Blocktyp erstellen… |
 | start from a ready-made form (the checklist, an empty folder) | Choose a template… | Vorlage wählen… |
 | turn a list of questions into fields | Paste questions… | Fragen einfügen… |
+| turn lines into a choice field's options, or a grid's rows (one a line) | Paste options… · Paste rows… | Optionen einfügen… · Zeilen einfügen… |
 | add a merge tag to a text | Insert merge tag | Platzhalter einfügen |
 | delete for good (asks first) | Delete… | Löschen… |
 | delete a designer element at once, with Undo in the toast | Delete rule · Delete outcome | Regel löschen · Abschluss löschen |

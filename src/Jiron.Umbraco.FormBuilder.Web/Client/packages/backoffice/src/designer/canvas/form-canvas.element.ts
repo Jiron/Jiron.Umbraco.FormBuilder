@@ -14,7 +14,14 @@ import type { FieldTypeResponseModel } from '../../api';
 import { jfbBackofficeTokens } from '../../styles/tokens';
 import type { DesignDefinition, DesignField, DesignGroup, DesignPage, LocalizedText } from '../definition';
 import type { Place } from '../editor-model';
-import { fieldModel, formSettings, groupClasses, textIn, type PreviewContext } from '../preview/field-models';
+import {
+  fieldModel,
+  formSettings,
+  groupClasses,
+  textIn,
+  type PreviewContext,
+  type ResolvedOption,
+} from '../preview/field-models';
 import type { CanvasLook } from '../preview/look';
 import { fragmentOf, safeHtml, showsText } from '../preview/rich-text';
 import { modifierTerm } from '../moves/keys';
@@ -81,6 +88,7 @@ export class FormCanvasElement extends UmbLitElement {
     sheets: { attribute: false },
     types: { attribute: false },
     mediaUrls: { attribute: false },
+    resolvedOptions: { attribute: false },
     width: { attribute: false },
     insertAt: { attribute: false },
     editing: { attribute: false },
@@ -102,6 +110,8 @@ export class FormCanvasElement extends UmbLitElement {
   declare types: Readonly<Record<string, FieldTypeResponseModel>>;
   /** The addresses of the media items the form's images show, by key. */
   declare mediaUrls: Readonly<Record<string, string>>;
+  /** The options of fields that take them from elsewhere, as the server resolved them, by the field's key (ADR-0172). */
+  declare resolvedOptions: ReadonlyMap<string, readonly ResolvedOption[]>;
   declare width: CanvasWidth;
   /** The insert point the palette is open for, which stays in sight. */
   declare insertAt: Place | null;
@@ -134,6 +144,7 @@ export class FormCanvasElement extends UmbLitElement {
     this.sheets = [];
     this.types = {};
     this.mediaUrls = {};
+    this.resolvedOptions = new Map();
     this.width = 'desktop';
     this.insertAt = null;
     this.editing = null;
@@ -312,11 +323,12 @@ export class FormCanvasElement extends UmbLitElement {
 
   // What the fields are built with, the same object while nothing it is made of changes, so their models are kept.
   #context(look: CanvasLook): PreviewContext & ReturnType<typeof formSettings> {
-    const key = [look, this.types, this.mediaUrls, this.definition['settings']];
+    const key = [look, this.types, this.mediaUrls, this.resolvedOptions, this.definition['settings']];
     const kept = this.#previewContext;
     if (kept && kept.key.every((part, at) => part === key[at])) return kept.context;
     const culture = look.culture;
     const urls = this.mediaUrls;
+    const resolved = this.resolvedOptions;
     const context = {
       look,
       types: this.types,
@@ -324,6 +336,7 @@ export class FormCanvasElement extends UmbLitElement {
       prefix: 'jfb-canvas',
       showRows: true,
       mediaUrl: (media: string) => (Object.hasOwn(urls, media) ? urls[media] : undefined),
+      resolved: (field: DesignField) => resolved.get(field.key),
       ...formSettings(this.definition, look, culture),
     };
     this.#previewContext = { key, context };

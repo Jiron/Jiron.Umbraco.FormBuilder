@@ -5,6 +5,7 @@
 import type { FieldSettingResponseModel, FieldTypeResponseModel } from '../../api';
 import type { DesignField, LocalizedText } from '../definition';
 import { keyIn } from '../preview/field-models';
+import { itemsOf, rowsOf } from './option-values';
 
 /** The inspector's sections, in their order. */
 export const SECTIONS = ['essentials', 'validation', 'rules', 'appearance', 'advanced'] as const;
@@ -13,7 +14,7 @@ export type SectionId = (typeof SECTIONS)[number];
 /** How many items a section shows before "More options". */
 export const MOST_SHOWN = 7;
 
-/** The setting editors 9.4a draws; options, rich text and pickers come in 9.4b and 9.4c. */
+/** The setting editors 9.4a draws; rich text and pickers come in 9.4c, and options are an item of their own (9.4b). */
 export const PLAIN_EDITORS: ReadonlySet<string> = new Set([
   'wholeNumber',
   'number',
@@ -46,6 +47,10 @@ export type Item =
   | { readonly kind: 'message'; readonly message: string }
   | { readonly kind: 'unique' }
   | { readonly kind: 'matches' }
+  /** Where a choice field's options come from, and its own options (9.4b). */
+  | { readonly kind: 'options' }
+  /** A grid's rows (9.4b). */
+  | { readonly kind: 'rows' }
   | { readonly kind: 'setting'; readonly setting: FieldSettingResponseModel };
 
 export interface Section {
@@ -77,6 +82,9 @@ export function fieldSections(type: FieldTypeResponseModel, groupColumns: number
   if (has('help')) essentials.push({ kind: 'text', property: 'help', long: true });
   if (has('required')) essentials.push({ kind: 'switch', property: 'required' });
   if (has('placeholder')) essentials.push({ kind: 'text', property: 'placeholder' });
+  // A grid's rows, then its columns, which are its options (IA 5.1: choice fields add their options to Essentials).
+  if (has('rows')) essentials.push({ kind: 'rows' });
+  if (has('options')) essentials.push({ kind: 'options' });
   essentials.push(...shownSettings(type, 'essentials'));
 
   const validation: Item[] = [...shownSettings(type, 'validation')];
@@ -152,6 +160,9 @@ export function untranslated(field: DesignField, type: FieldTypeResponseModel | 
     own['help'] as LocalizedText | undefined,
     own['placeholder'] as LocalizedText | undefined,
     ...Object.values((own['messages'] as Readonly<Record<string, LocalizedText>> | undefined) ?? {}),
+    // A field's own options, their descriptions, and a grid's rows (ADR-0172).
+    ...itemsOf(field).flatMap((item) => [item.label, item.description]),
+    ...rowsOf(field).map((row) => row.label),
   ];
   const settings = (own['settings'] as Readonly<Record<string, unknown>> | undefined) ?? {};
   const visit = (schema: readonly FieldSettingResponseModel[], values: Readonly<Record<string, unknown>>) => {

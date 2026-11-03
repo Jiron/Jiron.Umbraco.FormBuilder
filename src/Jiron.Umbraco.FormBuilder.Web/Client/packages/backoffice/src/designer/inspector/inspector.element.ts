@@ -33,6 +33,8 @@ import {
 } from './inspector-model';
 import { boxValue } from './box-value';
 import { inspectorStyles } from './inspector.styles';
+import './option-editor.element';
+import { itemsOf, optionsOf, parentsBefore, rowsOf, showsCards, sourceOf } from './option-values';
 import { problemText, settingEditor, settingText, type EditorContext } from './setting-editor';
 import {
   ownText,
@@ -518,7 +520,47 @@ export class InspectorElement extends UmbLitElement {
         const value = valueOf(settingsOf(subject.field), item.setting);
         return settingEditor(this.#editorContext(subject.field, subject.type), item.setting, value);
       }
+      case 'options':
+      case 'rows':
+        return subject.kind === 'field' && subject.type
+          ? this.#options(subject.field, subject.type, item.kind)
+          : nothing;
     }
+  }
+
+  // A choice field's options or a grid's rows, in an editor of their own whose every change comes back here.
+  #options(field: DesignField, type: FieldTypeResponseModel, part: 'options' | 'rows'): TemplateResult {
+    const isChoice = (each: DesignField) => {
+      const features = (Object.hasOwn(this.types, each.type) ? this.types[each.type] : undefined)?.features ?? [];
+      return features.includes('options') && !features.includes('rows');
+    };
+    return html`<jfb-option-editor
+      .field=${field}
+      .type=${type}
+      .culture=${this.culture}
+      .defaultCulture=${this.#defaultCulture}
+      .parents=${this.#parentsOf(field, isChoice)}
+      .edits=${part}
+      .cards=${showsCards(field, type, this.definition)}
+      .change=${(update: (one: DesignField) => DesignField, name: string, typed?: string) =>
+        this.#change(
+          field.key,
+          (element) => update(element as DesignField),
+          name,
+          typed === undefined ? undefined : `${part}:${typed}`,
+        )}
+    ></jfb-option-editor>`;
+  }
+
+  // The choice fields before this one, which its options may depend on, and the one they depend on wherever it is now:
+  // a move may have put it after this one, and "Depends on" still names it.
+  #parentsOf(field: DesignField, isChoice: (each: DesignField) => boolean): DesignField[] {
+    const fields = allFields(this.definition);
+    const before = parentsBefore(fields, field.key, isChoice);
+    const key = optionsOf(field).parent;
+    const parent =
+      key && !before.some((each) => each.key === key) ? fields.find((each) => each.key === key) : undefined;
+    return parent ? [...before, parent] : before;
   }
 
   #helpOf(item: Item): string {
@@ -853,6 +895,19 @@ export class InspectorElement extends UmbLitElement {
           ? name
           : null;
       }
+      case 'options': {
+        if (subject.kind !== 'field') return null;
+        const source = sourceOf(subject.field);
+        return source === 'items'
+          ? itemsOf(subject.field).length > 0
+            ? this.#term('options_count', itemsOf(subject.field).length)
+            : null
+          : this.#term(`options_from_${source}`);
+      }
+      case 'rows':
+        return subject.kind === 'field' && rowsOf(subject.field).length > 0
+          ? this.#term('rows_count', rowsOf(subject.field).length)
+          : null;
       case 'setting': {
         if (subject.kind !== 'field') return null;
         const settings = settingsOf(subject.field);

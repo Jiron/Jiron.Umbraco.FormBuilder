@@ -37,6 +37,11 @@ export interface PreviewContext {
   /** The address of a media item an image or a card shows, when it is known. */
   readonly mediaUrl?: (key: string) => string | undefined;
   /**
+   * The options of a field that takes them from elsewhere, as the server resolved the draft's (ADR-0172); undefined
+   * while they are read, or where nothing resolves them, and the field shows none.
+   */
+  readonly resolved?: (field: DesignField) => readonly ResolvedOption[] | undefined;
+  /**
    * Whether a repeatable group shows a row even when a first render has none, as the canvas does, so that its fields
    * can be seen and chosen.
    */
@@ -565,7 +570,18 @@ function calculated(shown: Shown): string {
   return around(format?.text('prefix') ?? '', value, format?.text('suffix') ?? '');
 }
 
-/** A field's own options, as the page shows them: a blank label shows the value. */
+/** One option a source gives, as the server resolved it. */
+export interface ResolvedOption {
+  readonly value: string;
+  readonly label?: string | null;
+  readonly description?: string | null;
+  readonly image?: string | null;
+}
+
+/**
+ * A field's options, as the page shows them: its own, or those its source resolved (ADR-0172); a blank label shows
+ * the value.
+ */
 function optionsOf(shown: Shown): { value: string; label: string; description?: string; image?: string }[] {
   const options = shown.field['options'] as
     | {
@@ -573,6 +589,18 @@ function optionsOf(shown: Shown): { value: string; label: string; description?: 
         items?: readonly { value?: string; label?: LocalizedText; description?: LocalizedText; image?: string }[];
       }
     | undefined;
+  if (options?.source !== undefined && options.source !== 'items') {
+    return (shown.context.resolved?.(shown.field) ?? []).map((option) => {
+      const label = (option.label ?? '').trim();
+      const description = (option.description ?? '').trim();
+      return {
+        value: option.value,
+        label: label || option.value,
+        ...(description ? { description } : {}),
+        ...(option.image ? { image: option.image } : {}),
+      };
+    });
+  }
   return (options?.items ?? []).map((item) => {
     const value = item.value ?? '';
     const label = textIn(item.label, shown.context.culture).trim();

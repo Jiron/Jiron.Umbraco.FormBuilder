@@ -1,11 +1,18 @@
 // The inspector (ROADMAP 9.4a, IA 5.1, ADR-0170): what it is headed with, its sections that open and close as the user
 // left them, the one line a closed one says, the requests its boxes send (typing in one box one step to undo), why a
 // value can't be kept, locks, the language it edits, the alias, and its ways of showing.
-import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { all, must, registerEnglish, settle, shadow, text } from '../../testing';
 import type { DesignDefinition, DesignField } from '../definition';
 import { builtInTypes } from '../preview/fixtures';
 import { INSPECTOR_REQUEST, InspectorElement, readOpen, type InspectorRequest } from './inspector.element';
+
+// The option editor reads what the site serves; here, the endpoint's snapshot.
+vi.mock('./option-data', async () => ({
+  readOptionSources: async () => (await import('../preview/fixtures')).optionSources,
+  readOptionLists: async () => [],
+  resolveOptions: async () => undefined,
+}));
 
 const LANGUAGES = [
   { culture: 'en-US', name: 'English (United States)', isDefault: true },
@@ -471,5 +478,27 @@ describe('the inspector', () => {
     ]);
     const page = await inspectorOf('p', { mode: 'overlay' });
     expect(all(page.element, '.tools button').map((button) => text(button))).toEqual(['Move to\u2026', 'Delete']);
+  });
+});
+
+describe("a choice field's options in the inspector", () => {
+  it('may depend on a field now after it, which "Depends on" still names, and show as cards by the form\'s layout', async () => {
+    const size: DesignField = { key: 'size', type: 'dropdown', alias: 'size', options: { items: [{ value: 's' }] } };
+    const colour: DesignField = {
+      key: 'colour',
+      type: 'radio',
+      alias: 'colour',
+      options: { parent: 'size', items: [{ value: 'red' }] },
+    };
+    const definition: DesignDefinition = {
+      ...definitionOf(colour, size),
+      settings: { appearance: { choiceLayout: 'cards' } },
+    };
+    const { root } = await inspectorOf('colour', { definition }, colour, size);
+    const editor = must(root.querySelector('jfb-option-editor'), 'the option editor');
+    await settle(editor);
+    expect(editor.parents.map((each) => each.key)).toEqual(['size']);
+    expect(editor.cards).toBe(true);
+    expect(must(editor.querySelector<HTMLSelectElement>('#options-parent'), 'Depends on').value).toBe('size');
   });
 });

@@ -151,6 +151,7 @@ export default {
     options_none: 'Noch keine Optionen. Fügen Sie sie einzeln hinzu oder fügen Sie eine Liste ein.',
     options_count: (count: number) => (count === 1 ? '1 Option' : `${count} Optionen`),
     options_list: 'Optionsliste',
+    options_listItem: (name: string, detail: string) => `${name} · ${detail}`,
     options_listNone: 'Liste wählen',
     options_noLists: 'Es gibt noch keine Optionslisten.',
     options_listFrom_manual: 'eingetippt',
