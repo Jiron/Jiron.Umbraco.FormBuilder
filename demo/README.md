@@ -66,6 +66,9 @@ When the site has started, `Seeding/DemoSeeder.cs` creates whatever is missing a
 - the newsletter slot in the footer, with its texts and the newsletter form on every page, so a page with a form of
   its own holds two;
 - the member group "Library members", the two members, and public access on the members page;
+- the option list "Library branches" (alias `branches`, three branches in English and German), which the designer's
+  "Options from" offers as a library list ([ADR-0172](../docs/decisions/0172-the-option-editor-and-the-option-sources.md)),
+  created when its alias is free;
 - the demo forms, from `Seeding/Forms/<alias>.json` in the package's definition format, created and published
   through the form service when their alias is missing ([ADR-0094](../docs/decisions/0094-demo-forms.md)): the
   contact form, which the contact page shows through its `form` property and gives its `formTopic` property as the

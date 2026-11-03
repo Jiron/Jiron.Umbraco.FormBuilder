@@ -2,6 +2,7 @@ using System.Text.Json.Nodes;
 using Jiron.Umbraco.FormBuilder.Core.Configuration;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
+using Jiron.Umbraco.FormBuilder.Core.OptionLists;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Migrations;
 using Microsoft.Extensions.Options;
 using Umbraco.Cms.Core;
@@ -15,10 +16,12 @@ namespace Jiron.Umbraco.FormBuilder.Demo.Seeding;
 /// reset. The pages name their forms in <c>DemoContent.json</c>, by alias, in their text property or a form block.
 /// Umbraco runs the package's migrations in the background after an install or an upgrade, so the forms wait for them.
 /// A host whose designer locks fix or hide settings (ADR-0060) gets the forms without those settings: the site uses the
-/// locks' values, and a save that leaves a locked setting out is never refused.
+/// locks' values, and a save that leaves a locked setting out is never refused. The library gets one manual option list,
+/// so the designer's source picker has one to offer (ADR-0172); like a form, it is created only when its alias is free.
 /// </summary>
 internal sealed class DemoFormSeeder(
     IFormBuilderFormService forms,
+    OptionListService lists,
     FormDefinitionSerializer serializer,
     IFormBuilderMigrationState migrations,
     IOptions<FormBuilderOptions> options,
@@ -26,6 +29,16 @@ internal sealed class DemoFormSeeder(
 {
     private const string ResourcePrefix = "Jiron.Umbraco.FormBuilder.Demo.Forms.";
     private const string Comment = "Created by the demo's seeder";
+
+    /// <summary>The library's option list the designer's source picker offers (ADR-0172), in English and German.</summary>
+    private const string Branches = """
+        [
+          {"value":"central","label":{"":"Central library","de-DE":"Zentralbibliothek"}},
+          {"value":"harbour","label":{"":"Harbour branch","de-DE":"Zweigstelle Hafen"}},
+          {"value":"hillside","label":{"":"Hillside branch","de-DE":"Zweigstelle am Berg"}}
+        ]
+        """;
+
     private static readonly Guid User = Constants.Security.SuperUserKey;
     private static readonly TimeSpan MigrationsDeadline = TimeSpan.FromMinutes(2);
     private static readonly TimeSpan MigrationsPoll = TimeSpan.FromSeconds(1);
@@ -43,12 +56,12 @@ internal sealed class DemoFormSeeder(
         ("volunteer", "Volunteer sign-up"),
     ];
 
-    /// <summary>Creates and publishes each missing form; true when one was created.</summary>
+    /// <summary>Creates the option list and creates and publishes each missing form; true when something was created.</summary>
     /// <param name="cancellationToken">Cancels the seeding.</param>
     public async Task<bool> SeedAsync(CancellationToken cancellationToken)
     {
         await MigratedAsync(cancellationToken);
-        var created = false;
+        var created = await SeedListAsync(cancellationToken);
         foreach (var (alias, name) in Forms)
         {
             if (await forms.GetByAliasAsync(alias, cancellationToken) is not null)
@@ -68,6 +81,18 @@ internal sealed class DemoFormSeeder(
         }
 
         return created;
+    }
+
+    // The library's branches, once: a list the alias names already is the demo's, as an editor may have changed it.
+    private async Task<bool> SeedListAsync(CancellationToken cancellationToken)
+    {
+        var result = await lists.CreateAsync(Guid.NewGuid(), new OptionListInput("branches", "Library branches", OptionListKind.Manual, Items: Branches), cancellationToken);
+        if (!result.Succeeded && result.Problems.Any(problem => problem.Code != DefinitionErrors.AliasDuplicate))
+        {
+            throw new InvalidOperationException($"Demo seeding: the option list was refused: {result.Problems[0].Message}");
+        }
+
+        return result.Succeeded;
     }
 
     /// <summary>The key of a demo form, which the pages' form blocks pick (ADR-0136).</summary>
