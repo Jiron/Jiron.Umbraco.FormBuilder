@@ -221,6 +221,31 @@ describe('the inspector', () => {
     expect(root.querySelector('input#setting-maxLength')).toBeNull();
     expect(root.querySelector('#setting-prefix')).toBeNull();
     expect(text(sectionButton(root, 'validation'))).toBe('Validation');
+
+    // A hidden lock inside nested settings: the email's blocked or allowed domains keep their list, not their mode.
+    const email_ = must(builtInTypes['email'], 'the email type');
+    const nested = {
+      ...builtInTypes,
+      email: {
+        ...email_,
+        settings: email_.settings.map((setting) =>
+          setting.name === 'domains'
+            ? {
+                ...setting,
+                settings: setting.settings.map((inner) =>
+                  inner.name === 'mode'
+                    ? { ...inner, lock: { hidden: true, configurationKey: 'JironFormBuilder:Designer:SettingLocks:2' } }
+                    : inner,
+                ),
+              }
+            : setting,
+        ),
+      },
+    };
+    const mail: DesignField = { key: 'mail', type: 'email', alias: 'mail', label: { '': 'Email' } };
+    const hidden = await inspectorOf('mail', { types: nested }, mail);
+    expect(hidden.root.querySelector('#setting-domains-list')).not.toBeNull();
+    expect(hidden.root.querySelector('#setting-domains-mode')).toBeNull();
   });
 
   it('edits the texts of the language the canvas shows, and says where visitors see the default instead', async () => {
@@ -234,7 +259,22 @@ describe('the inspector', () => {
     expect(must(root.querySelector<HTMLInputElement>('#prop-placeholder'), 'the placeholder').value).toBe('Ada');
     type(label, 'Ihr Name');
     expect(applied(requests[0], field)['label']).toEqual({ '': 'Your name', 'de-DE': 'Ihr Name' });
-    expect((await inspectorOf('name', { culture: 'en-US' }, field)).root.querySelector('.note')).toBeNull();
+    // In the default language a box holds its own text, with no placeholder to say it twice.
+    const english = await inspectorOf('name', { culture: 'en-US' }, field);
+    expect(english.root.querySelector('.note')).toBeNull();
+    const own = must(english.root.querySelector<HTMLInputElement>('#prop-label'), 'the label');
+    expect([own.value, own.hasAttribute('placeholder')]).toEqual(['Your name', false]);
+  });
+
+  it("shows a text setting's default words as its placeholder in another language, and none in the default", async () => {
+    localStorage.setItem('jfb.designer.inspector.open', JSON.stringify(['appearance']));
+    const field = { ...NAME, settings: { prefix: { '': 'Dr.' } } };
+    const german = await inspectorOf('name', { culture: 'de-DE' }, field);
+    const prefix = must(german.root.querySelector<HTMLInputElement>('#setting-prefix'), 'the prefix');
+    expect([prefix.value, prefix.placeholder]).toEqual(['', 'Dr.']);
+    const english = await inspectorOf('name', { culture: 'en-US' }, field);
+    const own = must(english.root.querySelector<HTMLInputElement>('#setting-prefix'), 'the prefix');
+    expect([own.value, own.hasAttribute('placeholder')]).toEqual(['Dr.', false]);
   });
 
   it('checks an alias as the server does, and sends one the form takes with a way back', async () => {

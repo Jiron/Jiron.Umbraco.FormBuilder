@@ -165,7 +165,8 @@ describe("a field's sections", () => {
 });
 
 describe('a section with many items', () => {
-  it(`shows ${MOST_SHOWN} before More options`, () => {
+  it('shows seven before More options, as IA 5.1 says', () => {
+    expect(MOST_SHOWN).toBe(7);
     const items = Array.from({ length: MOST_SHOWN + 2 }, (_, at): Item => ({ kind: 'message', message: `m${at}` }));
     const split = splitItems(items);
     expect(split.shown).toHaveLength(MOST_SHOWN);

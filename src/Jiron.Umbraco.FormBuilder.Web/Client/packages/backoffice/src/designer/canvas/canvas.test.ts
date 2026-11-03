@@ -433,6 +433,60 @@ describe('the canvas', () => {
     ).toBe('Add a field here, after C');
   });
 
+  it("switches the language it shows, marks a field without a text in it, none in the default's, and copies only an alias", async () => {
+    const languages = [
+      { culture: 'en-US', name: 'English (United States)', isDefault: true },
+      { culture: 'de-DE', name: 'Deutsch (Deutschland)', isDefault: false },
+    ];
+    const definition: DesignDefinition = {
+      pages: [
+        {
+          key: 'p',
+          groups: [
+            {
+              key: 'g',
+              fields: [
+                { key: 'a', type: 'text', alias: 'a', label: { '': 'Name', 'de-DE': 'Name' } },
+                { key: 'b', type: 'text', alias: 'b', label: { '': 'Email' } },
+                // Written in German only: the default's text is empty.
+                { key: 'c', type: 'text', label: { '': '', 'de-DE': 'Nur Deutsch' } },
+              ],
+            },
+          ],
+        },
+      ],
+      outcomes: [],
+    };
+    const chips = async (element: FormCanvasElement, root: ShadowRoot) => {
+      for (const field of all<CanvasFieldElement>(element, 'jfb-canvas-field')) await settle(field);
+      return [...root.querySelectorAll('.bo-chip')].map((chip) => [
+        chip.closest('jfb-canvas-field')?.getAttribute('key'),
+        text(chip),
+      ]);
+    };
+    const german = await canvasOf(definition, { look: { ...englishLook, languages, culture: 'de-DE' } });
+    expect(await chips(german.element, german.root)).toEqual([['b', 'No German text yet']]);
+    const select = must(german.root.querySelector<HTMLSelectElement>('.bo-language select'), 'the language');
+    expect([...select.options].map((option) => [option.value, option.selected])).toEqual([
+      ['en-US', false],
+      ['de-DE', true],
+    ]);
+    select.value = 'en-US';
+    select.dispatchEvent(new Event('change'));
+    expect(german.requests).toEqual([{ kind: 'culture', culture: 'en-US' }]);
+    document.body.replaceChildren();
+
+    const english = await canvasOf(definition, {
+      look: { ...englishLook, languages, culture: 'en-US' },
+      selection: 'c',
+    });
+    expect(await chips(english.element, english.root)).toEqual([]);
+    const menu = [...english.root.querySelectorAll('jfb-canvas-field[key="c"] .bo-menu button')].map((item) =>
+      text(item),
+    );
+    expect(menu).toEqual(['Start a new page after this']);
+  });
+
   it('points a new form to the palette and to pasting questions, and an empty later page to New page', async () => {
     const blank: DesignDefinition = { pages: [{ key: 'p', groups: [{ key: 'g', fields: [] }] }] };
     const first = await canvasOf(blank);
