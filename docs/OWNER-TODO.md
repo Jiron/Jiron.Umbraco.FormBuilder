@@ -114,6 +114,15 @@ what to do and why. Items for blocked roadmap steps name the step as "step X.Y",
   page loads only the features its form uses. Once you set a number, the blocked steps resume from the
   branch.
 
+- [ ] **The website runtime's budget, once more: 60 KB or about 62 KB? (ROADMAP §4.12,
+  [ADR-0163](decisions/0163-save-and-resume.md)).** It blocks step 8.6b. The runtime with every feature stands at 59.80 KB
+  gzip. "Save and continue later" and bringing a saved form back come to 1.94 KB as a chunk only a form offering it loads,
+  which makes 61.95 KB. No visitor loads all of that: a form loads only the features it uses, and what every page with a form
+  loads stays 2.3 KB. The bytes have been through a terser pass, and nothing obvious is left to take out. The server side of save
+  and resume is finished and works for headless sites either way. **My recommendation: raise it to 64 KB,** which also leaves room for
+  the insights beacons of step 11.5, a small addition. Keeping 60 KB means forms have no "Save and continue later" button
+  of their own. Once you set a number, the step resumes from the branch `wip/8.6b-resume-control`.
+
 ## Real-world checks (no real keys are used during the build)
 
 - [ ] **Captcha providers:** test reCAPTCHA v2/v3 and hCaptcha with real keys, set as environment

@@ -397,8 +397,8 @@ internal sealed partial class ContentActionType(
 
         if (item.Field is not { } key)
         {
-            // Text can go anywhere text goes; anything else has to be what the editor stores, known now, not whatever a tag renders.
-            if (!IsText(property.PropertyEditorAlias) && (item.Value!.Contains("{{", StringComparison.Ordinal) || property.PropertyEditorAlias == Constants.PropertyEditors.Aliases.MediaPicker3 || !IsConvertible(property.PropertyEditorAlias) || !TryConvert(property.PropertyEditorAlias, item.Value, out _)))
+            // Text can go anywhere text goes; anything else has to be what the editor stores, known now, which no tag is.
+            if (!IsText(property.PropertyEditorAlias) && (!IsConvertible(property.PropertyEditorAlias) || !TryConvert(property.PropertyEditorAlias, item.Value!, out _)))
             {
                 check.Invalid("mapping", $"The property '{item.Property}' cannot hold this value.");
             }
@@ -546,7 +546,7 @@ internal sealed partial class ContentActionType(
         return true;
     }
 
-    // An answer as the field reads it, not as it shows: a consent stores its wording's hash and counts as given by having one.
+    // An answer as the field reads it, not as it shows: a consent reads as true, whatever it stores.
     private static string WireTextOf(FormField field, MergeTagScope scope)
     {
         if (scope.Answers.Hidden.Contains(field.Key) || scope.Answers.Find(field.Key) is not { } answer)
@@ -554,7 +554,7 @@ internal sealed partial class ContentActionType(
             return string.Empty;
         }
 
-        return field.Type == "consent" ? "true" : answer.Values[0].Text ?? string.Empty;
+        return answer.Values[0].Text ?? string.Empty;
     }
 
     // The field's files as the value of a media picker. They are copied only here, where the mapping names them, and held to what a

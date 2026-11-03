@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text.Json;
 using Jiron.Umbraco.FormBuilder.Core.Definitions.Serialization;
+using Jiron.Umbraco.FormBuilder.Core.Email;
 using Jiron.Umbraco.FormBuilder.Core.Entries;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
@@ -144,13 +145,54 @@ internal static class EntryBodies
         return (previous, contentKey);
     }
 
-    // A submission's body, or a page's with the page's key.
-    private static (SubmissionRequest? Request, Guid? Page) Submission(byte[] body, Guid form, bool page, List<string> invalid, PlacementTokens? placements = null)
+    /// <summary>A draft's body (ADR-0163): a submission's, with the address and the page the visitor is on.</summary>
+    /// <param name="body">The body's bytes.</param>
+    /// <param name="form">The form's key.</param>
+    /// <param name="invalid">Where it goes wrong.</param>
+    public static (SubmissionRequest? Request, Guid? Page) ReadDraft(byte[] body, Guid form, List<string> invalid) =>
+        Submission(body, form, false, invalid, null, draft: true);
+
+    /// <summary>A resume's token, or null with where it goes wrong.</summary>
+    /// <param name="body">The body's bytes.</param>
+    /// <param name="invalid">Where it goes wrong.</param>
+    public static string? ReadResume(byte[] body, List<string> invalid)
     {
         ArgumentNullException.ThrowIfNull(body);
         ArgumentNullException.ThrowIfNull(invalid);
         using var document = Parse(body, invalid);
-        return document is null ? default : Read(document.RootElement, form, page, invalid, placements);
+        if (document is null)
+        {
+            return null;
+        }
+
+        string? token = null;
+        foreach (var (name, value) in Members(document.RootElement, string.Empty, invalid))
+        {
+            if (name == "token")
+            {
+                token = Text(value, name, invalid, EntryDrafts.MaxTokenLength);
+            }
+            else
+            {
+                Add(invalid, name);
+            }
+        }
+
+        if (token is null)
+        {
+            Add(invalid, "token");
+        }
+
+        return invalid.Count > 0 ? null : token;
+    }
+
+    // A submission's body, or a page's with the page's key.
+    private static (SubmissionRequest? Request, Guid? Page) Submission(byte[] body, Guid form, bool page, List<string> invalid, PlacementTokens? placements = null, bool draft = false)
+    {
+        ArgumentNullException.ThrowIfNull(body);
+        ArgumentNullException.ThrowIfNull(invalid);
+        using var document = Parse(body, invalid);
+        return document is null ? default : Read(document.RootElement, form, page, invalid, placements, draft);
     }
 
     // The body as a JSON object, or null with where it goes wrong: bytes that are not UTF-8, text that is not JSON or
@@ -184,7 +226,7 @@ internal static class EntryBodies
         return null;
     }
 
-    private static (SubmissionRequest? Request, Guid? Page) Read(JsonElement root, Guid form, bool page, List<string> invalid, PlacementTokens? placements)
+    private static (SubmissionRequest? Request, Guid? Page) Read(JsonElement root, Guid form, bool page, List<string> invalid, PlacementTokens? placements, bool draft = false)
     {
         int? revision = null;
         Guid? submissionId = null;
@@ -199,6 +241,8 @@ internal static class EntryBodies
         string? proof = null;
         string? captchaToken = null;
         Guid? redirect = null;
+        string? resume = null;
+        string? email = null;
         foreach (var (name, value) in Members(root, string.Empty, invalid))
         {
             switch (name)
@@ -210,6 +254,15 @@ internal static class EntryBodies
                     break;
                 case "submissionId" when !page:
                     submissionId = Key(value, name, invalid);
+                    break;
+                case "resume" when !page:
+                    resume = Text(value, name, invalid, EntryDrafts.MaxTokenLength);
+                    break;
+                case "email" when draft:
+                    email = Text(value, name, invalid, EmailAddresses.MaxLength);
+                    break;
+                case "pageKey" when draft:
+                    pageKey = Key(value, name, invalid);
                     break;
                 case "instance" when !page:
                     if (value.ValueKind != JsonValueKind.Null && (JsonPaths.TryGetString(value) is not { } instance || !FormInstances.IsId(instance)))
@@ -287,6 +340,8 @@ internal static class EntryBodies
             ProofOfWork = proof,
             CaptchaToken = captchaToken,
             Redirect = redirect,
+            ResumeToken = resume,
+            DraftEmail = email,
         }, pageKey);
     }
 

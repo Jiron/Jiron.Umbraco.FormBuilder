@@ -512,6 +512,40 @@ internal sealed class FormController(
     }
 
     /// <summary>
+    /// Saves a visitor's answers so far and mails the address a link to finish later (ADR-0163). The answer never holds the link. The
+    /// answers need not be whole: one that does not read well is not kept. Files, consents and sensitive answers are not kept at all.
+    /// </summary>
+    /// <param name="key">The form's key.</param>
+    /// <param name="cancellationToken">The request's cancellation, with its time limit.</param>
+    /// <remarks><c>409 resume_unavailable</c> says the form does not offer it, or the site cannot say where the link comes back to.</remarks>
+    [HttpPost("{key}/drafts")]
+    [FormBuilderRateLimit(FormBuilderRateLimitPolicies.Submit)]
+    [FormBuilderBodyLimit(EntryRequests.MaxBodyBytes)]
+    [FormBuilderTimeLimit(30)]
+    [FormBuilderJsonBody(typeof(DraftRequestModel))]
+    [ProducesResponseType<DraftResponseModel>(StatusCodes.Status200OK, "application/json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest, FormBuilderProblemResult.MediaType)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized, FormBuilderProblemResult.MediaType)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden, FormBuilderProblemResult.MediaType)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound, FormBuilderProblemResult.MediaType)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict, FormBuilderProblemResult.MediaType)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status413PayloadTooLarge, FormBuilderProblemResult.MediaType)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status415UnsupportedMediaType, FormBuilderProblemResult.MediaType)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity, FormBuilderProblemResult.MediaType)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status503ServiceUnavailable, FormBuilderProblemResult.MediaType)]
+    public async Task<IActionResult> Drafts(string key, CancellationToken cancellationToken)
+    {
+        // A form the site does not serve answers before its body is read.
+        if (!Guid.TryParseExact(key, "D", out var formKey) || await forms.GetAsync(formKey, cancellationToken) is null)
+        {
+            FormBuilderPublicProblems.CloseConnection(HttpContext);
+            return FormBuilderPublicProblems.FormNotFound();
+        }
+
+        return await entries.SaveDraftAsync(HttpContext, formKey, cancellationToken);
+    }
+
+    /// <summary>
     /// Checks one page's answers on the server before the visitor goes on (ADR-0089), as the submission will check them:
     /// a submission's body with the page's key, holding the answers the visitor gave so far, which the rules and checks
     /// read as the submission's. <c>204</c> when the page's answers pass; nothing is stored either way.

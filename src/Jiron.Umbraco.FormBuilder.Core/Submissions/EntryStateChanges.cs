@@ -370,6 +370,7 @@ internal sealed partial class EntryChangeQueue(
     ActionSettlement settlement,
     EntryEvents entryEvents,
     EntryVerification verification,
+    EntryDrafts drafts,
     OutboxWake wake,
     TimeProvider time,
     ILogger<EntryChangeQueue> logger) : IOutboxQueue
@@ -423,6 +424,9 @@ internal sealed partial class EntryChangeQueue(
                 return;
             case EntryVerification.ExpiresEvent:
                 await verification.ExpireAsync(entry, due, cancellationToken);
+                return;
+            case EntryDrafts.ExpiresEvent:
+                await drafts.ExpireAsync(entry, due, cancellationToken);
                 return;
         }
 

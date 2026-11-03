@@ -2541,18 +2541,21 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - tests cover the approved and rejected triggers, for single and bulk changes;
     - tests with fake time show that the runs a user's state change queues (approve, reject, not spam; single and bulk) start only after the undo window, that Undo inside the window restores every entry's state, gives places back or takes them again, and leaves those runs `Skipped` with `undone` and no email sent, that Undo after the window is refused with `409`, and that changes made by a rule, a "set state" action, verification or automatic approval run at once (ADR-0023);
     - tests show "not spam" on a verification form sending an entry without `VerifiedUtc` to `Unverified` with its mail, and a value kept only until the actions have run surviving while its entry is `Unverified`, in `Spam` or waiting for approval (also when the form has only `submitted`, only `verified` or only `approved` actions), used by the runs that follow, and gone after the last one.
-- [ ] **8.6 Save and resume, and phase review**
-  - **The flow:**
+- [ ] **8.6a Save and resume on the server, and phase review**
+  - **The flow (ADR-0163):**
     - the `drafts` and `resume` endpoints (§4.6), with the `Draft` state and the resume email through the outbox;
     - the token in the URL fragment, never sent to the server in a query string;
     - expiry, and the page restored;
-    - the runtime's "Save and continue later" control (the only use of browser storage, §4.10);
     - drafts purged when they expire.
     - **Places and unique answers** (ADR-0090, ADR-0091): a draft holds no places and no unique answers; the submit that turns it into an entry takes them as a submission does, and fails with `full` where an option has none left, and with the field's `uniquePerForm` check where another entry holds the answer by then.
   - **Phase review:** write the handover note.
   - Done when:
-    - Playwright resumes a three-page form from the link in the pickup email, and tests cover expiry, a second resume, the submit that turns the draft into an entry (and takes its places then, ADR-0090, and fails at a unique field whose answer another entry took meanwhile, ADR-0091), a resumed form asking again for the files it had and showing every consent unticked, and the visitor-address limits for resume mail (§4.10);
+    - tests cover expiry, a second resume, the submit that turns the draft into an entry (and takes its places then, ADR-0090, and fails at a unique field whose answer another entry took meanwhile, ADR-0091), a resume that gives no file and no consent back, and the visitor-address limits for resume mail (§4.10);
     - pushed, with the phase-review gate.
+- [~] **8.6b The runtime's "Save and continue later"**
+  - **Blocked on the owner (2026-11-02):** the control and the restoring of answers are built and wait on the branch `wip/8.6b-resume-control`. As the chunk of their own they come to 1.94 KB gzip, which puts the runtime with every feature at 61.95 KB against the 60 KB of ADR-0146, and that ADR leaves anything past 60 KB to the owner. `docs/OWNER-TODO.md` asks.
+  - **The control:** the runtime's "Save and continue later" (the only use of browser storage, §4.10), and a link's answers and page restored on arrival, its token taken out of the address at once.
+  - Done when: Playwright resumes a three-page form from the link in the pickup email, and a resumed form asks again for the files it had and shows every consent unticked.
 
 ### Phase 9: The backoffice I: section, form library and designer
 
@@ -2718,6 +2721,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
   - **The table:** a collection table per form, a column chooser (saved per user in `jfbUserSetting`), server-side paging, "new" markers and mark-as-seen, and an action status ("3/3 delivered"). Each entry is named by its entry title (§4.3.4), or by its number when the form has none.
   - **Finding entries:** filters as chips (date presets and ranges, state, typed field filters), search and sort. A set of filters can be saved under a name (per user). A search shows its count exactly up to 1,000 and as "more than 1,000" beyond (ADR-0003).
   - **Working on many:** bulk actions (approve, reject, spam, not spam, delete, export selected, re-run actions) and the keyboard shortcuts of §4.13.
+  - **Drafts stay out** (ADR-0163): an empty state filter means every state to the repository, so the list, its counts, search and exports name the states they show and leave `Draft` out, with a test.
   - Done when: Playwright passes with 1,000 seeded entries, including a saved filter set reopened in a second browser and a bulk approval undone from its toast inside the window (`page.clock`; every entry back in its state, no approved action run, and no Undo offered once the window has passed, ADR-0023), and the 100,000-entry budget of §4.12 is measured and met.
 - [ ] **11.2 The entry panel**
   - **Values:** grouped by page and group, with fields from older versions marked as such, plus files and the consent proof (the exact text), and a signature typed instead of drawn with its name as text beside its image, read from its PNG (ADR-0103, added in 6.2k). The panel's endpoint reads them through `EntryAnswerStore.ReadAsync` (named in 5.5j by the Phase 5 wiring sweep, ADR-0070), each value as its type read it.

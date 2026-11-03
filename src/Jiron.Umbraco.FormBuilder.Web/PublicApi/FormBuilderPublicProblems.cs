@@ -79,6 +79,12 @@ internal static class FormBuilderPublicProblems
     /// <summary>The form has an entry with this submission id and other answers (section 4.4).</summary>
     public const string DuplicateSubmissionCode = "duplicate_submission";
 
+    /// <summary>The code of a form that cannot be saved for later (ADR-0163).</summary>
+    public const string ResumeUnavailableCode = "resume_unavailable";
+
+    /// <summary>The code of a resume link past its time (ADR-0163).</summary>
+    public const string ResumeExpiredCode = "resume_expired";
+
     /// <summary>The page showed a revision of the form that cannot take the answers, or a consent wording that changed (ADR-0002).</summary>
     public const string FormChangedCode = "form_changed";
 
@@ -166,6 +172,14 @@ internal static class FormBuilderPublicProblems
     /// <summary>Other answers sent with the submission id of an entry the form has.</summary>
     public static FormBuilderProblemResult DuplicateSubmission() =>
         FormBuilderProblems.Problem(StatusCodes.Status409Conflict, DuplicateSubmissionCode, "This form was sent already.");
+
+    /// <summary>The form does not offer save and resume, or the site cannot say where its link comes back to (ADR-0163).</summary>
+    public static FormBuilderProblemResult ResumeUnavailable() =>
+        FormBuilderProblems.Problem(StatusCodes.Status409Conflict, ResumeUnavailableCode, "This form cannot be saved for later here.");
+
+    /// <summary>The resume link is past its time (ADR-0163).</summary>
+    public static FormBuilderProblemResult ResumeExpired() =>
+        FormBuilderProblems.Problem(StatusCodes.Status410Gone, ResumeExpiredCode, "This link is too old.");
 
     /// <summary>The form changed since the page showed it; the page loads it again.</summary>
     public static FormBuilderProblemResult FormChanged() =>

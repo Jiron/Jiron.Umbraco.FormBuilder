@@ -23,7 +23,8 @@ namespace Jiron.Umbraco.FormBuilder.Web.PublicApi;
 /// <param name="challenges">The challenges, which every request but a server key's posts (ADR-0138).</param>
 /// <param name="sent">The sent tokens, one of which a page's send gets for the copy of its answers (ADR-0155).</param>
 /// <param name="placements">The placements' tokens, which a page's send carries (ADR-0120).</param>
-internal sealed class EntryRequests(FormSubmissions submissions, UploadTokens tokens, ChallengeTokens challenges, SentTokens sent, PlacementTokens placements)
+/// <param name="drafts">Save and resume (ADR-0163).</param>
+internal sealed class EntryRequests(FormSubmissions submissions, UploadTokens tokens, ChallengeTokens challenges, SentTokens sent, PlacementTokens placements, EntryDrafts drafts)
 {
     /// <summary>The most bytes a submission's body holds, and a page's.</summary>
     public const int MaxBodyBytes = 1_048_576;
@@ -73,6 +74,59 @@ internal sealed class EntryRequests(FormSubmissions submissions, UploadTokens to
         return EntryBodies.ReadPage(body.Bytes, formKey, invalid) is ({ } submission, var page)
             ? Answer(await submissions.ValidateAsync(submission with { Tokens = tokens, Challenges = challenges, Address = http.Connection.RemoteIpAddress, Member = await MemberAsync(http), ServerKey = ServerKeyRequest.NameOf(http) }, page, cancellationToken))
             : FormBuilderPublicProblems.InvalidRequest([.. invalid]);
+    }
+
+    /// <summary>Reads a draft of a form and saves it (ADR-0163): when its link stops working, never the link itself.</summary>
+    /// <param name="http">The request.</param>
+    /// <param name="formKey">The form's key, from the route.</param>
+    /// <param name="cancellationToken">The request's cancellation, with its time limit.</param>
+    public async Task<IActionResult> SaveDraftAsync(HttpContext http, Guid formKey, CancellationToken cancellationToken)
+    {
+        var body = await ReadAsync(http, MaxBodyBytes, cancellationToken);
+        if (body.Refusal is { } refusal)
+        {
+            return refusal;
+        }
+
+        var invalid = new List<string>();
+        if (EntryBodies.ReadDraft(body.Bytes, formKey, invalid) is not ({ } submission, var page))
+        {
+            return FormBuilderPublicProblems.InvalidRequest([.. invalid]);
+        }
+
+        var result = await submissions.SaveDraftAsync(submission with { Tokens = tokens, Challenges = challenges, Address = http.Connection.RemoteIpAddress, Member = await MemberAsync(http), ServerKey = ServerKeyRequest.NameOf(http) }, page, cancellationToken);
+        return result.DraftExpires is { } expires
+            ? new FileContentResult(JsonSerializer.SerializeToUtf8Bytes(new DraftResponseModel { ExpiresUtc = expires.UtcDateTime }, Json), "application/json; charset=utf-8")
+            : Answer(result);
+    }
+
+    /// <summary>Reads a resume's token and answers with its draft's answers (ADR-0163), or the refusal.</summary>
+    /// <param name="http">The request.</param>
+    /// <param name="cancellationToken">The request's cancellation, with its time limit.</param>
+    public async Task<IActionResult> ResumeAsync(HttpContext http, CancellationToken cancellationToken)
+    {
+        var body = await ReadAsync(http, MaxReceiptBodyBytes, cancellationToken);
+        if (body.Refusal is { } refusal)
+        {
+            return refusal;
+        }
+
+        var invalid = new List<string>();
+        if (EntryBodies.ReadResume(body.Bytes, invalid) is not { } token)
+        {
+            return FormBuilderPublicProblems.InvalidRequest([.. invalid]);
+        }
+
+        var answer = await drafts.ResumeAsync(token, await MemberAsync(http), cancellationToken);
+        return answer.Status switch
+        {
+            DraftStatus.Found => new FileContentResult(
+                JsonSerializer.SerializeToUtf8Bytes(new ResumeResponseModel { Form = answer.Form, Revision = answer.Revision, PageKey = answer.PageKey, ExpiresUtc = answer.Expires!.Value.UtcDateTime, Values = answer.Values! }, Json),
+                "application/json; charset=utf-8"),
+            DraftStatus.Expired => FormBuilderPublicProblems.ResumeExpired(),
+            DraftStatus.MemberRequired => FormBuilderPublicProblems.MemberRequired(),
+            _ => FormBuilderPublicProblems.NotFound(),
+        };
     }
 
     // The member signed in on the request, whose values a field prefilled from the member takes (ADR-0124).
@@ -211,6 +265,7 @@ internal sealed class EntryRequests(FormSubmissions submissions, UploadTokens to
             SubmissionRefusal.InvalidRequest => FormBuilderPublicProblems.InvalidRequest([.. result.Problems.Select(problem => problem.Path)]),
             SubmissionRefusal.ValidationFailed => FormBuilderPublicProblems.ValidationFailed(result.Problems),
             SubmissionRefusal.EntryNotFound => FormBuilderPublicProblems.NotFound(),
+            SubmissionRefusal.ResumeUnavailable => FormBuilderPublicProblems.ResumeUnavailable(),
             _ => throw new InvalidOperationException("A submission's result is an entry, a page that passes or a refusal."),
         };
     }
@@ -219,6 +274,76 @@ internal sealed class EntryRequests(FormSubmissions submissions, UploadTokens to
     /// <param name="Bytes">Its bytes.</param>
     /// <param name="Refusal">The refusal, or null.</param>
     public readonly record struct Body(byte[] Bytes, IActionResult? Refusal);
+}
+
+/// <summary>What saving a draft answers (ADR-0163): never the link, which only the mail holds.</summary>
+internal sealed record DraftResponseModel
+{
+    /// <summary>When the link stops working.</summary>
+    public required DateTime ExpiresUtc { get; init; }
+}
+
+/// <summary>A draft to save (ADR-0163), as the document describes it. Every member but <c>revision</c> and <c>email</c> may be left out.</summary>
+internal sealed record DraftRequestModel
+{
+    /// <summary>The public revision the page shows.</summary>
+    public required int Revision { get; init; }
+
+    /// <summary>The address the link goes to; nothing but that mail keeps it.</summary>
+    public required string Email { get; init; }
+
+    /// <summary>The page's culture.</summary>
+    public string? Culture { get; init; }
+
+    /// <summary>The content page the form is on, which the link goes back to.</summary>
+    public Guid? ContentKey { get; init; }
+
+    /// <summary>The form's page the visitor is on.</summary>
+    public Guid? PageKey { get; init; }
+
+    /// <summary>The answers so far, by alias. Files, consents and sensitive answers are not kept.</summary>
+    public IReadOnlyDictionary<string, object>? Values { get; init; }
+
+    /// <summary>The token of the draft this one takes the place of; its link stops working.</summary>
+    public string? Resume { get; init; }
+
+    /// <summary>The challenge (ADR-0138), which makes one draft.</summary>
+    public string? Challenge { get; init; }
+
+    /// <summary>The form's honeypot.</summary>
+    public string? Honeypot { get; init; }
+
+    /// <summary>The answer to the challenge's puzzle.</summary>
+    public string? ProofOfWork { get; init; }
+
+    /// <summary>The form's captcha token.</summary>
+    public string? CaptchaToken { get; init; }
+}
+
+/// <summary>A resume (ADR-0163).</summary>
+internal sealed record ResumeRequestModel
+{
+    /// <summary>The token from the link's fragment.</summary>
+    public required string Token { get; init; }
+}
+
+/// <summary>What a resume answers (ADR-0163).</summary>
+internal sealed record ResumeResponseModel
+{
+    /// <summary>The form the draft belongs to.</summary>
+    public required Guid Form { get; init; }
+
+    /// <summary>The form's revision now, which the answers are named by.</summary>
+    public required int Revision { get; init; }
+
+    /// <summary>The page to go on from; left out for the first.</summary>
+    public Guid? PageKey { get; init; }
+
+    /// <summary>When the link stops working.</summary>
+    public required DateTime ExpiresUtc { get; init; }
+
+    /// <summary>The answers, as a submission's <c>values</c> names them.</summary>
+    public required IReadOnlyDictionary<string, object> Values { get; init; }
 }
 
 /// <summary>

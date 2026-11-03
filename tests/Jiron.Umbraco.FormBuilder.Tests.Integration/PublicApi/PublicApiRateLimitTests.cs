@@ -92,6 +92,29 @@ public sealed class PublicApiRateLimitTests : PublicApiTestBase
     }
 
     [Test]
+    public async Task ALinksPages_CountInTheirOwnPolicy_PerAddress()
+    {
+        var path = $"{Root}/verify?t=made-up";
+        for (var count = 0; count < 5; count++)
+        {
+            using var each = await GetAsync(path, "203.0.113.7");
+            if (each.StatusCode == HttpStatusCode.TooManyRequests)
+            {
+                using var resume = await PostAsync($"{Root}/drafts/resume", """{"token":"made-up"}""", "203.0.113.7");
+                using var other = await GetAsync(path, "203.0.113.8");
+                Assert.Multiple(() =>
+                {
+                    Assert.That(resume.StatusCode, Is.EqualTo(HttpStatusCode.TooManyRequests), "a draft's link takes the same limit");
+                    Assert.That(other.StatusCode, Is.Not.EqualTo(HttpStatusCode.TooManyRequests));
+                });
+                return;
+            }
+        }
+
+        Assert.Fail("A link's page never reached its limit.");
+    }
+
+    [Test]
     public async Task AnUpload_CountsInItsOwnPolicy()
     {
         var key = await PublishAsync();
@@ -341,6 +364,7 @@ public sealed class PublicApiRateLimitTests : PublicApiTestBase
         configuration[Limits + "Submit:SitePerSecond"] = "0";
         configuration[Limits + "Upload:PerAddressAndFormPerMinute"] = "1";
         configuration[Limits + "Upload:PerAddressPerMinute"] = "0";
+        configuration[Limits + "Verify:PerAddressPerMinute"] = "2";
         configuration[Limits + "Upload:SitePerSecond"] = "0";
         configuration[Limits + "Read:PerAddressPerMinute"] = "2";
         configuration[Limits + "Read:SitePerSecond"] = "0";

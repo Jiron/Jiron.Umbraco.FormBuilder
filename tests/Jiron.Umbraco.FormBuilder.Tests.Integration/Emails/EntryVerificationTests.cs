@@ -153,11 +153,13 @@ public sealed partial class EntryVerificationTests : EmailTestBase
         var waiting = (await Emails.ListForEntryAsync(entry.Id)).Single().State;
         Clock.Advance(TimeSpan.FromDays(7) + EntryVerification.Grace);
         await changes.PassAsync("test", DateTimeOffset.MaxValue, CancellationToken.None);
+        await SendDueAsync();
 
         var audited = await GetRequiredService<IAuditRepository>().QueryAsync(new AuditQuery { Action = EntryVerification.ExpiredAction }, new PageRequest(0, 10));
         Assert.Multiple(async () =>
         {
             Assert.That(waiting, Is.Not.EqualTo(EmailState.Sent));
+            Assert.That(Written(), Is.Empty, "the mail that was waiting went with it");
             Assert.That(await Entries.GetByIdAsync(entry.Id), Is.Null);
             Assert.That(await Emails.ListForEntryAsync(entry.Id), Is.Empty);
             Assert.That(audited.Items.Single().Details, Does.Contain(entry.Key.ToString()));

@@ -19,7 +19,7 @@ public abstract class PublicApiTestBase : FormBuilderTestServerTestBase
     public const string Root = "/jfb/api/v1";
 
     private static readonly System.Text.RegularExpressions.Regex PostsChallenge = new(
-        "/forms/(?<form>[0-9a-fA-F-]{36})/(?<endpoint>entries|validate|receipt|uploads)(\\?|$)",
+        "/forms/(?<form>[0-9a-fA-F-]{36})/(?<endpoint>entries|drafts|validate|receipt|uploads)(\\?|$)",
         System.Text.RegularExpressions.RegexOptions.Compiled,
         TimeSpan.FromSeconds(1));
 
@@ -79,7 +79,7 @@ public abstract class PublicApiTestBase : FormBuilderTestServerTestBase
         prepare?.Invoke(request);
         var challenged = await AddChallengeAsync(request);
         var response = await Client.SendAsync(request);
-        if (challenged is { Endpoint: "entries" } && response.StatusCode == HttpStatusCode.OK)
+        if (challenged is { Endpoint: "entries" or "drafts" } && response.StatusCode == HttpStatusCode.OK)
         {
             // A solved challenge has made its entry: a retry of that submission holds it, the id the server made too, and
             // anything else asks anew.

@@ -28,6 +28,7 @@ namespace Jiron.Umbraco.FormBuilder.Core.Submissions;
 /// <param name="Redirect">The page the placement sends the visitor to after the send (ADR-0129), or null for the outcome.</param>
 /// <param name="ChallengeId">The id of the challenge that made it, which makes one entry (ADR-0012); null for a request without one.</param>
 /// <param name="Verdict">Its spam score and why (ADR-0012); null for none.</param>
+/// <param name="Draft">The draft it finishes, which goes in its unit (ADR-0163); null for none.</param>
 internal sealed record NewSubmission(
     int FormId,
     int FormVersionId,
@@ -41,7 +42,8 @@ internal sealed record NewSubmission(
     IReadOnlyDictionary<string, string> Context,
     Guid? Redirect = null,
     string? ChallengeId = null,
-    SpamVerdict? Verdict = null);
+    SpamVerdict? Verdict = null,
+    long? Draft = null);
 
 /// <summary>An entry with its receipt and outcome (ADR-0088).</summary>
 /// <param name="Entry">The entry.</param>
@@ -82,7 +84,9 @@ internal sealed class SubmissionEntries(
     SiteBaseUrl baseUrls,
     ActionSettlement settlement,
     EntryEvents entryEvents,
-    OutboxWake wake)
+    OutboxWake wake,
+    IEntryRepository entries,
+    IEmailRepository emails)
 {
     /// <summary>The kind of the event that records a submission.</summary>
     public const string SubmittedEvent = "submitted";
@@ -176,6 +180,16 @@ internal sealed class SubmissionEntries(
                 }
 
                 await stats.IncrementAsync(created.FormId, [new DailyStatCount(verdict.IsSpam ? SpamMetric : SubmissionsMetric)], cancellationToken);
+                if (submission.Draft is { } draft)
+                {
+                    // The unit holds the form's row, so of two submits that name one draft only the first finds it.
+                    await emails.DeleteUnsentAsync(draft, cancellationToken);
+                    if (!await entries.DeleteAsync(draft, cancellationToken))
+                    {
+                        throw new FormBuilderConflictException(FormBuilderConflict.DuplicateSubmission, "Another submission finished this draft a moment ago.");
+                    }
+                }
+
                 if (state == EntryState.Unverified)
                 {
                     await events.AddAsync(new NewEntryEvent(created.Id, EntryVerification.RequestedEvent, DueIn: TimeSpan.Zero), cancellationToken);
@@ -339,7 +353,7 @@ internal sealed class SubmissionEntries(
 
     // The page's path in the culture, from the content's own address and not from an address the visitor sends, though a request
     // names which page it is on; null without one.
-    private async Task<string?> PathAsync(RequestPage page, string culture, CancellationToken cancellationToken)
+    internal async Task<string?> PathAsync(RequestPage page, string culture, CancellationToken cancellationToken)
     {
         if (page.Content is not { } key || await umbraco.ContentAsync(key) is not { } content)
         {

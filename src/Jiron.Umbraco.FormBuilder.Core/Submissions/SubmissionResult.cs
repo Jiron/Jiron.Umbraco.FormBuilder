@@ -6,6 +6,9 @@ namespace Jiron.Umbraco.FormBuilder.Core.Submissions;
 /// <summary>Why a submission, a page's check or a receipt was refused (ADR-0088, ADR-0089); each is one stable code of the public API.</summary>
 internal enum SubmissionRefusal
 {
+    /// <summary>The form does not offer save and resume, or the site cannot say where its link comes back to (<c>resume_unavailable</c>, ADR-0163).</summary>
+    ResumeUnavailable,
+
     /// <summary>The form is missing, unpublished, in the trash or unreadable (<c>form_not_found</c>).</summary>
     FormNotFound,
 
@@ -117,6 +120,9 @@ internal sealed record SubmissionResult
     /// <summary>Why it was refused; null for an entry and for a page that passes.</summary>
     public SubmissionRefusal? Refusal { get; private init; }
 
+    /// <summary>When the link of a draft this request saved stops working; null for anything else.</summary>
+    public DateTimeOffset? DraftExpires { get; private init; }
+
     /// <summary>The entry's receipt; null for a refusal.</summary>
     public SubmissionReceipt? Receipt { get; private init; }
 
@@ -139,6 +145,10 @@ internal sealed record SubmissionResult
 
     /// <summary>A page whose answers pass every check (ADR-0089): neither an entry nor a refusal.</summary>
     public static SubmissionResult Valid() => new();
+
+    /// <summary>A draft that was saved, or one the protection dropped, which is told nothing different (ADR-0163).</summary>
+    /// <param name="expires">When its link's time is over.</param>
+    public static SubmissionResult Saved(DateTimeOffset expires) => new() { DraftExpires = expires };
 
     /// <summary>A refusal without problems.</summary>
     /// <exception cref="ArgumentException">The refusal is one that has problems.</exception>

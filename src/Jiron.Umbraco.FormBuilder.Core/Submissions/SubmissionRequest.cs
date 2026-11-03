@@ -76,6 +76,12 @@ internal sealed record SubmissionRequest
     /// <summary>What the gate found in the request's challenge; null without one.</summary>
     public ChallengeTicket? Ticket { get; init; }
 
+    /// <summary>The token of the draft this submission finishes, as posted (ADR-0163); null for none.</summary>
+    public string? ResumeToken { get; init; }
+
+    /// <summary>The address a draft's link goes to, as posted (ADR-0163); null on anything but a draft.</summary>
+    public string? DraftEmail { get; init; }
+
     /// <summary>The token of the form's captcha, as posted (ADR-0142).</summary>
     public string? CaptchaToken { get; init; }
 

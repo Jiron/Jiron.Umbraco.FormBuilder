@@ -92,6 +92,16 @@ internal sealed record PublicApiEndpoint(ApiDescription Description)
             return new StringContent($$$"""{"submissionId":"{{{Guid.NewGuid()}}}"}""", Encoding.UTF8, "application/json");
         }
 
+        if (Description.RelativePath.EndsWith("/drafts", StringComparison.Ordinal))
+        {
+            return new StringContent("""{"revision":1,"email":"ada@jfb.test","values":{"name":"Ada"}}""", Encoding.UTF8, "application/json");
+        }
+
+        if (Description.RelativePath.EndsWith("/resume", StringComparison.Ordinal))
+        {
+            return new StringContent("""{"token":"made-up"}""", Encoding.UTF8, "application/json");
+        }
+
         throw new InvalidOperationException($"{Name} takes a body that {nameof(PublicApiEndpoint)}.{nameof(Body)} does not know yet; add one.");
     }
 }

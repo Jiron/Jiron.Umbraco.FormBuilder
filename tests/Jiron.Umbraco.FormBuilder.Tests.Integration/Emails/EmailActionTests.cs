@@ -404,6 +404,37 @@ public sealed class EmailActionTests : EmailTestBase
         Assert.That(Written().Single().Attachments.OfType<MimePart>().Select(part => part.FileName), Is.EqualTo(new[] { "chosen.pdf" }));
     }
 
+    [Test]
+    public async Task AFileQuarantinedBeforeItsMailLeaves_StaysOut()
+    {
+        var form = await PublishAsync(name: Guid.NewGuid().ToString("N"), change: definition => definition with { Actions = [Email(Texts(more: $$""","attachments":["{{Upload.Key}}"]"""))] }, fields: [NameField, Upload]);
+        var row = (await FormRows.GetAsync(form))!;
+        var field = (await FormRows.ListFieldsAsync(row.Id)).Single(item => item.Values.FieldKey == Upload.Key);
+        var file = await FileAsync(row.Id, Upload.Key, "chosen.pdf");
+        var entry = (await Entries.CreateAsync(new NewEntry
+        {
+            Key = Guid.NewGuid(),
+            FormId = row.Id,
+            FormVersionId = row.PublishedVersionId!.Value,
+            State = EntryState.Submitted,
+            SubmissionId = Guid.NewGuid(),
+            SubmissionHash = new string('a', 64),
+            Culture = "en-US",
+            FileIds = [file.Id],
+            Values = [new NewEntryValue(field.Id, "chosen.pdf", FileId: file.Id)],
+        }))!;
+        var action = (await Forms.GetDraftAsync(form))!.Definition!.Actions.Single();
+        await Runs.AddAsync(entry.Id, entry.FormVersionId, Guid.NewGuid(), [new NewActionRun(action.Key, action.Type, action.Trigger, 0, false)]);
+
+        // Only the queue of runs goes: the mail waits while the scan finds something.
+        await GetRequiredService<IEnumerable<IOutboxQueue>>().OfType<ActionRunQueue>().Single().PassAsync("test", DateTimeOffset.MaxValue, CancellationToken.None);
+        await Entries.ChangeScanStateAsync(file.Id, FileScanStates.Clean, FileScanStates.Quarantined);
+
+        await SendDueAsync();
+
+        Assert.That(Written().Single().Attachments.OfType<MimePart>(), Is.Empty);
+    }
+
     [TestCase(false, TestName = "A sensitive file stays out")]
     [TestCase(true, TestName = "A sensitive file goes where the action names it")]
     public async Task AnAttachedFile_OfASensitiveField_GoesOnlyWhereTheActionNamesIt(bool named)

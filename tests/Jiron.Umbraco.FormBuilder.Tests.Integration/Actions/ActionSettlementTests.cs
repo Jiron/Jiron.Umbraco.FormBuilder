@@ -515,6 +515,10 @@ public sealed class ActionSettlementTests : ActionTestBase
     }
 
     [Test]
+    public void TheRetentionJob_ForgetsUsedChallenges() =>
+        Assert.That(GetRequiredService<IEnumerable<Core.Retention.IFormBuilderRetentionPart>>().OfType<UsedChallengeCleanup>(), Has.Exactly(1).Items);
+
+    [Test]
     public async Task AUsedChallenge_IsForgotten_OnceItsTimeHasPassed()
     {
         var form = await PublishAsync(change: Stored(EntryStorage.Never));

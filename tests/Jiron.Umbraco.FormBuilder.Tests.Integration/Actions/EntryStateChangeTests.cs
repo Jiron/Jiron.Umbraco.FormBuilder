@@ -209,6 +209,23 @@ public sealed class EntryStateChangeTests : ActionTestBase
         });
     }
 
+    [TestCase("rejected", "Rejected")]
+    [TestCase("spam", "Spam")]
+    public async Task ASetStateAction_ReachesEachStateItOffers(string setting, string state)
+    {
+        var move = new FormAction { Key = Guid.NewGuid(), Type = SetStateActionType.Alias, Name = "Move", Settings = SettingsObject.Parse($$"""{"state":"{{setting}}"}""") };
+        var form = await ActionFormAsync(move);
+
+        var entry = await SubmitAsync(form);
+        var run = (await DrainAsync(entry.Id)).Single();
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(run.State, Is.EqualTo(ActionRunState.Succeeded), run.LastError?.Code);
+            Assert.That((await Entries.GetByIdAsync(entry.Id))!.State, Is.EqualTo(Enum.Parse<EntryState>(state)));
+        });
+    }
+
     [Test]
     public async Task ASetStateAction_OnAnEntryAlreadyThere_HasNothingToDo()
     {
@@ -329,14 +346,34 @@ public sealed class EntryStateChangeTests : ActionTestBase
         await Changes.ChangeAsync(form, [entry.Key], EntryState.Approved, User);
         await Changes.ChangeAsync(form, [entry.Key], EntryState.Rejected, User);
         Clock.Advance(EntrySpamFolder.UndoWindow);
+        var due = await Events.DueAsync(10);
         var runs = await DrainAsync(entry.Id);
 
         Assert.Multiple(() =>
         {
+            Assert.That(due, Has.Count.EqualTo(1), "only the later move still has anything left to do");
             Assert.That(Scripted.Started, Is.EqualTo(new[] { "on rejection" }));
             Assert.That(runs.Single(run => run.State == ActionRunState.Skipped).LastError?.Code, Is.EqualTo(DeliveryError.Superseded));
             Assert.That(Heard.Heard.OfType<EntryApprovedNotification>(), Is.Empty);
             Assert.That(Heard.Heard.OfType<EntryRejectedNotification>().Count(), Is.EqualTo(1));
+        });
+    }
+
+    [Test]
+    public async Task AMoveBack_CallsOffWhatTheEarlierMoveHadWaiting()
+    {
+        var form = await WaitingFormAsync(Action("on approval", ActionTrigger.Approved));
+        var entry = await SubmitAsync(form);
+
+        await Changes.ChangeAsync(form, [entry.Key], EntryState.Approved, User);
+        await Changes.ChangeAsync(form, [entry.Key], EntryState.Submitted, User);
+        Clock.Advance(EntrySpamFolder.UndoWindow);
+        var runs = await DrainAsync(entry.Id);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(Scripted.Started, Is.Empty);
+            Assert.That(runs.Single().LastError?.Code, Is.EqualTo(DeliveryError.Superseded));
         });
     }
 
@@ -443,7 +480,8 @@ public sealed class EntryStateChangeTests : ActionTestBase
     [Test]
     public async Task ATripToSpamAndBack_RunsNothingTwice_AndCountsOnce()
     {
-        var form = await WaitingFormAsync(Action("first"));
+        // The approved action makes the entry record what the rules chose, which coming back reads.
+        var form = await WaitingFormAsync(Action("first"), Action("on approval", ActionTrigger.Approved));
         var entry = await SubmitAsync(form);
         await DrainAsync(entry.Id);
 

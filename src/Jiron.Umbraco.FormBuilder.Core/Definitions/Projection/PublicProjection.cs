@@ -31,7 +31,7 @@ internal static class PublicProjection
                 BackLabel = settings.Submission.BackLabel,
                 SummaryPage = settings.Submission.SummaryPage,
                 Progress = settings.Submission.Progress,
-                Resume = settings.Submission.Resume is not null,
+                Resume = settings.Submission is { Resume: not null, Store: not EntryStorage.Never },
                 ClosedMessage = settings.Availability.ClosedMessage,
                 MembersOnly = settings.Availability.Access != MemberAccess.Anyone,
                 Protection = protection.Level,

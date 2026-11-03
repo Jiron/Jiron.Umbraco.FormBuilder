@@ -74,6 +74,12 @@ internal sealed partial class ActionSettlement(
         return await keyValues.GetAsync(UsedChallengePrefix + challengeId, cancellationToken) is not null;
     }
 
+    /// <summary>Records that a challenge is spent though no entry holds it, for a request that was answered as if one did.</summary>
+    /// <param name="challengeId">The challenge's id as an entry stores it.</param>
+    /// <param name="cancellationToken">Cancels the write.</param>
+    public Task SpendChallengeAsync(string challengeId, CancellationToken cancellationToken) =>
+        keyValues.SetAsync(UsedChallengePrefix + challengeId, "1", cancellationToken);
+
     /// <summary>Forgets the used challenges no longer in their time; how many.</summary>
     /// <param name="cancellationToken">Cancels the delete.</param>
     public Task<int> ForgetUsedChallengesAsync(CancellationToken cancellationToken) =>

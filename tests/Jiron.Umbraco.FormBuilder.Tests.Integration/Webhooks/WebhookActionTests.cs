@@ -190,6 +190,19 @@ public sealed class WebhookActionTests : ActionTestBase
         });
     }
 
+    [TestCase("form", TestName = "A form body without metadata")]
+    [TestCase("xml", TestName = "An XML body without metadata")]
+    public async Task WithoutMetadata_OtherFormatsHoldOnlyTheAnswersToo(string format)
+    {
+        var (call, _) = await SentAsync(Settings($$""","metadata":false,"format":"{{format}}" """));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(call.Body, Does.Contain("Ada"));
+            Assert.That(call.Body, Does.Not.Contain("delivery").And.Not.Contain("submitted"));
+        });
+    }
+
     [Test]
     public async Task WithoutAnswers_ItSaysOnlyWhatHappened()
     {

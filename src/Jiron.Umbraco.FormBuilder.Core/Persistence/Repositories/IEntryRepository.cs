@@ -442,6 +442,11 @@ internal interface IEntryRepository
     /// <summary>The form's entry with this submission id, or null: what answers a retry (section 4.4).</summary>
     Task<StoredEntry?> GetBySubmissionAsync(int formId, Guid submissionId, CancellationToken cancellationToken = default);
 
+    /// <summary>The draft with this hash of its resume token, or null.</summary>
+    /// <param name="tokenHash">The SHA-256 of the token in lowercase hex.</param>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    Task<StoredEntry?> GetByResumeTokenAsync(string tokenHash, CancellationToken cancellationToken = default);
+
     /// <summary>The form's entry a challenge made, or null (ADR-0012).</summary>
     /// <param name="formId">The form.</param>
     /// <param name="challengeId">The challenge's id as an entry stores it.</param>

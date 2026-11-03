@@ -163,6 +163,16 @@ internal sealed partial class EntryRepository(FormBuilderDatabase database) : IE
             cancellationToken);
 
     /// <inheritdoc />
+    public Task<StoredEntry?> GetByResumeTokenAsync(string tokenHash, CancellationToken cancellationToken = default) =>
+        database.ReadAsync(
+            db =>
+            {
+                var n = new SqlNames(db);
+                return FindAsync(db, n, $"{n.C("resumeTokenHash")} = @0", tokenHash);
+            },
+            cancellationToken);
+
+    /// <inheritdoc />
     public Task<StoredEntry?> GetBySubmissionAsync(int formId, Guid submissionId, CancellationToken cancellationToken = default) =>
         database.ReadAsync(
             db =>

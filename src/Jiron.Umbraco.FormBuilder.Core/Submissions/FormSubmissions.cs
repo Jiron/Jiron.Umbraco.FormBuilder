@@ -39,6 +39,7 @@ internal sealed class FormSubmissions(
     UniqueAnswers unique,
     FieldTypeRegistry types,
     SubmissionProtection protection,
+    EntryDrafts drafts,
     TimeProvider time)
 {
     /// <summary>The most values a query name may hold.</summary>
@@ -49,6 +50,9 @@ internal sealed class FormSubmissions(
 
     /// <summary>Where a page key that names no page of the form is, as a request names it.</summary>
     public const string PageKeyPath = "pageKey";
+
+    /// <summary>Where a draft's address is, as a request names it.</summary>
+    public const string DraftEmailPath = "email";
 
     /// <summary>Runs a submission through the pipeline.</summary>
     /// <param name="request">The submission, as its transport read it.</param>
@@ -95,7 +99,8 @@ internal sealed class FormSubmissions(
 
         // One transaction (section 4.4, step 8).
         var (scope, page, read, wordings) = reading.Read;
-        var submission = new NewSubmission(served.Row.Id, version.Info.Id, served.Form, read, wordings, request.SubmissionId ?? Guid.NewGuid(), digest, scope.Culture, page, scope.Context, request.Redirect, request.Ticket is { } used ? FormChallenges.StoredId(used) : null, reading.Verdict);
+        var draft = await drafts.FindAsync(request.ResumeToken, served.Row.Id, cancellationToken);
+        var submission = new NewSubmission(served.Row.Id, version.Info.Id, served.Form, read, wordings, request.SubmissionId ?? Guid.NewGuid(), digest, scope.Culture, page, scope.Context, request.Redirect, request.Ticket is { } used ? FormChallenges.StoredId(used) : null, reading.Verdict, draft);
         try
         {
             return await recorder.CreateAsync(submission, scope, cancellationToken) is { } created
@@ -131,6 +136,81 @@ internal sealed class FormSubmissions(
             var paths = new FieldPaths(served.Form.Definition);
             return SubmissionResult.Invalid(read.Answers.Where(answer => answer.Files.Length > 0)
                 .Select(answer => new SubmissionProblem(NameOf(FieldMessageKinds.Invalid), paths.Of(answer.Field, answer.Row))));
+        }
+    }
+
+    /// <summary>
+    /// Saves the answers so far as a draft, and mails its link (ADR-0163). It runs what a submission runs up to the answers, the
+    /// protection among them, and keeps what reads well: an answer with an error is simply not kept, and places and unique
+    /// answers are not looked at, as a draft holds none. A request the protection calls spam is answered the same and stores nothing,
+    /// so nobody can use it to make the site send mail.
+    /// </summary>
+    /// <param name="request">The answers so far, as the transport read them, with the address.</param>
+    /// <param name="pageKey">The form's page the visitor is on, or null for the first.</param>
+    /// <param name="cancellationToken">Cancelled when the request is, or when its time limit runs out.</param>
+    public async Task<SubmissionResult> SaveDraftAsync(SubmissionRequest request, Guid? pageKey, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        if (await ServedAsync(request.Form, cancellationToken) is not { } served
+            || await forms.GetVersionAsync(served.Row.Id, served.Form.Version, cancellationToken) is not { } version)
+        {
+            return SubmissionResult.Refused(SubmissionRefusal.FormNotFound);
+        }
+
+        // A form that stores no entries keeps nothing, and a draft would.
+        if (served.Form.Definition.Settings.Submission is not { Resume: { } resume, Store: not EntryStorage.Never })
+        {
+            return SubmissionResult.Refused(SubmissionRefusal.ResumeUnavailable);
+        }
+
+        if (Gate(request, served.Form) is { } refused)
+        {
+            return SubmissionResult.Refused(refused);
+        }
+
+        request = request with { Ticket = TicketOf(request) };
+        if (request.Ticket is { } ticket
+            && (await entries.GetByChallengeAsync(served.Row.Id, FormChallenges.StoredId(ticket), cancellationToken) is not null || await drafts.ChallengeSpentAsync(FormChallenges.StoredId(ticket), cancellationToken)))
+        {
+            return SubmissionResult.Refused(SubmissionRefusal.ChallengeRequired);
+        }
+
+        if (!Email.EmailAddresses.IsOne(request.DraftEmail))
+        {
+            return SubmissionResult.Invalid([new SubmissionProblem(NameOf(FieldMessageKinds.Invalid), DraftEmailPath)]);
+        }
+
+        var reading = await ReadAsync(request, served, pageKey: null, cancellationToken, draft: true);
+        if (reading.IsRefused)
+        {
+            return reading.Refusal;
+        }
+
+        var (scope, page, read, _) = reading.Read;
+        if (!await drafts.HasWayBackAsync(page, scope.Culture, cancellationToken))
+        {
+            return SubmissionResult.Refused(SubmissionRefusal.ResumeUnavailable);
+        }
+
+        var expires = time.GetUtcNow() + TimeSpan.FromDays(resume.Days);
+        var challenge = request.Ticket is { } used ? FormChallenges.StoredId(used) : null;
+        if (reading.Verdict is { IsSpam: true })
+        {
+            // Answered as a draft is, its challenge spent as a draft's is, so nothing tells a bot what tripped.
+            await drafts.DropAsync(challenge, cancellationToken);
+            return SubmissionResult.Saved(expires);
+        }
+
+        var current = pageKey is { } key && served.Form.Definition.Pages.Any(each => each.Key == key) ? pageKey : null;
+        var replaces = await drafts.FindAsync(request.ResumeToken, served.Row.Id, cancellationToken);
+        try
+        {
+            await drafts.SaveAsync(new NewDraft(served.Row.Id, version.Info.Id, served.Form, read, scope.Culture, page, request.DraftEmail!, current, challenge, replaces), cancellationToken);
+            return SubmissionResult.Saved(expires);
+        }
+        catch (FormBuilderConflictException conflict) when (conflict.Conflict == FormBuilderConflict.ChallengeUsed)
+        {
+            return SubmissionResult.Refused(SubmissionRefusal.ChallengeRequired);
         }
     }
 
@@ -304,7 +384,8 @@ internal sealed class FormSubmissions(
     // Compatibility, availability and the answers read and checked (section 4.4, steps 4, 5 and 7), the places left on
     // the options they chose among them (ADR-0090) and, for a submission, the answers that must be unique (ADR-0091). For
     // a page, only the errors of its fields count, and a page without an answer is no error.
-    private async Task<Reading> ReadAsync(SubmissionRequest request, Served served, Guid? pageKey, CancellationToken cancellationToken)
+    // A draft takes the submission's way past the protection, and its answers need not be whole.
+    private async Task<Reading> ReadAsync(SubmissionRequest request, Served served, Guid? pageKey, CancellationToken cancellationToken, bool draft = false)
     {
         var form = served.Form;
         var definition = form.Definition;
@@ -392,7 +473,7 @@ internal sealed class FormSubmissions(
         var paths = new FieldPaths(definition);
 
         // A token is spent when it is verified, so only answers that can be stored ask the provider (ADR-0142).
-        var captcha = pageKey is null && read.Errors.IsEmpty ? await protection.CheckCaptchaAsync(request, definition, protects, cancellationToken) : FormBuilderCaptchaOutcome.Passed;
+        var captcha = pageKey is null && (draft || read.Errors.IsEmpty) ? await protection.CheckCaptchaAsync(request, definition, protects, cancellationToken) : FormBuilderCaptchaOutcome.Passed;
         if (captcha == FormBuilderCaptchaOutcome.Failed)
         {
             return Reading.Refused(SubmissionResult.Refused(SubmissionRefusal.CaptchaFailed));
@@ -401,6 +482,11 @@ internal sealed class FormSubmissions(
         // The protection, for a submission (section 4.4, step 6), on the answers as they were read: Spam is told nothing of
         // places or unique answers, which it neither takes nor holds (ADR-0090, ADR-0091).
         var verdict = pageKey is null ? await protection.ScoreAsync(request, definition, read, scope.Culture, page, protects, captcha, cancellationToken) : SpamVerdict.None;
+        if (draft)
+        {
+            return new Reading(null, new ReadSubmission(scope, page, read, wordings), verdict);
+        }
+
         var full = verdict.IsSpam ? [] : await places.CheckAsync(served.Row.Id, read.Places, cancellationToken);
         // A unique answer is checked once nothing else refuses the post: an answer taken by another entry is then told to
         // a post that would be stored, never to one that stores nothing, which could ask it of any address (ADR-0091).
