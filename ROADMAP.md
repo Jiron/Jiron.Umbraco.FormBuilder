@@ -2628,27 +2628,32 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
 
     The canvas reconciles its children instead of replacing them (§3.3). Lost focus was a finding in three of Tandem's phase reviews.
   - Done when: Playwright builds a three-page form **with the keyboard only** and asserts the focused element after every operation, and a 300-field form stays within the §4.12 budget.
-- [ ] **9.4 The inspector**
-  - **A generic settings renderer** from type schemas, with these editors:
-    - text, number, switch, select;
-    - rich text (Tiptap), merge-tag-aware text with a tag picker;
-    - content and media pickers;
-    - an option editor (drag to reorder, paste many lines at once, images and descriptions for card layouts, a place limit per option), which also edits a grid's rows and columns;
-    - a pattern editor with a live tester.
+- [ ] **9.4a The inspector: its frame, sections and plain settings** (split from 9.4, see WORKLOG)
+  - **A generic settings renderer** from type schemas, with the editors for text, number (whole and decimal), switch, select (a choice), lists, nested settings, times, date bounds and a formula as text; the richer editors come in 9.4b and 9.4c.
   - **Sections:** Essentials, Validation, Rules, Appearance, Advanced (§4.13).
   - **Beside the canvas** (added in 9.3b, ADR-0168): between 620 and 1024 px the palette folds to its rail while an element is selected, so the canvas keeps its width beside the inspector, and opens again when the selection clears (IA 5.1).
   - **Per-culture texts** with a culture switcher and "missing translation" marks.
-  - **Fields:** alias editing with its lock rules, and change field type (compatible types only, with a preview of what is lost).
-  - **The element's "…"** (added in 9.3c, ADR-0169): on the selected element's bar, after Move to…, Duplicate and Delete, a "…" with Change type… (the change of type above), Start a new page after this, and Copy alias for a field; at 620 px the bar sits in the inspector's header (IA 5.1).
-  - **Changing types** (added in 5.1e, ADR-0059): the field types endpoint (5.1c) also serves each type's changes from 5.1e's map, with the permission matrix and the regenerated client, and the preview applies a change to the selected field: its values of lost and narrowed settings, the properties it uses that go, the conditions naming it whose operator goes, and the settings and options it needs.
+  - **Fields:** alias editing with its lock rules.
+  - **The element's "…"** (added in 9.3c, ADR-0169): on the selected element's bar, after Move to…, Duplicate and Delete, a "…" with Start a new page after this and Copy alias for a field (Change type… comes with 9.4d); at 620 px the bar sits in the inspector's header (IA 5.1).
+  - **Locks:** host-locked settings are shown as locked.
+  - **Designer locks** (added in 5.1f, ADR-0060): a setting the field types endpoint marks with a lock shows read-only with its locked value and the configuration key behind it, a hidden one does not show at all; the change-type preview's side of the lock comes with 9.4d.
+  - Done when: Playwright sets every setting of the text, number and date types with the plain editors through the inspector, and axe is clean on the inspector with each section open. With a designer lock of the text type's maximum length and a hidden lock of its prefix, Playwright finds the maximum length read-only with its value and key and no prefix in a text field's inspector (ADR-0060). At a 1024 px window, selecting a field folds the palette to its rail and clearing the selection opens it again. Playwright starts a new page after a selected field from its "…", with the keyboard only. On a site with two languages, Playwright edits a field's German label in the inspector and finds the "missing translation" mark on a field without one.
+- [ ] **9.4b The inspector: options** (split from 9.4, see WORKLOG)
+  - **The option editor** of the generic settings renderer: drag to reorder, paste many lines at once, images and descriptions for card layouts, a place limit per option; it also edits a grid's rows and columns.
   - **Option sources** (added in 5.5j by the Phase 5 wiring sweep; ADR-0073, ADR-0075, ADR-0076, ADR-0077): the option lists' configuration has a service and a publish check but no endpoint and no texts yet.
     - **The endpoint** serves the option kinds a field's source may use, each with its configuration's settings schema as the field types endpoint serves a type's settings (kinds, rules, `#jfbOption*` labels and descriptions), and the code sources' names with their labels in the registry's order, for any user of the Forms section, with the permission matrix and the regenerated client.
     - **The source picker** in the option editor: the field's own options, a library list (with its kind and how many options it offers), or a kind configured on the field through the generic renderer; for a cascading field, the parent among the earlier choice fields.
     - **The texts:** the backoffice dictionaries get English and German texts for every `#jfbOption*` key the kinds and the standard sources name, and the dictionaries' check holds them to the endpoint's snapshot, as it holds the field types' keys to theirs.
+  - Done when: the option sources endpoint's integration tests cover its answer (held to a snapshot in `docs/api/`) and the permission matrix; the dictionaries' check fails for a `#jfbOption*` key without an English or a German text; Playwright picks a library list, a code source and a cascading parent for a dropdown, and the canvas shows the options they resolve. Playwright adds options to a radio field by pasting lines, reorders them by drag and by keyboard, gives one a place limit, and edits a grid's rows and columns.
+- [ ] **9.4c The inspector: rich text, merge tags, pickers and patterns** (split from 9.4, see WORKLOG)
+  - **The richer editors** of the generic settings renderer: rich text (Tiptap), merge-tag-aware text with a tag picker, content and media pickers, and a pattern editor with a live tester.
   - **The tag picker's paths** (added in 5.5j by the Phase 5 wiring sweep; ADR-0065, ADR-0066): `IFormBuilderMergeTagService.Paths` has no caller yet. An endpoint serves the paths a form's merge tags may use in a place (the form's fields', the built-in sources' and the site's own, each with its label), for a user who may edit the form, with the permission matrix and the regenerated client. The tag picker of merge-tag-aware text offers the paths of its setting's place and inserts the tag; 10.2's email editor uses the same endpoint for mail.
-  - **Locks:** host-locked settings are shown as locked.
-  - **Designer locks** (added in 5.1f, ADR-0060): a setting the field types endpoint marks with a lock shows read-only with its locked value and the configuration key behind it, a hidden one does not show at all, and the change-type preview treats a locked setting of the target type as set by the lock: neither carried over nor needed.
-  - Done when: Playwright configures every built-in type through the UI, and axe is clean on the inspector. The option sources endpoint's integration tests cover its answer (held to a snapshot in `docs/api/`) and the permission matrix; the dictionaries' check fails for a `#jfbOption*` key without an English or a German text; Playwright picks a library list, a code source and a cascading parent for a dropdown, and the canvas shows the options they resolve. The merge-tag paths endpoint's integration tests cover its answer for a form with fields and a site's source in two places (held to a snapshot in `docs/api/`) and the permission matrix, and Playwright inserts a field's tag through the picker. Playwright changes a text field with a placeholder and a condition using `contains` into a dropdown, and the preview names the placeholder, the condition and the options it needs before the change; the endpoint's integration tests cover the served changes (ADR-0059). With a designer lock of the text type's maximum length and a hidden lock of its prefix, Playwright finds the maximum length read-only with its value and key and no prefix in a text field's inspector (ADR-0060). At a 1024 px window, selecting a field folds the palette to its rail and clearing the selection opens it again. Playwright starts a new page after a selected field from its "…", with the keyboard only.
+  - Done when: the merge-tag paths endpoint's integration tests cover its answer for a form with fields and a site's source in two places (held to a snapshot in `docs/api/`) and the permission matrix, and Playwright inserts a field's tag through the picker. Playwright writes a consent's rich text, picks an image's media, and tries a pattern against a sample in the live tester before it is kept.
+- [ ] **9.4d The inspector: changing a field's type, and every type** (split from 9.4, see WORKLOG)
+  - **Fields:** change field type (compatible types only, with a preview of what is lost), from the inspector and from the element's "…" (Change type…).
+  - **Changing types** (added in 5.1e, ADR-0059): the field types endpoint (5.1c) also serves each type's changes from 5.1e's map, with the permission matrix and the regenerated client, and the preview applies a change to the selected field: its values of lost and narrowed settings, the properties it uses that go, the conditions naming it whose operator goes, and the settings and options it needs.
+  - **Designer locks** (added in 5.1f, ADR-0060): the change-type preview treats a locked setting of the target type as set by the lock: neither carried over nor needed.
+  - Done when: Playwright configures every built-in type through the UI, and axe is clean on the inspector. Playwright changes a text field with a placeholder and a condition using `contains` into a dropdown, and the preview names the placeholder, the condition and the options it needs before the change; the endpoint's integration tests cover the served changes (ADR-0059). With a designer lock on the dropdown type, the preview neither carries the locked setting over nor asks for it.
 - [ ] **9.5a The rules builder**
   - **The builder:** rule rows in plain language ("Show this field when **Country** **is** **Germany**"), any/all groups, operators per field type, and value pickers (options, dates including relative ones, numbers).
     - "Required when", a value taken from another field ("is after **Arrival**"), and the context conditions (language, member, query value, today), all of §4.3.3.
@@ -2689,7 +2694,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
 - [ ] **10.2 The actions view and its editors**
   - **The list:** action cards per trigger (Submitted, Approved, Rejected, Verified), with order (drag and keyboard), an on/off switch, a rule chip and the last-run status.
   - **Adding:** an "add action" modal with presets.
-  - **The email editor:** a recipient builder, the merge-tag picker (its paths from 9.4's endpoint, for mail), and a live preview with a sample entry.
+  - **The email editor:** a recipient builder, the merge-tag picker (its paths from 9.4c's endpoint, for mail), and a live preview with a sample entry.
   - **Test run.**
   - **The other action editors:**
     - **Webhook:** a mapping table, a signature help text and a test.
@@ -2796,7 +2801,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
 
 - [ ] **12.1 Option lists**
   - A list, an editor per kind with a live preview of the options, CSV/TXT upload, the cache setting, and "used by".
-  - **From 9.4** (added in 5.5j): the editor per kind is the generic settings renderer over the option kinds' schemas that 9.4's endpoint serves, with the same texts; a code list picks its source from the endpoint's names, and a manual list's items use 9.4's option editor.
+  - **From 9.4b** (added in 5.5j): the editor per kind is the generic settings renderer over the option kinds' schemas that 9.4b's endpoint serves, with the same texts; a code list picks its source from the endpoint's names, and a manual list's items use 9.4's option editor.
   - Done when: Playwright passes, creating a list of every kind through the UI (a URL list against a local stub host the test site allows), and axe is clean on the list editor.
 - [ ] **12.2 Themes and email layouts**
   - **The editor:** a theme list, and a visual token editor:
