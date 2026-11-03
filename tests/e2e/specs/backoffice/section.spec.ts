@@ -3,8 +3,9 @@ import type { Page } from '@playwright/test';
 import { expect, test } from '../../fixtures.ts';
 import type { Role } from '../../support/users.ts';
 
-// The Forms section's shell (ROADMAP 9.1, ADR-0021, ADR-0165): each role sees exactly its menus, a confirm shows a name as text, the
-// checklist's form block step turns green, and the Overview holds up in Umbraco's three themes.
+// The Forms section's shell (ROADMAP 9.1, ADR-0021, ADR-0165): each role sees exactly its menus, the checklist's form block step
+// turns green, and the Overview holds up in Umbraco's three themes. A confirm that shows a name as text is the library's
+// (library.spec.ts), whose Recycle Bin asks before deleting for good.
 
 const OVERVIEW = '/umbraco/section/jfb-forms';
 const API = '/umbraco/jfb/management/api/v1';
@@ -80,34 +81,6 @@ test('a menu item opens its place, at the address the sidebar names', async ({ p
   await expect(page).toHaveURL(/section\/jfb-forms\/workspace\/jfb-privacy-retention/);
 });
 
-test('a confirm that names a form shows the name as text, and nothing in it runs', async ({ page, loginAs, apiAs }) => {
-  const name = '<img src=x onerror=alert(1)>';
-  const api = await apiAs('designer');
-  const created = await api.post(`${API}/form`, { data: { name } });
-  expect(created.status(), await created.text()).toBe(201);
-  const alerts: string[] = [];
-  page.on('dialog', (dialog) => {
-    alerts.push(dialog.message());
-    void dialog.dismiss();
-  });
-
-  await loginAs('designer');
-  await page.goto(OVERVIEW);
-  const row = page.locator(`umb-section-sidebar uui-menu-item[label="${name}"]`);
-  await row.hover();
-  // Umbraco draws an item's first action beside its "...".
-  await row.getByRole('button', { name: 'Trash' }).first().click();
-
-  const dialog = page.locator('umb-confirm-modal');
-  await expect(dialog).toContainText(`Move ${name} to the Recycle Bin?`);
-  await expect(dialog).toContainText(`${name} stops showing on the website until you restore it.`);
-  await expect(dialog.locator('img')).toHaveCount(0);
-
-  await dialog.getByRole('button', { name: 'Move to Recycle Bin' }).click();
-  await expect(row).toHaveCount(0);
-  expect(alerts).toEqual([]);
-});
-
 test("the checklist's button for the form block calls setup/form-block, and its item turns green", async ({
   page,
   loginAs,
@@ -148,7 +121,10 @@ test('the header search finds a form and links to it', async ({ page, loginAs, a
   const api = await apiAs('designer');
   const name = `Searched ${Date.now()}`;
   const created = await api.post(`${API}/form`, { data: { name } });
-  const key = created.headers()['location']?.split('/').pop() ?? '';
+  expect(created.status(), await created.text()).toBe(201);
+  // The answer holds the new form; there is no Location header to read its key from.
+  const { key } = (await created.json()) as { key: string };
+  expect(key).toMatch(/^[0-9a-f-]{36}$/);
 
   await loginAs('designer');
   await page.goto(OVERVIEW);
@@ -156,7 +132,7 @@ test('the header search finds a form and links to it', async ({ page, loginAs, a
   await page.locator('umb-search-modal').getByRole('button', { name: 'Forms' }).click();
   await page.locator('umb-search-modal input').fill(name);
   const result = page.locator('umb-search-modal a', { hasText: name });
-  await expect(result).toHaveAttribute('href', new RegExp(`section/jfb-forms/workspace/jfb-form/edit/${key}`));
+  await expect(result).toHaveAttribute('href', new RegExp(`section/jfb-forms/workspace/jfb-form/edit/${key}$`));
 });
 
 /** A colour as the browser computes it, as its red, green and blue from 0 to 1. */
