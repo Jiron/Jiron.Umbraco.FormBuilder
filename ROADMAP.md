@@ -2593,7 +2593,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
     - a test reads the section's manifest and finds the pathname `BackofficeLinks.SectionPathname`, and unit tests show the base-URL health check warning for a site with no setting, no `https` domain and no application URL, naming the site, and passing for a site with any of them (added in 5.3e);
     - screenshots are reviewed in `docs/ux/review-9.1.md` against §4.13;
     - in each of Umbraco's light, dark and high-contrast themes, axe is clean on the dashboard and a Playwright script measures `--jfb-bo-color-text-muted` (4.5:1) and `--jfb-bo-color-control-border` (3:1) against UUI's surface and background, so the backoffice's own colours follow every theme (`docs/ux/tokens.md`).
-- [ ] **9.2 The form library**
+- [x] **9.2 The form library** (2026-11-03, b6d8bf6)
   - **The tree:** folders, and create from blank or from the template gallery (a modal with previews; it shows the templates that exist, which are "Contact" from 4.5 until 12.3 adds the rest).
   - **Entity actions:**
     - rename, move;
