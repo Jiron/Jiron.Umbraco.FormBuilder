@@ -93,6 +93,10 @@ When the site has started, `Seeding/DemoSeeder.cs` creates whatever is missing a
   two references as the rows of a repeatable group, a letter, a switch and a consent, which works without JavaScript
   too ([ADR-0100](../docs/decisions/0100-the-post-without-javascript.md)).
 
+A host whose designer locks fix or hide a field type's setting (`JironFormBuilder:Designer:SettingLocks`,
+[ADR-0060](../docs/decisions/0060-designer-locks-of-field-settings.md)), as the browser tests' locks host does, gets the demo forms
+without that setting: the site uses the lock's value, and a form that leaves a locked setting out is never refused.
+
 ## Looking at the themes
 
 `?theme=<alias>` on any page shows its forms in that theme, for example

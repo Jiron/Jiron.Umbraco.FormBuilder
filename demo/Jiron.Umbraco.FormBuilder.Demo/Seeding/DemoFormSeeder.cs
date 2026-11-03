@@ -1,6 +1,9 @@
+using System.Text.Json.Nodes;
+using Jiron.Umbraco.FormBuilder.Core.Configuration;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Migrations;
+using Microsoft.Extensions.Options;
 using Umbraco.Cms.Core;
 
 namespace Jiron.Umbraco.FormBuilder.Demo.Seeding;
@@ -11,11 +14,14 @@ namespace Jiron.Umbraco.FormBuilder.Demo.Seeding;
 /// as an editor's would be. A form that exists is never changed, so what an editor does on the demo stays until a
 /// reset. The pages name their forms in <c>DemoContent.json</c>, by alias, in their text property or a form block.
 /// Umbraco runs the package's migrations in the background after an install or an upgrade, so the forms wait for them.
+/// A host whose designer locks fix or hide settings (ADR-0060) gets the forms without those settings: the site uses the
+/// locks' values, and a save that leaves a locked setting out is never refused.
 /// </summary>
 internal sealed class DemoFormSeeder(
     IFormBuilderFormService forms,
     FormDefinitionSerializer serializer,
     IFormBuilderMigrationState migrations,
+    IOptions<FormBuilderOptions> options,
     TimeProvider time)
 {
     private const string ResourcePrefix = "Jiron.Umbraco.FormBuilder.Demo.Forms.";
@@ -50,7 +56,7 @@ internal sealed class DemoFormSeeder(
                 continue;
             }
 
-            var definition = await ReadAsync(alias, cancellationToken);
+            var definition = WithoutLockedSettings(await ReadAsync(alias, cancellationToken), options.Value.Designer.SettingLocks);
             var form = await forms.CreateAsync(new NewFormRequest(name, alias, UserKey: User), cancellationToken);
             var draft = await forms.GetDraftAsync(form.Key, cancellationToken)
                 ?? throw new InvalidOperationException($"Demo seeding: the form {alias} has no draft.");
@@ -70,6 +76,45 @@ internal sealed class DemoFormSeeder(
     public async Task<Guid> KeyOfAsync(string alias, CancellationToken cancellationToken) =>
         (await forms.GetByAliasAsync(alias, cancellationToken))?.Key
         ?? throw new InvalidOperationException($"Demo seeding: a page's form block picks the form {alias}, which is missing.");
+
+    /// <summary>
+    /// A definition without the settings that the host's locks of kind <c>field</c> fix or hide, child fields of a
+    /// repeatable group included; the same instance when the host has no such lock.
+    /// </summary>
+    /// <param name="definition">The demo form's definition.</param>
+    /// <param name="locks">The host's designer locks.</param>
+    internal static FormDefinition WithoutLockedSettings(FormDefinition definition, IEnumerable<DesignerSettingLock> locks)
+    {
+        var locked = locks
+            .Where(each => string.Equals(each.Kind, DesignerSettingLock.FieldKind, StringComparison.OrdinalIgnoreCase) && each.Type is not null && each.Setting is not null)
+            .ToLookup(each => each.Type!, each => each.Setting!, StringComparer.Ordinal);
+        if (locked.Count == 0)
+        {
+            return definition;
+        }
+
+        FormField Strip(FormField field)
+        {
+            var settings = field.Settings;
+            if (settings is not null && locked.Contains(field.Type))
+            {
+                var own = JsonNode.Parse(settings.Value.GetRawText())!.AsObject();
+                foreach (var name in locked[field.Type])
+                {
+                    own.Remove(name);
+                }
+
+                settings = own.Count == 0 ? null : SettingsObject.Parse(own.ToJsonString());
+            }
+
+            return field with { Settings = settings, Fields = [.. field.Fields.Select(Strip)] };
+        }
+
+        return definition with
+        {
+            Pages = [.. definition.Pages.Select(page => page with { Groups = [.. page.Groups.Select(group => group with { Fields = [.. group.Fields.Select(Strip)] })] })],
+        };
+    }
 
     private async Task MigratedAsync(CancellationToken cancellationToken)
     {
