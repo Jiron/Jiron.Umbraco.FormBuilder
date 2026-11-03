@@ -89,11 +89,16 @@ test("the checklist's button for the form block calls setup/form-block, and its 
   // them; afterwards it reads as the server says. The other steps stand for what this test does not look at.
   let pressed = false;
   await page.route(`**${API}/setup/checklist`, async (route) => {
-    const response = await route.fetch();
-    const body = (await response.json()) as { complete: boolean; items: { step: string; done: boolean }[] };
-    body.complete = false;
-    for (const item of body.items) item.done = item.step === 'formBlock' ? pressed && item.done : true;
-    await route.fulfill({ response, json: body });
+    try {
+      const response = await route.fetch();
+      const body = (await response.json()) as { complete: boolean; items: { step: string; done: boolean }[] };
+      body.complete = false;
+      for (const item of body.items) item.done = item.step === 'formBlock' ? pressed && item.done : true;
+      await route.fulfill({ response, json: body });
+    } catch (error) {
+      // A request the page gave up on, as a navigation does, is answered by nobody: its response is gone.
+      if (!/disposed|closed/i.test(String(error))) throw error;
+    }
   });
 
   await loginAs('admin');
