@@ -198,6 +198,16 @@ cover the label); a refusal note may grow upwards on a narrow field, below the t
 | A page let go anywhere went to the end of the steps | it lands only near the steps |
 | A journey's check could never fail (`arrayContaining`) | it waits for the moved field to be first |
 
+## The tamper round (9.3c)
+
+Each check was tampered with in a throwaway clone, and a named test had to fail. 40 changes to the moves' code against
+its Vitest files: 34 failed a test at once; two no longer applied after the reader's fixes and were written again; one was
+misplaced (behind the early return for typing) and was moved; one, Enter in Move to… without a place, changed nothing,
+because a second guard repeated the first, so the dialog now has one; and two slipped through: no test held a group's place in
+Move to… at the end of its page, nor kept a place inside the moved element out of the list. Both are held now, and all 40
+fail a test. Three changes built into the client failed the browser journeys: a shown handle the pointer can't reach, Move
+to…'s name without its visible text (axe), and an empty page's sentence that takes no drop.
+
 ## Left for later steps
 
 - **9.4** opens the inspector beside the canvas, and with it the palette's fold to a rail while an element is selected between 620
