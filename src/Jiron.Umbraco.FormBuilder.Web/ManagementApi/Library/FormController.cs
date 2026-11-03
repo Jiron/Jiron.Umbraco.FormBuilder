@@ -121,7 +121,10 @@ internal sealed class FormController(
             ? Ok(await ModelAsync(form, cancellationToken))
             : FormBuilderProblems.NotFound(FormBuilderAccessResourceKind.Form);
 
-    /// <summary>A form opened for editing: its draft's definition, its problems under the current limits and its versions.</summary>
+    /// <summary>
+    /// A form opened for editing: its draft's definition, its problems under the current limits, its versions, and whether
+    /// it has entries.
+    /// </summary>
     /// <param name="key">The form.</param>
     /// <param name="cancellationToken">The request's cancellation.</param>
     [HttpGet("{key:guid}/draft")]
@@ -129,10 +132,16 @@ internal sealed class FormController(
     [FormBuilderPermission(FormBuilderPermissions.Design, On = FormBuilderAccessResourceKind.Form, Key = "key")]
     [ProducesResponseType(typeof(FormDraftResponseModel), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Draft(Guid key, CancellationToken cancellationToken = default) =>
-        await forms.GetDraftAsync(key, cancellationToken) is { } draft
-            ? Ok(FormDraftResponseModel.Of(draft, await ModelAsync(draft.Form, cancellationToken)))
-            : FormBuilderProblems.NotFound(FormBuilderAccessResourceKind.Form);
+    public async Task<IActionResult> Draft(Guid key, CancellationToken cancellationToken = default)
+    {
+        if (await forms.GetDraftAsync(key, cancellationToken) is not { } draft)
+        {
+            return FormBuilderProblems.NotFound(FormBuilderAccessResourceKind.Form);
+        }
+
+        var held = await lists.HoldingsAsync(key, cancellationToken);
+        return Ok(FormDraftResponseModel.Of(draft, await ModelAsync(draft.Form, cancellationToken), held?.Entries > 0));
+    }
 
     /// <summary>Creates a form from blank, at the root or in a folder outside the trash; answers <c>201</c> with it.</summary>
     /// <param name="request">The form.</param>

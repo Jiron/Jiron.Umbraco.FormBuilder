@@ -1,5 +1,12 @@
 {
   "culture": "en-US",
+  "languages": [
+    {
+      "culture": "en-US",
+      "name": "English (United States)",
+      "isDefault": true
+    }
+  ],
   "words": {
     "back": "Back",
     "next": "Next",

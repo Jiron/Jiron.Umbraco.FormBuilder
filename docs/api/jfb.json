@@ -5544,10 +5544,31 @@
         },
         "additionalProperties": false
       },
+      "CanvasLanguageResponseModel": {
+        "required": [
+          "culture",
+          "isDefault",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "culture": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "isDefault": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
       "CanvasResponseModel": {
         "required": [
           "classes",
           "culture",
+          "languages",
           "requiredMarker",
           "stylesheets",
           "words"
@@ -5556,6 +5577,16 @@
         "properties": {
           "culture": {
             "type": "string"
+          },
+          "languages": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/CanvasLanguageResponseModel"
+                }
+              ]
+            }
           },
           "words": {
             "type": "object",
@@ -6649,6 +6680,7 @@
         "required": [
           "draftVersion",
           "form",
+          "hasEntries",
           "hasUnpublishedChanges",
           "problems"
         ],
@@ -6684,6 +6716,9 @@
             "nullable": true
           },
           "hasUnpublishedChanges": {
+            "type": "boolean"
+          },
+          "hasEntries": {
             "type": "boolean"
           }
         },

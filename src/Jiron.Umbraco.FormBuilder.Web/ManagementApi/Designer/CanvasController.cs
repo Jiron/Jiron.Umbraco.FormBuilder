@@ -40,9 +40,11 @@ internal sealed class CanvasController(ILanguageService languages, IFormBuilderS
         var language = (culture is null ? null : await languages.GetAsync(culture))?.IsoCode ?? await languages.GetDefaultIsoCodeAsync();
         var general = (await settings.GetAsync<GeneralSettings>(cancellationToken: cancellationToken)).Value;
         var theme = new DefaultTheme();
+        var all = await languages.GetAllAsync();
         return Ok(new CanvasResponseModel
         {
             Culture = language,
+            Languages = [.. all.OrderByDescending(one => one.IsDefault).Select(one => new CanvasLanguageResponseModel { Culture = one.IsoCode, Name = one.CultureName, IsDefault = one.IsDefault })],
             Words = new Dictionary<string, string>(RenderingWords.Of(language).ByName(), StringComparer.Ordinal) { ["yes"] = FieldDisplayWords.Yes(language), ["no"] = FieldDisplayWords.No(language) },
             Classes = ClassesOf(new ThemeClassesModel(theme.Classes)),
             Stylesheets = assets.Addresses(Request.PathBase, theme).Styles,
@@ -67,6 +69,12 @@ internal sealed record CanvasResponseModel
     public required string Culture { get; init; }
 
     /// <summary>
+    /// The site's languages, the default first, then in Umbraco's order: the designer edits a form's texts in each of
+    /// them (ROADMAP 9.4a).
+    /// </summary>
+    public required IReadOnlyList<CanvasLanguageResponseModel> Languages { get; init; }
+
+    /// <summary>
     /// The words a rendered form brings of its own, and the answers of a yes-or-no question (<c>yes</c>, <c>no</c>), by
     /// their names in camel case; a text with <c>{0}</c> takes a value there.
     /// </summary>
@@ -80,4 +88,17 @@ internal sealed record CanvasResponseModel
 
     /// <summary>How the site marks the fields of a form whose marker is <c>inherit</c>: <c>optional</c>, <c>required</c> or <c>none</c>.</summary>
     public required string RequiredMarker { get; init; }
+}
+
+/// <summary>One of the site's languages.</summary>
+internal sealed record CanvasLanguageResponseModel
+{
+    /// <summary>Its culture, such as <c>de-DE</c>.</summary>
+    public required string Culture { get; init; }
+
+    /// <summary>Its name as Umbraco shows it, such as <c>German (Germany)</c>.</summary>
+    public required string Name { get; init; }
+
+    /// <summary>Whether it is the site's default language, whose texts visitors see where another language has none.</summary>
+    public required bool IsDefault { get; init; }
 }

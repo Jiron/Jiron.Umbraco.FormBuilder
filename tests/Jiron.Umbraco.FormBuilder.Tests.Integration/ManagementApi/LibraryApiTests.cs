@@ -14,7 +14,8 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Integration.ManagementApi;
 /// <summary>
 /// The form library's endpoints (ROADMAP 9.2, ADR-0166): duplicate, copy actions, the template gallery and a form from a
 /// template, the import's check and the import, export, the field search, a folder's list and the trash's, what a delete
-/// takes, the tree's mark for unseen entries, and deleting an empty folder at once.
+/// takes, whether a draft's form has entries (ROADMAP 9.4a), the tree's mark for unseen entries, and deleting an empty
+/// folder at once.
 /// </summary>
 [TestFixture]
 [UmbracoTest(Database = UmbracoTestOptions.Database.NewSchemaPerTest, Boot = true)]
@@ -282,6 +283,22 @@ public sealed class LibraryApiTests : ManagementApiTestBase
             Assert.That(Recent(events, summer), Is.Zero, "no entries yet");
             Assert.That((Recent(designer, inner), Recent(designer, spring)), Is.EqualTo(((long?)null, (long?)null)), "the designer may view no entries");
             Assert.That(hidden.Outcome, Is.EqualTo("404 folder_not_found"));
+        });
+    }
+
+    [Test]
+    public async Task TheDraft_SaysWhetherTheFormHasEntries_AsYesOrNo_ToADesignerWhoMayNotViewThem()
+    {
+        var spring = await FormAsync("Spring", _events);
+        await DesignAsync(spring, [Text("name", "Name")], publish: true);
+        var before = await CallAsync(Designer, HttpMethod.Get, $"form/{spring}/draft");
+        await EntryAsync(spring, EntryState.Spam);
+        var after = await CallAsync(Designer, HttpMethod.Get, $"form/{spring}/draft");
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(before.Body!["hasEntries"]!.GetValue<bool>(), Is.False, before.ToString());
+            Assert.That(after.Body!["hasEntries"]!.GetValue<bool>(), Is.True, "an entry in any state, spam too, holds the aliases it was sent with");
         });
     }
 

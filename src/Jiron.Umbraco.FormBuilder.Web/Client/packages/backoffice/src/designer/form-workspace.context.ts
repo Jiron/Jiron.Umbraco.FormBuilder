@@ -18,7 +18,7 @@ import { FORM_ENTITY_TYPE } from '../section/entity-types';
 import { FORM_DETAIL_REPOSITORY_ALIAS, FORM_WORKSPACE_ALIAS } from './constants';
 import { locate } from './definition';
 import { select, type Edit, type EditorState, type FieldTraits, type ModelContext } from './editor-model';
-import type { FormDetailModel } from './form-detail.data-source';
+import { keptAlias, type FormDetailModel } from './form-detail.data-source';
 import { fieldOfQuery, formState, type FormState } from './form-state';
 import { EditorHistory } from './history';
 
@@ -126,6 +126,15 @@ export class FormWorkspaceContext
     return this.getData()?.form.permissions.includes('design') ?? false;
   }
 
+  /**
+   * The alias a field is saved with when entries may name it (section 4.3.1): the form has entries and the field is in
+   * the saved draft. Changing it away from that alias asks first and keeps it for merge tags; null for a field whose
+   * alias no entry knows yet, which changes freely.
+   */
+  keptAliasOf(key: string): string | null {
+    return keptAlias(this._data.getPersisted(), key);
+  }
+
   // Every load starts the history over, with the field a link named selected when the form has it, else what was
   // selected before when it is still there, as after a publish.
   protected override async _processIncomingData(data: FormDetailModel): Promise<FormDetailModel> {
@@ -171,16 +180,17 @@ export class FormWorkspaceContext
 
   /**
    * Takes an edit of the editor model: a change to the definition goes into the draft and the undo history, a selection
-   * only into the view. Returns the edit, whose refusal the caller says.
+   * only into the view. A change with the same `merge` as the one before joins its step to undo. Returns the edit,
+   * whose refusal the caller says.
    */
-  edit(edit: Edit, said: string): Edit {
+  edit(edit: Edit, said: string, merge?: string): Edit {
     const before = this.#history.state.definition;
     // A change checked without the field types was checked against nothing: it waits for them.
     if (edit.ok && edit.state.definition !== before && !this.#typesRead) {
       void this.#loadTypes();
       return { ok: false, refusal: 'notReady' };
     }
-    const result = this.#history.apply(edit, said);
+    const result = this.#history.apply(edit, said, merge);
     if (result.ok && result.state.definition !== before)
       this._data.updateCurrent({ definition: result.state.definition });
     this.#publish();

@@ -87,8 +87,15 @@ internal sealed record FormDraftResponseModel
     /// <summary>Whether the draft differs from the version visitors get, or the form is unpublished.</summary>
     public required bool HasUnpublishedChanges { get; init; }
 
+    /// <summary>
+    /// Whether the form has entries, in any state: a field's alias changed from then on asks first and keeps the one
+    /// before for the merge tags that use it (section 4.3.1). Only yes or no, so a designer who may not view entries learns no
+    /// count.
+    /// </summary>
+    public required bool HasEntries { get; init; }
+
     /// <summary>The model of a draft.</summary>
-    public static FormDraftResponseModel Of(FormDraft draft, FormResponseModel form)
+    public static FormDraftResponseModel Of(FormDraft draft, FormResponseModel form, bool hasEntries)
     {
         ArgumentNullException.ThrowIfNull(draft);
         return new FormDraftResponseModel
@@ -99,6 +106,7 @@ internal sealed record FormDraftResponseModel
             DraftVersion = draft.DraftVersion,
             PublishedVersion = draft.PublishedVersion,
             HasUnpublishedChanges = draft.HasUnpublishedChanges,
+            HasEntries = hasEntries,
         };
     }
 }

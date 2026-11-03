@@ -3,7 +3,7 @@
 import { describe, expect, it } from 'vitest';
 import type { FieldTypeResponseModel, FormDraftResponseModel, FormResponseModel } from '../api';
 import { FORM_PERMISSION_CONDITION, FORM_WORKSPACE_ALIAS } from './constants';
-import { changesOf, detailOf, detailOfForm } from './form-detail.data-source';
+import { changesOf, detailOf, detailOfForm, keptAlias } from './form-detail.data-source';
 import { holdsAny } from './form-permission.condition';
 import { fieldOfQuery, formState } from './form-state';
 import { traitsOf } from './form-workspace.context';
@@ -33,6 +33,7 @@ const DRAFT: FormDraftResponseModel = {
   draftVersion: 2,
   publishedVersion: null,
   hasUnpublishedChanges: true,
+  hasEntries: false,
 };
 
 describe("the form's state", () => {
@@ -72,7 +73,9 @@ describe('a save', () => {
       problems: [],
       publishedVersion: null,
       hasUnpublishedChanges: true,
+      hasEntries: false,
     });
+    expect(detailOf({ ...DRAFT, hasEntries: true }).hasEntries).toBe(true);
   });
 
   it('holds the form alone for who may not read its draft, with no definition and no pending changes', () => {
@@ -86,6 +89,7 @@ describe('a save', () => {
       problems: [],
       publishedVersion: null,
       hasUnpublishedChanges: false,
+      hasEntries: false,
     });
   });
 
@@ -95,6 +99,35 @@ describe('a save', () => {
     expect(changesOf(DRAFT, { ...detail, name: 'Write to us ' })).toEqual({ name: 'Write to us' });
     const definition = { ...DEFINITION, pages: [{ key: 'p', groups: [{ key: 'g', fields: [] }] }] };
     expect(changesOf(DRAFT, { ...detail, definition })).toEqual({ definition });
+  });
+
+  it('keeps the alias a field is saved with once the form has entries, and none for a field no entry knows', () => {
+    const saved = detailOf({
+      ...DRAFT,
+      hasEntries: true,
+      definition: {
+        pages: [
+          {
+            key: 'p',
+            groups: [
+              {
+                key: 'g',
+                fields: [
+                  { key: 'f', type: 'text', alias: 'name' },
+                  { key: 'h', type: 'heading' },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+    expect(keptAlias(saved, 'f')).toBe('name');
+    expect(keptAlias(saved, 'h')).toBeNull();
+    expect(keptAlias(saved, 'new')).toBeNull();
+    expect(keptAlias(saved, 'g')).toBeNull();
+    expect(keptAlias({ ...saved, hasEntries: false }, 'f')).toBeNull();
+    expect(keptAlias(undefined, 'f')).toBeNull();
   });
 
   it("reads the server's canonical draft with its empty lists, and sends nothing when only that differs", () => {

@@ -15,7 +15,7 @@ import {
 } from '../api';
 import { sayRefusal } from '../library/library-changes';
 import { FORM_ENTITY_TYPE } from '../section/entity-types';
-import { normalise, type DesignDefinition } from './definition';
+import { locate, normalise, type DesignDefinition } from './definition';
 
 /** A form as its workspace holds it: the form, its draft's definition, and what the draft says beside it. */
 export interface FormDetailModel {
@@ -29,6 +29,19 @@ export interface FormDetailModel {
   readonly problems: readonly DefinitionProblemResponseModel[];
   readonly publishedVersion: number | null;
   readonly hasUnpublishedChanges: boolean;
+  /** Whether the form has entries, so a field's alias changed asks first and keeps the one before (section 4.3.1). */
+  readonly hasEntries: boolean;
+}
+
+/**
+ * The alias a field is saved with when entries may name it (section 4.3.1): the form has entries and the field is in
+ * the saved draft, with an alias. Changing it away from that alias asks first and keeps it for merge tags; null for a
+ * field whose alias no entry knows yet.
+ */
+export function keptAlias(saved: FormDetailModel | undefined, key: string): string | null {
+  if (!saved?.hasEntries) return null;
+  const found = locate(saved.definition, key);
+  return found?.kind === 'field' && found.element.alias ? found.element.alias : null;
 }
 
 /** The workspace's model of a draft endpoint's answer. */
@@ -42,6 +55,7 @@ export function detailOf(draft: FormDraftResponseModel): FormDetailModel {
     problems: draft.problems,
     publishedVersion: draft.publishedVersion ?? null,
     hasUnpublishedChanges: draft.hasUnpublishedChanges,
+    hasEntries: draft.hasEntries,
   };
 }
 
@@ -56,6 +70,7 @@ export function detailOfForm(form: FormResponseModel): FormDetailModel {
     problems: [],
     publishedVersion: null,
     hasUnpublishedChanges: false,
+    hasEntries: false,
   };
 }
 

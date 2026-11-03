@@ -53,8 +53,15 @@ export type ActionsCopiedResponseModel = {
     actions: Array<CopiedActionResponseModel>;
 };
 
+export type CanvasLanguageResponseModel = {
+    culture: string;
+    name: string;
+    isDefault: boolean;
+};
+
 export type CanvasResponseModel = {
     culture: string;
+    languages: Array<CanvasLanguageResponseModel>;
     words: {
         [key: string]: string;
     };
@@ -329,6 +336,7 @@ export type FormDraftResponseModel = {
     draftVersion: number;
     publishedVersion?: number | null;
     hasUnpublishedChanges: boolean;
+    hasEntries: boolean;
 };
 
 export type FormImportedResponseModel = {

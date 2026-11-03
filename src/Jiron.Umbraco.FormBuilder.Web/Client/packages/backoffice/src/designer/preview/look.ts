@@ -4,15 +4,26 @@
 import type { ThemeClassesModel } from '@jfb/element/answer';
 import type { UmbControllerHost } from '@umbraco-cms/backoffice/controller-api';
 import { tryExecute } from '@umbraco-cms/backoffice/resources';
-import { canvasGet, fieldTypeList, type CanvasResponseModel, type FieldTypeResponseModel } from '../../api';
+import {
+  canvasGet,
+  fieldTypeList,
+  type CanvasLanguageResponseModel,
+  type CanvasResponseModel,
+  type FieldTypeResponseModel,
+} from '../../api';
 
 /** How a form marks its fields: "(optional)" on those that need no answer, an asterisk on those that do, or nothing. */
 export type Marker = 'optional' | 'required' | 'none';
+
+/** One of the site's languages. */
+export type SiteLanguage = CanvasLanguageResponseModel;
 
 /** What a preview draws with. */
 export interface CanvasLook {
   /** The site's language the words are in. */
   readonly culture: string;
+  /** The site's languages, the default first; the designer edits a form's texts in each. */
+  readonly languages: readonly SiteLanguage[];
   /** The words a rendered form brings of its own, by name. */
   readonly words: Readonly<Record<string, string>>;
   /** The default theme's classes, as the views write them. */
@@ -56,6 +67,7 @@ export function lookOf(answer: CanvasResponseModel): CanvasLook {
   if (missing.length > 0) throw new Error(`The canvas answer has no class for ${missing.join(', ')}.`);
   return {
     culture: answer.culture,
+    languages: answer.languages,
     words: answer.words,
     classes: answer.classes as unknown as ThemeClassesModel,
     stylesheets: answer.stylesheets,

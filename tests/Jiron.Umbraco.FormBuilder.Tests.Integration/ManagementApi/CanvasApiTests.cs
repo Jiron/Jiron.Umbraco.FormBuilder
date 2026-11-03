@@ -17,7 +17,8 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Integration.ManagementApi;
 
 /// <summary>
 /// What the designer's canvas draws a form with (ADR-0168): the rendering words in one of the site's languages, the
-/// default theme's classes and stylesheets, and the site's marker, for any user of the Forms section. The answer in the
+/// site's languages (ADR-0170), the default theme's classes and stylesheets, and the site's marker, for any user of the
+/// Forms section. The answer in the
 /// site's default language, without the stylesheets' fingerprints, matches the committed snapshot
 /// <c>docs/api/canvas.json</c>, which the backoffice's preview tests draw with. After a deliberate change, run the
 /// fixture with <c>JFB_UPDATE_SNAPSHOTS=1</c>: it writes the snapshot and fails, so the diff gets reviewed.
@@ -63,6 +64,8 @@ public sealed class CanvasApiTests : ManagementApiTestBase
 
         Assert.Multiple(() =>
         {
+            Assert.That(german["languages"]!.ToJsonString(), Is.EqualTo("""[{"culture":"en-US","name":"English (United States)","isDefault":true},{"culture":"de-DE","name":"German","isDefault":false}]"""), "the site's languages, the default first");
+            Assert.That(lacking["languages"]!.ToJsonString(), Is.EqualTo(german["languages"]!.ToJsonString()), "the same in every language");
             Assert.That((Text(german["culture"]), Text(german["words"]!["next"]), Text(german["words"]!["optional"])), Is.EqualTo(("de-DE", "Weiter", "(optional)")));
             Assert.That((Text(lacking["culture"]), Text(lacking["words"]!["next"])), Is.EqualTo(("en-US", "Next")), "French is no language of the site");
             Assert.That(Text(nonsense["culture"]), Is.EqualTo("en-US"));
