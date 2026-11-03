@@ -140,7 +140,8 @@ test('a form of three pages is built with the mouse, from the palette and an ins
   await pick('Short text').click();
   await pick('Email').click();
   await expect(fields).toHaveCount(2);
-  await design.getByRole('button', { name: 'Add a field here, after Short text' }).click();
+  // Right above the selected Email, under its bar, the insert point shows its "+" alone at its start.
+  await design.getByRole('button', { name: 'Add a field here, after Short text' }).locator('.bo-pill').click();
   await pick('Number').click();
   await expect(design.getByRole('button', { name: 'Number, number field' })).toHaveAttribute('aria-current', 'true');
 
@@ -263,9 +264,21 @@ test('in the narrowest workspace the palette opens over the canvas, and a delete
   await expect(palette).toHaveCount(0);
   await expect(fields).toHaveCount(4);
 
-  // Delete says so with Undo, which brings the field back.
+  // The new field is selected, so the inspector lies over the canvas with the focus on its heading (9.4a); Escape
+  // gives the canvas back with the focus on the field.
+  const inspector = design.locator('jfb-designer-inspector');
+  await expect(inspector).toHaveAttribute('mode', 'overlay');
+  await expect(inspector.getByRole('heading', { name: 'Phone field' })).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(inspector).toHaveCount(0);
+  await expect(design.getByRole('button', { name: /^Phone, / })).toBeFocused();
+
+  // Delete, from the inspector's bar over the canvas, says so with Undo, which brings the field back.
   await design.getByRole('button', { name: /^Email address, / }).click();
-  await design.getByRole('button', { name: 'Delete Email address' }).click();
+  await inspector
+    .getByRole('group', { name: 'Actions for this element' })
+    .getByRole('button', { name: 'Delete' })
+    .click();
   await expect(fields).toHaveCount(3);
   await page
     .locator('uui-toast-notification')

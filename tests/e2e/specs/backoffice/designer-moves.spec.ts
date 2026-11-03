@@ -85,7 +85,8 @@ test('a form of three pages is built with the keyboard only, the focus where it 
 
   // F2 edits its label in place; Enter keeps it and gives the focus back to the field.
   await page.keyboard.press('F2');
-  const box = design.getByRole('textbox', { name: 'Label' });
+  // The canvas's box, not the inspector's Label beside it.
+  const box = design.locator('jfb-form-canvas').getByRole('textbox', { name: 'Label' });
   await expect(box).toBeFocused();
   await page.keyboard.press('Control+a');
   await page.keyboard.type('Your name');

@@ -32,6 +32,31 @@ export const contactForm = async (api: APIRequestContext, name: string, folderKe
 export const blankForm = async (api: APIRequestContext, name: string) =>
   created(await api.post(`${API}/form`, { data: { name } }), `the form ${name}`);
 
+/** A field as a draft holds it: its type, alias and label, and whatever else it is given. */
+export interface DraftField {
+  readonly type: string;
+  readonly alias?: string;
+  readonly label?: Record<string, string>;
+  readonly [other: string]: unknown;
+}
+
+/** A blank form whose draft's first group holds these fields, each with a key of its own; its key. */
+export async function formWithFields(api: APIRequestContext, name: string, fields: readonly DraftField[]) {
+  const key = await blankForm(api, name);
+  const draft = (await (await api.get(`${API}/form/${key}/draft`)).json()) as {
+    form: { concurrencyVersion: number };
+    definition: { pages: { groups: { fields: unknown[] }[] }[] };
+  };
+  const group = draft.definition.pages[0]?.groups[0];
+  expect(group, 'the blank form has a group').toBeTruthy();
+  (group as { fields: unknown[] }).fields = fields.map((field) => ({ key: crypto.randomUUID(), ...field }));
+  const saved = await api.put(`${API}/form/${key}/draft`, {
+    data: { concurrencyVersion: draft.form.concurrencyVersion, definition: draft.definition },
+  });
+  expect(saved.ok(), await saved.text()).toBe(true);
+  return key;
+}
+
 /** A form as the API gives it. */
 export const formOf = async (api: APIRequestContext, key: string) =>
   (await (await api.get(`${API}/form/${key}`)).json()) as {
