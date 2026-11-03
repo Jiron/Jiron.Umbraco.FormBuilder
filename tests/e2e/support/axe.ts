@@ -46,3 +46,24 @@ async function twinOf(page: Page, browser: Browser): Promise<Page> {
   await expect(twin.locator('main .jfb-form[data-jfb-form]'), 'the twin holds the page as it is').toHaveCount(1);
   return twin;
 }
+
+/**
+ * Axe's WCAG 2.2 A and AA rules on a backoffice page, counting what lies inside one of Jiron Form Builder's elements:
+ * Umbraco's own are its to answer for, as on the Overview (section.spec.ts).
+ */
+export async function axeInside(page: Page, element: string): Promise<void> {
+  await expect(page.locator(`${element} [aria-busy="true"]`)).toHaveCount(0);
+  // Axe measures what stands: no hover under a pointer left where a button appeared, and no frame of a fade.
+  await page.mouse.move(0, 0);
+  await page.waitForFunction(() => document.getAnimations().every((animation) => animation.playState !== 'running'));
+  const result = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
+    .options({ ancestry: true })
+    .analyze();
+  const ours = result.violations.flatMap((violation) =>
+    violation.nodes
+      .filter((node) => JSON.stringify(node.ancestry).includes(element))
+      .map((node) => `${violation.id}: ${JSON.stringify(node.target)}`),
+  );
+  expect(ours, `axe inside <${element}>`).toEqual([]);
+}

@@ -1,7 +1,17 @@
 import { readFileSync, writeFileSync } from 'node:fs';
-import AxeBuilder from '@axe-core/playwright';
-import type { APIRequestContext, APIResponse, Locator, Page } from '@playwright/test';
+import type { APIRequestContext, Locator, Page } from '@playwright/test';
 import { expect, test } from '../../fixtures.ts';
+import { axeInside } from '../../support/axe.ts';
+import {
+  API,
+  blankForm,
+  contactForm,
+  created,
+  formOf,
+  KEY,
+  publishWithLabel,
+  unique,
+} from '../../support/forms-api.ts';
 
 // The form library (ROADMAP 9.2, ADR-0166): new forms blank, from the gallery (also from the Overview's checklist) and by import
 // with its notes shown; export; folders made, renamed and deleted; a form moved; a restricted form's duplicate; actions copied
@@ -10,38 +20,13 @@ import { expect, test } from '../../fixtures.ts';
 // confirm, and the emptied bin. Each test makes its own forms and pages, as the host is shared with every other spec.
 
 const SECTION = '/umbraco/section/jfb-forms';
-const API = '/umbraco/jfb/management/api/v1';
 const MANAGEMENT_API = '/umbraco/management/api/v1';
-/** The built-in contact template (4.5): a name, an email address and a message. */
-const CONTACT_TEMPLATE = '66c2bf3e-fe43-41cc-8470-f446c2f01a89';
 /** The demo's volunteer page, whose copy picks a test's form, and the home page the copy goes below. */
 const VOLUNTEER_PAGE = 'b7d3e0a1-5c94-4f2e-8a6b-0d1c3f9e2a47';
 const HOME_PAGE = '7bbb6953-972d-499e-a05a-c7cf1d45b1db';
-const KEY = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
-
-/** A name no other test on the shared host uses. */
-const unique = (name: string) => `${name} ${Date.now().toString(36)}${Math.floor(Math.random() * 1000)}`;
-
-async function created(response: APIResponse, what: string): Promise<string> {
-  expect(response.status(), `${what}: ${await response.text()}`).toBe(201);
-  const body = (await response.json()) as { key?: string; form?: { key: string } };
-  const key = body.key ?? body.form?.key ?? '';
-  expect(key, `${what}: its key`).toMatch(KEY);
-  return key;
-}
 
 const newFolder = async (api: APIRequestContext, name: string) =>
   created(await api.post(`${API}/folder`, { data: { name } }), `the folder ${name}`);
-
-/** A form from the built-in contact template. */
-const contactForm = async (api: APIRequestContext, name: string, folderKey: string | null = null) =>
-  created(
-    await api.post(`${API}/form/from-template`, { data: { templateKey: CONTACT_TEMPLATE, name, folderKey } }),
-    `the form ${name}`,
-  );
-
-const blankForm = async (api: APIRequestContext, name: string) =>
-  created(await api.post(`${API}/form`, { data: { name } }), `the form ${name}`);
 
 /** The key of the demo's form with this alias, as the search finds it. */
 async function formWithAlias(api: APIRequestContext, alias: string): Promise<string> {
@@ -53,33 +38,10 @@ async function formWithAlias(api: APIRequestContext, alias: string): Promise<str
   return key as string;
 }
 
-const formOf = async (api: APIRequestContext, key: string) =>
-  (await (await api.get(`${API}/form/${key}`)).json()) as { concurrencyVersion: number; folderKey?: string | null };
-
 async function trash(api: APIRequestContext, key: string): Promise<void> {
   const { concurrencyVersion } = await formOf(api, key);
   const response = await api.post(`${API}/form/${key}/trash`, { data: { concurrencyVersion } });
   expect(response.ok(), await response.text()).toBe(true);
-}
-
-/** Gives the form's first field this label and publishes it, so the field catalogue holds the label. */
-async function publishWithLabel(api: APIRequestContext, key: string, label: string): Promise<string> {
-  const draft = (await (await api.get(`${API}/form/${key}/draft`)).json()) as {
-    form: { concurrencyVersion: number };
-    definition: { pages: { groups: { fields: { key: string; label: Record<string, string> }[] }[] }[] };
-  };
-  const field = draft.definition.pages[0]?.groups[0]?.fields[0];
-  expect(field, 'a field to label').toBeTruthy();
-  (field as { label: Record<string, string> }).label = { '': label };
-  const saved = await api.put(`${API}/form/${key}/draft`, {
-    data: { concurrencyVersion: draft.form.concurrencyVersion, definition: draft.definition },
-  });
-  expect(saved.ok(), await saved.text()).toBe(true);
-  const published = await api.post(`${API}/form/${key}/publish`, {
-    data: { concurrencyVersion: (await formOf(api, key)).concurrencyVersion },
-  });
-  expect(published.ok(), await published.text()).toBe(true);
-  return (field as { key: string }).key;
 }
 
 /**
@@ -160,27 +122,6 @@ async function expandInTree(page: Page, name: string): Promise<void> {
     if (await expand.count()) await expand.click();
     await expect(collapse).toBeVisible({ timeout: 1000 });
   }).toPass();
-}
-
-/**
- * Axe's WCAG 2.2 A and AA rules on the page, counting what lies inside the library's own elements: Umbraco's are its to answer
- * for, as on the Overview (section.spec.ts).
- */
-async function axeInside(page: Page, element: string): Promise<void> {
-  await expect(page.locator(`${element} [aria-busy="true"]`)).toHaveCount(0);
-  // Axe measures what stands: no hover under a pointer left where a button appeared, and no frame of a fade.
-  await page.mouse.move(0, 0);
-  await page.waitForFunction(() => document.getAnimations().every((animation) => animation.playState !== 'running'));
-  const result = await new AxeBuilder({ page })
-    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
-    .options({ ancestry: true })
-    .analyze();
-  const ours = result.violations.flatMap((violation) =>
-    violation.nodes
-      .filter((node) => JSON.stringify(node.ancestry).includes(element))
-      .map((node) => `${violation.id}: ${JSON.stringify(node.target)}`),
-  );
-  expect(ours, `axe inside <${element}>`).toEqual([]);
 }
 
 /** Chooses an item in Umbraco's tree picker and confirms it. */
