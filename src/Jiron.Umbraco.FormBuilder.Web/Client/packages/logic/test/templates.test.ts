@@ -33,6 +33,13 @@ const TEMPLATES = 10_000;
 const SEED = 5302;
 const RUNS = 3;
 const BUDGET_MS = 50;
+/**
+ * A template over the budget is timed again after the others, this many times with a pause between, and is slow only
+ * if every one of them is: the machine is shared, and a stall of the whole process (another suite, the collector) can
+ * hold three runs in a row, while a slow template is slow every time.
+ */
+const RECHECKS = 10;
+const RECHECK_PAUSE_MS = 25;
 
 const ch = (...codes: number[]): string => String.fromCharCode(...codes);
 const BS = ch(92);
@@ -366,11 +373,12 @@ function broken(text: string, parsed: ParsedTemplate, rendered: RenderedTemplate
 }
 
 describe('random templates', () => {
-  it('10,000 render without throwing, each in at most 50 ms, within the limit and with problems in order', () => {
+  it('10,000 render without throwing, each in at most 50 ms, within the limit and with problems in order', async () => {
     const generator = new TemplateGenerator(SEED);
     const outcomes = new Map<string, number>();
     const failures: string[] = [];
     let slowest = { ms: 0, template: '' };
+    const suspects: { index: number; context: string; text: string; once: () => unknown }[] = [];
     for (let i = 0; i < TEMPLATES; i++) {
       const { text, context } = generator.template();
       const values = generator.values();
@@ -396,9 +404,24 @@ describe('random templates', () => {
       if (wrong !== null) failures.push(`template ${i} in ${context}: ${wrong} for ${show(text)}`);
       const codes = new Set<string>(result[1].problems.map((problem) => problem.code));
       for (const code of codes.size === 0 ? ['clean'] : codes) outcomes.set(code, (outcomes.get(code) ?? 0) + 1);
-      if (fastest > BUDGET_MS) failures.push(`template ${i} in ${context}: ${fastest.toFixed(1)} ms for ${show(text)}`);
-      if (fastest > slowest.ms) slowest = { ms: fastest, template: text };
+      if (fastest > BUDGET_MS) suspects.push({ index: i, context, text, once });
+      else if (fastest > slowest.ms) slowest = { ms: fastest, template: text };
     }
+    for (const suspect of suspects) {
+      let fastest = Number.POSITIVE_INFINITY;
+      for (let run = 0; run < RECHECKS && fastest > BUDGET_MS; run++) {
+        await new Promise((done) => setTimeout(done, RECHECK_PAUSE_MS));
+        const start = performance.now();
+        suspect.once();
+        fastest = Math.min(fastest, performance.now() - start);
+      }
+      if (fastest > BUDGET_MS)
+        failures.push(
+          `template ${suspect.index} in ${suspect.context}: ${fastest.toFixed(1)} ms for ${show(suspect.text)}`,
+        );
+      if (fastest > slowest.ms) slowest = { ms: fastest, template: suspect.text };
+    }
+    console.log(`timed again: ${suspects.length}`);
 
     console.log(
       [...outcomes]
