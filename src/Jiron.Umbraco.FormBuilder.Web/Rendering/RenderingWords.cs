@@ -1,4 +1,5 @@
 using System.Collections.Frozen;
+using System.Collections.Immutable;
 using System.Reflection;
 using System.Text.Json;
 
@@ -19,7 +20,7 @@ internal sealed record RenderingWords
     private const char SharpS = (char)0xDF;
 
     // The words' properties in the order they are declared.
-    private static readonly PropertyInfo[] Properties = [.. typeof(RenderingWords).GetProperties(BindingFlags.Public | BindingFlags.Instance).Where(property => property.PropertyType == typeof(string)).OrderBy(property => property.MetadataToken)];
+    private static readonly ImmutableArray<PropertyInfo> Properties = [.. typeof(RenderingWords).GetProperties(BindingFlags.Public | BindingFlags.Instance).Where(property => property.PropertyType == typeof(string)).OrderBy(property => property.MetadataToken)];
 
     private static readonly FrozenDictionary<string, RenderingWords> Words = new Dictionary<string, RenderingWords>(StringComparer.OrdinalIgnoreCase)
     {
