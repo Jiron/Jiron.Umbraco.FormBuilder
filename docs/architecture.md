@@ -220,7 +220,13 @@ flowchart LR
   (`drag/pointer-drag.ts`) and its drop arithmetic (`drag/drop-place.ts`), put on the canvas by `canvas/canvas-drag.ts`
   for fields, groups, pages by their steps and the palette's types, each place's refusal asked of the editor model; and
   in `moves/` the pure helpers the Design view moves with (a drop's edit, where an element is, Move to…'s places), the
-  Move to… and Keyboard shortcuts dialogs, and the keys' names.
+  Move to… and Keyboard shortcuts dialogs, and the keys' names. From 9.4a the inspector (`inspector/`, ADR-0170):
+  `jfb-designer-inspector` beside the canvas, folded to a rail, or over it in a narrow view, whose sections
+  `inspector-model.ts` makes from a type's features and settings schema, whose plain setting editors are
+  `setting-editor.ts` and whose values `setting-values.ts` reads, checks as the server does and writes back; it sends
+  each change to the Design view as an edit of the editor model, typing in one box one step of the undo history. The
+  canvas endpoint serves the site's languages, which the toolbar switches between, and the draft endpoint whether the
+  form has entries, which an alias change asks about first.
 
 ## 2. The definition model
 

@@ -359,7 +359,7 @@ export const canvasChrome = css`
 
   /*
    * On a narrow sheet, as beside the inspector in a view up to 1024 px, the bar's buttons show their icons alone: the
-   * German bar with its words needs about 380 px, clear of the handle and the "+" of the insert point above.
+   * German bar with its words is about 370 px wide and stays clear of the handle and the "+" of the insert point above.
    */
   @container bo-sheet (max-width: 430px) {
     .jfb-form .bo-tools .bo-tool-text {

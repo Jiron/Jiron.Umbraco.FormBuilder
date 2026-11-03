@@ -187,7 +187,9 @@ progress, since the steps across its top stand in for it.
 - **At 1024 px and wider,** the palette stays open beside the canvas, and both panels can be collapsed to rails.
 - **Between 620 and 1024 px,** the palette stays open until an element is selected. Then it folds to a rail (its
   expand button and its search, which open it over the canvas), so the canvas keeps its width beside the inspector;
-  clearing the selection opens the palette again. The wireframes of step 2.2 found that both panels open leave the
+  clearing the selection, or folding the inspector, opens the palette again. The widths are the Design view's own, as
+  for the narrow view (ADR-0170): a 1024 px window gives it 724 px. On a narrow sheet the selected element's bar shows
+  its buttons' icons alone, still named for screen readers. The wireframes of step 2.2 found that both panels open leave the
   canvas about 150 px at a 1024 px window.
 - **When the canvas has less room than the chosen width,** it shows the form as it reflows in that room, as a
   visitor's narrow window would (columns stack), and "Narrowed to fit" beside the width switch says so. It never
@@ -217,11 +219,17 @@ progress, since the steps across its top stand in for it.
     country list) and the options themselves. The option list picker ends with "Create an option list…" for users with
     `manageLibrary`, which makes one in a sidebar without leaving the form.
 - **Validation, Rules, Appearance and Advanced** (closed, remembered per user):
-  - a closed section shows a one-line summary of what is set ("Up to 200 characters");
+  - a closed section shows a one-line summary of what is set ("Maximum length: 200"), or "Nothing changed";
   - a section shows at most seven settings before "More options".
+- **Each box** has its label, its help and why a value can't be kept tied to it for screen readers; a value is checked
+  as it is typed and said once the box is left. Typing in one box is one step to undo. A setting the site locks shows
+  its value and the configuration key behind it, read-only; one it hides is not shown (ADR-0060, ADR-0170).
+- **The alias** is checked as the server checks it. Once the form has entries, changing a saved field's alias asks
+  first ("Change the alias?") and keeps the old one for the merge tags that use it.
 - **Rules:**
   - the closed section's line holds its action directly: "Always shown · Add a rule", whose link sits beside the
-    header's button, not inside it, and opens the rules builder without opening the section first;
+    header's button, not inside it, and opens the rules builder without opening the section first (the link comes
+    with the builder in 9.5a; until then the line says "Always shown" or how many rules);
   - the section's help says that a rule sits on the element it shows, hides or requires.
 - **The AI add-on:** "Suggest help text" sits beside the help text.
 
@@ -254,7 +262,8 @@ each, which can be changed afterwards; primary **Add 5 fields**.
 
 **Translating** (on sites with more than one language): choosing another language in the toolbar shows that
 language's texts on the canvas and in the inspector, which says that visitors see the default language's text where
-one is empty. A field without a text in the chosen language carries the chip "No German text yet".
+one is empty, and shows that text in an empty box. A field without a text in the chosen language carries the chip "No
+German text yet".
 
 **The form check badge** shows the number of problems ("2 problems"), or "No problems".
 

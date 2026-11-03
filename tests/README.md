@@ -928,6 +928,33 @@ with a refused drop and palette types, one on an empty page; and the `budgets` p
 holds a form of 300 fields to 100 ms per interaction (Event Timing) and per frame (Long Animation Frames) in
 `specs/budgets/designer.spec.ts`.
 
+**The inspector** (ROADMAP 9.4a, [ADR-0170](../docs/decisions/0170-the-inspector.md)):
+`inspector/setting-values.test.ts` holds a setting's value with its default and lock, written back and left out where
+it is the default, a text in each language and where it goes, and what is typed checked as the server checks it (whole
+numbers, numbers in the wire form with their exclusive limits, times, date lists, lengths, counts, allowed values,
+choices) with a date's limit read and written; `inspector/inspector-model.test.ts` the sections of the text, number,
+date, heading and every other built-in type from the field types snapshot (common properties by feature, settings by
+group, a hidden lock left out, only the plain editors), seven items before More options, a default of several answers,
+and a field without a text in a language; `inspector/inspector.test.ts` the element: its heading, Essentials open and
+the others as left, a closed section's one line, typing as one step per visit, a click as its own, a problem said once
+the box is left with `aria-invalid` and `aria-describedby`, More options, a locked setting with its value and key and a
+hidden one left out, nested ones too, the texts of another language with the default as placeholder and no placeholder
+in the default language, the alias checked as the server
+does with a way back, date limits, nested settings and choice lists, a group's and a page's items, and its rail and its
+bar over a narrow canvas. `form-design.view.test.ts` adds the inspector beside the canvas, its changes as edits that
+merge while typing, an alias that entries know changed after a question and kept as a former alias, its fold and Close,
+the palette folded beside it up to 1024 px, the overlay with the focus on its heading, after a pick from the palette
+over it too, Start a new page after this and Copy alias, the language switch, and the element's keys kept out of it
+while Undo stays where the focus is; `canvas/canvas.test.ts` the element's "…" with its menu, Copy alias only with an
+alias, the language switch with the chip of a field without a text in the language shown and none in the default's,
+and the insert point right above the selected element as its "+" alone. In the browser, `specs/backoffice/designer-inspector.spec.ts` sets every setting
+of the text, number and date types through the inspector and saves them, axe clean with each section open; folds the
+palette at a 1024 px window; starts a new page from a field's "…" with the keyboard only; edits a German label with
+the chip on a field without one; and changes an alias. `specs/backoffice/designer-locks.spec.ts` runs a host of its own
+on 5535 whose configuration locks the text type's maximum length and hides its prefix, and finds the one read-only with
+its value and key and the other gone. The integration tests `CanvasApiTests` and `LibraryApiTests` hold the site's
+languages, the default first however Umbraco lists them, and a draft's `hasEntries`.
+
 ## The public API tests
 
 `Tests.Integration/PublicApi/` calls the public API anonymously on a real site that boots its runtime, with forms
