@@ -2521,7 +2521,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - **Umbraco webhook events:** registration (§4.4).
   - Done when: tests pass against the stub on 5560, the SSRF refusal tests pass, and the signature verification samples are tested.
   - **Not run on this machine:** the PHP sample. There is no PHP here, so `ThePhpSample` is skipped and a static test holds its constants; on CI's runner it runs, and fails without PHP. The C# and Node samples ran. `docs/OWNER-TODO.md` lists it under the first CI run (ADR-0161).
-- [ ] **8.5 Content and state actions, email verification and approval**
+- [x] **8.5 Content and state actions, email verification and approval** (2026-11-03, 45f15ef)
   - **Create or update content:**
     - document type, dynamic or picked parent, field-to-property mapping with type compatibility, publish or save;
     - uploaded files are not copied to media unless a mapping says so, and then into a chosen folder with the same file checks.
