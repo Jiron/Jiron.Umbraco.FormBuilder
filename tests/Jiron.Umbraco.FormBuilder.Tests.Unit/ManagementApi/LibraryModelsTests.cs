@@ -86,14 +86,14 @@ public sealed class LibraryModelsTests
     }
 
     [Test]
-    public void ADraft_CarriesTheCanonicalDocument_ItsProblems_AndItsVersions()
+    public void ADraft_CarriesTheCanonicalDocument_ItsProblems_ItsVersions_AndWhetherTheFormHasEntries()
     {
         var info = Form();
         var definition = new FormDefinition { Key = info.Key, Pages = [new FormPage { Key = Guid.NewGuid() }] };
         var form = FormResponseModel.Of(info, FormBuilderPermissions.Design);
 
-        var read = FormDraftResponseModel.Of(new FormDraft(info, definition, [new DefinitionProblem("limit_exceeded", "$.pages", "Too many.")], 4, 2, true), form);
-        var unreadable = FormDraftResponseModel.Of(new FormDraft(info, null, [], 1, null, false), form);
+        var read = FormDraftResponseModel.Of(new FormDraft(info, definition, [new DefinitionProblem("limit_exceeded", "$.pages", "Too many.")], 4, 2, true), form, hasEntries: true);
+        var unreadable = FormDraftResponseModel.Of(new FormDraft(info, null, [], 1, null, false), form, hasEntries: false);
 
         Assert.Multiple(() =>
         {
@@ -102,6 +102,7 @@ public sealed class LibraryModelsTests
             Assert.That(read.Problems, Is.EqualTo(new[] { new DefinitionProblemResponseModel("limit_exceeded", "$.pages", "Too many.") }));
             Assert.That((read.DraftVersion, read.PublishedVersion, read.HasUnpublishedChanges), Is.EqualTo((4, (int?)2, true)));
             Assert.That((unreadable.Definition, unreadable.Problems.Count, unreadable.PublishedVersion, unreadable.HasUnpublishedChanges), Is.EqualTo(((JsonElement?)null, 0, (int?)null, false)));
+            Assert.That((read.HasEntries, unreadable.HasEntries), Is.EqualTo((true, false)), "whether the form has entries, as the controller found");
         });
     }
 
