@@ -1,4 +1,5 @@
 using System.Net;
+using System.Text;
 using System.Text.Json;
 using Jiron.Umbraco.FormBuilder.Testing;
 using Microsoft.AspNetCore.Builder;
@@ -131,6 +132,20 @@ internal static class TestEndpointsHost
             request.Request.Method = HttpMethods.Get;
             request.Request.Path = path;
             request.Connection.RemoteIpAddress = remote;
+        });
+        return context;
+    }
+
+    /// <summary>A <c>POST</c> of a JSON body straight into the test server, from this machine.</summary>
+    public static async Task<HttpContext> PostAsync(TestServer server, string path, string json)
+    {
+        var context = await server.SendAsync(request =>
+        {
+            request.Request.Method = HttpMethods.Post;
+            request.Request.Path = path;
+            request.Request.ContentType = "application/json";
+            request.Request.Body = new MemoryStream(Encoding.UTF8.GetBytes(json));
+            request.Connection.RemoteIpAddress = IPAddress.Loopback;
         });
         return context;
     }

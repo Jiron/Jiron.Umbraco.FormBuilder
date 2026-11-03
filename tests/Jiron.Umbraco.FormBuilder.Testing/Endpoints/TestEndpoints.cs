@@ -84,6 +84,9 @@ internal sealed class TestEndpointsStartupFilter(IOptions<FormBuilderTestingOpti
 /// answers; <c>404</c> for a form the host does not have.</description></item>
 /// <item><description><c>POST /jfb-testing/protection {"captchaConsent": "cmp"}</c>: sets the protection settings' consent mode for
 /// a captcha (ADR-0157), which no screen sets yet; <c>204</c>.</description></item>
+/// <item><description><c>POST /jfb-testing/form-restriction {"form": "&lt;key&gt;", "restricted": true}</c>: gives a form its own
+/// restriction, or takes it away (ADR-0013), which no screen sets yet, so the browser tests can show what the library says of a
+/// restricted form (ADR-0166); <c>204</c>, or <c>404</c> for a form the host does not have.</description></item>
 /// <item><description><c>POST /jfb-testing/sent-expired {"form": "&lt;alias&gt;", "value": "&lt;jfb-sent value&gt;"}</c>: the
 /// same form's, instance's and entry's <c>jfb-sent</c> value, expired a minute ago (ADR-0123), so the browser tests see
 /// what an expired one shows without moving the clock that every test shares; <c>404</c> for a form the host does not
@@ -118,6 +121,24 @@ internal sealed class TestEndpointsMiddleware(RequestDelegate next)
     }
 
     private sealed record ProtectionRequest(string? CaptchaConsent);
+
+    // A form's own restriction, set as the access service sets it, at the version the form has now.
+    private static async Task FormRestrictionAsync(HttpContext context)
+    {
+        var body = await JsonSerializer.DeserializeAsync<FormRestrictionRequest>(context.Request.Body, Json, context.RequestAborted);
+        var forms = context.RequestServices.GetRequiredService<IFormBuilderFormService>();
+        if (body is null || await forms.GetAsync(body.Form, context.RequestAborted) is not { } form)
+        {
+            context.Response.StatusCode = StatusCodes.Status404NotFound;
+            return;
+        }
+
+        var access = context.RequestServices.GetRequiredService<IFormBuilderAccessService>();
+        _ = await access.RestrictFormAsync(form.Key, form.ConcurrencyVersion, body.Restricted, null, context.RequestAborted);
+        context.Response.StatusCode = StatusCodes.Status204NoContent;
+    }
+
+    private sealed record FormRestrictionRequest(Guid Form, bool Restricted);
 
     // A published headless form with one field and a webhook action to this address, signed with the host's secret.
     private static async Task WebhookFormAsync(HttpContext context)
@@ -266,6 +287,9 @@ internal sealed class TestEndpointsMiddleware(RequestDelegate next)
                 return;
             case "protection" when HttpMethods.IsPost(context.Request.Method):
                 await ProtectionAsync(context);
+                return;
+            case "form-restriction" when HttpMethods.IsPost(context.Request.Method):
+                await FormRestrictionAsync(context);
                 return;
             case "sent-expired" when HttpMethods.IsPost(context.Request.Method):
                 await SentExpiredAsync(context);

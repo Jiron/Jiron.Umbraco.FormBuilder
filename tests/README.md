@@ -404,7 +404,7 @@ A host turns these on in the `JironFormBuilderTesting` section; everything is of
 
 | Setting | Effect |
 | --- | --- |
-| `Endpoints` | Answers `/jfb-testing/status`, `/jfb-testing/clock`, `/jfb-testing/access` (each backoffice user's effective permissions, globally, at the root and in each root folder), `/jfb-testing/entries` (a form's stored entries) and `/jfb-testing/sent-expired` (a sent page's token again, expired a minute ago, ADR-0123), only in Development and only for requests from this machine. |
+| `Endpoints` | Answers `/jfb-testing/status`, `/jfb-testing/clock`, `/jfb-testing/access` (each backoffice user's effective permissions, globally, at the root and in each root folder), `/jfb-testing/entries` (a form's stored entries), `/jfb-testing/sent-expired` (a sent page's token again, expired a minute ago, ADR-0123) and `/jfb-testing/form-restriction` (a form's own restriction, which no screen sets yet, ADR-0166; `TestFormRestrictionEndpointTests`), only in Development and only for requests from this machine. |
 | `Clock` | Runs the host on `TestClock`. |
 | `StubPort` | Starts the stub on that port (5560 for the browser tests' host), only in Development, where calls to other hosts may then reach it on loopback at that port only (ADR-0076). |
 | `StartupMarker` | Logs `Jiron Form Builder test host: indexes rebuilt` after each rebuild of Umbraco's indexes. |
