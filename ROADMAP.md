@@ -2682,6 +2682,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
   - Done when: each check has unit tests, publishing with an error is refused through the API, and Playwright covers the badge, the list and the "fix it" links.
 - [ ] **9.6 Phase review**
   - **UX review:** every screen of the phase at 375, 768 and 1440 px, in light and dark, in en and de, each checked against the measurable rules of §4.13, plus a pass of all three design skills (ADR-0019, ADR-0020): `design-taste-frontend`, an `impeccable` critique and audit, and an `emil-design-eng` review. Fix the findings.
+  - **Carried in from 9.4c's look** (docs/ux/review-9.4c.md): on the canvas, the selected element's bar sits over the element above it and covers most of a heading's text; decide whether the bar takes room of its own, and hold the choice with a journey.
   - Write the handover note.
   - **The backoffice budget:** set the backoffice bundle's gzip budget in the size check from the measured size plus a stated margin, and record it in §4.12.
   - Done when: `docs/ux/review-9.md` with screenshots, with a section per design skill, is committed, the size check enforces the backoffice budget, and everything is pushed, with the phase-review gate.
