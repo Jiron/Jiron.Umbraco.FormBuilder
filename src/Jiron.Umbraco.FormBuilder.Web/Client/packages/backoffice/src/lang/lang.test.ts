@@ -8,6 +8,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import { CANVAS_WIDTHS } from '../designer/canvas/widths';
 import { SIDEBAR } from '../section/sidebar';
 import de from './de';
 import en from './en';
@@ -180,17 +181,24 @@ describe('the dictionaries', () => {
 
   it("hold the form workspace's keys that its code uses, and no other in that area", () => {
     const folder = join(dirname(fileURLToPath(import.meta.url)), '..', 'designer');
-    const sources = readdirSync(folder)
+    const sources = readdirSync(folder, { recursive: true, encoding: 'utf8' })
       .filter((file) => file.endsWith('.ts') && !file.endsWith('.test.ts'))
       .map((file) => readFileSync(join(folder, file), 'utf8'));
     const used = new Set(
       sources.flatMap((source) => [...source.matchAll(/(?:'|#)(jfbDesigner_[A-Za-z_]+)'/g)].map((match) => match[1])),
     );
-    // The keys code builds: each view's label and each state's chip.
+    // The keys code builds: each view's label, each state's chip, each canvas width, what a delete's toast says of each
+    // kind of element, and why the editor model refused an edit.
     for (const view of ['design', 'settings', 'actions', 'entries', 'insights', 'history']) {
       used.add(`jfbDesigner_view_${view}`);
     }
     for (const state of ['draft', 'published', 'pending', 'unpublished']) used.add(`jfbDesigner_state_${state}`);
+    for (const width of Object.keys(CANVAS_WIDTHS)) used.add(`jfbDesigner_width_${width}`);
+    for (const kind of ['page', 'group', 'field']) used.add(`jfbDesigner_deleted_${kind}`);
+    const refusals =
+      readFileSync(join(folder, 'editor-model.ts'), 'utf8').match(/export type Refusal =([^;]+);/)?.[1] ?? '';
+    for (const [, refusal] of refusals.matchAll(/'([a-zA-Z]+)'/g))
+      if (refusal !== 'unchanged') used.add(`jfbDesigner_refusal_${refusal}`);
     expect(termsOf(en).filter((term) => term.startsWith('jfbDesigner_'))).toEqual([...used].sort());
   });
 

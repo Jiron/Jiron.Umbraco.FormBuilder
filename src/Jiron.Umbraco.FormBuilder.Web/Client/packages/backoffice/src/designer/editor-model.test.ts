@@ -19,6 +19,7 @@ import {
   referencesTo,
   removeElement,
   select,
+  splitPage,
   step,
   uniqueAlias,
   type Edit,
@@ -511,5 +512,76 @@ describe('a free alias', () => {
     expect(uniqueAlias(state.definition, 'city')).toBe('city2');
     expect(uniqueAlias(DEFINITION, 'page')).toBe('page2');
     expect(uniqueAlias(DEFINITION, '2fast')).toBe('field');
+  });
+});
+
+describe('starting a new page at a place', () => {
+  it("moves a group's fields from the place on, and the groups after it, onto a new page after it", () => {
+    const split = ok(splitPage(START, { container: 'contact', index: 1 }, contextOf()));
+    const added = split.selection ?? '';
+    expect(keysIn(split, null)).toEqual(['about', added, 'extras']);
+    expect(keysIn(split, 'about')).toEqual(['contact']);
+    expect(keysIn(split, 'contact')).toEqual(['name']);
+    const [moved, rest] = keysIn(split, added);
+    expect(rest).toBe('address');
+    expect(keysIn(split, moved ?? '')).toEqual(['email', 'phone']);
+    // The moved fields' group keeps the look of the group they came from, not its title or rules.
+    expect(locate(split.definition, moved ?? '')?.element).toEqual({ key: 'new1', fields: expect.any(Array) });
+  });
+
+  it('moves a whole group at its start, and gives a page left without a group an empty one', () => {
+    const split = ok(splitPage(START, { container: 'contact', index: 0 }, contextOf()));
+    const added = split.selection ?? '';
+    expect(keysIn(split, added)).toEqual(['contact', 'address']);
+    const [kept] = keysIn(split, 'about');
+    expect(kept).not.toBe('contact');
+    expect(keysIn(split, kept ?? '')).toEqual([]);
+  });
+
+  it('splits after a repeatable group, and moves the groups of a page from a place on the page', () => {
+    const afterKids = ok(splitPage(START, { container: 'kids', index: 1 }, contextOf()));
+    expect(keysIn(afterKids, 'family')).toEqual(['kids']);
+    expect(keysIn(afterKids, keysIn(afterKids, afterKids.selection ?? '')[0] ?? '')).toEqual(['consent']);
+
+    const byGroups = ok(splitPage(START, { container: 'extras', index: 2 }, contextOf()));
+    expect(keysIn(byGroups, 'extras')).toEqual(['family', 'costs']);
+    expect(keysIn(byGroups, byGroups.selection ?? '')).toEqual(['summary']);
+  });
+
+  it("gives a new page at the end of a page an empty group, and keeps a group's columns on the moved part", () => {
+    const atEnd = ok(splitPage(START, { container: 'summary', index: 1 }, contextOf()));
+    expect(keysIn(atEnd, 'extras')).toEqual(['family', 'costs', 'summary']);
+    const [only, ...more] = keysIn(atEnd, atEnd.selection ?? '');
+    expect([keysIn(atEnd, only ?? ''), more]).toEqual([[], []]);
+
+    const columns: EditorState = {
+      definition: {
+        pages: [
+          {
+            key: 'p',
+            groups: [{ key: 'g', columns: 2, style: 'card', title: { '': 'T' }, fields: [field('a'), field('b')] }],
+          },
+        ],
+      },
+      selection: null,
+    };
+    const split = ok(splitPage(columns, { container: 'g', index: 1 }, contextOf()));
+    const moved = keysIn(split, split.selection ?? '')[0] ?? '';
+    expect(locate(split.definition, moved)?.element).toEqual({
+      key: 'new1',
+      columns: 2,
+      style: 'card',
+      fields: [field('b')],
+    });
+  });
+
+  it('refuses a place that is no container', () => {
+    expect(refusal(splitPage(START, { container: null, index: 0 }, contextOf()))).toBe('wrongPlace');
+    expect(refusal(splitPage(START, { container: 'gone', index: 0 }, contextOf()))).toBe('missing');
+  });
+
+  it('leaves the state it is given as it was', () => {
+    ok(splitPage(START, { container: 'contact', index: 1 }, contextOf()));
+    expect(keysIn(START, 'contact')).toEqual(['name', 'email', 'phone']);
   });
 });

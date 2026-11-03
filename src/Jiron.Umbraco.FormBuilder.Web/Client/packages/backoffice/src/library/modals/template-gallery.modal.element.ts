@@ -7,7 +7,7 @@ import { tryExecute } from '@umbraco-cms/backoffice/resources';
 import { formExchangeFromTemplate, templateList, type TemplateResponseModel } from '../../api';
 import { sayRefusal } from '../library-changes';
 import { GalleryStore } from '../stores';
-import '../template-preview.element';
+import '../../designer/preview/form-preview.element';
 import type { NewFormModalData, NewFormModalValue } from './tokens';
 import { jfbBackofficeTokens, jfbVisuallyHidden } from '../../styles/tokens';
 
@@ -334,7 +334,7 @@ export class TemplateGalleryModalElement extends UmbModalBaseElement<NewFormModa
       }
       <p class="muted">${this.localize.term('jfbLibrary_holds', template.holds.pages, template.holds.fields)}</p>
       ${this._previewing && description ? html`<p>${description}</p>` : nothing}
-      <jfb-template-preview .definition=${template.definition}></jfb-template-preview>
+      <jfb-form-preview .definition=${template.definition}></jfb-form-preview>
     </section>`;
   }
 

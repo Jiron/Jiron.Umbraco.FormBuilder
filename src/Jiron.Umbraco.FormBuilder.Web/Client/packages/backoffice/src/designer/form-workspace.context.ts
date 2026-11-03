@@ -12,7 +12,7 @@ import {
   type UmbRoutableWorkspaceContext,
 } from '@umbraco-cms/backoffice/workspace';
 import { FORMULAS } from '@jfb/logic/calc';
-import { fieldTypeList, formGet, formPublish, type FieldTypeResponseModel } from '../api';
+import { fieldTypeList, formGet, formPublish, type FieldGroupResponseModel, type FieldTypeResponseModel } from '../api';
 import { sayRefusal } from '../library/library-changes';
 import { FORM_ENTITY_TYPE } from '../section/entity-types';
 import { FORM_DETAIL_REPOSITORY_ALIAS, FORM_WORKSPACE_ALIAS } from './constants';
@@ -55,9 +55,13 @@ export class FormWorkspaceContext
   #typesRead = false;
   // A record, not a Map: the state compares values as JSON, which writes every Map as {}.
   readonly #types = new UmbObjectState<Readonly<Record<string, FieldTypeResponseModel>>>({});
+  readonly #groups = new UmbObjectState<readonly FieldGroupResponseModel[]>([]);
 
   /** The field types by alias, as the views name and draw them; empty until they are read. */
   readonly fieldTypes = this.#types.asObservable();
+
+  /** The palette's groups, in its order; empty until the field types are read. */
+  readonly paletteGroups = this.#groups.asObservable();
 
   /** What the editor model asks of the workspace: the field types, fresh keys and the calculation language. */
   readonly model: ModelContext = {
@@ -113,6 +117,7 @@ export class FormWorkspaceContext
     const { data } = await tryExecute(this, fieldTypeList(), { disableNotifications: true });
     if (!data) return;
     this.#types.setValue(Object.fromEntries(data.types.map((type) => [type.alias, type])));
+    this.#groups.setValue(data.paletteGroups);
     this.#typesRead = true;
   }
 
@@ -247,6 +252,7 @@ export class FormWorkspaceContext
   override destroy() {
     this.#editor.destroy();
     this.#types.destroy();
+    this.#groups.destroy();
     super.destroy();
   }
 }

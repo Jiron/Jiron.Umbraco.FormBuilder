@@ -229,9 +229,6 @@ export default {
     preview: 'Vorschau',
     allTemplates: 'Alle Vorlagen',
     useTemplate: 'Vorlage verwenden',
-    previewYes: 'Ja',
-    previewNo: 'Nein',
-    previewFields: (labels: string) => `Seine Felder: ${labels}.`,
     template_contact: 'Kontakt',
     template_contactDescription: 'Name, E-Mail-Adresse und eine Nachricht, danach eine Dankesnachricht.',
 

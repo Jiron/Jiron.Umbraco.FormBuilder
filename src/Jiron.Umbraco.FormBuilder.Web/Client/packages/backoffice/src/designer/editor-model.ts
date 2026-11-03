@@ -286,6 +286,66 @@ export function removeElement(state: EditorState, key: string): Edit {
 }
 
 /**
+ * Starts a new page at a place, as the palette's New page (under Layout) does: what follows the place on its page moves onto a
+ * new page right after it. A place in a group splits the group there, its fields from that place on going into a group
+ * of their own on the new page (the whole group when the place is its start); a place in a repeatable group splits
+ * after it; a place on a page moves its groups from that place on. A page left without a group keeps an empty one, and
+ * a new page with nothing to hold gets one. The new page is selected.
+ */
+export function splitPage(state: EditorState, place: Place, context: ModelContext): Edit {
+  if (place.container === null) return refused('wrongPlace');
+  const found = locate(state.definition, place.container);
+  if (!found) return refused('missing');
+  let pageKey: string;
+  let groupIndex: number;
+  let fieldIndex: number | null;
+  if (found.kind === 'page') [pageKey, groupIndex, fieldIndex] = [found.element.key, place.index, null];
+  else if (found.kind === 'group') [pageKey, groupIndex, fieldIndex] = [found.container.key, found.index, place.index];
+  else {
+    const group = locate(state.definition, found.container.key);
+    if (group?.kind !== 'group') return refused('wrongPlace');
+    [pageKey, groupIndex, fieldIndex] = [group.container.key, group.index, found.index + 1];
+  }
+
+  const pages = state.definition.pages;
+  const at = pages.findIndex((page) => page.key === pageKey);
+  const page = pages[at];
+  if (!page) return refused('missing');
+  const groups = page.groups;
+  const empty = (): DesignGroup => ({ key: context.newKey(), fields: [] });
+  let kept: DesignGroup[];
+  let moved: DesignGroup[];
+  const split = fieldIndex === null ? undefined : groups[groupIndex];
+  if (!split || fieldIndex === null || fieldIndex <= 0) {
+    kept = groups.slice(0, groupIndex);
+    moved = groups.slice(groupIndex);
+  } else {
+    const rest = split.fields.slice(fieldIndex);
+    kept = [...groups.slice(0, groupIndex), { ...split, fields: split.fields.slice(0, fieldIndex) }];
+    // The fields that move keep their group's columns and style; its title, text and rules stay with the group.
+    const look = Object.fromEntries(
+      ['columns', 'style'].flatMap((name) => (name in split ? [[name, split[name]]] : [])),
+    );
+    moved = [
+      ...(rest.length > 0 ? [{ ...look, key: context.newKey(), fields: rest }] : []),
+      ...groups.slice(groupIndex + 1),
+    ];
+  }
+  const added: DesignPage = { key: context.newKey(), groups: moved.length > 0 ? moved : [empty()] };
+  const next: DesignDefinition = {
+    ...state.definition,
+    pages: [
+      ...pages.slice(0, at),
+      { ...page, groups: kept.length > 0 ? kept : [empty()] },
+      added,
+      ...pages.slice(at + 1),
+    ],
+  };
+  if (makesCycle(state.definition, next, context)) return refused('cycle');
+  return done(next, added.key);
+}
+
+/**
  * The keys of the elements, validation rules, actions and outcomes outside an element that name it or anything in it,
  * anywhere in what they hold: a rule's condition or operand, a field check's other field, a cascading list's parent, the
  * field a validation rule checks, an email action's recipient field, an attachment; and `settings` when the form's

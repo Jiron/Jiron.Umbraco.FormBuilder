@@ -10,6 +10,7 @@ import {
   FORM_PERMISSION_CONDITION,
   FORM_WORKSPACE_ALIAS,
 } from './constants';
+import { PASTE_QUESTIONS_MODAL_ALIAS } from './palette/paste-questions.modal.token';
 import { PUBLISH_MODAL_ALIAS } from './publish.modal.token';
 
 const IN_FORM_WORKSPACE = { alias: 'Umb.Condition.WorkspaceAlias', match: FORM_WORKSPACE_ALIAS };
@@ -60,6 +61,12 @@ export const manifests: UmbExtensionManifest[] = [
     name: 'Jiron Form Builder publish dialog',
     // The modal's element type asks for a modal context that exactOptionalPropertyTypes says may be missing.
     element: (() => import('./publish.modal.element')) as never,
+  },
+  {
+    type: 'modal',
+    alias: PASTE_QUESTIONS_MODAL_ALIAS,
+    name: 'Jiron Form Builder paste questions dialog',
+    element: (() => import('./palette/paste-questions.modal.element')) as never,
   },
   ...VIEWS.map((view, index): UmbExtensionManifest => ({
     type: 'workspaceView',

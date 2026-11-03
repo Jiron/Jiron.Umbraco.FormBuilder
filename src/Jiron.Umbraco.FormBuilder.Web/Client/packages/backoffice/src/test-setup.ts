@@ -56,3 +56,8 @@ if (!('ResizeObserver' in globalThis)) {
     disconnect = (): undefined => undefined;
   };
 }
+
+// jsdom lays nothing out, so it scrolls nothing into view either; the elements that ask for it go on as in a browser.
+if (typeof Element !== 'undefined' && !('scrollIntoView' in Element.prototype)) {
+  Object.defineProperty(Element.prototype, 'scrollIntoView', { value: (): undefined => undefined });
+}
