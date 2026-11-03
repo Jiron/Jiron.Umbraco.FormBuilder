@@ -197,6 +197,38 @@ test('five fields come from a pasted list, each with the type its words suggest'
   ]);
 });
 
+test('fields side by side in two columns are each selected by a click on them', async ({ page, loginAs, apiAs }) => {
+  const api = await apiAs('designer');
+  const key = await contactForm(api, unique('Two columns'));
+  const draft = (await (await api.get(`${API}/form/${key}/draft`)).json()) as {
+    form: { concurrencyVersion: number };
+    definition: { pages: { groups: Record<string, unknown>[] }[] };
+  };
+  draft.definition.pages[0]!.groups[0]!['columns'] = 2;
+  await api.put(`${API}/form/${key}/draft`, {
+    data: { concurrencyVersion: draft.form.concurrencyVersion, definition: draft.definition },
+  });
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await loginAs('designer');
+  await page.goto(workspaceOf(key));
+  const design = page.locator('jfb-form-design-view');
+  const fields = design.locator('jfb-canvas-field');
+  await expect(fields).toHaveCount(3);
+
+  // The theme lines up the parts of fields side by side; the button that selects a field still covers all of it.
+  for (const [at, name] of [
+    [0, /^Name, /],
+    [1, /^Email address, /],
+  ] as const) {
+    const box = (await fields.nth(at).boundingBox())!;
+    await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+    await expect(design.getByRole('button', { name })).toHaveAttribute('aria-current', 'true');
+    const button = (await design.getByRole('button', { name }).boundingBox())!;
+    // It leaves out the padding below a field that spaces the rows, and nothing more.
+    expect(button.height, 'the button covers its field').toBeGreaterThan(box.height - 32);
+  }
+});
+
 test('in the narrowest workspace the palette opens over the canvas, and a delete comes back with Undo', async ({
   page,
   loginAs,
