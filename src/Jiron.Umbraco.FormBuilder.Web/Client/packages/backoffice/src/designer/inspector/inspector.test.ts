@@ -595,7 +595,10 @@ describe('rich text in the inspector (ADR-0173)', () => {
     expect(must(paragraph.root.querySelector('jfb-rich-text'), 'the paragraph').inline).toBe(false);
     // Each takes tags through the picker under it, of its own place, for its own element.
     const tagged = await inspectorOf('c', { form: 'form1' }, CONSENT);
-    const picker = must(tagged.root.querySelector('jfb-rich-text + jfb-merge-tag-picker'), 'the tag picker');
+    const picker = must(
+      tagged.root.querySelector<HTMLElement & { place: string; owner: string }>('jfb-rich-text + jfb-merge-tag-picker'),
+      'the tag picker',
+    );
     expect([picker.place, picker.owner]).toEqual(['consentText', 'c']);
   });
 
