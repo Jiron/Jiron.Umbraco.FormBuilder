@@ -216,6 +216,10 @@ test('a new page starts after a selected field from its "...", with the keyboard
   for (let presses = 0; presses < 8 && !(await holdsFocus(more)); presses++) await page.keyboard.press('Tab');
   expect(await holdsFocus(more)).toBe(true);
   await page.keyboard.press('Enter');
+  // The menu takes the focus on its first item, Change type... (9.4d); Tab goes to the next.
+  const first = design.locator('jfb-canvas-field[key] .bo-menu').getByRole('button', { name: /^Change type/ });
+  await expect.poll(() => holdsFocus(first)).toBe(true);
+  await page.keyboard.press('Tab');
   const item = design.getByRole('button', { name: 'Start a new page after this' });
   await expect.poll(() => holdsFocus(item)).toBe(true);
   await page.keyboard.press('Enter');

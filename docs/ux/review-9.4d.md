@@ -105,6 +105,7 @@ host that locks a dropdown's most options.
 | An unlabelled captcha placement is "Untitled field" on the canvas | the journey finds it so |
 | "Parts" also found "Required parts" | the groups are found by their exact names |
 | The locks host failed to seed (above) | the host makes every dropdown take several options |
+| The first gate: 9.4a's keyboard journey to Start a new page after this found the focus on Change type..., now the first item of the element's "..." (the two journeys above had run alone) | the journey tabs from Change type... to it; the whole backoffice project then ran |
 
 ## The tamper round
 
