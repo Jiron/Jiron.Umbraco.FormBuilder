@@ -302,6 +302,14 @@ public sealed class StructureTests
         yield return Case("a check that matches no field", d => Field(d, 2)["validation"]![0]!["field"] = Nowhere, DefinitionErrors.UnknownField, $"{F(2)}.validation[0].field");
         yield return Case("a validation rule on no field", d => d["validationRules"]![0]!["field"] = Nowhere, DefinitionErrors.UnknownField, "$.validationRules[0].field");
         yield return Case("a validation rule on a heading", d => d["validationRules"]![0]!["field"] = K(8), DefinitionErrors.UnknownField, "$.validationRules[0].field");
+        // Both runtimes decide a validation rule only for an answer rules compare, and refuse the form otherwise.
+        yield return Case("a validation rule on a name", d => d["validationRules"]![0]!["field"] = K(7), DefinitionErrors.UnknownField, "$.validationRules[0].field");
+        yield return Case("a validation rule on a repeatable group", d => d["validationRules"]![0]!["field"] = K(0xa), DefinitionErrors.UnknownField, "$.validationRules[0].field");
+        yield return Case("a validation rule on a value kept on the server", d =>
+        {
+            AddHidden(d);
+            d["validationRules"]![0]!["field"] = K(0x20);
+        }, DefinitionErrors.InvalidReference, "$.validationRules[0].field");
         yield return Case("verification of no field", d => d["settings"]!["submission"]!["verification"]!["emailField"] = Nowhere, DefinitionErrors.UnknownField, "$.settings.submission.verification.emailField");
         yield return Case("verification of a heading", d => d["settings"]!["submission"]!["verification"]!["emailField"] = K(8), DefinitionErrors.UnknownField, "$.settings.submission.verification.emailField");
         yield return Case("a parent that is no field", d => Field(d, 4)["options"]!["parent"] = Nowhere, DefinitionErrors.UnknownField, $"{F(4)}.options.parent");

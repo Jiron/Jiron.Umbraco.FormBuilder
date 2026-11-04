@@ -183,6 +183,19 @@ internal sealed partial class DefinitionStructureChecks
             {
                 Fail(DefinitionErrors.InvalidReference, P(path, "field"), $"The validation rule shows its message on {entry.Describe}, which a signed-in member's page leaves out (prefill.memberMode hide).");
             }
+            else if (!_visitorKinds.ContainsKey(KeyText(rule.Field)))
+            {
+                // Both runtimes decide a validation rule only for an answer the visitor's page has, and refuse the whole
+                // form otherwise (ADR-0178); a field whose type the site lacks waits for the type.
+                if (_kinds.ContainsKey(KeyText(rule.Field)))
+                {
+                    Fail(DefinitionErrors.InvalidReference, P(path, "field"), $"The validation rule shows its message on {entry.Describe}, whose value stays on the server, where no visitor sees it.");
+                }
+                else if (!entry.Unknown)
+                {
+                    Fail(DefinitionErrors.UnknownField, P(path, "field"), $"The validation rule shows its message on {entry.Describe}, whose answers rules cannot compare.");
+                }
+            }
 
             Conditions(rule.Conditions, P(path, "conditions"), _visitorKinds, dependencies: null, depth: 1);
         }
