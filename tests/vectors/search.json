@@ -1490,6 +1490,48 @@
       }
     },
     {
+      "id": "conflict-a-neighbour-near-zero-is-tried-by-neither",
+      "description": "C# would write one less than 1.00001 with an exponent, which no number reads as and so is not 1.00001",
+      "conflict": {
+        "requiring": {
+          "effect": "require",
+          "enabled": true,
+          "match": "all",
+          "conditions": [
+            {
+              "field": "guests",
+              "op": "isNotEmpty"
+            }
+          ]
+        },
+        "hidings": [
+          {
+            "effect": "hide",
+            "enabled": true,
+            "match": "all",
+            "conditions": [
+              {
+                "field": "guests",
+                "op": "notEquals",
+                "value": "1.00001"
+              }
+            ]
+          }
+        ]
+      },
+      "expect": {
+        "hiding": 0,
+        "answers": [
+          {
+            "subject": "field:guests",
+            "values": [
+              "2.00001"
+            ]
+          }
+        ]
+      }
+    },
+    {
       "id": "shows-without-rules",
       "shows": {
         "rules": [],

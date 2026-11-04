@@ -180,7 +180,8 @@ describe("the form's rules, element by element", () => {
               key: 'g',
               fields: [
                 choice('own', {}),
-                choice('listed', { options: { source: 'list', list: 'l1' } }),
+                // Items left from before the field took a library list are no options of its own.
+                choice('listed', { options: { ...items, source: 'list', list: 'l1' } }),
                 choice('cascading', { options: { ...items, parent: 'own' } }),
                 choice('other', { settings: { other: true } }),
               ],

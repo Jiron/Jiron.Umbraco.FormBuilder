@@ -216,6 +216,12 @@ export default {
       conflict: conflict(rule('require', [cond('guests', 'greaterThan', '0')]), [nearZero]),
       expect: { hiding: 0, answers: [answer('field:guests', ['1'])] },
     },
+    {
+      id: 'conflict-a-neighbour-near-zero-is-tried-by-neither',
+      description: 'C# would write one less than 1.00001 with an exponent, which no number reads as and so is not 1.00001',
+      conflict: conflict(rule('require', [cond('guests', 'isNotEmpty')]), [rule('hide', [cond('guests', 'notEquals', '1.00001')])]),
+      expect: { hiding: 0, answers: [answer('field:guests', ['2.00001'])] },
+    },
 
     // Whether an element ever shows.
     { id: 'shows-without-rules', shows: { rules: [], unanswered: [] }, expect: 'shows' },
