@@ -2683,7 +2683,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
     - unreachable pages;
     - and conditions a change of type left (promised by the decision records).
   - Done when: each check has unit tests, the search passes the shared vectors in both runtimes, and publishing with an error is refused through the API.
-- [ ] **9.5e The form check: the site, privacy and the promised checks** (split from 9.5d, see WORKLOG)
+- [x] **9.5e The form check: the site, privacy and the promised checks** (split from 9.5d, see WORKLOG) (2026-11-04, 5285826)
   - **The checks that reason about what the site holds and what the form collects:**
     - personal data collected without a consent field (a hint);
     - an outcome redirecting to an unpublished page;
