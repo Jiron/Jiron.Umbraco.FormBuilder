@@ -313,6 +313,11 @@ describe('the other fields that name a field', () => {
       { kind: 'parent', key: 'colour' },
     ]);
     expect(referencesTo(definition, 'size', type('dropdown'), changeOf('checkboxes', 'dropdown'))).toEqual([]);
+    // A field naming itself, which the form check refuses anyway, is no other field.
+    const selfish: DesignField = { ...size, options: { parent: 'size', items: [{ value: 's' }] } };
+    expect(referencesTo(form(selfish, colour), 'size', type('text'), changeOf('checkboxes', 'text'))).toEqual([
+      { kind: 'parent', key: 'colour' },
+    ]);
     expect(referencesTo(definition, 'mail', type('name'), changeOf('text', 'name'))).toEqual([
       { kind: 'matches', key: 'again' },
     ]);

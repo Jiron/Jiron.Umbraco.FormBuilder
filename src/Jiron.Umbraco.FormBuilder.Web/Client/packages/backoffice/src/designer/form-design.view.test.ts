@@ -901,6 +901,16 @@ describe('the moves', () => {
     expect(workspace.kept['kid']).toBeUndefined();
   });
 
+  it('change a field that is not selected, which the change selects, with the focus on it', async () => {
+    const { ask, canvas, state } = await viewOf();
+    expect(state().selection).toBeNull();
+    opened.value = { to: 'textarea' };
+    await ask({ kind: 'changeType', key: 'name' });
+    expect((locate(state().definition, 'name')?.element as DesignField).type).toBe('textarea');
+    expect(state().selection).toBe('name');
+    expect(focusedIn(canvas)).toBe('name select');
+  });
+
   it("show where it can't go in Move to..., with why", async () => {
     const { ask } = await viewOf({
       pages: [
