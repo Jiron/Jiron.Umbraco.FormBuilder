@@ -222,7 +222,8 @@
       "availability": {
         "isAvailable": true,
         "reason": null
-      }
+      },
+      "mayChangeType": true
     },
     {
       "alias": "textarea",
@@ -450,7 +451,8 @@
       "availability": {
         "isAvailable": true,
         "reason": null
-      }
+      },
+      "mayChangeType": true
     },
     {
       "alias": "email",
@@ -636,7 +638,8 @@
       "availability": {
         "isAvailable": true,
         "reason": null
-      }
+      },
+      "mayChangeType": true
     },
     {
       "alias": "phone",
@@ -699,7 +702,8 @@
       "availability": {
         "isAvailable": true,
         "reason": null
-      }
+      },
+      "mayChangeType": true
     },
     {
       "alias": "url",
@@ -773,7 +777,8 @@
       "availability": {
         "isAvailable": true,
         "reason": null
-      }
+      },
+      "mayChangeType": true
     },
     {
       "alias": "number",
@@ -974,7 +979,8 @@
       "availability": {
         "isAvailable": true,
         "reason": null
-      }
+      },
+      "mayChangeType": true
     },
     {
       "alias": "date",
@@ -1144,7 +1150,8 @@
       "availability": {
         "isAvailable": true,
         "reason": null
-      }
+      },
+      "mayChangeType": true
     },
     {
       "alias": "time",
@@ -1261,7 +1268,8 @@
       "availability": {
         "isAvailable": true,
         "reason": null
-      }
+      },
+      "mayChangeType": true
     },
     {
       "alias": "datetime",
@@ -1458,7 +1466,8 @@
       "availability": {
         "isAvailable": true,
         "reason": null
-      }
+      },
+      "mayChangeType": true
     },
     {
       "alias": "rating",
@@ -1610,7 +1619,8 @@
       "availability": {
         "isAvailable": true,
         "reason": null
-      }
+      },
+      "mayChangeType": true
     },
     {
       "alias": "scale",
@@ -1749,7 +1759,8 @@
       "availability": {
         "isAvailable": true,
         "reason": null
-      }
+      },
+      "mayChangeType": true
     },
     {
       "alias": "slider",
@@ -1918,7 +1929,8 @@
       "availability": {
         "isAvailable": true,
         "reason": null
-      }
+      },
+      "mayChangeType": true
     },
     {
       "alias": "calculation",
@@ -2106,7 +2118,8 @@
       "availability": {
         "isAvailable": true,
         "reason": null
-      }
+      },
+      "mayChangeType": true
     },
     {
       "alias": "dropdown",
@@ -2251,7 +2264,8 @@
       "availability": {
         "isAvailable": true,
         "reason": null
-      }
+      },
+      "mayChangeType": true
     },
     {
       "alias": "radio",
@@ -2384,7 +2398,8 @@
       "availability": {
         "isAvailable": true,
         "reason": null
-      }
+      },
+      "mayChangeType": true
     },
     {
       "alias": "checkboxes",
@@ -2572,7 +2587,8 @@
       "availability": {
         "isAvailable": true,
         "reason": null
-      }
+      },
+      "mayChangeType": true
     },
     {
       "alias": "grid",
@@ -2712,7 +2728,8 @@
       "availability": {
         "isAvailable": true,
         "reason": null
-      }
+      },
+      "mayChangeType": false
     },
     {
       "alias": "ranking",
@@ -2770,7 +2787,8 @@
       "availability": {
         "isAvailable": true,
         "reason": null
-      }
+      },
+      "mayChangeType": true
     },
     {
       "alias": "checkbox",
@@ -2827,7 +2845,8 @@
       "availability": {
         "isAvailable": true,
         "reason": null
-      }
+      },
+      "mayChangeType": true
     },
     {
       "alias": "yesno",
@@ -2947,7 +2966,8 @@
       "availability": {
         "isAvailable": true,
         "reason": null
-      }
+      },
+      "mayChangeType": true
     },
     {
       "alias": "consent",
@@ -3029,7 +3049,8 @@
       "availability": {
         "isAvailable": true,
         "reason": null
-      }
+      },
+      "mayChangeType": true
     },
     {
       "alias": "country",
@@ -3142,7 +3163,8 @@
       "availability": {
         "isAvailable": true,
         "reason": null
-      }
+      },
+      "mayChangeType": true
     },
     {
       "alias": "name",
@@ -3263,7 +3285,8 @@
       "availability": {
         "isAvailable": true,
         "reason": null
-      }
+      },
+      "mayChangeType": true
     },
     {
       "alias": "address",
@@ -3397,7 +3420,8 @@
       "availability": {
         "isAvailable": true,
         "reason": null
-      }
+      },
+      "mayChangeType": true
     },
     {
       "alias": "file",
@@ -3638,7 +3662,8 @@
       "availability": {
         "isAvailable": true,
         "reason": null
-      }
+      },
+      "mayChangeType": true
     },
     {
       "alias": "signature",
@@ -3721,7 +3746,8 @@
       "availability": {
         "isAvailable": true,
         "reason": null
-      }
+      },
+      "mayChangeType": true
     },
     {
       "alias": "repeater",
@@ -3884,7 +3910,8 @@
       "availability": {
         "isAvailable": true,
         "reason": null
-      }
+      },
+      "mayChangeType": false
     },
     {
       "alias": "hidden",
@@ -3908,7 +3935,8 @@
       "availability": {
         "isAvailable": true,
         "reason": null
-      }
+      },
+      "mayChangeType": true
     },
     {
       "alias": "heading",
@@ -3984,7 +4012,8 @@
       "availability": {
         "isAvailable": true,
         "reason": null
-      }
+      },
+      "mayChangeType": false
     },
     {
       "alias": "paragraph",
@@ -4033,7 +4062,8 @@
       "availability": {
         "isAvailable": true,
         "reason": null
-      }
+      },
+      "mayChangeType": false
     },
     {
       "alias": "divider",
@@ -4054,7 +4084,8 @@
       "availability": {
         "isAvailable": true,
         "reason": null
-      }
+      },
+      "mayChangeType": false
     },
     {
       "alias": "image",
@@ -4174,7 +4205,8 @@
       "availability": {
         "isAvailable": true,
         "reason": null
-      }
+      },
+      "mayChangeType": false
     },
     {
       "alias": "captcha",
@@ -4193,7 +4225,8 @@
       "availability": {
         "isAvailable": false,
         "reason": "#jfbFieldTypeAvailability_captchaNoKeys"
-      }
+      },
+      "mayChangeType": false
     }
   ]
 }

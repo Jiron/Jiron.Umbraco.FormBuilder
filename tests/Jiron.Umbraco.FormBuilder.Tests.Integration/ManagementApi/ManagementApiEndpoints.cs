@@ -66,12 +66,15 @@ internal sealed record ManagementApiEndpoint(ApiDescription Description, IReadOn
 
     /// <summary>
     /// Its path with every route value filled, and in the query the declared key when it lives there and every other
-    /// value it requires, each by its type.
+    /// value it requires, each by its type; a field type's alias is the built-in <c>text</c>, which every site has.
     /// </summary>
     public string PathFor(Guid key)
     {
-        var path = ManagementApiEndpoints.RouteValue().Replace(Template[Prefix.Length..], match =>
-            Description.ParameterDescriptions.FirstOrDefault(parameter => parameter.Source == BindingSource.Path && parameter.Name == match.Groups[1].Value)?.Type is { } routed && (routed == typeof(int) || routed == typeof(long)) ? "1" : key.ToString());
+        string RouteValueOf(string name) =>
+            Description.ParameterDescriptions.FirstOrDefault(parameter => parameter.Source == BindingSource.Path && parameter.Name == name)?.Type is { } routed && (routed == typeof(int) || routed == typeof(long))
+                ? "1"
+                : name == "alias" ? "text" : key.ToString();
+        var path = ManagementApiEndpoints.RouteValue().Replace(Template[Prefix.Length..], match => RouteValueOf(match.Groups[1].Value));
         var query = Description.ParameterDescriptions
             .Where(parameter => parameter.Source == BindingSource.Query && (parameter.Name == Key || IsRequired(parameter)))
             .Select(parameter => $"{parameter.Name}={(parameter.Name == Key ? key.ToString() : QueryValueOf(parameter.Type))}")

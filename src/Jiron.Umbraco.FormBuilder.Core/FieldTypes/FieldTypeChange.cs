@@ -30,6 +30,12 @@ internal sealed record FieldTypeChange
     /// <summary>The target's required settings the change does not carry over: the field needs them before it publishes.</summary>
     public ImmutableArray<string> NeededSettings { get; init; } = [];
 
+    /// <summary>
+    /// The settings the change would carry over that the host locks on the target (ADR-0060), the kept ones first: the
+    /// lock sets them, so they are neither carried over nor needed. Empty until <see cref="FieldTypeChanges.UnderLocks"/>.
+    /// </summary>
+    public ImmutableArray<string> LockedSettings { get; init; } = [];
+
     /// <summary>The common properties the source supports and the target does not.</summary>
     public FieldFeatures LostProperties { get; init; }
 

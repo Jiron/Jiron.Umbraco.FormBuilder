@@ -874,6 +874,65 @@
         ]
       }
     },
+    "/umbraco/jfb/management/api/v1/field-type/{alias}/changes": {
+      "get": {
+        "tags": [
+          "Field type"
+        ],
+        "operationId": "FieldTypeChanges",
+        "parameters": [
+          {
+            "name": "alias",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/FieldTypeChangesResponseModel"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The resource is protected and requires an authentication token"
+          },
+          "403": {
+            "description": "The authenticated user does not have access to this resource"
+          }
+        },
+        "security": [
+          {
+            "Backoffice-User": []
+          }
+        ]
+      }
+    },
     "/umbraco/jfb/management/api/v1/folder": {
       "post": {
         "tags": [
@@ -6632,6 +6691,109 @@
         },
         "additionalProperties": false
       },
+      "FieldTypeChangeResponseModel": {
+        "required": [
+          "comparesAnew",
+          "keepsColumns",
+          "keptSettings",
+          "lockedSettings",
+          "lostMessages",
+          "lostOperators",
+          "lostProperties",
+          "lostSettings",
+          "narrowedSettings",
+          "neededSettings",
+          "needsOptions",
+          "to"
+        ],
+        "type": "object",
+        "properties": {
+          "to": {
+            "type": "string"
+          },
+          "keptSettings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "narrowedSettings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "lostSettings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "neededSettings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "lockedSettings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "lostProperties": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "needsOptions": {
+            "type": "boolean"
+          },
+          "lostMessages": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "lostOperators": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "comparesAnew": {
+            "type": "boolean"
+          },
+          "keepsColumns": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "FieldTypeChangesResponseModel": {
+        "required": [
+          "changes",
+          "from"
+        ],
+        "type": "object",
+        "properties": {
+          "from": {
+            "type": "string"
+          },
+          "changes": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/FieldTypeChangeResponseModel"
+                }
+              ]
+            }
+          }
+        },
+        "additionalProperties": false
+      },
       "FieldTypeResponseModel": {
         "required": [
           "alias",
@@ -6639,6 +6801,7 @@
           "features",
           "holdsValue",
           "icon",
+          "mayChangeType",
           "messages",
           "multipleSetting",
           "name",
@@ -6709,6 +6872,9 @@
                 "$ref": "#/components/schemas/FieldTypeAvailabilityResponseModel"
               }
             ]
+          },
+          "mayChangeType": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false

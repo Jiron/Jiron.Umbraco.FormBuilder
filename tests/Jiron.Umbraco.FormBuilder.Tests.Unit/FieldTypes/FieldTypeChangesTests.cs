@@ -230,6 +230,56 @@ public sealed class FieldTypeChangesTests
     }
 
     [Test]
+    public void ALockOfTheTargetsSetting_SetsIt_SoItIsNeitherCarriedOverNorNeeded()
+    {
+        var required = new FieldSettingRules { Required = true };
+        var source = new SchemaFieldType("source", Setting("kept"), Setting("bounded", FieldSettingKind.WholeNumber), Setting("free"), Setting("gone"));
+        var target = new SchemaFieldType(
+            "target",
+            Setting("needed", rules: required),
+            Setting("kept"),
+            Setting("bounded", FieldSettingKind.WholeNumber, new FieldSettingRules { Minimum = "1" }),
+            Setting("free"),
+            Setting("asked", rules: required));
+        var change = FieldTypeChanges.Between(source, target);
+
+        var locked = FieldTypeChanges.UnderLocks(change, ["bounded", "needed", "kept", "acme.unknown"]);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(change.LockedSettings, Is.Empty, "none before the locks");
+            Assert.That(locked.KeptSettings, Is.EqualTo(new[] { "free" }));
+            Assert.That(locked.NarrowedSettings, Is.Empty);
+            Assert.That(locked.NeededSettings, Is.EqualTo(new[] { "asked" }), "a locked required setting is set by its lock");
+            Assert.That(locked.LockedSettings, Is.EqualTo(new[] { "kept", "bounded" }), "the kept ones first; one that was only needed was never carried");
+            Assert.That(
+                locked with { KeptSettings = change.KeptSettings, NarrowedSettings = change.NarrowedSettings, NeededSettings = change.NeededSettings, LockedSettings = change.LockedSettings },
+                Is.EqualTo(change),
+                "the rest of the change as it was: a lost setting stays lost");
+            Assert.That(FieldTypeChanges.UnderLocks(change, []), Is.SameAs(change), "no locks");
+        });
+    }
+
+    [Test]
+    public void ALockOnABuiltInTarget_TakesItsSettingOutOfTheChange()
+    {
+        var dropdown = FieldTypeChanges.UnderLocks(Between("checkboxes", "dropdown"), ["maxSelections"]);
+        var consent = FieldTypeChanges.UnderLocks(Between("checkbox", "consent"), ["text"]);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(Describe(Between("checkboxes", "dropdown")), Does.StartWith("minSelections,maxSelections | - | other,otherLabel,layout | - |"));
+            Assert.That(dropdown.KeptSettings, Is.EqualTo(new[] { "minSelections" }));
+            Assert.That(dropdown.LockedSettings, Is.EqualTo(new[] { "maxSelections" }));
+            Assert.That(consent.NarrowedSettings, Is.Empty, "a consent's text is required, so it narrows; locked, the lock writes it");
+            Assert.That(consent.NeededSettings, Is.Empty);
+            Assert.That(consent.LockedSettings, Is.EqualTo(new[] { "text" }));
+            Assert.That(() => FieldTypeChanges.UnderLocks(null!, []), Throws.ArgumentNullException);
+            Assert.That(() => FieldTypeChanges.UnderLocks(dropdown, null!), Throws.ArgumentNullException);
+        });
+    }
+
+    [Test]
     public void ASitesOwnType_ChangesLikeTheBuiltInOnes()
     {
         var registry = TestFieldTypes.Build(builder => builder.Append<CodeFieldType>());

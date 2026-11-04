@@ -1,0 +1,3913 @@
+{
+  "text": {
+    "from": "text",
+    "changes": [
+      {
+        "to": "textarea",
+        "keptSettings": [
+          "minLength",
+          "maxLength",
+          "counter"
+        ],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "prefix",
+          "suffix"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [],
+        "needsOptions": false,
+        "lostMessages": [],
+        "lostOperators": [],
+        "comparesAnew": false,
+        "keepsColumns": true
+      },
+      {
+        "to": "email",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "minLength",
+          "maxLength",
+          "prefix",
+          "suffix",
+          "counter"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [],
+        "needsOptions": false,
+        "lostMessages": [
+          "minLength",
+          "maxLength"
+        ],
+        "lostOperators": [],
+        "comparesAnew": false,
+        "keepsColumns": true
+      },
+      {
+        "to": "phone",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "minLength",
+          "maxLength",
+          "prefix",
+          "suffix",
+          "counter"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [],
+        "needsOptions": false,
+        "lostMessages": [
+          "minLength",
+          "maxLength"
+        ],
+        "lostOperators": [],
+        "comparesAnew": false,
+        "keepsColumns": true
+      },
+      {
+        "to": "url",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "minLength",
+          "maxLength",
+          "prefix",
+          "suffix",
+          "counter"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [],
+        "needsOptions": false,
+        "lostMessages": [
+          "minLength",
+          "maxLength"
+        ],
+        "lostOperators": [],
+        "comparesAnew": false,
+        "keepsColumns": true
+      },
+      {
+        "to": "number",
+        "keptSettings": [
+          "prefix",
+          "suffix"
+        ],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "minLength",
+          "maxLength",
+          "counter"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "patternCheck"
+        ],
+        "needsOptions": false,
+        "lostMessages": [
+          "minLength",
+          "maxLength"
+        ],
+        "lostOperators": [
+          "contains",
+          "endsWith",
+          "matches",
+          "notContains",
+          "startsWith"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": false
+      },
+      {
+        "to": "date",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "minLength",
+          "maxLength",
+          "prefix",
+          "suffix",
+          "counter"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "placeholder",
+          "patternCheck"
+        ],
+        "needsOptions": false,
+        "lostMessages": [
+          "minLength",
+          "maxLength"
+        ],
+        "lostOperators": [
+          "contains",
+          "endsWith",
+          "matches",
+          "notContains",
+          "startsWith"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": false
+      },
+      {
+        "to": "time",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "minLength",
+          "maxLength",
+          "prefix",
+          "suffix",
+          "counter"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "placeholder",
+          "autocomplete",
+          "patternCheck"
+        ],
+        "needsOptions": false,
+        "lostMessages": [
+          "minLength",
+          "maxLength"
+        ],
+        "lostOperators": [
+          "contains",
+          "endsWith",
+          "matches",
+          "notContains",
+          "startsWith"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": true
+      },
+      {
+        "to": "datetime",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "minLength",
+          "maxLength",
+          "prefix",
+          "suffix",
+          "counter"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "placeholder",
+          "autocomplete",
+          "patternCheck"
+        ],
+        "needsOptions": false,
+        "lostMessages": [
+          "minLength",
+          "maxLength"
+        ],
+        "lostOperators": [
+          "contains",
+          "endsWith",
+          "matches",
+          "notContains",
+          "startsWith"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": false
+      },
+      {
+        "to": "rating",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "minLength",
+          "maxLength",
+          "prefix",
+          "suffix",
+          "counter"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "placeholder",
+          "autocomplete",
+          "patternCheck",
+          "matchesFieldCheck",
+          "uniquePerFormCheck"
+        ],
+        "needsOptions": false,
+        "lostMessages": [
+          "minLength",
+          "maxLength"
+        ],
+        "lostOperators": [
+          "contains",
+          "endsWith",
+          "matches",
+          "notContains",
+          "startsWith"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": false
+      },
+      {
+        "to": "scale",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "minLength",
+          "maxLength",
+          "prefix",
+          "suffix",
+          "counter"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "placeholder",
+          "autocomplete",
+          "patternCheck",
+          "matchesFieldCheck",
+          "uniquePerFormCheck"
+        ],
+        "needsOptions": false,
+        "lostMessages": [
+          "minLength",
+          "maxLength"
+        ],
+        "lostOperators": [
+          "contains",
+          "endsWith",
+          "matches",
+          "notContains",
+          "startsWith"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": false
+      },
+      {
+        "to": "slider",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "minLength",
+          "maxLength",
+          "prefix",
+          "suffix",
+          "counter"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "placeholder",
+          "autocomplete",
+          "patternCheck",
+          "matchesFieldCheck",
+          "uniquePerFormCheck"
+        ],
+        "needsOptions": false,
+        "lostMessages": [
+          "minLength",
+          "maxLength"
+        ],
+        "lostOperators": [
+          "contains",
+          "endsWith",
+          "matches",
+          "notContains",
+          "startsWith"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": false
+      },
+      {
+        "to": "calculation",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "minLength",
+          "maxLength",
+          "prefix",
+          "suffix",
+          "counter"
+        ],
+        "neededSettings": [
+          "formula"
+        ],
+        "lockedSettings": [],
+        "lostProperties": [
+          "placeholder",
+          "required",
+          "defaultValue",
+          "prefill",
+          "autocomplete",
+          "patternCheck",
+          "matchesFieldCheck",
+          "uniquePerFormCheck"
+        ],
+        "needsOptions": false,
+        "lostMessages": [
+          "required",
+          "minLength",
+          "maxLength"
+        ],
+        "lostOperators": [
+          "contains",
+          "endsWith",
+          "matches",
+          "notContains",
+          "startsWith"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": false
+      },
+      {
+        "to": "dropdown",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "minLength",
+          "maxLength",
+          "prefix",
+          "suffix",
+          "counter"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "placeholder",
+          "patternCheck",
+          "matchesFieldCheck",
+          "uniquePerFormCheck"
+        ],
+        "needsOptions": true,
+        "lostMessages": [
+          "minLength",
+          "maxLength"
+        ],
+        "lostOperators": [
+          "contains",
+          "endsWith",
+          "matches",
+          "notContains",
+          "startsWith"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": true
+      },
+      {
+        "to": "radio",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "minLength",
+          "maxLength",
+          "prefix",
+          "suffix",
+          "counter"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "placeholder",
+          "autocomplete",
+          "patternCheck",
+          "matchesFieldCheck",
+          "uniquePerFormCheck"
+        ],
+        "needsOptions": true,
+        "lostMessages": [
+          "minLength",
+          "maxLength"
+        ],
+        "lostOperators": [
+          "contains",
+          "endsWith",
+          "matches",
+          "notContains",
+          "startsWith"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": true
+      },
+      {
+        "to": "checkboxes",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "minLength",
+          "maxLength",
+          "prefix",
+          "suffix",
+          "counter"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "placeholder",
+          "autocomplete",
+          "patternCheck",
+          "matchesFieldCheck",
+          "uniquePerFormCheck"
+        ],
+        "needsOptions": true,
+        "lostMessages": [
+          "minLength",
+          "maxLength"
+        ],
+        "lostOperators": [
+          "contains",
+          "endsWith",
+          "matches",
+          "notContains",
+          "startsWith"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": true
+      },
+      {
+        "to": "ranking",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "minLength",
+          "maxLength",
+          "prefix",
+          "suffix",
+          "counter"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "placeholder",
+          "defaultValue",
+          "prefill",
+          "autocomplete",
+          "patternCheck",
+          "matchesFieldCheck",
+          "uniquePerFormCheck"
+        ],
+        "needsOptions": true,
+        "lostMessages": [
+          "minLength",
+          "maxLength"
+        ],
+        "lostOperators": [
+          "contains",
+          "endsWith",
+          "matches",
+          "notContains",
+          "startsWith"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": true
+      },
+      {
+        "to": "checkbox",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "minLength",
+          "maxLength",
+          "prefix",
+          "suffix",
+          "counter"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "placeholder",
+          "autocomplete",
+          "patternCheck",
+          "matchesFieldCheck",
+          "uniquePerFormCheck"
+        ],
+        "needsOptions": false,
+        "lostMessages": [
+          "minLength",
+          "maxLength"
+        ],
+        "lostOperators": [
+          "contains",
+          "endsWith",
+          "matches",
+          "notContains",
+          "startsWith"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": false
+      },
+      {
+        "to": "yesno",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "minLength",
+          "maxLength",
+          "prefix",
+          "suffix",
+          "counter"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "placeholder",
+          "autocomplete",
+          "patternCheck",
+          "matchesFieldCheck",
+          "uniquePerFormCheck"
+        ],
+        "needsOptions": false,
+        "lostMessages": [
+          "minLength",
+          "maxLength"
+        ],
+        "lostOperators": [
+          "contains",
+          "endsWith",
+          "matches",
+          "notContains",
+          "startsWith"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": true
+      },
+      {
+        "to": "consent",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "minLength",
+          "maxLength",
+          "prefix",
+          "suffix",
+          "counter"
+        ],
+        "neededSettings": [
+          "text"
+        ],
+        "lockedSettings": [],
+        "lostProperties": [
+          "placeholder",
+          "defaultValue",
+          "prefill",
+          "autocomplete",
+          "patternCheck",
+          "matchesFieldCheck",
+          "uniquePerFormCheck"
+        ],
+        "needsOptions": false,
+        "lostMessages": [
+          "minLength",
+          "maxLength"
+        ],
+        "lostOperators": [
+          "contains",
+          "endsWith",
+          "matches",
+          "notContains",
+          "startsWith"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": true
+      },
+      {
+        "to": "country",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "minLength",
+          "maxLength",
+          "prefix",
+          "suffix",
+          "counter"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "placeholder",
+          "patternCheck",
+          "matchesFieldCheck",
+          "uniquePerFormCheck"
+        ],
+        "needsOptions": false,
+        "lostMessages": [
+          "minLength",
+          "maxLength"
+        ],
+        "lostOperators": [
+          "contains",
+          "endsWith",
+          "matches",
+          "notContains",
+          "startsWith"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": true
+      },
+      {
+        "to": "name",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "minLength",
+          "maxLength",
+          "prefix",
+          "suffix",
+          "counter"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "placeholder",
+          "defaultValue",
+          "autocomplete",
+          "patternCheck",
+          "matchesFieldCheck",
+          "uniquePerFormCheck"
+        ],
+        "needsOptions": false,
+        "lostMessages": [
+          "minLength",
+          "maxLength"
+        ],
+        "lostOperators": [
+          "contains",
+          "countAtLeast",
+          "countAtMost",
+          "endsWith",
+          "equals",
+          "isEmpty",
+          "isNoneOf",
+          "isNotEmpty",
+          "isOneOf",
+          "matches",
+          "notContains",
+          "notEquals",
+          "startsWith"
+        ],
+        "comparesAnew": false,
+        "keepsColumns": false
+      },
+      {
+        "to": "address",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "minLength",
+          "maxLength",
+          "prefix",
+          "suffix",
+          "counter"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "placeholder",
+          "defaultValue",
+          "autocomplete",
+          "patternCheck",
+          "matchesFieldCheck",
+          "uniquePerFormCheck"
+        ],
+        "needsOptions": false,
+        "lostMessages": [
+          "minLength",
+          "maxLength"
+        ],
+        "lostOperators": [
+          "contains",
+          "countAtLeast",
+          "countAtMost",
+          "endsWith",
+          "equals",
+          "isEmpty",
+          "isNoneOf",
+          "isNotEmpty",
+          "isOneOf",
+          "matches",
+          "notContains",
+          "notEquals",
+          "startsWith"
+        ],
+        "comparesAnew": false,
+        "keepsColumns": false
+      },
+      {
+        "to": "file",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "minLength",
+          "maxLength",
+          "prefix",
+          "suffix",
+          "counter"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "placeholder",
+          "defaultValue",
+          "prefill",
+          "autocomplete",
+          "patternCheck",
+          "matchesFieldCheck",
+          "uniquePerFormCheck"
+        ],
+        "needsOptions": false,
+        "lostMessages": [
+          "minLength",
+          "maxLength"
+        ],
+        "lostOperators": [
+          "contains",
+          "endsWith",
+          "matches",
+          "notContains",
+          "startsWith"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": false
+      },
+      {
+        "to": "signature",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "minLength",
+          "maxLength",
+          "prefix",
+          "suffix",
+          "counter"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "placeholder",
+          "defaultValue",
+          "prefill",
+          "autocomplete",
+          "patternCheck",
+          "matchesFieldCheck",
+          "uniquePerFormCheck"
+        ],
+        "needsOptions": false,
+        "lostMessages": [
+          "minLength",
+          "maxLength"
+        ],
+        "lostOperators": [
+          "contains",
+          "endsWith",
+          "matches",
+          "notContains",
+          "startsWith"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": false
+      },
+      {
+        "to": "hidden",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "minLength",
+          "maxLength",
+          "prefix",
+          "suffix",
+          "counter"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "hideLabel",
+          "help",
+          "placeholder",
+          "required",
+          "autocomplete",
+          "patternCheck",
+          "matchesFieldCheck",
+          "uniquePerFormCheck"
+        ],
+        "needsOptions": false,
+        "lostMessages": [
+          "required",
+          "minLength",
+          "maxLength"
+        ],
+        "lostOperators": [],
+        "comparesAnew": false,
+        "keepsColumns": true
+      }
+    ]
+  },
+  "textarea": {
+    "from": "textarea",
+    "changes": [
+      {
+        "to": "text",
+        "keptSettings": [
+          "counter"
+        ],
+        "narrowedSettings": [
+          "minLength",
+          "maxLength"
+        ],
+        "lostSettings": [
+          "minWords",
+          "maxWords",
+          "rows",
+          "autoGrow"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [],
+        "needsOptions": false,
+        "lostMessages": [
+          "minWords",
+          "maxWords"
+        ],
+        "lostOperators": [],
+        "comparesAnew": false,
+        "keepsColumns": true
+      },
+      {
+        "to": "email",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "minLength",
+          "maxLength",
+          "minWords",
+          "maxWords",
+          "rows",
+          "autoGrow",
+          "counter"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [],
+        "needsOptions": false,
+        "lostMessages": [
+          "minLength",
+          "maxLength",
+          "minWords",
+          "maxWords"
+        ],
+        "lostOperators": [],
+        "comparesAnew": false,
+        "keepsColumns": true
+      },
+      {
+        "to": "phone",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "minLength",
+          "maxLength",
+          "minWords",
+          "maxWords",
+          "rows",
+          "autoGrow",
+          "counter"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [],
+        "needsOptions": false,
+        "lostMessages": [
+          "minLength",
+          "maxLength",
+          "minWords",
+          "maxWords"
+        ],
+        "lostOperators": [],
+        "comparesAnew": false,
+        "keepsColumns": true
+      },
+      {
+        "to": "url",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "minLength",
+          "maxLength",
+          "minWords",
+          "maxWords",
+          "rows",
+          "autoGrow",
+          "counter"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [],
+        "needsOptions": false,
+        "lostMessages": [
+          "minLength",
+          "maxLength",
+          "minWords",
+          "maxWords"
+        ],
+        "lostOperators": [],
+        "comparesAnew": false,
+        "keepsColumns": true
+      },
+      {
+        "to": "number",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "minLength",
+          "maxLength",
+          "minWords",
+          "maxWords",
+          "rows",
+          "autoGrow",
+          "counter"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "patternCheck"
+        ],
+        "needsOptions": false,
+        "lostMessages": [
+          "minLength",
+          "maxLength",
+          "minWords",
+          "maxWords"
+        ],
+        "lostOperators": [
+          "contains",
+          "endsWith",
+          "matches",
+          "notContains",
+          "startsWith"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": false
+      },
+      {
+        "to": "date",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "minLength",
+          "maxLength",
+          "minWords",
+          "maxWords",
+          "rows",
+          "autoGrow",
+          "counter"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "placeholder",
+          "patternCheck"
+        ],
+        "needsOptions": false,
+        "lostMessages": [
+          "minLength",
+          "maxLength",
+          "minWords",
+          "maxWords"
+        ],
+        "lostOperators": [
+          "contains",
+          "endsWith",
+          "matches",
+          "notContains",
+          "startsWith"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": false
+      },
+      {
+        "to": "time",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "minLength",
+          "maxLength",
+          "minWords",
+          "maxWords",
+          "rows",
+          "autoGrow",
+          "counter"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "placeholder",
+          "autocomplete",
+          "patternCheck"
+        ],
+        "needsOptions": false,
+        "lostMessages": [
+          "minLength",
+          "maxLength",
+          "minWords",
+          "maxWords"
+        ],
+        "lostOperators": [
+          "contains",
+          "endsWith",
+          "matches",
+          "notContains",
+          "startsWith"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": true
+      },
+      {
+        "to": "datetime",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "minLength",
+          "maxLength",
+          "minWords",
+          "maxWords",
+          "rows",
+          "autoGrow",
+          "counter"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "placeholder",
+          "autocomplete",
+          "patternCheck"
+        ],
+        "needsOptions": false,
+        "lostMessages": [
+          "minLength",
+          "maxLength",
+          "minWords",
+          "maxWords"
+        ],
+        "lostOperators": [
+          "contains",
+          "endsWith",
+          "matches",
+          "notContains",
+          "startsWith"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": false
+      },
+      {
+        "to": "rating",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "minLength",
+          "maxLength",
+          "minWords",
+          "maxWords",
+          "rows",
+          "autoGrow",
+          "counter"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "placeholder",
+          "autocomplete",
+          "patternCheck",
+          "matchesFieldCheck",
+          "uniquePerFormCheck"
+        ],
+        "needsOptions": false,
+        "lostMessages": [
+          "minLength",
+          "maxLength",
+          "minWords",
+          "maxWords"
+        ],
+        "lostOperators": [
+          "contains",
+          "endsWith",
+          "matches",
+          "notContains",
+          "startsWith"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": false
+      },
+      {
+        "to": "scale",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "minLength",
+          "maxLength",
+          "minWords",
+          "maxWords",
+          "rows",
+          "autoGrow",
+          "counter"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "placeholder",
+          "autocomplete",
+          "patternCheck",
+          "matchesFieldCheck",
+          "uniquePerFormCheck"
+        ],
+        "needsOptions": false,
+        "lostMessages": [
+          "minLength",
+          "maxLength",
+          "minWords",
+          "maxWords"
+        ],
+        "lostOperators": [
+          "contains",
+          "endsWith",
+          "matches",
+          "notContains",
+          "startsWith"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": false
+      },
+      {
+        "to": "slider",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "minLength",
+          "maxLength",
+          "minWords",
+          "maxWords",
+          "rows",
+          "autoGrow",
+          "counter"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "placeholder",
+          "autocomplete",
+          "patternCheck",
+          "matchesFieldCheck",
+          "uniquePerFormCheck"
+        ],
+        "needsOptions": false,
+        "lostMessages": [
+          "minLength",
+          "maxLength",
+          "minWords",
+          "maxWords"
+        ],
+        "lostOperators": [
+          "contains",
+          "endsWith",
+          "matches",
+          "notContains",
+          "startsWith"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": false
+      },
+      {
+        "to": "calculation",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "minLength",
+          "maxLength",
+          "minWords",
+          "maxWords",
+          "rows",
+          "autoGrow",
+          "counter"
+        ],
+        "neededSettings": [
+          "formula"
+        ],
+        "lockedSettings": [],
+        "lostProperties": [
+          "placeholder",
+          "required",
+          "defaultValue",
+          "prefill",
+          "autocomplete",
+          "patternCheck",
+          "matchesFieldCheck",
+          "uniquePerFormCheck"
+        ],
+        "needsOptions": false,
+        "lostMessages": [
+          "required",
+          "minLength",
+          "maxLength",
+          "minWords",
+          "maxWords"
+        ],
+        "lostOperators": [
+          "contains",
+          "endsWith",
+          "matches",
+          "notContains",
+          "startsWith"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": false
+      },
+      {
+        "to": "dropdown",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "minLength",
+          "maxLength",
+          "minWords",
+          "maxWords",
+          "rows",
+          "autoGrow",
+          "counter"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "placeholder",
+          "patternCheck",
+          "matchesFieldCheck",
+          "uniquePerFormCheck"
+        ],
+        "needsOptions": true,
+        "lostMessages": [
+          "minLength",
+          "maxLength",
+          "minWords",
+          "maxWords"
+        ],
+        "lostOperators": [
+          "contains",
+          "endsWith",
+          "matches",
+          "notContains",
+          "startsWith"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": true
+      },
+      {
+        "to": "radio",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "minLength",
+          "maxLength",
+          "minWords",
+          "maxWords",
+          "rows",
+          "autoGrow",
+          "counter"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "placeholder",
+          "autocomplete",
+          "patternCheck",
+          "matchesFieldCheck",
+          "uniquePerFormCheck"
+        ],
+        "needsOptions": true,
+        "lostMessages": [
+          "minLength",
+          "maxLength",
+          "minWords",
+          "maxWords"
+        ],
+        "lostOperators": [
+          "contains",
+          "endsWith",
+          "matches",
+          "notContains",
+          "startsWith"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": true
+      },
+      {
+        "to": "checkboxes",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "minLength",
+          "maxLength",
+          "minWords",
+          "maxWords",
+          "rows",
+          "autoGrow",
+          "counter"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "placeholder",
+          "autocomplete",
+          "patternCheck",
+          "matchesFieldCheck",
+          "uniquePerFormCheck"
+        ],
+        "needsOptions": true,
+        "lostMessages": [
+          "minLength",
+          "maxLength",
+          "minWords",
+          "maxWords"
+        ],
+        "lostOperators": [
+          "contains",
+          "endsWith",
+          "matches",
+          "notContains",
+          "startsWith"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": true
+      },
+      {
+        "to": "ranking",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "minLength",
+          "maxLength",
+          "minWords",
+          "maxWords",
+          "rows",
+          "autoGrow",
+          "counter"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "placeholder",
+          "defaultValue",
+          "prefill",
+          "autocomplete",
+          "patternCheck",
+          "matchesFieldCheck",
+          "uniquePerFormCheck"
+        ],
+        "needsOptions": true,
+        "lostMessages": [
+          "minLength",
+          "maxLength",
+          "minWords",
+          "maxWords"
+        ],
+        "lostOperators": [
+          "contains",
+          "endsWith",
+          "matches",
+          "notContains",
+          "startsWith"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": true
+      },
+      {
+        "to": "checkbox",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "minLength",
+          "maxLength",
+          "minWords",
+          "maxWords",
+          "rows",
+          "autoGrow",
+          "counter"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "placeholder",
+          "autocomplete",
+          "patternCheck",
+          "matchesFieldCheck",
+          "uniquePerFormCheck"
+        ],
+        "needsOptions": false,
+        "lostMessages": [
+          "minLength",
+          "maxLength",
+          "minWords",
+          "maxWords"
+        ],
+        "lostOperators": [
+          "contains",
+          "endsWith",
+          "matches",
+          "notContains",
+          "startsWith"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": false
+      },
+      {
+        "to": "yesno",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "minLength",
+          "maxLength",
+          "minWords",
+          "maxWords",
+          "rows",
+          "autoGrow",
+          "counter"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "placeholder",
+          "autocomplete",
+          "patternCheck",
+          "matchesFieldCheck",
+          "uniquePerFormCheck"
+        ],
+        "needsOptions": false,
+        "lostMessages": [
+          "minLength",
+          "maxLength",
+          "minWords",
+          "maxWords"
+        ],
+        "lostOperators": [
+          "contains",
+          "endsWith",
+          "matches",
+          "notContains",
+          "startsWith"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": true
+      },
+      {
+        "to": "consent",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "minLength",
+          "maxLength",
+          "minWords",
+          "maxWords",
+          "rows",
+          "autoGrow",
+          "counter"
+        ],
+        "neededSettings": [
+          "text"
+        ],
+        "lockedSettings": [],
+        "lostProperties": [
+          "placeholder",
+          "defaultValue",
+          "prefill",
+          "autocomplete",
+          "patternCheck",
+          "matchesFieldCheck",
+          "uniquePerFormCheck"
+        ],
+        "needsOptions": false,
+        "lostMessages": [
+          "minLength",
+          "maxLength",
+          "minWords",
+          "maxWords"
+        ],
+        "lostOperators": [
+          "contains",
+          "endsWith",
+          "matches",
+          "notContains",
+          "startsWith"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": true
+      },
+      {
+        "to": "country",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "minLength",
+          "maxLength",
+          "minWords",
+          "maxWords",
+          "rows",
+          "autoGrow",
+          "counter"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "placeholder",
+          "patternCheck",
+          "matchesFieldCheck",
+          "uniquePerFormCheck"
+        ],
+        "needsOptions": false,
+        "lostMessages": [
+          "minLength",
+          "maxLength",
+          "minWords",
+          "maxWords"
+        ],
+        "lostOperators": [
+          "contains",
+          "endsWith",
+          "matches",
+          "notContains",
+          "startsWith"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": true
+      },
+      {
+        "to": "name",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "minLength",
+          "maxLength",
+          "minWords",
+          "maxWords",
+          "rows",
+          "autoGrow",
+          "counter"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "placeholder",
+          "defaultValue",
+          "autocomplete",
+          "patternCheck",
+          "matchesFieldCheck",
+          "uniquePerFormCheck"
+        ],
+        "needsOptions": false,
+        "lostMessages": [
+          "minLength",
+          "maxLength",
+          "minWords",
+          "maxWords"
+        ],
+        "lostOperators": [
+          "contains",
+          "countAtLeast",
+          "countAtMost",
+          "endsWith",
+          "equals",
+          "isEmpty",
+          "isNoneOf",
+          "isNotEmpty",
+          "isOneOf",
+          "matches",
+          "notContains",
+          "notEquals",
+          "startsWith"
+        ],
+        "comparesAnew": false,
+        "keepsColumns": false
+      },
+      {
+        "to": "address",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "minLength",
+          "maxLength",
+          "minWords",
+          "maxWords",
+          "rows",
+          "autoGrow",
+          "counter"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "placeholder",
+          "defaultValue",
+          "autocomplete",
+          "patternCheck",
+          "matchesFieldCheck",
+          "uniquePerFormCheck"
+        ],
+        "needsOptions": false,
+        "lostMessages": [
+          "minLength",
+          "maxLength",
+          "minWords",
+          "maxWords"
+        ],
+        "lostOperators": [
+          "contains",
+          "countAtLeast",
+          "countAtMost",
+          "endsWith",
+          "equals",
+          "isEmpty",
+          "isNoneOf",
+          "isNotEmpty",
+          "isOneOf",
+          "matches",
+          "notContains",
+          "notEquals",
+          "startsWith"
+        ],
+        "comparesAnew": false,
+        "keepsColumns": false
+      },
+      {
+        "to": "file",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "minLength",
+          "maxLength",
+          "minWords",
+          "maxWords",
+          "rows",
+          "autoGrow",
+          "counter"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "placeholder",
+          "defaultValue",
+          "prefill",
+          "autocomplete",
+          "patternCheck",
+          "matchesFieldCheck",
+          "uniquePerFormCheck"
+        ],
+        "needsOptions": false,
+        "lostMessages": [
+          "minLength",
+          "maxLength",
+          "minWords",
+          "maxWords"
+        ],
+        "lostOperators": [
+          "contains",
+          "endsWith",
+          "matches",
+          "notContains",
+          "startsWith"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": false
+      },
+      {
+        "to": "signature",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "minLength",
+          "maxLength",
+          "minWords",
+          "maxWords",
+          "rows",
+          "autoGrow",
+          "counter"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "placeholder",
+          "defaultValue",
+          "prefill",
+          "autocomplete",
+          "patternCheck",
+          "matchesFieldCheck",
+          "uniquePerFormCheck"
+        ],
+        "needsOptions": false,
+        "lostMessages": [
+          "minLength",
+          "maxLength",
+          "minWords",
+          "maxWords"
+        ],
+        "lostOperators": [
+          "contains",
+          "endsWith",
+          "matches",
+          "notContains",
+          "startsWith"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": false
+      },
+      {
+        "to": "hidden",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "minLength",
+          "maxLength",
+          "minWords",
+          "maxWords",
+          "rows",
+          "autoGrow",
+          "counter"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "hideLabel",
+          "help",
+          "placeholder",
+          "required",
+          "autocomplete",
+          "patternCheck",
+          "matchesFieldCheck",
+          "uniquePerFormCheck"
+        ],
+        "needsOptions": false,
+        "lostMessages": [
+          "required",
+          "minLength",
+          "maxLength",
+          "minWords",
+          "maxWords"
+        ],
+        "lostOperators": [],
+        "comparesAnew": false,
+        "keepsColumns": true
+      }
+    ]
+  },
+  "number": {
+    "from": "number",
+    "changes": [
+      {
+        "to": "text",
+        "keptSettings": [
+          "prefix",
+          "suffix"
+        ],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "min",
+          "max",
+          "step",
+          "decimals"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [],
+        "needsOptions": false,
+        "lostMessages": [
+          "invalid",
+          "min",
+          "max",
+          "step",
+          "digits"
+        ],
+        "lostOperators": [
+          "between",
+          "greaterThan",
+          "lessThan"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": false
+      },
+      {
+        "to": "textarea",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "min",
+          "max",
+          "step",
+          "decimals",
+          "prefix",
+          "suffix"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [],
+        "needsOptions": false,
+        "lostMessages": [
+          "invalid",
+          "min",
+          "max",
+          "step",
+          "digits"
+        ],
+        "lostOperators": [
+          "between",
+          "greaterThan",
+          "lessThan"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": false
+      },
+      {
+        "to": "email",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "min",
+          "max",
+          "step",
+          "decimals",
+          "prefix",
+          "suffix"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [],
+        "needsOptions": false,
+        "lostMessages": [
+          "min",
+          "max",
+          "step",
+          "digits"
+        ],
+        "lostOperators": [
+          "between",
+          "greaterThan",
+          "lessThan"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": false
+      },
+      {
+        "to": "phone",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "min",
+          "max",
+          "step",
+          "decimals",
+          "prefix",
+          "suffix"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [],
+        "needsOptions": false,
+        "lostMessages": [
+          "min",
+          "max",
+          "step",
+          "digits"
+        ],
+        "lostOperators": [
+          "between",
+          "greaterThan",
+          "lessThan"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": false
+      },
+      {
+        "to": "url",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "min",
+          "max",
+          "step",
+          "decimals",
+          "prefix",
+          "suffix"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [],
+        "needsOptions": false,
+        "lostMessages": [
+          "min",
+          "max",
+          "step",
+          "digits"
+        ],
+        "lostOperators": [
+          "between",
+          "greaterThan",
+          "lessThan"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": false
+      },
+      {
+        "to": "date",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "min",
+          "max",
+          "step",
+          "decimals",
+          "prefix",
+          "suffix"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "placeholder"
+        ],
+        "needsOptions": false,
+        "lostMessages": [
+          "min",
+          "max",
+          "step",
+          "digits"
+        ],
+        "lostOperators": [],
+        "comparesAnew": true,
+        "keepsColumns": false
+      },
+      {
+        "to": "time",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "min",
+          "max",
+          "step",
+          "decimals",
+          "prefix",
+          "suffix"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "placeholder",
+          "autocomplete"
+        ],
+        "needsOptions": false,
+        "lostMessages": [
+          "digits"
+        ],
+        "lostOperators": [],
+        "comparesAnew": true,
+        "keepsColumns": false
+      },
+      {
+        "to": "datetime",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "min",
+          "max",
+          "step",
+          "decimals",
+          "prefix",
+          "suffix"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "placeholder",
+          "autocomplete"
+        ],
+        "needsOptions": false,
+        "lostMessages": [
+          "min",
+          "max",
+          "digits"
+        ],
+        "lostOperators": [],
+        "comparesAnew": true,
+        "keepsColumns": false
+      },
+      {
+        "to": "rating",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "min",
+          "max",
+          "step",
+          "decimals",
+          "prefix",
+          "suffix"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "placeholder",
+          "autocomplete",
+          "matchesFieldCheck",
+          "uniquePerFormCheck"
+        ],
+        "needsOptions": false,
+        "lostMessages": [
+          "min",
+          "max",
+          "step",
+          "digits"
+        ],
+        "lostOperators": [],
+        "comparesAnew": false,
+        "keepsColumns": true
+      },
+      {
+        "to": "scale",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "min",
+          "max",
+          "step",
+          "decimals",
+          "prefix",
+          "suffix"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "placeholder",
+          "autocomplete",
+          "matchesFieldCheck",
+          "uniquePerFormCheck"
+        ],
+        "needsOptions": false,
+        "lostMessages": [
+          "min",
+          "max",
+          "step",
+          "digits"
+        ],
+        "lostOperators": [],
+        "comparesAnew": false,
+        "keepsColumns": true
+      },
+      {
+        "to": "slider",
+        "keptSettings": [
+          "min",
+          "max",
+          "step"
+        ],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "decimals",
+          "prefix",
+          "suffix"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "placeholder",
+          "autocomplete",
+          "matchesFieldCheck",
+          "uniquePerFormCheck"
+        ],
+        "needsOptions": false,
+        "lostMessages": [
+          "digits"
+        ],
+        "lostOperators": [],
+        "comparesAnew": false,
+        "keepsColumns": true
+      },
+      {
+        "to": "calculation",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "min",
+          "max",
+          "step",
+          "decimals",
+          "prefix",
+          "suffix"
+        ],
+        "neededSettings": [
+          "formula"
+        ],
+        "lockedSettings": [],
+        "lostProperties": [
+          "placeholder",
+          "required",
+          "defaultValue",
+          "prefill",
+          "autocomplete",
+          "matchesFieldCheck",
+          "uniquePerFormCheck"
+        ],
+        "needsOptions": false,
+        "lostMessages": [
+          "required",
+          "invalid",
+          "min",
+          "max",
+          "step",
+          "digits"
+        ],
+        "lostOperators": [],
+        "comparesAnew": false,
+        "keepsColumns": true
+      },
+      {
+        "to": "dropdown",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "min",
+          "max",
+          "step",
+          "decimals",
+          "prefix",
+          "suffix"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "placeholder",
+          "matchesFieldCheck",
+          "uniquePerFormCheck"
+        ],
+        "needsOptions": true,
+        "lostMessages": [
+          "min",
+          "max",
+          "step",
+          "digits"
+        ],
+        "lostOperators": [
+          "between",
+          "greaterThan",
+          "lessThan"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": false
+      },
+      {
+        "to": "radio",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "min",
+          "max",
+          "step",
+          "decimals",
+          "prefix",
+          "suffix"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "placeholder",
+          "autocomplete",
+          "matchesFieldCheck",
+          "uniquePerFormCheck"
+        ],
+        "needsOptions": true,
+        "lostMessages": [
+          "min",
+          "max",
+          "step",
+          "digits"
+        ],
+        "lostOperators": [
+          "between",
+          "greaterThan",
+          "lessThan"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": false
+      },
+      {
+        "to": "checkboxes",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "min",
+          "max",
+          "step",
+          "decimals",
+          "prefix",
+          "suffix"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "placeholder",
+          "autocomplete",
+          "matchesFieldCheck",
+          "uniquePerFormCheck"
+        ],
+        "needsOptions": true,
+        "lostMessages": [
+          "min",
+          "max",
+          "step",
+          "digits"
+        ],
+        "lostOperators": [
+          "between",
+          "greaterThan",
+          "lessThan"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": false
+      },
+      {
+        "to": "ranking",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "min",
+          "max",
+          "step",
+          "decimals",
+          "prefix",
+          "suffix"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "placeholder",
+          "defaultValue",
+          "prefill",
+          "autocomplete",
+          "matchesFieldCheck",
+          "uniquePerFormCheck"
+        ],
+        "needsOptions": true,
+        "lostMessages": [
+          "min",
+          "max",
+          "step",
+          "digits"
+        ],
+        "lostOperators": [
+          "between",
+          "greaterThan",
+          "lessThan"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": false
+      },
+      {
+        "to": "checkbox",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "min",
+          "max",
+          "step",
+          "decimals",
+          "prefix",
+          "suffix"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "placeholder",
+          "autocomplete",
+          "matchesFieldCheck",
+          "uniquePerFormCheck"
+        ],
+        "needsOptions": false,
+        "lostMessages": [
+          "invalid",
+          "min",
+          "max",
+          "step",
+          "digits"
+        ],
+        "lostOperators": [
+          "between",
+          "greaterThan",
+          "lessThan"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": false
+      },
+      {
+        "to": "yesno",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "min",
+          "max",
+          "step",
+          "decimals",
+          "prefix",
+          "suffix"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "placeholder",
+          "autocomplete",
+          "matchesFieldCheck",
+          "uniquePerFormCheck"
+        ],
+        "needsOptions": false,
+        "lostMessages": [
+          "invalid",
+          "min",
+          "max",
+          "step",
+          "digits"
+        ],
+        "lostOperators": [
+          "between",
+          "greaterThan",
+          "lessThan"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": false
+      },
+      {
+        "to": "consent",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "min",
+          "max",
+          "step",
+          "decimals",
+          "prefix",
+          "suffix"
+        ],
+        "neededSettings": [
+          "text"
+        ],
+        "lockedSettings": [],
+        "lostProperties": [
+          "placeholder",
+          "defaultValue",
+          "prefill",
+          "autocomplete",
+          "matchesFieldCheck",
+          "uniquePerFormCheck"
+        ],
+        "needsOptions": false,
+        "lostMessages": [
+          "invalid",
+          "min",
+          "max",
+          "step",
+          "digits"
+        ],
+        "lostOperators": [
+          "between",
+          "greaterThan",
+          "lessThan"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": false
+      },
+      {
+        "to": "country",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "min",
+          "max",
+          "step",
+          "decimals",
+          "prefix",
+          "suffix"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "placeholder",
+          "matchesFieldCheck",
+          "uniquePerFormCheck"
+        ],
+        "needsOptions": false,
+        "lostMessages": [
+          "min",
+          "max",
+          "step",
+          "digits"
+        ],
+        "lostOperators": [
+          "between",
+          "greaterThan",
+          "lessThan"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": false
+      },
+      {
+        "to": "name",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "min",
+          "max",
+          "step",
+          "decimals",
+          "prefix",
+          "suffix"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "placeholder",
+          "defaultValue",
+          "autocomplete",
+          "matchesFieldCheck",
+          "uniquePerFormCheck"
+        ],
+        "needsOptions": false,
+        "lostMessages": [
+          "min",
+          "max",
+          "step",
+          "digits"
+        ],
+        "lostOperators": [
+          "between",
+          "countAtLeast",
+          "countAtMost",
+          "equals",
+          "greaterThan",
+          "isEmpty",
+          "isNoneOf",
+          "isNotEmpty",
+          "isOneOf",
+          "lessThan",
+          "notEquals"
+        ],
+        "comparesAnew": false,
+        "keepsColumns": false
+      },
+      {
+        "to": "address",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "min",
+          "max",
+          "step",
+          "decimals",
+          "prefix",
+          "suffix"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "placeholder",
+          "defaultValue",
+          "autocomplete",
+          "matchesFieldCheck",
+          "uniquePerFormCheck"
+        ],
+        "needsOptions": false,
+        "lostMessages": [
+          "min",
+          "max",
+          "step",
+          "digits"
+        ],
+        "lostOperators": [
+          "between",
+          "countAtLeast",
+          "countAtMost",
+          "equals",
+          "greaterThan",
+          "isEmpty",
+          "isNoneOf",
+          "isNotEmpty",
+          "isOneOf",
+          "lessThan",
+          "notEquals"
+        ],
+        "comparesAnew": false,
+        "keepsColumns": false
+      },
+      {
+        "to": "file",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "min",
+          "max",
+          "step",
+          "decimals",
+          "prefix",
+          "suffix"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "placeholder",
+          "defaultValue",
+          "prefill",
+          "autocomplete",
+          "matchesFieldCheck",
+          "uniquePerFormCheck"
+        ],
+        "needsOptions": false,
+        "lostMessages": [
+          "invalid",
+          "min",
+          "max",
+          "step",
+          "digits"
+        ],
+        "lostOperators": [
+          "between",
+          "greaterThan",
+          "lessThan"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": false
+      },
+      {
+        "to": "signature",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "min",
+          "max",
+          "step",
+          "decimals",
+          "prefix",
+          "suffix"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "placeholder",
+          "defaultValue",
+          "prefill",
+          "autocomplete",
+          "matchesFieldCheck",
+          "uniquePerFormCheck"
+        ],
+        "needsOptions": false,
+        "lostMessages": [
+          "min",
+          "max",
+          "step",
+          "digits"
+        ],
+        "lostOperators": [
+          "between",
+          "greaterThan",
+          "lessThan"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": false
+      },
+      {
+        "to": "hidden",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "min",
+          "max",
+          "step",
+          "decimals",
+          "prefix",
+          "suffix"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "hideLabel",
+          "help",
+          "placeholder",
+          "required",
+          "autocomplete",
+          "matchesFieldCheck",
+          "uniquePerFormCheck"
+        ],
+        "needsOptions": false,
+        "lostMessages": [
+          "required",
+          "invalid",
+          "min",
+          "max",
+          "step",
+          "digits"
+        ],
+        "lostOperators": [
+          "between",
+          "greaterThan",
+          "lessThan"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": false
+      }
+    ]
+  },
+  "checkboxes": {
+    "from": "checkboxes",
+    "changes": [
+      {
+        "to": "text",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "other",
+          "otherLabel",
+          "minSelections",
+          "maxSelections",
+          "layout"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "options",
+          "places"
+        ],
+        "needsOptions": false,
+        "lostMessages": [
+          "invalid",
+          "selections",
+          "full"
+        ],
+        "lostOperators": [
+          "isChecked",
+          "isNotChecked"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": true
+      },
+      {
+        "to": "textarea",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "other",
+          "otherLabel",
+          "minSelections",
+          "maxSelections",
+          "layout"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "options",
+          "places"
+        ],
+        "needsOptions": false,
+        "lostMessages": [
+          "invalid",
+          "selections",
+          "full"
+        ],
+        "lostOperators": [
+          "isChecked",
+          "isNotChecked"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": true
+      },
+      {
+        "to": "email",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "other",
+          "otherLabel",
+          "minSelections",
+          "maxSelections",
+          "layout"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "options",
+          "places"
+        ],
+        "needsOptions": false,
+        "lostMessages": [
+          "selections",
+          "full"
+        ],
+        "lostOperators": [
+          "isChecked",
+          "isNotChecked"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": true
+      },
+      {
+        "to": "phone",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "other",
+          "otherLabel",
+          "minSelections",
+          "maxSelections",
+          "layout"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "options",
+          "places"
+        ],
+        "needsOptions": false,
+        "lostMessages": [
+          "selections",
+          "full"
+        ],
+        "lostOperators": [
+          "isChecked",
+          "isNotChecked"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": true
+      },
+      {
+        "to": "url",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "other",
+          "otherLabel",
+          "minSelections",
+          "maxSelections",
+          "layout"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "options",
+          "places"
+        ],
+        "needsOptions": false,
+        "lostMessages": [
+          "selections",
+          "full"
+        ],
+        "lostOperators": [
+          "isChecked",
+          "isNotChecked"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": true
+      },
+      {
+        "to": "number",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "other",
+          "otherLabel",
+          "minSelections",
+          "maxSelections",
+          "layout"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "options",
+          "places"
+        ],
+        "needsOptions": false,
+        "lostMessages": [
+          "selections",
+          "full"
+        ],
+        "lostOperators": [
+          "isChecked",
+          "isNotChecked"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": false
+      },
+      {
+        "to": "date",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "other",
+          "otherLabel",
+          "minSelections",
+          "maxSelections",
+          "layout"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "options",
+          "places"
+        ],
+        "needsOptions": false,
+        "lostMessages": [
+          "selections",
+          "full"
+        ],
+        "lostOperators": [
+          "isChecked",
+          "isNotChecked"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": false
+      },
+      {
+        "to": "time",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "other",
+          "otherLabel",
+          "minSelections",
+          "maxSelections",
+          "layout"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "options",
+          "places"
+        ],
+        "needsOptions": false,
+        "lostMessages": [
+          "selections",
+          "full"
+        ],
+        "lostOperators": [
+          "isChecked",
+          "isNotChecked"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": true
+      },
+      {
+        "to": "datetime",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "other",
+          "otherLabel",
+          "minSelections",
+          "maxSelections",
+          "layout"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "options",
+          "places"
+        ],
+        "needsOptions": false,
+        "lostMessages": [
+          "selections",
+          "full"
+        ],
+        "lostOperators": [
+          "isChecked",
+          "isNotChecked"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": false
+      },
+      {
+        "to": "rating",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "other",
+          "otherLabel",
+          "minSelections",
+          "maxSelections",
+          "layout"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "options",
+          "places"
+        ],
+        "needsOptions": false,
+        "lostMessages": [
+          "selections",
+          "full"
+        ],
+        "lostOperators": [
+          "isChecked",
+          "isNotChecked"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": false
+      },
+      {
+        "to": "scale",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "other",
+          "otherLabel",
+          "minSelections",
+          "maxSelections",
+          "layout"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "options",
+          "places"
+        ],
+        "needsOptions": false,
+        "lostMessages": [
+          "selections",
+          "full"
+        ],
+        "lostOperators": [
+          "isChecked",
+          "isNotChecked"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": false
+      },
+      {
+        "to": "slider",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "other",
+          "otherLabel",
+          "minSelections",
+          "maxSelections",
+          "layout"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "options",
+          "places"
+        ],
+        "needsOptions": false,
+        "lostMessages": [
+          "selections",
+          "full"
+        ],
+        "lostOperators": [
+          "isChecked",
+          "isNotChecked"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": false
+      },
+      {
+        "to": "calculation",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "other",
+          "otherLabel",
+          "minSelections",
+          "maxSelections",
+          "layout"
+        ],
+        "neededSettings": [
+          "formula"
+        ],
+        "lockedSettings": [],
+        "lostProperties": [
+          "required",
+          "defaultValue",
+          "prefill",
+          "options",
+          "places"
+        ],
+        "needsOptions": false,
+        "lostMessages": [
+          "required",
+          "invalid",
+          "selections",
+          "full"
+        ],
+        "lostOperators": [
+          "isChecked",
+          "isNotChecked"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": false
+      },
+      {
+        "to": "dropdown",
+        "keptSettings": [
+          "minSelections",
+          "maxSelections"
+        ],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "other",
+          "otherLabel",
+          "layout"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [],
+        "needsOptions": false,
+        "lostMessages": [],
+        "lostOperators": [],
+        "comparesAnew": true,
+        "keepsColumns": true
+      },
+      {
+        "to": "radio",
+        "keptSettings": [
+          "other",
+          "otherLabel",
+          "layout"
+        ],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "minSelections",
+          "maxSelections"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [],
+        "needsOptions": false,
+        "lostMessages": [
+          "selections"
+        ],
+        "lostOperators": [],
+        "comparesAnew": true,
+        "keepsColumns": true
+      },
+      {
+        "to": "ranking",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "other",
+          "otherLabel",
+          "minSelections",
+          "maxSelections",
+          "layout"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "defaultValue",
+          "prefill",
+          "places"
+        ],
+        "needsOptions": false,
+        "lostMessages": [
+          "selections",
+          "full"
+        ],
+        "lostOperators": [],
+        "comparesAnew": false,
+        "keepsColumns": true
+      },
+      {
+        "to": "checkbox",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "other",
+          "otherLabel",
+          "minSelections",
+          "maxSelections",
+          "layout"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "options",
+          "places"
+        ],
+        "needsOptions": false,
+        "lostMessages": [
+          "invalid",
+          "selections",
+          "full"
+        ],
+        "lostOperators": [],
+        "comparesAnew": true,
+        "keepsColumns": false
+      },
+      {
+        "to": "yesno",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "other",
+          "otherLabel",
+          "minSelections",
+          "maxSelections",
+          "layout"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "options",
+          "places"
+        ],
+        "needsOptions": false,
+        "lostMessages": [
+          "invalid",
+          "selections",
+          "full"
+        ],
+        "lostOperators": [],
+        "comparesAnew": true,
+        "keepsColumns": true
+      },
+      {
+        "to": "consent",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "other",
+          "otherLabel",
+          "minSelections",
+          "maxSelections",
+          "layout"
+        ],
+        "neededSettings": [
+          "text"
+        ],
+        "lockedSettings": [],
+        "lostProperties": [
+          "defaultValue",
+          "prefill",
+          "options",
+          "places"
+        ],
+        "needsOptions": false,
+        "lostMessages": [
+          "invalid",
+          "selections",
+          "full"
+        ],
+        "lostOperators": [],
+        "comparesAnew": true,
+        "keepsColumns": true
+      },
+      {
+        "to": "country",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "other",
+          "otherLabel",
+          "minSelections",
+          "maxSelections",
+          "layout"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "options",
+          "places"
+        ],
+        "needsOptions": false,
+        "lostMessages": [
+          "selections",
+          "full"
+        ],
+        "lostOperators": [],
+        "comparesAnew": true,
+        "keepsColumns": true
+      },
+      {
+        "to": "name",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "other",
+          "otherLabel",
+          "minSelections",
+          "maxSelections",
+          "layout"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "defaultValue",
+          "options",
+          "places"
+        ],
+        "needsOptions": false,
+        "lostMessages": [
+          "selections",
+          "full"
+        ],
+        "lostOperators": [
+          "countAtLeast",
+          "countAtMost",
+          "equals",
+          "isChecked",
+          "isEmpty",
+          "isNoneOf",
+          "isNotChecked",
+          "isNotEmpty",
+          "isOneOf",
+          "notEquals"
+        ],
+        "comparesAnew": false,
+        "keepsColumns": false
+      },
+      {
+        "to": "address",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "other",
+          "otherLabel",
+          "minSelections",
+          "maxSelections",
+          "layout"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "defaultValue",
+          "options",
+          "places"
+        ],
+        "needsOptions": false,
+        "lostMessages": [
+          "selections",
+          "full"
+        ],
+        "lostOperators": [
+          "countAtLeast",
+          "countAtMost",
+          "equals",
+          "isChecked",
+          "isEmpty",
+          "isNoneOf",
+          "isNotChecked",
+          "isNotEmpty",
+          "isOneOf",
+          "notEquals"
+        ],
+        "comparesAnew": false,
+        "keepsColumns": false
+      },
+      {
+        "to": "file",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "other",
+          "otherLabel",
+          "minSelections",
+          "maxSelections",
+          "layout"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "defaultValue",
+          "prefill",
+          "options",
+          "places"
+        ],
+        "needsOptions": false,
+        "lostMessages": [
+          "invalid",
+          "selections",
+          "full"
+        ],
+        "lostOperators": [
+          "isChecked",
+          "isNotChecked"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": false
+      },
+      {
+        "to": "signature",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "other",
+          "otherLabel",
+          "minSelections",
+          "maxSelections",
+          "layout"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "defaultValue",
+          "prefill",
+          "options",
+          "places"
+        ],
+        "needsOptions": false,
+        "lostMessages": [
+          "selections",
+          "full"
+        ],
+        "lostOperators": [
+          "isChecked",
+          "isNotChecked"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": false
+      },
+      {
+        "to": "hidden",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "other",
+          "otherLabel",
+          "minSelections",
+          "maxSelections",
+          "layout"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "hideLabel",
+          "help",
+          "required",
+          "options",
+          "places"
+        ],
+        "needsOptions": false,
+        "lostMessages": [
+          "required",
+          "invalid",
+          "selections",
+          "full"
+        ],
+        "lostOperators": [
+          "isChecked",
+          "isNotChecked"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": true
+      }
+    ]
+  },
+  "checkbox": {
+    "from": "checkbox",
+    "changes": [
+      {
+        "to": "text",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "text"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [],
+        "needsOptions": false,
+        "lostMessages": [],
+        "lostOperators": [
+          "isChecked",
+          "isNotChecked"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": false
+      },
+      {
+        "to": "textarea",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "text"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [],
+        "needsOptions": false,
+        "lostMessages": [],
+        "lostOperators": [
+          "isChecked",
+          "isNotChecked"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": false
+      },
+      {
+        "to": "email",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "text"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [],
+        "needsOptions": false,
+        "lostMessages": [],
+        "lostOperators": [
+          "isChecked",
+          "isNotChecked"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": false
+      },
+      {
+        "to": "phone",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "text"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [],
+        "needsOptions": false,
+        "lostMessages": [],
+        "lostOperators": [
+          "isChecked",
+          "isNotChecked"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": false
+      },
+      {
+        "to": "url",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "text"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [],
+        "needsOptions": false,
+        "lostMessages": [],
+        "lostOperators": [
+          "isChecked",
+          "isNotChecked"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": false
+      },
+      {
+        "to": "number",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "text"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [],
+        "needsOptions": false,
+        "lostMessages": [],
+        "lostOperators": [
+          "isChecked",
+          "isNotChecked"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": false
+      },
+      {
+        "to": "date",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "text"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [],
+        "needsOptions": false,
+        "lostMessages": [],
+        "lostOperators": [
+          "isChecked",
+          "isNotChecked"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": false
+      },
+      {
+        "to": "time",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "text"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [],
+        "needsOptions": false,
+        "lostMessages": [],
+        "lostOperators": [
+          "isChecked",
+          "isNotChecked"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": false
+      },
+      {
+        "to": "datetime",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "text"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [],
+        "needsOptions": false,
+        "lostMessages": [],
+        "lostOperators": [
+          "isChecked",
+          "isNotChecked"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": false
+      },
+      {
+        "to": "rating",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "text"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [],
+        "needsOptions": false,
+        "lostMessages": [],
+        "lostOperators": [
+          "isChecked",
+          "isNotChecked"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": false
+      },
+      {
+        "to": "scale",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "text"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [],
+        "needsOptions": false,
+        "lostMessages": [],
+        "lostOperators": [
+          "isChecked",
+          "isNotChecked"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": false
+      },
+      {
+        "to": "slider",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "text"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [],
+        "needsOptions": false,
+        "lostMessages": [],
+        "lostOperators": [
+          "isChecked",
+          "isNotChecked"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": false
+      },
+      {
+        "to": "calculation",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "text"
+        ],
+        "neededSettings": [
+          "formula"
+        ],
+        "lockedSettings": [],
+        "lostProperties": [
+          "required",
+          "defaultValue",
+          "prefill"
+        ],
+        "needsOptions": false,
+        "lostMessages": [
+          "required"
+        ],
+        "lostOperators": [
+          "isChecked",
+          "isNotChecked"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": false
+      },
+      {
+        "to": "dropdown",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "text"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [],
+        "needsOptions": true,
+        "lostMessages": [],
+        "lostOperators": [],
+        "comparesAnew": true,
+        "keepsColumns": false
+      },
+      {
+        "to": "radio",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "text"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [],
+        "needsOptions": true,
+        "lostMessages": [],
+        "lostOperators": [],
+        "comparesAnew": true,
+        "keepsColumns": false
+      },
+      {
+        "to": "checkboxes",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "text"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [],
+        "needsOptions": true,
+        "lostMessages": [],
+        "lostOperators": [],
+        "comparesAnew": true,
+        "keepsColumns": false
+      },
+      {
+        "to": "ranking",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "text"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "defaultValue",
+          "prefill"
+        ],
+        "needsOptions": true,
+        "lostMessages": [],
+        "lostOperators": [],
+        "comparesAnew": true,
+        "keepsColumns": false
+      },
+      {
+        "to": "yesno",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "text"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [],
+        "needsOptions": false,
+        "lostMessages": [],
+        "lostOperators": [],
+        "comparesAnew": true,
+        "keepsColumns": false
+      },
+      {
+        "to": "consent",
+        "keptSettings": [],
+        "narrowedSettings": [
+          "text"
+        ],
+        "lostSettings": [],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "defaultValue",
+          "prefill"
+        ],
+        "needsOptions": false,
+        "lostMessages": [],
+        "lostOperators": [],
+        "comparesAnew": false,
+        "keepsColumns": false
+      },
+      {
+        "to": "country",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "text"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [],
+        "needsOptions": false,
+        "lostMessages": [],
+        "lostOperators": [],
+        "comparesAnew": true,
+        "keepsColumns": false
+      },
+      {
+        "to": "name",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "text"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "defaultValue"
+        ],
+        "needsOptions": false,
+        "lostMessages": [],
+        "lostOperators": [
+          "countAtLeast",
+          "countAtMost",
+          "equals",
+          "isChecked",
+          "isEmpty",
+          "isNoneOf",
+          "isNotChecked",
+          "isNotEmpty",
+          "isOneOf",
+          "notEquals"
+        ],
+        "comparesAnew": false,
+        "keepsColumns": false
+      },
+      {
+        "to": "address",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "text"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "defaultValue"
+        ],
+        "needsOptions": false,
+        "lostMessages": [],
+        "lostOperators": [
+          "countAtLeast",
+          "countAtMost",
+          "equals",
+          "isChecked",
+          "isEmpty",
+          "isNoneOf",
+          "isNotChecked",
+          "isNotEmpty",
+          "isOneOf",
+          "notEquals"
+        ],
+        "comparesAnew": false,
+        "keepsColumns": false
+      },
+      {
+        "to": "file",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "text"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "defaultValue",
+          "prefill"
+        ],
+        "needsOptions": false,
+        "lostMessages": [],
+        "lostOperators": [
+          "isChecked",
+          "isNotChecked"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": false
+      },
+      {
+        "to": "signature",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "text"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "defaultValue",
+          "prefill"
+        ],
+        "needsOptions": false,
+        "lostMessages": [],
+        "lostOperators": [
+          "isChecked",
+          "isNotChecked"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": false
+      },
+      {
+        "to": "hidden",
+        "keptSettings": [],
+        "narrowedSettings": [],
+        "lostSettings": [
+          "text"
+        ],
+        "neededSettings": [],
+        "lockedSettings": [],
+        "lostProperties": [
+          "hideLabel",
+          "help",
+          "required"
+        ],
+        "needsOptions": false,
+        "lostMessages": [
+          "required"
+        ],
+        "lostOperators": [
+          "isChecked",
+          "isNotChecked"
+        ],
+        "comparesAnew": true,
+        "keepsColumns": false
+      }
+    ]
+  }
+}

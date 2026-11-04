@@ -6,8 +6,9 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Integration.ManagementApi;
 
 /// <summary>
 /// The host's designer locks through the management API (ADR-0060): the field types mark a locked setting read-only
-/// with its value and key, and a hidden one hidden without its value; a draft save that gives a locked setting another
-/// value answers <c>409 setting_locked</c> with the setting's path and the lock's key.
+/// with its value and key, and a hidden one hidden without its value; a change of type into a locked type neither carries
+/// the locked setting over nor needs it; a draft save that gives a locked setting another value answers
+/// <c>409 setting_locked</c> with the setting's path and the lock's key.
 /// </summary>
 [TestFixture]
 [UmbracoTest(Database = UmbracoTestOptions.Database.NewSchemaPerTest, Boot = true)]
@@ -27,6 +28,36 @@ public sealed class FieldSettingLockApiTests : ManagementApiTestBase
         InMemoryConfiguration[Locks + "1:Setting"] = "prefix";
         InMemoryConfiguration[Locks + "1:Value"] = "JFBSECRETPREFIX";
         InMemoryConfiguration[Locks + "1:Hidden"] = "true";
+        InMemoryConfiguration[Locks + "2:Kind"] = "field";
+        InMemoryConfiguration[Locks + "2:Type"] = "dropdown";
+        InMemoryConfiguration[Locks + "2:Setting"] = "maxSelections";
+        InMemoryConfiguration[Locks + "2:Value"] = "3";
+    }
+
+    [Test]
+    public async Task AChangeIntoALockedType_NeitherCarriesTheLockedSettingOverNorNeedsIt()
+    {
+        var answers = new Dictionary<string, JsonObject>();
+        var texts = new List<string>();
+        foreach (var from in new[] { "checkboxes", "textarea", "number", "text" })
+        {
+            var answer = await CallAsync("designer", HttpMethod.Get, $"field-type/{from}/changes");
+            Assert.That(answer.Outcome, Is.EqualTo("200"), answer.ToString());
+            answers[from] = answer.Body!.AsObject();
+            texts.Add(answer.Text);
+        }
+
+        string Part(string from, string to, string part) => string.Join(',', answers[from]["changes"]!.AsArray()
+            .Single(change => change!["to"]!.GetValue<string>() == to)![part]!.AsArray().Select(name => name!.GetValue<string>()));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That((Part("checkboxes", "dropdown", "keptSettings"), Part("checkboxes", "dropdown", "lockedSettings")), Is.EqualTo(("minSelections", "maxSelections")), "the dropdown's lock sets its most selections");
+            Assert.That((Part("textarea", "text", "narrowedSettings"), Part("textarea", "text", "lockedSettings")), Is.EqualTo(("minLength", "maxLength")), "the text's lock sets its maximum length");
+            Assert.That((Part("number", "text", "keptSettings"), Part("number", "text", "lockedSettings")), Is.EqualTo(("suffix", "prefix")), "a hidden lock too, by name only");
+            Assert.That((Part("text", "textarea", "keptSettings"), Part("text", "textarea", "lockedSettings")), Is.EqualTo(("minLength,maxLength,counter", string.Empty)), "a lock of the type it leaves changes nothing");
+            Assert.That(texts, Has.None.Contains("JFBSECRETPREFIX"));
+        });
     }
 
     [Test]

@@ -3,7 +3,8 @@
 - Status: accepted; builds on [ADR-0055](0055-field-type-framework.md) (what a type declares) and
   [ADR-0056](0056-field-settings-checks.md) (the rules of settings)
 - Date: 2026-10-25
-- Roadmap step: 5.1e (decided and built); 9.4 serves the map and previews a change in the inspector
+- Roadmap step: 5.1e (decided and built); 9.4d serves the map and previews a change in the designer, beside the
+  field types rather than with them ([ADR-0174](0174-changing-a-fields-type-in-the-designer.md))
 
 ## Context
 

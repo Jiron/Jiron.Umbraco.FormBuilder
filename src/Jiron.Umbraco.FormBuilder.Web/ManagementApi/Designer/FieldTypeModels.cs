@@ -37,9 +37,10 @@ internal sealed record FieldTypesResponseModel
         {
             PaletteGroups = [.. Enum.GetValues<FieldPaletteGroup>().Select(group => new FieldGroupResponseModel(FieldTypeNames.Of(group), $"#jfbFieldPalette_{FieldTypeNames.Of(group)}"))],
             SettingGroups = [.. Enum.GetValues<FieldSettingGroup>().Select(group => new FieldGroupResponseModel(FieldTypeNames.Of(group), $"#jfbFieldSettingGroups_{FieldTypeNames.Of(group)}"))],
-            Types = [.. types.Select((type, i) => FieldTypeResponseModel.Of(type, availability[i], locks.Of(type.Declaration.Alias)))],
+            Types = [.. types.Select((type, i) => FieldTypeResponseModel.Of(type, availability[i], locks.Of(type.Declaration.Alias), types.Any(to => FieldTypeChanges.CanChange(type.Declaration, to.Declaration))))],
         };
     }
+
 }
 
 /// <summary>A group of the palette or of the inspector.</summary>
@@ -92,8 +93,14 @@ internal sealed record FieldTypeResponseModel
     /// <summary>Whether the site has what it needs.</summary>
     public required FieldTypeAvailabilityResponseModel Availability { get; init; }
 
-    /// <summary>The model of a type, with the host's locks of its settings.</summary>
-    public static FieldTypeResponseModel Of(IFormBuilderFieldType type, FieldTypeAvailability availability, IReadOnlyList<FieldSettingLock> locks)
+    /// <summary>
+    /// Whether a field of the type may become another of the site's types (ADR-0059), whose changes
+    /// <c>field-type/{alias}/changes</c> serves; content, a grid and a repeatable group keep their type.
+    /// </summary>
+    public required bool MayChangeType { get; init; }
+
+    /// <summary>The model of a type, with the host's locks of its settings and whether its fields may change type.</summary>
+    public static FieldTypeResponseModel Of(IFormBuilderFieldType type, FieldTypeAvailability availability, IReadOnlyList<FieldSettingLock> locks, bool mayChangeType = false)
     {
         ArgumentNullException.ThrowIfNull(type);
         ArgumentNullException.ThrowIfNull(availability);
@@ -115,6 +122,105 @@ internal sealed record FieldTypeResponseModel
             Messages = [.. FieldMessageProperties.All.Where(message => declaration.Messages.HasFlag(message.Kind)).Select(message => message.Name)],
             Settings = FieldSettingResponseModel.Of(type.SettingsSchema.Settings, locks),
             Availability = new FieldTypeAvailabilityResponseModel(availability.IsAvailable, availability.Reason),
+            MayChangeType = mayChangeType,
+        };
+    }
+}
+
+/// <summary>
+/// The changes of type a field of one type may make (ADR-0059), for the designer's Change type: served apart from the
+/// list, as every type's changes would make the list four times its size, and the designer asks only for the field it
+/// changes.
+/// </summary>
+internal sealed record FieldTypeChangesResponseModel
+{
+    /// <summary>The alias of the type the field has.</summary>
+    public required string From { get; init; }
+
+    /// <summary>The changes, in the palette's order; none for a type whose fields keep their type.</summary>
+    public required IReadOnlyList<FieldTypeChangeResponseModel> Changes { get; init; }
+
+    /// <summary>The changes a field of <paramref name="from"/> may make among the site's types, each with the host's locks of its target applied.</summary>
+    public static FieldTypeChangesResponseModel Of(IFormBuilderFieldType from, IReadOnlyList<IFormBuilderFieldType> types, FieldSettingLocks locks)
+    {
+        ArgumentNullException.ThrowIfNull(from);
+        ArgumentNullException.ThrowIfNull(types);
+        ArgumentNullException.ThrowIfNull(locks);
+        return new FieldTypeChangesResponseModel
+        {
+            From = from.Declaration.Alias,
+            Changes =
+            [
+                .. types
+                    .Where(to => FieldTypeChanges.CanChange(from.Declaration, to.Declaration))
+                    .Select(to => FieldTypeChangeResponseModel.Of(FieldTypeChanges.UnderLocks(
+                        FieldTypeChanges.Between(from, to),
+                        locks.Of(to.Declaration.Alias).Select(each => each.Setting.Name)))),
+            ],
+        };
+    }
+}
+
+/// <summary>
+/// A change of type a field may make (ADR-0059): what it keeps, narrows, loses and needs, worked out from the two types'
+/// declarations, with the host's locks of the target applied (ADR-0060). The designer applies it to the field in the draft.
+/// </summary>
+internal sealed record FieldTypeChangeResponseModel
+{
+    /// <summary>The alias of the type the field becomes.</summary>
+    public required string To { get; init; }
+
+    /// <summary>The settings carried over as they are: the target's rules take every value the source's take.</summary>
+    public required IReadOnlyList<string> KeptSettings { get; init; }
+
+    /// <summary>The settings whose rules in the target take fewer values: a value outside them is not carried over.</summary>
+    public required IReadOnlyList<string> NarrowedSettings { get; init; }
+
+    /// <summary>The source's settings the target does not have, or has with another kind: their values go.</summary>
+    public required IReadOnlyList<string> LostSettings { get; init; }
+
+    /// <summary>The target's required settings the change does not carry over, which the field needs before it publishes.</summary>
+    public required IReadOnlyList<string> NeededSettings { get; init; }
+
+    /// <summary>The settings it would carry over that the host locks on the target: the lock sets them.</summary>
+    public required IReadOnlyList<string> LockedSettings { get; init; }
+
+    /// <summary>The common properties the target does not support, such as <c>placeholder</c>: the field's values for them go.</summary>
+    public required IReadOnlyList<string> LostProperties { get; init; }
+
+    /// <summary>Whether the target cannot be answered without options and the source has none.</summary>
+    public required bool NeedsOptions { get; init; }
+
+    /// <summary>The error kinds the target does not raise, each a message's name: the field's own messages for them go.</summary>
+    public required IReadOnlyList<string> LostMessages { get; init; }
+
+    /// <summary>The operators the target's rule kind does not take: a condition on the field with one of them no longer publishes.</summary>
+    public required IReadOnlyList<string> LostOperators { get; init; }
+
+    /// <summary>Whether both have a rule kind and they differ, so the conditions that stay compare answers as the target's kind.</summary>
+    public required bool ComparesAnew { get; init; }
+
+    /// <summary>Whether both store in the same columns, so the entries screen filters and sorts older answers as before.</summary>
+    public required bool KeepsColumns { get; init; }
+
+    /// <summary>The model of a change.</summary>
+    public static FieldTypeChangeResponseModel Of(FieldTypeChange change)
+    {
+        ArgumentNullException.ThrowIfNull(change);
+        return new FieldTypeChangeResponseModel
+        {
+            To = change.To,
+            KeptSettings = change.KeptSettings,
+            NarrowedSettings = change.NarrowedSettings,
+            LostSettings = change.LostSettings,
+            NeededSettings = change.NeededSettings,
+            LockedSettings = change.LockedSettings,
+            LostProperties = FieldTypeNames.OfFeatures(change.LostProperties),
+            NeedsOptions = change.NeedsOptions,
+            LostMessages = [.. FieldMessageProperties.All.Where(message => change.LostMessages.HasFlag(message.Kind)).Select(message => message.Name)],
+            LostOperators = change.LostOperators,
+            ComparesAnew = change.ComparesAnew,
+            KeepsColumns = change.KeepsColumns,
         };
     }
 }

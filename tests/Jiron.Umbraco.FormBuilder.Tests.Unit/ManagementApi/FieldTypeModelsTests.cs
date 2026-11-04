@@ -118,5 +118,43 @@ public sealed class FieldTypeModelsTests
         });
     }
 
+    [Test]
+    public void EachType_CarriesTheChangesItsFieldsMayMake_WithTheTargetsLocks()
+    {
+        var options = new FormBuilderOptions();
+        options.Designer.SettingLocks.Add(new DesignerSettingLock { Kind = "field", Type = "dropdown", Setting = "maxSelections", Value = "3" });
+        var locks = new FieldSettingLocks(Options.Create(options), Registry);
+
+        var model = FieldTypesResponseModel.Of(Registry.Types, [.. Registry.Types.Select(_ => FieldTypeAvailability.Available)], locks);
+        FieldTypeChangesResponseModel Changes(string alias) => FieldTypeChangesResponseModel.Of(Registry.FindType(alias)!, Registry.Types, locks);
+        var dropdown = Changes("text").Changes.Single(change => change.To == "dropdown");
+        var checkboxes = Changes("checkboxes").Changes.Single(change => change.To == "dropdown");
+
+        Assert.Multiple(() =>
+        {
+            foreach (var type in Registry.Types)
+            {
+                var alias = type.Declaration.Alias;
+                var map = FieldTypeChanges.From(Registry, alias).Select(change => change.To).ToList();
+                Assert.That((Changes(alias).From, Changes(alias).Changes.Select(change => change.To)), Is.EqualTo((alias, map)), $"{alias}, as the map has them");
+                Assert.That(model.Types.Single(each => each.Alias == alias).MayChangeType, Is.EqualTo(map.Count > 0), alias);
+            }
+
+            Assert.That(dropdown.LostSettings, Is.EqualTo(new[] { "minLength", "maxLength", "prefix", "suffix", "counter" }));
+            Assert.That(dropdown.LostProperties, Is.EqualTo(new[] { "placeholder", "patternCheck", "matchesFieldCheck", "uniquePerFormCheck" }), "in camel case");
+            Assert.That(dropdown.LostMessages, Is.EqualTo(new[] { "minLength", "maxLength" }), "as the messages are named");
+            Assert.That(dropdown.LostOperators, Does.Contain("contains"));
+            Assert.That((dropdown.NeedsOptions, dropdown.ComparesAnew, dropdown.KeepsColumns), Is.EqualTo((true, true, true)));
+            Assert.That(checkboxes.KeptSettings, Is.EqualTo(new[] { "minSelections" }), "a setting the target's lock sets is not carried over");
+            Assert.That(checkboxes.LockedSettings, Is.EqualTo(new[] { "maxSelections" }));
+            Assert.That((Changes("heading").Changes, model.Types.Single(type => type.Alias == "heading").MayChangeType), Is.EqualTo((Array.Empty<FieldTypeChangeResponseModel>(), false)), "content keeps its type");
+            Assert.That(FieldTypeResponseModel.Of(Registry.FindType("text")!, FieldTypeAvailability.Available, []).MayChangeType, Is.False, "not unless given");
+            Assert.That(() => FieldTypeChangeResponseModel.Of(null!), Throws.ArgumentNullException);
+            Assert.That(() => FieldTypeChangesResponseModel.Of(null!, Registry.Types, locks), Throws.ArgumentNullException);
+            Assert.That(() => FieldTypeChangesResponseModel.Of(Registry.FindType("text")!, null!, locks), Throws.ArgumentNullException);
+            Assert.That(() => FieldTypeChangesResponseModel.Of(Registry.FindType("text")!, Registry.Types, null!), Throws.ArgumentNullException);
+        });
+    }
+
     private static string Camel(string name) => char.ToLowerInvariant(name[0]) + name[1..];
 }

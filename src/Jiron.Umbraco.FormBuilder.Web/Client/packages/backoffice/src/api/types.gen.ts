@@ -259,6 +259,26 @@ export type FieldTypeAvailabilityResponseModel = {
     reason?: string | null;
 };
 
+export type FieldTypeChangeResponseModel = {
+    to: string;
+    keptSettings: Array<string>;
+    narrowedSettings: Array<string>;
+    lostSettings: Array<string>;
+    neededSettings: Array<string>;
+    lockedSettings: Array<string>;
+    lostProperties: Array<string>;
+    needsOptions: boolean;
+    lostMessages: Array<string>;
+    lostOperators: Array<string>;
+    comparesAnew: boolean;
+    keepsColumns: boolean;
+};
+
+export type FieldTypeChangesResponseModel = {
+    from: string;
+    changes: Array<FieldTypeChangeResponseModel>;
+};
+
 export type FieldTypeResponseModel = {
     alias: string;
     name: string;
@@ -274,6 +294,7 @@ export type FieldTypeResponseModel = {
     messages: Array<string>;
     settings: Array<FieldSettingResponseModel>;
     availability: FieldTypeAvailabilityResponseModel;
+    mayChangeType: boolean;
 };
 
 export type FieldTypesResponseModel = {
@@ -1114,6 +1135,41 @@ export type FieldTypeListResponses = {
 };
 
 export type FieldTypeListResponse = FieldTypeListResponses[keyof FieldTypeListResponses];
+
+export type FieldTypeChangesData = {
+    body?: never;
+    path: {
+        alias: string;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/field-type/{alias}/changes';
+};
+
+export type FieldTypeChangesErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type FieldTypeChangesError = FieldTypeChangesErrors[keyof FieldTypeChangesErrors];
+
+export type FieldTypeChangesResponses = {
+    /**
+     * OK
+     */
+    200: FieldTypeChangesResponseModel;
+};
+
+export type FieldTypeChangesResponse = FieldTypeChangesResponses[keyof FieldTypeChangesResponses];
 
 export type FolderCreateData = {
     body?: CreateFolderRequestModel;

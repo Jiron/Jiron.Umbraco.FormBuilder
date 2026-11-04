@@ -68,6 +68,33 @@ internal static class FieldTypeChanges
         };
     }
 
+    /// <summary>
+    /// A change with the host's locks of the target's settings applied (ADR-0060): a locked setting is set by its lock, so
+    /// it is neither carried over nor needed, and one the change would have carried over is named among
+    /// <see cref="FieldTypeChange.LockedSettings"/>.
+    /// </summary>
+    /// <param name="change">The change, as <see cref="Between"/> works it out.</param>
+    /// <param name="lockedOnTarget">The names of the target's settings the host locks, hidden ones too.</param>
+    public static FieldTypeChange UnderLocks(FieldTypeChange change, IEnumerable<string> lockedOnTarget)
+    {
+        ArgumentNullException.ThrowIfNull(change);
+        ArgumentNullException.ThrowIfNull(lockedOnTarget);
+        var locked = lockedOnTarget.ToHashSet(StringComparer.Ordinal);
+        if (locked.Count == 0)
+        {
+            return change;
+        }
+
+        bool Free(string name) => !locked.Contains(name);
+        return change with
+        {
+            KeptSettings = [.. change.KeptSettings.Where(Free)],
+            NarrowedSettings = [.. change.NarrowedSettings.Where(Free)],
+            NeededSettings = [.. change.NeededSettings.Where(Free)],
+            LockedSettings = [.. change.KeptSettings.Concat(change.NarrowedSettings).Where(locked.Contains)],
+        };
+    }
+
     private static bool HoldsOwnValue(FieldTypeDeclaration declaration) => declaration.HoldsValue && declaration.Storage != FieldStorageKind.None;
 
     private static ImmutableArray<string> Named(List<(string Name, SettingChange Change)> settings, SettingChange change) =>

@@ -90,6 +90,9 @@ internal static class FormBuilderProblems
     /// <summary>The code of a template that is neither built in nor saved on this site (ADR-0166).</summary>
     public const string TemplateNotFoundCode = "template_not_found";
 
+    /// <summary>The code of a field type the site does not have (ADR-0059).</summary>
+    public const string FieldTypeNotFoundCode = "field_type_not_found";
+
     /// <summary>How long a client waits before asking again while the plan has not run.</summary>
     public static readonly TimeSpan RetryAfter = TimeSpan.FromSeconds(10);
 
@@ -179,6 +182,10 @@ internal static class FormBuilderProblems
     /// <summary>A template that is neither built in nor saved on this site (ADR-0166).</summary>
     public static FormBuilderProblemResult TemplateNotFound() =>
         Problem(StatusCodes.Status404NotFound, TemplateNotFoundCode, "The template does not exist.");
+
+    /// <summary>A field type the site does not have (ADR-0059).</summary>
+    public static FormBuilderProblemResult FieldTypeNotFound() =>
+        Problem(StatusCodes.Status404NotFound, FieldTypeNotFoundCode, "The site has no such field type.");
 
     /// <summary>The user sees the item but lacks <paramref name="permission"/>, which the answer names.</summary>
     public static FormBuilderProblemResult Missing(FormBuilderPermissions permission, IDictionary<string, object?>? extensions = null)

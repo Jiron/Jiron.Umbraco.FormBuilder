@@ -13,8 +13,9 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Integration.ManagementApi;
 /// The field types for the designer (ADR-0057): every type of the registry in its order, with the palette's and the
 /// inspector's groups, each type's declaration, settings with their rules, and availability, for any user of the Forms
 /// section. The answer on a site with the built-in types matches the committed snapshot <c>docs/api/field-types.json</c>,
-/// whose <c>#</c> keys the backoffice's dictionary test holds both languages to. After a deliberate change, run the
-/// fixture with <c>JFB_UPDATE_SNAPSHOTS=1</c>: it writes the snapshot and fails, so the diff gets reviewed.
+/// whose <c>#</c> keys the backoffice's dictionary test holds both languages to, and the changes of type of a few of
+/// them (ADR-0059) <c>docs/api/field-type-changes.json</c>. After a deliberate change, run the fixture with
+/// <c>JFB_UPDATE_SNAPSHOTS=1</c>: it writes the snapshots and fails, so the diff gets reviewed.
 /// </summary>
 [TestFixture]
 [UmbracoTest(Database = UmbracoTestOptions.Database.NewSchemaPerTest, Boot = true)]
@@ -23,6 +24,12 @@ public sealed class FieldTypeApiTests : ManagementApiTestBase
     private const string FieldTypes = "field-type";
 
     private static readonly string SnapshotPath = RepositoryRoot.Path(typeof(FieldTypeApiTests).Assembly, "docs", "api", "field-types.json");
+
+    // The changes of a text, a long text, a number, the choice types and a single checkbox: every part of a change, for
+    // the designer's tests to read as the server serves them (ADR-0174).
+    private static readonly string ChangesSnapshotPath = RepositoryRoot.Path(typeof(FieldTypeApiTests).Assembly, "docs", "api", "field-type-changes.json");
+
+    private static readonly string[] ChangeSnapshotTypes = ["text", "textarea", "number", "checkboxes", "checkbox"];
 
     [Test]
     public async Task TheBuiltInTypes_AreServedToAUserOfTheSectionWithoutGrants_AsTheReviewedSnapshotHolds()
@@ -38,6 +45,28 @@ public sealed class FieldTypeApiTests : ManagementApiTestBase
 
         Assert.That(File.Exists(SnapshotPath), Is.True, $"the reviewed snapshot {SnapshotPath}; run with JFB_UPDATE_SNAPSHOTS=1");
         Assert.That((await File.ReadAllTextAsync(SnapshotPath)).ReplaceLineEndings("\n"), Is.EqualTo(served), "the field types changed: run with JFB_UPDATE_SNAPSHOTS=1, review the diff and the dictionaries");
+    }
+
+    [Test]
+    public async Task TheChangesOfSomeBuiltInTypes_AreServedAsTheReviewedSnapshotHolds()
+    {
+        var answers = new JsonObject();
+        foreach (var alias in ChangeSnapshotTypes)
+        {
+            var answer = await CallAsync("noAccess", HttpMethod.Get, $"{FieldTypes}/{alias}/changes");
+            Assert.That(answer.Outcome, Is.EqualTo("200"), answer.ToString());
+            answers[alias] = answer.Body!.DeepClone();
+        }
+
+        var served = answers.ToJsonString(new JsonSerializerOptions { WriteIndented = true, Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping }).ReplaceLineEndings("\n") + "\n";
+        if (Environment.GetEnvironmentVariable("JFB_UPDATE_SNAPSHOTS") == "1")
+        {
+            await File.WriteAllTextAsync(ChangesSnapshotPath, served, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+            Assert.Fail($"JFB_UPDATE_SNAPSHOTS=1: wrote {ChangesSnapshotPath}. Review the diff, commit it, and run again without the variable.");
+        }
+
+        Assert.That(File.Exists(ChangesSnapshotPath), Is.True, $"the reviewed snapshot {ChangesSnapshotPath}; run with JFB_UPDATE_SNAPSHOTS=1");
+        Assert.That((await File.ReadAllTextAsync(ChangesSnapshotPath)).ReplaceLineEndings("\n"), Is.EqualTo(served), "the changes changed: run with JFB_UPDATE_SNAPSHOTS=1 and review the diff");
     }
 
     [Test]
@@ -83,6 +112,52 @@ public sealed class FieldTypeApiTests : ManagementApiTestBase
 
             Assert.That(((bool)Type("hidden")["serverOnlyDefault"]!, (bool)Type("captcha")["onePerForm"]!, (bool)Type("captcha")["holdsValue"]!, Text(Type("captcha")["ruleKind"])), Is.EqualTo((true, true, false, string.Empty)));
             Assert.That((bool)Type("dropdown")["multipleSetting"]!, Is.True);
+        });
+    }
+
+    [Test]
+    public async Task EachTypesChanges_AreTheMaps_WithWhatEachKeepsLosesAndNeeds()
+    {
+        var registry = GetRequiredService<FieldTypeRegistry>();
+        var types = (await CallAsync("designer", HttpMethod.Get, FieldTypes)).Body!["types"]!.AsArray().Select(type => type!.AsObject()).ToList();
+        var served = new Dictionary<string, JsonObject>();
+        foreach (var alias in registry.Types.Select(type => type.Declaration.Alias))
+        {
+            var answer = await CallAsync("noAccess", HttpMethod.Get, $"{FieldTypes}/{alias}/changes");
+            Assert.That(answer.Outcome, Is.EqualTo("200"), $"{alias}: {answer}");
+            served[alias] = answer.Body!.AsObject();
+        }
+
+        var missing = await CallAsync("designer", HttpMethod.Get, $"{FieldTypes}/acme.missing/changes");
+        JsonObject Change(string from, string to) => served[from]["changes"]!.AsArray().Select(change => change!.AsObject()).Single(change => Text(change["to"]) == to);
+        IEnumerable<string> Names(JsonNode? list) => list!.AsArray().Select(Text);
+
+        Assert.Multiple(() =>
+        {
+            foreach (var type in types)
+            {
+                var alias = Text(type["alias"]);
+                var map = FieldTypeChanges.From(registry, alias).Select(change => change.To).ToList();
+                Assert.That(Text(served[alias]["from"]), Is.EqualTo(alias));
+                Assert.That(served[alias]["changes"]!.AsArray().Select(change => Text(change!["to"])), Is.EqualTo(map), $"{alias}: the map's changes, in the registry's order");
+                Assert.That((bool)type["mayChangeType"]!, Is.EqualTo(map.Count > 0), $"{alias}: the list says whether it changes");
+            }
+
+            Assert.That(missing.Outcome, Is.EqualTo("404 field_type_not_found"), missing.ToString());
+
+            var dropdown = Change("text", "dropdown");
+            Assert.That(Names(dropdown["lostProperties"]), Does.Contain("placeholder"), "a dropdown has no placeholder");
+            Assert.That(Names(dropdown["lostOperators"]), Does.Contain("contains"), "nor a condition that it contains a text");
+            Assert.That((bool)dropdown["needsOptions"]!, Is.True, "a dropdown needs its options");
+            Assert.That(Names(dropdown["lostSettings"]), Is.EqualTo(new[] { "minLength", "maxLength", "prefix", "suffix", "counter" }));
+            Assert.That(Names(dropdown["lostMessages"]), Is.EqualTo(new[] { "minLength", "maxLength" }));
+            Assert.That((Names(dropdown["keptSettings"]), Names(dropdown["lockedSettings"])), Is.EqualTo((Array.Empty<string>(), Array.Empty<string>())));
+
+            var consent = Change("checkbox", "consent");
+            Assert.That((Names(consent["narrowedSettings"]), Names(consent["neededSettings"])), Is.EqualTo((new[] { "text" }, Array.Empty<string>())), "a consent's text is required, and a checkbox's is carried over to it");
+            Assert.That(Names(Change("text", "calculation")["neededSettings"]), Is.EqualTo(new[] { "formula" }));
+            Assert.That(((bool)Change("text", "number")["comparesAnew"]!, (bool)Change("text", "number")["keepsColumns"]!), Is.EqualTo((true, false)));
+            Assert.That(served["heading"]["changes"]!.AsArray(), Is.Empty, "content keeps its type");
         });
     }
 
