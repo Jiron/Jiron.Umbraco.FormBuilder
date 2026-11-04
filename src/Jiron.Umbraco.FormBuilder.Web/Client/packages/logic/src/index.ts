@@ -38,7 +38,7 @@ export {
   type DatePatterns,
   type NumberFormat,
 } from './culture.ts';
-export { today } from './dates.ts';
+export { formatDate, parseDate, parseDateTime, parseRelative, parseTime, today } from './dates.ts';
 export { formatDecimal, parseDecimal, type Decimal } from './decimal.ts';
 export {
   calculationText,
@@ -126,14 +126,19 @@ export type {
   RecallPage,
 } from './recall.ts';
 export {
+  checkGroup,
+  contextKindOf,
   evaluateCondition,
   evaluateRule,
+  isGroup,
   MAX_DEPTH,
+  operatorsFor,
   type Condition,
   type Context,
   type Group,
   type Kind,
   type Operand,
+  type OperandShape,
   type Rule,
   type Subject,
 } from './rules.ts';

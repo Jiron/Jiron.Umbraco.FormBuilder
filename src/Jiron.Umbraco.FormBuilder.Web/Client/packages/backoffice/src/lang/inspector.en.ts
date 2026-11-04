@@ -23,7 +23,9 @@ export default {
     moreOptions: (count: number) => (count === 1 ? 'More options (1)' : `More options (${count})`),
     fewerOptions: 'Fewer options',
     rulesNone: 'Always shown',
-    rulesCount: (count: number) => (count === 1 ? '1 rule' : `${count} rules`),
+    rulesAdd: 'Add a rule',
+    rulesOff: 'Off',
+    rulesOffSummary: (words: string) => `${words} (off)`,
     rulesHelp: 'A rule sits on the element it shows, hides or requires.',
     saidChanged: (name: string) => `Changed ${name}`,
 

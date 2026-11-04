@@ -16,11 +16,15 @@ import {
   type DesignField,
   type DesignGroup,
   type DesignPage,
+  type DesignRule,
   type LocalizedText,
 } from '../definition';
 import { RESERVED_ALIASES } from '../editor-model';
 import { textIn } from '../preview/field-models';
 import type { SiteLanguage } from '../preview/look';
+import { clashOf, effectsOf } from '../rules/rule-draft';
+import { inspectorRuleWords, typeFactsOf } from '../rules/rule-names';
+import { ruleWords } from '../rules/rule-words';
 import {
   fieldSections,
   groupSections,
@@ -78,7 +82,9 @@ export type InspectorRequest =
   | { readonly kind: 'fold' }
   | { readonly kind: 'unfold' }
   | { readonly kind: 'close' }
-  | { readonly kind: 'element'; readonly action: ElementAction; readonly key: string };
+  | { readonly kind: 'element'; readonly action: ElementAction; readonly key: string }
+  /** Opens the rules builder on an element's rule, or on a new one with null. */
+  | { readonly kind: 'rule'; readonly key: string; readonly rule: string | null };
 
 /** How the inspector shows: beside the canvas, folded to a rail, or over the canvas. */
 export type InspectorMode = 'docked' | 'rail' | 'overlay';
@@ -191,6 +197,20 @@ export class InspectorElement extends UmbLitElement {
   /** Moves the focus to the inspector's heading, as opening it over the canvas does. */
   focusHeading() {
     void this.updateComplete.then(() => this.shadowRoot?.querySelector<HTMLElement>('h2')?.focus());
+  }
+
+  /** Moves the focus to a rule's line in the Rules section, which opens; to Add a rule where the rule is gone. */
+  focusRule(rule: string | null) {
+    if (!this._open.has('rules')) this.#toggle('rules');
+    void this.updateComplete.then(() => {
+      const root = this.shadowRoot;
+      const line = rule === null ? null : root?.querySelector<HTMLElement>(`button.rule[data-rule="${rule}"]`);
+      (
+        line ??
+        root?.querySelector<HTMLElement>('.add-rule') ??
+        root?.querySelector<HTMLElement>('[data-section="rules"] .section-head button')
+      )?.focus();
+    });
   }
 
   /** Moves the focus to the rail's button that opens the inspector again, as folding it does. */
@@ -1104,12 +1124,73 @@ export class InspectorElement extends UmbLitElement {
     }
   }
 
+  // ---- Rules --------------------------------------------------------------------------------------------------------
+
+  #rulesOf(subject: Subject): readonly DesignRule[] {
+    return this.#elementOf(subject).rules ?? [];
+  }
+
+  /** A rule in words, as the builder says it: "Shown when Country is Other". */
+  #ruleText(rule: DesignRule): string {
+    const words = inspectorRuleWords(this.definition, this.types, this.culture, this.languages, (key, ...args) =>
+      this.localize.term(key, ...args),
+    );
+    return ruleWords(words, rule);
+  }
+
+  /** Whether the element takes another rule: an effect it takes that none of its rules has, nor shows beside hide. */
+  #takesRule(key: string): boolean {
+    const facts = typeFactsOf(this.types);
+    return effectsOf(this.definition, key, (type) => facts[type]?.features ?? []).some(
+      (effect) => !clashOf(this.definition, key, effect, ''),
+    );
+  }
+
+  #addRule(key: string) {
+    return this.#takesRule(key)
+      ? html`<button type="button" class="add-rule" @click=${() => this.#request({ kind: 'rule', key, rule: null })}>
+          ${this.#term('rulesAdd')}
+        </button>`
+      : nothing;
+  }
+
+  // Each rule's words open it in the builder; a rule kept but not used says so beside them.
+  #rules(subject: Subject): TemplateResult {
+    const key = this.#keyOf(subject);
+    const rules = this.#rulesOf(subject);
+    return html`${
+        rules.length > 0
+          ? html`<ul class="rules">
+              ${rules.map(
+                (rule) =>
+                  html`<li>
+                    <button
+                      type="button"
+                      class="rule"
+                      data-rule=${rule.key}
+                      @click=${() => this.#request({ kind: 'rule', key, rule: rule.key })}
+                    >
+                      ${this.#ruleText(rule)}
+                      ${rule.enabled === false ? html`<span class="off">${this.#term('rulesOff')}</span>` : nothing}
+                    </button>
+                  </li>`,
+              )}
+            </ul>`
+          : html`<p class="help">${this.#term('rulesNone')}</p>`
+      }
+      ${this.#addRule(key)}
+      <p class="help">${this.#term('rulesHelp')}</p>`;
+  }
+
   #summary(subject: Subject, section: Section): string {
     if (section.id === 'rules') {
-      const rules =
-        ((this.#elementOf(subject) as Readonly<Record<string, unknown>>)['rules'] as readonly unknown[] | undefined) ??
-        [];
-      return rules.length === 0 ? this.#term('rulesNone') : this.#term('rulesCount', rules.length);
+      const rules = this.#rulesOf(subject);
+      if (rules.length === 0) return this.#term('rulesNone');
+      return rules
+        .map((rule) =>
+          rule.enabled === false ? this.#term('rulesOffSummary', this.#ruleText(rule)) : this.#ruleText(rule),
+        )
+        .join(' \u00b7 ');
     }
     const set = section.items.flatMap((item) => this.#summaryOf(subject, item) ?? []);
     return set.length > 0 ? set.join(' \u00b7 ') : this.#term('summaryNone');
@@ -1122,25 +1203,30 @@ export class InspectorElement extends UmbLitElement {
     const id = `section-${section.id}`;
     const { shown, more } = splitItems(section.items);
     const showsMore = this._more.has(section.id);
+    const head = html`<h3 class="section-head">
+      <button
+        type="button"
+        aria-expanded=${open ? 'true' : 'false'}
+        aria-controls=${id}
+        @click=${() => this.#toggle(section.id)}
+      >
+        <uui-icon name=${open ? 'icon-navigation-down' : 'icon-navigation-right'} aria-hidden="true"></uui-icon>
+        <span class="section-name">${this.#term(`section_${section.id}`)}</span>
+        ${open ? nothing : html`<span class="summary">${this.#summary(subject, section)}</span>`}
+      </button>
+    </h3>`;
+    // A closed Rules section holds Add a rule beside its header, not inside it (IA 5.1).
     return html`<section class="section" data-section=${section.id}>
-      <h3 class="section-head">
-        <button
-          type="button"
-          aria-expanded=${open ? 'true' : 'false'}
-          aria-controls=${id}
-          @click=${() => this.#toggle(section.id)}
-        >
-          <uui-icon name=${open ? 'icon-navigation-down' : 'icon-navigation-right'} aria-hidden="true"></uui-icon>
-          <span class="section-name">${this.#term(`section_${section.id}`)}</span>
-          ${open ? nothing : html`<span class="summary">${this.#summary(subject, section)}</span>`}
-        </button>
-      </h3>
+      ${
+        section.id === 'rules' && !open
+          ? html`<div class="section-line">${head}${this.#addRule(this.#keyOf(subject))}</div>`
+          : head
+      }
       <div class="section-body" id=${id} ?hidden=${!open}>
         ${
           open
             ? section.id === 'rules'
-              ? html`<p class="help">${this.#summary(subject, section)}</p>
-                  <p class="help">${this.#term('rulesHelp')}</p>`
+              ? this.#rules(subject)
               : html`${shown.map((item) => this.#item(subject, item))}
                 ${showsMore ? more.map((item) => this.#item(subject, item)) : nothing}
                 ${

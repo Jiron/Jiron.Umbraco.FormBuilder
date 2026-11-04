@@ -247,7 +247,14 @@ flowchart LR
   element's "..." and the inspector's header offer: `type-change.ts` works out a change's preview on the draft (what
   goes, what a lock sets instead, what the field needs, the conditions naming it whose operator goes) and the field once
   changed, pure; `change-type-words.ts` says the preview; the dialog chooses among the types the workspace reads from
-  `field-type/{alias}/changes` once while the form is open (`readOnce`), ahead for a field selected.
+  `field-type/{alias}/changes` once while the form is open (`readOnce`), ahead for a field selected. From 9.5a
+  (ADR-0175): `rules/` holds the rules builder, which the inspector's Rules section opens: `rule-draft.ts` is the rule
+  as the builder edits it (ids on its conditions and groups, what a condition may look at with its kind as the server
+  reads it, the operators of `@jfb/logic`'s own table narrowed to what a sentence means, why a row can't be kept by the
+  engine's own check), pure; `rule-words.ts` says a rule ("Shown when Country is Other"), for the inspector and the
+  builder alike; `rule-try.ts` is Try it's one adapter to `evaluateRule`, which the shared vectors hold; and
+  `rule-edits.ts` lands a rule through the editor model's `change` as one step to undo, a rule moved to another
+  element in that same step.
 
 ## 2. The definition model
 

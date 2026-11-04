@@ -122,7 +122,8 @@ export function fieldSections(type: FieldTypeResponseModel, groupColumns: number
   advanced.push(...shownSettings(type, 'advanced'));
   advanced.push({ kind: 'plain', property: 'cssClass' });
 
-  return sections({ essentials, validation, appearance, advanced }, has('visibilityRules'));
+  // Rules where the type takes show and hide rules, or require rules.
+  return sections({ essentials, validation, appearance, advanced }, has('visibilityRules') || has('required'));
 }
 
 /** A group's sections: its title, columns and style, and its rules. */

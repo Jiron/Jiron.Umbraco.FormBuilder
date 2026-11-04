@@ -294,8 +294,10 @@ German text yet".
   rule started from the question it depends on still lands on the right element;
 - rule rows in plain language ("Show this field when **Country** **is** **Other**"), with "Add condition" under the
   last row;
-- "all" and "any" groups: each group starts with "when all of these are true", where "all" can be changed to "any",
-  and "Add group" sits beside "Add condition";
+- condition groups, "all" and "any": each starts with "all of these are true", which can be changed to "any of these is
+  true", and "Add condition group" sits beside "Add condition" (never "group", a form's group of fields; ADR-0175);
+- **Try it** under the conditions (ADR-0175): a box for each field and part of the visit the rule looks at, and one
+  sentence on what the element then does ("Which country? shows."), from the same engine the website uses;
 - the switch **Use this rule**, which keeps the rule without using it;
 - the action bar: Delete rule at its start (an existing rule only; it acts at once, as every designer change does, and
   the toast offers Undo), Cancel, and primary **Update**, or **Add** for a new rule.

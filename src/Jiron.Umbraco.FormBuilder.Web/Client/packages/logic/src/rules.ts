@@ -72,7 +72,11 @@ export interface Scope {
 /** How deeply groups of conditions nest, the rule's own list being the first level (ADR-0061). */
 export const MAX_DEPTH = 10;
 
-type OperandShape = 'none' | 'one' | 'list' | 'pair' | 'count' | 'pattern' | 'checked';
+/**
+ * What an operator compares with: nothing, one operand, a list, two (the ends of a range), a whole number of answers, a
+ * pattern, or what is ticked (nothing for a checkbox, the option for a choice field).
+ */
+export type OperandShape = 'none' | 'one' | 'list' | 'pair' | 'count' | 'pattern' | 'checked';
 
 const ALL: readonly Kind[] = ['text', 'choice', 'choices', 'checkbox', 'files', 'number', 'date', 'time', 'dateTime'];
 const TEXT: readonly Kind[] = ['text'];
@@ -99,6 +103,21 @@ const OPERATORS: ReadonlyMap<string, { readonly kinds: readonly Kind[]; readonly
   ['isChecked', { kinds: CHECKABLE, operand: 'checked' }],
   ['isNotChecked', { kinds: CHECKABLE, operand: 'checked' }],
 ]);
+
+/** The operators that take a kind of answer, each with its operand's shape, in the order of the check's table. */
+export function operatorsFor(kind: Kind): { readonly op: string; readonly operand: OperandShape }[] {
+  return [...OPERATORS].filter(([, { kinds }]) => kinds.includes(kind)).map(([op, { operand }]) => ({ op, operand }));
+}
+
+/** What a context subject compares as (`culture`, `memberSignedIn`, `memberGroup`, `today`, `query.<name>`); undefined for none. */
+export function contextKindOf(name: string): Kind | undefined {
+  try {
+    return contextKind(name);
+  } catch (error) {
+    if (error instanceof LogicError) return undefined;
+    throw error;
+  }
+}
 
 export const isGroup = (item: Condition | Group): item is Group => 'match' in item;
 const isList = (operand: unknown): operand is readonly Operand[] => Array.isArray(operand);

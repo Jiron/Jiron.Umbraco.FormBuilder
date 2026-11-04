@@ -1048,6 +1048,37 @@ said, and the condition still there in the saved draft. `designer-locks.spec.ts`
 taking several options, three at most: checkboxes that become a dropdown are told that the site sets the most options
 instead, neither carried over nor asked for, and the saved field keeps only its fewest.
 
+The rules builder (9.5a, ADR-0175): `rules/rule-draft.test.ts` holds a rule read and written back as it came (nested
+condition groups, what else it held), condition groups added (a rule's own conditions becoming its first group) and
+nested to the tenth level and no deeper, what a condition may look at (every field a visitor answers, by page, a
+dropdown with several answers and a grid's rows with their kinds, the visit's parts with the language always kept for
+a rule that has it, never the rule's element or, for show and hide, what it holds, nor a field the visitor never sees),
+the operators each kind is offered (every one of the engine's offered for some kind, one a draft holds kept), what a
+condition keeps when its question or operator changes (a list's answers that aren't options kept, a count or pattern
+not carried into another shape), each reason a row can't be kept, and the first line's effects and clashes;
+`rules/rule-words.test.ts` a rule in words, kind by kind, in English and German; `rules/rule-try.test.ts` Try it's
+adapter run over every condition and rule case of `tests/vectors/rules.json` (D10), each of those that a draft can
+hold read through the draft and its boxes as well, and the boxes and the verdict; `rules/rule-edits.test.ts` a rule
+landed, changed, moved in one step, refused where an element would wait on itself, and taken off;
+`rules/rule-builder.test.ts` the sidebar: its first line, each kind's value, another answer and a day counted from
+today, condition groups and the focus after removing one, refusals said at the row and the first line (a broken rule
+opening with them said), a value a condition doesn't take with its remove, a rule moved (and the effect a new element
+takes), no condition group inside the tenth level, Try it (and none while a row is incomplete), the visit, Delete, and
+the Design view told when the builder is shown and gone;
+`rules/rule-data.test.ts` the member groups, read only for a user with the Members section; `rules/rule-names.test.ts`
+the names rules are said with (a grid's row by the grid and the row), dates in the backoffice's language, the field
+types' facts and a field's own options by their labels;
+`inspector/inspector.test.ts` the Rules section's rules in words, a rule that is off said inside its line, Add a rule
+beside a closed section's header, and the focus on a rule's line; `form-design.view.test.ts` the builder opened with
+what it needs, its answer landed as one step (none for a rule left as it was), a rule moved with the selection, a
+delete with Undo, Cancel, a new rule on the first effect the element has no rule for, and the builder opened once when
+asked twice; `inspector/inspector-model.test.ts` Rules for a type that can only be required; and
+`logic/test/operators.test.ts` the table the builder offers from. In the browser,
+`specs/backoffice/designer-rules.spec.ts` builds a rule of groups three levels deep with a condition of every operator,
+axe clean, and reads it back from the saved draft; and builds a "required when" rule comparing two fields and a query
+value, refused at its empty row first, tried in Try it (required, not required, off), read back, and deleted from its
+line with Undo in the toast.
+
 ## The public API tests
 
 `Tests.Integration/PublicApi/` calls the public API anonymously on a real site that boots its runtime, with forms

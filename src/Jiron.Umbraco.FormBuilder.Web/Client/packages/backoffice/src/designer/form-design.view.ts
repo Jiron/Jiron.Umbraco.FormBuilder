@@ -66,6 +66,10 @@ import {
 } from './palette/palette.element';
 import './palette/palette.element';
 import { PASTE_QUESTIONS_MODAL } from './palette/paste-questions.modal.token';
+import { RULE_BUILDER_MODAL } from './rules/rule-builder.modal.token';
+import { clashOf, effectsOf, sameRule } from './rules/rule-draft';
+import { dropRule, landRule } from './rules/rule-edits';
+import { elementNames, typeFactsOf } from './rules/rule-names';
 import { textIn } from './preview/field-models';
 import { ownText, withKey, withText } from './inspector/setting-values';
 import { readLook, themeSheets, type CanvasLook } from './preview/look';
@@ -343,6 +347,8 @@ export class FormDesignViewElement extends UmbLitElement {
   #shownLink = false;
   /** Whether Change type's dialog is opening or open, so a second ask does nothing. */
   #changingType = false;
+  /** Whether the rules builder is open, so a second ask does nothing. */
+  #buildingRule = false;
   /** The field selected whose changes of type were read ahead, with its type. */
   #readAhead: string | null = null;
   #mediaRead = new Set<string>();
@@ -816,6 +822,9 @@ export class FormDesignViewElement extends UmbLitElement {
       case 'element':
         await this.#act(request.action, request.key);
         return;
+      case 'rule':
+        await this.#buildRule(request.key, request.rule);
+        return;
     }
   }
 
@@ -1168,6 +1177,101 @@ export class FormDesignViewElement extends UmbLitElement {
       { type },
     );
     if (done) await this.#offerUndo(this.localize.term('jfbDesigner_typeChanged', type));
+  }
+
+  // The rules builder (ADR-0175): a rule of the element, or a new one with the first effect it can take. Its answer lands
+  // as one step to undo: a rule changed or moved selects the element it is on, with the focus on its line in the
+  // inspector; a rule deleted offers Undo, and the focus goes to the element's next rule or to Add a rule.
+  async #buildRule(key: string, ruleKey: string | null) {
+    if (this.#buildingRule) return;
+    this.#buildingRule = true;
+    try {
+      await this.#buildRuleOf(key, ruleKey);
+    } finally {
+      this.#buildingRule = false;
+    }
+  }
+
+  async #buildRuleOf(key: string, ruleKey: string | null) {
+    const context = this.#context;
+    const state = this.#state();
+    const found = state ? locate(state.definition, key) : undefined;
+    if (!context || !state || !found) return;
+    const rule = ruleKey === null ? null : (found.element.rules ?? []).find((one) => one.key === ruleKey);
+    if (rule === undefined) return;
+    const facts = typeFactsOf(this._types);
+    const effects = effectsOf(state.definition, key, (type) => facts[type]?.features ?? []);
+    const effect = effects.find((one) => !clashOf(state.definition, key, one, '')) ?? effects[0];
+    if (!effect) return;
+    const culture = this._look?.culture ?? '';
+    const term = (word: string, ...args: unknown[]) => this.localize.term(word, ...args);
+    // The builder answers before its sidebar slides out, and its dialog, as it closes, gives the focus back to what
+    // opened it; the focus set here waits until the builder is gone, so it stays.
+    let shown = false;
+    let gone: (() => void) | undefined;
+    const closed = new Promise<void>((done) => (gone = done));
+    const value = await umbOpenModal(this, RULE_BUILDER_MODAL, {
+      data: {
+        opened: () => (shown = true),
+        closed: () => gone?.(),
+        definition: state.definition,
+        form: context.getUnique() ?? '',
+        origin: key,
+        rule,
+        effect,
+        culture,
+        languages: (this._look?.languages ?? []).map((language) => ({
+          culture: language.culture,
+          name: language.name,
+        })),
+        types: facts,
+        names: elementNames(state.definition, culture, term),
+        refusal: (target, next) => {
+          const edit = landRule(this.#state() ?? state, rule ? key : null, target, next, context.model);
+          return !edit.ok && edit.refusal === 'cycle' ? 'cycle' : null;
+        },
+      },
+    }).catch(() => undefined);
+    if (shown) await Promise.race([closed, new Promise((done) => setTimeout(done, 2000))]);
+    const now = this.#state();
+    if (!value || !now) {
+      this.#inspector?.focusRule(ruleKey);
+      return;
+    }
+    if (value.rule === null) {
+      if (!rule) return;
+      const result = context.edit(
+        dropRule(now, key, rule.key, context.model),
+        this.localize.term('jfbRules_saidDeleted', this.#label(key)),
+      );
+      if (!result.ok) return;
+      this.#closeUndo();
+      const left = locate(result.state.definition, key)?.element.rules ?? [];
+      this.#inspector?.focusRule(left[0]?.key ?? null);
+      await this.#offerUndo(this.localize.term('jfbRules_deleted'));
+      return;
+    }
+    // Update on a rule left as it was makes no step to undo.
+    if (rule && value.target === key && sameRule(rule, value.rule)) {
+      this.#inspector?.focusRule(rule.key);
+      return;
+    }
+    const edit = landRule(now, rule ? key : null, value.target, value.rule, context.model);
+    const said = this.localize.term(rule ? 'jfbRules_saidChanged' : 'jfbRules_saidAdded', this.#label(value.target));
+    const result = context.edit(edit, said);
+    if (!result.ok) {
+      if (result.refusal === 'unchanged') this.#inspector?.focusRule(ruleKey);
+      else await this.#refuse(result.refusal);
+      return;
+    }
+    this.#closeUndo();
+    // The rule's element is the one the inspector shows now, with the focus on the rule's line.
+    this.#selectFirst(value.target);
+    const page = pageOf(result.state.definition, value.target);
+    const index = result.state.definition.pages.findIndex((each) => each.key === page?.key);
+    if (index >= 0) this._shown = index;
+    await this.updateComplete;
+    this.#inspector?.focusRule(value.rule.key);
   }
 
   async #shortcuts() {

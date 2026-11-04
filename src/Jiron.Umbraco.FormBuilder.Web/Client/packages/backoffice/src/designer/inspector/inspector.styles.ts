@@ -158,6 +158,73 @@ export const inspectorStyles = css`
     white-space: nowrap;
   }
 
+  .section-line {
+    display: flex;
+    align-items: center;
+  }
+
+  .section-line .section-head {
+    flex: 1 1 auto;
+    min-inline-size: 0;
+  }
+
+  .section-line .add-rule {
+    flex: none;
+    margin-inline-end: var(--uui-size-space-4);
+  }
+
+  .add-rule,
+  .rule {
+    padding: var(--uui-size-space-1) 0;
+    border: 0;
+    background: none;
+    color: var(--uui-color-interactive);
+    font: inherit;
+    text-align: start;
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+    cursor: pointer;
+  }
+
+  .add-rule {
+    justify-self: start;
+  }
+
+  .add-rule:hover,
+  .rule:hover {
+    color: var(--uui-color-interactive-emphasis);
+  }
+
+  .add-rule:focus-visible,
+  .rule:focus-visible {
+    outline: 2px solid var(--uui-color-focus);
+    outline-offset: 2px;
+    border-radius: var(--uui-border-radius);
+  }
+
+  .rules {
+    display: grid;
+    gap: var(--uui-size-space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .rules li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--uui-size-space-2);
+  }
+
+  .off {
+    padding: 0 var(--uui-size-space-2);
+    border: 1px solid var(--jfb-bo-color-control-border);
+    border-radius: var(--uui-border-radius);
+    color: var(--jfb-bo-color-text-muted);
+    font-size: var(--uui-type-small-size);
+  }
+
   .section-body {
     display: grid;
     gap: var(--uui-size-space-5);

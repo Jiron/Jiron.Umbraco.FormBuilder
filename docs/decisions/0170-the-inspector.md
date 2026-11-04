@@ -129,7 +129,8 @@ a group's handle, while it shows, lies above the insert point below the field be
 - A setting a later step draws needs only its editor in `setting-editor.ts` and its name in `PLAIN_EDITORS`; the
   sections and the summaries follow.
 - Typing makes one step per visit to a box, so the history stays short and Ctrl+Z means what a person meant.
-- The Rules section counts rules until 9.5a's builder fills it; "Add a rule" comes with it.
+- The Rules section counts rules until 9.5a's builder fills it; "Add a rule" comes with it. (9.5a, ADR-0175: the
+  section lists an element's rules in words, each opening the builder, and holds Add a rule.)
 - A designer who may not view entries learns whether a form has any, through the alias rule; the count stays theirs who
   may view them.
 - Seven items before "More options" hides a field's CSS class behind "More options (1)" in Advanced; IA 5.1 says seven,

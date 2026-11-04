@@ -117,6 +117,9 @@ describe("a field's sections", () => {
     });
     const plain: FieldTypeResponseModel = { ...typeOf('divider'), features: [] };
     expect(fieldSections(plain, 1).map((section) => section.id)).toEqual(['advanced']);
+    // A type that can only be required still has Rules, for "Required when" (ADR-0175).
+    const requiredOnly: FieldTypeResponseModel = { ...typeOf('divider'), features: ['required'] };
+    expect(fieldSections(requiredOnly, 1).map((section) => section.id)).toContain('rules');
     const text = typeOf('text');
     const hidden: FieldTypeResponseModel = {
       ...text,

@@ -16,7 +16,7 @@ import { must, registerEnglish, settle, shadow, testHost, text } from '../testin
 import type { FormCanvasElement } from './canvas/form-canvas.element';
 import { CANVAS_REQUEST, type CanvasRequest } from './canvas/form-canvas.element';
 import { FORM_WORKSPACE_CONTEXT } from './constants';
-import { locate, type DesignDefinition, type DesignField } from './definition';
+import { locate, type DesignDefinition, type DesignField, type DesignRule } from './definition';
 import type { Edit, EditorState } from './editor-model';
 import { readOnce, traitsOf, type EditorView } from './form-workspace.context';
 import { EditorHistory } from './history';
@@ -101,6 +101,7 @@ const { FormDesignViewElement, isCrowded, isNarrow, mediaOf, OPTIONS_PAUSE, read
 const { INSPECTOR_REQUEST } = await import('./inspector/inspector.element');
 const { MOVE_TO_MODAL_ALIAS } = await import('./moves/move-to.modal.token');
 type ChangeTypeModalData = import('./change-type/change-type.modal.token').ChangeTypeModalData;
+type RuleBuilderModalData = import('./rules/rule-builder.modal.token').RuleBuilderModalData;
 
 const field = (key: string, type = 'text') => ({ key, type, alias: key, label: { '': key } });
 
@@ -980,6 +981,85 @@ describe('the inspector in the Design view', () => {
     await settle(view);
   };
   const relabel = (label: string) => (element: Record<string, unknown>) => ({ ...element, label: { '': label } });
+
+  it("opens the rules builder on an element's rule, lands its answer as one step to undo, and offers Undo for a delete", async () => {
+    const { view, workspace, ask, state, toasts } = await viewOf();
+    await ask({ kind: 'select', key: 'name' });
+    const rulesOf = (key: string) => locate(state().definition, key)?.element.rules ?? [];
+    const lineFocused = () => shadow(must(inspectorOf(view), 'the inspector')).activeElement;
+    const rule: DesignRule = {
+      key: 'r1',
+      effect: 'show',
+      enabled: true,
+      match: 'all',
+      conditions: [{ field: 'note', op: 'isNotEmpty' }],
+    };
+    opened.value = { target: 'name', rule };
+    await tell(view, { kind: 'rule', key: 'name', rule: null });
+    expect(opened.dialogs[0]?.alias).toBe('Jiron.FormBuilder.Modal.RuleBuilder');
+    const data = opened.dialogs[0]?.data as RuleBuilderModalData;
+    expect([data.origin, data.rule, data.effect, data.form, data.names['g1']]).toEqual([
+      'name',
+      null,
+      'show',
+      'form1',
+      'Group 1',
+    ]);
+    expect(data.types['dropdown']).toMatchObject({ kind: 'choice', multipleSetting: true });
+    // A group shown by a field it holds would wait on itself, which the editor model refuses.
+    expect(data.refusal('g1', { ...rule, key: 'r9', conditions: [{ field: 'name', op: 'isEmpty' }] })).toBe('cycle');
+    expect(data.refusal('name', rule)).toBeNull();
+    expect(rulesOf('name')).toEqual([rule]);
+    expect(workspace.said.at(-1)).toBe('Added a rule to name');
+    expect(lineFocused()?.getAttribute('data-rule')).toBe('r1');
+
+    // Update on a rule left as it was makes no step; a rule moved goes with the selection to its new element.
+    const steps = workspace.said.length;
+    opened.value = { target: 'name', rule: { ...rule, enabled: undefined } };
+    await tell(view, { kind: 'rule', key: 'name', rule: 'r1' });
+    expect(workspace.said).toHaveLength(steps);
+    opened.value = { target: 'email', rule };
+    await tell(view, { kind: 'rule', key: 'name', rule: 'r1' });
+    expect([rulesOf('name'), rulesOf('email')]).toEqual([[], [rule]]);
+    expect(state().selection).toBe('email');
+    expect(workspace.said.at(-1)).toBe('Changed a rule of email');
+    expect(lineFocused()?.getAttribute('data-rule')).toBe('r1');
+
+    // Deleted, the rule goes at once with Undo in a toast, and the focus goes to Add a rule.
+    opened.value = { target: 'email', rule: null };
+    await tell(view, { kind: 'rule', key: 'email', rule: 'r1' });
+    expect(rulesOf('email')).toEqual([]);
+    expect(workspace.said.at(-1)).toBe('Deleted a rule of email');
+    expect(toasts.shown.at(-1)?.data.message).toBe('Rule deleted');
+    expect(lineFocused()?.classList.contains('add-rule')).toBe(true);
+    await toasts.shown.at(-1)?.data.undo();
+    expect(rulesOf('email')).toEqual([rule]);
+
+    // Cancel changes nothing and gives the focus back to the rule's line; a rule the element lacks opens nothing.
+    opened.value = undefined;
+    opened.dialogs = [];
+    await tell(view, { kind: 'rule', key: 'email', rule: 'r1' });
+    expect(rulesOf('email')).toEqual([rule]);
+    expect(lineFocused()?.getAttribute('data-rule')).toBe('r1');
+    await tell(view, { kind: 'rule', key: 'email', rule: 'gone' });
+    expect(opened.dialogs).toHaveLength(1);
+
+    // A new rule starts on the first effect the element has no rule for: show is taken, hide can't sit beside it.
+    opened.dialogs = [];
+    for (let twice = 0; twice < 2; twice++)
+      view.dispatchEvent(
+        new CustomEvent(INSPECTOR_REQUEST, {
+          detail: { kind: 'rule', key: 'email', rule: null },
+          bubbles: true,
+          composed: true,
+        }),
+      );
+    await settle(view);
+    await new Promise((done) => setTimeout(done, 50));
+    // Asked twice at once, the builder opens once.
+    expect(opened.dialogs).toHaveLength(1);
+    expect((opened.dialogs[0]?.data as RuleBuilderModalData).effect).toBe('require');
+  });
 
   it('folds the palette beside it in a view up to 1024 px, and not in a wider or a narrow one', () => {
     expect([620, 700, 701, 1024, 1025].map(isCrowded)).toEqual([false, false, true, true, false]);

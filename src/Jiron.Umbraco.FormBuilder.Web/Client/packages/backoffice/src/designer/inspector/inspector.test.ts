@@ -107,13 +107,48 @@ describe('the inspector', () => {
     expect(sectionButton(again.root, 'advanced').getAttribute('aria-expanded')).toBe('true');
   });
 
-  it("opens Rules on what a rule does, and counts an element's rules", async () => {
+  it("lists an element's rules in words, each opening the builder, and adds one while the element takes another", async () => {
     localStorage.setItem('jfb.designer.inspector.open', JSON.stringify(['rules']));
-    const ruled = await inspectorOf('name', {}, { ...NAME, rules: [{ key: 'r', effect: 'show', conditions: [] }] });
-    expect(all(ruled.element, '[data-section="rules"] .help').map((help) => text(help))).toEqual([
-      '1 rule',
-      'A rule sits on the element it shows, hides or requires.',
+    const rules = [
+      { key: 'r', effect: 'show', conditions: [{ field: 'guests', op: 'greaterThan', value: '2' }] },
+      { key: 'q', effect: 'require', enabled: false, conditions: [{ field: 'arrival', op: 'isNotEmpty' }] },
+    ];
+    const ruled = await inspectorOf('name', {}, { ...NAME, rules }, GUESTS, ARRIVAL);
+    expect(all(ruled.element, '[data-section="rules"] li').map((line) => text(line))).toEqual([
+      'Shown when Guests is more than 2',
+      'Required when Arrival is not empty Off',
     ]);
+    expect(text(ruled.root.querySelector('[data-section="rules"] .section-body > .help:last-child'))).toBe(
+      'A rule sits on the element it shows, hides or requires.',
+    );
+    // A show rule and a require rule leave the field no effect to add: hide would sit beside show.
+    expect(ruled.root.querySelector('.add-rule')).toBeNull();
+    must(ruled.root.querySelector<HTMLButtonElement>('button.rule[data-rule="q"]'), 'the second rule').click();
+    expect(ruled.requests.at(-1)).toEqual({ kind: 'rule', key: 'name', rule: 'q' });
+    ruled.element.focusRule('q');
+    await settle(ruled.element);
+    expect(ruled.root.activeElement?.getAttribute('data-rule')).toBe('q');
+    // Closed, the section says the rules in words, a rule kept but not used marked as off.
+    sectionButton(ruled.root, 'rules').click();
+    await settle(ruled.element);
+    expect(text(sectionButton(ruled.root, 'rules'))).toBe(
+      'Rules Shown when Guests is more than 2 \u00b7 Required when Arrival is not empty (off)',
+    );
+
+    localStorage.clear();
+    const plain = await inspectorOf('guests');
+    expect(text(sectionButton(plain.root, 'rules'))).toBe('Rules Always shown');
+    // Closed, Add a rule sits beside the header's button, not inside it (IA 5.1).
+    const add = must(plain.root.querySelector<HTMLButtonElement>('.section-line > .add-rule'), 'Add a rule');
+    expect(sectionButton(plain.root, 'rules').contains(add)).toBe(false);
+    add.click();
+    expect(plain.requests.at(-1)).toEqual({ kind: 'rule', key: 'guests', rule: null });
+    // A rule gone leaves the focus on Add a rule, the Rules section open.
+    plain.element.focusRule('gone');
+    await settle(plain.element);
+    expect(plain.root.activeElement?.classList.contains('add-rule')).toBe(true);
+    expect(sectionButton(plain.root, 'rules').getAttribute('aria-expanded')).toBe('true');
+
     localStorage.setItem('jfb.designer.inspector.open', 'not json');
     expect([...readOpen()]).toEqual(['essentials']);
   });
