@@ -102,7 +102,10 @@ const TYPES: readonly TypeCase[] = [
     type: 'url',
     name: 'Web address',
     configure: (inspector) =>
-      inspector.getByRole('group', { name: 'Allowed protocols' }).getByRole('checkbox', { name: 'http://' }).check(),
+      inspector
+        .getByRole('group', { name: 'Allowed protocols', exact: true })
+        .getByRole('checkbox', { name: 'http://' })
+        .check(),
     holds: (field) => expect(settingsOf(field)['schemes']).toEqual(['https', 'http']),
   },
   {
@@ -213,14 +216,20 @@ const TYPES: readonly TypeCase[] = [
     type: 'name',
     name: 'Name',
     configure: (inspector) =>
-      inspector.getByRole('group', { name: 'Parts' }).getByRole('checkbox', { name: 'Middle name' }).check(),
+      inspector
+        .getByRole('group', { name: 'Parts', exact: true })
+        .getByRole('checkbox', { name: 'Middle name' })
+        .check(),
     holds: (field) => expect(settingsOf(field)['parts']).toEqual(['first', 'middle', 'last']),
   },
   {
     type: 'address',
     name: 'Address',
     configure: (inspector) =>
-      inspector.getByRole('group', { name: 'Extra parts' }).getByRole('checkbox', { name: 'Postcode' }).check(),
+      inspector
+        .getByRole('group', { name: 'Extra parts', exact: true })
+        .getByRole('checkbox', { name: 'Postcode' })
+        .check(),
     holds: (field) => expect(settingsOf(field)['parts']).toEqual(['postcode']),
   },
   {

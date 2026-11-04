@@ -43,6 +43,9 @@ const PROPERTY_TERMS: Readonly<Record<string, string>> = {
 function propertyWords(context: WordsContext, field: DesignField, property: string): string {
   const name = PROPERTY_TERMS[property] ? context.term(PROPERTY_TERMS[property]) : property;
   const own = field as Readonly<Record<string, unknown>>;
+  // A field's own options are said by how many there are: "2 options".
+  const count = property === 'options' ? itemCount(own['options']) : 0;
+  if (count > 0) return context.term('jfbInspector_options_count', count);
   const value =
     property === 'label' || property === 'help' || property === 'placeholder'
       ? textIn(own[property] as LocalizedText | undefined, context.culture)
@@ -52,6 +55,11 @@ function propertyWords(context: WordsContext, field: DesignField, property: stri
           ? patternOf(field)
           : '';
   return value ? context.term('jfbDesigner_changeTypeValue', name, value) : name;
+}
+
+function itemCount(options: unknown): number {
+  const items = typeof options === 'object' && options !== null ? (options as { items?: unknown }).items : undefined;
+  return Array.isArray(items) ? items.length : 0;
 }
 
 function patternOf(field: DesignField): string {

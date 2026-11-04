@@ -16,8 +16,10 @@ export class ChangeTypeModalElement extends UmbModalBaseElement<ChangeTypeModalD
   static override styles = [
     jfbBackofficeTokens,
     css`
+      /* One width for every type chosen, so the dialog never jumps as the preview changes. */
       uui-dialog-layout {
-        max-width: 520px;
+        inline-size: min(520px, calc(100vw - 2 * var(--uui-size-space-6)));
+        box-sizing: border-box;
       }
 
       label {

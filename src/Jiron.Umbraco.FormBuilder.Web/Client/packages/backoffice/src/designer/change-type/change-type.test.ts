@@ -156,6 +156,17 @@ describe('the words of a change', () => {
     ]);
   });
 
+  it("say a field's own options by how many go, and options from elsewhere by their name", () => {
+    const own: DesignField = { key: 'n', type: 'checkboxes', options: { items: [{ value: 'a' }, { value: 'b' }] } };
+    const listed: DesignField = { key: 'n', type: 'checkboxes', options: { source: 'list', list: 'k' } };
+    const change = changeOf('checkboxes', 'text');
+    const goes = (field: DesignField) =>
+      changeWords(context, field, previewChange(DEFINITION, field, type('checkboxes'), type('text'), change), false)
+        .goes;
+    expect(goes(own)).toContain('2 options');
+    expect(goes(listed)).toContain('Options');
+  });
+
   it('name a needed setting by its label', () => {
     const preview = previewChange(DEFINITION, NAME, type('text'), type('calculation'), changeOf('text', 'calculation'));
     expect(changeWords(context, NAME, preview, false).needs[0]).toBe(term('jfbFieldSettings_calculationFormula'));
@@ -182,6 +193,7 @@ const DATA: ChangeTypeModalData = {
   type: 'Short text',
   targets: [
     { alias: 'textarea', name: 'Long text', group: 'Text', refusal: null, words: NONE },
+    { alias: 'email', name: 'Email', group: 'Text', refusal: null, words: NONE },
     {
       alias: 'dropdown',
       name: 'Dropdown',
@@ -234,9 +246,11 @@ describe('the Change type dialog', () => {
       'Choices',
       'Protection',
     ]);
+    expect(select.querySelectorAll('optgroup')[0]?.querySelectorAll('option')).toHaveLength(2);
     expect([...select.options].map((option) => [option.value, text(option), option.disabled])).toEqual([
       ['', 'Choose a type', false],
       ['textarea', 'Long text', false],
+      ['email', 'Email', false],
       ['dropdown', 'Dropdown', false],
       ['captcha', 'Captcha (unavailable)', false],
     ]);
@@ -263,6 +277,7 @@ describe('the Change type dialog', () => {
       'A rule of Phone uses "contains"',
     ]);
     expect(text(preview.querySelector('.help'))).toBe('Older answers note');
+    expect(text(preview)).not.toContain(term('jfbDesigner_changeTypeKeepsAll'));
     expect(confirm(root).disabled).toBe(false);
     confirm(root).dispatchEvent(new Event('click'));
     expect(modal.getValue()).toEqual({ to: 'dropdown' });

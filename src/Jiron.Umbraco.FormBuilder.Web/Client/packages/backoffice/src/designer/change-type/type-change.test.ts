@@ -159,6 +159,23 @@ describe('a change of type', () => {
     expect([asText.type, asText['options'], asText['settings']]).toEqual(['text', undefined, undefined]);
   });
 
+  it('takes the places off options that stay, where the new type has none', () => {
+    const boxes: DesignField = {
+      key: 'b',
+      type: 'checkboxes',
+      options: { source: 'items', items: [{ value: 'a', places: 3 }, { value: 'b' }] },
+    };
+    const change = changeOf('checkboxes', 'ranking');
+
+    expect(previewChange(form(boxes), boxes, type('checkboxes'), type('ranking'), change).properties).toEqual([
+      'places',
+    ]);
+    expect(changedField(boxes, type('ranking'), change)['options']).toEqual({
+      source: 'items',
+      items: [{ value: 'a' }, { value: 'b' }],
+    });
+  });
+
   it('carries a narrowed setting only when the new type takes its value', () => {
     const long = (maxLength: number): DesignField => ({
       key: 'l',
@@ -196,6 +213,10 @@ describe('a change of type', () => {
     ]);
     expect([preview.settings, preview.needs]).toEqual([[], []]);
     expect(changedField(boxes, dropdown, change)['settings']).toEqual({ minSelections: 2 });
+
+    // A field without a value of its own for the locked setting loses nothing to the lock.
+    const without: DesignField = { ...boxes, settings: { minSelections: 2 } };
+    expect(previewChange(form(without), without, type('checkboxes'), dropdown, change).locked).toEqual([]);
 
     const same: DesignField = { ...boxes, settings: { maxSelections: 3 } };
     expect(previewChange(form(same), same, type('checkboxes'), dropdown, change).locked).toEqual([]);
