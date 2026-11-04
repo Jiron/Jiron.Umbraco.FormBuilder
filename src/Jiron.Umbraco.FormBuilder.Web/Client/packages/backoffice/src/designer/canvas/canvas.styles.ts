@@ -232,6 +232,14 @@ export const canvasChrome = css`
   }
 
   /*
+   * A group a view away from what is in sight: its styling, layout and painting wait until it comes near, at the
+   * height it had (canvas-far.ts, ADR-0176). It stays in the accessibility tree, and the browser still finds its words.
+   */
+  .jfb-form .bo-group[data-far] {
+    content-visibility: auto;
+  }
+
+  /*
    * The field's whole box, whatever the theme aligns its parts by: a theme's start alignment would size this layer to
    * its contents, which lie outside the flow, and leave it no height. Its class named twice outranks a theme's rule for the
    * parts of fields side by side.

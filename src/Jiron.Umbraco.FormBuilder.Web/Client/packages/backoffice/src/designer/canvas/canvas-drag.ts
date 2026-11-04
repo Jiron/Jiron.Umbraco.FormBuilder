@@ -207,7 +207,8 @@ export class CanvasDrag {
     const containers = [
       ...root.querySelectorAll<HTMLElement>(source.kind === 'group' ? '[data-groups]' : '[data-fields]'),
     ]
-      .filter((container) => !(dragged && dragged.contains(container)))
+      // A group far from the view is never under the pointer, and measuring it would make the browser draw it.
+      .filter((container) => !(dragged && dragged.contains(container)) && !container.closest('[data-far]'))
       .map((element) => ({ element, box: rect(element) }));
     const container = containerAt(containers, x, y);
     if (!container) return { place: null, reason: null, line: null, step: null, area };

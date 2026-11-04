@@ -364,6 +364,30 @@ describe('the canvas', () => {
     expect([text(navigation), (navigation as HTMLElement).inert]).toEqual(['Next', true]);
   });
 
+  it("keeps the page's buttons and watches its groups for being far from the view (section 4.12, ADR-0176)", async () => {
+    const watched: Element[] = [];
+    const real = globalThis.IntersectionObserver;
+    globalThis.IntersectionObserver = class {
+      observe = (group: Element) => watched.push(group);
+      unobserve = (): undefined => undefined;
+      disconnect = (): undefined => undefined;
+    } as unknown as typeof IntersectionObserver;
+    try {
+      const { element, root } = await canvasOf(DEFINITION);
+      const navigation = root.querySelector('.jfb-navigation');
+      expect(watched).toEqual([...root.querySelectorAll('.bo-page > [data-group]')]);
+      expect(watched).toHaveLength(2);
+      // A selection draws the page again: its buttons are the same node, so the theme's rules that look inside the
+      // form have nothing to look at again.
+      element.selection = 'e';
+      await settle(element);
+      expect(root.querySelector('.jfb-navigation')).toBe(navigation);
+      expect(watched).toHaveLength(2);
+    } finally {
+      globalThis.IntersectionObserver = real;
+    }
+  });
+
   it("names each group's and page's button, and an empty group's place for a field", async () => {
     const { requests, root } = await canvasOf(DEFINITION, { selection: 'g1' });
     const groups = [...root.querySelectorAll<HTMLButtonElement>('.bo-select-group')];

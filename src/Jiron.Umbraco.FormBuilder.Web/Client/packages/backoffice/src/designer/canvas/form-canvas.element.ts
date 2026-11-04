@@ -26,6 +26,7 @@ import type { CanvasLook } from '../preview/look';
 import { fragmentOf, safeHtml, showsText } from '../preview/rich-text';
 import { modifierTerm } from '../moves/keys';
 import { CanvasDrag, type DragSource } from './canvas-drag';
+import { FarGroups } from './canvas-far';
 import { untranslated } from '../inspector/inspector-model';
 import { FIELD_REQUEST, moreMenu, type FieldRequest, type FieldState, type FieldWords } from './canvas-field.element';
 import './canvas-field.element';
@@ -126,6 +127,8 @@ export class FormCanvasElement extends UmbLitElement {
 
   #resize = new ResizeObserver(() => this.#measure());
   #observed: Element | null = null;
+  /** The page's groups far from the view, whose drawing waits until they come near (canvas-far.ts). */
+  readonly #far = new FarGroups();
   /** Each field's view model, kept while the field and what it is built with stay the same. */
   #models = new WeakMap<DesignField, { context: PreviewContext; columns: number; model: FieldViewModel | null }>();
   /**
@@ -135,6 +138,12 @@ export class FormCanvasElement extends UmbLitElement {
   #words = new WeakMap<DesignField, { readonly parts: readonly unknown[]; readonly words: FieldWords }>();
   #states = new WeakMap<DesignField, { readonly parts: readonly unknown[]; readonly state: FieldState }>();
   #previewContext: { key: readonly unknown[]; context: PreviewContext & ReturnType<typeof formSettings> } | undefined;
+  /**
+   * The page's buttons, the same node while their classes and words stay the same. A new node at every render would be
+   * taken out and put back at every selection, and the theme's rules that look inside the form (`:has()`) would then
+   * restyle every field of the page (section 4.12).
+   */
+  #navigation: { readonly parts: readonly unknown[]; readonly node: HTMLElement } | undefined;
 
   constructor() {
     super();
@@ -252,6 +261,7 @@ export class FormCanvasElement extends UmbLitElement {
 
   override disconnectedCallback() {
     this.#resize.disconnect();
+    this.#far.stop();
     this.#observed = null;
     super.disconnectedCallback();
   }
@@ -302,7 +312,9 @@ export class FormCanvasElement extends UmbLitElement {
       this.#resize.disconnect();
       this.#observed = viewport;
       if (viewport) this.#resize.observe(viewport);
+      this.#far.within(viewport);
     }
+    this.#far.watch(root?.querySelectorAll('.bo-page > [data-group]') ?? []);
     if (changed.has('width')) this.#measure();
   }
 
@@ -651,14 +663,7 @@ export class FormCanvasElement extends UmbLitElement {
     const selected = this.selection === page.key;
     const bare = pageIsBare(page, culture);
     const formEmpty = this.definition.pages.every((each) => each.groups.every((group) => group.fields.length === 0));
-    const last = index === this.definition.pages.length - 1;
-    const navigation = writeNavigation(document, context.look.classes, {
-      ...(index > 0 ? { back: { label: context.back || this.#word('back'), value: 'back' } } : {}),
-      ...(last
-        ? { submit: { label: context.send || this.#word('send'), value: 'submit' } }
-        : { next: { label: context.next || this.#word('next'), value: 'next' } }),
-    });
-    navigation.inert = true;
+    const navigation = this.#navigationOf(index, context);
     return html`<section class="jfb-page bo-page${selected ? ' bo-selected' : ''}" data-groups=${page.key}>
         <button
           type="button"
@@ -702,6 +707,23 @@ export class FormCanvasElement extends UmbLitElement {
         </button>
       </section>
       ${navigation}`;
+  }
+
+  // The page's Back, Next or Send as the theme draws them, shown and never pressed.
+  #navigationOf(index: number, context: PreviewContext & ReturnType<typeof formSettings>): HTMLElement {
+    const back = index > 0 ? context.back || this.#word('back') : null;
+    const last = index === this.definition.pages.length - 1;
+    const forward = last ? context.send || this.#word('send') : context.next || this.#word('next');
+    const parts = [context.look.classes, back, last, forward];
+    const kept = this.#navigation;
+    if (kept && kept.parts.every((part, at) => part === parts[at])) return kept.node;
+    const node = writeNavigation(document, context.look.classes, {
+      ...(back !== null ? { back: { label: back, value: 'back' } } : {}),
+      ...(last ? { submit: { label: forward, value: 'submit' } } : { next: { label: forward, value: 'next' } }),
+    });
+    node.inert = true;
+    this.#navigation = { parts, node };
+    return node;
   }
 
   // Why the form refused a group's or a page's last move, beside its handle.

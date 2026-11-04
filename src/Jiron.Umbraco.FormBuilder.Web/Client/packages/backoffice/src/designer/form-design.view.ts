@@ -199,6 +199,13 @@ export class FormDesignViewElement extends UmbLitElement {
         /* The view takes the width it is given, so it can measure when that is too narrow for the docked palette. */
         min-width: 0;
         min-height: 0;
+        /*
+         * The workspace's scroll container fades its scrollbar in and out as the pointer or the focus comes and goes,
+         * by a transition of this inherited property; set here, it stops at the view, so a form of hundreds of fields
+         * is not restyled at every frame of the fade (section 4.12). The canvas and the inspector keep the colour the
+         * container shows while in use.
+         */
+        scrollbar-color: var(--uui-color-disabled-standalone) transparent;
       }
 
       jfb-designer-palette {

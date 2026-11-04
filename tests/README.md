@@ -926,7 +926,11 @@ Cancel, and `?`. In the browser, `specs/backoffice/designer-moves.spec.ts` build
 keyboard only and asserts the focused element after every operation, moves fields, a group and a page with the mouse
 with a refused drop and palette types, one on an empty page; and the `budgets` project, alone after every other one,
 holds a form of 300 fields to 100 ms per interaction (Event Timing) and per frame (Long Animation Frames) in
-`specs/budgets/designer.spec.ts`.
+`specs/budgets/designer.spec.ts`. What keeps it there (ADR-0176): `canvas/canvas-far.test.ts` holds a group far from
+the view marked at its height and cleared when near, watched against the canvas's viewport each once and until gone;
+`canvas/canvas-drag.test.ts` a far group never measured nor dropped into; `canvas/canvas.test.ts` the page's buttons
+kept across a selection and its groups watched; and `form-design.view.test.ts` the workspace's scrollbar fade stopped
+at the view.
 
 **The inspector** (ROADMAP 9.4a, [ADR-0170](../docs/decisions/0170-the-inspector.md)):
 `inspector/setting-values.test.ts` holds a setting's value with its default and lock, written back and left out where

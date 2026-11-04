@@ -2,6 +2,7 @@
 // new field and a page land, a refusal shown at the line and asked once per place, a step's page end and the page shown
 // after resting on it, Escape, and the settle after a drop.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { must } from '../../testing';
 import type { Place } from '../editor-model';
 import { CanvasDrag, STEP_DWELL_MS, SETTLE_MS, type CanvasDragHost, type DragSource } from './canvas-drag';
 
@@ -106,6 +107,21 @@ describe('a drag on the canvas', () => {
     ]);
     expect(heard.drops).toEqual([[field('c'), { container: 'g1', index: 1 }]]);
     expect(drag.active).toBe(false);
+  });
+
+  it('never measures nor drops into a group far from the view, whose drawing waits (ADR-0176)', () => {
+    const { drag, heard, find } = canvasOf();
+    find('[data-group="g2"]')?.setAttribute('data-far', '');
+    const fields = must(find('[data-fields="g2"]'), "g2's fields");
+    const measured = vi.spyOn(fields, 'getBoundingClientRect');
+    dragAlong(drag, field('a'), [
+      [200, 100],
+      [200, 120],
+      [200, 290],
+    ]);
+    // The group in reach takes it, at its end.
+    expect(heard.drops).toEqual([[field('a'), { container: 'g1', index: 1 }]]);
+    expect(measured).not.toHaveBeenCalled();
   });
 
   it('drops at the end of a group below its last field, and counts places without the dragged field', () => {

@@ -354,6 +354,14 @@ describe("the view's look", () => {
     await settle(view);
     expect(shadow(view).querySelector('.failed')).toBeNull();
   });
+
+  it("stops the workspace's scrollbar fade at its edge, so a long form isn't restyled at each frame of it", () => {
+    // The workspace's scroll container fades its scrollbar by a transition of this inherited property (section 4.12).
+    const view = customElements.get('jfb-form-design-view') as unknown as { styles: { cssText: string }[] };
+    expect(view.styles.map((style) => style.cssText).join('\n')).toMatch(
+      /:host \{[^}]*scrollbar-color: var\(--uui-color-disabled-standalone\) transparent;/,
+    );
+  });
 });
 
 describe('a pick from the palette', () => {

@@ -218,7 +218,8 @@ flowchart LR
   management API's `canvas` endpoint; the template gallery shows a template with the same drawing
   (`preview/form-preview.element.ts`). From 9.3c the moves (ADR-0016, ADR-0169): the backoffice's one pointer drag
   (`drag/pointer-drag.ts`) and its drop arithmetic (`drag/drop-place.ts`), put on the canvas by `canvas/canvas-drag.ts`
-  for fields, groups, pages by their steps and the palette's types, each place's refusal asked of the editor model; and
+  for fields, groups, pages by their steps and the palette's types, each place's refusal asked of the editor model (a
+  group a view away from sight is not drawn until it comes near, `canvas/canvas-far.ts`, ADR-0176); and
   in `moves/` the pure helpers the Design view moves with (a drop's edit, where an element is, Move to…'s places), the
   Move to… and Keyboard shortcuts dialogs, and the keys' names. From 9.4a the inspector (`inspector/`, ADR-0170):
   `jfb-designer-inspector` beside the canvas, folded to a rail, or over it in a narrow view, whose sections

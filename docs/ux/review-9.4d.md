@@ -106,6 +106,7 @@ host that locks a dropdown's most options.
 | "Parts" also found "Required parts" | the groups are found by their exact names |
 | The locks host failed to seed (above) | the host makes every dropdown take several options |
 | The first gate: 9.4a's keyboard journey to Start a new page after this found the focus on Change type..., now the first item of the element's "..." (the two journeys above had run alone) | the journey tabs from Change type... to it; the whole backoffice project then ran |
+| The second gate: the budget's first click on a form of 300 fields took 176 ms, beside a tamper round; alone, 96 to 120 ms. Umbraco's scrollbar fade restyled the whole view at each frame, the page's buttons were drawn anew at each selection, and the rest grew with the fields drawn | the view stops the fade at its edge, the buttons are kept, and a group a view away is not drawn until it comes near ([ADR-0176](../decisions/0176-the-designer-budget-on-long-forms.md)): 72 to 80 ms alone |
 
 ## The tamper round
 
