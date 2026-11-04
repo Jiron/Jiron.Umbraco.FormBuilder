@@ -52,8 +52,8 @@ const MOST_TRIED = 4096;
 /** How many answers a choice of several is tried with at most. */
 const MOST_SETS = 32;
 
-const used = (rule: DesignRule | undefined): rule is DesignRule =>
-  rule !== undefined && rule.enabled !== false && rule.conditions.length > 0;
+// A rule that is off the engine leaves undecided (null), as one it refuses, so neither ever conflicts.
+const used = (rule: DesignRule | undefined): rule is DesignRule => rule !== undefined && rule.conditions.length > 0;
 
 /** The conflict of a field's own rules, or null where its rules can't conflict or no answers tried make them. */
 export function conflictOf(rules: readonly DesignRule[], scope: ConflictScope): Conflict | null {

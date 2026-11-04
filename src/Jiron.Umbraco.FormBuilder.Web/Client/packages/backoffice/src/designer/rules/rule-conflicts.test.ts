@@ -147,6 +147,21 @@ describe("a conflict of a field's rules", () => {
     ]);
   });
 
+  it("tries each side of a comparison with the other's values", () => {
+    // The guests are named by no value of their own, only compared with the kids, who are required at two.
+    const more = conflictOf(
+      [
+        rule('hide', [{ field: 'guests', op: 'greaterThan', value: { field: 'kids' } }]),
+        rule('require', [{ field: 'kids', op: 'equals', value: '2' }]),
+      ],
+      { ...SCOPE, fields: { ...SCOPE.fields, kids: 'number' } },
+    );
+    expect(more?.answers).toEqual([
+      { subject: 'field:guests', values: ['3'] },
+      { subject: 'field:kids', values: ['2'] },
+    ]);
+  });
+
   it('leaves out an answer the conflict holds for whatever it is, and has no answers where it holds for all', () => {
     const conflict = conflictOf(
       [
