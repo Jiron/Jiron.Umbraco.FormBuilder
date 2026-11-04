@@ -8,6 +8,7 @@ import library from './library.de';
 import mergeTags from './merge-tags.de';
 import options from './options.de';
 import picker from './picker.de';
+import rules from './rules.de';
 import section from './section.de';
 
 export default {
@@ -20,4 +21,5 @@ export default {
   ...designer,
   ...inspector,
   ...mergeTags,
+  ...rules,
 } satisfies UmbLocalizationDictionary;

@@ -1,11 +1,17 @@
 // The fixtures the preview tests draw with (ADR-0168), one source each: the canvas endpoint's answer in
-// docs/api/canvas.json, the field types in docs/api/field-types.json, the option sources in
+// docs/api/canvas.json, the field types in docs/api/field-types.json and some of their changes in
+// docs/api/field-type-changes.json, the option sources in
 // docs/api/option-sources.json, the sink's draft in
 // tests/fixtures/rendering/designer-sink.json and the server's markup of the same sink in element-en.json.
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import type { CanvasResponseModel, FieldTypesResponseModel, OptionSourcesResponseModel } from '../../api';
+import type {
+  CanvasResponseModel,
+  FieldTypeChangesResponseModel,
+  FieldTypesResponseModel,
+  OptionSourcesResponseModel,
+} from '../../api';
 import { normalise, type DesignDefinition } from '../definition';
 import { lookOf, type CanvasLook } from './look';
 
@@ -21,6 +27,13 @@ export const englishLook: CanvasLook = lookOf({
 /** The built-in field types by alias. */
 export const builtInTypes = Object.fromEntries(
   json<FieldTypesResponseModel>('docs', 'api', 'field-types.json').types.map((type) => [type.alias, type]),
+);
+
+/** The changes of type of a text, a long text, a number, checkboxes and a single checkbox, by the type they leave. */
+export const builtInChanges = json<Record<string, FieldTypeChangesResponseModel>>(
+  'docs',
+  'api',
+  'field-type-changes.json',
 );
 
 /** The kinds a field may take its options from and the standard lists, as docs/api/option-sources.json has them. */

@@ -474,7 +474,7 @@ export class FormCanvasElement extends UmbLitElement {
   }
 
   #wordsOf(field: DesignField, context: PreviewContext, model: FieldViewModel | null, label: string): FieldWords {
-    const parts = [context, model, this.localize.lang(), field.alias];
+    const parts = [context, model, this.localize.lang(), field.alias, this.types];
     const kept = this.#words.get(field);
     if (kept && kept.parts.every((part, at) => part === parts[at])) return kept.words;
     const words: FieldWords = {
@@ -489,6 +489,9 @@ export class FormCanvasElement extends UmbLitElement {
       delete: this.localize.term('jfbDesigner_delete'),
       deleteNamed: this.localize.term('jfbDesigner_deleteNamed', label),
       more: this.localize.term('jfbDesigner_moreElement'),
+      ...(Object.hasOwn(this.types, field.type) && this.types[field.type]?.mayChangeType
+        ? { changeType: this.localize.term('jfbDesigner_changeType') }
+        : {}),
       newPageAfter: this.localize.term('jfbDesigner_newPageAfter'),
       ...(field.alias ? { copyAlias: this.localize.term('jfbDesigner_copyAlias') } : {}),
       labelBox: this.localize.term('jfbDesigner_labelBox'),

@@ -136,6 +136,17 @@ describe('a field on the canvas', () => {
     ]);
   });
 
+  it('offers Change type... first, for a field whose type may change', async () => {
+    const { element, requests } = await fieldOf({
+      ...stateOf(email, { selected: true }),
+      words: { ...WORDS, changeType: 'Change type...' },
+    });
+    const items = [...controls(element).querySelectorAll<HTMLButtonElement>('.bo-menu button')];
+    expect(items.map((item) => text(item))).toEqual(['Change type...', 'Start a new page after this', 'Copy alias']);
+    items[0]?.click();
+    expect(requests).toEqual([{ kind: 'changeType', key: 'e' }]);
+  });
+
   it('offers Copy alias only for a field with an alias', async () => {
     const words: FieldWords = Object.fromEntries(
       Object.entries(WORDS).filter(([name]) => name !== 'copyAlias'),
@@ -484,7 +495,7 @@ describe('the canvas', () => {
     const menu = [...english.root.querySelectorAll('jfb-canvas-field[key="c"] .bo-menu button')].map((item) =>
       text(item),
     );
-    expect(menu).toEqual(['Start a new page after this']);
+    expect(menu).toEqual(['Change type\u2026', 'Start a new page after this']);
   });
 
   it('points a new form to the palette and to pasting questions, and an empty later page to New page', async () => {
@@ -598,6 +609,7 @@ describe('the canvas', () => {
       { kind: 'moveTo', key: 'e' },
       { kind: 'duplicate', key: 'e' },
       { kind: 'delete', key: 'e' },
+      { kind: 'changeType', key: 'e' },
       { kind: 'newPageAfter', key: 'e' },
       { kind: 'copyAlias', key: 'e' },
     ]);

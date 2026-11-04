@@ -12,7 +12,15 @@ import {
   type UmbRoutableWorkspaceContext,
 } from '@umbraco-cms/backoffice/workspace';
 import { FORMULAS } from '@jfb/logic/calc';
-import { fieldTypeList, formGet, formPublish, type FieldGroupResponseModel, type FieldTypeResponseModel } from '../api';
+import {
+  fieldTypeChanges,
+  fieldTypeList,
+  formGet,
+  formPublish,
+  type FieldGroupResponseModel,
+  type FieldTypeChangeResponseModel,
+  type FieldTypeResponseModel,
+} from '../api';
 import { sayRefusal } from '../library/library-changes';
 import { FORM_ENTITY_TYPE } from '../section/entity-types';
 import { FORM_DETAIL_REPOSITORY_ALIAS, FORM_WORKSPACE_ALIAS } from './constants';
@@ -56,6 +64,8 @@ export class FormWorkspaceContext
   // A record, not a Map: the state compares values as JSON, which writes every Map as {}.
   readonly #types = new UmbObjectState<Readonly<Record<string, FieldTypeResponseModel>>>({});
   readonly #groups = new UmbObjectState<readonly FieldGroupResponseModel[]>([]);
+  // Each type's changes, read once while the form is open (ADR-0174); a read that fails is asked again next time.
+  readonly #changes = new Map<string, Promise<readonly FieldTypeChangeResponseModel[] | undefined>>();
 
   /** The field types by alias, as the views name and draw them; empty until they are read. */
   readonly fieldTypes = this.#types.asObservable();
@@ -119,6 +129,23 @@ export class FormWorkspaceContext
     this.#types.setValue(Object.fromEntries(data.types.map((type) => [type.alias, type])));
     this.#groups.setValue(data.paletteGroups);
     this.#typesRead = true;
+  }
+
+  /**
+   * The changes of type a field of the type may make (ADR-0059), in the palette's order, with the host's locks of each
+   * new type applied (ADR-0060); undefined when they can't be read.
+   */
+  changesOf(type: string): Promise<readonly FieldTypeChangeResponseModel[] | undefined> {
+    const kept = this.#changes.get(type);
+    if (kept) return kept;
+    const read = tryExecute(this, fieldTypeChanges({ path: { alias: type } }), { disableNotifications: true }).then(
+      ({ data }) => {
+        if (!data) this.#changes.delete(type);
+        return data?.changes;
+      },
+    );
+    this.#changes.set(type, read);
+    return read;
   }
 
   /** Whether the user may design the open form. */

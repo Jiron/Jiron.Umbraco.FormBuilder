@@ -49,6 +49,9 @@ import {
   type Refusal,
 } from './editor-model';
 import type { EditorView, FormWorkspaceContext } from './form-workspace.context';
+import { CHANGE_TYPE_MODAL, type ChangeTypeTarget } from './change-type/change-type.modal.token';
+import { changeWords } from './change-type/change-type-words';
+import { changedField, previewChange } from './change-type/type-change';
 import { MOVE_TO_MODAL, type MoveToModalData } from './moves/move-to.modal.token';
 import { dropEdit, endOf, moveToPlaces, positionOf, type MovePlace } from './moves/moves';
 import { SHORTCUTS_MODAL } from './moves/shortcuts.modal.token';
@@ -750,6 +753,9 @@ export class FormDesignViewElement extends UmbLitElement {
       case 'moveTo':
         await this.#moveTo(request.key);
         return;
+      case 'changeType':
+        await this.#changeType(request.key);
+        return;
       case 'shortcuts':
         await this.#shortcuts();
         return;
@@ -878,6 +884,9 @@ export class FormDesignViewElement extends UmbLitElement {
         return;
       case 'delete':
         await this.#delete(key);
+        return;
+      case 'changeType':
+        await this.#changeType(key);
         return;
       case 'newPageAfter':
         await this.#newPageAfter(key);
@@ -1046,6 +1055,85 @@ export class FormDesignViewElement extends UmbLitElement {
       return;
     }
     await this.#moved(key, move(now, key, end, model), { toast: true });
+  }
+
+  #fieldType(alias: string): FieldTypeResponseModel | undefined {
+    return Object.hasOwn(this._types, alias) ? this._types[alias] : undefined;
+  }
+
+  // Change type...: the types the field may become (ADR-0059), each with what it takes from the field and what the
+  // field then needs, and each the form or the site refuses with why. The change is made on the form as it is when the
+  // dialog closes, and a toast offers Undo; Cancel gives the focus back to the field.
+  async #changeType(key: string) {
+    const context = this.#context;
+    const before = this.#state();
+    const found = before ? locate(before.definition, key) : undefined;
+    if (!context || found?.kind !== 'field') return;
+    const changes = await context.changesOf(found.element.type);
+    if (!changes) {
+      (await this.#notifications())?.peek('danger', {
+        data: { message: this.localize.term('jfbDesigner_changeTypeFailed') },
+      });
+      return;
+    }
+    // The form as it is once the changes are read, which the dialog shows.
+    const state = this.#state();
+    const field = state ? locate(state.definition, key) : undefined;
+    if (!state || field?.kind !== 'field') return;
+    const from = this.#fieldType(field.element.type);
+    const hasEntries = context.keptAliasOf(key) !== null;
+    const words = {
+      term: (term: string, ...args: unknown[]) => this.localize.term(term, ...args),
+      say: (text: string | null | undefined) => (text ? this.localize.string(text) : ''),
+      culture: this._look?.culture ?? '',
+      nameOf: (element: string) => this.#label(element),
+      actionTypeName: (type: string) => type,
+    };
+    const targets = changes.flatMap((each): ChangeTypeTarget[] => {
+      const to = this.#fieldType(each.to);
+      if (!to) return [];
+      const name = this.localize.string(to.name);
+      const edit = change(state, key, (one) => changedField(one as DesignField, to, each), context.model);
+      const refusal = !to.availability.isAvailable
+        ? this.localize.string(to.availability.reason ?? '')
+        : !edit.ok && edit.refusal !== 'unchanged'
+          ? this.#refusalText(edit.refusal, name)
+          : null;
+      const group = this._groups.find((one) => one.alias === to.paletteGroup);
+      return [
+        {
+          alias: to.alias,
+          name,
+          group: group ? this.localize.string(group.name) : to.paletteGroup,
+          refusal,
+          words: changeWords(
+            words,
+            field.element,
+            previewChange(state.definition, field.element, from, to, each),
+            hasEntries,
+          ),
+        },
+      ];
+    });
+    const name = this.#label(key);
+    const value = await umbOpenModal(this, CHANGE_TYPE_MODAL, {
+      data: { name, type: this.#typeName(field.element.type), targets },
+    }).catch(() => undefined);
+    const chosen = value ? changes.find((each) => each.to === value.to) : undefined;
+    const to = chosen ? this.#fieldType(chosen.to) : undefined;
+    // The field changed is the one selected, so the focus goes back to it.
+    const now = chosen ? this.#selectFirst(key) : this.#state();
+    if (!now || !chosen || !to) {
+      await this.#focus(key);
+      return;
+    }
+    const type = this.#typeName(to.alias);
+    const done = await this.#apply(
+      change(now, key, (one) => changedField(one as DesignField, to, chosen), context.model),
+      this.localize.term('jfbDesigner_saidTypeChanged', name, type),
+      { type },
+    );
+    if (done) await this.#offerUndo(this.localize.term('jfbDesigner_typeChanged', type));
   }
 
   async #shortcuts() {

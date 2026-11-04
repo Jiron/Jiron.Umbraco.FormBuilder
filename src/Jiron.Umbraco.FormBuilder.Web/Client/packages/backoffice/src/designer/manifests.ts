@@ -10,6 +10,7 @@ import {
   FORM_PERMISSION_CONDITION,
   FORM_WORKSPACE_ALIAS,
 } from './constants';
+import { CHANGE_TYPE_MODAL_ALIAS } from './change-type/change-type.modal.token';
 import { MOVE_TO_MODAL_ALIAS } from './moves/move-to.modal.token';
 import { SHORTCUTS_MODAL_ALIAS } from './moves/shortcuts.modal.token';
 import { PASTE_QUESTIONS_MODAL_ALIAS } from './palette/paste-questions.modal.token';
@@ -81,6 +82,12 @@ export const manifests: UmbExtensionManifest[] = [
     alias: SHORTCUTS_MODAL_ALIAS,
     name: 'Jiron Form Builder keyboard shortcuts dialog',
     element: (() => import('./moves/shortcuts.modal.element')) as never,
+  },
+  {
+    type: 'modal',
+    alias: CHANGE_TYPE_MODAL_ALIAS,
+    name: 'Jiron Form Builder change type dialog',
+    element: (() => import('./change-type/change-type.modal.element')) as never,
   },
   ...VIEWS.map((view, index): UmbExtensionManifest => ({
     type: 'workspaceView',

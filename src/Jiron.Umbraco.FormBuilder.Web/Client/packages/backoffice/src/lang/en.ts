@@ -10,6 +10,7 @@ import library from './library.en';
 import mergeTags from './merge-tags.en';
 import options from './options.en';
 import picker from './picker.en';
+import rules from './rules.en';
 import section from './section.en';
 
 export default {
@@ -22,4 +23,5 @@ export default {
   ...designer,
   ...inspector,
   ...mergeTags,
+  ...rules,
 } satisfies UmbLocalizationDictionary;

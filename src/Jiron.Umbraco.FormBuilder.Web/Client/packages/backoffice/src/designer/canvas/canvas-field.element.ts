@@ -29,6 +29,7 @@ export type FieldRequest =
   | { readonly kind: 'editLabel'; readonly key: string }
   | { readonly kind: 'label'; readonly key: string; readonly text: string | null }
   | { readonly kind: 'moveTo'; readonly key: string }
+  | { readonly kind: 'changeType'; readonly key: string }
   | { readonly kind: 'newPageAfter'; readonly key: string }
   | { readonly kind: 'copyAlias'; readonly key: string }
   | { readonly kind: 'drag'; readonly key: string; readonly event: PointerEvent; readonly handle: Element };
@@ -56,6 +57,8 @@ export interface FieldWords {
   readonly deleteNamed: string;
   /** The "..."'s name: "More actions". */
   readonly more: string;
+  /** Change type..., for a field whose type may become another (ADR-0059). */
+  readonly changeType?: string;
   readonly newPageAfter: string;
   /** Copy alias, for a field with an alias. */
   readonly copyAlias?: string;
@@ -462,6 +465,9 @@ export class CanvasFieldElement extends LitElement {
                   ><span class="bo-tool-text">${words.delete}</span>
                 </button>
                 ${moreMenu(`jfb-more-${key}`, words.more, [
+                  ...(words.changeType
+                    ? [{ label: words.changeType, act: () => this.#request({ kind: 'changeType', key }) }]
+                    : []),
                   { label: words.newPageAfter, act: () => this.#request({ kind: 'newPageAfter', key }) },
                   ...(words.copyAlias
                     ? [{ label: words.copyAlias, act: () => this.#request({ kind: 'copyAlias', key }) }]

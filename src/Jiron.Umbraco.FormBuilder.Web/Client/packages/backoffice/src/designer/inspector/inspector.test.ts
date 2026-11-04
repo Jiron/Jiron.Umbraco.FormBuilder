@@ -479,6 +479,24 @@ describe('the inspector', () => {
     const page = await inspectorOf('p', { mode: 'overlay' });
     expect(all(page.element, '.tools button').map((button) => text(button))).toEqual(['Move to\u2026', 'Delete']);
   });
+
+  it('offers Change type by the type of a field that may change, in every way of showing, and once', async () => {
+    for (const mode of ['docked', 'overlay'] as const) {
+      const { root, requests } = await inspectorOf('name', { mode });
+      const changeType = must(root.querySelector<HTMLElement>('.head uui-button.change-type'), `Change type, ${mode}`);
+      expect(changeType.getAttribute('label')).toBe('Change type');
+      changeType.dispatchEvent(new Event('click'));
+      expect(requests).toEqual([{ kind: 'element', action: 'changeType', key: 'name' }]);
+      expect(all(root.querySelector('.head') ?? root.host, 'button').map((button) => text(button))).not.toContain(
+        'Change type\u2026',
+      );
+      document.body.replaceChildren();
+    }
+
+    const heading: DesignField = { key: 'h', type: 'heading', settings: { text: { '': 'Hello' } } };
+    expect((await inspectorOf('h', {}, heading)).root.querySelector('.change-type')).toBeNull();
+    expect((await inspectorOf('g')).root.querySelector('.change-type')).toBeNull();
+  });
 });
 
 describe("a choice field's options in the inspector", () => {

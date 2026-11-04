@@ -55,7 +55,7 @@ import {
 export const INSPECTOR_REQUEST = 'jfb-inspector-request';
 
 /** The selected element's own actions, from the inspector's bar over a narrow canvas or the element's "...". */
-export type ElementAction = 'moveTo' | 'duplicate' | 'delete' | 'newPageAfter' | 'copyAlias';
+export type ElementAction = 'moveTo' | 'duplicate' | 'delete' | 'changeType' | 'newPageAfter' | 'copyAlias';
 
 type Element = DesignPage | DesignGroup | DesignField;
 
@@ -1235,6 +1235,18 @@ export class InspectorElement extends UmbLitElement {
     const sections = this.#sections(subject);
     return html`<div class="head">
         <h2 tabindex="-1">${this.#heading(subject)}</h2>
+        ${
+          // Change type sits by the type's name; the bar over a narrow canvas has no second one.
+          subject.kind === 'field' && subject.type?.mayChangeType
+            ? html`<uui-button
+                compact
+                look="secondary"
+                class="change-type"
+                label=${this.localize.term('jfbDesigner_changeTypeButton')}
+                @click=${() => this.#request({ kind: 'element', action: 'changeType', key: subject.field.key })}
+              ></uui-button>`
+            : nothing
+        }
         ${
           this.mode === 'docked'
             ? html`<uui-button compact label=${this.#term('fold')} @click=${() => this.#request({ kind: 'fold' })}>

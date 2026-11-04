@@ -242,7 +242,11 @@ flowchart LR
   `form/{key}/merge-tag-paths` for the paths of a place in the draft the designer holds, for the element whose text it
   is (`DraftMergeTagPaths` in Core: a field's path labelled in the language asked, a visitor text's answers only those
   before it); and "Must match a pattern" in Validation, whose "Try it" runs `@jfb/logic`'s `compilePattern`,
-  the browser's twin of the server's matcher.
+  the browser's twin of the server's matcher. From 9.4d (ADR-0174): `change-type/` holds Change type, which the canvas
+  element's "..." and the inspector's header offer: `type-change.ts` works out a change's preview on the draft (what
+  goes, what a lock sets instead, what the field needs, the conditions naming it whose operator goes) and the field once
+  changed, pure; `change-type-words.ts` says the preview; the dialog chooses among the types the workspace reads from
+  `field-type/{alias}/changes` once while the form is open.
 
 ## 2. The definition model
 
@@ -363,8 +367,10 @@ Text        LocalizedText: culture → text, "" is the default; "#key" reads the
   field's answers or those of a child of it (ADR-0077, ADR-0081, ADR-0083).
   `FieldTypeChanges` works out which types a field may become and what each change keeps and loses (its settings, by
   name, kind and rules; common properties; messages; the operators of rules; the columns of older answers), from the
-  declarations and schemas alone ([ADR-0059](decisions/0059-changing-field-types.md)), for the inspector's "Change
-  type" (9.4). `FieldSettingLocks` resolves the host's designer locks of field settings against the registry
+  declarations and schemas alone ([ADR-0059](decisions/0059-changing-field-types.md)), and `UnderLocks` takes a
+  setting the host locks on the new type out of what a change carries and needs; `GET field-type/{alias}/changes`
+  serves a type's changes so, and the list says which types change at all (`mayChangeType`,
+  [ADR-0174](decisions/0174-changing-a-fields-type-in-the-designer.md)). `FieldSettingLocks` resolves the host's designer locks of field settings against the registry
   ([ADR-0060](decisions/0060-designer-locks-of-field-settings.md)): start-up refuses a lock on a type or a setting the
   site lacks, or with a value the setting refuses; `GET field-type` marks a locked setting read-only with its value, or
   hidden without it; a draft save refuses another value (`409 setting_locked`) unless the stored draft held it; and

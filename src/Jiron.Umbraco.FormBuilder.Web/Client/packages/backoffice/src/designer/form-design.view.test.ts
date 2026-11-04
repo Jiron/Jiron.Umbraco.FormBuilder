@@ -5,8 +5,9 @@
 // type dropped, a refusal shown at the element, Alt+Up and Alt+Down with the focus kept, Up and Down between elements,
 // Move to... and the Keyboard shortcuts. The inspector (ROADMAP 9.4a): beside the canvas with the selection, its changes
 // as edits that typing in one box makes one step, the palette folded beside it up to 1024 px, an alias that entries know
-// changed only after a question, the element's "...", the language the canvas shows, and the keys from inside it. A
-// stand-in workspace drives the real undo history.
+// changed only after a question, the element's "...", the language the canvas shows, and the keys from inside it.
+// Change type (ROADMAP 9.4d): the dialog with each type's preview, the change made with Undo, a type the site can't
+// offer refused, and a read that fails said. A stand-in workspace drives the real undo history.
 import { FORMULAS } from '@jfb/logic/calc';
 import { UMB_NOTIFICATION_CONTEXT } from '@umbraco-cms/backoffice/notification';
 import { UmbObjectState } from '@umbraco-cms/backoffice/observable-api';
@@ -20,7 +21,7 @@ import type { Edit, EditorState } from './editor-model';
 import { traitsOf, type EditorView } from './form-workspace.context';
 import { EditorHistory } from './history';
 import { PALETTE_PICK, type PalettePick } from './palette/palette.element';
-import { builtInTypes, englishLook } from './preview/fixtures';
+import { builtInChanges, builtInTypes, englishLook } from './preview/fixtures';
 import type { UndoNotificationData } from '../ui/undo-notification.element';
 
 // What the dialogs answer, and each dialog opened with what it was given.
@@ -99,6 +100,7 @@ const { FormDesignViewElement, isCrowded, isNarrow, mediaOf, OPTIONS_PAUSE, read
   await import('./form-design.view');
 const { INSPECTOR_REQUEST } = await import('./inspector/inspector.element');
 const { MOVE_TO_MODAL_ALIAS } = await import('./moves/move-to.modal.token');
+type ChangeTypeModalData = import('./change-type/change-type.modal.token').ChangeTypeModalData;
 
 const field = (key: string, type = 'text') => ({ key, type, alias: key, label: { '': key } });
 
@@ -112,11 +114,19 @@ const DEFINITION: DesignDefinition = {
 /** A workspace that holds the editor's state in the real history, as the form workspace does. */
 class StandIn {
   readonly said: string[] = [];
+  /** Each type's changes as the server serves them; none read while `unreadable`. */
+  unreadable = false;
+  readonly asked: string[] = [];
+  changesOf = async (type: string) => {
+    this.asked.push(type);
+    return this.unreadable ? undefined : builtInChanges[type]?.changes;
+  };
   readonly #history: EditorHistory;
   readonly #editor: UmbObjectState<EditorView>;
   #next = 0;
   readonly editor;
-  readonly fieldTypes = new UmbObjectState(builtInTypes).asObservable();
+  readonly types = new UmbObjectState(builtInTypes);
+  readonly fieldTypes = this.types.asObservable();
   readonly paletteGroups = new UmbObjectState([{ alias: 'text', name: '#jfbFieldPalette_text' }]).asObservable();
   readonly model = {
     traitsOf: (type: string) => {
@@ -753,6 +763,84 @@ describe('the moves', () => {
     expect(keys('g2')).toEqual(['note', 'name']);
     expect(toasts.shown).toHaveLength(1);
     expect(focusedIn(canvas)).toBe('name select');
+  });
+
+  it("change a field's type with Change type..., which names what goes first, with Undo, and leave it on Cancel", async () => {
+    const name: DesignField = {
+      ...field('name'),
+      placeholder: { '': 'Your full name' },
+      settings: { maxLength: 50 },
+    };
+    const phone: DesignField = {
+      ...field('phone'),
+      rules: [{ key: 'r', effect: 'show', conditions: [{ field: 'name', op: 'contains', value: 'a' }] }],
+    };
+    const { ask, canvas, state, toasts, workspace } = await viewOf({
+      pages: [{ key: 'p1', groups: [{ key: 'g1', fields: [name, phone] }] }],
+    });
+    opened.value = { to: 'dropdown' };
+    await ask({ kind: 'changeType', key: 'name' });
+
+    expect(workspace.asked).toEqual(['text']);
+    const data = opened.dialogs[0]?.data as ChangeTypeModalData;
+    expect(opened.dialogs[0]?.alias).toBe('Jiron.FormBuilder.Modal.ChangeType');
+    expect([data.name, data.type]).toEqual(['name', 'Short text']);
+    expect(data.targets.map((target) => target.alias)).toEqual(
+      builtInChanges['text']?.changes.map((change) => change.to),
+    );
+    const dropdown = must(
+      data.targets.find((target) => target.alias === 'dropdown'),
+      'the dropdown',
+    );
+    expect(dropdown).toMatchObject({ name: 'Dropdown', group: 'choices', refusal: null });
+    expect(dropdown.words.goes).toContain('Placeholder: Your full name');
+    expect(dropdown.words.needs).toEqual(['Options, one at least', 'A rule of phone uses "contains"']);
+    expect(data.targets[0]).toMatchObject({ alias: 'textarea', group: 'Text' });
+
+    const changed = locate(state().definition, 'name')?.element as DesignField;
+    expect([changed.type, changed['placeholder'], changed['settings'], changed.alias]).toEqual([
+      'dropdown',
+      undefined,
+      undefined,
+      'name',
+    ]);
+    expect(workspace.said.at(-1)).toBe('Changed name to Dropdown');
+    expect(toasts.shown.map((toast) => toast.data.message)).toEqual(['Type changed to Dropdown.']);
+    expect(focusedIn(canvas)).toBe('name select');
+    await toasts.shown[0]?.data.undo();
+    expect((locate(state().definition, 'name')?.element as DesignField).type).toBe('text');
+
+    opened.value = undefined;
+    await ask({ kind: 'changeType', key: 'name' });
+    expect((locate(state().definition, 'name')?.element as DesignField).type).toBe('text');
+    expect(toasts.shown).toHaveLength(1);
+    expect(focusedIn(canvas)).toBe('name select');
+  });
+
+  it("refuse in Change type... a type the site lacks what it needs for, with why, and say when the types can't be read", async () => {
+    const { ask, toasts, workspace } = await viewOf();
+    const textarea = must(builtInTypes['textarea'], 'the long text');
+    workspace.types.setValue({
+      ...builtInTypes,
+      textarea: {
+        ...textarea,
+        availability: { isAvailable: false, reason: '#jfbFieldTypeAvailability_captchaNoKeys' },
+      },
+    });
+    opened.value = { to: 'textarea' };
+    await ask({ kind: 'changeType', key: 'name' });
+    const data = opened.dialogs[0]?.data as ChangeTypeModalData;
+    expect(data.targets.find((target) => target.alias === 'textarea')?.refusal).toBe(
+      "No captcha provider has its keys yet. They go in the site's configuration.",
+    );
+
+    workspace.unreadable = true;
+    opened.dialogs = [];
+    await ask({ kind: 'changeType', key: 'name' });
+    expect(opened.dialogs).toEqual([]);
+    expect(toasts.shown.at(-1)?.data.message).toBe(
+      "The types this field may become couldn't be read. Try again in a moment.",
+    );
   });
 
   it("show where it can't go in Move to..., with why", async () => {
