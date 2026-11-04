@@ -1180,6 +1180,28 @@ repeatable group's child and an action, none for a value equal to the lock's or 
 merge tag of a source labels refuse an error. `FormCheckApiTests` finds these through the draft check, publishes such a
 form, and has a publish refused for that label; `FormCopyServiceTests` keeps a built-in theme on import.
 
+The form check in the designer (9.5f, ADR-0181): `FormCheckTests` holds a form without a field to fill in an error at
+the end of its first page (a heading alone too), none with a field, a repeatable group's, one of a type the site lacks
+or a form without pages. The designer's Vitest tests hold the server's paths read step by step (names dotted and
+bracketed with their escapes, indexes, none it does not write) and each place's Fix it (`check/form-check.test.ts`: a
+field's texts, switches, alias, options, messages, checks by kind and settings, nested ones too; a repeatable group's
+child; an element's rule and a validation rule's field or grid; a group's and a page's items; the palette for a page or
+group without fields and a form without pages; the Settings and Actions views; nothing for the whole form or a place
+gone); when the check asks (`check/form-checker.test.ts`: at once for the form read, once after a run of changes, the
+last ask's answer only, the same form not again, again after no answer, an ask that fails as none, nothing after a
+reset or a stop); each problem's words (`check/check-words.test.ts`: the element's name, a merge tag's text by its
+place, a setting by its label, a theme, a member group by name or key, a dictionary key, a type by where it is, a
+page's number, kept limits by the form's storage, the server's sentence for the six codes whose words it has and one it
+doesn't know, every own code said without a code or a gap); the sidebar (`check/form-check.modal.test.ts`), the
+publish dialog (`publish.modal.test.ts`: no problems once, errors blocking with Fix it, warnings not, five of each,
+Publish waiting for the answer and let through without one), the badge on the canvas, the inspector's item and its
+first box (`inspector/item-focus.test.ts`) and the Design view's Fix it to a setting's box in a section opened for it,
+the rules builder, the palette, the views and a Fix it from the publish dialog. `lang.test.ts` reads every code from the
+server's sources and fails for one without the designer's sentence, a place among the server's words or among the codes
+the check never sends. `e2e/specs/backoffice/designer-form-check.spec.ts` counts a form's problems on the badge, lists
+them errors first with axe finding nothing on the list, follows Fix it to a label's box and to the rules builder, and
+has a blank form's error open the palette, block Publish with Fix it, and a warning alone publish.
+
 ## The public API tests
 
 `Tests.Integration/PublicApi/` calls the public API anonymously on a real site that boots its runtime, with forms

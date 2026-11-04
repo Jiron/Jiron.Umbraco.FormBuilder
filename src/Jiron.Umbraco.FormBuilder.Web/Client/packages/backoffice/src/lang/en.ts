@@ -2,6 +2,7 @@
 // in manifests and in what the management API serves, localize.term('<area>_<key>') in elements. de.ts has the same
 // keys, which lang.test.ts checks.
 import type { UmbLocalizationDictionary } from '@umbraco-cms/backoffice/localization-api';
+import check from './check.en';
 import designer from './designer.en';
 import fieldTypes from './field-types.en';
 import formPicker from './form-picker.en';
@@ -24,4 +25,5 @@ export default {
   ...inspector,
   ...mergeTags,
   ...rules,
+  ...check,
 } satisfies UmbLocalizationDictionary;

@@ -106,6 +106,7 @@ public sealed class SetupApiTests : ManagementApiTestBase
     public async Task TheEntryStep_IsDone_WithAnEntry_AndStaysDone_OnceTheEntryIsGone()
     {
         var form = await FormAsync("Contact");
+        await FillAsync(form);
         var forms = GetRequiredService<IFormBuilderFormService>();
         var draft = (await forms.GetDraftAsync(form))!;
         await forms.PublishAsync(form, draft.Form.ConcurrencyVersion, null, null);

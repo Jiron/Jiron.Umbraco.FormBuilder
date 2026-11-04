@@ -2,7 +2,7 @@
 // over the draft endpoint, so its header edits the name, its footer saves, and leaving with unsaved changes asks first.
 // It holds the editor model's state with its undo history: each edit changes the draft the workspace saves, and a load
 // starts the history over, selecting the field a link names (`?field=`, ADR-0166).
-import { UmbObjectState } from '@umbraco-cms/backoffice/observable-api';
+import { UmbBasicState, UmbObjectState } from '@umbraco-cms/backoffice/observable-api';
 import { tryExecute } from '@umbraco-cms/backoffice/resources';
 import type { UmbControllerHost } from '@umbraco-cms/backoffice/controller-api';
 import { UMB_NOTIFICATION_CONTEXT } from '@umbraco-cms/backoffice/notification';
@@ -15,6 +15,7 @@ import { FORMULAS } from '@jfb/logic/calc';
 import {
   fieldTypeChanges,
   fieldTypeList,
+  formCheckCheck,
   formGet,
   formPublish,
   type FieldGroupResponseModel,
@@ -23,8 +24,10 @@ import {
 } from '../api';
 import { sayRefusal } from '../library/library-changes';
 import { FORM_ENTITY_TYPE } from '../section/entity-types';
+import { issuesOf, type FixTarget } from './check/form-check';
+import { FormChecker, UNCHECKED, type CheckState } from './check/form-checker';
 import { FORM_DETAIL_REPOSITORY_ALIAS, FORM_WORKSPACE_ALIAS } from './constants';
-import { locate } from './definition';
+import { locate, type DesignDefinition } from './definition';
 import { select, type Edit, type EditorState, type FieldTraits, type ModelContext } from './editor-model';
 import { keptAlias, type FormDetailModel } from './form-detail.data-source';
 import { fieldOfQuery, formState, type FormState } from './form-state';
@@ -88,6 +91,22 @@ export class FormWorkspaceContext
 
   /** The palette's groups, in its order; empty until the field types are read. */
   readonly paletteGroups = this.#groups.asObservable();
+
+  readonly #check = new UmbObjectState<CheckState>(UNCHECKED);
+  /** The form the check's answers are about, so another form read starts it over. */
+  #checkedForm: string | null = null;
+  readonly #checker = new FormChecker(
+    (definition) => this.#askCheck(definition),
+    (state) => this.#check.setValue(state),
+  );
+
+  /** What the form check found in the draft (ADR-0181), as the badge, its sidebar and the publish dialog show it. */
+  readonly check = this.#check.asObservable();
+
+  readonly #fix = new UmbBasicState<FixTarget | null>(null);
+
+  /** A Fix it asked from outside the Design view, which it takes up once it is shown (ADR-0181). */
+  readonly fixRequest = this.#fix.asObservable();
 
   /** What the editor model asks of the workspace: the field types, fresh keys and the calculation language. */
   readonly model: ModelContext = {
@@ -158,6 +177,11 @@ export class FormWorkspaceContext
         ?.changes,
   );
 
+  /** The field types by alias, as read; empty until they are. */
+  getFieldTypes(): Readonly<Record<string, FieldTypeResponseModel>> {
+    return this.#types.getValue();
+  }
+
   /** Whether the user may design the open form. */
   canDesign(): boolean {
     return this.getData()?.form.permissions.includes('design') ?? false;
@@ -181,6 +205,7 @@ export class FormWorkspaceContext
     this.#history.reset({ definition: data.definition, selection });
     this.#guardName(data);
     this.#publish();
+    this.#checkChanged(data);
     return data;
   }
 
@@ -294,12 +319,60 @@ export class FormWorkspaceContext
       canUndo: this.#history.canUndo,
       canRedo: this.#history.canRedo,
     });
+    this.#checkChanged();
+  }
+
+  // ---- The form check (ADR-0181) ------------------------------------------------------------------------------------
+
+  // The draft as it is now is checked once the changes pause, for who may design the form, whose draft it is. A load
+  // passes the form it read, which the workspace holds only once the load is done.
+  #checkChanged(data: FormDetailModel | undefined = this.getData()) {
+    const form = data?.form.key ?? null;
+    if (form !== this.#checkedForm) {
+      this.#checkedForm = form;
+      this.#checker.reset();
+    }
+    if (form && data?.form.permissions.includes('design')) this.#checker.changed(this.#history.state.definition);
+  }
+
+  async #askCheck(definition: DesignDefinition) {
+    const key = this.getUnique();
+    if (!key) return undefined;
+    const { data } = await tryExecute(this, formCheckCheck({ path: { key }, body: { definition } }), {
+      disableNotifications: true,
+    });
+    return data ? issuesOf(data.issues) : undefined;
+  }
+
+  /** Checks the draft as it is now, as Publish does and Try again; it settles once the check shows the answer. */
+  checkNow(): Promise<void> {
+    return this.canDesign() ? this.#checker.now(this.#history.state.definition) : Promise.resolve();
+  }
+
+  /** What the check shows now. */
+  getCheck(): CheckState {
+    return this.#check.getValue();
+  }
+
+  /** Asks the Design view for a Fix it, from the publish dialog; the view takes it up once it is shown. */
+  requestFix(target: FixTarget) {
+    this.#fix.setValue(target);
+  }
+
+  /** The Fix it asked, which the Design view takes once, so it is made once. */
+  takeFix(): FixTarget | null {
+    const target = this.#fix.getValue();
+    this.#fix.setValue(null);
+    return target;
   }
 
   override destroy() {
+    this.#checker.stop();
     this.#editor.destroy();
     this.#types.destroy();
     this.#groups.destroy();
+    this.#check.destroy();
+    this.#fix.destroy();
     super.destroy();
   }
 }

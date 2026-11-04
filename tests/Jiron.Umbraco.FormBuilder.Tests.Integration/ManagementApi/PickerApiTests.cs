@@ -269,6 +269,7 @@ public sealed class PickerApiTests : ManagementApiTestBase
     private async Task<Guid> PublishedAsync(string name, Guid? folderKey = null)
     {
         var key = await FormAsync(name, folderKey);
+        await FillAsync(key);
         var forms = GetRequiredService<IFormBuilderFormService>();
         Assert.That(await forms.PublishAsync(key, (await forms.GetAsync(key))!.ConcurrencyVersion, null, null), Is.Not.Null);
         return key;

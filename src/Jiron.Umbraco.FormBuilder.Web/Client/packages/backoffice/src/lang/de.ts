@@ -1,5 +1,6 @@
 // The Forms section's texts in German (ADR-0057), one file per area merged here, with the keys of en.ts.
 import type { UmbLocalizationDictionary } from '@umbraco-cms/backoffice/localization-api';
+import check from './check.de';
 import designer from './designer.de';
 import fieldTypes from './field-types.de';
 import formPicker from './form-picker.de';
@@ -22,4 +23,5 @@ export default {
   ...inspector,
   ...mergeTags,
   ...rules,
+  ...check,
 } satisfies UmbLocalizationDictionary;

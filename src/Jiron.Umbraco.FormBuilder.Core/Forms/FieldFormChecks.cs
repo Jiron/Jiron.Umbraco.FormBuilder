@@ -60,6 +60,38 @@ internal sealed class LabelFormCheck(FieldTypeRegistry types) : IFormCheck
 }
 
 /// <summary>
+/// A form without a field to fill in (ROADMAP 9.5f, IA 5.1, ADR-0181): an error, so a new blank form never reads "No
+/// problems" and is not published with nothing for visitors to send. A field counts when its type holds a value, or
+/// when the site lacks its type, which the structural validation refuses already; a text, a heading or an image alone
+/// does not. The problem is at the end of the first page, where the designer's Fix it opens the palette. A form without
+/// pages is the structural validation's error.
+/// </summary>
+/// <param name="types">The field types.</param>
+internal sealed class FieldsMissingFormCheck(FieldTypeRegistry types) : IFormCheck
+{
+    /// <summary>A form without a field to fill in.</summary>
+    public const string FieldsMissing = "fields_missing";
+
+    /// <inheritdoc />
+    public ValueTask<IReadOnlyList<FormCheckIssue>> CheckAsync(FormDefinition definition, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(definition);
+        // A repeatable group holds a value of its own, so its children need no look.
+        if (definition.Pages.Count == 0
+            || definition.Pages.SelectMany(page => page.Groups).SelectMany(group => group.Fields).Any(field => types.Find(field.Type) is not { HoldsValue: false }))
+        {
+            return ValueTask.FromResult<IReadOnlyList<FormCheckIssue>>([]);
+        }
+
+        var groups = JsonPaths.Property(JsonPaths.Index(JsonPaths.Property(JsonPaths.Root, "pages"), 0), "groups");
+        var count = definition.Pages[0].Groups.Count;
+        var path = count == 0 ? groups : JsonPaths.Property(JsonPaths.Index(groups, count - 1), "fields");
+        return ValueTask.FromResult<IReadOnlyList<FormCheckIssue>>(
+            [new FormCheckIssue(FormCheckSeverity.Error, FieldsMissing, path, "The form has no field to fill in yet, so visitors would have nothing to send.")]);
+    }
+}
+
+/// <summary>
 /// A captcha provider without its keys on this site (ROADMAP 9.5b, ADR-0142, ADR-0177): a warning, not an error, since
 /// keys differ between environments and a definition travels between them, but until it has them the form's entries go
 /// to Spam. A provider the site lacks is the structural validation's error.

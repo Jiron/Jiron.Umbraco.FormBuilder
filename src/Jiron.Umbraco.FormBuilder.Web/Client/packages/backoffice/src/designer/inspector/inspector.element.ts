@@ -37,8 +37,10 @@ import {
   type Section,
   type SectionId,
 } from './inspector-model';
+import type { InspectorItem } from '../check/form-check';
 import { boxValue } from './box-value';
 import { inspectorStyles } from './inspector.styles';
+import { boxesOf, focusableIn, isItem } from './item-focus';
 import './merge-tag-picker.element';
 import { placeOf, withTag, type MergeTagPlace } from './merge-tags';
 import './option-editor.element';
@@ -211,6 +213,34 @@ export class InspectorElement extends UmbLitElement {
         root?.querySelector<HTMLElement>('.add-rule') ??
         root?.querySelector<HTMLElement>('[data-section="rules"] .section-head button')
       )?.focus();
+    });
+  }
+
+  /**
+   * Opens the section that holds an item of the element shown, and its More options where the item is among them, and
+   * moves the focus to the item's first box (the form check's Fix it, ADR-0181); to the section's header where the box
+   * takes no focus, and to the heading where the element shows no such item.
+   */
+  focusItem(wanted: InspectorItem) {
+    const subject = this.#subject();
+    const section = subject
+      ? this.#sections(subject).find((one) => one.items.some((item) => isItem(item, wanted)))
+      : undefined;
+    if (!section) {
+      this.focusHeading();
+      return;
+    }
+    if (!this._open.has(section.id)) this.#toggle(section.id);
+    if (splitItems(section.items).more.some((item) => isItem(item, wanted)) && !this._more.has(section.id))
+      this.#toggleMore(section.id);
+    void this.updateComplete.then(() => {
+      const root = this.shadowRoot;
+      const box =
+        boxesOf(wanted)
+          .map((id) => root?.getElementById(id) ?? null)
+          .find((found) => found !== null) ?? null;
+      const target = box ? focusableIn(box) : null;
+      (target ?? root?.querySelector<HTMLElement>(`[data-section="${section.id}"] .section-head button`))?.focus();
     });
   }
 
@@ -611,6 +641,7 @@ export class InspectorElement extends UmbLitElement {
       return features.includes('options') && !features.includes('rows');
     };
     return html`<jfb-option-editor
+      id=${`prop-${part}`}
       .field=${field}
       .type=${type}
       .culture=${this.culture}

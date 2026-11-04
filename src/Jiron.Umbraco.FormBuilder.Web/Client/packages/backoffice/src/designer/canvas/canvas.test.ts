@@ -850,4 +850,30 @@ describe('the canvas', () => {
     items[3]?.click();
     expect(requests).toEqual([{ kind: 'rulesOverview' }, { kind: 'shortcuts' }]);
   });
+
+  it("shows the form check's badge before its menu, which says what the check found and opens its sidebar (ADR-0181)", async () => {
+    const none = await canvasOf(DEFINITION);
+    expect(none.root.querySelector('.bo-check')).toBeNull();
+    const cases: [Parameters<typeof canvasOf>[1], string, string, string | null][] = [
+      [{ check: { kind: 'checking' } }, 'checking', 'Checking\u2026', null],
+      [{ check: { kind: 'failed' } }, 'failed', 'Not checked', 'icon-alert'],
+      [{ check: { kind: 'checked', errors: 1, warnings: 1 } }, 'error', '2 problems', 'icon-alert'],
+      [{ check: { kind: 'checked', errors: 0, warnings: 1 } }, 'warning', '1 problem', 'icon-alert'],
+      [{ check: { kind: 'checked', errors: 0, warnings: 0 } }, 'clear', 'No problems', 'icon-check'],
+    ];
+    for (const [extra, state, said, icon] of cases) {
+      document.body.replaceChildren();
+      const { requests, root } = await canvasOf(DEFINITION, extra);
+      const badge = must(root.querySelector<HTMLButtonElement>('.bo-check'), 'the badge');
+      expect([
+        badge.dataset['state'],
+        text(badge),
+        badge.querySelector('uui-icon')?.getAttribute('name') ?? null,
+      ]).toEqual([state, said, icon]);
+      expect(badge.getAttribute('aria-haspopup')).toBe('dialog');
+      expect(badge.nextElementSibling?.classList.contains('bo-more')).toBe(true);
+      badge.click();
+      expect(requests).toEqual([{ kind: 'formCheck' }]);
+    }
+  });
 });

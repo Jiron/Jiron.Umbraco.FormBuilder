@@ -51,6 +51,7 @@ export type CanvasRequest =
   | { readonly kind: 'changeOutcome' }
   | { readonly kind: 'shortcuts' }
   | { readonly kind: 'rulesOverview' }
+  | { readonly kind: 'formCheck' }
   | { readonly kind: 'culture'; readonly culture: string }
   | { readonly kind: 'drop'; readonly source: DragSource; readonly place: Place }
   | { readonly kind: 'refused'; readonly source: DragSource; readonly reason: string };
@@ -66,6 +67,16 @@ export interface InPlaceRefusal {
 
 /** The event a request travels in. */
 export const CANVAS_REQUEST = 'jfb-canvas-request';
+
+/**
+ * What the form check's badge says (ADR-0181): nothing before the first check; "Checking..." until the first answer;
+ * the problems, errors and warnings, of the last answer; or that the check gave none.
+ */
+export type CheckBadge =
+  | { readonly kind: 'none' }
+  | { readonly kind: 'checking' }
+  | { readonly kind: 'failed' }
+  | { readonly kind: 'checked'; readonly errors: number; readonly warnings: number };
 
 /**
  * Whether a page shows one sentence in place of its groups: it has no field and at most one group, without a title or
@@ -100,6 +111,7 @@ export class FormCanvasElement extends UmbLitElement {
     canRedo: { attribute: false },
     refusalOf: { attribute: false },
     refusal: { attribute: false },
+    check: { attribute: false },
     _narrowed: { state: true },
   };
 
@@ -126,6 +138,8 @@ export class FormCanvasElement extends UmbLitElement {
   /** Asked while something is dragged: why the form can't take it where it would land. */
   declare refusalOf: RefusalOf;
   declare refusal: InPlaceRefusal | null;
+  /** What the form check's badge says. */
+  declare check: CheckBadge;
   declare private _narrowed: boolean;
 
   #resize = new ResizeObserver(() => this.#measure());
@@ -165,6 +179,7 @@ export class FormCanvasElement extends UmbLitElement {
     this.canRedo = false;
     this.refusalOf = () => null;
     this.refusal = null;
+    this.check = { kind: 'none' };
     this._narrowed = false;
     this.addEventListener(FIELD_REQUEST, (event) => {
       event.stopPropagation();
@@ -840,7 +855,7 @@ export class FormCanvasElement extends UmbLitElement {
         )}
       </div>
       ${this._narrowed ? html`<span class="bo-narrowed">${this.localize.term('jfbDesigner_narrowed')}</span>` : nothing}
-      ${this.#languages()}
+      ${this.#languages()} ${this.#checkBadge()}
       <uui-button
         class="bo-more"
         compact
@@ -866,6 +881,34 @@ export class FormCanvasElement extends UmbLitElement {
         </div>
       </uui-popover-container>
     </div>`;
+  }
+
+  // The form check's badge (IA 5.1): how many problems the last check found, errors and warnings, which it opens in a
+  // sidebar. It changes after each change of the form, so it says it quietly: no motion, nothing said aloud.
+  #checkBadge(): TemplateResult | typeof nothing {
+    const check = this.check;
+    if (check.kind === 'none') return nothing;
+    const problems = check.kind === 'checked' ? check.errors + check.warnings : 0;
+    const state =
+      check.kind !== 'checked' ? check.kind : check.errors > 0 ? 'error' : check.warnings > 0 ? 'warning' : 'clear';
+    const icon = state === 'clear' ? 'icon-check' : state === 'checking' ? null : 'icon-alert';
+    const text =
+      check.kind === 'checking'
+        ? this.localize.term('jfbDesigner_checkChecking')
+        : check.kind === 'failed'
+          ? this.localize.term('jfbDesigner_checkFailed')
+          : problems > 0
+            ? this.localize.term('jfbDesigner_checkProblems', problems)
+            : this.localize.term('jfbDesigner_checkNone');
+    return html`<button
+      type="button"
+      class="bo-check"
+      data-state=${state}
+      aria-haspopup="dialog"
+      @click=${() => this.#ask({ kind: 'formCheck' })}
+    >
+      ${icon ? html`<uui-icon name=${icon} aria-hidden="true"></uui-icon>` : nothing}<span>${text}</span>
+    </button>`;
   }
 
   // The language the canvas and the inspector show, on a site with more than one.

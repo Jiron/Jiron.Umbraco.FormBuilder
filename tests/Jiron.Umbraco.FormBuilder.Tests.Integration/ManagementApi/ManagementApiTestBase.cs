@@ -3,6 +3,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json.Nodes;
 using Jiron.Umbraco.FormBuilder.Core.Access;
+using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Tests.Integration.Access;
@@ -43,6 +44,30 @@ public abstract class ManagementApiTestBase : FormBuilderTestServerTestBase
     /// <summary>Creates a form through the form service, at the root or in a folder.</summary>
     internal async Task<Guid> FormAsync(string name, Guid? folderKey = null) =>
         (await GetRequiredService<IFormBuilderFormService>().CreateAsync(new NewFormRequest(name, FolderKey: folderKey))).Key;
+
+    /// <summary>A text field labelled "Name", the field a form needs before it is published.</summary>
+    internal static FormField NameField { get; } = new()
+    {
+        Key = Guid.Parse("30000000-0000-4000-8000-0000000000a1"),
+        Type = "text",
+        Alias = "name",
+        Label = new LocalizedText([new(string.Empty, "Name")]),
+    };
+
+    /// <summary>
+    /// The definition with <see cref="NameField"/> in its first group: a blank form has no field to fill in, which the
+    /// form check refuses to publish (ADR-0181).
+    /// </summary>
+    internal static FormDefinition Fillable(FormDefinition definition) =>
+        definition with { Pages = [definition.Pages[0] with { Groups = [definition.Pages[0].Groups[0] with { Fields = [NameField] }] }, .. definition.Pages.Skip(1)] };
+
+    /// <summary>Saves a form's draft with <see cref="NameField"/> in its first group, so it can be published.</summary>
+    internal async Task FillAsync(Guid formKey)
+    {
+        var forms = GetRequiredService<IFormBuilderFormService>();
+        var draft = (await forms.GetDraftAsync(formKey))!;
+        _ = (await forms.SaveDraftAsync(formKey, draft.Form.ConcurrencyVersion, Fillable(draft.Definition!), null, null))!;
+    }
 
     /// <summary>Restricts a folder and grants a persona's group permissions on it.</summary>
     internal async Task RestrictAsync(Guid folderKey, string role, FormBuilderPermissions permissions)

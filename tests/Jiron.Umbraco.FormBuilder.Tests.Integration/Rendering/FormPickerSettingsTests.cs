@@ -412,7 +412,7 @@ public sealed class FormPickerSettingsTests : RenderingTestBase
     private async Task<Guid> FormInAsync(string alias, Guid? folder)
     {
         var created = await Forms.CreateAsync(new NewFormRequest(alias, alias, folder, Editor));
-        await SaveAndPublishAsync(created.Key, definition => definition);
+        await SaveAndPublishAsync(created.Key, definition => WithFields(definition, NameField));
         return created.Key;
     }
 

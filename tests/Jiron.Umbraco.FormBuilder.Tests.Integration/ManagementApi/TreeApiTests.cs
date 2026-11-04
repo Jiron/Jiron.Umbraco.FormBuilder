@@ -40,6 +40,7 @@ public sealed class TreeApiTests : ManagementApiTestBase
     public async Task TheRoot_ListsTheFoldersFirst_ThenTheForms_EachWithTheUsersPermissions()
     {
         var forms = GetRequiredService<IFormBuilderFormService>();
+        await FillAsync(_contact);
         await forms.PublishAsync(_contact, (await forms.GetAsync(_contact))!.ConcurrencyVersion, null, null);
 
         var root = await CallAsync("admin", HttpMethod.Get, "tree/root");

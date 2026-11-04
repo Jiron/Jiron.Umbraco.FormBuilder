@@ -206,6 +206,8 @@ public sealed class FormApiTests : ManagementApiTestBase
     [Test]
     public async Task PublishAndUnpublish_ChangeWhatVisitorsGet()
     {
+        // A field to fill in first, which publishing needs: the save is version 2.
+        await FillAsync(_contact);
         var published = await _api.CallAsync("designer", HttpMethod.Post, $"form/{_contact}/publish", new { concurrencyVersion = await VersionOfAsync(_contact), comment = "Live" });
         var again = await _api.CallAsync("designer", HttpMethod.Post, $"form/{_contact}/publish", new { concurrencyVersion = await VersionOfAsync(_contact) });
         var unpublished = await _api.CallAsync("drafter", HttpMethod.Post, $"form/{_contact}/unpublish", new { concurrencyVersion = await VersionOfAsync(_contact) });
@@ -214,7 +216,7 @@ public sealed class FormApiTests : ManagementApiTestBase
         Assert.Multiple(async () =>
         {
             Assert.That(published.Status, Is.EqualTo(HttpStatusCode.OK), published.ToString());
-            Assert.That((published.Body!["version"]!.GetValue<int>(), published.Body["form"]!["isPublished"]!.GetValue<bool>(), published.Body["form"]!["publicRevision"]!.GetValue<int>()), Is.EqualTo((2, true, 1)));
+            Assert.That((published.Body!["version"]!.GetValue<int>(), published.Body["form"]!["isPublished"]!.GetValue<bool>(), published.Body["form"]!["publicRevision"]!.GetValue<int>()), Is.EqualTo((3, true, 1)));
             Assert.That((again.Status, again.Body?["version"]), Is.EqualTo((HttpStatusCode.OK, (JsonNode?)null)), "the draft is live already");
             Assert.That(unpublished.Status, Is.EqualTo(HttpStatusCode.OK), unpublished.ToString());
             Assert.That(unpublished.Body!["isPublished"]!.GetValue<bool>(), Is.False);

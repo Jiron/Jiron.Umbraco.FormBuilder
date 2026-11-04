@@ -1,3 +1,4 @@
+using System.Globalization;
 using Jiron.Umbraco.FormBuilder.Core.Actions;
 using Jiron.Umbraco.FormBuilder.Core.Configuration;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
@@ -156,6 +157,37 @@ public sealed class FormCheckTests
             (FormCheckSeverity.Error, LabelFormCheck.LabelMissing, fields + "[6].label"),
             (FormCheckSeverity.Error, LabelFormCheck.LabelMissing, fields + "[7].fields[0].label"),
         }));
+    }
+
+    [Test]
+    public async Task AFormWithoutAFieldToFillIn_IsAnError_AtTheEndOfItsFirstPage()
+    {
+        const string group = """{"key":"20000000-0000-4000-8000-00000000000G","fields":[FIELDS]}""";
+        string Pages(params string[] groups) =>
+            "[{\"key\":\"10000000-0000-4000-8000-000000000001\",\"groups\":[" + string.Join(',', groups) + "]},"
+            + "{\"key\":\"10000000-0000-4000-8000-000000000002\",\"groups\":[" + group.Replace("G", "9", StringComparison.Ordinal).Replace("FIELDS", "", StringComparison.Ordinal) + "]}]";
+        string Group(int number, string fields) =>
+            group.Replace("G", number.ToString(CultureInfo.InvariantCulture), StringComparison.Ordinal).Replace("FIELDS", fields, StringComparison.Ordinal);
+        const string heading = """{"key":"30000000-0000-4000-8000-000000000001","type":"heading","settings":{"text":{"":"Hello"}}}""";
+        const string text = """{"key":"F1","type":"text","alias":"name","label":{"":"Name"}}""";
+        const string repeater = """{"key":"30000000-0000-4000-8000-000000000004","type":"repeater","alias":"kids","label":{"":"Kids"},"fields":[{"key":"F2","type":"text","alias":"kid","label":{"":"Kid"}}]}""";
+        const string unknown = """{"key":"30000000-0000-4000-8000-000000000003","type":"test.gone","alias":"gone"}""";
+        var check = new FieldsMissingFormCheck(Types);
+
+        async Task<IEnumerable<(FormCheckSeverity, string, string)>> Found(string pages) =>
+            (await check.CheckAsync(Read(pages), CancellationToken.None)).Select(issue => (issue.Severity, issue.Code, issue.Path));
+
+        var fields = (FormCheckSeverity.Error, FieldsMissingFormCheck.FieldsMissing, "$.pages[0].groups[1].fields");
+        Assert.Multiple(async () =>
+        {
+            Assert.That(await Found(Pages(Group(1, ""), Group(2, ""))), Is.EqualTo(new[] { fields }));
+            Assert.That(await Found(Pages(Group(1, heading), Group(2, ""))), Is.EqualTo(new[] { fields }), "a heading holds no answer");
+            Assert.That(await Found(Pages()), Is.EqualTo(new[] { (FormCheckSeverity.Error, FieldsMissingFormCheck.FieldsMissing, "$.pages[0].groups") }));
+            Assert.That(await Found(Pages(Group(1, ""), Group(2, text))), Is.Empty);
+            Assert.That(await Found(Pages(Group(1, repeater))), Is.Empty);
+            Assert.That(await Found(Pages(Group(1, unknown))), Is.Empty, "a type the site lacks is the structural validation's error");
+            Assert.That(await Found("[]"), Is.Empty, "a form without pages is the structural validation's error");
+        });
     }
 
     [Test]

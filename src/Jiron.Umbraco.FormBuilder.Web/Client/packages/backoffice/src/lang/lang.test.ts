@@ -10,6 +10,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { CANVAS_WIDTHS } from '../designer/canvas/widths';
+import { OWN_WORDS, SERVER_WORDS } from '../designer/check/check-words';
 import { SIDEBAR } from '../section/sidebar';
 import de from './de';
 import en from './en';
@@ -235,6 +236,64 @@ describe('the dictionaries', () => {
     for (const [, refusal] of refusals.matchAll(/'([a-zA-Z]+)'/g))
       if (refusal !== 'unchanged') used.add(`jfbDesigner_refusal_${refusal}`);
     expect(termsOf(en).filter((term) => term.startsWith('jfbDesigner_'))).toEqual([...used].sort());
+  });
+
+  it("hold a sentence for every code the server's form check sends, the form check's other keys, and no other in that area (ADR-0181)", () => {
+    const core = join(repositoryRoot(), 'src', 'Jiron.Umbraco.FormBuilder.Core');
+    const sources = [
+      ['Definitions', 'DefinitionProblem.cs'],
+      ['MergeTags', 'MergeTagValues.cs'],
+      ['Logic', 'LogicException.cs'],
+      ...[
+        'CollectedDataFormChecks',
+        'FieldFormChecks',
+        'FormCheck',
+        'LogicFormChecks',
+        'MergeTagFormCheck',
+        'SiteFormChecks',
+      ].map((file) => ['Forms', `${file}.cs`]),
+    ];
+    const codes = new Set(
+      sources.flatMap((parts) =>
+        [...readFileSync(join(core, ...parts), 'utf8').matchAll(/public const string \w+ = "([a-z_]+)";/g)].map(
+          (match) => match[1] ?? '',
+        ),
+      ),
+    );
+    // The codes only reading a stored draft gives, and the logic engine's while it runs a form for its answers.
+    const neverChecked = [
+      'invalid_json',
+      'unknown_property',
+      'missing_property',
+      'duplicate_property',
+      'invalid_type',
+      'unsupported_schema_version',
+      'unsupported_format',
+      'invalid_rule',
+      'invalid_form',
+      'invalid_context',
+      'unknown_time_zone',
+      'not_a_number',
+      'too_many_digits',
+      'division_by_zero',
+      'tag_in_escape',
+    ];
+    expect(codes.size).toBeGreaterThan(60);
+    expect(
+      [...codes].filter((code) => !OWN_WORDS.has(code) && !SERVER_WORDS.has(code) && !neverChecked.includes(code)),
+    ).toEqual([]);
+    expect([...OWN_WORDS].filter((code) => SERVER_WORDS.has(code) || !codes.has(code))).toEqual([]);
+
+    const folder = join(dirname(fileURLToPath(import.meta.url)), '..', 'designer');
+    const used = new Set(
+      readdirSync(folder, { recursive: true, encoding: 'utf8' })
+        .filter((file) => file.endsWith('.ts') && !file.endsWith('.test.ts'))
+        .flatMap((file) => [...readFileSync(join(folder, file), 'utf8').matchAll(/(?:'|#)(jfbCheck_[A-Za-z_]+)'/g)])
+        .map((match) => match[1]),
+    );
+    // The keys code builds: each own code's sentence.
+    for (const code of OWN_WORDS) used.add(`jfbCheck_code_${code}`);
+    expect(termsOf(en).filter((term) => term.startsWith('jfbCheck_'))).toEqual([...used].sort());
   });
 
   it("hold the form picker screens' keys that their elements use, and no other in that area", () => {

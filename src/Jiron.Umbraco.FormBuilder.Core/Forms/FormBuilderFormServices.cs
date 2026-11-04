@@ -19,6 +19,7 @@ internal static class FormBuilderFormServices
         ArgumentNullException.ThrowIfNull(builder);
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IFormPublishCheck, StructuralPublishCheck>());
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IFormPublishCheck, CaptchaPublishCheck>());
+        builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IFormCheck, FieldsMissingFormCheck>());
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IFormCheck, LabelFormCheck>());
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IFormCheck, MergeTagFormCheck>());
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IFormCheck, CaptchaKeysFormCheck>());

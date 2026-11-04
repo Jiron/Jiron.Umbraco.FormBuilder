@@ -10,11 +10,13 @@
 // offer refused, and a read that fails said. A stand-in workspace drives the real undo history.
 import { FORMULAS } from '@jfb/logic/calc';
 import { UMB_NOTIFICATION_CONTEXT } from '@umbraco-cms/backoffice/notification';
-import { UmbObjectState } from '@umbraco-cms/backoffice/observable-api';
+import { UmbBasicState, UmbObjectState } from '@umbraco-cms/backoffice/observable-api';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { must, registerEnglish, settle, shadow, testHost, text } from '../testing';
 import type { FormCanvasElement } from './canvas/form-canvas.element';
 import { CANVAS_REQUEST, type CanvasRequest } from './canvas/form-canvas.element';
+import type { FixTarget } from './check/form-check';
+import { UNCHECKED, type CheckState } from './check/form-checker';
 import { FORM_WORKSPACE_CONTEXT } from './constants';
 import { locate, type DesignDefinition, type DesignField, type DesignRule } from './definition';
 import type { Edit, EditorState } from './editor-model';
@@ -99,7 +101,7 @@ vi.mock('@umbraco-cms/backoffice/imaging', () => ({
   },
 }));
 
-const { FormDesignViewElement, isCrowded, isNarrow, mediaOf, OPTIONS_PAUSE, readWidth } =
+const { badgeOf, FormDesignViewElement, isCrowded, isNarrow, mediaOf, OPTIONS_PAUSE, readWidth } =
   await import('./form-design.view');
 const { INSPECTOR_REQUEST } = await import('./inspector/inspector.element');
 const { MOVE_TO_MODAL_ALIAS } = await import('./moves/move-to.modal.token');
@@ -158,6 +160,22 @@ class StandIn {
   /** The aliases entries know, by field: changing one asks first. */
   readonly kept: Record<string, string> = {};
   keptAliasOf = (key: string): string | null => this.kept[key] ?? null;
+
+  /** What the form check shows, and how often it was asked to check at once. */
+  readonly checks = new UmbObjectState<CheckState>(UNCHECKED);
+  readonly check = this.checks.asObservable();
+  checkedNow = 0;
+  checkNow = async () => {
+    this.checkedNow++;
+  };
+  /** A Fix it asked from the publish dialog. */
+  readonly fixes = new UmbBasicState<FixTarget | null>(null);
+  readonly fixRequest = this.fixes.asObservable();
+  takeFix = (): FixTarget | null => {
+    const target = this.fixes.getValue();
+    this.fixes.setValue(null);
+    return target;
+  };
 
   edit(edit: Edit, said: string, merge?: string): Edit {
     const result = this.#history.apply(edit, said, merge);
@@ -1614,5 +1632,134 @@ describe('the rules overview in the Design view (ADR-0178)', () => {
     const now = state();
     await ask({ kind: 'rulesOverview' });
     expect(state()).toBe(now);
+  });
+});
+
+describe('the form check in the Design view (ADR-0181)', () => {
+  type FormCheckModalData = import('./check/form-check.modal.token').FormCheckModalData;
+  const inspectorOf = (view: HTMLElement) =>
+    must(shadow(view).querySelector<HTMLElement>('jfb-designer-inspector'), 'the inspector');
+  const focusedIn = (view: HTMLElement) => shadow(inspectorOf(view)).activeElement as HTMLElement | null;
+  const problem = (severity: 'error' | 'warning' | 'hint') => ({ severity, code: 'x', path: '$', message: 'x' });
+  const answering = (fix: FixTarget) => (alias: string) => (alias.endsWith('FormCheck') ? { fix } : undefined);
+
+  it("says on the canvas's badge what the check found, the last answer while the next is awaited", async () => {
+    const { view, canvas, workspace } = await viewOf();
+    expect(canvas.check).toEqual({ kind: 'none' });
+    workspace.checks.setValue({ status: 'checking', issues: [], definition: null });
+    await settle(view);
+    expect(canvas.check).toEqual({ kind: 'checking' });
+    const found = [problem('error'), problem('warning'), problem('hint'), problem('warning')];
+    workspace.checks.setValue({ status: 'checked', issues: found, definition: DEFINITION });
+    await settle(view);
+    expect(canvas.check).toEqual({ kind: 'checked', errors: 1, warnings: 2 });
+    expect(badgeOf({ status: 'checking', issues: found, definition: DEFINITION })).toEqual(canvas.check);
+    expect(badgeOf({ status: 'failed', issues: [], definition: null })).toEqual({ kind: 'failed' });
+    expect(badgeOf(undefined)).toEqual({ kind: 'none' });
+  });
+
+  it("opens the sidebar from the badge, checking now, and a Fix it selects the field on its page, on its setting's box", async () => {
+    const { view, canvas, ask, state, workspace } = await viewOf();
+    opened.value = answering({ kind: 'element', key: 'note', item: { kind: 'text', property: 'label' } });
+    await ask({ kind: 'formCheck' });
+    expect(workspace.checkedNow).toBe(1);
+    expect(opened.dialogs[0]?.alias).toBe('Jiron.FormBuilder.Modal.FormCheck');
+    const data = opened.dialogs[0]?.data as FormCheckModalData;
+    expect([data.check, data.culture, Object.keys(data.types).length > 0]).toEqual([workspace.check, 'en-US', true]);
+    data.retry();
+    expect(workspace.checkedNow).toBe(2);
+    await settle(view);
+    expect([state().selection, canvas.shown]).toEqual(['note', 1]);
+    expect(focusedIn(view)?.id).toBe('prop-label');
+  });
+
+  it('opens a closed section and its More options for the setting, and the heading where the element shows none', async () => {
+    const { view, ask } = await viewOf();
+    opened.value = answering({ kind: 'element', key: 'name', item: { kind: 'plain', property: 'cssClass' } });
+    await ask({ kind: 'formCheck' });
+    await settle(view);
+    expect(focusedIn(view)?.id).toBe('prop-cssClass');
+    const advanced = must(
+      shadow(inspectorOf(view)).querySelector('[data-section="advanced"] .section-head button'),
+      'the Advanced section',
+    );
+    expect(advanced.getAttribute('aria-expanded')).toBe('true');
+
+    opened.value = answering({ kind: 'element', key: 'email', item: { kind: 'columns' } });
+    await ask({ kind: 'formCheck' });
+    await settle(view);
+    expect(focusedIn(view)?.localName).toBe('h2');
+  });
+
+  it('opens the rules builder on the rule a problem is on', async () => {
+    const definition: DesignDefinition = {
+      pages: [
+        {
+          key: 'p1',
+          groups: [
+            {
+              key: 'g1',
+              fields: [
+                field('name'),
+                {
+                  ...field('email', 'email'),
+                  rules: [{ key: 'r1', effect: 'show', conditions: [{ field: 'name', op: 'isNotEmpty' }] }],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+    const { view, ask, state } = await viewOf(definition);
+    opened.value = answering({ kind: 'rule', key: 'email', rule: 'r1' });
+    await ask({ kind: 'formCheck' });
+    await settle(view);
+    expect(state().selection).toBe('email');
+    expect(opened.dialogs.map((dialog) => dialog.alias)).toEqual([
+      'Jiron.FormBuilder.Modal.FormCheck',
+      'Jiron.FormBuilder.Modal.RuleBuilder',
+    ]);
+    const builder = opened.dialogs[1]?.data as RuleBuilderModalData;
+    expect([builder.origin, builder.rule?.key]).toEqual(['email', 'r1']);
+  });
+
+  it('opens the palette for the end of a page without fields, the selection let go', async () => {
+    const definition: DesignDefinition = {
+      pages: [
+        { key: 'p1', groups: [{ key: 'g1', fields: [field('name')] }] },
+        { key: 'p2', groups: [{ key: 'g2', fields: [] }] },
+      ],
+    };
+    const { view, canvas, ask, state } = await viewOf(definition);
+    await ask({ kind: 'select', key: 'name' });
+    opened.value = answering({ kind: 'palette', page: 'p2' });
+    await ask({ kind: 'formCheck' });
+    await settle(view);
+    expect([state().selection, canvas.shown, canvas.insertAt]).toEqual([null, 1, { container: 'g2', index: 0 }]);
+  });
+
+  it("leads to the views where the form's settings and actions are edited, and nowhere for an element gone", async () => {
+    const { ask, state } = await viewOf();
+    const before = window.location.pathname;
+    history.replaceState(null, '', '/umbraco/section/jfb-forms/workspace/jfb-form/edit/form1/view/design');
+    opened.value = answering({ kind: 'view', view: 'actions' });
+    await ask({ kind: 'formCheck' });
+    expect(window.location.pathname).toBe('/umbraco/section/jfb-forms/workspace/jfb-form/edit/form1/view/actions');
+    history.replaceState(null, '', before);
+
+    opened.value = answering({ kind: 'element', key: 'gone' });
+    const now = state();
+    await ask({ kind: 'formCheck' });
+    expect(state()).toBe(now);
+  });
+
+  it('makes a Fix it the publish dialog asked for, once', async () => {
+    const { view, canvas, state, workspace } = await viewOf();
+    workspace.fixes.setValue({ kind: 'element', key: 'email' });
+    await settle(view);
+    expect(state().selection).toBe('email');
+    expect(workspace.fixes.getValue()).toBeNull();
+    expect(shadow(canvas).activeElement).toBe(control(canvas, 'email', 'select'));
   });
 });

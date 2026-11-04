@@ -20,7 +20,7 @@ public sealed class RecentEntriesApiTests : ManagementApiTestBase
         var forms = GetRequiredService<IFormBuilderFormService>();
         var created = await forms.CreateAsync(new NewFormRequest(name, FolderKey: folder));
         var draft = (await forms.GetDraftAsync(created.Key))!;
-        var saved = (await forms.SaveDraftAsync(created.Key, draft.Form.ConcurrencyVersion, draft.Definition!, null, null))!;
+        var saved = (await forms.SaveDraftAsync(created.Key, draft.Form.ConcurrencyVersion, Fillable(draft.Definition!), null, null))!;
         await forms.PublishAsync(created.Key, saved.Form.ConcurrencyVersion, null, null);
         return created.Key;
     }

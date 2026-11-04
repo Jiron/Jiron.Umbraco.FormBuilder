@@ -82,6 +82,52 @@ export const canvasChrome = css`
     margin-inline-start: auto;
   }
 
+  /* The form check's badge sits at the bar's end, before its "...". */
+  .bo-check {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--uui-size-space-2);
+    min-height: 36px;
+    margin-inline-start: auto;
+    padding: 0 var(--uui-size-space-4);
+    border: 1px solid var(--jfb-bo-color-control-border);
+    border-radius: var(--uui-border-radius);
+    background: var(--uui-color-surface);
+    color: var(--uui-color-text);
+    font: inherit;
+    cursor: pointer;
+  }
+
+  .bo-check + .bo-more {
+    margin-inline-start: 0;
+  }
+
+  .bo-check:hover {
+    background: var(--uui-color-surface-emphasis);
+  }
+
+  .bo-check:focus-visible {
+    outline: 2px solid var(--bo-focus);
+    outline-offset: 2px;
+  }
+
+  .bo-check[data-state='checking'],
+  .bo-check[data-state='failed'] {
+    color: var(--jfb-bo-color-text-muted);
+  }
+
+  .bo-check[data-state='error'] uui-icon {
+    color: var(--uui-color-danger-standalone);
+  }
+
+  .bo-check[data-state='warning'] uui-icon {
+    color: var(--uui-color-warning-standalone);
+  }
+
+  .bo-check[data-state='clear'] uui-icon {
+    color: var(--uui-color-positive-standalone);
+  }
+
   .bo-language {
     display: inline-flex;
     align-items: center;

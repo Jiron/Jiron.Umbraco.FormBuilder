@@ -324,7 +324,13 @@ Text        LocalizedText: culture → text, "" is the default; "#key" reads the
   it lacks and a redirect to a page that is not published (`SiteReferencesFormCheck`), and a dictionary item without a
   text in a language whose visitors see it, over every localised text `FormTexts` finds (`DictionaryFormCheck`).
   `FormCheck` itself warns where a host's lock replaces a value the form stores, since it alone holds the definition
-  before the locks apply.
+  before the locks apply. From 9.5f ([ADR-0181](decisions/0181-the-form-check-in-the-designer.md)), a form without a
+  field to fill in is an error (`FieldsMissingFormCheck`). The designer asks for the draft's check once the changes
+  pause (`FormChecker` in the workspace, the last ask's answer only), shows it in the canvas's badge, its sidebar and the
+  publish dialog, says each problem in the user's language from its code (`check-words.ts`, the server's sentence for the
+  six codes whose words only it has), and reads each path against the definition checked for Fix it (`form-check.ts`):
+  the element with the inspector on the item, the rules builder on a rule, the palette for a page without fields, or
+  the Settings and Actions views.
 - **The History** ([ADR-0045](decisions/0045-versions-comparison-and-draft-cleanup.md)) lists the publishes, or every
   version, newest first, each with what changed since the version before it (a publish since the publish before).
   The comparison matches elements by key, settings groups by name, and gives each change its path of properties with

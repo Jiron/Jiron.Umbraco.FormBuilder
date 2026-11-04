@@ -24,8 +24,13 @@ import {
   pageIsBare,
   type CanvasRequest,
   type CanvasShown,
+  type CheckBadge,
   type InPlaceRefusal,
 } from './canvas/form-canvas.element';
+import { bySeverity, type FixTarget } from './check/form-check';
+import type { CheckState } from './check/form-checker';
+import { FORM_CHECK_MODAL } from './check/form-check.modal.token';
+import { goToView } from './form-views';
 import { CANVAS_WIDTHS, type CanvasWidth } from './canvas/widths';
 import { isDragging } from './drag/pointer-drag';
 import type { FormCanvasElement } from './canvas/form-canvas.element';
@@ -143,6 +148,18 @@ function deepFocus(): HTMLElement | null {
   return found instanceof HTMLElement ? found : null;
 }
 
+/**
+ * What the form check's badge says of its state: nothing before the first ask, Checking... until the first answer, the
+ * last answer's errors and warnings while the next is awaited, or that the check gave no answer.
+ */
+export function badgeOf(check: CheckState | undefined): CheckBadge {
+  if (!check || check.status === 'idle') return { kind: 'none' };
+  if (check.status === 'failed') return { kind: 'failed' };
+  if (!check.definition) return { kind: 'checking' };
+  const { error, warning } = bySeverity(check.issues);
+  return { kind: 'checked', errors: error.length, warnings: warning.length };
+}
+
 /** The canvas width this browser chose last; Desktop at first. */
 export function readWidth(): CanvasWidth {
   try {
@@ -190,6 +207,7 @@ export class FormDesignViewElement extends UmbLitElement {
     _said: { state: true },
     _failed: { state: true },
     _refusal: { state: true },
+    _badge: { state: true },
   };
 
   static override styles = [
@@ -341,6 +359,8 @@ export class FormDesignViewElement extends UmbLitElement {
   declare private _failed: boolean;
   /** Why the form refused the last move, shown at the element until the next change. */
   declare private _refusal: InPlaceRefusal | null;
+  /** What the form check's badge says, which changes only with the check's answers. */
+  declare private _badge: CheckBadge;
 
   #context: FormWorkspaceContext | undefined;
   /** The page the palette adds to when it was opened from a page's Add field and the page has no group. */
@@ -400,11 +420,29 @@ export class FormDesignViewElement extends UmbLitElement {
     this._said = '';
     this._failed = false;
     this._refusal = null;
+    this._badge = { kind: 'none' };
     this.consumeContext(FORM_WORKSPACE_CONTEXT, (context) => {
       this.#context = context;
       this.observe(context?.editor, (view) => this.#viewChanged(view), 'editor');
       this.observe(context?.fieldTypes, (types) => (this._types = types ?? {}), 'types');
       this.observe(context?.paletteGroups, (groups) => (this._groups = groups ?? []), 'groups');
+      this.observe(
+        context?.check,
+        (check) => {
+          // The canvas is drawn again only when the badge says something else.
+          const badge = badgeOf(check);
+          if (JSON.stringify(badge) !== JSON.stringify(this._badge)) this._badge = badge;
+        },
+        'check',
+      );
+      // A Fix it from the publish dialog, made once the view can show it.
+      this.observe(
+        context?.fixRequest,
+        (target) => {
+          if (target) void this.#fixPending();
+        },
+        'fix',
+      );
     });
     void this.#readLook();
     this.addEventListener(CANVAS_REQUEST, (event) => void this.#onCanvas((event as CustomEvent<CanvasRequest>).detail));
@@ -440,6 +478,7 @@ export class FormDesignViewElement extends UmbLitElement {
     }
     this._look = look;
     if (this._view) this.#readOptions(this._view.state.definition);
+    void this.#fixPending();
     this._sheets = await themeSheets(look.stylesheets);
   }
 
@@ -789,6 +828,9 @@ export class FormDesignViewElement extends UmbLitElement {
         return;
       case 'rulesOverview':
         await this.#rulesOverview();
+        return;
+      case 'formCheck':
+        await this.#formCheck();
         return;
       case 'newPageAfter':
         await this.#newPageAfter(request.key);
@@ -1328,6 +1370,71 @@ export class FormDesignViewElement extends UmbLitElement {
     await this.#focus(value.key);
   }
 
+  // The form check (ADR-0181): its sidebar lists what the check of the draft found, asked again as it opens; a Fix it
+  // leads to the problem's place once the sidebar is gone, which gives the focus back to the badge as it closes.
+  async #formCheck() {
+    const context = this.#context;
+    if (!context) return;
+    void context.checkNow();
+    let shown = false;
+    let gone: (() => void) | undefined;
+    const closed = new Promise<void>((done) => (gone = done));
+    const value = await umbOpenModal(this, FORM_CHECK_MODAL, {
+      data: {
+        check: context.check,
+        retry: () => void context.checkNow(),
+        types: this._types,
+        culture: this._look?.culture ?? '',
+        opened: () => (shown = true),
+        closed: () => gone?.(),
+      },
+    }).catch(() => undefined);
+    if (!value) return;
+    if (shown) await Promise.race([closed, new Promise((done) => setTimeout(done, 2000))]);
+    await this.#fix(value.fix);
+  }
+
+  // A Fix it the publish dialog asked for, made once the canvas can show it: its look is read.
+  async #fixPending() {
+    if (!this._look) return;
+    const target = this.#context?.takeFix();
+    if (target) await this.#fix(target);
+  }
+
+  /**
+   * Fix it: the element selected on its page, with the inspector on the setting the problem is about; the rules builder
+   * on a rule; the palette for the end of a page without fields; or the view where the form's settings, outcomes or
+   * actions are edited. An element gone since the check leads nowhere.
+   */
+  async #fix(target: FixTarget) {
+    // The user's own choice ends the wait for a link's selection, so its focus never takes this one's.
+    this.#shownLink = true;
+    if (target.kind === 'view') {
+      goToView(target.view);
+      return;
+    }
+    if (target.kind === 'palette') {
+      if (target.page === null) await this.#onCanvas({ kind: 'addPage' });
+      else if (this.#state()?.definition.pages.some((page) => page.key === target.page)) {
+        const state = this.#state();
+        if (state?.selection) this.#context?.edit(select(state, null), '');
+        this._shown = state?.definition.pages.findIndex((page) => page.key === target.page) ?? 0;
+        await this.#onCanvas({ kind: 'addField', page: target.page });
+      }
+      return;
+    }
+    const now = this.#selectFirst(target.key);
+    if (!now || !locate(now.definition, target.key)) return;
+    const page = pageOf(now.definition, target.key);
+    const index = now.definition.pages.findIndex((each) => each.key === page?.key);
+    if (index >= 0) this._shown = index;
+    this._inspectorFolded = false;
+    await this.updateComplete;
+    if (target.kind === 'rule') await this.#buildRule(target.key, target.rule);
+    else if (target.item) this.#inspector?.focusItem(target.item);
+    else await this.#focus(target.key);
+  }
+
   async #shortcuts() {
     const opener = deepFocus();
     await umbOpenModal(this, SHORTCUTS_MODAL).catch(() => undefined);
@@ -1567,9 +1674,7 @@ export class FormDesignViewElement extends UmbLitElement {
 
   // The Settings view, where a form's outcomes are edited.
   #toSettings() {
-    const path = window.location.pathname.replace(/\/view\/[^/]+\/?$/, '') + '/view/settings';
-    history.pushState(null, '', path);
-    window.dispatchEvent(new PopStateEvent('popstate'));
+    goToView('settings');
   }
 
   #onKey(event: KeyboardEvent) {
@@ -1724,6 +1829,7 @@ export class FormDesignViewElement extends UmbLitElement {
         .canRedo=${view?.canRedo ?? false}
         .refusalOf=${this.#refusalOf}
         .refusal=${this._refusal}
+        .check=${this._badge}
       ></jfb-form-canvas>
       ${
         inspects
