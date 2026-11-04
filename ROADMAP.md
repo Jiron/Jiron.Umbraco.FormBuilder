@@ -2655,7 +2655,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
   - **Changing types** (added in 5.1e, ADR-0059): the field types endpoint (5.1c) also serves each type's changes from 5.1e's map, with the permission matrix and the regenerated client, and the preview applies a change to the selected field: its values of lost and narrowed settings, the properties it uses that go, the conditions naming it whose operator goes, and the settings and options it needs.
   - **Designer locks** (added in 5.1f, ADR-0060): the change-type preview treats a locked setting of the target type as set by the lock: neither carried over nor needed.
   - Done when: Playwright configures every built-in type through the UI, and axe is clean on the inspector. Playwright changes a text field with a placeholder and a condition using `contains` into a dropdown, and the preview names the placeholder, the condition and the options it needs before the change; the endpoint's integration tests cover the served changes (ADR-0059). With a designer lock on the dropdown type, the preview neither carries the locked setting over nor asks for it.
-- [ ] **9.5a The rules builder** (split, see WORKLOG; ADR-0175)
+- [x] **9.5a The rules builder** (split, see WORKLOG; ADR-0175) (2026-11-04, 45d8fc8)
   - **The builder:** rule rows in plain language ("Show this field when **Country** **is** **Germany**"), any/all groups, operators per field type, and value pickers (options, dates including relative ones, numbers).
     - "Required when", a value taken from another field ("is after **Arrival**"), and the context conditions (language, member, query value, today), all of §4.3.3.
     - A switch that turns a rule off without deleting it.
