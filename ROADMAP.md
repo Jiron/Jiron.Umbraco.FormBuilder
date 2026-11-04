@@ -2692,7 +2692,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
     - a required choice whose options can all become full;
     - and anything Phase 1 adds: the decision records promise a dictionary key without a text (a warning), a last outcome with a rule (a warning), a missing theme, a host lock that replaces a stored value, content, media or member groups the site lacks, place or unique limits on a form that keeps no entries, and a merge tag in a label from a source the label refuses.
   - Done when: each check has unit tests, and publishing with an error is refused through the API.
-- [ ] **9.5f The form check in the designer** (split from 9.5b, see WORKLOG)
+- [x] **9.5f The form check in the designer** (split from 9.5b, see WORKLOG) (2026-11-04, ae4a63a)
   - **The badge, the list and "fix it"** (IA 5.1): the badge in the toolbar ("2 problems", "No problems"), the list in a sidebar with the errors first, and a "fix it" on every issue of 9.5b, 9.5d and 9.5e that selects the element and opens its setting (the palette for a form without fields, the rules builder for a rule); the publish dialog shows the check's result, errors blocking and warnings not.
   - Done when: Playwright covers the badge, the list and the "fix it" links, a publish blocked by an error and one with a warning, and axe finds nothing on the list.
 - [ ] **9.6 Phase review**
