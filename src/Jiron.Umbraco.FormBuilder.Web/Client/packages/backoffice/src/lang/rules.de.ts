@@ -46,6 +46,9 @@ export default {
     when_show: (words: string) => `Sichtbar, wenn ${words}`,
     when_hide: (words: string) => `Verborgen, wenn ${words}`,
     when_require: (words: string) => `Pflicht, wenn ${words}`,
+    when_message: (message: string, words: string) => `Zeigt „${message}“, wenn ${words}`,
+    when_messageStandard: (words: string) => `Zeigt die Standardmeldung, wenn ${words}`,
+    when_use: (words: string) => `Verwendet, wenn ${words}`,
     and: 'und',
     or: 'oder',
     listSeparator: ', ',
@@ -71,7 +74,13 @@ export default {
     effect_show: 'Zeigen',
     effect_hide: 'Verbergen',
     effect_require: 'Verlangen',
+    effect_message: 'Meldung zeigen bei',
     targetLabel: 'Was die Regel zeigt, verbirgt oder zur Pflicht macht',
+    targetLabelMessage: 'Das Feld, das die Meldung zeigt',
+    messageLabel: 'Meldung',
+    messageHelp:
+      'Was Besucher am Feld lesen, solange die Regel zutrifft, wie bei einer Antwort, die sie ändern müssen.',
+    problem_message: 'Schreiben Sie die Meldung, die Besucher lesen.',
     this_field: (name: string) => `dieses Feld: ${name}`,
     this_group: (name: string) => `diese Gruppe: ${name}`,
     this_page: (name: string) => `diese Seite: ${name}`,
@@ -126,6 +135,8 @@ export default {
     clashVisibility: (name: string) =>
       `Ob ${name} sichtbar ist, entscheidet eine Regel, und diese Regel gibt es schon. Ändern Sie besser jene.`,
     clashRequire: (name: string) => `${name} hat schon eine Regel, die es zur Pflicht macht. Ändern Sie besser jene.`,
+    effectGone: (name: string) =>
+      `${name} kann diese Regel nicht mehr haben. Wählen Sie, was die Regel tut, oder löschen Sie sie.`,
     cycle: (name: string) =>
       `Mit dieser Regel hinge es von ${name} selbst ab, ob ${name} sichtbar ist. Wählen Sie eine andere Frage oder ein anderes Element.`,
     useRule: 'Diese Regel verwenden',
@@ -137,6 +148,8 @@ export default {
       'Schalten Sie sie aus, um die Regel zu behalten, ohne sie zu verwenden. Die Seite wird dann immer angezeigt.',
     offHelpRequired:
       'Schalten Sie sie aus, um die Regel zu behalten, ohne sie zu verwenden. Das Feld ist dann nie Pflicht.',
+    offHelpMessage:
+      'Schalten Sie sie aus, um die Regel zu behalten, ohne sie zu verwenden. Die Meldung erscheint dann nie.',
     deleteRule: 'Regel löschen',
     add: 'Hinzufügen',
     update: 'Übernehmen',
@@ -151,11 +164,38 @@ export default {
     tryHidden: (name: string) => `${name} bleibt verborgen.`,
     tryRequired: (name: string) => `${name} ist Pflicht.`,
     tryNotRequired: (name: string) => `${name} ist keine Pflicht.`,
+    tryMessageShows: (name: string) => `Die Meldung erscheint bei ${name}.`,
+    tryMessageHidden: (name: string) => `Die Meldung erscheint nicht bei ${name}.`,
     tryNoAnswer: 'Keine Antwort',
     tryFiles: 'Gegebene Dateien',
     groupsTyped: 'Mitgliedergruppen, durch Kommas getrennt',
     removeValue: 'Wert entfernen',
     fieldGone: 'ein inzwischen gelöschtes Feld',
     alsoKept: (words: string) => `Außerdem behalten: ${words}`,
+
+    overviewHeadline: 'Regeln',
+    overviewAdd: 'Regel hinzufügen',
+    overviewEmpty:
+      'Noch keine Regeln. Die meisten Regeln zeigen eine Frage nur, wenn eine andere Antwort sie verlangt, und „Regel hinzufügen“ fragt zuerst, um welche Frage es geht.',
+    overviewPage: (number: number) => `Seite ${number}`,
+    overviewPageNamed: (number: number, name: string) => `Seite ${number}: ${name}`,
+    overviewAfter: 'Nach dem Absenden',
+    overviewOff: 'Aus',
+    overviewConflict: (words: string) =>
+      `Widerspruch: Wenn ${words}, verbirgt eine Regel das Feld und die andere macht es zur Pflicht. Ein verborgenes Feld ist nie Pflicht, Besucher können also ohne es absenden.`,
+    overviewConflictAlways:
+      'Widerspruch: Eine Regel verbirgt das Feld bei jeder Antwort, und die andere macht es zur Pflicht. Ein verborgenes Feld ist nie Pflicht, Besucher können also ohne es absenden.',
+    overviewConflictFiles: (name: string, count: number) =>
+      `${name} hat ${count === 1 ? '1 Datei' : `${count} Dateien`}`,
+    overviewAffects: 'Worauf soll die Regel wirken?',
+    overviewAffectsHelp:
+      'Wählen Sie die Frage, Gruppe oder Seite, die die Regel zeigt, verbirgt oder zur Pflicht macht, oder das Feld, bei dem sie eine Meldung zeigt.',
+    overviewChoose: 'Element wählen',
+    overviewContinue: 'Weiter',
+    overviewChooseFirst: 'Wählen Sie, worauf die Regel wirkt.',
+    outcomeRedirect: (url: string) => `Weiterleitung zu ${url}`,
+    outcomeRedirectPage: 'Weiterleitung zu einer Seite der Website',
+    outcomeMessage: (text: string) => `Meldung: ${text}`,
+    outcomeNumber: (number: number) => `Ergebnis ${number}`,
   },
 } satisfies UmbLocalizationDictionary;

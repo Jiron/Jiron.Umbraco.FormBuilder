@@ -28,7 +28,8 @@ export default {
     rulesAdd: 'Regel hinzufügen',
     rulesOff: 'Aus',
     rulesOffSummary: (words: string) => `${words} (aus)`,
-    rulesHelp: 'Eine Regel sitzt an dem Element, das sie zeigt, verbirgt oder zur Pflicht macht.',
+    rulesHelp:
+      'Eine Regel sitzt an dem Element, das sie zeigt, verbirgt oder zur Pflicht macht, oder an dem Feld, bei dem sie eine Meldung zeigt.',
     saidChanged: (name: string) => `${name} geändert`,
 
     property_label: 'Beschriftung',

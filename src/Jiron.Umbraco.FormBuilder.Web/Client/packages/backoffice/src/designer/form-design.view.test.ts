@@ -58,7 +58,10 @@ vi.mock('@umbraco-cms/backoffice/modal', async (original) => ({
   ...(await original<typeof import('@umbraco-cms/backoffice/modal')>()),
   umbOpenModal: async (_host: unknown, token: unknown, args?: { data?: unknown }) => {
     opened.dialogs.push({ alias: String(token), data: args?.data });
-    return opened.value;
+    // A function answers each dialog by its alias.
+    return typeof opened.value === 'function'
+      ? (opened.value as (alias: string) => unknown)(String(token))
+      : opened.value;
   },
   umbConfirmModal: async (_host: unknown, data: unknown) => {
     opened.dialogs.push({ alias: 'confirm', data });
@@ -1061,6 +1064,47 @@ describe('the inspector in the Design view', () => {
     expect((opened.dialogs[0]?.data as RuleBuilderModalData).effect).toBe('require');
   });
 
+  it("builds a validation rule on a field as one of its rules, kept among the form's own, and opens and deletes it (ADR-0178)", async () => {
+    const { view, workspace, ask, state, toasts } = await viewOf();
+    await ask({ kind: 'select', key: 'email' });
+    const validation = () => (state().definition['validationRules'] ?? []) as readonly Record<string, unknown>[];
+    const message: DesignRule = {
+      key: 'v',
+      effect: 'message',
+      enabled: true,
+      match: 'all',
+      message: { '': 'Use your work address' },
+      conditions: [{ field: 'email', op: 'endsWith', value: 'gmail.com' }],
+    };
+    opened.value = { target: 'email', rule: message };
+    await tell(view, { kind: 'rule', key: 'email', rule: null });
+    expect(validation()).toEqual([
+      {
+        key: 'v',
+        enabled: true,
+        match: 'all',
+        message: { '': 'Use your work address' },
+        conditions: [{ field: 'email', op: 'endsWith', value: 'gmail.com' }],
+        field: 'email',
+      },
+    ]);
+    expect(locate(state().definition, 'email')?.element.rules ?? []).toEqual([]);
+    expect(workspace.said.at(-1)).toBe('Added a rule to email');
+    // Opened again, the builder is given it as a rule that shows a message; nothing waits on a message.
+    opened.dialogs = [];
+    opened.value = undefined;
+    await tell(view, { kind: 'rule', key: 'email', rule: 'v' });
+    const data = opened.dialogs[0]?.data as RuleBuilderModalData;
+    expect(data.rule).toEqual(message);
+    expect(data.refusal('email', message)).toBeNull();
+    opened.value = { target: 'email', rule: null };
+    await tell(view, { kind: 'rule', key: 'email', rule: 'v' });
+    expect(validation()).toEqual([]);
+    expect(toasts.shown.at(-1)?.data.message).toBe('Rule deleted');
+    await toasts.shown.at(-1)?.data.undo();
+    expect(validation()).toHaveLength(1);
+  });
+
   it('folds the palette beside it in a view up to 1024 px, and not in a wider or a narrow one', () => {
     expect([620, 700, 701, 1024, 1025].map(isCrowded)).toEqual([false, false, true, true, false]);
   });
@@ -1504,5 +1548,53 @@ describe("the canvas's images", () => {
     });
     await settle(view);
     expect(imaging.asked).toEqual([['m1']]);
+  });
+});
+
+describe('the rules overview in the Design view (ADR-0178)', () => {
+  type RulesOverviewModalData = import('./rules/rules-overview.modal.token').RulesOverviewModalData;
+
+  it('opens from the canvas with the draft, and a row selects its element on its page with the focus on it', async () => {
+    const { view, canvas, ask, state } = await viewOf();
+    opened.value = { go: 'element', key: 'note' };
+    await ask({ kind: 'rulesOverview' });
+    expect(opened.dialogs[0]?.alias).toBe('Jiron.FormBuilder.Modal.RulesOverview');
+    const data = opened.dialogs[0]?.data as RulesOverviewModalData;
+    expect([data.definition, data.culture, Object.keys(data.types).length > 0]).toEqual([
+      state().definition,
+      'en-US',
+      true,
+    ]);
+    await settle(view);
+    expect([state().selection, canvas.shown]).toEqual(['note', 1]);
+    expect(shadow(canvas).activeElement).toBe(control(canvas, 'note', 'select'));
+  });
+
+  it('lets Add rule open the builder on the element chosen, selected, and an outcome lead to Settings', async () => {
+    const { view, ask, state } = await viewOf();
+    opened.value = (alias: string) => (alias.endsWith('RulesOverview') ? { go: 'add', key: 'email' } : undefined);
+    await ask({ kind: 'rulesOverview' });
+    await settle(view);
+    expect(state().selection).toBe('email');
+    expect(opened.dialogs.map((dialog) => dialog.alias)).toEqual([
+      'Jiron.FormBuilder.Modal.RulesOverview',
+      'Jiron.FormBuilder.Modal.RuleBuilder',
+    ]);
+    expect((opened.dialogs[1]?.data as RuleBuilderModalData).origin).toBe('email');
+    expect((opened.dialogs[1]?.data as RuleBuilderModalData).rule).toBeNull();
+
+    const before = window.location.pathname;
+    history.replaceState(null, '', '/umbraco/section/jfb-forms/workspace/jfb-form/edit/form1/view/design');
+    opened.dialogs = [];
+    opened.value = { go: 'outcomes' };
+    await ask({ kind: 'rulesOverview' });
+    expect(window.location.pathname).toBe('/umbraco/section/jfb-forms/workspace/jfb-form/edit/form1/view/settings');
+    history.replaceState(null, '', before);
+
+    // Closed, it changes nothing.
+    opened.value = undefined;
+    const now = state();
+    await ask({ kind: 'rulesOverview' });
+    expect(state()).toBe(now);
   });
 });

@@ -161,6 +161,7 @@ describe('the rules builder', () => {
       'Show',
       'Hide',
       'Require',
+      'Show a message on',
     ]);
     const target = must(root.querySelector<HTMLSelectElement>('#target'), 'to what');
     expect(target.value).toBe('which');
@@ -380,6 +381,65 @@ describe('the rules builder', () => {
     );
   });
 
+  it("keeps showing what a rule does where its element can't have it any more, and keeps the rule only once changed", async () => {
+    // A hidden field is never required, as after its type was changed.
+    const require: DesignRule = { key: 'req', effect: 'require', conditions: [{ field: 'agree', op: 'isChecked' }] };
+    const base = definitionWith([require]);
+    const definition: DesignDefinition = {
+      ...base,
+      pages: base.pages.map((page) => ({
+        ...page,
+        groups: page.groups.map((group) => ({
+          ...group,
+          fields: group.fields.map((one) => (one.key === 'which' ? { ...one, type: 'hidden' } : one)),
+        })),
+      })),
+    };
+    const { element, modal, root } = await builderOf({ definition, rule: require, effect: 'show' });
+    const effect = must(root.querySelector<HTMLSelectElement>('#effect'), 'what it does');
+    expect([effect.value, options(effect).length, effect.getAttribute('aria-invalid')]).toEqual(['require', 3, 'true']);
+    expect(text(root.querySelector('#first-line-why'))).toBe(
+      "Which can't have this rule any more. Choose what the rule does, or delete it.",
+    );
+    keep(root).click();
+    await settle(element);
+    expect(modal.submit).not.toHaveBeenCalled();
+    expect(root.activeElement).toBe(effect);
+    await pick(element, effect, 'hide');
+    expect(root.querySelector('#first-line-why')).toBeNull();
+    expect(options(must(root.querySelector<HTMLSelectElement>('#effect'), 'what it does'))).toHaveLength(2);
+    keep(root).click();
+    await settle(element);
+    expect(modal.submit).toHaveBeenCalled();
+    expect(modal.getValue().rule).toMatchObject({ key: 'req', effect: 'hide' });
+  });
+
+  it("opens a grid row's validation rule on its grid, still showing a message", async () => {
+    const base = definitionWith();
+    const grid = field('sizes', 'grid', 'Sizes', { rows: [{ key: 'size', label: { '': 'Size' } }] });
+    const kept = {
+      key: 'v',
+      field: 'size',
+      message: { '': 'Pick a size' },
+      conditions: [{ field: 'agree', op: 'isChecked' }],
+    };
+    const definition: DesignDefinition = {
+      ...base,
+      pages: base.pages.map((page, at) =>
+        at === 0 ? { ...page, groups: [...page.groups, { key: 'g3', fields: [grid] }] } : page,
+      ),
+      validationRules: [kept],
+    };
+    const rule: DesignRule = { key: 'v', effect: 'message', message: kept.message, conditions: kept.conditions };
+    const { element, modal, root } = await builderOf({ definition, origin: 'sizes', rule, effect: 'show' });
+    expect(must(root.querySelector<HTMLSelectElement>('#effect'), 'what it does').value).toBe('message');
+    expect(root.querySelector('#first-line-why')).toBeNull();
+    keep(root).click();
+    await settle(element);
+    expect(modal.submit).toHaveBeenCalled();
+    expect(modal.getValue()).toMatchObject({ target: 'sizes', rule: { key: 'v', effect: 'message' } });
+  });
+
   it('offers no condition group inside the tenth level', async () => {
     const leaf = { field: 'agree', op: 'isChecked' };
     interface Nested {
@@ -433,6 +493,99 @@ describe('the rules builder', () => {
     must(row(root).querySelector<HTMLElement>('uui-button'), 'remove').click();
     await settle(element);
     expect(text(root.querySelector('.verdict'))).toBe('Complete every condition to try the rule.');
+  });
+
+  it('builds a validation rule: its field and message in the first line, its own answer looked at, the message asked for', async () => {
+    const { element, modal, root } = await builderOf({ effect: 'message' });
+    const effect = must(root.querySelector<HTMLSelectElement>('#effect'), 'what it does');
+    expect(effect.value).toBe('message');
+    const target = must(root.querySelector<HTMLSelectElement>('#target'), 'on what');
+    expect([target.getAttribute('aria-label'), text(target.selectedOptions[0])]).toEqual([
+      'The field that shows the message',
+      'this field: Which',
+    ]);
+    const message = must(root.querySelector<HTMLInputElement>('#message'), 'the message');
+    expect(text(root.querySelector('label[for="message"]'))).toBe('Message');
+    // What it says changes nothing a rule reads, so it may look at its own field.
+    await pick(element, inRow(root, 'select.subject'), 'field:which');
+    await pick(element, inRow(root, 'select.operator'), 'endsWith');
+    await typeIn(element, inRow(root, 'input.plain'), 'land');
+    keep(root).click();
+    await settle(element);
+    expect(modal.submit).not.toHaveBeenCalled();
+    expect([message.getAttribute('aria-invalid'), text(root.querySelector('#message-why'))]).toEqual([
+      'true',
+      'Write the message visitors read.',
+    ]);
+    expect(root.activeElement).toBe(message);
+    // Try it says whether the message shows.
+    must(root.querySelector<HTMLButtonElement>('.try button.disclosure'), 'Try it').click();
+    await settle(element);
+    await typeIn(element, must(root.querySelector<HTMLInputElement>('#try-which'), "Which's box"), 'Finland');
+    expect(text(root.querySelector('.verdict'))).toBe('The message shows on Which.');
+    await typeIn(element, must(root.querySelector<HTMLInputElement>('#try-which'), "Which's box"), 'Spain');
+    expect(text(root.querySelector('.verdict'))).toBe("The message doesn't show on Which.");
+    expect(text(root.querySelector('.use .help'))).toBe(
+      'Turn it off to keep the rule without using it. The message then never shows.',
+    );
+    await typeIn(element, message, 'Name a country');
+    keep(root).click();
+    await settle(element);
+    expect(modal.submit).toHaveBeenCalled();
+    expect(modal.getValue()).toEqual({
+      target: 'which',
+      rule: {
+        key: expect.any(String),
+        effect: 'message',
+        enabled: true,
+        match: 'all',
+        conditions: [{ field: 'which', op: 'endsWith', value: 'land' }],
+        message: { '': 'Name a country' },
+      },
+    });
+  });
+
+  it("writes a validation rule's message in the language shown, the default's under its empty box, and offers only fields", async () => {
+    const rule: DesignRule = {
+      key: 'v',
+      effect: 'message',
+      message: { '': 'Name a country' },
+      conditions: [{ field: 'which', op: 'isEmpty' }],
+    };
+    const { element, modal, root } = await builderOf({
+      rule,
+      culture: 'de-DE',
+      languages: [
+        { culture: 'en-US', name: 'English', isDefault: true },
+        { culture: 'de-DE', name: 'German' },
+      ],
+    });
+    const message = must(root.querySelector<HTMLInputElement>('#message'), 'the message');
+    expect([message.value, message.placeholder, message.lang]).toEqual(['', 'Name a country', 'de-DE']);
+    // The default's message is one, which visitors in German read until it has its own; Delete is there for a rule kept.
+    expect(root.querySelector('#message-why')).toBeNull();
+    expect(root.querySelector('uui-button[slot="footer-info"]')).not.toBeNull();
+    await typeIn(element, message, 'Land nennen');
+    // A page or a group shows no message: choosing one takes the first effect it has.
+    const target = must(root.querySelector<HTMLSelectElement>('#target'), 'on what');
+    await pick(element, target, 'g2');
+    expect(must(root.querySelector<HTMLSelectElement>('#effect'), 'what it does').value).toBe('show');
+    expect(root.querySelector('#message')).toBeNull();
+    await pick(element, target, 'which');
+    await pick(element, must(root.querySelector<HTMLSelectElement>('#effect'), 'what it does'), 'message');
+    keep(root).click();
+    await settle(element);
+    expect(modal.getValue().rule).toMatchObject({
+      key: 'v',
+      effect: 'message',
+      message: { '': 'Name a country', 'de-DE': 'Land nennen' },
+    });
+
+    // One kept without a message (through the API) opens saying what it lacks.
+    const bare = await builderOf({
+      rule: { key: 'w', effect: 'message', conditions: [{ field: 'which', op: 'isEmpty' }] },
+    });
+    expect(text(bare.root.querySelector('#message-why'))).toBe('Write the message visitors read.');
   });
 
   it("doesn't try a rule while a row says something is wrong, even one the engine would run", async () => {

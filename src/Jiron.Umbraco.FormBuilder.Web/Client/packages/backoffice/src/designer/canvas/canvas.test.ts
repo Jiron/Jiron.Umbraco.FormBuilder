@@ -522,6 +522,76 @@ describe('the canvas', () => {
     expect(menu).toEqual(['Change type\u2026', 'Start a new page after this']);
   });
 
+  it('carries a chip for each rule in use on a page, a group or a field, each describing it, and none while it is selected', async () => {
+    const definition: DesignDefinition = {
+      pages: [
+        {
+          key: 'p',
+          title: { '': 'Your details' },
+          rules: [{ key: 'pr', effect: 'hide', conditions: [{ context: 'memberSignedIn', op: 'isChecked' }] }],
+          groups: [
+            {
+              key: 'g',
+              title: { '': 'About you' },
+              rules: [{ key: 'gr', effect: 'show', conditions: [{ field: 'a', op: 'isNotEmpty' }] }],
+              fields: [
+                { key: 'a', type: 'text', alias: 'a', label: { '': 'Name' } },
+                {
+                  key: 'b',
+                  type: 'text',
+                  alias: 'b',
+                  label: { '': 'Email' },
+                  rules: [
+                    { key: 'br', effect: 'show', conditions: [{ field: 'a', op: 'equals', value: 'Ann' }] },
+                    { key: 'off', effect: 'require', enabled: false, conditions: [{ field: 'a', op: 'isEmpty' }] },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+      validationRules: [
+        { key: 'v', field: 'a', message: { '': 'Say more' }, conditions: [{ field: 'a', op: 'isEmpty' }] },
+      ],
+      outcomes: [],
+    };
+    const chips = async (element: FormCanvasElement, root: ShadowRoot) => {
+      for (const field of all<CanvasFieldElement>(element, 'jfb-canvas-field')) await settle(field);
+      return [...root.querySelectorAll('.bo-rule-chip')].map((chip) => [
+        chip.closest('jfb-canvas-field')?.getAttribute('key') ??
+          chip.closest('[data-group]')?.getAttribute('data-group') ??
+          chip.closest('[data-groups]')?.getAttribute('data-groups'),
+        chip.id,
+        text(chip),
+      ]);
+    };
+    const { element, root } = await canvasOf(definition);
+    expect(await chips(element, root)).toEqual([
+      ['p', 'jfb-rule-chip-p-0', 'Hidden when The visitor is signed in'],
+      ['g', 'jfb-rule-chip-g-0', 'Shown when Name is not empty'],
+      ['a', 'jfb-rule-chip-a-0', 'Shows "Say more" when Name is empty'],
+      // A rule switched off changes nothing for visitors, so it has no chip.
+      ['b', 'jfb-rule-chip-b-0', 'Shown when Name is "Ann"'],
+    ]);
+    expect(root.querySelector('.bo-select-page')?.getAttribute('aria-describedby')).toBe('jfb-rule-chip-p-0');
+    expect(root.querySelector('.bo-select-group')?.getAttribute('aria-describedby')).toBe('jfb-rule-chip-g-0');
+    expect(root.querySelector('jfb-canvas-field[key="b"] .bo-select')?.getAttribute('aria-describedby')).toBe(
+      'jfb-rule-chip-b-0',
+    );
+    document.body.replaceChildren();
+
+    const selected = await canvasOf(definition, { selection: 'b' });
+    expect((await chips(selected.element, selected.root)).map(([key]) => key)).toEqual(['p', 'g', 'a']);
+    expect(selected.root.querySelector('jfb-canvas-field[key="b"] .bo-select')?.hasAttribute('aria-describedby')).toBe(
+      false,
+    );
+    document.body.replaceChildren();
+
+    const page = await canvasOf(definition, { selection: 'p' });
+    expect((await chips(page.element, page.root)).map(([key]) => key)).toEqual(['g', 'a', 'b']);
+  });
+
   it('points a new form to the palette and to pasting questions, and an empty later page to New page', async () => {
     const blank: DesignDefinition = { pages: [{ key: 'p', groups: [{ key: 'g', fields: [] }] }] };
     const first = await canvasOf(blank);
@@ -761,15 +831,17 @@ describe('the canvas', () => {
     ]).toEqual(['p2', 'step']);
   });
 
-  it('opens the Keyboard shortcuts from its menu, and names the keys as this keyboard has them', async () => {
+  it('opens the rules overview and the Keyboard shortcuts from its menu, and names the keys as this keyboard has them', async () => {
     const { requests, root } = await canvasOf(DEFINITION);
     const items = [...root.querySelectorAll<HTMLButtonElement>('.bo-menu button')];
     expect(items.map((item) => [text(item.querySelector('span')), text(item.querySelector('kbd'))])).toEqual([
       ['Undo', 'Ctrl+Z'],
       ['Redo', 'Ctrl+Y'],
+      ['Rules overview', ''],
       ['Keyboard shortcuts', '?'],
     ]);
     items[2]?.click();
-    expect(requests).toEqual([{ kind: 'shortcuts' }]);
+    items[3]?.click();
+    expect(requests).toEqual([{ kind: 'rulesOverview' }, { kind: 'shortcuts' }]);
   });
 });

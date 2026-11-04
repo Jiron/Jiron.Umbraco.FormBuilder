@@ -6,7 +6,8 @@
 // repeatable group shows its first row with each of its fields as a canvas field of its own, so they can be chosen.
 // Its handle, "Move Email address", drags it and, with Alt+Up and Alt+Down, moves it (ADR-0016, ADR-0169); Move to...
 // in its bar opens the dialog of places, and a move the form refuses says why at the field. The bar's "..." starts a new
-// page after the field and copies its alias (ADR-0170); a field without a text in the language shown carries a chip.
+// page after the field and copies its alias (ADR-0170); a field without a text in the language shown carries a chip,
+// and so does each rule in use on it, in words (ADR-0178), each describing the button that selects the field.
 import {
   html,
   LitElement,
@@ -93,6 +94,8 @@ export interface FieldState {
   readonly refusal?: string | null;
   /** The chip on a field without a text in the language shown: "No German text yet". */
   readonly untranslated?: string | null;
+  /** Its rules in use, in words, each a chip: "Shown when Country is Other" (ADR-0178). */
+  readonly rules?: readonly string[] | null;
 }
 
 /**
@@ -404,6 +407,13 @@ export class CanvasFieldElement extends LitElement {
 
   #renderChrome(state: FieldState) {
     const { words, key } = state;
+    // The chips say what the field is besides itself; while it is selected, the inspector says it.
+    const chips = state.selected
+      ? []
+      : [
+          ...(state.untranslated ? [{ id: `jfb-chip-${key}`, said: state.untranslated, rule: false }] : []),
+          ...(state.rules ?? []).map((said, at) => ({ id: `jfb-rule-chip-${key}-${at}`, said, rule: true })),
+        ];
     render(
       html`
         <button
@@ -412,7 +422,7 @@ export class CanvasFieldElement extends LitElement {
           data-key=${key}
           data-control="select"
           aria-label=${words.name}
-          aria-describedby=${state.untranslated && !state.selected ? `jfb-chip-${key}` : nothing}
+          aria-describedby=${chips.length > 0 ? chips.map((chip) => chip.id).join(' ') : nothing}
           aria-current=${state.selected ? 'true' : 'false'}
           ?hidden=${state.editing && this.#editingIn}
           @click=${() => this.#request({ kind: 'select', key })}
@@ -433,8 +443,16 @@ export class CanvasFieldElement extends LitElement {
         </button>
         ${state.refusal ? html`<p class="bo-refusal" aria-hidden="true">${state.refusal}</p>` : nothing}
         ${
-          state.untranslated && !state.selected
-            ? html`<span class="bo-chip" id=${`jfb-chip-${key}`}>${state.untranslated}</span>`
+          chips.length > 0
+            ? html`<span class="bo-chips"
+                >${chips.map((chip) =>
+                  chip.rule
+                    ? html`<span class="bo-chip bo-rule-chip" id=${chip.id}
+                        ><uui-icon name="icon-split" aria-hidden="true"></uui-icon><span>${chip.said}</span></span
+                      >`
+                    : html`<span class="bo-chip" id=${chip.id}>${chip.said}</span>`,
+                )}</span
+              >`
             : nothing
         }
         ${

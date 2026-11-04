@@ -1,11 +1,12 @@
-// How a rule lands in the draft (ROADMAP 9.5a, ADR-0175): added, changed in place, moved to another element in one
-// step, refused where an element would wait on itself, and taken off.
+// How a rule lands in the draft (ROADMAP 9.5a, 9.5c, ADR-0175, ADR-0178): added, changed in place, moved to another
+// element in one step, refused where an element would wait on itself, and taken off; a validation rule among the
+// form's own, and a rule moved between an element and them.
 import { describe, expect, it } from 'vitest';
 import type { DesignDefinition, DesignRule } from '../definition';
 import { locate } from '../definition';
 import type { EditorState, ModelContext } from '../editor-model';
 import { builtInTypes } from '../preview/fixtures';
-import { dropRule, landRule } from './rule-edits';
+import { asBuilderRule, asValidationRule, dropBuilt, dropRule, landBuilt, landRule } from './rule-edits';
 
 const CONTEXT: ModelContext = {
   traitsOf: (type) => {
@@ -79,5 +80,100 @@ describe('a rule landing', () => {
     if (!dropped.ok) throw new Error(dropped.refusal);
     expect(rulesOf(dropped.state.definition, 'which')).toEqual([]);
     expect(dropRule(STATE, 'which', 'gone', CONTEXT)).toEqual({ ok: false, refusal: 'unchanged' });
+  });
+});
+
+describe('a validation rule landing (ADR-0178)', () => {
+  const MESSAGE: DesignRule = {
+    key: 'v',
+    effect: 'message',
+    enabled: true,
+    message: { '': 'Use your work address' },
+    conditions: [{ field: 'phone', op: 'endsWith', value: '0' }],
+  };
+  const validation = (definition: DesignDefinition) => definition['validationRules'];
+  const ON_PHONE = { kind: 'validation', field: 'phone' } as const;
+
+  it("joins the form's validation rules on its field, takes the place of its own key, and goes with the list's last", () => {
+    const added = landBuilt(STATE, null, 'phone', MESSAGE, CONTEXT);
+    if (!added.ok) throw new Error(added.refusal);
+    expect(validation(added.state.definition)).toEqual([
+      {
+        key: 'v',
+        enabled: true,
+        message: { '': 'Use your work address' },
+        conditions: [{ field: 'phone', op: 'endsWith', value: '0' }],
+        field: 'phone',
+      },
+    ]);
+    expect(added.state.selection).toBe('country');
+    // Its own field may be looked at; nothing waits on a message.
+    const changed = landBuilt(added.state, ON_PHONE, 'which', { ...MESSAGE, enabled: false }, CONTEXT);
+    if (!changed.ok) throw new Error(changed.refusal);
+    expect(validation(changed.state.definition)).toMatchObject([{ key: 'v', field: 'which', enabled: false }]);
+    expect(landBuilt(added.state, ON_PHONE, 'phone', MESSAGE, CONTEXT)).toEqual({
+      ok: false,
+      refusal: 'unchanged',
+    });
+    const dropped = dropBuilt(added.state, ON_PHONE, 'v', CONTEXT);
+    if (!dropped.ok) throw new Error(dropped.refusal);
+    // The canonical form leaves an empty list out, so a draft that gets back to none has none.
+    expect('validationRules' in dropped.state.definition).toBe(false);
+  });
+
+  it('moves between an element and the validation rules in one step, keeping everything else the rule held', () => {
+    const toMessage = landBuilt(
+      STATE,
+      { kind: 'element', key: 'which' },
+      'which',
+      { ...SHOW, effect: 'message' },
+      CONTEXT,
+    );
+    if (!toMessage.ok) throw new Error(toMessage.refusal);
+    expect(rulesOf(toMessage.state.definition, 'which')).toEqual([]);
+    expect(validation(toMessage.state.definition)).toEqual([{ key: 's', conditions: SHOW.conditions, field: 'which' }]);
+    const back = landBuilt(
+      toMessage.state,
+      { kind: 'validation', field: 'which' },
+      'phone',
+      { ...SHOW, effect: 'hide' },
+      CONTEXT,
+    );
+    if (!back.ok) throw new Error(back.refusal);
+    expect('validationRules' in back.state.definition).toBe(false);
+    expect(rulesOf(back.state.definition, 'phone')).toEqual([{ ...SHOW, effect: 'hide' }]);
+  });
+
+  it("keeps a grid row's validation rule on its row, which the canvas shows as the grid", () => {
+    const grid: EditorState = {
+      ...STATE,
+      definition: {
+        ...STATE.definition,
+        pages: [
+          {
+            key: 'p',
+            groups: [
+              ...STATE.definition.pages.flatMap((page) => page.groups),
+              { key: 'k', fields: [{ key: 'sizes', type: 'grid', rows: [{ key: 'size' }] }] },
+            ],
+          },
+        ],
+        validationRules: [{ key: 'v', field: 'size', conditions: [] }],
+      },
+    };
+    const changed = landBuilt(grid, { kind: 'validation', field: 'size' }, 'sizes', MESSAGE, CONTEXT);
+    if (!changed.ok) throw new Error(changed.refusal);
+    expect(validation(changed.state.definition)).toMatchObject([{ key: 'v', field: 'size' }]);
+    // Moved to another field, it shows its message there.
+    const moved = landBuilt(grid, { kind: 'validation', field: 'size' }, 'phone', MESSAGE, CONTEXT);
+    if (!moved.ok) throw new Error(moved.refusal);
+    expect(validation(moved.state.definition)).toMatchObject([{ key: 'v', field: 'phone' }]);
+  });
+
+  it('reads a validation rule as the builder edits it, and writes it back as the definition keeps it', () => {
+    const kept = { key: 'v', field: 'phone', note: 'kept', conditions: [] };
+    const built = asBuilderRule(kept);
+    expect(built).toEqual({ key: 'v', note: 'kept', effect: 'message', conditions: [] });
+    expect(asValidationRule('phone', built)).toEqual(kept);
   });
 });

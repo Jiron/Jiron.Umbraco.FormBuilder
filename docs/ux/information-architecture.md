@@ -206,7 +206,7 @@ progress, since the steps across its top stand in for it.
 | --- | --- | --- |
 | Toolbar | the canvas width (Phone · Tablet · Desktop), the language (only on sites with more than one), and the form check badge | "…": Undo · Redo · Rules overview · Keyboard shortcuts · Translate with AI… (add-on) |
 | The steps | the pages by name across the top of the canvas (an unnamed page reads "Page 1"), then "Add page" (an empty page at the end, whose empty state says that the palette's Layout › New page splits a page instead), then **After sending** | Clicking a step shows that page. After sending shows the outcome as visitors will see it, read-only, with "Change", which opens that outcome's editor in the Settings view. |
-| Canvas | groups with their columns, and fields as visitors see them. An insert point, a button "Add a field here" in the gap above each element and below a group's last one, appears on hover and on keyboard focus, and every page ends with a visible "Add field", which opens the palette for the end of that page, or moves the focus to its search where it is already open. Rules show as small chips on the elements they affect, except on the selected element, whose rules are in the inspector. | An insert point opens the palette for that point, whose Layout › New page starts a page there. Every field and group has a handle ("Move Email address") at its top left, shown on hover, on focus and while it is selected, which drags it; a page is dragged by its step, and a step takes a dropped field or group at that page's end (ADR-0169). On the selected element: Move to… · Duplicate · Delete · "…" (Change type… · Start a new page after this · Save group as template… for groups · Copy alias). At 620 px they sit in the header of the inspector, which then covers the canvas. |
+| Canvas | groups with their columns, and fields as visitors see them. An insert point, a button "Add a field here" in the gap above each element and below a group's last one, appears on hover and on keyboard focus, and every page ends with a visible "Add field", which opens the palette for the end of that page, or moves the focus to its search where it is already open. Rules show as small chips on the elements they affect, except on the selected element, whose rules are in the inspector: one per rule in use, in words, at the element's top end beside its translation chip, and the description of the button that selects it; a click on one selects the element ([ADR-0178](../decisions/0178-seeing-rules-and-validation-rules-in-the-builder.md)). | An insert point opens the palette for that point, whose Layout › New page starts a page there. Every field and group has a handle ("Move Email address") at its top left, shown on hover, on focus and while it is selected, which drags it; a page is dragged by its step, and a step takes a dropped field or group at that page's end (ADR-0169). On the selected element: Move to… · Duplicate · Delete · "…" (Change type… · Start a new page after this · Save group as template… for groups · Copy alias). At 620 px they sit in the header of the inspector, which then covers the canvas. |
 | Palette | search, "Recently used", then **Layout** (Group: a set of fields, with optional columns; New page: starts a page at that point and moves what follows onto it), the field types in groups, the site's saved groups, and "Paste questions…" at the end | A click inserts at the chosen point, or after the selected element, or at the end of the current page; dragging a type from the palette beside the canvas places it. |
 | Inspector | opens when an element is selected: the element's type at the top ("Email field"), with Change type beside it for a field whose type may become another, then the sections; the label is the first field of Essentials | Change type opens the same dialog as the element's "…": the types the field may become, and what the one chosen takes from the field and what it then needs, before anything changes (ADR-0174) |
 
@@ -247,7 +247,8 @@ progress, since the steps across its top stand in for it.
   - the closed section's line holds its action directly: "Always shown · Add a rule", whose link sits beside the
     header's button, not inside it, and opens the rules builder without opening the section first (the link comes
     with the builder in 9.5a; until then the line says "Always shown" or how many rules);
-  - the section's help says that a rule sits on the element it shows, hides or requires.
+  - the section's help says that a rule sits on the element it shows, hides or requires, or on the field it shows a
+    message on: a field's validation rules are listed among its rules, each opening the builder (ADR-0178).
 - **The AI add-on:** "Suggest help text" sits beside the help text.
 
 **The keyboard** (ADR-0016) reaches everything on the canvas, in the visual order:
@@ -292,6 +293,11 @@ German text yet".
 
 - its first line names what the rule affects ("Show **this field** when…"), and the target can be changed there, so a
   rule started from the question it depends on still lands on the right element;
+- a form-level validation rule is a rule whose first line reads "Show a message on **this field: Email** when", the
+  message's box under it; the builder offers it for a field whose answer the visitor gives and rules compare (not a
+  name, an address, a grid or a repeatable group), and its conditions may look at that field itself (ADR-0178);
+- a rule its element can no longer have (after a type change) opens with what it does still shown and the first line
+  saying so, kept only once another effect is chosen;
 - rule rows in plain language ("Show this field when **Country** **is** **Other**"), with "Add condition" under the
   last row;
 - condition groups, "all" and "any": each starts with "all of these are true", which can be changed to "any of these is
@@ -304,9 +310,12 @@ German text yet".
 
 **The rules overview** (sidebar, from "…" and from the form check):
 
-- every rule in the form, by page, each linking to its element, then the outcomes' rules under After sending;
-- a conflict, a hide rule and a require rule that hold for the same answer, is warned on the row it concerns;
-- **Add rule**, which first asks what the rule affects;
+- every rule in the form, by page, each linking to its element, then the outcomes' rules under After sending (an
+  action's rule shows on its card in the Actions view, IA 5.3);
+- a conflict, a hide rule and a require rule that hold for the same answer, is warned on the row it concerns, with the
+  answers it holds for, where the form engine finds such answers among those a visitor can give (ADR-0178);
+- **Add rule**, which first asks what the rule affects, in a box at the overview's top; Continue then selects the
+  element and opens the builder on it for a new rule;
 - empty, one sentence on what most rules do.
 
 **A new blank form** shows one empty page with its "Add field" and a single sentence pointing to it and to "Paste

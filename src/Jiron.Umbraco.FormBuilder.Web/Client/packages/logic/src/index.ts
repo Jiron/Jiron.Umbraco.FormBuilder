@@ -38,7 +38,7 @@ export {
   type DatePatterns,
   type NumberFormat,
 } from './culture.ts';
-export { formatDate, parseDate, parseDateTime, parseRelative, parseTime, today } from './dates.ts';
+export { applyRelative, formatDate, parseDate, parseDateTime, parseRelative, parseTime, today } from './dates.ts';
 export { formatDecimal, parseDecimal, type Decimal } from './decimal.ts';
 export {
   calculationText,

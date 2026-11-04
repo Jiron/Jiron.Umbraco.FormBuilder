@@ -1,8 +1,9 @@
-// A rule in words (ROADMAP 9.5a, ADR-0175): "Shown when Country is Other and Phone is empty". The builder's rows, the
-// inspector's list of an element's rules, and 9.5c's overview and chips all say rules with these words, so a rule reads
-// the same wherever it shows. Pure: what the words need comes in a context.
+// A rule in words (ROADMAP 9.5a, 9.5c, ADR-0175): "Shown when Country is Other and Phone is empty". The builder's rows,
+// the inspector's list of an element's rules, the rules overview and the chips on the canvas all say rules with these
+// words, so a rule reads the same wherever it shows. Pure: what the words need comes in a context.
 import { parseRelative, type Kind, type Operand } from '@jfb/logic';
-import { otherFieldOf, relativeOf, type Effect } from './rule-draft';
+import type { LocalizedText } from '../definition';
+import { EFFECTS, otherFieldOf, relativeOf } from './rule-draft';
 
 /** What the words need of the backoffice and the form. */
 export interface RuleWordsContext {
@@ -17,6 +18,8 @@ export interface RuleWordsContext {
   readonly languageOf: (culture: string) => string;
   /** A number, date, time or date and time as the backoffice's language writes it, from its wire form. */
   readonly valueOf: (kind: Kind, text: string) => string;
+  /** A text the editor wrote (a validation rule's message), in the language the designer shows. */
+  readonly textOf: (texts: LocalizedText | null | undefined) => string;
 }
 
 /** What a condition looks at and how it compares, as a condition of the definition holds it. */
@@ -166,13 +169,26 @@ export function itemsWords(context: RuleWordsContext, match: string | undefined,
     .join(` ${joiner} `);
 }
 
-/** A rule in words: "Shown when Country is Other", "Required when Topic is one of Shipping, Press". */
+/**
+ * A rule in words: "Shown when Country is Other", "Required when Topic is one of Shipping, Press"; a validation rule's
+ * "Shows "Use your work address" when Email ends with gmail.com", and an outcome's "Used when Topic is Press".
+ */
 export function ruleWords(
   context: RuleWordsContext,
-  rule: { readonly effect: string; readonly match?: string; readonly conditions?: readonly unknown[] | null },
+  rule: {
+    readonly effect: string;
+    readonly match?: string;
+    readonly conditions?: readonly unknown[] | null;
+    readonly message?: unknown;
+  },
 ): string {
-  const effect = (['show', 'hide', 'require'] as readonly string[]).includes(rule.effect)
-    ? (rule.effect as Effect)
-    : 'show';
-  return context.term(`jfbRules_when_${effect}`, itemsWords(context, rule.match, rule.conditions ?? []));
+  const words = itemsWords(context, rule.match, rule.conditions ?? []);
+  if (rule.effect === 'message') {
+    const message = context.textOf(rule.message as LocalizedText | null | undefined).trim();
+    return message === ''
+      ? context.term('jfbRules_when_messageStandard', words)
+      : context.term('jfbRules_when_message', message, words);
+  }
+  const effect = rule.effect === 'use' || (EFFECTS as readonly string[]).includes(rule.effect) ? rule.effect : 'show';
+  return context.term(`jfbRules_when_${effect}`, words);
 }

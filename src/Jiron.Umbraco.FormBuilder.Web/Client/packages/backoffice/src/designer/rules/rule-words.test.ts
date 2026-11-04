@@ -42,6 +42,7 @@ const CONTEXT: RuleWordsContext = {
   optionOf: (_, value) => ({ other: 'Other', shipping: 'Shipping' })[value] ?? value,
   languageOf: (culture) => (culture === 'de-DE' ? 'German' : culture),
   valueOf: (kind, text) => valueText('en-GB', kind, text),
+  textOf: (texts) => texts?.['de-DE'] ?? texts?.[''] ?? '',
 };
 
 const say = (condition: Record<string, unknown>) => conditionWords(CONTEXT, condition);
@@ -118,5 +119,21 @@ describe('a rule in words', () => {
       'Required when Which country? is not empty',
     );
     expect(ruleWords(CONTEXT, { effect: 'nope', conditions: null })).toBe('Shown when ');
+  });
+
+  it("says a validation rule's message in the language shown, the standard one where it has none, and an outcome's use", () => {
+    const conditions = [{ field: 'which', op: 'endsWith', value: 'land' }];
+    expect(
+      ruleWords(CONTEXT, { effect: 'message', conditions, message: { '': 'Name a country', 'de-DE': 'Land' } }),
+    ).toBe('Shows "Land" when Which country? ends with "land"');
+    expect(ruleWords(CONTEXT, { effect: 'message', conditions, message: { '': '  ' } })).toBe(
+      'Shows the standard message when Which country? ends with "land"',
+    );
+    expect(ruleWords(CONTEXT, { effect: 'message', conditions })).toBe(
+      'Shows the standard message when Which country? ends with "land"',
+    );
+    expect(
+      ruleWords(CONTEXT, { effect: 'use', conditions: [{ field: 'country', op: 'equals', value: 'other' }] }),
+    ).toBe('Used when Country is Other');
   });
 });

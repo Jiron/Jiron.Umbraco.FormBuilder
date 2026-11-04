@@ -1,4 +1,5 @@
-// The rules builder's token (ROADMAP 9.5a, ADR-0175): a sidebar that builds or changes one rule.
+// The rules builder's token (ROADMAP 9.5a, 9.5c, ADR-0175, ADR-0178): a sidebar that builds or changes one rule, a
+// form-level validation rule too, which it edits as a rule whose effect is `message`.
 import { UmbModalToken } from '@umbraco-cms/backoffice/modal';
 import type { DesignDefinition, DesignRule } from '../definition';
 import type { Effect, TypeFacts } from './rule-draft';
@@ -9,6 +10,8 @@ export const RULE_BUILDER_MODAL_ALIAS = 'Jiron.FormBuilder.Modal.RuleBuilder';
 export interface RuleBuilderLanguage {
   readonly culture: string;
   readonly name: string;
+  /** Whether visitors read its texts where another language has none. */
+  readonly isDefault?: boolean;
 }
 
 export interface RuleBuilderModalData {
@@ -17,11 +20,11 @@ export interface RuleBuilderModalData {
   readonly form: string;
   /** The element the builder was opened from. */
   readonly origin: string;
-  /** The rule to change, on the origin; null for a new one. */
+  /** The rule to change, on the origin (a validation rule with the effect `message`); null for a new one. */
   readonly rule: DesignRule | null;
   /** A new rule's effect. */
   readonly effect: Effect;
-  /** The backoffice's culture, in which options and dates are said. */
+  /** The language the designer shows, in which options are said and a validation rule's message is written. */
   readonly culture: string;
   /** The site's languages; a condition may look at the language where there are several. */
   readonly languages: readonly RuleBuilderLanguage[];
@@ -39,7 +42,7 @@ export interface RuleBuilderModalData {
   readonly closed?: () => void;
 }
 
-/** The rule as it is to be kept on its element; null where it is deleted. */
+/** The rule as it is to be kept on its element (a validation rule's on its field); null where it is deleted. */
 export interface RuleBuilderModalValue {
   readonly target: string;
   readonly rule: DesignRule | null;

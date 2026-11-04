@@ -26,7 +26,7 @@ export default {
     rulesAdd: 'Add a rule',
     rulesOff: 'Off',
     rulesOffSummary: (words: string) => `${words} (off)`,
-    rulesHelp: 'A rule sits on the element it shows, hides or requires.',
+    rulesHelp: 'A rule sits on the element it shows, hides or requires, or on the field it shows a message on.',
     saidChanged: (name: string) => `Changed ${name}`,
 
     property_label: 'Label',

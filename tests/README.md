@@ -1079,6 +1079,35 @@ axe clean, and reads it back from the saved draft; and builds a "required when" 
 value, refused at its empty row first, tried in Try it (required, not required, off), read back, and deleted from its
 line with Undo in the toast.
 
+Seeing rules, and validation rules (9.5c, ADR-0178): `rules/rule-list.test.ts` holds an element's rules with where each
+is kept (a field's own, then the validation rules on it, a grid's row's on its grid), the pages with the elements that
+have rules, the outcomes' (a message as plain text), the chips' words (none for a rule switched off) and a choice's own
+options; `rules/rule-conflicts.test.ts` a conflict found by the engine for a hide rule, or a show rule that doesn't
+hold, and a require rule (an option, one more than a number, the day around a date, a minute around a time, a day
+counted from today, ticks, several choices, files, the visit, two answers compared), only with answers a visitor can
+give (no option a choice lacks, a language of the site's, groups only signed in, no text standing for others where a
+rule looks inside it), a text the rules don't name said as none of those they do, the answers that don't matter left
+out together, and none where no answer makes both hold, a rule is off or the engine refuses it;
+`rules/rules-overview.test.ts` the sidebar: the rules by page and After sending, a rule that is off marked, the
+conflict on its row (none of the texts named, files by how many), a row's and an outcome's way out, Add rule asking what
+the rule affects (only what can take a new rule, refused with nothing chosen, Cancel back to Add rule), and the empty
+sentence; `rules/rule-builder.test.ts`, `rule-draft.test.ts`, `rule-edits.test.ts`, `rule-words.test.ts` and
+`rule-try.test.ts` a validation rule as a rule that shows a message (offered only for a field whose answer rules compare
+and the visitor gives, its own field looked at, the message asked for at its box and written in the language shown, Try
+it's words, its landing among the form's validation rules, a grid's row's kept on its row, moved to and from an element
+in one step), and a rule whose element can no longer have its effect opening with it shown and refused until changed;
+`editor-model.test.ts` a delete taking the validation rules on what it deletes along and keeping those that only look
+at it; `Tests.Unit/Definitions/StructureTests` a validation rule on a name, a repeatable group or a value kept on the
+server refused; `canvas/canvas.test.ts` a chip per rule in use on a page, a group and a field, each describing the
+element's button, none while it is selected; `inspector/inspector.test.ts` a field's validation rules among its rules;
+and `form-design.view.test.ts` a validation rule landed, opened and deleted with Undo, and the overview's way to an
+element, to the builder and to Settings. In the browser,
+`specs/backoffice/designer-rules-overview.spec.ts` finds the chips on the elements rules affect and none on the selected
+one, opens the overview from the canvas's "...", finds the conflict on its row (axe clean), follows a row to its
+element, adds a rule from the overview after choosing what it affects, finds the empty overview's sentence, and builds a
+validation rule with its field and message whose message the published form, shown through the element on a page of
+the site's origin, shows at that field when the rule matches, and sends once it doesn't.
+
 The form check on the server (9.5b, ADR-0177): `Tests.Unit/Forms/FormCheckTests` holds every text where merge tags
 render with its place, context, owner and path (titles and descriptions, a field's texts, a default value and one kept
 on the server, a consent's wording, a heading's and a paragraph's text, a test type's nested setting, an outcome's

@@ -410,13 +410,44 @@ export const canvasChrome = css`
     outline-offset: -2px;
   }
 
-  /* A field without a text in the language shown: a quiet chip at its top end, gone while it is selected. */
-  .jfb-form .bo-chip {
+  /*
+   * An element's chips, out of the flow and gone while it is selected: a field without a text in the language shown,
+   * and each rule in use (ADR-0178). Out of the flow, so selecting an element moves nothing below it, and the theme's
+   * rows shared between columns hold; a click passes through to the element, whose inspector lists its rules. Each chip
+   * gives up width before the next. A field's sit at its top end, just above its label, in the gap the insert point
+   * above it shares, which they leave to it while it is in use; a group's and a page's sit on the box's bottom edge, so
+   * they never meet its first field's.
+   */
+  .jfb-form .bo-chips {
     position: absolute;
-    inset-block-start: -11px;
     inset-inline-end: 8px;
     z-index: 3;
+    display: flex;
+    gap: 4px;
     max-inline-size: calc(100% - 48px);
+    pointer-events: none;
+  }
+
+  .jfb-form .bo-field > .bo-chrome > .bo-chips {
+    inset-block-end: calc(100% - 2px);
+  }
+
+  .jfb-form :is(.bo-group, .bo-page) > .bo-chips {
+    inset-block-end: -11px;
+  }
+
+  .jfb-form
+    .bo-field:has(> .bo-chrome > .bo-insert-after:is(:hover, :focus-visible, [data-active]))
+    + .bo-field
+    > .bo-chrome
+    > .bo-chips,
+  .jfb-form .bo-insert-first:is(:hover, :focus-visible, [data-active]) + .bo-field > .bo-chrome > .bo-chips {
+    visibility: hidden;
+  }
+
+  .jfb-form .bo-chip {
+    flex: 0 1 auto;
+    min-inline-size: 0;
     overflow: hidden;
     padding: 1px 8px;
     border: 1px solid #d9b44a;
@@ -426,7 +457,27 @@ export const canvasChrome = css`
     font: 600 11px/1.5 var(--uui-font-family);
     text-overflow: ellipsis;
     white-space: nowrap;
-    pointer-events: none;
+  }
+
+  /* A rule is information, not a problem: a cool neutral beside the translation chip's amber. */
+  .jfb-form .bo-rule-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    border-color: #b8bfdc;
+    background: #eef0f8;
+    color: #1f2a5c;
+  }
+
+  .jfb-form .bo-rule-chip > uui-icon {
+    flex: none;
+    font-size: 11px;
+  }
+
+  .jfb-form .bo-rule-chip > span {
+    min-inline-size: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   /* An insert point: a line across the gap with "Add a field here" on it, in sight on hover and on focus. */
@@ -712,7 +763,7 @@ export const canvasChrome = css`
 
   /* While something is dragged, the line alone says where it lands: the selection, its tools, the handles (above),
      the insert points and a refusal's note step back until the drop. */
-  :host([data-dragging]) .jfb-form :is(.bo-tools, .bo-insert, .bo-refusal, .bo-chip) {
+  :host([data-dragging]) .jfb-form :is(.bo-tools, .bo-insert, .bo-refusal, .bo-chips) {
     visibility: hidden;
   }
 

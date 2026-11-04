@@ -273,8 +273,9 @@ export function duplicate(state: EditorState, key: string, context: ModelContext
 }
 
 /**
- * Removes a page, group or field with everything in it. The selection goes to the element that took its place, else
- * the one before it, else its container, as the focus does after a delete (ADR-0016).
+ * Removes a page, group or field with everything in it, and the validation rules that show their message on it or on
+ * anything in it, as its own rules go with it (ADR-0178); one step, so Undo brings both back. The selection goes to the
+ * element that took its place, else the one before it, else its container, as the focus does after a delete (ADR-0016).
  */
 export function removeElement(state: EditorState, key: string): Edit {
   const found = locate(state.definition, key);
@@ -282,8 +283,28 @@ export function removeElement(state: EditorState, key: string): Edit {
   if (found.kind === 'page' && state.definition.pages.length === 1) return refused('lastPage');
   const siblings = found.container === null ? state.definition.pages : childrenOf(found.container);
   const next = siblings[found.index + 1] ?? siblings[found.index - 1] ?? found.container ?? null;
-  return done(remove(state.definition, key), next?.key ?? null);
+  const inside = keysInside(found.element);
+  const removed = remove(state.definition, key);
+  const rules = listOf(removed['validationRules']);
+  const kept = rules.filter((rule) => !showsOn(rule, inside));
+  if (kept.length === rules.length) return done(removed, next?.key ?? null);
+  // A list left empty goes, as the server's canonical form leaves it out.
+  const rest = Object.fromEntries(
+    Object.entries(removed).filter(([name]) => name !== 'validationRules'),
+  ) as DesignDefinition;
+  return done(kept.length > 0 ? { ...rest, validationRules: kept } : rest, next?.key ?? null);
 }
+
+/** The keys of an element and of everything in it: its groups, fields and grid rows, and their rules. */
+function keysInside(element: DesignPage | DesignGroup | DesignField): Set<string> {
+  const inside = new Set<string>();
+  collectKeys(element, new Map(), () => '', inside);
+  return inside;
+}
+
+/** Whether a validation rule shows its message on one of these fields or grid rows. */
+const showsOn = (rule: Readonly<Record<string, unknown>>, keys: ReadonlySet<string>): boolean =>
+  typeof rule['field'] === 'string' && keys.has(rule['field']);
 
 /**
  * Starts a new page at a place, as the palette's New page (under Layout) does: what follows the place on its page moves onto a
@@ -347,20 +368,20 @@ export function splitPage(state: EditorState, place: Place, context: ModelContex
 
 /**
  * The keys of the elements, validation rules, actions and outcomes outside an element that name it or anything in it,
- * anywhere in what they hold: a rule's condition or operand, a field check's other field, a cascading list's parent, the
- * field a validation rule checks, an email action's recipient field, an attachment; and `settings` when the form's
- * settings name it, as the email check does. A delete leaves those naming nothing, which the form check then reports.
+ * anywhere in what they hold: a rule's condition or operand, a field check's other field, a cascading list's parent, an
+ * email action's recipient field, an attachment; and `settings` when the form's settings name it, as the email check
+ * does. A delete leaves those naming nothing, which the form check then reports; a validation rule that shows its
+ * message on the element or in it goes with it instead.
  */
 export function referencesTo(definition: DesignDefinition, key: string): string[] {
   const found = locate(definition, key);
   if (!found) return [];
-  const inside = new Set<string>();
-  collectKeys(found.element, new Map(), () => '', inside);
+  const inside = keysInside(found.element);
   const holders: readonly { key: string; [other: string]: unknown }[] = [
     ...definition.pages,
     ...definition.pages.flatMap((page) => page.groups),
     ...allFields(definition),
-    ...listOf(definition['validationRules']),
+    ...listOf(definition['validationRules']).filter((rule) => !showsOn(rule, inside)),
     ...listOf(definition['actions']),
     ...listOf(definition['outcomes']),
     { key: 'settings', settings: definition['settings'] },

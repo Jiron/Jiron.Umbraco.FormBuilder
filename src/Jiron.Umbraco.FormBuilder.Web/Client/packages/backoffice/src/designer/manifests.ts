@@ -16,6 +16,7 @@ import { SHORTCUTS_MODAL_ALIAS } from './moves/shortcuts.modal.token';
 import { PASTE_QUESTIONS_MODAL_ALIAS } from './palette/paste-questions.modal.token';
 import { PUBLISH_MODAL_ALIAS } from './publish.modal.token';
 import { RULE_BUILDER_MODAL_ALIAS } from './rules/rule-builder.modal.token';
+import { RULES_OVERVIEW_MODAL_ALIAS } from './rules/rules-overview.modal.token';
 
 const IN_FORM_WORKSPACE = { alias: 'Umb.Condition.WorkspaceAlias', match: FORM_WORKSPACE_ALIAS };
 const holding = (...anyOf: string[]) => ({ alias: FORM_PERMISSION_CONDITION, anyOf });
@@ -95,6 +96,12 @@ export const manifests: UmbExtensionManifest[] = [
     alias: RULE_BUILDER_MODAL_ALIAS,
     name: 'Jiron Form Builder rules builder',
     element: (() => import('./rules/rule-builder.modal.element')) as never,
+  },
+  {
+    type: 'modal',
+    alias: RULES_OVERVIEW_MODAL_ALIAS,
+    name: 'Jiron Form Builder rules overview',
+    element: (() => import('./rules/rules-overview.modal.element')) as never,
   },
   ...VIEWS.map((view, index): UmbExtensionManifest => ({
     type: 'workspaceView',

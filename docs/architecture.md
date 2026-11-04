@@ -254,7 +254,15 @@ flowchart LR
   engine's own check), pure; `rule-words.ts` says a rule ("Shown when Country is Other"), for the inspector and the
   builder alike; `rule-try.ts` is Try it's one adapter to `evaluateRule`, which the shared vectors hold; and
   `rule-edits.ts` lands a rule through the editor model's `change` as one step to undo, a rule moved to another
-  element in that same step.
+  element in that same step. From 9.5c (ADR-0178): a form-level validation rule is a rule whose effect is `message`
+  in the builder, which `rule-edits.ts` keeps in the definition's `validationRules` with its field, moving a rule to
+  or from there in one step; `rule-list.ts` lists the form's rules element by element (a field's own, then the
+  validation rules on it or, for a grid, on its rows) for the inspector, the canvas's chips and the rules overview, the
+  sidebar the canvas's "..." opens; and `rule-conflicts.ts` finds a field that one rule hides and another requires for
+  the same answers by trying answers a visitor can give through `evaluateRule`, so the overview says a conflict only
+  where the engine finds one. The editor model's delete takes the validation rules that show their message on what it
+  deletes along, and the structure check refuses a validation rule on a field the visitor's page has no comparable
+  answer of, which both runtimes would refuse the whole form for.
 
 ## 2. The definition model
 

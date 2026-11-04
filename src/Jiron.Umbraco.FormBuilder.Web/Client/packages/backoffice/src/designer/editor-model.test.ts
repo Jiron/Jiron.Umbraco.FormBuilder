@@ -459,7 +459,32 @@ describe('removing', () => {
     const onePage = ok(removeElement(START, 'extras'));
     expect(refusal(removeElement(onePage, 'about'))).toBe('lastPage');
   });
+
+  it('removes the validation rules that show their message on the element or in it, and keeps those that look at it', () => {
+    // v1 shows its message on phone; the list left empty goes.
+    expect(ok(removeElement(START, 'phone')).definition).not.toHaveProperty('validationRules');
+    expect(ok(removeElement(START, 'contact')).definition).not.toHaveProperty('validationRules');
+    const looking = { key: 'v2', field: 'street', conditions: [{ field: 'phone', op: 'isEmpty' }] };
+    const row = { key: 'v3', field: 'size', conditions: [{ field: 'name', op: 'isEmpty' }] };
+    const grid = field('sizes', 'grid', { rows: [{ key: 'size', label: { '': 'Size' } }] });
+    const definition: DesignDefinition = {
+      ...DEFINITION,
+      // A grid joins the first page in a group of its own.
+      pages: DEFINITION.pages.map((page, at) =>
+        at === 0 ? { ...page, groups: [...page.groups, { key: 'more', fields: [grid] }] } : page,
+      ),
+      validationRules: [...listed(DEFINITION['validationRules']), looking, row],
+    };
+    const state: EditorState = { definition, selection: null };
+    expect(ok(removeElement(state, 'phone')).definition['validationRules']).toEqual([looking, row]);
+    expect(ok(removeElement(state, 'sizes')).definition['validationRules']).toEqual([
+      ...listed(DEFINITION['validationRules']),
+      looking,
+    ]);
+  });
 });
+
+const listed = (value: unknown): unknown[] => (Array.isArray(value) ? [...(value as unknown[])] : []);
 
 describe('references', () => {
   it("count an action's recipient field and a list of attachments, wherever the action keeps them", () => {
@@ -467,15 +492,17 @@ describe('references', () => {
       ...DEFINITION,
       actions: [{ key: 'mail', settings: { toField: 'phone', attachments: ['street', 'name'] } }],
     };
-    expect(referencesTo(definition, 'phone')).toEqual(['v1', 'mail']);
+    expect(referencesTo(definition, 'phone')).toEqual(['mail']);
     expect(referencesTo(definition, 'street')).toEqual(['mail']);
   });
 
   it('lists the elements, validation rules, actions and settings outside an element that name it or what it holds', () => {
-    // The settings' email check reads the email field.
+    // The settings' email check reads the email field; v1 shows its message on phone, so it goes with contact.
     expect(referencesTo(DEFINITION, 'email')).toEqual(['address', 'settings']);
-    expect(referencesTo(DEFINITION, 'contact')).toEqual(['address', 'v1', 'a1', 'settings']);
+    expect(referencesTo(DEFINITION, 'contact')).toEqual(['address', 'a1', 'settings']);
     expect(referencesTo(DEFINITION, 'street')).toEqual([]);
+    const looking = { key: 'v2', field: 'street', conditions: [{ field: 'phone', op: 'isEmpty' }] };
+    expect(referencesTo({ ...DEFINITION, validationRules: [looking] }, 'phone')).toEqual(['v2']);
   });
 
   it("counts a cascading list's parent and a field check's other field", () => {
@@ -491,7 +518,7 @@ describe('references', () => {
         contextOf(),
       ),
     );
-    expect(referencesTo(state.definition, 'phone')).toEqual(['street', 'v1']);
+    expect(referencesTo(state.definition, 'phone')).toEqual(['street']);
     expect(referencesTo(state.definition, 'name')).toEqual(['street', 'a1']);
   });
 });

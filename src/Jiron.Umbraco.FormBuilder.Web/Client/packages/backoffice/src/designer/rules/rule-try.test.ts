@@ -202,5 +202,9 @@ describe('the boxes of Try it', () => {
     // A rule that is off does nothing: the element shows and is not required.
     expect(verdictTerm('hide', null)).toBe('jfbRules_tryShows');
     expect(verdictTerm('require', null)).toBe('jfbRules_tryNotRequired');
+    // A validation rule's message shows while it matches, and never while it is off (ADR-0178).
+    expect(verdictTerm('message', true)).toBe('jfbRules_tryMessageShows');
+    expect(verdictTerm('message', false)).toBe('jfbRules_tryMessageHidden');
+    expect(verdictTerm('message', null)).toBe('jfbRules_tryMessageHidden');
   });
 });

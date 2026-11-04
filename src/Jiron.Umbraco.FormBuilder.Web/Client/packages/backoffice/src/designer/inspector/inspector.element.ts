@@ -22,7 +22,8 @@ import {
 import { RESERVED_ALIASES } from '../editor-model';
 import { textIn } from '../preview/field-models';
 import type { SiteLanguage } from '../preview/look';
-import { clashOf, effectsOf } from '../rules/rule-draft';
+import { builderEffectsOf, clashOf } from '../rules/rule-draft';
+import { rulesOn } from '../rules/rule-list';
 import { inspectorRuleWords, typeFactsOf } from '../rules/rule-names';
 import { ruleWords } from '../rules/rule-words';
 import {
@@ -1126,8 +1127,9 @@ export class InspectorElement extends UmbLitElement {
 
   // ---- Rules --------------------------------------------------------------------------------------------------------
 
+  /** The element's rules, then the validation rules that show their message on it (ADR-0178). */
   #rulesOf(subject: Subject): readonly DesignRule[] {
-    return this.#elementOf(subject).rules ?? [];
+    return rulesOn(this.definition, this.#keyOf(subject)).map(({ rule }) => rule);
   }
 
   /** A rule in words, as the builder says it: "Shown when Country is Other". */
@@ -1138,10 +1140,13 @@ export class InspectorElement extends UmbLitElement {
     return ruleWords(words, rule);
   }
 
-  /** Whether the element takes another rule: an effect it takes that none of its rules has, nor shows beside hide. */
+  /**
+   * Whether the element takes another rule: an effect it takes that none of its rules has, nor shows beside hide, or a
+   * message, of which a field shows any number.
+   */
   #takesRule(key: string): boolean {
     const facts = typeFactsOf(this.types);
-    return effectsOf(this.definition, key, (type) => facts[type]?.features ?? []).some(
+    return builderEffectsOf(this.definition, key, (type) => facts[type]).some(
       (effect) => !clashOf(this.definition, key, effect, ''),
     );
   }

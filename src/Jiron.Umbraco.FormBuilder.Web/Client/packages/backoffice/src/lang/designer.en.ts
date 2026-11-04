@@ -111,6 +111,7 @@ export default {
     typeChanged: (type: string) => `Type changed to ${type}.`,
     pageRef: (number: number, title: string) => (title ? `Page ${number}: ${title}` : `Page ${number}`),
     shortcuts: 'Keyboard shortcuts',
+    rulesOverview: 'Rules overview',
     shortcutUndo: 'Undo the last change',
     shortcutRedo: 'Redo what was undone',
     shortcutsLead: 'They act on the field, group or page you are on.',

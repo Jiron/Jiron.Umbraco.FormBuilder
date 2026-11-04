@@ -67,9 +67,11 @@ import {
 import './palette/palette.element';
 import { PASTE_QUESTIONS_MODAL } from './palette/paste-questions.modal.token';
 import { RULE_BUILDER_MODAL } from './rules/rule-builder.modal.token';
-import { clashOf, effectsOf, sameRule } from './rules/rule-draft';
-import { dropRule, landRule } from './rules/rule-edits';
+import { builderEffectsOf, clashOf, sameRule, type Effect } from './rules/rule-draft';
+import { dropBuilt, landBuilt } from './rules/rule-edits';
+import { rulesOn } from './rules/rule-list';
 import { elementNames, typeFactsOf } from './rules/rule-names';
+import { RULES_OVERVIEW_MODAL } from './rules/rules-overview.modal.token';
 import { textIn } from './preview/field-models';
 import { ownText, withKey, withText } from './inspector/setting-values';
 import { readLook, themeSheets, type CanvasLook } from './preview/look';
@@ -785,6 +787,9 @@ export class FormDesignViewElement extends UmbLitElement {
       case 'shortcuts':
         await this.#shortcuts();
         return;
+      case 'rulesOverview':
+        await this.#rulesOverview();
+        return;
       case 'newPageAfter':
         await this.#newPageAfter(request.key);
         return;
@@ -1179,9 +1184,10 @@ export class FormDesignViewElement extends UmbLitElement {
     if (done) await this.#offerUndo(this.localize.term('jfbDesigner_typeChanged', type));
   }
 
-  // The rules builder (ADR-0175): a rule of the element, or a new one with the first effect it can take. Its answer lands
-  // as one step to undo: a rule changed or moved selects the element it is on, with the focus on its line in the
-  // inspector; a rule deleted offers Undo, and the focus goes to the element's next rule or to Add a rule.
+  // The rules builder (ADR-0175, ADR-0178): a rule of the element, a validation rule that shows its message on it, or a
+  // new one with the first effect it can take. Its answer lands as one step to undo: a rule changed or moved selects the
+  // element it is on, with the focus on its line in the inspector; a rule deleted offers Undo, and the focus goes to the
+  // element's next rule or to Add a rule.
   async #buildRule(key: string, ruleKey: string | null) {
     if (this.#buildingRule) return;
     this.#buildingRule = true;
@@ -1197,11 +1203,16 @@ export class FormDesignViewElement extends UmbLitElement {
     const state = this.#state();
     const found = state ? locate(state.definition, key) : undefined;
     if (!context || !state || !found) return;
-    const rule = ruleKey === null ? null : (found.element.rules ?? []).find((one) => one.key === ruleKey);
-    if (rule === undefined) return;
+    const held = ruleKey === null ? null : rulesOn(state.definition, key).find((one) => one.rule.key === ruleKey);
+    if (held === undefined) return;
+    const rule = held?.rule ?? null;
     const facts = typeFactsOf(this._types);
-    const effects = effectsOf(state.definition, key, (type) => facts[type]?.features ?? []);
-    const effect = effects.find((one) => !clashOf(state.definition, key, one, '')) ?? effects[0];
+    const effects = builderEffectsOf(state.definition, key, (type) => facts[type]);
+    // A rule kept opens even where its element takes no effect any more; the builder then says so.
+    const effect =
+      effects.find((one) => !clashOf(state.definition, key, one, '')) ??
+      effects[0] ??
+      (rule?.effect as Effect | undefined);
     if (!effect) return;
     const culture = this._look?.culture ?? '';
     const term = (word: string, ...args: unknown[]) => this.localize.term(word, ...args);
@@ -1223,11 +1234,12 @@ export class FormDesignViewElement extends UmbLitElement {
         languages: (this._look?.languages ?? []).map((language) => ({
           culture: language.culture,
           name: language.name,
+          isDefault: language.isDefault,
         })),
         types: facts,
         names: elementNames(state.definition, culture, term),
         refusal: (target, next) => {
-          const edit = landRule(this.#state() ?? state, rule ? key : null, target, next, context.model);
+          const edit = landBuilt(this.#state() ?? state, held?.holder ?? null, target, next, context.model);
           return !edit.ok && edit.refusal === 'cycle' ? 'cycle' : null;
         },
       },
@@ -1239,15 +1251,15 @@ export class FormDesignViewElement extends UmbLitElement {
       return;
     }
     if (value.rule === null) {
-      if (!rule) return;
+      if (!held) return;
       const result = context.edit(
-        dropRule(now, key, rule.key, context.model),
+        dropBuilt(now, held.holder, held.rule.key, context.model),
         this.localize.term('jfbRules_saidDeleted', this.#label(key)),
       );
       if (!result.ok) return;
       this.#closeUndo();
-      const left = locate(result.state.definition, key)?.element.rules ?? [];
-      this.#inspector?.focusRule(left[0]?.key ?? null);
+      const left = rulesOn(result.state.definition, key);
+      this.#inspector?.focusRule(left[0]?.rule.key ?? null);
       await this.#offerUndo(this.localize.term('jfbRules_deleted'));
       return;
     }
@@ -1256,7 +1268,7 @@ export class FormDesignViewElement extends UmbLitElement {
       this.#inspector?.focusRule(rule.key);
       return;
     }
-    const edit = landRule(now, rule ? key : null, value.target, value.rule, context.model);
+    const edit = landBuilt(now, held?.holder ?? null, value.target, value.rule, context.model);
     const said = this.localize.term(rule ? 'jfbRules_saidChanged' : 'jfbRules_saidAdded', this.#label(value.target));
     const result = context.edit(edit, said);
     if (!result.ok) {
@@ -1272,6 +1284,48 @@ export class FormDesignViewElement extends UmbLitElement {
     if (index >= 0) this._shown = index;
     await this.updateComplete;
     this.#inspector?.focusRule(value.rule.key);
+  }
+
+  // The rules overview (ADR-0178): every rule of the form by page. A row selects its element on its page, with the
+  // focus on it; an outcome's opens Settings, where outcomes are edited; Add rule selects the element chosen and opens
+  // the builder on it for a new rule. Its sidebar answers before it slides out and gives the focus back to the "..."
+  // as it closes, so the focus set here waits until it is gone.
+  async #rulesOverview() {
+    const state = this.#state();
+    if (!state) return;
+    let shown = false;
+    let gone: (() => void) | undefined;
+    const closed = new Promise<void>((done) => (gone = done));
+    const value = await umbOpenModal(this, RULES_OVERVIEW_MODAL, {
+      data: {
+        definition: state.definition,
+        types: this._types,
+        culture: this._look?.culture ?? '',
+        languages: (this._look?.languages ?? []).map((language) => ({
+          culture: language.culture,
+          name: language.name,
+        })),
+        opened: () => (shown = true),
+        closed: () => gone?.(),
+      },
+    }).catch(() => undefined);
+    if (!value) return;
+    if (shown) await Promise.race([closed, new Promise((done) => setTimeout(done, 2000))]);
+    if (value.go === 'outcomes') {
+      this.#toSettings();
+      return;
+    }
+    const now = this.#selectFirst(value.key);
+    if (!now || !locate(now.definition, value.key)) return;
+    const page = pageOf(now.definition, value.key);
+    const index = now.definition.pages.findIndex((each) => each.key === page?.key);
+    if (index >= 0) this._shown = index;
+    if (value.go === 'add') {
+      await this.updateComplete;
+      await this.#buildRule(value.key, null);
+      return;
+    }
+    await this.#focus(value.key);
   }
 
   async #shortcuts() {

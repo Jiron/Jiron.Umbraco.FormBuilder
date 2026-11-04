@@ -55,6 +55,7 @@ export function typeFactsOf(types: Readonly<Record<string, FieldTypeResponseMode
       features: type.features,
       multipleSetting: type.multipleSetting,
       serverOnlyDefault: type.serverOnlyDefault,
+      holdsValue: type.holdsValue,
     };
   return facts;
 }
@@ -87,5 +88,6 @@ export function inspectorRuleWords(
     optionOf: (field, value) => ownOptionLabel(definition, field, value, culture),
     languageOf: (code) => languages.find((language) => language.culture === code)?.name ?? code,
     valueOf: (kind, text) => valueText(culture, kind, text),
+    textOf: (texts) => textIn(texts, culture),
   };
 }

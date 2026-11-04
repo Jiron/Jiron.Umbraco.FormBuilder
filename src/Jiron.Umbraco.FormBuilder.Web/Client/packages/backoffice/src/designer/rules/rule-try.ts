@@ -86,9 +86,10 @@ export function triedSubjects(draft: DraftRule): string[] {
 
 /**
  * The words of what the element does with the answers tried, by the rule's effect and what the engine says. A rule that
- * is off does nothing: the element shows, and is not required (the switch's help says why).
+ * is off does nothing: the element shows, is not required, and shows no message (the switch's help says why).
  */
 export function verdictTerm(effect: Effect, matches: boolean | null): string {
+  if (effect === 'message') return matches === true ? 'jfbRules_tryMessageShows' : 'jfbRules_tryMessageHidden';
   if (matches === null) return effect === 'require' ? 'jfbRules_tryNotRequired' : 'jfbRules_tryShows';
   if (effect === 'require') return matches ? 'jfbRules_tryRequired' : 'jfbRules_tryNotRequired';
   const shown = effect === 'show' ? matches : !matches;

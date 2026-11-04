@@ -29,12 +29,16 @@ import {
   type DesignGroup,
   type DesignPage,
   type DesignRule,
+  type LocalizedText,
 } from '../definition';
 
-/** What a rule on a page, group or field does while it matches. */
-export type Effect = 'show' | 'hide' | 'require';
+/**
+ * What a rule does while it matches: a page's, group's or field's rule shows, hides or requires it; a form-level
+ * validation rule shows a message on its field (ROADMAP 9.5c), which the builder offers as a fourth effect.
+ */
+export type Effect = 'show' | 'hide' | 'require' | 'message';
 
-export const EFFECTS: readonly Effect[] = ['show', 'hide', 'require'];
+export const EFFECTS: readonly Effect[] = ['show', 'hide', 'require', 'message'];
 
 /** A condition as the builder edits it: what it looks at (a field's key, or a context's name), its operator and operand. */
 export interface DraftCondition {
@@ -63,6 +67,8 @@ export interface DraftRule {
   readonly effect: Effect;
   readonly enabled: boolean;
   readonly root: DraftGroup;
+  /** A validation rule's message in each language; what a rule of another effect keeps for a change back. */
+  readonly message: LocalizedText | null;
   /** What else the rule held, kept as it came. */
   readonly rest: Readonly<Record<string, unknown>>;
 }
@@ -76,7 +82,7 @@ const textOrNull = (value: unknown): string | null => (typeof value === 'string'
 
 /** A rule of the definition as the builder edits it; newId gives each condition and group its id. */
 export function draftOf(rule: DesignRule, target: string, newId: () => string): DraftRule {
-  const { key, effect, enabled, match, conditions, ...rest } = rule;
+  const { key, effect, enabled, match, conditions, message, ...rest } = rule;
   const item = (one: unknown): DraftItem => {
     const given = (typeof one === 'object' && one !== null ? one : {}) as Readonly<Record<string, unknown>>;
     if (Array.isArray(given['conditions']))
@@ -99,6 +105,7 @@ export function draftOf(rule: DesignRule, target: string, newId: () => string): 
     effect: asEffect(effect),
     enabled: enabled ?? true,
     root: { id: ROOT, match: match === 'any' ? 'any' : 'all', items: (conditions ?? []).map(item) },
+    message: typeof message === 'object' && message !== null ? (message as LocalizedText) : null,
     rest,
   };
 }
@@ -120,11 +127,15 @@ export function newDraft(key: string, target: string, effect: Effect, newId: () 
     effect,
     enabled: true,
     root: { id: ROOT, match: 'all', items: [emptyCondition(newId())] },
+    message: null,
     rest: {},
   };
 }
 
-/** The rule the definition keeps: its conditions as the engine reads them, and everything else it held. */
+/**
+ * The rule the definition keeps: its conditions as the engine reads them, and everything else it held; a validation
+ * rule's message where its effect is one.
+ */
 export function ruleOf(draft: DraftRule): DesignRule {
   const item = (one: DraftItem): Readonly<Record<string, unknown>> => {
     if (isDraftGroup(one)) return { match: one.match, conditions: one.items.map(item) };
@@ -142,8 +153,13 @@ export function ruleOf(draft: DraftRule): DesignRule {
     enabled: draft.enabled,
     match: draft.root.match,
     conditions: draft.root.items.map(item),
+    ...(draft.effect === 'message' && draft.message !== null ? { message: draft.message } : {}),
   };
 }
+
+/** Whether a validation rule's message says something in some language; one that doesn't can't be kept. */
+export const hasMessage = (draft: Pick<DraftRule, 'message'>): boolean =>
+  Object.values(draft.message ?? {}).some((text) => text.trim() !== '');
 
 /** Whether two rules say the same, an unstated `enabled` being true and an unstated `match` being all. */
 export function sameRule(one: DesignRule, other: DesignRule): boolean {
@@ -305,6 +321,8 @@ export interface TypeFacts {
   readonly multipleSetting: boolean;
   /** Whether its value stays on the server (the hidden field), so the visitor's page has no answer of it. */
   readonly serverOnlyDefault: boolean;
+  /** Whether it holds a value, which a validation rule's message may then be about. */
+  readonly holdsValue: boolean;
 }
 
 /** Whether a member's value stands in for a field, which a signed-in member's page then leaves out (ADR-0124). */
@@ -348,7 +366,8 @@ function keysIn(element: DesignPage | DesignGroup | DesignField): Set<string> {
 /**
  * What a rule's conditions may look at: each field of the form whose type rules compare, by page in the form's order,
  * then the visit. The element the rule sits on is left out, and for a show or hide rule so is everything inside it: its
- * being shown would wait on itself. `keep` is a subject a condition looks at already, which stays on the list.
+ * being shown would wait on itself. A validation rule may look at its own field ("ends with gmail.com"): what its
+ * message says changes nothing a rule reads. `keep` is a subject a condition looks at already, which stays on the list.
  */
 export function subjectsFor(
   definition: DesignDefinition,
@@ -359,7 +378,12 @@ export function subjectsFor(
   keep = '',
 ): RuleSubject[] {
   const found = locate(definition, target);
-  const excluded = found ? (effect === 'require' ? new Set([target]) : keysIn(found.element)) : new Set<string>();
+  const excluded =
+    !found || effect === 'message'
+      ? new Set<string>()
+      : effect === 'require'
+        ? new Set([target])
+        : keysIn(found.element);
   const subjects: RuleSubject[] = [];
   definition.pages.forEach((page, index) => {
     for (const field of allFields({ pages: [page] })) {
@@ -686,7 +710,41 @@ export function patternWorks(pattern: string): boolean {
 
 // The first line: what the rule does, and to what.
 
-/** The effects an element takes: show and hide for a page or a group; for a field, as its type allows. */
+/**
+ * Whether a field may show a validation rule's message: one whose answer rules compare and the visitor gives, so not a
+ * name, an address, a grid or a repeatable group, nor a value kept on the server or one a member's value stands in for.
+ * Both runtimes refuse the whole form otherwise, and publishing refuses it first (ADR-0124, ADR-0178).
+ */
+export function takesMessage(
+  definition: DesignDefinition,
+  key: string,
+  factsOf: (type: string) => TypeFacts | undefined,
+): boolean {
+  const found = locate(definition, key);
+  if (found?.kind !== 'field') return false;
+  const facts = factsOf(found.element.type);
+  return (
+    facts !== undefined &&
+    facts.kind !== null &&
+    facts.holdsValue &&
+    !facts.serverOnlyDefault &&
+    !hidesFromMember(found.element, facts)
+  );
+}
+
+/** The effects the builder offers an element: those its rules take, then a message for a field that may show one. */
+export function builderEffectsOf(
+  definition: DesignDefinition,
+  key: string,
+  factsOf: (type: string) => TypeFacts | undefined,
+): Effect[] {
+  return [
+    ...effectsOf(definition, key, (type) => factsOf(type)?.features ?? []),
+    ...(takesMessage(definition, key, factsOf) ? (['message'] as const) : []),
+  ];
+}
+
+/** The effects an element's own rules take: show and hide for a page or a group; for a field, as its type allows. */
 export function effectsOf(
   definition: DesignDefinition,
   key: string,
@@ -702,13 +760,17 @@ export function effectsOf(
   ];
 }
 
-/** Another rule of the element that a rule with this effect can't sit beside: one with the same effect, or show beside hide. */
+/**
+ * Another rule of the element that a rule with this effect can't sit beside: one with the same effect, or show beside
+ * hide. A field shows as many validation rules' messages as it is given.
+ */
 export function clashOf(
   definition: DesignDefinition,
   target: string,
   effect: Effect,
   ruleKey: string,
 ): DesignRule | undefined {
+  if (effect === 'message') return undefined;
   const rules = locate(definition, target)?.element.rules ?? [];
   const opposite = effect === 'show' ? 'hide' : effect === 'hide' ? 'show' : null;
   return rules.find((rule) => rule.key !== ruleKey && (rule.effect === effect || rule.effect === opposite));

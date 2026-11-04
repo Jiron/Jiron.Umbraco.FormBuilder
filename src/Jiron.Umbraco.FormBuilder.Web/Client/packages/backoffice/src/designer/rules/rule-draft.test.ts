@@ -8,12 +8,14 @@ import { builtInTypes } from '../preview/fixtures';
 import {
   addCondition,
   addGroup,
+  builderEffectsOf,
   clashOf,
   conditionsOf,
   draftOf,
   effectsOf,
   fieldKinds,
   findItem,
+  hasMessage,
   isDraftGroup,
   mayNest,
   newDraft,
@@ -26,6 +28,7 @@ import {
   shapeOf,
   subjectKinds,
   subjectsFor,
+  takesMessage,
   updateItem,
   withOperator,
   withRule,
@@ -490,6 +493,73 @@ describe('the first line', () => {
     expect(clashOf(ruled, 'which', 'show', 'new')).toBe(show);
     expect(clashOf(ruled, 'which', 'require', 'new')).toBeUndefined();
     expect(clashOf(ruled, 'which', 'hide', 's')).toBeUndefined();
+    // A field shows as many validation rules' messages as it is given.
+    expect(clashOf(ruled, 'which', 'message', 'new')).toBeUndefined();
+  });
+
+  it('offers a message on a field that holds an answer the visitor gives, after the effects its own rules take', () => {
+    expect(builderEffectsOf(DEFINITION, 'which', factsOf)).toEqual(['show', 'hide', 'require', 'message']);
+    expect(builderEffectsOf(DEFINITION, 'p1', factsOf)).toEqual(['show', 'hide']);
+    expect(builderEffectsOf(DEFINITION, 'g1', factsOf)).toEqual(['show', 'hide']);
+    // A heading holds no answer; rules compare no answer of a name, an address, a grid or a repeatable group; a
+    // hidden field's value stays on the server; a member's value stands in for one.
+    expect(takesMessage(DEFINITION, 'heading', factsOf)).toBe(false);
+    const uncompared: DesignDefinition = {
+      pages: [
+        {
+          key: 'p',
+          groups: [{ key: 'g', fields: ['name', 'address', 'grid', 'repeater'].map((type) => field(type, type)) }],
+        },
+      ],
+    };
+    expect(['name', 'address', 'grid', 'repeater'].map((key) => takesMessage(uncompared, key, factsOf))).toEqual([
+      false,
+      false,
+      false,
+      false,
+    ]);
+    const kept: DesignDefinition = {
+      pages: [
+        {
+          key: 'p',
+          groups: [
+            {
+              key: 'g',
+              fields: [
+                field('source', 'hidden'),
+                field('mail', 'email', { prefill: { member: 'email', memberMode: 'hide' } }),
+                field('shown', 'email', { prefill: { member: 'email', memberMode: 'show' } }),
+              ],
+            },
+          ],
+        },
+      ],
+    };
+    expect(['source', 'mail', 'shown', 'gone'].map((key) => takesMessage(kept, key, factsOf))).toEqual([
+      false,
+      false,
+      true,
+      false,
+    ]);
+  });
+
+  it("lets a validation rule look at its own field, and keeps a message's texts for the message effect only", () => {
+    const own = subjectsFor(DEFINITION, factsOf, 'which', 'message', VISIT).map((one) => one.id);
+    expect(own).toContain('field:which');
+    const draft = draftOf(
+      { key: 'v', effect: 'message', message: { '': 'Say more' }, conditions: [{ field: 'which', op: 'isEmpty' }] },
+      'which',
+      ids(),
+    );
+    expect([draft.effect, draft.message, hasMessage(draft)]).toEqual(['message', { '': 'Say more' }, true]);
+    expect(ruleOf(draft)).toMatchObject({ effect: 'message', message: { '': 'Say more' } });
+    // Changed to show, the rule keeps no message; the draft keeps it for a change back.
+    const shown = { ...draft, effect: 'show' as const };
+    expect('message' in ruleOf(shown)).toBe(false);
+    expect(ruleOf({ ...shown, effect: 'message' })).toMatchObject({ message: { '': 'Say more' } });
+    expect(hasMessage({ message: { '': ' ', 'de-DE': '' } })).toBe(false);
+    expect(hasMessage({ message: null })).toBe(false);
+    expect(newDraft('k', 'which', 'message', ids()).message).toBeNull();
   });
 
   it('puts a rule in place of the one with its key, at the end, or takes it out', () => {

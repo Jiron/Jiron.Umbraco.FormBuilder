@@ -28,6 +28,8 @@ import { modifierTerm } from '../moves/keys';
 import { CanvasDrag, type DragSource } from './canvas-drag';
 import { FarGroups } from './canvas-far';
 import { untranslated } from '../inspector/inspector-model';
+import { chipsOf } from '../rules/rule-list';
+import { inspectorRuleWords } from '../rules/rule-names';
 import { FIELD_REQUEST, moreMenu, type FieldRequest, type FieldState, type FieldWords } from './canvas-field.element';
 import './canvas-field.element';
 import { canvasChrome } from './canvas.styles';
@@ -48,6 +50,7 @@ export type CanvasRequest =
   | { readonly kind: 'paste' }
   | { readonly kind: 'changeOutcome' }
   | { readonly kind: 'shortcuts' }
+  | { readonly kind: 'rulesOverview' }
   | { readonly kind: 'culture'; readonly culture: string }
   | { readonly kind: 'drop'; readonly source: DragSource; readonly place: Place }
   | { readonly kind: 'refused'; readonly source: DragSource; readonly reason: string };
@@ -138,6 +141,7 @@ export class FormCanvasElement extends UmbLitElement {
   #words = new WeakMap<DesignField, { readonly parts: readonly unknown[]; readonly words: FieldWords }>();
   #states = new WeakMap<DesignField, { readonly parts: readonly unknown[]; readonly state: FieldState }>();
   #previewContext: { key: readonly unknown[]; context: PreviewContext & ReturnType<typeof formSettings> } | undefined;
+  #chips: { readonly parts: readonly unknown[]; readonly chips: ReadonlyMap<string, readonly string[]> } | undefined;
   /**
    * The page's buttons, the same node while their classes and words stay the same. A new node at every render would be
    * taken out and put back at every selection, and the theme's rules that look inside the form (`:has()`) would then
@@ -426,6 +430,7 @@ export class FormCanvasElement extends UmbLitElement {
     const refusal = this.refusal?.key === field.key ? this.refusal.text : null;
     const firstActive = this.insertAt?.container === field.key && this.insertAt.index === 0;
     const chip = this.#untranslated(field, context.culture);
+    const rules = this.#ruleChips().get(field.key) ?? null;
     const parts = [
       model,
       words,
@@ -436,6 +441,7 @@ export class FormCanvasElement extends UmbLitElement {
       refusal,
       firstActive,
       chip,
+      rules,
       ...(children ?? []),
     ];
     const kept = this.#states.get(field);
@@ -453,10 +459,57 @@ export class FormCanvasElement extends UmbLitElement {
       beforeSelected,
       refusal,
       untranslated: chip,
+      rules,
       ...(children ? { children, firstActive } : {}),
     };
     this.#states.set(field, { parts, state });
     return state;
+  }
+
+  /**
+   * The rule chips of every page, group and field, in words (ADR-0178). An element whose chips say what they said keeps
+   * its list, so a field a change didn't touch keeps its state and isn't drawn again (section 4.12).
+   */
+  #ruleChips(): ReadonlyMap<string, readonly string[]> {
+    const culture = this.#culture();
+    const parts = [this.definition, culture, this.localize.lang(), this.types, this.look?.languages];
+    const kept = this.#chips;
+    if (kept && kept.parts.every((part, at) => part === parts[at])) return kept.chips;
+    const languages = (this.look?.languages ?? []).map((language) => ({
+      culture: language.culture,
+      name: language.name,
+    }));
+    const words = inspectorRuleWords(this.definition, this.types, culture, languages, (key, ...args) =>
+      this.localize.term(key, ...args),
+    );
+    const chips = new Map<string, readonly string[]>();
+    for (const [key, said] of chipsOf(this.definition, words)) {
+      const before = kept?.chips.get(key);
+      const same = before !== undefined && before.length === said.length && before.every((one, at) => one === said[at]);
+      chips.set(key, same ? before : said);
+    }
+    this.#chips = { parts, chips };
+    return chips;
+  }
+
+  /** An element's rule chips, beside its translation chip, at its top end; none while it is selected. */
+  #chipsOf(key: string, selected: boolean) {
+    const rules = this.#ruleChips().get(key);
+    if (!rules || selected) return nothing;
+    return html`<span class="bo-chips"
+      >${rules.map(
+        (said, at) =>
+          html`<span class="bo-chip bo-rule-chip" id=${`jfb-rule-chip-${key}-${at}`}
+            ><uui-icon name="icon-split" aria-hidden="true"></uui-icon><span>${said}</span></span
+          >`,
+      )}</span
+    >`;
+  }
+
+  /** The ids of an element's rule chips, which describe the button that selects it. */
+  #chipIds(key: string, selected: boolean): string | typeof nothing {
+    const rules = this.#ruleChips().get(key);
+    return rules && !selected ? rules.map((_, at) => `jfb-rule-chip-${key}-${at}`).join(' ') : nothing;
   }
 
   /** The site's default language, whose texts visitors see where the language shown has none. */
@@ -595,6 +648,7 @@ export class FormCanvasElement extends UmbLitElement {
         data-key=${group.key}
         data-control="select"
         aria-label=${this.localize.term('jfbDesigner_groupName', name)}
+        aria-describedby=${this.#chipIds(group.key, selected)}
         aria-current=${selected ? 'true' : 'false'}
         @click=${() => this.#ask({ kind: 'select', key: group.key })}
       ></button>
@@ -611,7 +665,8 @@ export class FormCanvasElement extends UmbLitElement {
       >
         <uui-icon name="icon-grip" aria-hidden="true"></uui-icon>
       </button>
-      ${this.#refusalAt(group.key)} ${selected ? this.#tools(group.key, name, true) : nothing}`;
+      ${this.#refusalAt(group.key)} ${selected ? this.#tools(group.key, name, true) : nothing}
+      ${this.#chipsOf(group.key, selected)}`;
     const help = showsText(description) ? html`<div class="jfb-help" inert>${fragmentOf(description)}</div>` : nothing;
     const fields = html`<div class="jfb-fields" data-fields=${group.key}>
       ${
@@ -672,11 +727,12 @@ export class FormCanvasElement extends UmbLitElement {
           data-key=${page.key}
           data-control="select"
           aria-label=${this.localize.term('jfbDesigner_pageName', name)}
+          aria-describedby=${this.#chipIds(page.key, selected)}
           aria-current=${selected ? 'true' : 'false'}
           @click=${() => this.#ask({ kind: 'select', key: page.key })}
         ></button>
         ${this.#refusalAt(page.key)} ${selected ? this.#tools(page.key, name) : nothing}
-        ${title ? html`<h2 class="jfb-title" inert>${title}</h2>` : nothing}
+        ${this.#chipsOf(page.key, selected)} ${title ? html`<h2 class="jfb-title" inert>${title}</h2>` : nothing}
         ${showsText(description) ? html`<div class="jfb-intro" inert>${fragmentOf(description)}</div>` : nothing}
         ${
           bare
@@ -801,6 +857,9 @@ export class FormCanvasElement extends UmbLitElement {
           <button type="button" ?disabled=${!this.canRedo} @click=${() => this.#menu('redo')}>
             <span>${this.localize.term('jfbDesigner_redo')}</span><kbd>${held}+Y</kbd>
           </button>
+          <button type="button" @click=${() => this.#menu('rulesOverview')}>
+            <span>${this.localize.term('jfbDesigner_rulesOverview')}</span>
+          </button>
           <button type="button" @click=${() => this.#menu('shortcuts')}>
             <span>${this.localize.term('jfbDesigner_shortcuts')}</span><kbd>?</kbd>
           </button>
@@ -829,7 +888,7 @@ export class FormCanvasElement extends UmbLitElement {
     </label>`;
   }
 
-  #menu(kind: 'undo' | 'redo' | 'shortcuts') {
+  #menu(kind: 'undo' | 'redo' | 'rulesOverview' | 'shortcuts') {
     this.shadowRoot?.querySelector<HTMLElement & { hidePopover?: () => void }>('#jfb-canvas-more')?.hidePopover?.();
     this.#ask({ kind });
   }

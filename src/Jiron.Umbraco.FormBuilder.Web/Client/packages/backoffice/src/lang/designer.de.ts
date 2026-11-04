@@ -112,6 +112,7 @@ export default {
     typeChanged: (type: string) => `Typ in ${type} geändert.`,
     pageRef: (number: number, title: string) => (title ? `Seite ${number}: ${title}` : `Seite ${number}`),
     shortcuts: 'Tastenkürzel',
+    rulesOverview: 'Regelübersicht',
     shortcutUndo: 'Die letzte Änderung zurücknehmen',
     shortcutRedo: 'Zurückgenommenes erneut anwenden',
     shortcutsLead: 'Sie wirken auf das Feld, die Gruppe oder die Seite, auf der Sie gerade sind.',

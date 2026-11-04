@@ -1,26 +1,30 @@
-// The rules builder (ROADMAP 9.5a, ADR-0175): a sidebar that builds or changes one rule. Its first line says what the
-// rule does and to what ("Show this field: Which country? when"); each condition is a row in plain language, a
-// question, how it compares and a value; "all" and "any" groups nest to the engine's tenth level; Try it says what the
-// element does with answers given; Use this rule keeps a rule without using it. Update writes nothing while a row lacks
-// something or the engine's check refuses it: the row says why and the first such row takes the focus.
+// The rules builder (ROADMAP 9.5a, 9.5c, ADR-0175, ADR-0178): a sidebar that builds or changes one rule. Its first line
+// says what the rule does and to what ("Show this field: Which country? when", "Show a message on this field: Email
+// when", the message's box under it); each condition is a row in plain language, a question, how it compares and a
+// value; "all" and "any" groups nest to the engine's tenth level; Try it says what the element does with answers given;
+// Use this rule keeps a rule without using it. Update writes nothing while a row lacks something, the engine's check
+// refuses it or a message is empty: the row or the box says why, and the first of them takes the focus.
 import type { Kind, Operand, Rule } from '@jfb/logic';
 import { css, html, nothing, type PropertyValues, type TemplateResult } from '@umbraco-cms/backoffice/external/lit';
 import { UmbModalBaseElement } from '@umbraco-cms/backoffice/modal';
 import { jfbBackofficeTokens } from '../../styles/tokens';
-import { allFields, locate, type DesignField } from '../definition';
+import { allFields, locate, validationRulesOf, type DesignField } from '../definition';
 import { resolveOptions } from '../inspector/option-data';
+import { ownText, withText } from '../inspector/setting-values';
+import { textIn } from '../preview/field-models';
 import { readMemberGroups } from './rule-data';
 import { valueText } from './rule-names';
 import {
   addCondition,
   addGroup,
+  builderEffectsOf,
   clashOf,
   conditionsOf,
   draftOf,
-  effectsOf,
   emptyCondition,
   fieldKinds,
   findItem,
+  hasMessage,
   isDraftGroup,
   kindIn,
   mayNest,
@@ -98,8 +102,10 @@ export class RuleBuilderModalElement extends UmbModalBaseElement<RuleBuilderModa
   static override styles = [
     jfbBackofficeTokens,
     css`
+      /* The sidebar's whole height, so its actions sit at its foot. */
       :host {
         display: block;
+        height: 100%;
       }
 
       .builder {
@@ -343,9 +349,22 @@ export class RuleBuilderModalElement extends UmbModalBaseElement<RuleBuilderModa
         font-weight: 700;
       }
 
-      .use {
+      .use,
+      .message {
         display: grid;
         gap: var(--uui-size-space-2);
+      }
+
+      .message {
+        margin-block-start: var(--uui-size-space-4);
+      }
+
+      .message > label {
+        font-weight: 700;
+      }
+
+      .message > input {
+        inline-size: 100%;
       }
 
       .visually-hidden {
@@ -487,6 +506,7 @@ export class RuleBuilderModalElement extends UmbModalBaseElement<RuleBuilderModa
       optionOf: (field, value) => this._options.get(field)?.find((option) => option.value === value)?.label ?? value,
       languageOf: (code) => this.data?.languages.find((language) => language.culture === code)?.name ?? code,
       valueOf: (kind, text) => valueText(culture, kind, text),
+      textOf: (texts) => textIn(texts, culture),
     };
   }
 
@@ -545,11 +565,32 @@ export class RuleBuilderModalElement extends UmbModalBaseElement<RuleBuilderModa
     if (focus) void this.#focusLater(focus, 'select.subject');
   }
 
+  /**
+   * The effects the rule may have on an element: those the element takes, and, on a grid, the message of the validation
+   * rule opened where it shows it on one of the grid's rows, which the canvas shows as the grid (ADR-0178).
+   */
+  #effectsOf(key: string): Effect[] {
+    const data = this.data;
+    if (!data) return [];
+    const effects = builderEffectsOf(data.definition, key, this.#factsOf);
+    if (effects.includes('message') || !data.rule) return effects;
+    const opened = data.rule.key;
+    const field = validationRulesOf(data.definition).find((rule) => rule.key === opened)?.field;
+    const found = locate(data.definition, key);
+    const rows = found?.kind === 'field' ? (found.element.rows ?? []) : [];
+    return rows.some((row) => row.key === field) ? [...effects, 'message'] : effects;
+  }
+
+  /** Whether the element no longer takes what the rule does, as after its type changed; the first line then says so. */
+  #effectGone(): boolean {
+    return !this.#effectsOf(this._draft.target).includes(this._draft.effect);
+  }
+
   /** Moves the rule to another element; a rule still empty then looks at the element it was started from. */
   #retarget(key: string) {
     const data = this.data;
     if (!data) return;
-    const effects = effectsOf(data.definition, key, (type) => this.#factsOf(type)?.features ?? []);
+    const effects = this.#effectsOf(key);
     const effect = effects.includes(this._draft.effect) ? this._draft.effect : (effects[0] ?? this._draft.effect);
     let draft: DraftRule = { ...this._draft, target: key, effect };
     const conditions = conditionsOf(draft);
@@ -580,10 +621,20 @@ export class RuleBuilderModalElement extends UmbModalBaseElement<RuleBuilderModa
     );
   }
 
-  /** Keeps the rule; false while a row or the first line says why it can't be kept. */
+  /** Whether the rule shows a message that says nothing yet, which its box then says. */
+  #lacksMessage(): boolean {
+    return this._draft.effect === 'message' && !hasMessage(this._draft);
+  }
+
+  /** Keeps the rule; false while a row, the message's box or the first line says why it can't be kept. */
   #submit(): boolean {
     const data = this.data;
     if (!data) return false;
+    if (this.#lacksMessage()) {
+      this._tried = true;
+      void this.updateComplete.then(() => this.shadowRoot?.querySelector<HTMLElement>('#message')?.focus());
+      return false;
+    }
     const problems = problemsOf(this._draft, this.#scope());
     if (problems.size > 0) {
       this._tried = true;
@@ -591,7 +642,7 @@ export class RuleBuilderModalElement extends UmbModalBaseElement<RuleBuilderModa
       if (first) void this.#focusLater(first, '[data-problem], [aria-invalid="true"]');
       return false;
     }
-    if (this.#clash()) {
+    if (this.#effectGone() || this.#clash()) {
       this.shadowRoot?.querySelector<HTMLElement>('#effect')?.focus();
       return false;
     }
@@ -622,12 +673,13 @@ export class RuleBuilderModalElement extends UmbModalBaseElement<RuleBuilderModa
   #firstLine() {
     const data = this.data;
     if (!data) return nothing;
-    const effects = effectsOf(data.definition, this._draft.target, (type) => this.#factsOf(type)?.features ?? []);
-    const clash = this.#clash();
+    const gone = this.#effectGone();
+    // An effect the element no longer takes stays shown, as the rule still has it, until another is chosen.
+    const effects = [...this.#effectsOf(this._draft.target), ...(gone ? [this._draft.effect] : [])];
+    const clash = gone ? this.localize.term('jfbRules_effectGone', this.#nameOf(this._draft.target)) : this.#clash();
     const message = clash ?? this._refusal;
     const origin = locate(data.definition, data.origin);
-    const takes = (key: string) =>
-      effectsOf(data.definition, key, (type) => this.#factsOf(type)?.features ?? []).length > 0;
+    const takes = (key: string) => builderEffectsOf(data.definition, key, this.#factsOf).length > 0;
     return html`<div class="first-line">
         <select
           id="effect"
@@ -648,7 +700,9 @@ export class RuleBuilderModalElement extends UmbModalBaseElement<RuleBuilderModa
         </select>
         <select
           id="target"
-          aria-label=${this.localize.term('jfbRules_targetLabel')}
+          aria-label=${this.localize.term(
+            this._draft.effect === 'message' ? 'jfbRules_targetLabelMessage' : 'jfbRules_targetLabel',
+          )}
           aria-invalid=${this._refusal ? 'true' : 'false'}
           aria-describedby=${message ? 'first-line-why' : nothing}
           @change=${(event: Event) => this.#retarget((event.target as HTMLSelectElement).value)}
@@ -690,7 +744,47 @@ export class RuleBuilderModalElement extends UmbModalBaseElement<RuleBuilderModa
         </select>
         <span>${this.localize.term('jfbRules_when')}</span>
       </div>
-      ${message ? html`<p class="why" id="first-line-why">${message}</p>` : nothing}`;
+      ${message ? html`<p class="why" id="first-line-why">${message}</p>` : nothing}
+      ${this._draft.effect === 'message' ? this.#messageBox() : nothing}`;
+  }
+
+  /** The default language, whose texts visitors read where the one shown has none. */
+  #defaultCulture(): string {
+    const data = this.data;
+    return data?.languages.find((language) => language.isDefault)?.culture ?? data?.culture ?? '';
+  }
+
+  #showsDefault(): boolean {
+    return (this.data?.culture ?? '').toLowerCase() === this.#defaultCulture().toLowerCase();
+  }
+
+  /** A validation rule's message in the language the designer shows; the default's under an empty box in another. */
+  #messageBox() {
+    const culture = this.data?.culture ?? '';
+    const isDefault = this.#showsDefault();
+    const texts = this._draft.message;
+    const shown = isDefault ? textIn(texts, culture) : ownText(texts, culture);
+    const placeholder = isDefault ? '' : textIn(texts, this.#defaultCulture());
+    const lacking = this._tried && this.#lacksMessage();
+    return html`<div class="message">
+      <label for="message">${this.localize.term('jfbRules_messageLabel')}</label>
+      <input
+        type="text"
+        id="message"
+        autocomplete="off"
+        lang=${culture || nothing}
+        placeholder=${placeholder || nothing}
+        aria-describedby=${lacking ? 'message-help message-why' : 'message-help'}
+        aria-invalid=${lacking ? 'true' : 'false'}
+        .value=${shown}
+        @input=${(event: Event) => {
+          const written = withText(texts, culture, (event.target as HTMLInputElement).value, isDefault);
+          this._draft = { ...this._draft, message: written ?? null };
+        }}
+      />
+      <p class="help" id="message-help">${this.localize.term('jfbRules_messageHelp')}</p>
+      ${lacking ? html`<p class="why" id="message-why">${this.localize.term('jfbRules_problem_message')}</p>` : nothing}
+    </div>`;
   }
 
   #numbers(): Map<string, number> {
@@ -1378,6 +1472,7 @@ export class RuleBuilderModalElement extends UmbModalBaseElement<RuleBuilderModa
 
   #offHelp(): string {
     const data = this.data;
+    if (this._draft.effect === 'message') return this.localize.term('jfbRules_offHelpMessage');
     if (this._draft.effect === 'require') return this.localize.term('jfbRules_offHelpRequired');
     const kind = data ? (locate(data.definition, this._draft.target)?.kind ?? 'field') : 'field';
     return this.localize.term(`jfbRules_offHelpShows_${kind}`);

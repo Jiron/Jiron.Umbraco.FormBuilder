@@ -119,10 +119,10 @@ describe('the inspector', () => {
       'Required when Arrival is not empty Off',
     ]);
     expect(text(ruled.root.querySelector('[data-section="rules"] .section-body > .help:last-child'))).toBe(
-      'A rule sits on the element it shows, hides or requires.',
+      'A rule sits on the element it shows, hides or requires, or on the field it shows a message on.',
     );
-    // A show rule and a require rule leave the field no effect to add: hide would sit beside show.
-    expect(ruled.root.querySelector('.add-rule')).toBeNull();
+    // A show rule and a require rule leave the field's own rules no effect: it may still show a message.
+    expect(ruled.root.querySelector('.add-rule')).not.toBeNull();
     must(ruled.root.querySelector<HTMLButtonElement>('button.rule[data-rule="q"]'), 'the second rule').click();
     expect(ruled.requests.at(-1)).toEqual({ kind: 'rule', key: 'name', rule: 'q' });
     ruled.element.focusRule('q');
@@ -151,6 +151,49 @@ describe('the inspector', () => {
 
     localStorage.setItem('jfb.designer.inspector.open', 'not json');
     expect([...readOpen()]).toEqual(['essentials']);
+  });
+
+  it("lists the validation rules that show their message on a field among its rules, and a group's show rule takes no other", async () => {
+    localStorage.setItem('jfb.designer.inspector.open', JSON.stringify(['rules']));
+    const definition: DesignDefinition = {
+      ...definitionOf(NAME, GUESTS),
+      validationRules: [
+        {
+          key: 'v',
+          field: 'name',
+          message: { '': 'Use your full name' },
+          conditions: [{ field: 'name', op: 'contains', value: 'x' }],
+        },
+        { key: 'w', field: 'guests', conditions: [{ field: 'guests', op: 'isEmpty' }] },
+      ],
+    };
+    const named = await inspectorOf('name', { definition });
+    expect(all(named.element, '[data-section="rules"] li').map((line) => text(line))).toEqual([
+      'Shows "Use your full name" when Your name contains "x"',
+    ]);
+    must(named.root.querySelector<HTMLButtonElement>('button.rule[data-rule="v"]'), 'the validation rule').click();
+    expect(named.requests.at(-1)).toEqual({ kind: 'rule', key: 'name', rule: 'v' });
+
+    const shown: DesignDefinition = {
+      pages: [
+        {
+          key: 'p',
+          groups: [
+            {
+              key: 'g',
+              rules: [{ key: 's', effect: 'show', conditions: [{ field: 'guests', op: 'isNotEmpty' }] }],
+              fields: [GUESTS],
+            },
+          ],
+        },
+      ],
+    };
+    const group = await inspectorOf('g', { definition: shown });
+    expect(all(group.element, '[data-section="rules"] li').map((line) => text(line))).toEqual([
+      'Shown when Guests is not empty',
+    ]);
+    // A group's show rule leaves it no effect to add: hide would sit beside show, and only fields show messages.
+    expect(group.root.querySelector('.add-rule')).toBeNull();
   });
 
   it('sends what is typed in a box as a change, one step to undo until the focus leaves the box', async () => {

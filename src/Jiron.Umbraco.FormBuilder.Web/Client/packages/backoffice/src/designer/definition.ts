@@ -16,6 +16,27 @@ export interface DesignRule {
   readonly [other: string]: unknown;
 }
 
+/** A form-level validation rule: while its conditions match, its field shows its message as an error (ADR-0002). */
+export interface DesignValidationRule {
+  readonly key: string;
+  /** The field that shows the message. */
+  readonly field: string;
+  readonly enabled?: boolean;
+  readonly message?: LocalizedText | null;
+  readonly match?: 'all' | 'any';
+  readonly conditions: readonly unknown[];
+  readonly [other: string]: unknown;
+}
+
+/** The form's validation rules, each with a list of conditions, as the canonical form may leave an empty one out. */
+export function validationRulesOf(definition: DesignDefinition): DesignValidationRule[] {
+  const given = definition['validationRules'];
+  if (!Array.isArray(given)) return [];
+  return (given as readonly DesignValidationRule[]).map((rule) =>
+    rule.conditions ? rule : { ...rule, conditions: [] },
+  );
+}
+
 /** A grid's row: a subject of conditions, shown with its grid. */
 export interface DesignGridRow {
   readonly key: string;
