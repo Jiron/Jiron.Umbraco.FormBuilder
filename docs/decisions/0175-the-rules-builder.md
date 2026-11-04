@@ -118,7 +118,7 @@ the roadmap's personas and IA 5.1; where this record decides something the IA do
   write a condition publishing would refuse, and its preview can't disagree with the website about a rule.
 - `@jfb/logic` exports `operatorsFor` and its operand shapes; the website runtime doesn't use them, so its bundle keeps
   its size.
-- The form check names a broken rule (9.5b), and its Fix it opens the builder on it (9.5e, split from 9.5b); 9.5c's
+- The form check names a broken rule (9.5b), and its Fix it opens the builder on it (9.5f, split from 9.5b); 9.5c's
   overview and chips say rules with the builder's sentences, and its validation rules use the builder with a message and
   a field in the first line.
 - The member groups list is Umbraco's; a user without the right to read it types a group's name, as rules compare

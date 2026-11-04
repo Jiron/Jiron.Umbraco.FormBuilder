@@ -5,7 +5,7 @@
   [ADR-0035](0035-structural-validation-and-public-projection.md) (the structural validation's codes and paths) and
   [ADR-0044](0044-form-service.md) (the publish checks)
 - Date: 2026-11-04
-- Roadmap step: 9.5b (9.5d adds the checks that reason about the form's logic and the site, 9.5e the designer's side)
+- Roadmap step: 9.5b (9.5d adds the checks that reason about the form's logic, 9.5e those about the site and the promised ones, 9.5f the designer's side)
 
 ## Context
 

@@ -118,4 +118,4 @@ say, it says so.
   words stay the same, so a field a change didn't touch keeps its state and is not drawn again (section 4.12).
 - Publishing refuses a validation rule that would make either runtime refuse the whole form, which it accepted
   before; no form could have run with one, so none that worked is refused now.
-- 9.5d's form check covers the conflicts the overview cannot see, and 9.5e opens the overview from the form check.
+- 9.5d's form check covers the conflicts the overview cannot see, and 9.5f opens the overview from the form check.

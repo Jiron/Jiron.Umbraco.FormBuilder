@@ -2677,19 +2677,23 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
   - **Seeing rules:** chips on the canvas, and a **rules overview** listing every rule in the form with links.
   - **Form-level validation rules** in the same builder.
   - Done when: Playwright finds a rule's chip on the element it affects and none on the selected element, opens the rules overview from the toolbar's "...", follows a rule's link to its element, finds a hide rule and a require rule that hold for the same answer warned on their row, adds a rule from the overview after choosing what it affects, and finds the empty overview's sentence; and builds a form-level validation rule with its field and message in the builder, whose message the published form shows on that field in the browser when the rule matches.
-- [ ] **9.5d The form check: the form's logic and the site** (split from 9.5b, see WORKLOG)
-  - **The checks that reason about the form and what the site holds:**
+- [ ] **9.5d The form check: the form's logic** (split from 9.5b, then in two, see WORKLOG)
+  - **The checks that reason about the form's rules,** with the rule search of the rules overview (9.5c) on the server too, held to the same shared vectors in both runtimes (D10):
     - a required field that a rule can hide;
     - unreachable pages;
+    - and conditions a change of type left (promised by the decision records).
+  - Done when: each check has unit tests, the search passes the shared vectors in both runtimes, and publishing with an error is refused through the API.
+- [ ] **9.5e The form check: the site, privacy and the promised checks** (split from 9.5d, see WORKLOG)
+  - **The checks that reason about what the site holds and what the form collects:**
     - personal data collected without a consent field (a hint);
     - an outcome redirecting to an unpublished page;
     - a file field without limits;
     - labels or patterns that ask for card numbers or passwords (a warning, §1.4);
     - a required choice whose options can all become full;
-    - and anything Phase 1 adds: the decision records promise a dictionary key without a text (a warning), a last outcome with a rule (a warning), a missing theme, a host lock that replaces a stored value, content, media or member groups the site lacks, place or unique limits on a form that keeps no entries, conditions a change of type left, and a merge tag in a label from a source the label refuses.
+    - and anything Phase 1 adds: the decision records promise a dictionary key without a text (a warning), a last outcome with a rule (a warning), a missing theme, a host lock that replaces a stored value, content, media or member groups the site lacks, place or unique limits on a form that keeps no entries, and a merge tag in a label from a source the label refuses.
   - Done when: each check has unit tests, and publishing with an error is refused through the API.
-- [ ] **9.5e The form check in the designer** (split from 9.5b, see WORKLOG)
-  - **The badge, the list and "fix it"** (IA 5.1): the badge in the toolbar ("2 problems", "No problems"), the list in a sidebar with the errors first, and a "fix it" on every issue of 9.5b and 9.5d that selects the element and opens its setting (the palette for a form without fields, the rules builder for a rule); the publish dialog shows the check's result, errors blocking and warnings not.
+- [ ] **9.5f The form check in the designer** (split from 9.5b, see WORKLOG)
+  - **The badge, the list and "fix it"** (IA 5.1): the badge in the toolbar ("2 problems", "No problems"), the list in a sidebar with the errors first, and a "fix it" on every issue of 9.5b, 9.5d and 9.5e that selects the element and opens its setting (the palette for a form without fields, the rules builder for a rule); the publish dialog shows the check's result, errors blocking and warnings not.
   - Done when: Playwright covers the badge, the list and the "fix it" links, a publish blocked by an error and one with a warning, and axe finds nothing on the list.
 - [ ] **9.6 Phase review**
   - **UX review:** every screen of the phase at 375, 768 and 1440 px, in light and dark, in en and de, each checked against the measurable rules of §4.13, plus a pass of all three design skills (ADR-0019, ADR-0020): `design-taste-frontend`, an `impeccable` critique and audit, and an `emil-design-eng` review. Fix the findings.
