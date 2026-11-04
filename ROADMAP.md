@@ -2661,28 +2661,36 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
     - A switch that turns a rule off without deleting it.
   - **Where it opens** (ADR-0175): the inspector's Rules section lists an element's rules in words, each opening the builder, and holds Add a rule; the builder's live rule preview (Try it) runs on `@jfb/logic`.
   - Done when: Playwright builds nested rules of every operator kind, a "required when" rule, a comparison of two fields and a context condition, and the designer's live rule preview agrees with the shared vectors (D10).
-- [ ] **9.5b The form check**
-  - **The check runs on the server and joins the publish pipeline:** errors block publishing, warnings don't. Every issue has a "fix it" link in the designer. The checks:
-    - a required field that a rule can hide;
+- [ ] **9.5b The form check on the server** (split, see WORKLOG)
+  - **The check runs on the server and joins the publish pipeline:** errors block publishing, warnings and hints don't. A draft is checked without publishing too, for the designer (the `design` permission), and every issue names the element and the setting it is about by its path, so that every issue can have a "fix it" link in the designer (9.5e).
+  - **The checks that the field types, the settings and the merge-tag engine already know:**
     - an email action with no email field to reply to;
     - missing labels or alt texts;
     - duplicate aliases, unknown merge tags;
-    - unreachable pages, rules on removed fields;
-    - personal data collected without a consent field (a hint);
+    - rules on removed fields;
     - a captcha provider that isn't configured;
-    - an outcome redirecting to an unpublished page;
-    - a file field without limits;
     - a text that recalls a later field's answer (an error, §4.3.3);
     - a consent text with a merge tag other than `form`, `page`, `site` or `dictionary` (an error, ADR-0014);
-    - a redirect that puts answers into its URL (a warning: answers in URLs end up in logs and browser history);
-    - labels or patterns that ask for card numbers or passwords (a warning, §1.4);
-    - a required choice whose options can all become full;
-    - and anything Phase 1 adds.
-  - Done when: each check has unit tests, publishing with an error is refused through the API, and Playwright covers the badge, the list and the "fix it" links.
+    - a redirect that puts answers into its URL (a warning: answers in URLs end up in logs and browser history).
+  - Done when: each check has unit tests, publishing with an error is refused through the API, and the draft check returns the errors, warnings and hints with their paths through the API, a form with warnings only still publishing.
 - [ ] **9.5c Seeing rules, and form-level validation rules** (split from 9.5a, see WORKLOG; ADR-0175)
   - **Seeing rules:** chips on the canvas, and a **rules overview** listing every rule in the form with links.
   - **Form-level validation rules** in the same builder.
   - Done when: Playwright finds a rule's chip on the element it affects and none on the selected element, opens the rules overview from the toolbar's "...", follows a rule's link to its element, finds a hide rule and a require rule that hold for the same answer warned on their row, adds a rule from the overview after choosing what it affects, and finds the empty overview's sentence; and builds a form-level validation rule with its field and message in the builder, whose message the published form shows on that field in the browser when the rule matches.
+- [ ] **9.5d The form check: the form's logic and the site** (split from 9.5b, see WORKLOG)
+  - **The checks that reason about the form and what the site holds:**
+    - a required field that a rule can hide;
+    - unreachable pages;
+    - personal data collected without a consent field (a hint);
+    - an outcome redirecting to an unpublished page;
+    - a file field without limits;
+    - labels or patterns that ask for card numbers or passwords (a warning, §1.4);
+    - a required choice whose options can all become full;
+    - and anything Phase 1 adds: the decision records promise a dictionary key without a text (a warning), a last outcome with a rule (a warning), a missing theme, a host lock that replaces a stored value, content, media or member groups the site lacks, place or unique limits on a form that keeps no entries, conditions a change of type left, and a merge tag in a label from a source the label refuses.
+  - Done when: each check has unit tests, and publishing with an error is refused through the API.
+- [ ] **9.5e The form check in the designer** (split from 9.5b, see WORKLOG)
+  - **The badge, the list and "fix it"** (IA 5.1): the badge in the toolbar ("2 problems", "No problems"), the list in a sidebar with the errors first, and a "fix it" on every issue of 9.5b and 9.5d that selects the element and opens its setting (the palette for a form without fields, the rules builder for a rule); the publish dialog shows the check's result, errors blocking and warnings not.
+  - Done when: Playwright covers the badge, the list and the "fix it" links, a publish blocked by an error and one with a warning, and axe finds nothing on the list.
 - [ ] **9.6 Phase review**
   - **UX review:** every screen of the phase at 375, 768 and 1440 px, in light and dark, in en and de, each checked against the measurable rules of §4.13, plus a pass of all three design skills (ADR-0019, ADR-0020): `design-taste-frontend`, an `impeccable` critique and audit, and an `emil-design-eng` review. Fix the findings.
   - **Carried in from 9.4c's look** (docs/ux/review-9.4c.md): on the canvas, the selected element's bar sits over the element above it and covers most of a heading's text; decide whether the bar takes room of its own, and hold the choice with a journey.
