@@ -8,9 +8,10 @@ using Umbraco.Cms.Tests.Common.Testing;
 namespace Jiron.Umbraco.FormBuilder.Tests.Integration.ManagementApi;
 
 /// <summary>
-/// The form check through the management API (ROADMAP 9.5b, ADR-0177): the draft the designer holds, checked without
-/// saving, gives its errors, warnings and hints, each with the path of its element and setting; publishing refuses the
-/// errors at their paths, and a form with warnings only goes live.
+/// The form check through the management API (ROADMAP 9.5b, 9.5d; ADR-0177, ADR-0179): the draft the designer holds,
+/// checked without saving, gives its errors, warnings and hints, each with the path of its element and setting, the
+/// checks of the form's rules among them; publishing refuses the errors at their paths, conditions a change of type left
+/// too, and a form with warnings only goes live.
 /// </summary>
 [TestFixture]
 [UmbracoTest(Database = UmbracoTestOptions.Database.NewSchemaPerTest, Boot = true)]
@@ -93,6 +94,58 @@ public sealed class FormCheckApiTests : ManagementApiTestBase
         Assert.That(published.Status, Is.EqualTo(HttpStatusCode.OK), "a warning never keeps a form from going live: " + published);
     }
 
+    [Test]
+    public async Task TheFormsRules_AreChecked_ARequiredFieldARuleHides_AndAPageNoVisitorReaches()
+    {
+        // The notes are hidden for the press, yet required for it; the second page shows only once the third is answered.
+        var (form, _, definition) = await DraftAsync();
+        var topic = Field("dropdown", "topic", "Topic");
+        topic["options"] = JsonNode.Parse("""{"items":[{"value":"delivery"},{"value":"shipping"},{"value":"press"}]}""");
+        var notes = Field("textarea", "notes", "Notes");
+        notes["rules"] = JsonNode.Parse(
+            $$"""
+            [{"key":"{{Guid.NewGuid()}}","effect":"hide","conditions":[{"field":"{{topic["key"]}}","op":"equals","value":"press"}]},
+             {"key":"{{Guid.NewGuid()}}","effect":"require","conditions":[{"field":"{{topic["key"]}}","op":"isOneOf","value":["shipping","press"]}]}]
+            """);
+        Fields(definition, topic, notes);
+        var later = Field("text", "later", "Later");
+        var pages = definition["pages"]!.AsArray();
+        pages.Add(Page(JsonNode.Parse($$"""[{"key":"{{Guid.NewGuid()}}","effect":"show","conditions":[{"field":"{{later["key"]}}","op":"isNotEmpty"}]}]"""), Field("textarea", "more", "More")));
+        pages.Add(Page(null, later));
+
+        var answer = await CallAsync("designer", HttpMethod.Post, $"form/{form}/check", new { definition });
+
+        Assert.That(answer.Outcome, Is.EqualTo("200"), answer.ToString());
+        var warnings = answer.Body!["issues"]!.AsArray().Where(issue => issue!["severity"]!.GetValue<string>() == "warning").Select(issue => (issue!["code"]!.GetValue<string>(), issue["path"]!.GetValue<string>())).ToList();
+        Assert.That(warnings, Is.EqualTo(new[]
+        {
+            (RequiredHiddenFormCheck.RequiredCanHide, "$.pages[0].groups[0].fields[1].rules[1]"),
+            (UnreachablePageFormCheck.PageUnreachable, "$.pages[1].rules[0]"),
+        }), answer.ToString());
+    }
+
+    [Test]
+    public async Task Publishing_RefusesTheConditionsAChangeOfTypeLeft()
+    {
+        // The details show once the box is ticked; the box then became a short text, which no condition ticks.
+        var (form, version, definition) = await DraftAsync();
+        var box = Field("checkbox", "agree", "Agree");
+        var details = Field("textarea", "details", "Details");
+        details["rules"] = JsonNode.Parse($$"""[{"key":"{{Guid.NewGuid()}}","effect":"show","conditions":[{"field":"{{box["key"]}}","op":"isChecked"}]}]""");
+        Fields(definition, box, details);
+        version = await SaveAsync(form, version, definition);
+        box["type"] = "text";
+        version = await SaveAsync(form, version, definition);
+
+        var refused = await CallAsync("designer", HttpMethod.Post, $"form/{form}/publish", new { concurrencyVersion = version });
+
+        Assert.That(refused.Status, Is.EqualTo(HttpStatusCode.BadRequest), refused.ToString());
+        Assert.That(refused.Body!["errors"]!.AsArray().Select(error => (error!["code"]!.GetValue<string>(), error["path"]!.GetValue<string>())), Is.EqualTo(new[]
+        {
+            (DefinitionErrors.OperatorNotForKind, "$.pages[0].groups[0].fields[1].rules[0].conditions[0].op"),
+        }));
+    }
+
     /// <inheritdoc />
     protected override void CustomTestSetup(IUmbracoBuilder builder)
     {
@@ -117,6 +170,22 @@ public sealed class FormCheckApiTests : ManagementApiTestBase
     }
 
     private static void Fields(JsonNode definition, params JsonObject[] fields) => definition["pages"]![0]!["groups"]![0]!["fields"] = new JsonArray(fields);
+
+    // A page of one group with the fields, and its rules where given.
+    private static JsonObject Page(JsonNode? rules, params JsonObject[] fields)
+    {
+        var page = new JsonObject
+        {
+            ["key"] = Guid.NewGuid().ToString(),
+            ["groups"] = new JsonArray(new JsonObject { ["key"] = Guid.NewGuid().ToString(), ["fields"] = new JsonArray(fields) }),
+        };
+        if (rules is not null)
+        {
+            page["rules"] = rules;
+        }
+
+        return page;
+    }
 
     private static JsonObject Field(string type, string alias, string? label)
     {

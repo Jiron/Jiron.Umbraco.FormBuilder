@@ -1,11 +1,24 @@
-// A conflict between a field's rules (ROADMAP 9.5c, IA 5.1, ADR-0178): a hide rule, or a show rule that doesn't hold,
-// and a require rule that hold for the same answers, found by the engine with the answers the rules name, their
-// neighbours and none; never said where no such answers make both hold.
+// The rule search (ROADMAP 9.5c, 9.5d; ADR-0178, ADR-0179), beside the shared vectors of tests/vectors/search.json: a
+// conflict, a require rule and a rule that hides its field holding for the same answers, found by the engine with
+// answers a visitor can give and never said where none make both hold; whether an element ever shows, said to never
+// show only where the answers tried stand for all; and what a form hides for a set of answers, as its engine decides.
 import { describe, expect, it } from 'vitest';
-import type { DesignRule } from '../definition';
-import { conflictOf, type ConflictScope } from './rule-conflicts';
+import { FORMULAS } from '../src/calc.ts';
+import type { LogicField, LogicForm } from '../src/form.ts';
+import type { Context, Rule } from '../src/rules.ts';
+import { conflictOf as search, formSight, showsAtAll, type SearchRule, type SearchScope } from '../src/search.ts';
 
-const SCOPE: ConflictScope = {
+interface KeyedRule extends SearchRule {
+  readonly key: string;
+}
+
+/** The conflict of a field's own rules: its require rule against its show and hide rules. */
+const conflictOf = (rules: readonly KeyedRule[], scope: SearchScope) => {
+  const requiring = rules.find((one) => one.effect === 'require');
+  return requiring ? search(requiring, rules, scope) : null;
+};
+
+const SCOPE: SearchScope = {
   fields: {
     topic: 'choice',
     topics: 'choices',
@@ -21,7 +34,7 @@ const SCOPE: ConflictScope = {
   today: '2026-11-04',
 };
 
-const rule = (effect: string, conditions: readonly unknown[], extra: Partial<DesignRule> = {}): DesignRule => ({
+const rule = (effect: string, conditions: readonly unknown[], extra: Partial<KeyedRule> = {}): KeyedRule => ({
   key: effect,
   effect,
   conditions,
@@ -332,5 +345,157 @@ describe("a conflict of a field's rules", () => {
     // Nor of a show rule it refuses, which would otherwise read as never holding.
     const unread = rule('show', [{ field: 'topic', op: 'nope', value: 'press' }]);
     expect(conflictOf([unread, rule('require', [{ field: 'topic', op: 'isNotEmpty' }])], SCOPE)).toBeNull();
+  });
+});
+
+describe('a conflict with the rules of what holds a field', () => {
+  it("weighs a group's and a page's rule as hiding the field, and names the one that does", () => {
+    const require = rule('require', [{ field: 'topic', op: 'equals', value: 'press' }]);
+    const own = rule('show', [{ field: 'topic', op: 'isNotEmpty' }]);
+    const group = rule('hide', [{ field: 'topic', op: 'equals', value: 'press' }], { key: 'group' });
+    const page = rule('show', [{ context: 'memberSignedIn', op: 'isChecked' }], { key: 'page' });
+    expect(search(require, [own, group], SCOPE)).toEqual({
+      hiding: group,
+      requiring: require,
+      answers: [{ subject: 'field:topic', values: ['press'] }],
+    });
+    // The page shows only to members, so a visitor not signed in has the field hidden while it is required.
+    expect(search(require, [own, page], SCOPE)).toEqual({
+      hiding: page,
+      requiring: require,
+      answers: [
+        { subject: 'field:topic', values: ['press'] },
+        { subject: 'context:memberSignedIn', values: [] },
+      ],
+    });
+    expect(search(require, [own], SCOPE)).toBeNull();
+    expect(search(rule('show', [{ field: 'topic', op: 'isNotEmpty' }]), [group], SCOPE)).toBeNull();
+  });
+});
+
+describe('whether an element ever shows', () => {
+  it('shows without rules in use, and for answers its rules name', () => {
+    expect(showsAtAll([], SCOPE, [])).toBe('shows');
+    expect(showsAtAll([rule('show', [])], SCOPE, [])).toBe('shows');
+    expect(showsAtAll([rule('show', [{ field: 'topic', op: 'equals', value: 'press' }])], SCOPE, [])).toBe('shows');
+    expect(showsAtAll([rule('hide', [{ context: 'memberSignedIn', op: 'isChecked' }])], SCOPE, [])).toBe('shows');
+    // A rule that is off changes nothing.
+    const off = rule('show', [{ field: 'topic', op: 'equals', value: 'nowhere' }], { enabled: false });
+    expect(showsAtAll([off], SCOPE, [])).toBe('shows');
+  });
+
+  it('never shows where no answer a visitor can give makes it, every answer being tried', () => {
+    // An option the topic lacks.
+    expect(showsAtAll([rule('show', [{ field: 'topic', op: 'equals', value: 'nowhere' }])], SCOPE, [])).toBe('never');
+    // A field not yet answered, as one on a later page is going forward.
+    expect(showsAtAll([rule('show', [{ field: 'name', op: 'isNotEmpty' }])], SCOPE, ['name'])).toBe('never');
+    expect(showsAtAll([rule('show', [{ field: 'name', op: 'isNotEmpty' }])], SCOPE, [])).toBe('shows');
+    const always = rule('hide', [
+      {
+        match: 'any',
+        conditions: [
+          { field: 'agree', op: 'isChecked' },
+          { field: 'agree', op: 'isNotChecked' },
+        ],
+      },
+    ]);
+    expect(showsAtAll([always], SCOPE, [])).toBe('never');
+    expect(showsAtAll([rule('show', [{ context: 'culture', op: 'equals', value: 'fr-FR' }])], SCOPE, [])).toBe('never');
+  });
+
+  it("can't tell where the answers tried don't stand for all, or the engine refuses a rule", () => {
+    // Between 4 and 5 lies 4.5, which no neighbour of either is.
+    const between = rule('show', [
+      { field: 'guests', op: 'greaterThan', value: '4' },
+      { field: 'guests', op: 'lessThan', value: '5' },
+    ]);
+    expect(showsAtAll([between], SCOPE, [])).toBe('unknown');
+    // A text a rule looks inside, three ticks of several choices, and days counted from today.
+    const inside = rule('show', [
+      { field: 'name', op: 'notContains', value: 'a' },
+      { field: 'name', op: 'isNotEmpty' },
+    ]);
+    expect(showsAtAll([inside], SCOPE, [])).toBe('unknown');
+    expect(showsAtAll([rule('show', [{ field: 'topics', op: 'countAtLeast', value: '4' }])], SCOPE, [])).toBe(
+      'unknown',
+    );
+    const soon = rule('show', [{ field: 'arrival', op: 'greaterThan', value: { today: '+7d' } }]);
+    expect(showsAtAll([soon], SCOPE, ['arrival'])).toBe('unknown');
+    expect(showsAtAll([rule('show', [{ field: 'topic', op: 'nope', value: 'press' }])], SCOPE, [])).toBe('unknown');
+  });
+
+  it("can't tell for more sets of answers than C# counts in a long, trimmed to what it tries", () => {
+    // Seven choices of 1,100 options, as Core's RuleSearchTests has them.
+    const choices = Array.from({ length: 7 }, (_, at) => `choice${at + 1}`);
+    const options = Array.from({ length: 1100 }, (_, at) => `option${at + 1}`);
+    const scope: SearchScope = {
+      fields: Object.fromEntries(choices.map((key) => [key, 'choice'])),
+      options: () => options,
+      cultures: ['en-US'],
+      today: '2026-11-04',
+    };
+    const nowhere = rule(
+      'show',
+      choices.map((field) => ({ field, op: 'equals', value: 'nowhere' })),
+    );
+    expect(showsAtAll([nowhere], scope, [])).toBe('unknown');
+  });
+});
+
+describe('what a form hides for a set of answers', () => {
+  const when = (effect: string, value: string): Rule => ({
+    effect,
+    enabled: true,
+    match: 'all',
+    conditions: [{ field: 'topic', op: 'equals', value }],
+  });
+  const CONTEXT: Context = {
+    now: '2026-11-04T12:00:00Z',
+    timeZone: 'UTC',
+    culture: 'en-US',
+    member: { signedIn: false, groups: [] },
+    query: {},
+    hidden: [],
+  };
+  // The notes' group is hidden for the press, the party for delivery and the plan for shipping.
+  const form = (calculation: LogicField['calculation'] = null, nope = false): LogicForm => ({
+    pages: [
+      {
+        id: 'p1',
+        groups: [
+          {
+            id: 'g1',
+            fields: [
+              {
+                id: 'topic',
+                kind: 'choice',
+                rules: nope ? [{ ...when('show', 'press'), conditions: [{ field: 'topic', op: 'nope' }] }] : [],
+              },
+              { id: 'party', rules: [when('hide', 'delivery')], fields: [{ id: 'guests', kind: 'number' }] },
+              { id: 'plan', rules: [when('hide', 'shipping')], rows: [{ id: 'meals', kind: 'choice' }] },
+              { id: 'count', kind: 'number', alias: 'count' },
+              { id: 'total', kind: 'number', alias: 'total', calculation },
+            ],
+          },
+          { id: 'g2', rules: [when('hide', 'press')], fields: [{ id: 'notes', kind: 'text' }] },
+        ],
+      },
+    ],
+  });
+
+  it('is each field hidden with what holds it, a repeatable group child in its row, a grid row with its grid', () => {
+    const sight = formSight(form(), null);
+    expect([...(sight({ topic: ['press'] }, CONTEXT) ?? [])]).toEqual(['g2', 'notes']);
+    expect([...(sight({ topic: ['delivery'], guests: ['5'] }, CONTEXT) ?? [])]).toEqual(['party', 'guests']);
+    expect([...(sight({ topic: ['shipping'], meals: ['yes'] }, CONTEXT) ?? [])]).toEqual(['plan', 'meals']);
+  });
+
+  it("can't be told for a form the engine refuses, or one it can't work out without the calculation language", () => {
+    expect(formSight(form(null, true), null)({ topic: ['press'] }, CONTEXT)).toBeNull();
+    expect(formSight(form({ formula: 'count * 2' }), null)({ topic: ['press'] }, CONTEXT)).toBeNull();
+    expect([...(formSight(form({ formula: 'count * 2' }), FORMULAS)({ topic: ['press'] }, CONTEXT) ?? [])]).toEqual([
+      'g2',
+      'notes',
+    ]);
   });
 });

@@ -1,0 +1,2385 @@
+{
+  "format": "jfb-vectors/1",
+  "suite": "search",
+  "defaults": {
+    "search": {
+      "options": {
+        "topic": [
+          "delivery",
+          "shipping",
+          "press"
+        ],
+        "topics": [
+          "delivery",
+          "shipping",
+          "press"
+        ]
+      },
+      "cultures": [
+        "en-US",
+        "de-DE"
+      ],
+      "today": "2026-11-04"
+    }
+  },
+  "fields": {
+    "topic": "choice",
+    "topics": "choices",
+    "guests": "number",
+    "kids": "number",
+    "arrival": "date",
+    "agree": "checkbox",
+    "name": "text",
+    "nick": "text",
+    "start": "time",
+    "uploads": "files"
+  },
+  "cases": [
+    {
+      "id": "conflict-an-option",
+      "description": "hidden when the topic is press, required when it is shipping or press",
+      "conflict": {
+        "requiring": {
+          "effect": "require",
+          "enabled": true,
+          "match": "all",
+          "conditions": [
+            {
+              "field": "topic",
+              "op": "isOneOf",
+              "value": [
+                "shipping",
+                "press"
+              ]
+            }
+          ]
+        },
+        "hidings": [
+          {
+            "effect": "hide",
+            "enabled": true,
+            "match": "all",
+            "conditions": [
+              {
+                "field": "topic",
+                "op": "equals",
+                "value": "press"
+              }
+            ]
+          }
+        ]
+      },
+      "expect": {
+        "hiding": 0,
+        "answers": [
+          {
+            "subject": "field:topic",
+            "values": [
+              "press"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "conflict-a-show-rule-not-holding",
+      "description": "shown for shipping, required once answered: delivery hides it",
+      "conflict": {
+        "requiring": {
+          "effect": "require",
+          "enabled": true,
+          "match": "all",
+          "conditions": [
+            {
+              "field": "topic",
+              "op": "isNotEmpty"
+            }
+          ]
+        },
+        "hidings": [
+          {
+            "effect": "show",
+            "enabled": true,
+            "match": "all",
+            "conditions": [
+              {
+                "field": "topic",
+                "op": "equals",
+                "value": "shipping"
+              }
+            ]
+          }
+        ]
+      },
+      "expect": {
+        "hiding": 0,
+        "answers": [
+          {
+            "subject": "field:topic",
+            "values": [
+              "delivery"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "conflict-none-for-different-answers",
+      "conflict": {
+        "requiring": {
+          "effect": "require",
+          "enabled": true,
+          "match": "all",
+          "conditions": [
+            {
+              "field": "topic",
+              "op": "equals",
+              "value": "shipping"
+            }
+          ]
+        },
+        "hidings": [
+          {
+            "effect": "hide",
+            "enabled": true,
+            "match": "all",
+            "conditions": [
+              {
+                "field": "topic",
+                "op": "equals",
+                "value": "press"
+              }
+            ]
+          }
+        ]
+      },
+      "expect": null
+    },
+    {
+      "id": "conflict-none-for-a-rule-that-is-off",
+      "conflict": {
+        "requiring": {
+          "effect": "require",
+          "enabled": true,
+          "match": "all",
+          "conditions": [
+            {
+              "field": "topic",
+              "op": "equals",
+              "value": "press"
+            }
+          ]
+        },
+        "hidings": [
+          {
+            "effect": "hide",
+            "enabled": false,
+            "match": "all",
+            "conditions": [
+              {
+                "field": "topic",
+                "op": "equals",
+                "value": "press"
+              }
+            ]
+          }
+        ]
+      },
+      "expect": null
+    },
+    {
+      "id": "conflict-none-for-a-show-rule-the-engine-refuses",
+      "conflict": {
+        "requiring": {
+          "effect": "require",
+          "enabled": true,
+          "match": "all",
+          "conditions": [
+            {
+              "field": "topic",
+              "op": "isNotEmpty"
+            }
+          ]
+        },
+        "hidings": [
+          {
+            "effect": "show",
+            "enabled": true,
+            "match": "all",
+            "conditions": [
+              {
+                "field": "topic",
+                "op": "nope",
+                "value": "press"
+              }
+            ]
+          }
+        ]
+      },
+      "expect": null
+    },
+    {
+      "id": "conflict-one-more-than-a-number",
+      "conflict": {
+        "requiring": {
+          "effect": "require",
+          "enabled": true,
+          "match": "all",
+          "conditions": [
+            {
+              "field": "guests",
+              "op": "greaterThan",
+              "value": "2"
+            }
+          ]
+        },
+        "hidings": [
+          {
+            "effect": "hide",
+            "enabled": true,
+            "match": "all",
+            "conditions": [
+              {
+                "field": "guests",
+                "op": "greaterThan",
+                "value": "4"
+              }
+            ]
+          }
+        ]
+      },
+      "expect": {
+        "hiding": 0,
+        "answers": [
+          {
+            "subject": "field:guests",
+            "values": [
+              "5"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "conflict-the-day-between",
+      "conflict": {
+        "requiring": {
+          "effect": "require",
+          "enabled": true,
+          "match": "all",
+          "conditions": [
+            {
+              "field": "arrival",
+              "op": "greaterThan",
+              "value": "2026-11-29"
+            }
+          ]
+        },
+        "hidings": [
+          {
+            "effect": "hide",
+            "enabled": true,
+            "match": "all",
+            "conditions": [
+              {
+                "field": "arrival",
+                "op": "lessThan",
+                "value": "2026-12-01"
+              }
+            ]
+          }
+        ]
+      },
+      "expect": {
+        "hiding": 0,
+        "answers": [
+          {
+            "subject": "field:arrival",
+            "values": [
+              "2026-11-30"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "conflict-a-minute-before",
+      "conflict": {
+        "requiring": {
+          "effect": "require",
+          "enabled": true,
+          "match": "all",
+          "conditions": [
+            {
+              "field": "start",
+              "op": "isNotEmpty"
+            }
+          ]
+        },
+        "hidings": [
+          {
+            "effect": "hide",
+            "enabled": true,
+            "match": "all",
+            "conditions": [
+              {
+                "field": "start",
+                "op": "lessThan",
+                "value": "09:00"
+              }
+            ]
+          }
+        ]
+      },
+      "expect": {
+        "hiding": 0,
+        "answers": [
+          {
+            "subject": "field:start",
+            "values": [
+              "08:59"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "conflict-days-from-today",
+      "description": "today is 2026-11-04, so a week from today is 2026-11-11",
+      "conflict": {
+        "requiring": {
+          "effect": "require",
+          "enabled": true,
+          "match": "all",
+          "conditions": [
+            {
+              "field": "arrival",
+              "op": "isNotEmpty"
+            }
+          ]
+        },
+        "hidings": [
+          {
+            "effect": "hide",
+            "enabled": true,
+            "match": "all",
+            "conditions": [
+              {
+                "field": "arrival",
+                "op": "lessThan",
+                "value": {
+                  "today": "+7d"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "expect": {
+        "hiding": 0,
+        "answers": [
+          {
+            "subject": "field:arrival",
+            "values": [
+              "2026-11-10"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "conflict-the-visit",
+      "conflict": {
+        "requiring": {
+          "effect": "require",
+          "enabled": true,
+          "match": "all",
+          "conditions": [
+            {
+              "context": "memberSignedIn",
+              "op": "isChecked"
+            }
+          ]
+        },
+        "hidings": [
+          {
+            "effect": "hide",
+            "enabled": true,
+            "match": "all",
+            "conditions": [
+              {
+                "context": "culture",
+                "op": "equals",
+                "value": "de-DE"
+              }
+            ]
+          }
+        ]
+      },
+      "expect": {
+        "hiding": 0,
+        "answers": [
+          {
+            "subject": "context:culture",
+            "values": [
+              "de-DE"
+            ]
+          },
+          {
+            "subject": "context:memberSignedIn",
+            "values": [
+              "true"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "conflict-member-groups-signed-in",
+      "conflict": {
+        "requiring": {
+          "effect": "require",
+          "enabled": true,
+          "match": "all",
+          "conditions": [
+            {
+              "context": "memberSignedIn",
+              "op": "isChecked"
+            }
+          ]
+        },
+        "hidings": [
+          {
+            "effect": "hide",
+            "enabled": true,
+            "match": "all",
+            "conditions": [
+              {
+                "context": "memberGroup",
+                "op": "isChecked",
+                "value": "staff"
+              }
+            ]
+          }
+        ]
+      },
+      "expect": {
+        "hiding": 0,
+        "answers": [
+          {
+            "subject": "context:memberGroup",
+            "values": [
+              "staff"
+            ]
+          },
+          {
+            "subject": "context:memberSignedIn",
+            "values": [
+              "true"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "conflict-none-for-member-groups-without-signing-in",
+      "conflict": {
+        "requiring": {
+          "effect": "require",
+          "enabled": true,
+          "match": "all",
+          "conditions": [
+            {
+              "context": "memberSignedIn",
+              "op": "isNotChecked"
+            }
+          ]
+        },
+        "hidings": [
+          {
+            "effect": "hide",
+            "enabled": true,
+            "match": "all",
+            "conditions": [
+              {
+                "context": "memberGroup",
+                "op": "isChecked",
+                "value": "staff"
+              }
+            ]
+          }
+        ]
+      },
+      "expect": null
+    },
+    {
+      "id": "conflict-two-answers-compared",
+      "description": "the guests, named only by their comparison with the kids, are tried with the kids' values",
+      "conflict": {
+        "requiring": {
+          "effect": "require",
+          "enabled": true,
+          "match": "all",
+          "conditions": [
+            {
+              "field": "kids",
+              "op": "equals",
+              "value": "2"
+            }
+          ]
+        },
+        "hidings": [
+          {
+            "effect": "hide",
+            "enabled": true,
+            "match": "all",
+            "conditions": [
+              {
+                "field": "guests",
+                "op": "greaterThan",
+                "value": {
+                  "field": "kids"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "expect": {
+        "hiding": 0,
+        "answers": [
+          {
+            "subject": "field:guests",
+            "values": [
+              "3"
+            ]
+          },
+          {
+            "subject": "field:kids",
+            "values": [
+              "2"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "conflict-a-text-the-rules-do-not-name",
+      "conflict": {
+        "requiring": {
+          "effect": "require",
+          "enabled": true,
+          "match": "all",
+          "conditions": [
+            {
+              "field": "name",
+              "op": "isNotEmpty"
+            }
+          ]
+        },
+        "hidings": [
+          {
+            "effect": "hide",
+            "enabled": true,
+            "match": "all",
+            "conditions": [
+              {
+                "field": "name",
+                "op": "notEquals",
+                "value": "Ann"
+              }
+            ]
+          }
+        ]
+      },
+      "expect": {
+        "hiding": 0,
+        "answers": [
+          {
+            "subject": "field:name",
+            "values": [],
+            "noneOf": [
+              "Ann"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "conflict-none-for-a-text-another-looks-inside",
+      "description": "\"b\" is none of \"abc\", yet \"abc\" contains it",
+      "conflict": {
+        "requiring": {
+          "effect": "require",
+          "enabled": true,
+          "match": "all",
+          "conditions": [
+            {
+              "field": "name",
+              "op": "isNotEmpty"
+            }
+          ]
+        },
+        "hidings": [
+          {
+            "effect": "hide",
+            "enabled": true,
+            "match": "all",
+            "conditions": [
+              {
+                "field": "name",
+                "op": "notContains",
+                "value": {
+                  "field": "nick"
+                }
+              },
+              {
+                "field": "nick",
+                "op": "isNotEmpty"
+              },
+              {
+                "field": "name",
+                "op": "isOneOf",
+                "value": [
+                  "abc"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expect": null
+    },
+    {
+      "id": "conflict-answers-free-together",
+      "description": "the topic is free while the name is empty, but not together with it",
+      "conflict": {
+        "requiring": {
+          "effect": "require",
+          "enabled": true,
+          "match": "all",
+          "conditions": [
+            {
+              "match": "any",
+              "conditions": [
+                {
+                  "field": "agree",
+                  "op": "isChecked"
+                },
+                {
+                  "field": "agree",
+                  "op": "isNotChecked"
+                }
+              ]
+            }
+          ]
+        },
+        "hidings": [
+          {
+            "effect": "hide",
+            "enabled": true,
+            "match": "all",
+            "conditions": [
+              {
+                "match": "any",
+                "conditions": [
+                  {
+                    "field": "topic",
+                    "op": "isEmpty"
+                  },
+                  {
+                    "field": "name",
+                    "op": "isEmpty"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expect": {
+        "hiding": 0,
+        "answers": [
+          {
+            "subject": "field:name",
+            "values": []
+          }
+        ]
+      }
+    },
+    {
+      "id": "conflict-files-by-count",
+      "conflict": {
+        "requiring": {
+          "effect": "require",
+          "enabled": true,
+          "match": "all",
+          "conditions": [
+            {
+              "field": "uploads",
+              "op": "isNotEmpty"
+            }
+          ]
+        },
+        "hidings": [
+          {
+            "effect": "hide",
+            "enabled": true,
+            "match": "all",
+            "conditions": [
+              {
+                "field": "uploads",
+                "op": "countAtLeast",
+                "value": "3"
+              }
+            ]
+          }
+        ]
+      },
+      "expect": {
+        "hiding": 0,
+        "answers": [
+          {
+            "subject": "field:uploads",
+            "values": [
+              "file1",
+              "file2",
+              "file3"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "conflict-the-groups-rule",
+      "conflict": {
+        "requiring": {
+          "effect": "require",
+          "enabled": true,
+          "match": "all",
+          "conditions": [
+            {
+              "field": "topic",
+              "op": "equals",
+              "value": "press"
+            }
+          ]
+        },
+        "hidings": [
+          {
+            "effect": "show",
+            "enabled": true,
+            "match": "all",
+            "conditions": [
+              {
+                "field": "topic",
+                "op": "isNotEmpty"
+              }
+            ]
+          },
+          {
+            "effect": "hide",
+            "enabled": true,
+            "match": "all",
+            "conditions": [
+              {
+                "field": "topic",
+                "op": "equals",
+                "value": "press"
+              }
+            ]
+          }
+        ]
+      },
+      "expect": {
+        "hiding": 1,
+        "answers": [
+          {
+            "subject": "field:topic",
+            "values": [
+              "press"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "conflict-the-pages-rule",
+      "description": "the page shows only to members, so a visitor not signed in has the field hidden while it is required",
+      "conflict": {
+        "requiring": {
+          "effect": "require",
+          "enabled": true,
+          "match": "all",
+          "conditions": [
+            {
+              "field": "topic",
+              "op": "equals",
+              "value": "press"
+            }
+          ]
+        },
+        "hidings": [
+          {
+            "effect": "show",
+            "enabled": true,
+            "match": "all",
+            "conditions": [
+              {
+                "field": "topic",
+                "op": "isNotEmpty"
+              }
+            ]
+          },
+          {
+            "effect": "show",
+            "enabled": true,
+            "match": "all",
+            "conditions": [
+              {
+                "context": "memberSignedIn",
+                "op": "isChecked"
+              }
+            ]
+          }
+        ]
+      },
+      "expect": {
+        "hiding": 1,
+        "answers": [
+          {
+            "subject": "field:topic",
+            "values": [
+              "press"
+            ]
+          },
+          {
+            "subject": "context:memberSignedIn",
+            "values": []
+          }
+        ]
+      }
+    },
+    {
+      "id": "conflict-without-the-form-every-field-shows",
+      "description": "the rules alone conflict for five guests and delivery",
+      "conflict": {
+        "requiring": {
+          "effect": "require",
+          "enabled": true,
+          "match": "all",
+          "conditions": [
+            {
+              "field": "topic",
+              "op": "equals",
+              "value": "delivery"
+            }
+          ]
+        },
+        "hidings": [
+          {
+            "effect": "hide",
+            "enabled": true,
+            "match": "all",
+            "conditions": [
+              {
+                "field": "guests",
+                "op": "greaterThan",
+                "value": "4"
+              }
+            ]
+          }
+        ]
+      },
+      "expect": {
+        "hiding": 0,
+        "answers": [
+          {
+            "subject": "field:guests",
+            "values": [
+              "5"
+            ]
+          },
+          {
+            "subject": "field:topic",
+            "values": [
+              "delivery"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "conflict-none-for-a-field-the-form-hides",
+      "description": "for delivery the form hides the guests, whose answer then counts as none, so the name never hides",
+      "conflict": {
+        "requiring": {
+          "effect": "require",
+          "enabled": true,
+          "match": "all",
+          "conditions": [
+            {
+              "field": "topic",
+              "op": "equals",
+              "value": "delivery"
+            }
+          ]
+        },
+        "hidings": [
+          {
+            "effect": "hide",
+            "enabled": true,
+            "match": "all",
+            "conditions": [
+              {
+                "field": "guests",
+                "op": "greaterThan",
+                "value": "4"
+              }
+            ]
+          }
+        ],
+        "form": {
+          "pages": [
+            {
+              "id": "p1",
+              "groups": [
+                {
+                  "id": "g1",
+                  "fields": [
+                    {
+                      "id": "topic",
+                      "kind": "choice",
+                      "rules": []
+                    },
+                    {
+                      "id": "guests",
+                      "kind": "number",
+                      "rules": [
+                        {
+                          "effect": "show",
+                          "enabled": true,
+                          "match": "all",
+                          "conditions": [
+                            {
+                              "field": "topic",
+                              "op": "equals",
+                              "value": "press"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "id": "name",
+                      "kind": "text",
+                      "rules": [
+                        {
+                          "effect": "hide",
+                          "enabled": true,
+                          "match": "all",
+                          "conditions": [
+                            {
+                              "field": "guests",
+                              "op": "greaterThan",
+                              "value": "4"
+                            }
+                          ]
+                        },
+                        {
+                          "effect": "require",
+                          "enabled": true,
+                          "match": "all",
+                          "conditions": [
+                            {
+                              "field": "topic",
+                              "op": "equals",
+                              "value": "delivery"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "expect": null
+    },
+    {
+      "id": "conflict-with-the-form-a-field-it-shows",
+      "description": "for the press the form asks the guests, and five hide the name it requires",
+      "conflict": {
+        "requiring": {
+          "effect": "require",
+          "enabled": true,
+          "match": "all",
+          "conditions": [
+            {
+              "field": "topic",
+              "op": "isOneOf",
+              "value": [
+                "delivery",
+                "press"
+              ]
+            }
+          ]
+        },
+        "hidings": [
+          {
+            "effect": "hide",
+            "enabled": true,
+            "match": "all",
+            "conditions": [
+              {
+                "field": "guests",
+                "op": "greaterThan",
+                "value": "4"
+              }
+            ]
+          }
+        ],
+        "form": {
+          "pages": [
+            {
+              "id": "p1",
+              "groups": [
+                {
+                  "id": "g1",
+                  "fields": [
+                    {
+                      "id": "topic",
+                      "kind": "choice",
+                      "rules": []
+                    },
+                    {
+                      "id": "guests",
+                      "kind": "number",
+                      "rules": [
+                        {
+                          "effect": "show",
+                          "enabled": true,
+                          "match": "all",
+                          "conditions": [
+                            {
+                              "field": "topic",
+                              "op": "equals",
+                              "value": "press"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "id": "name",
+                      "kind": "text",
+                      "rules": [
+                        {
+                          "effect": "hide",
+                          "enabled": true,
+                          "match": "all",
+                          "conditions": [
+                            {
+                              "field": "guests",
+                              "op": "greaterThan",
+                              "value": "4"
+                            }
+                          ]
+                        },
+                        {
+                          "effect": "require",
+                          "enabled": true,
+                          "match": "all",
+                          "conditions": [
+                            {
+                              "field": "topic",
+                              "op": "isOneOf",
+                              "value": [
+                                "delivery",
+                                "press"
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "expect": {
+        "hiding": 0,
+        "answers": [
+          {
+            "subject": "field:guests",
+            "values": [
+              "5"
+            ]
+          },
+          {
+            "subject": "field:topic",
+            "values": [
+              "press"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "conflict-none-where-the-engine-refuses-the-form",
+      "description": "a form the engine refuses can't tell what it hides, so no conflict is said",
+      "conflict": {
+        "requiring": {
+          "effect": "require",
+          "enabled": true,
+          "match": "all",
+          "conditions": [
+            {
+              "field": "topic",
+              "op": "equals",
+              "value": "delivery"
+            }
+          ]
+        },
+        "hidings": [
+          {
+            "effect": "hide",
+            "enabled": true,
+            "match": "all",
+            "conditions": [
+              {
+                "field": "guests",
+                "op": "greaterThan",
+                "value": "4"
+              }
+            ]
+          }
+        ],
+        "form": {
+          "pages": [
+            {
+              "id": "p1",
+              "groups": [
+                {
+                  "id": "g1",
+                  "fields": [
+                    {
+                      "id": "topic",
+                      "kind": "choice",
+                      "rules": []
+                    },
+                    {
+                      "id": "guests",
+                      "kind": "number",
+                      "rules": [
+                        {
+                          "effect": "show",
+                          "enabled": true,
+                          "match": "all",
+                          "conditions": [
+                            {
+                              "field": "topic",
+                              "op": "nope",
+                              "value": "press"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "id": "name",
+                      "kind": "text",
+                      "rules": [
+                        {
+                          "effect": "hide",
+                          "enabled": true,
+                          "match": "all",
+                          "conditions": [
+                            {
+                              "field": "guests",
+                              "op": "greaterThan",
+                              "value": "4"
+                            }
+                          ]
+                        },
+                        {
+                          "effect": "require",
+                          "enabled": true,
+                          "match": "all",
+                          "conditions": [
+                            {
+                              "field": "topic",
+                              "op": "equals",
+                              "value": "delivery"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "expect": null
+    },
+    {
+      "id": "conflict-none-for-a-repeatable-groups-child-it-hides",
+      "description": "the party is hidden for delivery, and with it the guests of its row",
+      "conflict": {
+        "requiring": {
+          "effect": "require",
+          "enabled": true,
+          "match": "all",
+          "conditions": [
+            {
+              "field": "topic",
+              "op": "equals",
+              "value": "delivery"
+            }
+          ]
+        },
+        "hidings": [
+          {
+            "effect": "hide",
+            "enabled": true,
+            "match": "all",
+            "conditions": [
+              {
+                "field": "guests",
+                "op": "greaterThan",
+                "value": "4"
+              }
+            ]
+          }
+        ],
+        "form": {
+          "pages": [
+            {
+              "id": "p1",
+              "groups": [
+                {
+                  "id": "g1",
+                  "fields": [
+                    {
+                      "id": "topic",
+                      "kind": "choice",
+                      "rules": []
+                    },
+                    {
+                      "id": "party",
+                      "kind": null,
+                      "rules": [
+                        {
+                          "effect": "hide",
+                          "enabled": true,
+                          "match": "all",
+                          "conditions": [
+                            {
+                              "field": "topic",
+                              "op": "equals",
+                              "value": "delivery"
+                            }
+                          ]
+                        }
+                      ],
+                      "fields": [
+                        {
+                          "id": "guests",
+                          "kind": "number",
+                          "rules": []
+                        }
+                      ]
+                    },
+                    {
+                      "id": "name",
+                      "kind": "text",
+                      "rules": [
+                        {
+                          "effect": "hide",
+                          "enabled": true,
+                          "match": "all",
+                          "conditions": [
+                            {
+                              "field": "guests",
+                              "op": "greaterThan",
+                              "value": "4"
+                            }
+                          ]
+                        },
+                        {
+                          "effect": "require",
+                          "enabled": true,
+                          "match": "all",
+                          "conditions": [
+                            {
+                              "field": "topic",
+                              "op": "equals",
+                              "value": "delivery"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "expect": null
+    },
+    {
+      "id": "conflict-none-for-a-grid-row-hidden-with-its-grid",
+      "fields": {
+        "meals": "choice"
+      },
+      "conflict": {
+        "requiring": {
+          "effect": "require",
+          "enabled": true,
+          "match": "all",
+          "conditions": [
+            {
+              "field": "topic",
+              "op": "equals",
+              "value": "delivery"
+            }
+          ]
+        },
+        "hidings": [
+          {
+            "effect": "hide",
+            "enabled": true,
+            "match": "all",
+            "conditions": [
+              {
+                "field": "meals",
+                "op": "equals",
+                "value": "yes"
+              }
+            ]
+          }
+        ],
+        "form": {
+          "pages": [
+            {
+              "id": "p1",
+              "groups": [
+                {
+                  "id": "g1",
+                  "fields": [
+                    {
+                      "id": "topic",
+                      "kind": "choice",
+                      "rules": []
+                    },
+                    {
+                      "id": "plan",
+                      "kind": null,
+                      "rules": [
+                        {
+                          "effect": "hide",
+                          "enabled": true,
+                          "match": "all",
+                          "conditions": [
+                            {
+                              "field": "topic",
+                              "op": "equals",
+                              "value": "delivery"
+                            }
+                          ]
+                        }
+                      ],
+                      "rows": [
+                        {
+                          "id": "meals",
+                          "kind": "choice"
+                        }
+                      ]
+                    },
+                    {
+                      "id": "name",
+                      "kind": "text",
+                      "rules": [
+                        {
+                          "effect": "hide",
+                          "enabled": true,
+                          "match": "all",
+                          "conditions": [
+                            {
+                              "field": "meals",
+                              "op": "equals",
+                              "value": "yes"
+                            }
+                          ]
+                        },
+                        {
+                          "effect": "require",
+                          "enabled": true,
+                          "match": "all",
+                          "conditions": [
+                            {
+                              "field": "topic",
+                              "op": "equals",
+                              "value": "delivery"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "expect": null
+    },
+    {
+      "id": "conflict-a-neighbour-near-zero-is-not-tried",
+      "description": "one less than 1.00001 each runtime writes otherwise, so 1 is found, between 0 and 1.00001",
+      "conflict": {
+        "requiring": {
+          "effect": "require",
+          "enabled": true,
+          "match": "all",
+          "conditions": [
+            {
+              "field": "guests",
+              "op": "greaterThan",
+              "value": "0"
+            }
+          ]
+        },
+        "hidings": [
+          {
+            "effect": "hide",
+            "enabled": true,
+            "match": "all",
+            "conditions": [
+              {
+                "field": "guests",
+                "op": "lessThan",
+                "value": "1.00001"
+              }
+            ]
+          }
+        ]
+      },
+      "expect": {
+        "hiding": 0,
+        "answers": [
+          {
+            "subject": "field:guests",
+            "values": [
+              "1"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "shows-without-rules",
+      "shows": {
+        "rules": [],
+        "unanswered": []
+      },
+      "expect": "shows"
+    },
+    {
+      "id": "shows-for-an-option",
+      "shows": {
+        "rules": [
+          {
+            "effect": "show",
+            "enabled": true,
+            "match": "all",
+            "conditions": [
+              {
+                "field": "topic",
+                "op": "equals",
+                "value": "press"
+              }
+            ]
+          }
+        ],
+        "unanswered": []
+      },
+      "expect": "shows"
+    },
+    {
+      "id": "shows-with-a-rule-off",
+      "shows": {
+        "rules": [
+          {
+            "effect": "show",
+            "enabled": false,
+            "match": "all",
+            "conditions": [
+              {
+                "field": "topic",
+                "op": "equals",
+                "value": "nowhere"
+              }
+            ]
+          }
+        ],
+        "unanswered": []
+      },
+      "expect": "shows"
+    },
+    {
+      "id": "shows-once-a-field-is-answered",
+      "shows": {
+        "rules": [
+          {
+            "effect": "show",
+            "enabled": true,
+            "match": "all",
+            "conditions": [
+              {
+                "field": "name",
+                "op": "isNotEmpty"
+              }
+            ]
+          }
+        ],
+        "unanswered": []
+      },
+      "expect": "shows"
+    },
+    {
+      "id": "never-for-an-option-the-choice-lacks",
+      "shows": {
+        "rules": [
+          {
+            "effect": "show",
+            "enabled": true,
+            "match": "all",
+            "conditions": [
+              {
+                "field": "topic",
+                "op": "equals",
+                "value": "nowhere"
+              }
+            ]
+          }
+        ],
+        "unanswered": []
+      },
+      "expect": "never"
+    },
+    {
+      "id": "never-before-a-later-answer",
+      "description": "the name is on a later page, so going forward it is not yet answered",
+      "shows": {
+        "rules": [
+          {
+            "effect": "show",
+            "enabled": true,
+            "match": "all",
+            "conditions": [
+              {
+                "field": "name",
+                "op": "isNotEmpty"
+              }
+            ]
+          }
+        ],
+        "unanswered": [
+          "name"
+        ]
+      },
+      "expect": "never"
+    },
+    {
+      "id": "never-when-hidden-whatever-the-answer",
+      "shows": {
+        "rules": [
+          {
+            "effect": "hide",
+            "enabled": true,
+            "match": "all",
+            "conditions": [
+              {
+                "match": "any",
+                "conditions": [
+                  {
+                    "field": "agree",
+                    "op": "isChecked"
+                  },
+                  {
+                    "field": "agree",
+                    "op": "isNotChecked"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "unanswered": []
+      },
+      "expect": "never"
+    },
+    {
+      "id": "never-in-a-language-the-site-lacks",
+      "shows": {
+        "rules": [
+          {
+            "effect": "show",
+            "enabled": true,
+            "match": "all",
+            "conditions": [
+              {
+                "context": "culture",
+                "op": "equals",
+                "value": "fr-FR"
+              }
+            ]
+          }
+        ],
+        "unanswered": []
+      },
+      "expect": "never"
+    },
+    {
+      "id": "unknown-between-two-numbers",
+      "description": "between 4 and 5 lies 4.5, which no neighbour of either is",
+      "shows": {
+        "rules": [
+          {
+            "effect": "show",
+            "enabled": true,
+            "match": "all",
+            "conditions": [
+              {
+                "field": "guests",
+                "op": "greaterThan",
+                "value": "4"
+              },
+              {
+                "field": "guests",
+                "op": "lessThan",
+                "value": "5"
+              }
+            ]
+          }
+        ],
+        "unanswered": []
+      },
+      "expect": "unknown"
+    },
+    {
+      "id": "unknown-for-a-text-looked-inside",
+      "shows": {
+        "rules": [
+          {
+            "effect": "show",
+            "enabled": true,
+            "match": "all",
+            "conditions": [
+              {
+                "field": "name",
+                "op": "notContains",
+                "value": "a"
+              },
+              {
+                "field": "name",
+                "op": "isNotEmpty"
+              }
+            ]
+          }
+        ],
+        "unanswered": []
+      },
+      "expect": "unknown"
+    },
+    {
+      "id": "unknown-for-four-ticks",
+      "shows": {
+        "rules": [
+          {
+            "effect": "show",
+            "enabled": true,
+            "match": "all",
+            "conditions": [
+              {
+                "field": "topics",
+                "op": "countAtLeast",
+                "value": "4"
+              }
+            ]
+          }
+        ],
+        "unanswered": []
+      },
+      "expect": "unknown"
+    },
+    {
+      "id": "unknown-for-days-from-today",
+      "shows": {
+        "rules": [
+          {
+            "effect": "show",
+            "enabled": true,
+            "match": "all",
+            "conditions": [
+              {
+                "field": "arrival",
+                "op": "greaterThan",
+                "value": {
+                  "today": "+7d"
+                }
+              }
+            ]
+          }
+        ],
+        "unanswered": [
+          "arrival"
+        ]
+      },
+      "expect": "unknown"
+    },
+    {
+      "id": "unknown-for-a-rule-the-engine-refuses",
+      "shows": {
+        "rules": [
+          {
+            "effect": "show",
+            "enabled": true,
+            "match": "all",
+            "conditions": [
+              {
+                "field": "topic",
+                "op": "nope",
+                "value": "press"
+              }
+            ]
+          }
+        ],
+        "unanswered": []
+      },
+      "expect": "unknown"
+    },
+    {
+      "id": "never-for-two-options-of-one-choice",
+      "shows": {
+        "rules": [
+          {
+            "effect": "show",
+            "enabled": true,
+            "match": "all",
+            "conditions": [
+              {
+                "field": "topic",
+                "op": "equals",
+                "value": "delivery"
+              },
+              {
+                "field": "topic",
+                "op": "equals",
+                "value": "shipping"
+              }
+            ]
+          }
+        ],
+        "unanswered": []
+      },
+      "expect": "never"
+    },
+    {
+      "id": "unknown-for-a-repeatable-groups-child",
+      "description": "read from outside its group, a child has the answers of every row, so two rows answer both",
+      "shows": {
+        "rules": [
+          {
+            "effect": "show",
+            "enabled": true,
+            "match": "all",
+            "conditions": [
+              {
+                "field": "topic",
+                "op": "equals",
+                "value": "delivery"
+              },
+              {
+                "field": "topic",
+                "op": "equals",
+                "value": "shipping"
+              }
+            ]
+          }
+        ],
+        "unanswered": [],
+        "several": [
+          "topic"
+        ]
+      },
+      "expect": "unknown"
+    },
+    {
+      "id": "never-for-two-of-one-option",
+      "description": "one choice of several ticks an option once, so \"at least two\" of none but delivery never holds",
+      "shows": {
+        "rules": [
+          {
+            "effect": "show",
+            "enabled": true,
+            "match": "all",
+            "conditions": [
+              {
+                "field": "topics",
+                "op": "countAtLeast",
+                "value": "2"
+              },
+              {
+                "field": "topics",
+                "op": "isNoneOf",
+                "value": [
+                  "shipping",
+                  "press"
+                ]
+              }
+            ]
+          }
+        ],
+        "unanswered": []
+      },
+      "expect": "never"
+    },
+    {
+      "id": "unknown-for-two-of-one-option-in-two-rows",
+      "description": "two rows of a repeatable group may tick delivery each",
+      "shows": {
+        "rules": [
+          {
+            "effect": "show",
+            "enabled": true,
+            "match": "all",
+            "conditions": [
+              {
+                "field": "topics",
+                "op": "countAtLeast",
+                "value": "2"
+              },
+              {
+                "field": "topics",
+                "op": "isNoneOf",
+                "value": [
+                  "shipping",
+                  "press"
+                ]
+              }
+            ]
+          }
+        ],
+        "unanswered": [],
+        "several": [
+          "topics"
+        ]
+      },
+      "expect": "unknown"
+    },
+    {
+      "id": "unknown-for-two-names-in-two-rows",
+      "shows": {
+        "rules": [
+          {
+            "effect": "show",
+            "enabled": true,
+            "match": "all",
+            "conditions": [
+              {
+                "field": "name",
+                "op": "equals",
+                "value": "Ann"
+              },
+              {
+                "field": "name",
+                "op": "equals",
+                "value": "Bob"
+              }
+            ]
+          }
+        ],
+        "unanswered": [],
+        "several": [
+          "name"
+        ]
+      },
+      "expect": "unknown"
+    },
+    {
+      "id": "never-for-two-days-at-once",
+      "shows": {
+        "rules": [
+          {
+            "effect": "show",
+            "enabled": true,
+            "match": "all",
+            "conditions": [
+              {
+                "field": "arrival",
+                "op": "equals",
+                "value": "2026-12-01"
+              },
+              {
+                "field": "arrival",
+                "op": "equals",
+                "value": "2026-12-02"
+              }
+            ]
+          }
+        ],
+        "unanswered": []
+      },
+      "expect": "never"
+    },
+    {
+      "id": "unknown-for-two-days-in-two-rows",
+      "shows": {
+        "rules": [
+          {
+            "effect": "show",
+            "enabled": true,
+            "match": "all",
+            "conditions": [
+              {
+                "field": "arrival",
+                "op": "equals",
+                "value": "2026-12-01"
+              },
+              {
+                "field": "arrival",
+                "op": "equals",
+                "value": "2026-12-02"
+              }
+            ]
+          }
+        ],
+        "unanswered": [],
+        "several": [
+          "arrival"
+        ]
+      },
+      "expect": "unknown"
+    },
+    {
+      "id": "unknown-for-three-ticks",
+      "shows": {
+        "rules": [
+          {
+            "effect": "show",
+            "enabled": true,
+            "match": "all",
+            "conditions": [
+              {
+                "field": "topics",
+                "op": "countAtLeast",
+                "value": "3"
+              }
+            ]
+          }
+        ],
+        "unanswered": []
+      },
+      "expect": "unknown"
+    },
+    {
+      "id": "unknown-for-a-query-value",
+      "description": "a link may give a query value twice",
+      "shows": {
+        "rules": [
+          {
+            "effect": "show",
+            "enabled": true,
+            "match": "all",
+            "conditions": [
+              {
+                "context": "query.ref",
+                "op": "equals",
+                "value": "a"
+              },
+              {
+                "context": "query.ref",
+                "op": "equals",
+                "value": "b"
+              }
+            ]
+          }
+        ],
+        "unanswered": []
+      },
+      "expect": "unknown"
+    },
+    {
+      "id": "unknown-for-a-day-compared-with-another",
+      "description": "a day after another is no neighbour of a day the rules name",
+      "fields": {
+        "leave": "date"
+      },
+      "shows": {
+        "rules": [
+          {
+            "effect": "show",
+            "enabled": true,
+            "match": "all",
+            "conditions": [
+              {
+                "field": "arrival",
+                "op": "greaterThan",
+                "value": {
+                  "field": "leave"
+                }
+              }
+            ]
+          }
+        ],
+        "unanswered": []
+      },
+      "expect": "unknown"
+    },
+    {
+      "id": "unknown-for-at-most-two-ticked",
+      "description": "hidden for two ticked or fewer, so only three ticked show it, which is not tried",
+      "shows": {
+        "rules": [
+          {
+            "effect": "hide",
+            "enabled": true,
+            "match": "all",
+            "conditions": [
+              {
+                "field": "topics",
+                "op": "countAtMost",
+                "value": "2"
+              }
+            ]
+          }
+        ],
+        "unanswered": []
+      },
+      "expect": "unknown"
+    },
+    {
+      "id": "shows-for-at-most-one-ticked",
+      "shows": {
+        "rules": [
+          {
+            "effect": "hide",
+            "enabled": true,
+            "match": "all",
+            "conditions": [
+              {
+                "field": "topics",
+                "op": "countAtMost",
+                "value": "1"
+              }
+            ]
+          }
+        ],
+        "unanswered": []
+      },
+      "expect": "shows"
+    },
+    {
+      "id": "never-before-today",
+      "description": "today is 2026-11-04, and no visit is on an earlier day",
+      "shows": {
+        "rules": [
+          {
+            "effect": "show",
+            "enabled": true,
+            "match": "all",
+            "conditions": [
+              {
+                "context": "today",
+                "op": "lessThan",
+                "value": "2026-11-03"
+              }
+            ]
+          }
+        ],
+        "unanswered": []
+      },
+      "expect": "never"
+    },
+    {
+      "id": "never-for-a-number-only-tested-for-being-equal",
+      "shows": {
+        "rules": [
+          {
+            "effect": "show",
+            "enabled": true,
+            "match": "all",
+            "conditions": [
+              {
+                "field": "guests",
+                "op": "equals",
+                "value": "5"
+              },
+              {
+                "field": "guests",
+                "op": "notEquals",
+                "value": "5"
+              }
+            ]
+          }
+        ],
+        "unanswered": []
+      },
+      "expect": "never"
+    },
+    {
+      "id": "unknown-for-a-number-too-large-to-step-from",
+      "description": "no other number is tried, so the answers tried don't stand for all",
+      "shows": {
+        "rules": [
+          {
+            "effect": "show",
+            "enabled": true,
+            "match": "all",
+            "conditions": [
+              {
+                "field": "guests",
+                "op": "notEquals",
+                "value": "1000000000000000"
+              },
+              {
+                "field": "guests",
+                "op": "isNotEmpty"
+              }
+            ]
+          }
+        ],
+        "unanswered": []
+      },
+      "expect": "unknown"
+    },
+    {
+      "id": "unknown-between-two-minutes",
+      "description": "a time may hold seconds, so 10:00:30 lies between",
+      "shows": {
+        "rules": [
+          {
+            "effect": "show",
+            "enabled": true,
+            "match": "all",
+            "conditions": [
+              {
+                "field": "start",
+                "op": "greaterThan",
+                "value": "10:00"
+              },
+              {
+                "field": "start",
+                "op": "lessThan",
+                "value": "10:01"
+              }
+            ]
+          }
+        ],
+        "unanswered": []
+      },
+      "expect": "unknown"
+    },
+    {
+      "id": "never-for-files-and-none",
+      "shows": {
+        "rules": [
+          {
+            "effect": "show",
+            "enabled": true,
+            "match": "all",
+            "conditions": [
+              {
+                "field": "uploads",
+                "op": "countAtMost",
+                "value": "0"
+              },
+              {
+                "field": "uploads",
+                "op": "isNotEmpty"
+              }
+            ]
+          }
+        ],
+        "unanswered": []
+      },
+      "expect": "never"
+    },
+    {
+      "id": "unknown-for-more-sets-than-tried",
+      "description": "13 ticks make 8,192 sets of answers, more than the 4,096 tried",
+      "fields": {
+        "box1": "checkbox",
+        "box2": "checkbox",
+        "box3": "checkbox",
+        "box4": "checkbox",
+        "box5": "checkbox",
+        "box6": "checkbox",
+        "box7": "checkbox",
+        "box8": "checkbox",
+        "box9": "checkbox",
+        "box10": "checkbox",
+        "box11": "checkbox",
+        "box12": "checkbox",
+        "box13": "checkbox"
+      },
+      "shows": {
+        "rules": [
+          {
+            "effect": "show",
+            "enabled": true,
+            "match": "all",
+            "conditions": [
+              {
+                "field": "box1",
+                "op": "isChecked"
+              },
+              {
+                "field": "box2",
+                "op": "isChecked"
+              },
+              {
+                "field": "box3",
+                "op": "isChecked"
+              },
+              {
+                "field": "box4",
+                "op": "isChecked"
+              },
+              {
+                "field": "box5",
+                "op": "isChecked"
+              },
+              {
+                "field": "box6",
+                "op": "isChecked"
+              },
+              {
+                "field": "box7",
+                "op": "isChecked"
+              },
+              {
+                "field": "box8",
+                "op": "isChecked"
+              },
+              {
+                "field": "box9",
+                "op": "isChecked"
+              },
+              {
+                "field": "box10",
+                "op": "isChecked"
+              },
+              {
+                "field": "box11",
+                "op": "isChecked"
+              },
+              {
+                "field": "box12",
+                "op": "isChecked"
+              },
+              {
+                "field": "box13",
+                "op": "isChecked"
+              },
+              {
+                "field": "agree",
+                "op": "isChecked"
+              },
+              {
+                "field": "agree",
+                "op": "isNotChecked"
+              }
+            ]
+          }
+        ],
+        "unanswered": []
+      },
+      "expect": "unknown"
+    },
+    {
+      "id": "unknown-for-more-options-than-tried-together",
+      "description": "eight options make 37 answers of one or two ticked, more than the 32 tried",
+      "fields": {
+        "many": "choices"
+      },
+      "options": {
+        "many": [
+          "a",
+          "b",
+          "c",
+          "d",
+          "e",
+          "f",
+          "g",
+          "h"
+        ]
+      },
+      "shows": {
+        "rules": [
+          {
+            "effect": "show",
+            "enabled": true,
+            "match": "all",
+            "conditions": [
+              {
+                "field": "many",
+                "op": "isChecked",
+                "value": "a"
+              },
+              {
+                "field": "many",
+                "op": "isNotChecked",
+                "value": "a"
+              }
+            ]
+          }
+        ],
+        "unanswered": []
+      },
+      "expect": "unknown"
+    },
+    {
+      "id": "unknown-for-member-groups-tested-for-being-empty",
+      "description": "a member may be in a group no rule names",
+      "shows": {
+        "rules": [
+          {
+            "effect": "show",
+            "enabled": true,
+            "match": "all",
+            "conditions": [
+              {
+                "context": "memberGroup",
+                "op": "isNotEmpty"
+              },
+              {
+                "context": "memberGroup",
+                "op": "isNoneOf",
+                "value": [
+                  "staff"
+                ]
+              }
+            ]
+          }
+        ],
+        "unanswered": []
+      },
+      "expect": "unknown"
+    }
+  ]
+}

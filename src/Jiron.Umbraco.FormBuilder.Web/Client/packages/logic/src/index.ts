@@ -12,7 +12,8 @@
  * submission and the words of each language as a module of its own, `@jfb/logic/lang/<language>` (ADR-0112),
  * 6.4f the calculation language as one, `@jfb/logic/calc`, which the form engine takes (ADR-0114), and 6.4g the
  * merge tags as two, `@jfb/logic/template` and `@jfb/logic/recall`, which only a form with a text that recalls
- * answers loads (ADR-0115).
+ * answers loads (ADR-0115), and 9.5d the rule search, which the rules overview and the form check ask whether rules
+ * conflict or an element ever shows (ADR-0179); the website runtime leaves it out of its bundle.
  */
 // The calculation language is a module of its own, `@jfb/logic/calc`, that only a form with a calculation loads.
 export type { Calculation, FieldReference, Formulas, FormulaScope, Operation } from './calc.ts';
@@ -142,6 +143,17 @@ export {
   type Rule,
   type Subject,
 } from './rules.ts';
+export {
+  conflictOf,
+  formSight,
+  MOST_TRIED,
+  showsAtAll,
+  type Conflict,
+  type SearchAnswer,
+  type SearchRule,
+  type SearchScope,
+  type Showing,
+} from './search.ts';
 export type {
   MergeItem,
   MergeValue,

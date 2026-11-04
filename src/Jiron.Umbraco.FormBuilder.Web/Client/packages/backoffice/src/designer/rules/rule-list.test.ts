@@ -1,7 +1,7 @@
 // The form's rules, element by element (ROADMAP 9.5c, ADR-0178): an element's own rules and the validation rules on a
 // field or a grid's row, every page with the elements that have rules, the outcomes', and the chips' words.
 import { describe, expect, it } from 'vitest';
-import type { DesignDefinition, DesignRule } from '../definition';
+import type { DesignDefinition, DesignField, DesignRule } from '../definition';
 import { chipsOf, ownOptionValues, plainText, rulesByPage, ruledOutcomes, rulesOn } from './rule-list';
 import type { RuleWordsContext } from './rule-words';
 
@@ -160,5 +160,40 @@ describe("the form's rules, element by element", () => {
     expect(ownOptionValues(DEFINITION, 'topic')).toEqual(['press', 'sales']);
     expect(ownOptionValues(DEFINITION, 'r1')).toEqual(['yes']);
     expect(ownOptionValues(DEFINITION, 'notes')).toEqual([]);
+  });
+
+  it('know none for a library list, a cascading list, or a choice whose "Other" takes any text', () => {
+    const items = { items: [{ value: 'near' }, { value: 'far' }] };
+    const choice = (key: string, extra: Partial<DesignField>): DesignField => ({
+      key,
+      type: 'dropdown',
+      alias: key,
+      options: items,
+      ...extra,
+    });
+    const definition: DesignDefinition = {
+      pages: [
+        {
+          key: 'p',
+          groups: [
+            {
+              key: 'g',
+              fields: [
+                choice('own', {}),
+                choice('listed', { options: { source: 'list', list: 'l1' } }),
+                choice('cascading', { options: { ...items, parent: 'own' } }),
+                choice('other', { settings: { other: true } }),
+              ],
+            },
+          ],
+        },
+      ],
+    };
+    expect(['own', 'listed', 'cascading', 'other'].map((key) => ownOptionValues(definition, key))).toEqual([
+      ['near', 'far'],
+      [],
+      [],
+      [],
+    ]);
   });
 });

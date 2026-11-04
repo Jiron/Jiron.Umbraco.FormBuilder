@@ -141,11 +141,20 @@ export function plainText(html: string): string {
     .trim();
 }
 
-/** The values of a choice's own options, or of a grid's for one of its rows; none where they come from elsewhere. */
+/**
+ * The values of a choice's own options, or of a grid's for one of its rows, which are all a visitor can answer it
+ * with; none where they come from elsewhere (a library list, a data source), hang on another field's answer (a
+ * cascading list), or where "Other" lets the visitor type an answer of their own. The form check reads the same.
+ */
 export function ownOptionValues(definition: DesignDefinition, key: string): string[] {
   const field = allFields(definition).find((one) => one.key === key || (one.rows ?? []).some((row) => row.key === key));
-  const items = (field?.['options'] as { items?: readonly { value?: unknown }[] } | undefined)?.items ?? [];
-  return items.flatMap((item) => (typeof item.value === 'string' && item.value !== '' ? [item.value] : []));
+  const options = field?.['options'] as
+    { source?: unknown; parent?: unknown; items?: readonly { value?: unknown }[] } | null | undefined;
+  const other = (field?.['settings'] as { other?: unknown } | null | undefined)?.other === true;
+  if ((options?.source ?? 'items') !== 'items' || options?.parent != null || other) return [];
+  return (options?.items ?? []).flatMap((item) =>
+    typeof item.value === 'string' && item.value !== '' ? [item.value] : [],
+  );
 }
 
 /**

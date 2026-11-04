@@ -13,7 +13,7 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Logic;
 [TestFixture]
 public sealed class VectorTests
 {
-    private static readonly string[] Runnable = ["fileKind", "typedName", "typedPng", "condition", "rule", "number", "calc", "formula", "form", "field", "template", "recall", "message", "read", "rowCount", "post"];
+    private static readonly string[] Runnable = ["fileKind", "typedName", "typedPng", "condition", "rule", "number", "calc", "formula", "form", "field", "template", "recall", "message", "read", "rowCount", "post", "conflict", "shows"];
 
     private static readonly Lazy<IReadOnlyDictionary<string, JsonDocument>> Files = new(Load);
 
@@ -65,6 +65,7 @@ public sealed class VectorTests
             : vector.TryGetProperty("fileKind", out var fileKind) ? FileKindVector.Run(fileKind)
             : vector.TryGetProperty("typedName", out var typedName) ? TypedNameVector.Clean(typedName)
             : vector.TryGetProperty("typedPng", out _) ? TypedNameVector.Read(vector.GetProperty("expect"))
+            : vector.TryGetProperty("conflict", out _) || vector.TryGetProperty("shows", out _) ? SearchVector.Run(root, vector)
             : Run(root, vector);
 
         Assert.That(JsonNode.DeepEquals(actual, expected), Is.True, $"expected {Show(expected)}, got {Show(actual)}");

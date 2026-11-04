@@ -258,9 +258,11 @@ flowchart LR
   in the builder, which `rule-edits.ts` keeps in the definition's `validationRules` with its field, moving a rule to
   or from there in one step; `rule-list.ts` lists the form's rules element by element (a field's own, then the
   validation rules on it or, for a grid, on its rows) for the inspector, the canvas's chips and the rules overview, the
-  sidebar the canvas's "..." opens; and `rule-conflicts.ts` finds a field that one rule hides and another requires for
-  the same answers by trying answers a visitor can give through `evaluateRule`, so the overview says a conflict only
-  where the engine finds one. The editor model's delete takes the validation rules that show their message on what it
+  sidebar the canvas's "..." opens; and the rule search of `@jfb/logic` (`search.ts`, ADR-0179) finds a field that one
+  rule hides and another requires for the same answers by trying answers a visitor can give through `evaluateRule`, the
+  fields the form hides for them counting as none as the form engine decides (`formSight` over the editor model's
+  `logicOf`), so the overview says a conflict only where the engine finds one; Core's `RuleSearch` is the same in C#,
+  held to the shared vectors of `tests/vectors/search.json`. The editor model's delete takes the validation rules that show their message on what it
   deletes along, and the structure check refuses a validation rule on a field the visitor's page has no comparable
   answer of, which both runtimes would refuse the whole form for.
 
@@ -306,7 +308,13 @@ Text        LocalizedText: culture → text, "" is the default; "#key" reads the
   label (`LabelFormCheck`), the merge tags of every text of the form where they render, found by `FormTemplates`, with
   a redirect that recalls answers (`MergeTagFormCheck`), each action's settings by its type, whose warnings come through
   `ActionSettingsCheck.Warn` (`ActionPublishCheck`), a captcha provider without its keys (`CaptchaKeysFormCheck`) and an
-  email action without an email field to reply to (`EmailReplyFormCheck`).
+  email action without an email field to reply to (`EmailReplyFormCheck`). From 9.5d
+  ([ADR-0179](decisions/0179-the-form-checks-of-the-forms-rules.md)), the checks of the form's rules, over the rule
+  search (`RuleSearch`) and what it tries on this site (`RuleSearchScopes`: the kinds, each choice's own options, the
+  site's languages, today, the fields the form hides for the answers tried, a repeatable group's children as several
+  answers): a require rule that holds while a rule hides its field (`RequiredHiddenFormCheck`) and a page no visitor
+  reaches going forward (`UnreachablePageFormCheck`); conditions a change of type left stay the structural validation's
+  errors.
 - **The History** ([ADR-0045](decisions/0045-versions-comparison-and-draft-cleanup.md)) lists the publishes, or every
   version, newest first, each with what changed since the version before it (a publish since the publish before).
   The comparison matches elements by key, settings groups by name, and gives each change its path of properties with

@@ -24,6 +24,7 @@ import {
   type DesignRule,
   type ElementKind,
 } from './definition';
+import { subjectKinds, type TypeFacts } from './rules/rule-draft';
 
 /** What the editor shows: the definition and the selected element's key. */
 export interface EditorState {
@@ -449,8 +450,16 @@ function makesCycle(before: DesignDefinition, after: DesignDefinition, context: 
   }
 }
 
-/** The form engine's model of a definition, for the cycle check: what holds what, the rules, the aliases and formulas. */
-export function logicOf(definition: DesignDefinition, context: Pick<ModelContext, 'traitsOf'>): LogicForm {
+/**
+ * The form engine's model of a definition: what holds what, the rules, the aliases and formulas. The cycle check reads
+ * it with the types' traits; the rule search, which has the engine decide what is hidden (`formSight`), with the rules
+ * model's facts, so the engine checks each rule by the kinds the rules builder offers and knows which fields without a
+ * kind can be required.
+ */
+export function logicOf(
+  definition: DesignDefinition,
+  context: Partial<Pick<ModelContext, 'traitsOf'>> & { readonly factsOf?: (type: string) => TypeFacts | undefined },
+): LogicForm {
   const rules = (list: readonly DesignRule[] | null | undefined): Rule[] =>
     (list ?? []).map((rule) => ({
       effect: rule.effect,
@@ -459,17 +468,22 @@ export function logicOf(definition: DesignDefinition, context: Pick<ModelContext
       conditions: (rule.conditions ?? []) as Rule['conditions'],
     }));
   const field = (one: DesignField): LogicField => {
-    const kind = (context.traitsOf(one.type)?.kind ?? null) as NonNullable<LogicField['kind']> | null;
+    const facts = context.factsOf?.(one.type);
+    const kinds = new Map(facts ? subjectKinds(one, facts) : []);
+    const kind = (facts ? (kinds.get(one.key) ?? null) : (context.traitsOf?.(one.type)?.kind ?? null)) as NonNullable<
+      LogicField['kind']
+    > | null;
     const formula = (one['settings'] as { formula?: unknown } | null | undefined)?.formula;
     return {
       id: one.key,
       kind,
+      ...(facts ? { canBeRequired: facts.features.includes('required') } : {}),
       alias: one.alias ?? null,
       calculation: one.type === 'calculation' && typeof formula === 'string' ? { formula } : null,
       rules: rules(one.rules),
       fields: (one.fields ?? []).map(field),
       // A grid's rows are what rules look at; their kind does not change what waits on what.
-      rows: (one.rows ?? []).map((row) => ({ id: row.key, kind: 'choice' })),
+      rows: (one.rows ?? []).map((row) => ({ id: row.key, kind: kinds.get(row.key) ?? 'choice' })),
     };
   };
   return {

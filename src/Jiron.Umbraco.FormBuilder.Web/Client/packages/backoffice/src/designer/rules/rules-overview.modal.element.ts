@@ -3,11 +3,13 @@
 // row leads to its element (an outcome's to Settings, where outcomes are edited); a field whose hide and require rules
 // hold for the same answers says so on its row. Add rule first asks what the rule affects, then the builder opens on
 // it. A form without rules says, in one sentence, what most rules do.
+import { conflictOf, formSight, type Conflict, type SearchScope } from '@jfb/logic';
+import { FORMULAS } from '@jfb/logic/calc';
 import { css, html, nothing, type PropertyValues } from '@umbraco-cms/backoffice/external/lit';
 import { UmbModalBaseElement } from '@umbraco-cms/backoffice/modal';
 import { jfbBackofficeTokens } from '../../styles/tokens';
 import { allFields, type DesignDefinition, type DesignRule } from '../definition';
-import { conflictOf, type Conflict, type ConflictScope } from './rule-conflicts';
+import { logicOf } from '../editor-model';
 import { builderEffectsOf, clashOf, fieldKinds } from './rule-draft';
 import { ownOptionValues, rulesByPage, ruledOutcomes, type RuledElement, type RuledOutcome } from './rule-list';
 import { elementNames, inspectorRuleWords, typeFactsOf } from './rule-names';
@@ -359,20 +361,23 @@ export class RulesOverviewModalElement extends UmbModalBaseElement<RulesOverview
     if (!data || element.kind !== 'field') return null;
     if (this.#conflicts === null) {
       const facts = typeFactsOf(data.types);
-      const scope: ConflictScope = {
-        fields: fieldKinds(data.definition, (type) => facts[type]),
+      const factsOf = (type: string) => facts[type];
+      const scope: SearchScope = {
+        fields: fieldKinds(data.definition, factsOf),
         options: (key) => ownOptionValues(data.definition, key),
         cultures: data.languages.map((language) => language.culture),
         today: localToday(),
+        // A field the form hides for the answers tried has none, as on the website, so a conflict said is one there.
+        hidden: formSight(logicOf(data.definition, { factsOf }), FORMULAS),
       };
       this.#conflicts = new Map();
       for (const ruled of rulesByPage(data.definition).flatMap(({ elements }) => elements)) {
         if (ruled.kind !== 'field') continue;
-        // A message rule is neither a hide nor a require rule, so the search passes it by.
-        const conflict = conflictOf(
-          ruled.rules.map(({ rule }) => rule),
-          scope,
-        );
+        // The field's own rules (a message rule the search passes by); the form check also weighs its group's and its
+        // page's (ADR-0179).
+        const rules = ruled.rules.map(({ rule }) => rule);
+        const requiring = rules.find((rule) => rule.effect === 'require');
+        const conflict = requiring ? conflictOf(requiring, rules, scope) : null;
         if (conflict) this.#conflicts.set(ruled.key, this.#conflictWords(conflict, words));
       }
     }

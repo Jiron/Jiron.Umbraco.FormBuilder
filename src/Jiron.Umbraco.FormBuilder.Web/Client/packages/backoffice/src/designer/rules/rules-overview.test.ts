@@ -196,6 +196,62 @@ describe('the rules overview', () => {
     expect(conflict('more')).toMatch(/^Conflict: when Upload has 2 files, one rule hides it/);
   });
 
+  it('says no conflict for an answer the form hides, as on the website, and one for an answer it shows', async () => {
+    // The guests are asked only about the press, and more than four hide the notes; the form works out a total, which
+    // the form engine needs the calculation language for.
+    const formFor = (required: readonly string[]): DesignDefinition => ({
+      pages: [
+        {
+          key: 'p',
+          groups: [
+            {
+              key: 'g',
+              fields: [
+                {
+                  key: 'topic',
+                  type: 'dropdown',
+                  alias: 'topic',
+                  label: { '': 'Topic' },
+                  options: { items: [{ value: 'delivery' }, { value: 'press' }] },
+                },
+                {
+                  key: 'guests',
+                  type: 'number',
+                  alias: 'guests',
+                  label: { '': 'Guests' },
+                  rules: [{ key: 's', effect: 'show', conditions: [{ field: 'topic', op: 'equals', value: 'press' }] }],
+                },
+                {
+                  key: 'total',
+                  type: 'calculation',
+                  alias: 'total',
+                  label: { '': 'Total' },
+                  settings: { formula: 'guests * 2' },
+                },
+                {
+                  key: 'notes',
+                  type: 'text',
+                  alias: 'notes',
+                  label: { '': 'Notes' },
+                  rules: [
+                    { key: 'h', effect: 'hide', conditions: [{ field: 'guests', op: 'greaterThan', value: '4' }] },
+                    { key: 'r', effect: 'require', conditions: [{ field: 'topic', op: 'isOneOf', value: required }] },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+    const conflict = (root: ShadowRoot) => root.querySelector('button.row[data-key="notes"] .conflict');
+    expect(conflict((await overviewOf(formFor(['delivery']))).root)).toBeNull();
+    document.body.replaceChildren();
+    expect(text(conflict((await overviewOf(formFor(['delivery', 'press']))).root))).toMatch(
+      /^Conflict: when Guests is 5 and Topic is press, one rule hides it/,
+    );
+  });
+
   it('leads a row to its element and an outcome to Settings', async () => {
     const { modal, root } = await overviewOf();
     must(root.querySelector<HTMLButtonElement>('button.row[data-key="email"]'), 'the row').click();

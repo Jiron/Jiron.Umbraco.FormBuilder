@@ -1082,7 +1082,7 @@ line with Undo in the toast.
 Seeing rules, and validation rules (9.5c, ADR-0178): `rules/rule-list.test.ts` holds an element's rules with where each
 is kept (a field's own, then the validation rules on it, a grid's row's on its grid), the pages with the elements that
 have rules, the outcomes' (a message as plain text), the chips' words (none for a rule switched off) and a choice's own
-options; `rules/rule-conflicts.test.ts` a conflict found by the engine for a hide rule, or a show rule that doesn't
+options; `packages/logic/test/search.test.ts` (the rule search, moved into `@jfb/logic` in 9.5d) a conflict found by the engine for a hide rule, or a show rule that doesn't
 hold, and a require rule (an option, one more than a number, the day around a date, a minute around a time, a day
 counted from today, ticks, several choices, files, the visit, two answers compared), only with answers a visitor can
 give (no option a choice lacks, a language of the site's, groups only signed in, no text standing for others where a
@@ -1125,6 +1125,33 @@ a warning and a test site's hint, each at its path; a duplicate alias and a rule
 nothing saved; a definition it cannot read refused) and publishes
 through the API: refused at the label's path, then live with a warning only. `EmailActionTests` and
 `ContentActionTests` publish templates whose tags name nothing and find the form check's warnings at their settings.
+
+The checks of the form's rules (9.5d, ADR-0179): `tests/vectors/search.json` holds the rule search's cases, which the
+Vitest runner runs through `search.ts` of `@jfb/logic` and the NUnit runner through Core's `RuleSearch`
+(`Tests.Unit/Logic/SearchVector.cs`): conflicts by their hiding rule and answers (an option, a show rule not holding,
+none for other answers, a rule off or refused, a number, a day, a minute, days from today, the visit, member groups
+only signed in, two answers compared, a text the rules don't name, a text another looks inside, answers free together,
+files by count, a group's and a page's rule; with a form, none for an answer it hides, its own field, a repeatable
+group's child in its row or a grid's row with its grid, none where the engine refuses the form, and one for an answer it
+shows; one tried next to 1.00001 that each runtime writes alike) and whether an element shows, never shows or can't be
+told (an option the choice lacks, two options of one choice, a field not yet answered, hidden whatever the answer, a
+language the site lacks, a day before today, a number only tested for being equal, files and none; between two numbers
+or two minutes, a text looked inside, four ticks, at most two ticked, days from today, a refused rule, a repeatable
+group's child, a query value, a day compared with another, a number too large to step from, more sets than tried, more
+options than tried together, member groups tested for being empty). `packages/logic/test/search.test.ts` adds the
+search's own cases and what a form hides for a set of answers (`formSight`: with what holds it, in its row, with its
+grid; nothing it can tell for a refused form or one with calculations and no calculation language).
+`Tests.Unit/Forms/LogicFormCheckTests` holds a require rule holding while its own, its group's, its page's or its
+repeatable group's rule hides its field a warning at the rule, none where the form hides the answer that hides it, a
+field required while shown or for other answers none; a page shown only by a later answer, grid row or repeatable
+group's child, in a language the site lacks or for an answer no option is a warning, one an earlier answer shows, one a
+later default value, prefill or calculation answers, one two rows of a repeatable group may answer, one a choice taking
+any text may answer or one the answers tried cannot speak for none; and what the scope tries: a choice's own options
+only (none for a library list, a cascading list or "Other"), a grid's for its rows, the site's languages, the site's day
+(in UTC where its zone is unknown), a repeatable group's children as several answers. The designer's tests add the
+overview saying no conflict for an answer the form hides, `ownOptionValues` knowing none for the same choices as the
+server, and `logicOf` taking the rules model's kinds. `FormCheckApiTests` finds both warnings in the draft check and has
+a publish refused through the API for conditions a change of type left.
 
 ## The public API tests
 

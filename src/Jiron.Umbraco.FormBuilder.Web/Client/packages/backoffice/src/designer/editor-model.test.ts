@@ -1,5 +1,6 @@
 // Every operation of the designer's editor model (ROADMAP 9.3a, ADR-0016): selection, change, insert, move, step,
 // Move to..., duplicate and remove, the moves it refuses, and that it never changes the state it is given.
+import type { LogicForm } from '@jfb/logic';
 import { FORMULAS } from '@jfb/logic/calc';
 import { describe, expect, it } from 'vitest';
 import {
@@ -14,6 +15,7 @@ import {
   change,
   duplicate,
   insert,
+  logicOf,
   move,
   moveToGroup,
   referencesTo,
@@ -27,6 +29,8 @@ import {
   type FieldTraits,
   type ModelContext,
 } from './editor-model';
+import { builtInTypes } from './preview/fixtures';
+import { typeFactsOf } from './rules/rule-names';
 
 const TRAITS: Record<string, FieldTraits> = {
   text: { kind: 'text', onePerForm: false, childFields: false },
@@ -206,6 +210,48 @@ describe('a definition as the server writes it', () => {
     };
     const state = ok(insert(blank, 'field', field('first'), { container: 'g', index: 0 }, contextOf()));
     expect(keysIn(state, 'g')).toEqual(['first']);
+  });
+});
+
+describe("the form engine's model of a definition", () => {
+  it("takes, with the rules model's facts, the kinds the builder offers and which fields without one can be required", () => {
+    const facts = typeFactsOf(builtInTypes);
+    const definition = normalise({
+      pages: [
+        {
+          key: 'p',
+          groups: [
+            {
+              key: 'g',
+              fields: [
+                { key: 'plan', type: 'grid', settings: { multiple: true }, rows: [{ key: 'meals' }] },
+                { key: 'where', type: 'address' },
+                { key: 'topics', type: 'dropdown', settings: { multiple: true } },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+    const fields = (model: LogicForm) =>
+      (model.pages[0]?.groups?.[0]?.fields ?? []).map(({ id, kind, canBeRequired, rows }) => ({
+        id,
+        kind,
+        canBeRequired,
+        rows,
+      }));
+    expect(fields(logicOf(definition, { factsOf: (type) => facts[type] }))).toEqual([
+      { id: 'plan', kind: null, canBeRequired: true, rows: [{ id: 'meals', kind: 'choices' }] },
+      { id: 'where', kind: null, canBeRequired: true, rows: [] },
+      { id: 'topics', kind: 'choices', canBeRequired: true, rows: [] },
+    ]);
+    // The cycle check reads the types' traits, for which a row's kind changes nothing that waits.
+    expect(fields(logicOf(definition, contextOf()))[0]).toEqual({
+      id: 'plan',
+      kind: null,
+      canBeRequired: undefined,
+      rows: [{ id: 'meals', kind: 'choice' }],
+    });
   });
 });
 

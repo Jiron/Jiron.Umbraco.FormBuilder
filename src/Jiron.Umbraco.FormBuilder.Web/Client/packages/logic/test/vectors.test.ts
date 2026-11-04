@@ -48,6 +48,7 @@ import { calculate, evaluateFormula, FORMULAS, storedNumber } from '../src/calc.
 import { recallAnswers } from '../src/recall.ts';
 import { parseTemplate, renderTemplate } from '../src/template.ts';
 import { today } from '../src/dates.ts';
+import { conflictOf, formSight, showsAtAll, type SearchRule, type SearchScope } from '../src/search.ts';
 import { de } from '../src/lang/messages.de.ts';
 import { en } from '../src/lang/messages.en.ts';
 import { repositoryRoot, vectorsFolder } from '../tools/repository.ts';
@@ -78,6 +79,17 @@ interface VectorCase {
   readonly read?: { readonly field: ReadField; readonly answer: PostedAnswer };
   readonly rowCount?: { readonly field: ReadField; readonly count: number };
   readonly post?: { readonly fields: readonly PostField[]; readonly entries: readonly (readonly [string, string])[] };
+  readonly options?: Readonly<Record<string, readonly string[]>>;
+  readonly conflict?: {
+    readonly requiring: SearchRule;
+    readonly hidings: readonly SearchRule[];
+    readonly form?: LogicForm;
+  };
+  readonly shows?: {
+    readonly rules: readonly SearchRule[];
+    readonly unanswered: readonly string[];
+    readonly several?: readonly string[];
+  };
   readonly expect: unknown;
 }
 
@@ -209,6 +221,12 @@ interface VectorFile {
     readonly words?: Readonly<Record<string, DisplayWords>>;
     readonly forms?: Readonly<Record<string, VectorRecallForm>>;
     readonly answers?: Readonly<Record<string, RecallAnswers>>;
+    /** What the rule search tries (ADR-0179): each choice's own options by key, the site's languages, today. */
+    readonly search?: {
+      readonly options: Readonly<Record<string, readonly string[]>>;
+      readonly cultures: readonly string[];
+      readonly today: string;
+    };
   };
   readonly fields: Readonly<Record<string, Kind>>;
   readonly cases: readonly VectorCase[];
@@ -232,6 +250,8 @@ const RUNNABLE = [
   'fileKind',
   'typedName',
   'typedPng',
+  'conflict',
+  'shows',
 ] as const;
 
 const folder = vectorsFolder();
@@ -284,6 +304,28 @@ function recallForm(form: VectorRecallForm): RecallForm {
   };
 }
 
+/** A case of the rule search: a conflict as the index of its hiding rule and its answers, or whether an element shows. */
+function searched(file: VectorFile, vector: VectorCase): unknown {
+  const defaults = file.defaults.search;
+  if (!defaults) throw new Error(`${vector.id}: the file has no search defaults`);
+  const options = { ...defaults.options, ...vector.options };
+  const several = vector.shows?.several ?? [];
+  const form = vector.conflict?.form;
+  const scope: SearchScope = {
+    fields: { ...file.fields, ...vector.fields },
+    options: (key) => (Object.hasOwn(options, key) ? (options[key] ?? []) : []),
+    cultures: defaults.cultures,
+    today: defaults.today,
+    several: (key) => several.includes(key),
+    ...(form !== undefined ? { hidden: formSight(form, FORMULAS) } : {}),
+  };
+  if (vector.shows !== undefined) return showsAtAll(vector.shows.rules, scope, vector.shows.unanswered);
+  if (vector.conflict === undefined) throw new Error(`${vector.id}: nothing to search`);
+  const { requiring, hidings } = vector.conflict;
+  const found = conflictOf(requiring, hidings, scope);
+  return found === null ? null : { hiding: hidings.indexOf(found.hiding), answers: found.answers };
+}
+
 function run(file: VectorFile, vector: VectorCase): unknown {
   const subject: Subject = {
     fields: { ...file.fields, ...vector.fields },
@@ -291,6 +333,7 @@ function run(file: VectorFile, vector: VectorCase): unknown {
     context: { ...file.defaults.context, ...vector.context },
   };
   try {
+    if (vector.conflict !== undefined || vector.shows !== undefined) return searched(file, vector);
     if (vector.condition !== undefined) return evaluateCondition(vector.condition, subject);
     if (vector.rule !== undefined) return evaluateRule(vector.rule, subject);
     if (vector.number !== undefined) return storedNumber(vector.number);
