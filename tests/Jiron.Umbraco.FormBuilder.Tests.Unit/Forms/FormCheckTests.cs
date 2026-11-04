@@ -183,7 +183,8 @@ public sealed class FormCheckTests
         const string Nested = """[{"key":"10000000-0000-4000-8000-000000000001","groups":[{"key":"20000000-0000-4000-8000-000000000001","fields":[{"key":"F1","type":"repeater","alias":"kids","label":{"":"Kids"},"fields":[{"key":"F2","type":"email","alias":"mail","label":{"":"Mail"}}]}]}]}]""";
         const string Mails = ""","actions":[{"key":"50000000-0000-4000-8000-000000000001","type":"test.note"},{"key":"50000000-0000-4000-8000-000000000002","type":"email"},{"key":"50000000-0000-4000-8000-000000000003","type":"email","enabled":false},""" +
             """{"key":"50000000-0000-4000-8000-000000000004","type":"email","settings":{"replyToField":"30000000-0000-4000-8000-000000000002"}},{"key":"50000000-0000-4000-8000-000000000005","type":"email","settings":{"toField":"30000000-0000-4000-8000-000000000002"}},""" +
-            """{"key":"50000000-0000-4000-8000-000000000006","type":"email","settings":{"replyToField":null}}]""";
+            // A reply field that is no field's key, which the action's own check refuses, names none; a null one is left out on reading.
+            """{"key":"50000000-0000-4000-8000-000000000006","type":"email","settings":{"replyToField":5}}]""";
 
         var without = await check.CheckAsync(Read(Text, Mails), CancellationToken.None);
         var with = await check.CheckAsync(Read(Nested, Mails), CancellationToken.None);
@@ -210,7 +211,8 @@ public sealed class FormCheckTests
     public async Task AnActionTypesOwnCheck_RefusesWithErrors_AndWarnsWithWarnings_AtTheirPaths()
     {
         var check = new ActionPublishCheck(Actions);
-        var definition = Read("[]", ""","actions":[{"key":"50000000-0000-4000-8000-000000000001","type":"test.note","settings":{"note":"?"}},{"key":"50000000-0000-4000-8000-000000000002","type":"test.note","settings":{"note":"!"}},{"key":"50000000-0000-4000-8000-000000000003","type":"gone"}]""");
+        var definition = Read("[]", ""","actions":[{"key":"50000000-0000-4000-8000-000000000001","type":"test.note","settings":{"note":"?"}},{"key":"50000000-0000-4000-8000-000000000002","type":"test.note","settings":{"note":"!"}},{"key":"50000000-0000-4000-8000-000000000003","type":"gone"},""" +
+            """{"key":"50000000-0000-4000-8000-000000000004","type":"test.note","settings":{"note":5}}]""");
 
         var issues = await check.CheckAsync(definition, CancellationToken.None);
 
@@ -218,6 +220,8 @@ public sealed class FormCheckTests
         {
             (FormCheckSeverity.Error, DefinitionErrors.SettingInvalid, "$.actions[1].settings.note"),
             (FormCheckSeverity.Error, DefinitionErrors.UnknownType, "$.actions[2].type"),
+            // Settings that break the type's schema are refused by it alone: the type's own check never reads them.
+            (FormCheckSeverity.Error, DefinitionErrors.SettingInvalid, "$.actions[3].settings.note"),
             (FormCheckSeverity.Warning, "note_unsure", "$.actions[0].settings.note"),
         }));
     }
@@ -371,12 +375,16 @@ public sealed class FormCheckTests
         public string? Note { get; init; }
     }
 
-    // An action type whose own check refuses a note of "!" and is unsure of one of "?".
+    // An action type whose own check refuses a note of "!", is unsure of one of "?" and misses one it cannot read.
     private sealed class NoteType() : FormBuilderActionTypeBase<NoteSettings>(new ActionTypeDeclaration { Alias = "test.note", Name = "Note", Icon = "icon-note" })
     {
         protected override void CheckSettings(NoteSettings settings, ActionSettingsCheck check)
         {
-            if (settings.Note == "!")
+            if (settings.Note is null)
+            {
+                check.Warn("note", "note_missing", "A note says something.");
+            }
+            else if (settings.Note == "!")
             {
                 check.Invalid("note", "A note is more than a bang.");
             }

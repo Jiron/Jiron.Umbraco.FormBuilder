@@ -1088,7 +1088,7 @@ entry's reference); a field visitors see without a label an error, content, a va
 calculation no visitor sees not; a captcha provider without its keys a warning, one with keys or one the site lacks
 not; an email action on a form without an email field a warning, and on a form with one (a repeatable group's too) a
 hint where a mail to the site's people names no field to reply to; an action type's own check, its refusals errors and
-its warnings warnings at their settings; the check's errors (the publish checks' first), then warnings, then hints, at
+its warnings warnings at their settings, never run over settings its schema refuses; the check's errors (the publish checks' first), then warnings, then hints, at
 most a hundred of each; and the form as the site runs it, a host's lock applied. The runtime tests that publish tags
 their places refuse (`Support/RefusedTags.cs`) leave the merge-tag check out, as for a form published before it.
 `Tests.Integration/ManagementApi/FormCheckApiTests` checks the unsaved draft through `POST form/{key}/check` (an error,
