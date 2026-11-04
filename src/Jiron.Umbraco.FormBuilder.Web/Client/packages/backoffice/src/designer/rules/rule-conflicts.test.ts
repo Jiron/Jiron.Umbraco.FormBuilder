@@ -55,6 +55,8 @@ describe("a conflict of a field's rules", () => {
     const both = rule('require', [{ field: 'topic', op: 'equals', value: 'press' }]);
     expect(conflictOf([{ ...hide, enabled: false }, both], SCOPE)).toBeNull();
     expect(conflictOf([hide, { ...both, enabled: false }], SCOPE)).toBeNull();
+    // A show rule that is off leaves the field shown, though it never holds.
+    expect(conflictOf([{ ...shown, enabled: false }, both], SCOPE)).toBeNull();
     expect(conflictOf([rule('hide', []), both], SCOPE)).toBeNull();
     expect(conflictOf([both], SCOPE)).toBeNull();
     expect(conflictOf([hide], SCOPE)).toBeNull();
@@ -216,11 +218,48 @@ describe("a conflict of a field's rules", () => {
     expect(conflict?.answers).toEqual([{ subject: 'field:name', values: [] }]);
   });
 
+  it('says an answer rather than call it free where trying it with the others would take too long', () => {
+    // Five texts, each tested against nine values: leaving out four together would take 11^4 tries.
+    const texts = ['t1', 't2', 't3', 't4', 't5'];
+    const nine = (name: string) => Array.from({ length: 9 }, (_, i) => `${name}-${i}`);
+    const conflict = conflictOf(
+      [
+        rule('hide', [{ match: 'any', conditions: texts.map((t) => ({ field: t, op: 'isOneOf', value: nine(t) })) }]),
+        rule('require', [
+          {
+            match: 'any',
+            conditions: [
+              { field: 'agree', op: 'isChecked' },
+              { field: 'agree', op: 'isNotChecked' },
+            ],
+          },
+        ]),
+      ],
+      { ...SCOPE, fields: { ...SCOPE.fields, ...Object.fromEntries(texts.map((t) => [t, 'text' as const])) } },
+    );
+    // t2 to t4 are free together; t5 would be too, but is said, as trying it with them is past the limit.
+    expect(conflict?.answers).toEqual([
+      { subject: 'field:t1', values: ['t1-0'] },
+      { subject: 'field:t5', values: [] },
+    ]);
+  });
+
   it('tries only answers a visitor can give', () => {
     const require = rule('require', [{ field: 'topic', op: 'isNotEmpty' }]);
     // No option of the topic is none of its options, and a language is one of the site's.
     const none = rule('hide', [{ field: 'topic', op: 'isNoneOf', value: ['delivery', 'shipping', 'press'] }]);
     expect(conflictOf([none, require], SCOPE)).toBeNull();
+    const ticked = rule('require', [{ field: 'topics', op: 'isNotEmpty' }]);
+    const unticked = rule('hide', [{ field: 'topics', op: 'isNoneOf', value: ['delivery', 'shipping', 'press'] }]);
+    expect(conflictOf([unticked, ticked], SCOPE)).toBeNull();
+    // A language found is said as itself, never as none.
+    const english = rule('hide', [{ context: 'culture', op: 'equals', value: 'en-US' }]);
+    expect(
+      conflictOf([english, rule('require', [{ context: 'memberSignedIn', op: 'isChecked' }])], SCOPE)?.answers,
+    ).toEqual([
+      { subject: 'context:culture', values: ['en-US'] },
+      { subject: 'context:memberSignedIn', values: ['true'] },
+    ]);
     const signedIn = rule('require', [{ context: 'memberSignedIn', op: 'isChecked' }]);
     const foreign = rule('hide', [{ context: 'culture', op: 'isNoneOf', value: ['en-US', 'de-DE'] }]);
     expect(conflictOf([foreign, signedIn], SCOPE)).toBeNull();
@@ -236,6 +275,18 @@ describe("a conflict of a field's rules", () => {
     // A text a rule looks inside has no answer that stands for the others.
     const plain = rule('hide', [{ field: 'name', op: 'notContains', value: 'a' }]);
     expect(conflictOf([plain, rule('require', [{ field: 'name', op: 'isNotEmpty' }])], SCOPE)).toBeNull();
+    // Nor does a text another answer is looked inside of: "b" is none of "abc", yet "abc" contains it.
+    const inside = rule('hide', [
+      { field: 'name', op: 'notContains', value: { field: 'nick' } },
+      { field: 'nick', op: 'isNotEmpty' },
+      { field: 'name', op: 'isOneOf', value: ['abc'] },
+    ]);
+    expect(
+      conflictOf([inside, rule('require', [{ field: 'name', op: 'isNotEmpty' }])], {
+        ...SCOPE,
+        fields: { ...SCOPE.fields, nick: 'text' },
+      }),
+    ).toBeNull();
   });
 
   it('says a text the rules only test for being equal as none of the texts they name', () => {
@@ -263,5 +314,8 @@ describe("a conflict of a field's rules", () => {
   it('says nothing of a rule the engine refuses', () => {
     const broken = rule('hide', [{ field: 'topic', op: 'nope', value: 'press' }]);
     expect(conflictOf([broken, rule('require', [{ field: 'topic', op: 'isNotEmpty' }])], SCOPE)).toBeNull();
+    // Nor of a show rule it refuses, which would otherwise read as never holding.
+    const unread = rule('show', [{ field: 'topic', op: 'nope', value: 'press' }]);
+    expect(conflictOf([unread, rule('require', [{ field: 'topic', op: 'isNotEmpty' }])], SCOPE)).toBeNull();
   });
 });

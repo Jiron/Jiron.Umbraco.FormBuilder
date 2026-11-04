@@ -762,7 +762,8 @@ export function effectsOf(
 
 /**
  * Another rule of the element that a rule with this effect can't sit beside: one with the same effect, or show beside
- * hide. A field shows as many validation rules' messages as it is given.
+ * hide. A message never clashes: validation rules are kept apart from the element's own, so a field shows as many
+ * messages as it is given.
  */
 export function clashOf(
   definition: DesignDefinition,
@@ -770,7 +771,6 @@ export function clashOf(
   effect: Effect,
   ruleKey: string,
 ): DesignRule | undefined {
-  if (effect === 'message') return undefined;
   const rules = locate(definition, target)?.element.rules ?? [];
   const opposite = effect === 'show' ? 'hide' : effect === 'hide' ? 'show' : null;
   return rules.find((rule) => rule.key !== ruleKey && (rule.effect === effect || rule.effect === opposite));

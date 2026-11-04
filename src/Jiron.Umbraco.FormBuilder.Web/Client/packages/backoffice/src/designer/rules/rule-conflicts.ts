@@ -211,7 +211,7 @@ const ALIKE: ReadonlySet<string> = new Set([
 function othersAlike(subject: string, rules: readonly DesignRule[]): boolean {
   return conditionsIn(rules).every((condition) => {
     const operands = operandsOf(condition);
-    if (operands.some((operand) => otherFieldOf(operand as Operand) === subject)) return false;
+    if (operands.some((operand) => `field:${otherFieldOf(operand as Operand)}` === subject)) return false;
     if (subjectOf(condition) !== subject) return true;
     return ALIKE.has(String(condition['op'])) && operands.every((operand) => typeof operand === 'string');
   });
@@ -371,16 +371,16 @@ function answersOf(
     else if (subject.startsWith('context:query.') && given[0] !== undefined)
       query[subject.slice('context:query.'.length)] = given[0];
   }
-  // Only a signed-in member is in groups; where no rule asks whether the visitor signed in, one in groups did.
+  // Only a signed-in member is in groups. The engine reads each part of the visit alone, so where no rule asks whether
+  // the visitor signed in, it makes no difference what the visit says.
   if (signedIn === false && groups.length > 0) return null;
-  signedIn ??= groups.length > 0;
   return {
     values: fields,
     context: {
       now: `${today}T12:00:00Z`,
       timeZone: 'UTC',
       culture,
-      member: { signedIn, groups: [...groups] },
+      member: { signedIn: signedIn === true, groups: [...groups] },
       query,
       hidden: [],
     },

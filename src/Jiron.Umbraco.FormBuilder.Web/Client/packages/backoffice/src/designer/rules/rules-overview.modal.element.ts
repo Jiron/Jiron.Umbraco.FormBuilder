@@ -368,8 +368,11 @@ export class RulesOverviewModalElement extends UmbModalBaseElement<RulesOverview
       this.#conflicts = new Map();
       for (const ruled of rulesByPage(data.definition).flatMap(({ elements }) => elements)) {
         if (ruled.kind !== 'field') continue;
-        const own = ruled.rules.filter(({ holder }) => holder.kind === 'element').map(({ rule }) => rule);
-        const conflict = conflictOf(own, scope);
+        // A message rule is neither a hide nor a require rule, so the search passes it by.
+        const conflict = conflictOf(
+          ruled.rules.map(({ rule }) => rule),
+          scope,
+        );
         if (conflict) this.#conflicts.set(ruled.key, this.#conflictWords(conflict, words));
       }
     }
