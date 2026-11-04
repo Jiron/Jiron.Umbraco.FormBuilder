@@ -2655,12 +2655,11 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
   - **Changing types** (added in 5.1e, ADR-0059): the field types endpoint (5.1c) also serves each type's changes from 5.1e's map, with the permission matrix and the regenerated client, and the preview applies a change to the selected field: its values of lost and narrowed settings, the properties it uses that go, the conditions naming it whose operator goes, and the settings and options it needs.
   - **Designer locks** (added in 5.1f, ADR-0060): the change-type preview treats a locked setting of the target type as set by the lock: neither carried over nor needed.
   - Done when: Playwright configures every built-in type through the UI, and axe is clean on the inspector. Playwright changes a text field with a placeholder and a condition using `contains` into a dropdown, and the preview names the placeholder, the condition and the options it needs before the change; the endpoint's integration tests cover the served changes (ADR-0059). With a designer lock on the dropdown type, the preview neither carries the locked setting over nor asks for it.
-- [ ] **9.5a The rules builder**
+- [ ] **9.5a The rules builder** (split, see WORKLOG; ADR-0175)
   - **The builder:** rule rows in plain language ("Show this field when **Country** **is** **Germany**"), any/all groups, operators per field type, and value pickers (options, dates including relative ones, numbers).
     - "Required when", a value taken from another field ("is after **Arrival**"), and the context conditions (language, member, query value, today), all of §4.3.3.
     - A switch that turns a rule off without deleting it.
-  - **Seeing rules:** chips on the canvas, and a **rules overview** listing every rule in the form with links.
-  - **Form-level validation rules** in the same builder.
+  - **Where it opens** (ADR-0175): the inspector's Rules section lists an element's rules in words, each opening the builder, and holds Add a rule; the builder's live rule preview (Try it) runs on `@jfb/logic`.
   - Done when: Playwright builds nested rules of every operator kind, a "required when" rule, a comparison of two fields and a context condition, and the designer's live rule preview agrees with the shared vectors (D10).
 - [ ] **9.5b The form check**
   - **The check runs on the server and joins the publish pipeline:** errors block publishing, warnings don't. Every issue has a "fix it" link in the designer. The checks:
@@ -2680,6 +2679,10 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
     - a required choice whose options can all become full;
     - and anything Phase 1 adds.
   - Done when: each check has unit tests, publishing with an error is refused through the API, and Playwright covers the badge, the list and the "fix it" links.
+- [ ] **9.5c Seeing rules, and form-level validation rules** (split from 9.5a, see WORKLOG; ADR-0175)
+  - **Seeing rules:** chips on the canvas, and a **rules overview** listing every rule in the form with links.
+  - **Form-level validation rules** in the same builder.
+  - Done when: Playwright finds a rule's chip on the element it affects and none on the selected element, opens the rules overview from the toolbar's "...", follows a rule's link to its element, finds a hide rule and a require rule that hold for the same answer warned on their row, adds a rule from the overview after choosing what it affects, and finds the empty overview's sentence; and builds a form-level validation rule with its field and message in the builder, whose message the published form shows on that field in the browser when the rule matches.
 - [ ] **9.6 Phase review**
   - **UX review:** every screen of the phase at 375, 768 and 1440 px, in light and dark, in en and de, each checked against the measurable rules of §4.13, plus a pass of all three design skills (ADR-0019, ADR-0020): `design-taste-frontend`, an `impeccable` critique and audit, and an `emil-design-eng` review. Fix the findings.
   - **Carried in from 9.4c's look** (docs/ux/review-9.4c.md): on the canvas, the selected element's bar sits over the element above it and covers most of a heading's text; decide whether the bar takes room of its own, and hold the choice with a journey.
