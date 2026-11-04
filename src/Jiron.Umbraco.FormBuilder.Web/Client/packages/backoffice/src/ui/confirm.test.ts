@@ -8,8 +8,10 @@ import { describe, expect, it } from 'vitest';
 
 const root = join(import.meta.dirname, '..');
 
+// A folder whose name starts with a dot is another test's scratch (the API check's), which may go while this one reads.
 function sources(dir: string): string[] {
   return readdirSync(dir).flatMap((name) => {
+    if (name.startsWith('.')) return [];
     const path = join(dir, name);
     if (statSync(path).isDirectory()) return name === 'api' ? [] : sources(path);
     return name.endsWith('.ts') && !name.endsWith('.test.ts') ? [path] : [];
