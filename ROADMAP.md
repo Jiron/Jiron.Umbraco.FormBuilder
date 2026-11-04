@@ -2708,7 +2708,8 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
 - [ ] **10.1 The form settings view**
   - The groups of §4.3.4 with help text. The outcomes editor (an ordered list with rules), plus availability, spam, privacy, appearance and developer settings.
   - **Captcha providers:** the spam group greys out a provider without keys, from `GET designer/captcha-provider` (each provider's name and `isConfigured`, never a key), with its row in the permission matrix (added in 7.4g).
-  - Done when: Playwright covers each group, including validation messages.
+  - **The form check's Fix it** (ADR-0181, added in 9.5f): a problem in the form's settings or outcomes, which 9.5f leads to this view, opens the group and the setting it names, with the focus on it.
+  - Done when: Playwright covers each group, including validation messages, and follows the form check's Fix it of a setting and of an outcome to it.
 - [ ] **10.2 The actions view and its editors**
   - **The list:** action cards per trigger (Submitted, Approved, Rejected, Verified), with order (drag and keyboard), an on/off switch, a rule chip and the last-run status.
   - **Adding:** an "add action" modal with presets.
@@ -2720,10 +2721,12 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
     - **Content:** document type and property mapping; the site's document types come with the setting as its choices, as the option sources serve them (ADR-0173), since Umbraco lists them only to users of its Settings section.
     - **Set state.**
     - **Verification** is no action of its own: the Verified trigger's list says that it needs the form's email verification setting (10.1) and links to it.
+  - **The form check's Fix it** (ADR-0181, added in 9.5f): a problem in an action, which 9.5f leads to this view, selects the action and opens the setting it names, with the focus on it.
   - Done when:
     - Playwright configures an email action from a preset, and a test-run email lands in the pickup folder;
     - Playwright configures and test-runs each type (webhooks against the stub on 5560);
     - Playwright follows a link of 9.2's copy-actions result, which opens the target's Actions view with the copied action selected (`?action=`, ADR-0166).
+    - Playwright follows the form check's Fix it of an action's setting to it.
 - [ ] **10.3 Preview, publishing and history**
   - **Preview:** a modal with the draft rendered by the chosen theme in an iframe (from a preview endpoint), device widths, light and dark, and a culture switch. Test submissions are marked `IsTest`. **Fill with sample answers** (added in 1.1) fills every field with valid values in one click, so editors can try rules and outcomes quickly.
   - **Publish:** a summary of the changes against the live version, and draft and unpublished badges.
