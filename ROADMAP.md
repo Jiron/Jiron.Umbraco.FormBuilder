@@ -2673,7 +2673,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
     - a consent text with a merge tag other than `form`, `page`, `site` or `dictionary` (an error, ADR-0014);
     - a redirect that puts answers into its URL (a warning: answers in URLs end up in logs and browser history).
   - Done when: each check has unit tests, publishing with an error is refused through the API, and the draft check returns the errors, warnings and hints with their paths through the API, a form with warnings only still publishing.
-- [ ] **9.5c Seeing rules, and form-level validation rules** (split from 9.5a, see WORKLOG; ADR-0175)
+- [x] **9.5c Seeing rules, and form-level validation rules** (split from 9.5a, see WORKLOG; ADR-0175, ADR-0178) (2026-11-04, 0a3e9cc)
   - **Seeing rules:** chips on the canvas, and a **rules overview** listing every rule in the form with links.
   - **Form-level validation rules** in the same builder.
   - Done when: Playwright finds a rule's chip on the element it affects and none on the selected element, opens the rules overview from the toolbar's "...", follows a rule's link to its element, finds a hide rule and a require rule that hold for the same answer warned on their row, adds a rule from the overview after choosing what it affects, and finds the empty overview's sentence; and builds a form-level validation rule with its field and message in the builder, whose message the published form shows on that field in the browser when the rule matches.
