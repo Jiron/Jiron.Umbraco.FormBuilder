@@ -1097,12 +1097,30 @@ describe('the inspector in the Design view', () => {
     const data = opened.dialogs[0]?.data as RuleBuilderModalData;
     expect(data.rule).toEqual(message);
     expect(data.refusal('email', message)).toBeNull();
+    // The message's box shows the default language's text under an empty box in another, so it is told which that is.
+    expect(data.languages).toEqual([{ culture: 'en-US', name: 'English (United States)', isDefault: true }]);
     opened.value = { target: 'email', rule: null };
     await tell(view, { kind: 'rule', key: 'email', rule: 'v' });
     expect(validation()).toEqual([]);
     expect(toasts.shown.at(-1)?.data.message).toBe('Rule deleted');
     await toasts.shown.at(-1)?.data.undo();
     expect(validation()).toHaveLength(1);
+  });
+
+  it('opens a rule kept on an element that can have none any more, so the builder can say so', async () => {
+    // A captcha takes no rule; this one came through the API.
+    const kept: DesignRule = { key: 'k', effect: 'show', conditions: [{ field: 'name', op: 'isNotEmpty' }] };
+    const { view } = await viewOf({
+      pages: [
+        {
+          key: 'p1',
+          groups: [{ key: 'g1', fields: [field('name'), { ...field('robot', 'captcha'), rules: [kept] }] }],
+        },
+      ],
+    });
+    await tell(view, { kind: 'rule', key: 'robot', rule: 'k' });
+    expect(opened.dialogs.map((one) => one.alias)).toEqual(['Jiron.FormBuilder.Modal.RuleBuilder']);
+    expect((opened.dialogs[0]?.data as RuleBuilderModalData).rule).toEqual(kept);
   });
 
   it('folds the palette beside it in a view up to 1024 px, and not in a wider or a narrow one', () => {

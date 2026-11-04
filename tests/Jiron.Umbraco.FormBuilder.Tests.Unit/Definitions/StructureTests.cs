@@ -179,6 +179,8 @@ public sealed class StructureTests
         // Field types and the properties they support.
         yield return Case("a type the site lacks", d => Field(d, 7)["type"] = "colourPicker", DefinitionErrors.UnknownType, $"{F(7)}.type");
         yield return Case("a type the site lacks, with fields and rules that name it", d => Field(d, 3)["type"] = "colourPicker", DefinitionErrors.UnknownType, $"{F(3)}.type");
+        // The validation rule on it waits for the type too.
+        yield return Case("a type the site lacks, with a validation rule on it", d => Field(d, 5)["type"] = "colourPicker", DefinitionErrors.UnknownType, $"{F(5)}.type");
         yield return Case("a type the site lacks, with a row a rule names", d =>
         {
             Field2(d, 0)["type"] = "colourPicker";

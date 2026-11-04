@@ -263,5 +263,14 @@ describe('the rules overview', () => {
     must(root.querySelector<HTMLElement>('[slot="actions"] uui-button'), 'Close').click();
     await settle(element);
     expect(modal.reject).toHaveBeenCalled();
+    // A form whose only rules are an outcome's lists them.
+    const outcomes = await overviewOf({
+      pages: [{ key: 'p', groups: [{ key: 'g', fields: [] }] }],
+      outcomes: DEFINITION['outcomes'],
+    });
+    expect(outcomes.root.querySelector('.empty')).toBeNull();
+    expect([...outcomes.root.querySelectorAll('uui-box')].map((box) => box.getAttribute('headline'))).toEqual([
+      'After sending',
+    ]);
   });
 });

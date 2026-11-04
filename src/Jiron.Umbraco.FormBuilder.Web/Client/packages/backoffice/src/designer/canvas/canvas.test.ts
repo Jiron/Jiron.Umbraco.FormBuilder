@@ -579,6 +579,11 @@ describe('the canvas', () => {
     expect(root.querySelector('jfb-canvas-field[key="b"] .bo-select')?.getAttribute('aria-describedby')).toBe(
       'jfb-rule-chip-b-0',
     );
+    // A change that leaves a field's rules saying the same keeps its list, so the field isn't drawn again.
+    const said = must(root.querySelector<CanvasFieldElement>('jfb-canvas-field[key="b"]'), 'b').state?.rules;
+    element.definition = { ...definition, pages: definition.pages.map((one) => ({ ...one, title: { '': 'About' } })) };
+    await settle(element);
+    expect(must(root.querySelector<CanvasFieldElement>('jfb-canvas-field[key="b"]'), 'b').state?.rules).toBe(said);
     document.body.replaceChildren();
 
     const selected = await canvasOf(definition, { selection: 'b' });
@@ -833,7 +838,8 @@ describe('the canvas', () => {
 
   it('opens the rules overview and the Keyboard shortcuts from its menu, and names the keys as this keyboard has them', async () => {
     const { requests, root } = await canvasOf(DEFINITION);
-    const items = [...root.querySelectorAll<HTMLButtonElement>('.bo-menu button')];
+    // The items shown; one hidden would leave the list.
+    const items = [...root.querySelectorAll<HTMLButtonElement>('.bo-menu button')].filter((item) => !item.hidden);
     expect(items.map((item) => [text(item.querySelector('span')), text(item.querySelector('kbd'))])).toEqual([
       ['Undo', 'Ctrl+Z'],
       ['Redo', 'Ctrl+Y'],
