@@ -162,16 +162,16 @@ public sealed class FormCheckTests
     [Test]
     public async Task AFormWithoutAFieldToFillIn_IsAnError_AtTheEndOfItsFirstPage()
     {
-        const string group = """{"key":"20000000-0000-4000-8000-00000000000G","fields":[FIELDS]}""";
+        const string GroupJson = """{"key":"20000000-0000-4000-8000-00000000000G","fields":[FIELDS]}""";
         string Pages(params string[] groups) =>
             "[{\"key\":\"10000000-0000-4000-8000-000000000001\",\"groups\":[" + string.Join(',', groups) + "]},"
-            + "{\"key\":\"10000000-0000-4000-8000-000000000002\",\"groups\":[" + group.Replace("G", "9", StringComparison.Ordinal).Replace("FIELDS", "", StringComparison.Ordinal) + "]}]";
+            + "{\"key\":\"10000000-0000-4000-8000-000000000002\",\"groups\":[" + GroupJson.Replace("G", "9", StringComparison.Ordinal).Replace("FIELDS", "", StringComparison.Ordinal) + "]}]";
         string Group(int number, string fields) =>
-            group.Replace("G", number.ToString(CultureInfo.InvariantCulture), StringComparison.Ordinal).Replace("FIELDS", fields, StringComparison.Ordinal);
-        const string heading = """{"key":"30000000-0000-4000-8000-000000000001","type":"heading","settings":{"text":{"":"Hello"}}}""";
-        const string text = """{"key":"F1","type":"text","alias":"name","label":{"":"Name"}}""";
-        const string repeater = """{"key":"30000000-0000-4000-8000-000000000004","type":"repeater","alias":"kids","label":{"":"Kids"},"fields":[{"key":"F2","type":"text","alias":"kid","label":{"":"Kid"}}]}""";
-        const string unknown = """{"key":"30000000-0000-4000-8000-000000000003","type":"test.gone","alias":"gone"}""";
+            GroupJson.Replace("G", number.ToString(CultureInfo.InvariantCulture), StringComparison.Ordinal).Replace("FIELDS", fields, StringComparison.Ordinal);
+        const string Heading = """{"key":"30000000-0000-4000-8000-000000000001","type":"heading","settings":{"text":{"":"Hello"}}}""";
+        const string Text = """{"key":"F1","type":"text","alias":"name","label":{"":"Name"}}""";
+        const string Repeater = """{"key":"30000000-0000-4000-8000-000000000004","type":"repeater","alias":"kids","label":{"":"Kids"},"fields":[{"key":"F2","type":"text","alias":"kid","label":{"":"Kid"}}]}""";
+        const string Unknown = """{"key":"30000000-0000-4000-8000-000000000003","type":"test.gone","alias":"gone"}""";
         var check = new FieldsMissingFormCheck(Types);
 
         async Task<IEnumerable<(FormCheckSeverity, string, string)>> Found(string pages) =>
@@ -181,11 +181,11 @@ public sealed class FormCheckTests
         Assert.Multiple(async () =>
         {
             Assert.That(await Found(Pages(Group(1, ""), Group(2, ""))), Is.EqualTo(new[] { fields }));
-            Assert.That(await Found(Pages(Group(1, heading), Group(2, ""))), Is.EqualTo(new[] { fields }), "a heading holds no answer");
+            Assert.That(await Found(Pages(Group(1, Heading), Group(2, ""))), Is.EqualTo(new[] { fields }), "a heading holds no answer");
             Assert.That(await Found(Pages()), Is.EqualTo(new[] { (FormCheckSeverity.Error, FieldsMissingFormCheck.FieldsMissing, "$.pages[0].groups") }));
-            Assert.That(await Found(Pages(Group(1, ""), Group(2, text))), Is.Empty);
-            Assert.That(await Found(Pages(Group(1, repeater))), Is.Empty);
-            Assert.That(await Found(Pages(Group(1, unknown))), Is.Empty, "a type the site lacks is the structural validation's error");
+            Assert.That(await Found(Pages(Group(1, ""), Group(2, Text))), Is.Empty);
+            Assert.That(await Found(Pages(Group(1, Repeater))), Is.Empty);
+            Assert.That(await Found(Pages(Group(1, Unknown))), Is.Empty, "a type the site lacks is the structural validation's error");
             Assert.That(await Found("[]"), Is.Empty, "a form without pages is the structural validation's error");
         });
     }
