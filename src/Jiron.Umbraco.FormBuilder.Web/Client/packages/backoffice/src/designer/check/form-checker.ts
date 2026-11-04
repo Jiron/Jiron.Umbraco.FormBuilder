@@ -49,13 +49,12 @@ export class FormChecker {
 
   /**
    * The form changed, or was read: the check asks once the changes pause, the first time at once. The form it already
-   * waits for, as a change of the selection gives, does not start the pause again; the form the last ask was about, as
-   * an undo gives back, ends the wait, its answer holding.
+   * waits for, as a change of the selection gives, does not start the pause again; any other form ends the wait for the
+   * one before, so an undo is never asked about the change it took back.
    */
   changed(definition: DesignDefinition) {
     if (definition === this.#pending) return;
     this.#stopWaiting();
-    if (definition === this.#last?.definition) return;
     this.#pending = definition;
     this.#waiting = setTimeout(() => void this.now(definition), this.#state.status === 'idle' ? 0 : this.#pause);
   }

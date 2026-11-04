@@ -82,6 +82,20 @@ describe('the form check', () => {
     expect(subject.state).toEqual({ status: 'checked', issues: [], definition: checkedForm });
   });
 
+  it('asks again about a form an undo gives back when its check gave no answer', async () => {
+    const { subject, asked } = checker();
+    const unanswered = form('a');
+    subject.changed(unanswered);
+    await vi.advanceTimersByTimeAsync(0);
+    asked[0]?.answer.resolve(undefined);
+    await vi.advanceTimersByTimeAsync(0);
+    subject.changed(form('b'));
+    await vi.advanceTimersByTimeAsync(CHECK_PAUSE - 100);
+    subject.changed(unanswered);
+    await vi.advanceTimersByTimeAsync(CHECK_PAUSE);
+    expect(asked.map((one) => one.definition)).toEqual([unanswered, unanswered]);
+  });
+
   it('keeps counting the pause when the same form comes again, as a change of the selection gives it', async () => {
     const { subject, asked } = checker();
     subject.changed(form('a'));
