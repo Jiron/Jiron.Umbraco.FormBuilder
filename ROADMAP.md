@@ -2695,13 +2695,16 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
 - [x] **9.5f The form check in the designer** (split from 9.5b, see WORKLOG) (2026-11-04, ae4a63a)
   - **The badge, the list and "fix it"** (IA 5.1): the badge in the toolbar ("2 problems", "No problems"), the list in a sidebar with the errors first, and a "fix it" on every issue of 9.5b, 9.5d and 9.5e that selects the element and opens its setting (the palette for a form without fields, the rules builder for a rule); the publish dialog shows the check's result, errors blocking and warnings not.
   - Done when: Playwright covers the badge, the list and the "fix it" links, a publish blocked by an error and one with a warning, and axe finds nothing on the list.
-- [ ] **9.6 Phase review**
+- [ ] **9.6a Phase review: the UX walk and its fixes** (split from 9.6, see WORKLOG)
   - **UX review:** every screen of the phase at 375, 768 and 1440 px, in light and dark, in en and de, each checked against the measurable rules of §4.13, plus a pass of all three design skills (ADR-0019, ADR-0020): `design-taste-frontend`, an `impeccable` critique and audit, and an `emil-design-eng` review. Fix the findings.
   - **Carried in from 9.4c's look** (docs/ux/review-9.4c.md): on the canvas, the selected element's bar sits over the element above it and covers most of a heading's text; decide whether the bar takes room of its own, and hold the choice with a journey.
   - **Carried in from 9.4d's look** (docs/ux/review-9.4d.md): in Umbraco's dark theme, the primary buttons' label meets 4.38:1 on positive green and 4.34:1 on the default blue, under AA's 4.5:1 (axe on Change type's dialog); decide once for every dialog and footer button of the section, and hold it with axe in the dark theme.
+  - **Carried in from 9.5f's look** (docs/ux/review-9.5f.md): on a phone the Design view keeps Umbraco's workspace at its narrowest, 620 px, so its toolbar is reached by scrolling sideways; decide how the designer meets a phone, and hold the choice with a test that measures it.
+  - Done when: `docs/ux/review-9.md` with screenshots, with a section per design skill, is committed; a journey holds the canvas bar's choice, axe in the dark theme holds the buttons' choice, and a measuring test holds the phone's; and everything is pushed.
+- [ ] **9.6b Phase review: the budget, the wiring sweep and the handover** (split from 9.6, see WORKLOG)
   - Write the handover note.
   - **The backoffice budget:** set the backoffice bundle's gzip budget in the size check from the measured size plus a stated margin, and record it in §4.12.
-  - Done when: `docs/ux/review-9.md` with screenshots, with a section per design skill, is committed, the size check enforces the backoffice budget, and everything is pushed, with the phase-review gate.
+  - Done when: the size check enforces the backoffice budget, and everything is pushed, with the phase-review gate.
 
 ### Phase 10: The backoffice II: settings, actions, preview and publishing
 
