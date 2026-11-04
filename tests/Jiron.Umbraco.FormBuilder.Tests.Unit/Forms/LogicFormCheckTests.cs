@@ -144,7 +144,7 @@ public sealed class LogicFormCheckTests
             1,
             null,
             TopicField,
-            Choice(Listed, "dropdown", "listed", """{"source":"list","list":"50000000-0000-4000-8000-000000000001"}"""),
+            Choice(Listed, "dropdown", "listed", """{"source":"list","list":"50000000-0000-4000-8000-000000000001","items":[{"value":"stale"}]}"""),
             Choice(Cascading, "dropdown", "cascading", $$"""{"items":[{"value":"near"}],"parent":"{{Topic}}"}"""),
             OtherTopic(Others),
             PlanGrid,
