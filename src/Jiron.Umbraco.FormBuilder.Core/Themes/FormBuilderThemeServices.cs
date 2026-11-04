@@ -13,7 +13,7 @@ internal static class FormBuilderThemeServices
 {
     /// <summary>
     /// Registers the collection of themes (the built-in ones, and whatever the site's composers change), the registry over
-    /// it and its check at start-up. Safe to call more than once.
+    /// it and its check at start-up, and whether the site has a form's theme. Safe to call more than once.
     /// </summary>
     public static IUmbracoBuilder AddFormBuilderThemes(this IUmbracoBuilder builder)
     {
@@ -23,6 +23,7 @@ internal static class FormBuilderThemeServices
         // asked first.
         builder.JironFormBuilder().Themes();
         builder.Services.TryAddSingleton(provider => new FormBuilderThemes(provider.GetRequiredService<FormBuilderThemeCollection>(), provider.GetRequiredService<ILogger<FormBuilderThemes>>()));
+        builder.Services.TryAddSingleton<FormThemes>();
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IValidateOptions<FormBuilderStartupChecks>, ThemeStartupCheck>());
         return builder;
     }

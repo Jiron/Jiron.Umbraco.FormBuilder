@@ -434,13 +434,14 @@ public sealed class FormCopyServiceTests : RepositoryTestBase
     }
 
     [Test]
-    public async Task AnImport_ClearsAThemeTheSiteLacks_AndKeepsOneItHas()
+    public async Task AnImport_ClearsAThemeTheSiteLacks_AndKeepsOneItHas_InTheLibraryOrInCode()
     {
         await Themes.CreateAsync(new NewTheme(Guid.NewGuid(), "brand", "Brand", "default"));
         var (source, designed) = await DesignedAsync();
         var file = (await Exchange.ExportAsync(source.Key))!;
 
         var kept = await Exchange.ImportAsync(new ImportFormRequest(Themed(file.Json, "brand"), UserKey: Editor));
+        var builtIn = await Exchange.ImportAsync(new ImportFormRequest(Themed(file.Json, "bootstrap5"), UserKey: Editor));
         var cleared = await Exchange.ImportAsync(new ImportFormRequest(Themed(file.Json, "gone"), UserKey: Editor));
         var entry = (await Audit.QueryAsync(new AuditQuery { EntityKey = cleared.Form.Key }, PageRequest.First(10))).Items.Single();
 
@@ -448,6 +449,8 @@ public sealed class FormCopyServiceTests : RepositoryTestBase
         {
             Assert.That((await Service.GetDraftAsync(kept.Form.Key))!.Definition!.Settings.Appearance.Theme, Is.EqualTo("brand"));
             Assert.That(kept.Notes.Where(note => note.Code == FormImportNotes.ThemeMissing), Is.Empty);
+            Assert.That((await Service.GetDraftAsync(builtIn.Form.Key))!.Definition!.Settings.Appearance.Theme, Is.EqualTo("bootstrap5"), "a built-in theme, which has no row");
+            Assert.That(builtIn.Notes.Where(note => note.Code == FormImportNotes.ThemeMissing), Is.Empty);
             Assert.That((await Service.GetDraftAsync(cleared.Form.Key))!.Definition!.Settings.Appearance.Theme, Is.Null, "the default theme");
             Assert.That(cleared.Notes[0], Is.EqualTo(new FormImportNote(FormImportNotes.ThemeMissing, "$.definition.settings.appearance.theme", "gone")));
             Assert.That(designed.Settings.Appearance.Theme, Is.Null);

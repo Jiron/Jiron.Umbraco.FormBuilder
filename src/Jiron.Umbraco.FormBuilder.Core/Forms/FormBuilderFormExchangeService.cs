@@ -8,6 +8,7 @@ using Jiron.Umbraco.FormBuilder.Core.MergeTags;
 using Jiron.Umbraco.FormBuilder.Core.OptionLists;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
+using Jiron.Umbraco.FormBuilder.Core.Themes;
 using Microsoft.Extensions.Logging;
 using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.Services.Navigation;
@@ -91,7 +92,7 @@ internal sealed partial class FormBuilderFormExchangeService(
     IFormRepository forms,
     IFolderRepository folders,
     IOptionListRepository optionLists,
-    IThemeRepository themes,
+    FormThemes themes,
     IFormTemplateRepository templates,
     FormDocuments documents,
     FormInfos infos,
@@ -392,7 +393,6 @@ internal sealed partial class FormBuilderFormExchangeService(
         }
     }
 
-    // A theme the site lacks gives way to the default theme (IA 4, ADR-0046).
     // The definition with an action that this site cannot run switched off, each with a note (ADR-0046, ADR-0158): one whose
     // type the site lacks, and one whose type says that the site lacks configuration it needs.
     private FormDefinition WithActionsThisSiteCanRun(FormDefinition definition, List<FormImportNote> notes)
@@ -432,9 +432,10 @@ internal sealed partial class FormBuilderFormExchangeService(
         }
     }
 
+    // A theme the site lacks, neither in code nor in the library, gives way to the default theme (IA 4, ADR-0046).
     private async Task<FormDefinition> WithThemeAsync(FormDefinition definition, List<FormImportNote> notes, CancellationToken cancellationToken)
     {
-        if (definition.Settings.Appearance.Theme is not { } theme || await themes.GetByAliasAsync(theme, cancellationToken) is not null)
+        if (definition.Settings.Appearance.Theme is not { } theme || await themes.HasAsync(theme, cancellationToken))
         {
             return definition;
         }
