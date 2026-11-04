@@ -2892,9 +2892,9 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
   - Done when: tests and Playwright pass, including a test that searches **every Jiron Form Builder table** for the person's email address after an erase and finds nothing, and a test that an anonymised entry gives its places back (ADR-0090).
 - [ ] **13.3 Sensitive data and IP addresses**
   - **Masking** in the UI, emails, exports and logs; the "view sensitive data" permission; audited reveals.
-  - **IP modes:** none, anonymised (IPv4 /24, IPv6 /48) and full (only when the host allows it), with their settings screen.
+  - **IP modes:** none, anonymised (IPv4 /24, IPv6 /48) and full (only when the host allows it), with their settings screen. A form that stores `ip: full` on a host that does not allow it gets the form check's warning that the host replaces a value the form stores (`lock_replaces_value`, ADR-0008, ADR-0180; added in 9.5e).
   - **Values kept only until the actions have run** (§4.4, built in 6.1 and 8.1): audited end to end. The entry panel, exports and the privacy export show such a field as "not kept", and the designer explains the setting next to "sensitive".
-  - Done when: tests pass, including captured logs, and a test searches every Jiron Form Builder table for a value kept only until the actions have run, once no trigger can still fire for its entry and every run is final, and finds nothing.
+  - Done when: tests pass, including captured logs, and a test searches every Jiron Form Builder table for a value kept only until the actions have run, once no trigger can still fire for its entry and every run is final, and finds nothing. A unit test finds the form check's `lock_replaces_value` warning on a form that stores `ip: full` on a host that does not allow it.
 - [ ] **13.4 Privacy documentation and phase review**
   - Write `docs/privacy/`:
     - **a facts sheet:** what Jiron Form Builder stores, where and for how long; that it sets no cookies; the browser storage key used only by "save and resume"; third parties only when a captcha provider is chosen;
