@@ -5,7 +5,9 @@
   and [ADR-0056](0056-field-settings-checks.md) (settings schemas and their rules); the form endpoint's validator
   built in 6.1a ([ADR-0084](0084-the-public-apis-frame-and-the-form-endpoint.md))
 - Date: 2026-10-26
-- Roadmap step: 5.1f (locks of kind `field`); 8.1 applies the locks of kind `action` the same way
+- Roadmap step: 5.1f (locks of kind `field`); 8.1 applies the locks of kind `action` the same way; a value from
+  before a lock follows the field's key whatever its type there, since 9.4d
+  ([ADR-0174](0174-changing-a-fields-type-in-the-designer.md))
 
 ## Context
 
@@ -88,7 +90,7 @@ They do not apply to the draft the designer reads, to versions and their compari
 
 **Saving.** `SaveDraftAsync` checks the locks after the site's limits and before anything is written. The first locked
 setting in document order whose value is neither the lock's (the setting's default, for a lock without a value) nor the
-one the stored draft holds for the same field key and type refuses the save with `FormBuilderSettingLockedException`:
+one the stored draft holds for the same field key (and, until 9.4d, type: ADR-0174) refuses the save with `FormBuilderSettingLockedException`:
 `409 setting_locked`, naming the setting's path, such as `$.pages[0].groups[0].fields[1].settings.maxLength`, and the
 lock's key. Values compare as their kind does: `"2.50"` is `2.5`, and a date or a time as its value. Every other write
 keeps what it carries: a new form's defaults, templates, copies, imports and restored versions are not values an editor

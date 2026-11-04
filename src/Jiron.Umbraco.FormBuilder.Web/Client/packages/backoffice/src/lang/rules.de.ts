@@ -19,7 +19,7 @@ export default {
     op_greaterThan: 'ist größer als',
     op_lessThan: 'ist kleiner als',
     op_between: 'liegt zwischen',
-    op_isChecked: 'ist angehakt',
-    op_isNotChecked: 'ist nicht angehakt',
+    op_isChecked: 'ist angekreuzt',
+    op_isNotChecked: 'ist nicht angekreuzt',
   },
 } satisfies UmbLocalizationDictionary;

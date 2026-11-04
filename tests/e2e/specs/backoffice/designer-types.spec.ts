@@ -293,7 +293,7 @@ test('a field of every built-in type is added from the palette and configured in
   const palette = design.locator('jfb-designer-palette');
   const inspector = design.locator('jfb-designer-inspector');
 
-  await design.getByRole('button', { name: /^Captcha placement, / }).click();
+  await design.getByRole('button', { name: /, captcha placement field$/ }).click();
   await expect(inspector.getByRole('heading', { name: 'Captcha placement field' })).toBeVisible();
   await expect(palette.getByRole('button', { name: /^Captcha placement/ }).first()).toHaveAttribute(
     'aria-disabled',
@@ -386,7 +386,7 @@ test('a text field with a placeholder and a condition using contains becomes a d
   await expect(preview.getByRole('listitem')).toHaveText([
     'Maximum length: 50',
     'Placeholder: Your full name',
-    'Options, one at least',
+    'At least one option',
     'A rule of Nickname uses "contains"',
   ]);
   await expect(preview.getByRole('heading', { name: 'Needed before it publishes' })).toBeVisible();

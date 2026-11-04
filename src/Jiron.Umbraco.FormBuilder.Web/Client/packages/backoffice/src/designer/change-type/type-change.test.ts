@@ -10,7 +10,7 @@ import type {
 } from '../../api';
 import type { DesignDefinition, DesignField } from '../definition';
 import { builtInChanges, builtInTypes } from '../preview/fixtures';
-import { changedField, conditionsOn, losesNothing, previewChange, takes } from './type-change';
+import { changedField, conditionsOn, previewChange, referencesTo, takes } from './type-change';
 
 const type = (alias: string): FieldTypeResponseModel => {
   const found = builtInTypes[alias];
@@ -106,7 +106,6 @@ describe('a change of type', () => {
     expect(preview.needs).toEqual([]);
     expect(preview.locked).toEqual([]);
     expect(preview.newColumns).toBe(false);
-    expect(losesNothing(preview)).toBe(false);
   });
 
   it('changes the field: its type, without what goes, and with everything else as it was', () => {
@@ -256,7 +255,16 @@ describe('a change of type', () => {
   it('loses nothing where the field uses nothing that goes', () => {
     const bare: DesignField = { key: 't', type: 'text', label: { '': 'Comment' } };
     const preview = previewChange(form(bare), bare, type('text'), type('textarea'), changeOf('text', 'textarea'));
-    expect(losesNothing(preview)).toBe(true);
+    expect([
+      preview.settings,
+      preview.locked,
+      preview.properties,
+      preview.messages,
+      preview.conditions,
+      preview.references,
+      preview.needs,
+      preview.needsOptions,
+    ]).toEqual([[], [], [], [], [], [], [], false]);
     expect(changedField(bare, type('textarea'), changeOf('text', 'textarea'))).toEqual({ ...bare, type: 'textarea' });
   });
 
@@ -265,6 +273,35 @@ describe('a change of type', () => {
     expect(
       previewChange(form(amount), amount, type('number'), type('text'), changeOf('number', 'text')).newColumns,
     ).toBe(true);
+  });
+});
+
+describe('the other fields that name a field', () => {
+  it('are those whose options follow its answer, where the new type has no options, and those that must match it', () => {
+    const size: DesignField = { key: 'size', type: 'dropdown', options: { items: [{ value: 's' }] } };
+    const colour: DesignField = {
+      key: 'colour',
+      type: 'radio',
+      options: { parent: 'size', items: [{ value: 'red' }] },
+    };
+    const mail: DesignField = { key: 'mail', type: 'email' };
+    const again: DesignField = { key: 'again', type: 'email', validation: [{ kind: 'matchesField', field: 'mail' }] };
+    const definition = form(size, colour, mail, again);
+
+    expect(referencesTo(definition, 'size', type('text'), changeOf('checkboxes', 'text'))).toEqual([
+      { kind: 'parent', key: 'colour' },
+    ]);
+    expect(referencesTo(definition, 'size', type('dropdown'), changeOf('checkboxes', 'dropdown'))).toEqual([]);
+    expect(referencesTo(definition, 'mail', type('name'), changeOf('text', 'name'))).toEqual([
+      { kind: 'matches', key: 'again' },
+    ]);
+    expect(referencesTo(definition, 'mail', type('hidden'), changeOf('text', 'hidden'))).toEqual([
+      { kind: 'matches', key: 'again' },
+    ]);
+    expect(referencesTo(definition, 'mail', type('textarea'), changeOf('text', 'textarea'))).toEqual([]);
+    expect(
+      previewChange(definition, size, type('checkboxes'), type('text'), changeOf('checkboxes', 'text')).references,
+    ).toEqual([{ kind: 'parent', key: 'colour' }]);
   });
 });
 
@@ -308,8 +345,8 @@ describe('the conditions on a field', () => {
       { holder: { kind: 'element', key: 'child' }, op: 'contains' },
       { holder: { kind: 'element', key: 'child' }, op: 'isNotEmpty' },
       { holder: { kind: 'validationRule', key: 'vr', field: 'p' }, op: 'startsWith' },
-      { holder: { kind: 'action', key: 'a1', name: 'Thank you mail', type: 'email' }, op: 'matches' },
-      { holder: { kind: 'action', key: 'a2', name: null, type: 'webhook' }, op: 'endsWith' },
+      { holder: { kind: 'action', key: 'a1', name: 'Thank you mail', index: 0 }, op: 'matches' },
+      { holder: { kind: 'action', key: 'a2', name: null, index: 1 }, op: 'endsWith' },
       { holder: { kind: 'outcome', key: 'o2', index: 1 }, op: 'notContains' },
     ]);
     // The field the answer is compared with is the condition's own; the answer it is compared to is none of it.
@@ -359,7 +396,28 @@ describe('whether a setting takes a value', () => {
     expect(takes(setting('list', { maximumCount: 2 }), ['a', 'b'])).toBe(true);
     expect(takes(setting('json'), { any: 1 })).toBe(false);
     expect(takes(setting('text', { required: true }), undefined)).toBe(false);
-    expect(takes(setting('text'), null)).toBe(true);
+    expect(takes(setting('text'), null)).toBe(false);
+    expect(takes(setting('text', { minimumLength: 2 }), '')).toBe(false);
+    expect(takes(setting('text', { required: true }), '  ')).toBe(false);
+    expect(takes(setting('number'), '2.50')).toBe(true);
+    expect(takes(setting('number'), '.5')).toBe(false);
+    expect(takes(setting('number'), '1234567890123456')).toBe(false);
+    expect(takes(setting('date'), '2026-12-31')).toBe(true);
+    expect(takes(setting('date'), '2026-02-30')).toBe(false);
+    expect(takes(setting('time'), '09:30')).toBe(true);
+    expect(takes(setting('time'), '24:00')).toBe(false);
+    expect(takes(setting('key'), '5c0f9b5e-3a4d-4b8e-9b51-6f1d2c3a4b5c')).toBe(true);
+    expect(takes(setting('key'), '5C0F9B5E-3A4D-4B8E-9B51-6F1D2C3A4B5C')).toBe(false);
+    expect(takes(setting('choice'), 'a')).toBe(false);
+    expect(takes(setting('localizedText', { minimumLength: 2 }), { '': 'ab', de: '' })).toBe(false);
+    expect(takes(setting('localizedText'), { de: 'Hallo' })).toBe(false);
+    expect(takes(setting('localizedText'), { '': 'Hi', 'de-DE': 'Hallo', 'DE-de': 'Servus' })).toBe(false);
+    expect(takes(setting('localizedText'), { '': 'Hi', 'not a culture': 'x' })).toBe(false);
+    expect(takes(setting('localizedText', { required: true }), { '': ' ', de: 'Hallo' })).toBe(false);
+    expect(takes(setting('localizedText', { allowedValues: ['Hi'] }), { '': 'Hello' })).toBe(false);
+    expect(takes(setting('list', {}, { itemKind: 'number' }), ['1.5', '1.50'])).toBe(false);
+    expect(takes(setting('list', {}, { itemKind: 'date' }), ['2026-12-24', '2026-12-25'])).toBe(true);
+    expect(takes(setting('list', { minimumCount: 2 }, { itemKind: 'text' }), ['a'])).toBe(false);
     const nested = setting(
       'nested',
       {},

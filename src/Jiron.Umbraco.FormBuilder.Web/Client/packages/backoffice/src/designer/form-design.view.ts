@@ -334,6 +334,10 @@ export class FormDesignViewElement extends UmbLitElement {
   #addTo: string | null = null;
   /** Whether the selection a link named was brought into sight, or the user changed something first. */
   #shownLink = false;
+  /** Whether Change type's dialog is opening or open, so a second ask does nothing. */
+  #changingType = false;
+  /** The field selected whose changes of type were read ahead, with its type. */
+  #readAhead: string | null = null;
   #mediaRead = new Set<string>();
   /** What each field's options were last asked for as, so a field is asked again only when they or the language change. */
   #optionsAsked = new Map<string, string>();
@@ -437,10 +441,15 @@ export class FormDesignViewElement extends UmbLitElement {
     }
     void this.#readMedia(view.state.definition);
     this.#readOptions(view.state.definition);
-    // A selected field's changes of type are read ahead, so Change type opens at once (ADR-0174).
+    // A field's changes of type are read ahead as it is selected, so Change type opens at once (ADR-0174); once, not
+    // at every edit, so a read that fails is not asked again and again.
     const found = selection ? locate(view.state.definition, selection) : undefined;
-    if (found?.kind === 'field' && this.#fieldType(found.element.type)?.mayChangeType)
-      void this.#context?.changesOf(found.element.type);
+    const ahead = found?.kind === 'field' ? `${found.element.key} ${found.element.type}` : null;
+    if (ahead !== this.#readAhead) {
+      this.#readAhead = ahead;
+      if (found?.kind === 'field' && this.#fieldType(found.element.type)?.mayChangeType)
+        void this.#context?.changesOf(found.element.type);
+    }
   }
 
   // The options of each field that takes them from elsewhere, as the server resolves the draft's in the canvas's
@@ -1069,6 +1078,16 @@ export class FormDesignViewElement extends UmbLitElement {
   // field then needs, and each the form or the site refuses with why. The change is made on the form as it is when the
   // dialog closes, and a toast offers Undo; Cancel gives the focus back to the field.
   async #changeType(key: string) {
+    if (this.#changingType) return;
+    this.#changingType = true;
+    try {
+      await this.#changeTypeOf(key);
+    } finally {
+      this.#changingType = false;
+    }
+  }
+
+  async #changeTypeOf(key: string) {
     const context = this.#context;
     const before = this.#state();
     const found = before ? locate(before.definition, key) : undefined;
@@ -1078,6 +1097,7 @@ export class FormDesignViewElement extends UmbLitElement {
       (await this.#notifications())?.peek('danger', {
         data: { message: this.localize.term('jfbDesigner_changeTypeFailed') },
       });
+      await this.#focus(key);
       return;
     }
     // The form as it is once the changes are read, which the dialog shows.
@@ -1091,7 +1111,6 @@ export class FormDesignViewElement extends UmbLitElement {
       say: (text: string | null | undefined) => (text ? this.localize.string(text) : ''),
       culture: this._look?.culture ?? '',
       nameOf: (element: string) => this.#label(element),
-      actionTypeName: (type: string) => type,
     };
     const targets = changes.flatMap((each): ChangeTypeTarget[] => {
       const to = this.#fieldType(each.to);
@@ -1101,7 +1120,9 @@ export class FormDesignViewElement extends UmbLitElement {
       const refusal = !to.availability.isAvailable
         ? this.localize.string(to.availability.reason ?? '')
         : !edit.ok && edit.refusal !== 'unchanged'
-          ? this.#refusalText(edit.refusal, name)
+          ? edit.refusal === 'notInRepeater'
+            ? this.localize.term('jfbDesigner_changeTypeNotInRepeater', name)
+            : this.#refusalText(edit.refusal, name)
           : null;
       const group = this._groups.find((one) => one.alias === to.paletteGroup);
       return [

@@ -31,7 +31,6 @@ const context: WordsContext = {
   say: (text) => (text?.startsWith('#') ? term(text.slice(1)) : (text ?? '')),
   culture: '',
   nameOf: (key) => NAMES[key] ?? key,
-  actionTypeName: (type) => `the ${type} type`,
 };
 
 const type = (alias: string): FieldTypeResponseModel => must(builtInTypes[alias], alias);
@@ -94,10 +93,10 @@ describe('the words of a change', () => {
       'Message when the answer is too short',
     ]);
     expect(words.needs).toEqual([
-      'Options, one at least',
+      'At least one option',
       'A rule of Phone uses "contains"',
       'A validation rule of Phone uses "starts with"',
-      'The rule of the action the email type uses "matches a pattern"',
+      'The rule of action 1 uses "matches a pattern"',
       'The rule of outcome 1 uses "ends with"',
     ]);
     expect([words.locked, words.entries]).toEqual([[], null]);
@@ -138,6 +137,25 @@ describe('the words of a change', () => {
     expect(changeWords(context, amount, columns, false).entries).toBeNull();
   });
 
+  it('name another field that names it, and an action and a validation rule however they are given', () => {
+    const size: DesignField = { key: 'n', type: 'checkboxes', options: { items: [{ value: 's' }] } };
+    const definition: DesignDefinition = {
+      pages: [
+        { key: 'page', groups: [{ key: 'g', fields: [size, { key: 'p', type: 'radio', options: { parent: 'n' } }] }] },
+      ],
+      validationRules: [{ key: 'v', conditions: [{ field: 'n', op: 'isChecked' }] }],
+      actions: [
+        { key: 'a', type: 'email', name: 'Thanks', rules: [{ conditions: [{ field: 'n', op: 'isNotChecked' }] }] },
+      ],
+    };
+    const preview = previewChange(definition, size, type('checkboxes'), type('text'), changeOf('checkboxes', 'text'));
+    expect(changeWords(context, size, preview, false).needs).toEqual([
+      'A validation rule uses "is ticked"',
+      'The rule of the action Thanks uses "is not ticked"',
+      'The options of Phone follow its answer',
+    ]);
+  });
+
   it('name a needed setting by its label', () => {
     const preview = previewChange(DEFINITION, NAME, type('text'), type('calculation'), changeOf('text', 'calculation'));
     expect(changeWords(context, NAME, preview, false).needs[0]).toBe(term('jfbFieldSettings_calculationFormula'));
@@ -172,7 +190,7 @@ const DATA: ChangeTypeModalData = {
       words: {
         goes: ['Placeholder: Your full name'],
         locked: ['Most selections: 3'],
-        needs: ['Options, one at least', 'A rule of Phone uses "contains"'],
+        needs: ['At least one option', 'A rule of Phone uses "contains"'],
         entries: 'Older answers note',
       },
     },
@@ -220,7 +238,7 @@ describe('the Change type dialog', () => {
       ['', 'Choose a type', false],
       ['textarea', 'Long text', false],
       ['dropdown', 'Dropdown', false],
-      ['captcha', 'Captcha (A form holds one Captcha at most.)', true],
+      ['captcha', 'Captcha (unavailable)', false],
     ]);
     expect(text(root.querySelector('#now'))).toBe('Now: Short text');
     expect(select.getAttribute('aria-describedby')).toBe('now');
@@ -241,7 +259,7 @@ describe('the Change type dialog', () => {
     expect([...preview.querySelectorAll('li')].map((item) => text(item))).toEqual([
       'Placeholder: Your full name',
       'Most selections: 3',
-      'Options, one at least',
+      'At least one option',
       'A rule of Phone uses "contains"',
     ]);
     expect(text(preview.querySelector('.help'))).toBe('Older answers note');
@@ -258,13 +276,23 @@ describe('the Change type dialog', () => {
     const select = must(root.querySelector('select'), 'the list');
     select.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
     expect(modal.getValue()).toEqual({ to: 'textarea' });
+    expect(modal.submit).toHaveBeenCalledOnce();
   });
 
-  it('changes to nothing while no type, or a refused one, is chosen', async () => {
+  it('gives the list the focus as it opens', async () => {
+    const { root } = await dialogOf();
+    await new Promise<void>((done) => requestAnimationFrame(() => done()));
+    expect(root.activeElement).toBe(root.querySelector('select'));
+  });
+
+  it("says why a refused type can't be chosen, and changes to nothing while none, or a refused one, is chosen", async () => {
     const { element, modal, root } = await dialogOf();
     const select = must(root.querySelector('select'), 'the list');
     select.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
     await choose(element, root, 'captcha');
+    expect(text(root.querySelector('.preview .why'))).toBe('A form holds one Captcha at most.');
+    expect(root.querySelectorAll('.preview li')).toHaveLength(0);
+    select.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
     confirm(root).dispatchEvent(new Event('click'));
     expect(modal.submit).not.toHaveBeenCalled();
     expect(confirm(root).disabled).toBe(true);

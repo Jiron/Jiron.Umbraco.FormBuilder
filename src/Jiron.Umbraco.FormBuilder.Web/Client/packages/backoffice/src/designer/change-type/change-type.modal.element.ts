@@ -1,6 +1,7 @@
 // The Change type dialog (ROADMAP 9.4d, ADR-0174): the types the selected field may become, in the browser's own select
 // by palette group, and what the type chosen takes from the field and what it then needs, before anything changes. A
-// type the form or the site refuses can't be chosen and says why. Change type stays off until a type is chosen.
+// type the form or the site refuses is marked unavailable and, chosen, says why, so the keys and screen readers reach
+// the reason too. Change type stays off until a type it may become is chosen.
 import { css, html, nothing, type PropertyValues } from '@umbraco-cms/backoffice/external/lit';
 import { UmbModalBaseElement } from '@umbraco-cms/backoffice/modal';
 import { jfbBackofficeTokens } from '../../styles/tokens';
@@ -80,6 +81,10 @@ export class ChangeTypeModalElement extends UmbModalBaseElement<ChangeTypeModalD
         margin-block-start: var(--uui-size-space-5);
         color: var(--jfb-bo-color-text-muted);
       }
+
+      .why {
+        color: var(--uui-color-danger-standalone);
+      }
     `,
   ];
 
@@ -97,13 +102,13 @@ export class ChangeTypeModalElement extends UmbModalBaseElement<ChangeTypeModalD
   }
 
   #target(): ChangeTypeTarget | undefined {
-    return this.data?.targets.find((target) => target.alias === this._chosen && target.refusal === null);
+    return this.data?.targets.find((target) => target.alias === this._chosen);
   }
 
-  /** Changes to the type chosen; false while none is. */
+  /** Changes to the type chosen; false while none is, or the one chosen is refused. */
   #change(): boolean {
     const target = this.#target();
-    if (!target) return false;
+    if (!target || target.refusal !== null) return false;
     this.updateValue({ to: target.alias });
     this._submitModal();
     return true;
@@ -130,6 +135,7 @@ export class ChangeTypeModalElement extends UmbModalBaseElement<ChangeTypeModalD
 
   #preview(target: ChangeTypeTarget | undefined) {
     if (!target) return html`<p class="help">${this.localize.term('jfbDesigner_changeTypeChoose')}</p>`;
+    if (target.refusal !== null) return html`<p class="why">${target.refusal}</p>`;
     const { goes, locked, needs, entries } = target.words;
     const nothingGoes = goes.length === 0 && locked.length === 0 && needs.length === 0;
     return html`${this.#list(this.localize.term('jfbDesigner_changeTypeGoes'), goes)}
@@ -159,12 +165,8 @@ export class ChangeTypeModalElement extends UmbModalBaseElement<ChangeTypeModalD
             html`<optgroup label=${group.name}>
               ${group.targets.map(
                 (each) =>
-                  html`<option
-                    value=${each.alias}
-                    ?disabled=${each.refusal !== null}
-                    ?selected=${this._chosen === each.alias}
-                  >
-                    ${each.refusal ? this.localize.term('jfbDesigner_changeTypeRefused', each.name, each.refusal) : each.name}
+                  html`<option value=${each.alias} ?selected=${this._chosen === each.alias}>
+                    ${each.refusal === null ? each.name : this.localize.term('jfbDesigner_changeTypeUnavailable', each.name)}
                   </option>`,
               )}
             </optgroup>`,
@@ -177,7 +179,7 @@ export class ChangeTypeModalElement extends UmbModalBaseElement<ChangeTypeModalD
         slot="actions"
         look="primary"
         color="positive"
-        ?disabled=${!target}
+        ?disabled=${!target || target.refusal !== null}
         label=${this.localize.term('jfbDesigner_changeTypeConfirm')}
         @click=${() => this.#change()}
       ></uui-button>

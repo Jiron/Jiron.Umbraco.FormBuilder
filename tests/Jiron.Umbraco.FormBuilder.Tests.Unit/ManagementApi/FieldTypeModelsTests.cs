@@ -59,7 +59,7 @@ public sealed class FieldTypeModelsTests
             Assert.That(FieldTypeNames.OfFeatures(FieldFeatures.Label | FieldFeatures.Places), Is.EqualTo(new[] { "label", "places" }));
             foreach (var type in Registry.Types)
             {
-                var messages = FieldTypeResponseModel.Of(type, FieldTypeAvailability.Available, []).Messages;
+                var messages = FieldTypeResponseModel.Of(type, FieldTypeAvailability.Available, [], mayChangeType: false).Messages;
                 Assert.That(messages, Is.EqualTo(FieldMessageProperties.All.Where(message => type.Declaration.Messages.HasFlag(message.Kind)).Select(message => message.Name)), type.Declaration.Alias);
             }
         });
@@ -68,7 +68,7 @@ public sealed class FieldTypeModelsTests
     [Test]
     public void ASetting_CarriesItsKindChoicesNestedSettingsDefaultAndRules()
     {
-        var email = FieldTypeResponseModel.Of(Registry.FindType("email")!, FieldTypeAvailability.Available, []);
+        var email = FieldTypeResponseModel.Of(Registry.FindType("email")!, FieldTypeAvailability.Available, [], mayChangeType: false);
         var domains = email.Settings.Single(setting => setting.Name == "domains");
         var mode = domains.Settings.Single(setting => setting.Name == "mode");
         var list = domains.Settings.Single(setting => setting.Name == "list");
@@ -85,7 +85,7 @@ public sealed class FieldTypeModelsTests
             Assert.That(mode.Default?.GetString(), Is.EqualTo("any"));
             Assert.That((list.Kind, list.ItemKind, list.Rules.MaximumLength, list.Rules.MaximumCount), Is.EqualTo(("list", "text", 253, FieldSettingRules.ListCount)));
             Assert.That(email.RuleKind, Is.EqualTo("text"));
-            Assert.That(FieldTypeResponseModel.Of(Registry.FindType("captcha")!, FieldTypeAvailability.Available, []).RuleKind, Is.Null);
+            Assert.That(FieldTypeResponseModel.Of(Registry.FindType("captcha")!, FieldTypeAvailability.Available, [], mayChangeType: false).RuleKind, Is.Null);
         });
     }
 
@@ -114,7 +114,7 @@ public sealed class FieldTypeModelsTests
             Assert.That(domains.Settings.Select(setting => setting.Lock), Is.All.Null, "a lock fixes the whole object");
             Assert.That(model.Types.Where(type => type.Alias is not ("text" or "email")).SelectMany(type => type.Settings).Select(setting => setting.Lock), Is.All.Null);
             Assert.That(() => FieldTypesResponseModel.Of(Registry.Types, [], null!), Throws.ArgumentNullException);
-            Assert.That(() => FieldTypeResponseModel.Of(Registry.FindType("text")!, FieldTypeAvailability.Available, null!), Throws.ArgumentNullException);
+            Assert.That(() => FieldTypeResponseModel.Of(Registry.FindType("text")!, FieldTypeAvailability.Available, null!, mayChangeType: false), Throws.ArgumentNullException);
         });
     }
 
@@ -148,7 +148,7 @@ public sealed class FieldTypeModelsTests
             Assert.That(checkboxes.KeptSettings, Is.EqualTo(new[] { "minSelections" }), "a setting the target's lock sets is not carried over");
             Assert.That(checkboxes.LockedSettings, Is.EqualTo(new[] { "maxSelections" }));
             Assert.That((Changes("heading").Changes, model.Types.Single(type => type.Alias == "heading").MayChangeType), Is.EqualTo((Array.Empty<FieldTypeChangeResponseModel>(), false)), "content keeps its type");
-            Assert.That(FieldTypeResponseModel.Of(Registry.FindType("text")!, FieldTypeAvailability.Available, []).MayChangeType, Is.False, "not unless given");
+            Assert.That(FieldTypeResponseModel.Of(Registry.FindType("text")!, FieldTypeAvailability.Available, [], mayChangeType: true).MayChangeType, Is.True, "as given");
             Assert.That(() => FieldTypeChangeResponseModel.Of(null!), Throws.ArgumentNullException);
             Assert.That(() => FieldTypeChangesResponseModel.Of(null!, Registry.Types, locks), Throws.ArgumentNullException);
             Assert.That(() => FieldTypeChangesResponseModel.Of(Registry.FindType("text")!, null!, locks), Throws.ArgumentNullException);

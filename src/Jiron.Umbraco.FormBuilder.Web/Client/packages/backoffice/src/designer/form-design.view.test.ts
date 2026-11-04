@@ -798,7 +798,7 @@ describe('the moves', () => {
     );
     expect(dropdown).toMatchObject({ name: 'Dropdown', group: 'choices', refusal: null });
     expect(dropdown.words.goes).toContain('Placeholder: Your full name');
-    expect(dropdown.words.needs).toEqual(['Options, one at least', 'A rule of phone uses "contains"']);
+    expect(dropdown.words.needs).toEqual(['At least one option', 'A rule of phone uses "contains"']);
     expect(data.targets[0]).toMatchObject({ alias: 'textarea', group: 'Text' });
 
     const changed = locate(state().definition, 'name')?.element as DesignField;
@@ -822,7 +822,7 @@ describe('the moves', () => {
   });
 
   it("refuse in Change type... a type the site lacks what it needs for, with why, and say when the types can't be read", async () => {
-    const { ask, state, toasts, workspace } = await viewOf();
+    const { ask, canvas, state, toasts, view, workspace } = await viewOf();
     const textarea = must(builtInTypes['textarea'], 'the long text');
     workspace.types.setValue({
       ...builtInTypes,
@@ -844,10 +844,23 @@ describe('the moves', () => {
     workspace.unreadable = true;
     opened.dialogs = [];
     await ask({ kind: 'changeType', key: 'email' });
+    expect(focusedIn(canvas)).toBe('email select');
     expect(opened.dialogs).toEqual([]);
     expect(toasts.shown.at(-1)?.data.message).toBe(
       "The types this field may become couldn't be read. Try again in a moment.",
     );
+
+    // Asked twice while the first ask reads, the dialog opens once.
+    workspace.unreadable = false;
+    opened.value = undefined;
+    opened.dialogs = [];
+    for (let twice = 0; twice < 2; twice++)
+      view.dispatchEvent(
+        new CustomEvent(CANVAS_REQUEST, { detail: { kind: 'changeType', key: 'note' }, bubbles: true, composed: true }),
+      );
+    await settle(view);
+    await new Promise((done) => setTimeout(done, 50));
+    expect(opened.dialogs).toHaveLength(1);
   });
 
   it('say in Change type... what the entries screen does with older answers, and refuse what the form refuses', async () => {
@@ -868,7 +881,7 @@ describe('the moves', () => {
     await ask({ kind: 'changeType', key: 'amount' });
     const amount = opened.dialogs[0]?.data as ChangeTypeModalData;
     expect(amount.targets.find((target) => target.alias === 'text')?.words.entries).toBe(
-      "Entries already submitted keep their answers, but the entries screen's filters and sorting pass them by.",
+      "Entries already submitted keep their answers, but the entries screen's filters and sorting skip them.",
     );
     expect(amount.targets.find((target) => target.alias === 'textarea')?.words.entries).toBeTruthy();
     expect(amount.targets.find((target) => target.alias === 'slider')?.words.entries).toBeNull();
@@ -882,7 +895,7 @@ describe('the moves', () => {
     await ask({ kind: 'changeType', key: 'kid' });
     const kid = opened.dialogs[0]?.data as ChangeTypeModalData;
     expect(kid.targets.find((target) => target.alias === 'textarea')?.refusal).toBe(
-      "A repeatable group can't hold that.",
+      "A repeatable group can't hold a field of the type Long text.",
     );
     expect(kid.targets.find((target) => target.alias === 'email')?.refusal).toBeNull();
     expect(workspace.kept['kid']).toBeUndefined();

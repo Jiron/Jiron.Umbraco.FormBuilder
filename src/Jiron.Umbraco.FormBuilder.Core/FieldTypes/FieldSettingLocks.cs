@@ -104,9 +104,10 @@ internal sealed class FieldSettingLocks
 
     /// <summary>
     /// Refuses a draft that gives a locked setting a value of its own: one that is neither the lock's (the setting's
-    /// default, for a lock without a value) nor the one the stored draft holds for the field with the same key and type,
-    /// which a form keeps from before the lock came. A setting the field leaves out is always fine. The first such
-    /// setting in document order is named.
+    /// default, for a lock without a value) nor the one the stored draft holds for the field with the same key, which a
+    /// form keeps from before the lock came, whatever type the field had there: an Undo after a save may bring back a
+    /// change of type (ADR-0174). A setting the field leaves out is always fine. The first such setting in document
+    /// order is named.
     /// </summary>
     /// <param name="definition">The draft to save.</param>
     /// <param name="stored">The stored draft the save replaces, or null when there is none to read.</param>
@@ -130,7 +131,7 @@ internal sealed class FieldSettingLocks
 
         foreach (var (field, path) in FieldsOf(definition))
         {
-            var kept = before.TryGetValue(field.Key, out var earlier) && string.Equals(earlier.Type, field.Type, StringComparison.Ordinal) ? earlier.Settings : null;
+            var kept = before.TryGetValue(field.Key, out var earlier) ? earlier.Settings : null;
             if (FirstRefused(field.Settings, kept, Of(field.Type)) is { } settingLock)
             {
                 throw new FormBuilderSettingLockedException(JsonPaths.Property(JsonPaths.Property(path, "settings"), settingLock.Setting.Name), settingLock.ConfigurationKey);
@@ -143,7 +144,7 @@ internal sealed class FieldSettingLocks
     /// a value) nor the one kept from before the lock came; null when there is none. A setting left out is always fine.
     /// </summary>
     /// <param name="settings">The settings to save.</param>
-    /// <param name="kept">The settings the stored draft holds for the same element and type, or null.</param>
+    /// <param name="kept">The settings the stored draft holds for the same element, or null.</param>
     /// <param name="locks">The locks of the element's type.</param>
     internal static FieldSettingLock? FirstRefused(SettingsObject? settings, SettingsObject? kept, ImmutableArray<FieldSettingLock> locks)
     {

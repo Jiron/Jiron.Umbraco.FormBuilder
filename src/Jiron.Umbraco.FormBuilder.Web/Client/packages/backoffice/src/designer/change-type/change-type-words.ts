@@ -18,8 +18,6 @@ export interface WordsContext {
   readonly culture: string;
   /** The name of a page, group or field of the form, as the designer names it. */
   readonly nameOf: (key: string) => string;
-  /** The name of an action type. */
-  readonly actionTypeName: (type: string) => string;
 }
 
 // The common properties a change can take, each by the words that name it; a text property shows its text too.
@@ -75,13 +73,14 @@ function holderWords(context: WordsContext, holder: ConditionHolder, op: string)
     case 'element':
       return context.term('jfbDesigner_changeTypeConditionElement', context.nameOf(holder.key), said);
     case 'validationRule':
-      return context.term('jfbDesigner_changeTypeConditionCheck', context.nameOf(holder.field), said);
+      return holder.field
+        ? context.term('jfbDesigner_changeTypeConditionCheck', context.nameOf(holder.field), said)
+        : context.term('jfbDesigner_changeTypeConditionCheckAny', said);
     case 'action':
-      return context.term(
-        'jfbDesigner_changeTypeConditionAction',
-        holder.name ?? context.actionTypeName(holder.type),
-        said,
-      );
+      // An action without a name of its own is named by its place, as an outcome is.
+      return holder.name
+        ? context.term('jfbDesigner_changeTypeConditionAction', holder.name, said)
+        : context.term('jfbDesigner_changeTypeConditionActionNumber', holder.index + 1, said);
     case 'outcome':
       return context.term('jfbDesigner_changeTypeConditionOutcome', holder.index + 1, said);
   }
@@ -89,7 +88,7 @@ function holderWords(context: WordsContext, holder: ConditionHolder, op: string)
 
 /**
  * A preview in words: what goes (settings with the field's values, properties, own messages), what the site sets
- * instead, what the field needs (options, settings, the conditions to change), and, where the form has entries that
+ * instead, what the field needs (options, settings, the conditions and other fields to change), and, where the form has entries that
  * hold the field and the new type keeps its answers elsewhere, what the entries screen does with older answers.
  */
 export function changeWords(
@@ -121,6 +120,12 @@ export function changeWords(
       ...(preview.needsOptions ? [context.term('jfbDesigner_changeTypeOptions')] : []),
       ...preview.needs.map((setting) => context.say(setting.label)),
       ...preview.conditions.map(({ holder, op }) => holderWords(context, holder, op)),
+      ...preview.references.map(({ kind, key }) =>
+        context.term(
+          kind === 'parent' ? 'jfbDesigner_changeTypeParent' : 'jfbDesigner_changeTypeMatches',
+          context.nameOf(key),
+        ),
+      ),
     ],
     entries: hasEntries && preview.newColumns ? context.term('jfbDesigner_changeTypeEntries') : null,
   };

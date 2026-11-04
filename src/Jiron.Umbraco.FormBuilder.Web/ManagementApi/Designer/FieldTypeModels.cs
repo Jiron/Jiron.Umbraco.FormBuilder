@@ -40,7 +40,6 @@ internal sealed record FieldTypesResponseModel
             Types = [.. types.Select((type, i) => FieldTypeResponseModel.Of(type, availability[i], locks.Of(type.Declaration.Alias), types.Any(to => FieldTypeChanges.CanChange(type.Declaration, to.Declaration))))],
         };
     }
-
 }
 
 /// <summary>A group of the palette or of the inspector.</summary>
@@ -100,7 +99,7 @@ internal sealed record FieldTypeResponseModel
     public required bool MayChangeType { get; init; }
 
     /// <summary>The model of a type, with the host's locks of its settings and whether its fields may change type.</summary>
-    public static FieldTypeResponseModel Of(IFormBuilderFieldType type, FieldTypeAvailability availability, IReadOnlyList<FieldSettingLock> locks, bool mayChangeType = false)
+    public static FieldTypeResponseModel Of(IFormBuilderFieldType type, FieldTypeAvailability availability, IReadOnlyList<FieldSettingLock> locks, bool mayChangeType)
     {
         ArgumentNullException.ThrowIfNull(type);
         ArgumentNullException.ThrowIfNull(availability);

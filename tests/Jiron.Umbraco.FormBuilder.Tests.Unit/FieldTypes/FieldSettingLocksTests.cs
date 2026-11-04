@@ -346,7 +346,7 @@ public sealed class FieldSettingLocksTests
     }
 
     [Test]
-    public void ADraftSave_KeepsAValueTheStoredDraftHeld_ForTheSameFieldAndType()
+    public void ADraftSave_KeepsAValueTheStoredDraftHeld_ForTheSameField_WhateverItsTypeThere()
     {
         var locks = SaveLocks();
         var stored = Form(Field(First, "text", """{"maxLength":500}"""), Field(Second, "textarea", """{"maxLength":500}"""), Field(Third, "text", """{"counter":true}"""));
@@ -356,7 +356,8 @@ public sealed class FieldSettingLocksTests
             Assert.That(Refusal(locks, Form(Field(First, "text", """{"maxLength":500}""")), stored), Is.Null, "a value from before the lock came");
             Assert.That(Refusal(locks, Form(Field(Third, "text", """{"counter":true}"""), Field(First, "text", """{"maxLength":500,"minLength":2}""")), stored), Is.Null, "moved, beside other changes");
             Assert.That(Refusal(locks, Form(Field(First, "text", """{"maxLength":400}""")), stored), Is.EqualTo((At(0, "maxLength"), Key + "0")), "changed");
-            Assert.That(Refusal(locks, Form(Field(Second, "text", """{"maxLength":500}""")), stored), Is.EqualTo((At(0, "maxLength"), Key + "0")), "another type before");
+            Assert.That(Refusal(locks, Form(Field(Second, "text", """{"maxLength":500}""")), stored), Is.Null, "another type before, as an Undo after a save brings back");
+            Assert.That(Refusal(locks, Form(Field(Second, "text", """{"maxLength":600}""")), stored), Is.EqualTo((At(0, "maxLength"), Key + "0")), "another type before, with another value");
             Assert.That(Refusal(locks, Form(Field(Fourth, "text", """{"maxLength":500}""")), stored), Is.EqualTo((At(0, "maxLength"), Key + "0")), "another field");
             Assert.That(Refusal(locks, Form(Field(First, "text", """{"counter":true}""")), stored), Is.EqualTo((At(0, "counter"), Key + "2")), "a value the field did not hold");
             Assert.That(Refusal(locks, Form(Field(First, "number", """{"min":"3"}""")), Form(Field(First, "number", """{"min":"3.0"}"""))), Is.Null, "compared as its kind compares");
