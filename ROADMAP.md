@@ -2677,7 +2677,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
   - **Seeing rules:** chips on the canvas, and a **rules overview** listing every rule in the form with links.
   - **Form-level validation rules** in the same builder.
   - Done when: Playwright finds a rule's chip on the element it affects and none on the selected element, opens the rules overview from the toolbar's "...", follows a rule's link to its element, finds a hide rule and a require rule that hold for the same answer warned on their row, adds a rule from the overview after choosing what it affects, and finds the empty overview's sentence; and builds a form-level validation rule with its field and message in the builder, whose message the published form shows on that field in the browser when the rule matches.
-- [ ] **9.5d The form check: the form's logic** (split from 9.5b, then in two, see WORKLOG)
+- [x] **9.5d The form check: the form's logic** (split from 9.5b, then in two, see WORKLOG) (2026-11-04, cb13a79)
   - **The checks that reason about the form's rules,** with the rule search of the rules overview (9.5c) on the server too, held to the same shared vectors in both runtimes (D10):
     - a required field that a rule can hide;
     - unreachable pages;
