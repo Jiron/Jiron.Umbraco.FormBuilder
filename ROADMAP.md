@@ -2661,7 +2661,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
     - A switch that turns a rule off without deleting it.
   - **Where it opens** (ADR-0175): the inspector's Rules section lists an element's rules in words, each opening the builder, and holds Add a rule; the builder's live rule preview (Try it) runs on `@jfb/logic`.
   - Done when: Playwright builds nested rules of every operator kind, a "required when" rule, a comparison of two fields and a context condition, and the designer's live rule preview agrees with the shared vectors (D10).
-- [ ] **9.5b The form check on the server** (split, see WORKLOG)
+- [x] **9.5b The form check on the server** (split, see WORKLOG; ADR-0177) (2026-11-04, 6661367)
   - **The check runs on the server and joins the publish pipeline:** errors block publishing, warnings and hints don't. A draft is checked without publishing too, for the designer (the `design` permission), and every issue names the element and the setting it is about by its path, so that every issue can have a "fix it" link in the designer (9.5e).
   - **The checks that the field types, the settings and the merge-tag engine already know:**
     - an email action with no email field to reply to;
