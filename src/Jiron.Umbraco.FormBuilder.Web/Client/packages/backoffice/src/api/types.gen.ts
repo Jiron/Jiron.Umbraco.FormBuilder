@@ -329,6 +329,21 @@ export type FormChangeRequestModel = {
     concurrencyVersion: number;
 };
 
+export type FormCheckIssueResponseModel = {
+    severity: string;
+    code: string;
+    path: string;
+    message: string;
+};
+
+export type FormCheckRequestModel = {
+    definition: unknown;
+};
+
+export type FormCheckResponseModel = {
+    issues: Array<FormCheckIssueResponseModel>;
+};
+
 export type FormComparisonResponseModel = {
     fromVersion: number;
     toVersion: number;
@@ -1449,6 +1464,45 @@ export type FolderTrashResponses = {
 };
 
 export type FolderTrashResponse = FolderTrashResponses[keyof FolderTrashResponses];
+
+export type FormCheckCheckData = {
+    body?: FormCheckRequestModel;
+    path: {
+        key: string;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/form/{key}/check';
+};
+
+export type FormCheckCheckErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type FormCheckCheckError = FormCheckCheckErrors[keyof FormCheckCheckErrors];
+
+export type FormCheckCheckResponses = {
+    /**
+     * OK
+     */
+    200: FormCheckResponseModel;
+};
+
+export type FormCheckCheckResponse = FormCheckCheckResponses[keyof FormCheckCheckResponses];
 
 export type FormCreateData = {
     body?: CreateFormRequestModel;

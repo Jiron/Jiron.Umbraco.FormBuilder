@@ -1079,6 +1079,20 @@ axe clean, and reads it back from the saved draft; and builds a "required when" 
 value, refused at its empty row first, tried in Try it (required, not required, off), read back, and deleted from its
 line with Undo in the toast.
 
+The form check on the server (9.5b, ADR-0177): `Tests.Unit/Forms/FormCheckTests` holds every text where merge tags
+render with its place, context, owner and path (titles and descriptions, a field's texts, a default value and one kept
+on the server, a consent's wording, an outcome's message and redirect, the entry title, an action's template); the
+merge tags' errors and warnings at their paths, an action's errors left to its type, and a redirect that recalls
+answers; a field visitors see without a label an error, content, a value kept on the server and a repeatable group's
+labelled child not; a captcha provider without its keys a warning, one with keys or one the site lacks not; an email
+action on a form without an email field a warning, a switched-off one and a repeatable group's email field not; the
+check's errors (the publish checks' first), then warnings, then hints, at most a hundred of each; and the form as the
+site runs it, a host's lock applied. The runtime tests that publish tags their places refuse
+(`Support/RefusedTags.cs`) leave the merge-tag check out, as for a form published before it.
+`Tests.Integration/ManagementApi/FormCheckApiTests` checks the unsaved draft through `POST form/{key}/check` (an error,
+a warning and a test site's hint, each at its path) and publishes through the API: refused at the label's path, then
+live with a warning only.
+
 ## The public API tests
 
 `Tests.Integration/PublicApi/` calls the public API anonymously on a real site that boots its runtime, with forms

@@ -98,26 +98,15 @@ internal sealed partial class FormBuilderFormService
             return new FormVersionResult(await infos.InfoAsync(form, cancellationToken), null);
         }
 
-        // Every check's problems together, at most as many as one read reports, over the draft as the site will run it:
-        // with the host's designer locks applied (ADR-0060).
-        var running = actionLocks.Apply(locks.Apply(definition));
-        var problems = new DefinitionProblems();
-        foreach (var check in _publishChecks)
+        // The form check's errors together, over the draft as the site will run it (ADR-0177); its warnings and hints
+        // never keep a form from going live.
+        var errors = (await formCheck.CheckAsync(definition, cancellationToken))
+            .Where(issue => issue.Severity == FormCheckSeverity.Error)
+            .Select(issue => issue.ToProblem())
+            .ToList();
+        if (errors.Count > 0)
         {
-            if (problems.IsFull)
-            {
-                break;
-            }
-
-            foreach (var problem in await check.CheckAsync(running, cancellationToken))
-            {
-                problems.Add(problem);
-            }
-        }
-
-        if (problems.Found > 0)
-        {
-            throw new FormBuilderValidationException(problems.ToReadOnlyList());
+            throw new FormBuilderValidationException(errors);
         }
 
         await changes.CancelableAsync(new FormPublishingNotification(definition, form.Alias, form.Name, userKey, new EventMessages()));

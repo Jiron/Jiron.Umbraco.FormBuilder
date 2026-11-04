@@ -290,6 +290,14 @@ Text        LocalizedText: culture → text, "" is the default; "#key" reads the
 - **Versions:** every save that changes the definition appends a version row; publishing appends a published one,
   updates the field catalogue and raises the public revision when the projection changed
   ([ADR-0044](decisions/0044-form-service.md)). Drafts keep what publishing refuses; the form check lists it.
+- **The form check** ([ADR-0177](decisions/0177-the-form-check-on-the-server.md), from 9.5b): `FormCheck` in Core
+  runs every publish check, whose problems are errors, then every `IFormCheck`, which weighs its issues as errors,
+  warnings or hints, over the definition as the site runs it, the host's locks applied; each issue names its element and
+  setting by its JSON path. Publishing refuses its errors only. The management API's `form/{key}/check` gives the
+  issues of the draft the designer holds, unsaved, to a user with `design`. Its checks: a field visitors see without a
+  label (`LabelFormCheck`), the merge tags of every text where they render, found by `FormTemplates`, with a redirect
+  that recalls answers (`MergeTagFormCheck`), a captcha provider without its keys (`CaptchaKeysFormCheck`) and an email
+  action on a form without an email field (`EmailReplyFormCheck`).
 - **The History** ([ADR-0045](decisions/0045-versions-comparison-and-draft-cleanup.md)) lists the publishes, or every
   version, newest first, each with what changed since the version before it (a publish since the publish before).
   The comparison matches elements by key, settings groups by name, and gives each change its path of properties with

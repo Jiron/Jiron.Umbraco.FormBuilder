@@ -6,6 +6,7 @@ using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Core.MergeTags;
 using Jiron.Umbraco.FormBuilder.Testing;
+using Jiron.Umbraco.FormBuilder.Tests.Integration.Support;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Services;
@@ -29,6 +30,16 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Integration.PublicApi;
 [UmbracoTest(Database = UmbracoTestOptions.Database.NewSchemaPerTest, Boot = true)]
 public sealed partial class PublicFormRecallTests : PublicApiTestBase
 {
+    /// <inheritdoc />
+    protected override void CustomTestSetup(IUmbracoBuilder builder)
+    {
+        ArgumentNullException.ThrowIfNull(builder);
+        base.CustomTestSetup(builder);
+
+        // Its forms hold tags their places refuse, which both runtimes write as they stand (ADR-0177).
+        builder.PublishesRefusedTags();
+    }
+
     private static readonly string FixturePath = RepositoryRoot.Path(typeof(PublicFormRecallTests).Assembly, "tests", "fixtures", "public-api", "recall.json");
 
     private static readonly FormField FullName = Field("fullName", "text", "Your name", help: "Asked before {{ field.topic }}");

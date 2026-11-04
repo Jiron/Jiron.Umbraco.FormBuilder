@@ -6,6 +6,7 @@ using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Submissions;
 using Jiron.Umbraco.FormBuilder.Core.Themes;
 using Jiron.Umbraco.FormBuilder.Testing.Time;
+using Jiron.Umbraco.FormBuilder.Tests.Integration.Support;
 using Jiron.Umbraco.FormBuilder.Web.Rendering;
 using Microsoft.Extensions.DependencyInjection;
 using Umbraco.Cms.Core;
@@ -135,6 +136,7 @@ public sealed class ElementFixtureTests : RenderingTestBase
         var clock = new TestClock();
         builder.Services.AddSingleton(clock);
         builder.Services.AddUnique<TimeProvider>(clock);
+        builder.PublishesRefusedTags();
     }
 
     // The form's root as the render endpoint wrote it, without Umbraco's route token, which is new on every render, and

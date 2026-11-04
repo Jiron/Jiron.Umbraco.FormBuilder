@@ -137,7 +137,7 @@ internal sealed partial class FormBuilderFormService(
     FieldTypeRegistry types,
     FieldSettingLocks locks,
     ActionSettingLocks actionLocks,
-    IEnumerable<IFormPublishCheck> publishChecks,
+    FormCheck formCheck,
     FormRemoval removal,
     AccessSnapshotInvalidator snapshots,
     FormCacheInvalidator formCache,
@@ -161,8 +161,6 @@ internal sealed partial class FormBuilderFormService(
 
     /// <summary>The audit action of a move.</summary>
     public const string MovedAction = "form.moved";
-
-    private readonly IReadOnlyList<IFormPublishCheck> _publishChecks = publishChecks.ToList();
 
     /// <inheritdoc />
     public async Task<FormInfo?> GetAsync(Guid key, CancellationToken cancellationToken = default) =>

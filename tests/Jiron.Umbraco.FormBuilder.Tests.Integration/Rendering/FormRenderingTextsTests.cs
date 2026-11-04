@@ -5,6 +5,7 @@ using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.MergeTags;
 using Jiron.Umbraco.FormBuilder.Core.Settings;
+using Jiron.Umbraco.FormBuilder.Tests.Integration.Support;
 using Umbraco.Cms.Tests.Common.Testing;
 
 namespace Jiron.Umbraco.FormBuilder.Tests.Integration.Rendering;
@@ -20,6 +21,16 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Integration.Rendering;
 [UmbracoTest(Database = UmbracoTestOptions.Database.NewSchemaPerTest, Boot = true)]
 public sealed class FormRenderingTextsTests : RenderingTestBase
 {
+    /// <inheritdoc />
+    protected override void CustomTestSetup(IUmbracoBuilder builder)
+    {
+        ArgumentNullException.ThrowIfNull(builder);
+        base.CustomTestSetup(builder);
+
+        // Its forms hold tags their places refuse, which both runtimes write as they stand (ADR-0177).
+        builder.PublishesRefusedTags();
+    }
+
     private static readonly Guid PageOne = Key(0x01);
     private static readonly Guid PageTwo = Key(0x02);
     private static readonly Guid Name = Key(0x10);

@@ -615,6 +615,7 @@ public sealed partial class FormPostTests : RenderingTestBase
         ArgumentNullException.ThrowIfNull(builder);
         base.CustomTestSetup(builder);
         _clock = new TestClock();
+        builder.PublishesRefusedTags();
         builder.Services.AddSingleton(_clock);
         builder.Services.AddUnique<TimeProvider>(_clock);
         builder.Services.AddSingleton<MemoryFileStore>();
