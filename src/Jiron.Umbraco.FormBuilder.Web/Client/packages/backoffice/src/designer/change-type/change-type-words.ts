@@ -103,11 +103,13 @@ export function changeWords(
   const settingWords = preview.settings.map(({ setting, value }) =>
     valued(setting.label, settingText(wordsOf(context), setting, value)),
   );
-  const locked = preview.locked.map(({ setting }) =>
-    setting.lock && !setting.lock.hidden && setting.lock.value !== undefined && setting.lock.value !== null
-      ? valued(setting.label, settingText(wordsOf(context), setting, setting.lock.value))
-      : context.say(setting.label),
-  );
+  // A hidden lock's value stays on the server, so it is named without one.
+  const locked = preview.locked.map(({ setting }) => {
+    const value = setting.lock?.value;
+    return value === undefined || value === null
+      ? context.say(setting.label)
+      : valued(setting.label, settingText(wordsOf(context), setting, value));
+  });
   return {
     goes: [
       ...settingWords,

@@ -207,10 +207,7 @@ export function conditionsOn(definition: DesignDefinition, key: string): Conditi
     }
     if (!isRecord(value)) return;
     if (value['field'] === key && typeof value['op'] === 'string') found.push({ holder, op: value['op'] });
-    for (const [name, item] of Object.entries(value)) {
-      // A page's groups and a group's or repeatable group's fields are holders of their own.
-      if (name !== 'groups' && name !== 'fields') walk(item, holder);
-    }
+    for (const item of Object.values(value)) walk(item, holder);
   };
   for (const page of definition.pages) {
     walk(page.rules, { kind: 'element', key: page.key });
@@ -261,8 +258,8 @@ export function previewChange(
   const locked = change.lockedSettings.flatMap((name): SettingLoss[] => {
     const setting = settingNamed(to, name);
     if (!setting || !Object.hasOwn(own, name)) return [];
-    // A visible lock of the very value the field has takes nothing from it.
-    const lockValue = setting.lock?.hidden ? undefined : setting.lock?.value;
+    // A lock of the very value the field has takes nothing from it; a hidden one's value stays on the server.
+    const lockValue = setting.lock?.value;
     return lockValue !== undefined && lockValue !== null && same(lockValue, own[name])
       ? []
       : [{ setting, value: own[name] }];

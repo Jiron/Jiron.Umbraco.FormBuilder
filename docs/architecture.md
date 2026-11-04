@@ -246,7 +246,7 @@ flowchart LR
   element's "..." and the inspector's header offer: `type-change.ts` works out a change's preview on the draft (what
   goes, what a lock sets instead, what the field needs, the conditions naming it whose operator goes) and the field once
   changed, pure; `change-type-words.ts` says the preview; the dialog chooses among the types the workspace reads from
-  `field-type/{alias}/changes` once while the form is open.
+  `field-type/{alias}/changes` once while the form is open (`readOnce`), ahead for a field selected.
 
 ## 2. The definition model
 

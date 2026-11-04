@@ -73,7 +73,8 @@ Five questions came up:
   ChangeType`; the Design view checks each type against the form as a change of the editor model, makes the change
   chosen on the form as it is when the dialog closes, says it ("Changed Your name to Dropdown"), offers Undo in a
   toast, and gives the focus back to the field; Cancel too. The workspace reads a type's changes once while the form
-  is open, and again after a read that failed, which a toast says.
+  is open, ahead as soon as a field of the type is selected so the dialog opens at once, and again after a read that
+  failed, which a toast says. A type the dialog shows as refused is never changed to.
 - **The words of operators** live in their own area, `jfbRules_op_*`, in English and German, for the rules builder
   (9.5a) to say its conditions with.
 

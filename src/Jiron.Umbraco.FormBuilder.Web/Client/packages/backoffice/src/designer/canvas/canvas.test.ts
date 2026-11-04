@@ -601,6 +601,32 @@ describe('the canvas', () => {
     expect(requests).toEqual([{ kind: 'width', width: 'phone' }, { kind: 'undo' }]);
   });
 
+  it('offers Change type... for a field whose type may change, and none for content', async () => {
+    const definition: DesignDefinition = {
+      pages: [
+        {
+          key: 'p1',
+          groups: [
+            {
+              key: 'g1',
+              fields: [
+                { key: 'n', type: 'text', alias: 'name', label: { '': 'Name' } },
+                { key: 'h', type: 'heading', settings: { text: { '': 'About you' } } },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+    const menuOf = (root: ShadowRoot, key: string) =>
+      [...root.querySelectorAll(`jfb-canvas-field[key="${key}"] .bo-menu button`)].map((item) => text(item));
+    const name = await canvasOf(definition, { selection: 'n' });
+    expect(menuOf(name.root, 'n')).toEqual(['Change type\u2026', 'Start a new page after this', 'Copy alias']);
+    document.body.replaceChildren();
+    const heading = await canvasOf(definition, { selection: 'h' });
+    expect(menuOf(heading.root, 'h')).toEqual(['Start a new page after this']);
+  });
+
   it('passes on what its fields ask, and moves the focus to an element', async () => {
     const { element, requests, root } = await canvasOf(DEFINITION, { selection: 'e' });
     const field = must(root.querySelector<CanvasFieldElement>('jfb-canvas-field[key="e"]'), 'the field');

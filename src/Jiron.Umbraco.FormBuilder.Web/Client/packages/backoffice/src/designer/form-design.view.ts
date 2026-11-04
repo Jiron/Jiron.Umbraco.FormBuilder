@@ -437,6 +437,10 @@ export class FormDesignViewElement extends UmbLitElement {
     }
     void this.#readMedia(view.state.definition);
     this.#readOptions(view.state.definition);
+    // A selected field's changes of type are read ahead, so Change type opens at once (ADR-0174).
+    const found = selection ? locate(view.state.definition, selection) : undefined;
+    if (found?.kind === 'field' && this.#fieldType(found.element.type)?.mayChangeType)
+      void this.#context?.changesOf(found.element.type);
   }
 
   // The options of each field that takes them from elsewhere, as the server resolves the draft's in the canvas's
@@ -1119,7 +1123,9 @@ export class FormDesignViewElement extends UmbLitElement {
     const value = await umbOpenModal(this, CHANGE_TYPE_MODAL, {
       data: { name, type: this.#typeName(field.element.type), targets },
     }).catch(() => undefined);
-    const chosen = value ? changes.find((each) => each.to === value.to) : undefined;
+    // A type the dialog shows as refused is never changed to.
+    const offered = targets.find((target) => target.alias === value?.to && target.refusal === null);
+    const chosen = offered ? changes.find((each) => each.to === offered.alias) : undefined;
     const to = chosen ? this.#fieldType(chosen.to) : undefined;
     // The field changed is the one selected, so the focus goes back to it.
     const now = chosen ? this.#selectFirst(key) : this.#state();

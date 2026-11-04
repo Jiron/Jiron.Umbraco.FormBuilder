@@ -6,7 +6,7 @@ import { FORM_PERMISSION_CONDITION, FORM_WORKSPACE_ALIAS } from './constants';
 import { changesOf, detailOf, detailOfForm, keptAlias } from './form-detail.data-source';
 import { holdsAny } from './form-permission.condition';
 import { fieldOfQuery, formState } from './form-state';
-import { traitsOf } from './form-workspace.context';
+import { readOnce, traitsOf } from './form-workspace.context';
 import { manifests } from './manifests';
 
 const FORM: FormResponseModel = {
@@ -151,6 +151,24 @@ describe("a field type's traits", () => {
       onePerForm: true,
       childFields: false,
     });
+  });
+});
+
+describe('a read made once', () => {
+  it('answers every later ask for its key the same, and asks again after a read that found nothing', async () => {
+    const asked: string[] = [];
+    const answers = new Map<string, string | undefined>([['text', 'the changes']]);
+    const read = readOnce(async (key: string) => {
+      asked.push(key);
+      return answers.get(key);
+    });
+
+    expect(await Promise.all([read('text'), read('text')])).toEqual(['the changes', 'the changes']);
+    expect(await read('number')).toBeUndefined();
+    answers.set('number', 'read at last');
+    expect(await read('number')).toBe('read at last');
+    expect(await read('number')).toBe('read at last');
+    expect(asked).toEqual(['text', 'number', 'number']);
   });
 });
 

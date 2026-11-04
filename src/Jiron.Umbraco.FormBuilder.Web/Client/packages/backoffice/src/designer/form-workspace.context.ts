@@ -51,6 +51,24 @@ export function traitsOf(type: FieldTypeResponseModel): FieldTraits {
   };
 }
 
+/**
+ * A read by key that is made once: every later ask for the key gets the same answer, while one that found nothing
+ * (undefined) is made again at the next ask.
+ */
+export function readOnce<T>(read: (key: string) => Promise<T | undefined>): (key: string) => Promise<T | undefined> {
+  const kept = new Map<string, Promise<T | undefined>>();
+  return (key) => {
+    const found = kept.get(key);
+    if (found) return found;
+    const reading = read(key).then((value) => {
+      if (value === undefined) kept.delete(key);
+      return value;
+    });
+    kept.set(key, reading);
+    return reading;
+  };
+}
+
 export class FormWorkspaceContext
   extends UmbEntityNamedDetailWorkspaceContextBase<FormDetailModel>
   implements UmbRoutableWorkspaceContext
@@ -64,8 +82,6 @@ export class FormWorkspaceContext
   // A record, not a Map: the state compares values as JSON, which writes every Map as {}.
   readonly #types = new UmbObjectState<Readonly<Record<string, FieldTypeResponseModel>>>({});
   readonly #groups = new UmbObjectState<readonly FieldGroupResponseModel[]>([]);
-  // Each type's changes, read once while the form is open (ADR-0174); a read that fails is asked again next time.
-  readonly #changes = new Map<string, Promise<readonly FieldTypeChangeResponseModel[] | undefined>>();
 
   /** The field types by alias, as the views name and draw them; empty until they are read. */
   readonly fieldTypes = this.#types.asObservable();
@@ -135,18 +151,12 @@ export class FormWorkspaceContext
    * The changes of type a field of the type may make (ADR-0059), in the palette's order, with the host's locks of each
    * new type applied (ADR-0060); undefined when they can't be read.
    */
-  changesOf(type: string): Promise<readonly FieldTypeChangeResponseModel[] | undefined> {
-    const kept = this.#changes.get(type);
-    if (kept) return kept;
-    const read = tryExecute(this, fieldTypeChanges({ path: { alias: type } }), { disableNotifications: true }).then(
-      ({ data }) => {
-        if (!data) this.#changes.delete(type);
-        return data?.changes;
-      },
-    );
-    this.#changes.set(type, read);
-    return read;
-  }
+  // Each type's changes are read once while the form is open (ADR-0174), and again after a read that failed.
+  readonly changesOf: (type: string) => Promise<readonly FieldTypeChangeResponseModel[] | undefined> = readOnce(
+    async (type) =>
+      (await tryExecute(this, fieldTypeChanges({ path: { alias: type } }), { disableNotifications: true })).data
+        ?.changes,
+  );
 
   /** Whether the user may design the open form. */
   canDesign(): boolean {

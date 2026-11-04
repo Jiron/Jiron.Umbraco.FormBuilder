@@ -952,7 +952,7 @@ of the text, number and date types through the inspector and saves them, axe cle
 palette at a 1024 px window; starts a new page from a field's "…" with the keyboard only; edits a German label with
 the chip on a field without one; and changes an alias. `specs/backoffice/designer-locks.spec.ts` runs a host of its own
 on 5535 whose configuration locks the text type's maximum length and hides its prefix, and finds the one read-only with
-its value and key and the other gone. The integration tests `CanvasApiTests` and `LibraryApiTests` hold the site's
+its value and key and the other gone (its dropdowns all take several options, three at most, for 9.4d's change). The integration tests `CanvasApiTests` and `LibraryApiTests` hold the site's
 languages, the default first however Umbraco lists them, and a draft's `hasEntries`.
 
 The option editor (ROADMAP 9.4b, [ADR-0172](../docs/decisions/0172-the-option-editor-and-the-option-sources.md)):
@@ -1032,7 +1032,17 @@ palette group in the browser's own select, a refused one not to be chosen and wh
 Change type off until a type is chosen, and Enter; `form-design.view.test.ts` the dialog opened from the canvas with
 each type's preview, the change made and said with Undo, Cancel leaving the field, a type the site lacks what it needs
 for refused, and a read that fails said; `inspector/inspector.test.ts` Change type by the type's name, once in every
-way of showing; and `canvas/canvas.test.ts` Change type... first in the element's "...".
+way of showing; and `canvas/canvas.test.ts` Change type... first in the element's "...", and none for content.
+`form-workspace.test.ts` holds the read made once (`readOnce`): the same answer for every later ask, and a read that
+found nothing made again. In the browser, `specs/backoffice/designer-types.spec.ts` adds a field of every built-in type
+from the palette (the captcha placement, which the palette offers only with a provider's keys, from the API) and sets
+its help text and one setting of its own in its inspector, axe clean with every section open, then saves and reads
+each back; and changes a text field with a placeholder and a condition using `contains` into a dropdown through the
+element's "...", after the inspector's Change type and Cancel gave the focus back, with the preview naming the
+maximum length, the placeholder, the options it needs and the condition before the change, axe clean, the change
+said, and the condition still there in the saved draft. `designer-locks.spec.ts` runs its host with every dropdown
+taking several options, three at most: checkboxes that become a dropdown are told that the site sets the most options
+instead, neither carried over nor asked for, and the saved field keeps only its fewest.
 
 ## The public API tests
 

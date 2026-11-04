@@ -18,7 +18,7 @@ import { CANVAS_REQUEST, type CanvasRequest } from './canvas/form-canvas.element
 import { FORM_WORKSPACE_CONTEXT } from './constants';
 import { locate, type DesignDefinition, type DesignField } from './definition';
 import type { Edit, EditorState } from './editor-model';
-import { traitsOf, type EditorView } from './form-workspace.context';
+import { readOnce, traitsOf, type EditorView } from './form-workspace.context';
 import { EditorHistory } from './history';
 import { PALETTE_PICK, type PalettePick } from './palette/palette.element';
 import { builtInChanges, builtInTypes, englishLook } from './preview/fixtures';
@@ -117,10 +117,10 @@ class StandIn {
   /** Each type's changes as the server serves them; none read while `unreadable`. */
   unreadable = false;
   readonly asked: string[] = [];
-  changesOf = async (type: string) => {
+  readonly changesOf = readOnce(async (type: string) => {
     this.asked.push(type);
     return this.unreadable ? undefined : builtInChanges[type]?.changes;
-  };
+  });
   readonly #history: EditorHistory;
   readonly #editor: UmbObjectState<EditorView>;
   #next = 0;
@@ -130,7 +130,8 @@ class StandIn {
   readonly paletteGroups = new UmbObjectState([{ alias: 'text', name: '#jfbFieldPalette_text' }]).asObservable();
   readonly model = {
     traitsOf: (type: string) => {
-      const found = Object.hasOwn(builtInTypes, type) ? builtInTypes[type] : undefined;
+      const types = this.types.getValue();
+      const found = Object.hasOwn(types, type) ? types[type] : undefined;
       return found ? traitsOf(found) : undefined;
     },
     newKey: () => `new${++this.#next}`,
@@ -778,10 +779,13 @@ describe('the moves', () => {
     const { ask, canvas, state, toasts, workspace } = await viewOf({
       pages: [{ key: 'p1', groups: [{ key: 'g1', fields: [name, phone] }] }],
     });
+    // A field selected has its changes read ahead, which the dialog then uses.
+    await ask({ kind: 'select', key: 'name' });
+    expect(workspace.asked).toEqual(['text']);
     opened.value = { to: 'dropdown' };
     await ask({ kind: 'changeType', key: 'name' });
 
-    expect(workspace.asked).toEqual(['text']);
+    expect(workspace.asked).toEqual(['text', 'dropdown']);
     const data = opened.dialogs[0]?.data as ChangeTypeModalData;
     expect(opened.dialogs[0]?.alias).toBe('Jiron.FormBuilder.Modal.ChangeType');
     expect([data.name, data.type]).toEqual(['name', 'Short text']);
@@ -818,7 +822,7 @@ describe('the moves', () => {
   });
 
   it("refuse in Change type... a type the site lacks what it needs for, with why, and say when the types can't be read", async () => {
-    const { ask, toasts, workspace } = await viewOf();
+    const { ask, state, toasts, workspace } = await viewOf();
     const textarea = must(builtInTypes['textarea'], 'the long text');
     workspace.types.setValue({
       ...builtInTypes,
@@ -833,14 +837,55 @@ describe('the moves', () => {
     expect(data.targets.find((target) => target.alias === 'textarea')?.refusal).toBe(
       "No captcha provider has its keys yet. They go in the site's configuration.",
     );
+    // Were a refused type to come back, nothing would change.
+    expect((locate(state().definition, 'name')?.element as DesignField).type).toBe('text');
+    expect(toasts.shown).toEqual([]);
 
     workspace.unreadable = true;
     opened.dialogs = [];
-    await ask({ kind: 'changeType', key: 'name' });
+    await ask({ kind: 'changeType', key: 'email' });
     expect(opened.dialogs).toEqual([]);
     expect(toasts.shown.at(-1)?.data.message).toBe(
       "The types this field may become couldn't be read. Try again in a moment.",
     );
+  });
+
+  it('say in Change type... what the entries screen does with older answers, and refuse what the form refuses', async () => {
+    const { ask, workspace } = await viewOf({
+      pages: [
+        {
+          key: 'p1',
+          groups: [
+            {
+              key: 'g1',
+              fields: [field('amount', 'number'), { ...field('kids', 'repeater'), fields: [field('kid')] }],
+            },
+          ],
+        },
+      ],
+    });
+    workspace.kept['amount'] = 'amount';
+    await ask({ kind: 'changeType', key: 'amount' });
+    const amount = opened.dialogs[0]?.data as ChangeTypeModalData;
+    expect(amount.targets.find((target) => target.alias === 'text')?.words.entries).toBe(
+      "Entries already submitted keep their answers, but the entries screen's filters and sorting pass them by.",
+    );
+    expect(amount.targets.find((target) => target.alias === 'textarea')?.words.entries).toBeTruthy();
+    expect(amount.targets.find((target) => target.alias === 'slider')?.words.entries).toBeNull();
+
+    // A child of a repeatable group can't become one more.
+    workspace.types.setValue({
+      ...builtInTypes,
+      textarea: { ...must(builtInTypes['textarea'], 'the long text'), onePerForm: true },
+    });
+    opened.dialogs = [];
+    await ask({ kind: 'changeType', key: 'kid' });
+    const kid = opened.dialogs[0]?.data as ChangeTypeModalData;
+    expect(kid.targets.find((target) => target.alias === 'textarea')?.refusal).toBe(
+      "A repeatable group can't hold that.",
+    );
+    expect(kid.targets.find((target) => target.alias === 'email')?.refusal).toBeNull();
+    expect(workspace.kept['kid']).toBeUndefined();
   });
 
   it("show where it can't go in Move to..., with why", async () => {
