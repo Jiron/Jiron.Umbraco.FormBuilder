@@ -858,7 +858,7 @@ describe('the canvas', () => {
       [{ check: { kind: 'checking' } }, 'checking', 'Checking\u2026', null],
       [{ check: { kind: 'failed' } }, 'failed', 'Not checked', 'icon-alert'],
       [{ check: { kind: 'checked', errors: 1, warnings: 1 } }, 'error', '2 problems', 'icon-alert'],
-      [{ check: { kind: 'checked', errors: 0, warnings: 1 } }, 'warning', '1 problem', 'icon-alert'],
+      [{ check: { kind: 'checked', errors: 0, warnings: 1 } }, 'warning', '1 problem', 'icon-info'],
       [{ check: { kind: 'checked', errors: 0, warnings: 0 } }, 'clear', 'No problems', 'icon-check'],
     ];
     for (const [extra, state, said, icon] of cases) {

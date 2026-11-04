@@ -2,7 +2,9 @@
 // where each problem's Fix it leads. The server names each problem's place by a JSON path into the definition it was
 // sent; this reads the path against that definition and gives the element's key, so Fix it still finds the element
 // after later changes moved it. Pure.
-import { allFields, validationRulesOf, type DesignDefinition, type DesignField } from '../definition';
+import type { FieldSettingResponseModel, FieldTypeResponseModel } from '../../api';
+import { validationRulesOf, type DesignDefinition, type DesignField } from '../definition';
+import { messageFieldOf } from '../rules/rule-list';
 
 /** How much a problem weighs: an error blocks publishing, a warning doesn't, a hint is a suggestion. */
 export type CheckSeverity = 'error' | 'warning' | 'hint';
@@ -104,8 +106,11 @@ export type InspectorItem =
 
 /** Where Fix it leads. */
 export type FixTarget =
-  /** The element, selected, with the inspector on the item when there is one. */
-  | { readonly kind: 'element'; readonly key: string; readonly item?: InspectorItem }
+  /**
+   * The element, selected, with the inspector on the item when there is one, in the language of the text the problem
+   * is in where it is one ('' for the site's default).
+   */
+  | { readonly kind: 'element'; readonly key: string; readonly item?: InspectorItem; readonly culture?: string }
   /** The rules builder on a rule of the element, or on a validation rule that shows its message on it. */
   | { readonly kind: 'rule'; readonly key: string; readonly rule: string }
   /** The palette, to add at the end of the page; to a new page where the form has none. */
@@ -141,31 +146,66 @@ const CHECK_ITEMS: Readonly<Record<string, InspectorItem>> = {
   matchesField: { kind: 'matches' },
 };
 
-/** The item of a field that the steps after it name, if the inspector edits it. */
-function fieldItem(field: DesignField, rest: readonly PathStep[]): InspectorItem | undefined {
-  const [first, second, third] = rest;
-  if (typeof first !== 'string') return undefined;
-  if (first === 'settings' && typeof second === 'string')
-    return typeof third === 'string'
-      ? { kind: 'setting', name: second, inner: third }
-      : { kind: 'setting', name: second };
-  if (first === 'messages' && typeof second === 'string') return { kind: 'message', message: second };
+/** The field types by alias, whose settings say which take a text in each language. */
+export type CheckTypes = Readonly<Record<string, FieldTypeResponseModel>>;
+
+/** Whether a setting holds a text in each language, whose next step is a language. */
+const isText = (setting: FieldSettingResponseModel | undefined) =>
+  setting?.kind === 'localizedText' || setting?.kind === 'localizedHtml';
+
+/** An item, with the language of the text it is in where the place is one. */
+interface Found {
+  readonly item?: InspectorItem | undefined;
+  readonly culture?: string | undefined;
+}
+
+/** A text's language: the step after it, or the site's default for the text as a whole. */
+const languageAt = (step: PathStep | undefined): string | undefined =>
+  step === undefined ? '' : typeof step === 'string' ? step : undefined;
+
+/** The item of a field that the steps after it name, if the inspector edits it, with the language of its text. */
+function fieldItem(field: DesignField, rest: readonly PathStep[], types: CheckTypes | undefined): Found {
+  const [first, second, third, fourth] = rest;
+  if (typeof first !== 'string') return {};
+  if (first === 'settings' && typeof second === 'string') {
+    const setting = (types && Object.hasOwn(types, field.type) ? types[field.type] : undefined)?.settings.find(
+      (one) => one.name === second,
+    );
+    // A text setting's next step is its language, a nested setting's its own setting's name.
+    if (isText(setting)) return { item: { kind: 'setting', name: second }, culture: languageAt(third) };
+    if (typeof third !== 'string') return { item: { kind: 'setting', name: second } };
+    const nested = setting?.settings.find((one) => one.name === third);
+    const item: InspectorItem = { kind: 'setting', name: second, inner: third };
+    return isText(nested) ? { item, culture: languageAt(fourth) } : { item };
+  }
+  if (first === 'messages' && typeof second === 'string')
+    return { item: { kind: 'message', message: second }, culture: languageAt(third) };
   if (first === 'validation' && typeof second === 'number') {
     const check = (field['validation'] as readonly Readonly<Record<string, unknown>>[] | undefined)?.[second];
     const kind = check?.['kind'];
-    return typeof kind === 'string' && Object.hasOwn(CHECK_ITEMS, kind) ? CHECK_ITEMS[kind] : undefined;
+    const item = typeof kind === 'string' && Object.hasOwn(CHECK_ITEMS, kind) ? CHECK_ITEMS[kind] : undefined;
+    return third === 'message' ? { item, culture: languageAt(fourth) } : { item };
   }
-  return Object.hasOwn(FIELD_ITEMS, first) ? FIELD_ITEMS[first] : undefined;
+  const item = Object.hasOwn(FIELD_ITEMS, first) ? FIELD_ITEMS[first] : undefined;
+  return item?.kind === 'text' ? { item, culture: languageAt(second) } : { item };
 }
 
-/** The item of a group or a page that the steps after it name. */
-function containerItem(rest: readonly PathStep[], group: boolean): InspectorItem | undefined {
-  const [first] = rest;
-  if (first === 'title') return { kind: 'text', property: 'title' };
-  if (group && first === 'columns') return { kind: 'columns' };
-  if (group && first === 'style') return { kind: 'style' };
-  return undefined;
+/** The item of a group or a page that the steps after it name, with the language of its title. */
+function containerItem(rest: readonly PathStep[], group: boolean): Found {
+  const [first, second] = rest;
+  if (first === 'title') return { item: { kind: 'text', property: 'title' }, culture: languageAt(second) };
+  if (group && first === 'columns') return { item: { kind: 'columns' } };
+  if (group && first === 'style') return { item: { kind: 'style' } };
+  return {};
 }
+
+/** Fix it on an element, with the item and the language it found. */
+const onElement = (key: string, found: Found): FixTarget => ({
+  kind: 'element',
+  key,
+  ...(found.item ? { item: found.item } : {}),
+  ...(found.item && found.culture !== undefined ? { culture: found.culture } : {}),
+});
 
 /** An element's own rule that the steps after it name, by its key. */
 function ruleAt(rules: unknown, rest: readonly PathStep[]): string | null {
@@ -178,9 +218,10 @@ function ruleAt(rules: unknown, rest: readonly PathStep[]): string | null {
 /**
  * Where Fix it leads for a problem at this path of the definition checked: the element it names, with its item, its
  * rule, or the palette for a page without fields; a view for the form's settings, outcomes and actions. Null where the
- * path names nothing the designer shows, or the whole form.
+ * path names nothing the designer shows, or the whole form. The field types tell a text setting's language from a
+ * nested setting's name.
  */
-export function fixOf(definition: DesignDefinition, path: string): FixTarget | null {
+export function fixOf(definition: DesignDefinition, path: string, types?: CheckTypes): FixTarget | null {
   const steps = parsePath(path);
   if (!steps || steps.length === 0) return null;
   const [top, ...after] = steps;
@@ -201,20 +242,23 @@ export function fixOf(definition: DesignDefinition, path: string): FixTarget | n
     const group = typeof groupIndex === 'number' ? page.groups[groupIndex] : undefined;
     if (!group) return null;
     const [groupStep] = inGroup;
-    if (groupStep === 'fields') return fieldFix(page.key, group.fields, inGroup.slice(1));
+    if (groupStep === 'fields') return fieldFix(page.key, group.fields, inGroup.slice(1), types);
     const rule = ruleAt(group.rules, inGroup);
     if (rule) return { kind: 'rule', key: group.key, rule };
-    const item = containerItem(inGroup, true);
-    return item ? { kind: 'element', key: group.key, item } : { kind: 'element', key: group.key };
+    return onElement(group.key, containerItem(inGroup, true));
   }
   const rule = ruleAt(page.rules, inPage);
   if (rule) return { kind: 'rule', key: page.key, rule };
-  const item = containerItem(inPage, false);
-  return item ? { kind: 'element', key: page.key, item } : { kind: 'element', key: page.key };
+  return onElement(page.key, containerItem(inPage, false));
 }
 
 // A field at `fields[i]` of its group or its repeatable group, its children at `fields[j]` of it.
-function fieldFix(page: string, fields: readonly DesignField[], steps: readonly PathStep[]): FixTarget | null {
+function fieldFix(
+  page: string,
+  fields: readonly DesignField[],
+  steps: readonly PathStep[],
+  types: CheckTypes | undefined,
+): FixTarget | null {
   const [index, ...rest] = steps;
   // A group without fields: the palette adds at the end of the page.
   if (index === undefined) return { kind: 'palette', page };
@@ -223,12 +267,11 @@ function fieldFix(page: string, fields: readonly DesignField[], steps: readonly 
   if (rest[0] === 'fields') {
     // A repeatable group without fields: the field itself, where its fields are added.
     if (rest.length === 1) return { kind: 'element', key: field.key };
-    return fieldFix(page, field.fields ?? [], rest.slice(1));
+    return fieldFix(page, field.fields ?? [], rest.slice(1), types);
   }
   const rule = ruleAt(field.rules, rest);
   if (rule) return { kind: 'rule', key: field.key, rule };
-  const item = fieldItem(field, rest);
-  return item ? { kind: 'element', key: field.key, item } : { kind: 'element', key: field.key };
+  return onElement(field.key, fieldItem(field, rest, types));
 }
 
 // A validation rule opens in the builder on the field that shows its message; a grid's row's, on the grid.
@@ -236,15 +279,9 @@ function validationFix(definition: DesignDefinition, steps: readonly PathStep[])
   const [index] = steps;
   const rule = typeof index === 'number' ? validationRulesOf(definition)[index] : undefined;
   if (!rule || typeof rule.key !== 'string') return null;
-  const field = allFields(definition).find(
-    (one) => one.key === rule.field || (one.rows ?? []).some((row) => row.key === rule.field),
-  );
+  const field = messageFieldOf(definition, rule.field);
   return field ? { kind: 'rule', key: field.key, rule: rule.key } : null;
 }
-
-/** The problems the badge counts: errors and warnings. Hints are suggestions, listed but not counted. */
-export const countOf = (issues: readonly CheckIssue[]): number =>
-  issues.filter((issue) => issue.severity !== 'hint').length;
 
 /** The problems by their weight, each in the order the check found them. */
 export function bySeverity(issues: readonly CheckIssue[]): Readonly<Record<CheckSeverity, readonly CheckIssue[]>> {

@@ -6,6 +6,7 @@ import {
   locate,
   validationRulesOf,
   type DesignDefinition,
+  type DesignField,
   type DesignPage,
   type DesignRule,
   type DesignValidationRule,
@@ -36,6 +37,11 @@ export function rulesOn(definition: DesignDefinition, key: string): HeldRule[] {
     .filter((rule) => rule.field === key || rows.has(rule.field))
     .map(held);
   return [...own, ...messages];
+}
+
+/** The field a validation rule shows its message on, by the key it names: the field, or the grid whose row it is. */
+export function messageFieldOf(definition: DesignDefinition, key: string): DesignField | undefined {
+  return allFields(definition).find((one) => one.key === key || (one.rows ?? []).some((row) => row.key === key));
 }
 
 /** A validation rule as the builder edits it, with where it is kept. */

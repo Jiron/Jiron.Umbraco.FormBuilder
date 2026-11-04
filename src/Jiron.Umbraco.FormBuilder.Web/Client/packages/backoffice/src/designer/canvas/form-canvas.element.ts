@@ -891,7 +891,9 @@ export class FormCanvasElement extends UmbLitElement {
     const problems = check.kind === 'checked' ? check.errors + check.warnings : 0;
     const state =
       check.kind !== 'checked' ? check.kind : check.errors > 0 ? 'error' : check.warnings > 0 ? 'warning' : 'clear';
-    const icon = state === 'clear' ? 'icon-check' : state === 'checking' ? null : 'icon-alert';
+    // A warning's icon differs from an error's in its shape, not only its colour, as in the sidebar.
+    const icon =
+      state === 'clear' ? 'icon-check' : state === 'warning' ? 'icon-info' : state === 'checking' ? null : 'icon-alert';
     const text =
       check.kind === 'checking'
         ? this.localize.term('jfbDesigner_checkChecking')

@@ -1407,8 +1407,10 @@ export class FormDesignViewElement extends UmbLitElement {
    * actions are edited. An element gone since the check leads nowhere.
    */
   async #fix(target: FixTarget) {
-    // The user's own choice ends the wait for a link's selection, so its focus never takes this one's.
+    // The user's own choice ends the wait for a link's selection, so its focus never takes this one's; and the palette
+    // over the canvas, which would leave the inspector out of reach, closes.
     this.#shownLink = true;
+    if (this._open) this.#closePalette();
     if (target.kind === 'view') {
       goToView(target.view);
       return;
@@ -1423,8 +1425,11 @@ export class FormDesignViewElement extends UmbLitElement {
       }
       return;
     }
+    const before = this.#state();
+    if (!before || !locate(before.definition, target.key)) return;
+    if (target.kind === 'element' && target.culture !== undefined) await this.#showLanguage(target.culture);
     const now = this.#selectFirst(target.key);
-    if (!now || !locate(now.definition, target.key)) return;
+    if (!now) return;
     const page = pageOf(now.definition, target.key);
     const index = now.definition.pages.findIndex((each) => each.key === page?.key);
     if (index >= 0) this._shown = index;
@@ -1433,6 +1438,19 @@ export class FormDesignViewElement extends UmbLitElement {
     if (target.kind === 'rule') await this.#buildRule(target.key, target.rule);
     else if (target.item) this.#inspector?.focusItem(target.item);
     else await this.#focus(target.key);
+  }
+
+  // On a site with more than one language, the language of the text a Fix it is about ('' the default), so the
+  // inspector edits that text.
+  async #showLanguage(culture: string) {
+    const languages = this._look?.languages ?? [];
+    if (languages.length < 2) return;
+    const wanted =
+      culture === ''
+        ? languages.find((language) => language.isDefault)
+        : languages.find((language) => language.culture.toLowerCase() === culture.toLowerCase());
+    if (!wanted || wanted.culture.toLowerCase() === this._look?.culture.toLowerCase()) return;
+    await this.#onCanvas({ kind: 'culture', culture: wanted.culture });
   }
 
   async #shortcuts() {

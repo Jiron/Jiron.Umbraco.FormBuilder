@@ -36,9 +36,14 @@ export class PublishModalElement extends UmbModalBaseElement<PublishModalData, P
         width: 100%;
       }
 
-      .result {
+      .result,
+      .said {
         display: grid;
         gap: var(--uui-size-space-4);
+      }
+
+      /* The result keeps its room only while it says something. */
+      .result:has(.note, .state) {
         margin-block-end: var(--uui-size-space-5);
       }
 
@@ -168,7 +173,7 @@ export class PublishModalElement extends UmbModalBaseElement<PublishModalData, P
         ${shown.map((issue) => {
           if (!definition) return nothing;
           const said = issueWords(issue, definition, words);
-          const target = fixOf(definition, issue.path);
+          const target = fixOf(definition, issue.path, words.types);
           return html`<li data-severity=${issue.severity} data-code=${issue.code}>
             <span><span class="name">${said.name}:</span> ${said.said}</span>
             ${
@@ -192,40 +197,22 @@ export class PublishModalElement extends UmbModalBaseElement<PublishModalData, P
       }`;
   }
 
-  // The form check's result: what blocks, then what doesn't.
-  #result(): TemplateResult | typeof nothing {
+  // The form check's result: what blocks, then what doesn't. The errors are an alert; everything else the region under
+  // them says, which stays in place from "Checking the form..." to the answer, so a screen reader reads the answer out.
+  #result(): TemplateResult {
     const check = this._check;
-    if (check.status === 'idle') return nothing;
-    if (check.status === 'checking')
-      return html`<div class="result">
-        <p class="state" role="status"><uui-loader-circle></uui-loader-circle>${this.#term('jfbCheck_checking')}</p>
-      </div>`;
-    if (check.status === 'failed' || !check.definition)
-      return html`<div class="result">
-        <p class="note failed">
-          <span class="lead"
-            ><uui-icon name="icon-alert" aria-hidden="true"></uui-icon>${this.#term('jfbCheck_publishFailed')}</span
-          >
-        </p>
-      </div>`;
-    const { error, warning } = bySeverity(check.issues);
-    if (error.length === 0 && warning.length === 0)
-      return html`<div class="result">
-        <p class="note clear" role="status">
-          <span class="lead"
-            ><uui-icon name="icon-check" aria-hidden="true"></uui-icon>${this.#term('jfbCheck_publishClear')}</span
-          >
-        </p>
-      </div>`;
-    const words: CheckWordsContext = {
-      term: this.#term,
-      say: (text) => (text ? this.localize.string(text) : ''),
-      types: this.data?.types ?? {},
-      names: elementNames(check.definition, this.data?.culture ?? '', this.#term),
-    };
+    const { error, warning } = check.status === 'checked' && check.definition ? bySeverity(check.issues) : NONE;
+    const words: CheckWordsContext | null = check.definition
+      ? {
+          term: this.#term,
+          say: (text) => (text ? this.localize.string(text) : ''),
+          types: this.data?.types ?? {},
+          names: elementNames(check.definition, this.data?.culture ?? '', this.#term),
+        }
+      : null;
     return html`<div class="result">
       ${
-        error.length > 0
+        error.length > 0 && words
           ? html`<section class="note danger" role="alert" aria-labelledby="check-errors">
               <p class="lead" id="check-errors">
                 <uui-icon name="icon-alert" aria-hidden="true"></uui-icon
@@ -235,23 +222,42 @@ export class PublishModalElement extends UmbModalBaseElement<PublishModalData, P
             </section>`
           : nothing
       }
-      ${
-        warning.length > 0
-          ? html`<section class="note warning" aria-labelledby="check-warnings">
-              <p class="lead" id="check-warnings">
-                <uui-icon name="icon-info" aria-hidden="true"></uui-icon
-                ><span
-                  >${this.#term(
-                    error.length > 0 ? 'jfbCheck_publishAlsoWarnings' : 'jfbCheck_publishWarnings',
-                    warning.length,
-                  )}</span
-                >
-              </p>
-              ${this.#issues(warning, words)}
-            </section>`
-          : nothing
-      }
+      <div class="said" role="status">${this.#said(check, error.length, warning, words)}</div>
     </div>`;
+  }
+
+  // What the status region says: the wait, no answer, no problems, or the warnings, which don't block.
+  #said(
+    check: CheckState,
+    errors: number,
+    warning: readonly CheckIssue[],
+    words: CheckWordsContext | null,
+  ): TemplateResult | typeof nothing {
+    if (check.status === 'idle') return nothing;
+    if (check.status === 'checking')
+      return html`<p class="state"><uui-loader-circle></uui-loader-circle>${this.#term('jfbCheck_checking')}</p>`;
+    if (check.status === 'failed' || !words)
+      return html`<p class="note failed">
+        <span class="lead"
+          ><uui-icon name="icon-alert" aria-hidden="true"></uui-icon>${this.#term('jfbCheck_publishFailed')}</span
+        >
+      </p>`;
+    if (errors === 0 && warning.length === 0)
+      return html`<p class="note clear">
+        <span class="lead"
+          ><uui-icon name="icon-check" aria-hidden="true"></uui-icon>${this.#term('jfbCheck_publishClear')}</span
+        >
+      </p>`;
+    if (warning.length === 0) return nothing;
+    return html`<section class="note warning" aria-labelledby="check-warnings">
+      <p class="lead" id="check-warnings">
+        <uui-icon name="icon-info" aria-hidden="true"></uui-icon
+        ><span
+          >${this.#term(errors > 0 ? 'jfbCheck_publishAlsoWarnings' : 'jfbCheck_publishWarnings', warning.length)}</span
+        >
+      </p>
+      ${this.#issues(warning, words)}
+    </section>`;
   }
 
   override render() {
@@ -281,6 +287,9 @@ export class PublishModalElement extends UmbModalBaseElement<PublishModalData, P
 }
 
 const isError = (issue: CheckIssue) => issue.severity === 'error';
+
+/** No problems of either weight, before an answer. */
+const NONE = { error: [], warning: [] } as const;
 
 if (!customElements.get('jfb-publish-modal')) customElements.define('jfb-publish-modal', PublishModalElement);
 

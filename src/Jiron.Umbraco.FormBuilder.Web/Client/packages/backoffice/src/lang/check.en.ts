@@ -78,7 +78,7 @@ export default {
       `A merge tag${within(place)} uses a filter of the site's own that this text can't use.`,
     code_too_many_tags: (place: string) => `There are more merge tags${within(place)} than a text may hold.`,
     code_too_many_filters: (place: string) => `A merge tag${within(place)} has more filters than a tag may have.`,
-    code_too_long: (place: string) => `A merge tag${within(place)} is longer than a tag may be.`,
+    code_too_long: (place: string) => `A merge tag${within(place)} makes the text longer than a text may be.`,
     code_malformed_tag: (place: string) => `A merge tag${within(place)} isn't written as merge tags are.`,
     code_unclosed_tag: (place: string) => `A merge tag${within(place)} isn't closed with }}.`,
     code_tag_in_markup: (place: string) =>
@@ -151,7 +151,9 @@ export default {
       })[part] ?? 'Something this element needs is missing.',
     code_field_not_allowed: "A field of this type can't be here.",
     code_alias_invalid: (alias: string) =>
-      `"${alias}" can't be an alias: an alias starts with a lowercase letter and holds letters and digits only.`,
+      alias
+        ? `"${alias}" can't be an alias: an alias starts with a lowercase letter and holds letters and digits only.`
+        : 'This field has no alias, which the entries keep its answer under.',
     code_alias_reserved: (alias: string) => `"${alias}" can't be an alias: the form keeps it for its own use.`,
     code_alias_duplicate: (alias: string) => `Another field has the alias "${alias}" already.`,
     code_name_invalid: "This name starts the way only the site's own names may.",

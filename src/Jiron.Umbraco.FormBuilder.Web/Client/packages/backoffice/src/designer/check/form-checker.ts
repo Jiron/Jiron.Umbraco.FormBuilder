@@ -30,6 +30,8 @@ export class FormChecker {
   readonly #pause: number;
   #state: CheckState = UNCHECKED;
   #waiting: ReturnType<typeof setTimeout> | undefined;
+  /** The definition the pause waits to ask about. */
+  #pending: DesignDefinition | null = null;
   /** Counts the asks, so only the last one's answer is shown. */
   #asked = 0;
   /** The definition the last ask was of, and its answer while it is awaited. */
@@ -45,11 +47,24 @@ export class FormChecker {
     return this.#state;
   }
 
-  /** The form changed, or was read: the check asks once the changes pause, the first time at once. */
+  /**
+   * The form changed, or was read: the check asks once the changes pause, the first time at once. The form it already
+   * waits for, as a change of the selection gives, does not start the pause again; the form the last ask was about, as
+   * an undo gives back, ends the wait, its answer holding.
+   */
   changed(definition: DesignDefinition) {
+    if (definition === this.#pending) return;
+    this.#stopWaiting();
     if (definition === this.#last?.definition) return;
-    clearTimeout(this.#waiting);
+    this.#pending = definition;
     this.#waiting = setTimeout(() => void this.now(definition), this.#state.status === 'idle' ? 0 : this.#pause);
+  }
+
+  // Ends the pause, if any: nothing waits to be asked.
+  #stopWaiting() {
+    clearTimeout(this.#waiting);
+    this.#waiting = undefined;
+    this.#pending = null;
   }
 
   /**
@@ -57,8 +72,7 @@ export class FormChecker {
    * settles once the state shows an answer about it.
    */
   now(definition: DesignDefinition): Promise<void> {
-    clearTimeout(this.#waiting);
-    this.#waiting = undefined;
+    this.#stopWaiting();
     const text = JSON.stringify(definition);
     // The same form again, as a save gives it back: the answer about it holds.
     if (this.#last?.text === text && this.#state.status !== 'failed') return this.#last.answer;
@@ -80,8 +94,7 @@ export class FormChecker {
 
   /** Forgets every answer, as another form is read: the next change asks at once. */
   reset() {
-    clearTimeout(this.#waiting);
-    this.#waiting = undefined;
+    this.#stopWaiting();
     this.#asked++;
     this.#last = null;
     this.#set(UNCHECKED);
@@ -89,8 +102,7 @@ export class FormChecker {
 
   /** Stops waiting to ask; an answer still awaited is dropped. */
   stop() {
-    clearTimeout(this.#waiting);
-    this.#waiting = undefined;
+    this.#stopWaiting();
     this.#asked++;
   }
 

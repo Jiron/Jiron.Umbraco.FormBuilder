@@ -13,7 +13,10 @@ const SECTION = '/umbraco/section/jfb-forms';
 
 interface Draft {
   readonly form: { readonly concurrencyVersion: number };
-  readonly definition: { pages: { key: string; groups: { key: string; fields: unknown[] }[] }[] };
+  readonly definition: {
+    pages: { key: string; groups: { key: string; fields: unknown[] }[] }[];
+    settings?: Record<string, unknown>;
+  };
 }
 
 /**
@@ -47,6 +50,12 @@ async function checkedForm(api: APIRequestContext) {
     },
     { key: crypto.randomUUID(), type: 'email', alias: 'email', label: { '': 'Email address' } },
   ];
+  // A theme the site lacks: a warning of the form's settings, whose Fix it leads to Settings.
+  const settings = draft.definition.settings ?? {};
+  draft.definition.settings = {
+    ...settings,
+    appearance: { ...(settings['appearance'] as object | undefined), theme: 'retired' },
+  };
   const saved = await api.put(`${API}/form/${key}/draft`, {
     data: { concurrencyVersion: draft.form.concurrencyVersion, definition: draft.definition },
   });
@@ -86,13 +95,13 @@ test('the badge counts the problems, the sidebar lists them errors first, and Fi
   const design = await openForm(page, key);
 
   // The badge counts the error and the two warnings; the suggestion is listed, not counted.
-  await expect(badgeOf(design)).toHaveText('3 problems');
+  await expect(badgeOf(design)).toHaveText('4 problems');
   await expect(badgeOf(design)).toHaveAttribute('data-state', 'error');
   let sidebar = await openCheck(page, design);
   await expect(sidebar.locator('uui-box')).toHaveCount(3);
   await expect(sidebar.locator('uui-box').nth(0)).toHaveAttribute('headline', '1 error');
   await expect(sidebar.locator('uui-box').nth(0).locator('[slot="header-actions"]')).toHaveText('Blocks publishing');
-  await expect(sidebar.locator('uui-box').nth(1)).toHaveAttribute('headline', '2 warnings');
+  await expect(sidebar.locator('uui-box').nth(1)).toHaveAttribute('headline', '3 warnings');
   await expect(sidebar.locator('uui-box').nth(2)).toHaveAttribute('headline', '1 suggestion');
   await expect(rowOf(sidebar, 'label_missing')).toContainText(
     'This field has no label, which screen readers and the entries name it by.',
@@ -113,12 +122,12 @@ test('the badge counts the problems, the sidebar lists them errors first, and Fi
     'true',
   );
   await label.fill('Order number');
-  await expect(badgeOf(design)).toHaveText('2 problems');
+  await expect(badgeOf(design)).toHaveText('3 problems');
   await expect(badgeOf(design)).toHaveAttribute('data-state', 'warning');
 
   // Fix it on a rule's warning opens the rules builder on that rule, its field selected.
   sidebar = await openCheck(page, design);
-  await expect(sidebar.locator('uui-box').first()).toHaveAttribute('headline', '2 warnings');
+  await expect(sidebar.locator('uui-box').first()).toHaveAttribute('headline', '3 warnings');
   await rowOf(sidebar, 'required_can_hide').getByRole('button', { name: 'Fix it: Notes' }).click();
   const builder = page.locator('jfb-rule-builder-modal');
   await expect(builder.getByRole('heading', { name: 'Rule', exact: true })).toBeVisible();
@@ -128,6 +137,16 @@ test('the badge counts the problems, the sidebar lists them errors first, and Fi
   await builder.getByRole('button', { name: 'Cancel' }).click();
   await expect(builder).toHaveCount(0);
   await expect(design.locator('jfb-designer-inspector h2')).toHaveText('Long text field');
+
+  // From the publish dialog, the theme's Fix it opens Settings, where the form's settings are edited.
+  await page.getByRole('button', { name: 'Publish' + String.fromCharCode(0x2026) }).click();
+  const dialog = page.locator('jfb-publish-modal');
+  await expect(dialog.locator('.note.warning .lead')).toHaveText(
+    "The form check found 3 warnings. They don't block publishing.",
+  );
+  await dialog.getByRole('button', { name: 'Fix it: Form settings' }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(page).toHaveURL(/\/view\/settings$/);
 });
 
 test("a blank form's one error opens the palette, blocks Publish with Fix it, and a warning alone publishes", async ({

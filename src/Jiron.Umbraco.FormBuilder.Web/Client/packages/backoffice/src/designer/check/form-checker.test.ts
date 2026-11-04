@@ -66,6 +66,36 @@ describe('the form check', () => {
     expect(subject.state).toEqual({ status: 'checking', issues: [ISSUE], definition: form('a') });
   });
 
+  it('asks nothing when a change is undone within the pause, the answer about the form back holding', async () => {
+    const { subject, asked } = checker();
+    const checkedForm = form('a');
+    subject.changed(checkedForm);
+    await vi.advanceTimersByTimeAsync(0);
+    asked[0]?.answer.resolve([]);
+    await vi.advanceTimersByTimeAsync(0);
+    subject.changed(form('b'));
+    await vi.advanceTimersByTimeAsync(CHECK_PAUSE - 100);
+    // Undo gives the form back as it was, the same object.
+    subject.changed(checkedForm);
+    await vi.advanceTimersByTimeAsync(CHECK_PAUSE);
+    expect(asked).toHaveLength(1);
+    expect(subject.state).toEqual({ status: 'checked', issues: [], definition: checkedForm });
+  });
+
+  it('keeps counting the pause when the same form comes again, as a change of the selection gives it', async () => {
+    const { subject, asked } = checker();
+    subject.changed(form('a'));
+    await vi.advanceTimersByTimeAsync(0);
+    asked[0]?.answer.resolve([]);
+    await vi.advanceTimersByTimeAsync(0);
+    const typed = form('b');
+    subject.changed(typed);
+    await vi.advanceTimersByTimeAsync(CHECK_PAUSE - 100);
+    subject.changed(typed);
+    await vi.advanceTimersByTimeAsync(100);
+    expect(asked.map((one) => one.definition)).toEqual([form('a'), typed]);
+  });
+
   it("shows only the last ask's answer when an earlier one comes later", async () => {
     const { subject, asked } = checker();
     const first = form('a');

@@ -169,7 +169,7 @@ export class FormCheckModalElement extends UmbModalBaseElement<FormCheckModalDat
 
   #issue(issue: CheckIssue, icon: string, definition: DesignDefinition, context: CheckWordsContext) {
     const words = issueWords(issue, definition, context);
-    const target = fixOf(definition, issue.path);
+    const target = fixOf(definition, issue.path, context.types);
     return html`<li data-severity=${issue.severity} data-code=${issue.code}>
       <uui-icon name=${icon} aria-hidden="true"></uui-icon>
       <span class="lines">

@@ -3,7 +3,8 @@
 // the problem's path: the text it is in, a theme, a member group, an alias. The codes whose words only the server has
 // keep the server's sentence. Pure.
 import type { FieldTypeResponseModel } from '../../api';
-import { allFields, validationRulesOf, type DesignDefinition, type DesignField } from '../definition';
+import { validationRulesOf, type DesignDefinition, type DesignField } from '../definition';
+import { messageFieldOf } from '../rules/rule-list';
 import { parsePath, type CheckIssue, type PathStep } from './form-check';
 
 /** What the words need: the dictionaries, the field types, and the names of the form's elements. */
@@ -203,11 +204,7 @@ function whereOf(definition: DesignDefinition, steps: readonly PathStep[], words
     }
     case 'validationRules': {
       const rule = typeof index === 'number' ? validationRulesOf(definition)[index] : undefined;
-      const field = rule
-        ? allFields(definition).find(
-            (one) => one.key === rule.field || (one.rows ?? []).some((row) => row.key === rule.field),
-          )
-        : undefined;
+      const field = rule ? messageFieldOf(definition, rule.field) : undefined;
       return field ? { name: names[field.key] ?? '', top, field: null, rest: after } : form;
     }
     case 'settings':
@@ -268,7 +265,8 @@ function placeOf(where: Where, words: CheckWordsContext): string {
   if (where.top === 'settings') {
     if (first === 'submission' && second === 'entryTitle') return words.term('jfbCheck_place_entryTitle');
     if (where.rest.includes('closedMessage')) return words.term('jfbCheck_place_message');
-    if (where.rest.includes('buttons')) return words.term('jfbCheck_place_button');
+    if (first === 'submission' && (second === 'submitLabel' || second === 'nextLabel' || second === 'backLabel'))
+      return words.term('jfbCheck_place_button');
     return '';
   }
   // An action's settings are named as its type names them, which the designer doesn't read: by their own name.

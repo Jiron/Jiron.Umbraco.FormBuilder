@@ -1754,6 +1754,42 @@ describe('the form check in the Design view (ADR-0181)', () => {
     expect(state()).toBe(now);
   });
 
+  it("shows the language of the text a problem is in, the default's for the default text", async () => {
+    reading.german = true;
+    const { view, canvas, ask } = await viewOf();
+    opened.value = answering({
+      kind: 'element',
+      key: 'name',
+      item: { kind: 'text', property: 'label' },
+      culture: 'de-de',
+    });
+    await ask({ kind: 'formCheck' });
+    await settle(view);
+    expect((canvas as unknown as { look: { culture: string } }).look.culture).toBe('de-DE');
+    expect((inspectorOf(view) as unknown as { culture: string }).culture).toBe('de-DE');
+    expect(focusedIn(view)?.id).toBe('prop-label');
+
+    opened.value = answering({ kind: 'element', key: 'email', item: { kind: 'text', property: 'label' }, culture: '' });
+    await ask({ kind: 'formCheck' });
+    await settle(view);
+    expect((canvas as unknown as { look: { culture: string } }).look.culture).toBe('en-US');
+    expect(focusedIn(view)?.id).toBe('prop-label');
+    expect(reading.cultures).toEqual([undefined, 'de-DE', 'en-US']);
+  });
+
+  it('closes the palette over a narrow canvas first, which would leave the inspector out of reach', async () => {
+    const { view, ask } = await viewOf();
+    Object.assign(view, { _narrow: true });
+    await settle(view);
+    await ask({ kind: 'addField', page: 'p1' });
+    expect(shadow(view).querySelector('jfb-designer-palette')).not.toBeNull();
+    opened.value = answering({ kind: 'element', key: 'name', item: { kind: 'text', property: 'label' } });
+    await ask({ kind: 'formCheck' });
+    await settle(view);
+    expect(shadow(view).querySelector('jfb-designer-palette')).toBeNull();
+    expect(focusedIn(view)?.id).toBe('prop-label');
+  });
+
   it('makes a Fix it the publish dialog asked for, once', async () => {
     const { view, canvas, state, workspace } = await viewOf();
     workspace.fixes.setValue({ kind: 'element', key: 'email' });

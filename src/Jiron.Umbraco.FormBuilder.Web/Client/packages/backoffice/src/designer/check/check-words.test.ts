@@ -48,7 +48,7 @@ const DEFINITION: DesignDefinition = {
   settings: {
     appearance: { theme: 'bootstrap9' },
     availability: { memberGroups: ['Gold', '3f2504e0-4f89-41d3-9a0c-0305e82c3301'] },
-    submission: { store: 'never' },
+    submission: { store: 'never', submitLabel: { '': '#send' }, backLabel: { '': '#back' } },
   },
   outcomes: [
     { kind: 'redirect', redirect: { content: 'c1', url: '/x?q={{ field.email }}' } },
@@ -119,6 +119,16 @@ describe("a problem's words", () => {
     expect(words('alias_duplicate', `${F}[0].alias`, 'error').said).toBe(
       'Another field has the alias "email" already.',
     );
+    expect(words('alias_invalid', `${F}[2].alias`, 'error').said).toBe(
+      'This field has no alias, which the entries keep its answer under.',
+    );
+    expect(words('dictionary_text_missing', "$.settings.submission.submitLabel['']").said).toContain(
+      '"send" in "Button text"',
+    );
+    expect(words('dictionary_text_missing', "$.settings.submission.backLabel['']").said).toContain(
+      '"back" in "Button text"',
+    );
+    expect(words('dictionary_text_missing', '$.settings.submission.store').said).not.toContain('Button text');
   });
 
   it("tell a type the site lacks by where it is, a page by its number, and kept limits by the form's storage", () => {

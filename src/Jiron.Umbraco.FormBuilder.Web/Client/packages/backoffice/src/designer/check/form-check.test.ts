@@ -2,7 +2,8 @@
 // each place of the definition the designer shows mapped to its element, item, rule, the palette or a view.
 import { describe, expect, it } from 'vitest';
 import type { DesignDefinition } from '../definition';
-import { bySeverity, countOf, fixOf, issuesOf, parsePath, severityOf, type CheckIssue } from './form-check';
+import { builtInTypes } from '../preview/fixtures';
+import { bySeverity, fixOf, issuesOf, parsePath, severityOf, type CheckIssue, type CheckTypes } from './form-check';
 
 const BACKSLASH = String.fromCharCode(0x5c);
 
@@ -82,11 +83,13 @@ describe("a problem's Fix it", () => {
       kind: 'element',
       key: 'email',
       item: { kind: 'text', property: 'label' },
+      culture: '',
     });
     expect(fix(`${F}[0].placeholder.de`)).toEqual({
       kind: 'element',
       key: 'email',
       item: { kind: 'text', property: 'placeholder' },
+      culture: 'de',
     });
     expect(fix(`${F}[0].autocomplete`)).toEqual({
       kind: 'element',
@@ -99,6 +102,7 @@ describe("a problem's Fix it", () => {
       kind: 'element',
       key: 'email',
       item: { kind: 'message', message: 'required' },
+      culture: '',
     });
     expect(fix(`${F}[0].settings.maxBytes`)).toEqual({
       kind: 'element',
@@ -109,6 +113,66 @@ describe("a problem's Fix it", () => {
       kind: 'element',
       key: 'email',
       item: { kind: 'setting', name: 'address', inner: 'street' },
+    });
+  });
+
+  it('carries the language of the text it is in, the default for a text as a whole, and none for a place no text', () => {
+    expect(fix(`${F}[0].label`)).toEqual({
+      kind: 'element',
+      key: 'email',
+      item: { kind: 'text', property: 'label' },
+      culture: '',
+    });
+    expect(fix(`${F}[0].label['de-CH']`)).toMatchObject({ culture: 'de-CH' });
+    expect(fix(`${F}[0].messages.required.de`)).toMatchObject({ culture: 'de' });
+    expect(fix(`${F}[0].validation[0].message['']`)).toEqual({
+      kind: 'element',
+      key: 'email',
+      item: { kind: 'pattern' },
+      culture: '',
+    });
+    expect(fix(`${F}[0].validation[0].pattern`)).not.toHaveProperty('culture');
+    expect(fix(`${F}[0].autocomplete`)).not.toHaveProperty('culture');
+    expect(fix(`${F}[0].type`)).not.toHaveProperty('culture');
+  });
+
+  it("tells a text setting's language from a nested setting's name by the field's type", () => {
+    const one = (key: string, type: string): DesignDefinition => ({
+      pages: [{ key: 'p', groups: [{ key: 'g', fields: [{ key, type }] }] }],
+    });
+    const at = '$.pages[0].groups[0].fields[0].settings';
+    expect(fixOf(one('logo', 'image'), `${at}.alt.de`, builtInTypes)).toEqual({
+      kind: 'element',
+      key: 'logo',
+      item: { kind: 'setting', name: 'alt' },
+      culture: 'de',
+    });
+    expect(fixOf(one('logo', 'image'), `${at}.alt`, builtInTypes)).toMatchObject({ culture: '' });
+    expect(fixOf(one('logo', 'image'), `${at}.size`, builtInTypes)).not.toHaveProperty('culture');
+    const types = {
+      card: {
+        settings: [
+          {
+            name: 'caption',
+            kind: 'nested',
+            settings: [
+              { name: 'text', kind: 'localizedText', settings: [] },
+              { name: 'size', kind: 'choice', settings: [] },
+            ],
+          },
+        ],
+      },
+    } as unknown as CheckTypes;
+    expect(fixOf(one('c', 'card'), `${at}.caption.text['']`, types)).toEqual({
+      kind: 'element',
+      key: 'c',
+      item: { kind: 'setting', name: 'caption', inner: 'text' },
+      culture: '',
+    });
+    expect(fixOf(one('c', 'card'), `${at}.caption.size`, types)).toEqual({
+      kind: 'element',
+      key: 'c',
+      item: { kind: 'setting', name: 'caption', inner: 'size' },
     });
   });
 
@@ -126,6 +190,7 @@ describe("a problem's Fix it", () => {
       kind: 'element',
       key: 'kid',
       item: { kind: 'text', property: 'label' },
+      culture: '',
     });
     expect(fix(`${F}[1].fields`)).toEqual({ kind: 'element', key: 'kids' });
     expect(fix(`${F}[2].rows[0].label['']`)).toEqual({ kind: 'element', key: 'grid', item: { kind: 'rows' } });
@@ -148,12 +213,14 @@ describe("a problem's Fix it", () => {
       kind: 'element',
       key: 'g1',
       item: { kind: 'text', property: 'title' },
+      culture: '',
     });
     expect(fix('$.pages[0].groups[0].columns')).toEqual({ kind: 'element', key: 'g1', item: { kind: 'columns' } });
-    expect(fix("$.pages[0].title['']")).toEqual({
+    expect(fix('$.pages[0].title.fr')).toEqual({
       kind: 'element',
       key: 'p1',
       item: { kind: 'text', property: 'title' },
+      culture: 'fr',
     });
     expect(fix('$.pages[0].columns')).toEqual({ kind: 'element', key: 'p1' });
     expect(fix('$.pages[0].groups[1].fields')).toEqual({ kind: 'palette', page: 'p1' });
@@ -182,10 +249,8 @@ describe("the check's problems", () => {
     message: code,
   });
 
-  it('count errors and warnings for the badge, and hints not', () => {
+  it('come by their weight, each in the order the check found them', () => {
     const issues = [issue('error', 'a'), issue('warning', 'b'), issue('hint', 'c'), issue('warning', 'd')];
-    expect(countOf(issues)).toBe(3);
-    expect(countOf([issue('hint', 'c')])).toBe(0);
     const found = bySeverity(issues);
     expect(found.error.map((one) => one.code)).toEqual(['a']);
     expect(found.warning.map((one) => one.code)).toEqual(['b', 'd']);

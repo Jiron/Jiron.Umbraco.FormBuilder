@@ -12,6 +12,7 @@ import {
 } from './constants';
 import { CHANGE_TYPE_MODAL_ALIAS } from './change-type/change-type.modal.token';
 import { FORM_CHECK_MODAL_ALIAS } from './check/form-check.modal.token';
+import { FIRST_VIEW } from './form-views';
 import { MOVE_TO_MODAL_ALIAS } from './moves/move-to.modal.token';
 import { SHORTCUTS_MODAL_ALIAS } from './moves/shortcuts.modal.token';
 import { PASTE_QUESTIONS_MODAL_ALIAS } from './palette/paste-questions.modal.token';
@@ -24,7 +25,7 @@ const holding = (...anyOf: string[]) => ({ alias: FORM_PERMISSION_CONDITION, any
 
 /** The views in their order, with who sees each: the first one a user sees is where the form opens. */
 const VIEWS: readonly { id: string; icon: string; anyOf: string[]; ready: boolean }[] = [
-  { id: 'design', icon: 'icon-layout', anyOf: ['design'], ready: true },
+  { id: FIRST_VIEW, icon: 'icon-layout', anyOf: ['design'], ready: true },
   { id: 'settings', icon: 'icon-settings', anyOf: ['design'], ready: false },
   { id: 'actions', icon: 'icon-lightning', anyOf: ['design', 'manageActions'], ready: false },
   { id: 'entries', icon: 'icon-inbox', anyOf: ['viewEntries'], ready: false },

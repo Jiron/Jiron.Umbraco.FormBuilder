@@ -105,7 +105,7 @@ describe('the publish dialog', () => {
     errors?.querySelector<HTMLElement>('uui-button')?.click();
     await settle(element);
     expect(modal.getValue()).toEqual({
-      fix: { kind: 'element', key: 'email', item: { kind: 'text', property: 'label' } },
+      fix: { kind: 'element', key: 'email', item: { kind: 'text', property: 'label' }, culture: '' },
     });
     expect(modal.submit).toHaveBeenCalledOnce();
     // The action makes the Fix it once the dialog is gone, which gives the focus back to Publish... as it closes.
@@ -130,11 +130,18 @@ describe('the publish dialog', () => {
 
   it("waits for the check's answer, and leaves publishing to the server's check when it gives none", async () => {
     const { element, root, state, publish } = await dialogOf({ status: 'checking', issues: [], definition: null });
-    expect(text(root.querySelector('[role="status"]'))).toBe('Checking the form\u2026');
+    // One region says the wait and then the answer, so a screen reader reads the answer out as it comes.
+    const region = root.querySelector('[role="status"]');
+    expect(text(region)).toBe('Checking the form\u2026');
     expect(publish.hasAttribute('disabled')).toBe(true);
     state.setValue({ status: 'failed', issues: [], definition: null });
     await settle(element);
     expect(publish.hasAttribute('disabled')).toBe(false);
-    expect(text(root.querySelector('.result'))).toBe("The form check didn't answer. Publishing checks the form again.");
+    expect(root.querySelector('[role="status"]')).toBe(region);
+    expect(text(region)).toBe("The form check didn't answer. Publishing checks the form again.");
+    state.setValue({ status: 'checked', issues: [], definition: DEFINITION });
+    await settle(element);
+    expect(root.querySelector('[role="status"]')).toBe(region);
+    expect(text(region)).toBe('The form check found no problems.');
   });
 });

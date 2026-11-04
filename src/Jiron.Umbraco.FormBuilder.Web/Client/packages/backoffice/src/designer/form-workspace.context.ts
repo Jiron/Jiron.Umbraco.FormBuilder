@@ -349,11 +349,6 @@ export class FormWorkspaceContext
     return this.canDesign() ? this.#checker.now(this.#history.state.definition) : Promise.resolve();
   }
 
-  /** What the check shows now. */
-  getCheck(): CheckState {
-    return this.#check.getValue();
-  }
-
   /** Asks the Design view for a Fix it, from the publish dialog; the view takes it up once it is shown. */
   requestFix(target: FixTarget) {
     this.#fix.setValue(target);

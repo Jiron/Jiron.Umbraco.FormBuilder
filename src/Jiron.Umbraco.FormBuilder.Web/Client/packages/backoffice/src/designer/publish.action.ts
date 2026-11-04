@@ -36,7 +36,12 @@ export class PublishFormAction extends UmbWorkspaceActionBase {
     }).catch(() => undefined);
     if (!value) return;
     if ('fix' in value) {
-      // The dialog answers before it closes and gives the focus back to Publish... as it does, so the Fix it waits.
+      // A view is shown at once; the Design view makes any other Fix it. The dialog answers before it closes and gives
+      // the focus back to Publish... as it does, so the Fix it waits.
+      if (value.fix.kind === 'view') {
+        goToView(value.fix.view);
+        return;
+      }
       await Promise.race([closed, new Promise((done) => setTimeout(done, 2000))]);
       context.requestFix(value.fix);
       goToView('design');
