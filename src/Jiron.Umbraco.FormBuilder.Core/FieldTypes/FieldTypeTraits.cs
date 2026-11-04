@@ -28,6 +28,7 @@ internal sealed class FieldTypeTraits
         Messages = declaration.Messages;
         OnePerForm = declaration.OnePerForm;
         ServerOnlyDefault = declaration.ServerOnlyDefault;
+        PersonalData = declaration.PersonalData;
         PublicSettings = type.SettingsSchema.Settings.Where(setting => setting.IsPublic).Select(setting => setting.Name).ToFrozenSet(StringComparer.Ordinal);
     }
 
@@ -69,6 +70,9 @@ internal sealed class FieldTypeTraits
     /// page (the hidden field, which may use member and context values, ADR-0014).
     /// </summary>
     public bool ServerOnlyDefault { get; }
+
+    /// <summary>Whether the type's answers are about a person by their nature, such as an email address or a name (ADR-0180).</summary>
+    public bool PersonalData { get; }
 
     /// <summary>The settings visitors may see; every other setting stays on the server (ADR-0002, the public projection).</summary>
     public FrozenSet<string> PublicSettings { get; }

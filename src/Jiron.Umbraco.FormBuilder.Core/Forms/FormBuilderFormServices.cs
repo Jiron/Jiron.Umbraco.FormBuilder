@@ -25,6 +25,15 @@ internal static class FormBuilderFormServices
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IFormCheck, EmailReplyFormCheck>());
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IFormCheck, RequiredHiddenFormCheck>());
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IFormCheck, UnreachablePageFormCheck>());
+        builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IFormCheck, ConsentFormCheck>());
+        builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IFormCheck, CardAndPasswordFormCheck>());
+        builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IFormCheck, FileLimitFormCheck>());
+        builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IFormCheck, FullOptionsFormCheck>());
+        builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IFormCheck, KeptLimitsFormCheck>());
+        builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IFormCheck, LastOutcomeFormCheck>());
+        builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IFormCheck, ThemeFormCheck>());
+        builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IFormCheck, SiteReferencesFormCheck>());
+        builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IFormCheck, DictionaryFormCheck>());
         builder.Services.TryAddSingleton<RuleSearchScopes>();
         builder.Services.TryAddSingleton<FormCheck>();
         builder.Services.TryAddSingleton<FormRemoval>();

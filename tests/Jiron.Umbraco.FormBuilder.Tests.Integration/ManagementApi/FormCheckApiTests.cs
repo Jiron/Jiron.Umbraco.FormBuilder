@@ -8,10 +8,11 @@ using Umbraco.Cms.Tests.Common.Testing;
 namespace Jiron.Umbraco.FormBuilder.Tests.Integration.ManagementApi;
 
 /// <summary>
-/// The form check through the management API (ROADMAP 9.5b, 9.5d; ADR-0177, ADR-0179): the draft the designer holds,
-/// checked without saving, gives its errors, warnings and hints, each with the path of its element and setting, the
-/// checks of the form's rules among them; publishing refuses the errors at their paths, conditions a change of type left
-/// too, and a form with warnings only goes live.
+/// The form check through the management API (ROADMAP 9.5b, 9.5d, 9.5e; ADR-0177, ADR-0179, ADR-0180): the draft the
+/// designer holds, checked without saving, gives its errors, warnings and hints, each with the path of its element and
+/// setting, the checks of the form's rules, of the site and of what the form collects among them; publishing refuses the
+/// errors at their paths, conditions a change of type left and a label's tag of a source labels refuse too, and a form
+/// with warnings and hints only goes live.
 /// </summary>
 [TestFixture]
 [UmbracoTest(Database = UmbracoTestOptions.Database.NewSchemaPerTest, Boot = true)]
@@ -144,6 +145,58 @@ public sealed class FormCheckApiTests : ManagementApiTestBase
         {
             (DefinitionErrors.OperatorNotForKind, "$.pages[0].groups[0].fields[1].rules[0].conditions[0].op"),
         }));
+    }
+
+    [Test]
+    public async Task Publishing_RefusesAMergeTagInALabel_FromASourceALabelRefuses()
+    {
+        var (form, version, definition) = await DraftAsync();
+        Fields(definition, Field("text", "greeting", "Hello {{ member.name }}"));
+        version = await SaveAsync(form, version, definition);
+
+        var refused = await CallAsync("designer", HttpMethod.Post, $"form/{form}/publish", new { concurrencyVersion = version });
+
+        Assert.That(refused.Status, Is.EqualTo(HttpStatusCode.BadRequest), refused.ToString());
+        Assert.That(refused.Body!["errors"]!.AsArray().Select(error => (error!["code"]!.GetValue<string>(), error["path"]!.GetValue<string>())), Is.EqualTo(new[]
+        {
+            ("source_not_for_place", "$.pages[0].groups[0].fields[0].label['']"),
+        }));
+    }
+
+    [Test]
+    public async Task TheSitesChecks_AndThoseOfWhatTheFormCollects_ReachTheDesigner_AndTheirWarningsNeverKeepItFromGoingLive()
+    {
+        // An email address on a form without a consent field, under a dictionary item the site lacks; a file field without a
+        // size; a theme and a page the site lacks.
+        var (form, version, definition) = await DraftAsync();
+        Fields(definition, Field("email", "mail", "#jfb.test.nothing"), Field("file", "cv", "CV"));
+        if (definition["settings"] is not JsonObject settings)
+        {
+            settings = new JsonObject();
+            definition["settings"] = settings;
+        }
+
+        settings["appearance"] = JsonNode.Parse("""{"theme":"gone"}""");
+        definition["outcomes"] = JsonNode.Parse($$$"""[{"key":"{{{Guid.NewGuid()}}}","kind":"redirect","redirect":{"content":"{{{Guid.NewGuid()}}}"}}]""");
+
+        var answer = await CallAsync("designer", HttpMethod.Post, $"form/{form}/check", new { definition });
+
+        Assert.That(answer.Outcome, Is.EqualTo("200"), answer.ToString());
+        var issues = answer.Body!["issues"]!.AsArray().Select(issue => (issue!["severity"]!.GetValue<string>(), issue["code"]!.GetValue<string>(), issue["path"]!.GetValue<string>())).ToList();
+        Assert.That(issues, Is.SupersetOf(new[]
+        {
+            ("warning", DictionaryFormCheck.DictionaryTextMissing, "$.pages[0].groups[0].fields[0].label['']"),
+            ("warning", ThemeFormCheck.ThemeMissing, "$.settings.appearance.theme"),
+            ("warning", SiteReferencesFormCheck.ContentMissing, "$.outcomes[0].redirect.content"),
+            ("hint", ConsentFormCheck.ConsentMissing, "$.pages[0].groups[0].fields[0]"),
+            ("hint", FileLimitFormCheck.FileSizeUnset, "$.pages[0].groups[0].fields[1].settings.maxBytes"),
+        }), answer.ToString());
+        Assert.That(issues.Where(issue => issue.Item1 == "error"), Is.Empty, answer.ToString());
+
+        version = await SaveAsync(form, version, definition);
+        var published = await CallAsync("designer", HttpMethod.Post, $"form/{form}/publish", new { concurrencyVersion = version });
+
+        Assert.That(published.Status, Is.EqualTo(HttpStatusCode.OK), published.ToString());
     }
 
     /// <inheritdoc />

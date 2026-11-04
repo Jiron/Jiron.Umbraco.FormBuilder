@@ -596,7 +596,8 @@ public sealed class ContentActionTests : ActionTestBase
 
         var issues = await GetRequiredService<FormCheck>().CheckAsync((await GetRequiredService<IFormBuilderFormService>().GetDraftAsync(form))!.Definition!, CancellationToken.None);
 
-        Assert.That(issues.Select(issue => (issue.Severity, issue.Code, issue.Path, issue.Message)), Is.EqualTo(new[]
+        // The form's hints (its file field without a size of its own, 9.5e) are no business of the action's.
+        Assert.That(issues.Where(issue => issue.Severity != FormCheckSeverity.Hint).Select(issue => (issue.Severity, issue.Code, issue.Path, issue.Message)), Is.EqualTo(new[]
         {
             (FormCheckSeverity.Warning, "unknown_path", "$.actions[0].settings.name", "The merge tag at character 9 names nothing this form or site has, so it shows nothing."),
             (FormCheckSeverity.Warning, "unknown_path", "$.actions[0].settings.mapping", "In the value of 'title': The merge tag at character 7 names nothing this form or site has, so it shows nothing."),

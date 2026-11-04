@@ -71,3 +71,7 @@ Option 2.
   no label.
 - A field without a label, which the designer called "Untitled field", now keeps its form from going live; forms made
   before 9.5b may need labels before their next publish.
+- 9.5d adds the checks of the form's rules ([ADR-0179](0179-the-form-checks-of-the-forms-rules.md)), 9.5e those of the
+  site and of what a form collects, and the warning where a host's lock replaces a stored value, which only the form
+  check itself can give, since it alone holds the definition before the locks apply
+  ([ADR-0180](0180-the-form-checks-of-the-site-and-of-what-a-form-collects.md)).

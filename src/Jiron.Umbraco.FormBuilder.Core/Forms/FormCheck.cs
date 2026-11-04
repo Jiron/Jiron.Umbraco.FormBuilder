@@ -1,5 +1,6 @@
 using Jiron.Umbraco.FormBuilder.Core.Actions;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
+using Jiron.Umbraco.FormBuilder.Core.Definitions.Serialization;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 
 namespace Jiron.Umbraco.FormBuilder.Core.Forms;
@@ -46,8 +47,9 @@ internal interface IFormCheck
 
 /// <summary>
 /// The form check (ROADMAP 9.5b, ADR-0177): every publish check, whose problems are errors, then every check that weighs
-/// its issues, over the definition as the site runs it, with the host's designer locks (ADR-0060). Publishing refuses
-/// its errors; the designer asks it of the draft it holds, and lists every issue with its path.
+/// its issues, over the definition as the site runs it, with the host's designer locks (ADR-0060). A lock that replaces a
+/// value the form stores is a warning of its own, since only this check sees both (ADR-0008, ADR-0180). Publishing
+/// refuses its errors; the designer asks it of the draft it holds, and lists every issue with its path.
 /// </summary>
 /// <param name="publishChecks">The publish checks, the structural validation first (ADR-0044).</param>
 /// <param name="checks">The checks that weigh their issues.</param>
@@ -55,8 +57,37 @@ internal interface IFormCheck
 /// <param name="actionLocks">The host's locks of action settings.</param>
 internal sealed class FormCheck(IEnumerable<IFormPublishCheck> publishChecks, IEnumerable<IFormCheck> checks, FieldSettingLocks locks, ActionSettingLocks actionLocks)
 {
+    /// <summary>A host's lock that replaces a value the form stores (a warning).</summary>
+    public const string LockReplacesValue = "lock_replaces_value";
+
     private readonly IReadOnlyList<IFormPublishCheck> _publishChecks = [.. publishChecks];
     private readonly IReadOnlyList<IFormCheck> _checks = [.. checks];
+
+    /// <summary>
+    /// Each setting of a field or an action that a host's lock gives another value than the one the form stores, where it
+    /// is stored, in document order: the site runs the lock's value (ADR-0008). A hidden lock's setting is none, since the
+    /// designer never shows it, so no editor expects its value.
+    /// </summary>
+    internal static IEnumerable<FormCheckIssue> Replaced(FormDefinition definition, FieldSettingLocks locks, ActionSettingLocks actionLocks)
+    {
+        foreach (var (field, path) in DefinitionFields.Of(definition))
+        {
+            foreach (var settingLock in FieldSettingLocks.Replacing(field.Settings, locks.Of(field.Type)).Where(settingLock => !settingLock.Hidden))
+            {
+                yield return Replacing(JsonPaths.Property(path, "settings"), settingLock);
+            }
+        }
+
+        var actions = JsonPaths.Property(JsonPaths.Root, "actions");
+        for (var i = 0; i < definition.Actions.Count; i++)
+        {
+            var action = definition.Actions[i];
+            foreach (var settingLock in FieldSettingLocks.Replacing(action.Settings, actionLocks.Of(action.Type)).Where(settingLock => !settingLock.Hidden))
+            {
+                yield return Replacing(JsonPaths.Property(JsonPaths.Index(actions, i), "settings"), settingLock);
+            }
+        }
+    }
 
     /// <summary>
     /// Every issue of <paramref name="definition"/>: the errors first, then the warnings, then the hints, each in the order
@@ -80,7 +111,7 @@ internal sealed class FormCheck(IEnumerable<IFormPublishCheck> publishChecks, IE
             }
         }
 
-        var warnings = new List<FormCheckIssue>();
+        var warnings = Replaced(definition, locks, actionLocks).Take(DefinitionProblems.Max).ToList();
         var hints = new List<FormCheckIssue>();
         foreach (var check in _checks)
         {
@@ -103,4 +134,10 @@ internal sealed class FormCheck(IEnumerable<IFormPublishCheck> publishChecks, IE
 
         return [.. errors.ToReadOnlyList().Select(FormCheckIssue.Error), .. warnings, .. hints];
     }
+
+    private static FormCheckIssue Replacing(string settings, FieldSettingLock settingLock) => new(
+        FormCheckSeverity.Warning,
+        LockReplacesValue,
+        JsonPaths.Property(settings, settingLock.Setting.Name),
+        $"The site locks this setting ({settingLock.ConfigurationKey}), so the form runs with the locked value instead of the one it stores.");
 }

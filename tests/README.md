@@ -214,7 +214,7 @@ and the public projection ([ADR-0035](../docs/decisions/0035-structural-validati
 | `VisitorTextsTests` | The visitor texts of a visitor's form in the form's order with their owners and properties, a repeatable group's children after it; only the public text settings that take merge tags, nested ones by their path; no consent's text. |
 | `ModelListTests` | No list of a read definition, its value types or its projection can be changed through a cast or through the list a record was built from, none takes a null item, and records compare their lists by their items, in order. |
 | `StructureTests` | A document that publishes, and each publish refusal with its code and JSON path as one change to it (aliases that differ only in letter case and option values that fold to one text included); what publishes; that a save refusal comes first; that each one-per-form type counts on its own; and 500 generated definitions checked without throwing, every path naming a part of them. |
-| `FieldTypeSupportTests` | §4.3.2 restated apart from the code, against the field type registry: each built-in type refuses exactly the common properties, checks, rules and messages it does not support, and declares the palette group, storage, rule kind, multiple setting, one per form, server-only default, settings and public settings written there; the one list of field messages that both checks use holds every message of the record with its own kind. |
+| `FieldTypeSupportTests` | §4.3.2 restated apart from the code, against the field type registry: each built-in type refuses exactly the common properties, checks, rules and messages it does not support, and declares the palette group, storage, rule kind, multiple setting, one per form, server-only default, personal data, settings and public settings written there; the one list of field messages that both checks use holds every message of the record with its own kind. |
 | `RedirectUrlTests` | The redirects that could leave the editor's site, and those that stay on it. |
 | `ProjectionTests` | 500 generated definitions with a marker in every private place project without it; the projection names only allowlisted properties; `fixtures/definitions/v1-full.public.json` is the reviewed projection of the fixture; which changes move `PublicHash` and which do not. |
 | `DefinitionDiffTests` | The comparison of two versions ([ADR-0045](../docs/decisions/0045-versions-comparison-and-draft-cleanup.md)): texts per culture, a type's settings one by one, option items by value and grid rows by key with their order, moves to another parent and the fewest moves within one, rules whose order means nothing, settings groups by name, the order of the changes. Then 100 generated definitions, each changed by `DefinitionMutator` as editors change them: the comparison swapped mirrors it, names each element once, and each changed element's property changes rebuild its newer properties from its older ones. Also when a save changes the actions ([ADR-0051](../docs/decisions/0051-form-endpoints.md)): an action, or a rule of one added, changed or moved in or out, and nothing else. |
@@ -1152,6 +1152,30 @@ only (none for a library list, a cascading list or "Other"), a grid's for its ro
 overview saying no conflict for an answer the form hides, `ownOptionValues` knowing none for the same choices as the
 server, and `logicOf` taking the rules model's kinds. `FormCheckApiTests` finds both warnings in the draft check and has
 a publish refused through the API for conditions a change of type left.
+
+The checks of the site and of what a form collects (9.5e, ADR-0180): `Tests.Unit/Forms/CollectedDataFormCheckTests`
+holds personal data on a form without a consent field a hint at the first field that asks for it (a type that is
+personal by nature, a site's own type that declares it, a repeatable group's child, an autocomplete token after its
+section and kinds; none for a topic, a country or a count, or where a consent field sits anywhere); a card number asked
+for a warning from its token, its label or placeholder in any culture (a German compound, an accented French phrase,
+"CVV", "Card number" as the whole label) or a pattern that takes sixteen digits and refuses twelve, none for a
+membership card's number, a card type, a member number, a phone pattern or a checkbox; a password from its token or a
+word in the visitor languages, never from a help text; a file field without a size a hint naming the site's limit; a required choice whose
+options all have places a warning (its own, required by a rule switched on, a library list holding them), none with one
+unlimited, without a requirement, with "Other", or for a list that is open or gone; a form that keeps no entries
+warning about its entry limit, one entry per member, places and unique answers, a field kept until the actions have run
+about its own, and a form that keeps entries for days about none; and a last outcome's rule a warning unless it is
+switched off. `Tests.Unit/Forms/SiteFormCheckTests` holds a theme the site lacks in code and in the library a warning,
+a built-in one and a library one not; a redirect to a page in the tree but not published, or gone, a warning; content
+and media that are gone in an image's setting, an option's image and an action type's page, folder, list of pages and
+nested image;
+member groups by key and by name, in any letter case and in nested groups, the groups never asked for by a form that
+names none; every localised text with its path; and a dictionary text without a text a warning at the culture's text
+for the languages whose visitors see it, through Umbraco's fallbacks, read once per language, nothing read for a form
+without one. `FormCheckTests` adds a host's lock replacing a stored value a warning at the setting, for a field, a
+repeatable group's child and an action, none for a value equal to the lock's or under a hidden lock, and a label's
+merge tag of a source labels refuse an error. `FormCheckApiTests` finds these through the draft check, publishes such a
+form, and has a publish refused for that label; `FormCopyServiceTests` keeps a built-in theme on import.
 
 ## The public API tests
 

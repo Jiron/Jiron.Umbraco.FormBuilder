@@ -147,6 +147,7 @@ public sealed class EmailFieldType() : FormBuilderFieldTypeBase<EmailFieldSettin
     RuleKind = FieldKind.Text,
     Features = BuiltInFieldTypes.TextInput,
     Messages = BuiltInFieldTypes.Readable | FieldMessageKinds.Confirmation,
+    PersonalData = true,
 })
 {
     /// <summary>The longest address an email field takes: the most a mail server's path allows (RFC 5321).</summary>
@@ -316,6 +317,7 @@ public sealed class PhoneFieldType() : FormBuilderFieldTypeBase<PhoneFieldSettin
     RuleKind = FieldKind.Text,
     Features = BuiltInFieldTypes.TextInput,
     Messages = BuiltInFieldTypes.Readable,
+    PersonalData = true,
 })
 {
     /// <summary>The longest number a phone field takes, with room for spaces, brackets and an extension.</summary>

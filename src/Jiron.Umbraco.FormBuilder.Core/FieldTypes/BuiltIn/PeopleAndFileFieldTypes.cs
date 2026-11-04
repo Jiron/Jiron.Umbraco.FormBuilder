@@ -18,6 +18,7 @@ public sealed class NameFieldType() : FormBuilderFieldTypeBase<NameFieldSettings
     Storage = FieldStorageKind.Json,
     Features = BuiltInFieldTypes.Input | FieldFeatures.Prefill,
     Messages = BuiltInFieldTypes.Readable,
+    PersonalData = true,
 })
 {
     /// <summary>The longest part of a name a field takes.</summary>
@@ -107,6 +108,7 @@ public sealed class AddressFieldType() : FormBuilderFieldTypeBase<AddressFieldSe
     Storage = FieldStorageKind.Json,
     Features = BuiltInFieldTypes.Input | FieldFeatures.Prefill,
     Messages = BuiltInFieldTypes.Readable,
+    PersonalData = true,
 })
 {
     /// <summary>The parts every address asks for, which a required address needs when it lists none.</summary>
@@ -430,6 +432,7 @@ public sealed class SignatureFieldType() : FormBuilderFieldTypeBase<SignatureFie
     RuleKind = FieldKind.Files,
     Features = BuiltInFieldTypes.Input,
     Messages = BuiltInFieldTypes.Readable,
+    PersonalData = true,
 })
 {
     /// <summary>The most bytes a signature's PNG has (ADR-0071), whatever more the host allows.</summary>

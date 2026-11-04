@@ -93,21 +93,27 @@ public abstract partial class LocalizedString : IEquatable<LocalizedString>
     /// The text a request in <paramref name="culture"/> sees: that culture's, then its more general cultures' (subtags
     /// removed from the end, so <c>de-CH</c> falls back to <c>de</c>), then the default.
     /// </summary>
-    public string Resolve(string? culture)
+    public string Resolve(string? culture) => EntryFor(culture).Text;
+
+    /// <summary>The culture and text a request in <paramref name="culture"/> sees, as <see cref="Resolve"/> finds them.</summary>
+    internal CultureText EntryFor(string? culture)
     {
         var candidate = culture ?? string.Empty;
         while (candidate.Length > 0)
         {
-            if (TryGetText(candidate, out var text))
+            foreach (var entry in _texts.AsSpan())
             {
-                return text;
+                if (string.Equals(entry.Culture, candidate, StringComparison.OrdinalIgnoreCase))
+                {
+                    return entry;
+                }
             }
 
             var dash = candidate.LastIndexOf('-');
             candidate = dash < 0 ? string.Empty : candidate[..dash];
         }
 
-        return Default;
+        return _texts[0];
     }
 
     /// <inheritdoc />

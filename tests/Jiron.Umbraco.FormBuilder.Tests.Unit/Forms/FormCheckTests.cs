@@ -16,7 +16,8 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Forms;
 /// The form check on the server (ROADMAP 9.5b, ADR-0177): every text where merge tags render with its place, context,
 /// owner and path; the merge tags' errors and warnings, a redirect that recalls answers, a field without a label, a
 /// captcha provider without its keys, an email action without an email field to reply to, an action type's own warnings;
-/// and the check's order of errors, warnings and hints over the form as the site runs it.
+/// and the check's order of errors, warnings and hints over the form as the site runs it, with a warning where a host's
+/// lock replaces a value the form stores (9.5e).
 /// </summary>
 [TestFixture]
 public sealed class FormCheckTests
@@ -281,6 +282,51 @@ public sealed class FormCheckTests
         _ = await formCheck.CheckAsync(Read("""[{"key":"10000000-0000-4000-8000-000000000001","groups":[{"key":"20000000-0000-4000-8000-000000000001","fields":[{"key":"F1","type":"text","alias":"name","label":{"":"Name"},"settings":{"maxLength":200}}]}]}]"""), CancellationToken.None);
 
         Assert.That(seen.Definition?.Pages[0].Groups[0].Fields[0].Settings?.Value.GetProperty("maxLength").GetRawText(), Is.EqualTo("9"));
+    }
+
+    [Test]
+    public async Task AHostsLock_ThatReplacesAValueTheFormStores_IsAWarning_WhereItIsStored_UnlessTheLockIsHidden()
+    {
+        var options = new FormBuilderOptions();
+        options.Designer.SettingLocks.Add(new DesignerSettingLock { Kind = DesignerSettingLock.FieldKind, Type = "text", Setting = "maxLength", Value = "9" });
+        options.Designer.SettingLocks.Add(new DesignerSettingLock { Kind = DesignerSettingLock.FieldKind, Type = "text", Setting = "prefix", Value = "+", Hidden = true });
+        options.Designer.SettingLocks.Add(new DesignerSettingLock { Kind = DesignerSettingLock.FieldKind, Type = "text", Setting = "suffix" });
+        options.Designer.SettingLocks.Add(new DesignerSettingLock { Kind = DesignerSettingLock.ActionKind, Type = "test.note", Setting = "note", Value = "Kept" });
+        var formCheck = new FormCheck([], [], new FieldSettingLocks(Options.Create(options), Types), new ActionSettingLocks(Options.Create(options), Actions));
+        var definition = Read(
+            """
+            [{"key":"10000000-0000-4000-8000-000000000001","groups":[{"key":"20000000-0000-4000-8000-000000000001","fields":[
+              {"key":"F1","type":"text","alias":"name","label":{"":"Name"},"settings":{"maxLength":200,"prefix":"x","suffix":"kg"}},
+              {"key":"F2","type":"text","alias":"same","label":{"":"Same"},"settings":{"maxLength":9}},
+              {"key":"30000000-0000-4000-8000-000000000003","type":"repeater","alias":"kids","label":{"":"Kids"},"fields":[{"key":"30000000-0000-4000-8000-000000000004","type":"text","alias":"kid","label":{"":"Kid"},"settings":{"maxLength":20}}]}]}]}]
+            """,
+            ""","actions":[{"key":"50000000-0000-4000-8000-000000000001","type":"test.note","settings":{"note":"Mine"}},{"key":"50000000-0000-4000-8000-000000000002","type":"test.note","settings":{"note":"Kept"}}]""");
+
+        var issues = await formCheck.CheckAsync(definition, CancellationToken.None);
+
+        var fields = "$.pages[0].groups[0].fields";
+        Assert.Multiple(() =>
+        {
+            Assert.That(issues.Select(issue => (issue.Severity, issue.Code, issue.Path)), Is.EqualTo(new[]
+            {
+                (FormCheckSeverity.Warning, FormCheck.LockReplacesValue, fields + "[0].settings.maxLength"),
+                // A lock without a value keeps the setting's default, which replaces the field's own.
+                (FormCheckSeverity.Warning, FormCheck.LockReplacesValue, fields + "[0].settings.suffix"),
+                (FormCheckSeverity.Warning, FormCheck.LockReplacesValue, fields + "[2].fields[0].settings.maxLength"),
+                (FormCheckSeverity.Warning, FormCheck.LockReplacesValue, "$.actions[0].settings.note"),
+            }));
+            Assert.That(issues[0].Message, Is.EqualTo("The site locks this setting (JironFormBuilder:Designer:SettingLocks:0), so the form runs with the locked value instead of the one it stores."));
+        });
+    }
+
+    [Test]
+    public async Task AMergeTagInALabel_FromASourceALabelRefuses_IsAnError()
+    {
+        var definition = Read("""[{"key":"10000000-0000-4000-8000-000000000001","groups":[{"key":"20000000-0000-4000-8000-000000000001","fields":[{"key":"F1","type":"text","alias":"name","label":{"":"Hello {{ member.name }}"}}]}]}]""");
+
+        var issues = await new MergeTagFormCheck(Tags, Types).CheckAsync(definition, CancellationToken.None);
+
+        Assert.That(issues.Select(issue => (issue.Severity, issue.Code, issue.Path)), Is.EqualTo(new[] { (FormCheckSeverity.Error, MergeTagProblems.SourceNotForPlace, "$.pages[0].groups[0].fields[0].label['']") }));
     }
 
     [Test]

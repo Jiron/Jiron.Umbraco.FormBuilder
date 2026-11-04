@@ -59,14 +59,15 @@ public sealed class FieldTypeSupportTests
         ["captcha"] = (string.Empty, string.Empty),
     };
 
-    // The type's palette group, how its answer is stored, how rules compare it, what it may do of the three ("multiple"
-    // setting, "onePerForm", "serverOnlyDefault"), its settings (ADR-0002), and those of them visitors do not see.
+    // The type's palette group, how its answer is stored, how rules compare it, what it may do of the four ("multiple"
+    // setting, "onePerForm", "serverOnlyDefault", "personal" data, ADR-0180), its settings (ADR-0002), and those of them
+    // visitors do not see.
     private static readonly Dictionary<string, (string Palette, string Storage, string? Kind, string Traits, string Settings, string Private)> Declared = new(StringComparer.Ordinal)
     {
         ["text"] = ("Text", "Text", "Text", "", "minLength maxLength prefix suffix counter", ""),
         ["textarea"] = ("Text", "LongText", "Text", "", "rows autoGrow minLength maxLength minWords maxWords counter", ""),
-        ["email"] = ("Text", "Text", "Text", "", "confirm confirmLabel domains", "domains"),
-        ["phone"] = ("Text", "Text", "Text", "", "defaultCountry", ""),
+        ["email"] = ("Text", "Text", "Text", "personal", "confirm confirmLabel domains", "domains"),
+        ["phone"] = ("Text", "Text", "Text", "personal", "defaultCountry", ""),
         ["url"] = ("Text", "Text", "Text", "", "schemes", ""),
         ["number"] = ("NumbersAndDates", "Number", "Number", "", "min max step decimals prefix suffix", ""),
         ["date"] = ("NumbersAndDates", "Date", "Date", "", "min max weekdaysOnly excluded defaultToday", ""),
@@ -85,10 +86,10 @@ public sealed class FieldTypeSupportTests
         ["yesno"] = ("Choices", "Text", "Choice", "", "yesLabel noLabel style", ""),
         ["consent"] = ("Choices", "Text", "Checkbox", "", "text loadsCaptcha", ""),
         ["country"] = ("Choices", "Text", "Choice", "", "allowed top default", ""),
-        ["name"] = ("People", "Json", null, "", "parts requiredParts", ""),
-        ["address"] = ("People", "Json", null, "", "parts requiredParts", ""),
+        ["name"] = ("People", "Json", null, "personal", "parts requiredParts", ""),
+        ["address"] = ("People", "Json", null, "personal", "parts requiredParts", ""),
         ["file"] = ("Files", "File", "Files", "", "types extensions maxBytes maxFiles dropZone thumbnails camera", ""),
-        ["signature"] = ("Files", "File", "Files", "", "width height", ""),
+        ["signature"] = ("Files", "File", "Files", "personal", "width height", ""),
         ["repeater"] = ("Structure", "None", null, "", "minRows maxRows rowLabel addLabel removeLabel", ""),
         ["hidden"] = ("Structure", "Text", "Text", "serverOnlyDefault", "", ""),
         ["heading"] = ("Content", "None", null, "", "text level", ""),
@@ -137,6 +138,7 @@ public sealed class FieldTypeSupportTests
             Assert.That(traits.MultipleSetting, Is.EqualTo(Split(flags).Contains("multiple")), "multiple setting");
             Assert.That(traits.OnePerForm, Is.EqualTo(Split(flags).Contains("onePerForm")), "one per form");
             Assert.That(traits.ServerOnlyDefault, Is.EqualTo(Split(flags).Contains("serverOnlyDefault")), "server-only default");
+            Assert.That(traits.PersonalData, Is.EqualTo(Split(flags).Contains("personal")), "personal data");
             Assert.That(type.SettingsSchema.Settings.Select(setting => setting.Name), Is.EquivalentTo(Split(settings)), "settings");
             Assert.That(traits.PublicSettings, Is.EquivalentTo(Split(settings).Except(Split(hidden))), "public settings");
         });

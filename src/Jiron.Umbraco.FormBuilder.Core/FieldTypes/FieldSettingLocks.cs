@@ -123,13 +123,13 @@ internal sealed class FieldSettingLocks
         var before = new Dictionary<Guid, FormField>();
         if (stored is not null)
         {
-            foreach (var (field, _) in FieldsOf(stored))
+            foreach (var (field, _) in DefinitionFields.Of(stored))
             {
                 before.TryAdd(field.Key, field);
             }
         }
 
-        foreach (var (field, path) in FieldsOf(definition))
+        foreach (var (field, path) in DefinitionFields.Of(definition))
         {
             var kept = before.TryGetValue(field.Key, out var earlier) ? earlier.Settings : null;
             if (FirstRefused(field.Settings, kept, Of(field.Type)) is { } settingLock)
@@ -148,12 +148,10 @@ internal sealed class FieldSettingLocks
     /// <param name="locks">The locks of the element's type.</param>
     internal static FieldSettingLock? FirstRefused(SettingsObject? settings, SettingsObject? kept, ImmutableArray<FieldSettingLock> locks)
     {
-        foreach (var settingLock in locks)
+        foreach (var settingLock in Replacing(settings, locks))
         {
             var name = settingLock.Setting.Name;
-            if (settings is null || !settings.TryGetProperty(name, out var given)
-                || ((settingLock.Value ?? settingLock.Setting.Default) is { } allowed && Same(settingLock.Setting, given, allowed))
-                || (kept is not null && kept.TryGetProperty(name, out var keptValue) && Same(settingLock.Setting, given, keptValue)))
+            if (kept is not null && kept.TryGetProperty(name, out var keptValue) && settings!.TryGetProperty(name, out var given) && Same(settingLock.Setting, given, keptValue))
             {
                 continue;
             }
@@ -162,6 +160,29 @@ internal sealed class FieldSettingLocks
         }
 
         return null;
+    }
+
+    /// <summary>
+    /// The locks, in their order, whose setting the settings give a value of their own: neither the lock's nor, for a lock
+    /// without a value, the setting's default. The site runs the element with the lock's value instead (ADR-0008, ADR-0060).
+    /// </summary>
+    /// <param name="settings">The settings as stored.</param>
+    /// <param name="locks">The locks of the element's type.</param>
+    internal static IEnumerable<FieldSettingLock> Replacing(SettingsObject? settings, ImmutableArray<FieldSettingLock> locks)
+    {
+        if (settings is null)
+        {
+            yield break;
+        }
+
+        foreach (var settingLock in locks)
+        {
+            if (settings.TryGetProperty(settingLock.Setting.Name, out var given)
+                && !((settingLock.Value ?? settingLock.Setting.Default) is { } allowed && Same(settingLock.Setting, given, allowed)))
+            {
+                yield return settingLock;
+            }
+        }
     }
 
     /// <summary>Whether a lock is of the kind, with a type, a setting and a value of the right shape.</summary>
@@ -401,35 +422,6 @@ internal sealed class FieldSettingLocks
         using var document = JsonDocument.Parse(json);
         var applied = CanonicalJson.IsLeftOut(document.RootElement) ? null : SettingsObject.From(document.RootElement);
         return Equals(applied, given) ? given : applied;
-    }
-
-    // Every field with its path, in document order: a group's fields, each followed by its child fields.
-    private static IEnumerable<(FormField Field, string Path)> FieldsOf(FormDefinition definition)
-    {
-        for (var p = 0; p < definition.Pages.Count; p++)
-        {
-            var page = JsonPaths.Index(JsonPaths.Property(JsonPaths.Root, "pages"), p);
-            for (var g = 0; g < definition.Pages[p].Groups.Count; g++)
-            {
-                foreach (var field in FieldsOf(definition.Pages[p].Groups[g].Fields, JsonPaths.Index(JsonPaths.Property(page, "groups"), g)))
-                {
-                    yield return field;
-                }
-            }
-        }
-    }
-
-    private static IEnumerable<(FormField Field, string Path)> FieldsOf(IReadOnlyList<FormField> fields, string parent)
-    {
-        for (var i = 0; i < fields.Count; i++)
-        {
-            var path = JsonPaths.Index(JsonPaths.Property(parent, "fields"), i);
-            yield return (fields[i], path);
-            foreach (var child in FieldsOf(fields[i].Fields, path))
-            {
-                yield return child;
-            }
-        }
     }
 
     // Whether two values of a setting are one: numbers, dates and times as their values ("2.50" is 2.5), a list item by

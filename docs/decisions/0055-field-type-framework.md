@@ -72,7 +72,9 @@ Four questions were open:
   repeatable group and a grid);
 - the common properties it supports (`FieldFeatures`) and the error kinds it raises (`FieldMessageKinds`), both now
   public;
-- `MultipleSetting`, `OnePerForm` and `ServerOnlyDefault` as ADR-0035 describes them.
+- `MultipleSetting`, `OnePerForm` and `ServerOnlyDefault` as ADR-0035 describes them;
+- `PersonalData` (added in 9.5e, ADR-0180): whether its answers are about a person by their nature, for the form
+  check's hint at a consent field; a type that holds no value declares none.
 
 **A declaration that contradicts itself is refused.** The registry checks every type and names each problem with
 the type's alias and class:

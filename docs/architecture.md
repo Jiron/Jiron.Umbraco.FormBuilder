@@ -314,7 +314,17 @@ Text        LocalizedText: culture → text, "" is the default; "#key" reads the
   site's languages, today, the fields the form hides for the answers tried, a repeatable group's children as several
   answers): a require rule that holds while a rule hides its field (`RequiredHiddenFormCheck`) and a page no visitor
   reaches going forward (`UnreachablePageFormCheck`); conditions a change of type left stay the structural validation's
-  errors.
+  errors. From 9.5e ([ADR-0180](decisions/0180-the-form-checks-of-the-site-and-of-what-a-form-collects.md)), the
+  checks of what a form collects: personal data without a consent field, from a type's `PersonalData` or an
+  autocomplete token (`ConsentFormCheck`, a hint), a card number or a password asked for (`CardAndPasswordFormCheck`),
+  a file field without a size (`FileLimitFormCheck`, a hint), a required choice whose options can all fill up
+  (`FullOptionsFormCheck`), limits that count entries the form does not keep (`KeptLimitsFormCheck`) and a last outcome
+  with a rule (`LastOutcomeFormCheck`); and of what the site holds: a theme it lacks, in code or in the library
+  (`ThemeFormCheck` over `FormThemes`, which the import shares), the content, media and member groups a form names that
+  it lacks and a redirect to a page that is not published (`SiteReferencesFormCheck`), and a dictionary item without a
+  text in a language whose visitors see it, over every localised text `FormTexts` finds (`DictionaryFormCheck`).
+  `FormCheck` itself warns where a host's lock replaces a value the form stores, since it alone holds the definition
+  before the locks apply.
 - **The History** ([ADR-0045](decisions/0045-versions-comparison-and-draft-cleanup.md)) lists the publishes, or every
   version, newest first, each with what changed since the version before it (a publish since the publish before).
   The comparison matches elements by key, settings groups by name, and gives each change its path of properties with

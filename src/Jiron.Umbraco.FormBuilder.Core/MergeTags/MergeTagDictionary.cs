@@ -122,6 +122,10 @@ internal sealed class DictionaryTexts
     /// <summary>No items: every text shows as it is written.</summary>
     public static DictionaryTexts None { get; } = new(FrozenDictionary<string, string>.Empty);
 
+    /// <summary>Whether the item with this key, in any letter case, has a text, so a text that names it shows that text.</summary>
+    /// <param name="key">The item's key, dots included.</param>
+    public bool Has(string key) => _texts.ContainsKey(key);
+
     /// <summary>An editor's text in a culture, as <see cref="LocalizedString.Resolve"/> finds it, with the item's text for a text that names one.</summary>
     /// <param name="text">The text, or null for none.</param>
     /// <param name="culture">The culture.</param>

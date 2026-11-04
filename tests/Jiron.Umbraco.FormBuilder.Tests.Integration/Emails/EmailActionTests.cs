@@ -524,7 +524,8 @@ public sealed class EmailActionTests : EmailTestBase
 
         var issues = await GetRequiredService<FormCheck>().CheckAsync((await Forms.GetDraftAsync(form))!.Definition!, CancellationToken.None);
 
-        Assert.That(issues.Select(issue => (issue.Severity, issue.Code, issue.Path, issue.Message)), Is.EqualTo(new[]
+        // The form's hints (its email field on a form without a consent field, 9.5e) are no business of the action's.
+        Assert.That(issues.Where(issue => issue.Severity != FormCheckSeverity.Hint).Select(issue => (issue.Severity, issue.Code, issue.Path, issue.Message)), Is.EqualTo(new[]
         {
             (FormCheckSeverity.Warning, "unknown_path", "$.actions[0].settings.subject", "The merge tag at character 10 names nothing this form or site has, so it shows nothing."),
         }));

@@ -63,6 +63,13 @@ public sealed record FieldTypeDeclaration
     /// its type does not take it, so the field fails a submission only for being required without one (ADR-0080).
     /// </summary>
     public bool ServerOnlyDefault { get; init; }
+
+    /// <summary>
+    /// Whether the type's answers are about a person by their nature, such as an email address, a phone number, a name, an
+    /// address or a signature. The form check then hints at a consent field on a form that has none (ADR-0180); a type
+    /// that holds no value is none.
+    /// </summary>
+    public bool PersonalData { get; init; }
 }
 
 /// <summary>The groups of the designer's palette (section 4.3.2), in the order the palette shows them.</summary>
