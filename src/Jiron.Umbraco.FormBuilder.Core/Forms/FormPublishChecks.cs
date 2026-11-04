@@ -45,16 +45,18 @@ internal sealed class StructuralPublishCheck(FormDefinitionSerializer serializer
 /// <summary>
 /// Refuses an action whose type the site lacks (<c>unknown_type</c> at <c>actions[n].type</c>, ADR-0035), switched off or not,
 /// and holds each action's settings to its type: the schema and the rules of its attributes, then the type's own check
-/// (ADR-0158).
+/// (ADR-0158), whose refusals are errors and whose warnings, such as a template's tag that names nothing in the context the
+/// type renders it in, are the form check's warnings (ADR-0177).
 /// </summary>
 /// <param name="types">The action types the site has.</param>
-internal sealed class ActionPublishCheck(ActionTypeRegistry types) : IFormPublishCheck
+internal sealed class ActionPublishCheck(ActionTypeRegistry types) : IFormCheck
 {
     /// <inheritdoc />
-    public ValueTask<IReadOnlyList<DefinitionProblem>> CheckAsync(FormDefinition definition, CancellationToken cancellationToken)
+    public ValueTask<IReadOnlyList<FormCheckIssue>> CheckAsync(FormDefinition definition, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(definition);
         var problems = new DefinitionProblems();
+        var warnings = new List<FormCheckIssue>();
         var actions = JsonPaths.Property(JsonPaths.Root, "actions");
         for (var i = 0; i < definition.Actions.Count; i++)
         {
@@ -69,11 +71,13 @@ internal sealed class ActionPublishCheck(ActionTypeRegistry types) : IFormPublis
             var settings = JsonPaths.Property(path, "settings");
             if (FieldSettingsChecks.Check(type.SettingsSchema, action.Settings, settings, $"An action of the type '{action.Type}'", problems))
             {
-                type.CheckSettings(new ActionSettingsCheck(action, definition, settings, problems));
+                var check = new ActionSettingsCheck(action, definition, settings, problems);
+                type.CheckSettings(check);
+                warnings.AddRange(check.Warnings.Select(warning => new FormCheckIssue(FormCheckSeverity.Warning, warning.Code, warning.Path, warning.Message)));
             }
         }
 
-        return ValueTask.FromResult(problems.ToReadOnlyList());
+        return ValueTask.FromResult<IReadOnlyList<FormCheckIssue>>([.. problems.ToReadOnlyList().Select(FormCheckIssue.Error), .. warnings]);
     }
 }
 

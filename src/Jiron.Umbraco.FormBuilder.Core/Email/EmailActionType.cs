@@ -4,6 +4,7 @@ using Jiron.Umbraco.FormBuilder.Core.Actions;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Definitions.Exchange;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
+using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.MergeTags;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
@@ -375,9 +376,17 @@ internal sealed partial class EmailActionType(
     {
         foreach (var culture in text?.Texts ?? [])
         {
-            foreach (var problem in tags.Check(culture.Text, MergeTagPlace.Mail, context, check.Definition).Where(problem => !problem.IsWarning))
+            foreach (var problem in tags.Check(culture.Text, MergeTagPlace.Mail, context, check.Definition))
             {
-                check.Invalid(setting, $"A merge tag at {problem.At} cannot be used here: {problem.Code}.");
+                // A tag that names nothing renders empty: the form check warns (ADR-0177).
+                if (problem.IsWarning)
+                {
+                    check.Warn(setting, problem.Code, MergeTagFormCheck.Sentence(problem));
+                }
+                else
+                {
+                    check.Invalid(setting, $"A merge tag at {problem.At} cannot be used here: {problem.Code}.");
+                }
             }
         }
     }

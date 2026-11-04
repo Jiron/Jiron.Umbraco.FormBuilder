@@ -15,8 +15,8 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Forms;
 /// <summary>
 /// The form check on the server (ROADMAP 9.5b, ADR-0177): every text where merge tags render with its place, context,
 /// owner and path; the merge tags' errors and warnings, a redirect that recalls answers, a field without a label, a
-/// captcha provider without its keys, an email action without an email field to reply to; and the check's order of
-/// errors, warnings and hints, the publish checks' problems among its errors.
+/// captcha provider without its keys, an email action without an email field to reply to, an action type's own warnings;
+/// and the check's order of errors, warnings and hints over the form as the site runs it.
 /// </summary>
 [TestFixture]
 public sealed class FormCheckTests
@@ -25,6 +25,8 @@ public sealed class FormCheckTests
     private const string Field2 = "30000000-0000-4000-8000-000000000002";
 
     private static readonly IFormBuilderMergeTagService Tags = MergeTagTestSite.Create().Service;
+
+    private static readonly FieldTypeRegistry Types = TestFieldTypes.Build(builder => builder.Append<CardType>());
 
     private static readonly ActionTypeRegistry Actions = new([new NoteType()]);
 
@@ -37,39 +39,56 @@ public sealed class FormCheckTests
               {"key":"F1","type":"text","alias":"name","label":{"":"Name"},"help":{"":"Help"},"placeholder":{"":"Ann"},"defaultValue":"{{ form.name }}"},
               {"key":"F2","type":"hidden","alias":"source","defaultValue":["a","b"]},
               {"key":"30000000-0000-4000-8000-000000000003","type":"consent","alias":"ok","label":{"":"OK"},"settings":{"text":{"":"I agree"}}},
-              {"key":"30000000-0000-4000-8000-000000000004","type":"repeater","alias":"kids","label":{"":"Kids"},"fields":[{"key":"30000000-0000-4000-8000-000000000005","type":"text","alias":"kid","label":{"":"Kid"}}]}]}]}]
+              {"key":"30000000-0000-4000-8000-000000000004","type":"repeater","alias":"kids","label":{"":"Kids"},"fields":[{"key":"30000000-0000-4000-8000-000000000005","type":"text","alias":"kid","label":{"":"Kid"}}]},
+              {"key":"30000000-0000-4000-8000-000000000006","type":"heading","settings":{"text":{"":"Welcome"},"level":2}},
+              {"key":"30000000-0000-4000-8000-000000000007","type":"paragraph","settings":{"html":{"":"<p>Hi</p>"}}},
+              {"key":"30000000-0000-4000-8000-000000000008","type":"test.card","settings":{"caption":{"text":"Once"}}}]}]}]
             """,
             ""","outcomes":[{"key":"60000000-0000-4000-8000-000000000001","kind":"redirect","message":{"":"<p>Thanks</p>"},"redirect":{"url":"/thanks"}}],"settings":{"submission":{"entryTitle":"{{ field.name }}"}},"actions":[{"key":"50000000-0000-4000-8000-000000000001","type":"test.note","settings":{"note":"{{ field.name }}"}}]""");
 
-        var found = FormTemplates.Of(definition, TestFieldTypes.Registry, Actions);
+        var found = FormTemplates.Of(definition, Types);
 
         var page = "$.pages[0]";
         var fields = page + ".groups[0].fields";
-        Assert.That(found.Select(template => (template.Place, template.Context, template.Owner, template.Path, template.OfAction)), Is.EqualTo(new[]
+        Guid Key(int last) => Guid.Parse($"30000000-0000-4000-8000-00000000000{last}");
+        Assert.That(found.Select(template => (template.Place, template.Context, template.Owner, template.Path)), Is.EqualTo(new[]
         {
-            (MergeTagPlace.VisitorText, MergeTagContext.Text, (Guid?)definition.Pages[0].Key, page + ".title['']", false),
-            (MergeTagPlace.VisitorText, MergeTagContext.Text, definition.Pages[0].Key, page + ".title.de", false),
-            (MergeTagPlace.VisitorText, MergeTagContext.Html, definition.Pages[0].Groups[0].Key, page + ".groups[0].description['']", false),
-            (MergeTagPlace.VisitorText, MergeTagContext.Text, Guid.Parse(Field1), fields + "[0].label['']", false),
-            (MergeTagPlace.VisitorText, MergeTagContext.Text, Guid.Parse(Field1), fields + "[0].help['']", false),
-            (MergeTagPlace.VisitorText, MergeTagContext.Text, Guid.Parse(Field1), fields + "[0].placeholder['']", false),
-            (MergeTagPlace.DefaultValue, MergeTagContext.Text, Guid.Parse(Field1), fields + "[0].defaultValue", false),
+            (MergeTagPlace.VisitorText, MergeTagContext.Text, (Guid?)definition.Pages[0].Key, page + ".title['']"),
+            (MergeTagPlace.VisitorText, MergeTagContext.Text, definition.Pages[0].Key, page + ".title.de"),
+            (MergeTagPlace.VisitorText, MergeTagContext.Html, definition.Pages[0].Groups[0].Key, page + ".groups[0].description['']"),
+            (MergeTagPlace.VisitorText, MergeTagContext.Text, Key(1), fields + "[0].label['']"),
+            (MergeTagPlace.VisitorText, MergeTagContext.Text, Key(1), fields + "[0].help['']"),
+            (MergeTagPlace.VisitorText, MergeTagContext.Text, Key(1), fields + "[0].placeholder['']"),
+            (MergeTagPlace.DefaultValue, MergeTagContext.Text, Key(1), fields + "[0].defaultValue"),
             // A value kept on the server renders there, each of a list's values on its own.
-            (MergeTagPlace.HiddenValue, MergeTagContext.Text, Guid.Parse(Field2), fields + "[1].defaultValue[0]", false),
-            (MergeTagPlace.HiddenValue, MergeTagContext.Text, Guid.Parse(Field2), fields + "[1].defaultValue[1]", false),
-            (MergeTagPlace.VisitorText, MergeTagContext.Text, Guid.Parse("30000000-0000-4000-8000-000000000003"), fields + "[2].label['']", false),
-            (MergeTagPlace.ConsentText, MergeTagContext.Html, Guid.Parse("30000000-0000-4000-8000-000000000003"), fields + "[2].settings.text['']", false),
-            (MergeTagPlace.VisitorText, MergeTagContext.Text, Guid.Parse("30000000-0000-4000-8000-000000000004"), fields + "[3].label['']", false),
-            (MergeTagPlace.VisitorText, MergeTagContext.Text, Guid.Parse("30000000-0000-4000-8000-000000000005"), fields + "[3].fields[0].label['']", false),
-            (MergeTagPlace.Outcome, MergeTagContext.Html, (Guid?)null, "$.outcomes[0].message['']", false),
-            (MergeTagPlace.Redirect, MergeTagContext.Url, null, "$.outcomes[0].redirect.url", false),
-            (MergeTagPlace.EntryTitle, MergeTagContext.Text, null, "$.settings.submission.entryTitle", false),
-            (MergeTagPlace.Action, MergeTagContext.Text, null, "$.actions[0].settings.note", true),
+            (MergeTagPlace.HiddenValue, MergeTagContext.Text, Key(2), fields + "[1].defaultValue[0]"),
+            (MergeTagPlace.HiddenValue, MergeTagContext.Text, Key(2), fields + "[1].defaultValue[1]"),
+            (MergeTagPlace.VisitorText, MergeTagContext.Text, Key(3), fields + "[2].label['']"),
+            (MergeTagPlace.ConsentText, MergeTagContext.Html, Key(3), fields + "[2].settings.text['']"),
+            (MergeTagPlace.VisitorText, MergeTagContext.Text, Key(4), fields + "[3].label['']"),
+            (MergeTagPlace.VisitorText, MergeTagContext.Text, Key(5), fields + "[3].fields[0].label['']"),
+            (MergeTagPlace.VisitorText, MergeTagContext.Text, Key(6), fields + "[4].settings.text['']"),
+            (MergeTagPlace.VisitorText, MergeTagContext.Html, Key(7), fields + "[5].settings.html['']"),
+            // A nested setting's text, written as one text rather than one per culture.
+            (MergeTagPlace.VisitorText, MergeTagContext.Text, Key(8), fields + "[6].settings.caption.text"),
+            (MergeTagPlace.Outcome, MergeTagContext.Html, (Guid?)null, "$.outcomes[0].message['']"),
+            (MergeTagPlace.Redirect, MergeTagContext.Url, null, "$.outcomes[0].redirect.url"),
+            (MergeTagPlace.EntryTitle, MergeTagContext.Text, null, "$.settings.submission.entryTitle"),
         }));
     }
 
     [Test]
-    public async Task MergeTags_AreErrorsOrWarningsAsTheyRender_AndAnActionsErrorsAreItsTypes()
+    public void ATypeOrAnActionTheSiteLacks_IsPassedOver_ForTheStructuralValidationToRefuse()
+    {
+        var definition = Read(
+            """[{"key":"10000000-0000-4000-8000-000000000001","groups":[{"key":"20000000-0000-4000-8000-000000000001","fields":[{"key":"F1","type":"gone.type","alias":"x","label":{"":"X"},"settings":{"text":"{{ nothing.here }}"}}]}]}]""",
+            ""","actions":[{"key":"50000000-0000-4000-8000-000000000001","type":"gone.action","settings":{"note":"x"}}]""");
+
+        Assert.That(FormTemplates.Of(definition, Types).Select(template => template.Path), Is.EqualTo(new[] { "$.pages[0].groups[0].fields[0].label['']" }));
+    }
+
+    [Test]
+    public async Task MergeTags_AreErrorsOrWarningsAsTheyRender()
     {
         var definition = Read(
             """
@@ -78,9 +97,9 @@ public sealed class FormCheckTests
               {"key":"F2","type":"text","alias":"later","label":{"":"Later {{ form.name"}},
               {"key":"30000000-0000-4000-8000-000000000003","type":"consent","alias":"ok","label":{"":"OK"},"settings":{"text":{"":"I, {{ field.name }}, agree"}}}]}]}]
             """,
-            ""","outcomes":[{"key":"60000000-0000-4000-8000-000000000001","kind":"redirect","redirect":{"url":"/thanks?who={{ field.name }}"}}],"actions":[{"key":"50000000-0000-4000-8000-000000000001","type":"test.note","settings":{"note":"{{ nobody.knows }} {{ field.name | nope }"}}]""");
+            ""","outcomes":[{"key":"60000000-0000-4000-8000-000000000001","kind":"redirect","redirect":{"url":"/thanks?who={{ field.name }}"}}]""");
 
-        var issues = await new MergeTagFormCheck(Tags, TestFieldTypes.Registry, Actions).CheckAsync(definition, CancellationToken.None);
+        var issues = await new MergeTagFormCheck(Tags, Types).CheckAsync(definition, CancellationToken.None);
 
         var fields = "$.pages[0].groups[0].fields";
         Assert.That(issues.Select(issue => (issue.Severity, issue.Code, issue.Path)), Is.EqualTo(new[]
@@ -90,25 +109,28 @@ public sealed class FormCheckTests
             (FormCheckSeverity.Error, "unclosed_tag", fields + "[1].label['']"),
             (FormCheckSeverity.Error, MergeTagProblems.SourceNotForPlace, fields + "[2].settings.text['']"),
             (FormCheckSeverity.Warning, MergeTagFormCheck.AnswersInUrl, "$.outcomes[0].redirect.url"),
-            (FormCheckSeverity.Warning, MergeTagProblems.UnknownPath, "$.actions[0].settings.note"),
         }));
         Assert.That(issues[0].Message, Is.EqualTo("The merge tag at character 7 recalls the answer of a field that comes after this text."));
     }
 
     [Test]
-    public void ARedirect_RecallsAnswers_WhenItNamesAFieldOrTheEntry()
+    public void ARedirect_RecallsAnswers_WhenItNamesAFieldsValueOrTheEntrysAnswers()
     {
         Assert.Multiple(() =>
         {
             Assert.That(MergeTagFormCheck.RecallsAnswers("/a?b={{ field.email }}"), Is.True);
-            Assert.That(MergeTagFormCheck.RecallsAnswers("/a?r={{ entry.reference }}"), Is.True);
+            Assert.That(MergeTagFormCheck.RecallsAnswers("/a?b={{ field.address.city }}"), Is.True);
+            Assert.That(MergeTagFormCheck.RecallsAnswers("/a?all={{ entry.answers }}"), Is.True);
+            Assert.That(MergeTagFormCheck.RecallsAnswers("/a?all={{ entry.table }}"), Is.True);
+            Assert.That(MergeTagFormCheck.RecallsAnswers("/a?r={{ entry.reference }}&n={{ entry.number }}&s={{ entry.state }}"), Is.False, "no answer");
+            Assert.That(MergeTagFormCheck.RecallsAnswers("/a?l={{ field.email.label }}"), Is.False, "a field's label is no answer");
             Assert.That(MergeTagFormCheck.RecallsAnswers("/a?f={{ form.alias }}&p={{ page.url }}"), Is.False);
             Assert.That(MergeTagFormCheck.RecallsAnswers("/a?f=field.email"), Is.False);
         });
     }
 
     [Test]
-    public async Task AFieldVisitorsSee_WithoutALabel_IsAnError_AndContentAValueKeptOnTheServerAndAConsentNeedNone()
+    public async Task AFieldVisitorsSee_WithoutALabel_IsAnError_AndContentHiddenValuesAConsentAndAnUnseenCalculationNeedNone()
     {
         var definition = Read(
             """
@@ -118,17 +140,20 @@ public sealed class FormCheckTests
               {"key":"30000000-0000-4000-8000-000000000003","type":"heading","settings":{"text":{"":"Hello"}}},
               {"key":"30000000-0000-4000-8000-000000000004","type":"hidden","alias":"source"},
               {"key":"30000000-0000-4000-8000-000000000007","type":"consent","alias":"agreed","settings":{"text":{"":"I agree"}}},
+              {"key":"30000000-0000-4000-8000-000000000008","type":"calculation","alias":"total","settings":{"formula":"1","visible":false}},
+              {"key":"30000000-0000-4000-8000-000000000009","type":"calculation","alias":"shown","settings":{"formula":"1","visible":true}},
               {"key":"30000000-0000-4000-8000-000000000005","type":"repeater","alias":"kids","label":{"":"Kids"},"fields":[{"key":"30000000-0000-4000-8000-000000000006","type":"text","alias":"kid"}]}]}]}]
             """);
 
-        var issues = await new LabelFormCheck(TestFieldTypes.Registry).CheckAsync(definition, CancellationToken.None);
+        var issues = await new LabelFormCheck(Types).CheckAsync(definition, CancellationToken.None);
 
         var fields = "$.pages[0].groups[0].fields";
         Assert.That(issues.Select(issue => (issue.Severity, issue.Code, issue.Path)), Is.EqualTo(new[]
         {
             (FormCheckSeverity.Error, LabelFormCheck.LabelMissing, fields + "[0].label"),
             (FormCheckSeverity.Error, LabelFormCheck.LabelMissing, fields + "[1].label"),
-            (FormCheckSeverity.Error, LabelFormCheck.LabelMissing, fields + "[5].fields[0].label"),
+            (FormCheckSeverity.Error, LabelFormCheck.LabelMissing, fields + "[6].label"),
+            (FormCheckSeverity.Error, LabelFormCheck.LabelMissing, fields + "[7].fields[0].label"),
         }));
     }
 
@@ -151,20 +176,66 @@ public sealed class FormCheckTests
     }
 
     [Test]
-    public async Task AnEmailAction_OnAFormWithoutAnEmailField_IsAWarning_UnlessSwitchedOff()
+    public async Task AnEmailAction_WithoutAnEmailFieldToReplyTo_IsAWarning_OrAHintWhereTheFormHasOne()
     {
         var check = new EmailReplyFormCheck();
         const string Text = """[{"key":"10000000-0000-4000-8000-000000000001","groups":[{"key":"20000000-0000-4000-8000-000000000001","fields":[{"key":"F1","type":"text","alias":"name","label":{"":"Name"}}]}]}]""";
         const string Nested = """[{"key":"10000000-0000-4000-8000-000000000001","groups":[{"key":"20000000-0000-4000-8000-000000000001","fields":[{"key":"F1","type":"repeater","alias":"kids","label":{"":"Kids"},"fields":[{"key":"F2","type":"email","alias":"mail","label":{"":"Mail"}}]}]}]}]""";
-        const string Actions = ""","actions":[{"key":"50000000-0000-4000-8000-000000000001","type":"test.note"},{"key":"50000000-0000-4000-8000-000000000002","type":"email"},{"key":"50000000-0000-4000-8000-000000000003","type":"email","enabled":false}]""";
+        const string Mails = ""","actions":[{"key":"50000000-0000-4000-8000-000000000001","type":"test.note"},{"key":"50000000-0000-4000-8000-000000000002","type":"email"},{"key":"50000000-0000-4000-8000-000000000003","type":"email","enabled":false},""" +
+            """{"key":"50000000-0000-4000-8000-000000000004","type":"email","settings":{"replyToField":"30000000-0000-4000-8000-000000000002"}},{"key":"50000000-0000-4000-8000-000000000005","type":"email","settings":{"toField":"30000000-0000-4000-8000-000000000002"}},""" +
+            """{"key":"50000000-0000-4000-8000-000000000006","type":"email","settings":{"replyToField":null}}]""";
 
-        var without = await check.CheckAsync(Read(Text, Actions), CancellationToken.None);
-        var nested = await check.CheckAsync(Read(Nested, Actions), CancellationToken.None);
+        var without = await check.CheckAsync(Read(Text, Mails), CancellationToken.None);
+        var with = await check.CheckAsync(Read(Nested, Mails), CancellationToken.None);
 
         Assert.Multiple(() =>
         {
-            Assert.That(without.Select(issue => (issue.Severity, issue.Code, issue.Path)), Is.EqualTo(new[] { (FormCheckSeverity.Warning, EmailReplyFormCheck.NoReplyField, "$.actions[1]") }));
-            Assert.That(nested, Is.Empty, "a repeatable group's email field is one too");
+            Assert.That(without.Select(issue => (issue.Severity, issue.Code, issue.Path)), Is.EqualTo(new[]
+            {
+                (FormCheckSeverity.Warning, EmailReplyFormCheck.NoReplyField, "$.actions[1]"),
+                (FormCheckSeverity.Warning, EmailReplyFormCheck.NoReplyField, "$.actions[3]"),
+                (FormCheckSeverity.Warning, EmailReplyFormCheck.NoReplyField, "$.actions[4]"),
+                (FormCheckSeverity.Warning, EmailReplyFormCheck.NoReplyField, "$.actions[5]"),
+            }));
+            // A repeatable group's email field is one too; a mail that names one to reply to, or goes to the visitor, needs nothing.
+            Assert.That(with.Select(issue => (issue.Severity, issue.Code, issue.Path)), Is.EqualTo(new[]
+            {
+                (FormCheckSeverity.Hint, EmailReplyFormCheck.ReplyFieldUnset, "$.actions[1].settings.replyToField"),
+                (FormCheckSeverity.Hint, EmailReplyFormCheck.ReplyFieldUnset, "$.actions[5].settings.replyToField"),
+            }));
+        });
+    }
+
+    [Test]
+    public async Task AnActionTypesOwnCheck_RefusesWithErrors_AndWarnsWithWarnings_AtTheirPaths()
+    {
+        var check = new ActionPublishCheck(Actions);
+        var definition = Read("[]", ""","actions":[{"key":"50000000-0000-4000-8000-000000000001","type":"test.note","settings":{"note":"?"}},{"key":"50000000-0000-4000-8000-000000000002","type":"test.note","settings":{"note":"!"}},{"key":"50000000-0000-4000-8000-000000000003","type":"gone"}]""");
+
+        var issues = await check.CheckAsync(definition, CancellationToken.None);
+
+        Assert.That(issues.Select(issue => (issue.Severity, issue.Code, issue.Path)), Is.EqualTo(new[]
+        {
+            (FormCheckSeverity.Error, DefinitionErrors.SettingInvalid, "$.actions[1].settings.note"),
+            (FormCheckSeverity.Error, DefinitionErrors.UnknownType, "$.actions[2].type"),
+            (FormCheckSeverity.Warning, "note_unsure", "$.actions[0].settings.note"),
+        }));
+    }
+
+    [Test]
+    public void AWarning_NamesItsPlaceAndItsCode_AsTheyAreWritten()
+    {
+        var check = new ActionSettingsCheck(new FormAction { Key = Guid.NewGuid(), Type = "test.note" }, Read("[]"), "$.actions[0].settings", new DefinitionProblems());
+
+        check.Warn("headers[2]", "a_code", "A sentence.");
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(() => check.Warn("not a place", "a_code", "A sentence."), Throws.ArgumentException);
+            Assert.That(() => check.Warn("note", "Not-A-Code", "A sentence."), Throws.ArgumentException);
+            Assert.That(() => check.Warn("note", string.Empty, "A sentence."), Throws.ArgumentException);
+            Assert.That(() => check.Warn("note", "a_code", " "), Throws.ArgumentException);
+            Assert.That(check.Warnings, Is.EqualTo(new[] { ("a_code", "$.actions[0].settings.headers[2]", "A sentence.") }));
         });
     }
 
@@ -172,14 +243,12 @@ public sealed class FormCheckTests
     public async Task TheCheck_ListsErrorsThenWarningsThenHints_ThePublishChecksAmongItsErrors()
     {
         var problem = new DefinitionProblem("alias_duplicate", "$.pages[0].groups[0].fields[1].alias", "Twice.");
-        var formCheck = new FormCheck(
+        var formCheck = FormCheckOf(
             [new Publishing([problem])],
             [
                 new Weighing([Issue(FormCheckSeverity.Hint, "h"), Issue(FormCheckSeverity.Warning, "w1"), Issue(FormCheckSeverity.Error, "e")]),
                 new Weighing([Issue(FormCheckSeverity.Warning, "w2")]),
-            ],
-            new FieldSettingLocks(Options.Create(new FormBuilderOptions()), TestFieldTypes.Registry),
-            new ActionSettingLocks(Options.Create(new FormBuilderOptions()), Actions));
+            ]);
 
         var issues = await formCheck.CheckAsync(Read("[]"), CancellationToken.None);
 
@@ -202,7 +271,7 @@ public sealed class FormCheckTests
         var formCheck = new FormCheck(
             [],
             [seen],
-            new FieldSettingLocks(Options.Create(options), TestFieldTypes.Registry),
+            new FieldSettingLocks(Options.Create(options), Types),
             new ActionSettingLocks(Options.Create(new FormBuilderOptions()), Actions));
 
         _ = await formCheck.CheckAsync(Read("""[{"key":"10000000-0000-4000-8000-000000000001","groups":[{"key":"20000000-0000-4000-8000-000000000001","fields":[{"key":"F1","type":"text","alias":"name","label":{"":"Name"},"settings":{"maxLength":200}}]}]}]"""), CancellationToken.None);
@@ -214,16 +283,17 @@ public sealed class FormCheckTests
     public async Task TheCheck_KeepsAtMostAHundredOfEachWeight()
     {
         var many = Enumerable.Range(0, 150).SelectMany(at => new[] { Issue(FormCheckSeverity.Error, $"e{at}"), Issue(FormCheckSeverity.Warning, $"w{at}"), Issue(FormCheckSeverity.Hint, $"h{at}") }).ToList();
-        var formCheck = new FormCheck(
-            [],
-            [new Weighing(many)],
-            new FieldSettingLocks(Options.Create(new FormBuilderOptions()), TestFieldTypes.Registry),
-            new ActionSettingLocks(Options.Create(new FormBuilderOptions()), Actions));
 
-        var issues = await formCheck.CheckAsync(Read("[]"), CancellationToken.None);
+        var issues = await FormCheckOf([], [new Weighing(many)]).CheckAsync(Read("[]"), CancellationToken.None);
 
         Assert.That(new[] { FormCheckSeverity.Error, FormCheckSeverity.Warning, FormCheckSeverity.Hint }.Select(severity => issues.Count(issue => issue.Severity == severity)), Is.EqualTo(new[] { 100, 100, 100 }));
     }
+
+    private static FormCheck FormCheckOf(IEnumerable<IFormPublishCheck> publishChecks, IEnumerable<IFormCheck> checks) => new(
+        publishChecks,
+        checks,
+        new FieldSettingLocks(Options.Create(new FormBuilderOptions()), Types),
+        new ActionSettingLocks(Options.Create(new FormBuilderOptions()), Actions));
 
     private static FormCheckIssue Issue(FormCheckSeverity severity, string code) => new(severity, code, "$", code);
 
@@ -236,6 +306,32 @@ public sealed class FormCheckTests
             "{\"schemaVersion\":1,\"key\":\"f0000000-0000-4000-8000-000000000001\",\"pages\":"
             + pages.Replace("\"F1\"", $"\"{Field1}\"", StringComparison.Ordinal).Replace("\"F2\"", $"\"{Field2}\"", StringComparison.Ordinal)
             + rest + "}");
+
+    /// <summary>A site's own type whose settings hold a nested object with a text that takes merge tags.</summary>
+    public sealed class CardType() : FormBuilderFieldTypeBase<CardSettings>(new FieldTypeDeclaration
+    {
+        Alias = "test.card",
+        Name = "Card",
+        Icon = "icon-settings",
+        PaletteGroup = FieldPaletteGroup.Content,
+        Features = FieldFeatures.VisibilityRules,
+    });
+
+    /// <summary>The card's settings.</summary>
+    public sealed class CardSettings
+    {
+        /// <summary>Its caption.</summary>
+        [FormBuilderSetting("Caption", Kind = FieldSettingKind.Nested)]
+        public CardCaption? Caption { get; init; }
+    }
+
+    /// <summary>The card's caption.</summary>
+    public sealed class CardCaption
+    {
+        /// <summary>Its text.</summary>
+        [FormBuilderSetting("Text", SupportsMergeTags = true)]
+        public string? Text { get; init; }
+    }
 
     private sealed class Publishing(IReadOnlyList<DefinitionProblem> problems) : IFormPublishCheck
     {
@@ -271,12 +367,25 @@ public sealed class FormCheckTests
 
     private sealed class NoteSettings
     {
-        [FormBuilderSetting("Note", SupportsMergeTags = true)]
+        [FormBuilderSetting("Note")]
         public string? Note { get; init; }
     }
 
+    // An action type whose own check refuses a note of "!" and is unsure of one of "?".
     private sealed class NoteType() : FormBuilderActionTypeBase<NoteSettings>(new ActionTypeDeclaration { Alias = "test.note", Name = "Note", Icon = "icon-note" })
     {
+        protected override void CheckSettings(NoteSettings settings, ActionSettingsCheck check)
+        {
+            if (settings.Note == "!")
+            {
+                check.Invalid("note", "A note is more than a bang.");
+            }
+            else if (settings.Note == "?")
+            {
+                check.Warn("note", "note_unsure", "A note of a question mark may puzzle its reader.");
+            }
+        }
+
         protected override Task<ActionResult> RunAsync(NoteSettings settings, ActionRunContext context, CancellationToken cancellationToken) => Task.FromResult(ActionResult.Succeeded);
     }
 }

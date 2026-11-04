@@ -10,7 +10,8 @@ namespace Jiron.Umbraco.FormBuilder.Core.Forms;
 /// <summary>
 /// A field visitors see without a label (ROADMAP 9.5b, ADR-0002, ADR-0177): an error, since a screen reader names the
 /// field by it, a hidden label too, and the entries name its answer by it. A type that takes no label, or keeps its value
-/// on the server where no visitor sees it, needs none, nor does a consent, whose wording is its checkbox's label. The image's alternative text is its type's required setting, which
+/// on the server where no visitor sees it, needs none, nor does a calculation no visitor sees, nor a consent, whose
+/// wording is its checkbox's label. The image's alternative text is its type's required setting, which
 /// the structural validation already refuses (<c>setting_missing</c>).
 /// </summary>
 /// <param name="types">The field types.</param>
@@ -47,6 +48,7 @@ internal sealed class LabelFormCheck(FieldTypeRegistry types) : IFormCheck
                 && traits.Supports(FieldFeatures.Label)
                 && !traits.ServerOnlyDefault
                 && traits.Type is not ConsentFieldType
+                && (traits.Type is not CalculationFieldType calculation || calculation.ReadSettings(field.Settings).Visible)
                 && string.IsNullOrWhiteSpace(field.Label?.Default))
             {
                 issues.Add(new FormCheckIssue(FormCheckSeverity.Error, LabelMissing, JsonPaths.Property(fieldPath, "label"), "This field has no label, which screen readers and the entries name it by."));
@@ -80,16 +82,24 @@ internal sealed class CaptchaKeysFormCheck(FormBuilderCaptchaProviderCollection 
 }
 
 /// <summary>
-/// An email action on a form without an email field (ROADMAP 9.5b, ADR-0160, ADR-0177): a warning, since a reply to the
-/// mail then reaches no one who filled in the form. An action switched off sends nothing, and settings that could never
-/// send are the action's own check's errors.
+/// An email action without an email field to reply to (ROADMAP 9.5b, ADR-0160, ADR-0177): on a form without an email
+/// field, a warning, since a reply to the mail then reaches no one who filled in the form; on a form with one, a hint
+/// where a mail to the site's people names none to reply to. An action switched off sends nothing, a mail to the visitor
+/// is their own, and settings that could never send are the action's own check's errors.
 /// </summary>
 internal sealed class EmailReplyFormCheck : IFormCheck
 {
-    /// <summary>An email action without an email field to reply to.</summary>
+    /// <summary>An email action on a form without an email field to reply to (a warning).</summary>
     public const string NoReplyField = "no_reply_field";
 
+    /// <summary>A mail to the site's people that names no email field to reply to, on a form with one (a hint).</summary>
+    public const string ReplyFieldUnset = "reply_field_unset";
+
     private const string EmailFieldType = "email";
+
+    // Whether the action's settings name a field in a setting.
+    private static bool Names(FormAction action, string setting) =>
+        action.Settings is { } settings && settings.TryGetProperty(setting, out var value) && value.ValueKind == System.Text.Json.JsonValueKind.String;
 
     /// <inheritdoc />
     public ValueTask<IReadOnlyList<FormCheckIssue>> CheckAsync(FormDefinition definition, CancellationToken cancellationToken)
@@ -101,17 +111,22 @@ internal sealed class EmailReplyFormCheck : IFormCheck
             .SelectMany(group => group.Fields)
             .SelectMany(field => field.Fields.Prepend(field))
             .Any(field => field.Type == EmailFieldType);
-        if (hasEmailField)
-        {
-            return ValueTask.FromResult<IReadOnlyList<FormCheckIssue>>(issues);
-        }
-
         var actions = JsonPaths.Property(JsonPaths.Root, "actions");
         for (var a = 0; a < definition.Actions.Count; a++)
         {
-            if (definition.Actions[a] is { Enabled: true, Type: EmailActionType.Alias })
+            if (definition.Actions[a] is not { Enabled: true, Type: EmailActionType.Alias } action)
             {
-                issues.Add(new FormCheckIssue(FormCheckSeverity.Warning, NoReplyField, JsonPaths.Index(actions, a), "The form has no email field, so a reply to this mail reaches no one who filled in the form."));
+                continue;
+            }
+
+            var path = JsonPaths.Index(actions, a);
+            if (!hasEmailField)
+            {
+                issues.Add(new FormCheckIssue(FormCheckSeverity.Warning, NoReplyField, path, "The form has no email field, so a reply to this mail reaches no one who filled in the form."));
+            }
+            else if (!Names(action, "replyToField") && !Names(action, "toField"))
+            {
+                issues.Add(new FormCheckIssue(FormCheckSeverity.Hint, ReplyFieldUnset, JsonPaths.Property(JsonPaths.Property(path, "settings"), "replyToField"), "Choose the email field to reply to, so a reply to this mail reaches the person who filled in the form."));
             }
         }
 

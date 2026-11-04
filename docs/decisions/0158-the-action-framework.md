@@ -57,7 +57,9 @@ one, and `builder.JironFormBuilder().ActionTypes()` is where it is registered. S
 taken by another type, a missing name or icon, a time limit beyond a minute, and a setting marked as one visitors see.
 
 **Publishing** refuses an action whose type the site lacks, switched off or not (`unknown_type` at `actions[n].type`), and holds an
-action's settings to the type's schema and then its own check, as for a field (ADR-0056).
+action's settings to the type's schema and then its own check, as for a field (ADR-0056). From 9.5b the own check can also
+warn (`ActionSettingsCheck.Warn`) about a value that will not work as the editor may think, such as a template's tag that names
+nothing; the form check lists the warning, which never blocks (ADR-0177).
 
 **A pass of the worker** (`OutboxPass`) runs its queues in their order: the action runs (`ActionRunQueue`) now, the mail from 8.2 on.
 It does nothing while sending is paused, while Umbraco does not run or while a migration is pending. A queue marks expired leases,

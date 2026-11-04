@@ -589,6 +589,20 @@ public sealed class ContentActionTests : ActionTestBase
         Assert.That(refused!.Problems.Select(problem => problem.Path), Does.Contain($"$.actions[0].settings.{setting}"), string.Join(", ", refused.Problems));
     }
 
+    [Test]
+    public async Task TagsThatNameNothing_StillPublish_AndTheFormCheckWarnsAtTheirSettings()
+    {
+        var form = await FormAsync(Create("""{"documentType":"jfbNote","name":"From {{ nothing.here }}","mapping":[{"property":"title","value":"Of {{ nothing.there }}"}]}"""));
+
+        var issues = await GetRequiredService<FormCheck>().CheckAsync((await GetRequiredService<IFormBuilderFormService>().GetDraftAsync(form))!.Definition!, CancellationToken.None);
+
+        Assert.That(issues.Select(issue => (issue.Severity, issue.Code, issue.Path, issue.Message)), Is.EqualTo(new[]
+        {
+            (FormCheckSeverity.Warning, "unknown_path", "$.actions[0].settings.name", "The merge tag at character 9 names nothing this form or site has, so it shows nothing."),
+            (FormCheckSeverity.Warning, "unknown_path", "$.actions[0].settings.mapping", "In the value of 'title': The merge tag at character 7 names nothing this form or site has, so it shows nothing."),
+        }));
+    }
+
     /// <inheritdoc />
     protected override void CustomTestSetup(IUmbracoBuilder builder)
     {

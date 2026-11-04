@@ -98,4 +98,32 @@ public sealed class ActionSettingsCheck
 
         _problems.Add(DefinitionErrors.SettingInvalid, $"{_path}.{setting}", message);
     }
+
+    /// <summary>
+    /// Warns about a value of the action's settings that publishing takes but that will not work as the editor may
+    /// think, such as a merge tag that names nothing (ADR-0177); the form check lists it, and it never keeps a form from
+    /// going live.
+    /// </summary>
+    /// <param name="setting">Where the value is in the settings, written as for <see cref="Invalid"/>.</param>
+    /// <param name="code">What the warning is, in lowercase words joined by underscores, such as <c>unknown_path</c>.</param>
+    /// <param name="message">What will not work, as a sentence the editor reads.</param>
+    /// <exception cref="ArgumentException">The place or the code is not written that way, or the message is blank.</exception>
+    public void Warn(string setting, string code, string message)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(message);
+        if (!FieldSettingsCheck.IsSettingPath(setting))
+        {
+            throw new ArgumentException($"'{setting}' is no place in the settings: a setting's name, then .name or [index].", nameof(setting));
+        }
+
+        if (string.IsNullOrEmpty(code) || !code.All(letter => letter is (>= 'a' and <= 'z') or '_'))
+        {
+            throw new ArgumentException($"'{code}' is no code: lowercase words joined by underscores.", nameof(code));
+        }
+
+        Warnings.Add((code, $"{_path}.{setting}", message));
+    }
+
+    /// <summary>The warnings reported, each with its code, its path and its sentence.</summary>
+    internal List<(string Code, string Path, string Message)> Warnings { get; } = [];
 }

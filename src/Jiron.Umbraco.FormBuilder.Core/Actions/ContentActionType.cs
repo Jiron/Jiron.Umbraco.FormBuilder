@@ -6,6 +6,7 @@ using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Definitions.Exchange;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Core.Files;
+using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.MergeTags;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Microsoft.Extensions.Logging;
@@ -206,9 +207,17 @@ internal sealed partial class ContentActionType(
         }
         else
         {
-            foreach (var problem in tags.Check(settings.Name, MergeTagPlace.Action, MergeTagContext.Text, check.Definition).Where(problem => !problem.IsWarning))
+            foreach (var problem in tags.Check(settings.Name, MergeTagPlace.Action, MergeTagContext.Text, check.Definition))
             {
-                check.Invalid("name", $"A merge tag at {problem.At} cannot be used here: {problem.Code}.");
+                // A tag that names nothing renders empty: the form check warns (ADR-0177).
+                if (problem.IsWarning)
+                {
+                    check.Warn("name", problem.Code, MergeTagFormCheck.Sentence(problem));
+                }
+                else
+                {
+                    check.Invalid("name", $"A merge tag at {problem.At} cannot be used here: {problem.Code}.");
+                }
             }
         }
 
@@ -378,9 +387,16 @@ internal sealed partial class ContentActionType(
     {
         if (item.Value is { } written)
         {
-            foreach (var problem in tags.Check(written, MergeTagPlace.Action, MergeTagContext.Text, check.Definition).Where(problem => !problem.IsWarning))
+            foreach (var problem in tags.Check(written, MergeTagPlace.Action, MergeTagContext.Text, check.Definition))
             {
-                check.Invalid("mapping", $"A merge tag at {problem.At} in the value of '{item.Property}' cannot be used here: {problem.Code}.");
+                if (problem.IsWarning)
+                {
+                    check.Warn("mapping", problem.Code, $"In the value of '{item.Property}': {MergeTagFormCheck.Sentence(problem)}");
+                }
+                else
+                {
+                    check.Invalid("mapping", $"A merge tag at {problem.At} in the value of '{item.Property}' cannot be used here: {problem.Code}.");
+                }
             }
         }
 

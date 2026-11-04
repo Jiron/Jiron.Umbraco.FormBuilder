@@ -1081,17 +1081,21 @@ line with Undo in the toast.
 
 The form check on the server (9.5b, ADR-0177): `Tests.Unit/Forms/FormCheckTests` holds every text where merge tags
 render with its place, context, owner and path (titles and descriptions, a field's texts, a default value and one kept
-on the server, a consent's wording, an outcome's message and redirect, the entry title, an action's template); the
-merge tags' errors and warnings at their paths, an action's errors left to its type, and a redirect that recalls
-answers; a field visitors see without a label an error, content, a value kept on the server and a repeatable group's
-labelled child not; a captcha provider without its keys a warning, one with keys or one the site lacks not; an email
-action on a form without an email field a warning, a switched-off one and a repeatable group's email field not; the
-check's errors (the publish checks' first), then warnings, then hints, at most a hundred of each; and the form as the
-site runs it, a host's lock applied. The runtime tests that publish tags their places refuse
-(`Support/RefusedTags.cs`) leave the merge-tag check out, as for a form published before it.
+on the server, a consent's wording, a heading's and a paragraph's text, a test type's nested setting, an outcome's
+message and redirect, the entry title; no action's template, which is its type's); the merge tags' errors and warnings
+at their paths, and a redirect that recalls answers (a field's value or the entry's answers, not a field's label or the
+entry's reference); a field visitors see without a label an error, content, a value kept on the server, a consent and a
+calculation no visitor sees not; a captcha provider without its keys a warning, one with keys or one the site lacks
+not; an email action on a form without an email field a warning, and on a form with one (a repeatable group's too) a
+hint where a mail to the site's people names no field to reply to; an action type's own check, its refusals errors and
+its warnings warnings at their settings; the check's errors (the publish checks' first), then warnings, then hints, at
+most a hundred of each; and the form as the site runs it, a host's lock applied. The runtime tests that publish tags
+their places refuse (`Support/RefusedTags.cs`) leave the merge-tag check out, as for a form published before it.
 `Tests.Integration/ManagementApi/FormCheckApiTests` checks the unsaved draft through `POST form/{key}/check` (an error,
-a warning and a test site's hint, each at its path) and publishes through the API: refused at the label's path, then
-live with a warning only.
+a warning and a test site's hint, each at its path; a duplicate alias and a rule on a removed field among its errors;
+nothing saved; a definition it cannot read refused) and publishes
+through the API: refused at the label's path, then live with a warning only. `EmailActionTests` and
+`ContentActionTests` publish templates whose tags name nothing and find the form check's warnings at their settings.
 
 ## The public API tests
 

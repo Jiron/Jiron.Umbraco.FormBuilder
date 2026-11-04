@@ -141,7 +141,7 @@ not support keeps its default (ADR-0034: booleans and numbers are always written
 | `alias` | string | required for types that hold a value, absent for the others | `^[a-z][a-zA-Z0-9]{0,63}$`, unique in the form (repeater children included), not reserved (§4.3.1). |
 | `formerAliases` | string[] | empty | Aliases the field had in published versions; merge tags outside the form (Razor views, a developer's code) still resolve them (§4.3.1). |
 | `span` | 1 to the group's columns | 1 | |
-| `label` | LocalizedText | null | A field that holds a value needs one before it can be published. |
+| `label` | LocalizedText | null | A field visitors see that holds a value needs one before it can be published; a value kept on the server, a calculation no visitor sees and a consent, whose wording labels its checkbox, need none (ADR-0177). |
 | `hideLabel` | boolean | false | The label stays for screen readers. |
 | `help`, `placeholder` | LocalizedText | null | |
 | `required` | boolean | false | |
@@ -330,9 +330,9 @@ A type's `settings` belong to it: publishing holds them to its settings schema a
   `unsafe_pattern`, ADR-0005), the last also for the `pattern` checks of a field's `validation` list, what a field
   type does not support, missing and misplaced parts, rule effects, and redirects that could leave the site.
   ADR-0035 has every code and where it points. The form check
-  (9.5b) adds its errors (a missing label, an email action without an email field, a text that recalls a later field,
-  a consent text with a merge tag other than `form`, `page`, `site` or `dictionary`) and its warnings, which never
-  block.
+  (9.5b, ADR-0177) adds its errors (a missing label, a text that recalls a later field, a consent text with a merge tag
+  other than `form`, `page`, `site` or `dictionary`) and its warnings, which never block. An email action without an
+  email field is one of the warnings (ADR-0160): the settings that could never send are the action's own errors.
 - **A draft keeps** what the editor did, and the form check lists every problem with a "fix it" link. Deleting a
   field that rules use says so and can be undone; it does not force the editor to rewrite the rules first. Drafts
   reach visitors only through the preview, which runs both runtimes' checks first and shows a broken rule as an issue

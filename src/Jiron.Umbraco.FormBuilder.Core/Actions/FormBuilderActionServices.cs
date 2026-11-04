@@ -32,7 +32,7 @@ internal static class FormBuilderActionServices
         builder.Services.TryAddSingleton<ActionSettingLocks>();
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IValidateOptions<FormBuilderStartupChecks>, ActionTypeStartupCheck>());
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IValidateOptions<FormBuilderStartupChecks>, ActionSettingLockStartupCheck>());
-        builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IFormPublishCheck, ActionPublishCheck>());
+        builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IFormCheck, ActionPublishCheck>());
 
         builder.Services.TryAddSingleton<ActionSettlement>();
         builder.Services.TryAddSingleton<ActionAttempts>();

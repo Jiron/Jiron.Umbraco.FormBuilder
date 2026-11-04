@@ -36,6 +36,45 @@ public sealed class FormCheckApiTests : ManagementApiTestBase
     }
 
     [Test]
+    public async Task TheStructuralValidationsErrors_AreTheChecksErrors_ADuplicateAliasAndARuleOnARemovedField()
+    {
+        var (form, _, definition) = await DraftAsync();
+        var shown = Field("text", "name", "Name");
+        shown["rules"] = JsonNode.Parse("""[{"key":"40000000-0000-4000-8000-000000000001","effect":"show","conditions":[{"field":"30000000-0000-4000-8000-0000000000ff","op":"isNotEmpty"}]}]""");
+        Fields(definition, Field("text", "name", "First"), shown);
+
+        var answer = await CallAsync("designer", HttpMethod.Post, $"form/{form}/check", new { definition });
+
+        Assert.That(answer.Outcome, Is.EqualTo("200"), answer.ToString());
+        var errors = answer.Body!["issues"]!.AsArray().Where(issue => issue!["severity"]!.GetValue<string>() == "error").Select(issue => (issue!["code"]!.GetValue<string>(), issue["path"]!.GetValue<string>())).ToList();
+        Assert.That(errors, Is.SupersetOf(new[]
+        {
+            (DefinitionErrors.AliasDuplicate, "$.pages[0].groups[0].fields[1].alias"),
+            (DefinitionErrors.UnknownField, "$.pages[0].groups[0].fields[1].rules[0].conditions[0].field"),
+        }), answer.ToString());
+    }
+
+    [Test]
+    public async Task TheCheck_ChangesNothing_AndADefinitionThatCannotBeReadIsRefused()
+    {
+        var (form, version, definition) = await DraftAsync();
+        var before = (await CallAsync("designer", HttpMethod.Get, $"form/{form}/draft")).Body!["definition"]!.ToJsonString();
+        Fields(definition, Field("text", "nameless", null));
+
+        var checkedDraft = await CallAsync("designer", HttpMethod.Post, $"form/{form}/check", new { definition });
+        var unreadable = await CallAsync("designer", HttpMethod.Post, $"form/{form}/check", new { definition = new JsonArray() });
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(checkedDraft.Outcome, Is.EqualTo("200"), checkedDraft.ToString());
+            Assert.That(unreadable.Status, Is.EqualTo(HttpStatusCode.BadRequest), unreadable.ToString());
+            Assert.That(unreadable.Body?["errors"]?.AsArray(), Is.Not.Empty, unreadable.ToString());
+            Assert.That((await GetRequiredService<IFormBuilderFormService>().GetAsync(form))!.ConcurrencyVersion, Is.EqualTo(version), "nothing saved");
+            Assert.That((await CallAsync("designer", HttpMethod.Get, $"form/{form}/draft")).Body!["definition"]!.ToJsonString(), Is.EqualTo(before));
+        });
+    }
+
+    [Test]
     public async Task Publishing_RefusesTheErrors_AtTheirPaths_AndAFormWithWarningsOnlyGoesLive()
     {
         var (form, version, definition) = await DraftAsync();

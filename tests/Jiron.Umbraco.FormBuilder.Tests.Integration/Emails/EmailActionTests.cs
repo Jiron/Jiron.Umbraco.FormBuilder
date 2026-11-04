@@ -518,6 +518,19 @@ public sealed class EmailActionTests : EmailTestBase
     }
 
     [Test]
+    public async Task ATagThatNamesNothing_StillPublishes_AndTheFormCheckWarnsAtItsSetting()
+    {
+        var form = await FormAsync(Email(Texts(subject: "Entry {{ nothing.here }}", more: ",\"replyToField\":\"" + EmailField.Key + "\"")));
+
+        var issues = await GetRequiredService<FormCheck>().CheckAsync((await Forms.GetDraftAsync(form))!.Definition!, CancellationToken.None);
+
+        Assert.That(issues.Select(issue => (issue.Severity, issue.Code, issue.Path, issue.Message)), Is.EqualTo(new[]
+        {
+            (FormCheckSeverity.Warning, "unknown_path", "$.actions[0].settings.subject", "The merge tag at character 10 names nothing this form or site has, so it shows nothing."),
+        }));
+    }
+
+    [Test]
     public async Task OnAFormThatStoresNothing_TheMailLeaves_AndThenTheEntryGoes()
     {
         var form = await PublishAsync(

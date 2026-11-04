@@ -1,8 +1,6 @@
 using System.Text.Json;
-using Jiron.Umbraco.FormBuilder.Core.Actions;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Definitions.Serialization;
-using Jiron.Umbraco.FormBuilder.Core.Email;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn;
 using Jiron.Umbraco.FormBuilder.Core.MergeTags;
@@ -13,27 +11,22 @@ namespace Jiron.Umbraco.FormBuilder.Core.Forms;
 /// A text of a definition in which merge tags render (ADR-0014): where it is used, the context it renders in, whose text
 /// it is (a visitor text recalls only the answers of the fields before its owner), its JSON path and its text.
 /// </summary>
-internal sealed record FormTemplate(MergeTagPlace Place, MergeTagContext Context, Guid? Owner, string Path, string Text)
-{
-    /// <summary>Whether an action owns it, whose type's own check refuses its errors (ADR-0158).</summary>
-    public bool OfAction { get; init; }
-}
+internal sealed record FormTemplate(MergeTagPlace Place, MergeTagContext Context, Guid? Owner, string Path, string Text);
 
 /// <summary>
 /// Every text of a definition in which merge tags render, culture by culture, in the form's order (the form check,
 /// ADR-0177): each page's and group's title and description; each field's label, help, placeholder, default value
 /// (rendered on the server for a type that keeps its value there) and each text setting its type marks as taking tags, a
 /// consent's being its consent text, a repeatable group's children after it; each outcome's message and redirect; the
-/// entry title; and each action's text settings that take tags.
+/// entry title. An action's templates are its type's to check, in the contexts it renders them in (ADR-0158).
 /// </summary>
 internal static class FormTemplates
 {
     /// <summary>The templates of <paramref name="definition"/>.</summary>
-    public static IReadOnlyList<FormTemplate> Of(FormDefinition definition, FieldTypeRegistry fieldTypes, ActionTypeRegistry actionTypes)
+    public static IReadOnlyList<FormTemplate> Of(FormDefinition definition, FieldTypeRegistry fieldTypes)
     {
         ArgumentNullException.ThrowIfNull(definition);
         ArgumentNullException.ThrowIfNull(fieldTypes);
-        ArgumentNullException.ThrowIfNull(actionTypes);
         var found = new List<FormTemplate>();
         var pages = JsonPaths.Property(JsonPaths.Root, "pages");
         for (var p = 0; p < definition.Pages.Count; p++)
@@ -69,22 +62,6 @@ internal static class FormTemplates
         {
             var path = JsonPaths.Property(JsonPaths.Property(JsonPaths.Property(JsonPaths.Root, "settings"), "submission"), "entryTitle");
             found.Add(new FormTemplate(MergeTagPlace.EntryTitle, MergeTagContext.Text, null, path, title));
-        }
-
-        var actions = JsonPaths.Property(JsonPaths.Root, "actions");
-        for (var a = 0; a < definition.Actions.Count; a++)
-        {
-            var action = definition.Actions[a];
-            if (action.Settings is { } settings && actionTypes.Find(action.Type) is { } type)
-            {
-                var place = action.Type == EmailActionType.Alias ? MergeTagPlace.Mail : MergeTagPlace.Action;
-                var start = found.Count;
-                Settings(found, place, null, JsonPaths.Property(JsonPaths.Index(actions, a), "settings"), type.SettingsSchema.Settings, settings.Value);
-                for (var i = start; i < found.Count; i++)
-                {
-                    found[i] = found[i] with { OfAction = true };
-                }
-            }
         }
 
         return found;

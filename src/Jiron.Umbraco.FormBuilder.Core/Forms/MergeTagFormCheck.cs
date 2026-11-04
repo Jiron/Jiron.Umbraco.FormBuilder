@@ -1,4 +1,3 @@
-using Jiron.Umbraco.FormBuilder.Core.Actions;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Core.MergeTags;
@@ -11,14 +10,13 @@ namespace Jiron.Umbraco.FormBuilder.Core.Forms;
 /// The merge tags of every text where they render (ROADMAP 9.5b, ADR-0014, ADR-0177), each checked in its place: a tag
 /// that names nothing renders empty and is a warning; a malformed tag, one past a limit, a source or filter the place
 /// does not take (a consent text takes <c>form</c>, <c>page</c>, <c>site</c> and <c>dictionary</c> only) and a visitor
-/// text that recalls a later field's answer (section 4.3.3) are errors. An action's type refuses its templates' errors
-/// itself (ADR-0158), so only their warnings are this check's. A redirect that puts answers into its address is a
-/// warning: answers in addresses end up in logs and browser history.
+/// text that recalls a later field's answer (section 4.3.3) are errors. An action's type checks its own templates, in
+/// the contexts it renders them in, and warns through its settings check (ADR-0158). A redirect that puts answers into
+/// its address is a warning: answers in addresses end up in logs and browser history.
 /// </summary>
 /// <param name="tags">The merge-tag service, which knows the site's sources.</param>
 /// <param name="fieldTypes">The field types, whose settings schemas say which settings take tags.</param>
-/// <param name="actionTypes">The action types, likewise.</param>
-internal sealed class MergeTagFormCheck(IFormBuilderMergeTagService tags, FieldTypeRegistry fieldTypes, ActionTypeRegistry actionTypes) : IFormCheck
+internal sealed class MergeTagFormCheck(IFormBuilderMergeTagService tags, FieldTypeRegistry fieldTypes) : IFormCheck
 {
     /// <summary>A redirect whose address recalls answers (a warning).</summary>
     public const string AnswersInUrl = "answers_in_url";
@@ -28,16 +26,11 @@ internal sealed class MergeTagFormCheck(IFormBuilderMergeTagService tags, FieldT
     {
         ArgumentNullException.ThrowIfNull(definition);
         var issues = new List<FormCheckIssue>();
-        foreach (var template in FormTemplates.Of(definition, fieldTypes, actionTypes))
+        foreach (var template in FormTemplates.Of(definition, fieldTypes))
         {
             cancellationToken.ThrowIfCancellationRequested();
             foreach (var problem in tags.Check(template.Text, template.Place, template.Context, definition, template.Owner))
             {
-                if (template.OfAction && !problem.IsWarning)
-                {
-                    continue;
-                }
-
                 var severity = problem.IsWarning ? FormCheckSeverity.Warning : FormCheckSeverity.Error;
                 issues.Add(new FormCheckIssue(severity, problem.Code, template.Path, Sentence(problem)));
             }
@@ -51,13 +44,20 @@ internal sealed class MergeTagFormCheck(IFormBuilderMergeTagService tags, FieldT
         return ValueTask.FromResult<IReadOnlyList<FormCheckIssue>>(issues);
     }
 
-    /// <summary>Whether an address names an answer or the entry (<c>field.</c>, <c>entry.</c>).</summary>
+    /// <summary>
+    /// Whether an address names an answer: a field's value or a part of it (<c>field.</c>, but not a field's
+    /// <c>.label</c>), or the entry's answers (<c>entry.answers</c>, <c>entry.table</c>); the entry's number, reference,
+    /// date, state and address are none.
+    /// </summary>
     public static bool RecallsAnswers(string url) =>
         MergeTagEngine.Parse(url, MergeTagContext.Url).Parts
             .OfType<TagPart>()
-            .Any(tag => tag.Path is { } path && (path.StartsWith("field.", StringComparison.Ordinal) || path.StartsWith("entry.", StringComparison.Ordinal)));
+            .Any(tag => tag.Path is { } path
+                && ((path.StartsWith("field.", StringComparison.Ordinal) && !path.EndsWith(".label", StringComparison.Ordinal))
+                    || path is "entry.answers" or "entry.table"));
 
-    private static string Sentence(MergeTagProblem problem)
+    /// <summary>A merge-tag problem as a sentence the editor reads.</summary>
+    public static string Sentence(MergeTagProblem problem)
     {
         var what = problem.Code switch
         {
