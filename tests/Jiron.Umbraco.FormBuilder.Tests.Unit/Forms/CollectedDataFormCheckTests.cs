@@ -1,3 +1,4 @@
+using Jiron.Umbraco.FormBuilder.Core.Configuration;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
@@ -6,6 +7,7 @@ using Jiron.Umbraco.FormBuilder.Logic;
 using Jiron.Umbraco.FormBuilder.Testing;
 using Jiron.Umbraco.FormBuilder.Tests.Unit.Definitions;
 using Jiron.Umbraco.FormBuilder.Tests.Unit.OptionLists;
+using Microsoft.Extensions.Options;
 
 namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Forms;
 
@@ -20,6 +22,8 @@ public sealed class CollectedDataFormCheckTests
     private const string Fields = "$.pages[0].groups[0].fields";
 
     private static readonly FieldTypeRegistry Types = TestFieldTypes.Build(builder => builder.Append<PassportType>());
+
+    private static readonly FieldSettingLocks NoLocks = new(Options.Create(new FormBuilderOptions()), Types);
 
     [Test]
     public async Task PersonalData_WithoutAConsentField_IsAHint_AtTheFirstFieldThatAsksForIt()
@@ -39,6 +43,7 @@ public sealed class CollectedDataFormCheckTests
         {
             Assert.That(await FirstAsync(Text("F1", "Street", autocomplete: "section-ship shipping street-address")), Is.EqualTo(Fields + "[0]"), "a token after its section and address kind");
             Assert.That(await FirstAsync(Text("F1", "Mail", autocomplete: "work email webauthn")), Is.EqualTo(Fields + "[0]"), "a token before webauthn");
+            Assert.That(await FirstAsync(Text("F1", "Area", autocomplete: "tel-area-code"), Text("F2", "Number", autocomplete: "tel-local-prefix")), Is.EqualTo(Fields + "[0]"), "the parts of a local number");
             Assert.That(await FirstAsync("""{"key":"F1","type":"phone","alias":"phone","label":{"":"Phone"}}"""), Is.EqualTo(Fields + "[0]"));
             Assert.That(await FirstAsync("""{"key":"F1","type":"name","alias":"who","label":{"":"Name"}}"""), Is.EqualTo(Fields + "[0]"));
             Assert.That(await FirstAsync("""{"key":"F1","type":"address","alias":"where","label":{"":"Address"}}"""), Is.EqualTo(Fields + "[0]"));
@@ -85,6 +90,31 @@ public sealed class CollectedDataFormCheckTests
     }
 
     [Test]
+    public async Task ACardsWords_InTheVisitorLanguages_CompoundsIncluded_AskForACardNumber()
+    {
+        string[] labels =
+        [
+            "Debitkartennummer", $"Kartenpr{(char)0xFC}fnummer", $"Carte de d{(char)0xE9}bit", "Cryptogramme visuel", "Carta di debito",
+            "Carta di credito", "Betaalkaart", "Pinpas", $"Tarjeta de cr{(char)0xE9}dito", "Debetkort", "Kreditkortnummer", "Betalingskort",
+        ];
+        var definition = Form([.. labels.Select((label, i) => Text($"30000000-0000-4000-8000-0000000001{i:D2}", label))], "");
+
+        var issues = await new CardAndPasswordFormCheck(Types).CheckAsync(definition, CancellationToken.None);
+
+        Assert.That(issues.Select(issue => (issue.Code, issue.Path)), Is.EqualTo(labels.Select((_, i) => (CardAndPasswordFormCheck.CardNumberAsked, $"{Fields}[{i}].label['']"))));
+    }
+
+    [Test]
+    public async Task ATextWithANoncharacter_IsReadWithoutThrowing()
+    {
+        var definition = Form(Text("F1", $"Name{(char)0xFFFE}"), Text("F2", $"Passwort{(char)0xFFFF}"));
+
+        var issues = await new CardAndPasswordFormCheck(Types).CheckAsync(definition, CancellationToken.None);
+
+        Assert.That(issues.Select(issue => (issue.Code, issue.Path)), Is.EqualTo(new[] { (CardAndPasswordFormCheck.PasswordAsked, Fields + "[1].label['']") }));
+    }
+
+    [Test]
     public async Task ACardsNumber_NamedWithoutTheCard_CountsOnlyAsTheWholeText_AndOtherCardsAndNumbersAreNone()
     {
         var definition = Form(
@@ -126,6 +156,8 @@ public sealed class CollectedDataFormCheckTests
     [TestCase("[0-9]{16}", true)]
     [TestCase("[0-9]{13,19}", true)]
     [TestCase("[0-9]{4}([ -]?[0-9]{4}){3}", true)]
+    [TestCase("[0-9]{4} [0-9]{4} [0-9]{4} [0-9]{4}", true)]
+    [TestCase("[0-9]{4}-[0-9]{4}-[0-9]{4}-[0-9]{4}", true)]
     [TestCase("[0-9 -]+", false)]
     [TestCase("[0-9]{6,12}", false)]
     [TestCase("[A-Z]{2}[0-9]{2}[A-Z0-9]{11,30}", false)]
@@ -152,13 +184,25 @@ public sealed class CollectedDataFormCheckTests
             """{"key":"F2","type":"file","alias":"photo","label":{"":"Photo"},"settings":{"maxBytes":1000000}}""",
             """{"key":"F3","type":"signature","alias":"sign","label":{"":"Sign"}}""");
 
-        var issues = await new FileLimitFormCheck(Types, new FieldHostLimits(10_485_760, [])).CheckAsync(definition, CancellationToken.None);
+        var issues = await new FileLimitFormCheck(Types, new FieldHostLimits(10_485_760, []), NoLocks).CheckAsync(definition, CancellationToken.None);
 
         Assert.Multiple(() =>
         {
             Assert.That(issues.Select(issue => (issue.Severity, issue.Code, issue.Path)), Is.EqualTo(new[] { (FormCheckSeverity.Hint, FileLimitFormCheck.FileSizeUnset, Fields + "[0].settings.maxBytes") }));
             Assert.That(issues[0].Message, Does.Contain("10,485,760 bytes each (Files:MaxFileBytes)"));
         });
+    }
+
+    [Test]
+    public async Task AFileSizeTheHostLocks_GetsNoHint_SinceNoEditorCanGiveOne()
+    {
+        var options = new FormBuilderOptions();
+        options.Designer.SettingLocks.Add(new DesignerSettingLock { Kind = DesignerSettingLock.FieldKind, Type = "file", Setting = "maxBytes" });
+
+        var issues = await new FileLimitFormCheck(Types, FieldHostLimits.Default, new FieldSettingLocks(Options.Create(options), Types))
+            .CheckAsync(Form("""{"key":"F1","type":"file","alias":"cv","label":{"":"CV"}}"""), CancellationToken.None);
+
+        Assert.That(issues, Is.Empty);
     }
 
     [Test]
@@ -178,7 +222,8 @@ public sealed class CollectedDataFormCheckTests
             Choice("30000000-0000-4000-8000-000000000006", """{"items":[{"value":"am","places":5}]}""", required: true, settings: """{"other":true}"""),
             Choice("30000000-0000-4000-8000-000000000007", $$$"""{"source":"list","list":"{{{full}}}"}""", required: true),
             Choice("30000000-0000-4000-8000-000000000008", $$$"""{"source":"list","list":"{{{open}}}"}""", required: true),
-            Choice("30000000-0000-4000-8000-000000000009", """{"source":"list","list":"70000000-0000-4000-8000-000000000009"}""", required: true));
+            Choice("30000000-0000-4000-8000-000000000009", """{"source":"list","list":"70000000-0000-4000-8000-000000000009"}""", required: true),
+            Choice("30000000-0000-4000-8000-000000000010", """{"items":[{"value":"x","places":2,"parentValues":["am"]},{"value":"y","places":2,"parentValues":["pm"]}],"parent":"F1"}""", required: true));
 
         var issues = await new FullOptionsFormCheck(Types, site.Lists).CheckAsync(definition, CancellationToken.None);
 
@@ -187,6 +232,7 @@ public sealed class CollectedDataFormCheckTests
             (FormCheckSeverity.Warning, FullOptionsFormCheck.OptionsCanFill, Fields + "[0].options"),
             (FormCheckSeverity.Warning, FullOptionsFormCheck.OptionsCanFill, Fields + "[3].options"),
             (FormCheckSeverity.Warning, FullOptionsFormCheck.OptionsCanFill, Fields + "[6].options"),
+            (FormCheckSeverity.Warning, FullOptionsFormCheck.OptionsCanFill, Fields + "[9].options"),
         }));
     }
 
@@ -194,11 +240,13 @@ public sealed class CollectedDataFormCheckTests
     public async Task AFormThatKeepsNoEntries_WarnsAboutEachLimitThatCountsThem()
     {
         var site = new OptionListTestSite();
+        site.Repository.Write(Guid.Parse("70000000-0000-4000-8000-000000000001"), OptionListKind.Manual, items: """[{"value":"a","places":3},{"value":"b"}]""");
         var definition = Form(
             [
                 Choice("F1", """{"items":[{"value":"am","places":5},{"value":"pm"}]}"""),
                 """{"key":"F2","type":"email","alias":"mail","label":{"":"Mail"},"validation":[{"kind":"uniquePerForm"}]}""",
                 Choice("F3", """{"items":[{"value":"am"}]}"""),
+                Choice("F4", """{"source":"list","list":"70000000-0000-4000-8000-000000000001"}"""),
             ],
             ""","settings":{"submission":{"store":"never"},"availability":{"maxEntries":100,"onePerMember":true}}""");
 
@@ -212,6 +260,7 @@ public sealed class CollectedDataFormCheckTests
                 (FormCheckSeverity.Warning, KeptLimitsFormCheck.LimitWithoutEntries, "$.settings.availability.onePerMember"),
                 (FormCheckSeverity.Warning, KeptLimitsFormCheck.LimitWithoutEntries, Fields + "[0].options"),
                 (FormCheckSeverity.Warning, KeptLimitsFormCheck.LimitWithoutEntries, Fields + "[1].validation[0]"),
+                (FormCheckSeverity.Warning, KeptLimitsFormCheck.LimitWithoutEntries, Fields + "[3].options"),
             }));
             Assert.That(issues[0].Message, Does.StartWith("The form keeps no entries"));
         });
@@ -239,7 +288,7 @@ public sealed class CollectedDataFormCheckTests
     }
 
     [Test]
-    public async Task ALastOutcomeWithARule_IsAWarning_AndOneSwitchedOffIsNone()
+    public async Task ALastOutcomeWithARule_IsAWarning_AndOneSwitchedOffOrMatchingEveryAnswerIsNone()
     {
         const string Rule = """{"key":"40000000-0000-4000-8000-00000000000K","effect":"use","enabled":E,"conditions":[{"field":"F1","op":"isNotEmpty"}]}""";
         string Outcomes(string first, string last) =>
@@ -253,6 +302,8 @@ public sealed class CollectedDataFormCheckTests
             Assert.That(await CheckAsync(Outcomes(RuleOf(1, true), RuleOf(2, false))), Is.Empty, "a rule switched off");
             Assert.That(await CheckAsync(Outcomes(RuleOf(1, true), "")), Is.Empty, "the last without a rule");
             Assert.That(await CheckAsync(""), Is.Empty, "no outcomes");
+            Assert.That(await CheckAsync(Outcomes(RuleOf(1, true), """{"key":"40000000-0000-4000-8000-000000000009","effect":"use","conditions":[]}""")), Is.Empty, "all of no conditions, which every answer matches");
+            Assert.That((await CheckAsync(Outcomes(RuleOf(1, true), """{"key":"40000000-0000-4000-8000-000000000009","effect":"use","match":"any","conditions":[]}"""))).Select(issue => issue.Path), Is.EqualTo(new[] { "$.outcomes[1].rules[0]" }), "any of no conditions, which no answer matches");
         });
     }
 

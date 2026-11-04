@@ -29,8 +29,9 @@ internal sealed class ConsentFormCheck(FieldTypeRegistry types) : IFormCheck
     private static readonly FrozenSet<string> PersonalTokens = new[]
     {
         "name", "honorific-prefix", "given-name", "additional-name", "family-name", "honorific-suffix", "nickname", "username",
-        "email", "impp", "tel", "tel-national", "tel-local", "street-address", "address-line1", "address-line2", "address-line3",
-        "postal-code", "bday", "bday-day", "bday-month", "bday-year", "sex", "photo",
+        "email", "impp", "tel", "tel-national", "tel-area-code", "tel-local", "tel-local-prefix", "tel-local-suffix",
+        "street-address", "address-line1", "address-line2", "address-line3", "postal-code", "bday", "bday-day", "bday-month",
+        "bday-year", "sex", "photo",
     }.ToFrozenSet(StringComparer.Ordinal);
 
     /// <inheritdoc />
@@ -80,15 +81,15 @@ internal sealed class CardAndPasswordFormCheck(FieldTypeRegistry types) : IFormC
     private static readonly ImmutableArray<string> CardWords =
     [
         "credit card", "debit card", "cvv", "cvv2", "cvc", "cvc2",
-        "debitkarte",
-        "carte bancaire", "carte de credit", "carte bleue",
-        "carta di credito",
+        "carte bancaire", "carte de credit", "carte de debit", "carte bleue", "cryptogramme",
+        "carta di credito", "carta di debito",
+        "pinpas",
         "tarjeta de credito", "tarjeta de debito",
         "betalingskort",
     ];
 
-    // The starts of words that name a payment card, for the compounds of German, Dutch and Danish.
-    private static readonly ImmutableArray<string> CardStarts = ["creditcard", "debitcard", "kreditkart", "kreditkort"];
+    // The starts of words that name a payment card or its code, for the compounds of German, Dutch and Danish.
+    private static readonly ImmutableArray<string> CardStarts = ["creditcard", "debitcard", "betaalkaart", "kreditkart", "debitkart", "kartenprufnummer", "kreditkort", "debetkort"];
 
     // A card's number named without the card, folded as above, which counts only as the whole text.
     private static readonly ImmutableArray<string> CardNumberTexts =
@@ -148,11 +149,15 @@ internal sealed class CardAndPasswordFormCheck(FieldTypeRegistry types) : IFormC
         }
     }
 
-    /// <summary>A text folded for the word lists: lowercase, without accents, every run of other characters one space, with a space at each end.</summary>
+    /// <summary>
+    /// A text folded for the word lists: lowercase, without accents, every run of other characters one space, with a space
+    /// at each end. Lone surrogates and noncharacters become U+FFFD first, since .NET refuses to normalise U+FFFE and a
+    /// stored text may hold it.
+    /// </summary>
     internal static string Folded(string text)
     {
         var folded = new StringBuilder(text.Length + 2).Append(' ');
-        foreach (var c in text.Normalize(NormalizationForm.FormD))
+        foreach (var c in TextSemantics.Normalise(text).Normalize(NormalizationForm.FormD))
         {
             if (CharUnicodeInfo.GetUnicodeCategory(c) == UnicodeCategory.NonSpacingMark)
             {
@@ -227,14 +232,18 @@ internal sealed class CardAndPasswordFormCheck(FieldTypeRegistry types) : IFormC
 /// <summary>
 /// A file field without a size of its own (ROADMAP 9.5e, ADR-0180): a hint, since such a field takes every file up to
 /// the site's limit (<c>Files:MaxFileBytes</c>), which is set for the largest file any form takes, and each entry may
-/// hold as many such files as the field allows. The types and the number of files always have limits of their own.
+/// hold as many such files as the field allows. The types and the number of files always have limits of their own. A
+/// size the host locks is none an editor can give, so it gets no hint.
 /// </summary>
 /// <param name="types">The field types.</param>
 /// <param name="host">The host's limits.</param>
-internal sealed class FileLimitFormCheck(FieldTypeRegistry types, FieldHostLimits host) : IFormCheck
+/// <param name="locks">The host's locks of field settings.</param>
+internal sealed class FileLimitFormCheck(FieldTypeRegistry types, FieldHostLimits host, FieldSettingLocks locks) : IFormCheck
 {
     /// <summary>A file field without a size of its own (a hint).</summary>
     public const string FileSizeUnset = "file_size_unset";
+
+    private const string MaxBytes = "maxBytes";
 
     /// <inheritdoc />
     public ValueTask<IReadOnlyList<FormCheckIssue>> CheckAsync(FormDefinition definition, CancellationToken cancellationToken)
@@ -245,11 +254,12 @@ internal sealed class FileLimitFormCheck(FieldTypeRegistry types, FieldHostLimit
         [
             .. DefinitionFields.Of(definition)
                 .Where(found => types.FindType(found.Field.Type) is FileFieldType
-                    && !(found.Field.Settings is { } settings && settings.TryGetProperty("maxBytes", out var size) && size.ValueKind == JsonValueKind.Number))
+                    && !locks.Of(found.Field.Type).Any(settingLock => settingLock.Setting.Name == MaxBytes)
+                    && !(found.Field.Settings is { } settings && settings.TryGetProperty(MaxBytes, out var size) && size.ValueKind == JsonValueKind.Number))
                 .Select(found => new FormCheckIssue(
                     FormCheckSeverity.Hint,
                     FileSizeUnset,
-                    JsonPaths.Property(JsonPaths.Property(found.Path, "settings"), "maxBytes"),
+                    JsonPaths.Property(JsonPaths.Property(found.Path, "settings"), MaxBytes),
                     $"This field takes files up to the site's limit of {limit} bytes each (Files:MaxFileBytes): give it the largest size its answers need.")),
         ];
         return ValueTask.FromResult(issues);
@@ -380,7 +390,8 @@ internal sealed class KeptLimitsFormCheck(FieldTypeRegistry types, OptionListSer
 
 /// <summary>
 /// A last outcome with a rule (ROADMAP 9.5e, ADR-0002, ADR-0180): a warning, since visitors whose answers no outcome's
-/// rule matches get the built-in thank-you message. A rule that is switched off is none.
+/// rule matches get the built-in thank-you message. A rule that is switched off is none, and so is one that matches
+/// every answer: all of no conditions.
 /// </summary>
 internal sealed class LastOutcomeFormCheck : IFormCheck
 {
@@ -392,7 +403,7 @@ internal sealed class LastOutcomeFormCheck : IFormCheck
     {
         ArgumentNullException.ThrowIfNull(definition);
         var last = definition.Outcomes.Count - 1;
-        var rule = last < 0 ? -1 : definition.Outcomes[last].Rules.ToList().FindIndex(rule => rule.Enabled);
+        var rule = last < 0 ? -1 : definition.Outcomes[last].Rules.ToList().FindIndex(rule => rule.Enabled && !(rule.Match == RuleMatch.All && rule.Conditions.Count == 0));
         IReadOnlyList<FormCheckIssue> issues = rule < 0
             ? []
             : [new FormCheckIssue(FormCheckSeverity.Warning, LastOutcomeHasRule, JsonPaths.Index(JsonPaths.Property(JsonPaths.Index(JsonPaths.Property(JsonPaths.Root, "outcomes"), last), "rules"), rule), "Visitors whose answers no outcome's rule matches get the built-in thank-you message: leave the last outcome without a rule, so it is there for every other answer.")];

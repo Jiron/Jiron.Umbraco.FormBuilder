@@ -40,8 +40,9 @@ Option 2, option 2 and option 3, with these meanings and weights:
   and a contact form may rely on another. A field asks for personal data when its type declares
   `FieldTypeDeclaration.PersonalData` (the built-in email, phone, name, address and signature; a site's own type may
   declare it, and one that holds no value is refused at start-up) or its autocomplete token names, reaches or locates a
-  person (`name` and its parts, `nickname`, `username`, `email`, `impp`, `tel` and its parts, the street, address lines
-  and postcode, `bday` and its parts, `sex`, `photo`), whatever section, address or contact kind comes before it. A
+  person (`name` and its parts, `nickname`, `username`, `email`, `impp`, `tel` and the parts of a national or local
+  number, the street, address lines and postcode, `bday` and its parts, `sex`, `photo`), whatever section, address or
+  contact kind comes before it. A
   file may or may not be about a person, a country or a city alone is none. The hint is said at the first such field;
   a consent field anywhere in the form, in a repeatable group too, answers it.
 - **A card number or a password asked for** (`card_number_asked`, `password_asked`): warnings, said where the field asks,
@@ -52,12 +53,14 @@ Option 2, option 2 and option 3, with these meanings and weights:
   twelve-digit number. "Card number" named without the card, in each language, counts only as the whole text, since a
   membership or a library card has a number too. A field asks for a password when its token is `current-password` or
   `new-password`, or its label or placeholder names one. Texts are compared folded: lowercase, without accents, in
-  words. Help texts are left out, since they often say what not to type. A bank account number is not card data: a
+  words, after lone surrogates and noncharacters become U+FFFD as the rules engine cleans text, since .NET refuses to
+  decompose U+FFFE and a stored label may hold it. Help texts are left out, since they often say what not to type. A
+  bank account number is not card data: a
   direct debit mandate is a lawful thing for a form to take, and the check names only what ROADMAP 9.5e names.
 - **A file field without a size of its own** (`file_size_unset`): a hint at `settings.maxBytes`, naming the site's
   limit (`Files:MaxFileBytes`), which is set for the largest file any form takes. A file field always has limits on its
   types (images and PDFs by default) and on its number of files (one by default); its size is the one it may leave to
-  the site.
+  the site. A size the host locks gets no hint, since no editor can give one.
 - **A required choice whose options can all fill up** (`options_can_fill`): a warning at the field's options. Required
   means always or under a rule that is switched on. The options are the field's own, or a library list's that holds its
   options; options a source resolves have no places the form can know, and a choice with "Other" takes any text. A
@@ -67,24 +70,28 @@ Option 2, option 2 and option 3, with these meanings and weights:
   count only the entries whose actions still run. A field whose answers are kept only until the actions have run gives
   its places and unique answers back then (ADR-0090, ADR-0091). A form that keeps entries for days holds its limits
   while it keeps them.
-- **A last outcome with a rule** (`last_outcome_has_rule`): a warning at that rule; a rule switched off is none.
+- **A last outcome with a rule** (`last_outcome_has_rule`): a warning at that rule; a rule switched off is none, and so
+  is one that matches every answer (all of no conditions).
 - **A theme the site lacks** (`theme_missing`): a warning. The site has a theme in code (built in, or a site's own,
   ADR-0105) or in the library (`jfbTheme`), one lookup (`FormThemes`) that the import uses too, so an import no longer
-  clears a built-in theme, which has no row.
+  clears a built-in theme, which has no row. Rendering looks up the themes in code only until 12.2 adds the library's
+  (ADR-0105); until then no editor can make a library theme, so the two never disagree on a form a site holds.
 - **Content, media and member groups the site lacks** (`content_missing`, `media_missing`, `member_group_missing`):
   warnings, since the form goes live and that part of it does nothing. An item the site lacks is gone or in the recycle
   bin. The form names content in its outcomes' redirects and in the settings of its fields' and actions' types whose
   editor picks content (`documentPicker`, `contentPicker`), media in its options' images and in the settings whose
   editor picks media (`mediaPicker`), lists and nested settings included, and member groups by key in who may fill it in
-  and by name, in any letter case, in its rules' conditions. An option source's configuration is its kind's to check
-  when the form is published, with errors (ADR-0075).
+  and, in its rules' conditions, by key or by their exact name, as the website compares a member's groups; a name that
+  differs only in its letter case is said with the site's spelling. An option source's configuration is its kind's to
+  check when the form is published, with errors (ADR-0075).
 - **A redirect to a page that is not published** (`redirect_unpublished`): a warning, for a page in the tree that the
   published content does not hold in any culture. Visitors then get the outcome's message or the built-in thank-you
   message. A page published in some cultures is published; its address in each is Umbraco's to give.
 - **A dictionary item without a text** (`dictionary_text_missing`): a warning. Every localised text of the form that is
   exactly `#key` is asked in each of the site's languages as its visitors see the form: the text of their culture,
   falling back as a request does, and the item's text through Umbraco's languages (ADR-0067). The warning is said at
-  the culture's text and names the languages in which the item has none. The keys are read once per language. A merge
+  the culture's text and names the languages in which the item has none. The keys are read once per language. A
+  localised setting written as a single text is the settings check's error and shows nothing, so it is none. A merge
   tag of the dictionary renders empty and warns when it renders (ADR-0067), as an unknown tag does.
 - **A host lock that replaces a stored value** (`lock_replaces_value`): a warning from the form check itself, which
   compares the stored definition with the host's designer locks of field and action settings (ADR-0060) before it

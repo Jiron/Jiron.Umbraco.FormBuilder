@@ -41,7 +41,8 @@ internal sealed class ThemeFormCheck(FormThemes themes) : IFormCheck
 /// and a redirect to a page that is not published: warnings, since the form goes live but that part of it does nothing.
 /// A content or media item the site lacks is one that is gone or in the recycle bin. The form names content in its
 /// outcomes' redirects and in the settings of its fields' and actions' types that pick a page, media in its options'
-/// images and in the settings that pick media, and member groups by key in who may fill it in and by name in its rules.
+/// images and in the settings that pick media, and member groups by key in who may fill it in and by key or by their
+/// exact name in its rules.
 /// What an option source's configuration names is its kind's to check when the form is published (ADR-0075).
 /// </summary>
 /// <param name="fieldTypes">The field types, whose settings schemas say which settings pick content or media.</param>
@@ -324,11 +325,24 @@ internal sealed class SiteReferencesFormCheck(
             }
         }
 
-        // A member's groups are compared by name, in any letter case, as the website reads them.
-        var named = groups.Select(group => group.Name).OfType<string>().ToHashSet(StringComparer.OrdinalIgnoreCase);
-        foreach (var (name, at) in names.Where(found => !named.Contains(found.Name)))
+        // A rule names a group by its key, or by its name exactly, as the website compares a member's groups.
+        var named = groups.Select(group => group.Name).OfType<string>().ToHashSet(StringComparer.Ordinal);
+        foreach (var (name, at) in names)
         {
-            issues.Add(new FormCheckIssue(FormCheckSeverity.Warning, MemberGroupMissing, at, $"The site has no member group named '{name}', so no member is in it."));
+            if (Guid.TryParse(name, out var key))
+            {
+                if (!known.Contains(key))
+                {
+                    issues.Add(new FormCheckIssue(FormCheckSeverity.Warning, MemberGroupMissing, at, "The site has no member group with this key, so no member is in it."));
+                }
+            }
+            else if (!named.Contains(name))
+            {
+                var spelt = named.FirstOrDefault(group => string.Equals(group, name, StringComparison.OrdinalIgnoreCase));
+                issues.Add(new FormCheckIssue(FormCheckSeverity.Warning, MemberGroupMissing, at, spelt is null
+                    ? $"The site has no member group named '{name}', so no member is in it."
+                    : $"The site has no member group named '{name}', so no member is in it; names are compared exactly, and the site has '{spelt}'."));
+            }
         }
     }
 }

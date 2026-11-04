@@ -8,15 +8,11 @@ namespace Jiron.Umbraco.FormBuilder.Core.Forms;
 /// <summary>A localised text of a definition with its JSON path, without a culture (ADR-0002).</summary>
 /// <param name="Path">The path of the text, such as <c>$.pages[0].title</c>.</param>
 /// <param name="Text">The text in its cultures.</param>
-/// <param name="PerCulture">
-/// Whether the definition writes the text per culture, so a culture's text has a path of its own; false for a setting
-/// written as a single text.
-/// </param>
-internal sealed record FormText(string Path, LocalizedString Text, bool PerCulture = true)
+internal sealed record FormText(string Path, LocalizedString Text)
 {
-    /// <summary>The path of the text a culture's request sees, as the definition writes it.</summary>
+    /// <summary>The path of the text a culture's request sees.</summary>
     /// <param name="entry">The culture's text, as <see cref="LocalizedString.EntryFor"/> finds it.</param>
-    public string PathOf(CultureText entry) => PerCulture ? JsonPaths.Property(Path, entry.Culture) : Path;
+    public string PathOf(CultureText entry) => JsonPaths.Property(Path, entry.Culture);
 }
 
 /// <summary>
@@ -117,8 +113,8 @@ internal static class FormTexts
         }
     }
 
-    // The localised settings in the schema's order, a nested object's own in turn; a value of another shape is the settings
-    // check's to refuse, and one written as a single text has only its default.
+    // The localised settings in the schema's order, a nested object's own in turn; a value of another shape, a single text
+    // too, is the settings check's to refuse, and the page shows nothing of it.
     private static void Settings(List<FormText> found, string path, IReadOnlyList<FieldSettingDescriptor> schema, JsonElement value)
     {
         if (value.ValueKind != JsonValueKind.Object)
@@ -140,19 +136,14 @@ internal static class FormTexts
             }
             else if (setting.Kind is FieldSettingKind.LocalizedText or FieldSettingKind.LocalizedHtml && Localized(given) is { } text)
             {
-                found.Add(new FormText(settingPath, text, PerCulture: given.ValueKind == JsonValueKind.Object));
+                found.Add(new FormText(settingPath, text));
             }
         }
     }
 
-    // A setting's text as a localised text: a single text is its default; null for a value of another shape.
+    // A setting's text as a localised text: an object from culture to text; null for a value of another shape.
     private static LocalizedText? Localized(JsonElement given)
     {
-        if (given.ValueKind == JsonValueKind.String)
-        {
-            return new LocalizedText(given.GetString()!);
-        }
-
         if (given.ValueKind != JsonValueKind.Object)
         {
             return null;

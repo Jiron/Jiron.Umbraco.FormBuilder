@@ -97,11 +97,11 @@ public sealed class SiteFormCheckTests
     }
 
     [Test]
-    public async Task MemberGroups_TheSiteLacks_AreWarnings_ByKeyInWhoMayFillItIn_AndByNameInTheRules()
+    public async Task MemberGroups_TheSiteLacks_AreWarnings_ByKeyInWhoMayFillItIn_AndByKeyOrExactNameInTheRules()
     {
         var definition = Form(
             [
-                """{"key":"30000000-0000-4000-8000-000000000001","type":"text","alias":"topic","label":{"":"Topic"},"rules":[{"key":"40000000-0000-4000-8000-000000000001","effect":"show","match":"any","conditions":[{"context":"memberGroup","op":"contains","value":"Silver"},{"match":"all","conditions":[{"context":"memberGroup","op":"isOneOf","value":["gold","Bronze"]}]}]}]}""",
+                $$$"""{"key":"30000000-0000-4000-8000-000000000001","type":"text","alias":"topic","label":{"":"Topic"},"rules":[{"key":"40000000-0000-4000-8000-000000000001","effect":"show","match":"any","conditions":[{"context":"memberGroup","op":"contains","value":"Silver"},{"match":"all","conditions":[{"context":"memberGroup","op":"isOneOf","value":["gold","Bronze"]}]},{"context":"memberGroup","op":"contains","value":"{{{Gold}}}"},{"context":"memberGroup","op":"contains","value":"{{{GoneGroup}}}"}]}]}""",
             ],
             $$$""","outcomes":[{"key":"60000000-0000-4000-8000-000000000001","rules":[{"key":"40000000-0000-4000-8000-000000000002","effect":"use","conditions":[{"context":"memberGroup","op":"contains","value":"Gold"}]}]}],"settings":{"availability":{"members":"groups","memberGroups":["{{{Gold}}}","{{{GoneGroup}}}"]}}""");
 
@@ -113,9 +113,13 @@ public sealed class SiteFormCheckTests
             {
                 (FormCheckSeverity.Warning, SiteReferencesFormCheck.MemberGroupMissing, "$.settings.availability.memberGroups[1]"),
                 (FormCheckSeverity.Warning, SiteReferencesFormCheck.MemberGroupMissing, Fields + "[0].rules[0].conditions[0].value"),
+                (FormCheckSeverity.Warning, SiteReferencesFormCheck.MemberGroupMissing, Fields + "[0].rules[0].conditions[1].conditions[0].value[0]"),
                 (FormCheckSeverity.Warning, SiteReferencesFormCheck.MemberGroupMissing, Fields + "[0].rules[0].conditions[1].conditions[0].value[1]"),
+                (FormCheckSeverity.Warning, SiteReferencesFormCheck.MemberGroupMissing, Fields + "[0].rules[0].conditions[3].value"),
             }));
-            Assert.That(issues[1].Message, Does.Contain("'Silver'"), "a group's name in any letter case is the group: 'gold' is Gold");
+            Assert.That(issues[1].Message, Does.Contain("'Silver'"));
+            Assert.That(issues[2].Message, Does.EndWith("names are compared exactly, and the site has 'Gold'."), "the website compares a member's groups exactly");
+            Assert.That(issues[4].Message, Does.Contain("no member group with this key"), "a key names a group, as on the website; Gold's key is none of these");
         });
     }
 
@@ -164,13 +168,15 @@ public sealed class SiteFormCheckTests
         var umbraco = new TestUmbraco();
         umbraco.Language("en-US", isDefault: true);
         umbraco.Language("de-DE");
+        umbraco.Language("fr-FR", fallback: "de-DE");
         umbraco.Item("form.title", new Dictionary<string, string> { ["de-DE"] = "Kontakt" });
         umbraco.Item("form.ok", new Dictionary<string, string> { ["en-US"] = "OK", ["de-DE"] = "OK" });
         var definition = Form(
             [
                 """{"key":"30000000-0000-4000-8000-000000000001","type":"text","alias":"topic","label":{"":"#form.gone"},"help":{"":"Plain","de":"#form.ok"}}""",
                 """{"key":"30000000-0000-4000-8000-000000000002","type":"radio","alias":"pick","label":{"":"Pick"},"options":{"items":[{"value":"a","label":{"":"#Form.Gone","de":"Ja"}}]}}""",
-                """{"key":"30000000-0000-4000-8000-000000000003","type":"heading","settings":{"text":"#form.gone","level":2}}""",
+                """{"key":"30000000-0000-4000-8000-000000000003","type":"heading","settings":{"text":{"":"#form.gone"},"level":2}}""",
+                """{"key":"30000000-0000-4000-8000-000000000004","type":"heading","settings":{"text":"#form.gone","level":2}}""",
             ],
             ""","settings":{"submission":{"submitLabel":{"":"#form.ok"}}}""",
             pageTexts: ""","title":{"":"#form.title"}""");
@@ -184,12 +190,12 @@ public sealed class SiteFormCheckTests
                 (FormCheckSeverity.Warning, DictionaryFormCheck.DictionaryTextMissing, "$.pages[0].title['']"),
                 (FormCheckSeverity.Warning, DictionaryFormCheck.DictionaryTextMissing, Fields + "[0].label['']"),
                 (FormCheckSeverity.Warning, DictionaryFormCheck.DictionaryTextMissing, Fields + "[1].options.items[0].label['']"),
-                (FormCheckSeverity.Warning, DictionaryFormCheck.DictionaryTextMissing, Fields + "[2].settings.text"),
+                (FormCheckSeverity.Warning, DictionaryFormCheck.DictionaryTextMissing, Fields + "[2].settings.text['']"),
             }));
-            Assert.That(issues[0].Message, Is.EqualTo("Umbraco's dictionary has no text for 'form.title' in en-US, so visitors there see the text as it is written."), "German visitors see the item's text, English ones none of the default language");
-            Assert.That(issues[1].Message, Does.Contain("in en-US, de-DE"));
-            Assert.That(issues[2].Message, Does.Contain("'Form.Gone' in en-US, so"), "German visitors see their own text");
-            Assert.That(umbraco.DictionaryReads, Is.EqualTo(2), "one read per language");
+            Assert.That(issues[0].Message, Is.EqualTo("Umbraco's dictionary has no text for 'form.title' in en-US, so visitors there see the text as it is written."), "German visitors see the item's text, French ones through their language's fallback, English ones none of the default language");
+            Assert.That(issues[1].Message, Does.Contain("in en-US, de-DE, fr-FR, so"));
+            Assert.That(issues[2].Message, Does.Contain("'Form.Gone' in en-US, fr-FR, so"), "German visitors see their own text");
+            Assert.That(umbraco.DictionaryReads, Is.EqualTo(3), "one read per language; a setting's single text is the settings check's to refuse, and the page shows none of it");
         });
     }
 

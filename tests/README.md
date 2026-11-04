@@ -1156,23 +1156,26 @@ a publish refused through the API for conditions a change of type left.
 The checks of the site and of what a form collects (9.5e, ADR-0180): `Tests.Unit/Forms/CollectedDataFormCheckTests`
 holds personal data on a form without a consent field a hint at the first field that asks for it (a type that is
 personal by nature, a site's own type that declares it, a repeatable group's child, an autocomplete token after its
-section and kinds; none for a topic, a country or a count, or where a consent field sits anywhere); a card number asked
-for a warning from its token, its label or placeholder in any culture (a German compound, an accented French phrase,
-"CVV", "Card number" as the whole label) or a pattern that takes sixteen digits and refuses twelve, none for a
-membership card's number, a card type, a member number, a phone pattern or a checkbox; a password from its token or a
-word in the visitor languages, never from a help text; a file field without a size a hint naming the site's limit; a required choice whose
-options all have places a warning (its own, required by a rule switched on, a library list holding them), none with one
-unlimited, without a requirement, with "Other", or for a list that is open or gone; a form that keeps no entries
-warning about its entry limit, one entry per member, places and unique answers, a field kept until the actions have run
-about its own, and a form that keeps entries for days about none; and a last outcome's rule a warning unless it is
-switched off. `Tests.Unit/Forms/SiteFormCheckTests` holds a theme the site lacks in code and in the library a warning,
+section and kinds, the parts of a local number; none for a topic, a country or a count, or where a consent field sits
+anywhere); a card number asked for a warning from its token, its label or placeholder in any culture (compounds and
+accented words in each visitor language, "CVV", "Card number" as the whole label) or a pattern that takes sixteen
+digits, plain, spaced or dashed, and refuses twelve, none for a membership card's number, a card type, a member number,
+a phone pattern or a checkbox; a password from its token or a word in the visitor languages, never from a help text; a
+label with a noncharacter read without throwing; a file field without a size a hint naming the site's limit, none where
+the host locks the size; a required choice whose options all have places a warning (its own, required by a rule
+switched on, a library list holding them, a cascading choice's), none with one unlimited, without a requirement, with
+"Other", or for a list that is open or gone; a form that keeps no entries warning about its entry limit, one entry per
+member, places (a library list's too) and unique answers, a field kept until the actions have run about its own, and a
+form that keeps entries for days about none; and a last outcome's rule a warning unless it is switched off or matches
+every answer. `Tests.Unit/Forms/SiteFormCheckTests` holds a theme the site lacks in code and in the library a warning,
 a built-in one and a library one not; a redirect to a page in the tree but not published, or gone, a warning; content
 and media that are gone in an image's setting, an option's image and an action type's page, folder, list of pages and
 nested image;
-member groups by key and by name, in any letter case and in nested groups, the groups never asked for by a form that
-names none; every localised text with its path; and a dictionary text without a text a warning at the culture's text
-for the languages whose visitors see it, through Umbraco's fallbacks, read once per language, nothing read for a form
-without one. `FormCheckTests` adds a host's lock replacing a stored value a warning at the setting, for a field, a
+member groups by key, and in the rules by key or exact name (a name that differs in letter case said with the site's
+spelling) in nested groups too, the groups never asked for by a form that names none; every localised text with its
+path; and a dictionary text without a text a warning at the culture's text for the languages whose visitors see it,
+through a culture's parent and a language's fallback, read once per language, a setting's single text left to the
+settings check, nothing read for a form without one. `FormCheckTests` adds a host's lock replacing a stored value a warning at the setting, for a field, a
 repeatable group's child and an action, none for a value equal to the lock's or under a hidden lock, and a label's
 merge tag of a source labels refuse an error. `FormCheckApiTests` finds these through the draft check, publishes such a
 form, and has a publish refused for that label; `FormCopyServiceTests` keeps a built-in theme on import.
