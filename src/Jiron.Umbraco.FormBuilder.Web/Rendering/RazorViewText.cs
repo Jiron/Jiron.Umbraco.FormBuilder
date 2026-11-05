@@ -21,22 +21,16 @@ internal static class RazorViewText
     {
         ArgumentNullException.ThrowIfNull(view);
         ArgumentNullException.ThrowIfNull(action);
-        var (before, beforeUi) = (CultureInfo.CurrentCulture, CultureInfo.CurrentUICulture);
+
+        // The culture set here stays in this method: an async method's caller gets its own back when the method returns,
+        // or throws, as the culture flows with the execution context into a call and never out of it.
         if (culture is not null)
         {
             CultureInfo.CurrentCulture = culture;
             CultureInfo.CurrentUICulture = culture;
         }
 
-        try
-        {
-            return await WriteInAsync(view, action, model, tempData);
-        }
-        finally
-        {
-            CultureInfo.CurrentCulture = before;
-            CultureInfo.CurrentUICulture = beforeUi;
-        }
+        return await WriteInAsync(view, action, model, tempData);
     }
 
     private static async Task<string> WriteInAsync<TModel>(IView view, ActionContext action, TModel model, ITempDataProvider tempData)

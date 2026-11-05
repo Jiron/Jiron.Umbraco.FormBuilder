@@ -100,11 +100,11 @@ public sealed class SampleEntriesTests
     [Test]
     public async Task ACalculation_IsWorkedOutFromTheSamplesAnswers_RoundedToItsPlaces()
     {
-        var total = Field("calculation", "total", settings: """{"formula":"age * 2 / 4","format":{"decimals":1}}""");
+        var total = Field("calculation", "total", settings: """{"formula":"age * 2 / 7","format":{"decimals":2}}""");
         var age = Field("number", "age");
         var answers = await Samples().AnswersAsync(Scope(Definition(total, age), "en-GB"), Today);
 
-        Assert.That(Texts(answers, total.Key), Is.EqualTo(new[] { "1.5" }), "3 * 2 / 4, a field after it read too");
+        Assert.That(Texts(answers, total.Key), Is.EqualTo(new[] { "0.86" }), "3 * 2 / 7 to two places, a field after it read too");
     }
 
     [Test]

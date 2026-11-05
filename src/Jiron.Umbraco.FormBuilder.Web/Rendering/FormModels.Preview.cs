@@ -1,6 +1,5 @@
 using System.Globalization;
 using System.Net;
-using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.MergeTags;
 using Jiron.Umbraco.FormBuilder.Core.Submissions;
 using Jiron.Umbraco.FormBuilder.Core.Themes;
@@ -11,7 +10,10 @@ namespace Jiron.Umbraco.FormBuilder.Web.Rendering;
 
 /// <summary>What an outcome's preview is made of (ADR-0187).</summary>
 /// <param name="Outcome">The outcome as the server renders it for the sample entry.</param>
-/// <param name="Shown">The visitor's form the copy of the answers is listed by; null for an outcome without one.</param>
+/// <param name="Shown">
+/// The visitor's form the copy of the answers is listed by, given only for a message that shows the copy; null for an
+/// outcome without one.
+/// </param>
 /// <param name="Entry">The sample entry's scope.</param>
 /// <param name="Reference">The sample entry's reference in the form's format.</param>
 /// <param name="Alias">The form's alias, whose own views come first.</param>
@@ -41,7 +43,7 @@ internal sealed partial class FormModels
         var (_, paths) = await views.PartsAsync(FormViews.DefaultFolder, source.Alias, cancellationToken);
         var outcome = source.Outcome;
         OutcomeCopyModel? copy = null;
-        if (outcome is { Kind: OutcomeKind.Message, ShowAnswers: true } && source.Shown is { } shown && source.Entry.Entry is { } entry)
+        if (source.Shown is { } shown && source.Entry.Entry is { } entry)
         {
             copy = new OutcomeCopyModel
             {
