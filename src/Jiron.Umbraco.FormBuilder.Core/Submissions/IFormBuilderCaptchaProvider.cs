@@ -1,4 +1,6 @@
+using System.Collections.Concurrent;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
+using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Umbraco.Cms.Core.Composing;
 
 namespace Jiron.Umbraco.FormBuilder.Core.Submissions;
@@ -12,6 +14,16 @@ public interface IFormBuilderCaptchaProvider
 {
     /// <summary>The name a form's definition chooses it by, such as <c>hcaptcha</c>.</summary>
     string Name { get; }
+
+    /// <summary>The name the backoffice offers it by, such as <c>hCaptcha</c>; its <see cref="Name"/> unless it says otherwise.</summary>
+    string Label => Name;
+
+    /// <summary>
+    /// The class that describes the settings a form gives it, as a field type's settings class does, its properties marked
+    /// with <see cref="FieldTypes.FormBuilderSettingAttribute"/> (ADR-0184); null, as by default, for a provider without
+    /// settings. The backoffice draws them in the form's Spam protection group, and publishing holds a form's to them.
+    /// </summary>
+    Type? SettingsType => null;
 
     /// <summary>Whether it has its keys.</summary>
     bool IsConfigured { get; }
@@ -56,6 +68,9 @@ public sealed record FormBuilderCaptchaCheck(string Token, IReadOnlySet<string> 
 /// <summary>The captcha providers a site has, in the order they are registered (ADR-0142).</summary>
 public sealed class FormBuilderCaptchaProviderCollection : BuilderCollectionBase<IFormBuilderCaptchaProvider>
 {
+    // Each settings class's schema, read once, as reading reflects over the class and checks its defaults.
+    private readonly ConcurrentDictionary<Type, FieldSettingsSchema> _schemas = new();
+
     /// <summary>A collection of the providers the builder creates.</summary>
     public FormBuilderCaptchaProviderCollection(Func<IEnumerable<IFormBuilderCaptchaProvider>> items)
         : base(items)
@@ -65,6 +80,18 @@ public sealed class FormBuilderCaptchaProviderCollection : BuilderCollectionBase
     /// <summary>The provider of a name, the last registered when there are several; null when the site has none.</summary>
     /// <param name="name">The name.</param>
     public IFormBuilderCaptchaProvider? Find(string? name) => this.LastOrDefault(provider => string.Equals(provider.Name, name, StringComparison.Ordinal));
+
+    /// <summary>The providers a form can choose, one per name, the last registered of each, in the order they came.</summary>
+    public IReadOnlyList<IFormBuilderCaptchaProvider> Offered() =>
+        [.. this.Where(provider => ReferenceEquals(Find(provider.Name), provider))];
+
+    /// <summary>The schema of a provider's settings for a form, read once per settings class; empty for one without settings.</summary>
+    /// <param name="provider">The provider.</param>
+    internal FieldSettingsSchema SchemaOf(IFormBuilderCaptchaProvider provider)
+    {
+        ArgumentNullException.ThrowIfNull(provider);
+        return provider.SettingsType is { } type ? _schemas.GetOrAdd(type, FieldSettingsReader.Read) : FieldSettingsSchema.Empty;
+    }
 }
 
 /// <summary>

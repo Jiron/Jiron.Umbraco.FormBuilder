@@ -72,6 +72,13 @@ export type CanvasResponseModel = {
     requiredMarker: string;
 };
 
+export type CaptchaProviderResponseModel = {
+    name: string;
+    label: string;
+    isConfigured: boolean;
+    settings: Array<FieldSettingResponseModel>;
+};
+
 export type ChecklistItemResponseModel = {
     step: string;
     done: boolean;
@@ -411,6 +418,49 @@ export type FormResponseModel = {
 export type FormSavedResponseModel = {
     form: FormResponseModel;
     version?: number | null;
+};
+
+export type FormSettingsChoicesResponseModel = {
+    timeZone: string;
+    defaults: FormSettingsDefaultsResponseModel;
+    themes: Array<FormSettingsThemeResponseModel>;
+    memberGroups: Array<FormSettingsMemberGroupResponseModel>;
+    limits: FormSettingsLimitsResponseModel;
+};
+
+export type FormSettingsDefaultsResponseModel = {
+    protection: string;
+    captchaProvider?: string | null;
+    contentRules: string;
+    requiredMarker: string;
+    theme: string;
+    submitLabel?: {
+        [key: string]: string;
+    } | null;
+    nextLabel?: {
+        [key: string]: string;
+    } | null;
+    backLabel?: {
+        [key: string]: string;
+    } | null;
+};
+
+export type FormSettingsLimitsResponseModel = {
+    lineLength: number;
+    htmlLength: number;
+    nameLength: number;
+    verificationDays: number;
+    referenceDigits: number;
+};
+
+export type FormSettingsMemberGroupResponseModel = {
+    key: string;
+    name: string;
+};
+
+export type FormSettingsThemeResponseModel = {
+    alias: string;
+    label: string;
 };
 
 export type FormVersionDocumentResponseModel = {
@@ -1503,6 +1553,68 @@ export type FormCheckCheckResponses = {
 };
 
 export type FormCheckCheckResponse = FormCheckCheckResponses[keyof FormCheckCheckResponses];
+
+export type CaptchaProviderListData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/captcha-provider';
+};
+
+export type CaptchaProviderListErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+};
+
+export type CaptchaProviderListResponses = {
+    /**
+     * OK
+     */
+    200: Array<CaptchaProviderResponseModel>;
+};
+
+export type CaptchaProviderListResponse = CaptchaProviderListResponses[keyof CaptchaProviderListResponses];
+
+export type FormSettingsChoicesData = {
+    body?: never;
+    path: {
+        key: string;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/form/{key}/setting-choices';
+};
+
+export type FormSettingsChoicesErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type FormSettingsChoicesError = FormSettingsChoicesErrors[keyof FormSettingsChoicesErrors];
+
+export type FormSettingsChoicesResponses = {
+    /**
+     * OK
+     */
+    200: FormSettingsChoicesResponseModel;
+};
+
+export type FormSettingsChoicesResponse = FormSettingsChoicesResponses[keyof FormSettingsChoicesResponses];
 
 export type FormCreateData = {
     body?: CreateFormRequestModel;

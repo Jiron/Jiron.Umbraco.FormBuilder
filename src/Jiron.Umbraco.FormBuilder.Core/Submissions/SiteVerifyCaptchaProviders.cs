@@ -1,7 +1,9 @@
+using System.ComponentModel.DataAnnotations;
 using System.Globalization;
 using System.Net.Http.Headers;
 using System.Text.Json;
 using Jiron.Umbraco.FormBuilder.Core.Configuration;
+using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Core.Outbound;
 using Microsoft.Extensions.Options;
 
@@ -23,6 +25,12 @@ internal abstract class SiteVerifyCaptchaProvider(IFormBuilderHttpTransport tran
 
     /// <inheritdoc />
     public abstract string Name { get; }
+
+    /// <inheritdoc />
+    public abstract string Label { get; }
+
+    /// <inheritdoc />
+    public virtual Type? SettingsType => null;
 
     /// <inheritdoc />
     public bool IsConfigured => !string.IsNullOrWhiteSpace(Keys.SiteKey) && !string.IsNullOrWhiteSpace(Keys.SecretKey);
@@ -163,6 +171,9 @@ internal sealed class RecaptchaV2Provider(IOptions<FormBuilderOptions> options, 
     public override string Name => ChosenAs;
 
     /// <inheritdoc />
+    public override string Label => "reCAPTCHA v2";
+
+    /// <inheritdoc />
     protected override FormBuilderCaptchaKeys Keys => options.Value.Captcha.RecaptchaV2;
 
     /// <inheritdoc />
@@ -189,6 +200,12 @@ internal sealed class RecaptchaV3Provider(IOptions<FormBuilderOptions> options, 
 
     /// <inheritdoc />
     public override string Name => ChosenAs;
+
+    /// <inheritdoc />
+    public override string Label => "reCAPTCHA v3";
+
+    /// <inheritdoc />
+    public override Type? SettingsType => typeof(RecaptchaV3Settings);
 
     /// <inheritdoc />
     protected override FormBuilderCaptchaKeys Keys => options.Value.Captcha.RecaptchaV3;
@@ -220,6 +237,15 @@ internal sealed class RecaptchaV3Provider(IOptions<FormBuilderOptions> options, 
     }
 }
 
+/// <summary>What a form gives reCAPTCHA v3 (ADR-0184): the least score an entry needs to count as no bot.</summary>
+internal sealed record RecaptchaV3Settings
+{
+    /// <summary>The least score, from 0 (any) to 1 (certainly a person), a decimal written as text (ADR-0005).</summary>
+    [FormBuilderSetting("#jfbSettings_captchaThreshold", Description = "#jfbSettings_captchaThresholdHelp", Kind = FieldSettingKind.Number)]
+    [Range(typeof(decimal), "0", "1")]
+    public string Threshold { get; init; } = RecaptchaV3Provider.DefaultThreshold.ToString(CultureInfo.InvariantCulture);
+}
+
 /// <summary>hCaptcha (section 4.10).</summary>
 /// <param name="options">The host's keys.</param>
 /// <param name="transport">The calls to other hosts.</param>
@@ -231,6 +257,9 @@ internal sealed class HcaptchaProvider(IOptions<FormBuilderOptions> options, IFo
 
     /// <inheritdoc />
     public override string Name => ChosenAs;
+
+    /// <inheritdoc />
+    public override string Label => "hCaptcha";
 
     /// <inheritdoc />
     protected override FormBuilderCaptchaKeys Keys => options.Value.Captcha.Hcaptcha;

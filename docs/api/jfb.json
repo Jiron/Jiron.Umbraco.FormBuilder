@@ -1693,6 +1693,104 @@
         ]
       }
     },
+    "/umbraco/jfb/management/api/v1/captcha-provider": {
+      "get": {
+        "tags": [
+          "Form settings"
+        ],
+        "operationId": "CaptchaProviderList",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "oneOf": [
+                      {
+                        "$ref": "#/components/schemas/CaptchaProviderResponseModel"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The resource is protected and requires an authentication token"
+          },
+          "403": {
+            "description": "The authenticated user does not have access to this resource"
+          }
+        },
+        "security": [
+          {
+            "Backoffice-User": []
+          }
+        ]
+      }
+    },
+    "/umbraco/jfb/management/api/v1/form/{key}/setting-choices": {
+      "get": {
+        "tags": [
+          "Form settings"
+        ],
+        "operationId": "FormSettingsChoices",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/FormSettingsChoicesResponseModel"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The resource is protected and requires an authentication token"
+          },
+          "403": {
+            "description": "The authenticated user does not have access to this resource"
+          }
+        },
+        "security": [
+          {
+            "Backoffice-User": []
+          }
+        ]
+      }
+    },
     "/umbraco/jfb/management/api/v1/form": {
       "post": {
         "tags": [
@@ -6056,6 +6154,37 @@
         },
         "additionalProperties": false
       },
+      "CaptchaProviderResponseModel": {
+        "required": [
+          "isConfigured",
+          "label",
+          "name",
+          "settings"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "isConfigured": {
+            "type": "boolean"
+          },
+          "settings": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/FieldSettingResponseModel"
+                }
+              ]
+            }
+          }
+        },
+        "additionalProperties": false
+      },
       "ChecklistItemResponseModel": {
         "required": [
           "canDo",
@@ -7494,6 +7623,171 @@
         },
         "additionalProperties": false
       },
+      "FormSettingsChoicesResponseModel": {
+        "required": [
+          "defaults",
+          "limits",
+          "memberGroups",
+          "themes",
+          "timeZone"
+        ],
+        "type": "object",
+        "properties": {
+          "timeZone": {
+            "type": "string"
+          },
+          "defaults": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/FormSettingsDefaultsResponseModel"
+              }
+            ]
+          },
+          "themes": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/FormSettingsThemeResponseModel"
+                }
+              ]
+            }
+          },
+          "memberGroups": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/FormSettingsMemberGroupResponseModel"
+                }
+              ]
+            }
+          },
+          "limits": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/FormSettingsLimitsResponseModel"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "FormSettingsDefaultsResponseModel": {
+        "required": [
+          "contentRules",
+          "protection",
+          "requiredMarker",
+          "theme"
+        ],
+        "type": "object",
+        "properties": {
+          "protection": {
+            "type": "string"
+          },
+          "captchaProvider": {
+            "type": "string",
+            "nullable": true
+          },
+          "contentRules": {
+            "type": "string"
+          },
+          "requiredMarker": {
+            "type": "string"
+          },
+          "theme": {
+            "type": "string"
+          },
+          "submitLabel": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "nextLabel": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "backLabel": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "FormSettingsLimitsResponseModel": {
+        "required": [
+          "htmlLength",
+          "lineLength",
+          "nameLength",
+          "referenceDigits",
+          "verificationDays"
+        ],
+        "type": "object",
+        "properties": {
+          "lineLength": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "htmlLength": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "nameLength": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "verificationDays": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "referenceDigits": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "FormSettingsMemberGroupResponseModel": {
+        "required": [
+          "key",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "FormSettingsThemeResponseModel": {
+        "required": [
+          "alias",
+          "label"
+        ],
+        "type": "object",
+        "properties": {
+          "alias": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
       "FormVersionDocumentResponseModel": {
         "required": [
           "problems",
@@ -8798,6 +9092,9 @@
     },
     {
       "name": "Form check"
+    },
+    {
+      "name": "Form settings"
     },
     {
       "name": "Form"

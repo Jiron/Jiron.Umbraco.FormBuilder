@@ -31,7 +31,17 @@ internal sealed class DefinitionSaveChecks
     /// <summary>A theme's alias.</summary>
     public const int ThemeLength = 64;
 
-    private const int MaxDays = 36500;
+    /// <summary>The most days entries are kept or stored for.</summary>
+    public const int MaxDays = 36500;
+
+    /// <summary>The most days a verification link stays valid.</summary>
+    public const int MaxVerificationDays = 90;
+
+    /// <summary>The most days a resume link stays valid.</summary>
+    public const int MaxResumeDays = 365;
+
+    /// <summary>The most digits an entry reference pads its number to.</summary>
+    public const int MaxReferenceDigits = 10;
 
     // Each field inside a field and each rule group inside a rule group opens two levels of the document, an array and
     // an object, so a definition that nests more than half as deep as a document may is too deep for any reader.
@@ -275,12 +285,12 @@ internal sealed class DefinitionSaveChecks
         {
             var verificationPath = P(submissionPath, "verification");
             Reference(verification.EmailField, P(verificationPath, "emailField"));
-            Range(verification.Days, P(verificationPath, "days"), 1, 90);
+            Range(verification.Days, P(verificationPath, "days"), 1, MaxVerificationDays);
         }
 
         if (submission.Resume is { } resume)
         {
-            Range(resume.Days, P(P(submissionPath, "resume"), "days"), 1, 365);
+            Range(resume.Days, P(P(submissionPath, "resume"), "days"), 1, MaxResumeDays);
         }
 
         String(submission.EntryTitle, P(submissionPath, "entryTitle"), LineLength, singleLine: true);
@@ -288,7 +298,7 @@ internal sealed class DefinitionSaveChecks
         {
             var referencePath = P(submissionPath, "entryReference");
             String(reference.Prefix, P(referencePath, "prefix"), LineLength, singleLine: true);
-            Range(reference.Digits, P(referencePath, "digits"), 1, 10);
+            Range(reference.Digits, P(referencePath, "digits"), 1, MaxReferenceDigits);
         }
     }
 

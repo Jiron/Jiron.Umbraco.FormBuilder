@@ -80,6 +80,8 @@ public sealed class PermissionMatrixTests : ManagementApiTestBase
         ["GET canvas"] = (FormBuilderPermissions.None, FormBuilderAccessResourceKind.Global, null),
         ["GET option-source"] = (FormBuilderPermissions.None, FormBuilderAccessResourceKind.Global, null),
         ["GET option-list"] = (FormBuilderPermissions.None, FormBuilderAccessResourceKind.Global, null),
+        ["GET captcha-provider"] = (FormBuilderPermissions.None, FormBuilderAccessResourceKind.Global, null),
+        ["GET form/{key}/setting-choices"] = (FormBuilderPermissions.Design, FormBuilderAccessResourceKind.Form, "key"),
         ["POST form/{key}/options"] = (FormBuilderPermissions.Design, FormBuilderAccessResourceKind.Form, "key"),
         ["POST form/{key}/merge-tag-paths"] = (FormBuilderPermissions.Design, FormBuilderAccessResourceKind.Form, "key"),
         ["POST form/{key}/check"] = (FormBuilderPermissions.Design, FormBuilderAccessResourceKind.Form, "key"),

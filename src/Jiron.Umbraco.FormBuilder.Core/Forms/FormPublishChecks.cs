@@ -81,7 +81,11 @@ internal sealed class ActionPublishCheck(ActionTypeRegistry types) : IFormCheck
     }
 }
 
-/// <summary>Refuses a captcha provider the site lacks (ADR-0035, ADR-0142). One without its keys is the site's to mend, and its entries go to Spam until then.</summary>
+/// <summary>
+/// Refuses a captcha provider the site lacks (ADR-0035, ADR-0142), and settings its provider does not describe or whose
+/// value its description refuses (ADR-0184). One without its keys is the site's to mend, and its entries go to Spam until
+/// then.
+/// </summary>
 /// <param name="providers">The providers the site has.</param>
 internal sealed class CaptchaPublishCheck(FormBuilderCaptchaProviderCollection providers) : IFormPublishCheck
 {
@@ -89,9 +93,19 @@ internal sealed class CaptchaPublishCheck(FormBuilderCaptchaProviderCollection p
     public ValueTask<IReadOnlyList<DefinitionProblem>> CheckAsync(FormDefinition definition, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(definition);
-        IReadOnlyList<DefinitionProblem> problems = definition.Settings.Protection.Captcha is { } captcha && providers.Find(captcha.Provider) is null
-            ? [new DefinitionProblem(DefinitionErrors.UnknownType, "$.settings.protection.captcha.provider", $"The site has no captcha provider '{captcha.Provider}'.")]
-            : [];
-        return ValueTask.FromResult(problems);
+        if (definition.Settings.Protection.Captcha is not { } captcha)
+        {
+            return ValueTask.FromResult<IReadOnlyList<DefinitionProblem>>([]);
+        }
+
+        if (providers.Find(captcha.Provider) is not { } provider)
+        {
+            return ValueTask.FromResult<IReadOnlyList<DefinitionProblem>>(
+                [new DefinitionProblem(DefinitionErrors.UnknownType, "$.settings.protection.captcha.provider", $"The site has no captcha provider '{captcha.Provider}'.")]);
+        }
+
+        var problems = new DefinitionProblems();
+        FieldSettingsChecks.Check(providers.SchemaOf(provider), captcha.Settings, "$.settings.protection.captcha.settings", $"The captcha provider '{captcha.Provider}'", problems);
+        return ValueTask.FromResult(problems.ToReadOnlyList());
     }
 }

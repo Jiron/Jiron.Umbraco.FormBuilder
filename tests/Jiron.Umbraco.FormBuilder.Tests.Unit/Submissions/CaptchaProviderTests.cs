@@ -4,6 +4,7 @@ using System.Text;
 using System.Text.Json;
 using Jiron.Umbraco.FormBuilder.Core.Configuration;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
+using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Core.Outbound;
 using Jiron.Umbraco.FormBuilder.Core.Submissions;
 using Jiron.Umbraco.FormBuilder.Testing;
@@ -227,6 +228,38 @@ public sealed class CaptchaProviderTests
         }
 
         Assert.That(transport.Requests, Is.Empty);
+    }
+
+    [Test]
+    public void EachProvider_IsOfferedByItsLabel_AndOnlyV3_DescribesSettings_ItsThresholdFromZeroToOne()
+    {
+        var transport = Answering("""{"success":true}""");
+        var collection = new FormBuilderCaptchaProviderCollection(() => [Provider(V2, transport), Provider(V3, transport), Provider(H, transport)]);
+        var schemas = collection.ToDictionary(provider => provider.Name, collection.SchemaOf);
+        var threshold = schemas[V3].Find("threshold")!;
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(collection.Select(provider => provider.Label), Is.EqualTo(new[] { "reCAPTCHA v2", "reCAPTCHA v3", "hCaptcha" }));
+            Assert.That((schemas[V2].Settings, schemas[H].Settings), Is.EqualTo((FieldSettingsSchema.Empty.Settings, FieldSettingsSchema.Empty.Settings)));
+            Assert.That(schemas[V3].Settings.Select(setting => setting.Name), Is.EqualTo(new[] { "threshold" }));
+            Assert.That((threshold.Kind, threshold.Label, threshold.Description), Is.EqualTo((FieldSettingKind.Number, "#jfbSettings_captchaThreshold", "#jfbSettings_captchaThresholdHelp")));
+            Assert.That((threshold.Rules.Minimum, threshold.Rules.Maximum), Is.EqualTo(("0", "1")));
+            Assert.That(threshold.Default?.GetString(), Is.EqualTo("0.5"), "the default the provider reads, as settings write a decimal");
+            var scored = collection.Single(provider => provider.Name == V3);
+            Assert.That(collection.SchemaOf(scored), Is.SameAs(collection.SchemaOf(scored)).And.Not.SameAs(FieldSettingsSchema.Empty), "read once, a schema of its own");
+        });
+    }
+
+    [Test]
+    public void TheProvidersOffered_AreOnePerName_TheLastRegistered_InTheirOrder()
+    {
+        var transport = Answering("""{"success":true}""");
+        var replaced = Provider(V2, transport);
+        var replacement = Provider(V2, transport, keyed: false);
+        var collection = new FormBuilderCaptchaProviderCollection(() => [replaced, Provider(H, transport), replacement]);
+
+        Assert.That(collection.Offered(), Is.EqualTo(new IFormBuilderCaptchaProvider[] { collection.ElementAt(1), replacement }));
     }
 
     [Test]

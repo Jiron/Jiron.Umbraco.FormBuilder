@@ -1,0 +1,48 @@
+[
+  {
+    "name": "recaptchaV2",
+    "label": "reCAPTCHA v2",
+    "isConfigured": true,
+    "settings": []
+  },
+  {
+    "name": "recaptchaV3",
+    "label": "reCAPTCHA v3",
+    "isConfigured": false,
+    "settings": [
+      {
+        "name": "threshold",
+        "kind": "number",
+        "itemKind": null,
+        "choices": [],
+        "settings": [],
+        "default": "0.5",
+        "label": "#jfbSettings_captchaThreshold",
+        "description": "#jfbSettings_captchaThresholdHelp",
+        "editor": "number",
+        "group": "essentials",
+        "supportsMergeTags": false,
+        "isPublic": false,
+        "rules": {
+          "required": false,
+          "minimum": "0",
+          "minimumIsExclusive": false,
+          "maximum": "1",
+          "maximumIsExclusive": false,
+          "minimumLength": null,
+          "maximumLength": null,
+          "minimumCount": null,
+          "maximumCount": null,
+          "allowedValues": []
+        },
+        "lock": null
+      }
+    ]
+  },
+  {
+    "name": "hcaptcha",
+    "label": "hCaptcha",
+    "isConfigured": false,
+    "settings": []
+  }
+]
