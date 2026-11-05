@@ -138,7 +138,7 @@ test('the badge counts the problems, the sidebar lists them errors first, and Fi
   await expect(builder).toHaveCount(0);
   await expect(design.locator('jfb-designer-inspector h2')).toHaveText('Long text field');
 
-  // From the publish dialog, the theme's Fix it opens Settings, where the form's settings are edited.
+  // From the publish dialog, the theme's Fix it opens Settings on the theme, with the warning under it (ADR-0184).
   await page.getByRole('button', { name: 'Publish' + String.fromCharCode(0x2026) }).click();
   const dialog = page.locator('jfb-publish-modal');
   await expect(dialog.locator('.note.warning .lead')).toHaveText(
@@ -147,6 +147,11 @@ test('the badge counts the problems, the sidebar lists them errors first, and Fi
   await dialog.getByRole('button', { name: 'Fix it: Form settings' }).click();
   await expect(dialog).toHaveCount(0);
   await expect(page).toHaveURL(/\/view\/settings$/);
+  const settings = page.locator('jfb-form-settings-view');
+  await expect(settings.locator('#theme')).toBeFocused();
+  await expect(settings.locator('#theme-why-0')).toHaveText(
+    'Warning: The site has no theme "retired", so the form shows with the default theme.',
+  );
 });
 
 test("a blank form's one error opens the palette, blocks Publish with Fix it, and a warning alone publishes", async ({

@@ -40,6 +40,18 @@ export interface EditorContext {
   readonly set: (path: string, setting: FieldSettingResponseModel, parsed: Parsed, done: boolean) => void;
   /** "Insert merge tag" under the box of a setting that takes tags, which puts a tag into it (ADR-0173). */
   readonly mergeTags?: (setting: FieldSettingResponseModel, path: string) => TemplateResult | typeof nothing;
+  /**
+   * What the form check found at a box, by its id: the ids that describe the box, the lines that say it, and whether
+   * one is an error. Said under the box, it never holds what the box shows, as a value typed that can't be kept does.
+   */
+  readonly found?: (id: string) => Found | undefined;
+}
+
+/** What the form check found at a box, as an editor says it. */
+export interface Found {
+  readonly ids: readonly string[];
+  readonly lines: TemplateResult | typeof nothing;
+  readonly error: boolean;
 }
 
 /** The units of a date's limit from today, in their order. */
@@ -155,18 +167,20 @@ function frame(
   context: EditorContext,
   setting: FieldSettingResponseModel,
   path: string,
-  box: (described: string | undefined, invalid: boolean) => TemplateResult,
+  box: (described: string | undefined, invalid: boolean, held: boolean) => TemplateResult,
   extra?: string,
 ): TemplateResult {
   const id = boxId(path);
   const problem = context.problems.get(id);
+  const found = context.found?.(id);
   const help = setting.description ? `${id}-help` : undefined;
   const why = problem ? `${id}-why` : undefined;
-  const described = [help, extra, why].filter(Boolean).join(' ') || undefined;
+  const described = [help, extra, why, ...(found?.ids ?? [])].filter(Boolean).join(' ') || undefined;
   return html`<div class="item">
     <label class="label" for=${id}>${context.say(setting.label)}</label>
     ${help ? html`<p class="help" id=${help}>${context.say(setting.description)}</p>` : nothing}
-    ${box(described, problem !== undefined)} ${problem ? html`<p class="why" id=${why ?? ''}>${problem}</p>` : nothing}
+    ${box(described, problem !== undefined || (found?.error ?? false), problem !== undefined)}
+    ${problem ? html`<p class="why" id=${why ?? ''}>${problem}</p>` : nothing} ${found?.lines ?? nothing}
     ${setting.supportsMergeTags ? (context.mergeTags?.(setting, path) ?? nothing) : nothing}
   </div>`;
 }
@@ -230,7 +244,7 @@ export function settingEditor(
         context,
         setting,
         path,
-        (described, invalid) =>
+        (described, invalid, held) =>
           html`<input
             type="text"
             id=${id}
@@ -239,7 +253,7 @@ export function settingEditor(
             placeholder=${isDefault ? nothing : textIn(texts, context.defaultCulture) || nothing}
             aria-describedby=${described ?? nothing}
             aria-invalid=${invalid ? 'true' : 'false'}
-            .value=${boxValue(isDefault ? textIn(texts, context.culture) : ownText(texts, context.culture), invalid)}
+            .value=${boxValue(isDefault ? textIn(texts, context.culture) : ownText(texts, context.culture), held)}
             @input=${(event: Event) => typed((event.target as HTMLInputElement).value, false)}
             @change=${(event: Event) => typed((event.target as HTMLInputElement).value, true)}
           />`,
@@ -254,7 +268,7 @@ export function settingEditor(
         context,
         setting,
         path,
-        (described, invalid) =>
+        (described, invalid, held) =>
           html`<input
             type=${setting.editor === 'time' ? 'time' : 'text'}
             id=${id}
@@ -264,7 +278,7 @@ export function settingEditor(
             autocomplete="off"
             aria-describedby=${described ?? nothing}
             aria-invalid=${invalid ? 'true' : 'false'}
-            .value=${boxValue(asText(value), invalid)}
+            .value=${boxValue(asText(value), held)}
             @input=${(event: Event) => typed((event.target as HTMLInputElement).value, false)}
             @change=${(event: Event) => typed((event.target as HTMLInputElement).value, true)}
           />`,
@@ -453,14 +467,14 @@ function textList(context: EditorContext, setting: FieldSettingResponseModel, va
     context,
     setting,
     path,
-    (described, invalid) =>
+    (described, invalid, held) =>
       html`<textarea
           id=${id}
           rows="3"
           spellcheck="false"
           aria-describedby=${described ?? nothing}
           aria-invalid=${invalid ? 'true' : 'false'}
-          .value=${boxValue(lines, invalid)}
+          .value=${boxValue(lines, held)}
           @input=${(event: Event) => typed((event.target as HTMLTextAreaElement).value, false)}
           @change=${(event: Event) => typed((event.target as HTMLTextAreaElement).value, true)}
         ></textarea>

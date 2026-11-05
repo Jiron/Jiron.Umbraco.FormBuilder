@@ -171,10 +171,18 @@ class StandIn {
   /** A Fix it asked from the publish dialog. */
   readonly fixes = new UmbBasicState<FixTarget | null>(null);
   readonly fixRequest = this.fixes.asObservable();
-  takeFix = (): FixTarget | null => {
+  requestFix = (target: FixTarget) => this.fixes.setValue(target);
+  takeFix = (makes: (target: FixTarget) => boolean): FixTarget | null => {
     const target = this.fixes.getValue();
+    if (!target || !makes(target)) return null;
     this.fixes.setValue(null);
     return target;
+  };
+  /** The language the views show, as a switch chose it. */
+  language: string | null = null;
+  getLanguage = () => this.language;
+  setLanguage = (culture: string | null) => {
+    this.language = culture;
   };
 
   edit(edit: Edit, said: string, merge?: string): Edit {
@@ -209,8 +217,9 @@ class Toasts {
   }
 }
 
-async function viewOf(definition = DEFINITION) {
+async function viewOf(definition = DEFINITION, language: string | null = null) {
   const workspace = new StandIn(definition);
+  workspace.language = language;
   const toasts = new Toasts();
   const host = testHost();
   workspace.host = host;
@@ -1390,13 +1399,22 @@ describe('the inspector in the Design view', () => {
 
   it('shows the language chosen on a site with two, in the canvas and the inspector', async () => {
     reading.german = true;
-    const { view, ask, canvas } = await viewOf();
+    const { view, ask, canvas, workspace } = await viewOf();
     await ask({ kind: 'select', key: 'name' });
     await ask({ kind: 'culture', culture: 'de-DE' });
     await settle(view);
     expect(reading.cultures).toEqual([undefined, 'de-DE']);
     expect((canvas as unknown as { look: { culture: string } }).look.culture).toBe('de-DE');
     expect((inspectorOf(view) as unknown as { culture: string }).culture).toBe('de-DE');
+    expect(workspace.language, 'kept for the Settings view').toBe('de-DE');
+  });
+
+  it('opens in the language the Settings view chose', async () => {
+    reading.german = true;
+    const { view, canvas } = await viewOf(DEFINITION, 'de-DE');
+    await settle(view);
+    expect(reading.cultures.at(-1)).toBe('de-DE');
+    expect((canvas as unknown as { look: { culture: string } }).look.culture).toBe('de-DE');
   });
 
   it('keeps the element shortcuts out of the inspector, where Delete in a box would take the field, and Escape lets go', async () => {
@@ -1775,12 +1793,22 @@ describe('the form check in the Design view (ADR-0181)', () => {
   });
 
   it("leads to the views where the form's settings and actions are edited, and nowhere for an element gone", async () => {
-    const { ask, state } = await viewOf();
+    const { ask, state, workspace } = await viewOf();
     const before = window.location.pathname;
     history.replaceState(null, '', '/umbraco/section/jfb-forms/workspace/jfb-form/edit/form1/view/design');
-    opened.value = answering({ kind: 'view', view: 'actions' });
+    const target: FixTarget = { kind: 'view', view: 'settings', path: '$.settings.appearance.theme' };
+    opened.value = answering(target);
+    await ask({ kind: 'formCheck' });
+    expect(window.location.pathname).toBe('/umbraco/section/jfb-forms/workspace/jfb-form/edit/form1/view/settings');
+    // Handed on to the view that makes it, which this view leaves for it.
+    expect(workspace.fixes.getValue()).toEqual(target);
+    workspace.fixes.setValue(null);
+    history.replaceState(null, '', '/umbraco/section/jfb-forms/workspace/jfb-form/edit/form1/view/design');
+    // The Actions view, still to come, is shown, and handed nothing it would make long after.
+    opened.value = answering({ kind: 'view', view: 'actions', path: '$.actions[0]' });
     await ask({ kind: 'formCheck' });
     expect(window.location.pathname).toBe('/umbraco/section/jfb-forms/workspace/jfb-form/edit/form1/view/actions');
+    expect(workspace.fixes.getValue()).toBeNull();
     history.replaceState(null, '', before);
 
     opened.value = answering({ kind: 'element', key: 'gone' });

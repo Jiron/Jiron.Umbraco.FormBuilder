@@ -37,6 +37,19 @@ export const COMBOS: readonly Combo[] = WINDOWS.flatMap((window) =>
 /** A combination's folder name, for example `375-dark-de`. */
 export const comboName = (combo: Combo): string => `${combo.width}-${combo.theme}-${combo.language}`;
 
+/**
+ * Whether the walk shoots a screen: every screen, or with `JFB_UX_ONLY` only those whose names start with one of its
+ * comma-separated prefixes, so a step looks at its own screens without the whole walk.
+ */
+export const wantedScreen = (screen: string, env: NodeJS.ProcessEnv = process.env): boolean => {
+  const only =
+    env['JFB_UX_ONLY']
+      ?.split(',')
+      .map((prefix) => prefix.trim())
+      .filter(Boolean) ?? [];
+  return only.length === 0 || only.some((prefix) => screen.startsWith(prefix));
+};
+
 /** Where a walk writes: `JFB_UX_OUT`, or `.local/ux/latest`. */
 export const walkDir = (env: NodeJS.ProcessEnv = process.env): string =>
   env['JFB_UX_OUT'] ?? join(e2eState, '..', 'ux', 'latest');

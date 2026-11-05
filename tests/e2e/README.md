@@ -83,6 +83,17 @@ config with its first spec.
 | `startup`    | sites that must not start: an invalid host configuration and invariant globalization each stop the demo with a message that says what to change (ADR-0042). No browser: each test runs the demo in a process of its own on 5526 or 5527, without a database, and reads its log                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `budgets`    | section 4.12's interaction budgets, alone and after every other project (one worker): a form of 300 fields keeps every designer interaction and every frame under 100 ms, as Event Timing and Long Animation Frames measure them (ADR-0169)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 
+## The UX walk
+
+A phase review's walk (ROADMAP 9.6a, `specs/ux/walk.spec.ts`) shoots every screen of the backoffice at three widths, in
+the light and dark themes, in English and German, with what axe and the layout measures found; the `ux-sheets`
+project puts each screen's twelve shots on one sheet. Both join the config only with `JFB_E2E_UX=1`.
+
+| Variable      | Effect                                                                                          |
+| ------------- | ----------------------------------------------------------------------------------------------- |
+| `JFB_UX_OUT`  | where the shots, reports and sheets go (default `.local/ux/latest`)                             |
+| `JFB_UX_ONLY` | only the screens whose names start with one of its comma-separated prefixes, such as `settings` |
+
 ## Checks and output
 
 - `npm run check`: the type check, the formatting and the support tests. `npm run fix` formats.

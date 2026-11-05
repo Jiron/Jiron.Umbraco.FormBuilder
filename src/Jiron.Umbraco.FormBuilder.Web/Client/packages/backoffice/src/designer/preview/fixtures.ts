@@ -1,13 +1,14 @@
 // The fixtures the preview tests draw with (ADR-0168), one source each: the canvas endpoint's answer in
 // docs/api/canvas.json, the field types in docs/api/field-types.json and some of their changes in
 // docs/api/field-type-changes.json, the option sources in
-// docs/api/option-sources.json, the sink's draft in
+// docs/api/option-sources.json, the captcha providers in docs/api/captcha-providers.json, the sink's draft in
 // tests/fixtures/rendering/designer-sink.json and the server's markup of the same sink in element-en.json.
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type {
   CanvasResponseModel,
+  CaptchaProviderResponseModel,
   FieldTypeChangesResponseModel,
   FieldTypesResponseModel,
   OptionSourcesResponseModel,
@@ -38,6 +39,9 @@ export const builtInChanges = json<Record<string, FieldTypeChangesResponseModel>
 
 /** The kinds a field may take its options from and the standard lists, as docs/api/option-sources.json has them. */
 export const optionSources = json<OptionSourcesResponseModel>('docs', 'api', 'option-sources.json');
+
+/** The captcha providers, as the Settings view reads them on a site with reCAPTCHA v2's keys. */
+export const captchaProviders = json<CaptchaProviderResponseModel[]>('docs', 'api', 'captcha-providers.json');
 
 /** The sink: a field of every built-in type, a repeatable group holding one of each, and a captcha. */
 export const sink: DesignDefinition = normalise(

@@ -105,8 +105,11 @@ export class FormWorkspaceContext
 
   readonly #fix = new UmbBasicState<FixTarget | null>(null);
 
-  /** A Fix it asked from outside the Design view, which it takes up once it is shown (ADR-0181). */
+  /** A Fix it asked from outside the view that makes it, which that view takes up once it is shown (ADR-0181). */
   readonly fixRequest = this.#fix.asObservable();
+
+  /** The language the views show the form's texts in, as its switch chose it; null for the site's default. */
+  #language: string | null = null;
 
   /** What the editor model asks of the workspace: the field types, fresh keys and the calculation language. */
   readonly model: ModelContext = {
@@ -349,16 +352,30 @@ export class FormWorkspaceContext
     return this.canDesign() ? this.#checker.now(this.#history.state.definition) : Promise.resolve();
   }
 
-  /** Asks the Design view for a Fix it, from the publish dialog; the view takes it up once it is shown. */
+  /**
+   * Asks for a Fix it, from the publish dialog or from a view that leads to another: the view that makes it takes it up
+   * once it is shown, the Settings view a problem in the form's settings, the Design view any other.
+   */
   requestFix(target: FixTarget) {
     this.#fix.setValue(target);
   }
 
-  /** The Fix it asked, which the Design view takes once, so it is made once. */
-  takeFix(): FixTarget | null {
+  /** The Fix it asked, if it is one the view asking makes, which it takes once, so it is made once. */
+  takeFix(makes: (target: FixTarget) => boolean): FixTarget | null {
     const target = this.#fix.getValue();
+    if (!target || !makes(target)) return null;
     this.#fix.setValue(null);
     return target;
+  }
+
+  /** The language the views show the form's texts in, as the switch of either chose it; null for the site's default. */
+  getLanguage(): string | null {
+    return this.#language;
+  }
+
+  /** Keeps the language a view's switch chose, so the other view shows the texts in it too (ADR-0184). */
+  setLanguage(culture: string | null) {
+    this.#language = culture;
   }
 
   override destroy() {

@@ -115,8 +115,11 @@ export type FixTarget =
   | { readonly kind: 'rule'; readonly key: string; readonly rule: string }
   /** The palette, to add at the end of the page; to a new page where the form has none. */
   | { readonly kind: 'palette'; readonly page: string | null }
-  /** A view of the form where the place is edited: its settings and outcomes, or its actions. */
-  | { readonly kind: 'view'; readonly view: 'settings' | 'actions' };
+  /**
+   * A view of the form where the place is edited: its settings and outcomes, or its actions, with the problem's path,
+   * which that view leads to (ADR-0184).
+   */
+  | { readonly kind: 'view'; readonly view: 'settings' | 'actions'; readonly path: string };
 
 /** A field's properties that the inspector edits, by their name in the definition. */
 const FIELD_ITEMS: Readonly<Record<string, InspectorItem>> = {
@@ -225,8 +228,8 @@ export function fixOf(definition: DesignDefinition, path: string, types?: CheckT
   const steps = parsePath(path);
   if (!steps || steps.length === 0) return null;
   const [top, ...after] = steps;
-  if (top === 'settings' || top === 'outcomes') return { kind: 'view', view: 'settings' };
-  if (top === 'actions') return { kind: 'view', view: 'actions' };
+  if (top === 'settings' || top === 'outcomes') return { kind: 'view', view: 'settings', path };
+  if (top === 'actions') return { kind: 'view', view: 'actions', path };
   if (top === 'validationRules') return validationFix(definition, after);
   if (top !== 'pages') return null;
   const [pageIndex, ...inPage] = after;

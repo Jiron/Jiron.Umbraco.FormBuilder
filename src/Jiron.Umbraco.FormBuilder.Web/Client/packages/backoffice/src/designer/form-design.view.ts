@@ -31,7 +31,7 @@ import {
 import { bySeverity, type FixTarget } from './check/form-check';
 import type { CheckState } from './check/form-checker';
 import { FORM_CHECK_MODAL } from './check/form-check.modal.token';
-import { goToView } from './form-views';
+import { FIXING_VIEWS, goToView } from './form-views';
 import { CANVAS_WIDTHS, type CanvasWidth } from './canvas/widths';
 import { isDragging } from './drag/pointer-drag';
 import type { FormCanvasElement } from './canvas/form-canvas.element';
@@ -433,6 +433,12 @@ export class FormDesignViewElement extends UmbLitElement {
     this._badge = { kind: 'none' };
     this.consumeContext(FORM_WORKSPACE_CONTEXT, (context) => {
       this.#context = context;
+      // The language the Settings view's switch chose, which this view shows too.
+      const kept = context?.getLanguage() ?? null;
+      if (kept !== this._culture) {
+        this._culture = kept;
+        void this.#readLook();
+      }
       this.observe(context?.editor, (view) => this.#viewChanged(view), 'editor');
       this.observe(context?.fieldTypes, (types) => (this._types = types ?? {}), 'types');
       this.observe(context?.paletteGroups, (groups) => (this._groups = groups ?? []), 'groups');
@@ -850,6 +856,7 @@ export class FormDesignViewElement extends UmbLitElement {
         return;
       case 'culture':
         this._culture = request.culture;
+        this.#context?.setLanguage(request.culture);
         await this.#readLook();
         return;
     }
@@ -1405,10 +1412,11 @@ export class FormDesignViewElement extends UmbLitElement {
     await this.#fix(value.fix);
   }
 
-  // A Fix it the publish dialog asked for, made once the canvas can show it: its look is read.
+  // A Fix it the publish dialog asked for, made once the canvas can show it: its look is read. One in the form's
+  // settings or actions is the other view's.
   async #fixPending() {
     if (!this._look) return;
-    const target = this.#context?.takeFix();
+    const target = this.#context?.takeFix((one) => one.kind !== 'view');
     if (target) await this.#fix(target);
   }
 
@@ -1423,6 +1431,7 @@ export class FormDesignViewElement extends UmbLitElement {
     this.#shownLink = true;
     if (this._open) this.#closePalette();
     if (target.kind === 'view') {
+      if (FIXING_VIEWS.has(target.view)) this.#context?.requestFix(target);
       goToView(target.view);
       return;
     }

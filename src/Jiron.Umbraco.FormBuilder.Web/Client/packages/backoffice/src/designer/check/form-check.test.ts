@@ -230,9 +230,17 @@ describe("a problem's Fix it", () => {
   });
 
   it("leads to the view where the form's settings, outcomes and actions are edited", () => {
-    expect(fix('$.settings.appearance.theme')).toEqual({ kind: 'view', view: 'settings' });
-    expect(fix('$.outcomes[1].rules[0]')).toEqual({ kind: 'view', view: 'settings' });
-    expect(fix('$.actions[0].settings.replyToField')).toEqual({ kind: 'view', view: 'actions' });
+    expect(fix('$.settings.appearance.theme')).toEqual({
+      kind: 'view',
+      view: 'settings',
+      path: '$.settings.appearance.theme',
+    });
+    expect(fix('$.outcomes[1].rules[0]')).toEqual({ kind: 'view', view: 'settings', path: '$.outcomes[1].rules[0]' });
+    expect(fix('$.actions[0].settings.replyToField')).toEqual({
+      kind: 'view',
+      view: 'actions',
+      path: '$.actions[0].settings.replyToField',
+    });
   });
 
   it('leads nowhere for the whole form, a place the form no longer has, or a path the server does not write', () => {

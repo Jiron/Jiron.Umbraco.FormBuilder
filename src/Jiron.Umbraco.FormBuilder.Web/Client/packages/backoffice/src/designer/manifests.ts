@@ -23,14 +23,19 @@ import { RULES_OVERVIEW_MODAL_ALIAS } from './rules/rules-overview.modal.token';
 const IN_FORM_WORKSPACE = { alias: 'Umb.Condition.WorkspaceAlias', match: FORM_WORKSPACE_ALIAS };
 const holding = (...anyOf: string[]) => ({ alias: FORM_PERMISSION_CONDITION, anyOf });
 
-/** The views in their order, with who sees each: the first one a user sees is where the form opens. */
-const VIEWS: readonly { id: string; icon: string; anyOf: string[]; ready: boolean }[] = [
-  { id: FIRST_VIEW, icon: 'icon-layout', anyOf: ['design'], ready: true },
-  { id: 'settings', icon: 'icon-settings', anyOf: ['design'], ready: false },
-  { id: 'actions', icon: 'icon-lightning', anyOf: ['design', 'manageActions'], ready: false },
-  { id: 'entries', icon: 'icon-inbox', anyOf: ['viewEntries'], ready: false },
-  { id: 'insights', icon: 'icon-chart', anyOf: ['viewEntries'], ready: false },
-  { id: 'history', icon: 'icon-history', anyOf: ['design'], ready: false },
+type ViewElement = NonNullable<Extract<UmbExtensionManifest, { type: 'workspaceView' }>['element']>;
+
+/**
+ * The views in their order, with who sees each and the element of each view built: the first one a user sees is where
+ * the form opens.
+ */
+const VIEWS: readonly { id: string; icon: string; anyOf: string[]; element?: ViewElement }[] = [
+  { id: FIRST_VIEW, icon: 'icon-layout', anyOf: ['design'], element: () => import('./form-design.view') },
+  { id: 'settings', icon: 'icon-settings', anyOf: ['design'], element: () => import('./settings/form-settings.view') },
+  { id: 'actions', icon: 'icon-lightning', anyOf: ['design', 'manageActions'] },
+  { id: 'entries', icon: 'icon-inbox', anyOf: ['viewEntries'] },
+  { id: 'insights', icon: 'icon-chart', anyOf: ['viewEntries'] },
+  { id: 'history', icon: 'icon-history', anyOf: ['design'] },
 ];
 
 const pascal = (id: string): string => id.charAt(0).toUpperCase() + id.slice(1);
@@ -115,7 +120,7 @@ export const manifests: UmbExtensionManifest[] = [
     type: 'workspaceView',
     alias: `Jiron.FormBuilder.WorkspaceView.Form.${pascal(view.id)}`,
     name: `Jiron Form Builder form ${view.id} view`,
-    element: view.ready ? () => import('./form-design.view') : () => import('../section/coming-screen.element'),
+    element: view.element ?? (() => import('../section/coming-screen.element')),
     // Umbraco puts the higher weight first.
     weight: (VIEWS.length - index) * 100,
     meta: { label: `#jfbDesigner_view_${view.id}`, pathname: view.id, icon: view.icon },

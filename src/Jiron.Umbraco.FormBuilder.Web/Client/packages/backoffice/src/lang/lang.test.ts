@@ -1,7 +1,8 @@
 // The backoffice's dictionaries (ADR-0057): English and German hold the same keys, each a text that is not blank (or
 // a function of the values that gives one); they hold every `#` key the management API serves for the built-in field
-// types, action types and option sources, as docs/api/field-types.json, action-types.json and option-sources.json (the
-// snapshots integration tests hold the endpoints to) have them (ADR-0172); they hold
+// types, action types, option sources and captcha providers, as docs/api/field-types.json, action-types.json,
+// option-sources.json and captcha-providers.json (the snapshots integration tests hold the endpoints to) have them
+// (ADR-0172, ADR-0184); they hold
 // every `#jfbPicker_` key the form picker's checks send (ADR-0129), and its area no other; the form picker's screens
 // (ADR-0134, ADR-0135) hold the keys their elements and manifests use, and no other; and the field types' areas hold no
 // key nothing uses.
@@ -44,6 +45,7 @@ function keysIn(value: unknown, found = new Set<string>()): Set<string> {
 
 const served = keysIn(JSON.parse(readFileSync(join(repositoryRoot(), 'docs', 'api', 'field-types.json'), 'utf8')));
 keysIn(JSON.parse(readFileSync(join(repositoryRoot(), 'docs', 'api', 'action-types.json'), 'utf8')), served);
+keysIn(JSON.parse(readFileSync(join(repositoryRoot(), 'docs', 'api', 'captcha-providers.json'), 'utf8')), served);
 const optionKeys = keysIn(
   JSON.parse(readFileSync(join(repositoryRoot(), 'docs', 'api', 'option-sources.json'), 'utf8')),
 );

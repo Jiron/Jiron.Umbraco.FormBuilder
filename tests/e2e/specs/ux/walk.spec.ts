@@ -11,6 +11,7 @@ import {
   LANGUAGE_CODES,
   splitAxe,
   walkDir,
+  wantedScreen,
   type AxeNode,
   type Combo,
   type ShotReport,
@@ -122,6 +123,7 @@ class Walk {
 
   /** Reaches a screen, shoots it and measures it; a screen the walk cannot reach is noted, and the walk goes on. */
   async shot(screen: string, reach: () => Promise<void>, page = this.page): Promise<void> {
+    if (!wantedScreen(screen)) return;
     try {
       await reach();
       await settle(page);
@@ -196,6 +198,18 @@ async function seed(api: APIRequestContext, label: string, importPath: string) {
   const volunteer = await duplicate(api, (await demoForm(api, 'volunteer')).key, name('volunteer'));
   const blankName = name('blank');
   const blank = await blankForm(api, blankName);
+  // A form for some member groups that names none, so its Settings view shows the check's problem under the setting.
+  const grouped = await blankForm(api, name('members'));
+  const groupedDraft = (await (await api.get(`${API}/form/${grouped}/draft`)).json()) as {
+    form: { concurrencyVersion: number };
+    definition: { settings: Record<string, Record<string, unknown>> };
+  };
+  const groupedSettings = groupedDraft.definition.settings;
+  groupedSettings['availability'] = { ...groupedSettings['availability'], members: 'groups' };
+  const groupedSaved = await api.put(`${API}/form/${grouped}/draft`, {
+    data: { concurrencyVersion: groupedDraft.form.concurrencyVersion, definition: groupedDraft.definition },
+  });
+  expect(groupedSaved.ok(), await groupedSaved.text()).toBe(true);
   const restrictedName = name('salaries');
   const restricted = await contactForm(api, restrictedName);
   const restricting = await api.post('/jfb-testing/form-restriction', { data: { form: restricted, restricted: true } });
@@ -224,6 +238,7 @@ async function seed(api: APIRequestContext, label: string, importPath: string) {
     volunteerFields: await fieldsOf(api, volunteer),
     blank,
     blankName,
+    grouped,
     restrictedName,
     sourceName,
     targetName,
@@ -572,8 +587,41 @@ for (const combo of COMBOS) {
         page.locator('jfb-form-design-view jfb-form-canvas :is(.bo-empty-group, .bo-add-field)').first(),
       ).toBeVisible();
     });
+
+    // The Settings view (10.1a): Submission open with the others closed, More options, each other group opened in
+    // turn, and the form check's problem under its setting.
+    const settingsView = page.locator('jfb-form-settings-view');
+    const openSettings = async (key: string) => {
+      await page.goto(`${workspaceOf(key)}/view/settings`);
+      await expect(settingsView.locator('#group-submission')).toBeVisible();
+    };
+    const openSettingsGroup = async (group: string) => {
+      const head = settingsView.locator(`#group-${group}`);
+      if ((await head.getAttribute('aria-expanded')) !== 'true') await head.click();
+      await expect(head).toHaveAttribute('aria-expanded', 'true');
+      await scrollTo(head);
+    };
+    await walk.shot('settings', async () => {
+      await openSettings(made.feedback);
+    });
+    await walk.shot('settings-more', async () => {
+      await openSettings(made.feedback);
+      await settingsView.locator('.more-toggle').click();
+      await scrollTo(settingsView.locator('#reference-prefix'));
+    });
+    for (const group of ['availability', 'protection', 'appearance', 'developer'])
+      await walk.shot(`settings-${group}`, async () => {
+        await openSettings(made.feedback);
+        await openSettingsGroup(group);
+      });
+    await walk.shot('settings-problem', async () => {
+      await openSettings(made.grouped);
+      await openSettingsGroup('availability');
+      await expect(settingsView.locator('#member-groups-why-0')).toBeVisible();
+      await scrollTo(settingsView.locator('#member-groups'));
+    });
     await walk.shot('view-coming', async () => {
-      await page.goto(`${workspaceOf(made.feedback)}/view/settings`);
+      await page.goto(`${workspaceOf(made.feedback)}/view/actions`);
       await expect(page.locator('jfb-coming-screen')).toBeVisible();
     });
 

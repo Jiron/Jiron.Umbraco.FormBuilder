@@ -264,7 +264,17 @@ flowchart LR
   `logicOf`), so the overview says a conflict only where the engine finds one; Core's `RuleSearch` is the same in C#,
   held to the shared vectors of `tests/vectors/search.json`. The editor model's delete takes the validation rules that show their message on what it
   deletes along, and the structure check refuses a validation rule on a field the visitor's page has no comparable
-  answer of, which both runtimes would refuse the whole form for.
+  answer of, which both runtimes would refuse the whole form for. From 10.1a (ADR-0184): `settings/` holds the form's
+  Settings view, the groups of section 4.3.4 on one page: `settings-model.ts` reads each group with the model's
+  defaults, writes a setting back where it was as the server writes its canonical form, says where a path of the
+  settings is in the view (`anchorOf`) and the line a closed group says, pure; `time-zone.ts` turns a time on the
+  site's clock into the UTC instant the definition stores and back, with the browser's own time zone data; and
+  `form-settings.view.ts` draws the groups with the boxes' look the inspector has (`inspector/control.styles.ts`) and
+  its editors for a captcha provider's own settings. The site's choices come from the management API:
+  `form/{key}/setting-choices` for who may design the form (the defaults "Site default" names, the site's button
+  labels, the time zone, the themes, the member groups and the save checks' bounds) and `captcha-provider` (each
+  provider's label, whether it has its keys, never a key, and its settings). The workspace keeps the language either
+  view's switch chose, and hands each Fix it to the view that makes it (`FIXING_VIEWS`).
 
 ## 2. The definition model
 
@@ -330,7 +340,8 @@ Text        LocalizedText: culture → text, "" is the default; "#key" reads the
   publish dialog, says each problem in the user's language from its code (`check-words.ts`, the server's sentence for the
   six codes whose words only it has), and reads each path against the definition checked for Fix it (`form-check.ts`):
   the element with the inspector on the item, the rules builder on a rule, the palette for a page without fields, or
-  the Settings and Actions views.
+  the Settings and Actions views with the problem's path, which the Settings view leads to its setting (10.1a,
+  ADR-0184); a captcha provider's own settings are held to what it describes (`CaptchaPublishCheck`).
 - **The History** ([ADR-0045](decisions/0045-versions-comparison-and-draft-cleanup.md)) lists the publishes, or every
   version, newest first, each with what changed since the version before it (a publish since the publish before).
   The comparison matches elements by key, settings groups by name, and gives each change its path of properties with
@@ -739,7 +750,7 @@ names and traits are read once, at start-up
 | `IFormBuilderActionType` (`FormBuilderActionTypeBase<TSettings>`) | an action with settings, a test run and retries | ADR-0007 |
 | `IFormBuilderOptionSource` | options from code, with parent filtering, by a name start-up checks; the standard lists are sources a site may replace or remove | ADR-0002, ADR-0073 |
 | `IFormBuilderExportFormat` | an export | §4.9 |
-| `IFormBuilderCaptchaProvider` | a captcha a form can choose, through `CaptchaProviders()`; the last of a name wins, so a site can replace a built-in one; one that fails or lost its keys sends the entry to Spam | ADR-0012, ADR-0142 |
+| `IFormBuilderCaptchaProvider` | a captcha a form can choose, through `CaptchaProviders()`; the last of a name wins, so a site can replace a built-in one; one that fails or lost its keys sends the entry to Spam; its `Label` names it in the backoffice, and its `SettingsType` describes the settings a form gives it with the attributes a field type's settings use | ADR-0012, ADR-0142, ADR-0184 |
 | `IFormBuilderSpamCheck` | a spam signal with a score and a reason, through `SpamChecks()`; one that fails or takes over 5 seconds counts for nothing | ADR-0012, ADR-0140 |
 | `IFormBuilderMergeTagSource`, `IFormBuilderMergeTagFilter` | merge-tag sources and filters of a site's own, in the places their traits allow | ADR-0014, ADR-0065 |
 | `IFormBuilderFileScanner` | scanning and quarantine, through `FileScanners()`: asked in the background; any scanner's quarantine decides, and one that fails or takes over 5 minutes leaves the file waiting | ADR-0006, ADR-0144 |

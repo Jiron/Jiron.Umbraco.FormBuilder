@@ -338,7 +338,14 @@ Appearance, Developer.
   until 30 November · 120 entries at most").
 - **Submission** shows five settings: the send button's label, Store entries, Manual approval, Email verification and
   the entry title (with its merge-tag picker). Its "More options" holds the settings of forms with several pages (the
-  labels of Next and Back, Summary page, Progress, Save and continue later) and the entry reference prefix.
+  labels of Next and Back, Summary page, Progress, Save and continue later) and the entry reference: its prefix, the
+  year and the digits, with an example of a reference visitors get.
+- **Availability** names the site's time zone once, on whose clock the opening and the closing are shown and typed.
+- **Spam protection** is a list of choices with a line each: "Site default (Standard)" names what the site chooses, and a
+  captcha provider without its keys is dimmed, its line saying that a developer adds them. A chosen provider's own
+  settings follow it (reCAPTCHA v3's lowest score).
+- **Problems:** the form check's problems in the settings show under their setting, a closed group counts them on its
+  line, and Fix it opens the group, and More options where the setting is there, with the focus on it (ADR-0184).
 - **Help:** each setting has its help text below it and, where useful, "Learn more".
 - **The outcomes** (After sending) are an ordered list, each with an optional rule; visitors get the first one whose
   rule matches. A row's move handle ("Move Redirect to /press/thanks") shows on hover and on focus (ADR-0016).

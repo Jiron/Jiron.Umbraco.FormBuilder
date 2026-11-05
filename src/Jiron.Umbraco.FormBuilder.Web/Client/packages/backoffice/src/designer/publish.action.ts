@@ -1,12 +1,12 @@
 // "Publish..." in the form workspace's footer (docs/ux/information-architecture.md, section 5.7): the dialog asks first,
 // with the form check's result and an optional comment for the version, then the workspace saves what is unsaved and
-// publishes. A Fix it chosen in the dialog leads to the Design view, which makes it (ADR-0181). What changed joins the
-// dialog with its step.
+// publishes. A Fix it chosen in the dialog leads to the view that makes it: the Settings view for a problem in the form's
+// settings (ADR-0184), the Design view for any other (ADR-0181). What changed joins the dialog with its step.
 import { umbOpenModal } from '@umbraco-cms/backoffice/modal';
 import type { UmbControllerHost } from '@umbraco-cms/backoffice/controller-api';
 import { UmbWorkspaceActionBase, type UmbWorkspaceActionArgs } from '@umbraco-cms/backoffice/workspace';
 import { FORM_WORKSPACE_CONTEXT } from './constants';
-import { goToView } from './form-views';
+import { FIXING_VIEWS, goToView } from './form-views';
 import { PUBLISH_MODAL } from './publish.modal.token';
 
 export class PublishFormAction extends UmbWorkspaceActionBase {
@@ -36,15 +36,12 @@ export class PublishFormAction extends UmbWorkspaceActionBase {
     }).catch(() => undefined);
     if (!value) return;
     if ('fix' in value) {
-      // A view is shown at once; the Design view makes any other Fix it. The dialog answers before it closes and gives
-      // the focus back to Publish... as it does, so the Fix it waits.
-      if (value.fix.kind === 'view') {
-        goToView(value.fix.view);
-        return;
-      }
+      // The view that makes the Fix it takes it up once it is shown: the Settings view one in the form's settings, the
+      // Design view any other. The dialog answers before it closes and gives the focus back to Publish... as it does, so
+      // the Fix it waits.
       await Promise.race([closed, new Promise((done) => setTimeout(done, 2000))]);
-      context.requestFix(value.fix);
-      goToView('design');
+      if (value.fix.kind !== 'view' || FIXING_VIEWS.has(value.fix.view)) context.requestFix(value.fix);
+      goToView(value.fix.kind === 'view' ? value.fix.view : 'design');
       return;
     }
     this.setExecuting(true);

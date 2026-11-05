@@ -7,6 +7,12 @@
  */
 export const FIRST_VIEW = 'design';
 
+/**
+ * The views besides Design that take up a Fix it handed on to them once they are shown (ADR-0184): only these are
+ * handed one, so none waits for a view still to come. The Actions view joins with ROADMAP 10.2.
+ */
+export const FIXING_VIEWS: ReadonlySet<string> = new Set(['settings']);
+
 const VIEW_AT_END = /\/view\/([^/]+)\/?$/;
 
 /** The address of a view of the form open at this address: its `/view/<name>` in place of the one shown. */

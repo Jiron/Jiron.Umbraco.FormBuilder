@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { join } from 'node:path';
-import { COMBOS, comboName, sheetHtml, splitAxe, walkDir, WINDOWS } from './ux-walk.ts';
+import { COMBOS, comboName, sheetHtml, splitAxe, walkDir, wantedScreen, WINDOWS } from './ux-walk.ts';
 
 test('the walk looks at every screen in twelve ways: three widths, two themes, two languages', () => {
   assert.equal(COMBOS.length, 12);
@@ -15,6 +15,14 @@ test('the walk looks at every screen in twelve ways: three widths, two themes, t
     [...new Set(COMBOS.map((combo) => combo.width))],
     WINDOWS.map((window) => window.width),
   );
+});
+
+test('a walk shoots every screen, or with JFB_UX_ONLY those its prefixes name', () => {
+  assert.equal(wantedScreen('settings-more', {}), true);
+  assert.equal(wantedScreen('settings-more', { JFB_UX_ONLY: 'settings' }), true);
+  assert.equal(wantedScreen('design', { JFB_UX_ONLY: 'settings, publish' }), false);
+  assert.equal(wantedScreen('publish-blocked', { JFB_UX_ONLY: 'settings, publish' }), true);
+  assert.equal(wantedScreen('design', { JFB_UX_ONLY: ' , ' }), true);
 });
 
 test('a walk writes where JFB_UX_OUT says, or below .local/ux', () => {

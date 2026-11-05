@@ -6,8 +6,8 @@ import { tryExecute } from '@umbraco-cms/backoffice/resources';
 import { mergeTagPathList, type MergeTagPathResponseModel } from '../../api';
 import type { DesignDefinition } from '../definition';
 
-/** Where a text with tags is used, as the merge tag service names its places. */
-export type MergeTagPlace = 'visitorText' | 'consentText' | 'defaultValue';
+/** Where a text with tags is used, as the merge tag service names its places; the entry title is the form's own. */
+export type MergeTagPlace = 'visitorText' | 'consentText' | 'defaultValue' | 'entryTitle';
 
 /** The place of a setting's text: a consent's wording is the consent's own, any other a visitor's text. */
 export const placeOf = (type: string, setting: string): MergeTagPlace =>
