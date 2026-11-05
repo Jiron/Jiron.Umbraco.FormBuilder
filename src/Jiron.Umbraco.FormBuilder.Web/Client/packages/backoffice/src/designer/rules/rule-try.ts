@@ -90,6 +90,7 @@ export function triedSubjects(draft: DraftRule): string[] {
  */
 export function verdictTerm(effect: Effect, matches: boolean | null): string {
   if (effect === 'use') return matches === false ? 'jfbRules_tryNotUsed' : 'jfbRules_tryUsed';
+  if (effect === 'run') return matches === false ? 'jfbRules_tryNotRun' : 'jfbRules_tryRuns';
   if (effect === 'message') return matches === true ? 'jfbRules_tryMessageShows' : 'jfbRules_tryMessageHidden';
   if (matches === null) return effect === 'require' ? 'jfbRules_tryNotRequired' : 'jfbRules_tryShows';
   if (effect === 'require') return matches ? 'jfbRules_tryRequired' : 'jfbRules_tryNotRequired';

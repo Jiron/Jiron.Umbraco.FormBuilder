@@ -206,5 +206,9 @@ describe('the boxes of Try it', () => {
     expect(verdictTerm('message', true)).toBe('jfbRules_tryMessageShows');
     expect(verdictTerm('message', false)).toBe('jfbRules_tryMessageHidden');
     expect(verdictTerm('message', null)).toBe('jfbRules_tryMessageHidden');
+    // An action runs unless its rule does not match (ROADMAP 10.2a).
+    expect(verdictTerm('run', true)).toBe('jfbRules_tryRuns');
+    expect(verdictTerm('run', null)).toBe('jfbRules_tryRuns');
+    expect(verdictTerm('run', false)).toBe('jfbRules_tryNotRun');
   });
 });

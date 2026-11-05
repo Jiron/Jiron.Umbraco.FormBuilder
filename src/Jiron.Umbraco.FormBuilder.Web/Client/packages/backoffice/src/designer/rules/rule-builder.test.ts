@@ -780,6 +780,38 @@ describe('the rules builder', () => {
     });
   });
 
+  it("builds an action's rule: when it runs, from every question of the form (ROADMAP 10.2a)", async () => {
+    const definition = withSource(definitionWith());
+    const { element, modal, root } = await builderOf({ definition, origin: 'a1', action: { name: 'Email the team' } });
+    expect([root.querySelector('select#effect'), root.querySelector('#target')]).toEqual([null, null]);
+    expect(text(root.querySelector('.first-line'))).toBe('Run Email the team when');
+    // As an outcome's, the server's rule: a value that stays on the server is a question too.
+    const subject = inRow<HTMLSelectElement>(root, 'select.subject');
+    expect(options(subject)).toEqual(expect.arrayContaining(['Country', 'Source']) as unknown);
+    await pick(element, subject, 'field:country');
+    await pick(element, inRow<HTMLSelectElement>(root, 'select.plain'), 'other');
+    must(root.querySelector<HTMLButtonElement>('.try button.disclosure'), 'Try it').click();
+    await settle(element);
+    expect(text(root.querySelector('.verdict'))).toBe("This action doesn't run.");
+    await pick(element, must(root.querySelector<HTMLSelectElement>('.try-boxes select'), "Country's box"), 'other');
+    expect(text(root.querySelector('.verdict'))).toBe('This action runs.');
+    expect(text(root.querySelector('.use .help'))).toBe(
+      'Turn it off to keep the rule without using it. The action then runs for every entry its trigger brings.',
+    );
+    keep(root).click();
+    await settle(element);
+    expect(modal.getValue()).toEqual({
+      target: 'a1',
+      rule: expect.objectContaining({
+        effect: 'run',
+        conditions: [{ field: 'country', op: 'equals', value: 'other' }],
+      }) as unknown,
+    });
+    element.remove();
+    const added = await builderOf({ definition, origin: 'a2', action: { name: null } });
+    expect(text(added.root.querySelector('.first-line'))).toBe('Run the new action when');
+  });
+
   it("opens an outcome's rule as it is and keeps it as the outcome's", async () => {
     const rule: DesignRule = {
       key: 'r1',

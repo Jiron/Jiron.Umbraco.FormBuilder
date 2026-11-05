@@ -35,9 +35,13 @@ import {
 /**
  * What a rule does while it matches: a page's, group's or field's rule shows, hides or requires it; a form-level
  * validation rule shows a message on its field (ROADMAP 9.5c), which the builder offers as a fourth effect; an
- * outcome's rule has visitors get the outcome (ROADMAP 10.1b), which the builder never offers to an element.
+ * outcome's rule has visitors get the outcome (ROADMAP 10.1b), and an action's runs the action (10.2a, ADR-0188),
+ * neither of which the builder offers to an element.
  */
-export type Effect = 'show' | 'hide' | 'require' | 'message' | 'use';
+export type Effect = 'show' | 'hide' | 'require' | 'message' | 'use' | 'run';
+
+/** Whether a rule is read once the form is sent, as an outcome's and an action's are: the server's, not the page's. */
+export const afterSending = (effect: string): boolean => effect === 'use' || effect === 'run';
 
 export const EFFECTS: readonly Effect[] = ['show', 'hide', 'require', 'message'];
 
@@ -77,9 +81,9 @@ export interface DraftRule {
 /** The id of a rule's own list of conditions. */
 export const ROOT = 'root';
 
-// An outcome's `use` is read as itself, though the builder offers it to no element.
+// An outcome's `use` and an action's `run` are read as themselves, though the builder offers them to no element.
 const asEffect = (effect: string): Effect =>
-  effect === 'use' || (EFFECTS as readonly string[]).includes(effect) ? (effect as Effect) : 'show';
+  afterSending(effect) || (EFFECTS as readonly string[]).includes(effect) ? (effect as Effect) : 'show';
 const textOrNull = (value: unknown): string | null => (typeof value === 'string' && value !== '' ? value : null);
 
 /** A rule of the definition as the builder edits it; newId gives each condition and group its id. */
@@ -369,7 +373,7 @@ function keysIn(element: DesignPage | DesignGroup | DesignField): Set<string> {
  * What a rule's conditions may look at: each field of the form whose type rules compare, by page in the form's order,
  * then the visit. The element the rule sits on is left out, and for a show or hide rule so is everything inside it: its
  * being shown would wait on itself. A validation rule may look at its own field ("ends with gmail.com"): what its
- * message says changes nothing a rule reads. An outcome's rule is the server's, once the form is sent: it may look at a
+ * message says changes nothing a rule reads. An outcome's or an action's rule is the server's, once the form is sent: it may look at a
  * value that stays on the server and at a field a member's value stands in for. `keep` is a subject a condition looks
  * at already, which stays on the list.
  */
@@ -393,7 +397,7 @@ export function subjectsFor(
     for (const field of allFields({ pages: [page] })) {
       // A grid's rows are left out with it: their answers are its own.
       const out = excluded.has(field.key);
-      for (const [key, kind] of subjectKinds(field, factsOf(field.type), effect !== 'use')) {
+      for (const [key, kind] of subjectKinds(field, factsOf(field.type), !afterSending(effect))) {
         const id = `field:${key}`;
         if (out && id !== keep) continue;
         subjects.push({ id, kind, field: key, context: null, page: index });

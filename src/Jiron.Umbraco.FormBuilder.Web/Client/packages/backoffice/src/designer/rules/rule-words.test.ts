@@ -155,5 +155,9 @@ describe('a rule in words', () => {
     expect(
       ruleWords(CONTEXT, { effect: 'use', conditions: [{ field: 'country', op: 'equals', value: 'other' }] }),
     ).toBe('Used when Country is Other');
+    // An action's rule (ROADMAP 10.2a).
+    expect(
+      ruleWords(CONTEXT, { effect: 'run', conditions: [{ field: 'country', op: 'equals', value: 'other' }] }),
+    ).toBe('Runs when Country is Other');
   });
 });

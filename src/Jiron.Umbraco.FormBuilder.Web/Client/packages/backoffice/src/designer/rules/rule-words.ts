@@ -3,7 +3,7 @@
 // words, so a rule reads the same wherever it shows. Pure: what the words need comes in a context.
 import { parseRelative, type Kind, type Operand } from '@jfb/logic';
 import type { LocalizedText } from '../definition';
-import { EFFECTS, otherFieldOf, relativeOf } from './rule-draft';
+import { afterSending, EFFECTS, otherFieldOf, relativeOf } from './rule-draft';
 
 /** What the words need of the backoffice and the form. */
 export interface RuleWordsContext {
@@ -178,7 +178,8 @@ export function itemsWords(context: RuleWordsContext, match: string | undefined,
 
 /**
  * A rule in words: "Shown when Country is Other", "Required when Topic is one of Shipping, Press"; a validation rule's
- * "Shows "Use your work address" when Email ends with gmail.com", and an outcome's "Used when Topic is Press".
+ * "Shows "Use your work address" when Email ends with gmail.com", an outcome's "Used when Topic is Press", and an
+ * action's "Runs when Topic is Sales".
  */
 export function ruleWords(
   context: RuleWordsContext,
@@ -196,6 +197,7 @@ export function ruleWords(
       ? context.term('jfbRules_when_messageStandard', words)
       : context.term('jfbRules_when_message', message, words);
   }
-  const effect = rule.effect === 'use' || (EFFECTS as readonly string[]).includes(rule.effect) ? rule.effect : 'show';
+  const effect =
+    afterSending(rule.effect) || (EFFECTS as readonly string[]).includes(rule.effect) ? rule.effect : 'show';
   return context.term(`jfbRules_when_${effect}`, words);
 }
