@@ -14,8 +14,10 @@
  *   - each stylesheet the themes package builds, the base rules and each theme's: at most 10 KB (ADR-0105), and
  *     linted as it is served (scripts/lib/stylesheets.mjs): the base rules under .jfb-form, a theme's under
  *     .jfb-form:where(.jfb-theme-<alias>), so it styles only its own forms, and nothing physical anywhere;
- *   - the element and the backoffice bundle: reported, without a budget (section 4.12 sets none for the element,
- *     and 9.6 sets the backoffice's).
+ *   - the backoffice (ADR-0183): what every backoffice session loads at its start, in any section (the entry, its
+ *     static imports, and the words of English, which Umbraco always loads, and of the largest other language): at
+ *     most 64 KB; any one file, as a screen loads its own: at most 64 KB; the whole bundle: at most 512 KB;
+ *   - the element: reported, without a budget (section 4.12 sets none).
  *
  *   node scripts/size-check.mjs     run after the client build (npm run build in the Client folder)
  *
@@ -32,7 +34,14 @@ export const WEB_PROJECT = join(root, 'src', 'Jiron.Umbraco.FormBuilder.Web');
 export const REPORTS = join(WEB_PROJECT, 'Client', '.build');
 
 const KB = 1024;
-export const BUDGETS = { runtimeCore: 16 * KB, runtimeAll: 60 * KB, themeCss: 10 * KB };
+export const BUDGETS = {
+  runtimeCore: 16 * KB,
+  runtimeAll: 60 * KB,
+  themeCss: 10 * KB,
+  backofficeStart: 64 * KB,
+  backofficeFile: 64 * KB,
+  backofficeAll: 512 * KB,
+};
 
 /** The gzip size of some bytes at the strongest level, which servers and CDNs come close to. */
 export function gzipSize(bytes) {
@@ -62,6 +71,17 @@ export function readReport(name, reports = REPORTS) {
 export function isWords(file) {
   const modules = file.modules ?? [];
   return modules.length > 0 && modules.every((module) => /(^|\/)packages\/logic\/src\/lang\//.test(module));
+}
+
+/**
+ * The language whose backoffice words a file holds, such as `en`, or null for a file that holds anything else: every
+ * module of it in the backoffice's `lang` folder, one of them the language's own table (`lang/<language>.ts`).
+ */
+export function backofficeLanguage(file) {
+  const modules = file.modules ?? [];
+  if (modules.length === 0 || !modules.every((module) => /(^|\/)packages\/backoffice\/src\/lang\//.test(module))) return null;
+  const table = modules.map((module) => /\/lang\/([a-z]{2}(?:-[a-z]+)?)[.]ts$/i.exec(module)).find(Boolean);
+  return table ? table[1].toLowerCase() : null;
 }
 
 /** Whether a file's name carries the bundler's content hash: `<name>-<eight letters, digits, _ or ->.<ext>`. */
@@ -131,16 +151,33 @@ export function check({ reports = REPORTS, webProject = WEB_PROJECT } = {}) {
     }
   }
 
-  for (const [name, label, note] of [
-    ['element', 'element', 'no budget (section 4.12 sets none)'],
-    ['backoffice', 'backoffice bundle', 'no budget yet (9.6 sets it)'],
-  ]) {
-    const report = readReport(name, reports);
-    if (!report) missing(name);
-    else {
-      const all = report.files.map((f) => f.file);
-      results.push({ ok: true, line: `${label} (${files(all.length)}): ${kb(measure(report, all, webProject))} gzip, ${note}` });
-    }
+  const element = readReport('element', reports);
+  if (!element) missing('element');
+  else {
+    const all = element.files.map((f) => f.file);
+    results.push({ ok: true, line: `element (${files(all.length)}): ${kb(measure(element, all, webProject))} gzip, no budget (section 4.12 sets none)` });
+  }
+
+  const backoffice = readReport('backoffice', reports);
+  if (!backoffice) missing('backoffice');
+  else {
+    // Umbraco's own modules, which the entry imports, are no files of the bundle.
+    const own = new Set(backoffice.files.map((f) => f.file));
+    const start = staticClosure(backoffice).filter((file) => own.has(file));
+    const sizes = new Map(backoffice.files.map((f) => [f.file, measure(backoffice, [f.file], webProject)]));
+    const words = backoffice.files.filter((f) => backofficeLanguage(f) !== null);
+    const english = words.filter((f) => backofficeLanguage(f) === 'en').map((f) => f.file);
+    const others = words.filter((f) => backofficeLanguage(f) !== 'en').map((f) => sizes.get(f.file));
+    const startWords = english.reduce((sum, file) => sum + sizes.get(file), 0) + Math.max(0, ...others);
+    const startFiles = start.length + english.length + (others.length > 0 ? 1 : 0);
+    budget(
+      `backoffice at start (${files(startFiles)}: the entry, its static imports, and the words of English and of the largest other language)`,
+      start.reduce((sum, file) => sum + sizes.get(file), 0) + startWords,
+      BUDGETS.backofficeStart,
+    );
+    const [largest, largestSize] = [...sizes].reduce((most, next) => (next[1] > most[1] ? next : most), ['', 0]);
+    budget(`backoffice's largest file (${largest})`, largestSize, BUDGETS.backofficeFile);
+    budget(`backoffice bundle (${files(sizes.size)})`, [...sizes.values()].reduce((sum, size) => sum + size, 0), BUDGETS.backofficeAll);
   }
   return results;
 }

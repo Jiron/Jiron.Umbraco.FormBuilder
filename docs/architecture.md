@@ -868,7 +868,8 @@ The budgets are §4.12's; the measured starting points come from the spikes.
 | A submission | ≤ 150 ms at p95 with 10 at the same moment on SQLite | p95 59 to 115 ms with 10 at once (ADR-0003) |
 | The first page of 100,000 entries; a 10,000-entry CSV | ≤ 300 ms; ≤ 5 s | 7.9 to 16.7 ms by date; 0.77 to 1.09 s (ADR-0003) |
 | The first email after a submission | ≤ 10 s | median 7.8 ms, highest 22.7 ms after the commit (ADR-0007) |
-| The designer with 300 fields; the tree with 1,000 forms | < 100 ms per interaction; < 1 s | – (9.3c, 16.2) |
+| The designer with 300 fields; the tree with 1,000 forms | < 100 ms per interaction; < 1 s | 72 to 80 ms at the slowest interaction alone (9.4d, ADR-0176); the tree – (16.2) |
+| The backoffice's files | ≤ 64 KB gzip at each start, in any section (the entry, its static imports, English's words and the largest other language's); ≤ 64 KB any one file; ≤ 512 KB the whole (ADR-0183) | at start 54.47 KB, the Design view's chunk 55.14 KB, the whole 246.76 KB (9.6b) |
 | Accessibility | WCAG 2.2 AA for every theme and screen | – (6.8, 16.3) |
 | Coverage | ≥ 85% of Core's lines; every endpoint; every vector in both runtimes | – (ADR-0011) |
 | Builds | zero warnings, formatters and analyzers clean | – (3.1) |

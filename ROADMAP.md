@@ -1089,7 +1089,7 @@ Servers that Jiron Form Builder starts use only these ports. Ports the OS assign
   - a submission (store plus outbox) takes ≤ 150 ms at p95, with up to 10 submissions arriving at the same moment on SQLite (ADR-0003);
   - the first page of entries for a form with 100,000 entries loads in ≤ 300 ms, and a 10,000-entry CSV export streams in ≤ 5 s;
   - the first email leaves ≤ 10 s after a submission.
-- **Backoffice:** a 300-field form keeps designer interactions under 100 ms, and the form tree with 1,000 forms opens in under 1 s.
+- **Backoffice:** a 300-field form keeps designer interactions under 100 ms, and the form tree with 1,000 forms opens in under 1 s. Its files (ADR-0183; measured at 9.6b: 54.47, 55.14 and 246.76 KB): what every backoffice session loads at its start, in any section, ≤ 64 KB gzip (the entry, its static imports, and the words of English and of the largest other language, as Umbraco loads both); any one file ≤ 64 KB gzip; the whole bundle ≤ 512 KB gzip.
 - **Accessibility:** WCAG 2.2 AA for every theme and every backoffice screen: axe clean, keyboard only, screen-reader names, visible focus, target sizes, reduced motion. Every theme preset passes contrast, and custom theme colours get a live contrast warning.
 - **Coverage:** ≥ 85% line coverage on Core, every public and management endpoint covered by integration tests, and every shared vector passing in both runtimes.
 - **Builds:** zero warnings (warnings as errors), analyzers on, `dotnet format --verify-no-changes` clean, ESLint and Prettier clean.

@@ -91,7 +91,8 @@ from `.local/nuget-feed`:
 - **The size check:** each build writes a chunk report to `Client/.build/<name>.chunks.json`.
   `scripts/size-check.mjs` measures gzip sizes against §4.12: the runtime's core (the entry and everything it
   imports statically) at most 16 KB, the runtime with every feature at most 40 KB, each theme at most 10 KB; the
-  element and the backoffice bundle are reported until a step sets their budgets (9.6 for the backoffice).
+  element and the backoffice bundle are reported until a step sets their budgets (9.6 for the backoffice, which
+  ADR-0183 records).
 - **Boundaries,** enforced by ESLint: the logic package uses no globals and imports nothing; the runtime and the
   element import only their own files and `@jfb/logic`, and never write HTML strings into the page (`innerHTML`,
   `outerHTML`, `insertAdjacentHTML`, `document.write`); the backoffice takes Lit only from

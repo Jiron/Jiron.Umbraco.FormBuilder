@@ -6,7 +6,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { after, describe, test } from 'node:test';
-import { BUDGETS, check, gzipSize, isHashed, isWords, measure, scopeOf, staticClosure } from '../size-check.mjs';
+import { BUDGETS, backofficeLanguage, check, gzipSize, isHashed, isWords, measure, scopeOf, staticClosure } from '../size-check.mjs';
 
 const folders = [];
 after(() => {
@@ -41,7 +41,14 @@ const chunk = (file, imports = [], dynamicImports = [], entry = false, modules =
 
 describe('the budgets', () => {
   test('are those of ROADMAP section 4.12', () => {
-    assert.deepEqual(BUDGETS, { runtimeCore: 16 * 1024, runtimeAll: 60 * 1024, themeCss: 10 * 1024 });
+    assert.deepEqual(BUDGETS, {
+      runtimeCore: 16 * 1024,
+      runtimeAll: 60 * 1024,
+      themeCss: 10 * 1024,
+      backofficeStart: 64 * 1024,
+      backofficeFile: 64 * 1024,
+      backofficeAll: 512 * 1024,
+    });
   });
 });
 
@@ -94,7 +101,7 @@ describe('the check', () => {
     );
     assert.ok(results.some((r) => /^stylesheet base[.]css: .* gzip of 10[.]00 KB, ok$/.test(r.line)));
     assert.ok(results.some((r) => /^element [(]1 file[)]: .* gzip, no budget/.test(r.line)));
-    assert.ok(results.some((r) => /^backoffice bundle [(]1 file[)]: .* gzip, no budget yet [(]9[.]6/.test(r.line)));
+    assert.ok(results.some((r) => /^backoffice bundle [(]1 file[)]: .* gzip of 512[.]00 KB, ok$/.test(r.line)));
   });
 
   test("counts one language's words, the largest, in every feature, and reports the sum with every language", () => {
@@ -198,6 +205,69 @@ describe('the check', () => {
     assert.deepEqual(line('plain.css'), [
       { ok: false, line: 'stylesheet plain.css: REFUSED, outside .jfb-form:where(.jfb-theme-plain): .jfb-form .a; physical: padding-left: 1px' },
     ]);
+  });
+
+  describe('the backoffice', () => {
+    const runtime = { folder: 'WebsiteAssets/runtime', files: [{ meta: chunk('jfb-runtime.js', [], [], true), bytes: small('r') }] };
+    const words = (language) => [`Client/packages/backoffice/src/lang/${language}.ts`, `Client/packages/backoffice/src/lang/designer.${language}.ts`];
+    const backoffice = (files) => project({ ...base(), runtime, backoffice: { folder: 'wwwroot/App_Plugins/JironFormBuilder', files } });
+    const line = (paths, start) => check(paths).find((r) => r.line.startsWith(start));
+
+    test("counts at start the entry, its static imports and the words of English and of the largest other language, never a screen's chunk or Umbraco's modules", () => {
+      const [entry, shared, english, german, danish, designer] = [2000, 3000, 4000, 5000, 4500, 9000].map((size) => randomBytes(size));
+      const paths = backoffice([
+        { meta: chunk('jfb-backoffice.js', ['chunks/api-x.js', '@umbraco-cms/backoffice/lit-element'], ['chunks/en-x.js', 'chunks/de-x.js', 'chunks/da-x.js', 'chunks/designer-x.js'], true), bytes: entry },
+        { meta: chunk('chunks/api-x.js'), bytes: shared },
+        { meta: chunk('chunks/en-x.js', [], [], false, words('en')), bytes: english },
+        { meta: chunk('chunks/de-x.js', [], [], false, words('de')), bytes: german },
+        { meta: chunk('chunks/da-x.js', [], [], false, words('da')), bytes: danish },
+        { meta: chunk('chunks/designer-x.js', ['chunks/api-x.js'], [], false, ['Client/packages/backoffice/src/designer/form-design.view.ts']), bytes: designer },
+      ]);
+      const start = line(paths, 'backoffice at start');
+      const counted = [entry, shared, english, german].reduce((sum, bytes) => sum + gzipSize(bytes), 0);
+      assert.equal(
+        start.line,
+        `backoffice at start (4 files: the entry, its static imports, and the words of English and of the largest other language): ${(counted / 1024).toFixed(2)} KB gzip of 64.00 KB, ok`,
+      );
+      assert.equal(line(paths, "backoffice's largest file").line.startsWith("backoffice's largest file (chunks/designer-x.js): "), true);
+      assert.match(line(paths, 'backoffice bundle').line, /^backoffice bundle [(]6 files[)]: .* gzip of 512[.]00 KB, ok$/);
+    });
+
+    test("takes a file for a language's words only when every module it holds is the backoffice's words, one of them the language's table", () => {
+      assert.equal(backofficeLanguage(chunk('chunks/en-x.js', [], [], false, words('en'))), 'en');
+      assert.equal(backofficeLanguage(chunk('chunks/de-x.js', [], [], false, words('de'))), 'de');
+      assert.equal(backofficeLanguage(chunk('chunks/x.js', [], [], false, ['Client/packages/backoffice/src/lang/designer.en.ts'])), null, 'no table');
+      assert.equal(backofficeLanguage(chunk('chunks/x.js', [], [], false, [...words('en'), 'Client/packages/backoffice/src/designer/form-design.view.ts'])), null);
+      assert.equal(backofficeLanguage(chunk('chunks/x.js')), null, 'a report without modules');
+    });
+
+    test('fails at start over 64 KB, though no file is over its own budget', () => {
+      const paths = backoffice([
+        { meta: chunk('jfb-backoffice.js', ['chunks/api-x.js'], ['chunks/en-x.js'], true), bytes: randomBytes(33 * 1024) },
+        { meta: chunk('chunks/api-x.js'), bytes: randomBytes(20 * 1024) },
+        { meta: chunk('chunks/en-x.js', [], [], false, words('en')), bytes: randomBytes(12 * 1024) },
+      ]);
+      assert.match(line(paths, 'backoffice at start').line, /OVER BUDGET$/);
+      assert.match(line(paths, "backoffice's largest file").line, /, ok$/);
+    });
+
+    test('fails for any one file over 64 KB, though it loads only on demand', () => {
+      const paths = backoffice([
+        { meta: chunk('jfb-backoffice.js', [], ['chunks/designer-x.js'], true), bytes: small('b') },
+        { meta: chunk('chunks/designer-x.js'), bytes: randomBytes(65 * 1024) },
+      ]);
+      assert.match(line(paths, 'backoffice at start').line, /, ok$/);
+      assert.equal(line(paths, "backoffice's largest file").ok, false);
+      assert.match(line(paths, "backoffice's largest file").line, /^backoffice's largest file [(]chunks[/]designer-x[.]js[)]: .* OVER BUDGET$/);
+    });
+
+    test('fails for the whole bundle over 512 KB, though each file and the start are within theirs', () => {
+      const screens = Array.from({ length: 9 }, (_, n) => ({ meta: chunk(`chunks/screen-${n}.js`), bytes: randomBytes(60 * 1024) }));
+      const paths = backoffice([{ meta: chunk('jfb-backoffice.js', [], screens.map((s) => s.meta.file), true), bytes: small('b') }, ...screens]);
+      assert.match(line(paths, "backoffice's largest file").line, /, ok$/);
+      assert.equal(line(paths, 'backoffice bundle').ok, false);
+      assert.match(line(paths, 'backoffice bundle').line, /^backoffice bundle [(]10 files[)]: .* OVER BUDGET$/);
+    });
   });
 
   test('fails without a build, and names a file that is missing', () => {
