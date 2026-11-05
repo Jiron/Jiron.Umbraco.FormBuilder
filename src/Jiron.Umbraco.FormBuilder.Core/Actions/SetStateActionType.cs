@@ -8,12 +8,15 @@ namespace Jiron.Umbraco.FormBuilder.Core.Actions;
 public enum SetStateTarget
 {
     /// <summary>Approved.</summary>
+    [FormBuilderChoice("#jfbActionChoices_setStateApproved")]
     Approved,
 
     /// <summary>Rejected.</summary>
+    [FormBuilderChoice("#jfbActionChoices_setStateRejected")]
     Rejected,
 
     /// <summary>In Spam.</summary>
+    [FormBuilderChoice("#jfbActionChoices_setStateSpam")]
     Spam,
 }
 

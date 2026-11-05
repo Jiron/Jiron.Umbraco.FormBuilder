@@ -80,6 +80,21 @@ public sealed class ActionApiTests : ManagementApiTestBase
     }
 
     [Test]
+    public async Task TheWebhookType_OffersAPlainWebhookFirst_ThenSlackAndTeams()
+    {
+        var answer = await CallAsync("noAccess", HttpMethod.Get, "action-type");
+
+        var webhook = answer.Body!["types"]!.AsArray().Single(type => type!["alias"]!.GetValue<string>() == Core.Webhooks.WebhookActionType.Alias)!;
+        var presets = webhook["presets"]!.AsArray();
+        Assert.Multiple(() =>
+        {
+            // The designer offers a type only through its presets (ADR-0188): the plain one has the type's own name.
+            Assert.That(presets.Select(preset => preset!["name"]!.GetValue<string>()), Is.EqualTo(new[] { "#jfbActionTypes_webhook", "#jfbActionPresets_webhookSlack", "#jfbActionPresets_webhookTeams" }));
+            Assert.That(JsonNode.Parse(presets[0]!["settings"]!.GetValue<string>())!.AsObject(), Is.Empty, "a plain webhook starts with the type's defaults");
+        });
+    }
+
+    [Test]
     public async Task AnEntrysRuns_AreListedForAUserWhoSeesItsEntries_ForThatFormOnly()
     {
         var (form, entry, run) = await RunInAsync(ActionRunState.Failed);

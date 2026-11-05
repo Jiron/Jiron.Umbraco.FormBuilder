@@ -118,6 +118,7 @@ internal sealed class FormSettingsController(
                 VerificationDays = DefinitionSaveChecks.MaxVerificationDays,
                 ReferenceDigits = DefinitionSaveChecks.MaxReferenceDigits,
                 Outcomes = limits.MaxOutcomes,
+                Actions = limits.MaxActions,
             },
         });
     }
@@ -229,4 +230,7 @@ internal sealed record FormSettingsLimitsResponseModel
 
     /// <summary>The most outcomes a form has, as the host sets it (ADR-0185).</summary>
     public required int Outcomes { get; init; }
+
+    /// <summary>The most actions a form has, as the host sets it (ADR-0188).</summary>
+    public required int Actions { get; init; }
 }

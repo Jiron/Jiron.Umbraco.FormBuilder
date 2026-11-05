@@ -7829,6 +7829,7 @@
       },
       "FormSettingsLimitsResponseModel": {
         "required": [
+          "actions",
           "htmlLength",
           "lineLength",
           "nameLength",
@@ -7859,6 +7860,10 @@
             "format": "int32"
           },
           "outcomes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "actions": {
             "type": "integer",
             "format": "int32"
           }

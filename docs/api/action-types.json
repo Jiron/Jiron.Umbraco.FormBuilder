@@ -462,15 +462,15 @@
         "choices": [
           {
             "value": "url",
-            "label": "Url"
+            "label": "#jfbActionChoices_webhookTargetUrl"
           },
           {
             "value": "slack",
-            "label": "Slack"
+            "label": "#jfbActionChoices_webhookTargetSlack"
           },
           {
             "value": "teams",
-            "label": "Teams"
+            "label": "#jfbActionChoices_webhookTargetTeams"
           }
         ],
         "settings": [],
@@ -529,15 +529,15 @@
         "choices": [
           {
             "value": "json",
-            "label": "Json"
+            "label": "#jfbActionChoices_webhookFormatJson"
           },
           {
             "value": "form",
-            "label": "Form"
+            "label": "#jfbActionChoices_webhookFormatForm"
           },
           {
             "value": "xml",
-            "label": "Xml"
+            "label": "#jfbActionChoices_webhookFormatXml"
           }
         ],
         "settings": [],
@@ -754,6 +754,10 @@
     ],
     "presets": [
       {
+        "name": "#jfbActionTypes_webhook",
+        "settings": "{}"
+      },
+      {
         "name": "#jfbActionPresets_webhookSlack",
         "settings": "{\u0022target\u0022:\u0022slack\u0022,\u0022format\u0022:\u0022json\u0022,\u0022template\u0022:\u0022{\\\u0022text\\\u0022:\\\u0022*New entry in {{ form.name }}*\\\\n{{ entry.answers }}\\\u0022}\u0022}"
       },
@@ -776,15 +780,15 @@
         "choices": [
           {
             "value": "approved",
-            "label": "Approved"
+            "label": "#jfbActionChoices_setStateApproved"
           },
           {
             "value": "rejected",
-            "label": "Rejected"
+            "label": "#jfbActionChoices_setStateRejected"
           },
           {
             "value": "spam",
-            "label": "Spam"
+            "label": "#jfbActionChoices_setStateSpam"
           }
         ],
         "settings": [],
@@ -852,15 +856,15 @@
         "choices": [
           {
             "value": "picked",
-            "label": "Picked"
+            "label": "#jfbActionChoices_contentParentPicked"
           },
           {
             "value": "page",
-            "label": "Page"
+            "label": "#jfbActionChoices_contentParentPage"
           },
           {
             "value": "siteRoot",
-            "label": "SiteRoot"
+            "label": "#jfbActionChoices_contentParentSiteRoot"
           }
         ],
         "settings": [],

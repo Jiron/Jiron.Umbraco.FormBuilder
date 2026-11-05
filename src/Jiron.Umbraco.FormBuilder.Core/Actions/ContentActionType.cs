@@ -27,12 +27,15 @@ namespace Jiron.Umbraco.FormBuilder.Core.Actions;
 public enum ContentParentSource
 {
     /// <summary>The picked content item.</summary>
+    [FormBuilderChoice("#jfbActionChoices_contentParentPicked")]
     Picked,
 
     /// <summary>The page the form was sent from.</summary>
+    [FormBuilderChoice("#jfbActionChoices_contentParentPage")]
     Page,
 
     /// <summary>The root of the site the form was sent from.</summary>
+    [FormBuilderChoice("#jfbActionChoices_contentParentSiteRoot")]
     SiteRoot,
 }
 

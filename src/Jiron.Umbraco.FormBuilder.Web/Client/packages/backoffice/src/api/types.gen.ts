@@ -452,6 +452,7 @@ export type FormSettingsLimitsResponseModel = {
     verificationDays: number;
     referenceDigits: number;
     outcomes: number;
+    actions: number;
 };
 
 export type FormSettingsMemberGroupResponseModel = {

@@ -429,8 +429,8 @@ public sealed class WebhookActionTests : ActionTestBase
         Assert.That(refused!.Problems.Select(problem => problem.Path), Does.Contain($"$.actions[0].settings.{setting}"), string.Join(", ", refused.Problems));
     }
 
-    [TestCase(0, "slack")]
-    [TestCase(1, "teams")]
+    [TestCase(1, "slack")]
+    [TestCase(2, "teams")]
     public async Task ThePresets_SendAFormattedMessage_ToTheSitesAddress(int preset, string target)
     {
         await SaveIntegrationsAsync(new IntegrationSettings { SlackWebhook = "$JironFormBuilder:Secrets:SlackAddress", TeamsWebhook = "$JironFormBuilder:Secrets:TeamsAddress" });

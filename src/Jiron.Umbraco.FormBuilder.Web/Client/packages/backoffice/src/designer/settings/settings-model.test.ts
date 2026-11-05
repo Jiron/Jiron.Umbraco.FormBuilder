@@ -66,6 +66,7 @@ const CHOICES: FormSettingsChoicesResponseModel = {
     verificationDays: 90,
     referenceDigits: 10,
     outcomes: 50,
+    actions: 50,
   },
 };
 

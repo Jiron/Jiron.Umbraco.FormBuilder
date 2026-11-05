@@ -18,12 +18,15 @@ namespace Jiron.Umbraco.FormBuilder.Core.Webhooks;
 public enum WebhookFormat
 {
     /// <summary>A JSON object.</summary>
+    [FormBuilderChoice("#jfbActionChoices_webhookFormatJson")]
     Json,
 
     /// <summary><c>application/x-www-form-urlencoded</c>.</summary>
+    [FormBuilderChoice("#jfbActionChoices_webhookFormatForm")]
     Form,
 
     /// <summary>An XML document.</summary>
+    [FormBuilderChoice("#jfbActionChoices_webhookFormatXml")]
     Xml,
 }
 
@@ -31,12 +34,15 @@ public enum WebhookFormat
 public enum WebhookTarget
 {
     /// <summary>The action's own address.</summary>
+    [FormBuilderChoice("#jfbActionChoices_webhookTargetUrl")]
     Url,
 
     /// <summary>The site's Slack address, from the integrations settings.</summary>
+    [FormBuilderChoice("#jfbActionChoices_webhookTargetSlack")]
     Slack,
 
     /// <summary>The site's Microsoft Teams address, from the integrations settings.</summary>
+    [FormBuilderChoice("#jfbActionChoices_webhookTargetTeams")]
     Teams,
 }
 
@@ -163,8 +169,10 @@ internal sealed class WebhookActionType(OutboundHttp outbound, IFormBuilderMerge
         Name = "#jfbActionTypes_webhook",
         Icon = "icon-link",
         Test = ActionTestKind.AfterConfirmation,
+        // A plain webhook first: the designer offers each preset as a start, and a type only through its presets (ADR-0188).
         Presets =
         [
+            new ActionPreset("#jfbActionTypes_webhook", "{}"),
             new ActionPreset("#jfbActionPresets_webhookSlack", SlackPreset),
             new ActionPreset("#jfbActionPresets_webhookTeams", TeamsPreset),
         ],
