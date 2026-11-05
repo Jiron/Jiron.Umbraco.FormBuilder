@@ -2709,11 +2709,15 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
 
 ### Phase 10: The backoffice II: settings, actions, preview and publishing
 
-- [ ] **10.1 The form settings view**
-  - The groups of §4.3.4 with help text. The outcomes editor (an ordered list with rules), plus availability, spam, privacy, appearance and developer settings.
+- [ ] **10.1a The form settings view: its groups** (split from 10.1, see WORKLOG)
+  - The groups of §4.3.4 with help text: submission, availability, spam, privacy, appearance and developer settings, open or closed as IA 5.2 says, each closed group with its summary line, and the server's validation messages at their setting.
   - **Captcha providers:** the spam group greys out a provider without keys, from `GET designer/captcha-provider` (each provider's name and `isConfigured`, never a key), with its row in the permission matrix (added in 7.4g).
-  - **The form check's Fix it** (ADR-0181, added in 9.5f): a problem in the form's settings or outcomes, which 9.5f leads to this view, opens the group and the setting it names, with the focus on it.
-  - Done when: Playwright covers each group, including validation messages, and follows the form check's Fix it of a setting and of an outcome to it.
+  - **The form check's Fix it** (ADR-0181, added in 9.5f): a problem in the form's settings, which 9.5f leads to this view, opens the group and the setting it names, with the focus on it.
+  - Done when: Playwright covers each of these groups, including validation messages, and follows the form check's Fix it of a setting to it.
+- [ ] **10.1b The form settings view: after sending** (split from 10.1, see WORKLOG)
+  - The outcomes editor of §4.3.4 and IA 5.2: an ordered list with rules, each outcome edited in a sidebar beside a live preview with a sample entry; the canvas's After sending opens it.
+  - **The form check's Fix it** (ADR-0181, added in 9.5f): a problem in an outcome, which 9.5f leads to this view, opens the outcome and the setting it names, with the focus on it.
+  - Done when: Playwright covers the After sending group, including validation messages, and follows the form check's Fix it of an outcome to it.
 - [ ] **10.2 The actions view and its editors**
   - **The list:** action cards per trigger (Submitted, Approved, Rejected, Verified), with order (drag and keyboard), an on/off switch, a rule chip and the last-run status.
   - **Adding:** an "add action" modal with presets.
