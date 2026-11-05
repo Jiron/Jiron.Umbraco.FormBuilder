@@ -625,6 +625,19 @@ export type OptionSourcesResponseModel = {
     sources: Array<OptionSourceResponseModel>;
 };
 
+export type OutcomePreviewRequestModel = {
+    definition: unknown;
+    outcome: string;
+    culture?: string | null;
+};
+
+export type OutcomePreviewResponseModel = {
+    html?: string | null;
+    address?: string | null;
+    delaySeconds: number;
+    direction: string;
+};
+
 export type PagedFieldMatchResponseModel = {
     total: number;
     items: Array<FieldMatchResponseModel>;
@@ -1581,6 +1594,45 @@ export type CaptchaProviderListResponses = {
 };
 
 export type CaptchaProviderListResponse = CaptchaProviderListResponses[keyof CaptchaProviderListResponses];
+
+export type OutcomePreviewRenderData = {
+    body?: OutcomePreviewRequestModel;
+    path: {
+        key: string;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/form/{key}/outcome-preview';
+};
+
+export type OutcomePreviewRenderErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type OutcomePreviewRenderError = OutcomePreviewRenderErrors[keyof OutcomePreviewRenderErrors];
+
+export type OutcomePreviewRenderResponses = {
+    /**
+     * OK
+     */
+    200: OutcomePreviewResponseModel;
+};
+
+export type OutcomePreviewRenderResponse = OutcomePreviewRenderResponses[keyof OutcomePreviewRenderResponses];
 
 export type FormSettingsChoicesData = {
     body?: never;

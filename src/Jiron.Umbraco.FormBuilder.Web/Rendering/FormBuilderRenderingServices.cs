@@ -33,6 +33,7 @@ internal static class FormBuilderRenderingServices
         builder.Services.TryAddSingleton<PageAssets>();
         builder.Services.TryAddSingleton<FormViews>();
         builder.Services.TryAddSingleton<FormModels>();
+        builder.Services.TryAddSingleton<OutcomePreviews>();
         builder.Services.TryAddSingleton<FormRendering>();
         builder.Services.TryAddSingleton<FormPostHandler>();
         builder.Services.TryAddSingleton<FormPostFilesMiddleware>();

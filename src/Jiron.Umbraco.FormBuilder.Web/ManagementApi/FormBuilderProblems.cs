@@ -66,6 +66,9 @@ internal static class FormBuilderProblems
     /// <summary>An action the form's draft does not hold (ADR-0158).</summary>
     public const string ActionNotFoundCode = "action_not_found";
 
+    /// <summary>An outcome the definition does not hold (ADR-0187).</summary>
+    public const string OutcomeNotFoundCode = "outcome_not_found";
+
     /// <summary>An action whose type the site lacks (ADR-0158).</summary>
     public const string ActionTypeUnknownCode = "action_type_unknown";
 
@@ -150,6 +153,10 @@ internal static class FormBuilderProblems
     /// <summary>An action the form's draft does not hold (ADR-0158).</summary>
     public static FormBuilderProblemResult ActionNotFound() =>
         Problem(StatusCodes.Status404NotFound, ActionNotFoundCode, "The form's draft has no such action.");
+
+    /// <summary>An outcome the definition does not hold (ADR-0187).</summary>
+    public static FormBuilderProblemResult OutcomeNotFound() =>
+        Problem(StatusCodes.Status404NotFound, OutcomeNotFoundCode, "The definition has no such outcome.");
 
     /// <summary>An action whose type the site lacks (ADR-0158).</summary>
     public static FormBuilderProblemResult ActionTypeUnknown() =>

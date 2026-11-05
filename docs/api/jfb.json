@@ -1731,6 +1731,111 @@
         ]
       }
     },
+    "/umbraco/jfb/management/api/v1/form/{key}/outcome-preview": {
+      "post": {
+        "tags": [
+          "Form settings"
+        ],
+        "operationId": "OutcomePreviewRender",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/OutcomePreviewRequestModel"
+                  }
+                ]
+              }
+            },
+            "text/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/OutcomePreviewRequestModel"
+                  }
+                ]
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/OutcomePreviewRequestModel"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/OutcomePreviewResponseModel"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The resource is protected and requires an authentication token"
+          },
+          "403": {
+            "description": "The authenticated user does not have access to this resource"
+          }
+        },
+        "security": [
+          {
+            "Backoffice-User": []
+          }
+        ]
+      }
+    },
     "/umbraco/jfb/management/api/v1/form/{key}/setting-choices": {
       "get": {
         "tags": [
@@ -8460,6 +8565,50 @@
                 }
               ]
             }
+          }
+        },
+        "additionalProperties": false
+      },
+      "OutcomePreviewRequestModel": {
+        "required": [
+          "definition",
+          "outcome"
+        ],
+        "type": "object",
+        "properties": {
+          "definition": {},
+          "outcome": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "culture": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "OutcomePreviewResponseModel": {
+        "required": [
+          "delaySeconds",
+          "direction"
+        ],
+        "type": "object",
+        "properties": {
+          "html": {
+            "type": "string",
+            "nullable": true
+          },
+          "address": {
+            "type": "string",
+            "nullable": true
+          },
+          "delaySeconds": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "direction": {
+            "type": "string"
           }
         },
         "additionalProperties": false

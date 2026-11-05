@@ -3,8 +3,6 @@ using Jiron.Umbraco.FormBuilder.Core.Email;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Abstractions;
-using Microsoft.AspNetCore.Mvc.ModelBinding;
-using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.AspNetCore.Mvc.ViewEngines;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.AspNetCore.Routing;
@@ -51,11 +49,7 @@ internal sealed class RazorEmailView(IServiceScopeFactory services) : IFormBuild
 
         var http = new DefaultHttpContext { RequestServices = scope.ServiceProvider, RequestAborted = cancellationToken };
         var action = new ActionContext(http, new RouteData(), new ActionDescriptor());
-        using var writer = new StringWriter(CultureInfo.InvariantCulture);
-        var data = new ViewDataDictionary<EmailViewModel>(new EmptyModelMetadataProvider(), new ModelStateDictionary()) { Model = model };
-        var temp = new TempDataDictionary(http, scope.ServiceProvider.GetRequiredService<ITempDataProvider>());
-        await found.View.RenderAsync(new ViewContext(action, found.View, data, temp, writer, new HtmlHelperOptions()));
-        return writer.ToString();
+        return await RazorViewText.WriteAsync(found.View, action, model, scope.ServiceProvider.GetRequiredService<ITempDataProvider>());
     }
 
     private static CultureInfo? CultureOf(string culture)
