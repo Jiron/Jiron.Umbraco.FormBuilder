@@ -421,6 +421,9 @@ describe("an action's sidebar", () => {
     await pause();
     // Asked about the draft as Update would make it: the action at its new place.
     expect(actionsOf(must(checking.asked.at(-1), 'the ask')).map((one) => one.key)).toEqual(['a2', 'x', 'a1']);
+    // Update hands the place back with the action.
+    await keep();
+    expect(modal.getValue()).toEqual({ action: second, at: 0 });
     // Another trigger: after that trigger's actions until a place is chosen there.
     await choose('trigger', 'approved');
     expect([[...place().options].map((one) => text(one)), place().value]).toEqual([['1 of 2', '2 of 2'], '1']);
