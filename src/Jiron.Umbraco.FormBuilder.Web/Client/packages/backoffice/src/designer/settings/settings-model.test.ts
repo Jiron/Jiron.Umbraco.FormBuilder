@@ -117,6 +117,7 @@ describe('where a path is in the view', () => {
         { group: 'submission', more: false, boxes: ['verification-days', 'verification'] },
       ],
       ['$.settings.submission.verification', { group: 'submission', more: false, boxes: ['verification'] }],
+      ['$.settings.submission.nextLabel', { group: 'submission', more: true, boxes: ['next-label'] }],
       ['$.settings.submission.backLabel', { group: 'submission', more: true, boxes: ['back-label'] }],
       ['$.settings.submission.entryReference.digits', { group: 'submission', more: true, boxes: ['reference-digits'] }],
       ['$.settings.submission.entryReference', { group: 'submission', more: true, boxes: ['reference-prefix'] }],
@@ -250,6 +251,10 @@ describe("a closed group's line", () => {
       'strict',
     );
     expect(line(own, 'protection')).toEqual(['protection_proofOfWork', 'summary_content_strict']);
+    expect(line(withSettingAt(DEFINITION, ['protection', 'contentRules'], 'off'), 'protection')).toEqual([
+      'siteDefault(protection_standard)',
+      'summary_content_off',
+    ]);
     expect(line(withProtection(DEFINITION, { kind: 'captcha', provider: 'recaptchaV3' }), 'protection')).toEqual([
       'reCAPTCHA v3',
     ]);

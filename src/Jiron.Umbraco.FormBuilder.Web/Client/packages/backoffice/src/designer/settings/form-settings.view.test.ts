@@ -326,13 +326,18 @@ describe('a setting', () => {
 
 describe('a choice and a switch', () => {
   it('show the value the draft has, through Undo and Redo', async () => {
-    const { workspace, view, choose, box } = await viewOf();
+    const { workspace, view, choose, box, click } = await viewOf();
     await choose('store', 'never');
     workspace.undo();
     await settle(view);
     expect(box<HTMLSelectElement>('store').value).toBe('always');
     workspace.redo();
     await settle(view);
+    expect(box<HTMLSelectElement>('store').value).toBe('never');
+    // A choice the browser puts back on its own, as it restores a page's boxes, gives way to the draft's at the next
+    // drawing.
+    box<HTMLSelectElement>('store').value = 'always';
+    await click(box('approval'));
     expect(box<HTMLSelectElement>('store').value).toBe('never');
   });
 
@@ -614,9 +619,12 @@ describe('the form check', () => {
         issue('$.settings.availability.memberGroups', 'property_not_supported'),
         issue('$.settings.protection.captcha.settings.score', 'setting_unknown'),
         issue('$.settings.submission.entryReference.digits', 'invalid_value'),
+        // Verification is off, so its field has no box: the problem shows at its switch.
+        issue('$.settings.submission.verification.emailField', 'part_missing'),
       ],
     });
     await settle(view);
+    expect(why('verification')).toHaveLength(1);
     expect(text(root.querySelector('.more-toggle .flag'))).toBe('1 problem');
     await open('availability');
     await open('protection');
@@ -667,6 +675,23 @@ describe('the form check', () => {
       'icon-info',
     ]);
     expect(text(line)).toBe('Warning: The site has no theme "retired", so the form shows with the default theme.');
+  });
+
+  it("counts no suggestion on a closed group's line, and shows it under its setting", async () => {
+    const definition = {
+      ...DEFINITION,
+      settings: { ...(DEFINITION['settings'] as object), appearance: { theme: 'retired' } },
+    };
+    const { workspace, view, open, head, root } = await viewOf(definition);
+    workspace.checks.setValue({
+      status: 'checked',
+      definition,
+      issues: [issue('$.settings.appearance.theme', 'theme_missing', 'hint')],
+    });
+    await settle(view);
+    expect(head('appearance').querySelector('.flag')).toBeNull();
+    await open('appearance');
+    expect(root.getElementById('theme-why-0')?.getAttribute('data-severity')).toBe('hint');
   });
 
   it('leaves a Fix it of another view to it', async () => {

@@ -172,10 +172,13 @@ class StandIn {
   readonly fixes = new UmbBasicState<FixTarget | null>(null);
   readonly fixRequest = this.fixes.asObservable();
   requestFix = (target: FixTarget) => this.fixes.setValue(target);
+  /** The Fix its this view took up itself. */
+  readonly taken: FixTarget[] = [];
   takeFix = (makes: (target: FixTarget) => boolean): FixTarget | null => {
     const target = this.fixes.getValue();
     if (!target || !makes(target)) return null;
     this.fixes.setValue(null);
+    this.taken.push(target);
     return target;
   };
   /** The language the views show, as a switch chose it. */
@@ -1802,6 +1805,7 @@ describe('the form check in the Design view (ADR-0181)', () => {
     expect(window.location.pathname).toBe('/umbraco/section/jfb-forms/workspace/jfb-form/edit/form1/view/settings');
     // Handed on to the view that makes it, which this view leaves for it.
     expect(workspace.fixes.getValue()).toEqual(target);
+    expect(workspace.taken).toEqual([]);
     workspace.fixes.setValue(null);
     history.replaceState(null, '', '/umbraco/section/jfb-forms/workspace/jfb-form/edit/form1/view/design');
     // The Actions view, still to come, is shown, and handed nothing it would make long after.
