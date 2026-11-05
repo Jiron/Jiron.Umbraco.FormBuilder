@@ -2723,23 +2723,40 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
 - [x] **10.1c The form settings view: an outcome's live preview** (split from 10.1b, see WORKLOG) (2026-11-05, 2129fa4)
   - The outcome's sidebar shows the outcome beside its settings as visitors get it with a sample entry made from the form's fields, as each setting changes: the server renders it, as it renders a real entry's, from the draft.
   - Done when: Playwright edits an outcome's message and its preview shows the sample entry's answers in place of its merge tags, a sensitive field's masked; integration tests cover the preview endpoint, with its row in the permission matrix and the OpenAPI snapshot.
-- [ ] **10.2 The actions view and its editors**
-  - **The list:** action cards per trigger (Submitted, Approved, Rejected, Verified), with order (drag and keyboard), an on/off switch, a rule chip and the last-run status.
-  - **Adding:** an "add action" modal with presets.
+- [ ] **10.2a The actions view: the list and an action's sidebar** (10.2 split in four, see WORKLOG)
+  - **The list:** action cards per trigger (Submitted, Approved, Rejected, Verified), with order (drag and keyboard), an on/off switch and a rule chip; the last-run status is 10.2d's. Each card says what the action does in one line, and its "…" duplicates it, moves it to another trigger and deletes it with Undo (IA 5.3). Without `manageActions` the view is read-only and says which permission changes it.
+  - **Verification** is no action of its own: the Verified trigger's list says that it needs the form's email verification setting (10.1) and links to it; Rejected says so of manual approval.
+  - **Adding:** an "add action" modal with presets: the action's sidebar, its first setting choosing what happens among the types and their presets (IA 5.3), then the trigger and the type's settings, drawn by the inspector's setting editors. The editors no type has yet are 10.2b's and 10.2c's.
+  - **The action's rule** in the rules builder, whose effect is `run` (§4.3.3), as 10.1b's outcome rule is `use`.
+  - **The form check's Fix it** (ADR-0181, added in 9.5f): a problem in an action, which 9.5f leads to this view, selects the action and opens the setting it names, with the focus on it.
+  - Done when:
+    - Playwright adds an action from a preset, moves it by dragging and by the keyboard, switches it off, gives it a rule, and deletes it and brings it back with Undo;
+    - Playwright opens the view as a user without `manageActions` and finds it read-only;
+    - Playwright follows a link of 9.2's copy-actions result, which opens the target's Actions view with the copied action selected (`?action=`, ADR-0166);
+    - Playwright follows the form check's Fix it of an action's setting to it.
+- [ ] **10.2b The actions view: the email editor and Test** (10.2 split in four, see WORKLOG)
   - **The email editor:** a recipient builder, the merge-tag picker (its paths from 9.4c's endpoint, for mail), and a live preview with a sample entry.
-  - **Test run.**
+  - **Test run:** on a card and in the sidebar, for the action as the sidebar holds it, saved or not, against the sample entry (ADR-0187).
+  - The form check's Fix it lands on the email editor's own settings too.
+  - Done when:
+    - Playwright configures an email action from a preset, and a test-run email lands in the pickup folder;
+    - Playwright edits the email's body and its preview shows the sample entry's answers in place of its merge tags;
+    - integration tests cover every new endpoint, with its row in the permission matrix and the OpenAPI snapshot.
+- [ ] **10.2c The actions view: the other action editors** (10.2 split in four, see WORKLOG)
   - **The other action editors:**
     - **Webhook:** a mapping table, a signature help text and a test.
     - **Slack and Teams.**
     - **Content:** document type and property mapping; the site's document types come with the setting as its choices, as the option sources serve them (ADR-0173), since Umbraco lists them only to users of its Settings section.
     - **Set state.**
-    - **Verification** is no action of its own: the Verified trigger's list says that it needs the form's email verification setting (10.1) and links to it.
-  - **The form check's Fix it** (ADR-0181, added in 9.5f): a problem in an action, which 9.5f leads to this view, selects the action and opens the setting it names, with the focus on it.
+  - The form check's Fix it lands on each editor's own settings too.
   - Done when:
-    - Playwright configures an email action from a preset, and a test-run email lands in the pickup folder;
     - Playwright configures and test-runs each type (webhooks against the stub on 5560);
-    - Playwright follows a link of 9.2's copy-actions result, which opens the target's Actions view with the copied action selected (`?action=`, ADR-0166).
-    - Playwright follows the form check's Fix it of an action's setting to it.
+    - integration tests cover every new endpoint, with its row in the permission matrix and the OpenAPI snapshot.
+- [ ] **10.2d The actions view: the last run and its details** (10.2 split in four, see WORKLOG)
+  - **The last-run status** on each card ("Delivered 2 hours ago"); a failed or uncertain last run links to **Details**: what the server answered and the tries, never the entry, who can retry the run (ADR-0013, amendment), and Test (IA 5.3).
+  - Done when:
+    - Playwright shows an action's last run, and a failed one's Details with the server's answer and its tries (the webhook stub answering with an error);
+    - integration tests cover the endpoint, with its row in the permission matrix and the OpenAPI snapshot, and show it naming no entry and no answer.
 - [ ] **10.3 Preview, publishing and history**
   - **Preview:** a modal with the draft rendered by the chosen theme in an iframe (from a preview endpoint), device widths, light and dark, and a culture switch. Test submissions are marked `IsTest`. **Fill with sample answers** (added in 1.1) fills every field with valid values in one click, so editors can try rules and outcomes quickly.
   - **Publish:** a summary of the changes against the live version, and draft and unpublished badges.
