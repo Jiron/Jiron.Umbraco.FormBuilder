@@ -16,7 +16,7 @@ const card = (key: string, more: Partial<ActionCard> = {}): ActionCard => ({
   ...more,
 });
 
-async function listOf(cards: readonly ActionCard[], readOnly = false) {
+async function listOf(cards: readonly ActionCard[], readOnly = false, full = false) {
   const host = testHost();
   const list = new ActionListElement();
   const opened: string[] = [];
@@ -26,6 +26,7 @@ async function listOf(cards: readonly ActionCard[], readOnly = false) {
   list.cards = cards;
   list.label = 'Submitted';
   list.readOnly = readOnly;
+  list.full = full;
   list.open = (key) => opened.push(key);
   list.move = (from, to) => {
     moves.push([from, to]);
@@ -69,6 +70,21 @@ describe("a trigger's cards", () => {
     const flag = must(rows()[2]?.querySelector<HTMLElement>('.flag'), 'the flag');
     expect(flag.dataset['severity']).toBe('warning');
     expect(text(rows()[2]?.querySelector('.line'))).toMatch(/^2 problems/);
+  });
+
+  it('draw no line where it would only repeat the name, and the problems alone where there are some', async () => {
+    const { rows } = await listOf([
+      card('a', { summary: '' }),
+      card('b', { summary: '', flag: { count: 1, error: true } }),
+    ]);
+    expect(rows()[0]?.querySelector('.line')).toBeNull();
+    expect(text(rows()[1]?.querySelector('.line'))).toBe('1 problem');
+  });
+
+  it('offer no Duplicate once the form holds the most actions it can have', async () => {
+    const { rows } = await listOf([card('a')], false, true);
+    const items = [...(rows()[0]?.querySelectorAll<HTMLButtonElement>('.menu button') ?? [])];
+    expect(items.map((item) => text(item))).toEqual(['Move to another trigger\u2026', 'Delete']);
   });
 
   it('draw nothing for a trigger without actions', async () => {

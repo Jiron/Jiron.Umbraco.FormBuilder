@@ -11,8 +11,6 @@ import type { ActionChoice, ActionSetting, DesignAction, Trigger, TriggerNeed } 
 export interface ActionModalData {
   /** The action to change; null for a new one, which starts with the first choice of what happens. */
   readonly action: DesignAction | null;
-  /** A new action's trigger, as the view chose it. */
-  readonly trigger?: Trigger;
   /** The draft as the view has it, which the action is checked in and its rule built on. */
   readonly definition: DesignDefinition;
   /** The form's key, which reads a field's options for the rules builder. */
@@ -41,8 +39,12 @@ export interface ActionModalData {
   readonly closed?: () => void;
 }
 
-/** The action as Add or Update keeps it, or the action deleted. */
-export type ActionModalValue = { readonly action: DesignAction } | { readonly deleted: true };
+/**
+ * The action as Add or Update keeps it, with its place among its trigger's where one was chosen (null keeps it where it
+ * is, or puts a new one, or one with another trigger, at the end), or the action deleted.
+ */
+export type ActionModalValue =
+  { readonly action: DesignAction; readonly at: number | null } | { readonly deleted: true };
 
 export const ACTION_MODAL = new UmbModalToken<ActionModalData, ActionModalValue>(ACTION_MODAL_ALIAS, {
   modal: { type: 'sidebar', size: 'medium' },

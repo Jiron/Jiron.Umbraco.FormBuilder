@@ -170,14 +170,16 @@ export class FormWorkspaceContext
   /**
    * A link's `?action=` (ADR-0166, ADR-0188): the Actions view shows that action's card with the focus on it, as a Fix
    * it at the action. It is asked once the router has shown the view it routes to, which it would otherwise follow, and
-   * once the name box holds the focus Umbraco gives it as the workspace opens, which it would otherwise take back.
+   * once the name box holds the focus Umbraco gives it as the workspace opens, which it would otherwise take back. A press
+   * before then is the user's move, which it leaves alone; and who may not design the form has no Actions view to go to.
    */
   #showAction(key: string) {
     setTimeout(
       () =>
-        void afterNameFocus().then(() =>
-          followFix({ kind: 'view', view: 'actions', path: '$.actions', key }, (fix) => this.requestFix(fix)),
-        ),
+        void afterNameFocus().then((free) => {
+          if (free && this.canDesign())
+            followFix({ kind: 'view', view: 'actions', path: '$.actions', key }, (fix) => this.requestFix(fix));
+        }),
     );
   }
 

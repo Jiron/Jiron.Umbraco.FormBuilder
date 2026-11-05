@@ -66,15 +66,22 @@ For the read-only state:
   <name>", and "…" (More actions for <name>): Duplicate, Move to another trigger…, Delete. Duplicate puts a copy with a
   new key and "<name> (copy)" right after it; Move to another trigger… opens the sidebar with the focus on the trigger;
   Delete takes it away with Undo in the toast. A card moves within its trigger by its handle or Alt+Up and Alt+Down, and
-  the other triggers' actions keep their places in the definition's one list.
+  the other triggers' actions keep their places in the definition's one list. The switch says its own state; a later
+  change closes the toast, whose Undo would take back that one; Undo and Redo keep the focus on the card it was on, or
+  put it on Add action where the card is gone; at the most actions a form can have, "…" offers no Duplicate.
 - **Add action** opens the sidebar ready to email the team, the most common action. What happens offers every preset
   of every type and a type without presets as itself, in the registry's order: Email the team, Confirm to the
   visitor, Webhook, Slack, Microsoft Teams, Change the entry's state, Create or update content. Choosing another
   replaces the settings below it, and the name follows the choice until it is typed. Then the name, the trigger
-  (Submitted unless chosen), the type's settings as the inspector draws them (Essentials, then More options), whether
-  a failure stops the rest, and the rule, which the rules builder edits as an outcome's: its effect is `run`, its
+  (Submitted unless chosen), the place in the list among that trigger's actions (as an outcome's, a pointer's way to
+  order them without dragging, WCAG 2.5.7), the type's settings as the inspector draws them (Essentials, then More
+  options), whether a failure stops the rest, and the rule, which the rules builder edits as an outcome's: its effect is `run`, its
   first line "Run Email the team when", and every field and context a subject. Footer: Cancel and Add, or Update
-  with Delete action; Test comes with 10.2b. An existing action keeps its type, said under the headline.
+  with Delete action; Test comes with 10.2b. An existing action keeps its type, said under the headline. The sidebar
+  asks the form check about the draft as Add or Update would make it (`keptIn`, which the view keeps it by too): an
+  action of the form shows the problems it has at once, a new one's show once their box is left or Add is pressed; a
+  problem of a setting whose editor comes later shows under What happens, by the setting's name, so the button is never
+  held back without a word; and a value typed in a setting that another choice took away holds nothing back.
 - **The words** of the view and its sidebar load with the view: `lang/actions.en.ts` and `actions.de.ts`, registered
   through Umbraco's localization manager (which merges a language's words) before the view draws, so no key ever
   shows; `lang.test.ts` holds them to the same keys. The names of the types and presets stay in the start tables, as
@@ -89,9 +96,11 @@ For the read-only state:
   Actions view takes it: the action's sidebar on the setting the path names, or its card with the focus for a path at
   the action itself or the list. `?action=<key>` on a form's address is read before the router drops the query, and
   hands the Actions view a Fix it at that action, which shows its card with the focus on its name. On a workspace
-  that opens with the link, Umbraco's name box takes the focus and takes it back every 100 ms until it holds it, so
-  the Fix it waits until the box has it (`name-focus.ts`, at most five seconds, as a form the user may not rename has
-  no box).
+  that opens with the link, Umbraco's name box takes the focus and looks 100 ms later whether it holds it, taking it
+  again where its first try was still on its way; so the Fix it waits until the box has held the focus past that look
+  (`name-focus.ts`: 250 ms, at most five seconds in all). It gives up where the user pressed a
+  key or a pointer first, which is their move, and leads nowhere for who may not design the form, who has no Actions
+  view.
 
 ## Consequences
 

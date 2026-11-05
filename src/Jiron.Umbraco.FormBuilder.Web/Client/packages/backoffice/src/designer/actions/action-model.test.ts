@@ -13,8 +13,10 @@ import {
   editOf,
   inTrigger,
   isOn,
+  keptIn,
   movedWithin,
   newEdit,
+  placeOf,
   runRuleOf,
   settingAt,
   settingAtPath,
@@ -98,6 +100,30 @@ describe("the form's actions", () => {
     expect(withTrigger(actions, 'gone', 'approved')).toEqual(actions);
   });
 
+  it('are kept by Add and Update in their place, at the end of a new trigger, or at the place chosen', () => {
+    const actions = [action('s1'), action('a1', 'approved'), action('s2'), action('a2', 'approved')];
+    // Changed in its place; new at the end of its trigger.
+    expect(keys(keptIn(actions, { ...action('s1'), name: 'Renamed' }))).toEqual(['s1', 'a1', 's2', 'a2']);
+    expect(keys(keptIn(actions, action('s3')))).toEqual(['s1', 'a1', 's2', 's3', 'a2']);
+    // Another trigger: at the end of its actions, carrying its new trigger.
+    const moved = keptIn(actions, action('s1', 'approved'));
+    expect(keys(moved)).toEqual(['a1', 's2', 'a2', 's1']);
+    expect(moved.at(-1)?.trigger).toBe('approved');
+    // A place chosen among its trigger's; the other triggers' keep theirs.
+    expect(keys(keptIn(actions, action('s2'), 0))).toEqual(['s2', 'a1', 's1', 'a2']);
+    expect(keys(keptIn(actions, action('s3'), 0))).toEqual(['s3', 'a1', 's1', 's2', 'a2']);
+    expect(keys(keptIn(actions, action('s1', 'approved'), 1))).toEqual(['a1', 's2', 's1', 'a2']);
+    expect(keys(keptIn(actions, action('s1'), 0))).toEqual(keys(actions));
+  });
+
+  it("say an action's place among a trigger's: where it is, or after the others", () => {
+    const actions = [action('s1'), action('a1', 'approved'), action('s2')];
+    expect(placeOf(actions, 's2', 'submitted')).toEqual({ at: 1, count: 2 });
+    expect(placeOf(actions, 'new', 'submitted')).toEqual({ at: 2, count: 3 });
+    // An action going to another trigger comes after that trigger's.
+    expect(placeOf(actions, 's1', 'approved')).toEqual({ at: 1, count: 2 });
+  });
+
   it('copy one right after it, with keys of its own and its name as a copy', () => {
     let next = 0;
     const newKey = () => `new-${++next}`;
@@ -140,13 +166,17 @@ describe('what an action does, in one line', () => {
   const field = (key: string) => (key === 'f-email' ? 'Email address' : undefined);
   const of = (type: string, settings: Record<string, unknown>) => summaryOf({ key: 'k', type, settings }, field);
 
-  it("says an email's recipients, the field it goes to, the form's creator, or no one yet", () => {
+  it("says an email's recipients, the field it goes to, the form's creator, a choice that routes it, or no one yet", () => {
     expect(of('email', { to: ['sales@example.com', ' support@example.com'] })).toEqual({
       term: 'summary_emailTo',
       args: [['sales@example.com', 'support@example.com']],
     });
     expect(of('email', { toField: 'f-email' })).toEqual({ term: 'summary_emailToField', args: ['Email address'] });
     expect(of('email', { toField: 'f-gone', toCreator: true })).toEqual({ term: 'summary_emailToCreator', args: [] });
+    expect(of('email', { recipientMap: { field: 'f-topic', recipients: {} } })).toEqual({
+      term: 'summary_emailRouted',
+      args: [],
+    });
     expect(of('email', {})).toEqual({ term: 'summary_emailNoOne', args: [] });
   });
 
@@ -241,8 +271,8 @@ describe('an action as its sidebar edits it', () => {
       trigger: 'submitted',
       stopOnFailure: false,
     });
-    expect(newEdit('n', choice, 'Approve', 'approved')).toMatchObject({
-      trigger: 'approved',
+    expect(newEdit('n', choice, 'Approve')).toMatchObject({
+      trigger: 'submitted',
       named: false,
       choice: 'setState',
     });

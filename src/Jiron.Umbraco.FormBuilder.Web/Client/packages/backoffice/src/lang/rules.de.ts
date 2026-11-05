@@ -95,7 +95,7 @@ export default {
     when: 'wenn',
     useWhen: (number: number) => `Abschluss ${number} verwenden, wenn`,
     useWhenNew: 'Den neuen Abschluss verwenden, wenn',
-    runWhen: (name: string) => `${name} ausführen, wenn`,
+    runWhen: (name: string) => `„${name}“ ausführen, wenn`,
     runWhenNew: 'Die neue Aktion ausführen, wenn',
     matchLabel: 'Wie viele davon zutreffen müssen',
     matchAll: 'alle davon treffen zu',

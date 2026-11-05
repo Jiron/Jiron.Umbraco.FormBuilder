@@ -1,6 +1,6 @@
 // An action's sidebar (ROADMAP 10.2a, IA 5.3, ADR-0188): for a new action, what happens first, a choice of the types'
 // presets that replaces the settings below it; then the name, which follows that choice until it is typed, when it
-// runs, the type's own settings as the inspector draws them (Essentials, then More options), whether a failure stops the
+// runs and its place among that trigger's actions, the type's own settings as the inspector draws them (Essentials, then More options), whether a failure stops the
 // rest, and the action's rule, which the rules builder edits over it. An action of the form keeps its type, said where
 // the choice would be. The form check is asked about the draft as Add or Update would make it once the changes pause,
 // and its problems in the action show under their box: those it had at once, others once their box is left or the
@@ -44,10 +44,11 @@ import {
   actionOf,
   actionsOf,
   editOf,
+  keptIn,
   newEdit,
+  placeOf,
   settingAt,
   settingAtPath,
-  withAction,
   withActions,
   withChoice,
   withSettingAt,
@@ -62,6 +63,7 @@ const BOX = {
   whatHappens: 'what-happens',
   name: 'name',
   trigger: 'trigger',
+  place: 'place',
   stopOnFailure: 'stop-on-failure',
   rule: 'rule',
 } as const;
@@ -87,6 +89,7 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
     _tried: { state: true },
     _checking: { state: true },
     _more: { state: true },
+    _at: { state: true },
   };
 
   static override styles = [
@@ -219,6 +222,8 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
   declare private _checking: boolean;
   /** Whether the type's settings beyond Essentials show. */
   declare private _more: boolean;
+  /** The place chosen among its trigger's actions; null for where it is, or after the others. */
+  declare private _at: number | null;
 
   /** Whether the button is waiting for the check, so a second press does not keep the action twice. */
   #submitting = false;
@@ -237,6 +242,7 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
     this._tried = false;
     this._checking = false;
     this._more = false;
+    this._at = null;
   }
 
   override connectedCallback() {
@@ -247,7 +253,7 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
     this._edit = data.action
       ? editOf(data.action)
       : first
-        ? newEdit(crypto.randomUUID(), first, this.#say(first.name), data.trigger)
+        ? newEdit(crypto.randomUUID(), first, this.#say(first.name))
         : this._edit;
     this.#answered = false;
     if (data.readOnly) return;
@@ -292,10 +298,26 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
     return this.data?.actionTypes.find((type) => type.alias === this._edit.type);
   }
 
-  /** The draft as Add or Update would make it: the action in its place, or a new one at the end of its trigger's. */
+  /** The draft as Add or Update would make it: the action at its place among its trigger's (`keptIn`). */
   #draft(): DesignDefinition {
     const definition = this.data?.definition ?? { pages: [] };
-    return withActions(definition, withAction(actionsOf(definition), actionOf(this._edit)));
+    return withActions(definition, keptIn(actionsOf(definition), actionOf(this._edit), this._at));
+  }
+
+  /** The action's place among its trigger's: as chosen, or where it is, or after the others; and how many there are. */
+  #place(): { readonly at: number; readonly count: number } {
+    const place = placeOf(actionsOf(this.data?.definition ?? { pages: [] }), this._edit.key, this._edit.trigger);
+    return { at: Math.min(this._at ?? place.at, place.count - 1), count: place.count };
+  }
+
+  /** The names of the type's settings the sidebar has an editor for; the others come with 10.2b and 10.2c. */
+  #drawable(): ReadonlySet<string> {
+    const context = this.#context(new Map());
+    return new Set(
+      (this.#type()?.settings ?? [])
+        .filter((setting) => settingEditor(context, setting, this.#valueOf(setting)) !== nothing)
+        .map((setting) => setting.name),
+    );
   }
 
   /** A change of the action: `done` once its box is left, after which the check's problems with it show. */
@@ -349,7 +371,8 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
     this._check = state;
     if (this.#answered || state.status !== 'checked') return;
     this.#answered = true;
-    this._shown = new Set([...this._shown, ...this.#found().keys()]);
+    // An action of the form shows the problems it has at once; a new one's show once their box is left, or Add pressed.
+    if (this.data?.action) this._shown = new Set([...this._shown, ...this.#found().keys()]);
   }
 
   /** The box a problem's place in the action shows under. */
@@ -363,16 +386,20 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
         return BOX.stopOnFailure;
       case 'rule':
         return BOX.rule;
-      case 'setting':
-        return boxId(setting.path.split('.')[0] ?? setting.path);
+      case 'setting': {
+        // A setting without its editor yet says its problems under what happens.
+        const name = setting.path.split('.')[0] ?? setting.path;
+        return this.#drawable().has(name) ? boxId(name) : BOX.whatHappens;
+      }
       case 'action':
         return this.data?.action ? BOX.name : BOX.whatHappens;
     }
   }
 
   /**
-   * The check's problems in this action, by the box they show under. An answer about the action as it was before the
-   * last change shows only those of the boxes still drawn: another type's settings would land at the wrong box.
+   * The check's problems in this action, by the box they show under; one of a setting without its editor yet under what
+   * happens, by the setting's name. An answer about the action as it was before the last change shows none of a setting
+   * the type lacks: it is another type's, which the last choice replaced.
    */
   #found(): Map<string, Shown[]> {
     const found = new Map<string, Shown[]>();
@@ -390,16 +417,18 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
       types: data.fieldTypes,
       names: elementNames(checked, data.culture, term),
     };
-    const drawn = new Set(this.#type()?.settings.map((setting) => boxId(setting.name)) ?? []);
+    const settings = this.#type()?.settings ?? [];
     for (const issue of this._check.issues) {
       const steps = parsePath(issue.path);
       if (!steps || steps[0] !== 'actions' || steps[1] !== index) continue;
-      const box = this.#boxOf(settingAtPath(steps.slice(2)));
-      if (!current && box.startsWith('setting-') && !drawn.has(box)) continue;
-      found.set(box, [
-        ...(found.get(box) ?? []),
-        { text: issueWords(issue, checked, words).said, severity: issue.severity },
-      ]);
+      const at = settingAtPath(steps.slice(2));
+      const own = at.kind === 'setting' ? settings.find((one) => one.name === at.path.split('.')[0]) : undefined;
+      if (!current && at.kind === 'setting' && !own) continue;
+      const box = this.#boxOf(at);
+      const said = issueWords(issue, checked, words).said;
+      const text =
+        at.kind === 'setting' && box === BOX.whatHappens ? `${this.#say(own?.label) || at.path}: ${said}` : said;
+      found.set(box, [...(found.get(box) ?? []), { text, severity: issue.severity }]);
     }
     return found;
   }
@@ -432,7 +461,8 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
 
   async #submit() {
     if (this.#submitting) return;
-    // The first box that says why, as the sidebar shows them, takes the focus.
+    // The first box that says why, as the sidebar shows them, takes the focus. Each is drawn: another choice of what
+    // happens takes the typed problems of the settings it replaces with them, and More options stay open over one.
     const typed = [...this._typed.keys()][0];
     if (typed) {
       this.shadowRoot?.getElementById(typed)?.focus();
@@ -460,7 +490,7 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
         return;
       }
     }
-    this.value = { action: actionOf(this._edit) };
+    this.value = { action: actionOf(this._edit), at: this._at };
     this._submitModal();
   }
 
@@ -534,8 +564,10 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
         ${whys(BOX.whatHappens, problems, this.#weight)}
       </div>`;
     }
-    const choose = (choice: ActionChoice) =>
+    const choose = (choice: ActionChoice) => {
+      this._typed = new Map([...this._typed].filter(([box]) => !box.startsWith('setting-')));
       this.#change(withChoice(this._edit, choice, this.#say(choice.name)), BOX.whatHappens, true);
+    };
     return html`<fieldset
       class="item"
       id=${BOX.whatHappens}
@@ -623,7 +655,10 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
               value=${trigger}
               aria-describedby=${`trigger-needs-${trigger}`}
               .checked=${live(this._edit.trigger === trigger)}
-              @change=${() => this.#change({ ...this._edit, trigger }, BOX.trigger, true)}
+              @change=${() => {
+                this._at = null;
+                this.#change({ ...this._edit, trigger }, BOX.trigger, true);
+              }}
             />
             <span class="choice-name">${this.#term(`trigger_${trigger}`)}</span>
             <span class="choice-line" id=${`trigger-needs-${trigger}`}
@@ -634,6 +669,35 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
       </div>
       ${whys(BOX.trigger, problems, this.#weight)}
     </fieldset>`;
+  }
+
+  // Where the action runs among its trigger's, which a pointer chooses without dragging a card (WCAG 2.5.7); nothing
+  // where it is alone there, or for who may not change it, whose list shows the order.
+  #placeBox(): TemplateResult | typeof nothing {
+    const { at, count } = this.#place();
+    if (count < 2 || this.data?.readOnly) return nothing;
+    return html`<div class="item">
+      <label class="label" for=${BOX.place}>${this.#term('place')}</label>
+      <p class="help" id="place-help">${this.#term('placeHelp')}</p>
+      <select
+        id=${BOX.place}
+        class="short"
+        aria-describedby="place-help"
+        .value=${live(String(at))}
+        @change=${(event: Event) => {
+          this._at = Number((event.target as HTMLSelectElement).value);
+          this.#checker?.changed(this.#draft());
+        }}
+      >
+        ${Array.from(
+          { length: count },
+          (_, place) =>
+            html`<option value=${String(place)} ?selected=${place === at}>
+              ${this.#term('placeOf', place + 1, count)}
+            </option>`,
+        )}
+      </select>
+    </div>`;
   }
 
   /** The editors' context: the inspector's words, the boxes' problems, and a change of a setting at its path. */
@@ -695,7 +759,11 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
     const { shown, more } = this.#split(found);
     if (shown.length + more.length === 0) return nothing;
     // A setting under More options with a problem the check shows keeps them open: the problem is said where it is.
-    const flagged = more.some((one) => this.#checkedAt(boxId(one.setting.name), found).length > 0);
+    const typedAt = (id: string) => [...this._typed.keys()].some((box) => box === id || box.startsWith(`${id}-`));
+    const flagged = more.some((one) => {
+      const id = boxId(one.setting.name);
+      return this.#checkedAt(id, found).length > 0 || typedAt(id);
+    });
     const showsMore = this._more || flagged;
     return html`<div class="settings">
       ${shown.map((one) => one.template)} ${showsMore ? more.map((one) => one.template) : nothing}
@@ -787,8 +855,8 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
     const readOnly = data.readOnly;
     return html`<umb-body-layout headline=${data.action ? this.#nameShown() : this.#term('headlineNew')}>
       <div class="action">
-        ${this.#whatHappens(found)} ${this.#name(found)} ${this.#trigger(found)} ${this.#settings(found)}
-        ${this.#stopOnFailure(found)} ${this.#rule(found)}
+        ${this.#whatHappens(found)} ${this.#name(found)} ${this.#trigger(found)} ${this.#placeBox()}
+        ${this.#settings(found)} ${this.#stopOnFailure(found)} ${this.#rule(found)}
         ${
           data.action && !readOnly
             ? html`<div class="delete-body">

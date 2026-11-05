@@ -17,7 +17,7 @@ export interface ActionCard {
   readonly key: string;
   readonly name: string;
   readonly icon: string;
-  /** What it does, in one line. */
+  /** What it does, in one line; empty where that would only repeat its name. */
   readonly summary: string;
   /** Its rule in words; null for an action without one. */
   readonly rule: string | null;
@@ -34,6 +34,7 @@ export class ActionListElement extends UmbLitElement {
     cards: { attribute: false },
     label: {},
     readOnly: { type: Boolean, attribute: 'read-only' },
+    full: { type: Boolean },
     open: { attribute: false },
     move: { attribute: false },
     toggle: { attribute: false },
@@ -269,6 +270,8 @@ export class ActionListElement extends UmbLitElement {
   declare label: string;
   /** Without `manageActions`: no handles, switches or "..." (IA 5.3). */
   declare readOnly: boolean;
+  /** Whether the form holds the most actions it can have, so "..." offers no Duplicate. */
+  declare full: boolean;
   /** Opens an action's sidebar by its key. */
   declare open: (key: string) => void;
   /** Moves the card at `from` to `to` among the trigger's, as a change of the draft. */
@@ -288,6 +291,7 @@ export class ActionListElement extends UmbLitElement {
     this.cards = [];
     this.label = '';
     this.readOnly = false;
+    this.full = false;
     this.open = () => undefined;
     this.move = () => undefined;
     this.toggle = () => undefined;
@@ -303,6 +307,11 @@ export class ActionListElement extends UmbLitElement {
     target?.focus();
     target?.scrollIntoView?.({ block: 'nearest' });
     return Boolean(target);
+  }
+
+  /** The action whose card holds the focus, its menu included, or null. */
+  focusedKey(): string | null {
+    return this.shadowRoot?.activeElement?.closest<HTMLElement>('[data-key]')?.dataset['key'] ?? null;
   }
 
   /** Says a change in the list's live region. */
@@ -399,9 +408,13 @@ export class ActionListElement extends UmbLitElement {
         }}
       >
         <div class="menu">
-          <button type="button" @click=${() => this.#ask(card.key, 'duplicate')}>
-            <uui-icon name="icon-documents" aria-hidden="true"></uui-icon>${this.#term('duplicate')}
-          </button>
+          ${
+            this.full
+              ? nothing
+              : html`<button type="button" @click=${() => this.#ask(card.key, 'duplicate')}>
+                  <uui-icon name="icon-documents" aria-hidden="true"></uui-icon>${this.#term('duplicate')}
+                </button>`
+          }
           <button type="button" @click=${() => this.#ask(card.key, 'moveTrigger')}>
             <uui-icon name="icon-split" aria-hidden="true"></uui-icon>${this.#term('moveTrigger')}
           </button>
@@ -448,9 +461,13 @@ export class ActionListElement extends UmbLitElement {
               <uui-icon class="kind" name=${card.icon} aria-hidden="true"></uui-icon>
               <button type="button" class="open" @click=${() => this.open(card.key)}>
                 <span class="name">${card.name}</span>
-                <span class="line"
-                  >${flagLine(card.flag, (number) => this.#term('problems', number), DOT)}${card.summary}</span
-                >
+                ${
+                  card.summary || card.flag?.count
+                    ? html`<span class="line"
+                        >${flagLine(card.flag, (number) => this.#term('problems', number), card.summary ? DOT : undefined)}${card.summary}</span
+                      >`
+                    : nothing
+                }
                 ${
                   card.rule
                     ? html`<span class="rule"

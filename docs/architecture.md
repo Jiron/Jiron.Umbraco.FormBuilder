@@ -299,7 +299,8 @@ flowchart LR
   form check asked about the draft as Add or Update would make it, the rule a `run` rule in the rules builder. The
   view's words load with it (`action-words.ts` registers `lang/actions.<xx>.ts` with Umbraco's localization manager),
   so the backoffice's start does not carry them. Fix it of an action carries its key; `?action=` on a form's address
-  hands the view a Fix it at that action once the name box holds the focus Umbraco gives it (`name-focus.ts`).
+  hands the view a Fix it at that action once the name box has held the focus Umbraco gives it past its second look
+  (`name-focus.ts`).
 
 ## 2. The definition model
 

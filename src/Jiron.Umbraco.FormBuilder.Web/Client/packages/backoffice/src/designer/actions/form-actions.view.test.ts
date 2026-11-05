@@ -163,9 +163,10 @@ class StandIn {
 /** The toasts the view shows. */
 const toasts = {
   shown: [] as { color: string; data: Partial<UndoNotificationData> & { message: string } }[],
+  closed: 0,
   peek(color: string, options: { data: Partial<UndoNotificationData> & { message: string } }) {
     this.shown.push({ color, data: options.data });
-    return { close: () => undefined };
+    return { close: () => void this.closed++ };
   },
 };
 
@@ -204,6 +205,7 @@ beforeEach(() => {
   opened.sidebars = [];
   opened.answer = undefined;
   toasts.shown = [];
+  toasts.closed = 0;
   history.replaceState(null, '', ADDRESS);
 });
 
@@ -226,9 +228,7 @@ describe('the Actions view', () => {
       '',
       '',
     ]);
-    expect(text(sections()[1]?.querySelector('.none'))).toBe(
-      'No actions run as each entry comes in, because this form has no manual approval.',
-    );
+    expect(text(sections()[1]?.querySelector('.none'))).toBe('No actions here yet.');
     expect(text(sections()[2]?.querySelector('.off'))).toBe(
       'Runs when someone rejects an entry. It needs manual approval: turn it on in Settings',
     );
@@ -256,7 +256,7 @@ describe('the Actions view', () => {
     });
     const { sections, names } = await viewOf(manual);
     expect(text(sections()[1]?.querySelector('.when'))).toBe('when someone approves an entry');
-    expect(text(sections()[3]?.querySelector('.none'))).toBe('No actions run when a visitor confirms their address.');
+    expect(text(sections()[3]?.querySelector('.none'))).toBe('No actions here yet.');
     expect(names('rejected')).toEqual(['Action r']);
     document.body.replaceChildren();
     const held = await viewOf(definitionWith([action('r', { trigger: 'rejected' })]));
@@ -294,6 +294,7 @@ describe('the Actions view', () => {
           ],
         }),
         action('d', { type: 'crm', name: 'Our CRM' }),
+        action('e', { type: 'crm', name: null }),
       ]),
     );
     const lines = cards('submitted').map((card) => [
@@ -306,6 +307,8 @@ describe('the Actions view', () => {
       ['Email', 'To the answer of Email address', ''],
       ['Send to the CRM', 'Webhook to crm.example.com', 'Runs when Topic is "Sales"'],
       ['Our CRM', 'crm', ''],
+      // Without a name of its own, its type is its name, said once.
+      ['crm', '', ''],
     ]);
   });
 
@@ -340,13 +343,13 @@ describe('the Actions view', () => {
     ]);
   });
 
-  it('switches an action off as one step to undo, and says so', async () => {
+  it('switches an action off as one step to undo, its state said by the switch alone', async () => {
     const { workspace, view, list, actions, said } = await viewOf(definitionWith([action('a'), action('b')]));
     list('submitted').toggle('b', false);
     await settle(view);
     expect(actions().map((one) => one.enabled)).toEqual([true, false]);
     expect(workspace.said).toEqual(['Switched an action on or off']);
-    expect(said()).toBe('Action b is off.');
+    expect(said()).toBe('');
     // Ctrl+Z outside a text box takes it back.
     view.dispatchEvent(new KeyboardEvent('keydown', { key: 'z', ctrlKey: true, bubbles: true, composed: true }));
     await settle(view);
@@ -383,10 +386,39 @@ describe('the Actions view', () => {
     await toast.data.undo?.();
     await settle(view);
     expect(names('submitted')).toEqual(['Action a', 'Action b']);
+    await vi.waitFor(() =>
+      expect(shadow(list('submitted')).activeElement?.closest('.card')?.getAttribute('data-key')).toBe('a'),
+    );
+  });
+
+  it('closes the toast with Undo once another change is made, as its Undo would take that one back', async () => {
+    const { view, list } = await viewOf(definitionWith([action('a'), action('b')]));
+    list('submitted').request('a', 'delete');
+    await settle(view);
+    expect(toasts.closed).toBe(0);
+    list('submitted').toggle('b', false);
+    await settle(view);
+    expect(toasts.closed).toBe(1);
+  });
+
+  it('keeps the focus on the card it was on through Undo, or puts it on Add action where Undo takes the card away', async () => {
+    const { view, list, names } = await viewOf(definitionWith([action('a')]));
+    opened.answer = { action: action('n'), at: null };
+    must(shadow(view).querySelector<HTMLElement>('#add'), 'Add action').click();
+    await vi.waitFor(() =>
+      expect(shadow(list('submitted')).activeElement?.closest('.card')?.getAttribute('data-key')).toBe('n'),
+    );
+    const press = (key: string) =>
+      shadow(list('submitted')).activeElement?.dispatchEvent(
+        new KeyboardEvent('keydown', { key, ctrlKey: true, bubbles: true, composed: true }),
+      );
+    press('z');
+    await vi.waitFor(() => expect(names('submitted')).toEqual(['Action a']));
+    await vi.waitFor(() => expect(shadow(view).activeElement?.id).toBe('add'));
   });
 
   it("adds an action from its sidebar at the end of its trigger's, said, and the focus on it", async () => {
-    const { workspace, view, names, said } = await viewOf(
+    const { workspace, view, list, names, said } = await viewOf(
       definitionWith([action('a'), action('x', { trigger: 'approved' })]),
     );
     opened.answer = { action: action('n', { name: 'Email the team' }) };
@@ -407,6 +439,9 @@ describe('the Actions view', () => {
     expect(data.needs).toEqual({ submitted: null, approved: null, rejected: 'approval', verified: 'verification' });
     expect(workspace.said).toEqual(['Added an action']);
     expect(said()).toBe('Added. Email the team runs when an entry comes in.');
+    await vi.waitFor(() =>
+      expect(shadow(list('submitted')).activeElement?.closest('.card')?.getAttribute('data-key')).toBe('n'),
+    );
     // On a published form, a toast says when it starts to run.
     workspace.states.setValue('published');
     opened.answer = { action: action('m', { name: 'Tell sales' }) };
@@ -416,8 +451,20 @@ describe('the Actions view', () => {
     );
   });
 
+  it('puts an action at the place chosen in its sidebar, and says where it went', async () => {
+    const { view, list, names, said } = await viewOf(definitionWith([action('a'), action('b'), action('c')]));
+    opened.answer = { action: action('c', { name: 'Tell sales' }), at: 0 };
+    list('submitted').open('c');
+    await vi.waitFor(() => expect(names('submitted')).toEqual(['Tell sales', 'Action a', 'Action b']));
+    expect(said()).toBe('Moved. Tell sales: position 1 of 3.');
+    await vi.waitFor(() =>
+      expect(shadow(list('submitted')).activeElement?.closest('.card')?.getAttribute('data-key')).toBe('c'),
+    );
+    await settle(view);
+  });
+
   it("puts an action whose trigger changed at the end of the new trigger's, as one step to undo", async () => {
-    const { workspace, view, list, names } = await viewOf(
+    const { workspace, view, list, names, said } = await viewOf(
       definitionWith([action('a'), action('x', { trigger: 'approved' }), action('b')]),
     );
     opened.answer = { action: action('a', { trigger: 'approved' }) };
@@ -426,18 +473,29 @@ describe('the Actions view', () => {
     expect((opened.sidebars[0] as ActionModalData).focus).toEqual({ kind: 'trigger' });
     expect(names('submitted')).toEqual(['Action b']);
     expect(workspace.said).toEqual(['Changed an action']);
+    expect(said()).toBe('Moved. Action a: position 2 of 2.');
     await settle(view);
   });
 
   it('says the limit in place of Add action', async () => {
     server.limit = 2;
-    const { root } = await viewOf(definitionWith([action('a'), action('b')]));
+    const { root, view, list, names, workspace } = await viewOf(definitionWith([action('a'), action('b')]));
     expect(root.querySelector('#add')).toBeNull();
     expect(text(root.querySelector('.note'))).toBe('A form has at most 2 actions.');
+    expect(list('submitted').full).toBe(true);
+    // A Duplicate asked anyway makes no copy.
+    list('submitted').request('a', 'duplicate');
+    await settle(view);
+    expect(names('submitted')).toEqual(['Action a', 'Action b']);
+    // With no Add action to press, a Fix it of an action gone puts the focus on the first card.
+    workspace.requestFix({ kind: 'view', view: 'actions', path: '$.actions[5].name', key: 'gone' });
+    await vi.waitFor(() =>
+      expect(shadow(list('submitted')).activeElement?.closest('.card')?.getAttribute('data-key')).toBe('a'),
+    );
   });
 
   it('is read-only without manageActions: one line says why, no Add action, and a card opens its settings as they are', async () => {
-    const { root, list, view } = await viewOf(definitionWith([action('a')]), ['design']);
+    const { root, list, view, actions, workspace } = await viewOf(definitionWith([action('a')]), ['design']);
     expect(root.querySelector('#add')).toBeNull();
     expect(text(root.querySelector('.read-only'))).toBe(
       'Changing these actions needs the Manage actions permission for this form. An administrator can grant it.',
@@ -448,6 +506,7 @@ describe('the Actions view', () => {
     // A change asked anyway changes nothing.
     list('submitted').toggle('a', false);
     await settle(view);
+    expect([actions()[0]?.enabled, workspace.said]).toEqual([true, []]);
   });
 
   it('leads a Fix it to its action: the card, and the sidebar on the box the path names', async () => {

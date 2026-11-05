@@ -111,6 +111,31 @@ export function withTrigger(actions: readonly DesignAction[], key: string, trigg
 }
 
 /**
+ * The list as Add or Update keeps an action: in its place, or at the end of its trigger's where it is new or its trigger
+ * changed; then at `at` among its trigger's where a place was chosen.
+ */
+export function keptIn(actions: readonly DesignAction[], kept: DesignAction, at: number | null = null): DesignAction[] {
+  const before = actions.find((one) => one.key === kept.key);
+  const trigger = triggerOf(kept);
+  const placed = before && triggerOf(before) !== trigger ? withTrigger(actions, kept.key, trigger) : actions;
+  const next = withAction(placed, kept);
+  if (at === null) return next;
+  const from = inTrigger(next, trigger).findIndex((one) => one.key === kept.key);
+  return from === at ? next : movedWithin(next, trigger, from, at);
+}
+
+/** Where an action is among a trigger's, and how many there are with it: where it is, or after the others. */
+export function placeOf(
+  actions: readonly DesignAction[],
+  key: string,
+  trigger: Trigger,
+): { readonly at: number; readonly count: number } {
+  const group = inTrigger(actions, trigger);
+  const at = group.findIndex((one) => one.key === key);
+  return at >= 0 ? { at, count: group.length } : { at: group.length, count: group.length + 1 };
+}
+
+/**
  * The list with a copy of an action right after it: its own key and its rule's, from `newKey`, and its name as
  * `copyName` makes it.
  */
@@ -187,6 +212,7 @@ export function summaryOf(action: DesignAction, fieldName: (key: string) => stri
       const field = isText(settings['toField']) ? fieldName(settings['toField']) : undefined;
       if (field !== undefined) return line('summary_emailToField', field);
       if (settings['toCreator'] === true) return line('summary_emailToCreator');
+      if (isObject(settings['recipientMap'])) return line('summary_emailRouted');
       return line('summary_emailNoOne');
     }
     case 'webhook': {
@@ -283,15 +309,15 @@ export function editOf(action: DesignAction): ActionEdit {
   };
 }
 
-/** A new action as its sidebar starts it, from a choice of what it does, its name the choice's own, said. */
-export function newEdit(key: string, choice: ActionChoice, name: string, trigger: Trigger = 'submitted'): ActionEdit {
+/** A new action as its sidebar starts it, from a choice of what it does, its name the choice's own, said; Submitted. */
+export function newEdit(key: string, choice: ActionChoice, name: string): ActionEdit {
   return {
     key,
     type: choice.type,
     name,
     named: false,
     choice: choice.id,
-    trigger,
+    trigger: 'submitted',
     enabled: true,
     stopOnFailure: false,
     settings: choice.settings,

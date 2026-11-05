@@ -66,14 +66,17 @@ describe("the Actions view's words", () => {
   });
 
   it('put the comma German needs before a clause with \u201ewenn\u201c, and none before \u201ebei jedem\u201c', () => {
-    const { added, none, when_submitted, when_approvedEach } = de.jfbActions;
+    const { added, when_submitted, when_approvedEach } = de.jfbActions;
     expect(added('Email the team', when_submitted)).toBe(
-      'Hinzugef\u00fcgt. Email the team l\u00e4uft, wenn ein Eintrag eingeht.',
+      'Hinzugef\u00fcgt. \u201eEmail the team\u201c l\u00e4uft, wenn ein Eintrag eingeht.',
     );
-    expect(none(when_approvedEach)).toBe(
-      'Keine Aktionen laufen bei jedem eingehenden Eintrag, da dieses Formular keine manuelle Genehmigung hat.',
+    // A name stands in quotes, as a preset's reads as a verb.
+    expect(de.jfbActions.use('Team per E-Mail benachrichtigen')).toBe(
+      '\u201eTeam per E-Mail benachrichtigen\u201c verwenden',
     );
-    expect(en.jfbActions.none(en.jfbActions.when_submitted)).toBe('No actions run when an entry comes in.');
+    expect(added('Spam check', when_approvedEach)).toBe(
+      'Hinzugef\u00fcgt. \u201eSpam check\u201c l\u00e4uft bei jedem eingehenden Eintrag, da dieses Formular keine manuelle Genehmigung hat.',
+    );
   });
 
   it("are looked up as Umbraco's own: by area and key, in one language", () => {

@@ -34,19 +34,20 @@ import type { ActionListElement, ActionCard, CardRequest } from './action-list.e
 import {
   TRIGGERS,
   actionsOf,
+  approvesEachEntry,
   choicesOf,
   duplicated,
   inTrigger,
   isOn,
+  keptIn,
   movedWithin,
+  placeOf,
   runRuleOf,
   settingAtPath,
   summaryOf,
   triggerNeed,
   triggerOf,
-  withAction,
   withActions,
-  withTrigger,
   type ActionSetting,
   type DesignAction,
   type Trigger,
@@ -309,8 +310,7 @@ export class FormActionsViewElement extends UmbLitElement {
 
   /** When a trigger runs, in words: Approved, on a form without manual approval, as each entry comes in. */
   #when(trigger: Trigger, definition: DesignDefinition): string {
-    const each = trigger === 'approved' && triggerNeed(definition, 'rejected') === 'approval';
-    return this.#term(`when_${each ? 'approvedEach' : trigger}`);
+    return this.#term(`when_${trigger === 'approved' && approvesEachEntry(definition) ? 'approvedEach' : trigger}`);
   }
 
   // ---- Changes ------------------------------------------------------------------------------------------------------
@@ -328,15 +328,37 @@ export class FormActionsViewElement extends UmbLitElement {
     if (same(definition['actions'], view.state.definition['actions'])) return false;
     const result = context.edit({ ok: true, state: { definition, selection: view.state.selection } }, said);
     if (!result.ok) this.#announce(this.localize.term(`jfbDesigner_refusal_${result.refusal}`));
+    else this.#closeUndo();
     return result.ok;
   }
 
-  #travel(way: 'undo' | 'redo') {
+  /** Whether the form holds the most actions it can have. */
+  #full(): boolean {
+    return this._limit > 0 && actionsOf(this.#definition()).length >= this._limit;
+  }
+
+  /**
+   * Undoes or redoes the last change, its toast closed; the focus stays on the card it was on, wherever the step put
+   * it, or goes to Add action where the step took the card away.
+   */
+  async #travel(way: 'undo' | 'redo') {
     const context = this.#context;
     if (!context) return;
+    const focused = this.#focusedKey();
     const said = way === 'undo' ? context.undo() : context.redo();
     if (said === undefined) return;
+    this.#closeUndo();
     this.#announce(this.localize.term(way === 'undo' ? 'jfbDesigner_saidUndone' : 'jfbDesigner_saidRedone', said));
+    if (focused) await this.#focusAction(focused);
+  }
+
+  /** The action whose card holds the focus, or null. */
+  #focusedKey(): string | null {
+    for (const list of this.shadowRoot?.querySelectorAll<ActionListElement>('jfb-action-list') ?? []) {
+      const key = list.focusedKey();
+      if (key) return key;
+    }
+    return null;
   }
 
   #onKey(event: KeyboardEvent) {
@@ -348,8 +370,8 @@ export class FormActionsViewElement extends UmbLitElement {
       (target instanceof HTMLElement && target.isContentEditable);
     if (entry || !(event.ctrlKey || event.metaKey) || event.altKey) return;
     const key = event.key.toLowerCase();
-    if (key === 'z' && !event.shiftKey) this.#travel('undo');
-    else if (key === 'y' || (key === 'z' && event.shiftKey)) this.#travel('redo');
+    if (key === 'z' && !event.shiftKey) void this.#travel('undo');
+    else if (key === 'y' || (key === 'z' && event.shiftKey)) void this.#travel('redo');
     else return;
     event.preventDefault();
   }
@@ -358,12 +380,22 @@ export class FormActionsViewElement extends UmbLitElement {
     return this.shadowRoot?.querySelector<ActionListElement>(`jfb-action-list[data-trigger="${trigger}"]`) ?? null;
   }
 
-  /** Puts the focus on an action's card, or on Add action where it is gone. */
+  /**
+   * Puts the focus on an action's card; where it is gone, on Add action, or on the first card where Add action is not
+   * offered (read-only, or at the most actions).
+   */
   async #focusAction(key: string | null) {
     await this.updateComplete;
-    const action = key ? actionsOf(this.#definition()).find((one) => one.key === key) : undefined;
+    const actions = actionsOf(this.#definition());
+    const action = key ? actions.find((one) => one.key === key) : undefined;
     if (action && (await this.#list(triggerOf(action))?.focusAction(action.key))) return;
-    this.shadowRoot?.querySelector<HTMLElement>('#add')?.focus();
+    const add = this.shadowRoot?.querySelector<HTMLElement>('#add');
+    if (add) {
+      add.focus();
+      return;
+    }
+    const first = TRIGGERS.flatMap((trigger) => inTrigger(actions, trigger))[0];
+    if (first) await this.#list(triggerOf(first))?.focusAction(first.key);
   }
 
   #move(trigger: Trigger, from: number, to: number) {
@@ -374,11 +406,11 @@ export class FormActionsViewElement extends UmbLitElement {
     const actions = actionsOf(this.#definition());
     const action = actions.find((one) => one.key === key);
     if (!action) return;
-    const changed = this.#change(
+    // The switch says its own state; the change is one step to undo.
+    this.#change(
       actions.map((one) => (one.key === key ? { ...one, enabled: on } : one)),
       this.#term('undoSwitched'),
     );
-    if (changed) this.#announce(this.#term(on ? 'saidOn' : 'saidOff', this.#nameOf(action)));
   }
 
   async #request(key: string, request: CardRequest) {
@@ -387,6 +419,8 @@ export class FormActionsViewElement extends UmbLitElement {
     if (!action) return;
     switch (request) {
       case 'duplicate': {
+        // At the most actions "..." offers no Duplicate, and a request made anyway makes none.
+        if (this.#full()) return;
         const next = duplicated(
           actions,
           key,
@@ -430,11 +464,16 @@ export class FormActionsViewElement extends UmbLitElement {
     return this.getContext(UMB_NOTIFICATION_CONTEXT).catch(() => undefined);
   }
 
+  #closeUndo() {
+    this.#undoToast?.close();
+    this.#undoToast = undefined;
+  }
+
   // A toast with Undo for the action just deleted, closed by the next one: its Undo would take back another. Undo puts
   // the focus on the action back in the list, as the toast it was on is gone.
   async #offerUndo(message: string, restored: string) {
     const made = this._view?.state;
-    this.#undoToast?.close();
+    this.#closeUndo();
     const data: UndoNotificationData = {
       message,
       undoLabel: this.localize.term('jfbDesigner_undo'),
@@ -511,16 +550,22 @@ export class FormActionsViewElement extends UmbLitElement {
       }
       const now = actionsOf(this.#definition());
       const kept = value.action;
-      // A changed trigger puts the action at the end of the new trigger's, as Move to another trigger... says.
-      const placed =
-        action && triggerOf(action) !== triggerOf(kept) ? withTrigger(now, kept.key, triggerOf(kept)) : now;
-      const changed = this.#change(withAction(placed, kept), this.#term(action ? 'undoChanged' : 'undoAdded'));
+      const trigger = triggerOf(kept);
+      const next = keptIn(now, kept, value.at);
+      const changed = this.#change(next, this.#term(action ? 'undoChanged' : 'undoAdded'));
       if (!changed) {
         await this.#focusAction(key);
         return;
       }
       const name = this.#nameOf(kept);
-      if (!action) this.#announce(this.#term('added', name, this.#when(triggerOf(kept), this.#definition())));
+      if (!action) this.#announce(this.#term('added', name, this.#when(trigger, this.#definition())));
+      else {
+        // Another trigger or another place: where it went, as a move says it.
+        const before = placeOf(now, kept.key, trigger);
+        const after = placeOf(next, kept.key, trigger);
+        if (triggerOf(action) !== trigger || before.at !== after.at)
+          this.#announce(this.#term('moved', name, after.at + 1, after.count));
+      }
       if (this.#published)
         void this.#getNotifications().then((notifications) =>
           notifications?.peek('positive', {
@@ -601,7 +646,9 @@ export class FormActionsViewElement extends UmbLitElement {
               summary.term,
               ...summary.args.map((arg) => (Array.isArray(arg) ? list.format(arg as string[]) : arg)),
             )
-          : this.#say(type?.name) || action.type,
+          : action.name?.trim()
+            ? this.#say(type?.name) || action.type
+            : '',
         rule: said && rule?.enabled === false ? this.#term('ruleOff', said) : said,
         on: isOn(action),
         flag: flags.get(action.key),
@@ -640,6 +687,7 @@ export class FormActionsViewElement extends UmbLitElement {
               .cards=${cards}
               .label=${heading}
               ?read-only=${!this._manage}
+              ?full=${this.#full()}
               .open=${(key: string) => void this.#openAction(key)}
               .move=${(from: number, to: number) => this.#move(trigger, from, to)}
               .toggle=${(key: string, on: boolean) => this.#toggle(key, on)}
@@ -647,7 +695,7 @@ export class FormActionsViewElement extends UmbLitElement {
             ></jfb-action-list>`
           : need
             ? nothing
-            : html`<p class="none">${this.#term('none', when)}</p>`
+            : html`<p class="none">${this.#term('none')}</p>`
       }
     </section>`;
   }

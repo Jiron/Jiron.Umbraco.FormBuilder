@@ -252,9 +252,9 @@ describe("an action's sidebar", () => {
     expect(kept()).toEqual(TEAM);
   });
 
-  it('says when each trigger runs, or the setting it needs, and starts a new action at the trigger the view chose', async () => {
-    const { root, choose, keep, kept } = await sidebarOf({ action: null, trigger: 'verified' });
-    expect(root.querySelector<HTMLInputElement>('input[name="trigger"]:checked')?.value).toBe('verified');
+  it('says when each trigger runs, or the setting it needs, and starts a new action on Submitted', async () => {
+    const { root, choose, keep, kept } = await sidebarOf({ action: null });
+    expect(root.querySelector<HTMLInputElement>('input[name="trigger"]:checked')?.value).toBe('submitted');
     expect([...root.querySelectorAll('#trigger .choice-line')].map((one) => text(one))).toEqual([
       'when an entry comes in',
       'as each entry comes in, because this form has no manual approval',
@@ -407,6 +407,84 @@ describe("an action's sidebar", () => {
     ]);
   });
 
+  it("chooses its place among its trigger's actions without dragging, and goes after another trigger's", async () => {
+    const second = action('a2', { name: 'Second' });
+    const { element, root, choose, pause, keep, modal } = await sidebarOf({
+      action: second,
+      definition: definitionWith([TEAM, action('x', { trigger: 'approved' }), second]),
+    });
+    const place = () => must(root.querySelector<HTMLSelectElement>('#place'), 'the place');
+    expect([[...place().options].map((one) => text(one)), place().value]).toEqual([['1 of 2', '2 of 2'], '1']);
+    place().value = '0';
+    place().dispatchEvent(new Event('change'));
+    await settle(element);
+    await pause();
+    // Asked about the draft as Update would make it: the action at its new place.
+    expect(actionsOf(must(checking.asked.at(-1), 'the ask')).map((one) => one.key)).toEqual(['a2', 'x', 'a1']);
+    // Another trigger: after that trigger's actions until a place is chosen there.
+    await choose('trigger', 'approved');
+    expect([[...place().options].map((one) => text(one)), place().value]).toEqual([['1 of 2', '2 of 2'], '1']);
+    await keep();
+    expect(modal.getValue()).toEqual({ action: { ...second, trigger: 'approved' }, at: null });
+    // A new action goes after the others; an action alone in its trigger has no other place.
+    document.body.replaceChildren();
+    const fresh = await sidebarOf({ action: null, definition: definitionWith([TEAM]) });
+    expect(must(fresh.root.querySelector<HTMLSelectElement>('#place'), 'the place').value).toBe('1');
+    document.body.replaceChildren();
+    const alone = await sidebarOf();
+    expect(alone.root.querySelector('#place')).toBeNull();
+  });
+
+  it('holds nothing back with a value typed in a setting that another choice of what happens took away', async () => {
+    const { choose, type, keep, modal, root } = await sidebarOf({ action: null });
+    await choose('what-happens', 'webhook:0');
+    await type('setting-url', `https://${'x'.repeat(2000)}`);
+    expect(root.getElementById('setting-url-why')).not.toBeNull();
+    await choose('what-happens', 'email:0');
+    await type('setting-to', 'sales@example.com');
+    await keep();
+    expect(modal.submit).toHaveBeenCalled();
+    // What was typed went with the settings: the webhook's address is fresh again.
+    await choose('what-happens', 'webhook:0');
+    expect(root.getElementById('setting-url-why')).toBeNull();
+  });
+
+  it('keeps More options open over a value typed there that cannot be kept', async () => {
+    const { root, type } = await sidebarOf();
+    must(root.querySelector<HTMLButtonElement>('.more'), 'More options').click();
+    await settle();
+    await type('setting-from', 'x'.repeat(2001));
+    expect(root.getElementById('setting-from-why')).not.toBeNull();
+    // No button to close them over it: the problem stays in sight.
+    expect(root.querySelector('.more')).toBeNull();
+  });
+
+  it("says a problem of a setting without its editor yet under what happens, by the setting's name, and leads there", async () => {
+    checking.answer = () => [
+      problem('$.actions[0].settings.toField', 'setting_invalid', 'Choose an email field of this form.'),
+    ];
+    const visitor = action('a1', { settings: { toField: 'gone' } });
+    const { root, keep, why, modal } = await sidebarOf({ action: visitor });
+    expect(why('what-happens')).toEqual(['To the address in a field: Choose an email field of this form.']);
+    // The sidebar's own first focus, on its name, comes first.
+    await frame();
+    await keep();
+    expect([modal.submit.mock.calls.length, root.activeElement?.id]).toEqual([0, 'what-happens']);
+    // Its Fix it leads there too.
+    document.body.replaceChildren();
+    const fixing = await sidebarOf({ action: visitor, focus: { kind: 'setting', path: 'toField' } });
+    await frame();
+    expect(fixing.root.activeElement?.id).toBe('what-happens');
+  });
+
+  it("shows a new action's problems once their box is left or Add is pressed, not as it opens", async () => {
+    checking.answer = () => [problem('$.actions[0].settings.to', 'setting_invalid', 'A mail needs someone to go to.')];
+    const { found, keep, modal } = await sidebarOf({ action: null });
+    expect(found('setting-to')).toEqual([]);
+    await keep();
+    expect([found('setting-to'), modal.submit.mock.calls.length]).toEqual([['A mail needs someone to go to.'], 0]);
+  });
+
   it('keeps an action when the check gives no answer, and once for two presses', async () => {
     checking.answer = () => undefined;
     const { element, root, modal } = await sidebarOf();
@@ -472,7 +550,7 @@ describe("an action's sidebar", () => {
       'none',
       'New entry',
       'Off',
-      'Runs when Topic is "Sales" The rule is off, so the action runs as if it had none.',
+      'Runs when Topic is "Sales". The rule is off, so the action runs as if it had none.',
     ]);
     // It says nothing about keeping what it does: nothing here can be changed.
     expect(root.querySelector('#what-happens + .help')).toBeNull();

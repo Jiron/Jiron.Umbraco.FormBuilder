@@ -392,12 +392,14 @@ it runs ("when an entry comes in"). The actions one event queues run in the orde
     entry's state, Create or update content. Choosing another replaces the settings below it, and the name with them
     until a name is typed. An action of the form keeps what it does, said where the choice would be: another type is
     another action.
-  - **Then** the name, the trigger (Submitted, or the trigger chosen; each choice says when it runs or the setting it
-    needs), the type's own settings as the inspector draws them (Essentials, then More options), Stop the rest if this
+  - **Then** the name, the trigger (Submitted unless chosen; each choice says when it runs or the setting it needs),
+    the place in the list among that trigger's actions (a pointer orders them without dragging, WCAG 2.5.7), the type's
+    own settings as the inspector draws them (Essentials, then More options), Stop the rest if this
     fails, and the rule, which the rules builder edits ("Run Email the team when").
   - **Problems:** the sidebar asks the form check about the draft as Add or Update would make it and says its problems
-    under their box: those the action had at once, others once their box is left; an error keeps the button back, a
-    warning does not. A problem under More options opens them.
+    under their box: those an action of the form had at once, others, and all of a new action's, once their box is
+    left; an error keeps the button back, a warning does not. A problem under More options opens them; one of a setting
+    whose editor comes later shows under What happens, by the setting's name.
   - **Footer:** Cancel · **Add**, or Delete action · Cancel · **Update**; Test joins them with 10.2b.
   - **After Add,** the sidebar closes, the new card takes the focus, the live region says where it runs ("Added. Email
     the team runs when an entry comes in."), and on a published form the toast says when it starts to run.
@@ -405,10 +407,12 @@ it runs ("when an entry comes in"). The actions one event queues run in the orde
   - the type icon, the name, a one-line summary ("To sales@example.com", "Webhook to crm.example.com"), its problems
     counted in front of it, and the rule chip; the last run follows with 10.2d;
   - visible: the on/off switch, named for what it turns on ("Use Email the team"), and **Test** (10.2b); "…":
-    Duplicate · Move to another trigger… · Delete. Duplicate puts "<name> (copy)" right after it; Move to another
+    Duplicate · Move to another trigger… · Delete. Duplicate puts "<name> (copy)" right after it, and is not offered at
+    the most actions a form can have; Move to another
     trigger… opens the sidebar with the focus on the trigger; Delete acts at once and the toast offers Undo;
   - cards reorder within their trigger by drag and by Alt+Up and Alt+Down (ADR-0016), through a move handle that shows
-    on hover and on focus (always on touch); the live region says where a card went;
+    on hover and on focus (always on touch); the live region says where a card went. A change closes the toast whose
+    Undo would take back another, and Undo and Redo keep the focus on the card it was on;
   - clicking a card opens its sidebar (footer: Delete action · Cancel · **Update**);
   - a failed or uncertain last run ("Failed at 14:02. Next try at 14:30.") links to **Details**, a sidebar with what
     the server answered and the tries, never the entry. It says who can retry the run (ADR-0013, amendment) and
