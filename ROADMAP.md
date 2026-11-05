@@ -3082,6 +3082,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
     - **For site owners:** `spam-protection.md`, `files.md`, `email.md`, `privacy.md`, `permissions.md`, `multi-language.md`, `members.md`, `multi-site.md`.
     - **Licence:** `license-faq.md`, plain words, clearly marked as not legal advice and pointing to `LICENSE.md` (OWNER-TODO: lawyer review). It answers at least: using it on client sites, changing it for your own projects, hosting, add-ons, contributing through forks and pull requests, and why publishing your own version (free or paid, open source or not) is not allowed.
   - Each page is checked against the running demo.
+  - **"Learn more" in the backoffice (§4.13, `docs/ux/copy.md`; carried in from 9.6a):** each setting and notice whose help needs more than two sentences links to its page here, with link text that makes sense on its own, from one map of page addresses in the client.
   - **README and NuGet readme:**
     - **`README.md` (GitHub):**
       - **About:** the pitch, the features, screenshots.
@@ -3092,6 +3093,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
     - **`docs/README.nuget.md`:** shorter, with no relative links.
   - Done when:
     - a link-check script passes, and a subagent reads these pages as a new editor and its questions are answered;
+    - a test fails when a backoffice "Learn more" link names a page or heading that does not exist;
     - both are committed and render correctly, checked in Edge through a local GitHub-flavoured Markdown renderer (dev-only, MIT), because the private repository can't be viewed from here. The owner checks them on GitHub once public (OWNER-TODO).
 - [ ] **17.2b Documentation for developers**
   - Under `docs/`:
