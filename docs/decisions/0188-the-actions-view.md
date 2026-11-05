@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Date: 2026-11-05
-- Roadmap step: 10.2a (10.2b adds the email editor and Test, 10.2c the other editors, 10.2d the last run); builds on
+- Roadmap step: 10.2a (10.2b adds the email editor, 10.2c Test, 10.2d the other editors, 10.2e the last run); builds on
   [ADR-0185](0185-the-outcomes-editor.md) (the outcomes editor), [ADR-0158](0158-the-action-framework.md) (the action
   types), [ADR-0181](0181-the-form-check-in-the-designer.md) (Fix it), [ADR-0166](0166-the-form-library.md)
   (`?action=`), [ADR-0016](0016-designer-interaction.md) (moving) and IA 5.3
@@ -21,7 +21,7 @@ happens, offers seven choices. What the survey found:
 2. **The backoffice's names differ from IA 5.3 and copy.md**: "Notify the team" for Email the team, "Confirm to the
    sender" for Confirm to the visitor, "Message to Slack" for Slack, "Set state" for Change the entry's state.
 3. **Every area's words load when the backoffice starts**, which the start budget counts (61.54 KB of 64 after 10.1c);
-   the actions' words would take most of what is left, before 10.2b to 10.2d add theirs.
+   the actions' words would take most of what is left, before 10.2b to 10.2e add theirs.
 4. **No e2e persona has `design` without `manageActions`,** which the read-only view needs; the wireframe draws it in
    a restricted folder, whose grants the test host seeds for one group each.
 5. **Fix it of an action** leads to the Actions view without the action's key, and `?action=` (ADR-0166) is read by
@@ -77,7 +77,7 @@ For the read-only state:
   order them without dragging, WCAG 2.5.7), the type's settings as the inspector draws them (Essentials, then More
   options), whether a failure stops the rest, and the rule, which the rules builder edits as an outcome's: its effect is `run`, its
   first line "Run Email the team when", and every field and context a subject. Footer: Cancel and Add, or Update
-  with Delete action; Test comes with 10.2b. An existing action keeps its type, said under the headline. The sidebar
+  with Delete action; Test comes with 10.2c. An existing action keeps its type, said under the headline. The sidebar
   asks the form check about the draft as Add or Update would make it (`keptIn`, which the view keeps it by too): an
   action of the form shows the problems it has at once, a new one's show once their box is left or Add is pressed; a
   problem of a setting whose editor comes later shows under What happens, by the setting's name, so the button is never
@@ -109,5 +109,6 @@ For the read-only state:
 - The webhook type's presets start with a plain one; the integration test of the Slack and Teams presets reads them at
   their new places.
 - The backoffice at start does not grow by the Actions view's words; the bundle does.
-- 10.2b adds Test, on the card and in the sidebar, and the editors for recipients; 10.2c the webhook's mapping, the
-  content action's document types and properties; 10.2d the last run on the card and its Details.
+- 10.2b adds the email editor with its recipients and preview; 10.2c Test, on the card and in the sidebar; 10.2d the
+  webhook's mapping, the content action's document types and properties; 10.2e the last run on the card and its
+  Details.

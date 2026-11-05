@@ -400,13 +400,13 @@ it runs ("when an entry comes in"). The actions one event queues run in the orde
     under their box: those an action of the form had at once, others, and all of a new action's, once their box is
     left; an error keeps the button back, a warning does not. A problem under More options opens them; one of a setting
     whose editor comes later shows under What happens, by the setting's name.
-  - **Footer:** Cancel · **Add**, or Delete action · Cancel · **Update**; Test joins them with 10.2b.
+  - **Footer:** Cancel · **Add**, or Delete action · Cancel · **Update**; Test joins them with 10.2c.
   - **After Add,** the sidebar closes, the new card takes the focus, the live region says where it runs ("Added. Email
     the team runs when an entry comes in."), and on a published form the toast says when it starts to run.
 - **A card:**
   - the type icon, the name, a one-line summary ("To sales@example.com", "Webhook to crm.example.com"), its problems
-    counted in front of it, and the rule chip; the last run follows with 10.2d;
-  - visible: the on/off switch, named for what it turns on ("Use Email the team"), and **Test** (10.2b); "…":
+    counted in front of it, and the rule chip; the last run follows with 10.2e;
+  - visible: the on/off switch, named for what it turns on ("Use Email the team"), and **Test** (10.2c); "…":
     Duplicate · Move to another trigger… · Delete. Duplicate puts "<name> (copy)" right after it, and is not offered at
     the most actions a form can have; Move to another
     trigger… opens the sidebar with the focus on the trigger; Delete acts at once and the toast offers Undo;
