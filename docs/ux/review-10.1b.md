@@ -86,6 +86,7 @@ Operate mode, a refinement inside the incumbent world; the code, IA 5.2, the wir
 | — | Update shows Umbraco's waiting state while the check answers | the press is heard, and a second press keeps nothing twice |
 | the focus lost to the page after the toast's Undo | the focus on the outcome back in the list | the toast it was on is gone; the editor goes on where the outcome is |
 | rows reused by their place as the list changed | rows kept by their outcome's key | the focus and the dragged state stay on the outcome, not on whatever takes its place |
+| the canvas's move handle and insert points faded in and out over 120 ms | they show and hide at once | every selection, focus and hover reveals one and hides another, and each frame of a fade painted the whole sheet again (the gate, below) |
 
 ## The words
 
@@ -183,3 +184,27 @@ The first runs failed on what the step had changed around them: a row's move han
 outcome's name, matched a locator for the name too (the spec now finds a row by its name's own element); the Settings
 view's status region and the list's both answered a locator for "the status" (the view's has its id now); and axe
 reported the row's button named by its name alone while it shows its line too (see impeccable).
+
+## The gate
+
+The first gate, on `70471f1`, failed on one test alone: the designer's budget for a form of 300 fields
+(`budgets/designer.spec.ts`, ADR-0169), the drop at 112 ms from the input to the next paint, though nothing the step
+changed is on the drop's path. Measured on the idle machine, the test's runs differed by more than the step could:
+
+- **The test counted its own recorder.** Playwright's trace snapshots the page at every action by walking the whole
+  DOM on the page's thread, 160 to 210 ms on the 300 fields by the browser's CPU profiler, against 10 to 16 ms of the
+  designer's own work. The `budgets` project records no trace now (ADR-0169's addendum).
+- **Two fades and a scroller painted the sheet again:** the handle and the insert points faded over 120 ms at every
+  selection, focus and hover (emil-design-eng, above), and the canvas's scroller, which the browser saw through, had no
+  layer of its own. The fades are gone; the scroller has the host's solid colour, so the browser scrolls it as a
+  layer.
+- **What was left is the browser's drawing:** a frame right after the drop still lasted 85 to 110 ms while the main
+  thread was idle for most of it, and the same measure at ADR-0176's own commit, `d6bad04`, and at 10.1a's `5a46a03`
+  gave 92 to 110 ms today, where ADR-0176 had measured 52 at most. The budget now measures what ADR-0169 says it does,
+  the main thread's hold: every task and each long frame's own work under 100 ms, a frame's rendering under 50 ms, and
+  every interaction under 100 ms as before; a frame's whole duration is reported beside them
+  ([ADR-0186](../decisions/0186-the-designer-budget-measures-the-main-thread.md)).
+
+Five runs of the test then passed: interactions 72 to 96 ms, no task of 50 ms or more, at most 43 ms of work in a
+frame. A 120 ms stall put into the keyboard's handling of the built bundle failed it, with a task of 134 ms; the bundle
+was restored.
