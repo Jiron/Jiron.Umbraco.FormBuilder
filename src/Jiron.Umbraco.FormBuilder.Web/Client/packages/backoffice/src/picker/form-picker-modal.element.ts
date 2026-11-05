@@ -522,7 +522,7 @@ export class FormPickerModalElement extends UmbModalBaseElement<FormPickerModalD
 
       .row:focus-visible,
       .toggle:focus-visible {
-        outline: 2px solid var(--uui-color-focus);
+        outline: 2px solid var(--jfb-bo-color-focus);
         outline-offset: -2px;
       }
 

@@ -25,6 +25,7 @@ import {
   Text,
   UndoRedo,
 } from '@umbraco-cms/backoffice/tiptap';
+import { jfbBackofficeTokens } from '../../styles/tokens';
 
 /**
  * Whether an address is one a link may lead to: http, https, mailto or tel, or a path on the site, which starts with one
@@ -390,154 +391,157 @@ export class RichTextElement extends UmbLitElement {
     </form>`;
   }
 
-  static override styles = css`
-    :host {
-      display: block;
-    }
-
-    .frame {
-      border: 1px solid var(--jfb-bo-color-control-border, var(--uui-color-border-standalone));
-      border-radius: var(--uui-border-radius);
-      background: var(--uui-color-surface);
-    }
-
-    .frame:focus-within {
-      outline: 2px solid var(--uui-color-focus);
-      outline-offset: 0;
-    }
-
-    .toolbar {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 2px;
-      padding: 2px;
-      border-block-end: 1px solid var(--uui-color-border);
-    }
-
-    .toolbar button {
-      display: inline-grid;
-      place-items: center;
-      inline-size: 32px;
-      block-size: 32px;
-      padding: 0;
-      border: 0;
-      border-radius: var(--uui-border-radius);
-      background: none;
-      color: var(--uui-color-text);
-      cursor: pointer;
-    }
-
-    .toolbar button:hover {
-      background: var(--uui-color-surface-emphasis);
-    }
-
-    .toolbar button[data-on] {
-      background: var(--uui-color-selected);
-      color: var(--uui-color-selected-contrast);
-    }
-
-    .toolbar button:focus-visible,
-    .link input:focus-visible {
-      outline: 2px solid var(--uui-color-focus);
-      outline-offset: -2px;
-    }
-
-    .content .editor {
-      min-block-size: 96px;
-      padding: var(--uui-size-space-2) var(--uui-size-space-3);
-      outline: none;
-      white-space: pre-wrap;
-      overflow-wrap: break-word;
-    }
-
-    :host([inline]) .content .editor {
-      min-block-size: 0;
-    }
-
-    .content .editor > :first-child {
-      margin-block-start: 0;
-    }
-
-    .content .editor > :last-child {
-      margin-block-end: 0;
-    }
-
-    .content .editor p {
-      margin: 0 0 var(--uui-size-space-2);
-    }
-
-    .content .editor ul,
-    .content .editor ol {
-      margin: 0 0 var(--uui-size-space-2);
-      padding-inline-start: 1.4em;
-    }
-
-    .content .editor a {
-      color: var(--uui-color-interactive);
-      text-decoration: underline;
-    }
-
-    .content .editor p.is-editor-empty:first-child::before {
-      content: attr(data-placeholder);
-      float: inline-start;
-      block-size: 0;
-      color: var(--jfb-bo-color-text-muted, var(--uui-color-text-alt));
-      pointer-events: none;
-    }
-
-    .link {
-      display: grid;
-      gap: var(--uui-size-space-2);
-      padding: var(--uui-size-space-3);
-      border-block-end: 1px solid var(--uui-color-border);
-      background: var(--uui-color-surface-alt);
-    }
-
-    .link label {
-      font-weight: 600;
-    }
-
-    .link input[type='text'] {
-      box-sizing: border-box;
-      inline-size: 100%;
-      min-height: 36px;
-      padding: var(--uui-size-space-2) var(--uui-size-space-3);
-      border: 1px solid var(--jfb-bo-color-control-border, var(--uui-color-border-standalone));
-      border-radius: var(--uui-border-radius);
-      background: var(--uui-color-surface);
-      color: inherit;
-      font: inherit;
-    }
-
-    .link input[aria-invalid='true'] {
-      border: 2px solid var(--uui-color-danger-standalone);
-    }
-
-    .link .check {
-      display: flex;
-      align-items: center;
-      gap: var(--uui-size-space-2);
-      font-weight: 400;
-    }
-
-    .why {
-      margin: 0;
-      color: var(--jfb-bo-color-danger-text, var(--uui-color-danger));
-      font-size: var(--uui-type-small-size);
-    }
-
-    .actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: var(--uui-size-space-2);
-    }
-
-    @media (forced-colors: active) {
-      .toolbar button[data-on] {
-        outline: 2px solid Highlight;
+  static override styles = [
+    jfbBackofficeTokens,
+    css`
+      :host {
+        display: block;
       }
-    }
-  `;
+
+      .frame {
+        border: 1px solid var(--jfb-bo-color-control-border, var(--uui-color-border-standalone));
+        border-radius: var(--uui-border-radius);
+        background: var(--uui-color-surface);
+      }
+
+      .frame:focus-within {
+        outline: 2px solid var(--jfb-bo-color-focus);
+        outline-offset: 0;
+      }
+
+      .toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 2px;
+        padding: 2px;
+        border-block-end: 1px solid var(--uui-color-border);
+      }
+
+      .toolbar button {
+        display: inline-grid;
+        place-items: center;
+        inline-size: 32px;
+        block-size: 32px;
+        padding: 0;
+        border: 0;
+        border-radius: var(--uui-border-radius);
+        background: none;
+        color: var(--uui-color-text);
+        cursor: pointer;
+      }
+
+      .toolbar button:hover {
+        background: var(--uui-color-surface-emphasis);
+      }
+
+      .toolbar button[data-on] {
+        background: var(--uui-color-selected);
+        color: var(--uui-color-selected-contrast);
+      }
+
+      .toolbar button:focus-visible,
+      .link input:focus-visible {
+        outline: 2px solid var(--jfb-bo-color-focus);
+        outline-offset: -2px;
+      }
+
+      .content .editor {
+        min-block-size: 96px;
+        padding: var(--uui-size-space-2) var(--uui-size-space-3);
+        outline: none;
+        white-space: pre-wrap;
+        overflow-wrap: break-word;
+      }
+
+      :host([inline]) .content .editor {
+        min-block-size: 0;
+      }
+
+      .content .editor > :first-child {
+        margin-block-start: 0;
+      }
+
+      .content .editor > :last-child {
+        margin-block-end: 0;
+      }
+
+      .content .editor p {
+        margin: 0 0 var(--uui-size-space-2);
+      }
+
+      .content .editor ul,
+      .content .editor ol {
+        margin: 0 0 var(--uui-size-space-2);
+        padding-inline-start: 1.4em;
+      }
+
+      .content .editor a {
+        color: var(--uui-color-interactive);
+        text-decoration: underline;
+      }
+
+      .content .editor p.is-editor-empty:first-child::before {
+        content: attr(data-placeholder);
+        float: inline-start;
+        block-size: 0;
+        color: var(--jfb-bo-color-text-muted, var(--uui-color-text-alt));
+        pointer-events: none;
+      }
+
+      .link {
+        display: grid;
+        gap: var(--uui-size-space-2);
+        padding: var(--uui-size-space-3);
+        border-block-end: 1px solid var(--uui-color-border);
+        background: var(--uui-color-surface-alt);
+      }
+
+      .link label {
+        font-weight: 600;
+      }
+
+      .link input[type='text'] {
+        box-sizing: border-box;
+        inline-size: 100%;
+        min-height: 36px;
+        padding: var(--uui-size-space-2) var(--uui-size-space-3);
+        border: 1px solid var(--jfb-bo-color-control-border, var(--uui-color-border-standalone));
+        border-radius: var(--uui-border-radius);
+        background: var(--uui-color-surface);
+        color: inherit;
+        font: inherit;
+      }
+
+      .link input[aria-invalid='true'] {
+        border: 2px solid var(--jfb-bo-color-danger-text);
+      }
+
+      .link .check {
+        display: flex;
+        align-items: center;
+        gap: var(--uui-size-space-2);
+        font-weight: 400;
+      }
+
+      .why {
+        margin: 0;
+        color: var(--jfb-bo-color-danger-text, var(--uui-color-danger));
+        font-size: var(--uui-type-small-size);
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--uui-size-space-2);
+      }
+
+      @media (forced-colors: active) {
+        .toolbar button[data-on] {
+          outline: 2px solid Highlight;
+        }
+      }
+    `,
+  ];
 }
 
 if (!customElements.get('jfb-rich-text')) customElements.define('jfb-rich-text', RichTextElement);

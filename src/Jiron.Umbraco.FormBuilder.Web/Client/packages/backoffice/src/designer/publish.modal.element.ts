@@ -79,15 +79,15 @@ export class PublishModalElement extends UmbModalBaseElement<PublishModalData, P
       }
 
       .danger .lead uui-icon {
-        color: var(--uui-color-danger-standalone);
+        color: var(--jfb-bo-color-danger-text);
       }
 
       .warning .lead uui-icon {
-        color: var(--uui-color-warning-standalone);
+        color: var(--jfb-bo-color-warning-text);
       }
 
       .clear .lead uui-icon {
-        color: var(--uui-color-positive-standalone);
+        color: var(--jfb-bo-color-positive-text);
       }
 
       .failed .lead uui-icon {
@@ -264,15 +264,20 @@ export class PublishModalElement extends UmbModalBaseElement<PublishModalData, P
     const name = this.data?.name ?? '';
     return html`<uui-dialog-layout headline=${this.localize.term('jfbDesigner_publishHeadline', name)}>
       ${this.#result()}
-      <p>${this.localize.term('jfbDesigner_publishText')}</p>
-      <uui-label for="comment">${this.localize.term('jfbDesigner_comment')}</uui-label>
-      <uui-textarea
-        id="comment"
-        label=${this.localize.term('jfbDesigner_comment')}
-        maxlength=${MAX_COMMENT}
-        .value=${this._comment}
-        @input=${(event: Event) => (this._comment = (event.target as HTMLTextAreaElement).value)}
-      ></uui-textarea>
+      ${
+        // While an error blocks it, the dialog says what to fix and nothing of a version that can't be published yet.
+        this._check.status === 'checked' && this._check.issues.some(isError)
+          ? nothing
+          : html`<p>${this.localize.term('jfbDesigner_publishText')}</p>
+              <uui-label for="comment">${this.localize.term('jfbDesigner_comment')}</uui-label>
+              <uui-textarea
+                id="comment"
+                label=${this.localize.term('jfbDesigner_comment')}
+                maxlength=${MAX_COMMENT}
+                .value=${this._comment}
+                @input=${(event: Event) => (this._comment = (event.target as HTMLTextAreaElement).value)}
+              ></uui-textarea>`
+      }
       <uui-button slot="actions" label=${this.localize.term('general_cancel')} @click=${this._rejectModal}></uui-button>
       <uui-button
         slot="actions"

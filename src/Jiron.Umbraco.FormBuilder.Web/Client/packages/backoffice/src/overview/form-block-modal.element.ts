@@ -4,6 +4,7 @@ import { css, html, nothing } from '@umbraco-cms/backoffice/external/lit';
 import { UmbModalBaseElement, UmbModalToken } from '@umbraco-cms/backoffice/modal';
 import { tryExecute } from '@umbraco-cms/backoffice/resources';
 import { setupCreateFormBlock } from '../api';
+import { jfbBackofficeTokens } from '../styles/tokens';
 
 const ALIAS = 'Jiron.FormBuilder.Modal.FormBlock';
 
@@ -26,15 +27,18 @@ export class FormBlockModalElement extends UmbModalBaseElement<never, FormBlockM
     _failed: { state: true },
   };
 
-  static override styles = css`
-    p {
-      margin: 0 0 var(--uui-size-space-4);
-    }
+  static override styles = [
+    jfbBackofficeTokens,
+    css`
+      p {
+        margin: 0 0 var(--uui-size-space-4);
+      }
 
-    p:last-child {
-      margin-bottom: 0;
-    }
-  `;
+      p:last-child {
+        margin-bottom: 0;
+      }
+    `,
+  ];
 
   declare private _creating: boolean;
   declare private _created: boolean;

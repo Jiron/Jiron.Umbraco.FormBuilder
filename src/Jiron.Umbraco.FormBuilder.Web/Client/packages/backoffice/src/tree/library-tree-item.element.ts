@@ -31,6 +31,11 @@ export class LibraryTreeItemElement extends UmbTreeItemElementBase<LibraryTreeIt
         color: var(--jfb-bo-color-text-muted);
         font-style: italic;
       }
+
+      /* On the open or chosen row the label takes the row's own colour: the muted grey is 2.3:1 on its fill. */
+      uui-menu-item:is([active], [selected]) > .unpublished {
+        color: inherit;
+      }
     `,
   ];
 

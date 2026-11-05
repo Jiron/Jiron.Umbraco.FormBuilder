@@ -82,11 +82,11 @@ export class FormCheckModalElement extends UmbModalBaseElement<FormCheckModalDat
       }
 
       li[data-severity='error'] > uui-icon {
-        color: var(--uui-color-danger-standalone);
+        color: var(--jfb-bo-color-danger-text);
       }
 
       li[data-severity='warning'] > uui-icon {
-        color: var(--uui-color-warning-standalone);
+        color: var(--jfb-bo-color-warning-text);
       }
 
       .lines {
@@ -112,6 +112,12 @@ export class FormCheckModalElement extends UmbModalBaseElement<FormCheckModalDat
         color: var(--jfb-bo-color-text-muted);
       }
 
+      .actions {
+        display: flex;
+        align-items: center;
+        gap: var(--uui-size-space-5);
+      }
+
       .clear {
         display: grid;
         justify-items: center;
@@ -122,7 +128,7 @@ export class FormCheckModalElement extends UmbModalBaseElement<FormCheckModalDat
 
       .clear uui-icon {
         font-size: 24px;
-        color: var(--uui-color-positive-standalone);
+        color: var(--jfb-bo-color-positive-text);
       }
 
       .clear p,
@@ -213,20 +219,12 @@ export class FormCheckModalElement extends UmbModalBaseElement<FormCheckModalDat
       types: this.data?.types ?? {},
       names: elementNames(definition, this.data?.culture ?? '', this.#term),
     };
-    const again =
-      check.status === 'checking'
-        ? html`<p class="state" role="status">
-            <uui-loader-circle></uui-loader-circle>${this.#term('jfbCheck_checkingAgain')}
-          </p>`
-        : nothing;
     if (check.issues.length === 0)
-      return html`${again}
-        <div class="clear">
-          <uui-icon name="icon-check" aria-hidden="true"></uui-icon>
-          <p>${this.#term('jfbCheck_none')}</p>
-        </div>`;
+      return html`<div class="clear">
+        <uui-icon name="icon-check" aria-hidden="true"></uui-icon>
+        <p>${this.#term('jfbCheck_none')}</p>
+      </div>`;
     return html`<div class="found">
-      ${again}
       ${SEVERITIES.map(({ severity, icon, heading }) => {
         const issues = found[severity];
         if (issues.length === 0) return nothing;
@@ -244,10 +242,20 @@ export class FormCheckModalElement extends UmbModalBaseElement<FormCheckModalDat
     </div>`;
   }
 
+  // A check of the latest changes, said beside Close: the list above stays where it is while it runs.
+  #again() {
+    const check = this._check;
+    const again = check.status === 'checking' && check.definition !== null;
+    return html`<p class="state" role="status">
+      ${again ? html`<uui-loader-circle></uui-loader-circle>${this.#term('jfbCheck_checkingAgain')}` : nothing}
+    </p>`;
+  }
+
   override render() {
     return html`<umb-body-layout headline=${this.#term('jfbCheck_headline')}>
       ${this.#found()}
-      <div slot="actions">
+      <div slot="actions" class="actions">
+        ${this.#again()}
         <uui-button label=${this.#term('general_close')} @click=${() => this._rejectModal()}></uui-button>
       </div>
     </umb-body-layout>`;

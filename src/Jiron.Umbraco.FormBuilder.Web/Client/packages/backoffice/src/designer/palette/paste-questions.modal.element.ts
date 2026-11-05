@@ -49,7 +49,7 @@ export class PasteQuestionsModalElement extends UmbModalBaseElement<PasteQuestio
       }
 
       textarea:focus-visible {
-        outline: 2px solid var(--uui-color-focus);
+        outline: 2px solid var(--jfb-bo-color-focus);
         outline-offset: 1px;
       }
 

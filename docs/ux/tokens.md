@@ -219,10 +219,10 @@ element adds them to its styles.
 ### Colour
 
 UUI's semantic colours (`--uui-color-text`, `-surface`, `-background`, `-border`, `-interactive`, `-selected`,
-`-positive`, `-danger`, `-warning`, `-focus`) carry every meaning, and UUI's components keep their own look. Two
-colours are ours, for what UUI does not cover at AA. Both are mixed from UUI's own text and emphasis border, so they
-follow Umbraco's light, dark and high-contrast themes without knowing which one is on (the theme leaves no mark on
-the page that we could read):
+`-positive`, `-danger`, `-warning`, `-focus`) carry every meaning, and UUI's components keep their own look. The
+colours below are ours, for what UUI does not cover at AA. Each is mixed from UUI's own colours, so they follow
+Umbraco's light, dark and high-contrast themes without knowing which one is on (the theme leaves no mark on the page
+that we could read):
 
 | Token | Value | Why |
 | --- | --- | --- |
@@ -230,11 +230,60 @@ the page that we could read):
 | `--jfb-bo-color-control-border` | `color-mix(in srgb, var(--uui-color-text) 20%, var(--uui-color-border-emphasis))` | the boundary of controls we draw ourselves (the designer canvas, the rules builder), for WCAG 1.4.11. Light theme `#828282`: 3.8:1 on the surface, 3.6:1 on the background; dark theme `#7e8892`: 3.5:1 and 4.2:1; high contrast: black. UUI's own inputs keep UUI's border |
 | `--jfb-bo-color-danger-text` | `color-mix(in srgb, var(--uui-color-danger) 50%, var(--uui-color-text))` | text and icons that say something failed or is gone (the form picker's "Form not available", 6.7f). UUI's danger is 2.5:1 on the dark theme's surface; the mix: light `#731832` 11.0:1 on the surface, dark `#dc9593` 5.3:1 (4.8:1 on its emphasis surface), high contrast `#660420` 13.1:1 |
 | `--jfb-bo-color-positive-text` | `color-mix(in srgb, var(--uui-color-positive) 50%, var(--uui-color-text))` | text that says something holds (the inspector's "Try it" when a pattern takes the answer, 9.4c), beside its words. UUI's positive is 2.5:1 on the dark theme's surface; the mix: light `#09442c` 11.2:1 on the surface, dark `#91b694` 5.7:1 (5.1:1 on its emphasis surface), high contrast `#0a4725` 10.8:1 |
+| `--jfb-bo-color-warning-text` | `color-mix(in srgb, var(--uui-color-warning-standalone) 50%, var(--uui-color-text))` | text and icons that warn (the form check's warnings, a rule that conflicts, 9.6a). UUI's warning is 1.3:1 on the high-contrast theme's white; the mix: light `#543f03` 10.1:1 on the surface, dark `#cfb581` 6.4:1 (5.8:1 on its emphasis surface), high contrast `#837225` 4.8:1 |
+| `--jfb-bo-color-focus` | `color-mix(in srgb, var(--uui-color-focus) 70%, var(--uui-color-text))` | every focus ring the package draws, and UUI's own buttons, inputs, toggles, checkboxes, selects, menu items and references inside its elements (9.6a). UUI's focus colour is 2.5:1 on the dark theme's surface; the mix: light `#2956b4` 6.8:1 on the surface, dark `#6a94d5` 4.1:1 (3.7:1 on its emphasis surface, 4.9:1 on the background), high contrast `#2956b4` 6.8:1. The designer's sheet is white in every theme, so its own controls take `#2956b4` there |
 | `--jfb-bo-color-selected` | `color-mix(in srgb, var(--uui-color-selected) 85%, var(--uui-color-surface))` | the background of a chosen item in lists we draw ourselves (the form picker's sidebar, 6.7f), under `--uui-color-selected-contrast`. UUI's selected colour carries its contrast text at 4.3:1 in the dark theme (3.7:1 for its emphasis); the mix: light `#4858a7` 6.5:1, dark `#3064b5` 5.0:1, high contrast 6.5:1. A chosen item also shows a check mark, so the state never rests on the colour |
 
 The ratios come from the UUI values of Umbraco 17.7.1 (`light.css`, `dark.css`, `high-contrast.css` in
 `Umbraco.Cms.StaticAssets`). Step 9.1 checks them again in all three themes with axe, since UUI may change them. The
 two of 6.7f were found by axe in Edge on the dark theme, where UUI's own danger and selected colours fall short.
+
+**A filled button's label** (9.6a, ADR-0182). UUI draws a positive, default or danger button's label in
+`--uui-color-positive-contrast`, `-default-contrast` and `-danger-contrast`. The dark theme sets them to `#eeeeef`,
+4.37:1, 4.34:1 and 4.32:1 on its fills (`#347d39`, `#316dca`, `#ca3b37`), under AA; the light and high-contrast themes
+set them to `#fff`. The tokens set all three to `#fff` for the section's elements, Umbraco's footer and dialogs inside
+them included: 5.07:1, 5.04:1 and 5.01:1 in the dark theme, and nothing changes in the other two. A selected
+item's label (`--uui-color-selected-contrast`) is white for the same reason, and a warning's
+(`--uui-color-warning-contrast`) black: the dark theme's `#eeeeef` is 3.2:1 on its warning fill `#af7c12`, black 5.7:1,
+as the other two themes have it. `dark-theme.spec.ts` holds it with axe on every kind of filled button the section
+shows, and measures the state chip of a form with changes to publish, the focus rings and the form check's icon.
+
+**Status colours.** UUI's `-standalone` colours (danger, warning, positive) fall to 2.5:1 on the dark theme's surface,
+and its warning to 1.3:1 on the high-contrast theme's white, so the package never draws text, icons or a control's
+border in them: those take the three `-text` mixes above.
+
+**Motion.** `--jfb-bo-motion-fast` (`120ms`) and `--jfb-bo-motion-ease` (`cubic-bezier(0.23, 1, 0.32, 1)`) time every
+press, fade and reveal the package draws, the same values as the website's `--jfb-motion-fast` and `--jfb-motion-ease`.
+Hover and colour changes use `ease`. With `prefers-reduced-motion: reduce`, nothing moves or scales; fades keep their
+time.
+
+### Waiting
+
+While a box's words are read, it shows still lines in their place (`packages/backoffice/src/ui/skeleton.ts`), in
+`--uui-color-surface-alt`, busy (`aria-busy`) and with one sentence for screen readers; they never pulse. A screen
+whose name and the user's access are read with its list keeps its skeleton until both have come, so its name, its
+words and its buttons arrive together. The designer's canvas shows its sheet with still bones where the title and
+fields will be (IA 5.1). A turning loader is only for work started by the user that takes a moment, such as the form
+check running again, and it sits where it moves nothing.
+
+### The designer's sheet
+
+The sheet is white in every theme, as visitors see the form, so what the designer draws on it has fixed colours,
+named on the canvas (`designer/canvas/canvas.styles.ts`):
+
+| Name | Value | Used for |
+| --- | --- | --- |
+| `--bo-sheet-ink` | `#1d2433` | the sheet's text, the default theme's ink |
+| `--bo-sheet-quiet` | `#4a5263` | the words of an empty page or group and of a note in a field's place, 7.8:1 on white |
+| `--bo-sheet-line` | `#8a92a0` | the dashed edge of a place to add a field and of a dragged element's place, 3.1:1 on white |
+| `--bo-sheet-focus` | `#2956b4` | the focus ring of the designer's controls on the sheet, 6.8:1 on white |
+| `--bo-sheet-slot` | `#eceff3` | a dragged field's or group's place, and the waiting sheet's bones |
+| `--bo-chip-missing-*` | line `#d9b44a`, fill `#fff6d9`, ink `#533d00` | the chip of a field without a text in the language shown, 9.6:1 |
+| `--bo-chip-rule-*` | line `#b8bfdc`, fill `#eef0f8`, ink `#1f2a5c` | the chip of a rule in use, 12.0:1 |
+
+Everything else the designer draws there (the selected element's frame and bar, the insert points, the handle) takes
+Umbraco's selected colour, which keeps 5:1 on white in every theme (8.0:1 light and high contrast, 5.0:1 dark).
+Chips use Umbraco's small type (12 px), and the canvas's controls the two radii above.
 
 The wireframes of 2.2 (`docs/ux/wireframes/assets/kit.css`) used these values under provisional `--wf-*` names; the
 backoffice code in Phases 9 to 14 uses the names above.

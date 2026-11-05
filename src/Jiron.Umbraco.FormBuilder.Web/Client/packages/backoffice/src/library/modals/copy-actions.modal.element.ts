@@ -14,7 +14,8 @@ import {
   type FormResponseModel,
 } from '../../api';
 import { formPath, FORM_ENTITY_TYPE, screenPath } from '../../section/entity-types';
-import { jfbBackofficeTokens } from '../../styles/tokens';
+import { jfbBackofficeTokens, jfbVisuallyHidden } from '../../styles/tokens';
+import { jfbSkeleton, skeletonLines } from '../../ui/skeleton';
 import { LIBRARY_TREE_ALIAS } from '../../tree/aliases';
 import type { LibraryTreeItem } from '../../tree/library-tree.repository';
 import { changed, placeOf, sayRefusal } from '../library-changes';
@@ -38,6 +39,8 @@ export class CopyActionsModalElement extends UmbModalBaseElement<CopyActionsModa
 
   static override styles = [
     jfbBackofficeTokens,
+    jfbVisuallyHidden,
+    jfbSkeleton,
     css`
       /* It takes the focus only as the result takes the place of the button pressed; it does nothing. */
       .result:focus {
@@ -87,6 +90,16 @@ export class CopyActionsModalElement extends UmbModalBaseElement<CopyActionsModa
 
       .muted {
         color: var(--jfb-bo-color-text-muted);
+      }
+
+      /* Umbraco's link colour, as the Overview's links: the browser's own blue is 1.4:1 on the dark theme's box. */
+      a {
+        color: var(--uui-color-interactive);
+        text-decoration: underline;
+      }
+
+      a:hover {
+        color: var(--uui-color-interactive-emphasis);
       }
     `,
   ];
@@ -181,14 +194,14 @@ export class CopyActionsModalElement extends UmbModalBaseElement<CopyActionsModa
   }
 
   // Each sentence once: the server reports every place a missing field is named, and one action may name it twice.
-  #issues(copy: CopiedActionResponseModel, target: string): string[] {
+  #issues(copy: CopiedActionResponseModel): string[] {
     const said = [
       ...copy.unmapped.map((reference) =>
         reference.alias
-          ? this.localize.term('jfbLibrary_copyLacksField', reference.alias, target)
-          : this.localize.term('jfbLibrary_copyLacksElement', target),
+          ? this.localize.term('jfbLibrary_copyLacksField', reference.alias)
+          : this.localize.term('jfbLibrary_copyLacksElement'),
       ),
-      ...copy.mergeTags.map((tag) => this.localize.term('jfbLibrary_copyLacksTag', `{{ ${tag.tag} }}`, target)),
+      ...copy.mergeTags.map((tag) => this.localize.term('jfbLibrary_copyLacksTag', `{{ ${tag.tag} }}`)),
     ];
     return [...new Set(said)];
   }
@@ -202,22 +215,18 @@ export class CopyActionsModalElement extends UmbModalBaseElement<CopyActionsModa
       </p>
       ${
         troubled.length === 0
-          ? html`<p class="muted">
-              ${this.localize.term('jfbLibrary_copiedClean', result.actions.length, target.name)}
-            </p>`
-          : html`<p>
-                ${this.localize.term('jfbLibrary_copiedNeedsFixing', result.actions.length, troubled.length, target.name)}
-              </p>
+          ? html`<p class="muted">${this.localize.term('jfbLibrary_copiedClean', result.actions.length)}</p>`
+          : html`<p>${this.localize.term('jfbLibrary_copiedNeedsFixing', result.actions.length, troubled.length)}</p>
               <ul>
                 ${troubled.map(
                   (copy) =>
                     html`<li>
                       <strong>${names.get(copy.sourceKey) ?? ''}</strong>
                       <ul class="issues">
-                        ${this.#issues(copy, target.name).map((issue) => html`<li>${issue}</li>`)}
+                        ${this.#issues(copy).map((issue) => html`<li>${issue}</li>`)}
                       </ul>
                       <a href=${formPath(target.key, { action: copy.key })} @click=${this._submitModal}
-                        >${this.localize.term('jfbLibrary_fixIn', target.name)}</a
+                        >${this.localize.term('jfbLibrary_fixIn')}</a
                       >
                     </li>`,
                 )}
@@ -242,7 +251,7 @@ export class CopyActionsModalElement extends UmbModalBaseElement<CopyActionsModa
       <uui-box headline-variant="h4" headline=${this.localize.term('jfbLibrary_whichActions')}>
         ${
           actions === undefined
-            ? html`<p aria-busy="true">${this.localize.term('jfbLibrary_loading')}</p>`
+            ? skeletonLines(this.localize.term('jfbLibrary_loading'), [52, 40])
             : actions.length === 0
               ? html`<p>${this.localize.term('jfbLibrary_noActionsToCopy', this.data?.sourceName ?? '')}</p>`
               : html`<ul>

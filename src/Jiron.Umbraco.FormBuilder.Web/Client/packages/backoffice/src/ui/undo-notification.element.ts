@@ -2,6 +2,7 @@
 // layout with one button, which runs the undo once and closes the toast. Umbraco creates it by name for a notification.
 import { css, html, LitElement } from '@umbraco-cms/backoffice/external/lit';
 import type { UmbNotificationHandler } from '@umbraco-cms/backoffice/notification';
+import { jfbBackofficeTokens } from '../styles/tokens';
 
 /** What the toast says, the button's label, and what the button does. */
 export interface UndoNotificationData {
@@ -21,11 +22,17 @@ export class UndoNotificationElement extends LitElement {
     notificationHandler: { attribute: false },
   };
 
-  static override styles = css`
-    #message {
-      white-space: pre-line;
-    }
-  `;
+  // The toast sits in Umbraco's notification container, outside the section's elements, so it brings the tokens itself:
+  // on the dark theme's positive toast, Umbraco's grey label is 4.4:1 and white 5:1 (ADR-0182).
+  static override styles = [
+    jfbBackofficeTokens,
+    css`
+      #message {
+        white-space: pre-line;
+        color: var(--uui-color-positive-contrast);
+      }
+    `,
+  ];
 
   declare data: UndoNotificationData;
   declare notificationHandler: UmbNotificationHandler | undefined;

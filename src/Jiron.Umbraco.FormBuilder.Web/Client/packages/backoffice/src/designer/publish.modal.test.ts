@@ -94,6 +94,11 @@ describe('the publish dialog', () => {
       ]),
     );
     expect(publish.hasAttribute('disabled')).toBe(true);
+    // Nothing of a version that can't be published yet: no sentence about visitors, no comment for it.
+    expect([
+      shadow(element).querySelector('uui-textarea'),
+      text(shadow(element).querySelector('uui-dialog-layout')),
+    ]).toEqual([null, expect.not.stringContaining('Visitors get this version')]);
     const [errors, warnings] = all<HTMLElement>(element, '.result section');
     expect(errors?.getAttribute('role')).toBe('alert');
     expect(text(errors?.querySelector('.lead'))).toBe("This form can't be published yet: 1 error needs fixing.");

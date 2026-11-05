@@ -131,9 +131,12 @@ describe('the form check', () => {
     state.setValue({ status: 'checked', issues: [], definition: DEFINITION });
     await settle(element);
     expect(root.querySelector('.clear')).not.toBeNull();
+    // The line for a check of the latest changes sits beside Close, there and empty while none runs, so nothing moves.
+    const again = must(root.querySelector('[slot="actions"] [role="status"]'), 'the line beside Close');
+    expect(text(again)).toBe('');
     state.setValue({ status: 'checking', issues: [], definition: DEFINITION });
     await settle(element);
-    expect(text(root.querySelector('[role="status"]'))).toBe('Checking the latest changes\u2026');
+    expect(text(again)).toBe('Checking the latest changes\u2026');
     expect(root.querySelector('.clear')).not.toBeNull();
   });
 

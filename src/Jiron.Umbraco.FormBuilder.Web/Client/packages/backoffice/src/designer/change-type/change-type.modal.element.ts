@@ -41,9 +41,9 @@ export class ChangeTypeModalElement extends UmbModalBaseElement<ChangeTypeModalD
       }
 
       select:focus-visible {
-        outline: 2px solid var(--uui-color-focus);
+        outline: 2px solid var(--jfb-bo-color-focus);
         outline-offset: 0;
-        border-color: var(--uui-color-focus);
+        border-color: var(--jfb-bo-color-focus);
       }
 
       .now {
@@ -51,7 +51,12 @@ export class ChangeTypeModalElement extends UmbModalBaseElement<ChangeTypeModalD
         color: var(--jfb-bo-color-text-muted);
       }
 
+      /*
+       * Room for what most types take and need, so the centred dialog and its list keep their place while the arrow
+       * keys go through the types; a longer answer still grows it.
+       */
       .preview {
+        min-block-size: 10rem;
         margin-block-start: var(--uui-size-space-5);
       }
 
@@ -85,7 +90,7 @@ export class ChangeTypeModalElement extends UmbModalBaseElement<ChangeTypeModalD
       }
 
       .why {
-        color: var(--uui-color-danger-standalone);
+        color: var(--jfb-bo-color-danger-text);
       }
     `,
   ];

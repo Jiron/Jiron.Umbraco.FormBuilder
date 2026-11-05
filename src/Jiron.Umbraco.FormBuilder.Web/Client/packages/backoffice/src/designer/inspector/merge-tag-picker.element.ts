@@ -6,6 +6,7 @@
 import { css, html, nothing, type TemplateResult } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import type { MergeTagPathResponseModel } from '../../api';
+import { jfbBackofficeTokens } from '../../styles/tokens';
 import type { DesignDefinition } from '../definition';
 import { groupPaths, readMergeTagPaths, tagOf, type MergeTagPlace } from './merge-tags';
 
@@ -168,114 +169,117 @@ export class MergeTagPickerElement extends UmbLitElement {
     )}`;
   }
 
-  static override styles = css`
-    :host {
-      display: block;
-    }
-
-    .open {
-      display: inline-flex;
-      align-items: center;
-      gap: var(--uui-size-space-2);
-      padding: var(--uui-size-space-1) var(--uui-size-space-2);
-      border: 0;
-      border-radius: var(--uui-border-radius);
-      background: none;
-      color: var(--uui-color-interactive);
-      font: inherit;
-      font-size: var(--uui-type-small-size);
-      font-weight: 600;
-      cursor: pointer;
-    }
-
-    .open:hover {
-      background: var(--uui-color-surface-emphasis);
-      color: var(--uui-color-interactive-emphasis);
-    }
-
-    .open:focus-visible,
-    .path:focus-visible,
-    input:focus-visible {
-      outline: 2px solid var(--uui-color-focus);
-      outline-offset: 0;
-    }
-
-    .panel {
-      display: grid;
-      gap: var(--uui-size-space-2);
-      box-sizing: border-box;
-      max-block-size: min(320px, 50vh);
-      overflow: auto;
-      margin-block-start: var(--uui-size-space-2);
-      padding: var(--uui-size-space-3);
-      border: 1px solid var(--uui-color-border);
-      border-radius: var(--uui-border-radius);
-      background: var(--uui-color-surface);
-      color: var(--uui-color-text);
-    }
-
-    input {
-      box-sizing: border-box;
-      inline-size: 100%;
-      min-height: 36px;
-      padding: var(--uui-size-space-2) var(--uui-size-space-3);
-      border: 1px solid var(--jfb-bo-color-control-border);
-      border-radius: var(--uui-border-radius);
-      background: var(--uui-color-surface);
-      color: inherit;
-      font: inherit;
-    }
-
-    .heading {
-      margin: var(--uui-size-space-2) 0 0;
-      color: var(--jfb-bo-color-text-muted);
-      font-size: var(--uui-type-small-size);
-      font-weight: 600;
-    }
-
-    ul {
-      display: grid;
-      margin: 0;
-      padding: 0;
-      list-style: none;
-    }
-
-    .path {
-      display: grid;
-      gap: 2px;
-      inline-size: 100%;
-      padding: var(--uui-size-space-2);
-      border: 0;
-      border-radius: var(--uui-border-radius);
-      background: none;
-      color: inherit;
-      font: inherit;
-      text-align: start;
-      cursor: pointer;
-    }
-
-    .path:hover {
-      background: var(--uui-color-surface-emphasis);
-    }
-
-    code {
-      color: var(--jfb-bo-color-text-muted);
-      font-size: var(--uui-type-small-size);
-      overflow-wrap: anywhere;
-    }
-
-    .note {
-      margin: 0;
-      color: var(--jfb-bo-color-text-muted);
-      font-size: var(--uui-type-small-size);
-    }
-
-    @media (forced-colors: active) {
-      .panel {
-        border-color: CanvasText;
+  static override styles = [
+    jfbBackofficeTokens,
+    css`
+      :host {
+        display: block;
       }
-    }
-  `;
+
+      .open {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--uui-size-space-2);
+        padding: var(--uui-size-space-1) var(--uui-size-space-2);
+        border: 0;
+        border-radius: var(--uui-border-radius);
+        background: none;
+        color: var(--uui-color-interactive);
+        font: inherit;
+        font-size: var(--uui-type-small-size);
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      .open:hover {
+        background: var(--uui-color-surface-emphasis);
+        color: var(--uui-color-interactive-emphasis);
+      }
+
+      .open:focus-visible,
+      .path:focus-visible,
+      input:focus-visible {
+        outline: 2px solid var(--jfb-bo-color-focus);
+        outline-offset: 0;
+      }
+
+      .panel {
+        display: grid;
+        gap: var(--uui-size-space-2);
+        box-sizing: border-box;
+        max-block-size: min(320px, 50vh);
+        overflow: auto;
+        margin-block-start: var(--uui-size-space-2);
+        padding: var(--uui-size-space-3);
+        border: 1px solid var(--uui-color-border);
+        border-radius: var(--uui-border-radius);
+        background: var(--uui-color-surface);
+        color: var(--uui-color-text);
+      }
+
+      input {
+        box-sizing: border-box;
+        inline-size: 100%;
+        min-height: 36px;
+        padding: var(--uui-size-space-2) var(--uui-size-space-3);
+        border: 1px solid var(--jfb-bo-color-control-border);
+        border-radius: var(--uui-border-radius);
+        background: var(--uui-color-surface);
+        color: inherit;
+        font: inherit;
+      }
+
+      .heading {
+        margin: var(--uui-size-space-2) 0 0;
+        color: var(--jfb-bo-color-text-muted);
+        font-size: var(--uui-type-small-size);
+        font-weight: 600;
+      }
+
+      ul {
+        display: grid;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .path {
+        display: grid;
+        gap: 2px;
+        inline-size: 100%;
+        padding: var(--uui-size-space-2);
+        border: 0;
+        border-radius: var(--uui-border-radius);
+        background: none;
+        color: inherit;
+        font: inherit;
+        text-align: start;
+        cursor: pointer;
+      }
+
+      .path:hover {
+        background: var(--uui-color-surface-emphasis);
+      }
+
+      code {
+        color: var(--jfb-bo-color-text-muted);
+        font-size: var(--uui-type-small-size);
+        overflow-wrap: anywhere;
+      }
+
+      .note {
+        margin: 0;
+        color: var(--jfb-bo-color-text-muted);
+        font-size: var(--uui-type-small-size);
+      }
+
+      @media (forced-colors: active) {
+        .panel {
+          border-color: CanvasText;
+        }
+      }
+    `,
+  ];
 }
 
 if (!customElements.get('jfb-merge-tag-picker')) customElements.define('jfb-merge-tag-picker', MergeTagPickerElement);

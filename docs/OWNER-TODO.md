@@ -134,7 +134,16 @@ what to do and why. Items for blocked roadmap steps name the step as "step X.Y",
 - [ ] **Report to Umbraco HQ** (added 2026-10-31, ROADMAP 6.7f): in Umbraco 17.7.1's dark theme UUI's positive
   primary button (`#347d39` under `#eeeeef`) is 4.37:1, below WCAG AA's 4.5:1, on every dialog's main button. Jiron
   Form Builder keeps Umbraco's buttons as Umbraco draws them; its own parts use tokens that pass (docs/ux/tokens.md).
-  UUI's danger (2.5:1 on the surface) and selected (4.3:1) colours fall short there too.
+  UUI's danger (2.5:1 on the surface) and selected (4.3:1) colours fall short there too. Since 9.6a (ADR-0182) the
+  section sets white labels and a stronger focus ring on its own elements, Umbraco's footer and dialogs inside them
+  included; what stays Umbraco's, for the same report:
+  - the dark theme's default and danger labels (4.34:1, 4.32:1), its warning label (`#eeeeef` on `#af7c12`, 3.2:1),
+    its focus colour (`#316dca`, 2.5:1 on the surface) and its `-standalone` danger and positive (2.5:1); the
+    high-contrast theme's warning standalone (`#ffdd43`, 1.3:1 on white);
+  - the open row of every tree (`--uui-color-current`, `#316dca` under `#eeeeef`, 4.34:1 in the dark theme);
+  - `uui-menu-item`'s inner `#menu-item` carries `aria-label="menuitem"`, so its accessible name never matches its
+    label (axe's `label-content-name-mismatch` on every tree row);
+  - Umbraco's own page is at least 920 px wide in every section, so a phone scrolls sideways in all of them.
 - [ ] **Screen readers:** test a few forms and the designer with NVDA and VoiceOver. The build checks
   accessibility names and keyboard paths automatically, but no real screen reader runs here.
 - [ ] **GitHub rendering:** once the repository is public, check that the README, docs and issue forms
