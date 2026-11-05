@@ -40,7 +40,7 @@ export class PublishFormAction extends UmbWorkspaceActionBase {
       // Design view any other. The dialog answers before it closes and gives the focus back to Publish... as it does, so
       // the Fix it waits.
       await Promise.race([closed, new Promise((done) => setTimeout(done, 2000))]);
-      followFix(value.fix, context.requestFix);
+      followFix(value.fix, (fix) => context.requestFix(fix));
       return;
     }
     this.setExecuting(true);
