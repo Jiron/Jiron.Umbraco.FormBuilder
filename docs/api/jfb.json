@@ -7727,6 +7727,7 @@
           "htmlLength",
           "lineLength",
           "nameLength",
+          "outcomes",
           "referenceDigits",
           "verificationDays"
         ],
@@ -7749,6 +7750,10 @@
             "format": "int32"
           },
           "referenceDigits": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "outcomes": {
             "type": "integer",
             "format": "int32"
           }

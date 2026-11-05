@@ -54,7 +54,8 @@ internal sealed class FormSettingsController(
     IFormBuilderSettingsService settings,
     FormBuilderThemes themes,
     IThemeRepository library,
-    IMemberGroupService memberGroups) : FormBuilderManagementApiController
+    IMemberGroupService memberGroups,
+    DefinitionLimits limits) : FormBuilderManagementApiController
 {
     // A page of the library's themes, read until the last.
     private const int ThemePage = 200;
@@ -116,6 +117,7 @@ internal sealed class FormSettingsController(
                 NameLength = DefinitionStructureChecks.MaxNameLength,
                 VerificationDays = DefinitionSaveChecks.MaxVerificationDays,
                 ReferenceDigits = DefinitionSaveChecks.MaxReferenceDigits,
+                Outcomes = limits.MaxOutcomes,
             },
         });
     }
@@ -224,4 +226,7 @@ internal sealed record FormSettingsLimitsResponseModel
 
     /// <summary>The most digits an entry reference pads its number to; the least is 1.</summary>
     public required int ReferenceDigits { get; init; }
+
+    /// <summary>The most outcomes a form has, as the host sets it (ADR-0185).</summary>
+    public required int Outcomes { get; init; }
 }

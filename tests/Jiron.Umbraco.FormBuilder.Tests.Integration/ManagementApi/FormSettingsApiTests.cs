@@ -102,6 +102,7 @@ public sealed class FormSettingsApiTests : ManagementApiTestBase
             Assert.That(
                 (limits["lineLength"]!.GetValue<int>(), limits["htmlLength"]!.GetValue<int>(), limits["nameLength"]!.GetValue<int>(), limits["verificationDays"]!.GetValue<int>(), limits["referenceDigits"]!.GetValue<int>()),
                 Is.EqualTo((DefinitionSaveChecks.LineLength, DefinitionSaveChecks.HtmlLength, DefinitionStructureChecks.MaxNameLength, DefinitionSaveChecks.MaxVerificationDays, DefinitionSaveChecks.MaxReferenceDigits)));
+            Assert.That(limits["outcomes"]!.GetValue<int>(), Is.EqualTo(GetRequiredService<DefinitionLimits>().MaxOutcomes), "the host's limit of outcomes");
         });
     }
 
