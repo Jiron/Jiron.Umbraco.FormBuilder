@@ -2715,10 +2715,14 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
   - **Captcha providers:** the spam group greys out a provider without keys, from `GET captcha-provider` (each provider's name, label, `isConfigured` and settings, never a key), with its row in the permission matrix (added in 7.4g); the site's defaults, time zone, themes and member groups come from `GET form/{key}/setting-choices`, for who may design the form (ADR-0184).
   - **The form check's Fix it** (ADR-0181, added in 9.5f): a problem in the form's settings, which 9.5f leads to this view, opens the group and the setting it names, with the focus on it.
   - Done when: Playwright covers each of these groups, including validation messages, and follows the form check's Fix it of a setting to it.
-- [ ] **10.1b The form settings view: after sending** (split from 10.1, see WORKLOG)
-  - The outcomes editor of §4.3.4 and IA 5.2: an ordered list with rules, each outcome edited in a sidebar beside a live preview with a sample entry; the canvas's After sending opens it.
+- [ ] **10.1b The form settings view: after sending** (split from 10.1, see WORKLOG; its live preview split off to 10.1c)
+  - The outcomes editor of §4.3.4 and IA 5.2: an ordered list with rules, each outcome edited in a sidebar; the canvas's After sending opens it.
+  - **The outcome's rule** in the rules builder, whose effect is `use` (§4.3.3), as the builder edits an element's.
   - **The form check's Fix it** (ADR-0181, added in 9.5f): a problem in an outcome, which 9.5f leads to this view, opens the outcome and the setting it names, with the focus on it.
-  - Done when: Playwright covers the After sending group, including validation messages, and follows the form check's Fix it of an outcome to it.
+  - Done when: Playwright covers the After sending group, including validation messages and an outcome's rule, follows the form check's Fix it of an outcome to it, and opens an outcome's editor from the canvas's After sending.
+- [ ] **10.1c The form settings view: an outcome's live preview** (split from 10.1b, see WORKLOG)
+  - The outcome's sidebar shows the outcome beside its settings as visitors get it with a sample entry made from the form's fields, as each setting changes: the server renders it, as it renders a real entry's, from the draft.
+  - Done when: Playwright edits an outcome's message and its preview shows the sample entry's answers in place of its merge tags, a sensitive field's masked; integration tests cover the preview endpoint, with its row in the permission matrix and the OpenAPI snapshot.
 - [ ] **10.2 The actions view and its editors**
   - **The list:** action cards per trigger (Submitted, Approved, Rejected, Verified), with order (drag and keyboard), an on/off switch, a rule chip and the last-run status.
   - **Adding:** an "add action" modal with presets.
