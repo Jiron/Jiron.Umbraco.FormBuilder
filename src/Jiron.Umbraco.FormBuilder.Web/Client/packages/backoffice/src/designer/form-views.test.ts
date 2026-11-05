@@ -1,7 +1,9 @@
 // The moves between the form's views (ROADMAP 9.3a, 9.5f): the address of a view, the view an address shows, Design at
-// the form's own address, and no move to the view shown, which Umbraco's router would build anew.
+// the form's own address, no move to the view shown, which Umbraco's router would build anew, and a Fix it led to the
+// view that makes it, handed on only to a view that takes it up (ADR-0184).
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { FIRST_VIEW, goToView, shownView, viewPath } from './form-views';
+import type { FixTarget } from './check/form-check';
+import { FIRST_VIEW, followFix, goToView, shownView, viewPath } from './form-views';
 
 const FORM = '/umbraco/section/jfb-forms/workspace/jfb-form/edit/3f2504e0-4f89-41d3-9a0c-0305e82c3301';
 
@@ -38,5 +40,28 @@ describe("the form's views", () => {
     goToView('settings');
     goToView('design');
     expect(moves).toEqual([`${FORM}/view/settings`, `${FORM}/view/design`]);
+  });
+
+  it('lead a Fix it to its view, handing it on only to one that takes it up', () => {
+    const moves: string[] = [];
+    vi.spyOn(window, 'dispatchEvent').mockImplementation((event) => {
+      if (event.type === 'popstate') moves.push(window.location.pathname);
+      return true;
+    });
+    history.replaceState(null, '', `${FORM}/view/design`);
+    const handed: FixTarget[] = [];
+    const settings: FixTarget = { kind: 'view', view: 'settings', path: '$.settings.availability.members' };
+    followFix(settings, (fix) => handed.push(fix));
+    expect(handed).toEqual([settings]);
+    expect(moves).toEqual([`${FORM}/view/settings`]);
+    // The Actions view is still to come (ROADMAP 10.2): a Fix it handed on would wait for it.
+    const actions: FixTarget = { kind: 'view', view: 'actions', path: '$.actions[0]' };
+    followFix(actions, (fix) => handed.push(fix));
+    expect(handed).toEqual([settings]);
+    expect(moves).toEqual([`${FORM}/view/settings`, `${FORM}/view/actions`]);
+    const element: FixTarget = { kind: 'palette', page: null };
+    followFix(element, (fix) => handed.push(fix));
+    expect(handed).toEqual([settings, element]);
+    expect(moves).toEqual([`${FORM}/view/settings`, `${FORM}/view/actions`, `${FORM}/view/design`]);
   });
 });

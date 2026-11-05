@@ -31,7 +31,7 @@ import {
 import { bySeverity, type FixTarget } from './check/form-check';
 import type { CheckState } from './check/form-checker';
 import { FORM_CHECK_MODAL } from './check/form-check.modal.token';
-import { FIXING_VIEWS, goToView } from './form-views';
+import { followFix, goToView } from './form-views';
 import { CANVAS_WIDTHS, type CanvasWidth } from './canvas/widths';
 import { isDragging } from './drag/pointer-drag';
 import type { FormCanvasElement } from './canvas/form-canvas.element';
@@ -1431,8 +1431,7 @@ export class FormDesignViewElement extends UmbLitElement {
     this.#shownLink = true;
     if (this._open) this.#closePalette();
     if (target.kind === 'view') {
-      if (FIXING_VIEWS.has(target.view)) this.#context?.requestFix(target);
-      goToView(target.view);
+      followFix(target, (fix) => this.#context?.requestFix(fix));
       return;
     }
     if (target.kind === 'palette') {

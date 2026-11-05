@@ -6,7 +6,7 @@ import { umbOpenModal } from '@umbraco-cms/backoffice/modal';
 import type { UmbControllerHost } from '@umbraco-cms/backoffice/controller-api';
 import { UmbWorkspaceActionBase, type UmbWorkspaceActionArgs } from '@umbraco-cms/backoffice/workspace';
 import { FORM_WORKSPACE_CONTEXT } from './constants';
-import { FIXING_VIEWS, goToView } from './form-views';
+import { followFix } from './form-views';
 import { PUBLISH_MODAL } from './publish.modal.token';
 
 export class PublishFormAction extends UmbWorkspaceActionBase {
@@ -40,8 +40,7 @@ export class PublishFormAction extends UmbWorkspaceActionBase {
       // Design view any other. The dialog answers before it closes and gives the focus back to Publish... as it does, so
       // the Fix it waits.
       await Promise.race([closed, new Promise((done) => setTimeout(done, 2000))]);
-      if (value.fix.kind !== 'view' || FIXING_VIEWS.has(value.fix.view)) context.requestFix(value.fix);
-      goToView(value.fix.kind === 'view' ? value.fix.view : 'design');
+      followFix(value.fix, context.requestFix);
       return;
     }
     this.setExecuting(true);

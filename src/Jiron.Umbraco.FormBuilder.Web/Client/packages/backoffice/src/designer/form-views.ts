@@ -1,5 +1,6 @@
 // The form workspace's views by their path (ROADMAP 9.3a): a move to another view of the open form, as its tab makes
 // one, for the links between them (the outcomes in Settings, a Fix it in Design).
+import type { FixTarget } from './check/form-check';
 
 /**
  * The view the form's own address shows, without a view in it, to a user who designs: Design, the first of the views
@@ -31,4 +32,13 @@ export function goToView(view: string) {
   if (shownView(pathname) === view) return;
   history.pushState(null, '', viewPath(pathname, view));
   window.dispatchEvent(new PopStateEvent('popstate'));
+}
+
+/**
+ * Leads a Fix it to the view that makes it: the one it names for the form's own settings, Design for any other. It is
+ * handed on (`request`) first, to be taken up once that view is shown, only where that view takes it up.
+ */
+export function followFix(fix: FixTarget, request: (fix: FixTarget) => void) {
+  if (fix.kind !== 'view' || FIXING_VIEWS.has(fix.view)) request(fix);
+  goToView(fix.kind === 'view' ? fix.view : 'design');
 }
