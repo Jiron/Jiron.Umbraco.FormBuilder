@@ -60,6 +60,14 @@ export default defineConfig({
       workers: 1,
       use: browser,
     },
+    // A phase review's UX walk, only when asked (JFB_E2E_UX=1): every screen in twelve ways, then a sheet per screen
+    // (support/ux-walk.ts; ROADMAP 9.6a). The gate leaves it out: it reviews, it doesn't check.
+    ...(process.env['JFB_E2E_UX']
+      ? [
+          { name: 'ux', testDir: './specs/ux', use: browser },
+          { name: 'ux-sheets', testDir: './specs/ux-sheets', dependencies: ['ux'], use: browser },
+        ]
+      : []),
     // Two hosts on one SQL Server database in CI's load-balancing job; JFB_E2E_LB=1 proves the suite itself on one host.
     ...(process.env['SA_PASSWORD'] || process.env['JFB_E2E_LB']
       ? [{ name: 'lb', testDir: './specs/lb', use: browser }]
