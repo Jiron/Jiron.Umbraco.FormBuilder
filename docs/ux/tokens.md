@@ -255,7 +255,9 @@ border in them: those take the three `-text` mixes above.
 **Motion.** `--jfb-bo-motion-fast` (`120ms`) and `--jfb-bo-motion-ease` (`cubic-bezier(0.23, 1, 0.32, 1)`) time every
 press, fade and reveal the package draws, the same values as the website's `--jfb-motion-fast` and `--jfb-motion-ease`.
 Hover and colour changes use `ease`. With `prefers-reduced-motion: reduce`, nothing moves or scales; fades keep their
-time.
+time. The canvas's move handle and insert points show and hide at once: every selection, focus and hover reveals one
+and hides another, and a fade would paint the whole sheet again for each of its frames, which a form of 300 fields
+cannot afford (ADR-0169).
 
 ### Waiting
 

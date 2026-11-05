@@ -323,11 +323,14 @@ export const canvasChrome = css`
     }
   }
 
+  /* The host's own colour, solid, so the browser gives the scroller a layer of its own and scrolls it without painting
+     the sheet again; a scroller it sees through is painted with the page at every scroll (ADR-0169). */
   .bo-viewport {
     flex: 1 1 auto;
     min-height: 0;
     overflow: auto;
     padding: 0 var(--uui-size-layout-1) var(--uui-size-layout-1);
+    background: var(--uui-color-background);
   }
 
   .bo-viewport:focus-visible {
@@ -623,7 +626,8 @@ export const canvasChrome = css`
     text-overflow: ellipsis;
   }
 
-  /* An insert point: a line across the gap with "Add a field here" on it, in sight on hover and on focus. */
+  /* An insert point: a line across the gap with "Add a field here" on it, in sight on hover and on focus, at once: the
+     pointer reveals one at every gap it crosses, and a fade would paint the whole sheet again for each frame of it. */
   .jfb-form .bo-insert {
     position: absolute;
     inset-inline: 0;
@@ -640,7 +644,6 @@ export const canvasChrome = css`
     font: 600 12px/20px var(--uui-font-family);
     cursor: pointer;
     opacity: 0;
-    transition: opacity var(--jfb-bo-motion-fast) var(--jfb-bo-motion-ease);
   }
 
   .jfb-form .bo-insert::before {
@@ -678,11 +681,6 @@ export const canvasChrome = css`
     .jfb-form .bo-insert:hover {
       opacity: 1;
     }
-  }
-
-  /* What the keyboard reaches is there at once. */
-  .jfb-form .bo-insert:focus-visible {
-    transition: none;
   }
 
   .jfb-form .bo-insert:focus {
@@ -849,7 +847,9 @@ export const canvasChrome = css`
    * right, shown on hover, on keyboard focus and while selected (ADR-0016). It drags the element; Alt+Up and Alt+Down on
    * it move it one place. A field in a repeatable group shows its own, not the group's. Hidden, it takes no pointer, so
    * it never catches a click meant for the field above it. Its own button and itself say when it shows, as siblings:
-   * a rule that asks whether a field holds the pointer would be checked for every field at every move of the mouse.
+   * a rule that asks whether a field holds the pointer would be checked for every field at every move of the mouse. It
+   * shows at once: every selection, focus and hover reveals one and hides another, and a fade would paint the whole sheet
+   * again for each frame of it (a form of 300 fields, ADR-0169).
    */
   .jfb-form .bo-handle {
     position: absolute;
@@ -867,7 +867,6 @@ export const canvasChrome = css`
     background: var(--bo-accent);
     color: var(--bo-on-accent);
     opacity: 0;
-    transition: opacity var(--jfb-bo-motion-fast) var(--jfb-bo-motion-ease);
     pointer-events: none;
     cursor: grab;
     touch-action: none;
@@ -893,11 +892,6 @@ export const canvasChrome = css`
       opacity: 1;
       pointer-events: auto;
     }
-  }
-
-  .jfb-form .bo-select:focus-visible ~ .bo-handle,
-  .jfb-form .bo-handle:focus-visible {
-    transition: none;
   }
 
   .jfb-form .bo-handle:focus-visible {
