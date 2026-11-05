@@ -2556,7 +2556,8 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - **Retried at 9.6b (2026-11-05):** the branch with Phase 9 merged in measures 61.96 KB against 60 KB, and still waits.
   - **Blocked on the owner (2026-11-02):** the control and the restoring of answers are built and wait on the branch `wip/8.6b-resume-control`. As the chunk of their own they come to 1.94 KB gzip, which puts the runtime with every feature at 61.95 KB against the 60 KB of ADR-0146, and that ADR leaves anything past 60 KB to the owner. `docs/OWNER-TODO.md` asks.
   - **The control:** the runtime's "Save and continue later" (the only use of browser storage, §4.10), and a link's answers and page restored on arrival, its token taken out of the address at once.
-  - Done when: Playwright resumes a three-page form from the link in the pickup email, and a resumed form asks again for the files it had and shows every consent unticked.
+  - **Its switch** in the Settings view's Submission group, under More options, with the link's days (moved from 10.1a: settings come with their feature).
+  - Done when: Playwright turns on "Save and continue later" in the form's Settings view (a number of days out of range says its message there) and resumes a three-page form from the link in the pickup email, and a resumed form asks again for the files it had and shows every consent unticked.
 
 ### Phase 9: The backoffice I: section, form library and designer
 
@@ -2710,7 +2711,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
 ### Phase 10: The backoffice II: settings, actions, preview and publishing
 
 - [ ] **10.1a The form settings view: its groups** (split from 10.1, see WORKLOG)
-  - The groups of §4.3.4 with help text: submission, availability, spam, privacy, appearance and developer settings, open or closed as IA 5.2 says, each closed group with its summary line, and the server's validation messages at their setting.
+  - The groups of §4.3.4 with help text: submission, availability, spam, appearance and developer settings, open or closed as IA 5.2 says, each closed group with its summary line, and the server's validation messages at their setting. Settings come with their feature: the Privacy group comes with 11.5 (insights), 13.1 (retention, and Store entries "For a number of days") and 13.3 (IP handling), "Save and continue later" with 8.6b, and "One entry per member" with 14.3, which build what they configure.
   - **Captcha providers:** the spam group greys out a provider without keys, from `GET designer/captcha-provider` (each provider's name and `isConfigured`, never a key), with its row in the permission matrix (added in 7.4g).
   - **The form check's Fix it** (ADR-0181, added in 9.5f): a problem in the form's settings, which 9.5f leads to this view, opens the group and the setting it names, with the focus on it.
   - Done when: Playwright covers each of these groups, including validation messages, and follows the form check's Fix it of a setting to it.
@@ -2805,8 +2806,8 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
     - a comparison period, grouped by day, week or month;
     - a site-wide overview table.
   - **Charts** are small, accessible SVG components with a table view (no chart library).
-  - **Opt-out** globally and per form (the privacy section is global, ADR-0008).
-  - Done when: unit tests cover the aggregation, Playwright shows the beacons arriving and the charts filling on the demo (screenshots reviewed in `docs/ux/review-11.5.md`), and a test proves the stats hold no personal data (the `invalid` beacon included: a test posts a value with it and finds it nowhere). An entry the pipeline stores counts its origin page, its hour and its time to complete in the unit that stores it, and none of them when the unit is rolled back (ADR-0088).
+  - **Opt-out** globally and per form (the privacy section is global, ADR-0008). The form's switch is the first setting of its Settings view's Privacy group, which this step adds to the view with its summary line (moved from 10.1a: settings come with their feature).
+  - Done when: unit tests cover the aggregation, Playwright shows the beacons arriving and the charts filling on the demo (screenshots reviewed in `docs/ux/review-11.5.md`), turns a form's insights off in its Privacy group and sees its beacons stop, and a test proves the stats hold no personal data (the `invalid` beacon included: a test posts a value with it and finds it nowhere). An entry the pipeline stores counts its origin page, its hour and its time to complete in the unit that stores it, and none of them when the unit is rolled back (ADR-0088).
 - [ ] **11.5b Answer summaries** (added in 1.1 from the feature study)
   - **What it shows,** in the form's Insights view, over a date range and the entry filters of 11.1:
     - counts and percentages per option for choice and grid fields, and the average position for ranking fields;
@@ -2887,8 +2888,8 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
   - **A legal hold:** an entry can be kept with a reason and an end date.
   - **The job** deletes in batches, files and emails included, and offers a dry-run preview (counts per form). Everything is audited.
     - **What a dead process leaves in the file store** (ADR-0041): the job also deletes `.partial` files, `.deleted-` files and stored files that no `jfbEntryFile` row names, once they are a day old.
-  - **The screens:** the retention settings (global and per form) with the dry run, now that the engine exists.
-  - Done when: tests with fake time pass, including holds and a form's `storeDays` shorter and longer than its states' days, and Playwright changes a retention setting and sees the dry run follow it. A test leaves a partial file, a deleted file's bytes and a stored file without a row, each older than a day, next to younger ones, and the job deletes exactly the three old ones.
+  - **The screens:** the retention settings (global and per form) with the dry run, now that the engine exists. The form's are its days per state in its Settings view's Privacy group and the choice "For a number of days" of Store entries in its Submission group (moved from 10.1a: settings come with their feature).
+  - Done when: tests with fake time pass, including holds and a form's `storeDays` shorter and longer than its states' days, and Playwright changes a retention setting and sees the dry run follow it. Playwright sets a form's days per state in its Privacy group and Store entries "For a number of days", and each says its validation message for a number out of range. A test leaves a partial file, a deleted file's bytes and a stored file without a row, each older than a day, next to younger ones, and the job deletes exactly the three old ones.
 - [ ] **13.2 Data subject tools**
   - **Find:** by email (email-type fields and member email) or by member, across all forms.
   - **Export:** everything as a ZIP (JSON per entry, files, consent texts).
@@ -2903,9 +2904,9 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
   - Done when: tests and Playwright pass, including a test that searches **every Jiron Form Builder table** for the person's email address after an erase and finds nothing, and a test that an anonymised entry gives its places back (ADR-0090).
 - [ ] **13.3 Sensitive data and IP addresses**
   - **Masking** in the UI, emails, exports and logs; the "view sensitive data" permission; audited reveals.
-  - **IP modes:** none, anonymised (IPv4 /24, IPv6 /48) and full (only when the host allows it), with their settings screen. A form that stores `ip: full` on a host that does not allow it gets the form check's warning that the host replaces a value the form stores (`lock_replaces_value`, ADR-0008, ADR-0180; added in 9.5e).
+  - **IP modes:** none, anonymised (IPv4 /24, IPv6 /48) and full (only when the host allows it), with their settings screen: the site's, and the form's in its Settings view's Privacy group (moved from 10.1a: settings come with their feature). A form that stores `ip: full` on a host that does not allow it gets the form check's warning that the host replaces a value the form stores (`lock_replaces_value`, ADR-0008, ADR-0180; added in 9.5e).
   - **Values kept only until the actions have run** (§4.4, built in 6.1 and 8.1): audited end to end. The entry panel, exports and the privacy export show such a field as "not kept", and the designer explains the setting next to "sensitive".
-  - Done when: tests pass, including captured logs, and a test searches every Jiron Form Builder table for a value kept only until the actions have run, once no trigger can still fire for its entry and every run is final, and finds nothing. A unit test finds the form check's `lock_replaces_value` warning on a form that stores `ip: full` on a host that does not allow it.
+  - Done when: tests pass, including captured logs, and a test searches every Jiron Form Builder table for a value kept only until the actions have run, once no trigger can still fire for its entry and every run is final, and finds nothing. A unit test finds the form check's `lock_replaces_value` warning on a form that stores `ip: full` on a host that does not allow it. Playwright sets a form's IP handling in its Privacy group, and an entry it then takes keeps the address that way.
 - [ ] **13.4 Privacy documentation and phase review**
   - Write `docs/privacy/`:
     - **a facts sheet:** what Jiron Form Builder stores, where and for how long; that it sets no cookies; the browser storage key used only by "save and resume"; third parties only when a captcha provider is chosen;
@@ -2937,13 +2938,13 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
     - a test fails when any key is missing in any language, and both runtimes pass `tests/vectors/messages.json` in all seven (added in 6.2g's split);
     - a review subagent per language reads the texts in context (screenshots) and its fixes are applied.
 - [ ] **14.3 Members**
-  - **Access:** members-only forms and member groups, one entry per member; the `options` endpoint answers a members-only form's options only to a member the form admits (added in 6.1c, ADR-0086).
+  - **Access:** members-only forms and member groups, one entry per member, whose switch sits in the Settings view's Availability group (moved from 10.1a: the form check reads it, nothing at submission does yet); the `options` endpoint answers a members-only form's options only to a member the form admits (added in 6.1c, ADR-0086).
   - **Prefill** (show and tamper-proof hide), and the member link on entries.
   - **Member deletion:** a handler deletes or anonymises the deleted member's entries, per a setting.
   - **Entries on the member:**
     - A workspace view on the member editor lists that member's entries, with permissions applied.
   - Done when:
-    - tests and Playwright pass with the seeded members, including the entries view on the member;
+    - tests and Playwright pass with the seeded members, including the entries view on the member, and Playwright turns on "One entry per member" in a form's Availability group and a member's second entry is refused;
     - the `options` endpoint gives a members-only form's options to a member the form admits and none to an anonymous request or a member it does not admit (added in 6.1c, ADR-0086);
     - a members-only post with another member's challenge, without a challenge, with a challenge fetched without the member's cookie, or from a page on another origin is refused on both paths; a members-only page refuses to be framed by another origin; a repeated no-JS post leads to the first entry's outcome without a second entry, and an expired challenge renders the form again with its answers; a cross-origin or `Origin: null` post with a bad challenge, over the per-address limit, or with validation errors is refused without its answers; a server-key submission to a members-only form answers `member_required`; a no-JS post faster than the minimum fill time is accepted; no Jiron Form Builder response sets a cookie.
 - [ ] **14.4 Multi-site and phase review**
