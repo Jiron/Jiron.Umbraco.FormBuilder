@@ -83,7 +83,7 @@ describe('the Move to... dialog', () => {
       'true',
     );
     expect(radios[0]?.hasAttribute('aria-describedby')).toBe(false);
-    expect(text(root.querySelector('.help'))).toBe('Alt+Up and Alt+Down then move it one place at a time.');
+    expect(text(root.querySelector('.help'))).toBe('To move it one place at a time, press Alt+Up or Alt+Down on it.');
   });
 
   it('gives the focus to the first place that can be chosen once it is open', async () => {

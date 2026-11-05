@@ -9,6 +9,8 @@ export default {
     headingPage: 'Page',
     fold: 'Fold the inspector',
     unfold: 'Open the inspector',
+    nothingSelected: 'Nothing selected',
+    nothingSelectedHelp: 'Select a field, group or page in the form to change its settings here.',
     elementActions: 'Actions for this element',
     editingLanguage: (language: string, standard: string) =>
       `Editing the ${language} texts. Where one is empty, visitors see the ${standard} text.`,
@@ -173,6 +175,8 @@ export default {
     options_from_dataType: 'A data type',
     options_options: 'Options',
     options_columns: 'Columns',
+    options_columnsFrom: 'Columns from',
+    options_addColumn: 'Add column',
     options_none: 'No options yet. Add them one by one, or paste a list.',
     options_count: (count: number) => (count === 1 ? '1 option' : `${count} options`),
     options_list: 'Option list',
@@ -191,7 +195,7 @@ export default {
     options_standardNone: 'Choose a list',
     options_dependsOn: 'Depends on',
     options_dependsOnNothing: 'No other field',
-    options_dependsOnHelp: 'The answer to that field decides which of these options are offered.',
+    options_dependsOnHelp: 'The answer to the field chosen here decides which of these options visitors get.',
     options_move: (label: string) => `Move ${label}`,
     options_moveNamed: (label: string) => `Moved ${label}`,
     options_moved: (label: string, position: number, count: number) =>

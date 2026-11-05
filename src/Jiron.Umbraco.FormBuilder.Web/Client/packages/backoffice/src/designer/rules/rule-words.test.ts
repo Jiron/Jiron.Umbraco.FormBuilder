@@ -121,6 +121,26 @@ describe('a rule in words', () => {
     expect(ruleWords(CONTEXT, { effect: 'nope', conditions: null })).toBe('Shown when ');
   });
 
+  it('says a part of the visit small inside the sentence, as a line of a list starts it big', () => {
+    expect(
+      ruleWords(CONTEXT, {
+        effect: 'show',
+        match: 'all',
+        conditions: [
+          { context: 'memberSignedIn', op: 'isChecked' },
+          { context: 'culture', op: 'equals', value: 'de-DE' },
+          { context: 'today', op: 'greaterThan', value: '2026-12-01' },
+          { context: 'query.ref', op: 'equals', value: 'web' },
+        ],
+      }),
+    ).toBe(
+      'Shown when the visitor is signed in and the language is German and today\'s date is after 1 Dec 2026 and the query value ref is "web"',
+    );
+    expect(
+      ruleWords(CONTEXT, { effect: 'hide', conditions: [{ context: 'memberGroup', op: 'isChecked', value: 'Gold' }] }),
+    ).toBe('Hidden when member groups include Gold');
+  });
+
   it("says a validation rule's message in the language shown, the standard one where it has none, and an outcome's use", () => {
     const conditions = [{ field: 'which', op: 'endsWith', value: 'land' }];
     expect(

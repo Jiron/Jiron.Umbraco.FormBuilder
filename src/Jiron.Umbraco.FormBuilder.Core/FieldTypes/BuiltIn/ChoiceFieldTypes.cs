@@ -608,7 +608,11 @@ public sealed class ConsentFieldSettings
     public LocalizedHtml? Text { get; init; }
 
     /// <summary>Whether ticking this consent is the visitor's agreement to load the form's captcha, in the <c>explicit</c> mode (section 4.10, ADR-0157).</summary>
-    [FormBuilderSetting("#jfbFieldSettings_consentLoadsCaptcha", Public = true)]
+    [FormBuilderSetting(
+        "#jfbFieldSettings_consentLoadsCaptcha",
+        Description = "#jfbFieldSettings_consentLoadsCaptchaHelp",
+        Public = true
+    )]
     public bool? LoadsCaptcha { get; init; }
 }
 

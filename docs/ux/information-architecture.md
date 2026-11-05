@@ -184,13 +184,18 @@ shows it in the form's own theme on the site's page (ADR-0168). A repeatable gro
 width is the form's own width: Desktop 960 px, Tablet 768 px, Phone 375 px. The canvas leaves out the visitor's step
 progress, since the steps across its top stand in for it.
 
+- **Beside the canvas, the inspector's column is always there,** with "Nothing selected" and a sentence on how to
+  choose an element until one is, so selecting or clearing never changes the canvas's width or moves the element just
+  clicked: a double-click on a field edits its label in place (ADR-0182).
 - **At 1024 px and wider,** the palette stays open beside the canvas, and both panels can be collapsed to rails.
-- **Between 620 and 1024 px,** the palette stays open until an element is selected. Then it folds to a rail (its
-  expand button and its search, which open it over the canvas), so the canvas keeps its width beside the inspector;
-  clearing the selection, or folding the inspector, opens the palette again. The widths are the Design view's own, as
-  for the narrow view (ADR-0170): a 1024 px window gives it 724 px. On a narrow sheet the selected element's bar shows
-  its buttons' icons alone, still named for screen readers. The wireframes of step 2.2 found that both panels open leave the
-  canvas about 150 px at a 1024 px window.
+- **Between 620 and 1024 px,** the palette lies on its rail (its expand button and its search, which open it over the
+  canvas) whenever the view is that narrow, selected or not; folding the inspector gives the palette back as the user
+  left it. The widths are the Design view's own, as for the narrow view (ADR-0170): a 1024 px window gives it 724 px.
+  On a narrow sheet the selected element's bar shows its buttons' icons alone, still named for screen readers. The
+  wireframes of step 2.2 found that both panels open leave the canvas about 150 px at a 1024 px window.
+- **The canvas keeps room of its own** above each field and group, a little more than the visitor's page has, so a
+  selected element's bar and handle never lie over the element above it, and the form never shifts when one is
+  selected (ADR-0182).
 - **When the canvas has less room than the chosen width,** it shows the form as it reflows in that room, as a
   visitor's narrow window would (columns stack), and "Narrowed to fit" beside the width switch says so. It never
   scales the form down: text stays readable, and collapsing the inspector gives the canvas its width back.
@@ -208,7 +213,7 @@ progress, since the steps across its top stand in for it.
 | The steps | the pages by name across the top of the canvas (an unnamed page reads "Page 1"), then "Add page" (an empty page at the end, whose empty state says that the palette's Layout › New page splits a page instead), then **After sending** | Clicking a step shows that page. After sending shows the outcome as visitors will see it, read-only, with "Change", which opens that outcome's editor in the Settings view. |
 | Canvas | groups with their columns, and fields as visitors see them. An insert point, a button "Add a field here" in the gap above each element and below a group's last one, appears on hover and on keyboard focus, and every page ends with a visible "Add field", which opens the palette for the end of that page, or moves the focus to its search where it is already open. Rules show as small chips on the elements they affect, except on the selected element, whose rules are in the inspector: one per rule in use, in words, at the element's top end beside its translation chip, and the description of the button that selects it; a click on one selects the element ([ADR-0178](../decisions/0178-seeing-rules-and-validation-rules-in-the-builder.md)). | An insert point opens the palette for that point, whose Layout › New page starts a page there. Every field and group has a handle ("Move Email address") at its top left, shown on hover, on focus and while it is selected, which drags it; a page is dragged by its step, and a step takes a dropped field or group at that page's end (ADR-0169). On the selected element: Move to… · Duplicate · Delete · "…" (Change type… · Start a new page after this · Save group as template… for groups · Copy alias). At 620 px they sit in the header of the inspector, which then covers the canvas. |
 | Palette | search, "Recently used", then **Layout** (Group: a set of fields, with optional columns; New page: starts a page at that point and moves what follows onto it), the field types in groups, the site's saved groups, and "Paste questions…" at the end | A click inserts at the chosen point, or after the selected element, or at the end of the current page; dragging a type from the palette beside the canvas places it. |
-| Inspector | opens when an element is selected: the element's type at the top ("Email field"), with Change type beside it for a field whose type may become another, then the sections; the label is the first field of Essentials | Change type opens the same dialog as the element's "…": the types the field may become, and what the one chosen takes from the field and what it then needs, before anything changes (ADR-0174) |
+| Inspector | shows the selected element: its type at the top ("Email field"), with Change type beside it for a field whose type may become another, then the sections; the label is the first field of Essentials | Change type opens the same dialog as the element's "…": the types the field may become, and what the one chosen takes from the field and what it then needs, before anything changes (ADR-0174) |
 
 **The inspector's sections,** each under a header that is a button opening or closing it (`aria-expanded`):
 

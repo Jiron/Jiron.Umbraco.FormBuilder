@@ -3,7 +3,8 @@
 // section says in one line what is set; an open one shows seven items at most before "More options". It edits texts in
 // the language the canvas shows, and says so where that is not the default. Every change goes to the Design view as a
 // request, which makes it an edit of the form: typing in one box is one step to undo. Beside the canvas it folds to a
-// rail; over a narrow canvas it carries the element's own bar.
+// rail, and with nothing selected says how to choose what it shows (ADR-0182); over a narrow canvas it carries the
+// element's own bar.
 import { compilePattern, LogicError, type Pattern } from '@jfb/logic';
 import { html, nothing, type PropertyValues, type TemplateResult } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
@@ -20,7 +21,7 @@ import {
   type LocalizedText,
 } from '../definition';
 import { RESERVED_ALIASES } from '../editor-model';
-import { textIn } from '../preview/field-models';
+import { textIn, type ResolvedOption } from '../preview/field-models';
 import type { SiteLanguage } from '../preview/look';
 import { builderEffectsOf, clashOf } from '../rules/rule-draft';
 import { rulesOn } from '../rules/rule-list';
@@ -148,6 +149,7 @@ export class InspectorElement extends UmbLitElement {
     culture: { attribute: false },
     languages: { attribute: false },
     form: { attribute: false },
+    resolvedOptions: { attribute: false },
     mode: { reflect: true },
     _open: { state: true },
     _more: { state: true },
@@ -165,6 +167,8 @@ export class InspectorElement extends UmbLitElement {
   declare languages: readonly SiteLanguage[];
   /** The form's key, whose draft the tag picker's paths come from; none, no picker. */
   declare form: string;
+  /** The options of fields that take them from a source, as the server resolved the draft's, by field. */
+  declare resolvedOptions: ReadonlyMap<string, readonly ResolvedOption[]>;
   declare mode: InspectorMode;
   declare private _open: ReadonlySet<SectionId>;
   declare private _more: ReadonlySet<SectionId>;
@@ -184,6 +188,7 @@ export class InspectorElement extends UmbLitElement {
     this.culture = '';
     this.languages = [];
     this.form = '';
+    this.resolvedOptions = new Map();
     this.mode = 'docked';
     this._open = readOpen();
     this._more = new Set();
@@ -1165,8 +1170,13 @@ export class InspectorElement extends UmbLitElement {
 
   /** A rule in words, as the builder says it: "Shown when Country is Other". */
   #ruleText(rule: DesignRule): string {
-    const words = inspectorRuleWords(this.definition, this.types, this.culture, this.languages, (key, ...args) =>
-      this.localize.term(key, ...args),
+    const words = inspectorRuleWords(
+      this.definition,
+      this.types,
+      this.culture,
+      this.languages,
+      (key, ...args) => this.localize.term(key, ...args),
+      this.resolvedOptions,
     );
     return ruleWords(words, rule);
   }
@@ -1342,9 +1352,23 @@ export class InspectorElement extends UmbLitElement {
     this.#request({ kind: 'element', action, key });
   }
 
+  #fold() {
+    return html`<uui-button compact label=${this.#term('fold')} @click=${() => this.#request({ kind: 'fold' })}>
+      <uui-icon name="icon-navigation-right"></uui-icon>
+    </uui-button>`;
+  }
+
+  // Beside the canvas with nothing selected: what the column is for, and its fold.
+  #nothingSelected() {
+    return html`<div class="head">
+        <h2 tabindex="-1">${this.#term('nothingSelected')}</h2>
+        ${this.mode === 'docked' ? this.#fold() : nothing}
+      </div>
+      <p class="empty">${this.#term('nothingSelectedHelp')}</p>`;
+  }
+
   override render() {
     const subject = this.#subject();
-    if (!subject) return nothing;
     if (this.mode === 'rail')
       return html`<uui-button
         compact
@@ -1354,6 +1378,7 @@ export class InspectorElement extends UmbLitElement {
       >
         <uui-icon name="icon-navigation-left"></uui-icon>
       </uui-button>`;
+    if (!subject) return this.#nothingSelected();
     const sections = this.#sections(subject);
     return html`<div class="head">
         <h2 tabindex="-1">${this.#heading(subject)}</h2>
@@ -1364,18 +1389,12 @@ export class InspectorElement extends UmbLitElement {
                 compact
                 look="secondary"
                 class="change-type"
-                label=${this.localize.term('jfbDesigner_changeTypeButton')}
+                label=${this.localize.term('jfbDesigner_changeType')}
                 @click=${() => this.#request({ kind: 'element', action: 'changeType', key: subject.field.key })}
               ></uui-button>`
             : nothing
         }
-        ${
-          this.mode === 'docked'
-            ? html`<uui-button compact label=${this.#term('fold')} @click=${() => this.#request({ kind: 'fold' })}>
-                <uui-icon name="icon-navigation-right"></uui-icon>
-              </uui-button>`
-            : nothing
-        }
+        ${this.mode === 'docked' ? this.#fold() : nothing}
         <uui-button
           compact
           label=${this.localize.term('general_close')}

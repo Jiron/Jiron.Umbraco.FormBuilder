@@ -2,14 +2,37 @@
 // the steps and the sheet in Umbraco's colours, and the designer's controls laid over the form, each prefixed bo- so
 // that none reaches the form's own look. The form itself keeps the theme's light colours in every backoffice theme, as
 // visitors see it. The controls over a field are positioned out of the flow, so the theme's grid of a group's fields,
-// its rows shared between columns and its spacing between a field's parts hold as on the website.
+// its rows shared between columns and its spacing between a field's parts hold as on the website; only the room above
+// each field and group, where a selected element's bar stands, is the canvas's own (ADR-0182).
 import { css } from '@umbraco-cms/backoffice/external/lit';
 
 export const canvasChrome = css`
   :host {
     --bo-accent: var(--uui-color-selected, #3544b1);
     --bo-on-accent: var(--uui-color-selected-contrast, #fff);
-    --bo-focus: var(--uui-color-focus, #3879ff);
+    --bo-focus: var(--jfb-bo-color-focus);
+    /*
+     * The sheet is white in every theme, so what the designer draws on it has fixed colours (docs/ux/tokens.md, "The
+     * designer's sheet"): its ink, quiet text and dashed lines, its controls' ring, the two kinds of chip and a
+     * dragged element's place.
+     */
+    --bo-sheet-ink: #1d2433;
+    --bo-sheet-quiet: #4a5263;
+    --bo-sheet-line: #8a92a0;
+    --bo-sheet-focus: #2956b4;
+    --bo-sheet-slot: #eceff3;
+    --bo-chip-missing-line: #d9b44a;
+    --bo-chip-missing-fill: #fff6d9;
+    --bo-chip-missing-ink: #533d00;
+    --bo-chip-rule-line: #b8bfdc;
+    --bo-chip-rule-fill: #eef0f8;
+    --bo-chip-rule-ink: #1f2a5c;
+    /*
+     * The canvas's own room above each field and group (ADR-0182): a selected element's bar and handle stand 36 px
+     * above its frame, 40 px for a group's, and with the theme's spacing this room keeps them off the element above,
+     * a legend or a page title, so nothing moves when an element is selected.
+     */
+    --bo-room: 20px;
     --bo-sheet-padding: 32px;
     display: flex;
     flex-direction: column;
@@ -20,10 +43,42 @@ export const canvasChrome = css`
     font-family: var(--uui-font-family);
   }
 
-  .bo-loading {
+  /* While the look is read: the sheet with still bones where its title and fields will be. */
+  .bo-waiting {
+    padding-block-start: var(--uui-size-space-4);
+  }
+
+  .bo-waiting .bo-sheet {
     display: grid;
-    place-items: center;
-    padding: var(--uui-size-layout-3);
+    gap: 12px;
+    align-content: start;
+  }
+
+  .bo-bone {
+    display: block;
+    block-size: 12px;
+    border-radius: var(--uui-border-radius);
+    background: var(--bo-sheet-slot);
+  }
+
+  .bo-bone-title {
+    inline-size: 40%;
+    block-size: 24px;
+    margin-block-end: 12px;
+  }
+
+  .bo-bone-box {
+    block-size: 44px;
+    margin-block-end: 12px;
+  }
+
+  .bo-said {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 
   .bo-bar,
@@ -57,8 +112,10 @@ export const canvasChrome = css`
     border-inline-start: 0;
   }
 
-  .bo-widths button:hover {
-    background: var(--uui-color-surface-emphasis);
+  @media (hover: hover) {
+    .bo-widths button:hover {
+      background: var(--uui-color-surface-emphasis);
+    }
   }
 
   .bo-widths button[aria-pressed='true'] {
@@ -67,10 +124,20 @@ export const canvasChrome = css`
     font-weight: 700;
   }
 
-  :is(.bo-widths, .bo-steps, .bo-menu) button:focus-visible {
-    position: relative;
+  .bo-steps button:focus-visible {
     outline: 2px solid var(--bo-focus);
     outline-offset: 2px;
+  }
+
+  /* Inside a box that clips its buttons, the ring lies inside the button, white on the width shown. */
+  :is(.bo-widths, .bo-menu) button:focus-visible {
+    position: relative;
+    outline: 2px solid var(--bo-focus);
+    outline-offset: -4px;
+  }
+
+  .bo-widths button[aria-pressed='true']:focus-visible {
+    outline-color: var(--bo-on-accent);
   }
 
   .bo-narrowed {
@@ -102,8 +169,10 @@ export const canvasChrome = css`
     margin-inline-start: 0;
   }
 
-  .bo-check:hover {
-    background: var(--uui-color-surface-emphasis);
+  @media (hover: hover) {
+    .bo-check:hover {
+      background: var(--uui-color-surface-emphasis);
+    }
   }
 
   .bo-check:focus-visible {
@@ -117,15 +186,15 @@ export const canvasChrome = css`
   }
 
   .bo-check[data-state='error'] uui-icon {
-    color: var(--uui-color-danger-standalone);
+    color: var(--jfb-bo-color-danger-text);
   }
 
   .bo-check[data-state='warning'] uui-icon {
-    color: var(--uui-color-warning-standalone);
+    color: var(--jfb-bo-color-warning-text);
   }
 
   .bo-check[data-state='clear'] uui-icon {
-    color: var(--uui-color-positive-standalone);
+    color: var(--jfb-bo-color-positive-text);
   }
 
   .bo-language {
@@ -158,6 +227,17 @@ export const canvasChrome = css`
     border-radius: var(--uui-border-radius);
     background: var(--uui-color-surface);
     box-shadow: var(--uui-shadow-depth-3);
+    transform-origin: top right;
+    transition:
+      opacity var(--jfb-bo-motion-fast) var(--jfb-bo-motion-ease),
+      transform var(--jfb-bo-motion-fast) var(--jfb-bo-motion-ease);
+  }
+
+  @starting-style {
+    .bo-menu {
+      opacity: 0;
+      transform: scale(0.97);
+    }
   }
 
   .bo-menu button {
@@ -175,8 +255,10 @@ export const canvasChrome = css`
     cursor: pointer;
   }
 
-  .bo-menu button:hover:not(:disabled) {
-    background: var(--uui-color-surface-emphasis);
+  @media (hover: hover) {
+    .bo-menu button:hover:not(:disabled) {
+      background: var(--uui-color-surface-emphasis);
+    }
   }
 
   .bo-menu button:disabled {
@@ -216,8 +298,10 @@ export const canvasChrome = css`
     user-select: none;
   }
 
-  .bo-step:hover {
-    background: var(--uui-color-surface-emphasis);
+  @media (hover: hover) {
+    .bo-step:hover {
+      background: var(--uui-color-surface-emphasis);
+    }
   }
 
   .bo-step[aria-current='step'] {
@@ -233,8 +317,10 @@ export const canvasChrome = css`
     color: var(--uui-color-interactive);
   }
 
-  .bo-step-add:hover {
-    color: var(--uui-color-interactive-emphasis);
+  @media (hover: hover) {
+    .bo-step-add:hover {
+      color: var(--uui-color-interactive-emphasis);
+    }
   }
 
   .bo-viewport {
@@ -259,7 +345,7 @@ export const canvasChrome = css`
     border: 1px solid var(--uui-color-border);
     border-radius: var(--uui-border-radius);
     background: #fff;
-    color: #1d2433;
+    color: var(--bo-sheet-ink);
   }
 
   @media (max-width: 620px) {
@@ -275,6 +361,10 @@ export const canvasChrome = css`
 
   .jfb-form :is(.bo-page, .bo-group, .bo-field) {
     position: relative;
+  }
+
+  .jfb-form :is(.jfb-fields > .bo-field, .bo-page > .bo-group) {
+    margin-block-start: var(--bo-room);
   }
 
   /*
@@ -310,7 +400,7 @@ export const canvasChrome = css`
     margin: 0;
     padding: 0;
     border: 0;
-    border-radius: 8px;
+    border-radius: var(--uui-border-radius);
     background: transparent;
     cursor: pointer;
   }
@@ -325,12 +415,14 @@ export const canvasChrome = css`
     z-index: 0;
   }
 
-  .jfb-form .bo-select:hover {
-    outline: 1px dashed color-mix(in srgb, var(--bo-accent) 70%, transparent);
+  @media (hover: hover) {
+    .jfb-form .bo-select:hover {
+      outline: 1px dashed color-mix(in srgb, var(--bo-accent) 70%, transparent);
+    }
   }
 
   .jfb-form .bo-select:focus-visible {
-    outline: 2px solid var(--bo-focus);
+    outline: 2px solid var(--bo-sheet-focus);
     outline-offset: 2px;
   }
 
@@ -343,7 +435,7 @@ export const canvasChrome = css`
     outline: 2px solid var(--bo-accent);
     box-shadow:
       0 0 0 4px #fff,
-      0 0 0 6px var(--bo-focus);
+      0 0 0 6px var(--bo-sheet-focus);
   }
 
   /*
@@ -391,7 +483,7 @@ export const canvasChrome = css`
     z-index: 4;
     display: flex;
     margin: 0;
-    border-radius: 6px 6px 0 0;
+    border-radius: var(--uui-border-radius) var(--uui-border-radius) 0 0;
     background: var(--bo-accent);
     overflow: hidden;
   }
@@ -425,8 +517,11 @@ export const canvasChrome = css`
     }
   }
 
-  .jfb-form .bo-tools button:hover {
-    background: color-mix(in srgb, var(--bo-on-accent) 18%, transparent);
+  /* A darker shade: a lighter one takes the white label under 4.5:1 in the dark theme. */
+  @media (hover: hover) {
+    .jfb-form .bo-tools button:hover {
+      background: color-mix(in srgb, #000 20%, transparent);
+    }
   }
 
   .jfb-form .bo-tools button:focus-visible {
@@ -447,8 +542,10 @@ export const canvasChrome = css`
     font: 400 14px/1.4 var(--uui-font-family);
   }
 
-  .jfb-form .bo-tools .bo-menu button:hover {
-    background: var(--uui-color-surface-emphasis);
+  @media (hover: hover) {
+    .jfb-form .bo-tools .bo-menu button:hover {
+      background: var(--uui-color-surface-emphasis);
+    }
   }
 
   .jfb-form .bo-tools .bo-menu button:focus-visible {
@@ -496,11 +593,11 @@ export const canvasChrome = css`
     min-inline-size: 0;
     overflow: hidden;
     padding: 1px 8px;
-    border: 1px solid #d9b44a;
-    border-radius: 999px;
-    background: #fff6d9;
-    color: #533d00;
-    font: 600 11px/1.5 var(--uui-font-family);
+    border: 1px solid var(--bo-chip-missing-line);
+    border-radius: var(--jfb-bo-radius-round);
+    background: var(--bo-chip-missing-fill);
+    color: var(--bo-chip-missing-ink);
+    font: 600 var(--uui-type-small-size) / 1.5 var(--uui-font-family);
     text-overflow: ellipsis;
     white-space: nowrap;
   }
@@ -510,14 +607,14 @@ export const canvasChrome = css`
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    border-color: #b8bfdc;
-    background: #eef0f8;
-    color: #1f2a5c;
+    border-color: var(--bo-chip-rule-line);
+    background: var(--bo-chip-rule-fill);
+    color: var(--bo-chip-rule-ink);
   }
 
   .jfb-form .bo-rule-chip > uui-icon {
     flex: none;
-    font-size: 11px;
+    font-size: var(--uui-type-small-size);
   }
 
   .jfb-form .bo-rule-chip > span {
@@ -543,7 +640,7 @@ export const canvasChrome = css`
     font: 600 12px/20px var(--uui-font-family);
     cursor: pointer;
     opacity: 0;
-    transition: opacity 120ms cubic-bezier(0.23, 1, 0.32, 1);
+    transition: opacity var(--jfb-bo-motion-fast) var(--jfb-bo-motion-ease);
   }
 
   .jfb-form .bo-insert::before {
@@ -560,16 +657,32 @@ export const canvasChrome = css`
     align-items: center;
     gap: 4px;
     padding: 2px 12px 2px 8px;
-    border-radius: 999px;
+    border-radius: var(--jfb-bo-radius-round);
     background: var(--bo-accent);
+    transition: transform var(--jfb-bo-motion-fast) var(--jfb-bo-motion-ease);
+  }
+
+  .jfb-form .bo-insert:active > .bo-pill {
+    transform: scale(0.97);
   }
 
   .jfb-form .bo-pill > uui-icon {
     font-size: 14px;
   }
 
-  .jfb-form .bo-insert:is(:hover, :focus, [data-active]) {
+  .jfb-form .bo-insert:is(:focus-visible, [data-active]) {
     opacity: 1;
+  }
+
+  @media (hover: hover) {
+    .jfb-form .bo-insert:hover {
+      opacity: 1;
+    }
+  }
+
+  /* What the keyboard reaches is there at once. */
+  .jfb-form .bo-insert:focus-visible {
+    transition: none;
   }
 
   .jfb-form .bo-insert:focus {
@@ -579,7 +692,7 @@ export const canvasChrome = css`
   .jfb-form .bo-insert:focus-visible > .bo-pill {
     box-shadow:
       0 0 0 2px #fff,
-      0 0 0 4px var(--bo-focus);
+      0 0 0 4px var(--bo-sheet-focus);
   }
 
   .jfb-form .bo-insert-after {
@@ -590,8 +703,9 @@ export const canvasChrome = css`
     position: relative;
   }
 
+  /* In the room above the group's first field, below a legend. */
   .jfb-form .bo-insert-first {
-    inset-block-start: -24px;
+    inset-block-start: calc(var(--bo-room) - 24px);
   }
 
   /* The insert point right above the selected element lies under its bar: the "+" alone, at its start by the handle. */
@@ -637,10 +751,10 @@ export const canvasChrome = css`
     min-height: 44px;
     margin: 0;
     padding: 8px 16px;
-    border: 1px dashed #8a92a0;
-    border-radius: 8px;
+    border: 1px dashed var(--bo-sheet-line);
+    border-radius: var(--uui-border-radius);
     background: none;
-    color: #3b4352;
+    color: var(--bo-sheet-quiet);
     font: inherit;
     cursor: pointer;
   }
@@ -649,32 +763,45 @@ export const canvasChrome = css`
     grid-column: 1 / -1;
   }
 
-  .jfb-form :is(.bo-empty-group, .bo-add-field):hover,
   .jfb-form .bo-empty-group[data-active] {
     border-color: var(--bo-accent);
     color: var(--bo-accent);
     background: color-mix(in srgb, var(--bo-accent) 6%, transparent);
   }
 
+  @media (hover: hover) {
+    .jfb-form :is(.bo-empty-group, .bo-add-field):hover {
+      border-color: var(--bo-accent);
+      color: var(--bo-accent);
+      background: color-mix(in srgb, var(--bo-accent) 6%, transparent);
+    }
+  }
+
   .jfb-form :is(.bo-empty-group, .bo-add-field, .bo-link):focus-visible {
-    outline: 2px solid var(--bo-focus);
+    outline: 2px solid var(--bo-sheet-focus);
     outline-offset: 2px;
   }
 
-  /* A press answers at once, as Umbraco's own buttons do. */
-  .jfb-form :is(.bo-empty-group, .bo-add-field, .bo-tools button) {
-    transition: transform 120ms cubic-bezier(0.23, 1, 0.32, 1);
+  /* A press answers at once, as Umbraco's own buttons do: a wide place to add a field sinks, a button shrinks. */
+  .jfb-form :is(.bo-empty-group, .bo-add-field, .bo-tools button),
+  :is(.bo-widths button, .bo-check, .bo-step-add, .bo-step:not([data-page])) {
+    transition: transform var(--jfb-bo-motion-fast) var(--jfb-bo-motion-ease);
   }
 
-  .jfb-form :is(.bo-empty-group, .bo-add-field, .bo-tools button):active {
-    transform: scale(0.98);
+  .jfb-form :is(.bo-empty-group, .bo-add-field):active {
+    transform: translateY(1px);
+  }
+
+  .jfb-form .bo-tools button:active,
+  :is(.bo-widths button, .bo-check, .bo-step-add, .bo-step:not([data-page])):active {
+    transform: scale(0.97);
   }
 
   .jfb-form .bo-empty {
     position: relative;
     z-index: 3;
     margin: 0;
-    color: #3b4352;
+    color: var(--bo-sheet-quiet);
     text-align: center;
   }
 
@@ -694,9 +821,9 @@ export const canvasChrome = css`
   .jfb-form .bo-note {
     margin: 0;
     padding: 10px 14px;
-    border: 1px dashed #8a92a0;
-    border-radius: 8px;
-    color: #4a5263;
+    border: 1px dashed var(--bo-sheet-line);
+    border-radius: var(--uui-border-radius);
+    color: var(--bo-sheet-quiet);
     font-size: 0.875em;
   }
 
@@ -706,14 +833,14 @@ export const canvasChrome = css`
     margin: 0;
     padding: 2px 6px;
     border: 2px solid var(--bo-accent);
-    border-radius: 4px;
+    border-radius: var(--uui-border-radius);
     background: #fff;
     color: inherit;
     font: inherit;
   }
 
   .jfb-form .bo-label-box:focus {
-    outline: 2px solid var(--bo-focus);
+    outline: 2px solid var(--bo-sheet-focus);
     outline-offset: 1px;
   }
 
@@ -736,10 +863,11 @@ export const canvasChrome = css`
     margin: 0;
     padding: 0;
     border: 0;
-    border-radius: 6px 6px 0 0;
+    border-radius: var(--uui-border-radius) var(--uui-border-radius) 0 0;
     background: var(--bo-accent);
     color: var(--bo-on-accent);
     opacity: 0;
+    transition: opacity var(--jfb-bo-motion-fast) var(--jfb-bo-motion-ease);
     pointer-events: none;
     cursor: grab;
     touch-action: none;
@@ -753,14 +881,27 @@ export const canvasChrome = css`
     z-index: 4;
   }
 
-  :host(:not([data-dragging])) .jfb-form .bo-select:is(:hover, :focus-visible, [aria-current='true']) ~ .bo-handle,
-  :host(:not([data-dragging])) .jfb-form .bo-handle:is(:hover, :focus-visible) {
+  :host(:not([data-dragging])) .jfb-form .bo-select:is(:focus-visible, [aria-current='true']) ~ .bo-handle,
+  :host(:not([data-dragging])) .jfb-form .bo-handle:focus-visible {
     opacity: 1;
     pointer-events: auto;
   }
 
+  @media (hover: hover) {
+    :host(:not([data-dragging])) .jfb-form .bo-select:hover ~ .bo-handle,
+    :host(:not([data-dragging])) .jfb-form .bo-handle:hover {
+      opacity: 1;
+      pointer-events: auto;
+    }
+  }
+
+  .jfb-form .bo-select:focus-visible ~ .bo-handle,
   .jfb-form .bo-handle:focus-visible {
-    outline: 2px solid var(--bo-focus);
+    transition: none;
+  }
+
+  .jfb-form .bo-handle:focus-visible {
+    outline: 2px solid var(--bo-sheet-focus);
     outline-offset: 2px;
   }
 
@@ -780,7 +921,7 @@ export const canvasChrome = css`
     max-inline-size: max(140px, min(320px, calc(100% - 300px)));
     margin: 0;
     padding: 4px 10px;
-    border-radius: 6px;
+    border-radius: var(--uui-border-radius);
     background: var(--uui-color-danger);
     color: var(--uui-color-danger-contrast);
     font: 600 12px/1.5 var(--uui-font-family);
@@ -856,8 +997,13 @@ export const canvasChrome = css`
   .bo-slot {
     box-sizing: border-box;
     border: 1px dashed var(--jfb-bo-color-control-border);
-    border-radius: 8px;
+    border-radius: var(--uui-border-radius);
     background: var(--uui-color-surface-emphasis);
+  }
+
+  .bo-slot[data-sheet] {
+    border-color: var(--bo-sheet-line);
+    background: var(--bo-sheet-slot);
   }
 
   .bo-line {
@@ -907,7 +1053,7 @@ export const canvasChrome = css`
     max-inline-size: min(320px, 90vw);
     margin: 0;
     padding: 4px 10px;
-    border-radius: 6px;
+    border-radius: var(--uui-border-radius);
     background: var(--uui-color-danger);
     color: var(--uui-color-danger-contrast);
     font: 600 12px/1.5 var(--uui-font-family);
@@ -925,7 +1071,7 @@ export const canvasChrome = css`
     gap: 8px;
     max-inline-size: 280px;
     padding: 8px 12px;
-    border-radius: 8px;
+    border-radius: var(--uui-border-radius);
     background: var(--uui-color-surface);
     box-shadow: var(--uui-shadow-depth-3);
     color: var(--uui-color-text);
@@ -951,12 +1097,19 @@ export const canvasChrome = css`
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .jfb-form :is(.bo-insert, .bo-empty-group, .bo-add-field, .bo-tools button) {
+    .jfb-form :is(.bo-empty-group, .bo-add-field, .bo-tools button, .bo-pill),
+    :is(.bo-widths button, .bo-check, .bo-step-add, .bo-step:not([data-page])) {
       transition: none;
     }
 
-    .jfb-form :is(.bo-empty-group, .bo-add-field, .bo-tools button):active {
+    .jfb-form :is(.bo-empty-group, .bo-add-field, .bo-tools button):active,
+    .jfb-form .bo-insert:active > .bo-pill,
+    :is(.bo-widths button, .bo-check, .bo-step-add, .bo-step:not([data-page])):active {
       transform: none;
+    }
+
+    .bo-menu {
+      transition-property: opacity;
     }
   }
 

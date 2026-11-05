@@ -487,15 +487,27 @@ export class FormCanvasElement extends UmbLitElement {
    */
   #ruleChips(): ReadonlyMap<string, readonly string[]> {
     const culture = this.#culture();
-    const parts = [this.definition, culture, this.localize.lang(), this.types, this.look?.languages];
+    const parts = [
+      this.definition,
+      culture,
+      this.localize.lang(),
+      this.types,
+      this.look?.languages,
+      this.resolvedOptions,
+    ];
     const kept = this.#chips;
     if (kept && kept.parts.every((part, at) => part === parts[at])) return kept.chips;
     const languages = (this.look?.languages ?? []).map((language) => ({
       culture: language.culture,
       name: language.name,
     }));
-    const words = inspectorRuleWords(this.definition, this.types, culture, languages, (key, ...args) =>
-      this.localize.term(key, ...args),
+    const words = inspectorRuleWords(
+      this.definition,
+      this.types,
+      culture,
+      languages,
+      (key, ...args) => this.localize.term(key, ...args),
+      this.resolvedOptions,
     );
     const chips = new Map<string, readonly string[]>();
     for (const [key, said] of chipsOf(this.definition, words)) {
@@ -864,7 +876,15 @@ export class FormCanvasElement extends UmbLitElement {
       >
         <uui-symbol-more></uui-symbol-more>
       </uui-button>
-      <uui-popover-container id="jfb-canvas-more" placement="bottom-end">
+      <uui-popover-container
+        id="jfb-canvas-more"
+        placement="bottom-end"
+        @toggle=${(event: ToggleEvent) => {
+          // Open, the menu takes the focus on its first item it can do, as the element's "..." does.
+          if (event.newState === 'open')
+            (event.target as HTMLElement).querySelector<HTMLElement>('button:not(:disabled)')?.focus();
+        }}
+      >
         <div class="bo-menu">
           <button type="button" ?disabled=${!this.canUndo} @click=${() => this.#menu('undo')}>
             <span>${this.localize.term('jfbDesigner_undo')}</span><kbd>${held}+Z</kbd>
@@ -974,9 +994,24 @@ export class FormCanvasElement extends UmbLitElement {
     </nav>`;
   }
 
+  // While the look is read: the sheet's shape, still, without the toolbar and the steps (IA 5.1).
+  #waiting() {
+    return html`<div class="bo-viewport bo-waiting" aria-busy="true">
+      <div class="bo-sheet" style="--bo-width: ${CANVAS_WIDTHS[this.width]}px">
+        <span class="bo-bone bo-bone-title"></span>
+        ${[58, 42, 50].map(
+          (width) =>
+            html`<span class="bo-bone" style="inline-size: ${width / 2}%"></span
+              ><span class="bo-bone bo-bone-box"></span>`,
+        )}
+        <span class="bo-said">${this.localize.term('general_loading')}</span>
+      </div>
+    </div>`;
+  }
+
   override render() {
     const look = this.look;
-    if (!look) return html`<div class="bo-loading"><uui-loader></uui-loader></div>`;
+    if (!look) return this.#waiting();
     const context = this.#context(look);
     const pages = this.definition.pages;
     const index = this.shown === 'after' ? -1 : Math.min(this.shown, pages.length - 1);

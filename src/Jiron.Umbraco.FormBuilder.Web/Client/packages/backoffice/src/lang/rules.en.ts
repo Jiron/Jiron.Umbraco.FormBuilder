@@ -68,6 +68,11 @@ export default {
     subjectGroups: 'Member groups',
     subjectToday: "Today's date",
     subjectQuery: (name: string) => `The query value ${name}`,
+    subjectCultureInSentence: 'the language',
+    subjectSignedInInSentence: 'the visitor',
+    subjectGroupsInSentence: 'member groups',
+    subjectTodayInSentence: "today's date",
+    subjectQueryInSentence: (name: string) => `the query value ${name}`,
 
     headline: 'Rule',
     headlineNew: 'New rule',

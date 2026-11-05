@@ -136,6 +136,8 @@ export class CanvasDrag {
     marks.className = 'bo-marks';
     const slot = document.createElement('div');
     slot.className = 'bo-slot';
+    // A field's or a group's place lies on the white sheet, a page's among the steps on Umbraco's surface.
+    slot.toggleAttribute('data-sheet', source.kind !== 'page');
     const line = document.createElement('div');
     line.className = 'bo-line';
     marks.append(slot, line);

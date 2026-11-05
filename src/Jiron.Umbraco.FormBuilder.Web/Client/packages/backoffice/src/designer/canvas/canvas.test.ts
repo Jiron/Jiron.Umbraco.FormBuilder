@@ -334,6 +334,17 @@ async function canvasOf(definition: DesignDefinition, extra: Partial<FormCanvasE
 }
 
 describe('the canvas', () => {
+  it('shows the shape of the sheet while its look is read, busy, without the toolbar and the steps', async () => {
+    const { root } = await canvasOf(DEFINITION, { look: undefined });
+    expect(root.querySelector('.bo-waiting')?.getAttribute('aria-busy')).toBe('true');
+    expect(root.querySelectorAll('.bo-waiting .bo-bone')).toHaveLength(7);
+    expect([root.querySelector('.bo-bar'), root.querySelector('.bo-steps'), root.querySelector('uui-loader')]).toEqual([
+      null,
+      null,
+      null,
+    ]);
+  });
+
   it('shows the pages as steps, then Add page and After sending, the page shown current', async () => {
     const { element, requests, root } = await canvasOf(DEFINITION, { shown: 1 });
     const steps = [...root.querySelectorAll<HTMLButtonElement>('.bo-steps button')];
@@ -568,7 +579,7 @@ describe('the canvas', () => {
     };
     const { element, root } = await canvasOf(definition);
     expect(await chips(element, root)).toEqual([
-      ['p', 'jfb-rule-chip-p-0', 'Hidden when The visitor is signed in'],
+      ['p', 'jfb-rule-chip-p-0', 'Hidden when the visitor is signed in'],
       ['g', 'jfb-rule-chip-g-0', 'Shown when Name is not empty'],
       ['a', 'jfb-rule-chip-a-0', 'Shows "Say more" when Name is empty'],
       // A rule switched off changes nothing for visitors, so it has no chip.
@@ -601,7 +612,7 @@ describe('the canvas', () => {
     const blank: DesignDefinition = { pages: [{ key: 'p', groups: [{ key: 'g', fields: [] }] }] };
     const first = await canvasOf(blank);
     expect(text(first.root.querySelector('.bo-empty'))).toBe(
-      'Add your first field: pick a type on the left, or paste your questions.',
+      'Add your first field with Add field below, or paste your questions.',
     );
     first.root.querySelector<HTMLButtonElement>('.bo-empty .bo-link')?.click();
     expect(first.requests).toEqual([{ kind: 'paste' }]);
@@ -698,6 +709,16 @@ describe('the canvas', () => {
     expect([undo?.disabled, redo?.disabled]).toEqual([false, true]);
     undo?.click();
     expect(requests).toEqual([{ kind: 'width', width: 'phone' }, { kind: 'undo' }]);
+  });
+
+  it('puts the focus on the first item of its menu the canvas can do as the menu opens', async () => {
+    const { root } = await canvasOf(DEFINITION, { canUndo: false });
+    const menu = must(root.querySelector<HTMLElement>('#jfb-canvas-more'), 'the menu');
+    // jsdom has no popovers and lets nothing in a closed one take the focus: the menu stands open as the browser opens it.
+    menu.removeAttribute('popover');
+    menu.dispatchEvent(Object.assign(new Event('toggle'), { newState: 'open' }));
+    // Undo and Redo can't be used yet: the Rules overview comes first.
+    expect(root.activeElement?.textContent?.trim()).toBe('Rules overview');
   });
 
   it('offers Change type... for a field whose type may change, and none for content', async () => {

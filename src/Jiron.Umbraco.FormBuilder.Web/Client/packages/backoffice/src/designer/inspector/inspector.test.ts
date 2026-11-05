@@ -75,11 +75,21 @@ afterEach(() => {
 });
 
 describe('the inspector', () => {
-  it('is headed with what the element is, and shows nothing while nothing is selected', async () => {
+  it('is headed with what the element is, and says how to choose one while nothing is selected', async () => {
     expect(text((await inspectorOf('name')).root.querySelector('h2'))).toBe('Short text field');
     expect(text((await inspectorOf('g')).root.querySelector('h2'))).toBe('Group');
     expect(text((await inspectorOf('p')).root.querySelector('h2'))).toBe('Page');
-    expect((await inspectorOf(null)).root.querySelector('h2')).toBeNull();
+    const none = (await inspectorOf(null)).root;
+    expect([text(none.querySelector('h2')), text(none.querySelector('.empty')), none.querySelector('.body')]).toEqual([
+      'Nothing selected',
+      'Select a field, group or page in the form to change its settings here.',
+      null,
+    ]);
+    // Its fold stays, so the column can give the canvas its room.
+    expect(none.querySelector('uui-button')?.getAttribute('label')).toBe('Fold the inspector');
+    expect((await inspectorOf(null, { mode: 'rail' })).root.querySelector('uui-button')?.getAttribute('label')).toBe(
+      'Open the inspector',
+    );
     const gone = await inspectorOf('x', {}, { key: 'x', type: 'gone', alias: 'x' });
     expect(text(gone.root.querySelector('.body'))).toBe(
       'This site has no field type "gone" any more, so its settings can\'t be shown.',
@@ -562,7 +572,8 @@ describe('the inspector', () => {
     for (const mode of ['docked', 'overlay'] as const) {
       const { root, requests } = await inspectorOf('name', { mode });
       const changeType = must(root.querySelector<HTMLElement>('.head uui-button.change-type'), `Change type, ${mode}`);
-      expect(changeType.getAttribute('label')).toBe('Change type');
+      // It asks for the new type before it changes anything (docs/ux/copy.md).
+      expect(changeType.getAttribute('label')).toBe('Change type\u2026');
       changeType.dispatchEvent(new Event('click'));
       expect(requests).toEqual([{ kind: 'element', action: 'changeType', key: 'name' }]);
       expect(all(root.querySelector('.head') ?? root.host, 'button').map((button) => text(button))).not.toContain(

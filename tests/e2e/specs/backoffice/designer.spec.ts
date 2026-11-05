@@ -114,7 +114,7 @@ test('a blank form opens on Design with its empty group, though its draft leaves
 
   await expect(nameField(page)).toHaveValue(name);
   await expect(page.locator('jfb-form-design-view')).toContainText(
-    'Add your first field: pick a type on the left, or paste your questions.',
+    'Add your first field with Add field below, or paste your questions.',
   );
   await axeInside(page, 'jfb-form-design-view');
 });
@@ -282,7 +282,7 @@ test('in the narrowest workspace the palette opens over the canvas, and a delete
   await expect(fields).toHaveCount(3);
   await page
     .locator('uui-toast-notification')
-    .filter({ hasText: 'Field deleted.' })
+    .filter({ hasText: 'Email address deleted.' })
     .getByRole('button', { name: 'Undo' })
     .click();
   await expect(fields).toHaveCount(4);
@@ -329,7 +329,7 @@ test("a field's result of the header search opens the form with that field selec
   await expect(selected).toBeInViewport();
 });
 
-test('who may only read entries gets the entry views, no designer, and a name they cannot change', async ({
+test('who may only read entries gets the entry views, no designer, and the name as a heading, not a box', async ({
   page,
   loginAs,
   apiAs,
@@ -339,8 +339,9 @@ test('who may only read entries gets the entry views, no designer, and a name th
   await loginAs('viewer');
   await page.goto(workspaceOf(key));
 
-  await expect(nameField(page)).toHaveValue(name);
-  await expect(nameField(page)).not.toBeEditable();
+  // A box that takes no typing would say it could be changed (ADR-0182): the screen's heading names the form.
+  await expect(page.locator('jfb-form-workspace-editor').getByRole('heading', { level: 1, name })).toBeVisible();
+  await expect(nameField(page)).toHaveCount(0);
   await expect(page.getByRole('tab', { name: 'Entries' })).toBeVisible();
   await expect(page.getByRole('tab', { name: 'Insights' })).toBeVisible();
   for (const view of ['Design', 'Settings', 'Actions', 'History'])

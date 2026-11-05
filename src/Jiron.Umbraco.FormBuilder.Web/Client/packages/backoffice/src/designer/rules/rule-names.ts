@@ -1,9 +1,10 @@
 // What rules are said with in the designer (ROADMAP 9.5a, ADR-0175): each element named as the canvas names it, a grid's
-// rows by the grid and the row, the field types' facts the rules model reads, and a field's own options' labels.
+// rows by the grid and the row, the field types' facts the rules model reads, and a field's options' labels, its own or
+// those its source gave as the server resolved them (ADR-0172).
 import type { Kind } from '@jfb/logic';
 import type { FieldTypeResponseModel } from '../../api';
 import { allFields, type DesignDefinition, type DesignField, type LocalizedText } from '../definition';
-import { textIn } from '../preview/field-models';
+import { textIn, type ResolvedOption } from '../preview/field-models';
 import { fieldKinds, type TypeFacts } from './rule-draft';
 import type { RuleWordsContext } from './rule-words';
 
@@ -70,13 +71,17 @@ export function ownOptionLabel(definition: DesignDefinition, key: string, value:
   return (item && textIn(item.label, culture)) || value;
 }
 
-/** The words of rules for the inspector: names as the canvas says them, a field's own options by their labels. */
+/**
+ * The words of rules for the inspector: names as the canvas says them, a field's options by their labels, its own or,
+ * for a field that takes them from a source, those the server resolved ("Yes", never "yes").
+ */
 export function inspectorRuleWords(
   definition: DesignDefinition,
   types: Readonly<Record<string, FieldTypeResponseModel>>,
   culture: string,
   languages: readonly { readonly culture: string; readonly name: string }[],
   term: Term,
+  resolved: ReadonlyMap<string, readonly ResolvedOption[]> = new Map(),
 ): RuleWordsContext {
   const names = elementNames(definition, culture, term);
   const facts = typeFactsOf(types);
@@ -85,7 +90,10 @@ export function inspectorRuleWords(
     term,
     nameOf: (key) => names[key] ?? key,
     kindOf: (field) => kinds[field],
-    optionOf: (field, value) => ownOptionLabel(definition, field, value, culture),
+    optionOf: (field, value) => {
+      const own = ownOptionLabel(definition, field, value, culture);
+      return own !== value ? own : resolved.get(field)?.find((option) => option.value === value)?.label || value;
+    },
     languageOf: (code) => languages.find((language) => language.culture === code)?.name ?? code,
     valueOf: (kind, text) => valueText(culture, kind, text),
     textOf: (texts) => textIn(texts, culture),

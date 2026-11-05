@@ -118,7 +118,7 @@ test('a form of three pages is built with the keyboard only, the focus where it 
   await page.keyboard.press('Delete');
   await expect(fields).toHaveCount(2);
   await expect(field(/^Email, email field$/)).toBeFocused();
-  await expect(page.locator('uui-toast-notification').filter({ hasText: 'Field deleted.' })).toBeVisible();
+  await expect(page.locator('uui-toast-notification').filter({ hasText: 'Short text deleted.' })).toBeVisible();
 
   // Ctrl+Z brings it back with the focus.
   await page.keyboard.press('Control+z');

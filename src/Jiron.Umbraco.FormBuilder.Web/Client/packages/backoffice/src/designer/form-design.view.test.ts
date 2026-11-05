@@ -334,6 +334,29 @@ describe("the view's settings", () => {
   });
 });
 
+describe('the palette beside the canvas', () => {
+  it('keeps the focus on its rail when it folds, and on its search when it opens beside the canvas again', async () => {
+    const { view, pick } = await viewOf();
+    const palette = () =>
+      must(
+        shadow(view).querySelector<HTMLElement & { updateComplete: Promise<unknown> }>('jfb-designer-palette'),
+        'it',
+      );
+    await pick({ kind: 'fold' });
+    await settle(palette());
+    expect([palette().getAttribute('mode'), shadow(palette()).activeElement?.localName]).toEqual([
+      'rail',
+      'uui-button',
+    ]);
+    await pick({ kind: 'unfold' });
+    await settle(palette());
+    expect([palette().getAttribute('mode'), shadow(palette()).activeElement?.localName]).toEqual([
+      'docked',
+      'uui-input',
+    ]);
+  });
+});
+
 describe('the palette over the canvas', () => {
   it('leaves the canvas out of reach while it is open, and Esc gives the focus back to what opened it', async () => {
     const { view, canvas, ask, press } = await viewOf();
@@ -1141,15 +1164,22 @@ describe('the inspector in the Design view', () => {
     expect((opened.dialogs[0]?.data as RuleBuilderModalData).rule).toEqual(kept);
   });
 
-  it('folds the palette beside it in a view up to 1024 px, and not in a wider or a narrow one', () => {
+  it('puts the palette on its rail beside it in a view up to 1024 px, and not in a wider or a narrow one', () => {
     expect([620, 700, 701, 1024, 1025].map(isCrowded)).toEqual([false, false, true, true, false]);
   });
 
-  it('shows the selected element beside the canvas, and none without a selection', async () => {
+  it('shows the selected element beside the canvas in the column that says nothing is selected without one', async () => {
     const { view, ask } = await viewOf();
-    expect(inspectorOf(view)).toBeNull();
+    const empty = must(inspectorOf(view), 'the column with nothing selected');
+    await (empty as unknown as { updateComplete: Promise<unknown> }).updateComplete;
+    expect([empty.getAttribute('mode'), shadow(empty).querySelector('h2')?.textContent]).toEqual([
+      'docked',
+      'Nothing selected',
+    ]);
     await ask({ kind: 'select', key: 'email' });
+    // The same column: selecting draws nothing new beside the canvas, so the canvas keeps its width.
     const inspector = must(inspectorOf(view), 'the inspector');
+    expect(inspector).toBe(empty);
     expect([inspector.getAttribute('mode'), (inspector as unknown as { selection: string }).selection]).toEqual([
       'docked',
       'email',
@@ -1249,16 +1279,18 @@ describe('the inspector in the Design view', () => {
     await tell(view, { kind: 'close' });
     await settle(view);
     expect(state().selection).toBeNull();
-    expect(inspectorOf(view)).toBeNull();
+    const empty = must(inspectorOf(view), 'the column with nothing selected');
+    await (empty as unknown as { updateComplete: Promise<unknown> }).updateComplete;
+    expect(shadow(empty).querySelector('h2')?.textContent).toBe('Nothing selected');
     expect(focusedIn(canvas)).toBe('email select');
   });
 
-  it('folds the palette to its rail beside it up to 1024 px, opens it over the canvas from there, and back once the selection goes', async () => {
+  it('keeps the palette on its rail beside it up to 1024 px, selected or not, opens it over the canvas from there, and docks it while the inspector is folded', async () => {
     const { view, ask, pick, press } = await viewOf();
     Object.assign(view, { _crowded: true });
     await settle(view);
     const palette = () => shadow(view).querySelector('jfb-designer-palette')?.getAttribute('mode');
-    expect(palette()).toBe('docked');
+    expect(palette()).toBe('rail');
     await ask({ kind: 'select', key: 'email' });
     expect(palette()).toBe('rail');
     await pick({ kind: 'unfold' });
@@ -1269,15 +1301,18 @@ describe('the inspector in the Design view', () => {
     await tell(view, { kind: 'fold' });
     expect(palette()).toBe('docked');
     await tell(view, { kind: 'unfold' });
+    expect(palette()).toBe('rail');
     await ask({ kind: 'select', key: 'email' });
     await press('Escape');
-    expect(palette()).toBe('docked');
+    expect(palette()).toBe('rail');
   });
 
   it('opens over a narrow canvas with the focus on its heading, the canvas out of reach', async () => {
     const { view, canvas, ask } = await viewOf();
     Object.assign(view, { _narrow: true });
     await settle(view);
+    // Over a narrow canvas it comes only for a selection.
+    expect(inspectorOf(view)).toBeNull();
     await ask({ kind: 'select', key: 'email' });
     await settle(view);
     const inspector = must(inspectorOf(view), 'the inspector');

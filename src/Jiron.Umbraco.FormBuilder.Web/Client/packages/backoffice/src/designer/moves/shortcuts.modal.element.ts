@@ -95,12 +95,8 @@ export class ShortcutsModalElement extends UmbModalBaseElement<never, never> {
               <dd>${text}</dd>`,
         )}
       </dl>
-      <uui-button
-        slot="actions"
-        look="primary"
-        label=${this.localize.term('general_close')}
-        @click=${this._rejectModal}
-      ></uui-button>
+      <!-- Nothing to confirm here: Close in the plain look, as the other dialogs that only show something. -->
+      <uui-button slot="actions" label=${this.localize.term('general_close')} @click=${this._rejectModal}></uui-button>
     </uui-dialog-layout>`;
   }
 }

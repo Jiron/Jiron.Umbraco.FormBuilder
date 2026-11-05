@@ -43,7 +43,7 @@ export const inspectorStyles = css`
   }
 
   .head h2:focus-visible {
-    outline: 2px solid var(--uui-color-focus);
+    outline: 2px solid var(--jfb-bo-color-focus);
     outline-offset: 2px;
   }
 
@@ -71,15 +71,33 @@ export const inspectorStyles = css`
     cursor: pointer;
   }
 
-  .tools button:hover,
-  .menu button:hover,
-  .more:hover {
-    background: var(--uui-color-surface-emphasis);
+  @media (hover: hover) {
+    .tools button:hover,
+    .menu button:hover,
+    .more:hover {
+      background: var(--uui-color-surface-emphasis);
+    }
+  }
+
+  .tools button,
+  .more {
+    transition: transform var(--jfb-bo-motion-fast) var(--jfb-bo-motion-ease);
   }
 
   .tools button:active,
   .more:active {
     transform: scale(0.97);
+  }
+
+  .tools button:focus-visible,
+  .more:focus-visible {
+    outline: 2px solid var(--jfb-bo-color-focus);
+    outline-offset: 2px;
+  }
+
+  .menu button:focus-visible {
+    outline: 2px solid var(--jfb-bo-color-focus);
+    outline-offset: -2px;
   }
 
   .menu {
@@ -89,11 +107,30 @@ export const inspectorStyles = css`
     border-radius: var(--uui-border-radius);
     background: var(--uui-color-surface);
     box-shadow: var(--uui-shadow-depth-3);
+    /* It opens from its button with a short fade and a slight growth, as the canvas's menus do. */
+    transform-origin: top right;
+    transition:
+      opacity var(--jfb-bo-motion-fast) var(--jfb-bo-motion-ease),
+      transform var(--jfb-bo-motion-fast) var(--jfb-bo-motion-ease);
+  }
+
+  @starting-style {
+    .menu {
+      opacity: 0;
+      transform: scale(0.97);
+    }
   }
 
   .menu button {
     justify-content: flex-start;
     border-color: transparent;
+  }
+
+  /* Nothing selected: one quiet sentence under the heading. */
+  .empty {
+    margin: 0;
+    padding: var(--uui-size-space-5);
+    color: var(--jfb-bo-color-text-muted);
   }
 
   .note {
@@ -136,12 +173,14 @@ export const inspectorStyles = css`
     cursor: pointer;
   }
 
-  .section-head button:hover {
-    background: var(--uui-color-surface-emphasis);
+  @media (hover: hover) {
+    .section-head button:hover {
+      background: var(--uui-color-surface-emphasis);
+    }
   }
 
   .section-head button:focus-visible {
-    outline: 2px solid var(--uui-color-focus);
+    outline: 2px solid var(--jfb-bo-color-focus);
     outline-offset: -2px;
   }
 
@@ -190,14 +229,16 @@ export const inspectorStyles = css`
     justify-self: start;
   }
 
-  .add-rule:hover,
-  .rule:hover {
-    color: var(--uui-color-interactive-emphasis);
+  @media (hover: hover) {
+    .add-rule:hover,
+    .rule:hover {
+      color: var(--uui-color-interactive-emphasis);
+    }
   }
 
   .add-rule:focus-visible,
   .rule:focus-visible {
-    outline: 2px solid var(--uui-color-focus);
+    outline: 2px solid var(--jfb-bo-color-focus);
     outline-offset: 2px;
     border-radius: var(--uui-border-radius);
   }
@@ -299,16 +340,16 @@ export const inspectorStyles = css`
   input:focus-visible,
   select:focus-visible,
   textarea:focus-visible {
-    outline: 2px solid var(--uui-color-focus);
+    outline: 2px solid var(--jfb-bo-color-focus);
     outline-offset: 0;
-    border-color: var(--uui-color-focus);
+    border-color: var(--jfb-bo-color-focus);
   }
 
   /* As specific as the boxes' own rule above, so a box with a problem is marked. */
   input[aria-invalid='true'],
   select[aria-invalid='true'],
   textarea[aria-invalid='true'] {
-    border-color: var(--uui-color-danger-standalone);
+    border-color: var(--jfb-bo-color-danger-text);
     border-width: 2px;
   }
 
@@ -370,7 +411,7 @@ export const inspectorStyles = css`
     border: 1px solid var(--jfb-bo-color-control-border);
     border-radius: var(--jfb-bo-radius-round);
     background: var(--uui-color-border);
-    transition: background-color 120ms ease;
+    transition: background-color var(--jfb-bo-motion-fast) ease;
   }
 
   input[role='switch']::before {
@@ -383,7 +424,7 @@ export const inspectorStyles = css`
     border-radius: 50%;
     background: var(--uui-color-surface);
     box-shadow: var(--uui-shadow-depth-1);
-    transition: transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
+    transition: transform var(--jfb-bo-motion-fast) var(--jfb-bo-motion-ease);
   }
 
   input[role='switch']:checked {
@@ -400,7 +441,7 @@ export const inspectorStyles = css`
   }
 
   input[type='checkbox']:focus-visible {
-    outline: 2px solid var(--uui-color-focus);
+    outline: 2px solid var(--jfb-bo-color-focus);
     outline-offset: 2px;
   }
 
@@ -492,15 +533,17 @@ export const inspectorStyles = css`
     touch-action: none;
   }
 
-  .row-handle:hover,
-  .row-tool:hover {
-    background: var(--uui-color-surface-emphasis);
-    color: var(--uui-color-text);
+  @media (hover: hover) {
+    .row-handle:hover,
+    .row-tool:hover {
+      background: var(--uui-color-surface-emphasis);
+      color: var(--uui-color-text);
+    }
   }
 
   .row-handle:focus-visible,
   .row-tool:focus-visible {
-    outline: 2px solid var(--uui-color-focus);
+    outline: 2px solid var(--jfb-bo-color-focus);
     outline-offset: -2px;
   }
 
@@ -572,15 +615,21 @@ export const inspectorStyles = css`
     }
   }
 
+  /* With reduced motion the knob jumps and a press stays still; the track's colour keeps its change. */
   @media (prefers-reduced-motion: reduce) {
-    input[role='switch'],
-    input[role='switch']::before {
+    input[role='switch']::before,
+    .tools button,
+    .more {
       transition: none;
     }
 
     .tools button:active,
     .more:active {
       transform: none;
+    }
+
+    .menu {
+      transition-property: opacity;
     }
   }
 `;

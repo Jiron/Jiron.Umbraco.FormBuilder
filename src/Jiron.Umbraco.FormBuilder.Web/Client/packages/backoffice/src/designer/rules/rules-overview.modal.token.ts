@@ -2,6 +2,7 @@
 import { UmbModalToken } from '@umbraco-cms/backoffice/modal';
 import type { FieldTypeResponseModel } from '../../api';
 import type { DesignDefinition } from '../definition';
+import type { ResolvedOption } from '../preview/field-models';
 
 export const RULES_OVERVIEW_MODAL_ALIAS = 'Jiron.FormBuilder.Modal.RulesOverview';
 
@@ -12,6 +13,8 @@ export interface RulesOverviewModalData {
   readonly culture: string;
   /** The site's languages. */
   readonly languages: readonly { readonly culture: string; readonly name: string }[];
+  /** The options of fields that take them from a source, as the server resolved them, by field. */
+  readonly resolved?: ReadonlyMap<string, readonly ResolvedOption[]>;
   /** Called once the overview is shown. */
   readonly opened?: () => void;
   /**

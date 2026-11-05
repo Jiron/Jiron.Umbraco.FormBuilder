@@ -63,10 +63,15 @@ export default {
     countFiles: (count: number) => (count === 1 ? '1 Datei' : `${count} Dateien`),
 
     subjectCulture: 'Die Sprache',
-    subjectSignedIn: 'Der Besucher',
+    subjectSignedIn: 'Die ausfüllende Person',
     subjectGroups: 'Die Mitgliedergruppen',
     subjectToday: 'Das heutige Datum',
     subjectQuery: (name: string) => `Der Abfragewert ${name}`,
+    subjectCultureInSentence: 'die Sprache',
+    subjectSignedInInSentence: 'die ausfüllende Person',
+    subjectGroupsInSentence: 'die Mitgliedergruppen',
+    subjectTodayInSentence: 'das heutige Datum',
+    subjectQueryInSentence: (name: string) => `der Abfragewert ${name}`,
 
     headline: 'Regel',
     headlineNew: 'Neue Regel',

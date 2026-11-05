@@ -218,7 +218,8 @@ export class OptionEditorElement extends UmbLitElement {
     const source = sourceOf(this.field);
     const offered = this.#offered();
     if (!offered.includes(source)) offered.push(source);
-    const name = this.#term('options_from');
+    // A grid's options are its columns, and its words say so: "Columns from", "Add column".
+    const name = this.#term(this.type.features.includes('rows') ? 'options_columnsFrom' : 'options_from');
     return html`<div class="item">
         <label class="label" for="options-source">${name}</label>
         <select
@@ -403,8 +404,14 @@ export class OptionEditorElement extends UmbLitElement {
             </ol>`
       }
       <div class="row-actions">
-        <uui-button class="add" look="secondary" label=${this.#term('options_add')} @click=${() => this.#addOption()}>
-          <uui-icon name="icon-add" aria-hidden="true"></uui-icon>${this.#term('options_add')}
+        <uui-button
+          class="add"
+          look="secondary"
+          label=${this.#term(grid ? 'options_addColumn' : 'options_add')}
+          @click=${() => this.#addOption()}
+        >
+          <uui-icon name="icon-add" aria-hidden="true"></uui-icon
+          >${this.#term(grid ? 'options_addColumn' : 'options_add')}
         </uui-button>
         <uui-button
           class="paste-toggle"

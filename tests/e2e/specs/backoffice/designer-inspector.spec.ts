@@ -4,7 +4,8 @@ import { axeInside } from '../../support/axe.ts';
 import { API, formWithFields, unique } from '../../support/forms-api.ts';
 
 // The inspector (ROADMAP 9.4a, ADR-0170): every setting of the text, number and date types set with the plain editors
-// and saved, axe clean with each section open; the palette folded beside it at a 1024 px window; a new page started
+// and saved, axe clean with each section open; at a 1024 px window its column and the palette's rail stay as they are
+// whatever is selected, so a double-click edits a label (ADR-0182); a new page started
 // from the selected field's "..." with the keyboard only; a field's German label edited on the site's two languages,
 // with the mark of a field that has no German text; and an alias changed. The designer locks need a host of their own
 // (designer-locks.spec.ts).
@@ -164,24 +165,37 @@ test('every setting of the text, number and date types is set with the plain edi
   await expect(inspector.getByRole('switch', { name: 'Monday to Friday only' })).toBeChecked();
 });
 
-test('at a 1024 px window, selecting a field folds the palette to its rail, and clearing the selection opens it again', async ({
+test('at a 1024 px window, selecting and clearing moves nothing, and a double-click on a field edits its label', async ({
   page,
   loginAs,
   apiAs,
 }) => {
   const api = await apiAs('designer');
-  const key = await formWithFields(api, unique('Inspector fold'), [
+  const key = await formWithFields(api, unique('Inspector column'), [
     { type: 'text', alias: 'name', label: { '': 'Name' } },
+    { type: 'text', alias: 'town', label: { '': 'Town' } },
   ]);
   await page.setViewportSize({ width: 1024, height: 768 });
   await loginAs('designer');
   const design = await open(page, key);
   const palette = design.locator('jfb-designer-palette');
-  await expect(palette).toHaveAttribute('mode', 'docked');
-  const name = design.getByRole('button', { name: /^Name, / });
-  await name.click();
+  const inspector = design.locator('jfb-designer-inspector');
+  const canvas = design.locator('jfb-form-canvas');
+  // The inspector's column is there with nothing selected, and the palette on its rail beside it (ADR-0182).
   await expect(palette).toHaveAttribute('mode', 'rail');
-  await expect(design.locator('jfb-designer-inspector')).toHaveAttribute('mode', 'docked');
+  await expect(inspector).toHaveAttribute('mode', 'docked');
+  await expect(inspector.getByRole('heading', { name: 'Nothing selected' })).toBeVisible();
+  const name = design.getByRole('button', { name: /^Name, / });
+  const town = design.getByRole('button', { name: /^Town, / });
+  const before = { canvas: await canvas.boundingBox(), town: await town.boundingBox() };
+  expect(before.canvas && before.town, 'the canvas and a field are drawn').toBeTruthy();
+
+  await name.click();
+  await expect(name).toHaveAttribute('aria-current', 'true');
+  await expect(inspector.getByRole('heading', { name: 'Short text field' })).toBeVisible();
+  expect(await canvas.boundingBox(), 'the canvas while a field is selected').toEqual(before.canvas);
+  expect(await town.boundingBox(), 'the field below while one is selected').toEqual(before.town);
+  await expect(palette).toHaveAttribute('mode', 'rail');
   // Its search opens it over the canvas, and Escape gives the focus back.
   await palette.getByRole('button', { name: 'Search fields' }).click();
   await expect(palette).toHaveAttribute('mode', 'overlay');
@@ -189,9 +203,17 @@ test('at a 1024 px window, selecting a field folds the palette to its rail, and 
   await expect(palette).toHaveAttribute('mode', 'rail');
   await name.focus();
   await page.keyboard.press('Escape');
-  await expect(design.locator('jfb-designer-inspector')).toHaveCount(0);
-  await expect(palette).toHaveAttribute('mode', 'docked');
+  await expect(inspector.getByRole('heading', { name: 'Nothing selected' })).toBeVisible();
+  await expect(palette).toHaveAttribute('mode', 'rail');
+  expect(await canvas.boundingBox(), 'the canvas once nothing is selected').toEqual(before.canvas);
   await expect.poll(() => holdsFocus(name)).toBe(true);
+
+  // The first click of a double-click selects the field and moves nothing, so the second lands on it too.
+  await town.dblclick();
+  const box = design.locator('.bo-label-box');
+  await expect(box).toBeVisible();
+  await expect.poll(() => holdsFocus(box)).toBe(true);
+  await expect(box).toHaveValue('Town');
 });
 
 test('a new page starts after a selected field from its "...", with the keyboard only', async ({

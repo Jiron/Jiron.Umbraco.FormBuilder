@@ -136,6 +136,8 @@ export default {
     yesnoStyle: 'Darstellung',
     consentText: 'Einwilligungstext',
     consentLoadsCaptcha: 'Das Ankreuzen lädt das Captcha',
+    consentLoadsCaptchaHelp:
+      'Wo das Captcha des Formulars auf eine Einwilligung wartet, lädt es erst, wenn hier ein Haken gesetzt wird, und nicht vorher.',
     countryAllowed: 'Erlaubte Länder',
     countryTop: 'Zuerst angezeigte Länder',
     countryDefault: 'Vorausgewähltes Land',

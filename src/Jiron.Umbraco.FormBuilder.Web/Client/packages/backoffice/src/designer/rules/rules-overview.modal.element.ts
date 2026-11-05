@@ -93,7 +93,7 @@ export class RulesOverviewModalElement extends UmbModalBaseElement<RulesOverview
       }
 
       .row:focus-visible {
-        outline: 2px solid var(--uui-color-focus);
+        outline: 2px solid var(--jfb-bo-color-focus);
         outline-offset: -2px;
       }
 
@@ -142,7 +142,7 @@ export class RulesOverviewModalElement extends UmbModalBaseElement<RulesOverview
 
       .conflict > uui-icon {
         margin-block-start: 3px;
-        color: var(--uui-color-warning-standalone);
+        color: var(--jfb-bo-color-warning-text);
       }
 
       .add {
@@ -171,13 +171,13 @@ export class RulesOverviewModalElement extends UmbModalBaseElement<RulesOverview
       }
 
       .add select:focus-visible {
-        outline: 2px solid var(--uui-color-focus);
+        outline: 2px solid var(--jfb-bo-color-focus);
         outline-offset: 0;
-        border-color: var(--uui-color-focus);
+        border-color: var(--jfb-bo-color-focus);
       }
 
       .add select[aria-invalid='true'] {
-        border-color: var(--uui-color-danger-standalone);
+        border-color: var(--jfb-bo-color-danger-text);
       }
 
       .help,
@@ -188,7 +188,7 @@ export class RulesOverviewModalElement extends UmbModalBaseElement<RulesOverview
 
       .why {
         margin: 0;
-        color: var(--uui-color-danger-standalone);
+        color: var(--jfb-bo-color-danger-text);
       }
 
       .add-actions {
@@ -224,7 +224,9 @@ export class RulesOverviewModalElement extends UmbModalBaseElement<RulesOverview
 
   #words(): RuleWordsContext | null {
     const data = this.data;
-    return data ? inspectorRuleWords(data.definition, data.types, data.culture, data.languages, this.#term) : null;
+    return data
+      ? inspectorRuleWords(data.definition, data.types, data.culture, data.languages, this.#term, data.resolved)
+      : null;
   }
 
   #names(definition: DesignDefinition): Record<string, string> {

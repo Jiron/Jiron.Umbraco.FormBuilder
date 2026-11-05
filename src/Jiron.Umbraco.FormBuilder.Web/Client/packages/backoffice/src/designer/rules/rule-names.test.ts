@@ -108,4 +108,24 @@ describe('the names rules are said with', () => {
     expect([words.languageOf('de-DE'), words.languageOf('fr-FR')]).toEqual(['German', 'fr-FR']);
     expect(words.valueOf('date', '2026-12-01')).toBe('1 Dec 2026');
   });
+
+  it("say a source's option by the label the server resolved, the field's own label first, and the value without one", () => {
+    const resolved = new Map([
+      [
+        'gone',
+        [
+          { value: 'yes', label: 'Yes' },
+          { value: 'notSure', label: null },
+        ],
+      ],
+      ['country', [{ value: 'de', label: 'Deutschland' }]],
+    ]);
+    const words = inspectorRuleWords(DEFINITION, builtInTypes, 'en-GB', [], term, resolved);
+    expect([words.optionOf('gone', 'yes'), words.optionOf('gone', 'notSure'), words.optionOf('gone', 'no')]).toEqual([
+      'Yes',
+      'notSure',
+      'no',
+    ]);
+    expect(words.optionOf('country', 'de')).toBe('Germany');
+  });
 });

@@ -473,6 +473,11 @@ describe('the option editor', () => {
     const parent: DesignField = { key: 'p', type: 'dropdown', alias: 'size', options: { items: [{ value: 's' }] } };
     const grid: DesignField = { key: 'g', type: 'grid', alias: 'rating', options: { items: [{ value: 'poor' }] } };
     const columns = await editorOf(grid, { parents: [parent] });
+    // Its options are its columns, and the words say so.
+    expect([
+      text(columns.element.querySelector('label[for="options-source"]')),
+      columns.element.querySelector('.row-actions uui-button')?.getAttribute('label'),
+    ]).toEqual(['Columns from', 'Add column']);
     expect(columns.element.querySelector('#options-parent')).toBeNull();
     const radio = await editorOf(RADIO, { parents: [parent] });
     expect(radio.element.querySelector('#options-parent')).not.toBeNull();

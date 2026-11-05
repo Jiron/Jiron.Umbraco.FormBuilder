@@ -108,9 +108,11 @@ export class RuleBuilderModalElement extends UmbModalBaseElement<RuleBuilderModa
         height: 100%;
       }
 
+      /* One column that never grows past the sidebar: a long question's list wraps or cuts inside its own box. */
       .builder {
         container-type: inline-size;
         display: grid;
+        grid-template-columns: minmax(0, 1fr);
         gap: var(--uui-size-space-5);
       }
 
@@ -123,6 +125,7 @@ export class RuleBuilderModalElement extends UmbModalBaseElement<RuleBuilderModa
       textarea {
         box-sizing: border-box;
         min-inline-size: 0;
+        max-inline-size: 100%;
         min-height: 36px;
         padding: var(--uui-size-space-2) var(--uui-size-space-3);
         border: 1px solid var(--jfb-bo-color-control-border);
@@ -141,13 +144,13 @@ export class RuleBuilderModalElement extends UmbModalBaseElement<RuleBuilderModa
       select:focus-visible,
       input:focus-visible,
       textarea:focus-visible {
-        outline: 2px solid var(--uui-color-focus);
+        outline: 2px solid var(--jfb-bo-color-focus);
         outline-offset: 0;
-        border-color: var(--uui-color-focus);
+        border-color: var(--jfb-bo-color-focus);
       }
 
       [aria-invalid='true'] {
-        border-color: var(--uui-color-danger-standalone);
+        border-color: var(--jfb-bo-color-danger-text);
       }
 
       .first-line {
@@ -258,12 +261,12 @@ export class RuleBuilderModalElement extends UmbModalBaseElement<RuleBuilderModa
       .problem {
         grid-column: 1 / -1;
         margin: 0;
-        color: var(--uui-color-danger-standalone);
+        color: var(--jfb-bo-color-danger-text);
       }
 
       .why {
         margin: 0;
-        color: var(--uui-color-danger-standalone);
+        color: var(--jfb-bo-color-danger-text);
       }
 
       .help {
@@ -305,7 +308,7 @@ export class RuleBuilderModalElement extends UmbModalBaseElement<RuleBuilderModa
       }
 
       .disclosure:focus-visible {
-        outline: 2px solid var(--uui-color-focus);
+        outline: 2px solid var(--jfb-bo-color-focus);
         outline-offset: 0;
       }
 
@@ -340,7 +343,7 @@ export class RuleBuilderModalElement extends UmbModalBaseElement<RuleBuilderModa
       }
 
       .remove-value:focus-visible {
-        outline: 2px solid var(--uui-color-focus);
+        outline: 2px solid var(--jfb-bo-color-focus);
         outline-offset: 0;
       }
 
@@ -863,7 +866,7 @@ export class RuleBuilderModalElement extends UmbModalBaseElement<RuleBuilderModa
       label=${this.localize.term('jfbRules_removeGroup', number)}
       @click=${() => this.#remove(group.id)}
     >
-      <uui-icon name="icon-delete"></uui-icon>${this.localize.term('jfbRules_removeGroupShort')}
+      <uui-icon name="icon-trash" aria-hidden="true"></uui-icon>${this.localize.term('jfbRules_removeGroupShort')}
     </uui-button>`;
     return html`<div class="group nested" role="group" aria-label=${name} data-id=${group.id}>
       ${this.#group(group, depth, numbers, problems, remove)}
@@ -943,7 +946,8 @@ export class RuleBuilderModalElement extends UmbModalBaseElement<RuleBuilderModa
         label=${this.localize.term('jfbRules_removeCondition', words || String(number))}
         @click=${() => this.#remove(condition.id)}
       >
-        <uui-icon name="icon-wrong"></uui-icon>
+        <!-- A row taken away shows the bin, as an option's or a grid row's does. -->
+        <uui-icon name="icon-trash" aria-hidden="true"></uui-icon>
       </uui-button>
       ${problem ? html`<p class="problem" id=${problemId}>${this.localize.term(`jfbRules_problem_${problem}`)}</p>` : nothing}
     </div>`;

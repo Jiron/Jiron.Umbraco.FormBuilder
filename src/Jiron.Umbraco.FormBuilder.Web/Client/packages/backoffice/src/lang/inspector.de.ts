@@ -10,6 +10,9 @@ export default {
     headingPage: 'Seite',
     fold: 'Inspektor einklappen',
     unfold: 'Inspektor öffnen',
+    nothingSelected: 'Nichts ausgewählt',
+    nothingSelectedHelp:
+      'Wählen Sie ein Feld, eine Gruppe oder eine Seite im Formular aus, um hier die Einstellungen zu ändern.',
     elementActions: 'Aktionen für dieses Element',
     editingLanguage: (language: string, standard: string) =>
       `Sie bearbeiten die Texte auf ${language}. Wo einer leer ist, sehen Besucher den Text auf ${standard}.`,
@@ -17,7 +20,7 @@ export default {
       `Diese Website hat keinen Feldtyp „${type}“ mehr, darum können seine Einstellungen nicht gezeigt werden.`,
 
     section_essentials: 'Grundlegendes',
-    section_validation: 'Prüfung',
+    section_validation: 'Validierung',
     section_rules: 'Regeln',
     section_appearance: 'Darstellung',
     section_advanced: 'Erweitert',
@@ -177,6 +180,8 @@ export default {
     options_from_dataType: 'Einem Datentyp',
     options_options: 'Optionen',
     options_columns: 'Spalten',
+    options_columnsFrom: 'Spalten aus',
+    options_addColumn: 'Spalte hinzufügen',
     options_none: 'Noch keine Optionen. Fügen Sie sie einzeln hinzu oder fügen Sie eine Liste ein.',
     options_count: (count: number) => (count === 1 ? '1 Option' : `${count} Optionen`),
     options_list: 'Optionsliste',
@@ -195,7 +200,7 @@ export default {
     options_standardNone: 'Liste wählen',
     options_dependsOn: 'Hängt ab von',
     options_dependsOnNothing: 'Keinem anderen Feld',
-    options_dependsOnHelp: 'Die Antwort in diesem Feld entscheidet, welche dieser Optionen angeboten werden.',
+    options_dependsOnHelp: 'Die Antwort im hier gewählten Feld entscheidet, welche dieser Optionen angeboten werden.',
     options_move: (label: string) => `${label} verschieben`,
     options_moveNamed: (label: string) => `${label} verschoben`,
     options_moved: (label: string, position: number, count: number) =>

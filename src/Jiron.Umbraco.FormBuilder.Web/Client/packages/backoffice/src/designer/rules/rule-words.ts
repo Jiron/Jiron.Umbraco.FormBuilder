@@ -47,13 +47,17 @@ const CONTEXT_KINDS: Readonly<Record<string, Kind>> = {
 
 const DATED: ReadonlySet<Kind> = new Set(['date', 'time', 'dateTime']);
 
-/** The name of what a condition looks at: a field's name, or a part of the visit. */
-export function subjectWords(context: RuleWordsContext, condition: WordsCondition): string {
+/**
+ * The name of what a condition looks at: a field's name, or a part of the visit, which starts a list's line ("The
+ * visitor") and is said small inside a sentence ("Shown when the visitor is signed in").
+ */
+export function subjectWords(context: RuleWordsContext, condition: WordsCondition, inSentence = false): string {
   if (condition.field) return context.nameOf(condition.field);
   const name = condition.context ?? '';
-  if (name.startsWith('query.')) return context.term('jfbRules_subjectQuery', name.slice('query.'.length));
+  const said = inSentence ? 'InSentence' : '';
+  if (name.startsWith('query.')) return context.term(`jfbRules_subjectQuery${said}`, name.slice('query.'.length));
   const term = CONTEXT_TERMS[name];
-  return term ? context.term(term) : name;
+  return term ? context.term(`${term}${said}`) : name;
 }
 
 /** The kind of what a condition looks at; undefined for nothing known. */
@@ -141,10 +145,13 @@ export function valueWords(context: RuleWordsContext, condition: WordsCondition)
   return operandWords(context, condition, kind, value as Operand);
 }
 
-/** A condition in words: "Country is Other", "Arrival is after today", "The visitor is signed in". */
-export function conditionWords(context: RuleWordsContext, condition: WordsCondition): string {
+/**
+ * A condition in words: "Country is Other", "Arrival is after today", "The visitor is signed in"; inside a sentence, a
+ * part of the visit is said small.
+ */
+export function conditionWords(context: RuleWordsContext, condition: WordsCondition, inSentence = false): string {
   const kind = kindOfCondition(context, condition);
-  const subject = subjectWords(context, condition);
+  const subject = subjectWords(context, condition, inSentence);
   const op = condition.op ? context.term(operatorTerm(condition.op, kind, condition.context ?? null)) : '';
   const value = valueWords(context, condition);
   return [subject, op, value].filter((part) => part !== '').join(' ');
@@ -164,7 +171,7 @@ export function itemsWords(context: RuleWordsContext, match: string | undefined,
         );
         return (given['conditions'] as readonly unknown[]).length > 1 ? `(${inner})` : inner;
       }
-      return conditionWords(context, given as WordsCondition);
+      return conditionWords(context, given as WordsCondition, true);
     })
     .join(` ${joiner} `);
 }

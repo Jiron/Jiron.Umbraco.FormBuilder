@@ -1,6 +1,7 @@
 # 0170. The inspector: plain boxes, a section's one line, typing as one step, and languages from the canvas
 
-- Status: accepted
+- Status: accepted; the palette's fold on selection is superseded by [ADR-0182](0182-the-phase-9-ux-walk.md), whose
+  inspector column stays beside the canvas
 - Date: 2026-11-03
 - Roadmap step: 9.4a (decided and built); builds on ADR-0060 (designer locks), ADR-0168 (the canvas) and ADR-0169 (the
   moves); 9.4b to 9.4d add the option editor, the richer editors and the change of type to the same frame

@@ -3026,7 +3026,7 @@
           "settings": [],
           "default": null,
           "label": "#jfbFieldSettings_consentLoadsCaptcha",
-          "description": null,
+          "description": "#jfbFieldSettings_consentLoadsCaptchaHelp",
           "editor": "boolean",
           "group": "essentials",
           "supportsMergeTags": false,

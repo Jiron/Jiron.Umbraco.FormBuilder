@@ -5,7 +5,8 @@
 // (ADR-0016, ADR-0169) come from a drop, Move to... and Alt+Up and Alt+Down; each says where the element is now, a move
 // the form refuses says why at the element, and the focus stays on the element moved. Up and Down go through the
 // elements of the page, and ? opens the Keyboard shortcuts. The inspector (ADR-0170) shows the selected element beside
-// the canvas, or over it up to 700 px; up to 1024 px the palette folds to its rail while it does. Its changes are edits
+// the canvas, its column there with nothing selected too, or over it up to 700 px; up to 1024 px the palette lies on its
+// rail beside it (ADR-0182), so selecting moves nothing. Its changes are edits
 // too, typing in one box one step to undo, and an alias that entries know changes only after a question. A field that
 // takes its options from elsewhere shows them as the server resolves the draft's (ADR-0172).
 import { css, html, nothing, type PropertyValues } from '@umbraco-cms/backoffice/external/lit';
@@ -99,12 +100,12 @@ export const NARROW = 700;
 export const isNarrow = (width: number) => width <= NARROW;
 
 /**
- * Up to this width, beside the inspector, the palette folds to its rail while an element is selected, so the canvas
- * keeps its width (IA 5.1); clearing the selection opens it again.
+ * Up to this width, beside the inspector's column, the palette lies on its rail, whose buttons open it over the canvas
+ * (IA 5.1, ADR-0182): whatever is selected, the canvas keeps its width. Folding the inspector gives the palette back.
  */
 export const CROWDED = 1024;
 
-/** Whether a view this wide, but not narrow, folds the palette while an element is selected. */
+/** Whether a view this wide, but not narrow, puts the palette on its rail beside the inspector. */
 export const isCrowded = (width: number) => width > NARROW && width <= CROWDED;
 
 const WIDTH_KEY = 'jfb.designer.width';
@@ -328,7 +329,7 @@ export class FormDesignViewElement extends UmbLitElement {
 
       .skip:focus {
         transform: none;
-        outline: 2px solid var(--uui-color-focus);
+        outline: 2px solid var(--jfb-bo-color-focus);
       }
     `,
   ];
@@ -348,7 +349,7 @@ export class FormDesignViewElement extends UmbLitElement {
   declare private _folded: boolean;
   declare private _open: boolean;
   declare private _narrow: boolean;
-  /** Whether the view is up to 1024 px wide, but not narrow: the palette folds while an element is selected. */
+  /** Whether the view is up to 1024 px wide, but not narrow: the palette lies on its rail beside the inspector. */
   declare private _crowded: boolean;
   declare private _inspectorFolded: boolean;
   /** The language the canvas and the inspector show; null for the site's default. */
@@ -1347,6 +1348,7 @@ export class FormDesignViewElement extends UmbLitElement {
           culture: language.culture,
           name: language.name,
         })),
+        resolved: this._resolved,
         opened: () => (shown = true),
         closed: () => gone?.(),
       },
@@ -1595,14 +1597,14 @@ export class FormDesignViewElement extends UmbLitElement {
     switch (pick.kind) {
       case 'fold':
         this._folded = true;
-        this.#palette?.focusUnfold();
+        void this.updateComplete.then(() => this.#palette?.focusUnfold());
         return;
       case 'unfold':
         // Folded beside the inspector, the palette opens over the canvas; folded by its own button, beside it again.
         if (this.#crowded()) this.#openPalette();
         else {
           this._folded = false;
-          this.#palette?.focusSearch();
+          void this.updateComplete.then(() => this.#palette?.focusSearch());
         }
         return;
       case 'close':
@@ -1783,9 +1785,9 @@ export class FormDesignViewElement extends UmbLitElement {
     return this.#typeList.list;
   }
 
-  /** Whether the palette folds for the inspector: an element is selected in a view up to 1024 px. */
+  /** Whether the palette lies on its rail for the inspector beside it: in a view up to 1024 px, selected or not. */
   #crowded(): boolean {
-    return this._crowded && !this._narrow && Boolean(this._view?.state.selection) && !this._inspectorFolded;
+    return this._crowded && !this._narrow && !this._inspectorFolded;
   }
 
   #mode(): PaletteMode {
@@ -1804,7 +1806,8 @@ export class FormDesignViewElement extends UmbLitElement {
     const mode = this.#mode();
     const selection = view?.state.selection ?? null;
     const inspector = this.#inspectorMode();
-    const inspects = selection !== null && this._look !== undefined && !this._failed;
+    // Beside the canvas the inspector's column is always there, so a selection moves nothing; over it, only for one.
+    const inspects = this._look !== undefined && !this._failed && (selection !== null || inspector !== 'overlay');
     // A button, not a link: Umbraco's router takes every link's click for a move to another place.
     return html`<button
         type="button"
@@ -1859,6 +1862,7 @@ export class FormDesignViewElement extends UmbLitElement {
               .culture=${this._look?.culture ?? ''}
               .languages=${this._look?.languages ?? []}
               .form=${this.#context?.getUnique() ?? ''}
+              .resolvedOptions=${this._resolved}
               mode=${inspector}
             ></jfb-designer-inspector>`
           : nothing

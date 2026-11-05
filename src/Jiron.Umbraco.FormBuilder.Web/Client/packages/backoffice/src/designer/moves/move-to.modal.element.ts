@@ -74,13 +74,41 @@ export class MoveToModalElement extends UmbModalBaseElement<MoveToModalData, Mov
         margin-inline-start: var(--uui-size-space-6);
       }
 
+      /*
+       * The browser's own radio, drawn as the template gallery draws its choice, so it follows Umbraco's theme: a ring,
+       * and a dot in the selected colour when checked. Forced colours give it back to the system.
+       */
       input {
+        appearance: none;
+        flex: none;
+        box-sizing: border-box;
+        inline-size: 16px;
+        block-size: 16px;
         margin: 0;
-        accent-color: var(--uui-color-selected);
+        border: 1px solid var(--jfb-bo-color-control-border);
+        border-radius: var(--jfb-bo-radius-round);
+        background: var(--uui-color-surface);
+        cursor: inherit;
+      }
+
+      input:checked {
+        border-color: var(--uui-color-selected);
+        background: var(--uui-color-selected);
+        box-shadow: inset 0 0 0 3px var(--uui-color-surface);
+      }
+
+      input:disabled {
+        border-style: dashed;
+      }
+
+      @media (forced-colors: active) {
+        input {
+          appearance: auto;
+        }
       }
 
       input:focus-visible {
-        outline: 2px solid var(--uui-color-focus);
+        outline: 2px solid var(--jfb-bo-color-focus);
         outline-offset: 2px;
       }
 

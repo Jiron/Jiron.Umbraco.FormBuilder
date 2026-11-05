@@ -252,6 +252,8 @@ describe('a drag on the canvas', () => {
       false,
     );
     expect(root.querySelector('.bo-line')?.hasAttribute('data-upright')).toBe(true);
+    // A page's place is among the steps, in Umbraco's colours; a field's, below, on the sheet.
+    expect(root.querySelector('.bo-slot')?.hasAttribute('data-sheet')).toBe(false);
     window.dispatchEvent(pointer('pointerup', 20, 20));
     expect(heard.drops).toEqual([[page, { container: null, index: 0 }]]);
     dragAlong(
@@ -265,6 +267,7 @@ describe('a drag on the canvas', () => {
       false,
     );
     expect(root.querySelector('.bo-line')?.hasAttribute('data-upright')).toBe(false);
+    expect(root.querySelector('.bo-slot')?.hasAttribute('data-sheet')).toBe(true);
   });
 
   it('shows why beside the copy that follows the pointer, also over a step', () => {

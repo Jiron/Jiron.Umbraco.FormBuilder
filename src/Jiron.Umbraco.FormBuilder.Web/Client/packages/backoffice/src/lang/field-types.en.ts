@@ -136,6 +136,8 @@ export default {
     yesnoStyle: 'Style',
     consentText: 'Consent text',
     consentLoadsCaptcha: 'Ticking this loads the captcha',
+    consentLoadsCaptchaHelp:
+      "Where the form's captcha waits for consent, it loads only once a visitor ticks this, and not before.",
     countryAllowed: 'Allowed countries',
     countryTop: 'Countries shown first',
     countryDefault: 'Preselected country',

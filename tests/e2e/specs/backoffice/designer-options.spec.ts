@@ -301,8 +301,9 @@ test("a grid's rows and columns are added, pasted, marked, moved and removed", a
   await rows.getByRole('button', { name: 'Remove The rooms' }).click();
   expect(await labelsIn(rows)).toEqual(['The talks', 'The food']);
 
-  // The columns: one added, one renamed, the first removed.
-  await columns.getByRole('button', { name: 'Add option' }).click();
+  // The columns, in a grid's own words: where they come from, one added, one renamed, the first removed.
+  await expect(inspector.getByLabel('Columns from')).toBeVisible();
+  await columns.getByRole('button', { name: 'Add column' }).click();
   await page.keyboard.type('Good');
   await columns.getByRole('button', { name: 'Remove Poor' }).click();
   expect(await labelsIn(columns)).toEqual(['Good']);

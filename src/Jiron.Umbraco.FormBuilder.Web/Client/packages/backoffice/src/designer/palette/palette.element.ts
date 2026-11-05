@@ -155,8 +155,10 @@ export class PaletteElement extends UmbLitElement {
         cursor: pointer;
       }
 
-      .item:hover {
-        background: var(--uui-color-surface-emphasis);
+      @media (hover: hover) {
+        .item:hover {
+          background: var(--uui-color-surface-emphasis);
+        }
       }
 
       /* A type dragged sideways onto the page; the list still scrolls up and down under a finger. */
@@ -165,12 +167,16 @@ export class PaletteElement extends UmbLitElement {
         user-select: none;
       }
 
+      .item {
+        transition: transform var(--jfb-bo-motion-fast) var(--jfb-bo-motion-ease);
+      }
+
       .item:active {
         transform: scale(0.98);
       }
 
       .item:focus-visible {
-        outline: 2px solid var(--uui-color-focus);
+        outline: 2px solid var(--jfb-bo-color-focus);
         outline-offset: -2px;
       }
 

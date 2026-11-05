@@ -300,7 +300,7 @@ test('a required-when rule compares two fields and a query value, is tried, and 
   await expect(builder).toHaveCount(0);
   const line = inspector.getByRole('button', { name: /^Required when Departure is after the answer to Arrival/ });
   await expect(line).toHaveText(
-    'Required when Departure is after the answer to Arrival and The query value ref is "web"',
+    'Required when Departure is after the answer to Arrival and the query value ref is "web"',
   );
   await expect(line).toBeFocused();
   await saveDraft(page);
