@@ -258,7 +258,8 @@ async function seed(api: APIRequestContext, label: string, importPath: string) {
   const restricting = await api.post('/jfb-testing/form-restriction', { data: { form: restricted, restricted: true } });
   expect(restricting.status()).toBe(204);
   const sourceName = name('with actions');
-  await duplicate(api, (await demoForm(api, 'contact')).key, sourceName, true);
+  // Its two emails, one to the team and one to the visitor, which the Actions view shows (10.2a).
+  const withActions = await duplicate(api, (await demoForm(api, 'contact')).key, sourceName, true);
   const targetName = name('target');
   await blankForm(api, targetName);
   const trashedName = name('trashed');
@@ -284,6 +285,7 @@ async function seed(api: APIRequestContext, label: string, importPath: string) {
     grouped,
     restrictedName,
     sourceName,
+    withActions,
     targetName,
     trashedName,
   };
@@ -683,8 +685,25 @@ for (const combo of COMBOS) {
       await expect(outcomeSidebar.locator('#address')).toBeVisible();
       await expect(outcomeSidebar.locator('jfb-outcome-preview .said')).toBeVisible();
     });
+    // The Actions view (10.2a): the cards by trigger, an action's sidebar, and a new action's.
+    const actionsView = page.locator('jfb-form-actions-view');
+    const actionSidebar = page.locator('jfb-action-modal');
+    await walk.shot('actions', async () => {
+      await page.goto(`${workspaceOf(made.withActions)}/view/actions`);
+      await expect(actionsView.locator('jfb-action-list .card').first()).toBeVisible();
+    });
+    await walk.shot('action-sidebar', async () => {
+      await page.goto(`${workspaceOf(made.withActions)}/view/actions`);
+      await actionsView.locator('jfb-action-list .open').first().click();
+      await expect(actionSidebar.locator('#name')).toBeVisible();
+    });
+    await walk.shot('action-new', async () => {
+      await page.goto(`${workspaceOf(made.withActions)}/view/actions`);
+      await actionsView.locator('#add').click();
+      await expect(actionSidebar.locator('input[name="what-happens"]:checked')).toBeVisible();
+    });
     await walk.shot('view-coming', async () => {
-      await page.goto(`${workspaceOf(made.feedback)}/view/actions`);
+      await page.goto(`${workspaceOf(made.feedback)}/view/history`);
       await expect(page.locator('jfb-coming-screen')).toBeVisible();
     });
 

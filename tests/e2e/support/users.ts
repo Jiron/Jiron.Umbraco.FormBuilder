@@ -8,11 +8,21 @@ import { credentialsFile } from './paths.ts';
  * is the separate group that alone may open the restricted folder.
  */
 export type Role =
-  'admin' | 'designer' | 'entryHandler' | 'viewer' | 'privacyOfficer' | 'noAccess' | 'hr' | 'outsider' | 'editor';
+  | 'admin'
+  | 'designer'
+  | 'layoutDesigner'
+  | 'entryHandler'
+  | 'viewer'
+  | 'privacyOfficer'
+  | 'noAccess'
+  | 'hr'
+  | 'outsider'
+  | 'editor';
 
 export const ROLES: readonly Role[] = [
   'admin',
   'designer',
+  'layoutDesigner',
   'entryHandler',
   'viewer',
   'privacyOfficer',
@@ -50,6 +60,8 @@ export const USER_GROUPS = [
     mediaRootAccess: true,
     contentRootAccess: true,
   },
+  // Designs forms but may not change their actions: the Actions view is read-only for it (IA 5.3, ADR-0188).
+  { alias: 'jfbLayoutDesigners', name: 'Layout designers', sections: [FORMS_SECTION], permissions: ['design'] },
   {
     alias: 'jfbEntryHandlers',
     name: 'Entry handlers',
@@ -77,6 +89,7 @@ export const PEOPLE: Record<Role, { name: string; email: string; groups: readonl
   // The unattended install's super user, in the groups Umbraco gives it.
   admin: { name: 'Ada Admin', email: 'e2e-admin@jfb.test', groups: ['admin', 'sensitiveData'] },
   designer: { name: 'Dana Designer', email: 'e2e-designer@jfb.test', groups: ['jfbDesigners'] },
+  layoutDesigner: { name: 'Lea Layout', email: 'e2e-layout@jfb.test', groups: ['jfbLayoutDesigners'] },
   entryHandler: { name: 'Eli Entries', email: 'e2e-entries@jfb.test', groups: ['jfbEntryHandlers'] },
   viewer: { name: 'Vera Viewer', email: 'e2e-viewer@jfb.test', groups: ['jfbViewers'] },
   privacyOfficer: { name: 'Pia Privacy', email: 'e2e-privacy@jfb.test', groups: ['jfbPrivacyOfficers'] },

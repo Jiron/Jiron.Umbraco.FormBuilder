@@ -43,6 +43,7 @@ Every run generates new passwords into `.local/credentials.json` under `e2e`; th
 | ---------------- | -------------------------------------- | -------------- | --------------------------------------------------------------- |
 | `admin`          | the unattended install's administrator | Umbraco's      | everything                                                      |
 | `designer`       | `jfbDesigners`                         | Content, Forms | `design`, `manageActions`, `manageLibrary`                      |
+| `layoutDesigner` | `jfbLayoutDesigners`                   | Forms          | `design`, so the Actions view only shows (10.2a, ADR-0188)      |
 | `entryHandler`   | `jfbEntryHandlers`                     | Forms          | `viewEntries`, `editEntries`, `export`                          |
 | `viewer`         | `jfbViewers`                           | Forms          | `viewEntries`                                                   |
 | `privacyOfficer` | `jfbPrivacyOfficers`                   | Forms          | `privacyTools`, `viewEntries`, `viewSensitive`, `deleteEntries` |

@@ -337,6 +337,19 @@ test('actions copied to a form without their fields list each reference with a l
   const fixes = sidebar.getByRole('link', { name: 'Fix it in the form' });
   await expect(fixes).toHaveCount(2);
   await expect(fixes.first()).toHaveAttribute('href', new RegExp(`jfb-form/edit/${targetKey}\\?action=[0-9a-f-]{36}$`));
+
+  // The link opens the form copied to at its Actions view, the focus on the copy's card (ROADMAP 10.2a, ADR-0188).
+  const copy = /action=([0-9a-f-]{36})$/.exec((await fixes.first().getAttribute('href')) ?? '')?.[1];
+  const draft = (await (await api.get(`${API}/form/${targetKey}/draft`)).json()) as {
+    definition: { actions?: { key: string; name?: string }[] };
+  };
+  const name = draft.definition.actions?.find((action) => action.key === copy)?.name ?? '';
+  expect(name, 'the copy, by the key its link names').not.toBe('');
+  await fixes.first().click();
+  await expect(sidebar).toHaveCount(0);
+  await expect(page).toHaveURL(new RegExp(`jfb-form/edit/${targetKey}/view/actions$`));
+  const actions = page.locator('jfb-form-actions-view');
+  await expect(actions.locator('.open').filter({ has: page.locator('.name', { hasText: name }) })).toBeFocused();
 });
 
 test('an import shows what the file holds and the theme this site lacks, then arrives as a new copy', async ({
