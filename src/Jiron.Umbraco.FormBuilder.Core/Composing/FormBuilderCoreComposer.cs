@@ -130,6 +130,9 @@ public sealed class FormBuilderCoreComposer : IComposer
         // with its event, its action runs and its count, and the pipeline over the forms, the answers and the entries.
         builder.Services.TryAddSingleton<FormAvailability>();
         builder.Services.TryAddSingleton<SubmissionOutcomes>();
+
+        // The sample entry that previews and test runs show a form's texts with (ADR-0187).
+        builder.Services.TryAddSingleton<SampleEntries>();
         builder.Services.TryAddSingleton<OptionPlaces>();
         builder.Services.TryAddSingleton<SubmissionProtection>();
         builder.Services.TryAddSingleton<EntrySpamFolder>();

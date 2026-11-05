@@ -81,11 +81,23 @@ internal static class FieldValues
     /// <param name="field">The field.</param>
     /// <param name="answers">The member's value.</param>
     /// <param name="today">Today in the form's time zone, for a date's checks.</param>
-    public static bool StandsIn(IFormBuilderFieldType type, FormField field, FieldAnswers answers, DateOnly today)
+    public static bool StandsIn(IFormBuilderFieldType type, FormField field, FieldAnswers answers, DateOnly today) =>
+        StandsIn(type, field, answers, new FieldCheckInput(IsRequired: false, today));
+
+    /// <summary>
+    /// Whether a value stands in for a visitor's answer, with what the checks know besides it: the other fields' values
+    /// and the options a list or another source resolved, as a sample entry's answers are held (ADR-0187).
+    /// </summary>
+    /// <param name="type">The field's type.</param>
+    /// <param name="field">The field.</param>
+    /// <param name="answers">The value.</param>
+    /// <param name="input">Today, the other fields' values and the resolved options; not required, and no files.</param>
+    public static bool StandsIn(IFormBuilderFieldType type, FormField field, FieldAnswers answers, FieldCheckInput input)
     {
         ArgumentNullException.ThrowIfNull(type);
         ArgumentNullException.ThrowIfNull(field);
         ArgumentNullException.ThrowIfNull(answers);
+        ArgumentNullException.ThrowIfNull(input);
         if (type.Declaration.Storage == FieldStorageKind.File || CheckLimits(type, field, answers) is not null)
         {
             return false;
@@ -97,7 +109,7 @@ internal static class FieldValues
             return false;
         }
 
-        var errors = Check(type, field, read, new FieldCheckInput(IsRequired: false, today));
+        var errors = Check(type, field, read, input);
         return errors.Errors.IsEmpty && errors.Checks.IsEmpty;
     }
 

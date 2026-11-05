@@ -5,6 +5,7 @@ using Jiron.Umbraco.FormBuilder.Core.Actions;
 using Jiron.Umbraco.FormBuilder.Core.Composing;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Email;
+using Jiron.Umbraco.FormBuilder.Core.Entries;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
@@ -187,7 +188,7 @@ public sealed class ActionApiTests : ManagementApiTestBase
             Assert.That(confirmed.Body!["message"]!.GetValue<string>(), Is.EqualTo("Sent to target-of-the-test"));
             Assert.That(confirmed.Body!["preview"]!.AsArray().Select(line => line!.GetValue<string>()), Is.EqualTo(new[] { "one line" }));
             Assert.That(context.Action.Key, Is.EqualTo(action.Key));
-            Assert.That(context.Scope.Entry!.Number, Is.Zero, "a sample entry");
+            Assert.That(context.Scope.Entry!.Number, Is.EqualTo(SampleEntries.Number), "the sample entry previews show (ADR-0187)");
             Assert.That(context.User.Name, Is.Not.Empty);
             Assert.That(context.User.Email, Does.Contain("@"));
             Assert.That(await Entries.ListIdsAsync(row.Id, 5), Is.Empty, "nothing is stored");

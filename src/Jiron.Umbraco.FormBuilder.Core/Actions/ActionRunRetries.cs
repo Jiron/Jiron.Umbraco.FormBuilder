@@ -1,8 +1,6 @@
 using Jiron.Umbraco.FormBuilder.Core.Audit;
-using Jiron.Umbraco.FormBuilder.Core.Definitions;
-using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
+using Jiron.Umbraco.FormBuilder.Core.Entries;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
-using Jiron.Umbraco.FormBuilder.Core.MergeTags;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 
@@ -122,11 +120,11 @@ internal enum ActionTestStatus
 internal sealed record ActionTest(ActionTestStatus Status, ActionTestResult? Result = null);
 
 /// <summary>
-/// Test runs of a draft's actions against a sample entry (section 4.4, ADR-0158): nothing is stored and no run changes. What
+/// Test runs of a draft's actions against the sample entry (section 4.4, ADR-0158, ADR-0187): nothing is stored and no run changes. What
 /// a test run reaches is the type's, by its <see cref="ActionTypeDeclaration.Test"/>: a type that reaches what the action is
 /// set up to reach runs only after a confirmation.
 /// </summary>
-internal sealed class ActionTestRuns(IFormBuilderFormService forms, ActionTypeRegistry types, ActionSettingLocks locks, TimeProvider time)
+internal sealed class ActionTestRuns(IFormBuilderFormService forms, ActionTypeRegistry types, ActionSettingLocks locks, SampleEntries samples, TimeProvider time)
 {
     /// <summary>The code a type's failure stands under when it threw.</summary>
     public const string FailedMessage = "The test could not finish.";
@@ -161,15 +159,7 @@ internal sealed class ActionTestRuns(IFormBuilderFormService forms, ActionTypeRe
         {
             Action = locks.Apply(action),
             User = user,
-            Scope = new MergeTagScope
-            {
-                Form = definition,
-                FormName = draft.Form.Name,
-                FormAlias = draft.Form.Alias,
-                Culture = string.Empty,
-                Entry = new MergeTagEntry { Key = Guid.Empty, Number = 0, State = "submitted", Submitted = time.GetUtcNow() },
-                Answers = SampleAnswers(definition),
-            },
+            Scope = await samples.ScopeAsync(definition, draft.Form.Name, draft.Form.Alias, string.Empty, cancellationToken),
         };
         using var limit = new CancellationTokenSource(type.Declaration.AttemptTimeout ?? ActionTypeRegistry.LongestAttempt, time);
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(limit.Token, cancellationToken);
@@ -183,10 +173,4 @@ internal sealed class ActionTestRuns(IFormBuilderFormService forms, ActionTypeRe
             return new ActionTest(ActionTestStatus.Done, new ActionTestResult(ActionTestOutcome.Failed, FailedMessage));
         }
     }
-
-    // A made-up answer for each field that holds a value and takes text: the field's label, or its alias.
-    private static MergeTagAnswers SampleAnswers(FormDefinition definition) =>
-        new(definition.Pages.SelectMany(page => page.Groups).SelectMany(group => group.Fields).SelectMany(field => field.Fields.Prepend(field))
-            .Where(field => field.Alias is not null && field.Fields.Count == 0)
-            .Select(field => new MergeTagAnswer(field.Key, [new FieldValue(field.Label?.Default ?? field.Alias!)])));
 }
