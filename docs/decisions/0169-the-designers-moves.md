@@ -120,3 +120,9 @@ For move toasts:
 - Measured with Playwright in Edge on the demo machine, 300 fields, alone: the slowest interaction took 80 ms from the input to
   the next paint, and no frame held the main thread over 50 ms. Before the kept states and the sibling rules, the same interactions
   took up to 168 ms.
+- 2026-11-05 (10.1b's gate): the `budgets` project records no Playwright trace. Its recorder snapshots the page at every action
+  by walking the whole DOM on the page's own thread, 160 to 210 ms on the 300 fields by the browser's CPU profiler, against 10 to
+  16 ms of the designer's own work; the measure counted it, and the budget failed two runs in three on an idle machine. A failure
+  still names every slow interaction in its message.
+- 2026-11-05: the frames are measured by the main thread's hold, not by their whole duration, which also counts the
+  browser's drawing after the main thread is idle ([ADR-0186](0186-the-designer-budget-measures-the-main-thread.md)).

@@ -2,9 +2,19 @@ import { randomUUID } from 'node:crypto';
 import { expect, test } from '../../fixtures.ts';
 import { API, blankForm, unique } from '../../support/forms-api.ts';
 
-// The designer's budget (section 4.12, ADR-0169): a form of 300 fields keeps every interaction under 100 ms, from the
-// input to the next paint, and every frame under 100 ms, as the browser itself measures them. The budgets project runs
-// alone, after every other project, so nothing else shares the machine while it measures.
+// The designer's budget (section 4.12, ADR-0169, ADR-0186): a form of 300 fields keeps every interaction under 100 ms,
+// from the input to the next paint, and the main thread is never held 100 ms or more by a task or by the work of a
+// frame, nor 50 ms by a frame's rendering, as the browser itself measures them. A frame's whole duration, which also
+// counts the wait for the browser's own drawing after the main thread is idle, is reported beside them. The budgets
+// project runs alone, after every other project, so nothing else shares the machine while it measures.
+
+/** A long animation frame as the browser reports it, with what ran in it. */
+interface LongFrame {
+  readonly startTime: number;
+  readonly duration: number;
+  readonly renderStart: number;
+  readonly scripts: readonly { readonly duration: number }[];
+}
 
 const workspaceOf = (key: string) => `/umbraco/section/jfb-forms/workspace/jfb-form/edit/${key}`;
 
@@ -42,16 +52,28 @@ test('a form of 300 fields keeps every designer interaction under 100 ms', async
   await expect(design.locator('jfb-canvas-field')).toHaveCount(100);
   await page.waitForTimeout(1000);
 
-  // From here on, the browser's own measures: each interaction from the input to the next paint (Event Timing), and
-  // every frame the main thread kept longer than 50 ms (Long Animation Frames).
+  // From here on, the browser's own measures: each interaction from the input to the next paint (Event Timing), each
+  // task that held the main thread 50 ms or more (Long Tasks), and each frame that took 50 ms or more with the main
+  // thread's own work in it: its scripts and its rendering (Long Animation Frames).
   await page.evaluate(() => {
-    const found = { events: [] as { name: string; duration: number }[], frames: [] as number[] };
+    const found = {
+      events: [] as { name: string; duration: number }[],
+      tasks: [] as number[],
+      frames: [] as { duration: number; work: number; render: number }[],
+    };
     (window as unknown as { jfbBudget: typeof found }).jfbBudget = found;
     new PerformanceObserver((list) => {
       for (const entry of list.getEntries()) found.events.push({ name: entry.name, duration: entry.duration });
     }).observe({ type: 'event', durationThreshold: 16 } as PerformanceObserverInit);
     new PerformanceObserver((list) => {
-      for (const entry of list.getEntries()) found.frames.push(entry.duration);
+      for (const entry of list.getEntries()) found.tasks.push(entry.duration);
+    }).observe({ type: 'longtask' });
+    new PerformanceObserver((list) => {
+      for (const entry of list.getEntries() as unknown as LongFrame[]) {
+        const render = entry.renderStart > 0 ? entry.startTime + entry.duration - entry.renderStart : 0;
+        const scripts = entry.scripts.reduce((sum, script) => sum + script.duration, 0);
+        found.frames.push({ duration: entry.duration, work: scripts + render, render });
+      }
     }).observe({ type: 'long-animation-frame' });
   });
 
@@ -90,15 +112,30 @@ test('a form of 300 fields keeps every designer interaction under 100 ms', async
 
   const found = await page.evaluate(
     () =>
-      (window as unknown as { jfbBudget: { events: { name: string; duration: number }[]; frames: number[] } })
-        .jfbBudget,
+      (
+        window as unknown as {
+          jfbBudget: {
+            events: { name: string; duration: number }[];
+            tasks: number[];
+            frames: { duration: number; work: number; render: number }[];
+          };
+        }
+      ).jfbBudget,
   );
-  const slowest = Math.max(0, ...found.events.map((event) => event.duration));
-  const longest = Math.max(0, ...found.frames);
+  const most = (values: readonly number[]) => Math.round(Math.max(0, ...values));
+  const slowest = most(found.events.map((event) => event.duration));
+  const task = most(found.tasks);
+  const work = most(found.frames.map((frame) => frame.work));
+  const render = most(found.frames.map((frame) => frame.render));
+  const longest = most(found.frames.map((frame) => frame.duration));
   test.info().annotations.push({
     type: 'budget',
-    description: `slowest interaction ${slowest} ms (${found.events.length} over 16 ms), longest frame ${longest} ms`,
+    description:
+      `slowest interaction ${slowest} ms (${found.events.length} over 16 ms), longest task ${task} ms, ` +
+      `most work in a frame ${work} ms (rendering ${render} ms), longest frame ${longest} ms`,
   });
   expect(slowest, JSON.stringify(found.events)).toBeLessThan(100);
-  expect(longest, JSON.stringify(found.frames)).toBeLessThan(100);
+  expect(task, JSON.stringify(found.tasks)).toBeLessThan(100);
+  expect(work, JSON.stringify(found.frames)).toBeLessThan(100);
+  expect(render, JSON.stringify(found.frames)).toBeLessThan(50);
 });

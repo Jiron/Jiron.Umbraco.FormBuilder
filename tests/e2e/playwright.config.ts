@@ -53,12 +53,14 @@ export default defineConfig({
     },
     {
       // Interactions measured against section 4.12's budgets: alone, after every other project, so nothing else shares
-      // the machine while they are measured (ADR-0169).
+      // the machine while they are measured (ADR-0169). Without a trace: its recorder walks the page's whole DOM on the
+      // page's own thread at every action, which the measure would count as the designer's (160 to 210 ms on a form of
+      // 300 fields, 10.1b); a failure says every slow interaction in its message instead.
       name: 'budgets',
       testDir: './specs/budgets',
       dependencies: ['smoke', 'website', 'backoffice', 'limits', 'startup'],
       workers: 1,
-      use: browser,
+      use: { ...browser, trace: 'off' },
     },
     // A phase review's UX walk, only when asked (JFB_E2E_UX=1): every screen in twelve ways, then a sheet per screen
     // (support/ux-walk.ts; ROADMAP 9.6a). The gate leaves it out: it reviews, it doesn't check.
