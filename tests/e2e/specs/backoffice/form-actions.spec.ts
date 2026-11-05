@@ -156,6 +156,18 @@ test('the Actions view adds an action from a preset, moves it by drag and keyboa
   await drag(page, handle, { x: below.x + 80, y: below.y + below.height - 4 });
   await expect(names).toHaveText(['Email the team', 'Mark as approved']);
 
+  // Without dragging, a pointer chooses its place in its sidebar (WCAG 2.5.7); Ctrl+Z takes the move back.
+  await cardOf(view, 'Mark as approved').click();
+  await sidebar.getByRole('combobox', { name: 'Place in the list' }).selectOption({ label: '1 of 2' });
+  await sidebar.getByRole('button', { name: 'Update', exact: true }).click();
+  await expect(sidebar).toHaveCount(0);
+  await expect(names).toHaveText(['Mark as approved', 'Email the team']);
+  await expect(status).toHaveText('Moved. Mark as approved: position 1 of 2.');
+  await expect(cardOf(view, 'Mark as approved')).toBeFocused();
+  await cardOf(view, 'Mark as approved').press('Control+z');
+  await expect(names).toHaveText(['Email the team', 'Mark as approved']);
+  await expect(cardOf(view, 'Mark as approved')).toBeFocused();
+
   // Its switch takes it out of the run without deleting it.
   const use = view.getByRole('switch', { name: 'Use Mark as approved' });
   await use.uncheck();
