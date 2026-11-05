@@ -317,6 +317,9 @@ test('actions copied to a form without their fields list each reference with a l
 
   await treeAction(page, source, 'Copy actions to\u2026');
   const sidebar = page.locator('jfb-copy-actions-modal');
+  // A headline short enough that Umbraco's one-line header never cuts it; the form copied from heads its actions.
+  await expect(sidebar.locator('umb-body-layout')).toHaveAttribute('headline', 'Copy actions');
+  await expect(sidebar.locator(`uui-box[headline="Actions from ${source}"]`)).toBeVisible();
   await sidebar.getByRole('button', { name: 'Choose a form\u2026' }).click();
   await pickInTree(page, target);
   await expect(sidebar).toContainText(target);

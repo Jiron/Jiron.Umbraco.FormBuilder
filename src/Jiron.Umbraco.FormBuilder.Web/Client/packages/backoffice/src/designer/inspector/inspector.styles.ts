@@ -188,13 +188,12 @@ export const inspectorStyles = css`
     font-weight: 700;
   }
 
+  /* A closed section's summary wraps rather than cuts: a rule's sentence ends in what it depends on (ADR-0182). */
   .summary {
     grid-column: 2;
-    overflow: hidden;
     color: var(--jfb-bo-color-text-muted);
     font-size: var(--uui-type-small-size);
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    overflow-wrap: anywhere;
   }
 
   .section-line {

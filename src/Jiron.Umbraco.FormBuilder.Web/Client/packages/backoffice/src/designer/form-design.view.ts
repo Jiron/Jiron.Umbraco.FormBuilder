@@ -324,11 +324,20 @@ export class FormDesignViewElement extends UmbLitElement {
         font-weight: 700;
         text-decoration: underline;
         cursor: pointer;
-        transform: translateY(-200%);
+      }
+
+      /* Out of sight without a box until it takes the focus: one moved above the view lay over Umbraco's back button
+         and the form's name, which axe then found too small to hit (ADR-0182). */
+      .skip:not(:focus) {
+        inline-size: 1px;
+        block-size: 1px;
+        padding: 0;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
       }
 
       .skip:focus {
-        transform: none;
         outline: 2px solid var(--jfb-bo-color-focus);
       }
     `,

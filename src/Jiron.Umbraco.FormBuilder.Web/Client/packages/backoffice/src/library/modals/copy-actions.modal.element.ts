@@ -248,12 +248,15 @@ export class CopyActionsModalElement extends UmbModalBaseElement<CopyActionsModa
           ></uui-button>
         </div>
       </uui-box>
-      <uui-box headline-variant="h4" headline=${this.localize.term('jfbLibrary_whichActions')}>
+      <uui-box
+        headline-variant="h4"
+        headline=${this.localize.term('jfbLibrary_whichActions', this.data?.sourceName ?? '')}
+      >
         ${
           actions === undefined
             ? skeletonLines(this.localize.term('jfbLibrary_loading'), [52, 40])
             : actions.length === 0
-              ? html`<p>${this.localize.term('jfbLibrary_noActionsToCopy', this.data?.sourceName ?? '')}</p>`
+              ? html`<p>${this.localize.term('jfbLibrary_noActionsToCopy')}</p>`
               : html`<ul>
                   ${actions.map(
                     (action) =>
@@ -273,9 +276,8 @@ export class CopyActionsModalElement extends UmbModalBaseElement<CopyActionsModa
   override render() {
     const result = this._result;
     const target = this._target;
-    return html`<umb-body-layout
-      headline=${this.localize.term('jfbLibrary_copyActionsHeadline', this.data?.sourceName ?? '')}
-    >
+    // The headline stays short, as Umbraco's header cuts it to one line; the source's name heads its actions below.
+    return html`<umb-body-layout headline=${this.localize.term('jfbLibrary_copyActionsHeadline')}>
       ${result && target ? this.#renderResult(result, target) : this.#renderChoice()}
       <div slot="actions">
         ${

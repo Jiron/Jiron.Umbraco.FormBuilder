@@ -195,13 +195,13 @@ export default {
     duplicateRestricted: (where: string) =>
       `Dieses Formular hat eigene Zugriffsrechte, die die Kopie nicht übernimmt: Die Kopie landet in ${where} und erhält den Zugriff, der dort gilt.`,
 
-    copyActionsHeadline: (source: string) => `Aktionen aus ${source} kopieren`,
+    copyActionsHeadline: 'Aktionen kopieren',
     copyTo: 'Kopieren nach',
     noTargetYet: 'Noch kein Formular gewählt',
     chooseForm: 'Formular wählen…',
     chooseAnotherForm: 'Anderes Formular wählen…',
-    whichActions: 'Zu kopierende Aktionen',
-    noActionsToCopy: (source: string) => `${source} hat keine Aktionen, die sich kopieren lassen.`,
+    whichActions: (source: string) => `Aktionen aus ${source}`,
+    noActionsToCopy: 'Dieses Formular hat keine Aktionen, die sich kopieren lassen.',
     copyCount: (actions: number) => (actions === 1 ? '1 Aktion kopieren' : `${number(actions)} Aktionen kopieren`),
     copied: (actions: number, target: string) => `${count(actions, 'Aktion', 'Aktionen')} nach ${target} kopiert.`,
     copiedClean: (actions: number) =>

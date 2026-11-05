@@ -176,13 +176,13 @@ export default {
     duplicateRestricted: (where: string) =>
       `This form has access settings of its own, which the copy doesn't take: it lands in ${where} and gets the access set there.`,
 
-    copyActionsHeadline: (source: string) => `Copy actions from ${source}`,
+    copyActionsHeadline: 'Copy actions',
     copyTo: 'Copy to',
     noTargetYet: 'No form chosen yet',
     chooseForm: 'Choose a form…',
     chooseAnotherForm: 'Choose another form…',
-    whichActions: 'Actions to copy',
-    noActionsToCopy: (source: string) => `${source} has no actions to copy.`,
+    whichActions: (source: string) => `Actions from ${source}`,
+    noActionsToCopy: 'This form has no actions to copy.',
     copyCount: (actions: number) => (actions === 1 ? 'Copy 1 action' : `Copy ${number(actions)} actions`),
     copied: (actions: number, target: string) => `${count(actions, 'action', 'actions')} copied to ${target}.`,
     copiedClean: (actions: number) =>

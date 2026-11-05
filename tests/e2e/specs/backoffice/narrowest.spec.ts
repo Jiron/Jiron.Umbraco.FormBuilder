@@ -1,7 +1,9 @@
+import AxeBuilder from '@axe-core/playwright';
 import type { Page } from '@playwright/test';
 import { expect, test } from '../../fixtures.ts';
 import { inLanguage } from '../../support/backoffice-look.ts';
 import { API, contactForm, created, unique } from '../../support/forms-api.ts';
+import { splitAxe } from '../../support/ux-walk.ts';
 
 // The section at its narrowest (ROADMAP 9.6a, ADR-0182). Umbraco's backoffice keeps a width of its own below a window
 // of that width, and its 300 px tree beside the workspace, so on a phone or a tablet every section scrolls sideways as
@@ -72,6 +74,20 @@ for (const window of [
     expect(found.cut, 'texts cut short inside the section').toEqual([]);
     expect(found.scrolls, 'boxes that scroll sideways inside the section').toEqual([]);
 
+    // Nothing of the section lies over Umbraco's header, its back button and the form's name: axe finds no target of
+    // the section's too small to hit, as it did while the skip link waited above the view (ADR-0182).
+    const targets = await new AxeBuilder({ page }).options({ ancestry: true }).withRules(['target-size']).analyze();
+    const small = splitAxe(
+      targets.violations.flatMap((violation) =>
+        violation.nodes.map((node) => ({
+          rule: violation.id,
+          target: node.target,
+          ancestry: (node as { ancestry?: unknown[] }).ancestry ?? [],
+        })),
+      ),
+    ).ours;
+    expect(small, 'targets too small to hit inside the section').toEqual([]);
+
     // Every tool of the element lies inside the inspector, its "..." too; the menu it opens is hidden till then.
     const frame = await inspector.boundingBox();
     const tools = await inspector.locator('.tools > button').evaluateAll((buttons) =>
@@ -103,15 +119,20 @@ for (const window of [
     await page.locator('jfb-folder-list uui-button[look="outline"]').click();
     const gallery = page.locator('jfb-template-gallery-modal');
     await expect(gallery.locator('[role="radio"]').first()).toBeVisible();
-    const footer = await gallery.locator('[slot="actions"] uui-button').evaluateAll((buttons) =>
-      buttons.map((button) => {
-        const box = button.getBoundingClientRect();
-        return { top: Math.round(box.top), right: box.right };
-      }),
-    );
+    const footerOf = () =>
+      gallery.locator('[slot="actions"] uui-button').evaluateAll((buttons) =>
+        buttons.map((button) => {
+          const box = button.getBoundingClientRect();
+          return { top: Math.round(box.top), right: box.right };
+        }),
+      );
+    // Umbraco's sidebar slides in from the window's edge, so its footer is measured where it comes to rest.
+    await expect
+      .poll(async () => Math.max(...(await footerOf()).map((button) => button.right)), { message: 'the right edge' })
+      .toBeLessThanOrEqual(window.width);
+    const footer = await footerOf();
     expect(footer).toHaveLength(2);
     expect(footer[0]?.top, 'one row').toBe(footer[1]?.top);
-    for (const button of footer) expect(button.right).toBeLessThanOrEqual(window.width);
     const shown = await measure(page);
     expect([shown.cut, shown.scrolls], 'the gallery').toEqual([[], []]);
   });

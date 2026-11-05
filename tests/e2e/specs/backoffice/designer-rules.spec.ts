@@ -303,6 +303,15 @@ test('a required-when rule compares two fields and a query value, is tried, and 
     'Required when Departure is after the answer to Arrival and the query value ref is "web"',
   );
   await expect(line).toBeFocused();
+  // Closed, the section says the rule whole, on as many lines as it takes, never cut before what it depends on.
+  const rules = inspector.locator('[data-section="rules"] .section-head button');
+  await rules.click();
+  const summary = rules.locator('.summary');
+  await expect(summary).toHaveText(
+    'Required when Departure is after the answer to Arrival and the query value ref is "web"',
+  );
+  expect(await summary.evaluate((element) => element.scrollWidth <= element.clientWidth), 'nothing cut').toBe(true);
+  await rules.click();
   await saveDraft(page);
   expect((await fieldsOf(api, key)).guests?.rules?.[0]).toMatchObject({
     effect: 'require',

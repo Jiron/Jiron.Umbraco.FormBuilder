@@ -241,7 +241,8 @@ progress, since the steps across its top stand in for it.
   message, and **Try it**, which says at once whether a typed answer matches, as the site will check it. A pattern the
   site's matcher refuses is said under its box; the answer tried is never saved.
 - **Validation, Rules, Appearance and Advanced** (closed, remembered per user):
-  - a closed section shows a one-line summary of what is set ("Maximum length: 200"), or "Nothing changed";
+  - a closed section shows a short summary of what is set ("Maximum length: 200"), or "Nothing changed", wrapping
+    rather than cut, so a rule's sentence keeps what it depends on (ADR-0182);
   - a section shows at most seven settings before "More options".
 - **Each box** has its label, its help and why a value can't be kept tied to it for screen readers; a value is checked
   as it is typed and said once the box is left. Typing in one box is one step to undo. A setting the site locks shows
