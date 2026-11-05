@@ -183,6 +183,9 @@ describe('an outcome edited', () => {
     expect(outcomeOf({ ...editOf(base), rule: changed }, base, base.key).rules).toEqual([run, changed]);
     expect(outcomeOf({ ...editOf(base), rule: null }, base, base.key).rules).toEqual([run]);
     expect(outcomeOf({ ...editOf(message), rule: changed }, message, message.key).rules).toEqual([changed]);
+    // A first rule comes after the rules it held.
+    const other = { ...message, rules: [run] };
+    expect(outcomeOf({ ...editOf(other), rule: changed }, other, other.key).rules).toEqual([run, changed]);
     expect('rules' in outcomeOf(editOf(message), message, message.key)).toBe(false);
   });
 });

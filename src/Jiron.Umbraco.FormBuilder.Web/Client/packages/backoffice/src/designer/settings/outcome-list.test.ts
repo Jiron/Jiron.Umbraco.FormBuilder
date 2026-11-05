@@ -219,6 +219,14 @@ describe("After sending's list", () => {
     expect(moves.length).toBe(1);
   });
 
+  it('keeps the focus on its outcome as the list changes around it, as an Undo does', async () => {
+    const { list, root, rows } = await listOf([press, thanks]);
+    must(rows()[1]?.querySelector<HTMLButtonElement>('.row-open'), 'the second row').focus();
+    list.outcomes = [thanks, press];
+    await settle(list);
+    expect(root.activeElement?.closest('.outcome-row')?.getAttribute('data-key')).toBe('o2');
+  });
+
   it('puts the focus on an outcome, or on Add outcome where it is gone', async () => {
     const { list, root } = await listOf([press]);
     expect(await list.focusOutcome('o1')).toBe(true);
