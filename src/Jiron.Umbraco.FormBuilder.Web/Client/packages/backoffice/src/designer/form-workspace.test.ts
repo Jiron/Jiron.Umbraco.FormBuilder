@@ -5,7 +5,7 @@ import type { FieldTypeResponseModel, FormDraftResponseModel, FormResponseModel 
 import { FORM_PERMISSION_CONDITION, FORM_WORKSPACE_ALIAS } from './constants';
 import { changesOf, detailOf, detailOfForm, keptAlias } from './form-detail.data-source';
 import { holdsAny } from './form-permission.condition';
-import { fieldOfQuery, formState } from './form-state';
+import { actionOfQuery, fieldOfQuery, formState } from './form-state';
 import { readOnce, traitsOf } from './form-workspace.context';
 import { manifests } from './manifests';
 
@@ -57,6 +57,15 @@ describe("a link's field", () => {
     expect(fieldOfQuery('?action=3f2504e0-4f89-11d3-9a0c-0305e82c3301')).toBeNull();
     expect(fieldOfQuery('?field=email')).toBeNull();
     expect(fieldOfQuery('')).toBeNull();
+  });
+});
+
+describe("a link's action", () => {
+  it('is the key `?action=` names, in lowercase, and nothing that is no key (ADR-0166, ADR-0188)', () => {
+    expect(actionOfQuery('?action=3F2504E0-4F89-11D3-9A0C-0305E82C3301')).toBe('3f2504e0-4f89-11d3-9a0c-0305e82c3301');
+    expect(actionOfQuery('?field=3f2504e0-4f89-11d3-9a0c-0305e82c3301')).toBeNull();
+    expect(actionOfQuery('?action=email')).toBeNull();
+    expect(actionOfQuery('')).toBeNull();
   });
 });
 

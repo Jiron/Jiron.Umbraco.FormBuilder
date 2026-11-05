@@ -107,6 +107,11 @@ One line that says where something stands, next to the thing it is about.
 | Where | English | German |
 | --- | --- | --- |
 | an action's card, after a failed delivery | Failed at 14:02. Next try at 14:30. | Fehlgeschlagen um 14:02. Nächster Versuch um 14:30. |
+| a trigger whose setting is off, without actions (the link opens the setting) | Runs when someone rejects an entry. It needs manual approval: [turn it on in Settings] | Läuft, wenn jemand einen Eintrag ablehnt. Dafür braucht es die manuelle Genehmigung: [in den Einstellungen einschalten] |
+| a trigger whose setting is off, above the actions it holds | These don't run until the form has email verification: [turn it on in Settings] | Diese laufen erst, wenn das Formular die E-Mail-Bestätigung hat: [in den Einstellungen einschalten] |
+| the Approved trigger, on a form without manual approval | as each entry comes in, because this form has no manual approval | bei jedem eingehenden Eintrag, da dieses Formular keine manuelle Genehmigung hat |
+| the Actions view without Manage actions (one line at the top, no folder named: the grant may be global) | Changing these actions needs the Manage actions permission for this form. An administrator can grant it. | Diese Aktionen zu ändern, braucht die Berechtigung „Aktionen verwalten“ für dieses Formular. Wer Administratorrechte hat, kann sie erteilen. |
+| an action's card that is off, read-only | Off | Aus |
 | beside the canvas width switch, when the canvas has less room than the chosen width | Narrowed to fit | Schmaler als gewählt |
 | above the permission matrix, for a user group without the section | Translators can't open Form Builder yet. Add the section to their user group | Übersetzer können Form Builder noch nicht öffnen. Bereich zu ihrer Benutzergruppe hinzufügen |
 | above the permission matrix, once, for the fixed Administrators column | Administrators hold every permission everywhere, because they could grant themselves any. | Die Gruppe Administratoren hat überall jede Berechtigung, weil ihre Mitglieder sich jede selbst geben könnten. |
@@ -166,6 +171,7 @@ Use Umbraco's own words where Umbraco has the same action, so the section feels 
 | keep a person's entries past their retention | Set legal hold… | Löschsperre setzen… |
 | erase one person's data (asks first) | Erase… | Daten löschen… |
 | open a problem from the form check | Fix it | Beheben |
+| the "…" of an action's card | Duplicate · Move to another trigger… · Delete | Duplizieren · Zu einem anderen Auslöser verschieben… · Löschen |
 | fill the preview with valid answers | Fill with sample answers | Mit Beispielantworten füllen |
 | reach the canvas past the header and the palette (the workspace's first stop) | Skip to the form | Zum Formular springen |
 | list the keyboard shortcuts | Keyboard shortcuts | Tastenkürzel |
@@ -300,6 +306,9 @@ toast adds only what the user cannot see.
 | entries approved | 12 entries approved. [Undo] | 12 Einträge genehmigt. [Zurücknehmen] |
 | some selected entries left out | 3 entries approved. 3 weren't waiting for approval. [Undo] | 3 Einträge genehmigt. 3 warteten nicht auf Genehmigung. [Zurücknehmen] |
 | an action added to a published form (Publish… stays in the footer) | Post in #leads added. It runs for new entries once you publish. | Post in #leads hinzugefügt. Die Aktion läuft für neue Einträge, sobald Sie veröffentlichen. |
+| an action added (the live region; the card takes the focus) | Added. Email the team runs when an entry comes in. | Hinzugefügt. Email the team läuft, wenn ein Eintrag eingeht. |
+| an action duplicated (the live region) | Duplicated. Email the team (copy) is right after it. | Dupliziert. Email the team (Kopie) steht direkt danach. |
+| an action deleted (the toast) | Mark as approved deleted. [Undo] | Mark as approved gelöscht. [Zurücknehmen] |
 | an outcome added to a published form | Added. Visitors get it once you publish. | Hinzugefügt. Auf der Website gilt es ab der nächsten Veröffentlichung. |
 | test email sent | Test email sent to you (ana@example.com). | Test-E-Mail an Sie gesendet (ana@example.com). |
 | export ready | Your export of 12,400 entries is ready. [Download] | Ihr Export von 12.400 Einträgen ist fertig. [Herunterladen] |
@@ -336,6 +345,10 @@ Help text sits under its setting and answers the question the label leaves open;
 | Keep until (legal hold) · Behalten bis | At most a year from today. You can extend it before it ends. | Höchstens ein Jahr ab heute. Sie können sie vor dem Ende verlängern. |
 | the legal hold sidebar, under its settings | Held entries are kept past their retention, and Erase… leaves them out until the hold ends. | Gesperrte Einträge bleiben über ihre Aufbewahrung hinaus erhalten, und „Daten löschen…“ lässt sie aus, bis die Sperre endet. |
 | Preview with a sample entry (an outcome's sidebar) · Vorschau mit einem Beispieleintrag | As visitors see it after sending, with sample answers made from the form's fields. | So sehen Besucher es nach dem Absenden, mit Beispielantworten aus den Feldern des Formulars. |
+| What happens, for an action of the form · Was passiert | An action keeps what it does. To do something else, add another action. | Eine Aktion behält, was sie tut. Für etwas anderes fügen Sie eine weitere Aktion hinzu. |
+| Name (an action) · Name | Shown on its card and in the deliveries log. | Steht auf ihrer Karte und im Zustellprotokoll. |
+| Stop the rest if this fails · Die übrigen anhalten, wenn diese fehlschlägt | If it fails for good, the actions after it for the same entry don't run. Retrying it from Deliveries brings them back. | Schlägt sie endgültig fehl, laufen die Aktionen danach für denselben Eintrag nicht. Ein neuer Versuch unter Zustellungen bringt sie zurück. |
+| Rule, without one (an action) · Regel | Runs for every entry its trigger brings. | Läuft für jeden Eintrag, den ihr Auslöser bringt. |
 | Your questions (Paste questions) · Ihre Fragen | One question per line. Each becomes a field, with a type guessed from its words; you can change it afterwards. | Eine Frage pro Zeile. Jede wird ein Feld, mit einem aus ihren Wörtern erratenen Typ; Sie können ihn danach ändern. |
 
 A "Learn more" link goes to the docs page when a setting needs more than two sentences. Its text makes sense on its

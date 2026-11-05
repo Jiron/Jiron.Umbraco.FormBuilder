@@ -15,6 +15,12 @@ export const FORM_DETAIL_STORE_ALIAS = 'Jiron.FormBuilder.Store.FormDetail';
 /** The condition that shows a view or an action by what the user holds on the open form. */
 export const FORM_PERMISSION_CONDITION = 'Jiron.FormBuilder.Condition.FormPermission';
 
+/**
+ * An action's sidebar (ROADMAP 10.2a): named here, which the backoffice loads at its start, so its token loads with the
+ * Actions view (ADR-0188).
+ */
+export const ACTION_MODAL_ALIAS = 'Jiron.FormBuilder.Modal.Action';
+
 export const FORM_DETAIL_STORE_CONTEXT = new UmbContextToken<FormDetailStore>(FORM_DETAIL_STORE_ALIAS);
 
 /** The open form's workspace context, which the views and actions inside the form workspace consume. */

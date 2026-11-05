@@ -1,0 +1,715 @@
+// The form's Actions view (ROADMAP 10.2a, IA 5.3, ADR-0188): the actions by trigger, Submitted, Approved, Rejected and
+// Verified, each trigger with when it runs; one whose setting is off says so with a link to the setting. Add action
+// opens an action's sidebar ready to email the team; a card's name opens its own. Each change is a change of the draft
+// with one step to undo: a move within a trigger, a switch, a copy, a move to another trigger, an action added, changed
+// or deleted, the last with Undo in its toast too. The form check's problems in an action are counted on its card, and
+// its Fix it, or a link's `?action=`, leads to the action. Without `manageActions` the view is read-only. The view's
+// words load with it (`action-words.ts`), before it draws.
+import { css, html, nothing, type TemplateResult } from '@umbraco-cms/backoffice/external/lit';
+import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
+import { umbOpenModal } from '@umbraco-cms/backoffice/modal';
+import { UMB_NOTIFICATION_CONTEXT } from '@umbraco-cms/backoffice/notification';
+import { tryExecute } from '@umbraco-cms/backoffice/resources';
+import {
+  actionTypeList,
+  formSettingsChoices,
+  type ActionTypeResponseModel,
+  type FieldTypeResponseModel,
+} from '../../api';
+import { jfbBackofficeTokens, jfbVisuallyHidden } from '../../styles/tokens';
+import { UNDO_DURATION_MS, UNDO_NOTIFICATION, type UndoNotificationData } from '../../ui/undo-notification.element';
+import { parsePath, type FixTarget } from '../check/form-check';
+import { UNCHECKED, type CheckState } from '../check/form-checker';
+import { FORM_WORKSPACE_CONTEXT } from '../constants';
+import type { DesignDefinition } from '../definition';
+import type { EditorView, FormWorkspaceContext } from '../form-workspace.context';
+import { followFix, viewPath } from '../form-views';
+import { same } from '../inspector/setting-values';
+import { readLook, type CanvasLook } from '../preview/look';
+import { elementNames, inspectorRuleWords } from '../rules/rule-names';
+import { ruleWords } from '../rules/rule-words';
+import { flagWith, type Flag } from '../settings/problem-lines';
+import './action-list.element';
+import type { ActionListElement, ActionCard, CardRequest } from './action-list.element';
+import {
+  TRIGGERS,
+  actionsOf,
+  choicesOf,
+  duplicated,
+  inTrigger,
+  isOn,
+  movedWithin,
+  runRuleOf,
+  settingAtPath,
+  summaryOf,
+  triggerNeed,
+  triggerOf,
+  withAction,
+  withActions,
+  withTrigger,
+  type ActionSetting,
+  type DesignAction,
+  type Trigger,
+  type TriggerNeed,
+} from './action-model';
+import { ACTION_MODAL } from './action.modal.token';
+import { loadActionWords } from './action-words';
+
+/** The setting a trigger needs, as a Fix it in the Settings view names it. */
+const NEEDED_AT: Readonly<Record<TriggerNeed, string>> = {
+  approval: '$.settings.submission.approval',
+  verification: '$.settings.submission.verification',
+};
+
+export class FormActionsViewElement extends UmbLitElement {
+  static override properties = {
+    _view: { state: true },
+    _types: { state: true },
+    _actionTypes: { state: true },
+    _limit: { state: true },
+    _look: { state: true },
+    _failed: { state: true },
+    _check: { state: true },
+    _manage: { state: true },
+    _said: { state: true },
+  };
+
+  static override styles = [
+    jfbBackofficeTokens,
+    jfbVisuallyHidden,
+    css`
+      :host {
+        display: block;
+        padding: var(--uui-size-layout-1);
+      }
+
+      .page {
+        display: grid;
+        gap: var(--uui-size-space-6);
+        max-inline-size: 760px;
+        margin-inline: auto;
+      }
+
+      .toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--uui-size-space-3);
+      }
+
+      .note,
+      .none,
+      .empty {
+        margin: 0;
+        color: var(--jfb-bo-color-text-muted);
+      }
+
+      .note {
+        font-size: var(--uui-type-small-size);
+      }
+
+      .read-only {
+        display: flex;
+        align-items: flex-start;
+        gap: var(--uui-size-space-3);
+        margin: 0;
+        padding: var(--uui-size-space-4);
+        border-radius: var(--uui-border-radius);
+        background: var(--uui-color-surface);
+        box-shadow: var(--uui-shadow-depth-1);
+      }
+
+      .read-only uui-icon {
+        flex: none;
+        margin-block-start: 2px;
+        color: var(--jfb-bo-color-text-muted);
+      }
+
+      .trigger {
+        display: grid;
+        gap: var(--uui-size-space-3);
+      }
+
+      .trigger-head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        column-gap: var(--uui-size-space-3);
+      }
+
+      .trigger-head h2 {
+        margin: 0;
+        font-size: var(--uui-type-h5-size);
+        font-weight: 700;
+      }
+
+      .when {
+        color: var(--jfb-bo-color-text-muted);
+      }
+
+      /* A trigger that holds nothing, or does not run: one line in a dashed box, never a card. */
+      .off,
+      .none {
+        margin: 0;
+        padding: var(--uui-size-space-4);
+        border: 1px dashed var(--uui-color-border-standalone);
+        border-radius: var(--uui-border-radius);
+        color: var(--jfb-bo-color-text-muted);
+      }
+
+      .off a {
+        color: var(--uui-color-interactive);
+        font-weight: 600;
+      }
+
+      .off a:focus-visible {
+        outline: 2px solid var(--jfb-bo-color-focus);
+        outline-offset: 2px;
+      }
+
+      .skeleton {
+        display: grid;
+        gap: var(--uui-size-space-3);
+      }
+
+      .skeleton span {
+        display: block;
+        block-size: 64px;
+        border-radius: var(--uui-border-radius);
+        background: var(--uui-color-surface-alt);
+      }
+
+      .skeleton span:first-child {
+        inline-size: 20%;
+        block-size: 24px;
+      }
+
+      .failed {
+        display: grid;
+        justify-items: start;
+        gap: var(--uui-size-space-4);
+      }
+
+      .failed p {
+        margin: 0;
+      }
+    `,
+  ];
+
+  declare private _view: EditorView | undefined;
+  declare private _types: Readonly<Record<string, FieldTypeResponseModel>>;
+  declare private _actionTypes: readonly ActionTypeResponseModel[] | undefined;
+  declare private _limit: number;
+  declare private _look: CanvasLook | undefined;
+  declare private _failed: boolean;
+  declare private _check: CheckState;
+  /** Whether the user may change the form's actions. */
+  declare private _manage: boolean;
+  declare private _said: string;
+
+  #context: FormWorkspaceContext | undefined;
+  /** The form whose action types and choices were read, so another form open reads them again. */
+  #form: string | null = null;
+  /** Whether visitors get a published version, which an action added or changed reaches only once it is published. */
+  #published = false;
+  /** Whether an action's sidebar is open, so a second never opens over it. */
+  #editing = false;
+  /** The last toast with Undo, closed by the next one: its Undo would take back another change. */
+  #undoToast: { close(): void } | undefined;
+
+  constructor() {
+    super();
+    this._types = {};
+    this._limit = 0;
+    this._failed = false;
+    this._check = UNCHECKED;
+    this._manage = false;
+    this._said = '';
+    this.consumeContext(FORM_WORKSPACE_CONTEXT, (context) => {
+      this.#context = context;
+      if (!context) return;
+      this.observe(context.editor, (view) => (this._view = view), 'editor');
+      this.observe(context.check, (check) => (this._check = check ?? UNCHECKED), 'check');
+      this.observe(context.fieldTypes, (types) => (this._types = types ?? {}), 'types');
+      this.observe(context.state, (state) => (this.#published = state === 'published' || state === 'pending'), 'state');
+      this.observe(
+        context.form,
+        (form) => (this._manage = form?.permissions.includes('manageActions') ?? false),
+        'permissions',
+      );
+      this.observe(
+        context.unique,
+        (unique) => {
+          if (!unique || unique === this.#form) return;
+          this.#form = unique;
+          void this.#read();
+        },
+        'unique',
+      );
+      // A Fix it asked from the publish dialog while this view is shown, or from the view that led here.
+      this.observe(
+        context.fixRequest,
+        (target) => {
+          if (target) void this.#fixPending();
+        },
+        'fix',
+      );
+    });
+    this.addEventListener('keydown', (event) => this.#onKey(event));
+  }
+
+  // ---- Reading ------------------------------------------------------------------------------------------------------
+
+  async #read() {
+    this._failed = false;
+    const form = this.#form;
+    if (!form) return;
+    const culture = this.#context?.getLanguage() ?? undefined;
+    const [words, types, choices, look] = await Promise.all([
+      loadActionWords(this.localize.lang()).then(
+        () => true,
+        () => false,
+      ),
+      tryExecute(this, actionTypeList(), { disableNotifications: true }),
+      tryExecute(this, formSettingsChoices({ path: { key: form } }), { disableNotifications: true }),
+      readLook(this, culture),
+    ]);
+    // A form chosen meanwhile wins over the answer for the one before it.
+    if (form !== this.#form) return;
+    if (!words || !types.data || !choices.data || !look) {
+      this._failed = true;
+      return;
+    }
+    this._actionTypes = types.data.types;
+    this._limit = choices.data.limits.actions;
+    this._look = look;
+    await this.updateComplete;
+    await this.#fixPending();
+  }
+
+  // ---- Words --------------------------------------------------------------------------------------------------------
+
+  #term = (key: string, ...args: unknown[]) => this.localize.term(`jfbActions_${key}`, ...args);
+
+  #say = (text: string | null | undefined) => (text ? this.localize.string(text) : '');
+
+  #announce(text: string) {
+    // The same words twice in a row are said again: the live region hears a change.
+    this._said = this._said === text ? `${text} ` : text;
+  }
+
+  #typeOf(alias: string): ActionTypeResponseModel | undefined {
+    return this._actionTypes?.find((type) => type.alias === alias);
+  }
+
+  /** An action's name as it shows: its own, else its type's, else its type's alias. */
+  #nameOf(action: DesignAction): string {
+    return action.name?.trim() || this.#say(this.#typeOf(action.type)?.name) || action.type;
+  }
+
+  /** When a trigger runs, in words: Approved, on a form without manual approval, as each entry comes in. */
+  #when(trigger: Trigger, definition: DesignDefinition): string {
+    const each = trigger === 'approved' && triggerNeed(definition, 'rejected') === 'approval';
+    return this.#term(`when_${each ? 'approvedEach' : trigger}`);
+  }
+
+  // ---- Changes ------------------------------------------------------------------------------------------------------
+
+  #definition(): DesignDefinition {
+    return this._view?.state.definition ?? { pages: [] };
+  }
+
+  /** Makes a change of the actions, named for Undo; false where it changes nothing or is refused. */
+  #change(actions: readonly DesignAction[], said: string): boolean {
+    const context = this.#context;
+    const view = this._view;
+    if (!context || !view || !this._manage) return false;
+    const definition = withActions(view.state.definition, actions);
+    if (same(definition['actions'], view.state.definition['actions'])) return false;
+    const result = context.edit({ ok: true, state: { definition, selection: view.state.selection } }, said);
+    if (!result.ok) this.#announce(this.localize.term(`jfbDesigner_refusal_${result.refusal}`));
+    return result.ok;
+  }
+
+  #travel(way: 'undo' | 'redo') {
+    const context = this.#context;
+    if (!context) return;
+    const said = way === 'undo' ? context.undo() : context.redo();
+    if (said === undefined) return;
+    this.#announce(this.localize.term(way === 'undo' ? 'jfbDesigner_saidUndone' : 'jfbDesigner_saidRedone', said));
+  }
+
+  #onKey(event: KeyboardEvent) {
+    const target = event.composedPath()[0];
+    // A box that takes text has its own Undo.
+    const entry =
+      (target instanceof HTMLInputElement && target.type === 'text') ||
+      target instanceof HTMLTextAreaElement ||
+      (target instanceof HTMLElement && target.isContentEditable);
+    if (entry || !(event.ctrlKey || event.metaKey) || event.altKey) return;
+    const key = event.key.toLowerCase();
+    if (key === 'z' && !event.shiftKey) this.#travel('undo');
+    else if (key === 'y' || (key === 'z' && event.shiftKey)) this.#travel('redo');
+    else return;
+    event.preventDefault();
+  }
+
+  #list(trigger: Trigger): ActionListElement | null {
+    return this.shadowRoot?.querySelector<ActionListElement>(`jfb-action-list[data-trigger="${trigger}"]`) ?? null;
+  }
+
+  /** Puts the focus on an action's card, or on Add action where it is gone. */
+  async #focusAction(key: string | null) {
+    await this.updateComplete;
+    const action = key ? actionsOf(this.#definition()).find((one) => one.key === key) : undefined;
+    if (action && (await this.#list(triggerOf(action))?.focusAction(action.key))) return;
+    this.shadowRoot?.querySelector<HTMLElement>('#add')?.focus();
+  }
+
+  #move(trigger: Trigger, from: number, to: number) {
+    this.#change(movedWithin(actionsOf(this.#definition()), trigger, from, to), this.#term('undoMoved'));
+  }
+
+  #toggle(key: string, on: boolean) {
+    const actions = actionsOf(this.#definition());
+    const action = actions.find((one) => one.key === key);
+    if (!action) return;
+    const changed = this.#change(
+      actions.map((one) => (one.key === key ? { ...one, enabled: on } : one)),
+      this.#term('undoSwitched'),
+    );
+    if (changed) this.#announce(this.#term(on ? 'saidOn' : 'saidOff', this.#nameOf(action)));
+  }
+
+  async #request(key: string, request: CardRequest) {
+    const actions = actionsOf(this.#definition());
+    const action = actions.find((one) => one.key === key);
+    if (!action) return;
+    switch (request) {
+      case 'duplicate': {
+        const next = duplicated(
+          actions,
+          key,
+          () => crypto.randomUUID(),
+          (name) => this.#term('copyName', name),
+        );
+        const copy = next[next.findIndex((one) => one.key === key) + 1];
+        if (!copy || !this.#change(next, this.#term('undoDuplicated'))) return;
+        this.#announce(this.#term('duplicated', this.#nameOf(copy)));
+        await this.#focusAction(copy.key);
+        return;
+      }
+      case 'moveTrigger':
+        await this.#openAction(key, { kind: 'trigger' });
+        return;
+      case 'delete':
+        await this.#delete(action);
+        return;
+    }
+  }
+
+  /** Takes an action away with Undo in the toast; the focus goes to the card after it in its trigger, or before it. */
+  async #delete(action: DesignAction) {
+    const actions = actionsOf(this.#definition());
+    const trigger = triggerOf(action);
+    const siblings = inTrigger(actions, trigger);
+    const at = siblings.findIndex((one) => one.key === action.key);
+    if (
+      !this.#change(
+        actions.filter((one) => one.key !== action.key),
+        this.#term('undoDeleted'),
+      )
+    )
+      return;
+    void this.#offerUndo(this.#term('deleted', this.#nameOf(action)), action.key);
+    const next = siblings[at + 1] ?? siblings[at - 1];
+    await this.#focusAction(next?.key ?? null);
+  }
+
+  #getNotifications() {
+    return this.getContext(UMB_NOTIFICATION_CONTEXT).catch(() => undefined);
+  }
+
+  // A toast with Undo for the action just deleted, closed by the next one: its Undo would take back another. Undo puts
+  // the focus on the action back in the list, as the toast it was on is gone.
+  async #offerUndo(message: string, restored: string) {
+    const made = this._view?.state;
+    this.#undoToast?.close();
+    const data: UndoNotificationData = {
+      message,
+      undoLabel: this.localize.term('jfbDesigner_undo'),
+      undo: async () => {
+        if (this._view?.state !== made) return;
+        this.#travel('undo');
+        await this.#focusAction(restored);
+      },
+    };
+    this.#undoToast = (await this.#getNotifications())?.peek('positive', {
+      elementName: UNDO_NOTIFICATION,
+      duration: UNDO_DURATION_MS,
+      data,
+    });
+  }
+
+  // ---- The sidebar --------------------------------------------------------------------------------------------------
+
+  /**
+   * An action's sidebar, or a new one's with null: Update keeps the action in its place (at the end of its new
+   * trigger's where its trigger changed), Add puts a new one at the end of its trigger's, and Delete action takes it
+   * away with Undo in the toast. On a published form a toast says when new entries get a change; a change that changed
+   * nothing says nothing.
+   */
+  async #openAction(key: string | null, focus?: ActionSetting) {
+    const context = this.#context;
+    const look = this._look;
+    const types = this._actionTypes;
+    const form = this.#form;
+    if (!context || !look || !types || !form || this.#editing) return;
+    const definition = this.#definition();
+    const actions = actionsOf(definition);
+    const action = key === null ? null : (actions.find((one) => one.key === key) ?? null);
+    if (key !== null && !action) return;
+    if (key === null && (!this._manage || (this._limit > 0 && actions.length >= this._limit))) return;
+    this.#editing = true;
+    try {
+      // The sidebar answers before it slides out, and its dialog gives the focus back to what opened it as it closes;
+      // the focus set here waits until it is gone, so it stays.
+      let gone: (() => void) | undefined;
+      const closed = new Promise<void>((done) => (gone = done));
+      const value = await umbOpenModal(this, ACTION_MODAL, {
+        data: {
+          action,
+          definition,
+          form,
+          culture: look.culture,
+          languages: look.languages.map((language) => ({
+            culture: language.culture,
+            name: language.name,
+            isDefault: language.isDefault,
+          })),
+          fieldTypes: this._types,
+          actionTypes: types,
+          choices: choicesOf(types),
+          needs: Object.fromEntries(TRIGGERS.map((trigger) => [trigger, triggerNeed(definition, trigger)])) as Record<
+            Trigger,
+            TriggerNeed | null
+          >,
+          readOnly: !this._manage,
+          check: (asked) => context.checkOf(asked),
+          ...(focus ? { focus } : {}),
+          closed: () => gone?.(),
+        },
+      }).catch(() => undefined);
+      await Promise.race([closed, new Promise((done) => setTimeout(done, 2000))]);
+      if (!value) {
+        await this.#focusAction(key);
+        return;
+      }
+      if ('deleted' in value) {
+        if (action) await this.#delete(action);
+        return;
+      }
+      const now = actionsOf(this.#definition());
+      const kept = value.action;
+      // A changed trigger puts the action at the end of the new trigger's, as Move to another trigger... says.
+      const placed =
+        action && triggerOf(action) !== triggerOf(kept) ? withTrigger(now, kept.key, triggerOf(kept)) : now;
+      const changed = this.#change(withAction(placed, kept), this.#term(action ? 'undoChanged' : 'undoAdded'));
+      if (!changed) {
+        await this.#focusAction(key);
+        return;
+      }
+      const name = this.#nameOf(kept);
+      if (!action) this.#announce(this.#term('added', name, this.#when(triggerOf(kept), this.#definition())));
+      if (this.#published)
+        void this.#getNotifications().then((notifications) =>
+          notifications?.peek('positive', {
+            data: { message: this.#term(action ? 'updatedPublished' : 'addedPublished', name) },
+          }),
+        );
+      await this.#focusAction(kept.key);
+    } finally {
+      this.#editing = false;
+    }
+  }
+
+  // ---- Fix it -------------------------------------------------------------------------------------------------------
+
+  // A Fix it in the form's actions, or a link's `?action=`, made once the view shows them.
+  async #fixPending() {
+    if (!this._actionTypes || !this._look || !this._view) return;
+    const target = this.#context?.takeFix((one) => one.kind === 'view' && one.view === 'actions');
+    if (target) await this.#fix(target);
+  }
+
+  /**
+   * Leads to the action a problem's path names: its card with the focus on it, and its sidebar on the box the path
+   * names where it names one; Add action for a path at the list itself, or an action gone since.
+   */
+  async #fix(target: FixTarget) {
+    if (target.kind !== 'view') return;
+    const steps = parsePath(target.path) ?? [];
+    const actions = actionsOf(this.#definition());
+    const key = target.key ?? (typeof steps[1] === 'number' ? actions[steps[1]]?.key : undefined);
+    if (!key || !actions.some((action) => action.key === key)) {
+      await this.#focusAction(null);
+      return;
+    }
+    await this.#focusAction(key);
+    const setting = settingAtPath(steps.slice(2));
+    if (setting.kind !== 'action') await this.#openAction(key, setting);
+  }
+
+  // ---- Drawing ------------------------------------------------------------------------------------------------------
+
+  /**
+   * The form check's problems in each action, by its key, for its card; a hint shows only in its sidebar, as an outcome's
+   * does in its own (ADR-0185).
+   */
+  #flags(): ReadonlyMap<string, Flag> {
+    const flags = new Map<string, Flag>();
+    const checked = this._check.definition;
+    if (!checked) return flags;
+    const actions = actionsOf(checked);
+    for (const issue of this._check.issues) {
+      const steps = parsePath(issue.path);
+      if (issue.severity === 'hint' || !steps || steps[0] !== 'actions' || typeof steps[1] !== 'number') continue;
+      const key = actions[steps[1]]?.key;
+      if (!key) continue;
+      flags.set(key, flagWith(flags.get(key), issue.severity));
+    }
+    return flags;
+  }
+
+  #cards(definition: DesignDefinition, trigger: Trigger, flags: ReadonlyMap<string, Flag>): ActionCard[] {
+    const look = this._look;
+    const term = (key: string, ...args: unknown[]) => this.localize.term(key, ...args);
+    const names = elementNames(definition, look?.culture ?? '', term);
+    const words = look ? inspectorRuleWords(definition, this._types, look.culture, look.languages, term) : null;
+    const list = new Intl.ListFormat(this.localize.lang(), { type: 'conjunction' });
+    return inTrigger(actionsOf(definition), trigger).map((action) => {
+      const type = this.#typeOf(action.type);
+      const summary = summaryOf(action, (key) => names[key]);
+      const rule = runRuleOf(action);
+      const said = rule && words ? ruleWords(words, rule) : null;
+      return {
+        key: action.key,
+        name: this.#nameOf(action),
+        icon: type?.icon ?? 'icon-lightning',
+        summary: summary
+          ? this.#term(
+              summary.term,
+              ...summary.args.map((arg) => (Array.isArray(arg) ? list.format(arg as string[]) : arg)),
+            )
+          : this.#say(type?.name) || action.type,
+        rule: said && rule?.enabled === false ? this.#term('ruleOff', said) : said,
+        on: isOn(action),
+        flag: flags.get(action.key),
+      };
+    });
+  }
+
+  #trigger(definition: DesignDefinition, trigger: Trigger, flags: ReadonlyMap<string, Flag>): TemplateResult {
+    const need = triggerNeed(definition, trigger);
+    const cards = this.#cards(definition, trigger, flags);
+    const heading = this.#term(`trigger_${trigger}`);
+    const when = this.#when(trigger, definition);
+    const link = (need: TriggerNeed) =>
+      html`<a
+        href=${viewPath(window.location.pathname, 'settings')}
+        @click=${(event: Event) => {
+          event.preventDefault();
+          followFix({ kind: 'view', view: 'settings', path: NEEDED_AT[need] }, (fix) => this.#context?.requestFix(fix));
+        }}
+        >${this.#term('turnOn')}</a
+      >`;
+    return html`<section class="trigger" aria-labelledby=${`trigger-${trigger}`}>
+      <div class="trigger-head">
+        <h2 id=${`trigger-${trigger}`}>${heading}</h2>
+        ${need ? nothing : html`<span class="when">${when}</span>`}
+      </div>
+      ${
+        need
+          ? html`<p class="off">${this.#term(cards.length > 0 ? `held_${need}` : `needs_${need}`)} ${link(need)}</p>`
+          : nothing
+      }
+      ${
+        cards.length > 0
+          ? html`<jfb-action-list
+              data-trigger=${trigger}
+              .cards=${cards}
+              .label=${heading}
+              ?read-only=${!this._manage}
+              .open=${(key: string) => void this.#openAction(key)}
+              .move=${(from: number, to: number) => this.#move(trigger, from, to)}
+              .toggle=${(key: string, on: boolean) => this.#toggle(key, on)}
+              .request=${(key: string, request: CardRequest) => void this.#request(key, request)}
+            ></jfb-action-list>`
+          : need
+            ? nothing
+            : html`<p class="none">${this.#term('none', when)}</p>`
+      }
+    </section>`;
+  }
+
+  #toolbar(count: number): TemplateResult {
+    if (!this._manage)
+      return html`<p class="read-only">
+        <uui-icon name="icon-lock" aria-hidden="true"></uui-icon><span>${this.#term('readOnly')}</span>
+      </p>`;
+    if (this._limit > 0 && count >= this._limit) return html`<p class="note">${this.#term('limit', this._limit)}</p>`;
+    return html`<div class="toolbar">
+      <uui-button
+        id="add"
+        look="secondary"
+        label=${this.#term('addAction')}
+        @click=${() => void this.#openAction(null)}
+      >
+        <uui-icon name="icon-add" aria-hidden="true"></uui-icon>${this.#term('addAction')}
+      </uui-button>
+    </div>`;
+  }
+
+  override render() {
+    if (this._failed)
+      return html`<div class="page">
+        <div class="failed" role="alert">
+          <p>${this.localize.term('jfbDesigner_actionsFailed')}</p>
+          <uui-button
+            look="secondary"
+            label=${this.localize.term('jfbSettings_retry')}
+            @click=${() => void this.#read()}
+          ></uui-button>
+        </div>
+      </div>`;
+    const view = this._view;
+    if (!view || !this._actionTypes || !this._look)
+      return html`<div class="page">
+        <div class="skeleton" aria-hidden="true"><span></span><span></span><span></span></div>
+        <p class="visually-hidden" role="status">${this.localize.term('jfbDesigner_actionsLoading')}</p>
+      </div>`;
+    const definition = view.state.definition;
+    const actions = actionsOf(definition);
+    const flags = this.#flags();
+    return html`<div class="page">
+        ${this.#toolbar(actions.length)}
+        ${
+          actions.length === 0
+            ? html`<p class="empty">${this.#term('empty')}</p>`
+            : TRIGGERS.map((trigger) => this.#trigger(definition, trigger, flags))
+        }
+      </div>
+      <div class="visually-hidden" role="status" aria-live="polite">${this._said}</div>`;
+  }
+}
+
+if (!customElements.get('jfb-form-actions-view'))
+  customElements.define('jfb-form-actions-view', FormActionsViewElement);
+
+export { FormActionsViewElement as element };
+
+declare global {
+  interface HTMLElementTagNameMap {
+    'jfb-form-actions-view': FormActionsViewElement;
+  }
+}

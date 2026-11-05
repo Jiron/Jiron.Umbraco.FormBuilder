@@ -54,14 +54,14 @@ describe("the form's views", () => {
     followFix(settings, (fix) => handed.push(fix));
     expect(handed).toEqual([settings]);
     expect(moves).toEqual([`${FORM}/view/settings`]);
-    // The Actions view is still to come (ROADMAP 10.2): a Fix it handed on would wait for it.
-    const actions: FixTarget = { kind: 'view', view: 'actions', path: '$.actions[0]' };
+    // The Actions view takes one up too (ROADMAP 10.2a).
+    const actions: FixTarget = { kind: 'view', view: 'actions', path: '$.actions[0]', key: 'a' };
     followFix(actions, (fix) => handed.push(fix));
-    expect(handed).toEqual([settings]);
+    expect(handed).toEqual([settings, actions]);
     expect(moves).toEqual([`${FORM}/view/settings`, `${FORM}/view/actions`]);
     const element: FixTarget = { kind: 'palette', page: null };
     followFix(element, (fix) => handed.push(fix));
-    expect(handed).toEqual([settings, element]);
+    expect(handed).toEqual([settings, actions, element]);
     expect(moves).toEqual([`${FORM}/view/settings`, `${FORM}/view/actions`, `${FORM}/view/design`]);
   });
 });

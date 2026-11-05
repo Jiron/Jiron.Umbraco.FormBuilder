@@ -31,8 +31,10 @@ import { FORM_DETAIL_REPOSITORY_ALIAS, FORM_WORKSPACE_ALIAS } from './constants'
 import { locate, type DesignDefinition } from './definition';
 import { select, type Edit, type EditorState, type FieldTraits, type ModelContext } from './editor-model';
 import { keptAlias, type FormDetailModel } from './form-detail.data-source';
-import { fieldOfQuery, formState, type FormState } from './form-state';
+import { actionOfQuery, fieldOfQuery, formState, type FormState } from './form-state';
+import { followFix } from './form-views';
 import { EditorHistory } from './history';
+import { afterNameFocus } from './name-focus';
 
 /** What the views draw: the editor's state and whether undo and redo can do anything. */
 export interface EditorView {
@@ -147,19 +149,36 @@ export class FormWorkspaceContext
         setup: async (_component, info) => {
           // Read before the router moves on to a view, which drops the query.
           const wanted = fieldOfQuery(window.location.search);
+          const action = actionOfQuery(window.location.search);
           const unique = info.match.params['unique'] ?? '';
           // The form open already is not read again: a link to one of its fields selects it here.
           if (unique === this.getUnique() && this.getData()) {
             if (wanted && locate(this.#history.state.definition, wanted)?.kind === 'field')
               this.edit(select(this.#history.state, wanted), '');
+            if (action) this.#showAction(action);
             return;
           }
           this.#wanted = wanted;
           await this.load(unique);
+          if (action) this.#showAction(action);
         },
       },
     ]);
     void this.#loadTypes();
+  }
+
+  /**
+   * A link's `?action=` (ADR-0166, ADR-0188): the Actions view shows that action's card with the focus on it, as a Fix
+   * it at the action. It is asked once the router has shown the view it routes to, which it would otherwise follow, and
+   * once the name box holds the focus Umbraco gives it as the workspace opens, which it would otherwise take back.
+   */
+  #showAction(key: string) {
+    setTimeout(
+      () =>
+        void afterNameFocus().then(() =>
+          followFix({ kind: 'view', view: 'actions', path: '$.actions', key }, (fix) => this.requestFix(fix)),
+        ),
+    );
   }
 
   async #loadTypes() {

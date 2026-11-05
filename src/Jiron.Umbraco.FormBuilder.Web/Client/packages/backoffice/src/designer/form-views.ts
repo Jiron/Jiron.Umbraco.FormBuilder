@@ -10,9 +10,9 @@ export const FIRST_VIEW = 'design';
 
 /**
  * The views besides Design that take up a Fix it handed on to them once they are shown (ADR-0184): only these are
- * handed one, so none waits for a view still to come. The Actions view joins with ROADMAP 10.2.
+ * handed one, so none waits for a view still to come: the Settings view (10.1) and the Actions view (10.2a).
  */
-export const FIXING_VIEWS: ReadonlySet<string> = new Set(['settings']);
+export const FIXING_VIEWS: ReadonlySet<string> = new Set(['settings', 'actions']);
 
 const VIEW_AT_END = /\/view\/([^/]+)\/?$/;
 

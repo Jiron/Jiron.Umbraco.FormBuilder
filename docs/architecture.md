@@ -288,7 +288,18 @@ flowchart LR
   takes, which the action test runs share), as `SubmissionOutcomes` renders a real entry's, and writes it with the
   site's own `Outcome` view in the default theme (`OutcomePreviews`, `FormModels.PreviewAsync`, `RazorViewText`). The
   backoffice draws that markup in the canvas's look without anything that runs or sends, its countdown from the
-  runtime's own least seconds (`@jfb/runtime/countdown`).
+  runtime's own least seconds (`@jfb/runtime/countdown`). From 10.2a (ADR-0188): the Actions view lives in
+  `designer/actions/`: `action-model.ts` holds, pure, the form's
+  actions as one list in the order they run, shown by trigger (a move within a trigger keeps the others' places), what
+  a trigger needs on the form, an action's one line, the choices of what a new one does (every preset of every type, a
+  type without presets as itself, from `GET action-type`), and an action as its sidebar edits it and as Add or Update
+  writes it back. `action-list.element.ts` draws one trigger's cards (the handle with the pointer and Alt and the
+  arrows, the switch, "…"), `form-actions.view.ts` the triggers, Add action and the toasts with Undo, and
+  `action.modal.element.ts` the sidebar: the type's settings drawn by the inspector's editors (`settingEditor`), the
+  form check asked about the draft as Add or Update would make it, the rule a `run` rule in the rules builder. The
+  view's words load with it (`action-words.ts` registers `lang/actions.<xx>.ts` with Umbraco's localization manager),
+  so the backoffice's start does not carry them. Fix it of an action carries its key; `?action=` on a form's address
+  hands the view a Fix it at that action once the name box holds the focus Umbraco gives it (`name-focus.ts`).
 
 ## 2. The definition model
 

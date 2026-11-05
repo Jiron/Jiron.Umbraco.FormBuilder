@@ -18,7 +18,12 @@ export function formState(
 }
 
 /** The field a link asks the designer to select, `?field=` (ADR-0166), or none. */
-export function fieldOfQuery(search: string): string | null {
-  const key = new URLSearchParams(search).get('field');
+export const fieldOfQuery = (search: string): string | null => keyOfQuery(search, 'field');
+
+/** The action a link asks the Actions view to show, `?action=` (ADR-0166, ADR-0188), or none. */
+export const actionOfQuery = (search: string): string | null => keyOfQuery(search, 'action');
+
+function keyOfQuery(search: string, name: string): string | null {
+  const key = new URLSearchParams(search).get(name);
   return key && /^[0-9a-f-]{36}$/i.test(key) ? key.toLowerCase() : null;
 }

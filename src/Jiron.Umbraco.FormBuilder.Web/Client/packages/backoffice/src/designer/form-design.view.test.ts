@@ -1819,11 +1819,12 @@ describe('the form check in the Design view (ADR-0181)', () => {
     expect(workspace.taken).toEqual([]);
     workspace.fixes.setValue(null);
     history.replaceState(null, '', '/umbraco/section/jfb-forms/workspace/jfb-form/edit/form1/view/design');
-    // The Actions view, still to come, is shown, and handed nothing it would make long after.
-    opened.value = answering({ kind: 'view', view: 'actions', path: '$.actions[0]' });
+    // An action's Fix it is handed on to the Actions view (ADR-0188).
+    const action: FixTarget = { kind: 'view', view: 'actions', path: '$.actions[0]', key: 'a1' };
+    opened.value = answering(action);
     await ask({ kind: 'formCheck' });
     expect(window.location.pathname).toBe('/umbraco/section/jfb-forms/workspace/jfb-form/edit/form1/view/actions');
-    expect(workspace.fixes.getValue()).toBeNull();
+    expect(workspace.fixes.getValue()).toEqual(action);
     history.replaceState(null, '', before);
 
     opened.value = answering({ kind: 'element', key: 'gone' });

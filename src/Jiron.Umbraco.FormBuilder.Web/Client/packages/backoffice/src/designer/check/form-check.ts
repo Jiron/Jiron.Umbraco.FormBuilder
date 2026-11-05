@@ -235,16 +235,21 @@ export function fixOf(definition: DesignDefinition, path: string, types?: CheckT
   if (!steps || steps.length === 0) return null;
   const [top, ...after] = steps;
   if (top === 'settings') return { kind: 'view', view: 'settings', path };
-  if (top === 'outcomes') {
-    const outcomes = definition['outcomes'];
+  // An outcome's or an action's Fix it carries its key, so it finds the one it is about wherever the list moved it.
+  if (top === 'outcomes' || top === 'actions') {
+    const list = definition[top];
     const [index] = after;
     const key =
-      typeof index === 'number' && Array.isArray(outcomes)
-        ? (outcomes[index] as { key?: unknown } | undefined)?.key
+      typeof index === 'number' && Array.isArray(list)
+        ? (list[index] as { key?: unknown } | undefined)?.key
         : undefined;
-    return { kind: 'view', view: 'settings', path, ...(typeof key === 'string' ? { key } : {}) };
+    return {
+      kind: 'view',
+      view: top === 'outcomes' ? 'settings' : 'actions',
+      path,
+      ...(typeof key === 'string' ? { key } : {}),
+    };
   }
-  if (top === 'actions') return { kind: 'view', view: 'actions', path };
   if (top === 'validationRules') return validationFix(definition, after);
   if (top !== 'pages') return null;
   const [pageIndex, ...inPage] = after;

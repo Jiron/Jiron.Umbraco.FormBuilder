@@ -7,6 +7,9 @@ export default {
     view_design: 'Design',
     view_settings: 'Settings',
     view_actions: 'Actions',
+    // The Actions view's words while its own load (ADR-0188).
+    actionsLoading: 'Loading the actions…',
+    actionsFailed: "The actions couldn't be read. Try again in a moment.",
     view_entries: 'Entries',
     view_insights: 'Insights',
     view_history: 'History',

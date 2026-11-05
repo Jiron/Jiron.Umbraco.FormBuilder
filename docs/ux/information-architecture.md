@@ -378,26 +378,38 @@ Appearance, Developer.
 
 ### 5.3 Actions
 
-The actions grouped by trigger: **Submitted**, **Approved**, **Rejected** and **Verified**.
+The actions grouped by trigger: **Submitted**, **Approved**, **Rejected** and **Verified**, each a heading with when
+it runs ("when an entry comes in"). The actions one event queues run in the order shown (ADR-0188).
 
 - **Groups whose setting is off:** Rejected needs manual approval, and Verified needs email verification (10.2). While
-  its setting is off, the group shows one line saying so, with a link to the setting, and no cards.
+  its setting is off, the group shows one line saying so, with a link that opens the setting in the Settings view
+  with the focus on it, and any actions it holds under that line, which don't run until the setting is on. Approved,
+  on a form without manual approval, says that it runs as each entry comes in.
 - **The toolbar:** Add action, the view's main action and its one button. It opens the action sidebar ready to email
-  the team, the most common action.
-  - **Its first setting, What happens,** chooses the type: Email the team, Confirm to the visitor, Webhook, Slack,
-    Microsoft Teams, Create or update content, Change the entry's state. Choosing another type replaces the settings
-    below it.
-  - **Then** the trigger (Submitted unless chosen otherwise), then the type's own settings.
-  - **Footer:** Test · Cancel · **Add**.
-  - **After Add,** the sidebar closes, the new card is scrolled into view and takes the focus, and on a published form
-    the toast says when it starts to run.
+  the team, the most common action. At the most actions a form can have, a line says so in its place.
+  - **Its first setting, What happens,** offers every preset of every action type, and a type without presets as
+    itself, in the registry's order: Email the team, Confirm to the visitor, Webhook, Slack, Microsoft Teams, Change the
+    entry's state, Create or update content. Choosing another replaces the settings below it, and the name with them
+    until a name is typed. An action of the form keeps what it does, said where the choice would be: another type is
+    another action.
+  - **Then** the name, the trigger (Submitted, or the trigger chosen; each choice says when it runs or the setting it
+    needs), the type's own settings as the inspector draws them (Essentials, then More options), Stop the rest if this
+    fails, and the rule, which the rules builder edits ("Run Email the team when").
+  - **Problems:** the sidebar asks the form check about the draft as Add or Update would make it and says its problems
+    under their box: those the action had at once, others once their box is left; an error keeps the button back, a
+    warning does not. A problem under More options opens them.
+  - **Footer:** Cancel · **Add**, or Delete action · Cancel · **Update**; Test joins them with 10.2b.
+  - **After Add,** the sidebar closes, the new card takes the focus, the live region says where it runs ("Added. Email
+    the team runs when an entry comes in."), and on a published form the toast says when it starts to run.
 - **A card:**
-  - the type icon, the name, a one-line summary ("To sales@example.com"), the rule chip, and the last run ("Delivered
-    2 hours ago");
-  - visible: the on/off switch, named for what it turns on ("Use Email the team"), and **Test**; "…": Duplicate ·
-    Move to another trigger… · Delete;
-  - cards reorder by drag and by keyboard (ADR-0016), through a move handle that shows on hover and on focus;
-  - clicking a card opens its editor (footer: Test · Cancel · **Update**);
+  - the type icon, the name, a one-line summary ("To sales@example.com", "Webhook to crm.example.com"), its problems
+    counted in front of it, and the rule chip; the last run follows with 10.2d;
+  - visible: the on/off switch, named for what it turns on ("Use Email the team"), and **Test** (10.2b); "…":
+    Duplicate · Move to another trigger… · Delete. Duplicate puts "<name> (copy)" right after it; Move to another
+    trigger… opens the sidebar with the focus on the trigger; Delete acts at once and the toast offers Undo;
+  - cards reorder within their trigger by drag and by Alt+Up and Alt+Down (ADR-0016), through a move handle that shows
+    on hover and on focus (always on touch); the live region says where a card went;
+  - clicking a card opens its sidebar (footer: Delete action · Cancel · **Update**);
   - a failed or uncertain last run ("Failed at 14:02. Next try at 14:30.") links to **Details**, a sidebar with what
     the server answered and the tries, never the entry. It says who can retry the run (ADR-0013, amendment) and
     offers Test, which sends a sample entry to see whether the server answers again.
@@ -407,10 +419,14 @@ The actions grouped by trigger: **Submitted**, **Approved**, **Rejected** and **
   - an email goes only to the user who tests, and its first line names the recipients the real one would go to;
   - a webhook asks first, then sends with `X-Jfb-Test: true`;
   - content actions show what they would create, and create nothing.
-- **Without `manageActions`,** the view is read-only, and one line at the top says which permission changes it, and
-  for which folder. It has no Add action, move handles, switches, Test or "…"; a card still opens its settings,
-  read-only. Designers meet it where a restricted folder's own grant gives them `design` without `manageActions`
-  (section 11).
+- **Without `manageActions`,** the view is read-only, and one line at the top says which permission changes it. It
+  names no folder: the grant that decides can be global, a folder's or a restricted folder's (ADR-0188). It has no Add
+  action, move handles, switches, Test or "…", and a card that is off says "Off"; a card still opens its settings as
+  they are, with Close only. Designers meet it where a grant gives them `design` without `manageActions` (section
+  11).
+- **Fix it and links:** the form check's Fix it of an action opens its sidebar on the setting the problem names, or
+  puts the focus on its card; a link with `?action=<key>`, such as the copy-actions result's (ADR-0166), puts the focus
+  on that action's card.
 - **Empty:** one sentence on what actions do, pointing to Add action in the toolbar, which stays the view's only button.
 
 ### 5.4 Entries

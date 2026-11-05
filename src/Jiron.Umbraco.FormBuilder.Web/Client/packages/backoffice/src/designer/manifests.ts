@@ -5,6 +5,7 @@
 import { UmbSubmitWorkspaceAction } from '@umbraco-cms/backoffice/workspace';
 import { FORM_ENTITY_TYPE } from '../section/entity-types';
 import {
+  ACTION_MODAL_ALIAS,
   FORM_DETAIL_REPOSITORY_ALIAS,
   FORM_DETAIL_STORE_ALIAS,
   FORM_PERMISSION_CONDITION,
@@ -33,7 +34,12 @@ type ViewElement = NonNullable<Extract<UmbExtensionManifest, { type: 'workspaceV
 const VIEWS: readonly { id: string; icon: string; anyOf: string[]; element?: ViewElement }[] = [
   { id: FIRST_VIEW, icon: 'icon-layout', anyOf: ['design'], element: () => import('./form-design.view') },
   { id: 'settings', icon: 'icon-settings', anyOf: ['design'], element: () => import('./settings/form-settings.view') },
-  { id: 'actions', icon: 'icon-lightning', anyOf: ['design', 'manageActions'] },
+  {
+    id: 'actions',
+    icon: 'icon-lightning',
+    anyOf: ['design', 'manageActions'],
+    element: () => import('./actions/form-actions.view'),
+  },
   { id: 'entries', icon: 'icon-inbox', anyOf: ['viewEntries'] },
   { id: 'insights', icon: 'icon-chart', anyOf: ['viewEntries'] },
   { id: 'history', icon: 'icon-history', anyOf: ['design'] },
@@ -110,6 +116,12 @@ export const manifests: UmbExtensionManifest[] = [
     alias: OUTCOME_MODAL_ALIAS,
     name: 'Jiron Form Builder outcome sidebar',
     element: (() => import('./settings/outcome.modal.element')) as never,
+  },
+  {
+    type: 'modal',
+    alias: ACTION_MODAL_ALIAS,
+    name: 'Jiron Form Builder action sidebar',
+    element: (() => import('./actions/action.modal.element')) as never,
   },
   {
     type: 'modal',

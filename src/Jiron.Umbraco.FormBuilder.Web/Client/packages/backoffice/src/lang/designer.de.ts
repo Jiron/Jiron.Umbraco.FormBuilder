@@ -7,6 +7,8 @@ export default {
     view_design: 'Gestaltung',
     view_settings: 'Einstellungen',
     view_actions: 'Aktionen',
+    actionsLoading: 'Die Aktionen werden geladen…',
+    actionsFailed: 'Die Aktionen konnten nicht gelesen werden. Versuchen Sie es gleich noch einmal.',
     view_entries: 'Einträge',
     view_insights: 'Auswertung',
     view_history: 'Verlauf',

@@ -1,0 +1,100 @@
+// Die Aktionen eines Formulars auf Deutsch (ROADMAP 10.2a, ADR-0188, docs/ux/copy.md): die Auslöser und wann jeder
+// läuft, die Karte einer Aktion und ihr Menü, ihre Seitenleiste und was Rückgängig und die Meldungen sagen. Diese Wörter
+// laden mit der Ansicht, nicht beim Start des Backoffice (`designer/actions/action-words.ts`).
+import type { UmbLocalizationDictionary } from '@umbraco-cms/backoffice/localization-api';
+
+const count = (number: number, one: string, many: string) => (number === 1 ? `1 ${one}` : `${number} ${many}`);
+
+/** When a trigger runs, after a verb: a clause with „wenn“ takes a comma, „bei jedem …“ none. */
+const after = (when: string) => (/^wenn /.test(when) ? `, ${when}` : ` ${when}`);
+
+export default {
+  jfbActions: {
+    empty:
+      'Noch keine Aktionen. Die meisten Formulare benachrichtigen das Team per E-Mail, wenn ein Eintrag eingeht, und „Aktion hinzufügen“ beginnt damit.',
+    readOnly:
+      'Diese Aktionen zu ändern, braucht die Berechtigung „Aktionen verwalten“ für dieses Formular. Wer Administratorrechte hat, kann sie erteilen.',
+    addAction: 'Aktion hinzufügen',
+    limit: (most: number) => `Ein Formular hat höchstens ${most} Aktionen.`,
+    problems: (number: number) => count(number, 'Problem', 'Probleme'),
+
+    trigger_submitted: 'Gesendet',
+    trigger_approved: 'Genehmigt',
+    trigger_rejected: 'Abgelehnt',
+    trigger_verified: 'Bestätigt',
+    when_submitted: 'wenn ein Eintrag eingeht',
+    when_approved: 'wenn jemand einen Eintrag genehmigt',
+    when_approvedEach: 'bei jedem eingehenden Eintrag, da dieses Formular keine manuelle Genehmigung hat',
+    when_rejected: 'wenn jemand einen Eintrag ablehnt',
+    when_verified: 'wenn jemand die eigene Adresse bestätigt',
+    needs_approval: 'Läuft, wenn jemand einen Eintrag ablehnt. Dafür braucht es die manuelle Genehmigung:',
+    needs_verification: 'Läuft, wenn jemand die eigene Adresse bestätigt. Dafür braucht es die E-Mail-Bestätigung:',
+    held_approval: 'Diese laufen erst, wenn das Formular die manuelle Genehmigung hat:',
+    held_verification: 'Diese laufen erst, wenn das Formular die E-Mail-Bestätigung hat:',
+    turnOn: 'in den Einstellungen einschalten',
+    none: (when: string) => `Keine Aktionen laufen${after(when)}.`,
+    triggerNeeds_approval: 'Sie läuft, sobald das Formular die manuelle Genehmigung hat.',
+    triggerNeeds_verification: 'Sie läuft, sobald das Formular die E-Mail-Bestätigung hat.',
+
+    summary_emailTo: (recipients: string) => `An ${recipients}`,
+    summary_emailToField: (field: string) => `An die Antwort von ${field}`,
+    summary_emailToCreator: 'An die Person, die das Formular erstellt hat',
+    summary_emailNoOne: 'Noch kein Empfänger',
+    summary_slack: 'Slack-Nachricht',
+    summary_teams: 'Microsoft-Teams-Nachricht',
+    summary_webhook: (host: string) => `Webhook an ${host}`,
+    summary_webhookNowhere: 'Noch keine Adresse',
+    summary_approve: 'Genehmigt den Eintrag',
+    summary_reject: 'Lehnt den Eintrag ab',
+    summary_spam: 'Verschiebt den Eintrag in den Spam',
+    summary_content: 'Erstellt oder aktualisiert Inhalt',
+    summary_contentPublished: 'Erstellt oder aktualisiert Inhalt und veröffentlicht ihn',
+    ruleOff: (words: string) => `${words} Die Regel ist aus, also läuft die Aktion, als hätte sie keine.`,
+    off: 'Aus',
+
+    move: (name: string) => `${name} verschieben`,
+    moved: (name: string, position: number, count: number) => `Verschoben. ${name}: Position ${position} von ${count}.`,
+    edge: 'Weiter geht es nicht.',
+    use: (name: string) => `${name} verwenden`,
+    saidOn: (name: string) => `${name} ist an.`,
+    saidOff: (name: string) => `${name} ist aus.`,
+    more: (name: string) => `Weitere Aktionen für ${name}`,
+    duplicate: 'Duplizieren',
+    moveTrigger: 'Zu einem anderen Auslöser verschieben…',
+    delete: 'Löschen',
+    copyName: (name: string) => `${name} (Kopie)`,
+    duplicated: (name: string) => `Dupliziert. ${name} steht direkt danach.`,
+    deleted: (name: string) => `${name} gelöscht.`,
+    added: (name: string, trigger: string) => `Hinzugefügt. ${name} läuft${after(trigger)}.`,
+    addedPublished: (name: string) =>
+      `${name} hinzugefügt. Die Aktion läuft für neue Einträge, sobald Sie veröffentlichen.`,
+    updatedPublished: (name: string) =>
+      `${name} aktualisiert. Die Änderung gilt für neue Einträge, sobald Sie veröffentlichen.`,
+    undoAdded: 'Eine Aktion hinzugefügt',
+    undoChanged: 'Eine Aktion geändert',
+    undoDeleted: 'Eine Aktion gelöscht',
+    undoDuplicated: 'Eine Aktion dupliziert',
+    undoMoved: 'Eine Aktion verschoben',
+    undoSwitched: 'Eine Aktion ein- oder ausgeschaltet',
+
+    headlineNew: 'Neue Aktion',
+    whatHappens: 'Was passiert',
+    whatHappensKept: 'Eine Aktion behält, was sie tut. Für etwas anderes fügen Sie eine weitere Aktion hinzu.',
+    name: 'Name',
+    nameHelp: 'Steht auf ihrer Karte und im Zustellprotokoll.',
+    trigger: 'Wann sie läuft',
+    stopOnFailure: 'Die übrigen anhalten, wenn diese fehlschlägt',
+    stopOnFailureHelp:
+      'Schlägt sie endgültig fehl, laufen die Aktionen danach für denselben Eintrag nicht. Ein neuer Versuch unter Zustellungen bringt sie zurück.',
+    rule: 'Regel',
+    noRule: 'Läuft für jeden Eintrag, den ihr Auslöser bringt.',
+    addRule: 'Regel hinzufügen',
+    changeRule: 'Regel ändern',
+    add: 'Hinzufügen',
+    update: 'Aktualisieren',
+    deleteAction: 'Aktion löschen',
+    readOnlyValue_on: 'An',
+    readOnlyValue_off: 'Aus',
+    readOnlyValue_none: 'keine',
+  },
+} satisfies UmbLocalizationDictionary;

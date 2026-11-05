@@ -44,6 +44,7 @@ const DEFINITION: DesignDefinition = {
     { key: 'v3', field: 'gone', conditions: [] },
   ],
   outcomes: [{ key: 'o1' }, { key: 'o2', kind: 'redirect' }],
+  actions: [{ key: 'a1', type: 'email' }],
 };
 
 const F = '$.pages[0].groups[0].fields';
@@ -245,11 +246,15 @@ describe("a problem's Fix it", () => {
     });
     expect(fix('$.outcomes')).toEqual({ kind: 'view', view: 'settings', path: '$.outcomes' });
     expect(fix('$.outcomes[7].message')).toEqual({ kind: 'view', view: 'settings', path: '$.outcomes[7].message' });
+    // An action's carries its key too, as an outcome's does (ROADMAP 10.2a).
     expect(fix('$.actions[0].settings.replyToField')).toEqual({
       kind: 'view',
       view: 'actions',
       path: '$.actions[0].settings.replyToField',
+      key: 'a1',
     });
+    expect(fix('$.actions')).toEqual({ kind: 'view', view: 'actions', path: '$.actions' });
+    expect(fix('$.actions[4].name')).toEqual({ kind: 'view', view: 'actions', path: '$.actions[4].name' });
   });
 
   it('leads nowhere for the whole form, a place the form no longer has, or a path the server does not write', () => {
