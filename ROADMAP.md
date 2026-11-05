@@ -2715,7 +2715,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
   - **Captcha providers:** the spam group greys out a provider without keys, from `GET captcha-provider` (each provider's name, label, `isConfigured` and settings, never a key), with its row in the permission matrix (added in 7.4g); the site's defaults, time zone, themes and member groups come from `GET form/{key}/setting-choices`, for who may design the form (ADR-0184).
   - **The form check's Fix it** (ADR-0181, added in 9.5f): a problem in the form's settings, which 9.5f leads to this view, opens the group and the setting it names, with the focus on it.
   - Done when: Playwright covers each of these groups, including validation messages, and follows the form check's Fix it of a setting to it.
-- [ ] **10.1b The form settings view: after sending** (split from 10.1, see WORKLOG; its live preview split off to 10.1c)
+- [x] **10.1b The form settings view: after sending** (split from 10.1, see WORKLOG; its live preview split off to 10.1c) (2026-11-05, 32812ac)
   - The outcomes editor of §4.3.4 and IA 5.2: an ordered list with rules, each outcome edited in a sidebar; the canvas's After sending opens it.
   - **The outcome's rule** in the rules builder, whose effect is `use` (§4.3.3), as the builder edits an element's.
   - **The form check's Fix it** (ADR-0181, added in 9.5f): a problem in an outcome, which 9.5f leads to this view, opens the outcome and the setting it names, with the focus on it.
@@ -2755,7 +2755,10 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
     - tests and Playwright cover the history: the diff, pins, comments and restoring as a new version.
 - [ ] **10.4 Phase review**
   - UX review as in 9.6, plus the handover note.
-  - Done when: `docs/ux/review-10.md` is committed and pushed, with the phase-review gate.
+  - The option editor's rows get a way to move without dragging, as an outcome's Place in the list (WCAG 2.5.7,
+    ADR-0185; found in 10.1b's review).
+  - Done when: `docs/ux/review-10.md` is committed and pushed, with the phase-review gate, and a test moves an option
+    to another place with single pointer presses, no drag.
 
 ### Phase 11: Entries, exports and insights
 
