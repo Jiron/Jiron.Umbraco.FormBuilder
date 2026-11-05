@@ -49,7 +49,8 @@ export default {
     help_form: 'Mit einer Kontakt- oder Anmeldevorlage haben Sie in einer Minute ein fertiges Formular.',
     action_form: 'Vorlage wählen…',
     step_testEntry: 'Vorschau öffnen und Testeintrag senden',
-    help_testEntry: 'Sobald es ein Formular gibt: Sehen Sie es wie Ihre Besucher, und prüfen Sie, was ankommt.',
+    help_testEntry: 'Sehen Sie das Formular wie Ihre Besucher, senden Sie einen Eintrag und prüfen Sie, was ankommt.',
+    help_testEntryWaiting: 'Sobald es ein Formular gibt, sehen Sie es wie Ihre Besucher und prüfen, was ankommt.',
     action_testEntry: 'Formular öffnen',
     step_formBlock: 'Formular auf eine Seite bringen',
     help_formBlock:

@@ -92,13 +92,15 @@ export class OverviewElement extends UmbLitElement {
         height: 18px;
       }
 
+      /* Dashed: a step still to do, never a choice to make. */
       .mark--open {
-        border: 1.5px solid var(--jfb-bo-color-control-border);
+        border: 1.5px dashed var(--jfb-bo-color-control-border);
         border-radius: var(--jfb-bo-radius-round);
       }
 
+      /* The positive text's token: UUI's positive is 2.5:1 on the dark theme's surface, and the mark alone says done. */
       .mark--done {
-        color: var(--uui-color-positive);
+        color: var(--jfb-bo-color-positive-text);
       }
 
       .done {
@@ -175,7 +177,7 @@ export class OverviewElement extends UmbLitElement {
       }
 
       .passing uui-icon {
-        color: var(--uui-color-positive);
+        color: var(--jfb-bo-color-positive-text);
       }
 
       .skeleton {
@@ -356,15 +358,24 @@ export class OverviewElement extends UmbLitElement {
     return html`<button type="button" class="link step__name" @click=${act}>${name}</button>`;
   }
 
-  /** The email step says what is wrong where Health leaves it out; any other says what it is for. */
-  #renderStepHelp(view: StepView) {
+  /**
+   * The email step says what is wrong where Health leaves it out; the test entry's waits for a form until there is
+   * one; any other says what it is for.
+   */
+  #renderStepHelp(view: StepView, checklist: ChecklistResponseModel) {
     const covered =
       view.step === 'email' && this._health.state === 'ready'
         ? this._health.value.filter((finding) => finding.coversEmail)
         : [];
     return covered.length > 0
       ? covered.map((finding) => html`<p class="step__help">${finding.message}</p>`)
-      : html`<p class="step__help">${this.localize.term(`jfbOverview_help_${view.step}`)}</p>`;
+      : html`<p class="step__help">
+          ${this.localize.term(
+            view.step === 'testEntry' && !checklist.previewForm
+              ? 'jfbOverview_help_testEntryWaiting'
+              : `jfbOverview_help_${view.step}`,
+          )}
+        </p>`;
   }
 
   #renderStep(view: StepView, checklist: ChecklistResponseModel) {
@@ -382,7 +393,7 @@ export class OverviewElement extends UmbLitElement {
     const action = this.localize.term(`jfbOverview_action_${view.step}`);
     return html`<li class="step">
       <span class="mark mark--open"></span>
-      <div class="step__text">${this.#renderStepName(view, name, path)} ${this.#renderStepHelp(view)}</div>
+      <div class="step__text">${this.#renderStepName(view, name, path)} ${this.#renderStepHelp(view, checklist)}</div>
       ${
         view.state === 'next'
           ? html`<uui-button

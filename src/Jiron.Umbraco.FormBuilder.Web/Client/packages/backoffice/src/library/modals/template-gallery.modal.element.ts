@@ -11,8 +11,11 @@ import '../../designer/preview/form-preview.element';
 import type { NewFormModalData, NewFormModalValue } from './tokens';
 import { jfbBackofficeTokens, jfbVisuallyHidden } from '../../styles/tokens';
 
-/** The window width from which the preview stands beside the cards. */
+/** The window width from which the preview stands beside the cards: the sidebar follows the window, not a workspace. */
 const SIDE_BY_SIDE = '(min-width: 1000px)';
+
+/** From how many templates the search shows: fewer are read at a glance. */
+export const SEARCH_FROM = 6;
 
 export class TemplateGalleryModalElement extends UmbModalBaseElement<NewFormModalData, NewFormModalValue> {
   static override properties = {
@@ -45,6 +48,11 @@ export class TemplateGalleryModalElement extends UmbModalBaseElement<NewFormModa
 
       .gallery--single {
         grid-template-columns: 1fr;
+      }
+
+      /* Alone, the preview is a step of its own: its button under the cards, the footer keeping two buttons. */
+      .show-preview {
+        justify-self: start;
       }
 
       /* Below the sidebar's own heading (h3), as its boxes' are. */
@@ -89,7 +97,7 @@ export class TemplateGalleryModalElement extends UmbModalBaseElement<NewFormModa
       }
 
       .card:focus-visible {
-        outline: 2px solid var(--uui-color-focus);
+        outline: 2px solid var(--jfb-bo-color-focus);
         outline-offset: 2px;
       }
 
@@ -342,10 +350,28 @@ export class TemplateGalleryModalElement extends UmbModalBaseElement<NewFormModa
     const ready = this.#store.templates.state === 'ready' && this.#store.chosen !== undefined;
     const gallery = this._sideBySide
       ? html`<div class="gallery">${this.#cards()}${this.#preview()}</div>`
-      : html`<div class="gallery gallery--single">${this._previewing ? this.#preview() : this.#cards()}</div>`;
+      : html`<div class="gallery gallery--single">
+          ${
+            this._previewing
+              ? this.#preview()
+              : html`${this.#cards()}
+                ${
+                  ready
+                    ? html`<uui-button
+                        class="show-preview"
+                        look="secondary"
+                        label=${this.localize.term('jfbLibrary_preview')}
+                        @click=${() => void this.#showPreview(true)}
+                      ></uui-button>`
+                    : nothing
+                }`
+          }
+        </div>`;
+    const templates = this.#store.templates;
+    const searches = templates.state === 'ready' && (templates.value.length >= SEARCH_FROM || this.#store.query !== '');
     return html`<umb-body-layout headline=${this.localize.term('jfbLibrary_galleryHeadline')}>
       ${
-        this._previewing
+        this._previewing || !searches
           ? nothing
           : html`<uui-input
               class="search"
@@ -359,15 +385,6 @@ export class TemplateGalleryModalElement extends UmbModalBaseElement<NewFormModa
       ${gallery}
       <div slot="actions">
         <uui-button label=${this.localize.term('general_cancel')} @click=${this._rejectModal}></uui-button>
-        ${
-          !this._sideBySide && !this._previewing && ready
-            ? html`<uui-button
-                look="secondary"
-                label=${this.localize.term('jfbLibrary_preview')}
-                @click=${() => void this.#showPreview(true)}
-              ></uui-button>`
-            : nothing
-        }
         <uui-button
           look="primary"
           color="positive"

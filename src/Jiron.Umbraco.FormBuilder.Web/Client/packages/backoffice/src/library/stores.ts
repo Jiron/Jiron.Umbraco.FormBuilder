@@ -25,6 +25,8 @@ export const PAGE_SIZE = 100;
 export class ListStore {
   rows: Loaded<LibraryRowResponseModel[]> = { state: 'loading' };
   total = 0;
+  /** Whether the next page is being asked for: Load more waits, and a second press asks nothing more. */
+  loadingMore = false;
   #generation = 0;
 
   constructor(
@@ -49,13 +51,18 @@ export class ListStore {
     this.changed();
   }
 
-  /** Loads the next page after the rows already there. */
+  /** Loads the next page after the rows already there, once at a time. */
   async more(): Promise<void> {
-    if (this.rows.state !== 'ready') return;
+    if (this.rows.state !== 'ready' || this.loadingMore) return;
     const generation = this.#generation;
     const shown = this.rows.value;
-    const { data } = await this.fetch(shown.length, PAGE_SIZE);
-    if (generation !== this.#generation || !data) return;
+    this.loadingMore = true;
+    this.changed();
+    const { data } = await this.fetch(shown.length, PAGE_SIZE).finally(() => (this.loadingMore = false));
+    if (generation !== this.#generation || !data) {
+      this.changed();
+      return;
+    }
     const known = new Set(shown.map((row) => row.item.key));
     this.rows = { state: 'ready', value: [...shown, ...data.items.filter((row) => !known.has(row.item.key))] };
     this.total = data.total;

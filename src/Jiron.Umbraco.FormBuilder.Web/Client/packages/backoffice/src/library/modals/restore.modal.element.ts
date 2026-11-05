@@ -4,7 +4,8 @@ import { css, html, nothing } from '@umbraco-cms/backoffice/external/lit';
 import { UmbModalBaseElement } from '@umbraco-cms/backoffice/modal';
 import { tryExecute } from '@umbraco-cms/backoffice/resources';
 import { folderGet, formGet, formHoldings } from '../../api';
-import { jfbBackofficeTokens } from '../../styles/tokens';
+import { jfbBackofficeTokens, jfbVisuallyHidden } from '../../styles/tokens';
+import { jfbSkeleton, skeletonLines } from '../../ui/skeleton';
 import type { RestoreModalData, RestoreModalValue } from './tokens';
 
 /** Where a restore lands, as its sidebar says it: the folder's name, or the top of Forms because the folder is in the bin too. */
@@ -24,6 +25,8 @@ export class RestoreModalElement extends UmbModalBaseElement<RestoreModalData, R
 
   static override styles = [
     jfbBackofficeTokens,
+    jfbVisuallyHidden,
+    jfbSkeleton,
     css`
       p {
         margin: 0 0 var(--uui-size-space-4);
@@ -102,7 +105,7 @@ export class RestoreModalElement extends UmbModalBaseElement<RestoreModalData, R
           landing
             ? html`<p>${this.#where()}</p>
                 ${this.#along(landing)}`
-            : html`<p aria-busy="true">${this.localize.term('jfbLibrary_loading')}</p>`
+            : skeletonLines(this.localize.term('jfbLibrary_loading'), [70, 45])
         }
       </uui-box>
       <div slot="actions">

@@ -286,9 +286,11 @@ test("a restricted form's Duplicate dialog says that the copy takes its folder's
 
   await treeAction(page, name, 'Duplicate\u2026');
   const dialog = page.locator('jfb-duplicate-modal');
+  // The headline names the form; the sentence below says "this form".
   await expect(dialog).toContainText(
-    `${name} has access settings of its own, which the copy doesn't take: it lands in the top level of Forms and gets the access set there.`,
+    "This form has access settings of its own, which the copy doesn't take: it lands in the top level of Forms and gets the access set there.",
   );
+  expect((await dialog.locator('uui-dialog-layout').boundingBox())?.width ?? 0).toBeLessThanOrEqual(520);
   await expect(dialog.getByRole('textbox', { name: 'Name of the copy' })).toHaveValue(`${name} (copy)`);
   await axeInside(page, 'jfb-duplicate-modal');
   await dialog.getByRole('button', { name: 'Duplicate', exact: true }).click();
@@ -320,15 +322,16 @@ test('actions copied to a form without their fields list each reference with a l
   await expect(sidebar).toContainText(target);
   await sidebar.getByRole('button', { name: 'Copy 2 actions' }).click();
 
+  // The form copied to is named once; what each action lacks is listed under it.
   await expect(sidebar).toContainText(`2 actions copied to ${target}.`);
-  await expect(sidebar).toContainText(
-    `They name things ${target} doesn't have. Fix them before you publish ${target}:`,
-  );
+  await expect(sidebar).toContainText("They name things that form doesn't have. Fix them before you publish the form:");
+  const after = (await sidebar.locator('.result ~ *').allTextContents()).join(' ');
+  expect(after, 'the form copied to, named once above').not.toContain(target);
   // Said once for each action, however often an action names the field.
-  await expect(sidebar.getByText(`${target} has no field "email".`)).toHaveCount(2);
-  await expect(sidebar).toContainText(`The merge tag {{ field.name }} finds nothing in ${target}.`);
+  await expect(sidebar.getByText('The field "email"', { exact: true })).toHaveCount(2);
+  await expect(sidebar).toContainText('The merge tag {{ field.name }}');
   await axeInside(page, 'jfb-copy-actions-modal');
-  const fixes = sidebar.getByRole('link', { name: `Fix it in ${target}` });
+  const fixes = sidebar.getByRole('link', { name: 'Fix it in the form' });
   await expect(fixes).toHaveCount(2);
   await expect(fixes.first()).toHaveAttribute('href', new RegExp(`jfb-form/edit/${targetKey}\\?action=[0-9a-f-]{36}$`));
 });
@@ -364,7 +367,9 @@ test('an import shows what the file holds and the theme this site lacks, then ar
   await sidebar.getByRole('button', { name: 'Choose another file\u2026' }).click();
   await (await chooser).setFiles(good);
   await expect(sidebar).toContainText(source);
-  await expect(sidebar).toContainText('1 page with 3 fields');
+  // Each count once, after its label.
+  await expect(sidebar.locator('dt:text-is("Pages") + dd')).toHaveText('1');
+  await expect(sidebar.locator('dt:text-is("Fields") + dd')).toHaveText('3');
   await expect(sidebar).toContainText('What this site lacks');
   await expect(sidebar).toContainText('This site has no theme "midnight", so the form uses the default theme.');
   await expect(sidebar).toContainText(`It arrives as a draft in ${folder}`);
@@ -457,7 +462,7 @@ test.describe('the Recycle Bin', () => {
     const confirm = page.locator('umb-confirm-modal');
     await expect(confirm).toContainText(`Move ${name} to the Recycle Bin?`);
     await expect(confirm).toContainText(
-      `It's picked on 1 page: ${pageName}. It shows nothing in its place until you restore it.`,
+      `It's picked on 1 page: ${pageName}. That page shows nothing in its place until you restore the form.`,
     );
     await confirm.getByRole('button', { name: 'Move to Recycle Bin' }).click();
     await expect(treeRow(page, name)).toHaveCount(0);
@@ -477,6 +482,8 @@ test.describe('the Recycle Bin', () => {
     await restoring.getByRole('button', { name: 'Restore', exact: true }).click();
     await expect(page.locator('jfb-recycle-bin tr', { hasText: name })).toHaveCount(0);
     await expect(treeRow(page, name)).toBeVisible();
+    // The row and its menu are gone; the keyboard goes on from the bin's heading, not from the page's start.
+    await expect(page.locator('jfb-recycle-bin h2')).toBeFocused();
   });
 
   test('a confirm that names a form shows the name as text, and nothing in it runs', async ({

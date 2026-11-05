@@ -48,11 +48,11 @@ export default {
     optionForm: 'Form',
     optionFormDescription: 'A new, empty form.',
     optionFromTemplate: 'Form from a template…',
-    optionFromTemplateDescription: 'A working form to adapt, such as a contact form.',
+    optionFromTemplateDescription: 'A contact form or another to adapt.',
     optionImport: 'Import a form…',
-    optionImportDescription: 'A form from a JSON file that a site exported.',
+    optionImportDescription: 'A form a site exported, as JSON.',
     optionFolder: 'Folder…',
-    optionFolderDescription: 'A place that keeps forms together, with access of its own if needed.',
+    optionFolderDescription: 'Keeps forms together, with its own access.',
     createForm: 'Create form',
     createFolder: 'Create folder',
 
@@ -86,7 +86,7 @@ export default {
 
     trashHeadline: (name: string) => `Move ${name} to the Recycle Bin?`,
     trashInUse: (pages: number, names: string, more: number) =>
-      `${pickedOn(pages, names, more)} ${pages === 1 ? 'It shows' : 'They show'} nothing in its place until you restore it.`,
+      `${pickedOn(pages, names, more)} ${pages === 1 ? 'That page shows' : 'Those pages show'} nothing in its place until you restore the form.`,
     trashConfirm: 'Move to Recycle Bin',
     trashed: (name: string) => `${name} moved to the Recycle Bin.`,
     undo: 'Undo',
@@ -173,8 +173,8 @@ export default {
     copyName: (name: string) => `${name} (copy)`,
     copyActionsToo: (actions: number) =>
       actions === 1 ? 'Copy its action too' : `Copy its ${number(actions)} actions too`,
-    duplicateRestricted: (name: string, where: string) =>
-      `${name} has access settings of its own, which the copy doesn't take: it lands in ${where} and gets the access set there.`,
+    duplicateRestricted: (where: string) =>
+      `This form has access settings of its own, which the copy doesn't take: it lands in ${where} and gets the access set there.`,
 
     copyActionsHeadline: (source: string) => `Copy actions from ${source}`,
     copyTo: 'Copy to',
@@ -185,18 +185,18 @@ export default {
     noActionsToCopy: (source: string) => `${source} has no actions to copy.`,
     copyCount: (actions: number) => (actions === 1 ? 'Copy 1 action' : `Copy ${number(actions)} actions`),
     copied: (actions: number, target: string) => `${count(actions, 'action', 'actions')} copied to ${target}.`,
-    copiedClean: (actions: number, target: string) =>
-      actions === 1 ? `It finds everything it uses in ${target}.` : `They find everything they use in ${target}.`,
-    copiedNeedsFixing: (actions: number, troubled: number, target: string) =>
+    copiedClean: (actions: number) =>
+      actions === 1 ? 'It finds everything it uses there.' : 'They find everything they use there.',
+    copiedNeedsFixing: (actions: number, troubled: number) =>
       actions === 1
-        ? `It names things ${target} doesn't have. Fix it before you publish ${target}:`
+        ? "It names things that form doesn't have. Fix it before you publish the form:"
         : troubled === actions
-          ? `They name things ${target} doesn't have. Fix them before you publish ${target}:`
-          : `Some of them name things ${target} doesn't have. Fix those before you publish ${target}:`,
-    copyLacksField: (alias: string, target: string) => `${target} has no field "${alias}".`,
-    copyLacksElement: (target: string) => `A page, group or field it names isn't in ${target}.`,
-    copyLacksTag: (tag: string, target: string) => `The merge tag ${tag} finds nothing in ${target}.`,
-    fixIn: (target: string) => `Fix it in ${target}`,
+          ? "They name things that form doesn't have. Fix them before you publish the form:"
+          : "Some of them name things that form doesn't have. Fix those before you publish the form:",
+    copyLacksField: (alias: string) => `The field "${alias}"`,
+    copyLacksElement: 'A page, group or field',
+    copyLacksTag: (tag: string) => `The merge tag ${tag}`,
+    fixIn: 'Fix it in the form',
     openForm: (name: string) => `Open ${name}`,
 
     galleryHeadline: 'Choose a template',
@@ -230,11 +230,9 @@ export default {
     whatItHolds: 'What it holds',
     holdsForm: 'Form',
     holdsPages: 'Pages',
-    pagesWithFields: (pages: number, fields: number) =>
-      `${count(pages, 'page', 'pages')} with ${count(fields, 'field', 'fields')}`,
+    holdsFields: 'Fields',
     holdsRules: 'Rules',
     holdsOutcomes: 'Outcomes',
-    outcomes: (outcomes: number) => count(outcomes, 'outcome', 'outcomes'),
     holdsActions: 'Actions',
     exportsNeverHold: 'An export never holds entries, files or access settings.',
     whatItCannotImport: 'What this site lacks',

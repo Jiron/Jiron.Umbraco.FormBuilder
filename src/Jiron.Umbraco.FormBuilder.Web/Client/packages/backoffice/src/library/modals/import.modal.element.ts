@@ -240,14 +240,20 @@ export class ImportModalElement extends UmbModalBaseElement<NewFormModalData, Ne
       <dl>
         <dt>${this.localize.term('jfbLibrary_holdsForm')}</dt>
         <dd>${check.name}</dd>
-        <dt>${this.localize.term('jfbLibrary_holdsPages')}</dt>
-        <dd>${this.localize.term('jfbLibrary_pagesWithFields', holds.pages, holds.fields)}</dd>
-        <dt>${this.localize.term('jfbLibrary_holdsRules')}</dt>
-        <dd>${holds.rules === 0 ? this.localize.term('jfbLibrary_none') : holds.rules}</dd>
-        <dt>${this.localize.term('jfbLibrary_holdsOutcomes')}</dt>
-        <dd>${this.localize.term('jfbLibrary_outcomes', holds.outcomes)}</dd>
-        <dt>${this.localize.term('jfbLibrary_holdsActions')}</dt>
-        <dd>${holds.actions === 0 ? this.localize.term('jfbLibrary_none') : holds.actions}</dd>
+        ${(
+          [
+            ['jfbLibrary_holdsPages', holds.pages],
+            ['jfbLibrary_holdsFields', holds.fields],
+            ['jfbLibrary_holdsRules', holds.rules],
+            ['jfbLibrary_holdsOutcomes', holds.outcomes],
+            ['jfbLibrary_holdsActions', holds.actions],
+          ] as const
+        ).map(
+          // One way for every count: the label, then the number, or None.
+          ([label, held]) =>
+            html`<dt>${this.localize.term(label)}</dt>
+              <dd>${held === 0 ? this.localize.term('jfbLibrary_none') : this.localize.number(held)}</dd>`,
+        )}
       </dl>
       <p class="muted">${this.localize.term('jfbLibrary_exportsNeverHold')}</p>
     </uui-box>`;

@@ -98,6 +98,21 @@ describe('a list', () => {
     expect(list.rows.state === 'ready' && list.rows.value[0]?.item.key).toBe('b');
   });
 
+  it('loads more once at a time, and says while it does', async () => {
+    const next = deferred<Answer<{ items: LibraryRowResponseModel[]; total: number }>>();
+    const answers = [Promise.resolve({ data: { items: [row('a')], total: 2 } }), next.promise];
+    const fetch = vi.fn(() => answers.shift() ?? Promise.resolve({}));
+    const list = new ListStore(fetch, vi.fn());
+    await list.load();
+    const first = list.more();
+    const second = list.more();
+    expect(list.loadingMore).toBe(true);
+    next.resolve({ data: { items: [row('b')], total: 2 } });
+    await Promise.all([first, second]);
+    expect([fetch.mock.calls.length, list.loadingMore]).toEqual([2, false]);
+    expect(list.rows.state === 'ready' && list.rows.value.map((r) => r.item.key)).toEqual(['a', 'b']);
+  });
+
   it('asks for no more before it has loaded', async () => {
     const fetch = vi.fn(() => Promise.resolve({}));
     await new ListStore(fetch, vi.fn()).more();

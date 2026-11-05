@@ -22,6 +22,12 @@ export class DuplicateModalElement extends UmbModalBaseElement<DuplicateModalDat
   static override styles = [
     jfbBackofficeTokens,
     css`
+      /* A dialog as wide as a sentence reads well, never as wide as the window. */
+      uui-dialog-layout {
+        box-sizing: border-box;
+        inline-size: min(520px, calc(100vw - 2 * var(--uui-size-space-6)));
+      }
+
       uui-input {
         width: 100%;
       }
@@ -112,7 +118,7 @@ export class DuplicateModalElement extends UmbModalBaseElement<DuplicateModalDat
               ></uui-toggle>`
             : nothing
         }
-        ${form.isRestricted ? html`<p>${this.localize.term('jfbLibrary_duplicateRestricted', form.name, where)}</p>` : nothing}
+        ${form.isRestricted ? html`<p>${this.localize.term('jfbLibrary_duplicateRestricted', where)}</p>` : nothing}
       </form>
       <uui-button slot="actions" label=${this.localize.term('general_cancel')} @click=${this._rejectModal}></uui-button>
       <uui-button

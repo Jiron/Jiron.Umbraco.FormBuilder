@@ -54,7 +54,8 @@ export const SIDEBAR: readonly SidebarGroup[] = [
     items: [
       { id: 'optionLists', entityType: 'jfb-option-lists', icon: 'icon-bulleted-list', ...LIBRARY },
       { id: 'themes', entityType: 'jfb-themes', icon: 'icon-palette', ...LIBRARY },
-      { id: 'emailLayouts', entityType: 'jfb-email-layouts', icon: 'icon-message', ...LIBRARY },
+      // A layout, not a message: Settings' Email item has the envelope, and no two items share an icon.
+      { id: 'emailLayouts', entityType: 'jfb-email-layouts', icon: 'icon-layout', ...LIBRARY },
       { id: 'templates', entityType: 'jfb-templates', icon: 'icon-layers-alt', ...LIBRARY },
     ],
   },

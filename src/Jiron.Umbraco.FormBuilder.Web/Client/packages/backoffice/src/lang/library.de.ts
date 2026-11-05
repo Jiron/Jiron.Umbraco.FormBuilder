@@ -54,18 +54,18 @@ export default {
     optionForm: 'Formular',
     optionFormDescription: 'Ein neues, leeres Formular.',
     optionFromTemplate: 'Formular aus einer Vorlage…',
-    optionFromTemplateDescription: 'Ein fertiges Formular zum Anpassen, etwa ein Kontaktformular.',
+    optionFromTemplateDescription: 'Etwa ein Kontaktformular, zum Anpassen.',
     optionImport: 'Formular importieren…',
-    optionImportDescription: 'Ein Formular aus einer JSON-Datei, die eine Website exportiert hat.',
+    optionImportDescription: 'Ein exportiertes Formular als JSON-Datei.',
     optionFolder: 'Ordner…',
-    optionFolderDescription: 'Ein Ort, der Formulare zusammenhält, bei Bedarf mit eigenem Zugriff.',
+    optionFolderDescription: 'Bündelt Formulare, mit eigenem Zugriff.',
     createForm: 'Formular erstellen',
     createFolder: 'Ordner erstellen',
 
     columnName: 'Name',
     columnEntries: 'Einträge, letzte 30 Tage',
     columnChanged: 'Zuletzt geändert',
-    columnTrashed: 'In den Papierkorb verschoben',
+    columnTrashed: 'Verschoben',
     columnActions: 'Aktionen',
     listFailed: 'Die Formulare konnten nicht geladen werden.',
     emptyFolder:
@@ -192,8 +192,8 @@ export default {
     copyName: (name: string) => `${name} (Kopie)`,
     copyActionsToo: (actions: number) =>
       actions === 1 ? 'Auch seine Aktion kopieren' : `Auch seine ${number(actions)} Aktionen kopieren`,
-    duplicateRestricted: (name: string, where: string) =>
-      `${name} hat eigene Zugriffsrechte, die die Kopie nicht übernimmt: Sie landet in ${where} und erhält den Zugriff, der dort gilt.`,
+    duplicateRestricted: (where: string) =>
+      `Dieses Formular hat eigene Zugriffsrechte, die die Kopie nicht übernimmt: Die Kopie landet in ${where} und erhält den Zugriff, der dort gilt.`,
 
     copyActionsHeadline: (source: string) => `Aktionen aus ${source} kopieren`,
     copyTo: 'Kopieren nach',
@@ -204,16 +204,16 @@ export default {
     noActionsToCopy: (source: string) => `${source} hat keine Aktionen, die sich kopieren lassen.`,
     copyCount: (actions: number) => (actions === 1 ? '1 Aktion kopieren' : `${number(actions)} Aktionen kopieren`),
     copied: (actions: number, target: string) => `${count(actions, 'Aktion', 'Aktionen')} nach ${target} kopiert.`,
-    copiedClean: (actions: number, target: string) =>
+    copiedClean: (actions: number) =>
       actions === 1
-        ? `Sie findet in ${target} alles, was sie braucht.`
-        : `Sie finden in ${target} alles, was sie brauchen.`,
-    copiedNeedsFixing: (actions: number, troubled: number, target: string) =>
-      `${actions === 1 ? 'Sie nennt' : troubled === actions ? 'Sie nennen' : 'Einige nennen'} etwas, das ${target} nicht hat. Beheben Sie das, bevor Sie ${target} veröffentlichen:`,
-    copyLacksField: (alias: string, target: string) => `${target} hat kein Feld „${alias}“.`,
-    copyLacksElement: (target: string) => `Eine Seite, Gruppe oder ein Feld, das sie nennt, fehlt in ${target}.`,
-    copyLacksTag: (tag: string, target: string) => `Der Platzhalter ${tag} findet in ${target} nichts.`,
-    fixIn: (target: string) => `In ${target} beheben`,
+        ? 'Dort findet die Aktion alles, was sie braucht.'
+        : 'Dort finden die Aktionen alles, was sie brauchen.',
+    copiedNeedsFixing: (actions: number, troubled: number) =>
+      `${actions === 1 ? 'Die Aktion nennt' : troubled === actions ? 'Die Aktionen nennen' : 'Einige der Aktionen nennen'} etwas, das dieses Formular nicht hat. Beheben Sie das vor dem Veröffentlichen:`,
+    copyLacksField: (alias: string) => `Das Feld „${alias}“`,
+    copyLacksElement: 'Eine Seite, Gruppe oder ein Feld',
+    copyLacksTag: (tag: string) => `Der Platzhalter ${tag}`,
+    fixIn: 'Im Formular beheben',
     openForm: (name: string) => `${name} öffnen`,
 
     galleryHeadline: 'Vorlage wählen',
@@ -248,17 +248,15 @@ export default {
     whatItHolds: 'Was sie enthält',
     holdsForm: 'Formular',
     holdsPages: 'Seiten',
-    pagesWithFields: (pages: number, fields: number) =>
-      `${count(pages, 'Seite', 'Seiten')} mit ${count(fields, 'Feld', 'Feldern')}`,
+    holdsFields: 'Felder',
     holdsRules: 'Regeln',
     holdsOutcomes: 'Abschlüsse',
-    outcomes: (outcomes: number) => count(outcomes, 'Abschluss', 'Abschlüsse'),
     holdsActions: 'Aktionen',
     exportsNeverHold: 'Ein Export enthält nie Einträge, Dateien oder Zugriffsrechte.',
     whatItCannotImport: 'Was dieser Website fehlt',
     whatComesAlong: 'Was mitkommt',
     noteThemeMissing: (theme: string) =>
-      `Diese Website hat kein Design „${theme}“, deshalb verwendet das Formular das Standarddesign.`,
+      `Diese Website hat kein Theme „${theme}“, deshalb verwendet das Formular das Standard-Theme.`,
     noteListReused: (list: string) =>
       `Die Optionsliste „${list}“ gibt es auf dieser Website schon, das Formular verwendet sie.`,
     noteListCreated: (list: string) => `Die Optionsliste „${list}“ kommt mit und wird dieser Website hinzugefügt.`,

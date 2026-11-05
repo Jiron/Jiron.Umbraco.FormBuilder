@@ -9,6 +9,7 @@ import { tryExecute } from '@umbraco-cms/backoffice/resources';
 import { libraryListTrash, type LibraryRowResponseModel } from '../api';
 import { TRASHED_FOLDER_ENTITY_TYPE, TRASHED_FORM_ENTITY_TYPE } from '../section/entity-types';
 import { jfbBackofficeTokens, jfbVisuallyHidden } from '../styles/tokens';
+import { jfbSkeleton, skeletonLines } from '../ui/skeleton';
 import { emptyBin } from './actions/trash-actions';
 import { changedText } from './rows';
 import { ListStore } from './stores';
@@ -23,6 +24,7 @@ export class RecycleBinElement extends UmbLitElement {
   static override styles = [
     jfbBackofficeTokens,
     jfbVisuallyHidden,
+    jfbSkeleton,
     css`
       :host {
         display: block;
@@ -33,6 +35,11 @@ export class RecycleBinElement extends UmbLitElement {
       h2 {
         margin: 0;
         font-size: var(--jfb-bo-type-display);
+      }
+
+      /* It takes the focus only from the screen itself, after a row left the list. */
+      h2:focus {
+        outline: none;
       }
 
       .box--flush {
@@ -63,6 +70,11 @@ export class RecycleBinElement extends UmbLitElement {
         overflow-wrap: anywhere;
       }
 
+      /* A long name wraps beside its icon, which keeps its size. */
+      .item > uui-icon {
+        flex: none;
+      }
+
       .menu {
         width: 1%;
         text-align: end;
@@ -76,14 +88,6 @@ export class RecycleBinElement extends UmbLitElement {
         max-width: 36rem;
         margin: var(--uui-size-layout-2) auto;
         text-align: center;
-      }
-
-      .skeleton {
-        display: block;
-        height: 12px;
-        margin: var(--uui-size-space-5);
-        border-radius: var(--uui-border-radius);
-        background: var(--uui-color-surface-alt);
       }
 
       .failed {
@@ -111,10 +115,33 @@ export class RecycleBinElement extends UmbLitElement {
   );
 
   #events: EventTarget | undefined;
-  readonly #onChange = () => void this.#list.load();
+  readonly #onChange = () => void this.#reload();
+  /**
+   * Whether the focus was last in a row of the list, which a restore or a delete may take away; a dialog opened from
+   * the row's menu leaves it so.
+   */
+  #inRow = false;
+
+  /**
+   * Reads the bin again after a change. A row restored or deleted leaves with the menu that had the focus: the focus
+   * then goes to the bin's heading, from where the keyboard reaches the rows that are left, never to the page's start.
+   */
+  async #reload() {
+    await this.#list.load();
+    await this.updateComplete;
+    // The dialog that made the change gives the focus back as it closes, a frame or two after.
+    await new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done)));
+    let active = document.activeElement;
+    while (active?.shadowRoot?.activeElement) active = active.shadowRoot.activeElement;
+    if (this.#inRow && (!active || active === document.body || !active.isConnected))
+      this.shadowRoot?.querySelector<HTMLElement>('h2')?.focus();
+  }
 
   constructor() {
     super();
+    this.addEventListener('focusin', (event) => {
+      this.#inRow = event.composedPath().some((node) => node instanceof HTMLTableRowElement);
+    });
     this.consumeContext(UMB_ACTION_EVENT_CONTEXT, (events) => {
       this.#events?.removeEventListener(UmbRequestReloadChildrenOfEntityEvent.TYPE, this.#onChange);
       this.#events = events;
@@ -158,11 +185,9 @@ export class RecycleBinElement extends UmbLitElement {
   #body() {
     const rows = this.#list.rows;
     if (rows.state === 'loading')
-      return html`<uui-box class="box--flush" aria-busy="true">
-        <span class="skeleton" style="width: 52%"></span>
-        <span class="skeleton" style="width: 33%"></span>
-        <span class="visually-hidden">${this.localize.term('jfbLibrary_loading')}</span>
-      </uui-box>`;
+      return html`<uui-box class="box--flush"
+        >${skeletonLines(this.localize.term('jfbLibrary_loading'), [52, 33])}</uui-box
+      >`;
     if (rows.state === 'failed')
       return html`<uui-box>
         <div class="failed" role="alert">
@@ -194,7 +219,8 @@ export class RecycleBinElement extends UmbLitElement {
               <uui-button
                 look="secondary"
                 label=${this.localize.term('jfbLibrary_loadMore')}
-                @click=${() => void this.#list.more()}
+                .state=${this.#list.loadingMore ? 'waiting' : undefined}
+                @click=${() => void this.#more()}
               ></uui-button>
             </div>`
           : nothing
@@ -202,10 +228,21 @@ export class RecycleBinElement extends UmbLitElement {
     </uui-box>`;
   }
 
+  /** The next page; the focus goes to its first row, where the keyboard reads on, as the button may be gone. */
+  async #more() {
+    const before = this.#list.rows.state === 'ready' ? this.#list.rows.value.length : 0;
+    await this.#list.more();
+    await this.updateComplete;
+    this.shadowRoot
+      ?.querySelectorAll<HTMLElement>('tbody tr')
+      [before]?.querySelector<HTMLElement>('a, button, uui-button')
+      ?.focus();
+  }
+
   override render() {
     const filled = this.#list.rows.state === 'ready' && this.#list.rows.value.length > 0;
     return html`<umb-body-layout>
-      <h2 slot="header">${this.localize.term('jfbLibrary_recycleBin')}</h2>
+      <h2 slot="header" tabindex="-1">${this.localize.term('jfbLibrary_recycleBin')}</h2>
       ${this.#body()}
       ${
         filled

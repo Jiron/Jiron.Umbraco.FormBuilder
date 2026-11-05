@@ -105,8 +105,27 @@ describe('the Overview', () => {
     const steps = [...root.querySelectorAll('ol li')];
 
     expect(steps[2]?.querySelector('a, button.link'), 'the preview waits for a form').toBeNull();
+    expect(text(must(steps[2]?.querySelector('.step__help'), 'its help'))).toBe(
+      'Once there is a form, see it as visitors will and check what arrives.',
+    );
     expect(steps[3]?.querySelector('button.link')?.textContent).toBe('Put the form on a page');
     expect(steps[4]?.querySelector('a')?.getAttribute('href')).toBe('section/jfb-forms/workspace/jfb-settings-access');
+  });
+
+  it('links the test entry to the form there is, with help that no longer waits for one', async () => {
+    const key = '3f2a1c5e-0000-4000-8000-000000000001';
+    // A form made: its step is done, and the test entry is the next, its button opening that form.
+    const items = fresh.items.map((item) =>
+      item.step === 'form' ? { ...item, done: true } : item.step === 'testEntry' ? { ...item, canDo: true } : item,
+    );
+    api.checklist.mockImplementation(() => answer({ ...fresh, items, previewForm: key }));
+    const step = [...shadow(await open()).querySelectorAll('ol li')][2];
+    expect(step?.querySelector('uui-button')?.getAttribute('href')).toBe(
+      `section/jfb-forms/workspace/jfb-form/edit/${key}`,
+    );
+    expect(text(must(step?.querySelector('.step__help'), 'its help'))).toBe(
+      'See the form as visitors will, send an entry, and check what arrives.',
+    );
   });
 
   it('leaves the checklist away once setup is complete, and shows it on request', async () => {

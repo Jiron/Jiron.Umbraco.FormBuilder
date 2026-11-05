@@ -47,7 +47,8 @@ export default {
     help_form: 'A contact or sign-up template gives you a working form in a minute.',
     action_form: 'Choose a template…',
     step_testEntry: 'Preview and send a test entry',
-    help_testEntry: 'Once there is a form: see it as visitors will, and check what arrives.',
+    help_testEntry: 'See the form as visitors will, send an entry, and check what arrives.',
+    help_testEntryWaiting: 'Once there is a form, see it as visitors will and check what arrives.',
     action_testEntry: 'Open the form',
     step_formBlock: 'Put the form on a page',
     help_formBlock:

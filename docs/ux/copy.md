@@ -107,7 +107,7 @@ One line that says where something stands, next to the thing it is about.
 | Where | English | German |
 | --- | --- | --- |
 | an action's card, after a failed delivery | Failed at 14:02. Next try at 14:30. | Fehlgeschlagen um 14:02. Nächster Versuch um 14:30. |
-| beside the canvas width switch, when the canvas has less room than the chosen width | Narrowed to fit | An den Platz angepasst |
+| beside the canvas width switch, when the canvas has less room than the chosen width | Narrowed to fit | Schmaler als gewählt |
 | above the permission matrix, for a user group without the section | Translators can't open Form Builder yet. Add the section to their user group | Übersetzer können Form Builder noch nicht öffnen. Bereich zu ihrer Benutzergruppe hinzufügen |
 | above the permission matrix, once, for the fixed Administrators column | Administrators hold every permission everywhere, because they could grant themselves any. | Die Gruppe Administratoren hat überall jede Berechtigung, weil ihre Mitglieder sich jede selbst geben könnten. |
 | a form's header, when no page picks it | Not used on any page | Auf keiner Seite verwendet |
@@ -251,7 +251,7 @@ useful action. One sentence, plus a button or link where there is one.
 | no access to any form | You can't see any forms yet. An administrator can give your user group access in Settings › Access. | Sie sehen noch keine Formulare. Wer Administratorrechte hat, kann Ihre Benutzergruppe unter Einstellungen › Zugriff freischalten. |
 | nothing in Spam | No spam. Entries that look automated land here, and nothing in them is lost. | Kein Spam. Einträge, die automatisiert wirken, landen hier, und nichts davon geht verloren. |
 | no actions yet (Add action sits in the toolbar) | No actions yet. Most forms email the team when an entry comes in, and Add action starts with that. | Noch keine Aktionen. Die meisten Formulare benachrichtigen das Team per E-Mail, wenn ein Eintrag eingeht, und „Aktion hinzufügen“ beginnt damit. |
-| a new, empty form | Add your first field: pick a type on the left, or paste your questions. | Fügen Sie das erste Feld hinzu: Wählen Sie links einen Typ, oder fügen Sie Ihre Fragen ein. |
+| a new, empty form | Add your first field with Add field below, or paste your questions. | Fügen Sie das erste Feld mit „Feld hinzufügen“ unten hinzu, oder fügen Sie Ihre Fragen ein. |
 | no rules yet (the rules overview, with Add rule in its header) | No rules yet. Most rules show a question only when another answer calls for it, and Add rule starts by asking which question. | Noch keine Regeln. Die meisten Regeln zeigen eine Frage nur, wenn eine andere Antwort sie verlangt, und „Regel hinzufügen“ fragt zuerst, um welche Frage es geht. |
 | no insights yet | No data yet. Numbers appear after the first visit to a page with this form. | Noch keine Daten. Zahlen erscheinen nach dem ersten Besuch einer Seite mit diesem Formular. |
 | loading failed | Entries couldn't be loaded. [Try again] | Die Einträge konnten nicht geladen werden. [Erneut versuchen] |
@@ -260,8 +260,8 @@ An empty value inside a table or panel reads "none" ("keine") or "no data" ("kei
 
 ### Confirmations
 
-- **Reversible actions don't ask.** They act at once and offer **Undo** in a toast ("Field deleted. [Undo]" · „Feld
-  gelöscht. [Zurücknehmen]“).
+- **Reversible actions don't ask.** They act at once and offer **Undo** in a toast that names what it brings back
+  ("Email address deleted. [Undo]" · „Email address gelöscht. [Zurücknehmen]“).
 - **An entry's change of state is reversible too** (approve, reject, mark as spam, not spam; one entry or many): the
   toast offers Undo for 10 seconds, and the actions the change starts wait until then (ADR-0023). When the window
   ends, Undo leaves the toast, which then says: "It's too late to undo this. Change the state back by hand if
@@ -275,7 +275,7 @@ An empty value inside a table or panel reads "none" ("keine") or "no data" ("kei
 | Case | English | German |
 | --- | --- | --- |
 | delete entries | **Delete 23 entries?** This also deletes their 4 uploaded files and their timelines. You can't undo this. [Cancel] [Delete 23 entries] | **23 Einträge löschen?** Dabei werden auch ihre 4 hochgeladenen Dateien und ihre Chroniken gelöscht. Das lässt sich nicht rückgängig machen. [Abbrechen] [23 Einträge löschen] |
-| trash a form in use | **Move Contact us to the Recycle Bin?** It's picked on 3 pages: Home, Contact, Events. They show nothing in its place until you restore it. [Cancel] [Move to Recycle Bin] | **Kontakt in den Papierkorb verschieben?** Das Formular ist auf 3 Seiten eingebunden: Startseite, Kontakt, Veranstaltungen. Dort erscheint nichts, bis Sie es wiederherstellen. [Abbrechen] [In den Papierkorb] |
+| trash a form in use | **Move Contact us to the Recycle Bin?** It's picked on 3 pages: Home, Contact, Events. Those pages show nothing in its place until you restore the form. [Cancel] [Move to Recycle Bin] | **Kontakt in den Papierkorb verschieben?** Das Formular ist auf 3 Seiten eingebunden: Startseite, Kontakt, Veranstaltungen. Dort erscheint nichts, bis Sie es wiederherstellen. [Abbrechen] [In den Papierkorb] |
 | delete a form for good | **Delete Contact us for good?** This deletes the form with its 1,204 entries and 37 uploaded files. You can't undo this. [Cancel] [Delete form and entries] | **Kontakt endgültig löschen?** Dabei werden das Formular, seine 1.204 Einträge und 37 hochgeladenen Dateien gelöscht. Das lässt sich nicht rückgängig machen. [Abbrechen] [Formular und Einträge löschen] |
 | empty the Recycle Bin | **Empty the Recycle Bin?** This deletes 3 forms for good, with their 412 entries and 12 uploaded files. You can't undo this. [Cancel] [Empty recycle bin] | **Papierkorb leeren?** Dabei werden 3 Formulare mit ihren 412 Einträgen und 12 hochgeladenen Dateien endgültig gelöscht. Das lässt sich nicht rückgängig machen. [Abbrechen] [Papierkorb leeren] |
 | erase a person | **Erase everything about lena@example.com?** 6 entries in 3 forms, 2 uploaded files and 4 sent emails are erased. Statistics stay. You can't undo this. [Cancel] [Erase 6 entries] | **Alle Daten zu lena@example.com löschen?** 6 Einträge in 3 Formularen, 2 hochgeladene Dateien und 4 gesendete E-Mails werden gelöscht. Die Statistik bleibt. Das lässt sich nicht rückgängig machen. [Abbrechen] [6 Einträge löschen] |

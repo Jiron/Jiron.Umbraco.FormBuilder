@@ -7,7 +7,8 @@ import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import { tryExecute } from '@umbraco-cms/backoffice/resources';
 import { folderGet, formGet } from '../api';
 import { TRASHED_FOLDER_ENTITY_TYPE } from '../section/entity-types';
-import { jfbBackofficeTokens } from '../styles/tokens';
+import { jfbBackofficeTokens, jfbVisuallyHidden } from '../styles/tokens';
+import { jfbSkeleton, skeletonLines } from '../ui/skeleton';
 import { dayText } from './rows';
 import './entity-menu.element';
 
@@ -23,6 +24,8 @@ export class TrashedItemElement extends UmbLitElement {
 
   static override styles = [
     jfbBackofficeTokens,
+    jfbVisuallyHidden,
+    jfbSkeleton,
     css`
       :host {
         display: block;
@@ -109,7 +112,7 @@ export class TrashedItemElement extends UmbLitElement {
   override render() {
     if (!this._loaded) {
       return html`<umb-body-layout>
-        <uui-box><p aria-busy="true">${this.localize.term('jfbLibrary_loading')}</p></uui-box>
+        <uui-box>${skeletonLines(this.localize.term('jfbLibrary_loading'), [44, 66, 30])}</uui-box>
       </umb-body-layout>`;
     }
 

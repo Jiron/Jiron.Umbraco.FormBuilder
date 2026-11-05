@@ -11,6 +11,7 @@ import { folderGet, libraryListItems, type LibraryRowResponseModel } from '../ap
 import { myPermissions } from '../section/my-permissions';
 import { FOLDER_ENTITY_TYPE, FORM_ENTITY_TYPE, LIBRARY_ROOT_ENTITY_TYPE, screenPath } from '../section/entity-types';
 import { jfbBackofficeTokens, jfbVisuallyHidden } from '../styles/tokens';
+import { jfbSkeleton, skeletonLines } from '../ui/skeleton';
 import { renameFolder } from './actions/folder-actions';
 import { createBlankForm, createFromTemplate } from './actions/new-form';
 import { FolderScreenContext } from './folder-screen.context';
@@ -24,15 +25,19 @@ export class FolderListElement extends UmbLitElement {
     entityType: { attribute: false },
     _name: { state: true },
     _canDesign: { state: true },
+    _read: { state: true },
   };
 
   static override styles = [
     jfbBackofficeTokens,
     jfbVisuallyHidden,
+    jfbSkeleton,
     css`
+      /* Its own width decides what fits, not the window's: Umbraco's page is 920 px wide on a phone too. */
       :host {
         display: block;
         height: 100%;
+        container-type: inline-size;
       }
 
       .header {
@@ -92,6 +97,11 @@ export class FolderListElement extends UmbLitElement {
         min-width: 0;
       }
 
+      /* A long name wraps beside its icon, which keeps its size. */
+      .item > uui-icon {
+        flex: none;
+      }
+
       .item a {
         color: var(--uui-color-text);
         text-decoration: none;
@@ -117,12 +127,11 @@ export class FolderListElement extends UmbLitElement {
         text-align: center;
       }
 
-      .skeleton {
-        display: block;
-        height: 12px;
-        margin: var(--uui-size-space-5);
-        border-radius: var(--uui-border-radius);
-        background: var(--uui-color-surface-alt);
+      /* The name's place while it is read, as high as the name it stands for. */
+      .title-bone {
+        inline-size: 12rem;
+        block-size: 20px;
+        margin: 0;
       }
 
       .failed {
@@ -139,7 +148,7 @@ export class FolderListElement extends UmbLitElement {
         border-top: 1px solid var(--uui-color-divider);
       }
 
-      @media (max-width: 700px) {
+      @container (max-width: 520px) {
         .changed {
           display: none;
         }
@@ -152,6 +161,11 @@ export class FolderListElement extends UmbLitElement {
   declare private _name: string;
   /** Whether the user may create forms here; false until known. */
   declare private _canDesign: boolean;
+  /**
+   * Whether the folder's name and the user's access to it are read: until then the screen keeps its skeleton, so its
+   * name, its words for an empty folder and its buttons come together, never one after the other.
+   */
+  declare private _read: boolean;
 
   readonly #screen = new FolderScreenContext(this);
   readonly #list = new ListStore(
@@ -175,6 +189,7 @@ export class FolderListElement extends UmbLitElement {
     this.entityType = LIBRARY_ROOT_ENTITY_TYPE;
     this._name = '';
     this._canDesign = false;
+    this._read = false;
     this.consumeContext(UMB_ACTION_EVENT_CONTEXT, (events) => {
       this.#events?.removeEventListener(UmbRequestReloadChildrenOfEntityEvent.TYPE, this.#onChange);
       this.#events = events;
@@ -197,6 +212,9 @@ export class FolderListElement extends UmbLitElement {
 
   async #load() {
     const key = this.unique;
+    // Another folder starts from the skeleton; the same one, read again after a change, keeps what it shows.
+    if (key !== this.#readFor) this._read = false;
+    this.#readFor = key;
     void this.#list.load();
     if (key) {
       const { data } = await tryExecute(this, folderGet({ path: { key } }), { disableNotifications: true });
@@ -204,10 +222,16 @@ export class FolderListElement extends UmbLitElement {
       this._name = data?.name ?? '';
       this._canDesign = data?.permissions.includes('design') ?? false;
     } else {
+      const permissions = await myPermissions(this);
+      if (this.unique !== null) return;
       this._name = this.localize.term('jfbSection_forms');
-      this._canDesign = (await myPermissions(this))?.global.includes('design') ?? false;
+      this._canDesign = permissions?.global.includes('design') ?? false;
     }
+    this._read = true;
   }
+
+  /** The folder whose name and access were last asked for. */
+  #readFor: string | null | undefined = undefined;
 
   async #rename(event: Event) {
     const input = event.target as HTMLInputElement;
@@ -244,12 +268,8 @@ export class FolderListElement extends UmbLitElement {
 
   #body() {
     const rows = this.#list.rows;
-    if (rows.state === 'loading')
-      return html`<uui-box class="box--flush" aria-busy="true">
-        <span class="skeleton" style="width: 58%"></span>
-        <span class="skeleton" style="width: 37%"></span>
-        <span class="visually-hidden">${this.localize.term('jfbLibrary_loading')}</span>
-      </uui-box>`;
+    if (rows.state === 'loading' || !this._read)
+      return html`<uui-box class="box--flush">${skeletonLines(this.localize.term('jfbLibrary_loading'))}</uui-box>`;
     if (rows.state === 'failed')
       return html`<uui-box>
         <div class="failed" role="alert">
@@ -295,7 +315,8 @@ export class FolderListElement extends UmbLitElement {
               <uui-button
                 look="secondary"
                 label=${this.localize.term('jfbLibrary_loadMore')}
-                @click=${() => void this.#list.more()}
+                .state=${this.#list.loadingMore ? 'waiting' : undefined}
+                @click=${() => void this.#more()}
               ></uui-button>
             </div>`
           : nothing
@@ -307,22 +328,35 @@ export class FolderListElement extends UmbLitElement {
     const more = this.localize.term('jfbLibrary_moreActionsFor', this._name);
     return html`<div class="header" slot="header">
       ${
-        this.unique && this._canDesign
-          ? html`<uui-input
-              class="name"
-              label=${this.localize.term('jfbLibrary_folderName')}
-              .value=${this._name}
-              maxlength="255"
-              @change=${this.#rename}
-              @keydown=${(event: KeyboardEvent) => {
-                if (event.key === 'Enter') (event.target as HTMLElement).blur();
-                if (event.key === 'Escape') (event.target as HTMLInputElement).value = this._name;
-              }}
-            ></uui-input>`
-          : html`<h2>${this._name}</h2>`
+        !this._read
+          ? html`<span class="skeleton title-bone"></span>`
+          : this.unique && this._canDesign
+            ? html`<uui-input
+                class="name"
+                label=${this.localize.term('jfbLibrary_folderName')}
+                .value=${this._name}
+                maxlength="255"
+                @change=${this.#rename}
+                @keydown=${(event: KeyboardEvent) => {
+                  if (event.key === 'Enter') (event.target as HTMLElement).blur();
+                  if (event.key === 'Escape') (event.target as HTMLInputElement).value = this._name;
+                }}
+              ></uui-input>`
+            : html`<h2>${this._name}</h2>`
       }
       <jfb-entity-menu entity-type=${this.entityType} .unique=${this.unique} label=${more}></jfb-entity-menu>
     </div>`;
+  }
+
+  /** The next page; the focus goes to its first row, where the keyboard reads on, as the button may be gone. */
+  async #more() {
+    const before = this.#list.rows.state === 'ready' ? this.#list.rows.value.length : 0;
+    await this.#list.more();
+    await this.updateComplete;
+    this.shadowRoot
+      ?.querySelectorAll<HTMLElement>('tbody tr')
+      [before]?.querySelector<HTMLElement>('a, button, uui-button')
+      ?.focus();
   }
 
   override render() {

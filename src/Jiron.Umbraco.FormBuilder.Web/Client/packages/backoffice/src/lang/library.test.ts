@@ -7,10 +7,22 @@ import en from './library.en';
 const EN = en.jfbLibrary;
 const DE = de.jfbLibrary;
 
+describe("the create dialog's options", () => {
+  it("say what each makes in one line of Umbraco's create dialog, 44 characters at most, in both languages", () => {
+    const keys = [
+      'optionFormDescription',
+      'optionFromTemplateDescription',
+      'optionImportDescription',
+      'optionFolderDescription',
+    ] as const;
+    for (const words of [EN, DE]) for (const key of keys) expect(words[key].length, key).toBeLessThanOrEqual(44);
+  });
+});
+
 describe('trashing a form that pages pick', () => {
   it("says copy.md's example", () => {
     expect(EN.trashInUse(3, 'Home, Contact, Events', 0)).toBe(
-      "It's picked on 3 pages: Home, Contact, Events. They show nothing in its place until you restore it.",
+      "It's picked on 3 pages: Home, Contact, Events. Those pages show nothing in its place until you restore the form.",
     );
     expect(DE.trashInUse(3, 'Startseite, Kontakt, Veranstaltungen', 0)).toBe(
       'Das Formular ist auf 3 Seiten eingebunden: Startseite, Kontakt, Veranstaltungen. Dort erscheint nichts, bis Sie es wiederherstellen.',
@@ -19,11 +31,11 @@ describe('trashing a form that pages pick', () => {
 
   it('says one page, the pages past the names, and pages the user may not open', () => {
     expect(EN.trashInUse(1, 'Home', 0)).toBe(
-      "It's picked on 1 page: Home. It shows nothing in its place until you restore it.",
+      "It's picked on 1 page: Home. That page shows nothing in its place until you restore the form.",
     );
     expect(EN.trashInUse(7, 'A, B, C, D, E', 2)).toContain("It's picked on 7 pages: A, B, C, D, E and 2 more.");
     expect(DE.trashInUse(7, 'A, B, C, D, E', 2)).toContain('auf 7 Seiten eingebunden: A, B, C, D, E und 2 weiteren.');
-    expect(EN.trashInUse(2, '', 2)).toContain("It's picked on 2 pages. They show");
+    expect(EN.trashInUse(2, '', 2)).toContain("It's picked on 2 pages. Those pages show");
     expect(DE.trashInUse(1, '', 1)).toContain('Das Formular ist auf 1 Seite eingebunden. Dort');
   });
 });
@@ -87,23 +99,25 @@ describe('emptying the Recycle Bin', () => {
 });
 
 describe('copied actions', () => {
-  it('speak of one action, all of them, or some', () => {
-    expect(EN.copiedClean(1, 'Spring')).toBe('It finds everything it uses in Spring.');
-    expect(EN.copiedClean(3, 'Spring')).toBe('They find everything they use in Spring.');
-    expect(DE.copiedClean(1, 'Spring')).toBe('Sie findet in Spring alles, was sie braucht.');
-    expect(EN.copiedNeedsFixing(1, 1, 'Spring')).toBe(
-      "It names things Spring doesn't have. Fix it before you publish Spring:",
+  it('speak of one action, all of them, or some, and leave the form copied to unnamed: the line above names it', () => {
+    expect(EN.copied(2, 'Spring')).toBe('2 actions copied to Spring.');
+    expect(EN.copiedClean(1)).toBe('It finds everything it uses there.');
+    expect(EN.copiedClean(3)).toBe('They find everything they use there.');
+    expect(DE.copiedClean(1)).toBe('Dort findet die Aktion alles, was sie braucht.');
+    expect(EN.copiedNeedsFixing(1, 1)).toBe(
+      "It names things that form doesn't have. Fix it before you publish the form:",
     );
-    expect(EN.copiedNeedsFixing(2, 2, 'Spring')).toBe(
-      "They name things Spring doesn't have. Fix them before you publish Spring:",
+    expect(EN.copiedNeedsFixing(2, 2)).toBe(
+      "They name things that form doesn't have. Fix them before you publish the form:",
     );
-    expect(EN.copiedNeedsFixing(3, 1, 'Spring')).toBe(
-      "Some of them name things Spring doesn't have. Fix those before you publish Spring:",
+    expect(EN.copiedNeedsFixing(3, 1)).toBe(
+      "Some of them name things that form doesn't have. Fix those before you publish the form:",
     );
-    expect(DE.copiedNeedsFixing(3, 1, 'Spring')).toBe(
-      'Einige nennen etwas, das Spring nicht hat. Beheben Sie das, bevor Sie Spring veröffentlichen:',
+    expect(DE.copiedNeedsFixing(3, 1)).toBe(
+      'Einige der Aktionen nennen etwas, das dieses Formular nicht hat. Beheben Sie das vor dem Veröffentlichen:',
     );
-    expect(DE.copiedNeedsFixing(1, 1, 'Spring')).toMatch(/^Sie nennt etwas/);
+    expect(DE.copiedNeedsFixing(1, 1)).toMatch(/^Die Aktion nennt etwas/);
+    expect([EN.copyLacksField('email'), DE.copyLacksField('email')]).toEqual(['The field "email"', 'Das Feld „email“']);
   });
 });
 
@@ -127,7 +141,6 @@ describe('the counts of the other dialogs', () => {
     expect(DE.copyCount(2)).toBe('2 Aktionen kopieren');
     expect(EN.copied(1, 'Events')).toBe('1 action copied to Events.');
     expect(EN.holds(1, 3)).toBe('1 page, 3 fields');
-    expect(DE.pagesWithFields(2, 1)).toBe('2 Seiten mit 1 Feld');
     expect(EN.widenText(1)).toBe('In its new place, 1 more user group sees it and what it holds.');
     expect(DE.widenText(2)).toBe('Am neuen Ort sehen es 2 weitere Benutzergruppen, mit allem, was es enthält.');
     expect(EN.restoreFormComesBack(1)).toBe('Its 1 entry comes back with it.');
