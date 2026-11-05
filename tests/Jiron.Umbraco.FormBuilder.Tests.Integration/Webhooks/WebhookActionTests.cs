@@ -1,17 +1,23 @@
+using System.Diagnostics;
 using System.Globalization;
 using System.Net;
 using System.Text.Json.Nodes;
 using System.Xml.Linq;
 using Jiron.Umbraco.FormBuilder.Core.Actions;
+using Jiron.Umbraco.FormBuilder.Core.Configuration;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
+using Jiron.Umbraco.FormBuilder.Core.Outbound;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Core.Settings;
 using Jiron.Umbraco.FormBuilder.Core.Webhooks;
 using Jiron.Umbraco.FormBuilder.Testing.Stub;
+using Jiron.Umbraco.FormBuilder.Testing.Time;
 using Jiron.Umbraco.FormBuilder.Tests.Integration.Actions;
 using Jiron.Umbraco.FormBuilder.Tests.Integration.OptionLists;
 using Jiron.Umbraco.FormBuilder.Tests.Integration.Testing;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Umbraco.Cms.Tests.Common.Testing;
 
 namespace Jiron.Umbraco.FormBuilder.Tests.Integration.Webhooks;
@@ -40,6 +46,10 @@ public sealed class WebhookActionTests : ActionTestBase
         Label = new LocalizedText("Note"),
         Sensitive = true,
     };
+
+    private static readonly TimeSpan Patience = TimeSpan.FromSeconds(30);
+
+    private readonly ManualTimers _callLimits = new();
 
     private int _port;
 
@@ -328,12 +338,23 @@ public sealed class WebhookActionTests : ActionTestBase
         var form = await FormAsync(Hook(Settings()));
         var entry = await SubmitAsync(form);
 
+        // The call reaches the host, which holds it; then its time limit passes.
         var pass = Pass.RunAsync(CancellationToken.None);
-        await pass.WaitAsync(WebhookActionType.CallTimeout + TimeSpan.FromSeconds(10));
+        var waited = Stopwatch.StartNew();
+        while (Stub.CallsTo(Path).Count == 0)
+        {
+            Assert.That(waited.Elapsed, Is.LessThan(Patience), "the call reaches the host");
+            await Task.Delay(20);
+        }
+
+        var limit = _callLimits.Timers.Last(timer => !timer.Disposed);
+        limit.Fire();
+        await pass.WaitAsync(Patience);
 
         var run = (await Runs.ListForEntryAsync(entry.Id)).Single();
         Assert.Multiple(() =>
         {
+            Assert.That(limit.DueTime, Is.EqualTo(WebhookActionType.CallTimeout), "the limit of a call");
             Assert.That(run.State, Is.EqualTo(ActionRunState.Uncertain));
             Assert.That(run.LastError?.Code, Is.EqualTo(WebhookActionType.TimedOut));
         });
@@ -586,6 +607,13 @@ public sealed class WebhookActionTests : ActionTestBase
     {
         base.CustomTestSetup(builder);
         TestEndpointsHost.UseDevelopment(builder);
+
+        // The calls' time limit fires when a test says so, not after 30 s of a shared machine's time (ROADMAP "Flaky means
+        // broken": that test once waited past its margin while Umbraco's start-up jobs held SQLite).
+        builder.Services.AddUnique(provider => new OutboundHttp(
+            provider.GetRequiredService<IFormBuilderHttpTransport>(),
+            provider.GetRequiredService<IOptions<FormBuilderOptions>>(),
+            _callLimits));
     }
 
     private async Task SaveIntegrationsAsync(IntegrationSettings section)
