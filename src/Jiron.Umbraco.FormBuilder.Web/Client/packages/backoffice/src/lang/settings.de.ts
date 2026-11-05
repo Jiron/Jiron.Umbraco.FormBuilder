@@ -70,6 +70,11 @@ export default {
     outcome_placeHelp: 'Besucher erhalten den ersten Abschluss, dessen Regel zutrifft.',
     outcome_placeOf: (place: number, count: number) => `${place} von ${count}`,
     outcome_inLanguage: (language: string, said: string) => `${language}: ${said}`,
+    outcome_preview: 'Vorschau mit einem Beispieleintrag',
+    outcome_previewHelp: 'So sehen Besucher es nach dem Absenden, mit Beispielantworten aus den Feldern des Formulars.',
+    outcome_previewRedirect: 'Besucher gelangen direkt zu',
+    outcome_previewFailed: 'Die Vorschau konnte nicht angezeigt werden.',
+    outcome_previewRetry: 'Erneut versuchen',
     outcome_rule: 'Regel',
     outcome_noRule: 'Verwendet, wenn kein früherer Abschluss gilt.',
     outcome_ruleOff: (words: string) =>

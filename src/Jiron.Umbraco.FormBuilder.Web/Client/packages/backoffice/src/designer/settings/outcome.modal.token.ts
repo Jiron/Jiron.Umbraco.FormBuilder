@@ -1,11 +1,13 @@
 // The outcome's sidebar's token (ROADMAP 10.1b, ADR-0185): one outcome of After sending, or a new one, edited beside
-// the Settings view and kept by Update or Add; Delete outcome takes it away.
+// the Settings view and kept by Update or Add; Delete outcome takes it away. Umbraco's large sidebar, so the outcome's
+// live preview has room beside its settings (10.1c, ADR-0187).
 import { UmbModalToken } from '@umbraco-cms/backoffice/modal';
 import type { FieldTypeResponseModel } from '../../api';
 import type { CheckAsk } from '../check/form-checker';
 import type { DesignDefinition } from '../definition';
 import type { RuleBuilderLanguage } from '../rules/rule-builder.modal.token';
 import type { DesignOutcome, OutcomeSetting } from './outcome-model';
+import type { OutcomePreview } from './outcome-preview';
 
 export const OUTCOME_MODAL_ALIAS = 'Jiron.FormBuilder.Modal.Outcome';
 
@@ -30,6 +32,14 @@ export interface OutcomeModalData {
   readonly htmlLength: number;
   /** Asks the form check about a definition, as the workspace does. */
   readonly check: CheckAsk;
+  /** Asks the server for the preview of an outcome of a definition, in a language of the site (ADR-0187). */
+  readonly preview: (
+    definition: DesignDefinition,
+    outcome: string,
+    culture: string,
+  ) => Promise<OutcomePreview | undefined>;
+  /** The stylesheets of the site's look, which the preview draws the outcome with, the base rules first. */
+  readonly stylesheets: readonly string[];
   /** The setting to put the focus on, as a Fix it leads to it; the first one where none is given. */
   readonly focus?: OutcomeSetting;
   /** Called once the sidebar is gone, so the view can set the focus after Umbraco gives it back. */
@@ -40,5 +50,5 @@ export interface OutcomeModalData {
 export type OutcomeModalValue = { readonly outcome: DesignOutcome; readonly at: number } | { readonly deleted: true };
 
 export const OUTCOME_MODAL = new UmbModalToken<OutcomeModalData, OutcomeModalValue>(OUTCOME_MODAL_ALIAS, {
-  modal: { type: 'sidebar', size: 'medium' },
+  modal: { type: 'sidebar', size: 'large' },
 });

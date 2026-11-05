@@ -199,14 +199,39 @@ async function seed(api: APIRequestContext, label: string, importPath: string) {
   const blankName = name('blank');
   const blank = await blankForm(api, blankName);
   // A form for some member groups that names none, so its Settings view shows the check's problem under the setting,
-  // with a redirect for German visitors before its default message (10.1b).
+  // with a redirect for German visitors before its message (10.1b), which greets the sample entry by name, masks its
+  // sensitive email and shows a copy of the answers in its preview (10.1c).
   const grouped = await blankForm(api, name('members'));
   const groupedDraft = (await (await api.get(`${API}/form/${grouped}/draft`)).json()) as {
     form: { concurrencyVersion: number };
-    definition: { settings: Record<string, Record<string, unknown>>; outcomes?: unknown[] };
+    definition: {
+      settings: Record<string, Record<string, unknown>>;
+      pages: { groups: { fields: unknown[] }[] }[];
+      outcomes?: Record<string, unknown>[];
+    };
   };
   const groupedSettings = groupedDraft.definition.settings;
   groupedSettings['availability'] = { ...groupedSettings['availability'], members: 'groups' };
+  const groupedFields = groupedDraft.definition.pages[0]?.groups[0];
+  if (groupedFields)
+    groupedFields.fields = [
+      { key: crypto.randomUUID(), type: 'name', alias: 'name', label: { '': 'Your name', 'de-DE': 'Ihr Name' } },
+      {
+        key: crypto.randomUUID(),
+        type: 'email',
+        alias: 'email',
+        label: { '': 'Email', 'de-DE': 'E-Mail' },
+        sensitive: true,
+      },
+    ];
+  const groupedMessage = groupedDraft.definition.outcomes?.[0];
+  if (groupedMessage) {
+    groupedMessage['message'] = {
+      '': '<p>Thanks, {{ field.name }}. We answer at {{ field.email }} within two working days.</p>',
+      'de-DE': '<p>Danke, {{ field.name }}. Wir antworten an {{ field.email }} innerhalb von zwei Werktagen.</p>',
+    };
+    groupedMessage['showAnswers'] = true;
+  }
   groupedDraft.definition.outcomes = [
     {
       key: crypto.randomUUID(),
@@ -638,7 +663,7 @@ for (const combo of COMBOS) {
       await expect(settingsView.locator('#member-groups-why-0')).toBeVisible();
       await scrollTo(settingsView.locator('#member-groups'));
     });
-    // After sending (10.1b): the list, a message's sidebar, and a redirect's with its rule.
+    // After sending (10.1b): the list, a message's sidebar, and a redirect's with its rule, each with its preview (10.1c).
     await walk.shot('settings-after', async () => {
       await openSettings(made.grouped);
       await openSettingsGroup('after');
@@ -649,12 +674,14 @@ for (const combo of COMBOS) {
       await openSettingsGroup('after');
       await settingsView.locator('jfb-outcome-list .row-open').nth(1).click();
       await expect(outcomeSidebar.locator('#message')).toBeVisible();
+      await expect(outcomeSidebar.locator('jfb-outcome-preview .jfb-summary')).toBeVisible();
     });
     await walk.shot('settings-outcome-redirect', async () => {
       await openSettings(made.grouped);
       await openSettingsGroup('after');
       await settingsView.locator('jfb-outcome-list .row-open').first().click();
       await expect(outcomeSidebar.locator('#address')).toBeVisible();
+      await expect(outcomeSidebar.locator('jfb-outcome-preview .said')).toBeVisible();
     });
     await walk.shot('view-coming', async () => {
       await page.goto(`${workspaceOf(made.feedback)}/view/actions`);

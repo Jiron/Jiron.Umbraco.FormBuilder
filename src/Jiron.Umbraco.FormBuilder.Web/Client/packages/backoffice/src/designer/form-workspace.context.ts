@@ -16,6 +16,7 @@ import {
   fieldTypeChanges,
   fieldTypeList,
   formCheckCheck,
+  outcomePreviewRender,
   formGet,
   formPublish,
   type FieldGroupResponseModel,
@@ -350,6 +351,20 @@ export class FormWorkspaceContext
   /** Asks the form check about a definition other than the draft: an outcome's sidebar asks about its outcome. */
   checkOf(definition: DesignDefinition) {
     return this.#askCheck(definition);
+  }
+
+  /** The preview of an outcome of a definition, as visitors get it with the sample entry (ADR-0187); undefined without an answer. */
+  async previewOf(definition: DesignDefinition, outcome: string, culture: string) {
+    const key = this.getUnique();
+    if (!key) return undefined;
+    const { data } = await tryExecute(
+      this,
+      outcomePreviewRender({ path: { key }, body: { definition, outcome, culture } }),
+      {
+        disableNotifications: true,
+      },
+    );
+    return data;
   }
 
   /** Checks the draft as it is now, as Publish does and Try again; it settles once the check shows the answer. */

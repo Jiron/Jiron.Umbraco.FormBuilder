@@ -1580,6 +1580,8 @@ export class FormSettingsViewElement extends UmbLitElement {
           defaultMessage,
           htmlLength: choices.limits.htmlLength,
           check: (asked) => context.checkOf(asked),
+          preview: (asked, outcome, culture) => context.previewOf(asked, outcome, culture),
+          stylesheets: look.stylesheets,
           ...(focus ? { focus } : {}),
           closed: () => gone?.(),
         },

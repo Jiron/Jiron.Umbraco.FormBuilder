@@ -280,7 +280,15 @@ flowchart LR
   it at all, the outcome as its sidebar edits it and as Update writes it back, and where a new one goes. The sidebar asks
   the form check (`checkOf`) about the draft as Update would make it and says its problems under their setting; the
   rules builder edits an outcome's `use` rule when its data says it is an outcome's. A view Fix it carries the outcome's
-  key, as the canvas's Change and the rules overview's outcome rows do.
+  key, as the canvas's Change and the rules overview's outcome rows do. From 10.1c (ADR-0187): the sidebar, Umbraco's
+  large one, shows the outcome's live preview beside the settings (`outcome-preview.element.ts`), asked for once the
+  changes pause (`OutcomePreviewer` in `outcome-preview.ts`, as the form checker) from
+  `form/{key}/outcome-preview`, which needs `design`: the server renders the outcome of the draft for Core's sample
+  entry (`SampleEntries`: number 42, the form with the site's setting locks applied, every field answered with what it
+  takes, which the action test runs share), as `SubmissionOutcomes` renders a real entry's, and writes it with the
+  site's own `Outcome` view in the default theme (`OutcomePreviews`, `FormModels.PreviewAsync`, `RazorViewText`). The
+  backoffice draws that markup in the canvas's look without anything that runs or sends, its countdown from the
+  runtime's own least seconds (`@jfb/runtime/countdown`).
 
 ## 2. The definition model
 

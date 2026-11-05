@@ -15,6 +15,7 @@
 import type { Context, PostAnswer, ReadPost } from '@jfb/logic';
 import type { PageErrors, ServerProblem } from './errors';
 import { hostOf, markupOf, swapForm } from './changed';
+import { countdownFrom } from './countdown';
 import { parseSanitised } from './html';
 import { wordsFor } from './messages';
 import type { Places } from './places';
@@ -74,8 +75,6 @@ const WAIT = 40_000;
 const SLOW = 1_500;
 /** The form's attributes its outcome keeps, as the server's render of an outcome writes them. */
 const KEPT = ['class', 'id', 'data-jfb-form', 'data-jfb-contract', 'lang', 'dir'];
-/** The fewest seconds a redirect after a message counts down: a shorter time leaves none to reach "Stay here" (WCAG 2.2.1). */
-const LEAST_COUNTDOWN = 10;
 
 /** A version 4 UUID from the browser's random numbers, which every origin has; `crypto.randomUUID()` needs a secure one. */
 export function submissionId(
@@ -567,11 +566,12 @@ function showOutcome(
   const stay = shown.querySelector('[data-jfb-stay]');
   if (url !== null && link !== null) link.href = url;
   if (url === null || link === null) link?.parentElement?.remove();
-  if (url === null || link === null || count === null || delay <= 0) {
+  const from = countdownFrom(delay);
+  if (url === null || link === null || count === null || from === null) {
     count?.remove();
     stay?.remove();
   } else {
-    let left = Math.max(delay, LEAST_COUNTDOWN);
+    let left = from;
     let timer: ReturnType<typeof setTimeout> | undefined;
     const tick = (): void => {
       if (left <= 0) return go(url);

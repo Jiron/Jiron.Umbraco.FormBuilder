@@ -255,6 +255,7 @@ useful action. One sentence, plus a button or link where there is one.
 | no rules yet (the rules overview, with Add rule in its header) | No rules yet. Most rules show a question only when another answer calls for it, and Add rule starts by asking which question. | Noch keine Regeln. Die meisten Regeln zeigen eine Frage nur, wenn eine andere Antwort sie verlangt, und „Regel hinzufügen“ fragt zuerst, um welche Frage es geht. |
 | no insights yet | No data yet. Numbers appear after the first visit to a page with this form. | Noch keine Daten. Zahlen erscheinen nach dem ersten Besuch einer Seite mit diesem Formular. |
 | loading failed | Entries couldn't be loaded. [Try again] | Die Einträge konnten nicht geladen werden. [Erneut versuchen] |
+| an outcome's preview got no answer | The preview couldn't be shown. [Try again] | Die Vorschau konnte nicht angezeigt werden. [Erneut versuchen] |
 
 An empty value inside a table or panel reads "none" ("keine") or "no data" ("keine Daten"), never a dash (§4.13).
 
@@ -334,6 +335,7 @@ Help text sits under its setting and answers the question the label leaves open;
 | Reason (legal hold) · Grund | Shown with the hold, and recorded in the audit log with your name. | Wird mit der Löschsperre angezeigt und mit Ihrem Namen im Protokoll festgehalten. |
 | Keep until (legal hold) · Behalten bis | At most a year from today. You can extend it before it ends. | Höchstens ein Jahr ab heute. Sie können sie vor dem Ende verlängern. |
 | the legal hold sidebar, under its settings | Held entries are kept past their retention, and Erase… leaves them out until the hold ends. | Gesperrte Einträge bleiben über ihre Aufbewahrung hinaus erhalten, und „Daten löschen…“ lässt sie aus, bis die Sperre endet. |
+| Preview with a sample entry (an outcome's sidebar) · Vorschau mit einem Beispieleintrag | As visitors see it after sending, with sample answers made from the form's fields. | So sehen Besucher es nach dem Absenden, mit Beispielantworten aus den Feldern des Formulars. |
 | Your questions (Paste questions) · Ihre Fragen | One question per line. Each becomes a field, with a type guessed from its words; you can change it afterwards. | Eine Frage pro Zeile. Jede wird ein Feld, mit einem aus ihren Wörtern erratenen Typ; Sie können ihn danach ändern. |
 
 A "Learn more" link goes to the docs page when a setting needs more than two sentences. Its text makes sense on its

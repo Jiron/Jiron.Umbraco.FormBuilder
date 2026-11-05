@@ -250,3 +250,82 @@ test("the form check's Fix it of an outcome opens its sidebar on the setting, as
   await expect(sidebar.getByRole('radio', { name: 'A redirect', exact: true })).toBeChecked();
   await expect(sidebar.getByRole('radio', { name: 'A redirect', exact: true })).toBeFocused();
 });
+
+test("an outcome's preview shows it as visitors get it, the sample entry's answers in place of its tags, a sensitive one masked", async ({
+  page,
+  loginAs,
+  apiAs,
+}) => {
+  test.setTimeout(180_000);
+  const api = await apiAs('designer');
+  const key = await formWithFields(api, unique('Preview'), [
+    { type: 'name', alias: 'name', label: { '': 'Your name' } },
+    { type: 'email', alias: 'email', label: { '': 'Email' }, sensitive: true },
+  ]);
+  const before = (await draftOf(api, key)).definition.outcomes;
+  await loginAs('designer');
+  const view = await openSettings(page, key);
+  const list = view.locator('jfb-outcome-list');
+  await rowOf(list, `Message: "${DEFAULT}"`).click();
+  const sidebar = page.locator('jfb-outcome-modal');
+  const preview = sidebar.locator('jfb-outcome-preview');
+  await expect(preview.getByRole('heading', { name: 'Preview with a sample entry' })).toBeVisible();
+  const outcome = preview.locator('.jfb-form [data-jfb-outcome]');
+
+  // What visitors get now: the site's thank-you and the sample entry's reference, beside the settings.
+  await expect(outcome.locator('p').first()).toHaveText(DEFAULT);
+  await expect(outcome.locator('[data-jfb-reference]')).toHaveText(/^Your reference is \d{4}-00042$/);
+  const settings = (await sidebar.locator('.outcome').boundingBox())!;
+  expect((await preview.boundingBox())!.x, 'the preview beside the settings').toBeGreaterThanOrEqual(
+    settings.x + settings.width,
+  );
+
+  // The message with a tag of each field: the sample's name in its place, the sensitive email masked.
+  const message = sidebar.locator('#message [contenteditable="true"]');
+  await message.click();
+  await message.pressSequentially('Thanks, ');
+  await sidebar.getByRole('button', { name: 'Insert merge tag' }).click();
+  await sidebar.getByRole('button', { name: 'Your name {{ field.name }}' }).click();
+  await sidebar.getByRole('button', { name: 'Insert merge tag' }).click();
+  await sidebar.getByRole('button', { name: 'Email {{ field.email }}' }).click();
+  await expect(outcome.locator('p').first()).toContainText('Thanks, Alex Berger');
+  await expect(outcome.locator('p').first()).toContainText('\u2022\u2022\u2022');
+  await expect(preview).not.toContainText('alex.berger@example.com');
+
+  // The copy of the answers, as visitors get it: the email masked there too.
+  await sidebar.getByRole('switch', { name: 'Show a copy of the answers' }).check();
+  const rows = preview.locator('.jfb-summary dl > div');
+  await expect(rows.locator('dt')).toHaveText(['Your name', 'Email']);
+  await expect(rows.locator('dd').first()).toHaveText('Alex Berger');
+  await expect(rows.locator('dd[data-jfb-masked]')).toHaveCount(1);
+  await expect(preview).not.toContainText('alex.berger@example.com');
+  await expect(preview.getByRole('button', { name: 'Print your answers' })).toBeVisible();
+  await axeInside(page, 'jfb-outcome-modal');
+
+  // A redirect after the message counts down from at least ten seconds, as the runtime does.
+  await sidebar.getByRole('radio', { name: 'A message, then a redirect' }).check();
+  await sidebar.getByRole('radio', { name: 'An address' }).check();
+  await enter(sidebar.getByLabel('Address', { exact: true }), '/thanks');
+  await enter(sidebar.getByLabel('Seconds before the redirect'), '5');
+  await expect(outcome.locator('[data-jfb-countdown]')).toHaveText('Taking you to the next page in 10 seconds.');
+  await expect(outcome.getByRole('link', { name: 'Go now' })).toHaveAttribute('href', '/thanks');
+
+  // Beside the settings, a preview that fits the window stays in view while they scroll, where one that scrolled with
+  // them would be gone by their end.
+  await sidebar.getByRole('switch', { name: 'Show a copy of the answers' }).uncheck();
+  await expect(preview.locator('.jfb-summary')).toHaveCount(0);
+  await page.setViewportSize({ width: 1440, height: 560 });
+  await sidebar.getByRole('button', { name: 'Add a rule' }).scrollIntoViewIfNeeded();
+  await expect(preview.getByRole('heading', { name: 'Preview with a sample entry' })).toBeInViewport();
+
+  // Where the sidebar has no room for two columns, the preview follows the settings; nothing is kept by the preview.
+  await page.setViewportSize({ width: 900, height: 900 });
+  const below = async () => {
+    const [settingsBox, previewBox] = [await sidebar.locator('.outcome').boundingBox(), await preview.boundingBox()];
+    return previewBox!.y - (settingsBox!.y + settingsBox!.height);
+  };
+  await expect.poll(below, { message: 'the preview below the settings' }).toBeGreaterThanOrEqual(0);
+  await sidebar.getByRole('button', { name: 'Cancel' }).click();
+  await expect(sidebar).toHaveCount(0);
+  expect((await draftOf(api, key)).definition.outcomes).toEqual(before);
+});

@@ -4,7 +4,9 @@
 // rules builder edits over it, and its place in the list, which a pointer can choose without dragging. The form check is
 // asked about the draft as Update would make it, once the changes pause, and its problems in the outcome show under
 // their setting: those it had at once, others once their setting is left or Update is pressed; Update keeps the outcome
-// once the check finds no error in it that the sidebar can fix, or gives no answer.
+// once the check finds no error in it that the sidebar can fix, or gives no answer. Beside the settings, where the
+// sidebar has room, below them where it has not, the outcome's live preview shows it as visitors get it with the sample
+// entry, asked for as the check is (10.1c, ADR-0187).
 import {
   css,
   html,
@@ -29,6 +31,7 @@ import '../inspector/rich-text.element';
 import { problemText } from '../inspector/setting-editor';
 import { ownText, same, withText, type Problem } from '../inspector/setting-values';
 import { textIn } from '../preview/field-models';
+import { themeSheets } from '../preview/look';
 import { RULE_BUILDER_MODAL } from '../rules/rule-builder.modal.token';
 import { plainText } from '../rules/rule-list';
 import { elementNames, inspectorRuleWords, typeFactsOf } from '../rules/rule-names';
@@ -50,6 +53,8 @@ import {
   type OutcomeEdit,
   type OutcomeSetting,
 } from './outcome-model';
+import { NO_PREVIEW, OutcomePreviewer, type PreviewState } from './outcome-preview';
+import './outcome-preview.element';
 import type { OutcomeModalData, OutcomeModalValue } from './outcome.modal.token';
 import { described, whys, type Shown } from './problem-lines';
 import { parseWhole } from './settings-model';
@@ -82,6 +87,8 @@ export class OutcomeModalElement extends UmbModalBaseElement<OutcomeModalData, O
     _tried: { state: true },
     _checking: { state: true },
     _at: { state: true },
+    _preview: { state: true },
+    _sheets: { state: true },
   };
 
   static override styles = [
@@ -94,6 +101,30 @@ export class OutcomeModalElement extends UmbModalBaseElement<OutcomeModalData, O
         container-type: inline-size;
         display: grid;
         gap: var(--uui-size-space-6);
+      }
+
+      /* The settings and the preview: one column, the preview after the settings; side by side where the sidebar has
+         room, the preview kept in view while the settings scroll. */
+      .room {
+        container-type: inline-size;
+      }
+
+      .layout {
+        display: grid;
+        gap: var(--uui-size-space-6);
+      }
+
+      @container (min-width: 960px) {
+        .layout {
+          grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+          align-items: start;
+          gap: var(--uui-size-layout-2);
+        }
+
+        jfb-outcome-preview {
+          position: sticky;
+          top: 0;
+        }
       }
 
       .rule-words,
@@ -172,8 +203,12 @@ export class OutcomeModalElement extends UmbModalBaseElement<OutcomeModalData, O
   declare private _checking: boolean;
   /** The outcome's place in the list from 0, as the Place box chose it; null while it is a new one's place. */
   declare private _at: number | null;
+  declare private _preview: PreviewState;
+  /** The site's look, which the preview draws the outcome with. */
+  declare private _sheets: readonly CSSStyleSheet[];
 
   #key = '';
+  #previewer: OutcomePreviewer | undefined;
   /** Whether Update is waiting for the check, so a second press does not keep the outcome twice. */
   #submitting = false;
   /** Whether the rules builder is open over the sidebar, so a second does not open over it. */
@@ -191,6 +226,8 @@ export class OutcomeModalElement extends UmbModalBaseElement<OutcomeModalData, O
     this._tried = false;
     this._checking = false;
     this._at = null;
+    this._preview = NO_PREVIEW;
+    this._sheets = [];
   }
 
   override connectedCallback() {
@@ -203,11 +240,18 @@ export class OutcomeModalElement extends UmbModalBaseElement<OutcomeModalData, O
     this.#answered = false;
     this.#checker = new FormChecker(data.check, (state) => this.#heard(state));
     this.#checker.changed(this.#draft());
+    this.#previewer = new OutcomePreviewer(
+      (definition) => data.preview(definition, this.#key, data.culture),
+      (state) => (this._preview = state),
+    );
+    this.#previewer.changed(this.#draft());
+    void themeSheets(data.stylesheets).then((sheets) => (this._sheets = sheets));
   }
 
   override disconnectedCallback() {
     super.disconnectedCallback();
     this.#checker?.reset();
+    this.#previewer?.stop();
     this.data?.closed?.();
   }
 
@@ -260,6 +304,7 @@ export class OutcomeModalElement extends UmbModalBaseElement<OutcomeModalData, O
     this._edit = next;
     if (done && !this._shown.has(setting)) this._shown = new Set([...this._shown, setting]);
     this.#checker?.changed(this.#draft());
+    this.#previewer?.changed(this.#draft());
   }
 
   #typedProblem(setting: OutcomeSetting, text: string | null) {
@@ -686,6 +731,7 @@ export class OutcomeModalElement extends UmbModalBaseElement<OutcomeModalData, O
         .value=${live(String(at))}
         @change=${(event: Event) => {
           this._at = Number((event.target as HTMLSelectElement).value);
+          // The preview shows the outcome by its key, wherever it is in the list: a new place asks it nothing.
           this.#checker?.changed(this.#draft());
         }}
       >
@@ -745,22 +791,32 @@ export class OutcomeModalElement extends UmbModalBaseElement<OutcomeModalData, O
     return html`<umb-body-layout
       headline=${data.outcome ? this.#term('outcome_headline', data.number) : this.#term('outcome_headlineNew')}
     >
-      <div class="outcome">
-        ${this.#kind(found)}
-        ${kind !== 'redirect' ? html`${this.#message(found)} ${this.#showAnswers(found)}` : nothing}
-        ${kind !== 'message' ? this.#leadsTo(found) : nothing}
-        ${kind === 'messageThenRedirect' ? this.#delay(found) : nothing} ${this.#place()} ${this.#rule(found)}
-        ${
-          data.outcome
-            ? html`<div class="delete-body">
-                <uui-button
-                  look="secondary"
-                  label=${this.#term('outcome_delete')}
-                  @click=${() => this.#delete()}
-                ></uui-button>
-              </div>`
-            : nothing
-        }
+      <div class="room">
+        <div class="layout">
+          <div class="outcome">
+            ${this.#kind(found)}
+            ${kind !== 'redirect' ? html`${this.#message(found)} ${this.#showAnswers(found)}` : nothing}
+            ${kind !== 'message' ? this.#leadsTo(found) : nothing}
+            ${kind === 'messageThenRedirect' ? this.#delay(found) : nothing} ${this.#place()} ${this.#rule(found)}
+          </div>
+          <jfb-outcome-preview
+            .state=${this._preview}
+            .sheets=${this._sheets}
+            .culture=${data.culture}
+            .retry=${() => this.#previewer?.retry()}
+          ></jfb-outcome-preview>
+          ${
+            data.outcome
+              ? html`<div class="delete-body">
+                  <uui-button
+                    look="secondary"
+                    label=${this.#term('outcome_delete')}
+                    @click=${() => this.#delete()}
+                  ></uui-button>
+                </div>`
+              : nothing
+          }
+        </div>
       </div>
       ${
         data.outcome

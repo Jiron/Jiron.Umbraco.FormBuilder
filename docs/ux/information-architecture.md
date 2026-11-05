@@ -360,6 +360,13 @@ Appearance, Developer.
     those the outcome had at once, others once their setting is left; an error keeps Update back, a warning does not,
     nor does a problem in another language's message, which names the language.
   - The sidebar's **Place in the list** moves the outcome without dragging; the live region says where it went.
+  - **Preview with a sample entry** sits beside the settings in Umbraco's large sidebar, kept in view as they scroll, and
+    follows them where the sidebar has no room for two columns. The server renders the outcome of the draft as
+    Update would make it, for a sample entry made from the form's fields (number 42, a made-up person's name and
+    address), with the site's own views in the canvas's look: the message with the sample's answers in place of its
+    tags and a sensitive answer masked, the reference, "Go now" with the countdown visitors see, and the copy of the
+    answers. A redirect shows as "Visitors go straight to /press/thanks". It follows each change once the changes
+    pause, the last preview staying until the next; one that fails says so with Try again (ADR-0187).
   - "Add outcome" sits under the list, under the list's own problems; at the most outcomes a form can have, a line
     says so in its place. A new outcome with a rule goes before the first outcome for every visitor, after which it
     would never be used, until its place is chosen.

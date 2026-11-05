@@ -11,6 +11,7 @@ import { CHECK_PAUSE } from '../check/form-checker';
 import type { DesignDefinition, DesignRule } from '../definition';
 import { builtInTypes } from '../preview/fixtures';
 import type { DesignOutcome } from './outcome-model';
+import type { OutcomePreview } from './outcome-preview';
 import type { OutcomeModalData, OutcomeModalValue } from './outcome.modal.token';
 
 // The rules builder's answer, and what it was opened with.
@@ -66,6 +67,21 @@ const checking = {
   answer: (() => []) as (definition: DesignDefinition) => CheckIssue[] | undefined,
 };
 
+/** What the preview answers: each ask, and the preview of its definition; undefined for no answer. */
+const previewing = {
+  asked: [] as { definition: DesignDefinition; outcome: string; culture: string }[],
+  answer: (() => THANKS) as (
+    definition: DesignDefinition,
+  ) => Promise<OutcomePreview | undefined> | OutcomePreview | undefined,
+};
+
+const THANKS: OutcomePreview = {
+  html: '<div class="jfb-outcome" data-jfb-outcome tabindex="-1"><p>Thanks.</p></div>',
+  address: null,
+  delaySeconds: 0,
+  direction: 'ltr',
+};
+
 function modalContext() {
   const state = new UmbObjectState<Partial<OutcomeModalValue>>({});
   return {
@@ -95,6 +111,11 @@ async function sidebarOf(extra: Partial<OutcomeModalData> = {}) {
       checking.asked.push(definition);
       return checking.answer(definition);
     },
+    preview: async (definition, outcome, culture) => {
+      previewing.asked.push({ definition, outcome, culture });
+      return previewing.answer(definition);
+    },
+    stylesheets: [],
     ...extra,
   };
   const modal = modalContext();
@@ -148,6 +169,8 @@ beforeEach(() => {
   vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
   checking.asked = [];
   checking.answer = () => [];
+  previewing.asked = [];
+  previewing.answer = () => THANKS;
   builder.answer = undefined;
   builder.data = [];
 });
@@ -416,5 +439,85 @@ describe("an outcome's sidebar", () => {
     await settle(element);
     expect(modal.getValue()).toEqual({ deleted: true });
     expect(modal.submit).toHaveBeenCalled();
+  });
+});
+
+describe("an outcome's live preview", () => {
+  const sheetOf = (root: ShadowRoot) => {
+    const preview = shadow(must(root.querySelector('jfb-outcome-preview'), 'the preview'));
+    return must(preview.querySelector<HTMLElement>('.shown'), 'what the preview shows');
+  };
+
+  it('asks for the outcome as Update would make it, in the language shown, at once and once the changes pause', async () => {
+    const { root, type, choose, pause } = await sidebarOf({ culture: 'de-DE' });
+    expect(previewing.asked).toHaveLength(1);
+    expect(previewing.asked[0]).toMatchObject({ outcome: 'o1', culture: 'de-DE' });
+    expect(text(sheetOf(root).querySelector('.jfb-form'))).toBe('Thanks.');
+    await choose('kind', 'messageThenRedirect');
+    await choose('leads-to', 'address');
+    await type('address', '/thanks');
+    await type('delay', '5');
+    // Typing asks nothing until the changes pause.
+    expect(previewing.asked).toHaveLength(1);
+    await pause();
+    expect(previewing.asked).toHaveLength(2);
+    const asked = previewing.asked[1]?.definition['outcomes'] as DesignOutcome[];
+    expect(asked[0]).toMatchObject({ key: 'o1', redirect: { url: '/thanks', delaySeconds: 5 } });
+    // A change that leaves the outcome as it was asks nothing.
+    await type('delay', '5');
+    await pause();
+    expect(previewing.asked).toHaveLength(2);
+  });
+
+  it("shows the server's markup in the site's look with nothing to press, and keeps it while the next is awaited", async () => {
+    const { root, pause } = await sidebarOf();
+    const sheet = sheetOf(root);
+    const form = must(sheet.querySelector<HTMLElement>('.jfb-form.jfb-theme-default'), 'the form');
+    // A screen reader reads it, in the visitors' direction; a press on it, with any button, goes nowhere.
+    expect(form.hasAttribute('inert')).toBe(false);
+    expect(form.getAttribute('dir')).toBe('ltr');
+    for (const kind of ['click', 'auxclick']) {
+      const press = new MouseEvent(kind, { bubbles: true, cancelable: true });
+      form.querySelector('p')?.dispatchEvent(press);
+      expect(press.defaultPrevented).toBe(true);
+    }
+    expect(form.querySelector('[data-jfb-outcome]')?.hasAttribute('tabindex')).toBe(false);
+    expect(sheet.getAttribute('aria-busy')).toBe('false');
+    let answer: (preview: OutcomePreview) => void = () => undefined;
+    previewing.answer = () => new Promise((done) => (answer = done));
+    must(root.querySelector<HTMLInputElement>('#show-answers'), 'the switch').click();
+    await pause();
+    // The last preview stays, busy, until the next answer comes.
+    expect(text(sheetOf(root).querySelector('.jfb-form'))).toBe('Thanks.');
+    expect(sheetOf(root).getAttribute('aria-busy')).toBe('true');
+    answer({ ...THANKS, html: '<div class="jfb-outcome" data-jfb-outcome><p>Danke.</p></div>' });
+    await pause();
+    expect(text(sheetOf(root).querySelector('.jfb-form'))).toBe('Danke.');
+    expect(sheetOf(root).getAttribute('aria-busy')).toBe('false');
+  });
+
+  it('says where a redirect takes visitors, and when the preview could not be shown, with Try again', async () => {
+    previewing.answer = () => ({ html: null, address: '/press/thanks', delaySeconds: 0, direction: 'ltr' });
+    const redirecting = await sidebarOf({ outcome: redirect, definition: { ...DEFINITION, outcomes: [redirect] } });
+    expect(text(sheetOf(redirecting.root))).toBe('Visitors go straight to /press/thanks');
+    // Visitors get no page of the form: the line stands on the sidebar, not on a visitor's page.
+    expect(sheetOf(redirecting.root).querySelector('.sheet')).toBeNull();
+    document.body.replaceChildren();
+    previewing.answer = () => undefined;
+    const failed = await sidebarOf();
+    expect(text(sheetOf(failed.root).querySelector('.said[role="alert"]'))).toBe("The preview couldn't be shown.");
+    previewing.answer = () => THANKS;
+    must(sheetOf(failed.root).querySelector<HTMLElement>('uui-button[label="Try again"]'), 'Try again').click();
+    await settle(failed.element);
+    expect(previewing.asked).toHaveLength(3);
+    expect(text(sheetOf(failed.root).querySelector('.jfb-form'))).toBe('Thanks.');
+  });
+
+  it('stops asking once the sidebar is gone', async () => {
+    const { element, root } = await sidebarOf();
+    must(root.querySelector<HTMLInputElement>('#show-answers'), 'the switch').click();
+    element.remove();
+    await vi.advanceTimersByTimeAsync(CHECK_PAUSE * 2);
+    expect(previewing.asked).toHaveLength(1);
   });
 });
