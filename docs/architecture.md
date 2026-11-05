@@ -274,7 +274,13 @@ flowchart LR
   `form/{key}/setting-choices` for who may design the form (the defaults "Site default" names, the site's button
   labels, the time zone, the themes, the member groups and the save checks' bounds) and `captcha-provider` (each
   provider's label, whether it has its keys, never a key, and its settings). The workspace keeps the language either
-  view's switch chose, and hands each Fix it to the view that makes it (`FIXING_VIEWS`).
+  view's switch chose, and hands each Fix it to the view that makes it (`FIXING_VIEWS`, `followFix`). From 10.1b
+  (ADR-0185): After sending lists the outcomes (`outcome-list.element.ts`), each edited in a sidebar of its own
+  (`outcome.modal.element.ts`), `outcome-model.ts` holding, pure, what an outcome gives visitors and whether one can get
+  it at all, the outcome as its sidebar edits it and as Update writes it back, and where a new one goes. The sidebar asks
+  the form check (`checkOf`) about the draft as Update would make it and says its problems under their setting; the
+  rules builder edits an outcome's `use` rule when its data says it is an outcome's. A view Fix it carries the outcome's
+  key, as the canvas's Change and the rules overview's outcome rows do.
 
 ## 2. The definition model
 
@@ -341,7 +347,7 @@ Text        LocalizedText: culture → text, "" is the default; "#key" reads the
   six codes whose words only it has), and reads each path against the definition checked for Fix it (`form-check.ts`):
   the element with the inspector on the item, the rules builder on a rule, the palette for a page without fields, or
   the Settings and Actions views with the problem's path, which the Settings view leads to its setting (10.1a,
-  ADR-0184); a captcha provider's own settings are held to what it describes (`CaptchaPublishCheck`).
+  ADR-0184) or to the outcome's sidebar on it, by the outcome's key (10.1b, ADR-0185); a captcha provider's own settings are held to what it describes (`CaptchaPublishCheck`).
 - **The History** ([ADR-0045](decisions/0045-versions-comparison-and-draft-cleanup.md)) lists the publishes, or every
   version, newest first, each with what changed since the version before it (a publish since the publish before).
   The comparison matches elements by key, settings groups by name, and gives each change its path of properties with

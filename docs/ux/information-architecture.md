@@ -353,7 +353,16 @@ Appearance, Developer.
     answers), a redirect (a page or an address), or a message and then a redirect, and its rule, beside a live preview
     with a sample entry. The action bar: Delete outcome at its start (it acts at once and the toast offers Undo),
     Cancel, primary **Update**.
-  - "Add outcome" sits under the list.
+  - Each row says when visitors get it: its rule in words, "Otherwise" for the first outcome for every visitor ("Used
+    for every visitor" when it is first), and "Never used" for any after that one, which no visitor gets (ADR-0185).
+    Its problems are counted on it, in the error colour where an error is among them.
+  - The sidebar asks the form check about the draft as Update would make it and says its problems under their setting:
+    those the outcome had at once, others once their setting is left; an error keeps Update back, a warning does not,
+    nor does a problem in another language's message, which names the language.
+  - The sidebar's **Place in the list** moves the outcome without dragging; the live region says where it went.
+  - "Add outcome" sits under the list, under the list's own problems; at the most outcomes a form can have, a line
+    says so in its place. A new outcome with a rule goes before the first outcome for every visitor, after which it
+    would never be used, until its place is chosen.
   - A new form has one outcome: the default thank-you message (copy.md). Without any outcome, visitors get that
     message, and the list says so.
 - **Settings, outcomes and actions belong to the draft:** a sidebar's **Add** or **Update** changes the draft like any

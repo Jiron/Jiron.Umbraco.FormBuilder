@@ -1,0 +1,252 @@
+import type { APIRequestContext, Locator, Page } from '@playwright/test';
+import { expect, test } from '../../fixtures.ts';
+import { axeInside } from '../../support/axe.ts';
+import { API, formWithFields, unique } from '../../support/forms-api.ts';
+
+// After sending in the form's Settings view (ROADMAP 10.1b, IA 5.2, ADR-0185). The outcomes are a list, each opened in a
+// sidebar of its own: a message with merge tags and a copy of the answers, a redirect to a page or an address, or a
+// message and then a redirect; its rule in the rules builder; what the server can't keep refused at its box and the
+// form check's problems said under their setting. Rows move with Alt and the arrows, Delete outcome offers Undo, and
+// Save draft keeps them. The form check's Fix it and the canvas's After sending lead to an outcome's sidebar.
+
+const SECTION = '/umbraco/section/jfb-forms';
+const DEFAULT = 'Thank you. We have received your message.';
+
+interface Outcome {
+  readonly key: string;
+  readonly kind?: string;
+  readonly message?: Record<string, string>;
+  readonly showAnswers?: boolean;
+  readonly redirect?: { readonly url?: string; readonly content?: string; readonly delaySeconds?: number };
+  readonly rules?: readonly { readonly effect: string; readonly conditions: readonly unknown[] }[];
+}
+
+interface Draft {
+  readonly form: { readonly concurrencyVersion: number };
+  readonly definition: { outcomes?: Outcome[]; readonly [other: string]: unknown };
+}
+
+const draftOf = async (api: APIRequestContext, key: string) =>
+  (await (await api.get(`${API}/form/${key}/draft`)).json()) as Draft;
+
+const newForm = (api: APIRequestContext, name: string) =>
+  formWithFields(api, unique(name), [
+    { type: 'text', alias: 'name', label: { '': 'Name' } },
+    { type: 'email', alias: 'email', label: { '': 'Email' } },
+  ]);
+
+async function openSettings(page: Page, key: string) {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto(`${SECTION}/workspace/jfb-form/edit/${key}/view/settings`);
+  const view = page.locator('jfb-form-settings-view');
+  await expect(view.locator('#group-after')).toHaveAttribute('aria-expanded', 'true');
+  return view;
+}
+
+/** Types into a box and leaves it, as a person does: what can't be kept, and the check's problems, show once it is left. */
+async function enter(box: Locator, value: string) {
+  await box.fill(value);
+  await box.press('Tab');
+}
+
+/** The button that opens the outcome a row names: its name is all the row shows, the outcome's name first. */
+const rowOf = (list: Locator, name: string) =>
+  list.locator('.row-open').filter({ has: list.page().locator('.row-name', { hasText: name }) });
+
+/** Saves the draft and waits for the save's own answer, which the button does not wait for. */
+async function saveDraft(page: Page, key: string) {
+  const saved = page.waitForResponse(
+    (response) => response.request().method() === 'PUT' && response.url().endsWith(`/form/${key}/draft`),
+  );
+  await page.getByRole('button', { name: 'Save draft' }).click();
+  expect((await saved).ok(), 'the draft is saved').toBe(true);
+}
+
+test('After sending edits each outcome in its sidebar, with its rule and its messages, moves it and deletes it with Undo', async ({
+  page,
+  loginAs,
+  apiAs,
+}) => {
+  test.setTimeout(240_000);
+  const api = await apiAs('designer');
+  const key = await newForm(api, 'Outcomes');
+  await loginAs('designer');
+  const view = await openSettings(page, key);
+  const list = view.locator('jfb-outcome-list');
+  const rows = list.locator('.outcome-row');
+  const names = rows.locator('.row-name');
+  const lines = rows.locator('.row-line');
+
+  // A new form's one outcome gives every visitor the default message.
+  await expect(names).toHaveText([`Message: "${DEFAULT}"`]);
+  await expect(lines).toHaveText(['Used for every visitor']);
+  await axeInside(page, 'jfb-form-settings-view');
+
+  // Its message, written with a merge tag, and a copy of the answers.
+  await rowOf(list, `Message: "${DEFAULT}"`).click();
+  const sidebar = page.locator('jfb-outcome-modal');
+  await expect(sidebar.getByRole('heading', { name: 'Outcome 1' })).toBeVisible();
+  await expect(sidebar.getByRole('radio', { name: 'A message', exact: true })).toBeChecked();
+  const message = sidebar.locator('#message [contenteditable="true"]');
+  await message.click();
+  await message.pressSequentially('Thanks, ');
+  await sidebar.getByRole('button', { name: 'Insert merge tag' }).click();
+  await sidebar.getByRole('button', { name: 'Name {{ field.name }}' }).click();
+  await sidebar.getByRole('switch', { name: 'Show a copy of the answers' }).check();
+  await axeInside(page, 'jfb-outcome-modal');
+  await sidebar.getByRole('button', { name: 'Update', exact: true }).click();
+  await expect(sidebar).toHaveCount(0);
+  await expect(names).toHaveText(['Message: "Thanks, {{ field.name }}"']);
+  await expect(rowOf(list, 'Message: "Thanks, {{ field.name }}"')).toBeFocused();
+
+  // A message and then a redirect waits from 0 to 600 seconds; a number past that is refused once its box is left.
+  await list.getByRole('button', { name: 'Add outcome' }).click();
+  await expect(sidebar.getByRole('heading', { name: 'New outcome' })).toBeVisible();
+  await sidebar.getByRole('radio', { name: 'A message, then a redirect' }).check();
+  await enter(sidebar.getByLabel('Seconds before the redirect'), '900');
+  await expect(sidebar.locator('#delay-why-0')).toHaveText('Enter a whole number from 0 to 600.');
+  await sidebar.getByRole('button', { name: 'Cancel' }).click();
+  await expect(sidebar).toHaveCount(0);
+  await expect(rows).toHaveCount(1);
+
+  // A redirect: the form check's own words under an address it refuses, which keep Add back; then its rule.
+  await list.getByRole('button', { name: 'Add outcome' }).click();
+  await sidebar.getByRole('radio', { name: 'A redirect', exact: true }).check();
+  await expect(sidebar.getByRole('radio', { name: 'A page of this site' })).toBeChecked();
+  await sidebar.getByRole('radio', { name: 'An address' }).check();
+  const address = sidebar.getByLabel('Address', { exact: true });
+  await enter(address, 'javascript:alert(1)');
+  await expect(sidebar.locator('#address-why-0')).toHaveText(
+    'A redirect is a path on the site, such as /thanks, or an https address.',
+  );
+  await sidebar.getByRole('button', { name: 'Add', exact: true }).click();
+  await expect(address).toBeFocused();
+  await enter(address, '/press/thanks');
+  await expect(sidebar.locator('#address-why-0')).toHaveCount(0);
+  await sidebar.getByRole('button', { name: 'Add a rule' }).click();
+  const builder = page.locator('jfb-rule-builder-modal');
+  await expect(builder.getByRole('heading', { name: 'New rule' })).toBeVisible();
+  await expect(builder.locator('.first-line')).toHaveText('Use the new outcome when');
+  await builder.getByRole('combobox', { name: 'What condition 1 looks at' }).selectOption({ label: 'Name' });
+  await builder.getByRole('combobox', { name: 'How condition 1 compares' }).selectOption({ label: 'is not empty' });
+  await builder.getByRole('button', { name: 'Add', exact: true }).click();
+  await expect(builder).toHaveCount(0);
+  await expect(sidebar.locator('#rule-words')).toHaveText('Used when Name is not empty');
+  await expect(sidebar.getByRole('button', { name: 'Change rule' })).toBeFocused();
+  await sidebar.getByRole('button', { name: 'Add', exact: true }).click();
+  await expect(sidebar).toHaveCount(0);
+  // An outcome with a rule goes before the one for every visitor, which stays the one the others fall back to.
+  await expect(names).toHaveText(['Redirect to /press/thanks', 'Message: "Thanks, {{ field.name }}"']);
+  await expect(lines).toHaveText(['Used when Name is not empty', 'Otherwise']);
+  await expect(list.getByRole('status')).toHaveText('Added. Redirect to /press/thanks: position 1 of 2.');
+
+  // Alt and the arrows move a row and say where it went; the outcome after the one for every visitor is never used.
+  const handle = list.getByRole('button', { name: 'Move Redirect to /press/thanks' });
+  await handle.focus();
+  await handle.press('Alt+ArrowDown');
+  await expect(names).toHaveText(['Message: "Thanks, {{ field.name }}"', 'Redirect to /press/thanks']);
+  await expect(lines).toHaveText(['Used for every visitor', 'Never used: an outcome above is used for every visitor']);
+  await expect(list.getByRole('status')).toHaveText('Moved. Redirect to /press/thanks: position 2 of 2.');
+  await expect(handle).toBeFocused();
+  // Ctrl+Z outside a text box undoes the move.
+  await handle.press('Control+z');
+  await expect(names).toHaveText(['Redirect to /press/thanks', 'Message: "Thanks, {{ field.name }}"']);
+
+  // The sidebar's place moves it without dragging, and says first where no visitor would get it.
+  await rowOf(list, 'Redirect to /press/thanks').click();
+  await sidebar.getByLabel('Place in the list').selectOption({ label: '2 of 2' });
+  await expect(sidebar.locator('#rule-never')).toHaveText('Never used: an outcome above is used for every visitor');
+  await sidebar.getByRole('button', { name: 'Update', exact: true }).click();
+  await expect(sidebar).toHaveCount(0);
+  await expect(names).toHaveText(['Message: "Thanks, {{ field.name }}"', 'Redirect to /press/thanks']);
+  await expect(list.getByRole('status')).toHaveText('Moved. Redirect to /press/thanks: position 2 of 2.');
+  const moved = rowOf(list, 'Redirect to /press/thanks');
+  await expect(moved).toBeFocused();
+  await moved.press('Control+z');
+  await expect(names).toHaveText(['Redirect to /press/thanks', 'Message: "Thanks, {{ field.name }}"']);
+
+  // Delete outcome acts at once; Undo in the toast brings it back.
+  await rowOf(list, 'Redirect to /press/thanks').click();
+  await expect(sidebar.getByRole('heading', { name: 'Outcome 1' })).toBeVisible();
+  await sidebar.getByRole('button', { name: 'Delete outcome' }).click();
+  await expect(sidebar).toHaveCount(0);
+  await expect(names).toHaveText(['Message: "Thanks, {{ field.name }}"']);
+  await page
+    .locator('uui-toast-notification')
+    .filter({ hasText: 'Outcome deleted.' })
+    .getByRole('button', { name: 'Undo' })
+    .click();
+  await expect(names).toHaveText(['Redirect to /press/thanks', 'Message: "Thanks, {{ field.name }}"']);
+  // The toast is gone with its Undo: the focus is on the outcome back in the list.
+  await expect(rowOf(list, 'Redirect to /press/thanks')).toBeFocused();
+
+  // Closed, the group says how many outcomes there are; Save draft keeps them as the server writes them.
+  await view.locator('#group-after').click();
+  await expect(view.locator('#group-after .summary')).toHaveText('2 outcomes');
+  await saveDraft(page, key);
+  const outcomes = (await draftOf(api, key)).definition.outcomes ?? [];
+  expect(outcomes.map((one) => [one.kind, one.redirect?.url ?? null, one.showAnswers ?? null])).toEqual([
+    ['redirect', '/press/thanks', false],
+    ['message', null, true],
+  ]);
+  expect(outcomes[0]?.rules?.map((rule) => [rule.effect, rule.conditions])).toEqual([
+    ['use', [expect.objectContaining({ op: 'isNotEmpty' })]],
+  ]);
+  expect(outcomes[1]?.message?.['']).toContain('Thanks, {{ field.name }}');
+});
+
+test("the form check's Fix it of an outcome opens its sidebar on the setting, as the canvas's After sending does", async ({
+  page,
+  loginAs,
+  apiAs,
+}) => {
+  test.setTimeout(240_000);
+  const api = await apiAs('designer');
+  const key = await newForm(api, 'Outcome check');
+  // A redirect to an address the server refuses, before the form's own message.
+  const draft = await draftOf(api, key);
+  const outcomes = [
+    { key: crypto.randomUUID(), kind: 'redirect', redirect: { url: '//elsewhere.example', delaySeconds: 0 } },
+    ...(draft.definition.outcomes ?? []),
+  ];
+  const saved = await api.put(`${API}/form/${key}/draft`, {
+    data: { concurrencyVersion: draft.form.concurrencyVersion, definition: { ...draft.definition, outcomes } },
+  });
+  expect(saved.ok(), await saved.text()).toBe(true);
+  await loginAs('designer');
+
+  // From the Design view's check: Fix it opens After sending on the outcome's address, its problem under it.
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto(`${SECTION}/workspace/jfb-form/edit/${key}`);
+  const design = page.locator('jfb-form-design-view');
+  await expect(design.locator('jfb-form-canvas .bo-check')).toHaveText('1 problem');
+  await design.locator('jfb-form-canvas .bo-check').click();
+  const check = page.locator('jfb-form-check-modal');
+  await check.getByRole('button', { name: 'Fix it: After sending: outcome 1' }).click();
+  await expect(check).toHaveCount(0);
+  await expect(page).toHaveURL(/\/view\/settings$/);
+  const sidebar = page.locator('jfb-outcome-modal');
+  await expect(sidebar.getByRole('heading', { name: 'Outcome 1' })).toBeVisible();
+  const address = sidebar.getByLabel('Address', { exact: true });
+  await expect(address).toBeFocused();
+  await expect(sidebar.locator('#address-why-0')).toHaveText(
+    'A path that starts with two slashes leads to another site.',
+  );
+  await axeInside(page, 'jfb-outcome-modal');
+  // The row counts the problem, said in the sidebar.
+  await sidebar.getByRole('button', { name: 'Cancel' }).click();
+  await expect(sidebar).toHaveCount(0);
+  const list = page.locator('jfb-form-settings-view jfb-outcome-list');
+  await expect(list.locator('.outcome-row').first().locator('.row-line')).toHaveText(
+    /^1 problem\s+\S\s+Used for every visitor$/,
+  );
+
+  // The canvas's After sending shows the outcome for every visitor, the redirect, whose Change opens its sidebar.
+  await page.goto(`${SECTION}/workspace/jfb-form/edit/${key}`);
+  await design.locator('jfb-form-canvas').getByRole('button', { name: 'After sending' }).click();
+  await design.locator('jfb-form-canvas').getByRole('button', { name: 'Change' }).click();
+  await expect(page).toHaveURL(/\/view\/settings$/);
+  await expect(sidebar.getByRole('heading', { name: 'Outcome 1' })).toBeVisible();
+  await expect(sidebar.getByRole('radio', { name: 'A redirect', exact: true })).toBeChecked();
+  await expect(sidebar.getByRole('radio', { name: 'A redirect', exact: true })).toBeFocused();
+});

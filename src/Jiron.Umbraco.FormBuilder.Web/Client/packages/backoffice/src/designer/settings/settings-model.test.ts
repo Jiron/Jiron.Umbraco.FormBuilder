@@ -59,7 +59,14 @@ const CHOICES: FormSettingsChoicesResponseModel = {
     { alias: 'brand', label: 'Brand' },
   ],
   memberGroups: [],
-  limits: { lineLength: 500, htmlLength: 50000, nameLength: 64, verificationDays: 90, referenceDigits: 10 },
+  limits: {
+    lineLength: 500,
+    htmlLength: 50000,
+    nameLength: 64,
+    verificationDays: 90,
+    referenceDigits: 10,
+    outcomes: 50,
+  },
 };
 
 const PROVIDERS: CaptchaProviderResponseModel[] = [
@@ -135,13 +142,17 @@ describe('where a path is in the view', () => {
     for (const [path, anchor] of cases) expect(anchorOf(path), path).toEqual(anchor);
   });
 
+  it("puts the outcomes' problems in After sending, the list's own at the list", () => {
+    for (const path of ['$.outcomes', '$.outcomes[0]', '$.outcomes[1].redirect.url'])
+      expect(anchorOf(path), path).toEqual({ group: 'after', more: false, boxes: ['outcomes'] });
+  });
+
   it('is nowhere for a setting this view does not show yet, or a path outside the settings', () => {
     for (const path of [
       '$.settings.submission.resume.days',
       '$.settings.availability.onePerMember',
       '$.settings.privacy.retentionDays.spam',
       '$.settings',
-      '$.outcomes[0]',
       '$.pages[0].label',
       'nonsense',
     ])

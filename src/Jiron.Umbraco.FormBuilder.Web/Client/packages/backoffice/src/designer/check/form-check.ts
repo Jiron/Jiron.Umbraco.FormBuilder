@@ -117,9 +117,15 @@ export type FixTarget =
   | { readonly kind: 'palette'; readonly page: string | null }
   /**
    * A view of the form where the place is edited: its settings and outcomes, or its actions, with the problem's path,
-   * which that view leads to (ADR-0184).
+   * which that view leads to (ADR-0184), and the key of the outcome the path is in, as the definition checked holds it,
+   * so a move of the outcomes since leads to the same one (ADR-0185).
    */
-  | { readonly kind: 'view'; readonly view: 'settings' | 'actions'; readonly path: string };
+  | {
+      readonly kind: 'view';
+      readonly view: 'settings' | 'actions';
+      readonly path: string;
+      readonly key?: string;
+    };
 
 /** A field's properties that the inspector edits, by their name in the definition. */
 const FIELD_ITEMS: Readonly<Record<string, InspectorItem>> = {
@@ -228,7 +234,16 @@ export function fixOf(definition: DesignDefinition, path: string, types?: CheckT
   const steps = parsePath(path);
   if (!steps || steps.length === 0) return null;
   const [top, ...after] = steps;
-  if (top === 'settings' || top === 'outcomes') return { kind: 'view', view: 'settings', path };
+  if (top === 'settings') return { kind: 'view', view: 'settings', path };
+  if (top === 'outcomes') {
+    const outcomes = definition['outcomes'];
+    const [index] = after;
+    const key =
+      typeof index === 'number' && Array.isArray(outcomes)
+        ? (outcomes[index] as { key?: unknown } | undefined)?.key
+        : undefined;
+    return { kind: 'view', view: 'settings', path, ...(typeof key === 'string' ? { key } : {}) };
+  }
   if (top === 'actions') return { kind: 'view', view: 'actions', path };
   if (top === 'validationRules') return validationFix(definition, after);
   if (top !== 'pages') return null;

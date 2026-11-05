@@ -30,6 +30,7 @@ import { FarGroups } from './canvas-far';
 import { untranslated } from '../inspector/inspector-model';
 import { chipsOf } from '../rules/rule-list';
 import { inspectorRuleWords } from '../rules/rule-names';
+import { holdsAlways, outcomesOf, useRuleOf } from '../settings/outcome-model';
 import { FIELD_REQUEST, moreMenu, type FieldRequest, type FieldState, type FieldWords } from './canvas-field.element';
 import './canvas-field.element';
 import { canvasChrome } from './canvas.styles';
@@ -48,7 +49,8 @@ export type CanvasRequest =
   | { readonly kind: 'undo' }
   | { readonly kind: 'redo' }
   | { readonly kind: 'paste' }
-  | { readonly kind: 'changeOutcome' }
+  /** The outcome the canvas shows, by its key, to change in the Settings view; none where visitors get the default. */
+  | { readonly kind: 'changeOutcome'; readonly key: string | null }
   | { readonly kind: 'shortcuts' }
   | { readonly kind: 'rulesOverview' }
   | { readonly kind: 'formCheck' }
@@ -820,14 +822,11 @@ export class FormCanvasElement extends UmbLitElement {
     return this.look?.words[name] ?? name;
   }
 
-  // What visitors get after sending: the outcome without rules, else the package's thanks.
+  // What visitors get after sending: the first outcome for every visitor (its rule off or always met), else the first,
+  // else the package's thanks.
   #after(look: CanvasLook): TemplateResult {
-    const outcomes = (this.definition['outcomes'] ?? []) as readonly {
-      kind?: string;
-      message?: LocalizedText;
-      rules?: readonly unknown[];
-    }[];
-    const outcome = outcomes.find((each) => (each.rules ?? []).length === 0) ?? outcomes[0];
+    const outcomes = outcomesOf(this.definition);
+    const outcome = outcomes.find((each) => holdsAlways(useRuleOf(each))) ?? outcomes[0];
     let shown: Node | TemplateResult;
     if (outcome?.kind === 'redirect')
       shown = html`<p class="bo-empty">${this.localize.term('jfbDesigner_afterRedirect')}</p>`;
@@ -846,7 +845,7 @@ export class FormCanvasElement extends UmbLitElement {
       <uui-button
         look="outline"
         label=${this.localize.term('jfbDesigner_changeOutcome')}
-        @click=${() => this.#ask({ kind: 'changeOutcome' })}
+        @click=${() => this.#ask({ kind: 'changeOutcome', key: outcome?.key ?? null })}
       ></uui-button>
     </div>`;
   }

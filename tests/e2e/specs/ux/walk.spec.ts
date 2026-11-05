@@ -198,14 +198,32 @@ async function seed(api: APIRequestContext, label: string, importPath: string) {
   const volunteer = await duplicate(api, (await demoForm(api, 'volunteer')).key, name('volunteer'));
   const blankName = name('blank');
   const blank = await blankForm(api, blankName);
-  // A form for some member groups that names none, so its Settings view shows the check's problem under the setting.
+  // A form for some member groups that names none, so its Settings view shows the check's problem under the setting,
+  // with a redirect for German visitors before its default message (10.1b).
   const grouped = await blankForm(api, name('members'));
   const groupedDraft = (await (await api.get(`${API}/form/${grouped}/draft`)).json()) as {
     form: { concurrencyVersion: number };
-    definition: { settings: Record<string, Record<string, unknown>> };
+    definition: { settings: Record<string, Record<string, unknown>>; outcomes?: unknown[] };
   };
   const groupedSettings = groupedDraft.definition.settings;
   groupedSettings['availability'] = { ...groupedSettings['availability'], members: 'groups' };
+  groupedDraft.definition.outcomes = [
+    {
+      key: crypto.randomUUID(),
+      kind: 'redirect',
+      redirect: { url: '/de/danke', delaySeconds: 0 },
+      rules: [
+        {
+          key: crypto.randomUUID(),
+          effect: 'use',
+          enabled: true,
+          match: 'all',
+          conditions: [{ context: 'culture', op: 'startsWith', value: 'de' }],
+        },
+      ],
+    },
+    ...(groupedDraft.definition.outcomes ?? []),
+  ];
   const groupedSaved = await api.put(`${API}/form/${grouped}/draft`, {
     data: { concurrencyVersion: groupedDraft.form.concurrencyVersion, definition: groupedDraft.definition },
   });
@@ -619,6 +637,24 @@ for (const combo of COMBOS) {
       await openSettingsGroup('availability');
       await expect(settingsView.locator('#member-groups-why-0')).toBeVisible();
       await scrollTo(settingsView.locator('#member-groups'));
+    });
+    // After sending (10.1b): the list, a message's sidebar, and a redirect's with its rule.
+    await walk.shot('settings-after', async () => {
+      await openSettings(made.grouped);
+      await openSettingsGroup('after');
+    });
+    const outcomeSidebar = page.locator('jfb-outcome-modal');
+    await walk.shot('settings-outcome', async () => {
+      await openSettings(made.grouped);
+      await openSettingsGroup('after');
+      await settingsView.locator('jfb-outcome-list .row-open').nth(1).click();
+      await expect(outcomeSidebar.locator('#message')).toBeVisible();
+    });
+    await walk.shot('settings-outcome-redirect', async () => {
+      await openSettings(made.grouped);
+      await openSettingsGroup('after');
+      await settingsView.locator('jfb-outcome-list .row-open').first().click();
+      await expect(outcomeSidebar.locator('#address')).toBeVisible();
     });
     await walk.shot('view-coming', async () => {
       await page.goto(`${workspaceOf(made.feedback)}/view/actions`);

@@ -347,6 +347,11 @@ export class FormWorkspaceContext
     return data ? issuesOf(data.issues) : undefined;
   }
 
+  /** Asks the form check about a definition other than the draft: an outcome's sidebar asks about its outcome. */
+  checkOf(definition: DesignDefinition) {
+    return this.#askCheck(definition);
+  }
+
   /** Checks the draft as it is now, as Publish does and Try again; it settles once the check shows the answer. */
   checkNow(): Promise<void> {
     return this.canDesign() ? this.#checker.now(this.#history.state.definition) : Promise.resolve();

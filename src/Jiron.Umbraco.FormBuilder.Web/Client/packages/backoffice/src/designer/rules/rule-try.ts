@@ -89,6 +89,7 @@ export function triedSubjects(draft: DraftRule): string[] {
  * is off does nothing: the element shows, is not required, and shows no message (the switch's help says why).
  */
 export function verdictTerm(effect: Effect, matches: boolean | null): string {
+  if (effect === 'use') return matches === false ? 'jfbRules_tryNotUsed' : 'jfbRules_tryUsed';
   if (effect === 'message') return matches === true ? 'jfbRules_tryMessageShows' : 'jfbRules_tryMessageHidden';
   if (matches === null) return effect === 'require' ? 'jfbRules_tryNotRequired' : 'jfbRules_tryShows';
   if (effect === 'require') return matches ? 'jfbRules_tryRequired' : 'jfbRules_tryNotRequired';

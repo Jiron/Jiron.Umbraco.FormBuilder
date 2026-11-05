@@ -257,7 +257,7 @@ describe('the rules overview', () => {
     must(root.querySelector<HTMLButtonElement>('button.row[data-key="email"]'), 'the row').click();
     expect([modal.getValue(), modal.submit.mock.calls.length]).toEqual([{ go: 'element', key: 'email' }, 1]);
     must(root.querySelector<HTMLButtonElement>('button.row[data-outcome="0"]'), 'the outcome').click();
-    expect(modal.getValue()).toEqual({ go: 'outcomes' });
+    expect(modal.getValue()).toEqual({ go: 'outcomes', index: 0 });
   });
 
   it('asks first what a new rule affects, says when nothing is chosen, and leads to it', async () => {

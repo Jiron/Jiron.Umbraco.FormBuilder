@@ -692,7 +692,26 @@ describe('the canvas', () => {
     expect(outcome.innerHTML).toBe('<p>Thanks, <strong>see you</strong>!</p>');
     expect(outcome.inert).toBe(true);
     must(root.querySelector('uui-button[label="Change"]'), 'Change').dispatchEvent(new Event('click'));
-    expect(requests).toEqual([{ kind: 'changeOutcome' }]);
+    // Change opens the outcome shown, in the Settings view (ADR-0185).
+    expect(requests).toEqual([{ kind: 'changeOutcome', key: 'o' }]);
+  });
+
+  it('shows the first outcome for every visitor: one whose rule is off counts, one with a rule that may not match does not', async () => {
+    const ruled = (enabled: boolean) => [
+      { key: 'r', effect: 'use', enabled, match: 'all' as const, conditions: [{ field: 'name', op: 'isNotEmpty' }] },
+    ];
+    const definition: DesignDefinition = {
+      ...DEFINITION,
+      outcomes: [
+        { key: 'press', kind: 'message', message: { '': '<p>Press</p>' }, rules: ruled(true) },
+        { key: 'off', kind: 'message', message: { '': '<p>Off</p>' }, rules: ruled(false) },
+        { key: 'o', kind: 'message', message: { '': '<p>Last</p>' } },
+      ],
+    };
+    const { requests, root } = await canvasOf(definition, { shown: 'after' });
+    expect(must(root.querySelector<HTMLElement>('.jfb-outcome'), 'the outcome').innerHTML).toBe('<p>Off</p>');
+    must(root.querySelector('uui-button[label="Change"]'), 'Change').dispatchEvent(new Event('click'));
+    expect(requests).toEqual([{ kind: 'changeOutcome', key: 'off' }]);
   });
 
   it('switches the width, the chosen one pressed, and keeps Undo and Redo in its menu as they can be used', async () => {

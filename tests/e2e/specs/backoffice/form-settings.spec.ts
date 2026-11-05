@@ -165,7 +165,7 @@ test('the submission group and its More options set what they say, refuse what t
   // Ctrl+Z outside a text box takes the last change back, and says so.
   await view.getByRole('switch', { name: 'Include the year' }).press('Control+z');
   await expect(view.locator('.example code')).toHaveText(`REQ-${new Date().getFullYear()}-042`);
-  await expect(view.locator('[role="status"][aria-live="polite"]')).toHaveText('Undone: Changed Entry reference');
+  await expect(view.locator('#said')).toHaveText('Undone: Changed Entry reference');
 
   await saveDraft(page, key);
   const submission = (await draftOf(api, key)).definition.settings['submission'];
@@ -203,7 +203,9 @@ test('availability, spam protection, appearance and developer set what they say,
 
   // Availability: the times on the site's clock, a closing before the opening refused, the limit, the message, members.
   await openGroup(view, 'availability');
-  await expect(view.locator('.group-body .note').first()).toHaveText(`Times are on the site's clock: ${timeZone}.`);
+  await expect(view.locator('#body-availability .note').first()).toHaveText(
+    `Times are on the site's clock: ${timeZone}.`,
+  );
   await enter(view.getByLabel('Opens'), '2026-12-01T09:00');
   await enter(view.getByLabel('Closes'), '2026-11-30T18:00');
   await expect(view.locator('#closes-at-why-0')).toHaveText('This is before it opens. Choose a later time.');

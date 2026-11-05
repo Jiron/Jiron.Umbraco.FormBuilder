@@ -6,10 +6,11 @@ import type { CaptchaProviderResponseModel, FormSettingsChoicesResponseModel } f
 import { parsePath } from '../check/form-check';
 import type { DesignDefinition, DesignField, LocalizedText } from '../definition';
 import { without } from '../inspector/setting-values';
+import { kindOf, outcomesOf, type DesignOutcome } from './outcome-model';
 import { isInstant } from './time-zone';
 
-/** The view's groups in their order (IA 5.2); After sending comes with 10.1b, Privacy with 11.5. */
-export const GROUPS = ['submission', 'availability', 'protection', 'appearance', 'developer'] as const;
+/** The view's groups in their order (IA 5.2); Privacy comes with 11.5. After sending holds the outcomes (ADR-0185). */
+export const GROUPS = ['submission', 'after', 'availability', 'protection', 'appearance', 'developer'] as const;
 export type GroupId = (typeof GROUPS)[number];
 
 type Json = Readonly<Record<string, unknown>>;
@@ -18,7 +19,7 @@ const isObject = (value: unknown): value is Json =>
   value !== null && typeof value === 'object' && !Array.isArray(value);
 
 /** A group of the definition's settings as stored; empty where the definition has none. */
-export function groupOf(definition: DesignDefinition, group: GroupId | 'privacy'): Json {
+export function groupOf(definition: DesignDefinition, group: Exclude<GroupId, 'after'> | 'privacy'): Json {
   const settings = definition['settings'];
   const value = isObject(settings) ? settings[group] : undefined;
   return isObject(value) ? value : {};
@@ -140,6 +141,8 @@ const own = (table: Readonly<Record<string, string>>, name: string | number | un
  */
 export function anchorOf(path: string): Anchor | null {
   const steps = parsePath(path);
+  // The outcomes' problems are After sending's: the list shows those of the list, each row those of its outcome.
+  if (steps?.[0] === 'outcomes') return at('after', ['outcomes']);
   if (!steps || steps[0] !== 'settings') return null;
   const [, group, name, inner, deeper] = steps;
   switch (group) {
@@ -273,6 +276,8 @@ export interface SummaryWords {
   readonly date: (instant: string) => string;
   /** A number as the user's language writes it. */
   readonly number: (value: number) => string;
+  /** What an outcome gives visitors, in words; without it, an outcome is named by its kind. */
+  readonly outcome?: (outcome: DesignOutcome) => string;
 }
 
 /** The dot between the parts of a closed group's line. */
@@ -307,6 +312,15 @@ export function summaryOf(
   const { term } = words;
   const parts: string[] = [];
   switch (group) {
+    case 'after': {
+      // One outcome by what it gives visitors, more by their number, none by the message visitors then get.
+      const outcomes = outcomesOf(definition);
+      const [only] = outcomes;
+      if (outcomes.length > 1) parts.push(term('summary_outcomes', outcomes.length));
+      else if (only) parts.push(words.outcome?.(only) ?? term(`summary_outcome_${kindOf(only)}`));
+      else parts.push(term('summary_defaultMessage'));
+      break;
+    }
     case 'submission': {
       const submission = groupOf(definition, 'submission');
       parts.push(term(wordIn(submission, 'store', 'always') === 'never' ? 'summary_notStored' : 'summary_stored'));

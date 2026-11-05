@@ -442,7 +442,12 @@ export class RulesOverviewModalElement extends UmbModalBaseElement<RulesOverview
 
   #outcome(outcome: RuledOutcome, words: RuleWordsContext) {
     return html`<li>
-      <button type="button" class="row" data-outcome=${outcome.index} @click=${() => this.#go({ go: 'outcomes' })}>
+      <button
+        type="button"
+        class="row"
+        data-outcome=${outcome.index}
+        @click=${() => this.#go({ go: 'outcomes', index: outcome.index })}
+      >
         <uui-icon name="icon-split" aria-hidden="true"></uui-icon>
         <span class="lines">
           <span class="name">${this.#outcomeName(outcome)}</span>

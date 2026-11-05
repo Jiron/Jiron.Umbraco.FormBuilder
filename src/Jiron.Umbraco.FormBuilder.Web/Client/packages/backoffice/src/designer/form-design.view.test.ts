@@ -1663,7 +1663,10 @@ describe('the rules overview in the Design view (ADR-0178)', () => {
   });
 
   it('lets Add rule open the builder on the element chosen, selected, and an outcome lead to Settings', async () => {
-    const { view, ask, state } = await viewOf();
+    const { view, ask, state, workspace } = await viewOf({
+      ...DEFINITION,
+      outcomes: [{ key: 'o1', kind: 'redirect', redirect: { url: '/x', delaySeconds: 0 } }],
+    });
     opened.value = (alias: string) => (alias.endsWith('RulesOverview') ? { go: 'add', key: 'email' } : undefined);
     await ask({ kind: 'rulesOverview' });
     await settle(view);
@@ -1678,9 +1681,17 @@ describe('the rules overview in the Design view (ADR-0178)', () => {
     const before = window.location.pathname;
     history.replaceState(null, '', '/umbraco/section/jfb-forms/workspace/jfb-form/edit/form1/view/design');
     opened.dialogs = [];
-    opened.value = { go: 'outcomes' };
+    opened.value = { go: 'outcomes', index: 0 };
     await ask({ kind: 'rulesOverview' });
     expect(window.location.pathname).toBe('/umbraco/section/jfb-forms/workspace/jfb-form/edit/form1/view/settings');
+    // A rule of an outcome opens the outcome's sidebar on its rule, handed on to the Settings view (ADR-0185).
+    expect(workspace.fixes.getValue()).toEqual({
+      kind: 'view',
+      view: 'settings',
+      path: '$.outcomes[0].rules[0]',
+      key: 'o1',
+    });
+    workspace.fixes.setValue(null);
     history.replaceState(null, '', before);
 
     // Closed, it changes nothing.
@@ -1819,6 +1830,25 @@ describe('the form check in the Design view (ADR-0181)', () => {
     const now = state();
     await ask({ kind: 'formCheck' });
     expect(state()).toBe(now);
+  });
+
+  it("leads the canvas's Change to the outcome it shows, and to Add outcome where visitors get the default", async () => {
+    const before = window.location.pathname;
+    history.replaceState(null, '', '/umbraco/section/jfb-forms/workspace/jfb-form/edit/form1/view/design');
+    const { ask, workspace } = await viewOf({
+      ...DEFINITION,
+      outcomes: [
+        { key: 'o1', kind: 'redirect', redirect: { url: '/x', delaySeconds: 0 } },
+        { key: 'o2', kind: 'message' },
+      ],
+    });
+    await ask({ kind: 'changeOutcome', key: 'o2' });
+    expect(window.location.pathname).toBe('/umbraco/section/jfb-forms/workspace/jfb-form/edit/form1/view/settings');
+    expect(workspace.fixes.getValue()).toEqual({ kind: 'view', view: 'settings', path: '$.outcomes[1]', key: 'o2' });
+    workspace.fixes.setValue(null);
+    await ask({ kind: 'changeOutcome', key: null });
+    expect(workspace.fixes.getValue()).toEqual({ kind: 'view', view: 'settings', path: '$.outcomes' });
+    history.replaceState(null, '', before);
   });
 
   it("shows the language of the text a problem is in, the default's for the default text", async () => {

@@ -31,7 +31,8 @@ import {
 import { bySeverity, type FixTarget } from './check/form-check';
 import type { CheckState } from './check/form-checker';
 import { FORM_CHECK_MODAL } from './check/form-check.modal.token';
-import { followFix, goToView } from './form-views';
+import { followFix } from './form-views';
+import { outcomesOf } from './settings/outcome-model';
 import { CANVAS_WIDTHS, type CanvasWidth } from './canvas/widths';
 import { isDragging } from './drag/pointer-drag';
 import type { FormCanvasElement } from './canvas/form-canvas.element';
@@ -825,7 +826,7 @@ export class FormDesignViewElement extends UmbLitElement {
         await this.#paste();
         return;
       case 'changeOutcome':
-        this.#toSettings();
+        this.#toOutcome(request.key);
         return;
       case 'drop':
         await this.#drop(request.source, request.place);
@@ -1372,7 +1373,9 @@ export class FormDesignViewElement extends UmbLitElement {
     if (!value) return;
     if (shown) await Promise.race([closed, new Promise((done) => setTimeout(done, 2000))]);
     if (value.go === 'outcomes') {
-      this.#toSettings();
+      // A rule of an outcome opens the outcome on its rule.
+      const key = outcomesOf(this.#state()?.definition ?? { pages: [] })[value.index]?.key ?? null;
+      this.#toOutcome(key, key ? `$.outcomes[${value.index}].rules[0]` : undefined);
       return;
     }
     const now = this.#selectFirst(value.key);
@@ -1709,9 +1712,18 @@ export class FormDesignViewElement extends UmbLitElement {
     if (done) this.#closePalette();
   }
 
-  // The Settings view, where a form's outcomes are edited.
-  #toSettings() {
-    goToView('settings');
+  /**
+   * The Settings view, where a form's outcomes are edited, on an outcome's sidebar (at the setting `path` names), or on
+   * Add outcome for none: handed on as a Fix it without a problem, which the Settings view takes up (ADR-0185).
+   */
+  #toOutcome(key: string | null, path?: string) {
+    const index = key ? outcomesOf(this.#state()?.definition ?? { pages: [] }).findIndex((one) => one.key === key) : -1;
+    followFix(
+      key && index >= 0
+        ? { kind: 'view', view: 'settings', path: path ?? `$.outcomes[${index}]`, key }
+        : { kind: 'view', view: 'settings', path: '$.outcomes' },
+      (fix) => this.#context?.requestFix(fix),
+    );
   }
 
   #onKey(event: KeyboardEvent) {

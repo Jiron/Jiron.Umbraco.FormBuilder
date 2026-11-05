@@ -133,6 +133,12 @@ export class RichTextElement extends UmbLitElement {
     this.change(this.#html(), done);
   }
 
+  /** Gives the editor the focus, the caret where it was, as a text box's own focus does: a Fix it leads here. */
+  override focus(options?: FocusOptions) {
+    if (this.#editor) this.#editor.commands.focus();
+    else super.focus(options);
+  }
+
   /** Puts text in where the caret is, such as a merge tag, and gives the box the focus. */
   insertText(text: string) {
     this.#editor?.chain().focus().insertContent({ type: 'text', text }).run();

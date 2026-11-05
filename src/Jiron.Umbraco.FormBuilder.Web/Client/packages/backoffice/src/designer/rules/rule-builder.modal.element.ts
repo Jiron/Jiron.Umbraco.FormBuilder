@@ -417,7 +417,7 @@ export class RuleBuilderModalElement extends UmbModalBaseElement<RuleBuilderModa
     this._tried = data.rule !== null;
     this._draft = data.rule
       ? draftOf(data.rule, data.origin, this.#newId)
-      : newDraft(crypto.randomUUID(), data.origin, data.effect, this.#newId);
+      : newDraft(crypto.randomUUID(), data.origin, data.outcome ? 'use' : data.effect, this.#newId);
     void readMemberGroups(this).then((groups) => (this._groups = groups ?? null));
   }
 
@@ -454,7 +454,10 @@ export class RuleBuilderModalElement extends UmbModalBaseElement<RuleBuilderModa
 
   #scope(): RuleScope {
     const definition = this.data?.definition ?? { pages: [] };
-    return { fields: fieldKinds(definition, this.#factsOf), contexts: scopeContexts(this.#visitFacts()) };
+    return {
+      fields: fieldKinds(definition, this.#factsOf, !this.data?.outcome),
+      contexts: scopeContexts(this.#visitFacts()),
+    };
   }
 
   #subjects(keep = ''): RuleSubject[] {
@@ -575,6 +578,7 @@ export class RuleBuilderModalElement extends UmbModalBaseElement<RuleBuilderModa
   #effectsOf(key: string): Effect[] {
     const data = this.data;
     if (!data) return [];
+    if (data.outcome) return ['use'];
     const effects = builderEffectsOf(data.definition, key, this.#factsOf);
     if (effects.includes('message') || !data.rule) return effects;
     const opened = data.rule.key;
@@ -676,6 +680,13 @@ export class RuleBuilderModalElement extends UmbModalBaseElement<RuleBuilderModa
   #firstLine() {
     const data = this.data;
     if (!data) return nothing;
+    // An outcome's rule says only when visitors get it: there is nothing else for it to do, nor anywhere else to be.
+    if (data.outcome) {
+      const { number } = data.outcome;
+      return html`<p class="first-line" id="effect" tabindex="-1">
+        ${number === null ? this.localize.term('jfbRules_useWhenNew') : this.localize.term('jfbRules_useWhen', number)}
+      </p>`;
+    }
     const gone = this.#effectGone();
     // An effect the element no longer takes stays shown, as the rule still has it, until another is chosen.
     const effects = [...this.#effectsOf(this._draft.target), ...(gone ? [this._draft.effect] : [])];
@@ -1478,6 +1489,7 @@ export class RuleBuilderModalElement extends UmbModalBaseElement<RuleBuilderModa
     const data = this.data;
     if (this._draft.effect === 'message') return this.localize.term('jfbRules_offHelpMessage');
     if (this._draft.effect === 'require') return this.localize.term('jfbRules_offHelpRequired');
+    if (this._draft.effect === 'use') return this.localize.term('jfbRules_offHelpUse');
     const kind = data ? (locate(data.definition, this._draft.target)?.kind ?? 'field') : 'field';
     return this.localize.term(`jfbRules_offHelpShows_${kind}`);
   }

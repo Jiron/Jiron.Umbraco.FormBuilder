@@ -72,6 +72,22 @@ const definitionWith = (rules: readonly DesignRule[] = []): DesignDefinition => 
   settings: { developer: { queryValues: ['ref'] } },
 });
 
+/** The form with a value that stays on the server, which only an outcome's rule may look at. */
+const withSource = (definition: DesignDefinition): DesignDefinition => ({
+  ...definition,
+  pages: definition.pages.map((page, at) =>
+    at === 1
+      ? {
+          ...page,
+          groups: page.groups.map((group) => ({
+            ...group,
+            fields: [...group.fields, field('source', 'hidden', 'Source')],
+          })),
+        }
+      : page,
+  ),
+});
+
 function modalContext() {
   const state = new UmbObjectState<Partial<RuleBuilderModalValue>>({});
   return {
@@ -726,5 +742,66 @@ describe('the rules builder', () => {
     await settle(element);
     expect(modal.getValue()).toEqual({ target: 'which', rule: null });
     expect(modal.submit).toHaveBeenCalled();
+  });
+
+  it("builds an outcome's rule: when visitors get it, from every question of the form", async () => {
+    const definition = withSource(definitionWith());
+    const { element, modal, root } = await builderOf({ definition, origin: 'o1', outcome: { number: 2 } });
+    // Nothing to choose about what it does or where it is: an outcome's rule says when visitors get the outcome.
+    expect([root.querySelector('select#effect'), root.querySelector('#target')]).toEqual([null, null]);
+    expect(text(root.querySelector('.first-line'))).toBe('Use outcome 2 when');
+    // Every answer is in once the form is sent: the questions of every page, a value that stays on the server, and the
+    // visit; a show rule can't look at the value visitors never send.
+    const subject = inRow<HTMLSelectElement>(root, 'select.subject');
+    expect(options(subject)).toEqual(
+      expect.arrayContaining(['Country', 'Which', 'Guests', 'Source', "Today's date"]) as unknown,
+    );
+    const shown = await builderOf({ definition, effect: 'show' });
+    expect(options(inRow<HTMLSelectElement>(shown.root, 'select.subject'))).not.toContain('Source');
+    shown.element.remove();
+    await pick(element, subject, 'field:country');
+    await pick(element, inRow<HTMLSelectElement>(root, 'select.plain'), 'other');
+    must(root.querySelector<HTMLButtonElement>('.try button.disclosure'), 'Try it').click();
+    await settle(element);
+    expect(text(root.querySelector('.verdict'))).toBe("This outcome doesn't apply.");
+    await pick(element, must(root.querySelector<HTMLSelectElement>('.try-boxes select'), "Country's box"), 'other');
+    expect(text(root.querySelector('.verdict'))).toBe('This outcome applies.');
+    expect(text(root.querySelector('.use .help'))).toBe(
+      'Turn it off to keep the rule without using it. Visitors then get this outcome unless an earlier one applies.',
+    );
+    keep(root).click();
+    await settle(element);
+    expect(modal.getValue()).toEqual({
+      target: 'o1',
+      rule: expect.objectContaining({
+        effect: 'use',
+        conditions: [{ field: 'country', op: 'equals', value: 'other' }],
+      }) as unknown,
+    });
+  });
+
+  it("opens an outcome's rule as it is and keeps it as the outcome's", async () => {
+    const rule: DesignRule = {
+      key: 'r1',
+      effect: 'use',
+      enabled: true,
+      match: 'any',
+      conditions: [{ field: 'guests', op: 'greaterThan', value: '4' }],
+    };
+    const { element, modal, root } = await builderOf({ origin: 'o1', outcome: { number: null }, rule, effect: 'use' });
+    expect(text(root.querySelector('.first-line'))).toBe('Use the new outcome when');
+    expect(inRow<HTMLSelectElement>(root, 'select.subject').value).toBe('field:guests');
+    expect(inRow<HTMLSelectElement>(root, 'select.operator').value).toBe('greaterThan');
+    keep(root).click();
+    await settle(element);
+    expect(modal.getValue()).toEqual({
+      target: 'o1',
+      rule: expect.objectContaining({
+        key: 'r1',
+        effect: 'use',
+        match: 'any',
+        conditions: [{ field: 'guests', op: 'greaterThan', value: '4' }],
+      }) as unknown,
+    });
   });
 });

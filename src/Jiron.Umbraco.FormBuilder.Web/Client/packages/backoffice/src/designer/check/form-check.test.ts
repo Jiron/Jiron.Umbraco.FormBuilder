@@ -43,6 +43,7 @@ const DEFINITION: DesignDefinition = {
     { key: 'v2', field: 'row1', conditions: [] },
     { key: 'v3', field: 'gone', conditions: [] },
   ],
+  outcomes: [{ key: 'o1' }, { key: 'o2', kind: 'redirect' }],
 };
 
 const F = '$.pages[0].groups[0].fields';
@@ -235,7 +236,15 @@ describe("a problem's Fix it", () => {
       view: 'settings',
       path: '$.settings.appearance.theme',
     });
-    expect(fix('$.outcomes[1].rules[0]')).toEqual({ kind: 'view', view: 'settings', path: '$.outcomes[1].rules[0]' });
+    // An outcome's problem keeps the outcome's key, as the definition checked holds it; the list itself has none.
+    expect(fix('$.outcomes[1].rules[0]')).toEqual({
+      kind: 'view',
+      view: 'settings',
+      path: '$.outcomes[1].rules[0]',
+      key: 'o2',
+    });
+    expect(fix('$.outcomes')).toEqual({ kind: 'view', view: 'settings', path: '$.outcomes' });
+    expect(fix('$.outcomes[7].message')).toEqual({ kind: 'view', view: 'settings', path: '$.outcomes[7].message' });
     expect(fix('$.actions[0].settings.replyToField')).toEqual({
       kind: 'view',
       view: 'actions',

@@ -18,8 +18,14 @@ export interface RuleBuilderModalData {
   readonly definition: DesignDefinition;
   /** The form's key, which reads a field's options. */
   readonly form: string;
-  /** The element the builder was opened from. */
+  /** The element the builder was opened from; the outcome, by its key, where `outcome` is given. */
   readonly origin: string;
+  /**
+   * The outcome the rule is an outcome's, by its number in the list, null for a new one (ROADMAP 10.1b, ADR-0185): its
+   * effect is then `use`, it stays on its outcome, and every field and context of the form is a subject, as all the
+   * answers are in once the form is sent.
+   */
+  readonly outcome?: { readonly number: number | null };
   /** The rule to change, on the origin (a validation rule with the effect `message`); null for a new one. */
   readonly rule: DesignRule | null;
   /** A new rule's effect. */

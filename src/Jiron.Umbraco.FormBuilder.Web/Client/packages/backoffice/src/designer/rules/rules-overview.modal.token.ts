@@ -27,7 +27,7 @@ export interface RulesOverviewModalData {
 /** Where the overview leads: to an element, to the outcomes in Settings, or to a new rule on the element chosen. */
 export type RulesOverviewModalValue =
   | { readonly go: 'element'; readonly key: string }
-  | { readonly go: 'outcomes' }
+  | { readonly go: 'outcomes'; readonly index: number }
   | { readonly go: 'add'; readonly key: string };
 
 export const RULES_OVERVIEW_MODAL = new UmbModalToken<RulesOverviewModalData, RulesOverviewModalValue>(
