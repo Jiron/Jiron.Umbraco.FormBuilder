@@ -2553,6 +2553,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - tests cover expiry, a second resume, the submit that turns the draft into an entry (and takes its places then, ADR-0090, and fails at a unique field whose answer another entry took meanwhile, ADR-0091), a resume that gives no file and no consent back, and the visitor-address limits for resume mail (§4.10);
     - pushed, with the phase-review gate.
 - [~] **8.6b The runtime's "Save and continue later"**
+  - **Retried at 9.6b (2026-11-05):** the branch with Phase 9 merged in measures 61.96 KB against 60 KB, and still waits.
   - **Blocked on the owner (2026-11-02):** the control and the restoring of answers are built and wait on the branch `wip/8.6b-resume-control`. As the chunk of their own they come to 1.94 KB gzip, which puts the runtime with every feature at 61.95 KB against the 60 KB of ADR-0146, and that ADR leaves anything past 60 KB to the owner. `docs/OWNER-TODO.md` asks.
   - **The control:** the runtime's "Save and continue later" (the only use of browser storage, §4.10), and a link's answers and page restored on arrival, its token taken out of the address at once.
   - Done when: Playwright resumes a three-page form from the link in the pickup email, and a resumed form asks again for the files it had and shows every consent unticked.

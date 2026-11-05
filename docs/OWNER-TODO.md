@@ -121,7 +121,8 @@ what to do and why. Items for blocked roadmap steps name the step as "step X.Y",
   loads stays 2.3 KB. The bytes have been through a terser pass, and nothing obvious is left to take out. The server side of save
   and resume is finished and works for headless sites either way. **My recommendation: raise it to 64 KB,** which also leaves room for
   the insights beacons of step 11.5, a small addition. Keeping 60 KB means forms have no "Save and continue later" button
-  of their own. Once you set a number, the step resumes from the branch `wip/8.6b-resume-control`.
+  of their own. Once you set a number, the step resumes from the branch `wip/8.6b-resume-control`. Retried at the Phase 9
+  review (2026-11-05): with Phase 9 merged in, 61.96 KB.
 
 ## Real-world checks (no real keys are used during the build)
 
