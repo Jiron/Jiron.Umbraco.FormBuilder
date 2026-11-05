@@ -69,10 +69,19 @@ describe('a refusal', () => {
       ...details,
     });
 
-  it('says a code it knows in its own words', () => {
+  it('says each code it knows in its own words', () => {
     expect(codeOf(problem({ code: 'folder_not_empty' }))).toBe('folder_not_empty');
-    expect(refusalText(localize, problem({ code: 'folder_not_empty' }))).toBe('jfbLibrary_folderNotEmpty');
-    expect(refusalText(localize, problem({ code: 'concurrency_conflict' }))).toBe('jfbLibrary_changedMeanwhile');
+    expect(
+      ['folder_not_empty', 'form_not_found', 'folder_not_found', 'template_not_found', 'concurrency_conflict'].map(
+        (code) => refusalText(localize, problem({ code })),
+      ),
+    ).toEqual([
+      'jfbLibrary_folderNotEmpty',
+      'jfbLibrary_formGone',
+      'jfbLibrary_folderGone',
+      'jfbLibrary_templateGone',
+      'jfbLibrary_changedMeanwhile',
+    ]);
   });
 
   it('names the permission a refusal misses', () => {

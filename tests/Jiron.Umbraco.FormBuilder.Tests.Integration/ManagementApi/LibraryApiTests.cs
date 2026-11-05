@@ -131,6 +131,37 @@ public sealed class LibraryApiTests : ManagementApiTestBase
     }
 
     [Test]
+    public async Task TheGallery_ListsTheSitesSavedFormTemplates_AfterTheBuiltInOnes_ByName_LeavingOutGroupsAndADamagedOne()
+    {
+        var templates = GetRequiredService<IFormTemplateRepository>();
+        var page = new FormPage { Key = Guid.NewGuid(), Groups = [new FormGroup { Key = Guid.NewGuid() }] };
+        var definition = FormDefinitionSerializer.WriteString(new FormDefinition { Key = Guid.NewGuid(), Pages = [page], Outcomes = [new FormOutcome { Key = Guid.NewGuid() }] });
+        var zeta = await templates.CreateAsync(new NewFormTemplate(Guid.NewGuid(), FormTemplateKind.Form, "Zeta survey", definition, "Asks about the zoo"));
+        var alpha = await templates.CreateAsync(new NewFormTemplate(Guid.NewGuid(), FormTemplateKind.Form, "Alpha survey", definition));
+        var group = await templates.CreateAsync(new NewFormTemplate(Guid.NewGuid(), FormTemplateKind.Group, "Address", definition));
+        await templates.CreateAsync(new NewFormTemplate(Guid.NewGuid(), FormTemplateKind.Form, "Damaged", """{"pages":"none"}"""));
+
+        var gallery = await CallAsync("noAccess", HttpMethod.Get, "template");
+        var created = await CallAsync(Designer, HttpMethod.Post, "form/from-template", new { templateKey = alpha.Key, folderKey = _events });
+        var fromAGroup = await CallAsync(Designer, HttpMethod.Post, "form/from-template", new { templateKey = group.Key });
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(gallery.Status, Is.EqualTo(HttpStatusCode.OK), gallery.ToString());
+            var items = gallery.Body!["items"]!.AsArray();
+            var builtIn = BuiltInFormTemplates.All.Count;
+            Assert.That(items.Take(builtIn).Select(item => item!["builtIn"]!.GetValue<bool>()), Is.All.True, "the built-in templates first");
+            var saved = items.Skip(builtIn).ToList();
+            Assert.That(saved.Select(item => item!["name"]!.GetValue<string>()), Is.EqualTo(new[] { "Alpha survey", "Zeta survey" }), "by name, without the group or the damaged one");
+            var last = saved[^1]!;
+            Assert.That((last["key"]!.GetValue<Guid>(), last["builtIn"]!.GetValue<bool>(), last["alias"], last["description"]!.GetValue<string>()), Is.EqualTo((zeta.Key, false, (JsonNode?)null, "Asks about the zoo")));
+            Assert.That(created.Status, Is.EqualTo(HttpStatusCode.Created), created.ToString());
+            Assert.That((created.Body!["name"]!.GetValue<string>(), created.Body["folderKey"]!.GetValue<Guid>()), Is.EqualTo(("Alpha survey", _events)));
+            Assert.That(fromAGroup.Outcome, Is.EqualTo("404 template_not_found"), "a group is no form's template");
+        });
+    }
+
+    [Test]
     public async Task TheImportCheck_SaysWhatAFileHolds_AndWhatItCannotBring_AsTheImportThenDoes()
     {
         var spring = await FormAsync("Spring", _events);
@@ -231,13 +262,13 @@ public sealed class LibraryApiTests : ManagementApiTestBase
             Assert.That(byLabel.Status, Is.EqualTo(HttpStatusCode.OK), byLabel.ToString());
             var match = byLabel.Body!["items"]![0]!;
             Assert.That(
-                (match["formKey"]!.GetValue<Guid>(), match["formName"]!.GetValue<string>(), match["folderName"]!.GetValue<string>(), match["label"]!.GetValue<string>(), match["alias"]!.GetValue<string>()),
-                Is.EqualTo((spring, "Spring", "Events", "Favourite colour", "colour")));
+                (match["formKey"]!.GetValue<Guid>(), match["formName"]!.GetValue<string>(), match["folderName"]!.GetValue<string>(), match["label"]!.GetValue<string>(), match["alias"]!.GetValue<string>(), match["fieldType"]!.GetValue<string>()),
+                Is.EqualTo((spring, "Spring", "Events", "Favourite colour", "colour", "text")));
             Assert.That(byAlias.Body!["total"]!.GetValue<int>(), Is.EqualTo(1), "an alias, in any letter case");
             Assert.That(draftOnly.Body!["total"]!.GetValue<int>(), Is.Zero, "a field only the draft has is found once it is published");
             Assert.That(hidden.Body!["total"]!.GetValue<int>(), Is.Zero, "the designer does not see Payroll");
             Assert.That(hrSees.Body!["total"]!.GetValue<int>(), Is.EqualTo(1));
-            Assert.That(grid.Body!["items"]!.AsArray().Select(item => item!["label"]!.GetValue<string>()), Is.EqualTo(new[] { "Service rating" }), "a grid once, not its rows, which share its alias");
+            Assert.That(grid.Body!["items"]!.AsArray().Select(item => (item!["label"]!.GetValue<string>(), item["fieldType"]!.GetValue<string>())), Is.EqualTo(new[] { ("Service rating", "grid") }), "a grid once, not its rows, which share its alias");
             Assert.That(unpublished.Body!["total"]!.GetValue<int>(), Is.Zero, "visitors get nothing of an unpublished form");
             Assert.That(aliasOnly.Body!["items"]!.AsArray().Select(item => item!["label"]!.GetValue<string>()), Is.EqualTo(new[] { "Date of birth" }), "by its alias alone");
             Assert.That(dropped.Body!["total"]!.GetValue<int>(), Is.Zero, "a field the last publish dropped");

@@ -2921,8 +2921,10 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
   - **Entries** keep their culture, and exports format dates and numbers by it.
   - **Backoffice localisation:**
     - Audit that every backoffice string in en and de goes through localisation keys (each UI step added its keys, see "How to use").
+    - **Every key is used** (carried in from 9.6b's wiring sweep): the dictionaries' check holds each area to the keys its code uses, as the section's, library's, designer's and form check's areas are held already; the inspector's, the rules' and the merge tags' areas join them, with their keys built from a prefix (a setting's, a message's, an operator's, a merge tag path's) taken from the lists that name them.
   - Done when:
     - Playwright runs a form end to end in en and de, including the emails;
+    - the dictionaries' check fails for a key no code uses, in every area of the backoffice's dictionaries;
     - a lint rule that fails on hard-coded UI strings passes, and the German screenshots are reviewed in `docs/ux/review-14.1.md`.
 - [ ] **14.2 Visitor texts in seven languages**
   - Add French, Italian, Dutch, Spanish and Danish to the runtime and server messages, the words merge tags show yes and no as (ADR-0066), and the option presets (English and German came with 6.2g, 6.4d, 5.3d and 5.5). All seven are overridable per site and per form.

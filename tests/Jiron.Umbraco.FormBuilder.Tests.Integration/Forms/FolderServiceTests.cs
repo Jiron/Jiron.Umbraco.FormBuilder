@@ -414,6 +414,39 @@ public sealed class FolderServiceTests : RepositoryTestBase
     }
 
     [Test]
+    public async Task AnEmptyFolder_IsDeletedOutsideTheTrash_AnnouncedAndAudited_AndOnlyItsGrantsGo()
+    {
+        var empty = await CreateAsync("Empty");
+        var holder = await CreateAsync("Holder");
+        await CreateFormAsync("Contact", holder.Key);
+        var other = await CreateAsync("Other");
+        await Permissions.ChangeAsync(new GrantChange(Designers, PermissionTarget.Folder, empty.Key, 0, 5));
+        await Permissions.ChangeAsync(new GrantChange(Designers, PermissionTarget.Folder, other.Key, 0, 5));
+        AssertCode(async () => await Service.DeleteEmptyAsync(holder.Key, Editor), "folder_not_empty");
+        Notifications.Cancel = true;
+        AssertCode(async () => await Service.DeleteEmptyAsync(empty.Key, Editor), "cancelled");
+        Notifications.Cancel = false;
+        var before = Notifications.Seen.Count;
+
+        var deleted = (await Service.DeleteEmptyAsync(empty.Key, Editor))!;
+        var seen = Notifications.Seen.Skip(before).ToList();
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(deleted.Folders, Is.EqualTo(new[] { new FolderSummary(empty.Key, "Empty") }));
+            Assert.That(await Folders.GetAsync(empty.Key), Is.Null);
+            Assert.That(seen.Select(notification => notification.GetType()), Is.EqualTo(new[] { typeof(FolderDeletingNotification), typeof(FolderDeletedNotification) }));
+            var deleting = seen.OfType<FolderDeletingNotification>().Single();
+            var done = seen.OfType<FolderDeletedNotification>().Single();
+            Assert.That((deleting.FolderKey, deleting.Name, deleting.UserKey, deleting.Folders.Count, deleting.Forms.Count), Is.EqualTo((empty.Key, "Empty", (Guid?)Editor, 0, 0)));
+            Assert.That((done.FolderKey, done.Name, done.UserKey, done.Folders.Count, done.Forms.Count), Is.EqualTo((empty.Key, "Empty", (Guid?)Editor, 0, 0)));
+            Assert.That((await AuditAsync(empty.Key)).Last(), Is.EqualTo((FormBuilderFolderService.DeletedAction, (Guid?)Editor, "{}")));
+            Assert.That((await Permissions.ListAsync()).Select(grant => grant.TargetKey), Is.EqualTo(new[] { other.Key }), "its grant went, another folder's stays");
+            Assert.That(await Service.DeleteEmptyAsync(empty.Key, Editor), Is.Null, "gone");
+        });
+    }
+
+    [Test]
     public async Task EmptyingTheTrash_OfWhatAFilterLetsGo_NamesOnlyThat_AndCountsWhatStays()
     {
         var top = await CreateAsync("Events");
