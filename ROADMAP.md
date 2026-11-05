@@ -2702,7 +2702,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
   - **Carried in from 9.4d's look** (docs/ux/review-9.4d.md): in Umbraco's dark theme, the primary buttons' label meets 4.38:1 on positive green and 4.34:1 on the default blue, under AA's 4.5:1 (axe on Change type's dialog); decide once for every dialog and footer button of the section, and hold it with axe in the dark theme.
   - **Carried in from 9.5f's look** (docs/ux/review-9.5f.md): on a phone the Design view keeps Umbraco's workspace at its narrowest, 620 px, so its toolbar is reached by scrolling sideways; decide how the designer meets a phone, and hold the choice with a test that measures it.
   - Done when: `docs/ux/review-9.md` with screenshots, with a section per design skill, is committed; a journey holds the canvas bar's choice, axe in the dark theme holds the buttons' choice, and a measuring test holds the phone's; and everything is pushed.
-- [ ] **9.6b Phase review: the budget, the wiring sweep and the handover** (split from 9.6, see WORKLOG)
+- [x] **9.6b Phase review: the budget, the wiring sweep and the handover** (split from 9.6, see WORKLOG) (2026-11-05, ee04734)
   - Write the handover note.
   - **The backoffice budget:** set the backoffice bundle's gzip budget in the size check from the measured size plus a stated margin, and record it in §4.12.
   - Done when: the size check enforces the backoffice budget, and everything is pushed, with the phase-review gate.
