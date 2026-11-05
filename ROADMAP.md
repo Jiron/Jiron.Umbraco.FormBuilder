@@ -2710,9 +2710,9 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
 
 ### Phase 10: The backoffice II: settings, actions, preview and publishing
 
-- [ ] **10.1a The form settings view: its groups** (split from 10.1, see WORKLOG)
+- [x] **10.1a The form settings view: its groups** (split from 10.1, see WORKLOG) (2026-11-05, 5a46a03)
   - The groups of §4.3.4 with help text: submission, availability, spam, appearance and developer settings, open or closed as IA 5.2 says, each closed group with its summary line, and the server's validation messages at their setting. Settings come with their feature: the Privacy group comes with 11.5 (insights), 13.1 (retention, and Store entries "For a number of days") and 13.3 (IP handling), "Save and continue later" with 8.6b, and "One entry per member" with 14.3, which build what they configure.
-  - **Captcha providers:** the spam group greys out a provider without keys, from `GET designer/captcha-provider` (each provider's name and `isConfigured`, never a key), with its row in the permission matrix (added in 7.4g).
+  - **Captcha providers:** the spam group greys out a provider without keys, from `GET captcha-provider` (each provider's name, label, `isConfigured` and settings, never a key), with its row in the permission matrix (added in 7.4g); the site's defaults, time zone, themes and member groups come from `GET form/{key}/setting-choices`, for who may design the form (ADR-0184).
   - **The form check's Fix it** (ADR-0181, added in 9.5f): a problem in the form's settings, which 9.5f leads to this view, opens the group and the setting it names, with the focus on it.
   - Done when: Playwright covers each of these groups, including validation messages, and follows the form check's Fix it of a setting to it.
 - [ ] **10.1b The form settings view: after sending** (split from 10.1, see WORKLOG)
