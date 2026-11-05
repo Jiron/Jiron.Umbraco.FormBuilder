@@ -126,6 +126,31 @@ before the tamper round, each with a test:
   for who may design it (`GET form/{key}/setting-choices`, ADR-0184 decision 10).
 - **A stale Fix it:** one for the Actions view, still to come, waited for it; only a view that takes it up is handed one.
 
+## The tamper round
+
+In a throwaway clone of `3408c8c` (ADR-0117), 44 changes each took back one rule of the step, one at a time, after
+every check had passed untampered, each run under a time limit and the file restored after it: the server's provider
+settings, labels and choices (11), the settings model and the site's clock (9), the view, its Fix it and the box
+editors (20), the Design view, the check and the words (4).
+
+Before the round, the publish dialog's choice of which Fix it to hand on had no test of its own, only journeys that
+never meet a Fix it for the Actions view: the Design view and the dialog now share `followFix` (`form-views.ts`), whose
+test holds all three ways (3408c8c).
+
+The first run caught 37. The rest, each now held (ab84a7f):
+
+- **Missed (5):** Next's label outside More options; a closed group's line leaving out content checks turned off; a
+  choice the browser restores on its own, as it does a page's boxes, staying over the draft's at the next drawing; a
+  problem at verification's field while verification is off, which has no box; a suggestion counted on a closed
+  group's line.
+- **A run without a named failure (1):** the Design view taking up the Fix it it hands to the Settings view called
+  itself until the stack overflowed, which failed the run but no test. The test's workspace now records what the view
+  takes up.
+- **A tamper that did not build (1):** rewritten so that the provider's settings reach the check as none.
+
+The second run of these seven caught all seven. The radios' size, the dimmed switch and the column's width are CSS
+that jsdom does not lay out: the walk's shots and measures hold them.
+
 ## What the journeys found
 
 `form-settings.spec.ts` sets every setting of Submission and More options, says a number of days and of digits out of
