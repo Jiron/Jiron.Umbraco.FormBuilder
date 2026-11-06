@@ -49,51 +49,63 @@ public enum WebhookTarget
 /// <summary>The settings of the webhook action (ROADMAP 8.4, ADR-0161).</summary>
 public sealed class WebhookActionSettings
 {
-    /// <summary>Where it goes.</summary>
-    [FormBuilderSetting("#jfbActionSettings_webhookTarget", Order = 1)]
+    /// <summary>Where it goes; its box draws the address within it (ADR-0191).</summary>
+    [FormBuilderSetting("#jfbActionSettings_webhookTarget", Order = 1, Editor = "webhookAddress")]
     public WebhookTarget Target { get; init; }
 
-    /// <summary>The address, or a <c>$JironFormBuilder:Secrets:&lt;Name&gt;</c> reference to one that is a secret itself.</summary>
-    [FormBuilderSetting("#jfbActionSettings_webhookUrl", Order = 2)]
+    /// <summary>
+    /// The address, or a <c>$JironFormBuilder:Secrets:&lt;Name&gt;</c> reference to one that is a secret itself; for Slack or Teams
+    /// only such a reference, null for the integrations settings' address.
+    /// </summary>
+    [FormBuilderSetting("#jfbActionSettings_webhookUrl", Order = 2, Within = "target")]
     public string? Url { get; init; }
 
     /// <summary>What the body is written as.</summary>
-    [FormBuilderSetting("#jfbActionSettings_webhookFormat", Order = 3)]
+    [FormBuilderSetting("#jfbActionSettings_webhookFormat", Order = 3, Within = "fields")]
     public WebhookFormat Format { get; init; }
 
     /// <summary>
     /// The field mapping, as <c>{"name": "{{ field.email }}"}</c>: each name with the text of its template. Null for every field
-    /// a mail could show, by its alias.
+    /// a mail could show, by its alias. Its box, What it sends, draws the format, the body, the message and the switches within it
+    /// (ADR-0191).
     /// </summary>
-    [FormBuilderSetting("#jfbActionSettings_webhookFields", Order = 4, Editor = "webhookFieldMap")]
+    [FormBuilderSetting("#jfbActionSettings_webhookFields", Order = 4, Editor = "webhookBody")]
     public JsonElement? Fields { get; init; }
 
     /// <summary>Whether it sends no field at all, only that something happened, for a receiver that then asks for what it may see.</summary>
-    [FormBuilderSetting("#jfbActionSettings_webhookWithoutAnswers", Order = 5)]
+    [FormBuilderSetting("#jfbActionSettings_webhookWithoutAnswers", Order = 5, Within = "fields")]
     public bool WithoutAnswers { get; init; }
 
     /// <summary>Whether the body also says what happened: the trigger, the delivery, the form and the entry.</summary>
-    [FormBuilderSetting("#jfbActionSettings_webhookMetadata", Order = 6)]
+    [FormBuilderSetting("#jfbActionSettings_webhookMetadata", Order = 6, Within = "fields")]
     public bool Metadata { get; init; } = true;
 
-    /// <summary>The whole body as a template, in the format's own language, instead of the fields; a Slack or Teams message is one.</summary>
-    [FormBuilderSetting("#jfbActionSettings_webhookTemplate", Order = 7, SupportsMergeTags = true, Group = FieldSettingGroup.Advanced)]
+    /// <summary>The whole body as a template, in the format's own language, instead of the fields or a chat's message.</summary>
+    [FormBuilderSetting("#jfbActionSettings_webhookTemplate", Order = 7, SupportsMergeTags = true, Within = "fields")]
     [StringLength(FieldSettingRules.HtmlLength)]
     public string? Template { get; init; }
+
+    /// <summary>
+    /// A Slack or Teams message, as text with merge tags in the chat's own formatting (ADR-0191); an own body wins over it, and
+    /// without either a chat gets the answers under the form's name. Its address's own target ignores it.
+    /// </summary>
+    [FormBuilderSetting("#jfbActionSettings_webhookMessage", Order = 8, SupportsMergeTags = true, Within = "fields")]
+    [StringLength(FieldSettingRules.HtmlLength)]
+    public string? Message { get; init; }
 
     /// <summary>
     /// A <c>$JironFormBuilder:Secrets:&lt;Name&gt;</c> reference to the signing secret; null for the integrations settings' one. A
     /// request without any is not signed.
     /// </summary>
-    [FormBuilderSetting("#jfbActionSettings_webhookSecret", Order = 8, Group = FieldSettingGroup.Advanced)]
+    [FormBuilderSetting("#jfbActionSettings_webhookSecret", Description = "#jfbActionSettings_webhookSecretHelp", Order = 9, Editor = "secretReference", Group = FieldSettingGroup.Advanced)]
     public string? Secret { get; init; }
 
     /// <summary>More headers, as <c>{"Authorization": "$JironFormBuilder:Secrets:CrmToken"}</c>; a value may be such a reference.</summary>
-    [FormBuilderSetting("#jfbActionSettings_webhookHeaders", Order = 9, Editor = "headerMap", Group = FieldSettingGroup.Advanced)]
+    [FormBuilderSetting("#jfbActionSettings_webhookHeaders", Description = "#jfbActionSettings_webhookHeadersHelp", Order = 10, Editor = "headerMap", Group = FieldSettingGroup.Advanced)]
     public JsonElement? Headers { get; init; }
 
     /// <summary>The sensitive fields it may send (ADR-0014); none by default.</summary>
-    [FormBuilderSetting("#jfbActionSettings_webhookIncludeSensitive", Order = 10, Kind = FieldSettingKind.Key, Editor = "fieldPicker", Picks = FieldPick.Sensitive, Group = FieldSettingGroup.Advanced)]
+    [FormBuilderSetting("#jfbActionSettings_webhookIncludeSensitive", Order = 11, Kind = FieldSettingKind.Key, Editor = "fieldPicker", Picks = FieldPick.Sensitive, Group = FieldSettingGroup.Advanced)]
     public IReadOnlyList<Guid> IncludeSensitive { get; init; } = [];
 }
 
@@ -155,13 +167,9 @@ internal sealed class WebhookActionType(OutboundHttp outbound, IFormBuilderMerge
     /// <summary>The code of a call whose body would be cut at the merge tags' limit.</summary>
     public const string TooLong = MergeTagProblems.TooLong;
 
-    private const string SlackPreset = """
-        {"target":"slack","format":"json","template":"{\"text\":\"*New entry in {{ form.name }}*\\n{{ entry.answers }}\"}"}
-        """;
-
-    private const string TeamsPreset = """
-        {"target":"teams","format":"json","template":"{\"type\":\"message\",\"attachments\":[{\"contentType\":\"application/vnd.microsoft.card.adaptive\",\"content\":{\"type\":\"AdaptiveCard\",\"version\":\"1.4\",\"body\":[{\"type\":\"TextBlock\",\"weight\":\"Bolder\",\"text\":\"New entry in {{ form.name }}\"},{\"type\":\"TextBlock\",\"wrap\":true,\"text\":\"{{ entry.answers }}\"}]}}]}"}
-        """;
+    // A message each, which the server writes as the chat's JSON (ADR-0191); presets of before held own bodies, which still go as they are.
+    private static string ChatPreset(string target, string message) =>
+        JsonSerializer.Serialize(new Dictionary<string, string>(StringComparer.Ordinal) { ["target"] = target, ["message"] = message });
 
     private static readonly ActionTypeDeclaration Declared = new()
     {
@@ -173,8 +181,8 @@ internal sealed class WebhookActionType(OutboundHttp outbound, IFormBuilderMerge
         Presets =
         [
             new ActionPreset("#jfbActionTypes_webhook", "{}"),
-            new ActionPreset("#jfbActionPresets_webhookSlack", SlackPreset),
-            new ActionPreset("#jfbActionPresets_webhookTeams", TeamsPreset),
+            new ActionPreset("#jfbActionPresets_webhookSlack", ChatPreset("slack", WebhookChat.SlackMessage)),
+            new ActionPreset("#jfbActionPresets_webhookTeams", ChatPreset("teams", WebhookChat.TeamsMessage)),
         ],
     };
 
@@ -194,6 +202,7 @@ internal sealed class WebhookActionType(OutboundHttp outbound, IFormBuilderMerge
             _ => MergeTagContext.Json,
         };
         CheckTemplate("template", settings.Template, context, check);
+        CheckTemplate("message", settings.Message, MergeTagContext.Text, check);
         if (settings.WithoutAnswers && (settings.Fields is { ValueKind: not JsonValueKind.Null } || settings.Template is not null))
         {
             check.Invalid("withoutAnswers", "A webhook without answers has no mapping and no body of its own.");
@@ -237,23 +246,27 @@ internal sealed class WebhookActionType(OutboundHttp outbound, IFormBuilderMerge
     /// <inheritdoc />
     protected override async Task<ActionResult> RunAsync(WebhookActionSettings settings, ActionRunContext context, CancellationToken cancellationToken)
     {
-        var (status, failure) = await CallAsync(settings, context.Scope, context.Trigger.ToString(), context.DeliveryKey, test: false, cancellationToken);
+        var (status, failure, _) = await CallAsync(settings, context.Scope, context.Trigger.ToString(), context.DeliveryKey, testLine: null, cancellationToken);
         return failure ?? ResultOf(status);
     }
 
     /// <inheritdoc />
     protected override async Task<ActionTestResult> TestAsync(WebhookActionSettings settings, ActionTestContext context, CancellationToken cancellationToken)
     {
-        var (status, failure) = await CallAsync(settings, context.Scope, nameof(ActionTrigger.Submitted), "test", test: true, cancellationToken);
+        // A chat's message says on its first line that it is a test, in the tester's language, as a test mail does (ADR-0191).
+        var line = WebhookChat.TestLine(context.User.Culture);
+        var (status, failure, missing) = await CallAsync(settings, context.Scope, nameof(ActionTrigger.Submitted), "test", line, cancellationToken);
         var result = failure ?? ResultOf(status);
+        var answered = string.Create(CultureInfo.InvariantCulture, $"{status}");
         if (result.Kind == ActionResultKind.Succeeded)
         {
-            return new ActionTestResult(ActionTestOutcome.Sent, string.Create(CultureInfo.InvariantCulture, $"The host answered {status}.")) { Code = ActionTestCodes.Sent };
+            return new ActionTestResult(ActionTestOutcome.Sent, $"The host answered {answered}.") { Code = ActionTestCodes.Sent, Args = [answered] };
         }
 
-        // The run's code, which the backoffice says in its words from ROADMAP 10.2d; until then the sentence names it.
+        // The run's code, which the backoffice says in its words, with the configuration key a secret the host lacks has; the
+        // sentence names it for any other reader.
         var code = result.Code ?? ActionTestCodes.Failed;
-        return new ActionTestResult(ActionTestOutcome.Failed, $"The webhook was not delivered ({code}).") { Code = code };
+        return new ActionTestResult(ActionTestOutcome.Failed, $"The webhook was not delivered ({code}).") { Code = code, Args = missing is null ? [] : [missing] };
     }
 
     private static ActionResult ResultOf(int status) => status switch
@@ -316,11 +329,22 @@ internal sealed class WebhookActionType(OutboundHttp outbound, IFormBuilderMerge
         }
     }
 
-    private async Task<(int Status, ActionResult? Failure)> CallAsync(WebhookActionSettings action, MergeTagScope scope, string trigger, string delivery, bool test, CancellationToken cancellationToken)
+    // What a call came to: the host's status, or why it failed, with the configuration key of a secret the host lacks, which is
+    // no secret itself.
+    private static (int Status, ActionResult? Failure, string? Missing) Fails(ActionResult failure) => (0, failure, null);
+
+    private static (int Status, ActionResult? Failure, string? Missing) Lacks(string reference)
+    {
+        var key = FormBuilderSecrets.KeyOf(reference);
+        return (0, ActionResult.Failed(SecretMissing, $"The host configuration has no {key}."), key);
+    }
+
+    // A test's call carries its line for a chat's message, and is marked as one; a run's has none.
+    private async Task<(int Status, ActionResult? Failure, string? Missing)> CallAsync(WebhookActionSettings action, MergeTagScope scope, string trigger, string delivery, string? testLine, CancellationToken cancellationToken)
     {
         if (HoldsALiteralSecret(action))
         {
-            return (0, ActionResult.Failed(SecretLiteral));
+            return Fails(ActionResult.Failed(SecretLiteral));
         }
 
         var integrations = (await settings.GetAsync<IntegrationSettings>(cancellationToken: cancellationToken)).Value;
@@ -332,17 +356,23 @@ internal sealed class WebhookActionType(OutboundHttp outbound, IFormBuilderMerge
         };
         if (string.IsNullOrWhiteSpace(written))
         {
-            return (0, ActionResult.Failed(NoAddress, "The action has no address, and the integrations settings none for it."));
+            return Fails(ActionResult.Failed(NoAddress, "The action has no address, and the integrations settings none for it."));
         }
 
-        if (!secrets.TryResolve(written, out var url) || !secrets.TryResolve(action.Secret ?? integrations.SigningSecret, out var secret))
+        var signing = action.Secret ?? integrations.SigningSecret;
+        if (!secrets.TryResolve(written, out var url))
         {
-            return (0, ActionResult.Failed(SecretMissing));
+            return Lacks(written);
+        }
+
+        if (!secrets.TryResolve(signing, out var secret))
+        {
+            return Lacks(signing!);
         }
 
         if (!Uri.TryCreate(url, UriKind.Absolute, out var address))
         {
-            return (0, ActionResult.Failed(NotAllowed));
+            return Fails(ActionResult.Failed(NotAllowed));
         }
 
         var headers = new List<KeyValuePair<string, string>> { new("X-Jfb-Delivery", delivery) };
@@ -350,12 +380,12 @@ internal sealed class WebhookActionType(OutboundHttp outbound, IFormBuilderMerge
         {
             if (!secrets.TryResolve(value, out var header))
             {
-                return (0, ActionResult.Failed(SecretMissing));
+                return Lacks(value);
             }
 
             if (!WebhookMaps.IsHeaderValue(header ?? string.Empty))
             {
-                return (0, ActionResult.Failed(HeaderInvalid));
+                return Fails(ActionResult.Failed(HeaderInvalid));
             }
 
             headers.Add(new(name, header ?? string.Empty));
@@ -371,9 +401,9 @@ internal sealed class WebhookActionType(OutboundHttp outbound, IFormBuilderMerge
                 _ => null,
             },
         };
-        if (await new WebhookBody(tags).WriteAsync(action, guarded, trigger, delivery, cancellationToken) is not { } body)
+        if (await new WebhookBody(tags).WriteAsync(action, guarded, trigger, delivery, testLine, cancellationToken) is not { } body)
         {
-            return (0, ActionResult.Failed(TooLong));
+            return Fails(ActionResult.Failed(TooLong));
         }
 
         if (secret is not null)
@@ -381,12 +411,13 @@ internal sealed class WebhookActionType(OutboundHttp outbound, IFormBuilderMerge
             headers.Add(new(WebhookSignature.Header, WebhookSignature.Of(secret, time.GetUtcNow(), body)));
         }
 
-        if (test)
+        if (testLine is not null)
         {
             headers.Add(new("X-Jfb-Test", "true"));
         }
 
-        return await PostAsync(address, body, action.Format, headers, cancellationToken);
+        var (status, failure) = await PostAsync(address, body, action.Format, headers, cancellationToken);
+        return (status, failure, null);
     }
 
     // What came of the call. Whether a broken connection delivered is unknowable, but the delivery key lets a receiver see a repeat,

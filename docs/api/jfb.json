@@ -6226,6 +6226,7 @@
       },
       "ActionTestResponseModel": {
         "required": [
+          "args",
           "outcome",
           "preview"
         ],
@@ -6237,6 +6238,12 @@
           "code": {
             "type": "string",
             "nullable": true
+          },
+          "args": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           },
           "message": {
             "type": "string",

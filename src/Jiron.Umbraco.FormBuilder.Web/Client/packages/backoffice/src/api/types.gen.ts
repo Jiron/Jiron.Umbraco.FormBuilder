@@ -37,6 +37,7 @@ export type ActionTestRequestModel = {
 export type ActionTestResponseModel = {
     outcome: string;
     code?: string | null;
+    args: Array<string>;
     message?: string | null;
     recipient?: string | null;
     preview: Array<string>;

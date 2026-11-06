@@ -31,22 +31,27 @@ An address that resolves to a private, loopback or link-local address is refused
 
 A plain address is allowed as it is. If yours holds a key, in its path or query, name it as a reference too.
 
-A form whose secret is missing still publishes, and each run fails with `secret_missing`. An import names a missing secret the action names itself, but not the signing secret or address it takes from the integrations settings.
+A form whose secret is missing still publishes, and each run fails with `secret_missing`, its message naming the configuration key it lacks (never a value). An import names a missing secret the action names itself, but not the signing secret or address it takes from the integrations settings.
+
+The action's sidebar keeps these settings as references too: a credential, a signing secret or a chat's address typed as itself is said under its box and never reaches the draft.
 
 ## The webhook action
 
 | Setting | What it does |
 | --- | --- |
-| Where it goes | The action's own address, or the site's Slack or Teams address from the integrations settings |
-| Address | An address, or a reference to one |
-| Format | `json`, `form` (`application/x-www-form-urlencoded`) or `xml` |
-| Field mapping | Names with templates, such as `{"email": "{{ field.email }}"}`. Without one, every field with an answer goes, by its alias |
-| Send no answers | Only says that something happened; the receiver asks for what it may see |
-| Send metadata too | Adds the event, delivery, form and entry; on by default |
-| Own body | The whole body as a template, in the format's own language; each merge tag is escaped for it |
-| Signing secret | A reference; without one, the integrations settings' secret signs, and with neither the request is unsigned |
-| More headers | Names with texts or references. Headers of the request itself and `X-Jfb-*` are refused |
-| Send sensitive fields | The sensitive fields it may send; none by default |
+| Where it goes (`target`) | The action's own address, or the site's Slack or Teams address from the integrations settings |
+| Address (`url`) | An address, or a reference to one; for Slack or Teams only a reference, and empty for the site's |
+| Format (`format`) | `json`, `form` (`application/x-www-form-urlencoded`) or `xml` |
+| What it sends (`fields`) | Names with templates, such as `{"email": "{{ field.email }}"}`. Without one, every field with an answer goes, by its alias |
+| Send no answers (`withoutAnswers`) | Only says that something happened; the receiver asks for what it may see |
+| Send metadata too (`metadata`) | Adds the event, delivery, form and entry; on by default |
+| Own body (`template`) | The whole body as a template, in the format's own language; each merge tag is escaped for it |
+| Message (`message`) | A Slack or Teams message, as text with merge tags in the chat's own formatting |
+| Signing secret (`secret`) | A reference; without one, the integrations settings' secret signs, and with neither the request is unsigned |
+| More headers (`headers`) | Names with texts or references. Headers of the request itself and `X-Jfb-*` are refused |
+| Send sensitive fields (`includeSensitive`) | The sensitive fields it may send; none by default |
+
+In the sidebar, **What it sends** is one choice: every answer by its field's alias, the names and values you choose (a table that starts with every field), a body you write, or only that something happened. Only the chosen way's settings are saved; the sidebar keeps the others while it is open, so choosing back brings them back.
 
 A field the rules hid is never sent. A sensitive field the action does not name goes as no field at all, and as a mask where a mapping or own body asks for it.
 
@@ -122,10 +127,12 @@ Working samples, each with the same tests behind it:
 
 Choose the preset on a new webhook action, and name the address in **Integrations** as a reference (`$JironFormBuilder:Secrets:SlackMessages`), or on the action itself. Its host has to be in `AllowedHosts` too.
 
-- **Slack** sends a `text` message for an incoming webhook.
-- **Teams** sends an Adaptive Card for a workflow that receives webhooks.
+Each preset starts with a **message**: text with merge tags, in the chat's own formatting (`*bold*` in Slack, `**bold**` in Teams), which Jiron Form Builder writes as the JSON the chat reads.
 
-Each preset is an ordinary own body that you can change, with its merge tags escaped for JSON and for the chat.
+- **Slack** gets `{"text": "<the message>"}` for an incoming webhook.
+- **Teams** gets an Adaptive Card for a workflow that receives webhooks, with a wrapping text block for each line of the message, as a card shows a line break only between blocks; an empty line becomes the space before the next.
+
+Without a message, a chat gets "New entry in" the form's name and the answers. **A body you write** still wins over the message, for another shape of message; actions saved with the earlier presets hold such a body and keep working as they are. A test sends the message with a first line that says it is a test, in the tester's backoffice language.
 
 ## Umbraco's webhook events
 

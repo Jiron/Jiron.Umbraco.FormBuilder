@@ -113,11 +113,38 @@ internal static class FieldSettingsReader
         return [.. found.OrderBy(each => each.Setting.Group).ThenBy(each => each.Setting.Order).ThenBy(each => each.Index).Select(each => each.Setting)];
     }
 
+    // The editors that draw settings within them, each with the kinds of setting it draws and how many of each: the email's
+    // recipients (ADR-0189), and the webhook's address and body (ADR-0191).
+    private static readonly ImmutableSortedDictionary<string, BoxEditor> Boxes = new Dictionary<string, BoxEditor>(StringComparer.Ordinal)
+    {
+        ["recipients"] = new(
+            setting => setting switch
+            {
+                { Editor: "fieldPicker", Picks: FieldPick.Email } => ("an email field's answer", 1),
+                { Editor: "boolean" } => ("the person who created the form", 1),
+                { Editor: "recipientMap" } => ("the addresses an answer chooses", 1),
+                _ => null,
+            },
+            "an email field's answer (a fieldPicker of email fields), the person who created the form (a boolean) and the addresses an answer chooses (a recipientMap)"),
+        ["webhookAddress"] = new(
+            setting => setting is { Kind: FieldSettingKind.Text, Editor: "text" } ? ("an address", 1) : null,
+            "an address (a text)"),
+        ["webhookBody"] = new(
+            setting => setting switch
+            {
+                { Kind: FieldSettingKind.Choice } => ("a format", 1),
+                { Kind: FieldSettingKind.Text, Editor: "text" } => ("texts", 2),
+                { Kind: FieldSettingKind.Boolean } => ("switches", 2),
+                _ => null,
+            },
+            "a format (a choice), a body and a message (texts) and two switches (booleans)"),
+    }.ToImmutableSortedDictionary(StringComparer.Ordinal);
+
     // A setting within another names one of its class at the top, which is itself within none, and whose editor draws it
-    // (ADR-0189): only the recipients editor draws settings within it, one of each kind it knows.
+    // (ADR-0189, ADR-0191): only the editors of Boxes draw settings within them, as many of each kind as each knows.
     private static void CheckWithin(List<(FieldSettingDescriptor Setting, string Where)> settings, bool nested, List<string> problems)
     {
-        var held = new HashSet<(string Box, string Kind)>();
+        var held = new Dictionary<(string Box, string Kind), int>();
         foreach (var (setting, where) in settings.Where(each => each.Setting.Within is not null))
         {
             var box = settings.FirstOrDefault(each => !ReferenceEquals(each.Setting, setting) && string.Equals(each.Setting.Name, setting.Within, StringComparison.Ordinal)).Setting;
@@ -133,29 +160,35 @@ internal static class FieldSettingsReader
             {
                 problems.Add($"{where} is within '{box.Name}', which is itself within '{outer}'; a setting is within one that has its own place.");
             }
-            else if (box.Editor != "recipients")
+            else if (!Boxes.TryGetValue(box.Editor, out var editor))
             {
-                problems.Add($"{where} is within '{box.Name}', whose editor draws no setting within it; only the editor recipients does.");
+                problems.Add($"{where} is within '{box.Name}', whose editor draws no setting within it; only the editors {string.Join(", ", Boxes.Keys)} do.");
             }
-            else if (RecipientKind(setting) is not { } kind)
+            else if (editor.KindOf(setting) is not { } found)
             {
-                problems.Add($"{where} is within '{box.Name}', whose editor recipients draws only an email field's answer (a fieldPicker of email fields), the person who created the form (a boolean) and the addresses an answer chooses (a recipientMap).");
+                problems.Add($"{where} is within '{box.Name}', whose editor {box.Editor} draws only {editor.Draws}.");
             }
-            else if (!held.Add((box.Name, kind)))
+            else
             {
-                problems.Add($"{where} is within '{box.Name}', which already holds {kind}; the editor recipients draws one of each.");
+                var count = held.GetValueOrDefault((box.Name, found.Kind)) + 1;
+                held[(box.Name, found.Kind)] = count;
+                if (count > found.Most)
+                {
+                    problems.Add(found.Most == 1
+                        ? $"{where} is within '{box.Name}', which already holds {found.Kind}; the editor {box.Editor} draws one of each."
+                        : string.Create(CultureInfo.InvariantCulture, $"{where} is within '{box.Name}', which already holds {found.Most} {found.Kind}; the editor {box.Editor} draws at most {found.Most}."));
+                }
             }
         }
     }
 
-    // The kind of recipient a setting is, as the recipients editor draws it; null for one it does not draw.
-    private static string? RecipientKind(FieldSettingDescriptor setting) => setting switch
-    {
-        { Editor: "fieldPicker", Picks: FieldPick.Email } => "an email field's answer",
-        { Editor: "boolean" } => "the person who created the form",
-        { Editor: "recipientMap" } => "the addresses an answer chooses",
-        _ => null,
-    };
+    /// <summary>An editor that draws settings within it: the kind of each it draws with how many, and what it draws in words.</summary>
+    /// <param name="KindOf">
+    /// The kind a setting is to the editor and how many of it the editor draws (the kind in the plural where it draws more than
+    /// one); null for one it does not draw.
+    /// </param>
+    /// <param name="Draws">What it draws, for the problem of a setting it does not.</param>
+    private sealed record BoxEditor(Func<FieldSettingDescriptor, (string Kind, int Most)?> KindOf, string Draws);
 
     private static FieldSettingDescriptor? Describe(
         PropertyInfo property,

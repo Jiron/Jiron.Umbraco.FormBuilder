@@ -379,7 +379,8 @@ public sealed class WebhookActionTests : ActionTestBase
 
     [TestCase("""{"url":"$JironFormBuilder:Secrets:Missing"}""")]
     [TestCase("""{"url":"http://127.0.0.1:1/hook","secret":"$JironFormBuilder:Secrets:Missing"}""")]
-    public async Task ASecretTheHostLacks_FailsIt_NamingNoValue(string settings)
+    [TestCase("""{"url":"http://127.0.0.1:1/hook","headers":{"Authorization":"$JironFormBuilder:Secrets:Missing"}}""")]
+    public async Task ASecretTheHostLacks_FailsIt_NamingItsKeyAndNoValue(string settings)
     {
         var run = await AnsweredAsync(200, settings.Replace("http://127.0.0.1:1/hook", Address, StringComparison.Ordinal));
 
@@ -387,6 +388,23 @@ public sealed class WebhookActionTests : ActionTestBase
         {
             Assert.That(run.State, Is.EqualTo(ActionRunState.Failed));
             Assert.That(run.LastError?.Code, Is.EqualTo(WebhookActionType.SecretMissing));
+            Assert.That(run.LastError?.Message, Is.EqualTo("The host configuration has no JironFormBuilder:Secrets:Missing."));
+            Assert.That(Stub.Calls, Is.Empty);
+        });
+    }
+
+    [Test]
+    public async Task ATestOfASecretTheHostLacks_NamesItsKey()
+    {
+        var action = Hook(Settings(",\"secret\":\"$JironFormBuilder:Secrets:Missing\""));
+        var form = await FormAsync(action);
+
+        var test = await GetRequiredService<ActionTestRuns>().TestAsync(form, action.Key, new ActionTestUser(Guid.NewGuid(), "ada@jfb.test", "Ada"), confirmed: true);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That((test.Result!.Outcome, test.Result.Code), Is.EqualTo((ActionTestOutcome.Failed, WebhookActionType.SecretMissing)));
+            Assert.That(test.Result.Args, Is.EqualTo(new[] { "JironFormBuilder:Secrets:Missing" }), "the key a developer adds, never a value");
             Assert.That(Stub.Calls, Is.Empty);
         });
     }
@@ -441,12 +459,14 @@ public sealed class WebhookActionTests : ActionTestBase
         var (call, run) = await SentAsync(settings, """{"name":"Ada \"the first\"","message":"Hello"}""");
 
         var body = JsonNode.Parse(call.Body)!;
-        var text = target == "slack" ? body["text"]!.GetValue<string>() : body["attachments"]![0]!["content"]!["body"]![1]!["text"]!.GetValue<string>();
+        var text = target == "slack" ? body["text"]!.GetValue<string>() : string.Join("\n", CardLines(body));
         Assert.Multiple(() =>
         {
             Assert.That(run.State, Is.EqualTo(ActionRunState.Succeeded));
             Assert.That(call.Path, Is.EqualTo(Path));
+            Assert.That(settings, Does.Contain("\"message\"").And.Not.Contain("template"), "a message, not a body to edit (ADR-0191)");
             Assert.That(text, Does.Contain("Ada \"the first\""));
+            Assert.That(text, Does.StartWith(target == "slack" ? "*New entry in " : "**New entry in "));
             if (target == "teams")
             {
                 Assert.That(body["attachments"]![0]!["content"]!["type"]!.GetValue<string>(), Is.EqualTo("AdaptiveCard"));
@@ -477,6 +497,86 @@ public sealed class WebhookActionTests : ActionTestBase
         {
             Assert.That(text.Contains("](", StringComparison.Ordinal), Is.False);
             Assert.That(text.Replace(((char)0x200b).ToString(), string.Empty, StringComparison.Ordinal), Is.EqualTo("[Open](https://evil.example)"));
+        });
+    }
+
+    [Test]
+    public async Task AChatsMessage_IsWrittenAsTheChatReadsIt_AndAnOwnBodyWinsOverIt()
+    {
+        var (slack, _) = await SentAsync("""{"target":"slack","url":"$JironFormBuilder:Secrets:Address","message":"Hi {{ field.name }}\n{{ field.message }}"}""");
+        Stub.Reset();
+        var (teams, _) = await SentAsync("""{"target":"teams","url":"$JironFormBuilder:Secrets:Address","message":"**Hi {{ field.name }}**\n\n{{ field.message }}"}""");
+        Stub.Reset();
+        var (own, _) = await SentAsync("""{"target":"slack","url":"$JironFormBuilder:Secrets:Address","message":"Unused","template":"{\"text\":\"Own\"}"}""");
+
+        var card = JsonNode.Parse(teams.Body)!["attachments"]![0]!["content"]!["body"]!.AsArray();
+        Assert.Multiple(() =>
+        {
+            Assert.That(JsonNode.Parse(slack.Body)!.ToJsonString(), Is.EqualTo("""{"text":"Hi Ada\nHello"}"""));
+            Assert.That(card.Select(block => (block!["text"]!.GetValue<string>(), block["spacing"]!.GetValue<string>(), block["wrap"]!.GetValue<bool>())), Is.EqualTo(new[] { ("**Hi Ada**", "None", true), ("Hello", "Medium", true) }), "a block a line, a blank line the space before the next");
+            Assert.That(own.Body, Is.EqualTo("""{"text":"Own"}"""));
+        });
+    }
+
+    [Test]
+    public async Task AChatsMessage_KeepsWhatAVisitorTypedAsText()
+    {
+        var (call, _) = await SentAsync("""{"target":"slack","url":"$JironFormBuilder:Secrets:Address","message":"{{ field.message }}"}""", """{"name":"Ada","message":"<!channel> & more"}""");
+
+        Assert.That(JsonNode.Parse(call.Body)!["text"]!.GetValue<string>(), Is.EqualTo("&lt;!channel&gt; &amp; more"));
+    }
+
+    [Test]
+    public async Task ItsOwnAddress_SendsTheAnswers_WhateverMessageItHolds()
+    {
+        var (call, _) = await SentAsync(Settings(",\"message\":\"Unused\""));
+
+        var body = JsonNode.Parse(call.Body)!;
+        Assert.Multiple(() =>
+        {
+            Assert.That(body["fields"]!["name"]!.GetValue<string>(), Is.EqualTo("Ada"));
+            Assert.That(body["text"], Is.Null);
+        });
+    }
+
+    [Test]
+    public async Task AChatsTest_SaysOnItsFirstLineThatItIsOne_InTheTestersLanguage()
+    {
+        Stub.Answer(new StubAnswer("POST", Path, Status: 200));
+        var action = Hook("""{"target":"slack","url":"$JironFormBuilder:Secrets:Address","message":"Hi {{ field.name }}"}""");
+        var form = await FormAsync(action);
+        var tests = GetRequiredService<ActionTestRuns>();
+
+        var english = await tests.TestAsync(form, action.Key, new ActionTestUser(Guid.NewGuid(), "ada@jfb.test", "Ada"), confirmed: true);
+        var german = await tests.TestAsync(form, action.Key, new ActionTestUser(Guid.NewGuid(), "bea@jfb.test", "Bea") { Culture = "de-DE" }, confirmed: true);
+
+        var calls = Stub.CallsTo(Path);
+        var texts = calls.Select(call => JsonNode.Parse(call.Body)!["text"]!.GetValue<string>()).ToList();
+        Assert.Multiple(() =>
+        {
+            Assert.That(texts, Has.Count.EqualTo(2));
+            Assert.That(texts[0], Does.StartWith("This is a test.\n\nHi "));
+            Assert.That(texts[1], Does.StartWith("Dies ist ein Test.\n\nHi "));
+            Assert.That(calls.Select(call => call.Header("X-Jfb-Test")), Is.All.EqualTo("true"));
+            Assert.That((english.Result!.Code, german.Result!.Code), Is.EqualTo((ActionTestCodes.Sent, ActionTestCodes.Sent)));
+            Assert.That(english.Result.Args, Is.EqualTo(new[] { "200" }), "the status its words take");
+        });
+    }
+
+    [Test]
+    public async Task AnOwnBody_IsSentAsItIs_ByATestRun()
+    {
+        Stub.Answer(new StubAnswer("POST", Path));
+        var action = Hook("""{"target":"slack","url":"$JironFormBuilder:Secrets:Address","template":"{\"text\":\"Own\"}"}""");
+        var form = await FormAsync(action);
+
+        await GetRequiredService<ActionTestRuns>().TestAsync(form, action.Key, new ActionTestUser(Guid.NewGuid(), "ada@jfb.test", "Ada"), confirmed: true);
+
+        var call = Stub.CallsTo(Path).Single();
+        Assert.Multiple(() =>
+        {
+            Assert.That(call.Body, Is.EqualTo("""{"text":"Own"}"""), "marked by its header only");
+            Assert.That(call.Header("X-Jfb-Test"), Is.EqualTo("true"));
         });
     }
 
@@ -602,6 +702,7 @@ public sealed class WebhookActionTests : ActionTestBase
             Assert.That(confirmed.Result!.Outcome, Is.EqualTo(ActionTestOutcome.Sent));
             Assert.That(confirmed.Result!.Message, Does.Contain("201"));
             Assert.That(confirmed.Result!.Code, Is.EqualTo(ActionTestCodes.Sent));
+            Assert.That(confirmed.Result!.Args, Is.EqualTo(new[] { "201" }), "the status, for the backoffice's own words");
             Assert.That(call.Header("X-Jfb-Test"), Is.EqualTo("true"));
             Assert.That(call.Header("X-Jfb-Delivery"), Is.EqualTo("test"));
         });
@@ -635,6 +736,10 @@ public sealed class WebhookActionTests : ActionTestBase
             provider.GetRequiredService<IOptions<FormBuilderOptions>>(),
             _callLimits));
     }
+
+    // A Teams card's lines, a text block each.
+    private static IEnumerable<string> CardLines(JsonNode body) =>
+        body["attachments"]![0]!["content"]!["body"]!.AsArray().Select(block => block!["text"]!.GetValue<string>());
 
     private async Task SaveIntegrationsAsync(IntegrationSettings section)
     {

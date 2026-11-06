@@ -168,6 +168,9 @@ internal sealed record ActionTestResponseModel
     /// <summary>What it came to as a code the backoffice words, such as <c>sent_to_you</c> or <c>mail_off</c>; null for none.</summary>
     public string? Code { get; init; }
 
+    /// <summary>What the code's words take, such as the status a host answered; empty for none.</summary>
+    public required IReadOnlyList<string> Args { get; init; }
+
     /// <summary>What to tell the editor, or null.</summary>
     public string? Message { get; init; }
 
@@ -190,6 +193,7 @@ internal sealed record ActionTestResponseModel
                 _ => "dryRun",
             },
             Code = result.Code,
+            Args = result.Args,
             Message = result.Message,
             Recipient = result.Code == ActionTestCodes.SentToYou ? address : null,
             Preview = result.Preview ?? [],

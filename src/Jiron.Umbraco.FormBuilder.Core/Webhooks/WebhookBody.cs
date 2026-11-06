@@ -14,7 +14,13 @@ namespace Jiron.Umbraco.FormBuilder.Core.Webhooks;
 internal sealed class WebhookBody(IFormBuilderMergeTagService tags)
 {
     /// <summary>The body as it is sent and signed; null when a text would be cut at the merge tags' limit, as a body cut short is no body.</summary>
-    public async Task<byte[]?> WriteAsync(WebhookActionSettings action, MergeTagScope scope, string trigger, string delivery, CancellationToken cancellationToken)
+    /// <param name="action">The action's settings.</param>
+    /// <param name="scope">The entry and what the action may show of it.</param>
+    /// <param name="trigger">What happened.</param>
+    /// <param name="delivery">The run's delivery key.</param>
+    /// <param name="testLine">A test's first line for a chat's message; null for a run.</param>
+    /// <param name="cancellationToken">Cancels the rendering.</param>
+    public async Task<byte[]?> WriteAsync(WebhookActionSettings action, MergeTagScope scope, string trigger, string delivery, string? testLine, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(action);
         ArgumentNullException.ThrowIfNull(scope);
@@ -27,6 +33,15 @@ internal sealed class WebhookBody(IFormBuilderMergeTagService tags)
                 _ => MergeTagContext.Json,
             };
             return await RenderAsync(template, context, scope, cancellationToken) is { } text ? Encoding.UTF8.GetBytes(text) : null;
+        }
+
+        // A chat's message, written as the chat reads it (ADR-0191); the scope keeps each answer in it as text.
+        if (action.Target != WebhookTarget.Url)
+        {
+            var message = action.Message ?? (action.Target == WebhookTarget.Slack ? WebhookChat.SlackMessage : WebhookChat.TeamsMessage);
+            return await RenderAsync(message, MergeTagContext.Text, scope, cancellationToken) is { } text
+                ? WebhookChat.Body(action.Target, testLine is null ? text : testLine + "\n\n" + text)
+                : null;
         }
 
         if (await FieldsAsync(action, scope, cancellationToken) is not { } fields)

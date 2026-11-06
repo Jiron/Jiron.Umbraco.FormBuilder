@@ -87,6 +87,9 @@ public sealed record ActionTestResult(ActionTestOutcome Outcome, string? Message
     /// <c>dry_run</c>, <c>no_address</c> or <c>mail_off</c>; null leaves the editor the message.
     /// </summary>
     public string? Code { get; init; }
+
+    /// <summary>What the code's words take, such as the status a host answered (ADR-0191); empty for a code that takes none.</summary>
+    public IReadOnlyList<string> Args { get; init; } = [];
 }
 
 /// <summary>The codes of a test run the backoffice says in its own words (ADR-0190); a type may give others.</summary>
