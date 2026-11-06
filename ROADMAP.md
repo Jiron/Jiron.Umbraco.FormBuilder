@@ -2764,7 +2764,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
   - Done when:
     - Playwright configures and test-runs a content action and a Set state action;
     - integration tests cover every new endpoint, with its row in the permission matrix and the OpenAPI snapshot.
-- [ ] **10.2f The actions view: the last run and its details** (10.2 split in four, then 10.2d in two, see WORKLOG)
+- [x] **10.2f The actions view: the last run and its details** (10.2 split in four, then 10.2d in two, see WORKLOG) (2026-11-06, 4442d2e)
   - **The last-run status** on each card ("Delivered 2 hours ago"); a failed or uncertain last run links to **Details**: what the server answered and the tries, never the entry, who can retry the run (ADR-0013, amendment), and Test (IA 5.3).
   - Done when:
     - Playwright shows an action's last run, and a failed one's Details with the server's answer and its tries (the webhook stub answering with an error);
