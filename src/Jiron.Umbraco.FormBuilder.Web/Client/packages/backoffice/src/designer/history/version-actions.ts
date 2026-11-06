@@ -149,7 +149,7 @@ export class VersionActions extends UmbControllerBase {
 
   /** Opens the publish dialog for the draft, as Publish... does. */
   async publish(): Promise<void> {
-    await publishWithDialog(this, this.#context);
+    await publishWithDialog(this, this.#context, undefined, this.#localize);
   }
 
   // "Version 13 is the new draft: 4 fields, After sending, 1 rule and 1 action changed."

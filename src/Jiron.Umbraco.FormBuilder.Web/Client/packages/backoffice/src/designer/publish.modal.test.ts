@@ -1,12 +1,14 @@
 // The publish dialog with the form check's result (ROADMAP 9.5f, IA 5.7, ADR-0181): no problems said once; errors that
 // block Publish, each with Fix it; warnings that don't; Publish waiting for the check's answer, and left to the
-// server's own check when the check gives none; the comment the version keeps.
+// server's own check when the check gives none; the comment the version keeps; and what changed since the version
+// visitors get, said once it is read, in History's parts, or in one sentence (ROADMAP 10.3d).
 import { UmbObjectState } from '@umbraco-cms/backoffice/observable-api';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { all, must, registerEnglish, settle, shadow, text } from '../testing';
 import type { CheckIssue } from './check/form-check';
 import type { CheckState } from './check/form-checker';
 import type { DesignDefinition } from './definition';
+import type { PublishChanges } from './history/publish-changes';
 import { builtInTypes } from './preview/fixtures';
 import { MOST_LISTED, PublishModalElement } from './publish.modal.element';
 import type { PublishModalValue } from './publish.modal.token';
@@ -43,13 +45,20 @@ function modalContext() {
   };
 }
 
-async function dialogOf(check: CheckState) {
+async function dialogOf(check: CheckState | UmbObjectState<CheckState>, changes?: Promise<PublishChanges>) {
   const modal = modalContext();
-  const state = new UmbObjectState<CheckState>(check);
+  const state = check instanceof UmbObjectState ? check : new UmbObjectState<CheckState>(check);
   const element = new PublishModalElement();
   const closed = vi.fn();
   element.modalContext = modal as never;
-  element.data = { name: 'Contact us', check: state.asObservable(), types: builtInTypes, culture: '', closed };
+  element.data = {
+    name: 'Contact us',
+    check: state.asObservable(),
+    types: builtInTypes,
+    culture: '',
+    closed,
+    ...(changes ? { changes: { said: changes, comparing: 'Comparing with the published version...' } } : {}),
+  };
   document.body.append(element);
   await settle(element);
   const root = shadow(element);
@@ -148,5 +157,65 @@ describe('the publish dialog', () => {
     await settle(element);
     expect(root.querySelector('[role="status"]')).toBe(region);
     expect(text(region)).toBe('The form check found no problems.');
+  });
+});
+
+describe('what the publish dialog says changed', () => {
+  const PARTS: PublishChanges = {
+    headline: 'Since the published version',
+    parts: [
+      { name: 'Fields', lines: ['Field added: Phone', 'Email address: Label and Required'], more: 'And 2 more.' },
+      { name: 'Settings', lines: ['After sending: Redirect page'], more: null },
+    ],
+    said: 'Changed since the published version: Fields and Settings.',
+  };
+
+  it('says the wait, then one sentence a screen reader hears, and lists the parts under their headline', async () => {
+    let answer: (said: PublishChanges) => void = () => undefined;
+    const { root } = await dialogOf(checked([]), new Promise((done) => (answer = done)));
+    const region = must(root.querySelector<HTMLElement>('.changes [role="status"]'), 'region');
+    expect(text(region)).toBe('Comparing with the published version...');
+    answer(PARTS);
+    await vi.waitFor(() => expect(root.querySelector('.changes h4')).not.toBeNull());
+    // The region stays in place, and says which parts changed, for a screen reader alone.
+    expect(root.querySelector('.changes [role="status"]')).toBe(region);
+    expect(text(region)).toBe('Changed since the published version: Fields and Settings.');
+    expect(region.classList.contains('visually-hidden')).toBe(true);
+    expect(region.querySelector('li')).toBeNull();
+    const section = must(root.querySelector<HTMLElement>('.changes section'), 'section');
+    expect(text(section.querySelector('h4'))).toBe('Since the published version');
+    expect(section.getAttribute('aria-labelledby')).toBe(section.querySelector('h4')?.id);
+    expect([...section.querySelectorAll('dt')].map((one) => text(one))).toEqual(['Fields', 'Settings']);
+    expect(
+      [...section.querySelectorAll('dd')].map((one) => [...one.querySelectorAll('li')].map((li) => text(li))),
+    ).toEqual([['Field added: Phone', 'Email address: Label and Required'], ['After sending: Redirect page']]);
+    expect([...section.querySelectorAll('.more')].map((one) => text(one))).toEqual(['And 2 more.']);
+  });
+
+  it('says a first version, or no changes, in one sentence, for the eye too', async () => {
+    for (const sentence of [
+      'The first version holds 1 page and 3 fields.',
+      'Nothing changed since the published version.',
+    ]) {
+      const { root } = await dialogOf(checked([]), Promise.resolve({ headline: null, parts: [], said: sentence }));
+      await vi.waitFor(() => expect(text(root.querySelector('.changes [role="status"]'))).toBe(sentence));
+      expect(root.querySelector('.changes [role="status"]')?.classList.contains('visually-hidden')).toBe(false);
+      expect(root.querySelector('.changes section')).toBeNull();
+      document.body.replaceChildren();
+    }
+  });
+
+  it('shows the changes while the form is checked, and none once an error blocks publishing', async () => {
+    const state = new UmbObjectState<CheckState>({ status: 'checking', issues: [], definition: DEFINITION });
+    const { element, root } = await dialogOf(state, Promise.resolve(PARTS));
+    await vi.waitFor(() => expect(root.querySelector('.changes section')).not.toBeNull());
+    state.setValue(checked([issue('error', 'label_missing')]));
+    await settle(element);
+    expect(root.querySelector('.changes')).toBeNull();
+  });
+
+  it('says nothing of the changes without the words to say them', async () => {
+    const { root } = await dialogOf(checked([]));
+    expect(root.querySelector('.changes')).toBeNull();
   });
 });

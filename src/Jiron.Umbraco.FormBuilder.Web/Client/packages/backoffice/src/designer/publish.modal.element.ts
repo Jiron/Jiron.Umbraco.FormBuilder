@@ -1,14 +1,17 @@
 // The publish dialog (docs/ux/information-architecture.md, section 5.7): it asks before the draft goes live, with an
 // optional comment that the version keeps. It shows the form check's result first (ROADMAP 9.5f, ADR-0181): errors
 // block publishing, each with Fix it, and warnings are listed with theirs, since the badge counts both; Publish waits
-// for the check's answer, and a check that gives none leaves publishing to the server's own check. What changed since
-// the live version joins it with its step.
+// for the check's answer, and a check that gives none leaves publishing to the server's own check. Then what changed
+// since the version visitors get, unsaved changes included, in History's parts, or what a first version holds
+// (ROADMAP 10.3d): a region that stays in place says the wait, then one sentence, which a screen reader hears; the
+// parts follow it, to read on.
 import { css, html, nothing, type PropertyValues, type TemplateResult } from '@umbraco-cms/backoffice/external/lit';
 import { UmbModalBaseElement } from '@umbraco-cms/backoffice/modal';
-import { jfbBackofficeTokens } from '../styles/tokens';
+import { jfbBackofficeTokens, jfbVisuallyHidden } from '../styles/tokens';
 import { issueWords, type CheckWordsContext } from './check/check-words';
 import { bySeverity, fixOf, type CheckIssue, type FixTarget } from './check/form-check';
 import { UNCHECKED, type CheckState } from './check/form-checker';
+import type { PublishChanges } from './history/publish-changes';
 import { elementNames } from './rules/rule-names';
 import type { PublishModalData, PublishModalValue } from './publish.modal.token';
 
@@ -23,10 +26,12 @@ export class PublishModalElement extends UmbModalBaseElement<PublishModalData, P
     ...UmbModalBaseElement.properties,
     _comment: { state: true },
     _check: { state: true },
+    _changes: { state: true },
   };
 
   static override styles = [
     jfbBackofficeTokens,
+    jfbVisuallyHidden,
     css`
       p {
         margin: 0 0 var(--uui-size-space-5);
@@ -126,11 +131,54 @@ export class PublishModalElement extends UmbModalBaseElement<PublishModalData, P
         align-items: center;
         gap: var(--uui-size-space-3);
       }
+
+      /* What changed: History's parts, each a quiet label over its lines. */
+      .changes {
+        margin-block-end: var(--uui-size-space-5);
+      }
+
+      .changes > p {
+        margin: 0;
+      }
+
+      .changes section,
+      .changes dl,
+      .changes dd {
+        display: grid;
+        gap: var(--uui-size-space-3);
+        margin: 0;
+      }
+
+      .changes h4 {
+        margin: 0;
+        font-size: var(--uui-type-default-size);
+        font-weight: 700;
+      }
+
+      .changes dt {
+        color: var(--jfb-bo-color-text-muted);
+      }
+
+      .changes ul {
+        gap: var(--uui-size-space-2);
+        padding-inline-start: var(--uui-size-space-5);
+        list-style: disc;
+      }
+
+      .changes li {
+        display: list-item;
+      }
+
+      .changes dd p {
+        margin: 0;
+      }
     `,
   ];
 
   declare private _comment: string;
   declare private _check: CheckState;
+  /** What changed, once it is said; undefined while it is read. */
+  declare private _changes: PublishChanges | undefined;
 
   override connectedCallback() {
     super.connectedCallback();
@@ -145,7 +193,11 @@ export class PublishModalElement extends UmbModalBaseElement<PublishModalData, P
 
   protected override willUpdate(changed: PropertyValues) {
     super.willUpdate(changed);
-    if (changed.has('data') && this.data) this.observe(this.data.check, (check) => (this._check = check), 'check');
+    if (changed.has('data') && this.data) {
+      this.observe(this.data.check, (check) => (this._check = check), 'check');
+      this._changes = undefined;
+      void this.data.changes?.said.then((said) => (this._changes = said));
+    }
   }
 
   #term = (key: string, ...args: unknown[]) => this.localize.term(key, ...args);
@@ -260,6 +312,39 @@ export class PublishModalElement extends UmbModalBaseElement<PublishModalData, P
     </section>`;
   }
 
+  // What changed since the version visitors get: the region says the wait, then a sentence, in place of the parts or
+  // over them, where it is for a screen reader alone; the parts follow under their headline.
+  #changes(): TemplateResult | typeof nothing {
+    const asked = this.data?.changes;
+    if (!asked) return nothing;
+    const said = this._changes;
+    const listed = said !== undefined && said.parts.length > 0;
+    return html`<div class="changes">
+      <p class=${said ? (listed ? 'visually-hidden' : '') : 'state'} role="status">
+        ${said ? said.said : html`<uui-loader-circle></uui-loader-circle>${asked.comparing}`}
+      </p>
+      ${
+        listed
+          ? html`<section aria-labelledby="changes-title">
+              <h4 id="changes-title">${said.headline}</h4>
+              <dl>
+                ${said.parts.map(
+                  (part) =>
+                    html`<dt>${part.name}</dt>
+                      <dd>
+                        <ul>
+                          ${part.lines.map((line) => html`<li>${line}</li>`)}
+                        </ul>
+                        ${part.more ? html`<p class="more">${part.more}</p>` : nothing}
+                      </dd>`,
+                )}
+              </dl>
+            </section>`
+          : nothing
+      }
+    </div>`;
+  }
+
   override render() {
     const name = this.data?.name ?? '';
     return html`<uui-dialog-layout headline=${this.localize.term('jfbDesigner_publishHeadline', name)}>
@@ -268,7 +353,8 @@ export class PublishModalElement extends UmbModalBaseElement<PublishModalData, P
         // While an error blocks it, the dialog says what to fix and nothing of a version that can't be published yet.
         this._check.status === 'checked' && this._check.issues.some(isError)
           ? nothing
-          : html`<p>${this.localize.term('jfbDesigner_publishText')}</p>
+          : html`${this.#changes()}
+              <p>${this.localize.term('jfbDesigner_publishText')}</p>
               <uui-label for="comment">${this.localize.term('jfbDesigner_comment')}</uui-label>
               <uui-textarea
                 id="comment"
