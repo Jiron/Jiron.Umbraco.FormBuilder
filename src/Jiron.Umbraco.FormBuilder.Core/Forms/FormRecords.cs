@@ -119,6 +119,11 @@ internal sealed record FormVersionDocument(FormVersion Version, FormDefinition? 
 /// <param name="Changes">The elements that differ.</param>
 internal sealed record FormComparison(int FromVersion, int ToVersion, IReadOnlyList<DefinitionChange> Changes);
 
+/// <summary>What changed from a version of a form to a definition not saved yet (ADR-0200).</summary>
+/// <param name="FromVersion">The version's number.</param>
+/// <param name="Changes">The elements that differ.</param>
+internal sealed record DraftComparison(int FromVersion, IReadOnlyList<DefinitionChange> Changes);
+
 /// <summary>What a save or a publish did.</summary>
 /// <param name="Form">The form after it.</param>
 /// <param name="Version">The number of the version it wrote, or null when it wrote nothing because nothing changed.</param>

@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using Asp.Versioning;
 using Jiron.Umbraco.FormBuilder.Core.Access;
+using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Definitions.Comparison;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
@@ -16,14 +17,14 @@ using Umbraco.Cms.Web.Common.Routing;
 namespace Jiron.Umbraco.FormBuilder.Web.ManagementApi.Library;
 
 /// <summary>
-/// A form's versions (ADR-0045, ADR-0052): the History, a version with its definition, a comparison of two, a restore
-/// into a new draft, pins and comments. Each needs <c>design</c> on the form; a restore that changes the actions also
-/// <c>manageActions</c>, as a save does (ADR-0051).
+/// A form's versions (ADR-0045, ADR-0052): the History, a version with its definition, a comparison of two or of one
+/// with a draft not saved yet (ADR-0200), a restore into a new draft, pins and comments. Each needs <c>design</c> on the
+/// form; a restore that changes the actions also <c>manageActions</c>, as a save does (ADR-0051).
 /// </summary>
 [ApiVersion("1.0")]
 [BackOfficeRoute(FormBuilderManagementApi.Route + "/form/{key:guid}/versions")]
 [ApiExplorerSettings(GroupName = "Version")]
-internal sealed class VersionController(IFormBuilderFormVersionService versions, IFormBuilderFormService forms, IFormBuilderAccessService access, FormSensitivityChecks sensitivity, IUserService users) : FormBuilderManagementApiController
+internal sealed class VersionController(IFormBuilderFormVersionService versions, IFormBuilderFormService forms, IFormBuilderAccessService access, FormSensitivityChecks sensitivity, IUserService users, FormDefinitionSerializer serializer) : FormBuilderManagementApiController
 {
     /// <summary>A page of the form's versions, newest first: the publishes, and the draft saves too when asked.</summary>
     /// <param name="key">The form.</param>
@@ -86,6 +87,34 @@ internal sealed class VersionController(IFormBuilderFormVersionService versions,
         await versions.CompareAsync(key, from, to, cancellationToken) is { } comparison
             ? Ok(FormComparisonResponseModel.Of(comparison))
             : FormBuilderProblems.VersionNotFound();
+
+    /// <summary>
+    /// What changed from a version to a definition not saved yet, element by element (ADR-0200): a draft compared with the
+    /// one saved meanwhile, or with the live version. The answer holds the definition as a save would store it.
+    /// </summary>
+    /// <param name="key">The form.</param>
+    /// <param name="number">The version's number.</param>
+    /// <param name="request">The definition not saved yet.</param>
+    /// <param name="cancellationToken">The request's cancellation.</param>
+    [HttpPost("{number:int}/compare")]
+    [MapToApiVersion("1.0")]
+    [FormBuilderPermission(FormBuilderPermissions.Design, On = FormBuilderAccessResourceKind.Form, Key = "key")]
+    [ProducesResponseType(typeof(DraftComparisonResponseModel), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> CompareWith(Guid key, int number, CompareDraftRequestModel request, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        var read = serializer.Read(request.Definition.GetRawText());
+        if (read.Definition is not { } definition)
+        {
+            throw new FormBuilderValidationException(read.Problems);
+        }
+
+        return await versions.CompareWithAsync(key, number, definition, cancellationToken) is { } comparison
+            ? Ok(DraftComparisonResponseModel.Of(comparison, definition))
+            : FormBuilderProblems.VersionNotFound();
+    }
 
     /// <summary>
     /// Copies a version's definition into a new draft; the current draft stays in the History. A restore that changes the

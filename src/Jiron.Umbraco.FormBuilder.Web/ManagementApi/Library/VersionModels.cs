@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Definitions.Comparison;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
@@ -193,6 +194,38 @@ internal sealed record FormComparisonResponseModel
             FromVersion = comparison.FromVersion,
             ToVersion = comparison.ToVersion,
             Changes = [.. comparison.Changes.Select(DefinitionChangeResponseModel.Of)],
+        };
+    }
+}
+
+/// <summary>A definition not saved yet, to compare with a version (ADR-0200).</summary>
+internal sealed record CompareDraftRequestModel
+{
+    /// <summary>The definition document; an older schema version is upgraded when read.</summary>
+    public required JsonElement Definition { get; init; }
+}
+
+/// <summary>What changed from a version of a form to a definition not saved yet (ADR-0200).</summary>
+internal sealed record DraftComparisonResponseModel
+{
+    /// <summary>The version's number.</summary>
+    public required int FromVersion { get; init; }
+
+    /// <summary>The elements that differ, the version as the older side.</summary>
+    public required IReadOnlyList<DefinitionChangeResponseModel> Changes { get; init; }
+
+    /// <summary>The definition sent, as a save would store it: canonical and upgraded.</summary>
+    public required JsonElement Definition { get; init; }
+
+    /// <summary>The model of a comparison with a definition not saved yet.</summary>
+    public static DraftComparisonResponseModel Of(DraftComparison comparison, FormDefinition definition)
+    {
+        ArgumentNullException.ThrowIfNull(comparison);
+        return new DraftComparisonResponseModel
+        {
+            FromVersion = comparison.FromVersion,
+            Changes = [.. comparison.Changes.Select(DefinitionChangeResponseModel.Of)],
+            Definition = DefinitionJson.Of(definition),
         };
     }
 }

@@ -114,6 +114,38 @@ public sealed class VersionApiTests : ManagementApiTestBase
     }
 
     [Test]
+    public async Task ADraftNotSavedYet_IsComparedWithAVersion_AndComesBackAsASaveWouldStoreIt()
+    {
+        var draft = await _api.CallAsync("designer", HttpMethod.Get, $"form/{_spring}/draft");
+        var definition = draft.Body!["definition"]!.DeepClone().AsObject();
+        Fields(definition)[0]!["label"] = new JsonObject { [string.Empty] = "Full name" };
+        definition["actions"] = new JsonArray();
+        var before = await VersionOfAsync();
+
+        var compared = await _api.CallAsync("designer", HttpMethod.Post, $"form/{_spring}/versions/4/compare", new { definition });
+        var bare = definition.DeepClone().AsObject();
+        bare.Remove("settings");
+        var canonical = await _api.CallAsync("designer", HttpMethod.Post, $"form/{_spring}/versions/4/compare", new { definition = bare });
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(compared.Status, Is.EqualTo(HttpStatusCode.OK), compared.ToString());
+            Assert.That(compared.Body!["fromVersion"]!.GetValue<int>(), Is.EqualTo(4));
+            Assert.That(compared.Body!["changes"]!.AsArray().Select(change => $"{change!["kind"]} {change["change"]}"), Is.EquivalentTo(new[] { "field changed", "action removed" }));
+            var label = compared.Body!["changes"]!.AsArray().Single(change => change!["kind"]!.GetValue<string>() == "field")!;
+            Assert.That(label["properties"]!.AsArray().Select(property => $"{string.Join("/", property!["path"]!.AsArray().Select(segment => segment!.GetValue<string>()))}: {property["from"]!.ToJsonString()} -> {property["to"]!.ToJsonString()}"), Is.EqualTo(new[] { "label/: \"Name\" -> \"Full name\"" }));
+            Assert.That(Fields(compared.Body!["definition"]!.AsObject())[0]!["label"]![string.Empty]!.GetValue<string>(), Is.EqualTo("Full name"), "the draft sent, as a save stores it");
+            Assert.That(compared.Body!["definition"]!["schemaVersion"], Is.Not.Null, "in its canonical form");
+            Assert.That(canonical.Body?["definition"]?["settings"]?.AsObject().Count, Is.GreaterThan(0), canonical.ToString() + ": the settings a save writes, defaults and all, where none were sent");
+            Assert.That(await VersionOfAsync(), Is.EqualTo(before), "a comparison saves nothing");
+            Assert.That((await _api.CallAsync("designer", HttpMethod.Post, $"form/{_spring}/versions/99/compare", new { definition })).Outcome, Is.EqualTo("404 version_not_found"));
+            Assert.That((await _api.CallAsync("designer", HttpMethod.Post, $"form/{_spring}/versions/4/compare", new { definition = new JsonObject { ["pages"] = "none" } })).Status, Is.EqualTo(HttpStatusCode.BadRequest), "a definition that can't be read");
+            var viewer = await _api.CallAsync("viewer", HttpMethod.Post, $"form/{_spring}/versions/4/compare", new { definition });
+            Assert.That((viewer.Outcome, viewer.Body?["permission"]?.GetValue<string>()), Is.EqualTo(("403 forbidden", "design")));
+        });
+    }
+
+    [Test]
     public async Task ARestore_CopiesTheVersionIntoANewDraft_AndNeedsManageActionsWhenItChangesThem()
     {
         var version = await VersionOfAsync();

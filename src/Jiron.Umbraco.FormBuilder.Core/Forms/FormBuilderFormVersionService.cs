@@ -34,6 +34,14 @@ internal interface IFormBuilderFormVersionService
     Task<FormComparison?> CompareAsync(Guid key, int fromNumber, int toNumber, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// What changed from a version of a form to a definition not saved yet, the version read and upgraded first (ADR-0200):
+    /// a draft compared with the one saved meanwhile, or with the live version. Null when the form or the version does not
+    /// exist.
+    /// </summary>
+    /// <exception cref="FormBuilderValidationException">The stored version cannot be read.</exception>
+    Task<DraftComparison?> CompareWithAsync(Guid key, int fromNumber, FormDefinition definition, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Copies a version's definition into a new draft; the current draft stays in the History (ADR-0045). A version whose
     /// definition is the draft's writes nothing. Null when the form or the version does not exist.
     /// </summary>
@@ -146,6 +154,18 @@ internal sealed class FormBuilderFormVersionService(
         }
 
         return new FormComparison(fromNumber, toNumber, DefinitionDiff.Compare(documents.Readable(older), documents.Readable(newer)));
+    }
+
+    /// <inheritdoc />
+    public async Task<DraftComparison?> CompareWithAsync(Guid key, int fromNumber, FormDefinition definition, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(definition);
+        if (await forms.GetAsync(key, cancellationToken) is not { } form || await forms.GetVersionAsync(form.Id, fromNumber, cancellationToken) is not { } older)
+        {
+            return null;
+        }
+
+        return new DraftComparison(fromNumber, DefinitionDiff.Compare(documents.Readable(older), definition));
     }
 
     /// <inheritdoc />

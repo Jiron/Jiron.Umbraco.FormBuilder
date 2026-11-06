@@ -125,6 +125,10 @@ export type CommentVersionRequestModel = {
     comment?: string | null;
 };
 
+export type CompareDraftRequestModel = {
+    definition: unknown;
+};
+
 export type ContentDocumentTypeResponseModel = {
     alias: string;
     name: string;
@@ -214,6 +218,12 @@ export type DefinitionPropertyChangeResponseModel = {
     path: Array<string>;
     from?: unknown;
     to?: unknown;
+};
+
+export type DraftComparisonResponseModel = {
+    fromVersion: number;
+    changes: Array<DefinitionChangeResponseModel>;
+    definition: unknown;
 };
 
 export type DraftOptionsRequestModel = {
@@ -3634,6 +3644,46 @@ export type VersionCommentResponses = {
 };
 
 export type VersionCommentResponse = VersionCommentResponses[keyof VersionCommentResponses];
+
+export type VersionCompareWithData = {
+    body?: CompareDraftRequestModel;
+    path: {
+        key: string;
+        number: number;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/form/{key}/versions/{number}/compare';
+};
+
+export type VersionCompareWithErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type VersionCompareWithError = VersionCompareWithErrors[keyof VersionCompareWithErrors];
+
+export type VersionCompareWithResponses = {
+    /**
+     * OK
+     */
+    200: DraftComparisonResponseModel;
+};
+
+export type VersionCompareWithResponse = VersionCompareWithResponses[keyof VersionCompareWithResponses];
 
 export type VersionPinData = {
     body?: PinVersionRequestModel;

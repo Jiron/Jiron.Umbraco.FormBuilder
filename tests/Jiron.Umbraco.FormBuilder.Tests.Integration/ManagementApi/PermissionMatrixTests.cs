@@ -74,6 +74,7 @@ public sealed class PermissionMatrixTests : ManagementApiTestBase
         ["GET form/{key}/versions"] = (FormBuilderPermissions.Design, FormBuilderAccessResourceKind.Form, "key"),
         ["GET form/{key}/versions/{number}"] = (FormBuilderPermissions.Design, FormBuilderAccessResourceKind.Form, "key"),
         ["GET form/{key}/versions/compare"] = (FormBuilderPermissions.Design, FormBuilderAccessResourceKind.Form, "key"),
+        ["POST form/{key}/versions/{number}/compare"] = (FormBuilderPermissions.Design, FormBuilderAccessResourceKind.Form, "key"),
         ["POST form/{key}/versions/{number}/restore"] = (FormBuilderPermissions.Design, FormBuilderAccessResourceKind.Form, "key"),
         ["PUT form/{key}/versions/{number}/pin"] = (FormBuilderPermissions.Design, FormBuilderAccessResourceKind.Form, "key"),
         ["PUT form/{key}/versions/{number}/comment"] = (FormBuilderPermissions.Design, FormBuilderAccessResourceKind.Form, "key"),
