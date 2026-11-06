@@ -208,7 +208,9 @@ describe("an action's last run in words", () => {
     const inGerman = (more: Partial<LastRun>, type = 'webhook') => runLine(run(more), type, now, 'de', german)?.text;
     expect(inGerman({ finishedUtc: at(12, 30) })).toBe('Vor 2 Stunden zugestellt');
     expect(inGerman({ finishedUtc: at(23, 10, 5) })).toBe('Gestern zugestellt');
-    expect(inGerman({ finishedUtc: at(14, 29, 6, 10, 2026, 30) }, 'email')).toBe('Gerade eben zum Versand \u00fcbergeben');
+    expect(inGerman({ finishedUtc: at(14, 29, 6, 10, 2026, 30) }, 'email')).toBe(
+      'Gerade eben zum Versand \u00fcbergeben',
+    );
     expect(inGerman({ state: 'pending', lastAttemptUtc: at(14, 2), nextAttemptUtc: at(14, 45) })).toBe(
       'Fehlgeschlagen um 14:02. N\u00e4chster Versuch um 14:45.',
     );
