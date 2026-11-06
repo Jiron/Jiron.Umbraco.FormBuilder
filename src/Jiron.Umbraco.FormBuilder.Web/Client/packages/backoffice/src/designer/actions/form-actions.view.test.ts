@@ -565,6 +565,8 @@ describe('the Actions view', () => {
       kind: 'done',
       result: { outcome: 'sent', code: 'sent_to_you', recipient: 'ana@example.com', preview: [] },
     };
+    // Its card says what its test does before it runs.
+    expect(list('submitted').cards[0]?.testHint).toBe('Sends a test to you alone.');
     const started = vi.fn();
     await list('submitted').test?.('a', started);
     expect(workspace.tested.map(([key, confirmed]) => [key, confirmed])).toEqual([['a', false]]);
@@ -618,7 +620,9 @@ describe('the Actions view', () => {
     await settle(view);
     const data = opened.sidebars[0] as ActionModalData;
     const held = { ...data.definition, actions: [{ ...action('a'), name: 'Held' }] };
-    await data.test?.(held, 'a', () => undefined);
+    const started = vi.fn();
+    await data.test?.(held, 'a', started);
+    expect(started).toHaveBeenCalledTimes(1);
     expect(workspace.tested.map(([key, , definition]) => [key, definition])).toEqual([['a', held]]);
   });
 
