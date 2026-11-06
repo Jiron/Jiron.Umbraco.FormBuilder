@@ -135,7 +135,7 @@ test('the Actions view adds an action from a preset, moves it by drag and keyboa
   await view.getByRole('button', { name: 'Add action' }).click();
   await sidebar.getByRole('radio', { name: "Change the entry's state" }).check();
   await expect(sidebar.getByRole('textbox', { name: 'Name', exact: true })).toHaveValue("Change the entry's state");
-  await expect(sidebar.getByRole('combobox', { name: 'State' })).toHaveValue('approved');
+  await expect(sidebar.getByRole('combobox', { name: 'Move the entry to' })).toHaveValue('approved');
   await expect(sidebar.getByRole('textbox', { name: 'Subject' })).toHaveCount(0);
   await enter(sidebar.getByRole('textbox', { name: 'Name', exact: true }), 'Mark as approved');
   await sidebar.locator('[slot="actions"]').getByRole('button', { name: 'Add', exact: true }).click();
