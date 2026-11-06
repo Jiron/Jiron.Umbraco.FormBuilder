@@ -64,7 +64,7 @@ Jiron Form Builder is a form builder for Umbraco 17. Editors design forms in a *
    - Never batch several steps into one commit. Never weaken or delete a step or a "Done when" check. A replacement needs an ADR and an equal or stronger check.
 10. **Take your time.** There is no deadline. Quality beats speed every time.
     - Prefer the robust, tested design over the quick one.
-    - When a step turns out bigger than written, split it in the roadmap as `X.Ya`, `X.Yb` (and say why in WORKLOG) instead of cutting corners.
+    - When a step turns out bigger than written, keep it one step and work it in as many commits as it needs; never split a step or add small ones (the owner, 2026-11-06, ADR-0197), and never cut corners either.
     - Re-read the relevant ROADMAP sections before each step, and look at the result in a real browser before calling any UI done.
 11. **No orchestration frameworks.** Do not use the Workflow tool or ultracode. Ordinary subagents are fine for focused research, reviews and parallel reading.
 

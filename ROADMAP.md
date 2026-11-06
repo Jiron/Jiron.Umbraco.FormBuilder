@@ -22,13 +22,13 @@ Written 2026-10-19 from the owner's brief, with research into Umbraco 17 packagi
 - **The bootstrap exception:** step 0.1 makes no commit (the owner already made the license root commit). Its tick and WORKLOG line are written in 0.2.
 - **Done when** lists the checks that prove a step is finished. Run them in the current session and show their output. Passing checks are the only evidence that counts.
 - **Every phase ends with a phase review.** It reviews the phase's work, fixes what it finds, and writes a handover note to `docs/WORKLOG.md`, so that a context compaction at any moment loses nothing. Where a phase needs a review of its own (security, privacy, UX, the schema freeze), that is a step of its own. Otherwise the review is the last part of the phase's last step, whose title says "and phase review".
-- You may improve this roadmap as you learn. Split steps that turn out too big, fix facts that turn out wrong, or add steps that are clearly needed. Record every such change in `docs/WORKLOG.md` with the reason.
+- You may improve this roadmap as you learn: fix facts that turn out wrong, and move work between steps. **Never split a step, and never add small ones** (the owner, 2026-11-06, ADR-0197): a step that turns out bigger than written stays one step, worked in as many commits as it needs, and something clearly missing joins the step it belongs to. Record every such change in `docs/WORKLOG.md` with the reason.
   - **Never weaken or delete** a requirement from §1 or §2, a step, or a "Done when" check.
   - If a check is impossible as written, replace it with an equal or stronger check, explained in an ADR.
   - If a requirement turns out impossible, explain why in an ADR and list it in `docs/OWNER-TODO.md`.
 - Facts marked *(verify)* came from research but were not confirmed on this machine. Confirm them in Phase 1 before relying on them.
-- **Splitting a step:** give the parts letters (`9.3a`, `9.3b`), so `roadmap-status.mjs` counts them. Some steps are split already.
-- **`[~]` is only for things outside your control:** an owner-only item (CLAUDE.md rule 8) or an outage of an outside service. An ordering problem (a check that needs something a later step builds) is fixed by moving or splitting work, with the reason in WORKLOG, never by marking a step blocked.
+- **Clustered steps** (the owner, 2026-11-06, ADR-0197): the open steps were put together, one or two a phase. Each keeps the number of its first part and holds its parts' items and "Done when" checks word for word, under their old numbers and titles, and is ticked once all of them pass. A step number named elsewhere before ADR-0197 (11.2, 18.3) points into the step that now holds it. Steps done before then keep their letters (`9.3a`, `9.3b`).
+- **`[~]` is only for things outside your control:** an owner-only item (CLAUDE.md rule 8) or an outage of an outside service. An ordering problem (a check that needs something a later step builds) is fixed by moving work, with the reason in WORKLOG, never by marking a step blocked.
 - **The phase-review gate.** Every phase review's "Done when" includes these checks, whether the review is a step of its own or the end of a step "and phase review", and even where it only says "pushed":
   - `scripts/ci-local.ps1` passes (from 3.5 on);
   - the full Playwright suite passes (from 3.4 on);
@@ -2769,504 +2769,532 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
   - Done when:
     - Playwright shows an action's last run, and a failed one's Details with the server's answer and its tries (the webhook stub answering with an error);
     - integration tests cover the endpoint, with its row in the permission matrix and the OpenAPI snapshot, and show it naming no entry and no answer.
-- [ ] **10.3a History: the list, pins, comments and the comparison** (10.3 split in six, see WORKLOG)
-  - **The list:** versions (draft saves and published), with pins and comments (IA 5.6): the published versions newest first, each with when, who and what changed against the one before, its comment and pin, the live one's "Published" chip; the "Show draft saves" switch; a row's "…" with Pin and Add comment….
-  - **The diff:** a side-by-side comparison in plain language (fields added, removed and changed; settings, actions and rules): Compare for two ticked versions, and a clicked row's sidebar comparing that version with the current draft. The server sends paths and values (ADR-0045), and the backoffice says them in its own words, in English and German.
-  - Done when: tests and Playwright cover the history: the list with its draft saves, the diff, pins and comments; Vitest says every kind of change the comparison sends in words.
-- [ ] **10.3b History: restoring as a new version, and how long draft saves are kept** (10.3 split in six, see WORKLOG)
-  - **Restore** as a new version (IA 5.6): Restore as a new draft in the sidebar, Restore and publish…, a row's "…" restoring at once with Undo, and Restore an earlier version… in the form's "…".
-  - **The version-cleanup settings:** how long a form's History keeps draft saves, read by the draft cleanup (`HistorySettings`), with an endpoint and their place in Settings › General (the rest of General is 12.4a's).
-  - Done when: tests and Playwright cover restoring as a new version from the sidebar, from a row's "…" with Undo and from the form's "…"; an integration test shows the cleanup keeping draft saves as the changed setting says; every new endpoint has its row in the permission matrix and the OpenAPI snapshot.
-- [ ] **10.3c Conflicts, and the guard against leaving unsaved** (10.3 split in six, see WORKLOG)
-  - **Conflicts:** when someone else saved first, show both versions and let the user choose; never overwrite silently (IA 5.7: the save conflict says who saved and when, and that the user's changes are still here; Review both versions takes each difference from either side). A Save after a refused one is refused again until the user has chosen (the survey for this split found the re-read after a failed save taking the newer version, so a second Save would overwrite).
-  - **A guard** against leaving with unsaved changes: Umbraco's, for a change on the canvas and in a view as for the name, and for closing or reloading the browser's tab.
-  - Done when: Playwright covers a two-browser concurrency conflict, choosing differences from both sides and saving; a test shows a second Save after a conflict refused; Playwright leaves a canvas change unsaved and is asked first.
-- [ ] **10.3d Publish: what changed since the live version** (10.3 split in six, see WORKLOG)
-  - **Publish:** a summary of the changes against the live version, and draft and unpublished badges (the badges came with 9.3a): the publish dialog groups what changed (fields, settings, actions, rules), with unsaved changes included, or, on a first publish, says what the first version holds (IA 5.7).
-  - Done when: Playwright covers publishing: a changed form's dialog lists its changes, grouped, and a first publish says what the first version holds; tests cover the grouping.
-- [ ] **10.3e Preview: the frame, its ticket and its choices** (10.3 split in six, see WORKLOG)
-  - **Preview:** a modal with the draft rendered by the chosen theme in an iframe (from a preview endpoint), device widths, light and dark, and a culture switch (IA 5.7: Preview in the footer, the form's widths with "Narrowed to fit"). The frame is sandboxed without `allow-same-origin`; its requests reach the public API with the origin `null` and a short-lived signed preview ticket bound to the form (§4.10, ADR-0012), issued to who may design it.
-  - Done when:
-    - Playwright covers preview: its widths, light and dark, and another language;
-    - the preview frame has an opaque origin (§4.10), and integration tests show the public API refusing a `null`-origin request without a valid preview ticket, with an expired one and with one for another form; the ticket's endpoint has its row in the permission matrix and the OpenAPI snapshot.
-- [ ] **10.3f Preview: test entries and sample answers** (10.3 split in six, see WORKLOG)
-  - Test submissions are marked `IsTest`: the preview sends against the draft, and a test entry runs no actions unless "Run actions for test entries" is on; after sending, Run actions… runs them for that one test entry, asking first (IA 5.7). **Fill with sample answers** (added in 1.1) fills every field with valid values in one click, so editors can try rules and outcomes quickly (Start again, after sending).
-  - Done when: Playwright covers sample answers that pass validation for every field type and a test entry, which runs no action; tests cover a test entry's actions with and without the setting and Run actions….
-- [ ] **10.4 Phase review**
-  - UX review as in 9.6, plus the handover note.
-  - The option editor's rows get a way to move without dragging, as an outcome's Place in the list (WCAG 2.5.7,
-    ADR-0185; found in 10.1b's review).
-  - Done when: `docs/ux/review-10.md` is committed and pushed, with the phase-review gate, and a test moves an option
-    to another place with single pointer presses, no drag.
+- [ ] **10.3 Preview, publishing and history, and phase review** (10.3a, 10.3b, 10.3c, 10.3d, 10.3e, 10.3f and 10.4 in one, ADR-0197)
+  - **10.3a History: the list, pins, comments and the comparison**:
+    - **The list:** versions (draft saves and published), with pins and comments (IA 5.6): the published versions newest first, each with when, who and what changed against the one before, its comment and pin, the live one's "Published" chip; the "Show draft saves" switch; a row's "…" with Pin and Add comment….
+    - **The diff:** a side-by-side comparison in plain language (fields added, removed and changed; settings, actions and rules): Compare for two ticked versions, and a clicked row's sidebar comparing that version with the current draft. The server sends paths and values (ADR-0045), and the backoffice says them in its own words, in English and German.
+    - Done when: tests and Playwright cover the history: the list with its draft saves, the diff, pins and comments; Vitest says every kind of change the comparison sends in words.
+  - **10.3b History: restoring as a new version, and how long draft saves are kept**:
+    - **Restore** as a new version (IA 5.6): Restore as a new draft in the sidebar, Restore and publish…, a row's "…" restoring at once with Undo, and Restore an earlier version… in the form's "…".
+    - **The version-cleanup settings:** how long a form's History keeps draft saves, read by the draft cleanup (`HistorySettings`), with an endpoint and their place in Settings › General (the rest of General is 12.4a's).
+    - Done when: tests and Playwright cover restoring as a new version from the sidebar, from a row's "…" with Undo and from the form's "…"; an integration test shows the cleanup keeping draft saves as the changed setting says; every new endpoint has its row in the permission matrix and the OpenAPI snapshot.
+  - **10.3c Conflicts, and the guard against leaving unsaved**:
+    - **Conflicts:** when someone else saved first, show both versions and let the user choose; never overwrite silently (IA 5.7: the save conflict says who saved and when, and that the user's changes are still here; Review both versions takes each difference from either side). A Save after a refused one is refused again until the user has chosen (the survey for this split found the re-read after a failed save taking the newer version, so a second Save would overwrite).
+    - **A guard** against leaving with unsaved changes: Umbraco's, for a change on the canvas and in a view as for the name, and for closing or reloading the browser's tab.
+    - Done when: Playwright covers a two-browser concurrency conflict, choosing differences from both sides and saving; a test shows a second Save after a conflict refused; Playwright leaves a canvas change unsaved and is asked first.
+  - **10.3d Publish: what changed since the live version**:
+    - **Publish:** a summary of the changes against the live version, and draft and unpublished badges (the badges came with 9.3a): the publish dialog groups what changed (fields, settings, actions, rules), with unsaved changes included, or, on a first publish, says what the first version holds (IA 5.7).
+    - Done when: Playwright covers publishing: a changed form's dialog lists its changes, grouped, and a first publish says what the first version holds; tests cover the grouping.
+  - **10.3e Preview: the frame, its ticket and its choices**:
+    - **Preview:** a modal with the draft rendered by the chosen theme in an iframe (from a preview endpoint), device widths, light and dark, and a culture switch (IA 5.7: Preview in the footer, the form's widths with "Narrowed to fit"). The frame is sandboxed without `allow-same-origin`; its requests reach the public API with the origin `null` and a short-lived signed preview ticket bound to the form (§4.10, ADR-0012), issued to who may design it.
+    - Done when:
+      - Playwright covers preview: its widths, light and dark, and another language;
+      - the preview frame has an opaque origin (§4.10), and integration tests show the public API refusing a `null`-origin request without a valid preview ticket, with an expired one and with one for another form; the ticket's endpoint has its row in the permission matrix and the OpenAPI snapshot.
+  - **10.3f Preview: test entries and sample answers**:
+    - Test submissions are marked `IsTest`: the preview sends against the draft, and a test entry runs no actions unless "Run actions for test entries" is on; after sending, Run actions… runs them for that one test entry, asking first (IA 5.7). **Fill with sample answers** (added in 1.1) fills every field with valid values in one click, so editors can try rules and outcomes quickly (Start again, after sending).
+    - Done when: Playwright covers sample answers that pass validation for every field type and a test entry, which runs no action; tests cover a test entry's actions with and without the setting and Run actions….
+  - **10.4 Phase review**:
+    - UX review as in 9.6, plus the handover note.
+    - The option editor's rows get a way to move without dragging, as an outcome's Place in the list (WCAG 2.5.7,
+      ADR-0185; found in 10.1b's review).
+    - Done when: `docs/ux/review-10.md` is committed and pushed, with the phase-review gate, and a test moves an option
+      to another place with single pointer presses, no drag.
+  - Done when: every part's "Done when" above passes, as each part says.
 
 ### Phase 11: Entries, exports and insights
 
-- [ ] **11.1 The entries list**
-  - **The table:** a collection table per form, a column chooser (saved per user in `jfbUserSetting`), server-side paging, "new" markers and mark-as-seen, and an action status ("3/3 delivered"). Each entry is named by its entry title (§4.3.4), or by its number when the form has none.
-  - **Finding entries:** filters as chips (date presets and ranges, state, typed field filters), search and sort. A set of filters can be saved under a name (per user). A search shows its count exactly up to 1,000 and as "more than 1,000" beyond (ADR-0003).
-  - **Working on many:** bulk actions (approve, reject, spam, not spam, delete, export selected, re-run actions) and the keyboard shortcuts of §4.13.
-  - **Drafts stay out** (ADR-0163): an empty state filter means every state to the repository, so the list, its counts, search and exports name the states they show and leave `Draft` out, with a test.
-  - Done when: Playwright passes with 1,000 seeded entries, including a saved filter set reopened in a second browser and a bulk approval undone from its toast inside the window (`page.clock`; every entry back in its state, no approved action run, and no Undo offered once the window has passed, ADR-0023), and the 100,000-entry budget of §4.12 is measured and met.
-- [ ] **11.2 The entry panel**
-  - **Values:** grouped by page and group, with fields from older versions marked as such, plus files and the consent proof (the exact text), and a signature typed instead of drawn with its name as text beside its image, read from its PNG (ADR-0103, added in 6.2k). The panel's endpoint reads them through `EntryAnswerStore.ReadAsync` (named in 5.5j by the Phase 5 wiring sweep, ADR-0070), each value as its type read it.
-  - **Metadata:** time, page, culture, member link, IP if stored, duration, spam reasons.
-  - **The timeline:** events, action runs with retry, and emails.
-  - **Notes:** add and edit your own.
-  - **State actions:** moving an entry back into a state that holds places takes them again, and asks before overbooking an option that is full by then (§4.4, ADR-0090). Moving an entry back whose unique answer another entry holds by then asks first too (ADR-0091).
-  - **Entry events** (registered in 8.4, ADR-0161): a user deleting an entry, one at a time or in bulk, publishes `EntryDeletedNotification` through `EntryEvents`, tested; a form's removal and a stored-nothing form letting go of its entry publish none.
-  - **Edit mode:** validation per type, audited; a changed choice moves its place, and asks before overbooking an option that is full (ADR-0090); a changed answer that must be unique and that another entry holds asks first too (ADR-0091).
-  - **Sensitive values:** masked, with an audited "reveal".
-  - **Forward** (added in 1.1): send the entry to a backoffice user or to one of the team addresses of the email settings (§4.8), through the outbox. Sensitive values go along only when the user may see them and chooses to. Audited, and shown on the timeline.
-  - **The entry's link** (added in 5.3e, ADR-0067): the entry's workspace (`BackofficeLinks.EntryEntityType`) answers `/umbraco/section/jfb-forms/workspace/jfb-entry/edit/<key>`, the link `entry.url` gives team mail, and opens the entry's panel without its list; a user who may not view the entry sees the backoffice's "not found" answer, as for an entry that is gone.
-  - Done when: Playwright passes, and the audit entries are asserted, including Approve in the panel followed by Undo from its toast (ADR-0023), and a rejected entry moved back onto an option that is full by then, which asks first and overbooks only once confirmed (ADR-0090), and one moved back whose unique answer another entry holds by then, which asks first too (ADR-0091). The panel's endpoint's integration test stores an entry of every type and gets each value back as `EntryAnswerStore.ReadAsync` reads it, and a typed signature with its name (added in 6.2k). A forwarded entry arrives in the pickup folder, and an address outside the allowed recipients is refused by the API. Playwright opens the `entry.url` link of a mail in the pickup folder and lands on that entry's panel, and the same link as a user without access to its form shows no value of it.
-- [ ] **11.3 The all-entries inbox and spam**
-  - **The inbox:** a cross-form list with a form column and a form filter, unseen entries first. It holds the entries of the forms the user may view entries of, through the access filter of 4.6a in its query (ADR-0048).
-  - **Spam:** the spam folder with "not spam", which asks first, as moving an entry back does (11.2), when an option is full or a unique answer is held by another entry by then (ADR-0090, ADR-0091).
-  - **Badges:** unseen counts on the menu items, from a light count endpoint. The poll pauses while the user is idle and never renews an expired session (§4.10).
-  - **The digest** (added in 1.1): each user can ask for a daily or weekly email ("12 new entries in 3 forms") instead of watching the inbox. It holds counts and links only, never entry values, covers only the forms the user may view, and goes out in the site's time zone through the outbox.
-  - Done when: Playwright passes, including an idle user whose session still ends on time (`page.clock`), an inbox as the viewer that holds no entry of the restricted folder's forms, and "not spam" on an entry whose unique answer another entry holds by then, which asks first. Tests with fake time show one digest per user and period, nothing for a user who has not asked for one, no form the user may not view, and no entry value in the mail.
-- [ ] **11.4 Exports**
-  - **Formats:**
-    - **CSV:** delimiter, BOM, formula guard, headers as labels or aliases;
-    - **Excel:** per ADR, either a small own XLSX writer or an MIT library; repeaters on their own sheet;
-    - **JSON**, and a **printable view** of one entry and of a list;
-    - **ZIP** of the files: a folder per entry, safe names.
-  - **Columns:** a grid gives one column per row, and a ranking one column per position.
-  - **The export dialog** remembers the last format, fields and delimiter per user and form (`jfbUserSetting`).
-  - **Large exports:** a background job, a notification, and a time-limited download. Every export reads in keyset pages of 250 entries, each its own gated read, so submissions wait behind one page at most (ADR-0003).
-  - **Rules:** every export respects the filters, the permissions and the sensitive-data rules, and is audited.
-  - Done when: tests open the produced files (the XLSX with a test-only reader, CSV round trip, ZIP listing), and the 10,000-entry budget is met.
-- [ ] **11.5 Insights**
-  - **Collection:**
-    - the runtime sends `view`, `start` and `page` beacons (`navigator.sendBeacon`) to `events`, unless insights are off;
-    - when validation stops a visitor (on submit or "next"), it sends `invalid` with only the field key and the kind of error; the server also counts its own refusals;
-    - the server rolls them up into daily stats;
-    - **What a stored entry counts** (added in 6.1e, ADR-0088): 6.1e counts each entry the pipeline stores as `submissions` in the unit that stores it; 11.5 adds its origin page (`origin:{contentKey}`), its hour (`hour:{0-23}`, in the site's time zone) and its time to complete (`completionSeconds`) to the same unit;
-    - unique members are counted from entries at query time.
-  - **What it shows:**
-    - views, starts, submissions and conversion;
-    - spam caught, from the daily `spam` metric the pipeline already counts (added in 7.4g);
-    - drop-off per page (funnel), median time to complete;
-    - the fields that fail validation most, with the kind of error ("Postcode: 31% of attempts, mostly the format");
-    - top origin pages, hour of day, unique members;
-    - a comparison period, grouped by day, week or month;
-    - a site-wide overview table.
-  - **Charts** are small, accessible SVG components with a table view (no chart library).
-  - **Opt-out** globally and per form (the privacy section is global, ADR-0008). The form's switch is the first setting of its Settings view's Privacy group, which this step adds to the view with its summary line (moved from 10.1a: settings come with their feature).
-  - Done when: unit tests cover the aggregation, Playwright shows the beacons arriving and the charts filling on the demo (screenshots reviewed in `docs/ux/review-11.5.md`), turns a form's insights off in its Privacy group and sees its beacons stop, and a test proves the stats hold no personal data (the `invalid` beacon included: a test posts a value with it and finds it nowhere). An entry the pipeline stores counts its origin page, its hour and its time to complete in the unit that stores it, and none of them when the unit is rolled back (ADR-0088).
-- [ ] **11.5b Answer summaries** (added in 1.1 from the feature study)
-  - **What it shows,** in the form's Insights view, over a date range and the entry filters of 11.1:
-    - counts and percentages per option for choice and grid fields, and the average position for ranking fields;
-    - average, median, lowest and highest for numbers, ratings, scales and sliders;
-    - for a 0-to-10 scale, the three groups (0 to 6, 7 and 8, 9 and 10) and the recommendation score (the share of the top group minus that of the bottom one);
-    - free-text answers as a list that links to their entries, never summarised.
-  - **Rules:**
-    - test, spam and sensitive values are left out, and so are values kept only until the actions have run;
-    - only users who may view the form's entries see it;
-    - computed in the database, never by loading the entries;
-    - values from older form versions count under their field, with a mark where the options changed.
-  - **The charts** reuse the accessible SVG components of 11.5, each with its table view.
-  - **The endpoint** under §4.7 Insights.
-  - **Design skills:** load `design-taste-frontend`, `impeccable` and `emil-design-eng` before designing the view (ADR-0019, ADR-0020).
-  - Done when: unit tests cover each kind of summary against seeded entries, including multi-value fields and two form versions; the summaries over 100,000 entries load in under 1 s on SQLite; Playwright shows them on the demo, and the screenshots are reviewed in `docs/ux/review-11.5b.md`.
-- [ ] **11.6 Phase review**
-  - UX review as in 9.6 for the entries screens, plus the handover note.
-  - Done when: `docs/ux/review-11.md` is committed and pushed, with the phase-review gate.
+- [ ] **11.1 Entries: the list, the entry panel, the inbox and Spam** (11.1, 11.2 and 11.3 in one, ADR-0197)
+  - **11.1 The entries list**:
+    - **The table:** a collection table per form, a column chooser (saved per user in `jfbUserSetting`), server-side paging, "new" markers and mark-as-seen, and an action status ("3/3 delivered"). Each entry is named by its entry title (§4.3.4), or by its number when the form has none.
+    - **Finding entries:** filters as chips (date presets and ranges, state, typed field filters), search and sort. A set of filters can be saved under a name (per user). A search shows its count exactly up to 1,000 and as "more than 1,000" beyond (ADR-0003).
+    - **Working on many:** bulk actions (approve, reject, spam, not spam, delete, export selected, re-run actions) and the keyboard shortcuts of §4.13.
+    - **Drafts stay out** (ADR-0163): an empty state filter means every state to the repository, so the list, its counts, search and exports name the states they show and leave `Draft` out, with a test.
+    - Done when: Playwright passes with 1,000 seeded entries, including a saved filter set reopened in a second browser and a bulk approval undone from its toast inside the window (`page.clock`; every entry back in its state, no approved action run, and no Undo offered once the window has passed, ADR-0023), and the 100,000-entry budget of §4.12 is measured and met.
+  - **11.2 The entry panel**:
+    - **Values:** grouped by page and group, with fields from older versions marked as such, plus files and the consent proof (the exact text), and a signature typed instead of drawn with its name as text beside its image, read from its PNG (ADR-0103, added in 6.2k). The panel's endpoint reads them through `EntryAnswerStore.ReadAsync` (named in 5.5j by the Phase 5 wiring sweep, ADR-0070), each value as its type read it.
+    - **Metadata:** time, page, culture, member link, IP if stored, duration, spam reasons.
+    - **The timeline:** events, action runs with retry, and emails.
+    - **Notes:** add and edit your own.
+    - **State actions:** moving an entry back into a state that holds places takes them again, and asks before overbooking an option that is full by then (§4.4, ADR-0090). Moving an entry back whose unique answer another entry holds by then asks first too (ADR-0091).
+    - **Entry events** (registered in 8.4, ADR-0161): a user deleting an entry, one at a time or in bulk, publishes `EntryDeletedNotification` through `EntryEvents`, tested; a form's removal and a stored-nothing form letting go of its entry publish none.
+    - **Edit mode:** validation per type, audited; a changed choice moves its place, and asks before overbooking an option that is full (ADR-0090); a changed answer that must be unique and that another entry holds asks first too (ADR-0091).
+    - **Sensitive values:** masked, with an audited "reveal".
+    - **Forward** (added in 1.1): send the entry to a backoffice user or to one of the team addresses of the email settings (§4.8), through the outbox. Sensitive values go along only when the user may see them and chooses to. Audited, and shown on the timeline.
+    - **The entry's link** (added in 5.3e, ADR-0067): the entry's workspace (`BackofficeLinks.EntryEntityType`) answers `/umbraco/section/jfb-forms/workspace/jfb-entry/edit/<key>`, the link `entry.url` gives team mail, and opens the entry's panel without its list; a user who may not view the entry sees the backoffice's "not found" answer, as for an entry that is gone.
+    - Done when: Playwright passes, and the audit entries are asserted, including Approve in the panel followed by Undo from its toast (ADR-0023), and a rejected entry moved back onto an option that is full by then, which asks first and overbooks only once confirmed (ADR-0090), and one moved back whose unique answer another entry holds by then, which asks first too (ADR-0091). The panel's endpoint's integration test stores an entry of every type and gets each value back as `EntryAnswerStore.ReadAsync` reads it, and a typed signature with its name (added in 6.2k). A forwarded entry arrives in the pickup folder, and an address outside the allowed recipients is refused by the API. Playwright opens the `entry.url` link of a mail in the pickup folder and lands on that entry's panel, and the same link as a user without access to its form shows no value of it.
+  - **11.3 The all-entries inbox and spam**:
+    - **The inbox:** a cross-form list with a form column and a form filter, unseen entries first. It holds the entries of the forms the user may view entries of, through the access filter of 4.6a in its query (ADR-0048).
+    - **Spam:** the spam folder with "not spam", which asks first, as moving an entry back does (11.2), when an option is full or a unique answer is held by another entry by then (ADR-0090, ADR-0091).
+    - **Badges:** unseen counts on the menu items, from a light count endpoint. The poll pauses while the user is idle and never renews an expired session (§4.10).
+    - **The digest** (added in 1.1): each user can ask for a daily or weekly email ("12 new entries in 3 forms") instead of watching the inbox. It holds counts and links only, never entry values, covers only the forms the user may view, and goes out in the site's time zone through the outbox.
+    - Done when: Playwright passes, including an idle user whose session still ends on time (`page.clock`), an inbox as the viewer that holds no entry of the restricted folder's forms, and "not spam" on an entry whose unique answer another entry holds by then, which asks first. Tests with fake time show one digest per user and period, nothing for a user who has not asked for one, no form the user may not view, and no entry value in the mail.
+  - Done when: every part's "Done when" above passes, as each part says.
+- [ ] **11.4 Exports, insights and answer summaries, and phase review** (11.4, 11.5, 11.5b and 11.6 in one, ADR-0197)
+  - **11.4 Exports**:
+    - **Formats:**
+      - **CSV:** delimiter, BOM, formula guard, headers as labels or aliases;
+      - **Excel:** per ADR, either a small own XLSX writer or an MIT library; repeaters on their own sheet;
+      - **JSON**, and a **printable view** of one entry and of a list;
+      - **ZIP** of the files: a folder per entry, safe names.
+    - **Columns:** a grid gives one column per row, and a ranking one column per position.
+    - **The export dialog** remembers the last format, fields and delimiter per user and form (`jfbUserSetting`).
+    - **Large exports:** a background job, a notification, and a time-limited download. Every export reads in keyset pages of 250 entries, each its own gated read, so submissions wait behind one page at most (ADR-0003).
+    - **Rules:** every export respects the filters, the permissions and the sensitive-data rules, and is audited.
+    - Done when: tests open the produced files (the XLSX with a test-only reader, CSV round trip, ZIP listing), and the 10,000-entry budget is met.
+  - **11.5 Insights**:
+    - **Collection:**
+      - the runtime sends `view`, `start` and `page` beacons (`navigator.sendBeacon`) to `events`, unless insights are off;
+      - when validation stops a visitor (on submit or "next"), it sends `invalid` with only the field key and the kind of error; the server also counts its own refusals;
+      - the server rolls them up into daily stats;
+      - **What a stored entry counts** (added in 6.1e, ADR-0088): 6.1e counts each entry the pipeline stores as `submissions` in the unit that stores it; 11.5 adds its origin page (`origin:{contentKey}`), its hour (`hour:{0-23}`, in the site's time zone) and its time to complete (`completionSeconds`) to the same unit;
+      - unique members are counted from entries at query time.
+    - **What it shows:**
+      - views, starts, submissions and conversion;
+      - spam caught, from the daily `spam` metric the pipeline already counts (added in 7.4g);
+      - drop-off per page (funnel), median time to complete;
+      - the fields that fail validation most, with the kind of error ("Postcode: 31% of attempts, mostly the format");
+      - top origin pages, hour of day, unique members;
+      - a comparison period, grouped by day, week or month;
+      - a site-wide overview table.
+    - **Charts** are small, accessible SVG components with a table view (no chart library).
+    - **Opt-out** globally and per form (the privacy section is global, ADR-0008). The form's switch is the first setting of its Settings view's Privacy group, which this step adds to the view with its summary line (moved from 10.1a: settings come with their feature).
+    - Done when: unit tests cover the aggregation, Playwright shows the beacons arriving and the charts filling on the demo (screenshots reviewed in `docs/ux/review-11.5.md`), turns a form's insights off in its Privacy group and sees its beacons stop, and a test proves the stats hold no personal data (the `invalid` beacon included: a test posts a value with it and finds it nowhere). An entry the pipeline stores counts its origin page, its hour and its time to complete in the unit that stores it, and none of them when the unit is rolled back (ADR-0088).
+  - **11.5b Answer summaries** (added in 1.1 from the feature study):
+    - **What it shows,** in the form's Insights view, over a date range and the entry filters of 11.1:
+      - counts and percentages per option for choice and grid fields, and the average position for ranking fields;
+      - average, median, lowest and highest for numbers, ratings, scales and sliders;
+      - for a 0-to-10 scale, the three groups (0 to 6, 7 and 8, 9 and 10) and the recommendation score (the share of the top group minus that of the bottom one);
+      - free-text answers as a list that links to their entries, never summarised.
+    - **Rules:**
+      - test, spam and sensitive values are left out, and so are values kept only until the actions have run;
+      - only users who may view the form's entries see it;
+      - computed in the database, never by loading the entries;
+      - values from older form versions count under their field, with a mark where the options changed.
+    - **The charts** reuse the accessible SVG components of 11.5, each with its table view.
+    - **The endpoint** under §4.7 Insights.
+    - **Design skills:** load `design-taste-frontend`, `impeccable` and `emil-design-eng` before designing the view (ADR-0019, ADR-0020).
+    - Done when: unit tests cover each kind of summary against seeded entries, including multi-value fields and two form versions; the summaries over 100,000 entries load in under 1 s on SQLite; Playwright shows them on the demo, and the screenshots are reviewed in `docs/ux/review-11.5b.md`.
+  - **11.6 Phase review**:
+    - UX review as in 9.6 for the entries screens, plus the handover note.
+    - Done when: `docs/ux/review-11.md` is committed and pushed, with the phase-review gate.
+  - Done when: every part's "Done when" above passes, as each part says.
 
 ### Phase 12: Library, global settings and deployment
 
-- [ ] **12.1 Option lists**
-  - A list, an editor per kind with a live preview of the options, CSV/TXT upload, the cache setting, and "used by".
-  - **From 9.4b** (added in 5.5j): the editor per kind is the generic settings renderer over the option kinds' schemas that 9.4b's endpoint serves, with the same texts; a code list picks its source from the endpoint's names, and a manual list's items use 9.4's option editor.
-  - Done when: Playwright passes, creating a list of every kind through the UI (a URL list against a local stub host the test site allows), and axe is clean on the list editor.
-- [ ] **12.2 Themes and email layouts**
-  - **The editor:** a theme list, and a visual token editor:
-    - the tokens a base theme declares (`IFormBuilderTheme.Tokens`), with their defaults, which nothing else reads yet (ADR-0105, added in 6.8d);
-    - light and dark colours, the dark ones only for a base theme whose `IFormBuilderTheme.DarkScheme` is true (ADR-0105, added in 6.8d);
-    - the font family (system stacks or "use the site's font");
-    - type scale, spacing, corners, borders, the focus ring, button style.
-  - **The preview:** a live kitchen-sink form, with WCAG contrast checks shown in place.
-  - **Custom CSS**, scoped to the form root and sanitised.
-  - **Exchange and use:** import and export as JSON, the theme picker per form, and the default theme.
-  - **Design skills:** load `design-taste-frontend`, `impeccable` and `emil-design-eng` before building the editors (ADR-0019, ADR-0020).
-  - **Email layouts:**
-    - Logo (media picker), colours, header and footer per culture, preview with a sample entry in light and dark, and a test send.
-  - Done when:
-    - Playwright and contrast unit tests pass;
-    - a test shows the editor listing a site's own base theme's `Tokens` with their defaults, and offering dark colours only where its `DarkScheme` is true;
-    - Playwright covers the email layout editor, and its test email arrives in the pickup folder.
-- [ ] **12.3 Templates**
-  - **Built-in templates,** in en and de:
-    - contact, callback;
-    - newsletter (with verification);
-    - event registration (multi-page, entry limit, sessions with place limits);
-    - job application (uploads, approval);
-    - feedback with NPS (a 0-to-10 scale and a grid);
-    - quote request (calculations);
-    - support request;
-    - privacy request (added in 1.1): a visitor asks for a copy or the deletion of their data, and the entry goes to the people who may use the privacy tools (13.2).
-  - "Save as template", and the gallery with previews.
-  - **Saved groups** (added in 1.1): save a group of fields (an address block, a standard consent) as a template of kind `Group` (Save group as template… in the selected group's "…" on the canvas, ADR-0169), and insert it into any form from the designer's palette, as a copy with new keys, so every form stays self-contained for versions and exports.
-  - Done when: a test creates and publishes a form from every template without form-check errors, and the gallery screenshots are reviewed in `docs/ux/review-12.3.md`. Playwright saves a group, inserts it into another form, and a test shows the copy's new keys and remapped rules.
-- [ ] **12.4a Global settings and access**
-  - **Settings:** the sections of §4.8 with host locks, for the features that exist by now. The privacy section's retention and IP settings come with 13.1 and 13.3 ("Settings come with their feature").
-  - **Scopes and the time zone** (ADR-0043): a site scope must name a root content node, and a save for any other key is refused with nothing written. The time zone is picked from a list of zones (the browser's `Intl.supportedValuesOf('timeZone')`), so nobody types its spelling, and a zone the server refuses shows its message at the field.
-  - **Access:** a permissions editor (a matrix of groups and permissions, with folder and form overrides).
-  - Done when: Playwright passes per section, the permission matrix covers the new endpoints, and a test enumerates every setting and fails unless each has a screen (or is marked host-only) and is read by product code outside the settings module. A site save whose key names no root content is refused, and a time zone picked from the list saves (ADR-0043).
-- [ ] **12.4b Deliveries and the audit log**
-  - **Deliveries:** emails and webhook runs, with filters and retry. A retry of an `Uncertain` run asks first and says that it may deliver twice; a `Limited` mail offers no retry and says which limit held it back; while sending is paused, the screen says so once (§4.4).
-  - **The audit log viewer,** with filters and export.
-  - Done when: Playwright passes for both screens, including the confirmation before an `Uncertain` retry and the paused notice, and the permission matrix covers the new endpoints.
-- [ ] **12.5 Forms as files, import and export**
-  - **Import and export:** the JSON import UI, with "new copy" or "replace".
-  - **Mirror mode (D25):** write on publish, import on start-up, and detect conflicts (both file and database changed: keep the database, warn in the health check, a probe of its own as 9.1's are, ADR-0165). Documented.
-  - Done when: integration tests cover the mirror round trip and the conflict case.
-- [ ] **12.6 Phase review**
-  - UX review as in 9.6 for the library and settings screens, plus the handover note.
-  - **The setup checklist end to end:** on a freshly reset demo, Playwright follows the dashboard checklist (9.1) through every item and sees each one turn green.
-  - Done when: `docs/ux/review-12.md` is committed, the checklist run passes, and everything is pushed, with the phase-review gate.
+- [ ] **12.1 The library: option lists, themes, email layouts and templates** (12.1, 12.2 and 12.3 in one, ADR-0197)
+  - **12.1 Option lists**:
+    - A list, an editor per kind with a live preview of the options, CSV/TXT upload, the cache setting, and "used by".
+    - **From 9.4b** (added in 5.5j): the editor per kind is the generic settings renderer over the option kinds' schemas that 9.4b's endpoint serves, with the same texts; a code list picks its source from the endpoint's names, and a manual list's items use 9.4's option editor.
+    - Done when: Playwright passes, creating a list of every kind through the UI (a URL list against a local stub host the test site allows), and axe is clean on the list editor.
+  - **12.2 Themes and email layouts**:
+    - **The editor:** a theme list, and a visual token editor:
+      - the tokens a base theme declares (`IFormBuilderTheme.Tokens`), with their defaults, which nothing else reads yet (ADR-0105, added in 6.8d);
+      - light and dark colours, the dark ones only for a base theme whose `IFormBuilderTheme.DarkScheme` is true (ADR-0105, added in 6.8d);
+      - the font family (system stacks or "use the site's font");
+      - type scale, spacing, corners, borders, the focus ring, button style.
+    - **The preview:** a live kitchen-sink form, with WCAG contrast checks shown in place.
+    - **Custom CSS**, scoped to the form root and sanitised.
+    - **Exchange and use:** import and export as JSON, the theme picker per form, and the default theme.
+    - **Design skills:** load `design-taste-frontend`, `impeccable` and `emil-design-eng` before building the editors (ADR-0019, ADR-0020).
+    - **Email layouts:**
+      - Logo (media picker), colours, header and footer per culture, preview with a sample entry in light and dark, and a test send.
+    - Done when:
+      - Playwright and contrast unit tests pass;
+      - a test shows the editor listing a site's own base theme's `Tokens` with their defaults, and offering dark colours only where its `DarkScheme` is true;
+      - Playwright covers the email layout editor, and its test email arrives in the pickup folder.
+  - **12.3 Templates**:
+    - **Built-in templates,** in en and de:
+      - contact, callback;
+      - newsletter (with verification);
+      - event registration (multi-page, entry limit, sessions with place limits);
+      - job application (uploads, approval);
+      - feedback with NPS (a 0-to-10 scale and a grid);
+      - quote request (calculations);
+      - support request;
+      - privacy request (added in 1.1): a visitor asks for a copy or the deletion of their data, and the entry goes to the people who may use the privacy tools (13.2).
+    - "Save as template", and the gallery with previews.
+    - **Saved groups** (added in 1.1): save a group of fields (an address block, a standard consent) as a template of kind `Group` (Save group as template… in the selected group's "…" on the canvas, ADR-0169), and insert it into any form from the designer's palette, as a copy with new keys, so every form stays self-contained for versions and exports.
+    - Done when: a test creates and publishes a form from every template without form-check errors, and the gallery screenshots are reviewed in `docs/ux/review-12.3.md`. Playwright saves a group, inserts it into another form, and a test shows the copy's new keys and remapped rules.
+  - Done when: every part's "Done when" above passes, as each part says.
+- [ ] **12.4 Global settings and access, deliveries and the audit log, forms as files, and phase review** (12.4a, 12.4b, 12.5 and 12.6 in one, ADR-0197)
+  - **12.4a Global settings and access**:
+    - **Settings:** the sections of §4.8 with host locks, for the features that exist by now. The privacy section's retention and IP settings come with 13.1 and 13.3 ("Settings come with their feature").
+    - **Scopes and the time zone** (ADR-0043): a site scope must name a root content node, and a save for any other key is refused with nothing written. The time zone is picked from a list of zones (the browser's `Intl.supportedValuesOf('timeZone')`), so nobody types its spelling, and a zone the server refuses shows its message at the field.
+    - **Access:** a permissions editor (a matrix of groups and permissions, with folder and form overrides).
+    - Done when: Playwright passes per section, the permission matrix covers the new endpoints, and a test enumerates every setting and fails unless each has a screen (or is marked host-only) and is read by product code outside the settings module. A site save whose key names no root content is refused, and a time zone picked from the list saves (ADR-0043).
+  - **12.4b Deliveries and the audit log**:
+    - **Deliveries:** emails and webhook runs, with filters and retry. A retry of an `Uncertain` run asks first and says that it may deliver twice; a `Limited` mail offers no retry and says which limit held it back; while sending is paused, the screen says so once (§4.4).
+    - **The audit log viewer,** with filters and export.
+    - Done when: Playwright passes for both screens, including the confirmation before an `Uncertain` retry and the paused notice, and the permission matrix covers the new endpoints.
+  - **12.5 Forms as files, import and export**:
+    - **Import and export:** the JSON import UI, with "new copy" or "replace".
+    - **Mirror mode (D25):** write on publish, import on start-up, and detect conflicts (both file and database changed: keep the database, warn in the health check, a probe of its own as 9.1's are, ADR-0165). Documented.
+    - Done when: integration tests cover the mirror round trip and the conflict case.
+  - **12.6 Phase review**:
+    - UX review as in 9.6 for the library and settings screens, plus the handover note.
+    - **The setup checklist end to end:** on a freshly reset demo, Playwright follows the dashboard checklist (9.1) through every item and sees each one turn green.
+    - Done when: `docs/ux/review-12.md` is committed, the checklist run passes, and everything is pushed, with the phase-review gate.
+  - Done when: every part's "Done when" above passes, as each part says.
 
 ### Phase 13: Privacy, retention and compliance
 
-- [ ] **13.1 Retention**
-  - **Rules:** days per state per form, with global defaults. `PurgeAfterUtc` is computed on every state change.
-  - **A form that keeps entries for a number of days** (added in 6.8i by the Phase 6 wiring sweep): `settings.submission.store: days` with `storeDays` (§4.3, ADR-0002) has only its save check so far. It caps what the rules above give an entry of that form, in every state.
-  - **A legal hold:** an entry can be kept with a reason and an end date.
-  - **The job** deletes in batches, files and emails included, and offers a dry-run preview (counts per form). Everything is audited.
-    - **What a dead process leaves in the file store** (ADR-0041): the job also deletes `.partial` files, `.deleted-` files and stored files that no `jfbEntryFile` row names, once they are a day old.
-  - **The screens:** the retention settings (global and per form) with the dry run, now that the engine exists. The form's are its days per state in its Settings view's Privacy group and the choice "For a number of days" of Store entries in its Submission group (moved from 10.1a: settings come with their feature).
-  - Done when: tests with fake time pass, including holds and a form's `storeDays` shorter and longer than its states' days, and Playwright changes a retention setting and sees the dry run follow it. Playwright sets a form's days per state in its Privacy group and Store entries "For a number of days", and each says its validation message for a number out of range. A test leaves a partial file, a deleted file's bytes and a stored file without a row, each older than a day, next to younger ones, and the job deletes exactly the three old ones.
-- [ ] **13.2 Data subject tools**
-  - **Find:** by email (email-type fields and member email) or by member, across all forms.
-  - **Export:** everything as a ZIP (JSON per entry, files, consent texts).
-  - **Erase:** delete, or anonymise (values replaced, files removed, stats kept), with a preview first. Audited.
-    - **Every copy is in scope:**
-      - entry values and files;
-      - `SearchText`, `IpAddress`, `Context` and consent links;
-      - the entry's events (old and new values) and notes;
-      - queued and sent emails (addresses and bodies);
-      - action-run error messages;
-      - drafts.
-  - Done when: tests and Playwright pass, including a test that searches **every Jiron Form Builder table** for the person's email address after an erase and finds nothing, and a test that an anonymised entry gives its places back (ADR-0090).
-- [ ] **13.3 Sensitive data and IP addresses**
-  - **Masking** in the UI, emails, exports and logs; the "view sensitive data" permission; audited reveals.
-  - **IP modes:** none, anonymised (IPv4 /24, IPv6 /48) and full (only when the host allows it), with their settings screen: the site's, and the form's in its Settings view's Privacy group (moved from 10.1a: settings come with their feature). A form that stores `ip: full` on a host that does not allow it gets the form check's warning that the host replaces a value the form stores (`lock_replaces_value`, ADR-0008, ADR-0180; added in 9.5e).
-  - **Values kept only until the actions have run** (§4.4, built in 6.1 and 8.1): audited end to end. The entry panel, exports and the privacy export show such a field as "not kept", and the designer explains the setting next to "sensitive".
-  - Done when: tests pass, including captured logs, and a test searches every Jiron Form Builder table for a value kept only until the actions have run, once no trigger can still fire for its entry and every run is final, and finds nothing. A unit test finds the form check's `lock_replaces_value` warning on a form that stores `ip: full` on a host that does not allow it. Playwright sets a form's IP handling in its Privacy group, and an entry it then takes keeps the address that way.
-- [ ] **13.4 Privacy documentation and phase review**
-  - Write `docs/privacy/`:
-    - **a facts sheet:** what Jiron Form Builder stores, where and for how long; that it sets no cookies; the browser storage key used only by "save and resume"; third parties only when a captcha provider is chosen;
-    - a checklist for site owners;
-    - privacy-policy section templates in en and de. **Each starts with "TEMPLATE, not legal advice; adapt with your data protection adviser".**
-  - **Phase review:**
-    - A subagent acts as a privacy reviewer (GDPR, TDDDG, revDSG, UWG §7 double opt-in, the European Accessibility Act) against the running demo and the docs. Fix what it finds, and record open legal judgements in OWNER-TODO.
-    - Write the handover note.
-  - Done when:
-    - a test finds that no workspace of the section still shows the stand-in of 9.1 (ADR-0165);
-    - committed, and a test compares the storage keys and requests the runtime makes with the facts sheet;
-    - pushed, with the phase-review gate.
+- [ ] **13.1 Privacy: retention, data subject tools, sensitive data and IP addresses, and phase review** (13.1, 13.2, 13.3 and 13.4 in one, ADR-0197)
+  - **13.1 Retention**:
+    - **Rules:** days per state per form, with global defaults. `PurgeAfterUtc` is computed on every state change.
+    - **A form that keeps entries for a number of days** (added in 6.8i by the Phase 6 wiring sweep): `settings.submission.store: days` with `storeDays` (§4.3, ADR-0002) has only its save check so far. It caps what the rules above give an entry of that form, in every state.
+    - **A legal hold:** an entry can be kept with a reason and an end date.
+    - **The job** deletes in batches, files and emails included, and offers a dry-run preview (counts per form). Everything is audited.
+      - **What a dead process leaves in the file store** (ADR-0041): the job also deletes `.partial` files, `.deleted-` files and stored files that no `jfbEntryFile` row names, once they are a day old.
+    - **The screens:** the retention settings (global and per form) with the dry run, now that the engine exists. The form's are its days per state in its Settings view's Privacy group and the choice "For a number of days" of Store entries in its Submission group (moved from 10.1a: settings come with their feature).
+    - Done when: tests with fake time pass, including holds and a form's `storeDays` shorter and longer than its states' days, and Playwright changes a retention setting and sees the dry run follow it. Playwright sets a form's days per state in its Privacy group and Store entries "For a number of days", and each says its validation message for a number out of range. A test leaves a partial file, a deleted file's bytes and a stored file without a row, each older than a day, next to younger ones, and the job deletes exactly the three old ones.
+  - **13.2 Data subject tools**:
+    - **Find:** by email (email-type fields and member email) or by member, across all forms.
+    - **Export:** everything as a ZIP (JSON per entry, files, consent texts).
+    - **Erase:** delete, or anonymise (values replaced, files removed, stats kept), with a preview first. Audited.
+      - **Every copy is in scope:**
+        - entry values and files;
+        - `SearchText`, `IpAddress`, `Context` and consent links;
+        - the entry's events (old and new values) and notes;
+        - queued and sent emails (addresses and bodies);
+        - action-run error messages;
+        - drafts.
+    - Done when: tests and Playwright pass, including a test that searches **every Jiron Form Builder table** for the person's email address after an erase and finds nothing, and a test that an anonymised entry gives its places back (ADR-0090).
+  - **13.3 Sensitive data and IP addresses**:
+    - **Masking** in the UI, emails, exports and logs; the "view sensitive data" permission; audited reveals.
+    - **IP modes:** none, anonymised (IPv4 /24, IPv6 /48) and full (only when the host allows it), with their settings screen: the site's, and the form's in its Settings view's Privacy group (moved from 10.1a: settings come with their feature). A form that stores `ip: full` on a host that does not allow it gets the form check's warning that the host replaces a value the form stores (`lock_replaces_value`, ADR-0008, ADR-0180; added in 9.5e).
+    - **Values kept only until the actions have run** (§4.4, built in 6.1 and 8.1): audited end to end. The entry panel, exports and the privacy export show such a field as "not kept", and the designer explains the setting next to "sensitive".
+    - Done when: tests pass, including captured logs, and a test searches every Jiron Form Builder table for a value kept only until the actions have run, once no trigger can still fire for its entry and every run is final, and finds nothing. A unit test finds the form check's `lock_replaces_value` warning on a form that stores `ip: full` on a host that does not allow it. Playwright sets a form's IP handling in its Privacy group, and an entry it then takes keeps the address that way.
+  - **13.4 Privacy documentation and phase review**:
+    - Write `docs/privacy/`:
+      - **a facts sheet:** what Jiron Form Builder stores, where and for how long; that it sets no cookies; the browser storage key used only by "save and resume"; third parties only when a captcha provider is chosen;
+      - a checklist for site owners;
+      - privacy-policy section templates in en and de. **Each starts with "TEMPLATE, not legal advice; adapt with your data protection adviser".**
+    - **Phase review:**
+      - A subagent acts as a privacy reviewer (GDPR, TDDDG, revDSG, UWG §7 double opt-in, the European Accessibility Act) against the running demo and the docs. Fix what it finds, and record open legal judgements in OWNER-TODO.
+      - Write the handover note.
+    - Done when:
+      - a test finds that no workspace of the section still shows the stand-in of 9.1 (ADR-0165);
+      - committed, and a test compares the storage keys and requests the runtime makes with the facts sheet;
+      - pushed, with the phase-review gate.
+  - Done when: every part's "Done when" above passes, as each part says.
 
 ### Phase 14: Languages, members and multi-site
 
-- [ ] **14.1 Culture variants and backoffice localisation**
-  - **Texts:** every `LocalizedText` in the designer, settings, emails and outcomes, with the culture switcher, "missing translation" marks, `#dictionary` keys (with a picker) and fallback.
-  - **Entries** keep their culture, and exports format dates and numbers by it.
-  - **Backoffice localisation:**
-    - Audit that every backoffice string in en and de goes through localisation keys (each UI step added its keys, see "How to use").
-    - **Every key is used** (carried in from 9.6b's wiring sweep): the dictionaries' check holds each area to the keys its code uses, as the section's, library's, designer's and form check's areas are held already; the inspector's, the rules' and the merge tags' areas join them, with their keys built from a prefix (a setting's, a message's, an operator's, a merge tag path's) taken from the lists that name them.
-  - Done when:
-    - Playwright runs a form end to end in en and de, including the emails;
-    - the dictionaries' check fails for a key no code uses, in every area of the backoffice's dictionaries;
-    - a lint rule that fails on hard-coded UI strings passes, and the German screenshots are reviewed in `docs/ux/review-14.1.md`.
-- [ ] **14.2 Visitor texts in seven languages**
-  - Add French, Italian, Dutch, Spanish and Danish to the runtime and server messages, the words merge tags show yes and no as (ADR-0066), and the option presets (English and German came with 6.2g, 6.4d, 5.3d and 5.5). All seven are overridable per site and per form.
-  - Done when:
-    - a test fails when any key is missing in any language, and both runtimes pass `tests/vectors/messages.json` in all seven (added in 6.2g's split);
-    - a review subagent per language reads the texts in context (screenshots) and its fixes are applied.
-- [ ] **14.3 Members**
-  - **Access:** members-only forms and member groups, one entry per member, whose switch sits in the Settings view's Availability group (moved from 10.1a: the form check reads it, nothing at submission does yet); the `options` endpoint answers a members-only form's options only to a member the form admits (added in 6.1c, ADR-0086).
-  - **Prefill** (show and tamper-proof hide), and the member link on entries.
-  - **Member deletion:** a handler deletes or anonymises the deleted member's entries, per a setting.
-  - **Entries on the member:**
-    - A workspace view on the member editor lists that member's entries, with permissions applied.
-  - Done when:
-    - tests and Playwright pass with the seeded members, including the entries view on the member, and Playwright turns on "One entry per member" in a form's Availability group and a member's second entry is refused;
-    - the `options` endpoint gives a members-only form's options to a member the form admits and none to an anonymous request or a member it does not admit (added in 6.1c, ADR-0086);
-    - a members-only post with another member's challenge, without a challenge, with a challenge fetched without the member's cookie, or from a page on another origin is refused on both paths; a members-only page refuses to be framed by another origin; a repeated no-JS post leads to the first entry's outcome without a second entry, and an expired challenge renders the form again with its answers; a cross-origin or `Origin: null` post with a bad challenge, over the per-address limit, or with validation errors is refused without its answers; a server-key submission to a members-only form answers `member_required`; a no-JS post faster than the minimum fill time is accepted; no Jiron Form Builder response sets a cookie.
-- [ ] **14.4 Multi-site and phase review**
-  - **Per-site settings:** sender, base URL, defaults and theme, resolved by the request's root or host. Links in emails follow the site. A root deleted for good takes its settings rows with it (ADR-0043).
-  - **Protection stays out of a request's hands** (7.4a, ADR-0147): a client chooses its `Host` as it chooses a page, so a host's site protects a form only where a page of it holds the form, and otherwise the strictest of the sites does.
-  - **Phase review:** write the handover note.
-  - Done when:
-    - integration and Playwright tests pass with two roots on `site-a.localhost` and `site-b.localhost` (loopback by themselves in Edge and Chromium, with Umbraco domains on each root; never edit the system hosts file). Playwright's API request context resolves `*.localhost` to IPv6 and reaches the default host instead, so API calls in these tests send the `Host` header explicitly (§3.3);
-    - a root deleted for good leaves no `jfbSetting` rows, and the other root's rows stay (ADR-0043);
-    - pushed, with the phase-review gate.
+- [ ] **14.1 Languages, members and multi-site, and phase review** (14.1, 14.2, 14.3 and 14.4 in one, ADR-0197)
+  - **14.1 Culture variants and backoffice localisation**:
+    - **Texts:** every `LocalizedText` in the designer, settings, emails and outcomes, with the culture switcher, "missing translation" marks, `#dictionary` keys (with a picker) and fallback.
+    - **Entries** keep their culture, and exports format dates and numbers by it.
+    - **Backoffice localisation:**
+      - Audit that every backoffice string in en and de goes through localisation keys (each UI step added its keys, see "How to use").
+      - **Every key is used** (carried in from 9.6b's wiring sweep): the dictionaries' check holds each area to the keys its code uses, as the section's, library's, designer's and form check's areas are held already; the inspector's, the rules' and the merge tags' areas join them, with their keys built from a prefix (a setting's, a message's, an operator's, a merge tag path's) taken from the lists that name them.
+    - Done when:
+      - Playwright runs a form end to end in en and de, including the emails;
+      - the dictionaries' check fails for a key no code uses, in every area of the backoffice's dictionaries;
+      - a lint rule that fails on hard-coded UI strings passes, and the German screenshots are reviewed in `docs/ux/review-14.1.md`.
+  - **14.2 Visitor texts in seven languages**:
+    - Add French, Italian, Dutch, Spanish and Danish to the runtime and server messages, the words merge tags show yes and no as (ADR-0066), and the option presets (English and German came with 6.2g, 6.4d, 5.3d and 5.5). All seven are overridable per site and per form.
+    - Done when:
+      - a test fails when any key is missing in any language, and both runtimes pass `tests/vectors/messages.json` in all seven (added in 6.2g's split);
+      - a review subagent per language reads the texts in context (screenshots) and its fixes are applied.
+  - **14.3 Members**:
+    - **Access:** members-only forms and member groups, one entry per member, whose switch sits in the Settings view's Availability group (moved from 10.1a: the form check reads it, nothing at submission does yet); the `options` endpoint answers a members-only form's options only to a member the form admits (added in 6.1c, ADR-0086).
+    - **Prefill** (show and tamper-proof hide), and the member link on entries.
+    - **Member deletion:** a handler deletes or anonymises the deleted member's entries, per a setting.
+    - **Entries on the member:**
+      - A workspace view on the member editor lists that member's entries, with permissions applied.
+    - Done when:
+      - tests and Playwright pass with the seeded members, including the entries view on the member, and Playwright turns on "One entry per member" in a form's Availability group and a member's second entry is refused;
+      - the `options` endpoint gives a members-only form's options to a member the form admits and none to an anonymous request or a member it does not admit (added in 6.1c, ADR-0086);
+      - a members-only post with another member's challenge, without a challenge, with a challenge fetched without the member's cookie, or from a page on another origin is refused on both paths; a members-only page refuses to be framed by another origin; a repeated no-JS post leads to the first entry's outcome without a second entry, and an expired challenge renders the form again with its answers; a cross-origin or `Origin: null` post with a bad challenge, over the per-address limit, or with validation errors is refused without its answers; a server-key submission to a members-only form answers `member_required`; a no-JS post faster than the minimum fill time is accepted; no Jiron Form Builder response sets a cookie.
+  - **14.4 Multi-site and phase review**:
+    - **Per-site settings:** sender, base URL, defaults and theme, resolved by the request's root or host. Links in emails follow the site. A root deleted for good takes its settings rows with it (ADR-0043).
+    - **Protection stays out of a request's hands** (7.4a, ADR-0147): a client chooses its `Host` as it chooses a page, so a host's site protects a form only where a page of it holds the form, and otherwise the strictest of the sites does.
+    - **Phase review:** write the handover note.
+    - Done when:
+      - integration and Playwright tests pass with two roots on `site-a.localhost` and `site-b.localhost` (loopback by themselves in Edge and Chromium, with Umbraco domains on each root; never edit the system hosts file). Playwright's API request context resolves `*.localhost` to IPv6 and reaches the default host instead, so API calls in these tests send the `Host` header explicitly (§3.3);
+      - a root deleted for good leaves no `jfbSetting` rows, and the other root's rows stay (ADR-0043);
+      - pushed, with the phase-review gate.
+  - Done when: every part's "Done when" above passes, as each part says.
 
 ### Phase 15: Extensibility, samples and the AI add-on
 
-- [ ] **15.1 The public C# surface and backoffice extension points**
-  - Complete the services and notifications of §4.9, including `IFormBuilderEntryReader`. Write `docs/extending.md`.
-  - **Backoffice extension points:**
-    - **Manifests:** `jfbSettingEditor` (a custom editor for one setting) and `jfbFieldPreview` (the designer preview of a custom field type).
-    - **The headless element:** a site's own field type registers the control `<jfb-form>` writes for it, from the type's part of the element endpoint's answer (ADR-0128).
-    - **Slots:** extra workspace views on the form workspace.
-    - **Types:** TypeScript declarations for extension authors.
-  - Done when:
-    - a public-API snapshot test lists every public type and member and fails on unreviewed changes;
-    - a sample extension registers a custom setting editor and a preview, and Playwright shows both working.
-- [ ] **15.2 Samples**
-  - `samples/Jiron.Umbraco.FormBuilder.Samples`:
-    - a custom field type (a colour choice with swatches), rendered on a Razor page and through `<jfb-form>`;
-    - a custom action (a CRM stub);
-    - an option source (a fake product API);
-    - an export format (iCalendar for event registrations);
-    - a captcha provider (a simple arithmetic check);
-    - a spam check (link density);
-    - a merge-tag source (values from a site-settings node);
-    - a file scanner (a stub that quarantines files named "eicar");
-    - a file store for blob storage on Umbraco's official Azure Blob provider, per ADR-0006 (a private container, `ContainerRootPath` set, blocks committed only when complete);
-    - a notification handler that adds a field error.
+- [ ] **15.1 Extensibility, samples and the AI add-on, and phase review** (15.1, 15.2 and 15.3 in one, ADR-0197)
+  - **15.1 The public C# surface and backoffice extension points**:
+    - Complete the services and notifications of §4.9, including `IFormBuilderEntryReader`. Write `docs/extending.md`.
+    - **Backoffice extension points:**
+      - **Manifests:** `jfbSettingEditor` (a custom editor for one setting) and `jfbFieldPreview` (the designer preview of a custom field type).
+      - **The headless element:** a site's own field type registers the control `<jfb-form>` writes for it, from the type's part of the element endpoint's answer (ADR-0128).
+      - **Slots:** extra workspace views on the form workspace.
+      - **Types:** TypeScript declarations for extension authors.
+    - Done when:
+      - a public-API snapshot test lists every public type and member and fails on unreviewed changes;
+      - a sample extension registers a custom setting editor and a preview, and Playwright shows both working.
+  - **15.2 Samples**:
+    - `samples/Jiron.Umbraco.FormBuilder.Samples`:
+      - a custom field type (a colour choice with swatches), rendered on a Razor page and through `<jfb-form>`;
+      - a custom action (a CRM stub);
+      - an option source (a fake product API);
+      - an export format (iCalendar for event registrations);
+      - a captcha provider (a simple arithmetic check);
+      - a spam check (link density);
+      - a merge-tag source (values from a site-settings node);
+      - a file scanner (a stub that quarantines files named "eicar");
+      - a file store for blob storage on Umbraco's official Azure Blob provider, per ADR-0006 (a private container, `ContainerRootPath` set, blocks committed only when complete);
+      - a notification handler that adds a field error.
 
-    Each is compiled and tested in CI and documented in `docs/extending.md`.
-  - Done when: the samples build and their tests pass; the blob file store passes the store's contract tests against a local storage emulator (a dev-only tool).
-- [ ] **15.3 The AI add-on and phase review**
-  - **First, a spike on Umbraco.AI:**
-    - Confirm the Umbraco.AI 17.x chat API (`IAIChatService`) and structured output.
-    - Port Tandem's fake provider (`tests/…Testing/FakeAI`) for tests. **No real key, ever (D22).**
-    - Write ADR-0018 "The AI add-on".
-  - **The package** `Jiron.Umbraco.FormBuilder.AI`:
-    - **Draft with AI:** a description, or the pasted text of an existing questionnaire, becomes a draft definition, validated by the structural validator, never published automatically, and marked "drafted by AI, please review".
-    - **Translate:** a form's texts into another culture, with a preview and apply.
-    - **Suggest:** help texts and accessibility improvements.
-  - **Plumbing:** a profile picker and a health check. Editors only.
-  - **No entry data ever reaches the AI;** a test asserts the prompts contain no entry values.
-  - Docs. OWNER-TODO: try it with a real provider.
-  - **Phase review:** write the handover note.
-  - Done when:
-    - the ADR is committed and a spike test drafts a form definition through the fake provider;
-    - tests with the fake provider pass, and Playwright shows the three features in the designer;
-    - pushed, with the phase-review gate.
+      Each is compiled and tested in CI and documented in `docs/extending.md`.
+    - Done when: the samples build and their tests pass; the blob file store passes the store's contract tests against a local storage emulator (a dev-only tool).
+  - **15.3 The AI add-on and phase review**:
+    - **First, a spike on Umbraco.AI:**
+      - Confirm the Umbraco.AI 17.x chat API (`IAIChatService`) and structured output.
+      - Port Tandem's fake provider (`tests/…Testing/FakeAI`) for tests. **No real key, ever (D22).**
+      - Write ADR-0018 "The AI add-on".
+    - **The package** `Jiron.Umbraco.FormBuilder.AI`:
+      - **Draft with AI:** a description, or the pasted text of an existing questionnaire, becomes a draft definition, validated by the structural validator, never published automatically, and marked "drafted by AI, please review".
+      - **Translate:** a form's texts into another culture, with a preview and apply.
+      - **Suggest:** help texts and accessibility improvements.
+    - **Plumbing:** a profile picker and a health check. Editors only.
+    - **No entry data ever reaches the AI;** a test asserts the prompts contain no entry values.
+    - Docs. OWNER-TODO: try it with a real provider.
+    - **Phase review:** write the handover note.
+    - Done when:
+      - the ADR is committed and a spike test drafts a form definition through the fake provider;
+      - tests with the fake provider pass, and Playwright shows the three features in the designer;
+      - pushed, with the phase-review gate.
+  - Done when: every part's "Done when" above passes, as each part says.
 
 ### Phase 16: Hardening
 
-- [ ] **16.1 Security review**
-  - A STRIDE pass over the architecture, and an OWASP ASVS-style checklist on the code:
-    - XSS, injection, authorisation on every endpoint, CSRF posture;
-    - SSRF in webhooks and option lists, open redirects in outcomes;
-    - uploads, DoS and limits, secrets.
-  - Run `dotnet list package --vulnerable --include-transitive` and `npm audit --omit=dev`.
-  - Fix the findings, with a test for each. An advisory in an upstream package that Jiron Form Builder cannot fix gets an ADR and a reviewed suppression in `NuGetAudit.props` (the Tandem ADR-0014 pattern), never a silent ignore.
-  - Done when: `docs/security-review.md` exists and no high or critical findings are open.
-- [ ] **16.2 Performance and load**
-  - A Node load script (no copyleft tools) covers:
-    - 200 submissions per minute with uploads;
-    - lists, filters and exports over 100,000 entries;
-    - render throughput;
-    - the designer with 300 fields.
-  - Check the query plans.
-  - Done when: `docs/performance.md` has the numbers and §4.12 is met (or an ADR explains why not).
-- [ ] **16.3 Accessibility audit**
-  - **Tools:** axe on every theme × every field type, and on every backoffice screen.
-  - **Automated checks** for what a person would otherwise check by hand:
-    - Playwright accessibility snapshots for names, roles and states;
-    - keyboard-only journeys;
-    - `emulateMedia({ forcedColors: 'active' })` for Windows forced-colours mode;
-    - 640 and 320 CSS-pixel viewports for reflow at 200% and 400% zoom;
-    - reduced motion.
-  - **For site owners:** an accessibility-statement template, labelled as a template.
-  - **For buyers** (added in 1.1): `docs/accessibility.md` has a table of every WCAG 2.2 A and AA success criterion for the default theme and the backoffice, saying for each whether it applies, how it was tested (which suite, or "by hand", or "not tested") and any known gap. It states what was tested and never claims conformance (§3.7).
-  - Done when: there are zero serious or critical findings, and `docs/accessibility.md` exists with the table, and a test fails when a criterion of WCAG 2.2 A or AA is missing from it. A real screen-reader test (NVDA, VoiceOver) goes to OWNER-TODO.
-- [ ] **16.4 Resilience**
-  - Cover:
-    - SMTP down (no retries burnt), webhook timeouts;
-    - transient database errors (retry the outermost unit of work, Tandem ADR-0065);
-    - a host restart in the middle of an action run (`Uncertain`, visible and retryable);
-    - a late cache refresher, double processing under load balancing;
-    - the network dropping during a submission (the receipt check);
-    - blocked browser storage;
-    - one broken form on a page not breaking the others.
-  - Done when: each case has a test.
-- [ ] **16.5 Upgrade and migration tests** (this step builds the install harness that 18.3 reuses)
-  - **`scripts/install-test.ps1`:**
-    - creates a fresh Umbraco 17 site (SQLite, unattended, generated credentials, the private template hive) under `%TEMP%\jfb-install-<timestamp>` on port 5530;
-    - takes Jiron Form Builder packages only from the local feed (package source mapping), with a fresh package cache in `%TEMP%\jfb-nuget-<timestamp>`;
-    - installs the given Jiron Form Builder version;
-    - runs the site with `Umbraco:CMS:Global:UseHttps=false` (plain http) and, for upgrades, `Umbraco:CMS:Unattended:UpgradeUnattended=true`;
-    - reads the expected migration state from the plan in the code, never a hard-coded value;
-    - runs its builds and packs with the throwaway-build settings of CLAUDE.md rule 6, and removes worktrees with `fs.rmSync` plus `git worktree prune` (MAX_PATH);
-    - writes its site's PID to a file under `.local/` and stops the whole process tree by that PID (`taskkill /T /F /PID`), also when a step fails. Tandem's stopped only the one process, and had no build-server settings.
-  - **The upgrade path:**
-    1. With `git worktree add`, check out `baseline/schema-v1` (4.8) into `%TEMP%\jfb-baseline-<timestamp>`, and pack it as `17.0.0-alpha.0.baseline`.
-    2. Install it, and create the data the baseline supports: forms with versions, folders, settings, and entries with values and files. Seed it through a small console built against the baseline's Core services (the baseline has no submission pipeline yet), or as SQL through Node's built-in `node:sqlite`.
-    3. Upgrade to the current build packed as `17.0.0-dev.<yyyyMMddHHmm>`, start it again, and run smoke checks.
-  - **Fixtures:** a fixture per released schema version, stored as JSON rows rather than a database file so it runs on SQLite and SQL Server (Tandem ADR-0067), plus definition-upgrader fixtures.
-  - Done when: the upgrade test passes, the temp folders and worktree are removed, no process of the run is left (checked by its PID file), and the process is documented in `docs/upgrading.md`.
-- [ ] **16.6 UX polish pass** (D18, §4.13)
-  - **Walk the full journeys** with screenshots at 375, 768 and 1440 px, light and dark, en and de:
-    - an editor builds and publishes a multi-page form with rules and actions;
-    - an entry handler works through the inbox;
-    - an admin sets permissions and retention;
-    - a visitor fills in a form on a phone;
-    - a privacy officer erases a person's data.
-  - **Critique and simplify:** rerun all three design skills (ADR-0019, ADR-0020): `design-taste-frontend`, an `impeccable` critique and audit, and an `emil-design-eng` review; a subagent with the §4.13 checklist may add a fourth view. Fix every finding that is not purely taste. Count the clicks for the top five tasks per role and remove the unnecessary ones.
-  - Done when: `docs/ux/review-16.6.md` lists the findings and fixes (a section per skill) with before and after screenshots, and the E2E suites are still green.
-- [ ] **16.7 Code quality and phase review**
-  - **Code quality pass:**
-    - Analyzers clean, no dead code. Everything not meant for extension is `internal`. XML docs on every public type. Consistent naming.
-  - Write the handover note.
-  - Done when:
-    - `dotnet format --verify-no-changes` and the builds are clean, and the public API snapshot is reviewed;
-    - pushed, with the phase-review gate.
+- [ ] **16.1 Hardening: security, performance and load, accessibility and resilience** (16.1, 16.2, 16.3 and 16.4 in one, ADR-0197)
+  - **16.1 Security review**:
+    - A STRIDE pass over the architecture, and an OWASP ASVS-style checklist on the code:
+      - XSS, injection, authorisation on every endpoint, CSRF posture;
+      - SSRF in webhooks and option lists, open redirects in outcomes;
+      - uploads, DoS and limits, secrets.
+    - Run `dotnet list package --vulnerable --include-transitive` and `npm audit --omit=dev`.
+    - Fix the findings, with a test for each. An advisory in an upstream package that Jiron Form Builder cannot fix gets an ADR and a reviewed suppression in `NuGetAudit.props` (the Tandem ADR-0014 pattern), never a silent ignore.
+    - Done when: `docs/security-review.md` exists and no high or critical findings are open.
+  - **16.2 Performance and load**:
+    - A Node load script (no copyleft tools) covers:
+      - 200 submissions per minute with uploads;
+      - lists, filters and exports over 100,000 entries;
+      - render throughput;
+      - the designer with 300 fields.
+    - Check the query plans.
+    - Done when: `docs/performance.md` has the numbers and §4.12 is met (or an ADR explains why not).
+  - **16.3 Accessibility audit**:
+    - **Tools:** axe on every theme × every field type, and on every backoffice screen.
+    - **Automated checks** for what a person would otherwise check by hand:
+      - Playwright accessibility snapshots for names, roles and states;
+      - keyboard-only journeys;
+      - `emulateMedia({ forcedColors: 'active' })` for Windows forced-colours mode;
+      - 640 and 320 CSS-pixel viewports for reflow at 200% and 400% zoom;
+      - reduced motion.
+    - **For site owners:** an accessibility-statement template, labelled as a template.
+    - **For buyers** (added in 1.1): `docs/accessibility.md` has a table of every WCAG 2.2 A and AA success criterion for the default theme and the backoffice, saying for each whether it applies, how it was tested (which suite, or "by hand", or "not tested") and any known gap. It states what was tested and never claims conformance (§3.7).
+    - Done when: there are zero serious or critical findings, and `docs/accessibility.md` exists with the table, and a test fails when a criterion of WCAG 2.2 A or AA is missing from it. A real screen-reader test (NVDA, VoiceOver) goes to OWNER-TODO.
+  - **16.4 Resilience**:
+    - Cover:
+      - SMTP down (no retries burnt), webhook timeouts;
+      - transient database errors (retry the outermost unit of work, Tandem ADR-0065);
+      - a host restart in the middle of an action run (`Uncertain`, visible and retryable);
+      - a late cache refresher, double processing under load balancing;
+      - the network dropping during a submission (the receipt check);
+      - blocked browser storage;
+      - one broken form on a page not breaking the others.
+    - Done when: each case has a test.
+  - Done when: every part's "Done when" above passes, as each part says.
+- [ ] **16.5 Upgrade tests, the UX polish pass and code quality, and phase review** (16.5, 16.6 and 16.7 in one, ADR-0197)
+  - **16.5 Upgrade and migration tests** (this step builds the install harness that 18.3 reuses):
+    - **`scripts/install-test.ps1`:**
+      - creates a fresh Umbraco 17 site (SQLite, unattended, generated credentials, the private template hive) under `%TEMP%\jfb-install-<timestamp>` on port 5530;
+      - takes Jiron Form Builder packages only from the local feed (package source mapping), with a fresh package cache in `%TEMP%\jfb-nuget-<timestamp>`;
+      - installs the given Jiron Form Builder version;
+      - runs the site with `Umbraco:CMS:Global:UseHttps=false` (plain http) and, for upgrades, `Umbraco:CMS:Unattended:UpgradeUnattended=true`;
+      - reads the expected migration state from the plan in the code, never a hard-coded value;
+      - runs its builds and packs with the throwaway-build settings of CLAUDE.md rule 6, and removes worktrees with `fs.rmSync` plus `git worktree prune` (MAX_PATH);
+      - writes its site's PID to a file under `.local/` and stops the whole process tree by that PID (`taskkill /T /F /PID`), also when a step fails. Tandem's stopped only the one process, and had no build-server settings.
+    - **The upgrade path:**
+      1. With `git worktree add`, check out `baseline/schema-v1` (4.8) into `%TEMP%\jfb-baseline-<timestamp>`, and pack it as `17.0.0-alpha.0.baseline`.
+      2. Install it, and create the data the baseline supports: forms with versions, folders, settings, and entries with values and files. Seed it through a small console built against the baseline's Core services (the baseline has no submission pipeline yet), or as SQL through Node's built-in `node:sqlite`.
+      3. Upgrade to the current build packed as `17.0.0-dev.<yyyyMMddHHmm>`, start it again, and run smoke checks.
+    - **Fixtures:** a fixture per released schema version, stored as JSON rows rather than a database file so it runs on SQLite and SQL Server (Tandem ADR-0067), plus definition-upgrader fixtures.
+    - Done when: the upgrade test passes, the temp folders and worktree are removed, no process of the run is left (checked by its PID file), and the process is documented in `docs/upgrading.md`.
+  - **16.6 UX polish pass** (D18, §4.13):
+    - **Walk the full journeys** with screenshots at 375, 768 and 1440 px, light and dark, en and de:
+      - an editor builds and publishes a multi-page form with rules and actions;
+      - an entry handler works through the inbox;
+      - an admin sets permissions and retention;
+      - a visitor fills in a form on a phone;
+      - a privacy officer erases a person's data.
+    - **Critique and simplify:** rerun all three design skills (ADR-0019, ADR-0020): `design-taste-frontend`, an `impeccable` critique and audit, and an `emil-design-eng` review; a subagent with the §4.13 checklist may add a fourth view. Fix every finding that is not purely taste. Count the clicks for the top five tasks per role and remove the unnecessary ones.
+    - Done when: `docs/ux/review-16.6.md` lists the findings and fixes (a section per skill) with before and after screenshots, and the E2E suites are still green.
+  - **16.7 Code quality and phase review**:
+    - **Code quality pass:**
+      - Analyzers clean, no dead code. Everything not meant for extension is `internal`. XML docs on every public type. Consistent naming.
+    - Write the handover note.
+    - Done when:
+      - `dotnet format --verify-no-changes` and the builds are clean, and the public API snapshot is reviewed;
+      - pushed, with the phase-review gate.
+  - Done when: every part's "Done when" above passes, as each part says.
 
 ### Phase 17: Branding, documentation, screenshots
 
-- [ ] **17.1 Logo and icon**
-  - **Design `assets/logo.svg`:**
-    - **Concept:** a minimal form card (stacked field lines) whose submit button is a small check mark, drawn to sit next to the "Jiron" wordmark and to work alone as a 32 px section icon.
-    - **Shapes and colours:** simple geometric shapes, legible at 32 px, with two brand colours and a neutral defined in `assets/brand.md`.
-    - **No Umbraco logo, no "U" mark, and no resemblance to any other product's mark.**
-  - Also design a monochrome variant and the section icon (registered through the `icons` manifest).
-  - **Design skills:** load `design-taste-frontend`, `impeccable` and `emil-design-eng` before the logo work starts (ADR-0019, ADR-0020).
-  - `scripts/icons.mjs` renders PNGs with Playwright (no new dependency): 512, 256, 128, 64.
-  - Done when: the PNGs exist, the 128 px icon is checked visually (show the screenshot), and the brand doc is committed.
-- [ ] **17.2a Documentation for editors and site owners, and the READMEs**
-  - Under `docs/`:
-    - **Start:** a `README` index, `getting-started.md` (install to first entry in 10 minutes), `installation.md`.
-    - **For editors:** `editor-guide.md`, `field-types.md`, `rules-and-validation.md`, `merge-tags.md`, `actions.md`, `entries-and-exports.md`, `insights.md`, `themes.md` (the theme editor).
-    - **For site owners:** `spam-protection.md`, `files.md`, `email.md`, `privacy.md`, `permissions.md`, `multi-language.md`, `members.md`, `multi-site.md`.
-    - **Licence:** `license-faq.md`, plain words, clearly marked as not legal advice and pointing to `LICENSE.md` (OWNER-TODO: lawyer review). It answers at least: using it on client sites, changing it for your own projects, hosting, add-ons, contributing through forks and pull requests, and why publishing your own version (free or paid, open source or not) is not allowed.
-  - Each page is checked against the running demo.
-  - **"Learn more" in the backoffice (§4.13, `docs/ux/copy.md`; carried in from 9.6a):** each setting and notice whose help needs more than two sentences links to its page here, with link text that makes sense on its own, from one map of page addresses in the client.
-  - **README and NuGet readme:**
-    - **`README.md` (GitHub):**
-      - **About:** the pitch, the features, screenshots.
-      - **Getting started:** a quick start, the requirements (Umbraco 17.6+), a link to the docs.
-      - **Licence:** "free to use and change, including commercially; no selling, no published versions of your own (free or paid, open source or not), no competing products; source-available" with a link to the licence FAQ, never called "open source".
-      - **Notices:** the trademark notice and how to contribute.
-      - **Credits:** "Made by Manassés Zähnler · Ligata", linking jiron.dev and ligata.ch.
-    - **`docs/README.nuget.md`:** shorter, with no relative links.
-  - Done when:
-    - a link-check script passes, and a subagent reads these pages as a new editor and its questions are answered;
-    - a test fails when a backoffice "Learn more" link names a page or heading that does not exist;
-    - both are committed and render correctly, checked in Edge through a local GitHub-flavoured Markdown renderer (dev-only, MIT), because the private repository can't be viewed from here. The owner checks them on GitHub once public (OWNER-TODO).
-- [ ] **17.2b Documentation for developers**
-  - Under `docs/`:
-    - **Placement:** `rendering.md` (Razor, tag helpers, blocks, overriding theme views, CSS custom properties).
-    - **Headless:** `headless.md` (API, element, types, the Delivery API).
-    - **Integration:** webhook signature verification in C#, Node and PHP (in `actions.md`), and `deployment.md` (the mirror).
-    - **Reference:** `configuration.md`, generated from the settings types, with a test that fails when the docs are stale.
-    - **Internals:** `extending.md`, `upgrading.md`, `troubleshooting.md`, `faq.md`, `security.md`, `database.md`, `architecture.md` (updated).
-  - Done when: the link check and the configuration reference test pass, and a subagent reads these pages as a new developer and its questions are answered.
-- [ ] **17.3 Screenshots and phase review**
-  - `scripts/screenshots.mjs` (Playwright on the demo, with seeded data) takes desktop and phone shots:
-    - **the backoffice:**
-      - the setup dashboard, the designer with the inspector, the rules builder;
-      - actions with the email preview, preview, the history diff;
-      - the entries list and panel, the inbox, insights;
-      - the theme editor, settings, privacy tools;
-    - **the website:** forms in each theme, on a phone, the error summary, the success state.
-  - Output goes to `docs/screenshots/` as optimised PNGs (16:9 for the Marketplace).
-  - **Phase review:** write the handover note.
-  - Done when:
-    - the images are committed and referenced in the docs and the README;
-    - pushed, with the phase-review gate.
+- [ ] **17.1 Logo and icon, documentation and screenshots, and phase review** (17.1, 17.2a, 17.2b and 17.3 in one, ADR-0197)
+  - **17.1 Logo and icon**:
+    - **Design `assets/logo.svg`:**
+      - **Concept:** a minimal form card (stacked field lines) whose submit button is a small check mark, drawn to sit next to the "Jiron" wordmark and to work alone as a 32 px section icon.
+      - **Shapes and colours:** simple geometric shapes, legible at 32 px, with two brand colours and a neutral defined in `assets/brand.md`.
+      - **No Umbraco logo, no "U" mark, and no resemblance to any other product's mark.**
+    - Also design a monochrome variant and the section icon (registered through the `icons` manifest).
+    - **Design skills:** load `design-taste-frontend`, `impeccable` and `emil-design-eng` before the logo work starts (ADR-0019, ADR-0020).
+    - `scripts/icons.mjs` renders PNGs with Playwright (no new dependency): 512, 256, 128, 64.
+    - Done when: the PNGs exist, the 128 px icon is checked visually (show the screenshot), and the brand doc is committed.
+  - **17.2a Documentation for editors and site owners, and the READMEs**:
+    - Under `docs/`:
+      - **Start:** a `README` index, `getting-started.md` (install to first entry in 10 minutes), `installation.md`.
+      - **For editors:** `editor-guide.md`, `field-types.md`, `rules-and-validation.md`, `merge-tags.md`, `actions.md`, `entries-and-exports.md`, `insights.md`, `themes.md` (the theme editor).
+      - **For site owners:** `spam-protection.md`, `files.md`, `email.md`, `privacy.md`, `permissions.md`, `multi-language.md`, `members.md`, `multi-site.md`.
+      - **Licence:** `license-faq.md`, plain words, clearly marked as not legal advice and pointing to `LICENSE.md` (OWNER-TODO: lawyer review). It answers at least: using it on client sites, changing it for your own projects, hosting, add-ons, contributing through forks and pull requests, and why publishing your own version (free or paid, open source or not) is not allowed.
+    - Each page is checked against the running demo.
+    - **"Learn more" in the backoffice (§4.13, `docs/ux/copy.md`; carried in from 9.6a):** each setting and notice whose help needs more than two sentences links to its page here, with link text that makes sense on its own, from one map of page addresses in the client.
+    - **README and NuGet readme:**
+      - **`README.md` (GitHub):**
+        - **About:** the pitch, the features, screenshots.
+        - **Getting started:** a quick start, the requirements (Umbraco 17.6+), a link to the docs.
+        - **Licence:** "free to use and change, including commercially; no selling, no published versions of your own (free or paid, open source or not), no competing products; source-available" with a link to the licence FAQ, never called "open source".
+        - **Notices:** the trademark notice and how to contribute.
+        - **Credits:** "Made by Manassés Zähnler · Ligata", linking jiron.dev and ligata.ch.
+      - **`docs/README.nuget.md`:** shorter, with no relative links.
+    - Done when:
+      - a link-check script passes, and a subagent reads these pages as a new editor and its questions are answered;
+      - a test fails when a backoffice "Learn more" link names a page or heading that does not exist;
+      - both are committed and render correctly, checked in Edge through a local GitHub-flavoured Markdown renderer (dev-only, MIT), because the private repository can't be viewed from here. The owner checks them on GitHub once public (OWNER-TODO).
+  - **17.2b Documentation for developers**:
+    - Under `docs/`:
+      - **Placement:** `rendering.md` (Razor, tag helpers, blocks, overriding theme views, CSS custom properties).
+      - **Headless:** `headless.md` (API, element, types, the Delivery API).
+      - **Integration:** webhook signature verification in C#, Node and PHP (in `actions.md`), and `deployment.md` (the mirror).
+      - **Reference:** `configuration.md`, generated from the settings types, with a test that fails when the docs are stale.
+      - **Internals:** `extending.md`, `upgrading.md`, `troubleshooting.md`, `faq.md`, `security.md`, `database.md`, `architecture.md` (updated).
+    - Done when: the link check and the configuration reference test pass, and a subagent reads these pages as a new developer and its questions are answered.
+  - **17.3 Screenshots and phase review**:
+    - `scripts/screenshots.mjs` (Playwright on the demo, with seeded data) takes desktop and phone shots:
+      - **the backoffice:**
+        - the setup dashboard, the designer with the inspector, the rules builder;
+        - actions with the email preview, preview, the history diff;
+        - the entries list and panel, the inbox, insights;
+        - the theme editor, settings, privacy tools;
+      - **the website:** forms in each theme, on a phone, the error summary, the success state.
+    - Output goes to `docs/screenshots/` as optimised PNGs (16:9 for the Marketplace).
+    - **Phase review:** write the handover note.
+    - Done when:
+      - the images are committed and referenced in the docs and the README;
+      - pushed, with the phase-review gate.
+  - Done when: every part's "Done when" above passes, as each part says.
 
 ### Phase 18: Packaging, CI/CD, Marketplace readiness
 
-- [ ] **18.1 NuGet metadata and `umbraco-marketplace.json`**
-  - **On every package:**
-    - `PackageId`, `Title`, `Description`, `Authors`, `Copyright`, `PackageProjectUrl`, `RepositoryUrl`;
-    - `PackageLicenseFile LICENSE.md` (non-OSI licences cannot use an expression, §3.5), `PackageRequireLicenseAcceptance true`;
-    - `PackageReadmeFile`, `PackageIcon` (icon-128.png);
-    - `PackageTags`: the meta package and the AI add-on (both installed by sites) get `umbraco umbraco-marketplace forms form-builder contact-form`; Core and Web get `umbraco` only;
-    - the meta package references `Umbraco.Cms.Web.Website` `[17.6.0, 18.0.0)` directly (§3.5);
-    - SourceLink, `snupkg`, `EnablePackageValidation`, `ContinuousIntegrationBuild` in CI.
-  - The appsettings JSON schema ships as ADR-0008 decides: the Core package's `buildTransitive` props file adds `appsettings-schema.Jiron.Umbraco.FormBuilder.json` to `UmbracoJsonSchemaFiles`. Umbraco.Cms.Targets then copies it into the site's project folder and adds a reference to it to the site's `appsettings-schema.json` before every build (its `CopyUmbracoJsonSchemaFiles` and `AddUmbracoJsonSchemaReferences` targets, confirmed in 17.6.2, 17.7.1 and 18.2.1 in 1.8).
-  - **`umbraco-marketplace.json`:**
-    - **Fill it in from the schema:**
-      - `Title` "Jiron Form Builder", `Description`;
-      - `Category` "Editor Tools" and `AlternateCategory` "Campaign & Marketing" (there is no forms category; §3.5);
-      - `AuthorDetails` (Name "Jiron"; the description names Manassés Zähnler and Ligata, with links to jiron.dev and ligata.ch);
-      - `DocumentationUrl` (docs.jiron.dev/form-builder once the owner publishes it, until then the repository's `docs/`), `IssueTrackerUrl`;
-      - `Screenshots` with raw GitHub URLs (they work once public), `Tags`;
-      - `PackageType` "Package", `LicenseTypes` `["Free"]`;
-      - `RelatedPackages` (the AI add-on).
-    - Validate it against the downloaded schema in a script (copy in `.local/`).
-  - Done when:
-    - `dotnet pack` produces packages whose unzip listings are correct, and package validation passes;
-    - validation passes, and the owner steps (make the repo public, run marketplace.umbraco.com/validate) are in OWNER-TODO.
-- [ ] **18.2 Release workflow**
-  - `.github/workflows/release.yml`, on tags `v*.*.*` and `workflow_dispatch`, in Tandem's final shape (Tandem ADR-0077):
-    - a `prepare` job checks the version against the branch's Umbraco major and its `CHANGELOG.md` section, so a missing section fails in a minute;
-    - build and test by calling `ci.yml` through `workflow_call` (copied CI steps drift), then the npm build. `ci.yml` gains the `workflow_call` trigger and drops its own `v*` tag trigger, which 3.5 set until this workflow exists, so a tag runs CI once (ADR-0032);
-    - `dotnet pack -p:Version=${tag#v}` through the one `scripts/pack.mjs` that the gate and CI use too;
-    - attach the nupkgs and snupkgs to a **draft** GitHub Release with changelog notes;
-    - a `publish` job with `if: vars.JFB_NUGET_PUBLISH == 'true'`, `permissions: id-token: write`, `NuGet/login@v1` and `dotnet nuget push --skip-duplicate`.
-  - The publish job stays disabled; no nuget.org policy exists.
-  - Document the owner's steps to turn it on in `docs/releasing.md`.
-  - Done when: the workflow check passes, and a dry run of the pack steps in `scripts/ci-local.ps1` produces the same files.
-- [ ] **18.3 Install test from packages**
-  - With `scripts/install-test.ps1` (16.5), create a fresh Umbraco 17.7.1 site on 5530 that installs `Jiron.Umbraco.FormBuilder` (Jiron Form Builder packages only from the local feed).
-  - **Smoke:** the section is visible to the admin; a form is created through the management API and placed on a page; it renders, submits and emails (pickup); the entry shows in the backoffice; after the build, the site's `appsettings-schema.json` references `appsettings-schema.Jiron.Umbraco.FormBuilder.json` and the file is next to it (18.1).
-  - Run the same smoke after `dotnet publish` of that site (static assets, §3.2).
-  - **The supported floor:** run the same smoke on a fresh **Umbraco 17.6.0** site (its own template hive), because D3 promises `[17.6.0, 18.0.0)`.
-  - **An upgrade on the floor:** on that 17.6.0 site, update the packages to a second build with a higher version, restart, and check in a signed-in browser that keeps its cache that the backoffice runs the new code without a hard refresh. 17.6 busts package files by the manifest's stamped `version` (§3.4), and Umbraco sends them without caching headers, so this checks both.
-  - Done when: the smoke runs pass on 17.7.1 (run and published) and on 17.6.0 against the installed packages, and the 17.6.0 upgrade check passes.
-- [ ] **18.4 First prerelease and phase review**
-  - Set the version to `17.0.0-alpha.1`. Update CHANGELOG and `docs/upgrading.md`.
-  - Tag `v17.0.0-alpha.1` and push the tag. The release workflow builds a draft release; nothing is published.
-  - **Phase review:** write the handover note.
-  - Done when:
-    - the tag is pushed and the local pack of the same version passes 18.3. You can't watch Actions, so add "check the draft release" to OWNER-TODO;
-    - pushed, with the phase-review gate.
+- [ ] **18.1 Packaging, the release workflow, the install test and the first prerelease, and phase review** (18.1, 18.2, 18.3 and 18.4 in one, ADR-0197)
+  - **18.1 NuGet metadata and `umbraco-marketplace.json`**:
+    - **On every package:**
+      - `PackageId`, `Title`, `Description`, `Authors`, `Copyright`, `PackageProjectUrl`, `RepositoryUrl`;
+      - `PackageLicenseFile LICENSE.md` (non-OSI licences cannot use an expression, §3.5), `PackageRequireLicenseAcceptance true`;
+      - `PackageReadmeFile`, `PackageIcon` (icon-128.png);
+      - `PackageTags`: the meta package and the AI add-on (both installed by sites) get `umbraco umbraco-marketplace forms form-builder contact-form`; Core and Web get `umbraco` only;
+      - the meta package references `Umbraco.Cms.Web.Website` `[17.6.0, 18.0.0)` directly (§3.5);
+      - SourceLink, `snupkg`, `EnablePackageValidation`, `ContinuousIntegrationBuild` in CI.
+    - The appsettings JSON schema ships as ADR-0008 decides: the Core package's `buildTransitive` props file adds `appsettings-schema.Jiron.Umbraco.FormBuilder.json` to `UmbracoJsonSchemaFiles`. Umbraco.Cms.Targets then copies it into the site's project folder and adds a reference to it to the site's `appsettings-schema.json` before every build (its `CopyUmbracoJsonSchemaFiles` and `AddUmbracoJsonSchemaReferences` targets, confirmed in 17.6.2, 17.7.1 and 18.2.1 in 1.8).
+    - **`umbraco-marketplace.json`:**
+      - **Fill it in from the schema:**
+        - `Title` "Jiron Form Builder", `Description`;
+        - `Category` "Editor Tools" and `AlternateCategory` "Campaign & Marketing" (there is no forms category; §3.5);
+        - `AuthorDetails` (Name "Jiron"; the description names Manassés Zähnler and Ligata, with links to jiron.dev and ligata.ch);
+        - `DocumentationUrl` (docs.jiron.dev/form-builder once the owner publishes it, until then the repository's `docs/`), `IssueTrackerUrl`;
+        - `Screenshots` with raw GitHub URLs (they work once public), `Tags`;
+        - `PackageType` "Package", `LicenseTypes` `["Free"]`;
+        - `RelatedPackages` (the AI add-on).
+      - Validate it against the downloaded schema in a script (copy in `.local/`).
+    - Done when:
+      - `dotnet pack` produces packages whose unzip listings are correct, and package validation passes;
+      - validation passes, and the owner steps (make the repo public, run marketplace.umbraco.com/validate) are in OWNER-TODO.
+  - **18.2 Release workflow**:
+    - `.github/workflows/release.yml`, on tags `v*.*.*` and `workflow_dispatch`, in Tandem's final shape (Tandem ADR-0077):
+      - a `prepare` job checks the version against the branch's Umbraco major and its `CHANGELOG.md` section, so a missing section fails in a minute;
+      - build and test by calling `ci.yml` through `workflow_call` (copied CI steps drift), then the npm build. `ci.yml` gains the `workflow_call` trigger and drops its own `v*` tag trigger, which 3.5 set until this workflow exists, so a tag runs CI once (ADR-0032);
+      - `dotnet pack -p:Version=${tag#v}` through the one `scripts/pack.mjs` that the gate and CI use too;
+      - attach the nupkgs and snupkgs to a **draft** GitHub Release with changelog notes;
+      - a `publish` job with `if: vars.JFB_NUGET_PUBLISH == 'true'`, `permissions: id-token: write`, `NuGet/login@v1` and `dotnet nuget push --skip-duplicate`.
+    - The publish job stays disabled; no nuget.org policy exists.
+    - Document the owner's steps to turn it on in `docs/releasing.md`.
+    - Done when: the workflow check passes, and a dry run of the pack steps in `scripts/ci-local.ps1` produces the same files.
+  - **18.3 Install test from packages**:
+    - With `scripts/install-test.ps1` (16.5), create a fresh Umbraco 17.7.1 site on 5530 that installs `Jiron.Umbraco.FormBuilder` (Jiron Form Builder packages only from the local feed).
+    - **Smoke:** the section is visible to the admin; a form is created through the management API and placed on a page; it renders, submits and emails (pickup); the entry shows in the backoffice; after the build, the site's `appsettings-schema.json` references `appsettings-schema.Jiron.Umbraco.FormBuilder.json` and the file is next to it (18.1).
+    - Run the same smoke after `dotnet publish` of that site (static assets, §3.2).
+    - **The supported floor:** run the same smoke on a fresh **Umbraco 17.6.0** site (its own template hive), because D3 promises `[17.6.0, 18.0.0)`.
+    - **An upgrade on the floor:** on that 17.6.0 site, update the packages to a second build with a higher version, restart, and check in a signed-in browser that keeps its cache that the backoffice runs the new code without a hard refresh. 17.6 busts package files by the manifest's stamped `version` (§3.4), and Umbraco sends them without caching headers, so this checks both.
+    - Done when: the smoke runs pass on 17.7.1 (run and published) and on 17.6.0 against the installed packages, and the 17.6.0 upgrade check passes.
+  - **18.4 First prerelease and phase review**:
+    - Set the version to `17.0.0-alpha.1`. Update CHANGELOG and `docs/upgrading.md`.
+    - Tag `v17.0.0-alpha.1` and push the tag. The release workflow builds a draft release; nothing is published.
+    - **Phase review:** write the handover note.
+    - Done when:
+      - the tag is pushed and the local pack of the same version passes 18.3. You can't watch Actions, so add "check the draft release" to OWNER-TODO;
+      - pushed, with the phase-review gate.
+  - Done when: every part's "Done when" above passes, as each part says.
 
 ### Phase 19: The Umbraco 18 line (forward compatibility)
 
-- [ ] **19.1 Branch strategy and an 18 build**
-  - As decided in D16: `main` stays the 17 line and holds every ROADMAP and WORKLOG change. The 18 code lives only on `v18/main`, branched from `main`.
-  - Tick Phase 19 steps on `main` only, after pushing `v18/main`, with the `v18/main` commit hash.
-  - Work on `v18/main` through `git worktree` in `%TEMP%\jfb-v18`, so `main`'s working folder never switches branches mid-run.
-  - **One-way merges** (Tandem ADR-0078): `main` is merged into `v18/main` after every later change to `main`, and never the other way. The two lines share ports, so only one line's gate runs at a time.
-  - On `v18/main`, set CMS `[18.1.0, 19.0.0)` (18.1.0 is the first 18.x whose runtime cache clears reliably, ADR-0074), `@umbraco-cms/backoffice` 18.x, Umbraco.AI 18.x for the add-on, and the version `18.0.0-alpha.0`.
-  - **The OpenAPI port:**
-    - move the registration from Swashbuckle to Microsoft.AspNetCore.OpenApi (`/umbraco/openapi`);
-    - add the schema transformer that keeps the client's types as on 17 (§3.4);
-    - regenerate the client and the snapshots per line;
-    - replace the removed APIs.
-  - Done when: the solution builds on CMS 18 with zero warnings.
-- [ ] **19.2 Run everything on 18, and phase review**
-  - Create an 18 sandbox on 5540 and an 18 demo on 5541, with Umbraco.Templates 18.x in its own template hive. Run the unit, integration and E2E suites. Fix what breaks behind the adapters. Document the differences in `docs/upgrading.md`.
-  - **A real 17 → 18 upgrade:** the install test (16.5) learns the line. It installs the 17 packages on an Umbraco 17 site with data, then raises Umbraco and Jiron Form Builder to 18, and checks the data and Umbraco's own upgrade state.
-  - **Phase review:**
-    - Write the handover note on `main`.
-  - Done when:
-    - all suites pass on 18, the 17 → 18 upgrade passes, and `main` is untouched by 18 code and still green;
-    - `v18/main` and `main` are both pushed, and `git ls-remote origin` shows both.
+- [ ] **19.1 The Umbraco 18 line: branch, build and everything on 18, and phase review** (19.1 and 19.2 in one, ADR-0197)
+  - **19.1 Branch strategy and an 18 build**:
+    - As decided in D16: `main` stays the 17 line and holds every ROADMAP and WORKLOG change. The 18 code lives only on `v18/main`, branched from `main`.
+    - Tick Phase 19 steps on `main` only, after pushing `v18/main`, with the `v18/main` commit hash.
+    - Work on `v18/main` through `git worktree` in `%TEMP%\jfb-v18`, so `main`'s working folder never switches branches mid-run.
+    - **One-way merges** (Tandem ADR-0078): `main` is merged into `v18/main` after every later change to `main`, and never the other way. The two lines share ports, so only one line's gate runs at a time.
+    - On `v18/main`, set CMS `[18.1.0, 19.0.0)` (18.1.0 is the first 18.x whose runtime cache clears reliably, ADR-0074), `@umbraco-cms/backoffice` 18.x, Umbraco.AI 18.x for the add-on, and the version `18.0.0-alpha.0`.
+    - **The OpenAPI port:**
+      - move the registration from Swashbuckle to Microsoft.AspNetCore.OpenApi (`/umbraco/openapi`);
+      - add the schema transformer that keeps the client's types as on 17 (§3.4);
+      - regenerate the client and the snapshots per line;
+      - replace the removed APIs.
+    - Done when: the solution builds on CMS 18 with zero warnings.
+  - **19.2 Run everything on 18, and phase review**:
+    - Create an 18 sandbox on 5540 and an 18 demo on 5541, with Umbraco.Templates 18.x in its own template hive. Run the unit, integration and E2E suites. Fix what breaks behind the adapters. Document the differences in `docs/upgrading.md`.
+    - **A real 17 → 18 upgrade:** the install test (16.5) learns the line. It installs the 17 packages on an Umbraco 17 site with data, then raises Umbraco and Jiron Form Builder to 18, and checks the data and Umbraco's own upgrade state.
+    - **Phase review:**
+      - Write the handover note on `main`.
+    - Done when:
+      - all suites pass on 18, the 17 → 18 upgrade passes, and `main` is untouched by 18 code and still green;
+      - `v18/main` and `main` are both pushed, and `git ls-remote origin` shows both.
+  - Done when: every part's "Done when" above passes, as each part says.
 
 ### Phase 20: Final verification and handover
 
-- [ ] **20.1 Clean-clone verification**
-  - Clone `origin/main` into `%TEMP%\jfb-verify-<timestamp>`, outside the repo, so no parent `NuGet.config` or `node_modules` can leak in. Use a fresh `NUGET_PACKAGES` cache in `%TEMP%\jfb-nuget-<timestamp>`, and the throwaway-build settings of CLAUDE.md rule 6, so the folders can be deleted afterwards. The hang-marker rerun applies here too.
-  - Run, in order:
-    - `scripts/ci-local.ps1`: restore, build, all unit and integration tests, vectors in both runtimes, and the client lint, tests and build;
-    - the full Playwright suite;
-    - a pack with a unique `-dev.<timestamp>` version;
-    - the install test (18.3);
-    - **an upgrade** from the `v17.0.0-alpha.1` pack (18.4) to this build, with data, through the 16.5 harness;
-    - `node scripts/secret-scan.mjs --history`.
-  - Run `node scripts/term-guard.mjs --history` **from the working repo**, because the clone has no `.private/`.
-  - Show the summary output. If this session did not run 20.1 itself (for example after a restart), run it again before claiming the goal.
-  - Done when: everything passes from the clean clone, the term guard passes on the full history, and the temp folders are removed.
-- [ ] **20.2 Status report**
-  - Write `docs/STATUS.md`:
-    - what was built (features against §1);
-    - test counts and coverage;
-    - budgets measured;
-    - known limitations;
-    - the final OWNER-TODO list, with clear instructions for each item.
-  - Update CHANGELOG. Every roadmap step is `[x]`, or `[~]` with its reason in OWNER-TODO.
-  - If the owner's private reference exists, update the private mapping in `.private/` one last time (never committed).
-  - Done when: committed and pushed, and the final output of `node scripts/roadmap-status.mjs` shows `open=0 blocked_missing_in_owner_todo=0 clean=yes` with `head` equal to `origin_main`.
+- [ ] **20.1 Clean-clone verification and the status report** (20.1 and 20.2 in one, ADR-0197)
+  - **20.1 Clean-clone verification**:
+    - Clone `origin/main` into `%TEMP%\jfb-verify-<timestamp>`, outside the repo, so no parent `NuGet.config` or `node_modules` can leak in. Use a fresh `NUGET_PACKAGES` cache in `%TEMP%\jfb-nuget-<timestamp>`, and the throwaway-build settings of CLAUDE.md rule 6, so the folders can be deleted afterwards. The hang-marker rerun applies here too.
+    - Run, in order:
+      - `scripts/ci-local.ps1`: restore, build, all unit and integration tests, vectors in both runtimes, and the client lint, tests and build;
+      - the full Playwright suite;
+      - a pack with a unique `-dev.<timestamp>` version;
+      - the install test (18.3);
+      - **an upgrade** from the `v17.0.0-alpha.1` pack (18.4) to this build, with data, through the 16.5 harness;
+      - `node scripts/secret-scan.mjs --history`.
+    - Run `node scripts/term-guard.mjs --history` **from the working repo**, because the clone has no `.private/`.
+    - Show the summary output. If this session did not run 20.1 itself (for example after a restart), run it again before claiming the goal.
+    - Done when: everything passes from the clean clone, the term guard passes on the full history, and the temp folders are removed.
+  - **20.2 Status report**:
+    - Write `docs/STATUS.md`:
+      - what was built (features against §1);
+      - test counts and coverage;
+      - budgets measured;
+      - known limitations;
+      - the final OWNER-TODO list, with clear instructions for each item.
+    - Update CHANGELOG. Every roadmap step is `[x]`, or `[~]` with its reason in OWNER-TODO.
+    - If the owner's private reference exists, update the private mapping in `.private/` one last time (never committed).
+    - Done when: committed and pushed, and the final output of `node scripts/roadmap-status.mjs` shows `open=0 blocked_missing_in_owner_todo=0 clean=yes` with `head` equal to `origin_main`.
+  - Done when: every part's "Done when" above passes, as each part says.
 
 ---
 
