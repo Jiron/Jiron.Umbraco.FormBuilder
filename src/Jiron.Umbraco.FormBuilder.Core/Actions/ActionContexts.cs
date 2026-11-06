@@ -42,7 +42,11 @@ public sealed record ActionRunContext
 /// <param name="Key">The user's key.</param>
 /// <param name="Email">The user's address; null when the user has none.</param>
 /// <param name="Name">The user's name.</param>
-public sealed record ActionTestUser(Guid Key, string? Email, string Name);
+public sealed record ActionTestUser(Guid Key, string? Email, string Name)
+{
+    /// <summary>The user's backoffice language, such as <c>de-DE</c>, for what a test says to them; null for English.</summary>
+    public string? Culture { get; init; }
+}
 
 /// <summary>What a test run runs for (ADR-0158): the action of a form's draft and a sample entry.</summary>
 public sealed record ActionTestContext

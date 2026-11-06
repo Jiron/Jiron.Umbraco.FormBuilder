@@ -2755,6 +2755,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
     - **Content:** document type and property mapping; the site's document types come with the setting as its choices, as the option sources serve them (ADR-0173), since Umbraco lists them only to users of its Settings section.
     - **Set state.**
   - The form check's Fix it lands on each editor's own settings too.
+  - **Carried in from 10.2c** (ADR-0190): the webhook's, the content action's and Set state's tests answer with a code the backoffice says in its words (`ActionTestCodes`), and content and Set state test as dry runs whose lines say what a run would do, each with a test.
   - Done when:
     - Playwright configures and test-runs each type (webhooks against the stub on 5560);
     - integration tests cover every new endpoint, with its row in the permission matrix and the OpenAPI snapshot.

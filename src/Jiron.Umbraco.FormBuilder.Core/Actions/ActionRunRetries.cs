@@ -1,5 +1,7 @@
 using Jiron.Umbraco.FormBuilder.Core.Audit;
+using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Entries;
+using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
@@ -112,6 +114,9 @@ internal enum ActionTestStatus
 
     /// <summary>The type reaches what the action is set up to reach, and the request did not confirm that.</summary>
     NeedsConfirmation,
+
+    /// <summary>The action's settings do not fit its type, as the form check says; there is no test until they do.</summary>
+    SettingsInvalid,
 }
 
 /// <summary>What a request for a test run of an action came to.</summary>
@@ -122,25 +127,37 @@ internal sealed record ActionTest(ActionTestStatus Status, ActionTestResult? Res
 /// <summary>
 /// Test runs of a draft's actions against the sample entry (section 4.4, ADR-0158, ADR-0187): nothing is stored and no run changes. What
 /// a test run reaches is the type's, by its <see cref="ActionTypeDeclaration.Test"/>: a type that reaches what the action is
-/// set up to reach runs only after a confirmation.
+/// set up to reach runs only after a confirmation. The draft is the one the designer holds, saved or not, or the stored one
+/// (ADR-0190); settings the type cannot read are refused before anything runs.
 /// </summary>
 internal sealed class ActionTestRuns(IFormBuilderFormService forms, ActionTypeRegistry types, ActionSettingLocks locks, SampleEntries samples, TimeProvider time)
 {
-    /// <summary>The code a type's failure stands under when it threw.</summary>
+    /// <summary>The message a type's failure stands under when it threw.</summary>
     public const string FailedMessage = "The test could not finish.";
 
-    /// <summary>Runs the action of the form's draft against a sample entry.</summary>
+    /// <summary>Runs an action of the form's draft against a sample entry.</summary>
     /// <param name="formKey">The form.</param>
     /// <param name="actionKey">The action in its draft.</param>
     /// <param name="user">Who asks.</param>
     /// <param name="confirmed">Whether the user confirmed that the test reaches what the action is set up to reach.</param>
+    /// <param name="held">The draft as the designer holds it, saved or not; null for the stored draft.</param>
     /// <param name="cancellationToken">The request's cancellation.</param>
-    public async Task<ActionTest> TestAsync(Guid formKey, Guid actionKey, ActionTestUser user, bool confirmed, CancellationToken cancellationToken = default)
+    public async Task<ActionTest> TestAsync(Guid formKey, Guid actionKey, ActionTestUser user, bool confirmed, FormDefinition? held = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(user);
-        if (await forms.GetDraftAsync(formKey, cancellationToken) is not { } draft
-            || draft.Definition is not { } definition
-            || definition.Actions.FirstOrDefault(action => action.Key == actionKey) is not { } action)
+        FormDefinition? definition;
+        FormInfo? form;
+        if (held is null)
+        {
+            var draft = await forms.GetDraftAsync(formKey, cancellationToken);
+            (definition, form) = (draft?.Definition, draft?.Form);
+        }
+        else
+        {
+            (definition, form) = (held, await forms.GetAsync(formKey, cancellationToken));
+        }
+
+        if (definition is null || form is null || definition.Actions.FirstOrDefault(each => each.Key == actionKey) is not { } action)
         {
             return new ActionTest(ActionTestStatus.NotFound);
         }
@@ -150,6 +167,13 @@ internal sealed class ActionTestRuns(IFormBuilderFormService forms, ActionTypeRe
             return new ActionTest(ActionTestStatus.UnknownType);
         }
 
+        // Settings the type cannot read, such as a draft written before its editor, are the form check's to say.
+        var locked = locks.Apply(action);
+        if (!FieldSettingsChecks.Check(type.SettingsSchema, locked.Settings, "$.settings", "An action", new DefinitionProblems()))
+        {
+            return new ActionTest(ActionTestStatus.SettingsInvalid);
+        }
+
         if (type.Declaration.Test == ActionTestKind.AfterConfirmation && !confirmed)
         {
             return new ActionTest(ActionTestStatus.NeedsConfirmation);
@@ -157,9 +181,9 @@ internal sealed class ActionTestRuns(IFormBuilderFormService forms, ActionTypeRe
 
         var context = new ActionTestContext
         {
-            Action = locks.Apply(action),
+            Action = locked,
             User = user,
-            Scope = await samples.ScopeAsync(definition, draft.Form.Name, draft.Form.Alias, string.Empty, cancellationToken),
+            Scope = await samples.ScopeAsync(definition, form.Name, form.Alias, string.Empty, cancellationToken),
         };
         using var limit = new CancellationTokenSource(type.Declaration.AttemptTimeout ?? ActionTypeRegistry.LongestAttempt, time);
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(limit.Token, cancellationToken);
@@ -170,7 +194,7 @@ internal sealed class ActionTestRuns(IFormBuilderFormService forms, ActionTypeRe
         catch (Exception exception) when (exception is not OutOfMemoryException && !cancellationToken.IsCancellationRequested)
         {
             // Its message may hold a secret, so the editor reads only that it failed; the log of the type has the rest.
-            return new ActionTest(ActionTestStatus.Done, new ActionTestResult(ActionTestOutcome.Failed, FailedMessage));
+            return new ActionTest(ActionTestStatus.Done, new ActionTestResult(ActionTestOutcome.Failed, FailedMessage) { Code = ActionTestCodes.Failed });
         }
     }
 }

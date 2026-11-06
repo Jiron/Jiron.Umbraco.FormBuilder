@@ -1,6 +1,7 @@
 using Jiron.Umbraco.FormBuilder.Core.Actions;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Email;
+using Jiron.Umbraco.FormBuilder.Core.Entries;
 using Jiron.Umbraco.FormBuilder.Core.Files;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
@@ -467,25 +468,43 @@ public sealed class EmailActionTests : EmailTestBase
     }
 
     [Test]
-    public async Task ATestRun_ReachesOnlyWhoAsks_AndIsLoggedAsATest()
+    public async Task ATestRun_ReachesOnlyWhoAsks_SaysWhomTheRealOneGoesTo_InTheirLanguage_AndIsLoggedAsATest()
     {
         var form = await FormAsync(Email(Texts(more: $$""","toField":"{{EmailField.Key}}","cc":["copy@jfb.test"]""")));
         var draft = (await Forms.GetDraftAsync(form))!.Definition!;
         var tests = GetRequiredService<ActionTestRuns>();
 
         var test = await tests.TestAsync(form, draft.Actions[0].Key, new ActionTestUser(Guid.NewGuid(), "ada@jfb.test", "Ada"), confirmed: false);
+        var german = await tests.TestAsync(form, draft.Actions[0].Key, new ActionTestUser(Guid.NewGuid(), "bea@jfb.test", "Bea") { Culture = "de-DE" }, confirmed: false);
         var nobody = await tests.TestAsync(form, draft.Actions[0].Key, new ActionTestUser(Guid.NewGuid(), null, "Ben"), confirmed: false);
         await SendDueAsync();
 
-        var written = Written().Single();
+        var written = Written();
+        var english = written.Single(mail => mail.To.Mailboxes.Single().Address == "ada@jfb.test");
         Assert.Multiple(() =>
         {
-            Assert.That(test.Result!.Outcome, Is.EqualTo(ActionTestOutcome.Sent));
+            Assert.That((test.Result!.Outcome, test.Result.Code), Is.EqualTo((ActionTestOutcome.Sent, ActionTestCodes.SentToYou)));
             Assert.That(test.Result.Message, Does.Contain("ada@jfb.test"));
-            Assert.That(nobody.Result!.Outcome, Is.EqualTo(ActionTestOutcome.Failed));
-            Assert.That(written.To.Mailboxes.Single().Address, Is.EqualTo("ada@jfb.test"));
-            Assert.That(written.Cc, Is.Empty);
+            Assert.That((nobody.Result!.Outcome, nobody.Result.Code), Is.EqualTo((ActionTestOutcome.Failed, ActionTestCodes.NoAddress)));
+            Assert.That(written.Select(mail => mail.To.Mailboxes.Single().Address), Is.EquivalentTo(new[] { "ada@jfb.test", "bea@jfb.test" }), "only to who asks");
+            Assert.That(english.Cc, Is.Empty);
+            Assert.That(HtmlOf(english), Does.Contain($">This is a test. The real email goes to {To}, copy@jfb.test, and to {SampleEntries.Email} in a mail of its own.</p>"), "its first line, the real recipients routed as a run routes them");
+            Assert.That(HtmlOf(written.Single(mail => mail != english)), Does.Contain($"Dies ist ein Test. Die echte E-Mail geht an {To}, copy@jfb.test und in einer eigenen E-Mail an {SampleEntries.Email}."));
+            Assert.That(german.Result!.Code, Is.EqualTo(ActionTestCodes.SentToYou));
         });
+    }
+
+    [Test]
+    public async Task ATestRun_OfAPlainTextMail_ToNobodyYet_SaysSoOnItsFirstLine()
+    {
+        // The form's creator, whom a form of the tests lacks: nobody yet.
+        var form = await FormAsync(Email(Texts(to: "[]", body: "Hello.", more: ""","plainText":true,"toCreator":true""")));
+        var draft = (await Forms.GetDraftAsync(form))!.Definition!;
+
+        await GetRequiredService<ActionTestRuns>().TestAsync(form, draft.Actions[0].Key, new ActionTestUser(Guid.NewGuid(), "ada@jfb.test", "Ada"), confirmed: false);
+        await SendDueAsync();
+
+        Assert.That(((TextPart)Written().Single().Body!).Text, Does.StartWith("This is a test. The real email goes to no one yet."));
     }
 
     [TestCase("""{"subject":{"":"S"},"body":{"":"B"}}""", "to", TestName = "no recipient at all")]

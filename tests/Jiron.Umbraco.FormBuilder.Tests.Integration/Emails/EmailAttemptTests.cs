@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using Jiron.Umbraco.FormBuilder.Core.Actions;
+using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Email;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Core.Settings;
@@ -41,6 +42,28 @@ public sealed class EmailAttemptTests : EmailTestBase
     private ScriptedEmailSender Sender => (ScriptedEmailSender)GetRequiredService<IEmailSender>();
 
     private EmailAttempts Attempts => GetRequiredService<EmailAttempts>();
+
+    [Test]
+    public async Task ATestRun_WhereMailCannotLeave_SaysSo_AndQueuesNothing()
+    {
+        Sender.CanSend = false;
+        var action = new FormAction
+        {
+            Key = Guid.NewGuid(),
+            Type = EmailActionType.Alias,
+            Name = "Mail",
+            Settings = SettingsObject.Parse("""{"to":["team@jfb.test"],"subject":{"":"S"},"body":{"":"<p>B</p>"}}"""),
+        };
+        var form = await ActionFormAsync(action);
+
+        var test = await GetRequiredService<ActionTestRuns>().TestAsync(form, action.Key, new ActionTestUser(Guid.NewGuid(), "ada@jfb.test", "Ada"), confirmed: false);
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That((test.Result!.Outcome, test.Result.Code), Is.EqualTo((ActionTestOutcome.Failed, ActionTestCodes.MailOff)));
+            Assert.That(await Emails.DueAsync(10), Is.Empty, "nothing queued");
+        });
+    }
 
     [Test]
     public async Task TheSender_IsToldItsTypeAndTime_AndItsHandlersSeeTheMail()

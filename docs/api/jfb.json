@@ -73,7 +73,7 @@
               "schema": {
                 "oneOf": [
                   {
-                    "$ref": "#/components/schemas/ActionConfirmationRequestModel"
+                    "$ref": "#/components/schemas/ActionTestRequestModel"
                   }
                 ]
               }
@@ -82,7 +82,7 @@
               "schema": {
                 "oneOf": [
                   {
-                    "$ref": "#/components/schemas/ActionConfirmationRequestModel"
+                    "$ref": "#/components/schemas/ActionTestRequestModel"
                   }
                 ]
               }
@@ -91,7 +91,7 @@
               "schema": {
                 "oneOf": [
                   {
-                    "$ref": "#/components/schemas/ActionConfirmationRequestModel"
+                    "$ref": "#/components/schemas/ActionTestRequestModel"
                   }
                 ]
               }
@@ -107,6 +107,20 @@
                   "oneOf": [
                     {
                       "$ref": "#/components/schemas/ActionTestResponseModel"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
                     }
                   ]
                 }
@@ -6195,6 +6209,21 @@
         },
         "additionalProperties": false
       },
+      "ActionTestRequestModel": {
+        "required": [
+          "confirmed"
+        ],
+        "type": "object",
+        "properties": {
+          "confirmed": {
+            "type": "boolean"
+          },
+          "definition": {
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "ActionTestResponseModel": {
         "required": [
           "outcome",
@@ -6205,7 +6234,15 @@
           "outcome": {
             "type": "string"
           },
+          "code": {
+            "type": "string",
+            "nullable": true
+          },
           "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "recipient": {
             "type": "string",
             "nullable": true
           },

@@ -1,3 +1,4 @@
+using System.Net;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Jiron.Umbraco.FormBuilder.Core.Actions;
@@ -9,6 +10,7 @@ using Jiron.Umbraco.FormBuilder.Core.MergeTags;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Microsoft.Extensions.Logging;
+using Umbraco.Cms.Core.Mail;
 using Umbraco.Cms.Core.Services;
 
 namespace Jiron.Umbraco.FormBuilder.Core.Email;
@@ -200,6 +202,7 @@ internal sealed partial class EmailActionType(
     IUserService users,
     FormBuilderDatabase database,
     IEnumerable<IFormBuilderEmailView> views,
+    IEmailSender sender,
     ILogger<EmailActionType> logger)
     : FormBuilderActionTypeBase<EmailActionSettings>(Declared)
 {
@@ -344,24 +347,58 @@ internal sealed partial class EmailActionType(
     {
         if (!EmailAddresses.IsOne(context.User.Email))
         {
-            return new ActionTestResult(ActionTestOutcome.Failed, "Your account has no address a test mail can go to.");
+            return new ActionTestResult(ActionTestOutcome.Failed, "Your account has no address a test mail can go to.") { Code = ActionTestCodes.NoAddress };
+        }
+
+        // A mail the site cannot send would wait in the queue, and the test would say it went (ADR-0190).
+        if (!sender.CanSendRequiredEmail())
+        {
+            return new ActionTestResult(ActionTestOutcome.Failed, "This site cannot send mail yet: it has no mail server or pickup folder.") { Code = ActionTestCodes.MailOff };
         }
 
         var run = new ActionRunContext { Action = context.Action, Trigger = ActionTrigger.Submitted, Scope = context.Scope, Attempt = 1, DeliveryKey = string.Empty };
         OutgoingEmail mail;
         try
         {
-            mail = await MailAsync(settings, run, [context.User.Email!], toVisitor: false, quiet: false, cancellationToken);
+            // The real mail, to the tester alone, its first line naming whom the real one goes to, routed as a run routes it.
+            var (team, visitors) = await RecipientsAsync(settings, run, quiet: true, cancellationToken);
+            var real = TeamMails(settings, team, visitors.Count > 0)
+                .SelectMany(each => each.To.Concat(each.Cc).Concat(each.Bcc))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            var line = TestLine(context.User.Culture, real, visitors);
+            mail = await MailAsync(settings, run, [context.User.Email!], toVisitor: false, quiet: true, cancellationToken);
+            mail = mail with { Body = settings.PlainText ? line + "\n\n" + mail.Body : "<p>" + WebUtility.HtmlEncode(line) + "</p>" + mail.Body };
         }
         catch (ViewMissingException exception)
         {
-            return new ActionTestResult(ActionTestOutcome.Failed, exception.Message);
+            return new ActionTestResult(ActionTestOutcome.Failed, exception.Message) { Code = ViewMissing };
         }
 
         var stored = await outbox.QueueAsync(mail with { Kind = EmailKind.Test, EntryId = null, ActionRunId = null }, cancellationToken);
         return stored is null
-            ? new ActionTestResult(ActionTestOutcome.Failed, "The test mail could not be queued.")
-            : new ActionTestResult(ActionTestOutcome.Sent, $"Sent to {context.User.Email}", [stored.Subject, stored.TextBody]);
+            ? new ActionTestResult(ActionTestOutcome.Failed, "The test mail could not be queued.") { Code = ActionTestCodes.Failed }
+            : new ActionTestResult(ActionTestOutcome.Sent, $"Sent to {context.User.Email}", [stored.Subject, stored.TextBody]) { Code = ActionTestCodes.SentToYou };
+    }
+
+    // A test mail's first line, in the tester's backoffice language (English or German, as the setup test mail): that it is
+    // one, and whom the real mail goes to (ADR-0190).
+    private static string TestLine(string? culture, List<string> team, List<string> visitors)
+    {
+        var german = string.Equals(culture?.Split('-')[0], "de", StringComparison.OrdinalIgnoreCase);
+        var to = string.Join(", ", team);
+        var own = string.Join(", ", visitors);
+        return (team.Count > 0, visitors.Count > 0, german) switch
+        {
+            (true, true, false) => $"This is a test. The real email goes to {to}, and to {own} in a mail of its own.",
+            (true, false, false) => $"This is a test. The real email goes to {to}.",
+            (false, true, false) => $"This is a test. The real email goes to {own}, in a mail of its own.",
+            (false, false, false) => "This is a test. The real email goes to no one yet.",
+            (true, true, true) => $"Dies ist ein Test. Die echte E-Mail geht an {to} und in einer eigenen E-Mail an {own}.",
+            (true, false, true) => $"Dies ist ein Test. Die echte E-Mail geht an {to}.",
+            (false, true, true) => $"Dies ist ein Test. Die echte E-Mail geht in einer eigenen E-Mail an {own}.",
+            _ => "Dies ist ein Test. Die echte E-Mail geht noch an niemanden.",
+        };
     }
 
     /// <summary>

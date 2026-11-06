@@ -1,3 +1,4 @@
+using System.Net;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -207,6 +208,38 @@ public sealed class ActionApiTests : ManagementApiTestBase
             Assert.That(context.User.Name, Is.Not.Empty);
             Assert.That(context.User.Email, Does.Contain("@"));
             Assert.That(await Entries.ListIdsAsync(row.Id, 5), Is.Empty, "nothing is stored");
+        });
+    }
+
+    [Test]
+    public async Task ATestRun_OfTheDraftTheDesignerHolds_RunsTheActionAsItHoldsIt_SavedOrNot()
+    {
+        var stored = Scripted0("stored");
+        var form = await PublishedAsync(stored);
+        var draft = (await CallAsync(Admin, HttpMethod.Get, $"form/{form}/draft")).Body!["definition"]!;
+        var held = draft.DeepClone();
+        var unsaved = Guid.NewGuid();
+        held["actions"]![0]!["settings"] = JsonNode.Parse("""{"target":"changed"}""");
+        held["actions"]!.AsArray().Add(JsonNode.Parse($$$"""{"key":"{{{unsaved}}}","type":"{{{ScriptedActionType.Alias}}}","name":"New","settings":{"target":"unsaved"}}"""));
+
+        var changed = await CallAsync(Admin, HttpMethod.Post, $"form/{form}/action/{stored.Key}/test", new { confirmed = true, definition = held });
+        var added = await CallAsync(Admin, HttpMethod.Post, $"form/{form}/action/{unsaved}/test", new { confirmed = true, definition = held });
+        var notStored = await CallAsync(Admin, HttpMethod.Post, $"form/{form}/action/{unsaved}/test", new { confirmed = true });
+        var unreadable = await CallAsync(Admin, HttpMethod.Post, $"form/{form}/action/{stored.Key}/test", new { confirmed = true, definition = new JsonArray() });
+        held["actions"]![0]!["settings"] = JsonNode.Parse("""{"target":["not","a","text"]}""");
+        var unfit = await CallAsync(Admin, HttpMethod.Post, $"form/{form}/action/{stored.Key}/test", new { confirmed = true, definition = held });
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(changed.Outcome, Is.EqualTo("200"), changed.ToString());
+            Assert.That(added.Outcome, Is.EqualTo("200"), added.ToString());
+            Assert.That(Scripted.Tests.Select(test => test.Action.Settings!.Value.GetProperty("target").GetString()), Is.EqualTo(new[] { "changed", "unsaved" }), "as the designer holds them");
+            Assert.That(notStored.Outcome, Is.EqualTo("404 action_not_found"), "the stored draft has no such action");
+            Assert.That(unreadable.Status, Is.EqualTo(HttpStatusCode.BadRequest), unreadable.ToString());
+            Assert.That(unfit.Outcome, Is.EqualTo("409 action_settings_invalid"), unfit.ToString());
+            Assert.That(Scripted.Tests, Has.Count.EqualTo(2), "nothing ran for settings its type cannot read");
+            Assert.That(changed.Body!["code"], Is.Null, "a type without codes leaves the message");
+            Assert.That(changed.Body!["recipient"], Is.Null);
         });
     }
 

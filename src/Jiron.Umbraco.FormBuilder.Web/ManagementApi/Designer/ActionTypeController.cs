@@ -1,7 +1,10 @@
+using System.Text.Json;
 using Asp.Versioning;
 using Jiron.Umbraco.FormBuilder.Core.Access;
 using Jiron.Umbraco.FormBuilder.Core.Actions;
+using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
+using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Web.ManagementApi.Access;
 using Jiron.Umbraco.FormBuilder.Web.ManagementApi.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -32,34 +35,47 @@ internal sealed class ActionTypeController(ActionTypeRegistry registry, ActionSe
 /// <summary>
 /// A test run of a draft's action against a sample entry (section 4.4, ADR-0158): nothing is stored and no run changes. It
 /// needs <c>manageActions</c> on the form, and a type that reaches what the action is set up to reach runs only after a
-/// confirmation.
+/// confirmation. The draft is the one the request carries, as the designer holds it, saved or not, or the stored one
+/// (ADR-0190).
 /// </summary>
 [ApiVersion("1.0")]
 [BackOfficeRoute(FormBuilderManagementApi.Route + "/form/{key:guid}/action/{actionKey:guid}/test")]
 [ApiExplorerSettings(GroupName = "Action type")]
-internal sealed class ActionTestController(ActionTestRuns tests, IUserService users) : FormBuilderManagementApiController
+internal sealed class ActionTestController(ActionTestRuns tests, FormDefinitionSerializer serializer, IUserService users) : FormBuilderManagementApiController
 {
-    /// <summary>Runs the action of the form's draft against a sample entry.</summary>
+    /// <summary>Runs an action of the form's draft against a sample entry.</summary>
     /// <param name="key">The form.</param>
     /// <param name="actionKey">The action in its draft.</param>
-    /// <param name="request">Whether the user confirmed it.</param>
+    /// <param name="request">Whether the user confirmed it, and the draft as the designer holds it.</param>
     /// <param name="cancellationToken">The request's cancellation.</param>
     [HttpPost]
     [MapToApiVersion("1.0")]
     [FormBuilderPermission(FormBuilderPermissions.ManageActions, On = FormBuilderAccessResourceKind.Form, Key = "key")]
     [ProducesResponseType(typeof(ActionTestResponseModel), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
-    public async Task<IActionResult> Test(Guid key, Guid actionKey, ActionConfirmationRequestModel? request = null, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> Test(Guid key, Guid actionKey, ActionTestRequestModel? request = null, CancellationToken cancellationToken = default)
     {
+        FormDefinition? held = null;
+        if (request?.Definition is { } sent)
+        {
+            var read = serializer.Read(sent.GetRawText());
+            held = read.Definition ?? throw new FormBuilderValidationException(read.Problems);
+        }
+
         var user = await users.GetAsync(RequestAccess.User.Key);
-        var asking = new ActionTestUser(RequestAccess.User.Key, string.IsNullOrWhiteSpace(user?.Email) ? null : user.Email, user?.Name ?? string.Empty);
-        var test = await tests.TestAsync(key, actionKey, asking, request?.Confirmed == true, cancellationToken);
+        var asking = new ActionTestUser(RequestAccess.User.Key, string.IsNullOrWhiteSpace(user?.Email) ? null : user.Email, user?.Name ?? string.Empty)
+        {
+            Culture = user?.Language,
+        };
+        var test = await tests.TestAsync(key, actionKey, asking, request?.Confirmed == true, held, cancellationToken);
         return test.Status switch
         {
-            ActionTestStatus.Done => Ok(ActionTestResponseModel.Of(test.Result!)),
+            ActionTestStatus.Done => Ok(ActionTestResponseModel.Of(test.Result!, asking.Email)),
             ActionTestStatus.UnknownType => FormBuilderProblems.ActionTypeUnknown(),
             ActionTestStatus.NeedsConfirmation => FormBuilderProblems.ActionTestNeedsConfirmation(),
+            ActionTestStatus.SettingsInvalid => FormBuilderProblems.ActionSettingsInvalid(),
             _ => FormBuilderProblems.ActionNotFound(),
         };
     }
@@ -131,20 +147,38 @@ internal sealed record ActionConfirmationRequestModel
     public bool Confirmed { get; init; }
 }
 
+/// <summary>What a test run is asked for.</summary>
+internal sealed record ActionTestRequestModel
+{
+    /// <summary>Whether the user confirmed it, having been told what it reaches.</summary>
+    public bool Confirmed { get; init; }
+
+    /// <summary>
+    /// The draft's definition as the designer holds it, saved or not, read as a draft save reads it; null for the stored draft.
+    /// </summary>
+    public JsonElement? Definition { get; init; }
+}
+
 /// <summary>What a test run came to.</summary>
 internal sealed record ActionTestResponseModel
 {
     /// <summary>What it came to: <c>sent</c>, <c>dryRun</c> or <c>failed</c>.</summary>
     public required string Outcome { get; init; }
 
+    /// <summary>What it came to as a code the backoffice words, such as <c>sent_to_you</c> or <c>mail_off</c>; null for none.</summary>
+    public string? Code { get; init; }
+
     /// <summary>What to tell the editor, or null.</summary>
     public string? Message { get; init; }
+
+    /// <summary>The address a test that reached the asking user went to; null for another.</summary>
+    public string? Recipient { get; init; }
 
     /// <summary>What a run would do, one line each.</summary>
     public required IReadOnlyList<string> Preview { get; init; }
 
-    /// <summary>The model of a type's result.</summary>
-    public static ActionTestResponseModel Of(ActionTestResult result)
+    /// <summary>The model of a type's result, for the user who asked.</summary>
+    public static ActionTestResponseModel Of(ActionTestResult result, string? address)
     {
         ArgumentNullException.ThrowIfNull(result);
         return new ActionTestResponseModel
@@ -155,7 +189,9 @@ internal sealed record ActionTestResponseModel
                 ActionTestOutcome.Failed => "failed",
                 _ => "dryRun",
             },
+            Code = result.Code,
             Message = result.Message,
+            Recipient = result.Code == ActionTestCodes.SentToYou ? address : null,
             Preview = result.Preview ?? [],
         };
     }

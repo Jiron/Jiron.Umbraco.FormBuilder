@@ -300,7 +300,10 @@ flowchart LR
   view's words load with it (`action-words.ts` registers `lang/actions.<xx>.ts` with Umbraco's localization manager),
   so the backoffice's start does not carry them. Fix it of an action carries its key; `?action=` on a form's address
   hands the view a Fix it at that action once the name box has held the focus Umbraco gives it past its second look
-  (`name-focus.ts`). From 10.2b (ADR-0189): the action types' own editors are `action-editors.ts`, which the sidebar
+  (`name-focus.ts`). From 10.2c (ADR-0190): Test on a card and in the sidebar runs `action-test.ts`'s `runTest`,
+  which asks first where the type tests after a confirmation and says the answer in a toast, through the workspace's
+  `testActionOf` and the test endpoint with the draft the designer holds; `ActionTestResult.Code` carries what the
+  backoffice words. From 10.2b (ADR-0189): the action types' own editors are `action-editors.ts`, which the sidebar
   hands the inspector's `settingEditor` through its `editors`: a field picker of the draft's fields of the setting's
   `picks`, addresses as chips, the email's To box (`recipients`), which draws the settings `within` it, the recipient
   map, and the layout from the setting choices' `emailLayouts`. An email's sidebar is Umbraco's large one, with its

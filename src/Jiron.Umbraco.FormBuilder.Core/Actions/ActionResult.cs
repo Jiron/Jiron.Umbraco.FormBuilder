@@ -80,4 +80,33 @@ public enum ActionTestOutcome
 /// <param name="Outcome">What it came to.</param>
 /// <param name="Message">What to tell the editor: a sentence without a secret, or null.</param>
 /// <param name="Preview">What a run would do, one line each, such as the content it would create; empty when there is nothing to show.</param>
-public sealed record ActionTestResult(ActionTestOutcome Outcome, string? Message = null, IReadOnlyList<string>? Preview = null);
+public sealed record ActionTestResult(ActionTestOutcome Outcome, string? Message = null, IReadOnlyList<string>? Preview = null)
+{
+    /// <summary>
+    /// What it came to as a code the backoffice says in its own words (ADR-0190), such as <c>sent_to_you</c>,
+    /// <c>dry_run</c>, <c>no_address</c> or <c>mail_off</c>; null leaves the editor the message.
+    /// </summary>
+    public string? Code { get; init; }
+}
+
+/// <summary>The codes of a test run the backoffice says in its own words (ADR-0190); a type may give others.</summary>
+public static class ActionTestCodes
+{
+    /// <summary>It reached the asking user, such as a test mail to their address.</summary>
+    public const string SentToYou = "sent_to_you";
+
+    /// <summary>It reached what the action is set up to reach, marked as a test.</summary>
+    public const string Sent = "sent";
+
+    /// <summary>It reached nobody and created nothing: the preview shows what a run would do.</summary>
+    public const string DryRun = "dry_run";
+
+    /// <summary>The asking user has no address a test mail can go to.</summary>
+    public const string NoAddress = "no_address";
+
+    /// <summary>The site cannot send mail yet: it has no mail server or pickup folder.</summary>
+    public const string MailOff = "mail_off";
+
+    /// <summary>The test could not finish; the type's log says why.</summary>
+    public const string Failed = "failed";
+}
