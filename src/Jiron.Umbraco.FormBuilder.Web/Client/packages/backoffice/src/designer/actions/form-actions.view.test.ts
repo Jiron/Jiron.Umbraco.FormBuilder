@@ -21,6 +21,7 @@ import { EditorHistory } from '../history';
 import { builtInTypes, englishLook } from '../preview/fixtures';
 import type { ActionListElement } from './action-list.element';
 import { actionsOf, type DesignAction } from './action-model';
+import type { TestAnswer } from './action-test';
 import type { ActionModalData } from './action.modal.token';
 
 /** The built-in action types, as the snapshot holds what the server serves. */
@@ -34,12 +35,18 @@ const ACTION_TYPES = JSON.parse(
 // What the server answers, or nothing while it fails; the sidebars opened, and what the one open answers.
 const server = vi.hoisted(() => ({ fails: false, limit: 50 }));
 const opened = vi.hoisted(() => ({ sidebars: [] as unknown[], sizes: [] as unknown[], answer: undefined as unknown }));
+/** Umbraco's confirm dialog: whether the user confirms, and how often it was asked. */
+const confirming = vi.hoisted(() => ({ yes: true, asked: 0 }));
 
 /** The form's address, at its Actions view. */
 const ADDRESS = '/umbraco/section/jfb-forms/workspace/jfb-form/edit/form1/view/actions';
 
 vi.mock('@umbraco-cms/backoffice/modal', async (original) => ({
   ...(await original<typeof import('@umbraco-cms/backoffice/modal')>()),
+  umbConfirmModal: async () => {
+    confirming.asked++;
+    if (!confirming.yes) throw new Error('declined');
+  },
   umbOpenModal: async (
     _host: unknown,
     _token: unknown,
@@ -137,6 +144,13 @@ class StandIn {
     this.previewed.push([key, culture]);
     return undefined;
   };
+  /** The tests asked for: the action, whether confirmed, and the definition. */
+  readonly tested: (readonly [string, boolean, DesignDefinition])[] = [];
+  testAnswer: TestAnswer = { kind: 'noAnswer' };
+  testActionOf = async (definition: DesignDefinition, key: string, confirmed: boolean) => {
+    this.tested.push([key, confirmed, definition]);
+    return this.testAnswer;
+  };
 
   constructor(definition: DesignDefinition) {
     this.#history = new EditorHistory({ definition, selection: null });
@@ -228,6 +242,8 @@ beforeEach(() => {
   opened.answer = undefined;
   toasts.shown = [];
   toasts.closed = 0;
+  confirming.yes = true;
+  confirming.asked = 0;
   history.replaceState(null, '', ADDRESS);
 });
 
@@ -539,6 +555,53 @@ describe('the Actions view', () => {
     ]);
     await data.preview?.(data.definition, 'a', 'de-DE');
     expect(workspace.previewed).toEqual([['a', 'de-DE']]);
+  });
+
+  it('tests an action from its card as the draft holds it, and says what it came to in a toast (ADR-0190)', async () => {
+    const { workspace, list } = await viewOf(definitionWith([action('a')]));
+    workspace.testAnswer = {
+      kind: 'done',
+      result: { outcome: 'sent', code: 'sent_to_you', recipient: 'ana@example.com', preview: [] },
+    };
+    await list('submitted').test?.('a');
+    expect(workspace.tested.map(([key, confirmed]) => [key, confirmed])).toEqual([['a', false]]);
+    expect(workspace.tested[0]?.[2]).toEqual(workspace.getEditorState().definition);
+    expect(confirming.asked).toBe(0);
+    expect(toasts.shown.at(-1)).toEqual({
+      color: 'positive',
+      data: { headline: 'Test email sent to you (ana@example.com).', message: '' },
+    });
+  });
+
+  it('asks before a test that reaches what the action is set up to reach, and sends nothing when declined', async () => {
+    const { workspace, list } = await viewOf(
+      definitionWith([action('b', { type: 'webhook', settings: { url: 'https://x.example.com' } })]),
+    );
+    confirming.yes = false;
+    await list('submitted').test?.('b');
+    expect([confirming.asked, workspace.tested.length, toasts.shown.length]).toEqual([1, 0, 0]);
+    confirming.yes = true;
+    workspace.testAnswer = {
+      kind: 'done',
+      result: { outcome: 'failed', code: 'http_503', message: 'http_503', preview: [] },
+    };
+    await list('submitted').test?.('b');
+    expect(workspace.tested.map(([key, confirmed]) => [key, confirmed])).toEqual([['b', true]]);
+    expect(toasts.shown.at(-1)).toEqual({
+      color: 'danger',
+      data: { headline: 'The test failed.', message: 'http_503' },
+    });
+  });
+
+  it("hands an action's sidebar its Test, which tests the action as the sidebar holds it", async () => {
+    const { workspace, list, view } = await viewOf(definitionWith([action('a')]));
+    list('submitted').open('a');
+    await vi.waitFor(() => expect(opened.sidebars).toHaveLength(1));
+    await settle(view);
+    const data = opened.sidebars[0] as ActionModalData;
+    const held = { ...data.definition, actions: [{ ...action('a'), name: 'Held' }] };
+    await data.test?.(held, 'a');
+    expect(workspace.tested.map(([key, , definition]) => [key, definition])).toEqual([['a', held]]);
   });
 
   it('is read-only without manageActions: one line says why, no Add action, and a card opens its settings as they are', async () => {

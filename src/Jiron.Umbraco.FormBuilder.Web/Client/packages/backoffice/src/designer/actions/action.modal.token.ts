@@ -46,6 +46,11 @@ export interface ActionModalData {
     action: string,
     culture: string,
   ) => Promise<EmailPreview | undefined>;
+  /**
+   * Tests the action as the sidebar holds it in this definition, saved or not, and says what it came to (ADR-0190);
+   * without it, the sidebar offers no Test.
+   */
+  readonly test?: (definition: DesignDefinition, action: string) => Promise<void>;
   /** The box a Fix it, or Move to another trigger..., leads to. */
   readonly focus?: ActionSetting;
   /**

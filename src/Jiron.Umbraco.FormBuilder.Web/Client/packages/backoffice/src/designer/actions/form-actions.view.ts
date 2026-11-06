@@ -17,6 +17,7 @@ import {
   type FieldTypeResponseModel,
 } from '../../api';
 import { jfbBackofficeTokens, jfbVisuallyHidden } from '../../styles/tokens';
+import { confirmText } from '../../ui/confirm';
 import { UNDO_DURATION_MS, UNDO_NOTIFICATION, type UndoNotificationData } from '../../ui/undo-notification.element';
 import { parsePath, type FixTarget } from '../check/form-check';
 import { UNCHECKED, type CheckState } from '../check/form-checker';
@@ -54,6 +55,7 @@ import {
   type TriggerNeed,
 } from './action-model';
 import type { LayoutChoice } from './action-editors';
+import { runTest } from './action-test';
 import { ACTION_MODAL } from './action.modal.token';
 import { loadActionWords } from './action-words';
 
@@ -470,6 +472,38 @@ export class FormActionsViewElement extends UmbLitElement {
     return this.getContext(UMB_NOTIFICATION_CONTEXT).catch(() => undefined);
   }
 
+  // ---- Test ---------------------------------------------------------------------------------------------------------
+
+  /**
+   * Tests an action as this definition holds it, saved or not (ADR-0190): a type that reaches what the action is set up
+   * to reach asks first, and a toast says what it came to.
+   */
+  async #test(definition: DesignDefinition, key: string): Promise<void> {
+    const context = this.#context;
+    const action = actionsOf(definition).find((one) => one.key === key);
+    if (!context || !action || !this._manage) return;
+    const type = this._actionTypes?.find((one) => one.alias === action.type);
+    await runTest({
+      asksFirst: type?.test === 'afterConfirmation',
+      confirm: () =>
+        confirmText(this, {
+          headline: this.#term('testConfirmHeadline'),
+          content: this.#term('testConfirmText'),
+          confirmLabel: this.#term('testConfirmButton'),
+        }).then(
+          () => true,
+          () => false,
+        ),
+      ask: (confirmed) => context.testActionOf(definition, key, confirmed),
+      say: async (toast) => {
+        (await this.#getNotifications())?.peek(toast.color, {
+          data: { headline: toast.headline, message: toast.message },
+        });
+      },
+      term: this.#term,
+    });
+  }
+
   #closeUndo() {
     this.#undoToast?.close();
     this.#undoToast = undefined;
@@ -547,6 +581,7 @@ export class FormActionsViewElement extends UmbLitElement {
           layouts: this._layouts.items,
           defaultLayout: this._layouts.defaultKey,
           preview: (asked, key, culture) => context.emailPreviewOf(asked, key, culture),
+          test: (asked, key) => this.#test(asked, key),
           ...(focus ? { focus } : {}),
           closed: () => gone?.(),
         },
@@ -704,6 +739,7 @@ export class FormActionsViewElement extends UmbLitElement {
               .move=${(from: number, to: number) => this.#move(trigger, from, to)}
               .toggle=${(key: string, on: boolean) => this.#toggle(key, on)}
               .request=${(key: string, request: CardRequest) => void this.#request(key, request)}
+              .test=${this._manage ? (key: string) => this.#test(this.#definition(), key) : undefined}
             ></jfb-action-list>`
           : need
             ? nothing

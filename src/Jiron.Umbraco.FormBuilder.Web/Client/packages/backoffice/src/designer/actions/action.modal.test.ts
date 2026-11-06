@@ -645,6 +645,45 @@ describe("an action's sidebar", () => {
     expect(checking.asked).toHaveLength(0);
   });
 
+  it('tests the action as the sidebar holds it, saved or not, its button busy until it answers (ADR-0190)', async () => {
+    let finish: () => void = () => undefined;
+    const tests: [DesignDefinition, string][] = [];
+    const test = (definition: DesignDefinition, key: string) => {
+      tests.push([definition, key]);
+      return new Promise<void>((done) => (finish = done));
+    };
+    const { element, root, type } = await sidebarOf({ test });
+    await type('name', 'Tell the team');
+    const button = must(root.querySelector<HTMLElement>('uui-button.test'), 'Test');
+    expect([button.getAttribute('slot'), button.getAttribute('label')]).toEqual(['footer-info', 'Test']);
+    button.click();
+    await settle(element);
+    expect(button.getAttribute('state')).toBe('waiting');
+    button.click();
+    expect(tests).toHaveLength(1);
+    const [definition, key] = must(tests[0], 'the test');
+    expect([key, actionsOf(definition).find((one) => one.key === key)?.name]).toEqual([TEAM.key, 'Tell the team']);
+    finish();
+    await settle(element);
+    expect(button.hasAttribute('state')).toBe(false);
+    // A new action is tested before it is added.
+    document.body.replaceChildren();
+    const fresh = await sidebarOf({ action: null, test });
+    must(fresh.root.querySelector<HTMLElement>('uui-button.test'), 'Test').click();
+    await settle(fresh.element);
+    const [added, newKey] = must(tests[1], "the new action's test");
+    expect(actionsOf(added).some((one) => one.key === newKey)).toBe(true);
+    finish();
+  });
+
+  it('offers no Test to who may only read the action, nor without a way to test', async () => {
+    const reader = await sidebarOf({ readOnly: true, test: async () => undefined });
+    expect(reader.root.querySelector('uui-button.test')).toBeNull();
+    document.body.replaceChildren();
+    const without = await sidebarOf();
+    expect(without.root.querySelector('uui-button.test')).toBeNull();
+  });
+
   it('deletes the action, and says once it is gone', async () => {
     const closed = vi.fn();
     const { element, root, modal } = await sidebarOf({ closed });

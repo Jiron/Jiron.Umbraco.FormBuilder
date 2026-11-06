@@ -55,6 +55,35 @@ afterEach(() => {
 });
 
 describe("a trigger's cards", () => {
+  it('offer Test beside the switch, busy while it runs, a second press waiting for the first (ADR-0190)', async () => {
+    const { list, root, rows } = await listOf([card('a'), card('b')]);
+    expect(root.querySelector('.test')).toBeNull();
+    let finish: () => void = () => undefined;
+    const tested: string[] = [];
+    list.test = (key) => {
+      tested.push(key);
+      return new Promise<void>((done) => (finish = done));
+    };
+    await settle(list);
+    const test = must(rows()[0]?.querySelector<HTMLElement>('.test'), 'Test');
+    expect([test.getAttribute('label'), text(test)]).toEqual(['Test Action a', 'Test']);
+    test.click();
+    await settle(list);
+    expect(test.getAttribute('state')).toBe('waiting');
+    test.click();
+    expect(tested).toEqual(['a']);
+    finish();
+    await settle(list);
+    expect(test.hasAttribute('state')).toBe(false);
+  });
+
+  it('offer no Test where the actions are read-only', async () => {
+    const { list, root } = await listOf([card('a')], true);
+    list.test = async () => undefined;
+    await settle(list);
+    expect(root.querySelector('.test')).toBeNull();
+  });
+
   it('say what each action does, its rule and its problems, in a list named by the trigger', async () => {
     const { root, rows } = await listOf([
       card('a'),

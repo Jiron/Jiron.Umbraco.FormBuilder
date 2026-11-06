@@ -174,7 +174,8 @@ Use Umbraco's own words where Umbraco has the same action, so the section feels 
 | move an entry out of Spam | Not spam | Kein Spam |
 | send an entry to a colleague | Forward… | Weiterleiten… |
 | show one masked value, and mask it again | Reveal · Hide | Anzeigen · Verbergen |
-| try an action against a sample entry (on its card and in its editor) | Test | Testen |
+| try an action against a sample entry (on its card, named "Test Email the team" · „Email the team“ testen, and in its sidebar's footer) | Test | Testen |
+| test an action that reaches what it is set up to reach, after its question "Send a test?" · „Test senden?": "This sends a sample entry where this action is set up to send it, marked as a test." · „Damit geht ein Beispieleintrag dorthin, wohin diese Aktion sendet, als Test gekennzeichnet." | Send test | Test senden |
 | run a test entry's actions, from the preview (asks first) | Run actions… | Aktionen ausführen… |
 | narrow a list | Filter | Filtern |
 | keep the current filters under a name | Save as… | Speichern unter… |
@@ -330,6 +331,16 @@ toast adds only what the user cannot see.
 | an action deleted (the toast) | Mark as approved deleted. [Undo] | „Mark as approved“ gelöscht. [Zurücknehmen] |
 | an outcome added to a published form | Added. Visitors get it once you publish. | Hinzugefügt. Auf der Website gilt es ab der nächsten Veröffentlichung. |
 | test email sent | Test email sent to you (ana@example.com). | Test-E-Mail an Sie gesendet (ana@example.com). |
+| an action's test reached what it is set up to reach (the type's own sentence under it) | Test sent. | Test gesendet. |
+| an action's test that reached nobody (what a run would do under it) | Nothing was sent or changed. | Nichts wurde gesendet oder geändert. |
+| an action's test failed (the reason under it, in the type's sentence for a reason the backoffice does not know) | The test failed. | Der Test ist fehlgeschlagen. |
+| … the tester has no address | Your account has no email address, so a test email has nowhere to go. | Ihr Konto hat keine E-Mail-Adresse, daher kann keine Test-E-Mail ankommen. |
+| … the site cannot send mail | This site can't send email yet: it has no mail server or pickup folder. | Diese Website kann noch keine E-Mails senden: Ihr fehlt ein Mailserver oder ein Ablageordner. |
+| … the email's view is missing | This site has no Razor view the email names, and the email has no body of its own. | Diese Website hat die Razor-Ansicht nicht, die die E-Mail nennt, und die E-Mail hat keinen eigenen Text. |
+| … it threw | The test couldn't finish. The site's log says why. | Der Test konnte nicht abgeschlossen werden. Das Protokoll der Website nennt den Grund. |
+| … settings the type cannot read | This action's settings have errors. Fix them, then test again. | Die Einstellungen dieser Aktion haben Fehler. Beheben Sie sie, und testen Sie dann erneut. |
+| … no answer from the server | The test couldn't be run. Try again. | Der Test konnte nicht ausgeführt werden. Versuchen Sie es erneut. |
+| a test mail's first line (in the tester's backoffice language; the rest is the real mail) | This is a test. The real email goes to sales@example.com, and to alex.berger@example.com in a mail of its own. | Dies ist ein Test. Die echte E-Mail geht an sales@example.com und in einer eigenen E-Mail an alex.berger@example.com. |
 | export ready | Your export of 12,400 entries is ready. [Download] | Ihr Export von 12.400 Einträgen ist fertig. [Herunterladen] |
 | one person's export ready (Privacy › People) | Your export for lena@example.com is ready. [Download] | Ihr Export für lena@example.com ist fertig. [Herunterladen] |
 | a person's data erased (the link only for users with `manageSettings`; others read "It's recorded in the audit log." · „Das ist im Protokoll vermerkt.“) | Everything about lena@example.com is erased: 6 entries in 3 forms, 2 uploaded files and 4 sent emails. Statistics stay. [Open the audit record] | Alle Daten zu lena@example.com sind gelöscht: 6 Einträge in 3 Formularen, 2 hochgeladene Dateien und 4 gesendete E-Mails. Die Statistik bleibt. [Protokolleintrag öffnen] |

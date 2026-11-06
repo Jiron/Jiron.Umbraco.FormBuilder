@@ -104,6 +104,7 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
     _edit: { state: true },
     _check: { state: true },
     _typed: { state: true },
+    _testing: { state: true },
     _shown: { state: true },
     _tried: { state: true },
     _checking: { state: true },
@@ -262,6 +263,7 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
   declare private _check: CheckState;
   /** Why a box's last value couldn't be kept, by its box's id, until it can. */
   declare private _typed: ReadonlyMap<string, string>;
+  declare private _testing: boolean;
   /** The boxes whose problems the check's answers show: those the action had as it opened, and each one left. */
   declare private _shown: ReadonlySet<string>;
   /** Whether Add or Update was pressed, after which every problem shows. */
@@ -292,6 +294,7 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
     this._edit = { ...newEdit('', { id: '', type: '', name: '', icon: '', settings: {} }, ''), choice: null };
     this._check = UNCHECKED;
     this._typed = new Map();
+    this._testing = false;
     this._shown = new Set();
     this._tried = false;
     this._checking = false;
@@ -631,6 +634,18 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
     }
     this.value = { action: actionOf(this._edit), at: this._at };
     this._submitModal();
+  }
+
+  // Tests the action as Add or Update would make it, saved or not (ADR-0190); a second press waits for the first.
+  async #test() {
+    const test = this.data?.test;
+    if (!test || this._testing) return;
+    this._testing = true;
+    try {
+      await test(this.#draft(), this._edit.key);
+    } finally {
+      this._testing = false;
+    }
   }
 
   #delete() {
@@ -1099,6 +1114,18 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
               look="secondary"
               label=${this.#term('deleteAction')}
               @click=${() => this.#delete()}
+            ></uui-button>`
+          : nothing
+      }
+      ${
+        data.test && !readOnly
+          ? html`<uui-button
+              slot="footer-info"
+              class="test"
+              look="secondary"
+              label=${this.#term('test')}
+              .state=${this._testing ? 'waiting' : undefined}
+              @click=${() => void this.#test()}
             ></uui-button>`
           : nothing
       }

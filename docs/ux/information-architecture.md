@@ -400,7 +400,8 @@ it runs ("when an entry comes in"). The actions one event queues run in the orde
     under their box: those an action of the form had at once, others, and all of a new action's, once their box is
     left; an error keeps the button back, a warning does not. A problem under More options opens them; one of a setting
     whose editor comes later shows under What happens, by the setting's name.
-  - **Footer:** Cancel · **Add**, or Delete action · Cancel · **Update**; Test joins them with 10.2c.
+  - **Footer:** Delete action (for an action of the form) and Test at its start; Cancel · **Add**, or Cancel ·
+    **Update**, at its end. Test tests the action as the sidebar holds it, before Add or Update (ADR-0190).
   - **After Add,** the sidebar closes, the new card takes the focus, the live region says where it runs ("Added. Email
     the team runs when an entry comes in."), and on a published form the toast says when it starts to run.
 - **A card:**
@@ -439,9 +440,11 @@ it runs ("when an entry comes in"). The actions one event queues run in the orde
     asked once the changes pause, and who may only read the actions sees it too.
   - The form check's Fix it of an email setting lands on its part: a recipient's row, or Add recipient for the To
     box itself.
-- **Test** runs the action against a sample entry made from the form's fields (8.1):
-  - an email goes only to the user who tests, and its first line names the recipients the real one would go to;
-  - a webhook asks first, then sends with `X-Jfb-Test: true`;
+- **Test** runs the action as the card's draft or its sidebar holds it, saved or not, against a sample entry made
+  from the form's fields (8.1, ADR-0190); its button is busy until the answer, and a toast says what it came to:
+  - an email goes only to the user who tests, and its first line, in their backoffice language, names the recipients
+    the real one would go to; where the site cannot send mail, the toast says so and nothing is queued;
+  - a webhook asks first ("Send a test?"), then sends with `X-Jfb-Test: true`;
   - content actions show what they would create, and create nothing.
 - **Without `manageActions`,** the view is read-only, and one line at the top says which permission changes it. It
   names no folder: the grant that decides can be global, a folder's or a restricted folder's (ADR-0188). It has no Add

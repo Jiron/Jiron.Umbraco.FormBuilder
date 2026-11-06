@@ -29,9 +29,16 @@ export type ActionRunResponseModel = {
     finishedUtc?: string | null;
 };
 
+export type ActionTestRequestModel = {
+    confirmed: boolean;
+    definition?: unknown;
+};
+
 export type ActionTestResponseModel = {
     outcome: string;
+    code?: string | null;
     message?: string | null;
+    recipient?: string | null;
     preview: Array<string>;
 };
 
@@ -863,7 +870,7 @@ export type ActionTypeListResponses = {
 export type ActionTypeListResponse = ActionTypeListResponses[keyof ActionTypeListResponses];
 
 export type ActionTestTestData = {
-    body?: ActionConfirmationRequestModel;
+    body?: ActionTestRequestModel;
     path: {
         key: string;
         actionKey: string;
@@ -873,6 +880,10 @@ export type ActionTestTestData = {
 };
 
 export type ActionTestTestErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
     /**
      * The resource is protected and requires an authentication token
      */

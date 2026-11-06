@@ -16,6 +16,7 @@ import {
   fieldTypeChanges,
   fieldTypeList,
   formCheckCheck,
+  actionTestTest,
   emailPreviewRender,
   outcomePreviewRender,
   formGet,
@@ -25,6 +26,7 @@ import {
   type FieldTypeResponseModel,
 } from '../api';
 import { codeOf, sayRefusal } from '../library/library-changes';
+import { testAnswer, type TestAnswer } from './actions/action-test';
 import { previewAnswer, type EmailPreview } from './actions/email-preview';
 import { FORM_ENTITY_TYPE } from '../section/entity-types';
 import { issuesOf, type FixTarget } from './check/form-check';
@@ -407,6 +409,18 @@ export class FormWorkspaceContext
       { disableNotifications: true },
     );
     return previewAnswer(data, codeOf(error));
+  }
+
+  /** Tests an action as the definition holds it, saved or not (ADR-0190), confirmed or not. */
+  async testActionOf(definition: DesignDefinition, action: string, confirmed: boolean): Promise<TestAnswer> {
+    const key = this.getUnique();
+    if (!key) return { kind: 'noAnswer' };
+    const { data, error } = await tryExecute(
+      this,
+      actionTestTest({ path: { key, actionKey: action }, body: { confirmed, definition } }),
+      { disableNotifications: true },
+    );
+    return testAnswer(data, codeOf(error));
   }
 
   /** Checks the draft as it is now, as Publish does and Try again; it settles once the check shows the answer. */

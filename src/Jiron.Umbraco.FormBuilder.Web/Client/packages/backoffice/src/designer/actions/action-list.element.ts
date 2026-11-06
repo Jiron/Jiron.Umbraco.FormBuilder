@@ -34,6 +34,8 @@ export class ActionListElement extends UmbLitElement {
     cards: { attribute: false },
     label: {},
     readOnly: { type: Boolean, attribute: 'read-only' },
+    test: { attribute: false },
+    _testing: { state: true },
     full: { type: Boolean },
     open: { attribute: false },
     move: { attribute: false },
@@ -280,6 +282,9 @@ export class ActionListElement extends UmbLitElement {
   declare toggle: (key: string, on: boolean) => void;
   /** What a card's "..." asks for. */
   declare request: (key: string, request: CardRequest) => void;
+  /** Tests an action as the draft holds it (ADR-0190); without it, no card offers Test. */
+  declare test: ((key: string) => Promise<void>) | undefined;
+  declare private _testing: ReadonlySet<string>;
   declare private _drag: { readonly from: number; readonly to: number } | null;
   declare private _said: string;
 
@@ -296,6 +301,8 @@ export class ActionListElement extends UmbLitElement {
     this.move = () => undefined;
     this.toggle = () => undefined;
     this.request = () => undefined;
+    this.test = undefined;
+    this._testing = new Set();
     this._drag = null;
     this._said = '';
   }
@@ -378,6 +385,20 @@ export class ActionListElement extends UmbLitElement {
       },
       cancel: () => (this._drag = null),
     });
+  }
+
+  // ---- Test ---------------------------------------------------------------------------------------------------------
+
+  // A card's test, its button busy until it answers; a second press waits for the first.
+  async #test(key: string) {
+    const test = this.test;
+    if (!test || this._testing.has(key)) return;
+    this._testing = new Set([...this._testing, key]);
+    try {
+      await test(key);
+    } finally {
+      this._testing = new Set([...this._testing].filter((each) => each !== key));
+    }
   }
 
   // ---- The menu -----------------------------------------------------------------------------------------------------
@@ -482,7 +503,20 @@ export class ActionListElement extends UmbLitElement {
                     ? card.on
                       ? nothing
                       : html`<span class="state">${this.#term('off')}</span>`
-                    : html`<input
+                    : html`${
+                          this.test
+                            ? html`<uui-button
+                                class="test"
+                                look="outline"
+                                compact
+                                label=${this.#term('testNamed', card.name)}
+                                .state=${this._testing.has(card.key) ? 'waiting' : undefined}
+                                @click=${() => void this.#test(card.key)}
+                                >${this.#term('test')}</uui-button
+                              >`
+                            : nothing
+                        }
+                        <input
                           type="checkbox"
                           role="switch"
                           aria-label=${this.#term('use', card.name)}
