@@ -96,7 +96,7 @@ export const en: MessageWords = {
     'This form uses a spam check from an outside service, which loads once you agree in the cookie settings.',
   captchaCookies:
     'This form uses a spam check from an outside service, which loads once you agree to {category} cookies.',
-  captchaCategories: { preferences: 'preference', statistics: 'statistics', marketing: 'marketing' },
+  captchaCategories: { marketing: 'marketing' },
   captchaCookieSettings: 'Change the cookie settings',
   captchaMissing: 'Complete the check before you send the form.',
   captchaFailed: 'The spam check could not load. You can still send the form.',

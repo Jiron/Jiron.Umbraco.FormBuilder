@@ -219,11 +219,11 @@ public sealed class PublicFormCaptchaTests : PublicApiTestBase
     }
 
     [TestCase(nameof(CaptchaConsentMode.Cmp), "cmp", null)]
-    [TestCase(nameof(CaptchaConsentMode.Cookiebot), "cookiebot", "statistics")]
+    [TestCase(nameof(CaptchaConsentMode.Cookiebot), "cookiebot", "marketing")]
     public async Task TheChallenge_TellsThePageTheSitesConsentMode(string mode, string told, string? category)
     {
         var current = await Settings.GetAsync<ProtectionSettings>();
-        _ = await Settings.SaveAsync(new ProtectionSettings { CaptchaConsent = Enum.Parse<CaptchaConsentMode>(mode), CookiebotCategory = "statistics" }, current.Version, null);
+        _ = await Settings.SaveAsync(new ProtectionSettings { CaptchaConsent = Enum.Parse<CaptchaConsentMode>(mode), CookiebotCategory = "marketing" }, current.Version, null);
 
         var key = await PublishAsync(change: Choosing(Scored));
         using var answer = await SendAsync(HttpMethod.Post, $"{Root}/forms/{key}/challenge", request => request.Content = Json("{}"));

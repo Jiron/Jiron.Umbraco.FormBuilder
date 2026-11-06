@@ -121,7 +121,7 @@ public sealed class PublicFormSiteTests : PublicApiTestBase
             Level = ProtectionLevel.Captcha,
             CaptchaProvider = HcaptchaProvider.ChosenAs,
             CaptchaConsent = CaptchaConsentMode.Cookiebot,
-            CookiebotCategory = "statistics",
+            CookiebotCategory = "marketing",
             ProofBits = 12,
             BlockedRanges = ["203.0.113.0/24"],
             ContentRules = ContentRuleLevel.Strict,

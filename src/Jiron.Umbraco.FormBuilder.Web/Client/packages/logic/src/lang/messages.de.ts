@@ -99,7 +99,7 @@ export const de: MessageWords = {
     'Dieses Formular nutzt eine Spam-Prüfung eines externen Dienstes, die lädt, sobald Sie in den Cookie-Einstellungen zustimmen.',
   captchaCookies:
     'Dieses Formular nutzt eine Spam-Prüfung eines externen Dienstes, die lädt, sobald Sie {category}-Cookies zustimmen.',
-  captchaCategories: { preferences: 'Präferenz', statistics: 'Statistik', marketing: 'Marketing' },
+  captchaCategories: { marketing: 'Marketing' },
   captchaCookieSettings: 'Cookie-Einstellungen ändern',
   captchaMissing: 'Schließen Sie die Prüfung ab, bevor Sie das Formular senden.',
   captchaFailed: 'Die Spam-Prüfung konnte nicht laden. Sie können das Formular trotzdem senden.',

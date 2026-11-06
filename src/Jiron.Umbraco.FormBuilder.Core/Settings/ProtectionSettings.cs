@@ -53,8 +53,11 @@ internal sealed record ProtectionSettings : ISettingsSection
     /// <summary>When a page may load a captcha's script (section 4.10, ADR-0157): <c>explicit</c> by default.</summary>
     public CaptchaConsentMode CaptchaConsent { get; init; } = CaptchaConsentMode.Explicit;
 
-    /// <summary>In the <c>cookiebot</c> mode, the category whose consent loads the script: <c>preferences</c>, <c>statistics</c> or <c>marketing</c>.</summary>
-    public string CookiebotCategory { get; init; } = "marketing";
+    /// <summary>
+    /// In the <c>cookiebot</c> mode, the category whose consent loads the script: <c>necessary</c> by default, as Cookiebot
+    /// files a captcha's cookie, or <c>marketing</c> (the owner, ADR-0199).
+    /// </summary>
+    public string CookiebotCategory { get; init; } = "necessary";
 
     /// <summary>How many zero bits a puzzle of the site's forms asks for; each more doubles the work (ADR-0141).</summary>
     public int ProofBits { get; init; } = 16;
@@ -193,9 +196,9 @@ internal sealed class ProtectionSettingsValidator : ISettingsValidator<Protectio
             errors.Add(nameof(ProtectionSettings.CaptchaProvider), SettingsErrors.ProtectionLevelCode, "A site names a captcha provider at the captcha level, and only there.");
         }
 
-        if (section.CookiebotCategory is not ("preferences" or "statistics" or "marketing"))
+        if (section.CookiebotCategory is not ("necessary" or "marketing"))
         {
-            errors.Add(nameof(ProtectionSettings.CookiebotCategory), SettingsErrors.ProtectionLevelCode, "A Cookiebot category is preferences, statistics or marketing.");
+            errors.Add(nameof(ProtectionSettings.CookiebotCategory), SettingsErrors.ProtectionLevelCode, "A Cookiebot category is necessary or marketing.");
         }
 
         if (section.ProofBits is < ProtectionSettings.FewestProofBits or > ProtectionSettings.MostProofBits)

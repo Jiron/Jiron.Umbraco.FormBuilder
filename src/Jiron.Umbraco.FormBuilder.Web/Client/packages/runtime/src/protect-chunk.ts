@@ -192,13 +192,16 @@ export function enhanceCaptcha(
     return element;
   };
   const load = (): HTMLElement => button(texts.captchaLoad, () => consent?.grant('captcha'));
+  // A category visitors are asked about is named; necessary, which Cookiebot gives on every page it runs on (ADR-0199),
+  // is not, and the notice says only that the cookie settings load the check.
+  const category = texts.captchaCategories[told.category ?? ''];
   /** What the place says while the visitor has yet to agree; a consent field says it itself. */
   const notice = (): HTMLElement[] =>
     ticked !== null
       ? []
       : told.consent === 'cookiebot'
         ? [
-            line(texts.captchaCookies.replace('{category}', texts.captchaCategories[told.category ?? ''] ?? '')),
+            line(category ? texts.captchaCookies.replace('{category}', category) : texts.captchaManager),
             button(texts.captchaCookieSettings, () => view.Cookiebot?.renew?.()),
           ]
         : told.consent === 'cmp'

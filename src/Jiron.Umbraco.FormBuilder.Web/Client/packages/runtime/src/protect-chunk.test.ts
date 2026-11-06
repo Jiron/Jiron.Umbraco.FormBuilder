@@ -589,6 +589,18 @@ describe('the captcha', () => {
       expect(consent().has('captcha')).toBe(false);
     });
 
+    it('loads at once for the necessary category, which Cookiebot always gives, and asks only while Cookiebot is not there', async () => {
+      const form = open();
+      await give(form, { consent: 'cookiebot', category: 'necessary' });
+      expect(scriptsOf()).toEqual([]);
+      // Without a category word, the notice says only that the cookie settings load the check.
+      expect(box(form).querySelector('p')?.textContent).toBe((await wordsFor('en-US')).captchaManager);
+
+      cookiebot({ necessary: true, marketing: false });
+      window.dispatchEvent(new Event('CookiebotOnConsentReady'));
+      expect(scriptsOf()).toHaveLength(1);
+    });
+
     it('waits for its own consent when a form beside it agrees by its button', async () => {
       const form = open();
       cookiebot({ marketing: false });

@@ -60,29 +60,32 @@ public sealed class ProtectionSettingsTests
         Assert.Multiple(() =>
         {
             Assert.That(new ProtectionSettings().CaptchaConsent, Is.EqualTo(CaptchaConsentMode.Explicit));
-            Assert.That(new ProtectionSettings().CookiebotCategory, Is.EqualTo("marketing"));
+            // Cookiebot files a captcha's cookie as necessary (the owner, ADR-0199).
+            Assert.That(new ProtectionSettings().CookiebotCategory, Is.EqualTo("necessary"));
         });
     }
 
-    [TestCase("preferences", true)]
-    [TestCase("statistics", true)]
+    // A switch between the two the owner named (ADR-0199).
+    [TestCase("necessary", true)]
     [TestCase("marketing", true)]
-    [TestCase("necessary", false)]
+    [TestCase("preferences", false)]
+    [TestCase("statistics", false)]
+    [TestCase("Necessary", false)]
     [TestCase("", false)]
-    public void ACookiebotCategory_IsOneOfThose_ItCanBeAskedAbout(string category, bool allowed) =>
+    public void ACookiebotCategory_IsNecessaryOrMarketing(string category, bool allowed) =>
         Assert.That(Codes(new ProtectionSettings { CookiebotCategory = category }), Is.EqualTo(allowed ? Array.Empty<string>() : new[] { SettingsErrors.ProtectionLevelCode }));
 
     [Test]
     public void TheStrictest_AsksForConsent_UnlessEverySiteAgrees()
     {
-        var cmp = new ProtectionSettings { CaptchaConsent = CaptchaConsentMode.Cmp, CookiebotCategory = "statistics" };
+        var cmp = new ProtectionSettings { CaptchaConsent = CaptchaConsentMode.Cmp, CookiebotCategory = "marketing" };
 
         Assert.Multiple(() =>
         {
             Assert.That(ProtectionSettings.Strictest([cmp, cmp]).CaptchaConsent, Is.EqualTo(CaptchaConsentMode.Cmp));
-            Assert.That(ProtectionSettings.Strictest([cmp, cmp]).CookiebotCategory, Is.EqualTo("statistics"));
+            Assert.That(ProtectionSettings.Strictest([cmp, cmp]).CookiebotCategory, Is.EqualTo("marketing"));
             Assert.That(ProtectionSettings.Strictest([cmp, new ProtectionSettings { CaptchaConsent = CaptchaConsentMode.Implicit }]).CaptchaConsent, Is.EqualTo(CaptchaConsentMode.Explicit));
-            Assert.That(ProtectionSettings.Strictest([cmp, cmp with { CookiebotCategory = "marketing" }]).CaptchaConsent, Is.EqualTo(CaptchaConsentMode.Explicit), "another category is another consent");
+            Assert.That(ProtectionSettings.Strictest([cmp, cmp with { CookiebotCategory = "necessary" }]).CaptchaConsent, Is.EqualTo(CaptchaConsentMode.Explicit), "another category is another consent");
         });
     }
 
