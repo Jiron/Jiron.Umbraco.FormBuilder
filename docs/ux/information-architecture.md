@@ -466,6 +466,32 @@ it runs ("when an entry comes in"). The actions one event queues run in the orde
     secret written as itself where a reference belongs is said to be there, never shown.
   - **A host's lock** on the target draws the address alone, with the same guard, and What it sends for the host's
     target; a lock on a way's setting draws the table and each of that target's settings as they are.
+- **The content editor** (10.2e, ADR-0192), for Create or update content:
+  - **Document type:** the site's document types an item may have, by name, as the setting's own choices (Umbraco
+    lists them only to users of its Settings section); its help says each entry becomes an item of that type.
+  - **Where it goes:** three choices, each with its line: under an item you pick (at the root of the content tree
+    without one), under the page the form is sent from, or under the root of the visitor's site, each of those within
+    the item you pick; the item picked is set in under the chosen one, named "Under this item" or "Only within this
+    item" to who hears it.
+  - **Name**, with Insert merge tag; **Properties**, a table of rows, each a property of the document type and what
+    it takes: "The answer to" a field it can hold (one with one answer, never a repeatable group's), or a value written
+    for it in the form the property stores (words with Insert merge tag, a whole number, a decimal, which a decimal
+    comma becomes a point, a date, Yes or No). A field it can't hold, or one that is gone, is said so; a property
+    nothing on the form fills says so in place of its choice. Add property offers the properties not set yet that the
+    form can fill, by their groups; a row stays out of the draft until it has a property and what it takes, and its
+    problems show under it once the table is written. Another document type keeps the table of the one before while
+    the sidebar is open, an emptied one too; one chosen for the first time starts with the properties a field of the
+    same alias can fill. Properties that could not be read have Try again. **Publish it** follows, with its help;
+    under More options, Update an item of the same name (its help says a visitor's answer can choose the item), the
+    media folder (only where a row takes a file upload's answer, or where it holds one) and Copy sensitive fields.
+  - The form check's Fix it lands on its box: the document type, where it goes, the item picked, the name, or a row's
+    property, what it takes or its value.
+  - **Who may only read it** sees the document type by its name, where it goes in words, the item picked as Umbraco's
+    own input names it under what it is for, and each row as "Title: the answer to Headline".
+- **Change the entry's state** (10.2e): "Move the entry to" Approved, Rejected or Spam, whose help says approving or
+  rejecting starts that trigger's actions. The form check refuses two actions that would move an entry between
+  Approved and Rejected for ever, naming the other, and warns of one that moves an entry to the state its trigger's
+  entries are in already.
 - **Test** runs the action as the card's draft or its sidebar holds it, saved or not, against a sample entry made
   from the form's fields (8.1, ADR-0190); its button is busy until the answer, and a toast says what it came to:
   - an email goes only to the user who tests, and its first line, in their backoffice language, names the recipients
@@ -473,7 +499,10 @@ it runs ("when an entry comes in"). The actions one event queues run in the orde
   - a webhook asks first ("Send a test?"), then sends with `X-Jfb-Test: true`; a chat's message starts with a line
     that says it is a test, and the toast says what the server answered, or why it did not go, in the backoffice's
     words;
-  - content actions show what they would create, and create nothing.
+  - a content action says what a run would save or publish, under its name and where, the properties it would set
+    and any it would leave out, with the sample entry's answers, and creates nothing; a test that would leave
+    something out is a warning, which stays until it is closed; Change the entry's state says the state a run would
+    move the entry to and how many actions that starts (ADR-0192).
 - **Without `manageActions`,** the view is read-only, and one line at the top says which permission changes it. It
   names no folder: the grant that decides can be global, a folder's or a restricted folder's (ADR-0188). It has no Add
   action, move handles, switches, Test or "…", and a card that is off says "Off"; a card still opens its settings as

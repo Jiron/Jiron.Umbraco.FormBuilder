@@ -16,6 +16,7 @@ const field = (key: string, more: Partial<PickField> = {}): PickField => ({
   key,
   alias: key,
   label: key,
+  type: 'text',
   email: false,
   choice: false,
   file: false,

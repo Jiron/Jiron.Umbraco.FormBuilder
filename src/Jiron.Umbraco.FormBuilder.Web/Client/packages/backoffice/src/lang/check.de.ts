@@ -132,6 +132,25 @@ export default {
     code_redirect_unpublished:
       'Diese Seite ist nicht veröffentlicht; Besucher erhalten also die Meldung des Abschlusses oder die eingebaute Dankesmeldung, bis sie es ist.',
     code_media_missing: 'Die Website hat dieses Medienelement nicht mehr.',
+    code_content_type_missing: 'Wählen Sie den Dokumenttyp, zu dem jeder Eintrag wird.',
+    code_content_type_gone: 'Diese Website hat diesen Dokumenttyp nicht mehr. Wählen Sie einen anderen.',
+    code_content_parent_missing: 'Wählen Sie den Inhalt, in dem er bleiben muss.',
+    code_content_name_missing: 'Der Inhalt braucht einen Namen.',
+    code_content_sensitive_unknown: 'Ein hier gewähltes Feld ist nicht mehr in diesem Formular.',
+    code_content_mapping_invalid: 'Jede Eigenschaft braucht ein Feld oder einen Wert.',
+    code_content_property_gone: 'Der Dokumenttyp hat keine solche Eigenschaft. Entfernen Sie die Zeile.',
+    code_content_property_twice: 'Eine Zeile davor setzt diese Eigenschaft auch; der Wert dieser Zeile gilt.',
+    code_content_field_gone: 'Dieses Feld ist nicht mehr in diesem Formular. Wählen Sie ein anderes.',
+    code_content_field_cannot_hold:
+      'Die Eigenschaft kann die Antwort dieses Felds nicht aufnehmen. Wählen Sie ein anderes.',
+    code_content_value_cannot_hold:
+      'Die Eigenschaft kann diesen Wert nicht aufnehmen. Schreiben Sie ihn so, wie das Eingabefeld es verlangt.',
+    code_content_group_field:
+      'Dieses Feld ist in einer wiederholbaren Gruppe, mit einer Antwort je Zeile, und eine Eigenschaft nimmt eine auf. Wählen Sie ein anderes.',
+    code_state_already:
+      'Einträge sind schon in diesem Status, wenn die Aktionen dieses Auslösers laufen; diese Aktion ändert also nichts.',
+    code_state_loop: (other: string) =>
+      `${other ? `„${other}“` : 'Eine andere Aktion'} bewegt den Eintrag zurück; die beiden würden ihn also endlos hin und her bewegen. Ändern Sie eine davon.`,
     code_member_group_missing: (group: string) =>
       group
         ? `Die Website hat keine Mitgliedergruppe namens „${group}“; also ist kein Mitglied darin. Namen werden genau verglichen.`

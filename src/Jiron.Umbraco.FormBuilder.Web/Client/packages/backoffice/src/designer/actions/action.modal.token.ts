@@ -9,6 +9,7 @@ import type { DesignDefinition } from '../definition';
 import type { RuleBuilderLanguage } from '../rules/rule-builder.modal.token';
 import type { LayoutChoice } from './action-editors';
 import type { ActionChoice, ActionSetting, DesignAction, Trigger, TriggerNeed } from './action-model';
+import type { ContentType } from './content-model';
 import type { EmailPreview } from './email-preview';
 
 export interface ActionModalData {
@@ -51,6 +52,12 @@ export interface ActionModalData {
    * without it, the sidebar offers no Test.
    */
   readonly test?: (definition: DesignDefinition, action: string, started: () => void) => Promise<void>;
+  /**
+   * A document type a content action can create, by its alias, with the properties a form can set (ADR-0192): null where
+   * the site has none of that alias, undefined where it could not be read. Without it, a content action's table says it
+   * could not read the properties.
+   */
+  readonly documentType?: (alias: string) => Promise<ContentType | null | undefined>;
   /** The box a Fix it, or Move to another trigger..., leads to. */
   readonly focus?: ActionSetting;
   /**

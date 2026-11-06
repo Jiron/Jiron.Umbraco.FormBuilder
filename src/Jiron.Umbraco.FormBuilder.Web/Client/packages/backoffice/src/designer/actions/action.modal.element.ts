@@ -34,6 +34,7 @@ import { resolveOptions } from '../inspector/option-data';
 import type { DesignOptions } from '../inspector/option-values';
 import {
   boxId,
+  pickedKeys,
   problemText,
   settingEditor,
   settingText,
@@ -76,9 +77,20 @@ import {
 } from './action-model';
 import { testHint } from './action-test';
 import type { ActionModalData, ActionModalValue } from './action.modal.token';
+import { contentEditorStyles, rowBox, type RowPart } from './content-editors';
+import { parentSourceOf, type TypeRead } from './content-model';
 import { EmailPreviewer, type EmailPreview } from './email-preview';
 import './email-preview.element';
 import { webhookEditorStyles } from './webhook-editors';
+
+/** The editors that draw a row's boxes, so a problem at a row's part lands on that box (ADR-0192). */
+const ROW_EDITORS: ReadonlySet<string> = new Set(['contentMapping']);
+
+const isRowPart = (part: string | undefined): part is RowPart =>
+  part === 'property' || part === 'field' || part === 'value';
+
+/** The editors that pick Umbraco's own items, which a reader sees as Umbraco names them. */
+const PICKERS: ReadonlySet<string> = new Set(['documentPicker', 'contentPicker', 'mediaPicker', 'contentMediaFolder']);
 
 /** The ids of the sidebar's own boxes; a type's settings have the inspector's (`boxId`). */
 const BOX = {
@@ -124,6 +136,7 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
     choiceStyles,
     actionEditorStyles,
     webhookEditorStyles,
+    contentEditorStyles,
     css`
       .action {
         display: grid;
@@ -436,6 +449,7 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
           key: field.key,
           alias: field.alias ?? '',
           label: textIn(field.label, data.culture) || field.alias || field.key,
+          type: field.type,
           email: field.type === 'email',
           choice: options !== undefined && options !== null,
           file: type.storage === 'file',
@@ -542,7 +556,15 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
       case 'setting': {
         // A setting without its editor yet says its problems under what happens.
         const name = setting.path.split('.')[0] ?? setting.path;
-        return this.#drawable().has(name) ? boxId(name) : BOX.whatHappens;
+        if (!this.#drawable().has(name)) return BOX.whatHappens;
+        // A row's part, where its editor draws each row's boxes and the setting holds that row.
+        const own = this.#type()?.settings.find((one) => one.name === name);
+        const { row } = setting;
+        if (row && own && ROW_EDITORS.has(own.editor) && isRowPart(row.part)) {
+          const rows = this.#valueOf(own);
+          if (Array.isArray(rows) && row.index < rows.length) return rowBox(name, row.index, row.part);
+        }
+        return boxId(name);
       }
       case 'action':
         return this.data?.action ? BOX.name : BOX.whatHappens;
@@ -588,7 +610,17 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
 
   /** The check's problems under a box that show by now: those it had at once, others once it is left or kept. */
   #checkedAt(box: string, found: FoundAt): readonly Shown[] {
-    return this._tried || this._shown.has(box) ? (found.get(box) ?? []) : [];
+    return this._tried || this._shown.has(box) || this.#rowShown(box) ? (found.get(box) ?? []) : [];
+  }
+
+  /** Whether a box is a row's of a table that writes its rows, which shows its problems once the table is written. */
+  #rowShown(box: string): boolean {
+    return (this.#type()?.settings ?? []).some(
+      (setting) =>
+        ROW_EDITORS.has(setting.editor) &&
+        this._shown.has(boxId(setting.name)) &&
+        box.startsWith(`${boxId(setting.name)}-`),
+    );
   }
 
   /** The problems shown under a box: one typed that can't be kept, then the check's that show by now. */
@@ -619,6 +651,15 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
           ? box
           : (focusableIn(box) ?? box);
     focus?.focus();
+    // A box a table draws once its document type is read: the focus goes there when it is, if it is still here then.
+    if (box.id !== ids[0] && this.#readingAType()) this.#waiting = { setting, at: root?.activeElement ?? null };
+  }
+
+  // A Fix it whose box waits for a document type to be read, and where the focus stood meanwhile (ADR-0192).
+  #waiting: { setting: ActionSetting; at: Element | null } | undefined;
+
+  #readingAType(): boolean {
+    return [...this.#types.values()].includes('reading');
   }
 
   async #submit() {
@@ -897,6 +938,32 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
   // What the webhook's editors keep while the sidebar is open: another choice's values, rows being typed (ADR-0191).
   readonly #kept = new Map<string, unknown>();
 
+  // The document types a content action's table has read, each once while the sidebar is open (ADR-0192).
+  readonly #types = new Map<string, TypeRead>();
+
+  #documentType(alias: string): TypeRead {
+    const known = this.#types.get(alias);
+    if (known) return known;
+    const read = this.data?.documentType;
+    if (!read) return 'failed';
+    this.#types.set(alias, 'reading');
+    const settle = (type: TypeRead) => {
+      this.#types.set(alias, type);
+      this.requestUpdate();
+      const waiting = this.#waiting;
+      if (!waiting || this.#readingAType()) return;
+      this.#waiting = undefined;
+      void this.updateComplete.then(() => {
+        if (this.shadowRoot?.activeElement === waiting.at) this.#focus(waiting.setting);
+      });
+    };
+    read(alias).then(
+      (type) => settle(type === null ? 'gone' : (type ?? 'failed')),
+      () => settle('failed'),
+    );
+    return 'reading';
+  }
+
   /** What the action's own editors need beyond the inspector's context. */
   #actionContext(editor: EditorContext): ActionEditorContext {
     const data = this.data;
@@ -934,11 +1001,16 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
         return typeof message === 'string' ? message : undefined;
       },
       redraw: () => this.requestUpdate(),
+      documentType: (alias) => this.#documentType(alias),
+      readAgain: (alias) => {
+        this.#types.delete(alias);
+        this.requestUpdate();
+      },
     };
   }
 
   // "Insert merge tag" under a box of the action, its tags those its place may use in the draft as it is: mail's for an
-  // email (ADR-0189), the other actions' for a webhook (ADR-0191).
+  // email (ADR-0189), the other actions' for a webhook and a content item's name (ADR-0191, ADR-0192).
   #tagPicker(id: string | (() => string)): TemplateResult | typeof nothing {
     const data = this.data;
     if (!data || data.readOnly) return nothing;
@@ -956,7 +1028,8 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
   #inspectorContext(found: FoundAt): EditorContext {
     const data = this.data;
     return {
-      ...(this._edit.type === 'email'
+      // Insert merge tag under each text that takes tags; the webhook's editors place their own (ADR-0191).
+      ...(this._edit.type !== 'webhook'
         ? { mergeTags: (_setting: FieldSettingResponseModel, path: string) => this.#tagPicker(boxId(path)) }
         : {}),
       say: this.#say,
@@ -1018,10 +1091,44 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
     const value = this.#valueOf(setting);
     const own = actionSettingText(this.#actionContext(this.#inspectorContext(new Map())), setting, value);
     const text = (own ?? settingText(context, setting, value)).trim();
+    // Umbraco's items as Umbraco's own inputs name them, the setting's own and those of a box's picker within it.
+    const items = PICKERS.has(setting.editor) ? this.#shownItems(setting, value) : nothing;
+    const within = (this.#type()?.settings ?? [])
+      .filter((one) => one.within === setting.name && PICKERS.has(one.editor) && !one.lock?.hidden)
+      .map((one) => this.#shownWithin(setting, one));
+    // The value keeps its line breaks, so its words stand on the paragraph's own line.
+    const words = text || this.#term('readOnlyValue_none');
+    const shown = html`<p class="value" id=${boxId(setting.name)} tabindex="-1">${words}</p>`;
     return html`<div class="item">
       <p class="label">${this.#say(setting.label)}</p>
-      <p class="value" id=${boxId(setting.name)} tabindex="-1">${text || this.#term('readOnlyValue_none')}</p>
+      ${items === nothing ? shown : items} ${within}
     </div>`;
+  }
+
+  // A picker within a box, for who may only read it: what it is for, then its items; the item a content action's item
+  // goes under is named for where it goes (ADR-0192).
+  #shownWithin(box: FieldSettingResponseModel, one: FieldSettingResponseModel): TemplateResult | typeof nothing {
+    const items = this.#shownItems(one, this.#valueOf(one));
+    if (items === nothing) return nothing;
+    const id = `${boxId(one.name)}-label`;
+    const label =
+      box.editor === 'contentParent'
+        ? this.#term(`contentParent_${parentSourceOf(this.#valueOf(box))}`)
+        : this.#say(one.label);
+    return html`<div class="item" role="group" aria-labelledby=${id}>
+      <p class="label" id=${id}>${label}</p>
+      ${items}
+    </div>`;
+  }
+
+  // The items a picker holds, as Umbraco's own input shows them, which no one here can change; nothing for none.
+  #shownItems(setting: FieldSettingResponseModel, value: unknown): TemplateResult | typeof nothing {
+    const keys = pickedKeys(setting, value);
+    if (keys.length === 0) return nothing;
+    const id = boxId(setting.name);
+    return setting.editor === 'mediaPicker' || setting.editor === 'contentMediaFolder'
+      ? html`<umb-input-media id=${id} readonly .selection=${keys}></umb-input-media>`
+      : html`<umb-input-document id=${id} readonly .selection=${keys}></umb-input-document>`;
   }
 
   #settings(found: FoundAt): TemplateResult | typeof nothing {
@@ -1053,13 +1160,14 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
 
   #stopOnFailure(found: FoundAt): TemplateResult {
     const problems = this.#problemsAt(BOX.stopOnFailure, found);
-    if (this.data?.readOnly)
+    if (this.data?.readOnly) {
+      // The value keeps its line breaks, so its word stands on the paragraph's own line.
+      const word = this.#term(this._edit.stopOnFailure ? 'readOnlyValue_on' : 'readOnlyValue_off');
       return html`<div class="item">
         <p class="label">${this.#term('stopOnFailure')}</p>
-        <p class="value" id=${BOX.stopOnFailure} tabindex="-1">
-          ${this.#term(this._edit.stopOnFailure ? 'readOnlyValue_on' : 'readOnlyValue_off')}
-        </p>
+        <p class="value" id=${BOX.stopOnFailure} tabindex="-1">${word}</p>
       </div>`;
+    }
     return html`<div class="item">
       <div class="item-switch">
         <input

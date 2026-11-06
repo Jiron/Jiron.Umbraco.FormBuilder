@@ -127,6 +127,23 @@ export default {
     code_redirect_unpublished:
       "This page isn't published, so visitors get the outcome's message or the built-in thank-you message until it is.",
     code_media_missing: 'The site has no such media item any more.',
+    code_content_type_missing: 'Choose the document type each entry becomes.',
+    code_content_type_gone: 'This site no longer has that document type. Choose another.',
+    code_content_parent_missing: 'Choose the item it must stay within.',
+    code_content_name_missing: 'The item needs a name.',
+    code_content_sensitive_unknown: 'A field chosen here is no longer on this form.',
+    code_content_mapping_invalid: 'Each property needs a field or a value.',
+    code_content_property_gone: 'The document type has no such property. Remove the row.',
+    code_content_property_twice: "An earlier row sets this property too; this row's value wins.",
+    code_content_field_gone: 'That field is no longer on this form. Choose another.',
+    code_content_field_cannot_hold: "The property can't hold that field's answer. Choose another.",
+    code_content_value_cannot_hold: "The property can't hold this value. Write it as the box asks.",
+    code_content_group_field:
+      'That field is in a repeatable group, with an answer for each row, and a property holds one. Choose another.',
+    code_state_already:
+      "Entries are in that state already when this trigger's actions run, so this action changes nothing.",
+    code_state_loop: (other: string) =>
+      `${other ? `"${other}"` : 'Another action'} moves the entry back, so the two would move it back and forth for ever. Change one of them.`,
     code_member_group_missing: (group: string) =>
       group
         ? `The site has no member group named "${group}", so no member is in it. Names are compared exactly.`

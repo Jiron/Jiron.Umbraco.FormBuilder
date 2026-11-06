@@ -202,9 +202,13 @@ function hostOf(url: string): string {
 
 /**
  * What a built-in action does, in one line (IA 5.3): an email's recipients, where a webhook goes, what a change of the
- * state does; null for a site's own type, which the view names by its type.
+ * state does, the kind of item content is saved as; null for a site's own type, which the view names by its type.
  */
-export function summaryOf(action: DesignAction, fieldName: (key: string) => string | undefined): Line | null {
+export function summaryOf(
+  action: DesignAction,
+  fieldName: (key: string) => string | undefined,
+  documentTypeName: (alias: string) => string | undefined = () => undefined,
+): Line | null {
   const settings = isObject(action.settings) ? action.settings : {};
   switch (action.type) {
     case 'email': {
@@ -230,8 +234,13 @@ export function summaryOf(action: DesignAction, fieldName: (key: string) => stri
       const state = settings['state'];
       return line(state === 'rejected' ? 'summary_reject' : state === 'spam' ? 'summary_spam' : 'summary_approve');
     }
-    case 'content':
-      return line(settings['publish'] === true ? 'summary_contentPublished' : 'summary_content');
+    case 'content': {
+      // The document type by its name, or by its alias where the site no longer has it.
+      const alias = isText(settings['documentType']) ? settings['documentType'] : '';
+      if (alias === '') return line('summary_contentNoType');
+      const name = documentTypeName(alias) ?? alias;
+      return line(settings['publish'] === true ? 'summary_contentPublishes' : 'summary_contentSaves', name);
+    }
     default:
       return null;
   }
@@ -390,7 +399,12 @@ export type ActionSetting =
   | { readonly kind: 'trigger' }
   | { readonly kind: 'stopOnFailure' }
   | { readonly kind: 'rule' }
-  | { readonly kind: 'setting'; readonly path: string };
+  | {
+      readonly kind: 'setting';
+      readonly path: string;
+      /** The item of a list the path goes on to, and its part, for an editor that draws each item's boxes (ADR-0192). */
+      readonly row?: { readonly index: number; readonly part: string | undefined };
+    };
 
 /** The box a path within an action names (`settings.to`, `settings.headers[2]`, `rules[0]`); the action for its own. */
 export function settingAtPath(steps: readonly (string | number)[]): ActionSetting {
@@ -408,7 +422,12 @@ export function settingAtPath(steps: readonly (string | number)[]): ActionSettin
       // A setting's own steps: a nested setting's names, up to the first item of a list.
       const end = rest.findIndex((step) => typeof step !== 'string');
       const names = end < 0 ? rest : rest.slice(0, end);
-      return names.length > 0 ? { kind: 'setting', path: names.join('.') } : { kind: 'action' };
+      if (names.length === 0) return { kind: 'action' };
+      const index = end < 0 ? undefined : rest[end];
+      const part = end < 0 ? undefined : rest[end + 1];
+      return typeof index === 'number'
+        ? { kind: 'setting', path: names.join('.'), row: { index, part: typeof part === 'string' ? part : undefined } }
+        : { kind: 'setting', path: names.join('.') };
     }
     default:
       return { kind: 'action' };

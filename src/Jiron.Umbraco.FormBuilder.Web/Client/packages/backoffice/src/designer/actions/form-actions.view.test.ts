@@ -33,7 +33,7 @@ const ACTION_TYPES = JSON.parse(
 ) as ActionTypeResponseModel[];
 
 // What the server answers, or nothing while it fails; the sidebars opened, and what the one open answers.
-const server = vi.hoisted(() => ({ fails: false, limit: 50 }));
+const server = vi.hoisted(() => ({ fails: false, limit: 50, documentTypes: [] as { value: string; label: string }[] }));
 const opened = vi.hoisted(() => ({ sidebars: [] as unknown[], sizes: [] as unknown[], answer: undefined as unknown }));
 /** Umbraco's confirm dialog: whether the user confirms, and how often it was asked. */
 const confirming = vi.hoisted(() => ({ yes: true, asked: 0, said: [] as unknown[] }));
@@ -66,7 +66,22 @@ vi.mock('@umbraco-cms/backoffice/resources', () => ({
 
 vi.mock('../../api', async (original) => ({
   ...(await original<typeof import('../../api')>()),
-  actionTypeList: async () => (server.fails ? undefined : { types: ACTION_TYPES }),
+  // The site's document types come with the content type, as its document type's choices.
+  actionTypeList: async () =>
+    server.fails
+      ? undefined
+      : {
+          types: ACTION_TYPES.map((type) =>
+            type.alias !== 'content'
+              ? type
+              : {
+                  ...type,
+                  settings: type.settings.map((setting) =>
+                    setting.name === 'documentType' ? { ...setting, choices: server.documentTypes } : setting,
+                  ),
+                },
+          ),
+        },
   formSettingsChoices: async () =>
     server.fails
       ? undefined
@@ -196,12 +211,16 @@ class StandIn {
   }
 }
 
-/** The toasts the view shows. */
+/** The toasts the view shows; one that stays until it is closed is marked so. */
 const toasts = {
-  shown: [] as { color: string; data: Partial<UndoNotificationData> & { message: string } }[],
+  shown: [] as { color: string; data: Partial<UndoNotificationData> & { message: string }; stays?: true }[],
   closed: 0,
   peek(color: string, options: { data: Partial<UndoNotificationData> & { message: string } }) {
     this.shown.push({ color, data: options.data });
+    return { close: () => void this.closed++ };
+  },
+  stay(color: string, options: { data: Partial<UndoNotificationData> & { message: string } }) {
+    this.shown.push({ color, data: options.data, stays: true });
     return { close: () => void this.closed++ };
   },
 };
@@ -214,6 +233,7 @@ async function viewOf(definition: DesignDefinition, permissions = ['design', 'ma
   host.provideContext(FORM_WORKSPACE_CONTEXT, workspace as never);
   host.provideContext(UMB_NOTIFICATION_CONTEXT, {
     peek: (color: string, options: Parameters<typeof toasts.peek>[1]) => toasts.peek(color, options),
+    stay: (color: string, options: Parameters<typeof toasts.stay>[1]) => toasts.stay(color, options),
     getHostElement: () => host,
   } as never);
   const view = new FormActionsViewElement();
@@ -238,6 +258,7 @@ beforeAll(registerEnglish);
 beforeEach(() => {
   server.fails = false;
   server.limit = 50;
+  server.documentTypes = [];
   opened.sidebars = [];
   opened.sizes = [];
   opened.answer = undefined;
@@ -349,6 +370,27 @@ describe('the Actions view', () => {
       ['Our CRM', 'crm', ''],
       // Without a name of its own, its type is its name, said once.
       ['crm', '', ''],
+    ]);
+  });
+
+  it("names a content action's document type on its card by the name the site gives it", async () => {
+    server.documentTypes = [{ value: 'demoPage', label: 'Demo page' }];
+    const { cards } = await viewOf(
+      definitionWith([
+        action('a', { type: 'content', name: 'Save each story', settings: { documentType: 'demoPage' } }),
+        action('b', {
+          type: 'content',
+          name: 'Publish each story',
+          settings: { documentType: 'demoPage', publish: true },
+        }),
+        // One the site no longer has keeps its alias.
+        action('c', { type: 'content', name: 'Save the old way', settings: { documentType: 'oldPage' } }),
+      ]),
+    );
+    expect(cards('submitted').map((card) => text(card.querySelector('.line')))).toEqual([
+      'Saves an item of type Demo page',
+      'Publishes an item of type Demo page',
+      'Saves an item of type oldPage',
     ]);
   });
 
@@ -577,6 +619,33 @@ describe('the Actions view', () => {
       color: 'positive',
       data: { message: 'Action a: Test email sent to you (ana@example.com).' },
     });
+  });
+
+  it('keeps the toast of a dry run that would leave something out until it is closed, and lets another go', async () => {
+    const { workspace, list } = await viewOf(
+      definitionWith([
+        action('a', { type: 'content', name: 'Save each story', settings: { documentType: 'demoPage' } }),
+      ]),
+    );
+    const dryRun = (code: string, args: string[]) =>
+      ({
+        kind: 'done',
+        result: { outcome: 'dryRun', code: 'dry_run', preview: [{ text: 'English', code, args }], args: [] },
+      }) as TestAnswer;
+    workspace.testAnswer = dryRun('content_property_gone', ['subtitle']);
+    await list('submitted').test?.('a', vi.fn());
+    expect(toasts.shown.at(-1)).toEqual({
+      color: 'warning',
+      data: {
+        message:
+          'Save each story: Nothing was sent or changed.\n' +
+          'The document type has no property subtitle, so a run leaves it out.',
+      },
+      stays: true,
+    });
+    workspace.testAnswer = dryRun('content_root', ['save', 'Demo page', 'Story']);
+    await list('submitted').test?.('a', vi.fn());
+    expect([toasts.shown.at(-1)?.color, toasts.shown.at(-1)?.stays]).toEqual(['positive', undefined]);
   });
 
   it('asks before a test that reaches what the action is set up to reach, and sends nothing when declined', async () => {

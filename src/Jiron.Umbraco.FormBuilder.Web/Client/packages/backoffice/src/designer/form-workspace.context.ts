@@ -17,6 +17,7 @@ import {
   fieldTypeList,
   formCheckCheck,
   actionTestTest,
+  contentDocumentTypeGet,
   emailPreviewRender,
   outcomePreviewRender,
   formGet,
@@ -27,6 +28,7 @@ import {
 } from '../api';
 import { codeOf, sayRefusal } from '../library/library-changes';
 import { testAnswer, type TestAnswer } from './actions/action-test';
+import { contentTypeOf, type ContentType } from './actions/content-model';
 import { previewAnswer, type EmailPreview } from './actions/email-preview';
 import { FORM_ENTITY_TYPE } from '../section/entity-types';
 import { issuesOf, type FixTarget } from './check/form-check';
@@ -425,6 +427,18 @@ export class FormWorkspaceContext
       { disableNotifications: true },
     );
     return testAnswer(data, codeOf(error));
+  }
+
+  /**
+   * A document type a content action can create, with the properties a form can set (ADR-0192): null where the site has
+   * none of that alias, undefined where it could not be read.
+   */
+  async documentTypeOf(alias: string): Promise<ContentType | null | undefined> {
+    const { data, error } = await tryExecute(this, contentDocumentTypeGet({ path: { alias } }), {
+      disableNotifications: true,
+    });
+    if (data) return contentTypeOf(data);
+    return codeOf(error) === 'document_type_not_found' ? null : undefined;
   }
 
   /** Checks the draft as it is now, as Publish does and Try again; it settles once the check shows the answer. */

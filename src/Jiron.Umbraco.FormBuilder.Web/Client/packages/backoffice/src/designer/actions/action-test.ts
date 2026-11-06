@@ -1,7 +1,8 @@
 // Test of an action (ROADMAP 10.2c, ADR-0190): the action as a card's draft or its sidebar holds it, saved or not, run
 // against the sample entry. A type that reaches what the action is set up to reach asks first; what the test came to is
 // said in a toast in the backoffice's words, and a code the backoffice does not know in the type's own sentence. A
-// webhook's codes are its runs' (ADR-0191), with the status a host answered, or the key of a secret the site lacks.
+// webhook's codes are its runs' (ADR-0191), with the status a host answered, or the key of a secret the site lacks; a dry
+// run's lines have codes of their own, such as the content a run would save (ADR-0192).
 import type { ActionTestResponseModel } from '../../api';
 
 /** What the server answers for a test. */
@@ -35,12 +36,23 @@ export function testHint(
  * does not); each sentence says on its own what happened.
  */
 export interface TestToast {
-  readonly color: 'positive' | 'danger';
+  readonly color: 'positive' | 'warning' | 'danger';
   readonly message: string;
+  /** Whether it stays until it is closed: a dry run with something to act on, which takes longer to read. */
+  readonly stays?: boolean;
 }
 
 // The failures the backoffice says in its words; another's sentence is the type's. A webhook's are its own, as one of
 // its codes means another thing for an email.
+/** The lines of a dry run that say what a run would leave out (ADR-0192). */
+const LEAVES_OUT = new Set([
+  'content_property_gone',
+  'content_field_gone',
+  'content_sensitive',
+  'content_cannot_hold',
+  'content_cannot_hold_value',
+]);
+
 const FAILURES = new Set(['no_address', 'mail_off', 'paused', 'view_missing', 'failed']);
 const WEBHOOK_FAILURES = new Set([
   'no_address',
@@ -53,6 +65,34 @@ const WEBHOOK_FAILURES = new Set([
   'too_long',
 ]);
 
+/** The lines of a dry run the backoffice says in its words (ADR-0192); another's sentence is the type's. */
+const LINES = new Set([
+  'content_under',
+  'content_root',
+  'content_page',
+  'content_site',
+  'content_update',
+  'content_sets',
+  'content_property_gone',
+  'content_field_gone',
+  'content_sensitive',
+  'content_cannot_hold',
+  'content_cannot_hold_value',
+  'state_move',
+]);
+
+/** A line of what a run would do, in the backoffice's words where it knows its code. */
+export function lineWords(
+  line: { readonly text: string; readonly code?: string | null; readonly args: readonly string[] },
+  term: (key: string, ...args: unknown[]) => string,
+): string {
+  if (!line.code || !LINES.has(line.code)) return line.text;
+  // The properties a run sets are one list, said as the language joins a list.
+  return line.code === 'content_sets'
+    ? term('testLine_content_sets', line.args)
+    : term(`testLine_${line.code}`, ...line.args);
+}
+
 /** A failure's words: a webhook's own, a host's status, or the backoffice's for any type; none for another code. */
 function failureWords(
   type: string,
@@ -61,6 +101,12 @@ function failureWords(
   term: (key: string, ...args: unknown[]) => string,
 ): string | undefined {
   if (!code) return undefined;
+  if (type === 'content') {
+    // What is missing: the document type, the item picked as the parent, or the item it must stay within.
+    if (code === 'target_missing')
+      return term(`testFailed_content_${args[0] === 'parent' || args[0] === 'within' ? args[0] : 'type'}`);
+    if (code === 'no_name') return term('testFailed_content_no_name');
+  }
   if (type === 'webhook') {
     if (/^http_\d{3}$/.test(code)) return term('testFailed_webhook_http', code.slice(5));
     // Nowhere to go: its own address is missing, or the site has none for the chat.
@@ -101,8 +147,16 @@ function answerToast(answer: TestAnswer, term: (key: string, ...args: unknown[])
       if (code === 'sent_to_you' && recipient) return { color: 'positive', message: term('testSentToYou', recipient) };
       // A host's status, which says that it took the test; the type's sentence says it in English only.
       if (code === 'sent' && args[0]) return { color: 'positive', message: term('testSentStatus', args[0]) };
-      // A dry run's lines, each on its own line under what it was; the toast keeps the breaks.
-      if (outcome === 'dryRun') return { color: 'positive', message: [term('testDryRun'), ...preview].join('\n') };
+      // A dry run's lines, each on its own line under what it was; the toast keeps the breaks. One that says what a run
+      // would leave out is a warning, which stays to be read.
+      if (outcome === 'dryRun') {
+        const leaves = preview.some((line) => LEAVES_OUT.has(line.code ?? ''));
+        return {
+          color: leaves ? 'warning' : 'positive',
+          message: [term('testDryRun'), ...preview.map((line) => lineWords(line, term))].join('\n'),
+          ...(leaves ? { stays: true } : {}),
+        };
+      }
       return { color: 'positive', message: message ? `${term('testSent')} ${message}` : term('testSent') };
     }
   }

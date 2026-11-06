@@ -102,6 +102,21 @@ export const OWN_WORDS: ReadonlySet<string> = new Set([
   'rule_duplicate',
   'cycle',
   'duplicate_key',
+  // The content and Set state actions' own (ADR-0192).
+  'content_type_missing',
+  'content_type_gone',
+  'content_parent_missing',
+  'content_name_missing',
+  'content_sensitive_unknown',
+  'content_mapping_invalid',
+  'content_property_gone',
+  'content_property_twice',
+  'content_field_gone',
+  'content_field_cannot_hold',
+  'content_value_cannot_hold',
+  'content_group_field',
+  'state_already',
+  'state_loop',
 ]);
 
 /** The merge-tag problems, whose sentence names the text the tag is in. */
@@ -320,9 +335,29 @@ function argumentsOf(
       const last = [...steps].reverse().find((step): step is string => typeof step === 'string');
       return [last && Object.hasOwn(PARTS, last) ? PARTS[last] : ''];
     }
+    case 'state_loop':
+      return [loopPartner(definition, steps)];
     default:
       return [];
   }
+}
+
+/** The name of the Set state action that moves an entry back to where the action at the path moves it from. */
+function loopPartner(definition: DesignDefinition, steps: readonly PathStep[]): string {
+  const actions = (definition['actions'] ?? []) as readonly Record<string, unknown>[];
+  const at = steps[0] === 'actions' && typeof steps[1] === 'number' ? actions[steps[1]] : undefined;
+  if (!at) return '';
+  const stateOf = (action: Record<string, unknown>) =>
+    (action['settings'] as Record<string, unknown> | undefined)?.['state'];
+  const other = actions.find(
+    (action) =>
+      action !== at &&
+      action['enabled'] !== false &&
+      action['type'] === 'setState' &&
+      action['trigger'] === stateOf(at) &&
+      stateOf(action) === at['trigger'],
+  );
+  return typeof other?.['name'] === 'string' ? other['name'] : '';
 }
 
 /** A problem in words: the element it is on, by its name, and what is wrong, in the user's language. */

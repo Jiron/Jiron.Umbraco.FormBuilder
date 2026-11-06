@@ -144,6 +144,35 @@ describe("a problem's words", () => {
     expect(words('part_missing', '$.pages[1].groups', 'error').said).toBe('This page has no group.');
   });
 
+  it("say the content and Set state actions' problems, a loop naming the action that moves the entry back", () => {
+    const pair: DesignDefinition = {
+      ...DEFINITION,
+      actions: [
+        { key: 'a1', type: 'setState', name: 'Reject again', trigger: 'approved', settings: { state: 'rejected' } },
+        // One that is off comes first, and moves nothing back.
+        {
+          key: 'a3',
+          type: 'setState',
+          name: 'Off',
+          trigger: 'rejected',
+          enabled: false,
+          settings: { state: 'approved' },
+        },
+        { key: 'a2', type: 'setState', name: 'Approve again', trigger: 'rejected', settings: { state: 'approved' } },
+      ],
+    };
+    const said = (code: string, path: string) =>
+      issueWords({ severity: 'error', code, path, message: 'x' } satisfies CheckIssue, pair, context).said;
+    expect(said('state_loop', '$.actions[0].settings.state')).toBe(
+      '"Approve again" moves the entry back, so the two would move it back and forth for ever. Change one of them.',
+    );
+    expect(said('state_loop', '$.actions[1].settings.state')).toMatch(/^"Reject again" moves/);
+    expect(said('state_loop', '$.actions[2].settings.state')).toMatch(/^"Reject again" moves/);
+    expect(words('content_property_gone', '$.actions[0].settings.mapping[1].property', 'error').said).toBe(
+      'The document type has no such property. Remove the row.',
+    );
+  });
+
   it("keep the server's sentence for the codes whose words only it has, and for a code the designer doesn't know", () => {
     for (const code of [...SERVER_WORDS, 'a_code_from_later'])
       expect(words(code, `${F}[1].settings.maxBytes`, 'error', 'Must be at most 10.').said).toBe('Must be at most 10.');

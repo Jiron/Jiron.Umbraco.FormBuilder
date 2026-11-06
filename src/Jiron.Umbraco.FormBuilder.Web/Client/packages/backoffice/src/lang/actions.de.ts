@@ -49,8 +49,9 @@ export default {
     summary_approve: 'Genehmigt den Eintrag',
     summary_reject: 'Lehnt den Eintrag ab',
     summary_spam: 'Verschiebt den Eintrag in den Spam',
-    summary_content: 'Erstellt oder aktualisiert Inhalt',
-    summary_contentPublished: 'Erstellt oder aktualisiert Inhalt und veröffentlicht ihn',
+    summary_contentNoType: 'Noch kein Dokumenttyp',
+    summary_contentSaves: (type: string) => `Speichert einen Inhalt vom Typ ${type}`,
+    summary_contentPublishes: (type: string) => `Veröffentlicht einen Inhalt vom Typ ${type}`,
     ruleOff: (words: string) => `${words}. Die Regel ist aus, also läuft die Aktion, als hätte sie keine.`,
     off: 'Aus',
 
@@ -198,6 +199,45 @@ export default {
     sends_body: 'ein Inhalt, den Sie schreiben',
     sends_message: 'Der Name des Formulars und die Antworten',
 
+    contentParent_picked: 'Unter diesem Element',
+    contentParent_page: 'Nur innerhalb dieses Elements',
+    contentParent_siteRoot: 'Nur innerhalb dieses Elements',
+    contentParentHelp_picked: 'Ohne eines auf der obersten Ebene des Inhaltsbaums.',
+    contentParentHelp_page: 'Nur von Seiten innerhalb des gewählten Elements; anderswo legt ein Lauf nichts an.',
+    contentParentHelp_siteRoot: 'Nur wenn dieser Stamm im gewählten Element liegt; anderswo legt ein Lauf nichts an.',
+    mappingNoType: 'Wählen Sie einen Dokumenttyp, dann erscheinen hier seine Eigenschaften.',
+    mappingReading: 'Die Eigenschaften werden gelesen…',
+    mappingTypeGone: 'Diesen Dokumenttyp hat die Website nicht mehr. Wählen Sie einen anderen.',
+    mappingUnread: 'Die Eigenschaften des Dokumenttyps konnten nicht gelesen werden.',
+    mappingRetry: 'Erneut versuchen',
+    mappingNone: 'Dieser Dokumenttyp hat keine Eigenschaft, die ein Formular füllen kann.',
+    mapProperty: 'Eigenschaft',
+    mapFrom: 'Erhält',
+    mapChoose: 'Eigenschaft wählen',
+    mapChooseFrom: 'Wählen…',
+    mapAnswerTo: (field: string) => `Die Antwort auf ${field}`,
+    mapAnswerCantHold: (field: string, property: string) =>
+      `Die Antwort auf ${field} (${property} kann sie nicht aufnehmen)`,
+    mapNothingFits: (property: string) =>
+      `Dieses Formular hat kein Feld, dessen Antwort ${property} aufnehmen kann, und ${property} nimmt keinen geschriebenen Wert auf.`,
+    mapValue: 'Einen Wert, den Sie schreiben',
+    mapGone: (alias: string) => `${alias} (nicht in diesem Dokumenttyp)`,
+    mapPropertyOf: (row: number) => `Eigenschaft ${row}`,
+    mapFromOf: (name: string) => `Was ${name} erhält`,
+    mapFromOfRow: (row: number) => `Was Eigenschaft ${row} erhält`,
+    mapValueOf: (name: string) => `Wert von ${name}`,
+    mapRemove: (name: string) => `${name} entfernen`,
+    mapRemoveRow: (row: number) => `Eigenschaft ${row} entfernen`,
+    mapAdd: 'Eigenschaft hinzufügen',
+    mapYes: 'Ja',
+    mapNo: 'Nein',
+    mapHint_wholeNumber: 'Eine ganze Zahl',
+    mapHint_decimal: 'Eine Zahl',
+    contentRoot: 'Auf der obersten Ebene des Inhaltsbaums',
+    mapRead_field: (property: string, field: string) => `${property}: die Antwort auf ${field}`,
+    mapRead_fieldGone: (property: string) => `${property}: ein Feld, das es nicht mehr gibt`,
+    mapRead_value: (property: string, value: string) => `${property}: ${value}`,
+
     preview: 'Vorschau mit einem Beispieleintrag',
     previewHelp: 'So bekommt das Team sie, mit Beispielantworten aus den Feldern des Formulars.',
     previewHelpVisitor:
@@ -249,6 +289,45 @@ export default {
       'Diese Website hat die Razor-Ansicht nicht, die die E-Mail nennt, und die E-Mail hat keinen eigenen Text.',
     testFailed_failed:
       'Der Test konnte nicht abgeschlossen werden. Den Grund findet jemand aus der Entwicklung im Protokoll der Website.',
+    testFailed_content_type: 'Wählen Sie einen Dokumenttyp dieser Website, dann testen Sie erneut.',
+    testFailed_content_parent:
+      'Das unter „Ablageort“ gewählte Element gibt es nicht mehr. Wählen Sie ein anderes, dann testen Sie erneut.',
+    testFailed_content_within:
+      'Wählen Sie unter „Ablageort“ den Inhalt, in dem er bleiben muss, dann testen Sie erneut.',
+    testFailed_content_no_name:
+      'Der Name des Inhalts ist für den Beispieleintrag leer. Geben Sie einen Namen an, dann testen Sie erneut.',
+    testLine_content_under: (verb: string, type: string, name: string, parent: string) =>
+      `Ein Lauf würde einen Inhalt vom Typ ${type} namens „${name}“ unter ${parent} ${verb === 'publish' ? 'veröffentlichen' : 'speichern'}.`,
+    testLine_content_root: (verb: string, type: string, name: string) =>
+      `Ein Lauf würde einen Inhalt vom Typ ${type} namens „${name}“ auf der obersten Ebene des Inhaltsbaums ${verb === 'publish' ? 'veröffentlichen' : 'speichern'}.`,
+    testLine_content_page: (verb: string, type: string, name: string, within: string) =>
+      `Ein Lauf würde einen Inhalt vom Typ ${type} namens „${name}“ unter der Seite, von der das Formular gesendet wird, innerhalb von ${within} ${verb === 'publish' ? 'veröffentlichen' : 'speichern'}.`,
+    testLine_content_site: (verb: string, type: string, name: string, within: string) =>
+      `Ein Lauf würde einen Inhalt vom Typ ${type} namens „${name}“ unter dem Stamm der Website der Person, die sendet, innerhalb von ${within} ${verb === 'publish' ? 'veröffentlichen' : 'speichern'}.`,
+    testLine_content_update:
+      'Gibt es schon einen Inhalt dieses Typs und Namens, aktualisiert ein Lauf stattdessen diesen.',
+    testLine_content_sets: (names: readonly string[]) =>
+      `Er würde ${new Intl.ListFormat('de', { type: 'conjunction' }).format(names)} setzen.`,
+    testLine_content_property_gone: (alias: string) =>
+      `Der Dokumenttyp hat keine Eigenschaft ${alias}, daher lässt ein Lauf sie aus.`,
+    testLine_content_field_gone: (property: string) =>
+      `${property} erhält ein Feld, das dieses Formular nicht mehr hat, daher lässt ein Lauf sie aus.`,
+    testLine_content_sensitive: (property: string, field: string) =>
+      `${field} ist vertraulich, daher lässt ein Lauf ${property} leer. „Vertrauliche Felder übernehmen“ lässt es durch.`,
+    testLine_content_cannot_hold: (property: string, field: string) =>
+      `${property} kann die Antwort des Beispieleintrags auf ${field} nicht aufnehmen.`,
+    testLine_content_cannot_hold_value: (property: string) =>
+      `${property} kann den dafür geschriebenen Wert nicht aufnehmen.`,
+    testLine_state_move: (state: string, count = '0') => {
+      const starts = Number(count);
+      const then = (trigger: string) =>
+        starts > 0 ? `, was ${starts === 1 ? '1 Aktion' : `${starts} Aktionen`} von „${trigger}“ startet` : '';
+      return state === 'approved'
+        ? `Ein Lauf würde den Eintrag genehmigen${then('Genehmigt')}.`
+        : state === 'rejected'
+          ? `Ein Lauf würde den Eintrag ablehnen${then('Abgelehnt')}.`
+          : 'Ein Lauf würde den Eintrag in den Spam verschieben.';
+    },
     testSettingsInvalid:
       'Die Einstellungen dieser Aktion haben Fehler. Öffnen Sie die Aktion, beheben Sie sie, und testen Sie dann erneut.',
     testNoAnswer: 'Der Test konnte nicht ausgeführt werden.',

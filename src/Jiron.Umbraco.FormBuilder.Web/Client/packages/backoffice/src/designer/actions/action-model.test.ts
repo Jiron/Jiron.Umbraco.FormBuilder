@@ -201,9 +201,21 @@ describe('what an action does, in one line', () => {
     expect(of('setState', {})?.term).toBe('summary_approve');
     expect(of('setState', { state: 'rejected' })?.term).toBe('summary_reject');
     expect(of('setState', { state: 'spam' })?.term).toBe('summary_spam');
-    expect(of('content', {})?.term).toBe('summary_content');
-    expect(of('content', { publish: true })?.term).toBe('summary_contentPublished');
     expect(of('crm', { anything: 1 })).toBeNull();
+  });
+
+  it('says what content is saved or published as, by the name the site gives its document type (ADR-0192)', () => {
+    const named = (settings: Record<string, unknown>) =>
+      summaryOf({ key: 'k', type: 'content', settings }, field, (alias) => (alias === 'story' ? 'Story' : undefined));
+    expect(named({})).toEqual({ term: 'summary_contentNoType', args: [] });
+    expect(named({ documentType: 'story' })).toEqual({ term: 'summary_contentSaves', args: ['Story'] });
+    expect(named({ documentType: 'story', publish: true })).toEqual({
+      term: 'summary_contentPublishes',
+      args: ['Story'],
+    });
+    // A type the site no longer has is said by its alias.
+    expect(named({ documentType: 'gone' })?.args).toEqual(['gone']);
+    expect(of('content', { documentType: 'story' })?.args).toEqual(['story']);
   });
 });
 
@@ -313,7 +325,17 @@ describe('an action as its sidebar edits it', () => {
     expect(settingAtPath(['stopOnFailure'])).toEqual({ kind: 'stopOnFailure' });
     expect(settingAtPath(['rules', 0, 'conditions', 1])).toEqual({ kind: 'rule' });
     expect(settingAtPath(['settings', 'to'])).toEqual({ kind: 'setting', path: 'to' });
-    expect(settingAtPath(['settings', 'headers', 2, 'name'])).toEqual({ kind: 'setting', path: 'headers' });
+    // An item of a list, and its part, for an editor that draws each item's boxes (ADR-0192).
+    expect(settingAtPath(['settings', 'headers', 2, 'name'])).toEqual({
+      kind: 'setting',
+      path: 'headers',
+      row: { index: 2, part: 'name' },
+    });
+    expect(settingAtPath(['settings', 'to', 1])).toEqual({
+      kind: 'setting',
+      path: 'to',
+      row: { index: 1, part: undefined },
+    });
     expect(settingAtPath(['settings', 'format', 'decimals'])).toEqual({ kind: 'setting', path: 'format.decimals' });
     expect(settingAtPath(['settings'])).toEqual({ kind: 'action' });
     expect(settingAtPath(['type'])).toEqual({ kind: 'action' });

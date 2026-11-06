@@ -246,6 +246,7 @@ describe('the dictionaries', () => {
       ['Definitions', 'DefinitionProblem.cs'],
       ['MergeTags', 'MergeTagValues.cs'],
       ['Logic', 'LogicException.cs'],
+      ['Actions', 'ActionCheckCodes.cs'],
       ...[
         'CollectedDataFormChecks',
         'FieldFormChecks',

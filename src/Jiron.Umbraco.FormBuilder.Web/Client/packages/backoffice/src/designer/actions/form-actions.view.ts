@@ -506,7 +506,9 @@ export class FormActionsViewElement extends UmbLitElement {
         ),
       ask: (confirmed) => context.testActionOf(definition, key, confirmed),
       say: async (toast) => {
-        (await this.#getNotifications())?.peek(toast.color, { data: { message: toast.message } });
+        const notifications = await this.#getNotifications();
+        if (toast.stays) notifications?.stay(toast.color, { data: { message: toast.message } });
+        else notifications?.peek(toast.color, { data: { message: toast.message } });
       },
       term: this.#term,
     });
@@ -590,6 +592,7 @@ export class FormActionsViewElement extends UmbLitElement {
           defaultLayout: this._layouts.defaultKey,
           preview: (asked, key, culture) => context.emailPreviewOf(asked, key, culture),
           test: (asked, key, started) => this.#test(asked, key, started),
+          documentType: (alias) => context.documentTypeOf(alias),
           ...(focus ? { focus } : {}),
           closed: () => gone?.(),
         },
@@ -683,7 +686,13 @@ export class FormActionsViewElement extends UmbLitElement {
 
   // What an action does in one line, as its card says it; empty for an action whose settings say nothing yet.
   #line(action: DesignAction, names: ReturnType<typeof elementNames>): string {
-    const summary = summaryOf(action, (key) => names[key]);
+    // A content action's document type by the name the site gives it, among the choices its type serves.
+    const types = this.#typeOf('content')?.settings.find((setting) => setting.name === 'documentType')?.choices ?? [];
+    const summary = summaryOf(
+      action,
+      (key) => names[key],
+      (alias) => types.find((choice) => choice.value === alias)?.label,
+    );
     if (!summary) return '';
     const list = new Intl.ListFormat(this.localize.lang(), { type: 'conjunction' });
     return this.#term(

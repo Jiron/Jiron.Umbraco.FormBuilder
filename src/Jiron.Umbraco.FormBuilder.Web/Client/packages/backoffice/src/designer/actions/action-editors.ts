@@ -2,13 +2,15 @@
 // that offers the draft's fields of the setting's kind; addresses as a list with a box that adds them; the email's To
 // box, which holds every kind of recipient the schema puts within it (addresses, an email field's answer, the person
 // who created the form, the addresses an answer chooses) and offers the others under Add recipient; the addresses an
-// answer chooses on their own, where a host locks the To box; and the layout; and the webhook's (ADR-0191,
-// webhook-editors.ts). Each is labelled, described and says its problems as the inspector's editors do, under ids the
-// form check's Fix it lands on.
+// answer chooses on their own, where a host locks the To box; and the layout; the webhook's (ADR-0191,
+// webhook-editors.ts) and the content action's (ADR-0192, content-editors.ts). Each is labelled, described and says its
+// problems as the inspector's editors do, under ids the form check's Fix it lands on.
 import { isEmailAddress } from '@jfb/logic';
 import { css, html, live, nothing, type TemplateResult } from '@umbraco-cms/backoffice/external/lit';
 import type { FieldSettingResponseModel } from '../../api';
 import { boxId, pickedKeys, settingEditor, settingFrame, type EditorContext } from '../inspector/setting-editor';
+import { contentEditors, contentSettingText } from './content-editors';
+import type { TypeRead } from './content-model';
 import { foundAt, typedLine } from './editor-lines';
 import { webhookEditors, webhookSettingText } from './webhook-editors';
 
@@ -19,6 +21,8 @@ export interface PickField {
   readonly alias: string;
   /** Its label in the language shown, or its alias. */
   readonly label: string;
+  /** Its type's alias, by which a content property says it can hold its answer. */
+  readonly type: string;
   /** Whether it is of the email type. */
   readonly email: boolean;
   /** Whether it has options. */
@@ -86,6 +90,13 @@ export interface ActionEditorContext {
   readonly presetMessage: (target: string) => string | undefined;
   /** Draws the sidebar anew, for what the sidebar keeps that no setting holds, such as a blank row. */
   readonly redraw: () => void;
+  /**
+   * A document type a content action can create, with the properties a form can set (ADR-0192), as the sidebar has it:
+   * one being read draws the sidebar anew once it is there.
+   */
+  readonly documentType: (alias: string) => TypeRead;
+  /** Reads a document type again whose reading failed, for Try again. */
+  readonly readAgain: (alias: string) => void;
 }
 
 export type ActionEditor = (
@@ -103,6 +114,7 @@ export function actionEditors(context: ActionEditorContext): Readonly<Record<str
     recipientMap: (setting, value, path) => mapAlone(context, setting, value, path),
     emailLayoutPicker: (setting, value, path) => layoutPicker(context, setting, value, path),
     ...webhookEditors(context),
+    ...contentEditors(context),
   };
 }
 
@@ -424,7 +436,7 @@ export function actionSettingText(
     case 'emailLayoutPicker':
       return layoutName(context, typeof value === 'string' ? value : '');
     default:
-      return webhookSettingText(context, setting, value);
+      return webhookSettingText(context, setting, value) ?? contentSettingText(context, setting, value);
   }
 }
 

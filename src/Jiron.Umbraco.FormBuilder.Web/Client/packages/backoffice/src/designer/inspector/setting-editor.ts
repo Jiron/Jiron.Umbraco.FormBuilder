@@ -152,11 +152,18 @@ export function settingText(
     case 'localizedHtml':
     case 'inlineHtml':
       return plainOf(textIn(value as LocalizedText | undefined, context.culture));
-    case 'mediaPicker':
-    case 'contentPicker':
-    case 'documentPicker':
     case 'documentTypePicker':
     case 'dataTypePicker': {
+      // The site's items its choices name, by their names (ADR-0173, ADR-0192); a key no choice names is counted.
+      const keys = pickedKeys(setting, value);
+      const named = keys.map((key) => setting.choices.find((each) => each.value === key));
+      if (keys.length > 0 && named.every((one) => one !== undefined))
+        return named.map((one) => context.say(one?.label)).join(', ');
+      return keys.length === 0 ? context.term('pickedNone') : context.term('picked', keys.length);
+    }
+    case 'mediaPicker':
+    case 'contentPicker':
+    case 'documentPicker': {
       const count = pickedKeys(setting, value).length;
       return count === 0 ? context.term('pickedNone') : context.term('picked', count);
     }
@@ -210,27 +217,35 @@ export function settingEditor(
   const id = boxId(path);
   const typed = (raw: string, done: boolean) => context.set(path, setting, parseSetting(setting, raw), done);
   switch (setting.editor) {
-    case 'boolean':
-      return html`<div class="item item-switch">
-        <input
+    case 'boolean': {
+      // A switch's help goes under it, as the sidebar's own Stop the rest has it.
+      const help = setting.description ? `${id}-help` : undefined;
+      const toggle = html`<input
           type="checkbox"
           role="switch"
           id=${id}
+          aria-describedby=${help ?? nothing}
           .checked=${value === true}
           @change=${(event: Event) =>
             context.set(path, setting, { ok: true, value: (event.target as HTMLInputElement).checked }, true)}
         />
-        <label class="label" for=${id}>${context.say(setting.label)}</label>
+        <label class="label" for=${id}>${context.say(setting.label)}</label>`;
+      if (!help) return html`<div class="item item-switch">${toggle}</div>`;
+      return html`<div class="item">
+        <div class="item-switch">${toggle}</div>
+        <p class="help" id=${help}>${context.say(setting.description)}</p>
       </div>`;
+    }
     case 'choice':
       return settingFrame(
         context,
         setting,
         path,
-        (described) =>
+        (described, invalid) =>
           html`<select
             id=${id}
             aria-describedby=${described ?? nothing}
+            aria-invalid=${invalid ? 'true' : 'false'}
             @change=${(event: Event) =>
               context.set(path, setting, { ok: true, value: (event.target as HTMLSelectElement).value }, true)}
           >
@@ -329,12 +344,13 @@ function siteChoice(context: EditorContext, setting: FieldSettingResponseModel, 
     ...picked.filter((key) => !known.has(key)).map((key) => ({ value: key, label: context.term('pickedGone') })),
   ];
   if (setting.kind !== 'list')
-    return settingFrame(context, setting, path, (described) =>
+    return settingFrame(context, setting, path, (described, invalid) =>
       choices.length === 0
         ? html`<p class="help" id=${id}>${context.term('siteChoicesNone')}</p>`
         : html`<select
             id=${id}
             aria-describedby=${described ?? nothing}
+            aria-invalid=${invalid ? 'true' : 'false'}
             @change=${(event: Event) => {
               const chosen = (event.target as HTMLSelectElement).value;
               context.set(path, setting, { ok: true, value: chosen === '' ? undefined : chosen }, true);
@@ -399,7 +415,9 @@ function picker(context: EditorContext, setting: FieldSettingResponseModel, valu
   const label = context.say(setting.label);
   const help = setting.description ? `${id}-help` : undefined;
   const problem = context.problems.get(id);
-  const described = [help, problem ? `${id}-why` : undefined].filter(Boolean).join(' ') || undefined;
+  const found = context.found?.(id);
+  const described =
+    [help, problem ? `${id}-why` : undefined, ...(found?.ids ?? [])].filter(Boolean).join(' ') || undefined;
   // Umbraco's input is no form control a label names: a group named by the label holds it, so its own Choose and Remove
   // are said with the setting they belong to.
   return html`<div class="item">
@@ -425,7 +443,7 @@ function picker(context: EditorContext, setting: FieldSettingResponseModel, valu
         }
       })()}
     </div>
-    ${problem ? html`<p class="why" id=${`${id}-why`}>${problem}</p>` : nothing}
+    ${problem ? html`<p class="why" id=${`${id}-why`}>${problem}</p>` : nothing} ${found?.lines ?? nothing}
   </div>`;
 }
 

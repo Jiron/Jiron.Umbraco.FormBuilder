@@ -23,6 +23,7 @@ import { builtInTypes } from '../preview/fixtures';
 import { actionsOf, choicesOf, type DesignAction } from './action-model';
 import { loadActionWords } from './action-words';
 import type { ActionModalData, ActionModalValue } from './action.modal.token';
+import type { ContentType } from './content-model';
 
 /** The built-in action types, as the snapshot holds what the server serves. */
 const ACTION_TYPES = JSON.parse(
@@ -522,8 +523,19 @@ describe("an action's sidebar", () => {
 
   it("says a problem of a setting without its editor yet under what happens, by the setting's name, and leads there", async () => {
     checking.answer = () => [problem('$.actions[0].settings.mapping', 'setting_invalid', 'Each property has a value.')];
+    // A newer server may serve an editor this backoffice does not know yet.
+    const types = ACTION_TYPES.map((type) =>
+      type.alias === 'content'
+        ? {
+            ...type,
+            settings: type.settings.map((setting) =>
+              setting.name === 'mapping' ? { ...setting, editor: 'laterEditor' } : setting,
+            ),
+          }
+        : type,
+    );
     const hook = action('a1', { type: 'content', name: 'Page', settings: { mapping: [{}] } });
-    const { root, keep, why, modal } = await sidebarOf({ action: hook });
+    const { root, keep, why, modal } = await sidebarOf({ action: hook, actionTypes: types });
     expect(why('what-happens')).toEqual(['Properties: Each property has a value.']);
     // The sidebar's own first focus, on its name, comes first.
     await frame();
@@ -531,7 +543,7 @@ describe("an action's sidebar", () => {
     expect([modal.submit.mock.calls.length, root.activeElement?.id]).toEqual([0, 'what-happens']);
     // Its Fix it leads there too.
     document.body.replaceChildren();
-    const fixing = await sidebarOf({ action: hook, focus: { kind: 'setting', path: 'mapping' } });
+    const fixing = await sidebarOf({ action: hook, actionTypes: types, focus: { kind: 'setting', path: 'mapping' } });
     await frame();
     expect(fixing.root.activeElement?.id).toBe('what-happens');
   });
@@ -635,6 +647,10 @@ describe("an action's sidebar", () => {
       'Off',
       'Runs when Topic is "Sales". The rule is off, so the action runs as if it had none.',
     ]);
+    // A value keeps its line breaks, so no line stands empty before or after its words.
+    expect(
+      ['setting-to', 'setting-subject', 'stop-on-failure'].map((id) => root.getElementById(id)?.textContent),
+    ).toEqual(['sales@example.com', 'New entry', 'Off']);
     // It says nothing about keeping what it does: nothing here can be changed.
     expect(root.querySelector('#what-happens + .help')).toBeNull();
     // The same settings show as for who may change them.
@@ -1113,11 +1129,19 @@ describe("an email's sidebar", () => {
     expect(german.kept().settings?.['subject']).toEqual({ '': 'New entry', 'de-DE': 'Neue Anfrage' });
   });
 
-  it('offers Insert merge tag for mail under the subject and the body, and none for another type', async () => {
+  it("offers Insert merge tag for mail under the subject and the body, an action's under a content item's name", async () => {
     const { root } = await sidebarOf();
     const pickers = [...root.querySelectorAll('jfb-merge-tag-picker')] as unknown as { place: string }[];
     expect(pickers.map((picker) => picker.place)).toEqual(['mail', 'mail']);
     expect(root.querySelector('.item:has(#setting-subject) jfb-merge-tag-picker')).not.toBeNull();
+    document.body.replaceChildren();
+    const page = action('a1', { type: 'content', name: 'Page', settings: {} });
+    const content = await sidebarOf({ action: page });
+    const named = [...content.root.querySelectorAll('.item:has(#setting-name) jfb-merge-tag-picker')] as unknown as {
+      place: string;
+    }[];
+    expect(named.map((picker) => picker.place)).toEqual(['action']);
+    // The webhook's editors place their own, where they belong.
     document.body.replaceChildren();
     const hook = action('a1', { type: 'webhook', name: 'CRM', settings: { url: 'https://crm.example.com' } });
     const webhook = await sidebarOf({ action: hook });
@@ -1683,5 +1707,668 @@ describe("a webhook's sidebar", () => {
     expect(said('setting-fields')).toBe('A body you write');
     said = await reader({ url: 'https://crm.example.com/in', format: 'xml', template: '<a/>' });
     expect(said('setting-fields')).toBe('XML: a body you write');
+  });
+});
+
+describe("a content action's sidebar", () => {
+  const STORY: ContentType = {
+    alias: 'story',
+    name: 'Story',
+    properties: [
+      { alias: 'title', name: 'Title', group: 'Content', fieldTypes: ['text', 'email'], value: 'text' },
+      { alias: 'count', name: 'Count', group: 'Content', fieldTypes: ['number'], value: 'wholeNumber' },
+      { alias: 'featured', name: 'Featured', group: 'Content', fieldTypes: [], value: 'boolean' },
+      { alias: 'photo', name: 'Photo', group: null, fieldTypes: ['file'], value: null },
+    ],
+  };
+  const NOTE: ContentType = {
+    alias: 'note',
+    name: 'Note',
+    properties: [
+      { alias: 'title', name: 'Title', group: null, fieldTypes: ['text', 'email'], value: 'text' },
+      { alias: 'email', name: 'Email', group: null, fieldTypes: ['email', 'text'], value: 'text' },
+    ],
+  };
+  // The site's document types, served with the content type as its document type's choices.
+  const TYPES = ACTION_TYPES.map((type) =>
+    type.alias !== 'content'
+      ? type
+      : {
+          ...type,
+          settings: type.settings.map((setting) =>
+            setting.name === 'documentType'
+              ? {
+                  ...setting,
+                  choices: [
+                    { value: 'story', label: 'Story' },
+                    { value: 'note', label: 'Note' },
+                  ],
+                }
+              : setting,
+          ),
+        },
+  );
+  const form = (actions: readonly DesignAction[]): DesignDefinition => ({
+    ...definitionWith(actions),
+    pages: [
+      {
+        key: 'p1',
+        groups: [
+          {
+            key: 'g1',
+            fields: [
+              { key: 'f-title', type: 'text', alias: 'title', label: { '': 'Headline' } },
+              { key: 'f-email', type: 'email', alias: 'email', label: { '': 'Email address' } },
+              { key: 'f-age', type: 'number', alias: 'age', label: { '': 'Age' } },
+            ],
+          },
+        ],
+      },
+    ],
+  });
+  const content = (settings: Record<string, unknown>) =>
+    action('a1', { type: 'content', name: 'Save the story', settings });
+  const read: string[] = [];
+  const open = (settings: Record<string, unknown>, extra: Partial<ActionModalData> = {}) => {
+    const one = content(settings);
+    return sidebarOf({
+      action: one,
+      definition: form([one]),
+      actionTypes: TYPES,
+      choices: choicesOf(TYPES),
+      documentType: async (alias) => {
+        read.push(alias);
+        return alias === 'story' ? STORY : alias === 'note' ? NOTE : null;
+      },
+      ...extra,
+    });
+  };
+  const select = async (element: { updateComplete: Promise<unknown> }, box: HTMLSelectElement, value: string) => {
+    box.value = value;
+    box.dispatchEvent(new Event('change'));
+    await settle(element);
+  };
+  const options = (box: HTMLSelectElement) =>
+    [...box.querySelectorAll('option')].filter((one) => !one.disabled).map((one) => text(one));
+  const rowIds = (root: ShadowRoot) =>
+    [...root.querySelectorAll<HTMLSelectElement>('.map-row select.property')].map((one) => one.id);
+  const add = async (root: ShadowRoot, element: { updateComplete: Promise<unknown> }) => {
+    must(root.querySelector<HTMLButtonElement>('#setting-mapping-add'), 'Add property').click();
+    await settle(element);
+  };
+
+  beforeEach(() => {
+    read.length = 0;
+  });
+
+  it('says where it goes as three choices, each with its line, the item picked under the chosen one', async () => {
+    const { root, choose, keep, kept } = await open({ documentType: 'story' });
+    const place = must(root.getElementById('setting-parentSource'), 'Where it goes');
+    expect([place.localName, text(place.querySelector('legend'))]).toEqual(['fieldset', 'Where it goes']);
+    expect([...place.querySelectorAll('.choice-name')].map((one) => text(one))).toEqual([
+      'Under an item you pick',
+      'Under the page the form is sent from',
+      "Under the root of the visitor's site",
+    ]);
+    expect(text(root.getElementById('content-parent-picked'))).toBe('Without one, at the root of the content tree.');
+    expect(place.querySelector<HTMLInputElement>('input[value="picked"]')?.checked).toBe(true);
+    // The item picked under the chosen choice, named for it to who hears it.
+    expect(text(root.getElementById('setting-parent-label'))).toBe('Under this item');
+    expect(root.querySelector('label:has(input[value="picked"]) + .parent #setting-parent-label')).not.toBeNull();
+    await choose('content-parent', 'page');
+    expect(text(root.getElementById('setting-parent-label'))).toBe('Only within this item');
+    expect(root.querySelector('label:has(input[value="page"]) + .parent')).not.toBeNull();
+    expect(root.querySelectorAll('.parent')).toHaveLength(1);
+    await keep();
+    expect(kept().settings).toEqual({ documentType: 'story', parentSource: 'page' });
+  });
+
+  it("keeps the item's name as typed while the table, the place and the check change around it", async () => {
+    const { element, root, box, type, choose, keep, kept } = await open({
+      documentType: 'story',
+      mapping: [{ property: 'title', field: 'f-title' }],
+    });
+    await frame();
+    await type('setting-name', 'Story of {{ field.title }}', false);
+    await add(root, element);
+    await select(element, box<HTMLSelectElement>('setting-mapping-blank-1-property'), 'count');
+    await select(element, box<HTMLSelectElement>('setting-mapping-blank-1-field'), '=value');
+    await type('setting-mapping-1--value', '12');
+    await choose('content-parent', 'page');
+    await vi.advanceTimersByTimeAsync(CHECK_PAUSE);
+    await settle(element);
+    expect(box('setting-name').value).toBe('Story of {{ field.title }}');
+    await keep();
+    expect(kept().settings).toMatchObject({ name: 'Story of {{ field.title }}', parentSource: 'page' });
+  });
+
+  it("offers the site's document types, and says the table waits for one", async () => {
+    const { root, box } = await open({});
+    // None chosen stands first while nothing is; the form check asks for a type.
+    expect(options(box<HTMLSelectElement>('setting-documentType'))).toEqual(['None chosen', 'Story', 'Note']);
+    expect(text(root.getElementById('setting-documentType-help'))).toBe('Each entry becomes an item of this type.');
+    expect(text(root.getElementById('setting-mapping'))).toBe('Choose a document type, and its properties come here.');
+    expect(read).toEqual([]);
+  });
+
+  it('sets each property from the answer of a field it can hold, or a value written for it in the form it stores', async () => {
+    const { element, root, box, type, keep, kept } = await open({
+      documentType: 'story',
+      mapping: [{ property: 'title', field: 'f-title' }],
+    });
+    expect(read).toEqual(['story']);
+    expect(rowIds(root)).toEqual(['setting-mapping-0--property']);
+    const from = box<HTMLSelectElement>('setting-mapping-0--field');
+    expect([from.value, from.getAttribute('aria-label')]).toEqual(['f-title', 'What Title takes']);
+    // Only the fields a property can hold the answer of, and a value where it takes one.
+    expect(options(from)).toEqual(['The answer to Headline', 'The answer to Email address', 'A value you write']);
+    await add(root, element);
+    expect(rowIds(root)).toEqual(['setting-mapping-0--property', 'setting-mapping-blank-1-property']);
+    const added = box<HTMLSelectElement>('setting-mapping-blank-1-property');
+    // A property already set is not offered again; the document type's groups are said.
+    expect(options(added)).toEqual(['Count', 'Featured']);
+    // One group left is no group to name.
+    expect(added.querySelector('optgroup')).toBeNull();
+    await select(element, added, 'count');
+    expect(options(box<HTMLSelectElement>('setting-mapping-blank-1-field'))).toEqual([
+      'The answer to Age',
+      'A value you write',
+    ]);
+    await select(element, box<HTMLSelectElement>('setting-mapping-blank-1-field'), '=value');
+    const count = box('setting-mapping-1--value');
+    expect([count.getAttribute('inputmode'), count.placeholder, count.getAttribute('aria-label')]).toEqual([
+      'numeric',
+      'A whole number',
+      'Value of Count',
+    ]);
+    await type('setting-mapping-1--value', '12');
+    // Yes or no for a property that stores it.
+    await add(root, element);
+    await select(element, box<HTMLSelectElement>('setting-mapping-blank-2-property'), 'featured');
+    expect(options(box<HTMLSelectElement>('setting-mapping-blank-2-field'))).toEqual(['A value you write']);
+    await select(element, box<HTMLSelectElement>('setting-mapping-blank-2-field'), '=value');
+    await select(element, box<HTMLSelectElement>('setting-mapping-2--value'), 'false');
+    await keep();
+    expect(kept().settings).toEqual({
+      documentType: 'story',
+      mapping: [
+        { property: 'title', field: 'f-title' },
+        { property: 'count', value: '12' },
+        { property: 'featured', value: 'false' },
+      ],
+    });
+  });
+
+  it('takes a row away, and keeps a row without what it takes out of the draft until it has it', async () => {
+    const { element, root, box, keep, kept } = await open({
+      documentType: 'story',
+      mapping: [
+        { property: 'title', field: 'f-title' },
+        { property: 'count', field: 'f-age' },
+      ],
+    });
+    // The sidebar's own first focus, on its name, comes first.
+    await frame();
+    // Another property whose source does not fit: the row waits for what it takes.
+    await select(element, box<HTMLSelectElement>('setting-mapping-0--property'), 'photo');
+    expect(rowIds(root)).toEqual(['setting-mapping-blank-0-property', 'setting-mapping-0--property']);
+    expect(box<HTMLSelectElement>('setting-mapping-blank-0-field').value).toBe('');
+    must(
+      [...root.querySelectorAll<HTMLButtonElement>('button.remove')].find(
+        (one) => one.getAttribute('aria-label') === 'Remove Count',
+      ),
+      'Remove Count',
+    ).click();
+    await settle(element);
+    await frame();
+    expect(rowIds(root)).toEqual(['setting-mapping-blank-0-property']);
+    expect(root.activeElement?.id).toBe('setting-mapping-blank-0-property');
+    await keep();
+    expect(kept().settings).toEqual({ documentType: 'story' });
+  });
+
+  it('keeps the table of a document type while another is chosen, and starts a new one with the fields of its aliases', async () => {
+    const { element, box, keep, kept } = await open({
+      documentType: 'story',
+      mapping: [{ property: 'count', field: 'f-age' }],
+    });
+    await select(element, box<HTMLSelectElement>('setting-documentType'), 'note');
+    await settle(element);
+    expect(box<HTMLSelectElement>('setting-mapping-0--field').value).toBe('f-title');
+    expect(box<HTMLSelectElement>('setting-mapping-1--property').value).toBe('email');
+    await select(element, box<HTMLSelectElement>('setting-documentType'), 'story');
+    await settle(element);
+    expect(box<HTMLSelectElement>('setting-mapping-0--property').value).toBe('count');
+    await select(element, box<HTMLSelectElement>('setting-documentType'), 'note');
+    await settle(element);
+    await keep();
+    expect(kept().settings).toEqual({
+      documentType: 'note',
+      mapping: [
+        { property: 'title', field: 'f-title' },
+        { property: 'email', field: 'f-email' },
+      ],
+    });
+  });
+
+  it('keeps a table emptied by hand empty, and leaves the rows not finished with the type they name', async () => {
+    const { element, root, box, keep, kept } = await open({
+      documentType: 'story',
+      mapping: [{ property: 'count', field: 'f-age' }],
+    });
+    // Story's only row removed, a row begun and not finished, then Note and Story again.
+    must(root.querySelector<HTMLButtonElement>('button.remove'), 'Remove Count').click();
+    await settle(element);
+    await add(root, element);
+    await select(element, box<HTMLSelectElement>('setting-mapping-blank-0-property'), 'count');
+    await select(element, box<HTMLSelectElement>('setting-documentType'), 'note');
+    await settle(element);
+    expect(rowIds(root)).toEqual(['setting-mapping-0--property', 'setting-mapping-1--property']);
+    await select(element, box<HTMLSelectElement>('setting-documentType'), 'story');
+    await settle(element);
+    expect(rowIds(root)).toEqual([]);
+    await keep();
+    expect(kept().settings).toEqual({ documentType: 'story' });
+  });
+
+  it("leaves a row not finished with its type where the next type's table is the same", async () => {
+    const { element, root, box, keep, kept } = await open({
+      documentType: 'story',
+      mapping: [{ property: 'count', field: 'f-age' }],
+    });
+    // Story's table emptied, then Note's emptied too, and a row begun on Note's Email.
+    must(root.querySelector<HTMLButtonElement>('button.remove'), 'Remove Count').click();
+    await settle(element);
+    await select(element, box<HTMLSelectElement>('setting-documentType'), 'note');
+    await settle(element);
+    while (root.querySelector('button.remove')) {
+      must(root.querySelector<HTMLButtonElement>('button.remove'), 'Remove').click();
+      await settle(element);
+    }
+    await add(root, element);
+    await select(element, box<HTMLSelectElement>('setting-mapping-blank-0-property'), 'email');
+    // Story, whose table is as empty: the row names a property Story lacks, and stays with Note.
+    await select(element, box<HTMLSelectElement>('setting-documentType'), 'story');
+    await settle(element);
+    expect(rowIds(root)).toEqual([]);
+    await keep();
+    expect(kept().settings).toEqual({ documentType: 'story' });
+  });
+
+  it('writes a decimal comma typed for a decimal property as a point', async () => {
+    const PRICED: ContentType = {
+      ...STORY,
+      properties: [
+        ...STORY.properties,
+        { alias: 'price', name: 'Price', group: 'Content', fieldTypes: ['number'], value: 'decimal' },
+      ],
+    };
+    const { box, type, keep, kept } = await open(
+      { documentType: 'story', mapping: [{ property: 'price', value: '' }] },
+      { documentType: async () => PRICED },
+    );
+    expect(box('setting-mapping-0--value').getAttribute('inputmode')).toBe('decimal');
+    await type('setting-mapping-0--value', '1,5');
+    await keep();
+    expect(kept().settings).toEqual({ documentType: 'story', mapping: [{ property: 'price', value: '1.5' }] });
+  });
+
+  it('says under Publish it and Update an item of the same name what each does, and describes each switch by it', async () => {
+    const { element, root, box } = await open({ documentType: 'story' });
+    must(root.querySelector<HTMLButtonElement>('.more'), 'More options').click();
+    await settle(element);
+    const helpOf = (id: string) => {
+      const toggle = box(id);
+      return [toggle.getAttribute('role'), text(root.getElementById(toggle.getAttribute('aria-describedby') ?? ''))];
+    };
+    expect(helpOf('setting-publish')).toEqual([
+      'switch',
+      'Off, the item is saved for an editor to look at and publish.',
+    ]);
+    expect(helpOf('setting-updateExisting')).toEqual([
+      'switch',
+      "Where the name comes from an answer, a visitor's answer chooses which item is overwritten. Turn it on only where that's what you want.",
+    ]);
+  });
+
+  it('shows the media folder for files where a row takes a file upload, or where it holds a folder', async () => {
+    const more = async (root: ShadowRoot, element: { updateComplete: Promise<unknown> }) => {
+      must(root.querySelector<HTMLButtonElement>('.more'), 'More options').click();
+      await settle(element);
+    };
+    // No row takes a file: no folder to choose.
+    const plain = await open({ documentType: 'story', mapping: [{ property: 'title', field: 'f-title' }] });
+    await more(plain.root, plain.element);
+    expect(plain.root.getElementById('setting-updateExisting')).not.toBeNull();
+    expect(plain.root.getElementById('setting-mediaFolder')).toBeNull();
+    document.body.replaceChildren();
+    // A row that takes a file upload's answer.
+    const one = content({ documentType: 'story', mapping: [{ property: 'photo', field: 'f-upload' }] });
+    const withUpload = form([one]);
+    const upload = { key: 'f-upload', type: 'file', alias: 'upload', label: { '': 'Your photo' } };
+    const files = await sidebarOf({
+      action: one,
+      definition: {
+        ...withUpload,
+        pages: withUpload.pages.map((page) => ({
+          ...page,
+          groups: page.groups.map((group) => ({ ...group, fields: [...group.fields, upload] })),
+        })),
+      },
+      actionTypes: TYPES,
+      choices: choicesOf(TYPES),
+      documentType: async () => STORY,
+    });
+    await more(files.root, files.element);
+    expect(files.root.getElementById('setting-mediaFolder')).not.toBeNull();
+    document.body.replaceChildren();
+    // A folder held, though no row takes a file any more, stays to be cleared.
+    const held = await open({ documentType: 'story', mediaFolder: '0a0b0c0d-0000-4000-8000-000000000001' });
+    await more(held.root, held.element);
+    expect(held.root.getElementById('setting-mediaFolder')).not.toBeNull();
+  });
+
+  it('keeps a value written where the next property stores it the same way, else starts its box again', async () => {
+    const { element, box, keep, kept } = await open({
+      documentType: 'story',
+      mapping: [{ property: 'title', value: 'Hello' }],
+    });
+    const property = () => box<HTMLSelectElement>('setting-mapping-0--property');
+    await select(element, property(), 'featured');
+    expect(box<HTMLSelectElement>('setting-mapping-0--value').value).toBe('true');
+    await select(element, property(), 'count');
+    expect(box('setting-mapping-0--value').value).toBe('');
+    await select(element, property(), 'title');
+    await keep();
+    expect(kept().settings).toEqual({ documentType: 'story', mapping: [{ property: 'title', value: '' }] });
+  });
+
+  it('offers only the properties the form can fill, and says a field that is gone and a property nothing fills', async () => {
+    const offered = await open({ documentType: 'story', mapping: [{ property: 'title', field: 'f-title' }] });
+    await add(offered.root, offered.element);
+    // Photo holds files, and the form has no file upload.
+    expect(options(offered.box<HTMLSelectElement>('setting-mapping-blank-1-property'))).toEqual(['Count', 'Featured']);
+    document.body.replaceChildren();
+    // With one, Photo is offered too, and the document type's groups are named.
+    const plain = form([content({ documentType: 'story' })]);
+    const withFile: DesignDefinition = {
+      ...plain,
+      pages: plain.pages.map((page, at) =>
+        at > 0
+          ? page
+          : {
+              ...page,
+              groups: page.groups.map((group, inPage) =>
+                inPage > 0
+                  ? group
+                  : {
+                      ...group,
+                      fields: [...group.fields, { key: 'f-cv', type: 'file', alias: 'cv', label: { '': 'CV' } }],
+                    },
+              ),
+            },
+      ),
+    };
+    const filed = await open({ documentType: 'story' }, { definition: withFile });
+    await add(filed.root, filed.element);
+    const property = filed.box<HTMLSelectElement>('setting-mapping-blank-0-property');
+    expect(options(property)).toEqual(['Title', 'Count', 'Featured', 'Photo']);
+    expect(property.querySelector('optgroup')?.getAttribute('label')).toBe('Content');
+    document.body.replaceChildren();
+    const { root, box } = await open({
+      documentType: 'story',
+      mapping: [{ property: 'title', field: 'f-gone' }, { property: 'photo' }],
+    });
+    const gone = box<HTMLSelectElement>('setting-mapping-0--field');
+    expect([gone.value, text(gone.selectedOptions[0])]).toEqual(['f-gone', 'A field that is gone']);
+    expect(text(root.getElementById('setting-mapping-blank-1-field'))).toBe(
+      'This form has no field whose answer Photo can hold, and Photo takes no value written for it.',
+    );
+    document.body.replaceChildren();
+    const reader = await open(
+      { documentType: 'story', mapping: [{ property: 'title', field: 'f-gone' }] },
+      { readOnly: true },
+    );
+    expect(text(reader.root.getElementById('setting-mapping'))).toBe('Title: a field that is gone');
+  });
+
+  it("puts a merge tag into the text value last in focus, else the last row's text value", async () => {
+    const { element, root, box } = await open({
+      documentType: 'story',
+      mapping: [
+        { property: 'title', value: 'A' },
+        { property: 'count', value: '1' },
+      ],
+    });
+    const picker = must(root.querySelector('.map jfb-merge-tag-picker'), 'the picker') as unknown as {
+      insert: (tag: string) => void;
+    };
+    picker.insert('{{ form.name }}');
+    await settle(element);
+    expect(box('setting-mapping-0--value').value).toBe('A{{ form.name }}');
+  });
+
+  it("says a row's problems under its own boxes, and a Fix it lands there", async () => {
+    checking.answer = () => [
+      problem('$.actions[0].settings.mapping[1].field', 'setting_invalid', "The property 'count' cannot hold this."),
+      problem('$.actions[0].settings.mapping', 'setting_invalid', 'The mapping is a list.'),
+    ];
+    const { root, box, found } = await open(
+      {
+        documentType: 'story',
+        mapping: [
+          { property: 'title', field: 'f-title' },
+          { property: 'count', field: 'f-email' },
+        ],
+      },
+      { focus: { kind: 'setting', path: 'mapping', row: { index: 1, part: 'field' } } },
+    );
+    await frame();
+    expect(root.activeElement?.id).toBe('setting-mapping-1--field');
+    expect(found('setting-mapping-1--field')).toEqual(["The property 'count' cannot hold this."]);
+    expect(box('setting-mapping-1--field').getAttribute('aria-invalid')).toBe('true');
+    // A field it can't hold stays shown while it is chosen, said so.
+    expect(options(box<HTMLSelectElement>('setting-mapping-1--field'))).toEqual([
+      'The answer to Age',
+      "The answer to Email address (Count can't hold it)",
+      'A value you write',
+    ]);
+    expect(found('setting-mapping')).toEqual(['The mapping is a list.']);
+  });
+
+  it("says a row's problem once the table is written, in the backoffice's words, without waiting for Update", async () => {
+    checking.answer = () => [];
+    const { root, type, pause, found } = await open({
+      documentType: 'story',
+      mapping: [
+        { property: 'title', field: 'f-title' },
+        { property: 'count', value: '12' },
+      ],
+    });
+    await pause();
+    expect(found('setting-mapping-1--value')).toEqual([]);
+    checking.answer = () => [
+      problem(
+        '$.actions[0].settings.mapping[1].value',
+        'content_value_cannot_hold',
+        "The property 'count' cannot hold this value.",
+      ),
+    ];
+    await type('setting-mapping-1--value', 'many');
+    await pause();
+    expect(found('setting-mapping-1--value')).toEqual([
+      "The property can't hold this value. Write it as the box asks.",
+    ]);
+    expect(root.querySelector('#setting-mapping-1--value')?.getAttribute('aria-invalid')).toBe('true');
+  });
+
+  it('lands a Fix it on its row once the document type is read, unless the focus moved on meanwhile', async () => {
+    checking.answer = () => [
+      problem('$.actions[0].settings.mapping[1].field', 'setting_invalid', "The property 'count' cannot hold this."),
+    ];
+    const settings = {
+      documentType: 'story',
+      mapping: [
+        { property: 'title', field: 'f-title' },
+        { property: 'count', field: 'f-email' },
+      ],
+    };
+    const landed: (string | undefined)[] = [];
+    for (const moved of [false, true]) {
+      document.body.replaceChildren();
+      let answer: (type: ContentType) => void = () => undefined;
+      const { element, root, box } = await open(settings, {
+        focus: { kind: 'setting', path: 'mapping', row: { index: 1, part: 'field' } },
+        documentType: () => new Promise<ContentType>((done) => (answer = done)),
+      });
+      await frame();
+      // The table waits for its type, so the sidebar's name has the focus meanwhile.
+      expect(root.activeElement?.id).toBe('name');
+      if (moved) box<HTMLSelectElement>('setting-documentType').focus();
+      answer(STORY);
+      await settle(element);
+      landed.push(root.activeElement?.id);
+    }
+    expect(landed).toEqual(['setting-mapping-1--field', 'setting-documentType']);
+  });
+
+  it('says while it reads the properties, and a document type the site no longer has or could not be read', async () => {
+    let answer: (type: ContentType | null | undefined) => void = () => undefined;
+    const reading = await open(
+      { documentType: 'story' },
+      { documentType: () => new Promise((done) => (answer = done)) },
+    );
+    expect(text(reading.root.getElementById('setting-mapping'))).toBe('Reading the properties\u2026');
+    expect(reading.root.getElementById('setting-mapping')?.getAttribute('aria-busy')).toBe('true');
+    answer(null);
+    await settle(reading.element);
+    expect(text(reading.root.getElementById('setting-mapping'))).toBe(
+      'This site no longer has that document type. Choose another.',
+    );
+    document.body.replaceChildren();
+    // A read that fails says so, and Try again reads the type again.
+    let reads = 0;
+    const failed = await open(
+      { documentType: 'story' },
+      { documentType: async () => (++reads === 1 ? undefined : STORY) },
+    );
+    expect(text(failed.root.getElementById('setting-mapping'))).toBe(
+      "The document type's properties couldn't be read.",
+    );
+    must(
+      [...failed.root.querySelectorAll<HTMLButtonElement>('button')].find((one) => text(one) === 'Try again'),
+      'Try again',
+    ).click();
+    await settle(failed.element);
+    expect([reads, failed.root.querySelectorAll('.map-row').length]).toEqual([2, 0]);
+    expect(failed.root.getElementById('setting-mapping-add')).not.toBeNull();
+  });
+
+  it('says each setting in words for who may only read them', async () => {
+    const first = await open(
+      {
+        documentType: 'story',
+        mapping: [
+          { property: 'title', field: 'f-title' },
+          { property: 'featured', value: 'true' },
+          { property: 'gone', value: 'x' },
+        ],
+      },
+      { readOnly: true },
+    );
+    // The document type by its name, as the site's choices give it.
+    expect(first.root.getElementById('setting-documentType')?.textContent).toBe('Story');
+    // The item picked, as Umbraco's input names it, named for where it goes.
+    document.body.replaceChildren();
+    const within = await open(
+      { documentType: 'story', parentSource: 'page', parent: '7bbb6953-972d-499e-a05a-c7cf1d45b1db' },
+      { readOnly: true },
+    );
+    const group = must(within.root.querySelector('[role="group"]:has(umb-input-document)'), 'the item picked');
+    expect([
+      text(within.root.getElementById(group.getAttribute('aria-labelledby') ?? '')),
+      text(within.root.getElementById('setting-parentSource')),
+    ]).toEqual(['Only within this item', 'Under the page the form is sent from']);
+    document.body.replaceChildren();
+    const { root } = await open(
+      {
+        documentType: 'story',
+        mapping: [
+          { property: 'title', field: 'f-title' },
+          { property: 'featured', value: 'true' },
+          { property: 'gone', value: 'x' },
+        ],
+      },
+      { readOnly: true },
+    );
+    expect(text(root.getElementById('setting-parentSource'))).toBe('At the root of the content tree');
+    expect(
+      (root.getElementById('setting-mapping')?.textContent ?? '')
+        .trim()
+        .split('\n')
+        .map((one) => one.trim()),
+    ).toEqual(['Title: the answer to Headline', 'Featured: Yes', 'gone: x']);
+  });
+
+  it('says the media folder and Stop on failure as they are for who may only read them', async () => {
+    const one = action('a1', {
+      type: 'content',
+      name: 'Save the story',
+      stopOnFailure: true,
+      settings: { documentType: 'story', mediaFolder: '0a0b0c0d-0000-4000-8000-000000000001' },
+    });
+    const { element, root } = await sidebarOf({
+      action: one,
+      definition: form([one]),
+      actionTypes: TYPES,
+      choices: choicesOf(TYPES),
+      documentType: async () => STORY,
+      readOnly: true,
+    });
+    must(root.querySelector<HTMLButtonElement>('.more'), 'More options').click();
+    await settle(element);
+    // The folder as Umbraco's own input names it, and the switch in a word.
+    expect(root.getElementById('setting-mediaFolder')?.localName).toBe('umb-input-media');
+    expect(text(root.getElementById('stop-on-failure'))).toBe('On');
+  });
+
+  it('marks the document type and the state invalid where the form check says so, in its words', async () => {
+    checking.answer = () => [problem('$.actions[0].settings.documentType', 'content_type_missing', 'Choose one.')];
+    const { box, found } = await open({});
+    expect(box('setting-documentType').getAttribute('aria-invalid')).toBe('true');
+    expect(found('setting-documentType')).toEqual(['Choose the document type each entry becomes.']);
+    document.body.replaceChildren();
+    checking.answer = () => [problem('$.actions[0].settings.state', 'state_loop', "'Approve again' moves it back.")];
+    const reject = action('a1', {
+      type: 'setState',
+      name: 'Reject again',
+      trigger: 'approved',
+      settings: { state: 'rejected' },
+    });
+    const approve = action('a2', {
+      type: 'setState',
+      name: 'Approve again',
+      trigger: 'rejected',
+      settings: { state: 'approved' },
+    });
+    const state = await sidebarOf({ action: reject, definition: form([reject, approve]) });
+    expect(state.box('setting-state').getAttribute('aria-invalid')).toBe('true');
+    expect(state.found('setting-state')).toEqual([
+      '"Approve again" moves the entry back, so the two would move it back and forth for ever. Change one of them.',
+    ]);
+  });
+
+  it("asks the state of Change the entry's state, and says that its rule picks the entries", async () => {
+    const one = action('a1', { type: 'setState', name: 'Spam it', settings: { state: 'spam' } });
+    const { element, root, box, keep, kept } = await sidebarOf({ action: one, definition: form([one]) });
+    const state = box<HTMLSelectElement>('setting-state');
+    expect([state.value, options(state)]).toEqual(['spam', ['Approved', 'Rejected', 'Spam']]);
+    expect(text(root.querySelector('label[for="setting-state"]'))).toBe('Move the entry to');
+    expect(text(root.getElementById('setting-state-help'))).toBe(
+      "Approving or rejecting starts that trigger's actions for the entry.",
+    );
+    await select(element, state, 'rejected');
+    await keep();
+    expect(kept().settings).toEqual({ state: 'rejected' });
   });
 });

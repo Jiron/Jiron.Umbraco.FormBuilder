@@ -45,8 +45,9 @@ export default {
     summary_approve: 'Approves the entry',
     summary_reject: 'Rejects the entry',
     summary_spam: 'Moves the entry to Spam',
-    summary_content: 'Creates or updates content',
-    summary_contentPublished: 'Creates or updates content and publishes it',
+    summary_contentNoType: 'No document type yet',
+    summary_contentSaves: (type: string) => `Saves an item of type ${type}`,
+    summary_contentPublishes: (type: string) => `Publishes an item of type ${type}`,
     ruleOff: (words: string) => `${words}. The rule is off, so the action runs as if it had none.`,
     off: 'Off',
 
@@ -190,6 +191,44 @@ export default {
     sends_body: 'a body you write',
     sends_message: "The form's name and the answers",
 
+    contentParent_picked: 'Under this item',
+    contentParent_page: 'Only within this item',
+    contentParent_siteRoot: 'Only within this item',
+    contentParentHelp_picked: 'Without one, at the root of the content tree.',
+    contentParentHelp_page: 'Only from pages within the item you pick; elsewhere a run creates nothing.',
+    contentParentHelp_siteRoot: 'Only where that root is within the item you pick; elsewhere a run creates nothing.',
+    mappingNoType: 'Choose a document type, and its properties come here.',
+    mappingReading: 'Reading the properties…',
+    mappingTypeGone: 'This site no longer has that document type. Choose another.',
+    mappingUnread: "The document type's properties couldn't be read.",
+    mappingRetry: 'Try again',
+    mappingNone: 'This document type has no property a form can fill.',
+    mapProperty: 'Property',
+    mapFrom: 'Takes',
+    mapChoose: 'Choose a property',
+    mapChooseFrom: 'Choose…',
+    mapAnswerTo: (field: string) => `The answer to ${field}`,
+    mapAnswerCantHold: (field: string, property: string) => `The answer to ${field} (${property} can't hold it)`,
+    mapNothingFits: (property: string) =>
+      `This form has no field whose answer ${property} can hold, and ${property} takes no value written for it.`,
+    mapValue: 'A value you write',
+    mapGone: (alias: string) => `${alias} (not on this document type)`,
+    mapPropertyOf: (row: number) => `Property ${row}`,
+    mapFromOf: (name: string) => `What ${name} takes`,
+    mapFromOfRow: (row: number) => `What property ${row} takes`,
+    mapValueOf: (name: string) => `Value of ${name}`,
+    mapRemove: (name: string) => `Remove ${name}`,
+    mapRemoveRow: (row: number) => `Remove property ${row}`,
+    mapAdd: 'Add property',
+    mapYes: 'Yes',
+    mapNo: 'No',
+    mapHint_wholeNumber: 'A whole number',
+    mapHint_decimal: 'A number',
+    contentRoot: 'At the root of the content tree',
+    mapRead_field: (property: string, field: string) => `${property}: the answer to ${field}`,
+    mapRead_fieldGone: (property: string) => `${property}: a field that is gone`,
+    mapRead_value: (property: string, value: string) => `${property}: ${value}`,
+
     preview: 'Preview with a sample entry',
     previewHelp: "As the team gets it, with sample answers made from the form's fields.",
     previewHelpVisitor: "As the visitor gets it, with sample answers made from the form's fields.",
@@ -233,6 +272,41 @@ export default {
     testFailed_paused: "Actions and email are paused on this site, so the test can't go out.",
     testFailed_view_missing: 'This site has no Razor view the email names, and the email has no body of its own.',
     testFailed_failed: "The test couldn't finish. A developer finds why in the site's log.",
+    testFailed_content_type: 'Choose a document type this site has, then test again.',
+    testFailed_content_parent: 'The item picked under Where it goes is gone. Pick another, then test again.',
+    testFailed_content_within: 'Pick the item it must stay within under Where it goes, then test again.',
+    testFailed_content_no_name:
+      "The item's name comes out empty for the sample entry. Give it a name, then test again.",
+    testLine_content_under: (verb: string, type: string, name: string, parent: string) =>
+      `A run would ${verb === 'publish' ? 'publish' : 'save'} an item of type ${type} named "${name}" under ${parent}.`,
+    testLine_content_root: (verb: string, type: string, name: string) =>
+      `A run would ${verb === 'publish' ? 'publish' : 'save'} an item of type ${type} named "${name}" at the root of the content tree.`,
+    testLine_content_page: (verb: string, type: string, name: string, within: string) =>
+      `A run would ${verb === 'publish' ? 'publish' : 'save'} an item of type ${type} named "${name}" under the page the form is sent from, within ${within}.`,
+    testLine_content_site: (verb: string, type: string, name: string, within: string) =>
+      `A run would ${verb === 'publish' ? 'publish' : 'save'} an item of type ${type} named "${name}" under the root of the visitor's site, within ${within}.`,
+    testLine_content_update: 'Where an item of that type and name is there already, a run updates it instead.',
+    testLine_content_sets: (names: readonly string[]) =>
+      `It would set ${new Intl.ListFormat('en-GB', { type: 'conjunction' }).format(names)}.`,
+    testLine_content_property_gone: (alias: string) =>
+      `The document type has no property ${alias}, so a run leaves it out.`,
+    testLine_content_field_gone: (property: string) =>
+      `${property} takes a field this form no longer has, so a run leaves it out.`,
+    testLine_content_sensitive: (property: string, field: string) =>
+      `${field} is sensitive, so a run leaves ${property} empty. Copy sensitive fields lets it through.`,
+    testLine_content_cannot_hold: (property: string, field: string) =>
+      `${property} can't hold the sample entry's answer to ${field}.`,
+    testLine_content_cannot_hold_value: (property: string) => `${property} can't hold the value written for it.`,
+    testLine_state_move: (state: string, count = '0') => {
+      const starts = Number(count);
+      const then = (trigger: string) =>
+        starts > 0 ? `, which starts ${starts} ${trigger} action${starts === 1 ? '' : 's'}` : '';
+      return state === 'approved'
+        ? `A run would approve the entry${then('Approved')}.`
+        : state === 'rejected'
+          ? `A run would reject the entry${then('Rejected')}.`
+          : 'A run would move the entry to Spam.';
+    },
     testSettingsInvalid: "This action's settings have errors. Open the action, fix them, then test again.",
     testNoAnswer: "The test couldn't be run.",
     testNoReply: "The site didn't answer. Try again in a moment.",

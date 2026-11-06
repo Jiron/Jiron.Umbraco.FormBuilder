@@ -62,7 +62,16 @@ describe("an action's test", () => {
       testToast(result({ code: 'sent_to_you', recipient: 'ana@example.com' }), term, 'Email the team').message,
     ).toBe('Email the team: Test email sent to you (ana@example.com).');
     expect(
-      testToast(result({ outcome: 'dryRun', preview: ['It would save a page.', 'It would publish it.'] }), term),
+      testToast(
+        result({
+          outcome: 'dryRun',
+          preview: [
+            { text: 'It would save a page.', args: [] },
+            { text: 'It would publish it.', code: 'a_site_code', args: [] },
+          ],
+        }),
+        term,
+      ),
     ).toEqual({
       color: 'positive',
       message: 'Nothing was sent or changed.\nIt would save a page.\nIt would publish it.',
@@ -127,6 +136,89 @@ describe("an action's test", () => {
     expect(hook('http_5x')).toBe('English sentence');
     expect(testToast(result({ outcome: 'failed', code: 'no_address' }), term, '', 'email').message).toBe(
       'Your account has no email address, so a test email has nowhere to go.',
+    );
+  });
+
+  it("says a dry run's lines of content and of a state in its words, and a content test's failures (ADR-0192)", () => {
+    const line = (code: string, ...args: string[]) => ({ text: 'English sentence', code, args });
+    const dry = (...lines: ReturnType<typeof line>[]) =>
+      testToast(result({ outcome: 'dryRun', code: 'dry_run', preview: lines }), term, '', 'content').message;
+    expect(
+      dry(
+        line('content_under', 'save', 'Story', 'Anna Berger', 'Stories'),
+        line('content_update'),
+        line('content_sets', 'Title', 'Email', 'Age'),
+      ),
+    ).toBe(
+      'Nothing was sent or changed.\nA run would save an item of type Story named "Anna Berger" under Stories.\nWhere an item of that type and name is there already, a run updates it instead.\nIt would set Title, Email and Age.',
+    );
+    expect(dry(line('content_root', 'publish', 'Story', 'Anna'))).toBe(
+      'Nothing was sent or changed.\nA run would publish an item of type Story named "Anna" at the root of the content tree.',
+    );
+    expect(dry(line('content_page', 'save', 'Story', 'Anna', 'Home'))).toBe(
+      'Nothing was sent or changed.\nA run would save an item of type Story named "Anna" under the page the form is sent from, within Home.',
+    );
+    expect(dry(line('content_site', 'save', 'Story', 'Anna', 'Home'))).toBe(
+      'Nothing was sent or changed.\nA run would save an item of type Story named "Anna" under the root of the visitor\'s site, within Home.',
+    );
+    expect(
+      dry(
+        line('content_property_gone', 'subtitle'),
+        line('content_field_gone', 'Title'),
+        line('content_sensitive', 'Email', 'Email address'),
+        line('content_cannot_hold', 'Age', 'Your age'),
+        line('content_cannot_hold_value', 'Age'),
+      ).split('\n'),
+    ).toEqual([
+      'Nothing was sent or changed.',
+      'The document type has no property subtitle, so a run leaves it out.',
+      'Title takes a field this form no longer has, so a run leaves it out.',
+      'Email address is sensitive, so a run leaves Email empty. Copy sensitive fields lets it through.',
+      "Age can't hold the sample entry's answer to Your age.",
+      "Age can't hold the value written for it.",
+    ]);
+    // A run that would leave something out is a warning, which stays to be read; one that leaves nothing out is not.
+    const toastOf = (...lines: ReturnType<typeof line>[]) =>
+      testToast(result({ outcome: 'dryRun', code: 'dry_run', preview: lines }), term, '', 'content');
+    expect([
+      toastOf(line('content_cannot_hold_value', 'Age')).color,
+      toastOf(line('content_cannot_hold_value', 'Age')).stays,
+    ]).toEqual(['warning', true]);
+    expect([
+      toastOf(line('content_root', 'save', 'Story', 'Anna')).color,
+      toastOf(line('content_root', 'save', 'Story', 'Anna')).stays,
+    ]).toEqual(['positive', undefined]);
+    // A state's line, and a line whose code the backoffice does not know in the type's sentence.
+    expect(['approved', 'rejected', 'spam'].map((state) => dry(line('state_move', state)).split('\n')[1])).toEqual([
+      'A run would approve the entry.',
+      'A run would reject the entry.',
+      'A run would move the entry to Spam.',
+    ]);
+    // And the actions the move starts.
+    expect(
+      [dry(line('state_move', 'approved', '2')), dry(line('state_move', 'rejected', '1'))].map(
+        (said) => said.split('\n')[1],
+      ),
+    ).toEqual([
+      'A run would approve the entry, which starts 2 Approved actions.',
+      'A run would reject the entry, which starts 1 Rejected action.',
+    ]);
+    expect(dry(line('state_jump', 'approved')).split('\n')[1]).toBe('English sentence');
+    const failed = (code: string, ...args: string[]) =>
+      testToast(result({ outcome: 'failed', code, args, message: 'English sentence' }), term, '', 'content').message;
+    expect(failed('target_missing', 'documentType')).toBe('Choose a document type this site has, then test again.');
+    expect(failed('target_missing', 'parent')).toBe(
+      'The item picked under Where it goes is gone. Pick another, then test again.',
+    );
+    expect(failed('target_missing', 'within')).toBe(
+      'Pick the item it must stay within under Where it goes, then test again.',
+    );
+    expect(failed('no_name')).toBe(
+      "The item's name comes out empty for the sample entry. Give it a name, then test again.",
+    );
+    // Another type's target_missing is not the content action's.
+    expect(testToast(result({ outcome: 'failed', code: 'target_missing', message: 'Sentence' }), term).message).toBe(
+      'Sentence',
     );
   });
 
