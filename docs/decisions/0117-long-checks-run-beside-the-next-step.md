@@ -1,7 +1,8 @@
 # 0117. Long checks run beside the next step
 
 - Status: accepted; the owner's message of 2026-10-30; amends the roadmap's "How to use" (finishing a step) and
-  [ADR-0011](0011-testing-strategy.md) (where the gate runs)
+  [ADR-0011](0011-testing-strategy.md) (where the gate runs); the gate per step amended by
+  [ADR-0194](0194-the-full-gate-runs-at-milestones.md) (the owner, 2026-11-06), which runs it at phase reviews
 - Date: 2026-10-30
 - Roadmap step: between 6.4g and 6.4h (the owner's message; ROADMAP "When the owner writes during the run")
 
