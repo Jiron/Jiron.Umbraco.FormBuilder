@@ -5,7 +5,10 @@
 // the choice would be. The form check is asked about the draft as Add or Update would make it once the changes pause,
 // and its problems in the action show under their box: those it had at once, others once their box is left or the
 // button is pressed, which keeps the action once the check finds no error in it, or gives no answer. Without
-// `manageActions` every setting shows as it is, and only Close is offered.
+// `manageActions` every setting shows as it is, and only Close is offered. An email has its own editors (ADR-0189): its
+// To box holds every kind of recipient, its fields are picked by kind, its subject and body offer merge tags for mail,
+// and the mail it sends for the sample entry shows beside the settings where there is room, after them where there is
+// not, asked once the changes pause.
 import {
   css,
   html,
@@ -20,11 +23,14 @@ import { jfbBackofficeTokens, jfbVisuallyHidden } from '../../styles/tokens';
 import { issueWords, type CheckWordsContext } from '../check/check-words';
 import { parsePath, type CheckSeverity } from '../check/form-check';
 import { FormChecker, UNCHECKED, type CheckState } from '../check/form-checker';
-import type { DesignDefinition } from '../definition';
+import { allFields, type DesignDefinition, type DesignField, type LocalizedText } from '../definition';
 import { boxValue } from '../inspector/box-value';
 import { controlStyles } from '../inspector/control.styles';
 import { MOST_SHOWN } from '../inspector/inspector-model';
 import { focusableIn } from '../inspector/item-focus';
+import { insertTagInto } from '../inspector/merge-tag-picker.element';
+import { resolveOptions } from '../inspector/option-data';
+import type { DesignOptions } from '../inspector/option-values';
 import {
   boxId,
   problemText,
@@ -33,12 +39,23 @@ import {
   type EditorContext,
   type Found as BoxFound,
 } from '../inspector/setting-editor';
-import { same, type Parsed, type Problem } from '../inspector/setting-values';
+import { same, withText, type Parsed, type Problem } from '../inspector/setting-values';
+import { NO_PREVIEW, type PreviewState } from '../preview/draft-previewer';
+import { textIn } from '../preview/field-models';
 import { RULE_BUILDER_MODAL } from '../rules/rule-builder.modal.token';
 import { elementNames, inspectorRuleWords, typeFactsOf } from '../rules/rule-names';
 import { ruleWords } from '../rules/rule-words';
 import { choiceStyles } from '../settings/choice.styles';
 import { described, whyLine, whys, type Shown } from '../settings/problem-lines';
+import {
+  actionEditors,
+  actionEditorStyles,
+  actionSettingText,
+  type ActionEditorContext,
+  type PickField,
+  type PickOption,
+  type RecipientRoute,
+} from './action-editors';
 import {
   TRIGGERS,
   actionOf,
@@ -57,6 +74,8 @@ import {
   type ActionSetting,
 } from './action-model';
 import type { ActionModalData, ActionModalValue } from './action.modal.token';
+import { EmailPreviewer, type EmailPreview } from './email-preview';
+import './email-preview.element';
 
 /** The ids of the sidebar's own boxes; a type's settings have the inspector's (`boxId`). */
 const BOX = {
@@ -90,6 +109,8 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
     _checking: { state: true },
     _more: { state: true },
     _at: { state: true },
+    _preview: { state: true },
+    _options: { state: true },
   };
 
   static override styles = [
@@ -97,10 +118,35 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
     jfbVisuallyHidden,
     controlStyles,
     choiceStyles,
+    actionEditorStyles,
     css`
       .action {
         display: grid;
         gap: var(--uui-size-space-6);
+      }
+
+      /* The settings and an email's preview: one column, the preview after the settings; side by side where the
+         sidebar has room, the preview kept in view while the settings scroll (as an outcome's, ADR-0187). */
+      .room {
+        container-type: inline-size;
+      }
+
+      .layout {
+        display: grid;
+        gap: var(--uui-size-space-6);
+      }
+
+      @container (min-width: 960px) {
+        .layout.with-preview {
+          grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+          align-items: start;
+          gap: var(--uui-size-layout-2);
+        }
+
+        jfb-email-preview {
+          position: sticky;
+          top: 0;
+        }
       }
 
       .kept {
@@ -224,12 +270,19 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
   declare private _more: boolean;
   /** The place chosen among its trigger's actions; null for where it is, or after the others. */
   declare private _at: number | null;
+  /** An email's mail for the sample entry, as the preview shows it. */
+  declare private _preview: PreviewState<EmailPreview>;
+  /** The options of the fields whose options come from a source, by the field's key, as read for the recipient map. */
+  declare private _options: ReadonlyMap<string, readonly PickOption[]>;
 
   /** Whether the button is waiting for the check, so a second press does not keep the action twice. */
   #submitting = false;
   /** Whether the rules builder is open over the sidebar, so a second does not open over it. */
   #building = false;
   #checker: FormChecker | undefined;
+  #previewer: EmailPreviewer | undefined;
+  /** The fields whose options are being read. */
+  #reading = new Set<string>();
   /** Whether the check has answered yet: its first answer's problems are the action's own, which show at once. */
   #answered = false;
 
@@ -243,6 +296,8 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
     this._checking = false;
     this._more = false;
     this._at = null;
+    this._preview = NO_PREVIEW;
+    this._options = new Map();
   }
 
   override connectedCallback() {
@@ -256,6 +311,14 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
         ? newEdit(crypto.randomUUID(), first, this.#say(first.name))
         : this._edit;
     this.#answered = false;
+    // Who may only read the actions sees the mail too, as the preview needs only design (ADR-0189).
+    const preview = data.preview;
+    if (preview)
+      this.#previewer = new EmailPreviewer(
+        (definition) => preview(definition, this._edit.key, data.culture),
+        (state) => (this._preview = state),
+      );
+    this.#askPreview();
     if (data.readOnly) return;
     this.#checker = new FormChecker(data.check, (state) => this.#heard(state));
     this.#checker.changed(this.#draft());
@@ -264,6 +327,7 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
   override disconnectedCallback() {
     super.disconnectedCallback();
     this.#checker?.reset();
+    this.#previewer?.stop();
     this.data?.closed?.();
   }
 
@@ -325,6 +389,72 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
     this._edit = next;
     if (done && !this._shown.has(box)) this._shown = new Set([...this._shown, box]);
     this.#checker?.changed(this.#draft());
+    this.#askPreview();
+  }
+
+  /** Whether the action sends mail, which its preview shows. */
+  #isEmail(): boolean {
+    return this._edit.type === 'email' && this.#previewer !== undefined;
+  }
+
+  /** Asks for an email's preview of the draft as it is now, once the changes pause. */
+  #askPreview() {
+    if (this.#isEmail()) this.#previewer?.changed(this.#draft());
+  }
+
+  /** The draft's fields that hold a value, as the action's pickers offer them, in the language shown. */
+  #pickFields(): PickField[] {
+    const data = this.data;
+    if (!data) return [];
+    const definition = data.definition;
+    const top = new Set(
+      definition.pages.flatMap((page) => page.groups.flatMap((group) => group.fields.map((field) => field.key))),
+    );
+    return allFields(definition).flatMap((field): PickField[] => {
+      const type = data.fieldTypes[field.type];
+      if (!type?.holdsValue) return [];
+      const options = field['options'] as DesignOptions | null | undefined;
+      return [
+        {
+          key: field.key,
+          label: textIn(field.label, data.culture) || field.alias || field.key,
+          email: field.type === 'email',
+          choice: options !== undefined && options !== null,
+          file: type.storage === 'file',
+          sensitive: field['sensitive'] === true,
+          top: top.has(field.key),
+          options: this.#optionsOf(field, options),
+        },
+      ];
+    });
+  }
+
+  /** A field's options with their labels: its own, or those its source gave; null while a source's are not read. */
+  #optionsOf(field: DesignField, options: DesignOptions | null | undefined): readonly PickOption[] | null {
+    if (!options) return [];
+    if ((options.source ?? 'items') === 'items')
+      return (options.items ?? []).map((item) => ({
+        value: item.value,
+        label: textIn(item.label, this.data?.culture ?? '') || item.value,
+      }));
+    return this._options.get(field.key) ?? null;
+  }
+
+  /** Reads the options of a field whose options come from a source, once, for the recipient map. */
+  #readOptions(key: string) {
+    const data = this.data;
+    if (!data || this.#reading.has(key) || this._options.has(key)) return;
+    const field = allFields(data.definition).find((one) => one.key === key);
+    const options = field?.['options'] as DesignOptions | null | undefined;
+    if (!field || !options || (options.source ?? 'items') === 'items') return;
+    this.#reading.add(key);
+    void resolveOptions(this, data.form, field, data.culture).then((resolved) => {
+      this.#reading.delete(key);
+      const read = resolved?.isAvailable
+        ? resolved.options.map((option) => ({ value: option.value, label: option.label || option.value }))
+        : [];
+      this._options = new Map(this._options).set(key, read);
+    });
   }
 
   #typedProblem(box: string, text: string | null) {
@@ -348,10 +478,15 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
     if (!type) return { shown: [], more: [] };
     const readOnly = this.data?.readOnly ?? false;
     const context = this.#context(found);
-    const drawn = type.settings.flatMap((setting): Drawn[] => {
-      const editor = settingEditor(context, setting, this.#valueOf(setting));
-      return editor === nothing ? [] : [{ setting, template: readOnly ? this.#shown(setting) : editor }];
-    });
+    // A setting within another's box is drawn by that box's editor, unless a host locks the box (ADR-0189).
+    const boxed = (setting: FieldSettingResponseModel) =>
+      Boolean(setting.within) && type.settings.some((box) => box.name === setting.within && !box.lock);
+    const drawn = type.settings
+      .filter((setting) => !boxed(setting))
+      .flatMap((setting): Drawn[] => {
+        const editor = settingEditor(context, setting, this.#valueOf(setting));
+        return editor === nothing ? [] : [{ setting, template: readOnly ? this.#shown(setting) : editor }];
+      });
     const essentials = drawn.filter((one) => one.setting.group === 'essentials');
     return {
       shown: essentials.slice(0, MOST_SHOWN),
@@ -465,7 +600,9 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
     // happens takes the typed problems of the settings it replaces with them, and More options stay open over one.
     const typed = [...this._typed.keys()][0];
     if (typed) {
-      this.shadowRoot?.getElementById(typed)?.focus();
+      const box = this.shadowRoot?.getElementById(typed);
+      box?.closest('details')?.setAttribute('open', '');
+      box?.focus();
       return;
     }
     this._tried = true;
@@ -700,10 +837,59 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
     </div>`;
   }
 
-  /** The editors' context: the inspector's words, the boxes' problems, and a change of a setting at its path. */
+  /**
+   * The editors' context: the inspector's words, the boxes' problems, a change of a setting at its path, merge tags for
+   * mail, and the action's own editors (ADR-0189).
+   */
   #context(found: FoundAt): EditorContext {
+    const editor = this.#inspectorContext(found);
+    return { ...editor, editors: actionEditors(this.#actionContext(editor)) };
+  }
+
+  // The addresses of each choice field's options, kept while another field is chosen (ADR-0189).
+  readonly #routes = new Map<string, readonly RecipientRoute[]>();
+
+  /** What the action's own editors need beyond the inspector's context. */
+  #actionContext(editor: EditorContext): ActionEditorContext {
     const data = this.data;
     return {
+      editor,
+      words: this.#term,
+      fields: this.#pickFields(),
+      layouts: data?.layouts ?? [],
+      defaultLayout: data?.defaultLayout ?? '',
+      within: (box) =>
+        (this.#type()?.settings ?? [])
+          .filter((setting) => setting.within === box)
+          .map((setting) => ({ setting, value: this.#valueOf(setting) })),
+      focus: (id) =>
+        void this.updateComplete.then(() => (this.shadowRoot?.getElementById(id) as HTMLElement | null)?.focus()),
+      problem: (id, text) => this.#typedProblem(id, text),
+      options: (field) => this.#readOptions(field),
+      routes: this.#routes,
+    };
+  }
+
+  // "Insert merge tag" under a box of the mail, its tags those mail may use in the draft as it is (ADR-0189).
+  #tagPicker(id: string): TemplateResult | typeof nothing {
+    const data = this.data;
+    if (!data || data.readOnly) return nothing;
+    return html`<jfb-merge-tag-picker
+      .place=${'mail'}
+      .form=${data.form}
+      .owner=${''}
+      .culture=${data.culture}
+      .definition=${() => this.#draft()}
+      .insert=${(tag: string) => insertTagInto(this.shadowRoot?.getElementById(id), tag)}
+    ></jfb-merge-tag-picker>`;
+  }
+
+  #inspectorContext(found: FoundAt): EditorContext {
+    const data = this.data;
+    return {
+      ...(this._edit.type === 'email'
+        ? { mergeTags: (_setting: FieldSettingResponseModel, path: string) => this.#tagPicker(boxId(path)) }
+        : {}),
       say: this.#say,
       term: (key, ...args) => this.localize.term(`jfbInspector_${key}`, ...args),
       culture: data?.culture ?? '',
@@ -731,7 +917,19 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
       return;
     }
     this.#typedProblem(id, null);
-    const value = parsed.value === undefined || same(parsed.value, setting.default) ? undefined : parsed.value;
+    // A text per culture takes the typed text in the language shown, its other languages kept (as the inspector writes it).
+    const culture = this.data?.culture ?? '';
+    const written =
+      (setting.kind === 'localizedText' || setting.kind === 'localizedHtml') &&
+      (typeof parsed.value === 'string' || parsed.value === undefined)
+        ? withText(
+            settingAt(this._edit, path) as LocalizedText | undefined,
+            culture,
+            (parsed.value as string | undefined) ?? '',
+            culture === this.#defaultCulture(),
+          )
+        : parsed.value;
+    const value = written === undefined || same(written, setting.default) ? undefined : written;
     this.#change(withSettingAt(this._edit, path, value), id, done);
   }
 
@@ -748,7 +946,9 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
       term: (key: string, ...args: unknown[]) => this.localize.term(`jfbInspector_${key}`, ...args),
       culture: this.data?.culture ?? '',
     };
-    const text = settingText(context, setting, this.#valueOf(setting)).trim();
+    const value = this.#valueOf(setting);
+    const own = actionSettingText(this.#actionContext(this.#inspectorContext(new Map())), setting, value);
+    const text = (own ?? settingText(context, setting, value)).trim();
     return html`<div class="item">
       <p class="label">${this.#say(setting.label)}</p>
       <p class="value" id=${boxId(setting.name)} tabindex="-1">${text || this.#term('readOnlyValue_none')}</p>
@@ -853,21 +1053,37 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
     if (!data) return nothing;
     const found = this.#found();
     const readOnly = data.readOnly;
+    const email = this.#isEmail();
+    const view = settingAt(this._edit, 'view');
     return html`<umb-body-layout headline=${data.action ? this.#nameShown() : this.#term('headlineNew')}>
-      <div class="action">
-        ${this.#whatHappens(found)} ${this.#name(found)} ${this.#trigger(found)} ${this.#placeBox()}
-        ${this.#settings(found)} ${this.#stopOnFailure(found)} ${this.#rule(found)}
-        ${
-          data.action && !readOnly
-            ? html`<div class="delete-body">
-                <uui-button
-                  look="secondary"
-                  label=${this.#term('deleteAction')}
-                  @click=${() => this.#delete()}
-                ></uui-button>
-              </div>`
-            : nothing
-        }
+      <div class="room">
+        <div class="layout ${email ? 'with-preview' : ''}">
+          <div class="action">
+            ${this.#whatHappens(found)} ${this.#name(found)} ${this.#trigger(found)} ${this.#placeBox()}
+            ${this.#settings(found)} ${this.#stopOnFailure(found)} ${this.#rule(found)}
+          </div>
+          ${
+            email
+              ? html`<jfb-email-preview
+                  .state=${this._preview}
+                  .culture=${data.culture}
+                  .view=${typeof view === 'string' ? view : ''}
+                  .retry=${() => this.#previewer?.retry()}
+                ></jfb-email-preview>`
+              : nothing
+          }
+          ${
+            data.action && !readOnly
+              ? html`<div class="delete-body">
+                  <uui-button
+                    look="secondary"
+                    label=${this.#term('deleteAction')}
+                    @click=${() => this.#delete()}
+                  ></uui-button>
+                </div>`
+              : nothing
+          }
+        </div>
       </div>
       ${
         data.action && !readOnly

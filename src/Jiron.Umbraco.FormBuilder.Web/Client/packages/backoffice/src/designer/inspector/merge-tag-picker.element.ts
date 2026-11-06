@@ -8,7 +8,7 @@ import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import type { MergeTagPathResponseModel } from '../../api';
 import { jfbBackofficeTokens } from '../../styles/tokens';
 import type { DesignDefinition } from '../definition';
-import { groupPaths, readMergeTagPaths, tagOf, type MergeTagPlace } from './merge-tags';
+import { groupPaths, readMergeTagPaths, tagOf, withTag, type MergeTagPlace } from './merge-tags';
 
 let opened = 0;
 
@@ -280,6 +280,24 @@ export class MergeTagPickerElement extends UmbLitElement {
       }
     `,
   ];
+}
+
+/**
+ * Puts a tag into a box where its caret was: the box takes the focus with the caret after the tag, and the change is sent
+ * as the box sends one (`change` for a setting's box, which keeps the value, `input` for a property's). Rich text
+ * takes it through its own `insertText`.
+ */
+export function insertTagInto(box: Element | null | undefined, tag: string, sent: 'change' | 'input' = 'change') {
+  if (box instanceof HTMLInputElement || box instanceof HTMLTextAreaElement) {
+    const end = box.value.length;
+    const { text, caret } = withTag(box.value, box.selectionStart ?? end, box.selectionEnd ?? end, tag);
+    box.value = text;
+    box.focus();
+    box.setSelectionRange(caret, caret);
+    box.dispatchEvent(new Event(sent, { bubbles: true }));
+  } else if (box && 'insertText' in box) {
+    (box as unknown as { insertText: (text: string) => void }).insertText(tag);
+  }
 }
 
 if (!customElements.get('jfb-merge-tag-picker')) customElements.define('jfb-merge-tag-picker', MergeTagPickerElement);

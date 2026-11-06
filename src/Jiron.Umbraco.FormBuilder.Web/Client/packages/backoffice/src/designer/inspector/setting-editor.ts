@@ -45,6 +45,16 @@ export interface EditorContext {
    * one is an error. Said under the box, it never holds what the box shows, as a value typed that can't be kept does.
    */
   readonly found?: (id: string) => Found | undefined;
+  /**
+   * The host's own editors by their aliases, for settings the inspector draws none of: the action sidebar's field
+   * pickers, addresses, recipients and layouts (ADR-0189).
+   */
+  readonly editors?: Readonly<
+    Record<
+      string,
+      (setting: FieldSettingResponseModel, value: unknown, path: string) => TemplateResult | typeof nothing
+    >
+  >;
 }
 
 /** What the form check found at a box, as an editor says it. */
@@ -162,8 +172,8 @@ export function settingText(
   }
 }
 
-/** The label, the description and the problem's words around a setting's box. */
-function frame(
+/** The label, the description and the problem's words around a setting's box, as every editor of a setting has them. */
+export function settingFrame(
   context: EditorContext,
   setting: FieldSettingResponseModel,
   path: string,
@@ -185,7 +195,10 @@ function frame(
   </div>`;
 }
 
-/** The editor for one setting of a type's schema, at a path in the field's settings; nothing for one 9.4a doesn't draw. */
+/**
+ * The editor for one setting of a type's schema, at a path in the field's settings; the host's own for an editor it
+ * brings, nothing for one neither draws.
+ */
 export function settingEditor(
   context: EditorContext,
   setting: FieldSettingResponseModel,
@@ -210,7 +223,7 @@ export function settingEditor(
         <label class="label" for=${id}>${context.say(setting.label)}</label>
       </div>`;
     case 'choice':
-      return frame(
+      return settingFrame(
         context,
         setting,
         path,
@@ -240,7 +253,7 @@ export function settingEditor(
     case 'localizedText': {
       const texts = value as LocalizedText | undefined;
       const isDefault = context.culture === context.defaultCulture;
-      return frame(
+      return settingFrame(
         context,
         setting,
         path,
@@ -264,7 +277,7 @@ export function settingEditor(
     case 'text':
     case 'time':
     case 'formula':
-      return frame(
+      return settingFrame(
         context,
         setting,
         path,
@@ -294,7 +307,7 @@ export function settingEditor(
     case 'inlineHtml':
       return richText(context, setting, value, path);
     default:
-      return nothing;
+      return context.editors?.[setting.editor]?.(setting, value, path) ?? nothing;
   }
 }
 
@@ -316,7 +329,7 @@ function siteChoice(context: EditorContext, setting: FieldSettingResponseModel, 
     ...picked.filter((key) => !known.has(key)).map((key) => ({ value: key, label: context.term('pickedGone') })),
   ];
   if (setting.kind !== 'list')
-    return frame(context, setting, path, (described) =>
+    return settingFrame(context, setting, path, (described) =>
       choices.length === 0
         ? html`<p class="help" id=${id}>${context.term('siteChoicesNone')}</p>`
         : html`<select
@@ -463,7 +476,7 @@ function textList(context: EditorContext, setting: FieldSettingResponseModel, va
   const id = boxId(path);
   const lines = Array.isArray(value) ? value.map(asText).join('\n') : '';
   const typed = (raw: string, done: boolean) => context.set(path, setting, parseSetting(setting, raw), done);
-  return frame(
+  return settingFrame(
     context,
     setting,
     path,

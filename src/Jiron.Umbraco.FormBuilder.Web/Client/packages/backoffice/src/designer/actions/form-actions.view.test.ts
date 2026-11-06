@@ -33,15 +33,20 @@ const ACTION_TYPES = JSON.parse(
 
 // What the server answers, or nothing while it fails; the sidebars opened, and what the one open answers.
 const server = vi.hoisted(() => ({ fails: false, limit: 50 }));
-const opened = vi.hoisted(() => ({ sidebars: [] as unknown[], answer: undefined as unknown }));
+const opened = vi.hoisted(() => ({ sidebars: [] as unknown[], sizes: [] as unknown[], answer: undefined as unknown }));
 
 /** The form's address, at its Actions view. */
 const ADDRESS = '/umbraco/section/jfb-forms/workspace/jfb-form/edit/form1/view/actions';
 
 vi.mock('@umbraco-cms/backoffice/modal', async (original) => ({
   ...(await original<typeof import('@umbraco-cms/backoffice/modal')>()),
-  umbOpenModal: async (_host: unknown, _token: unknown, args?: { data?: { closed?: () => void } }) => {
+  umbOpenModal: async (
+    _host: unknown,
+    _token: unknown,
+    args?: { data?: { closed?: () => void }; modal?: { size?: string } },
+  ) => {
     opened.sidebars.push(args?.data);
+    opened.sizes.push(args?.modal?.size);
     args?.data?.closed?.();
     return opened.answer;
   },
@@ -54,7 +59,17 @@ vi.mock('@umbraco-cms/backoffice/resources', () => ({
 vi.mock('../../api', async (original) => ({
   ...(await original<typeof import('../../api')>()),
   actionTypeList: async () => (server.fails ? undefined : { types: ACTION_TYPES }),
-  formSettingsChoices: async () => (server.fails ? undefined : { limits: { actions: server.limit } }),
+  formSettingsChoices: async () =>
+    server.fails
+      ? undefined
+      : {
+          limits: { actions: server.limit },
+          defaults: { emailLayout: 'card' },
+          emailLayouts: [
+            { key: 'card', name: '#jfbEmailLayouts_card' },
+            { key: 'brand', name: 'Brand mail' },
+          ],
+        },
 }));
 
 vi.mock('../preview/look', async (original) => ({
@@ -116,6 +131,12 @@ class StandIn {
   readonly form = this.forms.asObservable();
   host: Element | undefined;
   checkOf = async () => UNCHECKED;
+  /** The email previews asked for: the action and the language. */
+  readonly previewed: (readonly [string, string])[] = [];
+  emailPreviewOf = async (_definition: DesignDefinition, key: string, culture: string) => {
+    this.previewed.push([key, culture]);
+    return undefined;
+  };
 
   constructor(definition: DesignDefinition) {
     this.#history = new EditorHistory({ definition, selection: null });
@@ -203,6 +224,7 @@ beforeEach(() => {
   server.fails = false;
   server.limit = 50;
   opened.sidebars = [];
+  opened.sizes = [];
   opened.answer = undefined;
   toasts.shown = [];
   toasts.closed = 0;
@@ -492,6 +514,31 @@ describe('the Actions view', () => {
     await vi.waitFor(() =>
       expect(shadow(list('submitted')).activeElement?.closest('.card')?.getAttribute('data-key')).toBe('a'),
     );
+  });
+
+  it("opens Umbraco's large sidebar for an email, with the site's layouts and its preview, and the medium one for another type", async () => {
+    const { workspace, view, list } = await viewOf(
+      definitionWith([action('a'), action('b', { type: 'webhook', settings: { url: 'https://x.example.com' } })]),
+    );
+    must(shadow(view).querySelector<HTMLElement>('#add'), 'Add action').click();
+    await vi.waitFor(() => expect(opened.sidebars).toHaveLength(1));
+    await settle(view);
+    list('submitted').open('a');
+    await vi.waitFor(() => expect(opened.sidebars).toHaveLength(2));
+    await settle(view);
+    list('submitted').open('b');
+    await vi.waitFor(() => expect(opened.sidebars).toHaveLength(3));
+    expect(opened.sizes).toEqual(['large', 'large', 'medium']);
+    const data = opened.sidebars[1] as ActionModalData;
+    expect([data.layouts, data.defaultLayout]).toEqual([
+      [
+        { key: 'card', name: '#jfbEmailLayouts_card' },
+        { key: 'brand', name: 'Brand mail' },
+      ],
+      'card',
+    ]);
+    await data.preview?.(data.definition, 'a', 'de-DE');
+    expect(workspace.previewed).toEqual([['a', 'de-DE']]);
   });
 
   it('is read-only without manageActions: one line says why, no Add action, and a card opens its settings as they are', async () => {

@@ -4,7 +4,9 @@
 // options, written back as the server keeps them; a value it can't keep refused at its box; the form check's problems in
 // the action under their box, at once for those it had, others once left, Add or Update kept back by an error but not by
 // a check that gives no answer, and kept once for two presses; the rule in the rules builder as a `run` rule; Fix it and
-// Move to another trigger...; read-only, every setting as it is with Close only; and Delete action.
+// Move to another trigger...; read-only, every setting as it is with Close only; and Delete action. An email (ADR-0189):
+// its To box with every kind of recipient, each added and taken away again; Copy to's addresses; fields picked by
+// kind; the layouts; Insert merge tag for mail; and its mail's preview, asked once the changes pause.
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { UmbObjectState } from '@umbraco-cms/backoffice/observable-api';
@@ -13,7 +15,7 @@ import type { ActionTypeResponseModel } from '../../api';
 import { must, registerEnglish, shadow, text } from '../../testing';
 import type { CheckIssue } from '../check/form-check';
 import { CHECK_PAUSE } from '../check/form-checker';
-import type { DesignDefinition, DesignRule } from '../definition';
+import type { DesignDefinition, DesignField, DesignRule } from '../definition';
 import { builtInTypes } from '../preview/fixtures';
 import { actionsOf, choicesOf, type DesignAction } from './action-model';
 import { loadActionWords } from './action-words';
@@ -81,6 +83,51 @@ const definitionWith = (actions: readonly DesignAction[]): DesignDefinition => (
 });
 
 const TEAM = action('a1', { settings: { to: ['sales@example.com'] } });
+
+/** A form with an email field, a choice of two options, a sensitive field and a file upload. */
+const emailForm = (actions: readonly DesignAction[], more: readonly DesignField[] = []): DesignDefinition => ({
+  ...definitionWith(actions),
+  pages: [
+    {
+      key: 'p1',
+      groups: [
+        {
+          key: 'g1',
+          fields: [
+            { key: 'mail', type: 'email', alias: 'email', label: { '': 'Email address' } },
+            {
+              key: 'topic',
+              type: 'dropdown',
+              alias: 'topic',
+              label: { '': 'Topic' },
+              options: {
+                items: [
+                  { value: 'sales', label: { '': 'Sales' } },
+                  { value: 'press', label: { '': 'Press' } },
+                ],
+              },
+            },
+            { key: 'secret', type: 'text', alias: 'secret', label: { '': 'Secret' }, sensitive: true },
+            { key: 'cv', type: 'file', alias: 'cv', label: { '': 'Your CV' } },
+            ...more,
+          ],
+        },
+      ],
+    },
+  ],
+});
+
+/** The mail the preview shows. */
+const MAIL = {
+  from: 'Example <forms@example.com>',
+  to: ['sales@example.com'],
+  cc: [],
+  bcc: [],
+  subject: 'New entry',
+  html: '<!DOCTYPE html><html><head></head><body><p>Hi.</p></body></html>',
+  text: 'Hi.',
+  direction: 'ltr',
+};
 
 const RULE: DesignRule = {
   key: 'r1',
@@ -277,29 +324,37 @@ describe("an action's sidebar", () => {
   });
 
   it("draws the type's settings, Essentials first and the rest under More options, and writes them back as the server keeps them", async () => {
-    const { root, box, type, keep, kept } = await sidebarOf();
+    const { root, type, keep, kept } = await sidebarOf();
     const drawn = () =>
       [...root.querySelectorAll('.settings [id^="setting-"]')]
         .map((one) => one.id)
-        .filter((id) => !/-(lines|label)$/.test(id));
-    // The settings whose editors come with 10.2b (a field's address, recipients by a choice) are not drawn yet.
+        .filter((id) => !/-(lines|label|several|address|remove-\d+)$/.test(id));
+    // The recipients within the To box (a field's answer, the form's creator, the map) are drawn by it, not on their own.
+    // Who it goes to, what it says, then the reply-to and the copies; a blind copy under More options.
     expect(drawn()).toEqual([
       'setting-to',
-      'setting-toCreator',
-      'setting-cc',
-      'setting-bcc',
       'setting-subject',
       'setting-body',
       'setting-withoutUnanswered',
+      'setting-replyToField',
+      'setting-cc',
     ]);
-    expect(box('setting-to').value).toBe('sales@example.com');
+    expect([...root.querySelectorAll('.recipients .chip-text')].map((one) => text(one))).toEqual(['sales@example.com']);
     const more = must(root.querySelector<HTMLButtonElement>('.more'), 'More options');
-    expect([text(more), more.getAttribute('aria-expanded')]).toEqual(['More options (3)', 'false']);
+    expect([text(more), more.getAttribute('aria-expanded')]).toEqual(['More options (7)', 'false']);
     more.click();
     await settle();
-    expect(drawn().slice(7)).toEqual(['setting-plainText', 'setting-from', 'setting-view']);
+    expect(drawn().slice(6)).toEqual([
+      'setting-plainText',
+      'setting-layout',
+      'setting-bcc',
+      'setting-from',
+      'setting-view',
+      'setting-includeSensitive',
+      'setting-attachments',
+    ]);
     expect(text(root.querySelector('.more'))).toBe('Fewer options');
-    await type('setting-to', 'sales@example.com\nlead@example.com');
+    await type('setting-to-address', 'lead@example.com');
     await type('setting-from', 'forms@example.com');
     must(root.querySelector<HTMLInputElement>('#stop-on-failure'), 'Stop the rest').click();
     await settle();
@@ -463,21 +518,47 @@ describe("an action's sidebar", () => {
   });
 
   it("says a problem of a setting without its editor yet under what happens, by the setting's name, and leads there", async () => {
-    checking.answer = () => [
-      problem('$.actions[0].settings.toField', 'setting_invalid', 'Choose an email field of this form.'),
-    ];
-    const visitor = action('a1', { settings: { toField: 'gone' } });
-    const { root, keep, why, modal } = await sidebarOf({ action: visitor });
-    expect(why('what-happens')).toEqual(['To the address in a field: Choose an email field of this form.']);
+    checking.answer = () => [problem('$.actions[0].settings.headers', 'setting_invalid', 'Each header has a name.')];
+    const hook = action('a1', {
+      type: 'webhook',
+      name: 'CRM',
+      settings: { url: 'https://crm.example.com', headers: [{}] },
+    });
+    const { root, keep, why, modal } = await sidebarOf({ action: hook });
+    expect(why('what-happens')).toEqual(['More headers: Each header has a name.']);
     // The sidebar's own first focus, on its name, comes first.
     await frame();
     await keep();
     expect([modal.submit.mock.calls.length, root.activeElement?.id]).toEqual([0, 'what-happens']);
     // Its Fix it leads there too.
     document.body.replaceChildren();
-    const fixing = await sidebarOf({ action: visitor, focus: { kind: 'setting', path: 'toField' } });
+    const fixing = await sidebarOf({ action: hook, focus: { kind: 'setting', path: 'headers' } });
     await frame();
     expect(fixing.root.activeElement?.id).toBe('what-happens');
+  });
+
+  it('says a problem of a recipient within the To box at its row, where its Fix it leads', async () => {
+    checking.answer = () => [
+      problem('$.actions[0].settings.toField', 'setting_invalid', 'Choose an email field of this form.'),
+    ];
+    const visitor = action('a1', { settings: { toField: 'gone' } });
+    const { root, box, keep, found, why, modal } = await sidebarOf({ action: visitor });
+    expect(why('what-happens')).toEqual([]);
+    expect(found('setting-toField')).toEqual(['Choose an email field of this form.']);
+    const field = box<HTMLSelectElement>('setting-toField');
+    expect([field.value, text(field.selectedOptions[0]), field.getAttribute('aria-invalid')]).toEqual([
+      'gone',
+      'A field that is gone',
+      'true',
+    ]);
+    expect(field.getAttribute('aria-describedby')).toBe('setting-toField-found-0');
+    await frame();
+    await keep();
+    expect([modal.submit.mock.calls.length, root.activeElement?.id]).toEqual([0, 'setting-toField']);
+    document.body.replaceChildren();
+    const fixing = await sidebarOf({ action: visitor, focus: { kind: 'setting', path: 'toField' } });
+    await frame();
+    expect(fixing.root.activeElement?.id).toBe('setting-toField');
   });
 
   it("shows a new action's problems once their box is left or Add is pressed, not as it opens", async () => {
@@ -573,5 +654,364 @@ describe("an action's sidebar", () => {
     expect(modal.submit).toHaveBeenCalled();
     element.remove();
     expect(closed).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("an email's sidebar", () => {
+  const chips = (root: ShadowRoot, box: string) =>
+    [...root.querySelectorAll(`#${box} ~ * .chip-text, .item:has(#${box}) .chip-text`)].map((one) => text(one));
+  const toChips = (root: ShadowRoot) => [...root.querySelectorAll('.recipients .chip-text')].map((one) => text(one));
+  const openAdd = (root: ShadowRoot) => {
+    must(root.querySelector('details.add'), 'Add recipient').setAttribute('open', '');
+  };
+  const kinds = (root: ShadowRoot) => [...root.querySelectorAll('.add-kind')].map((one) => text(one));
+  const press = (root: ShadowRoot, label: string) =>
+    must(
+      [...root.querySelectorAll<HTMLButtonElement>('button')].find(
+        (one) => text(one) === label || one.getAttribute('aria-label') === label,
+      ),
+      label,
+    ).click();
+
+  it('builds the To box from every kind of recipient, as the server keeps them, each kind offered once', async () => {
+    const { element, root, box, type, keep, kept } = await sidebarOf({ definition: emailForm([TEAM]) });
+    // The sidebar's own first focus, on its name, comes first.
+    await frame();
+    expect(toChips(root)).toEqual(['sales@example.com']);
+    expect(text(root.querySelector('.recipients > legend'))).toBe('To');
+    expect(text(root.getElementById('setting-to'))).toBe('Add recipient');
+    openAdd(root);
+    expect(kinds(root)).toEqual([
+      'The answer of a field',
+      'The person who created the form',
+      'Addresses chosen by an answer',
+    ]);
+    // Several at once, apart by commas; one already there is kept once.
+    await type('setting-to-address', 'lead@example.com, SALES@example.com ops@example.com');
+    expect(toChips(root)).toEqual(['sales@example.com', 'lead@example.com', 'ops@example.com']);
+    expect(box('setting-to-address').value).toBe('');
+    press(root, 'The answer of a field');
+    await settle(element);
+    expect(root.querySelector('details.add')?.hasAttribute('open')).toBe(false);
+    const field = box<HTMLSelectElement>('setting-toField');
+    expect([field.value, [...field.options].map((option) => text(option))]).toEqual(['mail', ['Email address']]);
+    expect(text(root.querySelector('label[for="setting-toField"]'))).toBe('The answer of');
+    expect(root.activeElement?.id).toBe('setting-toField');
+    openAdd(root);
+    press(root, 'The person who created the form');
+    await settle(element);
+    expect(root.activeElement?.getAttribute('aria-label')).toBe('Remove the person who created the form');
+    openAdd(root);
+    press(root, 'Addresses chosen by an answer');
+    await settle(element);
+    const map = box<HTMLSelectElement>('setting-recipientMap');
+    expect([map.value, [...map.options].map((option) => text(option))]).toEqual(['topic', ['Topic']]);
+    expect(root.activeElement?.id).toBe('setting-recipientMap');
+    expect([...root.querySelectorAll('.routes label')].map((one) => text(one))).toEqual(['Sales', 'Press']);
+    await type('setting-recipientMap-route-1', 'press@example.com, pr@example.com');
+    // Each kind is there once: Add recipient offers addresses alone now.
+    openAdd(root);
+    expect(kinds(root)).toEqual([]);
+    await keep();
+    expect(kept().settings).toEqual({
+      to: ['sales@example.com', 'lead@example.com', 'ops@example.com'],
+      toField: 'mail',
+      toCreator: true,
+      recipientMap: { field: 'topic', routes: [{ value: 'press', to: ['press@example.com', 'pr@example.com'] }] },
+    });
+  });
+
+  it('keeps the addresses of a choice field while another is chosen, and brings them back with it', async () => {
+    const routed = action('a1', {
+      settings: { recipientMap: { field: 'topic', routes: [{ value: 'press', to: ['press@example.com'] }] } },
+    });
+    const region: DesignField = {
+      key: 'region',
+      type: 'dropdown',
+      alias: 'region',
+      label: { '': 'Region' },
+      options: { items: [{ value: 'north', label: { '': 'North' } }] },
+    };
+    const { element, root, box, keep, kept } = await sidebarOf({
+      action: routed,
+      definition: emailForm([routed], [region]),
+    });
+    await frame();
+    const choose = async (field: string) => {
+      const map = box<HTMLSelectElement>('setting-recipientMap');
+      map.value = field;
+      map.dispatchEvent(new Event('change'));
+      await settle(element);
+    };
+    await choose('region');
+    expect([
+      [...root.querySelectorAll('.routes label')].map((one) => text(one)),
+      box('setting-recipientMap-route-0').value,
+    ]).toEqual([['North'], '']);
+    await choose('topic');
+    expect(box('setting-recipientMap-route-1').value).toBe('press@example.com');
+    await keep();
+    expect(kept().settings?.['recipientMap']).toEqual({
+      field: 'topic',
+      routes: [{ value: 'press', to: ['press@example.com'] }],
+    });
+  });
+
+  it('takes each recipient away with its remove button, the focus on the next chip or on Add recipient', async () => {
+    const everyone = action('a1', {
+      settings: {
+        to: ['a@example.com', 'b@example.com'],
+        toField: 'mail',
+        toCreator: true,
+        recipientMap: { field: 'topic', routes: [{ value: 'sales', to: ['s@example.com'] }] },
+      },
+    });
+    const { element, root, keep, kept } = await sidebarOf({ action: everyone, definition: emailForm([everyone]) });
+    await frame();
+    expect(must(root.getElementById('setting-recipientMap-route-0') as HTMLInputElement | null, 'Sales').value).toBe(
+      's@example.com',
+    );
+    press(root, 'Remove a@example.com');
+    await settle(element);
+    expect([toChips(root), root.activeElement?.getAttribute('aria-label')]).toEqual([
+      ['b@example.com'],
+      'Remove b@example.com',
+    ]);
+    press(root, 'Remove the answer of Email address');
+    await settle(element);
+    expect([root.getElementById('setting-toField'), root.activeElement?.id]).toEqual([null, 'setting-to']);
+    press(root, 'Remove the person who created the form');
+    press(root, 'Remove the addresses chosen by Topic');
+    await settle(element);
+    expect(root.querySelectorAll('.recipient')).toHaveLength(0);
+    await keep();
+    expect(kept().settings).toEqual({ to: ['b@example.com'] });
+  });
+
+  it('refuses at the To box an address that is none, keeping what was typed until it is one', async () => {
+    const { root, box, type, keep, modal } = await sidebarOf({ definition: emailForm([TEAM]) });
+    openAdd(root);
+    await type('setting-to-address', 'lead@example.com, sales');
+    // Said under the box it was typed in, which it describes.
+    expect(text(root.getElementById('setting-to-address-why'))).toBe(
+      'Enter addresses such as hello@example.com: "sales" isn\'t one.',
+    );
+    const address = box('setting-to-address');
+    expect([address.value, address.getAttribute('aria-invalid'), address.getAttribute('aria-describedby')]).toEqual([
+      'lead@example.com, sales',
+      'true',
+      'setting-to-address-why setting-to-address-several',
+    ]);
+    expect(toChips(root)).toEqual(['sales@example.com']);
+    await type('setting-to-address', 'lead@example.com');
+    expect([root.getElementById('setting-to-address-why'), toChips(root)]).toEqual([
+      null,
+      ['sales@example.com', 'lead@example.com'],
+    ]);
+    await keep();
+    expect(modal.submit).toHaveBeenCalled();
+  });
+
+  it('opens Add recipient to show what it keeps back, its Add named apart from the footer', async () => {
+    const { root, type, keep, modal } = await sidebarOf({ definition: emailForm([TEAM]) });
+    // The sidebar's own first focus, on its name, comes first.
+    await frame();
+    openAdd(root);
+    const add = must(root.querySelector('details.add uui-button'), 'Add address');
+    expect([add.getAttribute('label'), text(add)]).toEqual(['Add address', 'Add']);
+    await type('setting-to-address', 'sales');
+    must(root.querySelector('details.add'), 'Add recipient').removeAttribute('open');
+    await keep();
+    expect(modal.submit).not.toHaveBeenCalled();
+    expect([root.querySelector('details.add')?.hasAttribute('open'), root.activeElement?.id]).toEqual([
+      true,
+      'setting-to-address',
+    ]);
+  });
+
+  it("says under an option's box why the addresses typed in it can't be kept", async () => {
+    const routed = action('a1', {
+      settings: { to: ['sales@example.com'], recipientMap: { field: 'topic', routes: [] } },
+    });
+    const { root, box, type } = await sidebarOf({ action: routed, definition: emailForm([routed]) });
+    await frame();
+    await type('setting-recipientMap-route-1', 'press@example.com, press');
+    const press = box('setting-recipientMap-route-1');
+    expect([
+      text(root.getElementById('setting-recipientMap-route-1-why')),
+      press.getAttribute('aria-invalid'),
+      press.getAttribute('aria-describedby'),
+    ]).toEqual([
+      'Enter addresses such as hello@example.com: "press" isn\'t one.',
+      'true',
+      'setting-recipientMap-routes-help setting-recipientMap-route-1-why',
+    ]);
+    expect([
+      root.getElementById('setting-recipientMap-route-0-why'),
+      box('setting-recipientMap-route-0').getAttribute('aria-invalid'),
+    ]).toEqual([null, 'false']);
+    await type('setting-recipientMap-route-1', 'press@example.com');
+    expect([root.getElementById('setting-recipientMap-route-1-why'), press.getAttribute('aria-invalid')]).toEqual([
+      null,
+      'false',
+    ]);
+  });
+
+  it('adds Copy to and Blind copy to as chips, each with its remove button', async () => {
+    const { element, root, type, keep, kept } = await sidebarOf({ definition: emailForm([TEAM]) });
+    await frame();
+    expect(text(root.querySelector('label[for="setting-cc"]'))).toBe('Copy to');
+    // That several go at once is said once, under the To box's address.
+    expect(root.getElementById('setting-cc-several')).toBeNull();
+    expect(text(root.getElementById('setting-to-address-several'))).toBe('Several at once: separate them with commas.');
+    await type('setting-cc', 'boss@example.com; deputy@example.com');
+    must(root.querySelector<HTMLButtonElement>('.more'), 'More options').click();
+    await settle(element);
+    await type('setting-bcc', 'audit@example.com');
+    expect(chips(root, 'setting-cc')).toEqual(['boss@example.com', 'deputy@example.com']);
+    press(root, 'Remove deputy@example.com');
+    await settle(element);
+    expect(root.activeElement?.getAttribute('aria-label')).toBe('Remove boss@example.com');
+    await keep();
+    expect(kept().settings).toEqual({
+      to: ['sales@example.com'],
+      cc: ['boss@example.com'],
+      bcc: ['audit@example.com'],
+    });
+  });
+
+  it("offers the fields of each picker's kind, one that is gone said so, and says where the form has none", async () => {
+    const odd = action('a1', { settings: { to: ['sales@example.com'], replyToField: 'gone' } });
+    const { element, root, box, keep, kept } = await sidebarOf({ action: odd, definition: emailForm([odd]) });
+    const reply = box<HTMLSelectElement>('setting-replyToField');
+    expect([...reply.options].map((option) => text(option))).toEqual(['None', 'Email address', 'A field that is gone']);
+    expect(reply.value).toBe('gone');
+    reply.value = 'mail';
+    reply.dispatchEvent(new Event('change'));
+    must(root.querySelector<HTMLButtonElement>('.more'), 'More options').click();
+    await settle(element);
+    const ticks = (id: string) => [...root.querySelectorAll(`#${id} label`)].map((one) => text(one));
+    expect(ticks('setting-includeSensitive')).toEqual(['Secret']);
+    expect(ticks('setting-attachments')).toEqual(['Your CV']);
+    must(root.querySelector<HTMLInputElement>('#setting-attachments-0'), 'Your CV').click();
+    await settle(element);
+    await keep();
+    expect(kept().settings).toEqual({ to: ['sales@example.com'], replyToField: 'mail', attachments: ['cv'] });
+    // A form without such a field says so.
+    document.body.replaceChildren();
+    const plain = await sidebarOf();
+    must(plain.root.querySelector<HTMLButtonElement>('.more'), 'More options').click();
+    await settle(plain.element);
+    expect(text(plain.root.querySelector('#setting-attachments .help'))).toBe('This form has no file upload yet.');
+    expect(text(plain.root.querySelector('#setting-includeSensitive .help'))).toBe(
+      'This form has no field marked sensitive.',
+    );
+  });
+
+  it("offers the site's default layout by its name, the built-in ones and the library's, and one that is gone", async () => {
+    const layouts = [
+      { key: 'card', name: '#jfbEmailLayouts_card' },
+      { key: 'letter', name: '#jfbEmailLayouts_letter' },
+      { key: 'brand', name: 'Brand mail' },
+    ];
+    const gone = action('a1', { settings: { to: ['sales@example.com'], layout: 'old' } });
+    const { element, root, box, keep, kept } = await sidebarOf({ action: gone, layouts, defaultLayout: 'brand' });
+    must(root.querySelector<HTMLButtonElement>('.more'), 'More options').click();
+    await settle(element);
+    const layout = box<HTMLSelectElement>('setting-layout');
+    expect([...layout.options].map((option) => text(option))).toEqual([
+      'Site default (Brand mail)',
+      'A layout that is gone',
+      'Card',
+      'Letter',
+      'Brand mail',
+    ]);
+    expect(layout.value).toBe('old');
+    layout.value = 'letter';
+    layout.dispatchEvent(new Event('change'));
+    await settle(element);
+    await keep();
+    expect(kept().settings).toEqual({ to: ['sales@example.com'], layout: 'letter' });
+  });
+
+  it("writes a typed subject into the texts of the language shown, keeping the others' as the server reads them", async () => {
+    const both = action('a1', {
+      settings: { to: ['sales@example.com'], subject: { '': 'New entry', 'de-DE': 'Neuer Eintrag' } },
+    });
+    const languages = [
+      { culture: 'en-US', name: 'English', isDefault: true },
+      { culture: 'de-DE', name: 'Deutsch', isDefault: false },
+    ];
+    const english = await sidebarOf({ action: both, languages });
+    await english.type('setting-subject', 'New enquiry');
+    await english.keep();
+    expect(english.kept().settings?.['subject']).toEqual({ '': 'New enquiry', 'de-DE': 'Neuer Eintrag' });
+    document.body.replaceChildren();
+    const german = await sidebarOf({ action: both, languages, culture: 'de-DE' });
+    await german.type('setting-subject', 'Neue Anfrage');
+    await german.keep();
+    expect(german.kept().settings?.['subject']).toEqual({ '': 'New entry', 'de-DE': 'Neue Anfrage' });
+  });
+
+  it('offers Insert merge tag for mail under the subject and the body, and none for another type', async () => {
+    const { root } = await sidebarOf();
+    const pickers = [...root.querySelectorAll('jfb-merge-tag-picker')] as unknown as { place: string }[];
+    expect(pickers.map((picker) => picker.place)).toEqual(['mail', 'mail']);
+    expect(root.querySelector('.item:has(#setting-subject) jfb-merge-tag-picker')).not.toBeNull();
+    document.body.replaceChildren();
+    const hook = action('a1', { type: 'webhook', name: 'CRM', settings: { url: 'https://crm.example.com' } });
+    const webhook = await sidebarOf({ action: hook });
+    expect(webhook.root.querySelectorAll('jfb-merge-tag-picker')).toHaveLength(0);
+  });
+
+  it("shows the mail beside an email's settings, asked at once and again once the changes pause, and none for another type", async () => {
+    const asked: [DesignDefinition, string, string][] = [];
+    const preview = async (definition: DesignDefinition, key: string, culture: string) => {
+      asked.push([definition, key, culture]);
+      return MAIL;
+    };
+    const { element, root, type, pause } = await sidebarOf({ preview });
+    expect(asked.map(([, key, culture]) => [key, culture])).toEqual([['a1', 'en-US']]);
+    expect(root.querySelector('.layout')?.classList.contains('with-preview')).toBe(true);
+    const shown = must(root.querySelector('jfb-email-preview'), 'the preview') as unknown as {
+      state: { status: string; preview: unknown };
+    };
+    expect(shown.state).toEqual({ status: 'shown', preview: MAIL });
+    await type('setting-subject', 'Hello {{ field.email }}');
+    expect(asked).toHaveLength(1);
+    await pause();
+    await settle(element);
+    expect(asked).toHaveLength(2);
+    expect(actionsOf(asked[1]?.[0] ?? { pages: [] })[0]?.settings).toEqual({
+      to: ['sales@example.com'],
+      subject: { '': 'Hello {{ field.email }}' },
+    });
+    // Who may only read the actions sees the mail too.
+    document.body.replaceChildren();
+    const reader = await sidebarOf({ preview, readOnly: true });
+    expect(reader.root.querySelector('jfb-email-preview')).not.toBeNull();
+    // Another type sends no mail of its own: nothing is asked, and the settings have the room.
+    document.body.replaceChildren();
+    asked.length = 0;
+    const hook = action('a1', { type: 'webhook', name: 'CRM', settings: { url: 'https://crm.example.com' } });
+    const webhook = await sidebarOf({ action: hook, preview });
+    expect([webhook.root.querySelector('jfb-email-preview'), asked]).toEqual([null, []]);
+  });
+
+  it('says the To box in words for who may only read it', async () => {
+    const everyone = action('a1', {
+      settings: {
+        to: ['a@example.com'],
+        toField: 'mail',
+        toCreator: true,
+        recipientMap: { field: 'topic', routes: [] },
+        cc: ['boss@example.com'],
+      },
+    });
+    const { root } = await sidebarOf({ action: everyone, definition: emailForm([everyone]), readOnly: true });
+    expect(text(root.getElementById('setting-to'))).toBe(
+      'a@example.com, The answer of Email address, The person who created the form, Addresses chosen by Topic',
+    );
+    expect(text(root.getElementById('setting-cc'))).toBe('boss@example.com');
   });
 });

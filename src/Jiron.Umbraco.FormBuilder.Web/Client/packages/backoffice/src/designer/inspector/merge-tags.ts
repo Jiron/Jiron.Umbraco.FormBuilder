@@ -8,9 +8,10 @@ import type { DesignDefinition } from '../definition';
 
 /**
  * Where a text with tags is used, as the merge tag service names its places: the entry title, an outcome's message and
- * its redirect's address are the form's own.
+ * its redirect's address are the form's own, and a mail's subject and body an email action's.
  */
-export type MergeTagPlace = 'visitorText' | 'consentText' | 'defaultValue' | 'entryTitle' | 'outcome' | 'redirect';
+export type MergeTagPlace =
+  'visitorText' | 'consentText' | 'defaultValue' | 'entryTitle' | 'outcome' | 'redirect' | 'mail';
 
 /** The place of a setting's text: a consent's wording is the consent's own, any other a visitor's text. */
 export const placeOf = (type: string, setting: string): MergeTagPlace =>

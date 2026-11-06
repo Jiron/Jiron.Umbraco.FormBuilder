@@ -53,6 +53,7 @@ import {
   type Trigger,
   type TriggerNeed,
 } from './action-model';
+import type { LayoutChoice } from './action-editors';
 import { ACTION_MODAL } from './action.modal.token';
 import { loadActionWords } from './action-words';
 
@@ -68,6 +69,7 @@ export class FormActionsViewElement extends UmbLitElement {
     _types: { state: true },
     _actionTypes: { state: true },
     _limit: { state: true },
+    _layouts: { state: true },
     _look: { state: true },
     _failed: { state: true },
     _check: { state: true },
@@ -201,6 +203,8 @@ export class FormActionsViewElement extends UmbLitElement {
   declare private _types: Readonly<Record<string, FieldTypeResponseModel>>;
   declare private _actionTypes: readonly ActionTypeResponseModel[] | undefined;
   declare private _limit: number;
+  /** The email layouts a mail may name and the site's default, from the form's setting choices (ADR-0189). */
+  declare private _layouts: { readonly items: readonly LayoutChoice[]; readonly defaultKey: string };
   declare private _look: CanvasLook | undefined;
   declare private _failed: boolean;
   declare private _check: CheckState;
@@ -222,6 +226,7 @@ export class FormActionsViewElement extends UmbLitElement {
     super();
     this._types = {};
     this._limit = 0;
+    this._layouts = { items: [], defaultKey: '' };
     this._failed = false;
     this._check = UNCHECKED;
     this._manage = false;
@@ -283,6 +288,7 @@ export class FormActionsViewElement extends UmbLitElement {
     }
     this._actionTypes = types.data.types;
     this._limit = choices.data.limits.actions;
+    this._layouts = { items: choices.data.emailLayouts, defaultKey: choices.data.defaults.emailLayout };
     this._look = look;
     await this.updateComplete;
     await this.#fixPending();
@@ -515,7 +521,10 @@ export class FormActionsViewElement extends UmbLitElement {
       // the focus set here waits until it is gone, so it stays.
       let gone: (() => void) | undefined;
       const closed = new Promise<void>((done) => (gone = done));
+      // An email shows its mail beside its settings, in Umbraco's large sidebar (ADR-0189); a new action starts as one.
+      const email = (action?.type ?? choicesOf(types)[0]?.type) === 'email';
       const value = await umbOpenModal(this, ACTION_MODAL, {
+        modal: { type: 'sidebar', size: email ? 'large' : 'medium' },
         data: {
           action,
           definition,
@@ -535,6 +544,9 @@ export class FormActionsViewElement extends UmbLitElement {
           >,
           readOnly: !this._manage,
           check: (asked) => context.checkOf(asked),
+          layouts: this._layouts.items,
+          defaultLayout: this._layouts.defaultKey,
+          preview: (asked, key, culture) => context.emailPreviewOf(asked, key, culture),
           ...(focus ? { focus } : {}),
           closed: () => gone?.(),
         },

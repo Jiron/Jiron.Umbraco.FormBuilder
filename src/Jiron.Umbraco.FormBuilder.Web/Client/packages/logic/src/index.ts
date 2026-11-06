@@ -15,6 +15,8 @@
  * answers loads (ADR-0115), and 9.5d the rule search, which the rules overview and the form check ask whether rules
  * conflict or an element ever shows (ADR-0179); the website runtime leaves it out of its bundle.
  */
+// An email address as the email field checks it, which the backoffice's address boxes check too (ADR-0189).
+export { isEmailAddress } from './forms.ts';
 // The calculation language is a module of its own, `@jfb/logic/calc`, that only a form with a calculation loads.
 export type { Calculation, FieldReference, Formulas, FormulaScope, Operation } from './calc.ts';
 export {

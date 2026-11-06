@@ -51,13 +51,22 @@ const DEFINITION: DesignDefinition = {
   },
 };
 
+const CARD = '6f0a2c1e-58b3-4d97-a3e1-2b7c9d40e611';
+
 const CHOICES: FormSettingsChoicesResponseModel = {
   timeZone: 'Europe/Berlin',
-  defaults: { protection: 'standard', contentRules: 'normal', requiredMarker: 'optional', theme: 'default' },
+  defaults: {
+    protection: 'standard',
+    contentRules: 'normal',
+    requiredMarker: 'optional',
+    theme: 'default',
+    emailLayout: CARD,
+  },
   themes: [
     { alias: 'default', label: 'Default' },
     { alias: 'brand', label: 'Brand' },
   ],
+  emailLayouts: [{ key: CARD, name: '#jfbEmailLayouts_card' }],
   memberGroups: [],
   limits: {
     lineLength: 500,

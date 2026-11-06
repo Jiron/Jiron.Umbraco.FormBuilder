@@ -184,6 +184,25 @@ export type DuplicateFormRequestModel = {
     includeActions: boolean;
 };
 
+export type EmailPreviewRequestModel = {
+    definition: unknown;
+    action: string;
+    culture?: string | null;
+};
+
+export type EmailPreviewResponseModel = {
+    from: string;
+    to: Array<string>;
+    visitor?: string | null;
+    cc: Array<string>;
+    bcc: Array<string>;
+    replyTo?: string | null;
+    subject: string;
+    html?: string | null;
+    text: string;
+    direction: string;
+};
+
 export type EntryStateMovedResponseModel = {
     key: string;
     state: string;
@@ -244,6 +263,8 @@ export type FieldSettingResponseModel = {
     group: string;
     supportsMergeTags: boolean;
     isPublic: boolean;
+    within?: string | null;
+    picks?: string | null;
     rules: FieldSettingRulesResponseModel;
     lock?: FieldSettingLockResponseModel | null;
 };
@@ -425,6 +446,7 @@ export type FormSettingsChoicesResponseModel = {
     defaults: FormSettingsDefaultsResponseModel;
     themes: Array<FormSettingsThemeResponseModel>;
     memberGroups: Array<FormSettingsMemberGroupResponseModel>;
+    emailLayouts: Array<FormSettingsEmailLayoutResponseModel>;
     limits: FormSettingsLimitsResponseModel;
 };
 
@@ -434,6 +456,7 @@ export type FormSettingsDefaultsResponseModel = {
     contentRules: string;
     requiredMarker: string;
     theme: string;
+    emailLayout: string;
     submitLabel?: {
         [key: string]: string;
     } | null;
@@ -443,6 +466,11 @@ export type FormSettingsDefaultsResponseModel = {
     backLabel?: {
         [key: string]: string;
     } | null;
+};
+
+export type FormSettingsEmailLayoutResponseModel = {
+    key: string;
+    name: string;
 };
 
 export type FormSettingsLimitsResponseModel = {
@@ -873,6 +901,49 @@ export type ActionTestTestResponses = {
 };
 
 export type ActionTestTestResponse = ActionTestTestResponses[keyof ActionTestTestResponses];
+
+export type EmailPreviewRenderData = {
+    body?: EmailPreviewRequestModel;
+    path: {
+        key: string;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/form/{key}/email-preview';
+};
+
+export type EmailPreviewRenderErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+};
+
+export type EmailPreviewRenderError = EmailPreviewRenderErrors[keyof EmailPreviewRenderErrors];
+
+export type EmailPreviewRenderResponses = {
+    /**
+     * OK
+     */
+    200: EmailPreviewResponseModel;
+};
+
+export type EmailPreviewRenderResponse = EmailPreviewRenderResponses[keyof EmailPreviewRenderResponses];
 
 export type CanvasGetData = {
     body?: never;

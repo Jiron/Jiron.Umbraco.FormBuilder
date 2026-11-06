@@ -258,7 +258,7 @@ export default {
     emailFrom: 'From address',
     emailSubject: 'Subject',
     emailBody: 'Body',
-    emailWithoutUnanswered: 'Leave unanswered fields out of the table',
+    emailWithoutUnanswered: 'Leave out unanswered fields',
     emailPlainText: 'Send as plain text',
     emailLayout: 'Layout',
     emailView: 'Razor view',

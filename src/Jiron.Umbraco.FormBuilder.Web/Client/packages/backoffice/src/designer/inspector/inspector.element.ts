@@ -42,8 +42,8 @@ import type { InspectorItem } from '../check/form-check';
 import { boxValue } from './box-value';
 import { inspectorStyles } from './inspector.styles';
 import { boxesOf, focusableIn, isItem } from './item-focus';
-import './merge-tag-picker.element';
-import { placeOf, withTag, type MergeTagPlace } from './merge-tags';
+import { insertTagInto } from './merge-tag-picker.element';
+import { placeOf, type MergeTagPlace } from './merge-tags';
 import './option-editor.element';
 import { itemsOf, optionsOf, parentsBefore, rowsOf, showsCards, sourceOf } from './option-values';
 import { boxId, problemText, settingEditor, settingText, type EditorContext } from './setting-editor';
@@ -405,17 +405,7 @@ export class InspectorElement extends UmbLitElement {
   // A tag put into a box where its caret was, the box given the focus with the caret after the tag, and the change sent
   // as the box sends one: a setting's box as a value it may keep, a property's as typing.
   #insertTag(id: string, tag: string) {
-    const box = this.shadowRoot?.getElementById(id);
-    if (box instanceof HTMLInputElement || box instanceof HTMLTextAreaElement) {
-      const end = box.value.length;
-      const { text, caret } = withTag(box.value, box.selectionStart ?? end, box.selectionEnd ?? end, tag);
-      box.value = text;
-      box.focus();
-      box.setSelectionRange(caret, caret);
-      box.dispatchEvent(new Event(id.startsWith('setting-') ? 'change' : 'input', { bubbles: true }));
-    } else if (box && 'insertText' in box) {
-      (box as unknown as { insertText: (text: string) => void }).insertText(tag);
-    }
+    insertTagInto(this.shadowRoot?.getElementById(id), tag, id.startsWith('setting-') ? 'change' : 'input');
   }
 
   // A setting's new value, at its path: a nested setting's own value sits in its parent's object.

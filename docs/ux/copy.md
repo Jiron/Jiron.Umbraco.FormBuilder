@@ -113,6 +113,12 @@ One line that says where something stands, next to the thing it is about.
 | the Actions view without Manage actions (one line at the top, no folder named: the grant may be global) | Changing these actions needs the Manage actions permission for this form. An administrator can grant it. | Zum Ändern dieser Aktionen ist die Berechtigung „Aktionen verwalten“ für dieses Formular nötig. Wer Administratorrechte hat, kann sie erteilen. |
 | an action's card that is off, read-only | Off | Aus |
 | a trigger without actions (its heading says when it runs) | No actions here yet. | Hier noch keine Aktionen. |
+| an email's preview: who it goes to, before anyone is chosen | No recipient yet | Noch kein Empfänger |
+| an email's preview: who it comes from, on a site without a sender | None yet: the site's email settings name no sender | Noch keiner: Die E-Mail-Einstellungen der Website nennen keinen Absender |
+| an email's preview: the sample's answer of the recipient field | alex.berger@example.com, in a mail of its own | alex.berger@example.com, in einer eigenen E-Mail |
+| an email's layout left to the site (the select names the layout it is) | Site default (Card) | Standard der Website (Karte) |
+| a picked field or layout the form or site no longer has | A field that is gone · A layout that is gone | Ein Feld, das es nicht mehr gibt · Ein Layout, das es nicht mehr gibt |
+| a picked field of another kind, which the picker shows while it is picked | Your name (no email field) · Topic (in a repeatable group) | Your name (kein E-Mail-Feld) · Topic (in einer wiederholbaren Gruppe) |
 | beside the canvas width switch, when the canvas has less room than the chosen width | Narrowed to fit | Schmaler als gewählt |
 | above the permission matrix, for a user group without the section | Translators can't open Form Builder yet. Add the section to their user group | Übersetzer können Form Builder noch nicht öffnen. Bereich zu ihrer Benutzergruppe hinzufügen |
 | above the permission matrix, once, for the fixed Administrators column | Administrators hold every permission everywhere, because they could grant themselves any. | Die Gruppe Administratoren hat überall jede Berechtigung, weil ihre Mitglieder sich jede selbst geben könnten. |
@@ -147,6 +153,10 @@ Use Umbraco's own words where Umbraco has the same action, so the section feels 
 | turn a list of questions into fields | Paste questions… | Fragen einfügen… |
 | turn lines into a choice field's options, or a grid's rows (one a line) | Paste options… · Paste rows… | Optionen einfügen… · Zeilen einfügen… |
 | add a merge tag to a text | Insert merge tag | Platzhalter einfügen |
+| add who gets an email (its To box; it offers An address, The answer of a field, The person who created the form, Addresses chosen by an answer, each kind once) | Add recipient | Empfänger hinzufügen |
+| keep the addresses typed in a box (Enter and leaving the box keep them too; its accessible name is Add address · Adresse hinzufügen, apart from the sidebar's own Add) | Add | Hinzufügen |
+| take a recipient away (an icon button, named for it) | Remove sales@example.com · Remove the answer of Email address | sales@example.com entfernen · Die Antwort von „Email address“ entfernen |
+| show an email's preview in a colour scheme (two pressed buttons) | Light · Dark | Hell · Dunkel |
 | delete for good (asks first) | Delete… | Löschen… |
 | delete a designer element at once, with Undo in the toast | Delete rule · Delete outcome | Regel löschen · Abschluss löschen |
 | empty the Recycle Bin | Empty recycle bin… | Papierkorb leeren… |
@@ -234,6 +244,8 @@ code as the message, never blames the user, and never claims a cause it cannot k
 | a mail held back by a sending limit (no Retry) | Not sent: this site's forms had already sent 3 emails to anna@example.org today, the most one address gets in a day. The limit keeps the forms from being used to send mail to strangers. A limited email is never sent later, so it can't be retried. Host configuration sets the limit: `JironFormBuilder:Limits`. | Nicht gesendet: Die Formulare dieser Website haben heute schon 3 E-Mails an anna@example.org gesendet, die Höchstzahl für eine Adresse an einem Tag. Die Grenze verhindert, dass die Formulare genutzt werden, um Fremden E-Mails zu schicken. Eine begrenzte E-Mail wird nie später gesendet und lässt sich deshalb nicht wiederholen. Die Hostkonfiguration legt die Grenze fest: `JironFormBuilder:Limits`. |
 | locked by configuration | Locked by configuration: `JironFormBuilder:Privacy:AllowFullIp`. | Durch die Konfiguration gesperrt: `JironFormBuilder:Privacy:AllowFullIp`. |
 | folder not empty | This folder still holds 3 forms. Move or delete them first. | Dieser Ordner enthält noch 3 Formulare. Verschieben oder löschen Sie sie zuerst. |
+| an address that is none, in an email's address box (what was typed stays) | Enter addresses such as hello@example.com: "sales" isn't one. | Geben Sie Adressen wie hallo@example.com ein: „sales“ ist keine. |
+| an email's preview, for a view the site lacks and no body (named as its setting, Razor view, names it) | This site has no Razor view "Receipt", and this email has no body of its own. Write a body, or name a view the site has. | Diese Website hat keine Razor-Ansicht „Receipt“, und diese E-Mail hat keinen eigenen Text. Schreiben Sie einen Text, oder nennen Sie eine Ansicht, die die Website hat. |
 
 - **Field errors** sit under their field and say how to fix it ("Enter a number between 1 and 20"), never only what is
   wrong ("Invalid").
@@ -257,6 +269,7 @@ useful action. One sentence, plus a button or link where there is one.
 | a member without entries (the member's Form entries view) | No entries yet. Entries this member sends while signed in appear here. | Noch keine Einträge. Einträge, die dieses Mitglied angemeldet sendet, erscheinen hier. |
 | no access to any form | You can't see any forms yet. An administrator can give your user group access in Settings › Access. | Sie sehen noch keine Formulare. Wer Administratorrechte hat, kann Ihre Benutzergruppe unter Einstellungen › Zugriff freischalten. |
 | nothing in Spam | No spam. Entries that look automated land here, and nothing in them is lost. | Kein Spam. Einträge, die automatisiert wirken, landen hier, und nichts davon geht verloren. |
+| a field picker on a form without such a field (said in its place) | This form has no email field yet. · This form has no file upload yet. · This form has no field marked sensitive. | Dieses Formular hat noch kein E-Mail-Feld. · Dieses Formular hat noch keinen Datei-Upload. · Dieses Formular hat kein als vertraulich markiertes Feld. |
 | no actions yet (Add action sits in the toolbar) | No actions yet. Most forms email the team when an entry comes in, and Add action starts with that. | Noch keine Aktionen. Die meisten Formulare benachrichtigen das Team per E-Mail, wenn ein Eintrag eingeht, und „Aktion hinzufügen“ beginnt damit. |
 | a new, empty form | Add your first field with Add field below, or paste your questions. | Fügen Sie das erste Feld mit „Feld hinzufügen“ unten hinzu, oder fügen Sie Ihre Fragen ein. |
 | no rules yet (the rules overview, with Add rule in its header) | No rules yet. Most rules show a question only when another answer calls for it, and Add rule starts by asking which question. | Noch keine Regeln. Die meisten Regeln zeigen eine Frage nur, wenn eine andere Antwort sie verlangt, und „Regel hinzufügen“ fragt zuerst, um welche Frage es geht. |
@@ -346,6 +359,10 @@ Help text sits under its setting and answers the question the label leaves open;
 | Keep until (legal hold) · Behalten bis | At most a year from today. You can extend it before it ends. | Höchstens ein Jahr ab heute. Sie können sie vor dem Ende verlängern. |
 | the legal hold sidebar, under its settings | Held entries are kept past their retention, and Erase… leaves them out until the hold ends. | Gesperrte Einträge bleiben über ihre Aufbewahrung hinaus erhalten, und „Daten löschen…“ lässt sie aus, bis die Sperre endet. |
 | Preview with a sample entry (an outcome's sidebar) · Vorschau mit einem Beispieleintrag | As visitors see it after sending, with sample answers made from the form's fields. | So sehen Besucher es nach dem Absenden, mit Beispielantworten aus den Feldern des Formulars. |
+| Preview with a sample entry (an email's sidebar) · Vorschau mit einem Beispieleintrag | As the team gets it, with sample answers made from the form's fields. | So bekommt das Team sie, mit Beispielantworten aus den Feldern des Formulars. |
+| Preview with a sample entry (an email only a field's answer gets) · Vorschau mit einem Beispieleintrag | As the visitor gets it, with sample answers made from the form's fields. | So bekommt sie die Person, die das Formular sendet, mit Beispielantworten aus den Feldern des Formulars. |
+| An address (under Add recipient; said once on the sidebar, though Copy to's boxes take several the same way) · Eine Adresse | Several at once: separate them with commas. | Mehrere auf einmal: durch Kommas getrennt. |
+| Addresses chosen by (each option's addresses) · Adressen je nach | The addresses each answer sends to, separated by commas. An answer without addresses adds no one. | Die Adressen, an die jede Antwort geht, durch Kommas getrennt. Eine Antwort ohne Adressen fügt niemanden hinzu. |
 | What happens, for an action of the form · Was passiert | An action keeps what it does. To do something else, add another action. | Eine Aktion behält, was sie tut. Für etwas anderes fügen Sie eine weitere Aktion hinzu. |
 | Name (an action) · Name | Shown on its card and in the deliveries log. | Steht auf ihrer Karte und im Zustellprotokoll. |
 | Place in the list (an action) · Platz in der Liste | Actions of the same trigger run in this order. | Aktionen desselben Auslösers laufen in dieser Reihenfolge. |

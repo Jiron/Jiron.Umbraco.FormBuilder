@@ -75,13 +75,22 @@ vi.mock('../preview/look', async (original) => ({
 
 const { FormSettingsViewElement, readOpenGroups } = await import('./form-settings.view');
 
+const CARD = '6f0a2c1e-58b3-4d97-a3e1-2b7c9d40e611';
+
 const CHOICES: FormSettingsChoicesResponseModel = {
   timeZone: 'Europe/Berlin',
-  defaults: { protection: 'standard', contentRules: 'normal', requiredMarker: 'optional', theme: 'default' },
+  defaults: {
+    protection: 'standard',
+    contentRules: 'normal',
+    requiredMarker: 'optional',
+    theme: 'default',
+    emailLayout: CARD,
+  },
   themes: [
     { alias: 'default', label: 'Default' },
     { alias: 'brand', label: 'Brand' },
   ],
+  emailLayouts: [{ key: CARD, name: '#jfbEmailLayouts_card' }],
   memberGroups: [
     { key: '11111111-1111-1111-1111-111111111111', name: 'Alumni' },
     { key: '22222222-2222-2222-2222-222222222222', name: 'Volunteers' },

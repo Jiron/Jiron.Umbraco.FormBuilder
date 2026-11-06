@@ -417,8 +417,28 @@ it runs ("when an entry comes in"). The actions one event queues run in the orde
   - a failed or uncertain last run ("Failed at 14:02. Next try at 14:30.") links to **Details**, a sidebar with what
     the server answered and the tries, never the entry. It says who can retry the run (ADR-0013, amendment) and
     offers Test, which sends a sample entry to see whether the server answers again.
-- **The email editor:** the recipient builder, the subject and body with the merge-tag picker, the layout and
-  attachments, and a live preview with a sample entry.
+- **The email editor** (10.2b, ADR-0189), in Umbraco's large sidebar:
+  - **To** is one box: the addresses as chips, then the other kinds of recipient there are, each a row with its remove
+    button: The answer of [an email field], The person who created the form, and Addresses chosen by [a choice field],
+    with each of its options and the addresses it sends to. **Add recipient** opens An address (one or several, apart by
+    commas) and the kinds not there yet; a kind the form has no field for is not offered. What can't be kept of a typed
+    address is said under the box it was typed in.
+  - The settings go: To, the subject, the body, Leave out unanswered fields, Reply to, Copy to; **Blind copy to**
+    waits under More options with the layout, the sender and the view.
+  - Another field chosen for Addresses chosen by keeps the addresses typed for the one before while the sidebar is
+    open: choosing it again brings them back.
+  - **Copy to** and **Blind copy to** are chips with a box that adds them. A field picker offers only the fields of its
+    kind (an email field for Reply to, a field marked sensitive for Show sensitive fields, a file upload for Attach
+    files) and says when the form has none. **Layout** offers the site's default by the layout it is ("Site default
+    (Card)"), the built-in card and letter, and the library's.
+  - The subject and the body offer **Insert merge tag** for mail.
+  - **Preview with a sample entry** shows beside the settings where the sidebar has room for two columns, after them
+    where it has not: From, To (and the address a mail of its own goes to), Copy to, Blind copy to, Reply to and the
+    subject, then the mail as the team gets it (as the visitor gets it, and its help says so, where only a field's
+    answer gets it), in a frame that runs nothing, with a Light/Dark switch; a plain-text mail shows its text. It is
+    asked once the changes pause, and who may only read the actions sees it too.
+  - The form check's Fix it of an email setting lands on its part: a recipient's row, or Add recipient for the To
+    box itself.
 - **Test** runs the action against a sample entry made from the form's fields (8.1):
   - an email goes only to the user who tests, and its first line names the recipients the real one would go to;
   - a webhook asks first, then sends with `X-Jfb-Test: true`;
