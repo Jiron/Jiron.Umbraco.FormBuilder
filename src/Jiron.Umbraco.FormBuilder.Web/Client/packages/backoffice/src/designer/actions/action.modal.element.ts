@@ -1104,6 +1104,7 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
                 </div>`
               : nothing
           }
+          <div class="visually-hidden" role="status">${this._testing ? this.#term('testing') : ''}</div>
         </div>
       </div>
       ${

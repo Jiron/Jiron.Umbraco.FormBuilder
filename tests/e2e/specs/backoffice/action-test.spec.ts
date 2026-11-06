@@ -36,6 +36,13 @@ async function newForm(api: APIRequestContext, name: string) {
   return { key, email: fields.find((field) => field.alias === 'email')!.key };
 }
 
+// The test's toast, and its words in the live region Umbraco reads a toast's message aloud from (ADR-0190).
+async function sentToYou(page: Page, address: string) {
+  const said = `Test email sent to you (${address}).`;
+  await expect(page.locator('uui-toast-notification').filter({ hasText: said })).toBeVisible();
+  await expect(page.getByRole('alert').filter({ hasText: said })).toHaveCount(1);
+}
+
 async function openActions(page: Page, key: string) {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto(`${SECTION}/${key}/view/actions`);
@@ -73,7 +80,7 @@ test('an email from a preset is tested from its sidebar before it is added, and 
 
   // Test before Add: the mail goes to the tester alone, its first line naming whom the real one goes to.
   await sidebar.getByRole('button', { name: 'Test', exact: true }).click();
-  await expect(page.getByText(`Test email sent to you (${designer.email}).`)).toBeVisible();
+  await sentToYou(page, designer.email);
   const mail = await waitForMail(
     (candidate) =>
       headerOf(candidate.raw, 'To').includes(designer.email) && headerOf(candidate.raw, 'Subject').includes(name),
@@ -81,9 +88,10 @@ test('an email from a preset is tested from its sidebar before it is added, and 
   expect(headerOf(mail.raw, 'To')).not.toContain('sales@example.com');
   expect(visibleText(bodyOf(mail.raw))).toContain('This is a test. The real email goes to sales@example.com.');
 
-  // The test added nothing: Cancel leaves the form without actions.
+  // The test added nothing: after Cancel the designer holds no card, and the stored draft no action.
   await sidebar.getByRole('button', { name: 'Cancel' }).click();
   await expect(sidebar).toHaveCount(0);
+  await expect(view.locator('jfb-action-list .card')).toHaveCount(0);
   expect((await draftOf(api, form.key)).definition.actions ?? []).toEqual([]);
 });
 
@@ -133,13 +141,17 @@ test('an action is tested from its card, as the draft holds it, and its test mai
   await expect(view.locator('uui-button.test')).toHaveText('Test');
   await axeInside(page, 'jfb-form-actions-view');
   await testButton.click();
-  await expect(page.getByText(`Test email sent to you (${designer.email}).`)).toBeVisible();
+  await sentToYou(page, designer.email);
   const mail = await waitForMail(
     (candidate) =>
       headerOf(candidate.raw, 'To').includes(designer.email) && headerOf(candidate.raw, 'Subject').includes(name),
   );
   expect(visibleText(bodyOf(mail.raw))).toContain(
     'This is a test. The real email goes to ops@example.com, and to alex.berger@example.com in a mail of its own.',
+  );
+  // It said it was testing, in the list's live region, and is not busy any more.
+  await expect(view.locator('jfb-action-list').first().locator('[role="status"]')).toHaveText(
+    'Testing Email the team\u2026',
   );
   await expect(testButton).not.toHaveAttribute('state', 'waiting');
 });

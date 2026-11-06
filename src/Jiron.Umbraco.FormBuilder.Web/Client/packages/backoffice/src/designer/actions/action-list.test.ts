@@ -55,8 +55,8 @@ afterEach(() => {
 });
 
 describe("a trigger's cards", () => {
-  it('offer Test beside the switch, busy while it runs, a second press waiting for the first (ADR-0190)', async () => {
-    const { list, root, rows } = await listOf([card('a'), card('b')]);
+  it('offer Test beside the switch, busy while it runs and saying so, a second press waiting for the first (ADR-0190)', async () => {
+    const { list, root, rows, said } = await listOf([card('a'), card('b')]);
     expect(root.querySelector('.test')).toBeNull();
     let finish: () => void = () => undefined;
     const tested: string[] = [];
@@ -70,11 +70,25 @@ describe("a trigger's cards", () => {
     test.click();
     await settle(list);
     expect(test.getAttribute('state')).toBe('waiting');
+    expect(said()).toBe('Testing Action a\u2026');
     test.click();
     expect(tested).toEqual(['a']);
     finish();
     await settle(list);
     expect(test.hasAttribute('state')).toBe(false);
+  });
+
+  it('offer Test in the "..." too, for a card too narrow to show it beside the switch (IA 5.3)', async () => {
+    const { list, root, rows } = await listOf([card('a')]);
+    expect(root.querySelector('.test-item')).toBeNull();
+    const tested: string[] = [];
+    list.test = async (key) => void tested.push(key);
+    await settle(list);
+    const item = must(rows()[0]?.querySelector<HTMLElement>('.menu .test-item'), 'Test in the menu');
+    expect(text(item)).toBe('Test');
+    item.click();
+    await settle(list);
+    expect(tested).toEqual(['a']);
   });
 
   it('offer no Test where the actions are read-only', async () => {

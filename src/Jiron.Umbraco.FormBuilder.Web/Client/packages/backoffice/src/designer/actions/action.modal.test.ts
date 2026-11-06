@@ -659,6 +659,9 @@ describe("an action's sidebar", () => {
     button.click();
     await settle(element);
     expect(button.getAttribute('state')).toBe('waiting');
+    // Said in the sidebar's own live region: the view's is behind the modal.
+    const status = () => text(root.querySelector('.visually-hidden[role="status"]'));
+    expect(status()).toBe('Testing\u2026');
     button.click();
     expect(tests).toHaveLength(1);
     const [definition, key] = must(tests[0], 'the test');
@@ -666,6 +669,7 @@ describe("an action's sidebar", () => {
     finish();
     await settle(element);
     expect(button.hasAttribute('state')).toBe(false);
+    expect(status()).toBe('');
     // A new action is tested before it is added.
     document.body.replaceChildren();
     const fresh = await sidebarOf({ action: null, test });

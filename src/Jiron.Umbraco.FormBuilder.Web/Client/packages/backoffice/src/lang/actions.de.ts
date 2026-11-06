@@ -151,6 +151,8 @@ export default {
       'Die Einstellungen dieser E-Mail haben Fehler. Die Vorschau erscheint, sobald sie behoben sind.',
     test: 'Testen',
     testNamed: (name: string) => `„${name}“ testen`,
+    testing: 'Wird getestet…',
+    testingNamed: (name: string) => `„${name}“ wird getestet…`,
     testConfirmHeadline: 'Test senden?',
     testConfirmText: 'Damit geht ein Beispieleintrag dorthin, wohin diese Aktion sendet, als Test gekennzeichnet.',
     testConfirmWhere: (line: string) => `${line}. Ein Beispieleintrag geht dorthin, als Test gekennzeichnet.`,
@@ -158,15 +160,16 @@ export default {
     testSentToYou: (address: string) => `Test-E-Mail an Sie gesendet (${address}).`,
     testSent: 'Test gesendet.',
     testDryRun: 'Nichts wurde gesendet oder geändert.',
-    testFailed: 'Der Test ist fehlgeschlagen.',
     testFailed_no_address: 'Ihr Konto hat keine E-Mail-Adresse, daher kann keine Test-E-Mail ankommen.',
     testFailed_mail_off:
-      'Diese Website kann noch keine E-Mails senden: Ihr fehlt ein Mailserver oder ein Ablageordner.',
+      'Diese Website kann noch keine E-Mails senden: Es ist weder ein Mailserver noch ein Ablageordner eingerichtet.',
+    testFailed_paused:
+      'Aktionen und E-Mails sind auf dieser Website angehalten, daher kann der Test nicht gesendet werden.',
     testFailed_view_missing:
       'Diese Website hat die Razor-Ansicht nicht, die die E-Mail nennt, und die E-Mail hat keinen eigenen Text.',
     testFailed_failed: 'Der Test konnte nicht abgeschlossen werden. Das Protokoll der Website nennt den Grund.',
     testSettingsInvalid: 'Die Einstellungen dieser Aktion haben Fehler. Beheben Sie sie, und testen Sie dann erneut.',
-    testNoAnswer: 'Der Test konnte nicht ausgeführt werden. Versuchen Sie es erneut.',
+    testNoAnswer: 'Der Test konnte nicht ausgeführt werden.',
     previewFrom: 'Von',
     previewTo: 'An',
     previewVisitor: 'Auch an',

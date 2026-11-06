@@ -52,6 +52,7 @@ export class ActionListElement extends UmbLitElement {
     css`
       :host {
         display: block;
+        container: jfb-action-list / inline-size;
       }
 
       .cards {
@@ -205,6 +206,20 @@ export class ActionListElement extends UmbLitElement {
         display: flex;
         align-items: center;
         gap: var(--uui-size-space-2);
+      }
+
+      /* Test sits on a card wide enough to keep its name readable beside it; a narrow card offers it in its "...", once
+         either way (IA 5.3). */
+      @container jfb-action-list (width < 26rem) {
+        .end .test {
+          display: none;
+        }
+      }
+
+      @container jfb-action-list (width >= 26rem) {
+        .menu .test-item {
+          display: none;
+        }
       }
 
       .state {
@@ -389,11 +404,13 @@ export class ActionListElement extends UmbLitElement {
 
   // ---- Test ---------------------------------------------------------------------------------------------------------
 
-  // A card's test, its button busy until it answers; a second press waits for the first.
+  // A card's test, its button busy until it answers and the list saying so; a second press waits for the first.
   async #test(key: string) {
     const test = this.test;
     if (!test || this._testing.has(key)) return;
     this._testing = new Set([...this._testing, key]);
+    const card = this.cards.find((one) => one.key === key);
+    if (card) this.announce(this.#term('testingNamed', card.name));
     try {
       await test(key);
     } finally {
@@ -404,10 +421,14 @@ export class ActionListElement extends UmbLitElement {
   // ---- The menu -----------------------------------------------------------------------------------------------------
 
   #ask(key: string, request: CardRequest) {
+    this.#closeMenu(key);
+    this.request(key, request);
+  }
+
+  #closeMenu(key: string) {
     this.shadowRoot
       ?.querySelector<HTMLElement & { hidePopover?: () => void }>(`[data-key="${key}"] uui-popover-container`)
       ?.hidePopover?.();
-    this.request(key, request);
   }
 
   #menu(card: ActionCard, at: number) {
@@ -429,6 +450,20 @@ export class ActionListElement extends UmbLitElement {
         }}
       >
         <div class="menu">
+          ${
+            this.test
+              ? html`<button
+                  type="button"
+                  class="test-item"
+                  @click=${() => {
+                    this.#closeMenu(card.key);
+                    void this.#test(card.key);
+                  }}
+                >
+                  <uui-icon name="icon-play" aria-hidden="true"></uui-icon>${this.#term('test')}
+                </button>`
+              : nothing
+          }
           ${
             this.full
               ? nothing

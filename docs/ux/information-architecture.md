@@ -407,14 +407,15 @@ it runs ("when an entry comes in"). The actions one event queues run in the orde
 - **A card:**
   - the type icon, the name, a one-line summary ("To sales@example.com", "Webhook to crm.example.com"), its problems
     counted in front of it, and the rule chip; the last run follows with 10.2e;
-  - visible: the on/off switch, named for what it turns on ("Use Email the team"), and **Test** (10.2c); "…":
-    Duplicate · Move to another trigger… · Delete. Duplicate puts "<name> (copy)" right after it, and is not offered at
+  - visible: the on/off switch, named for what it turns on ("Use Email the team"), and **Test** (10.2c), which a card
+    too narrow to keep its name readable beside it offers first in its "…" instead; "…": Duplicate · Move to another
+    trigger… · Delete. Duplicate puts "<name> (copy)" right after it, and is not offered at
     the most actions a form can have; Move to another
     trigger… opens the sidebar with the focus on the trigger; Delete acts at once and the toast offers Undo;
   - cards reorder within their trigger by drag and by Alt+Up and Alt+Down (ADR-0016), through a move handle that shows
     on hover and on focus (always on touch); the live region says where a card went. A change closes the toast whose
     Undo would take back another, and Undo and Redo keep the focus on the card it was on;
-  - clicking a card opens its sidebar (footer: Delete action · Cancel · **Update**);
+  - clicking a card opens its sidebar (footer: Delete action · Test · Cancel · **Update**);
   - a failed or uncertain last run ("Failed at 14:02. Next try at 14:30.") links to **Details**, a sidebar with what
     the server answered and the tries, never the entry. It says who can retry the run (ADR-0013, amendment) and
     offers Test, which sends a sample entry to see whether the server answers again.

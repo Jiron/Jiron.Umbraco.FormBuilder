@@ -330,17 +330,19 @@ toast adds only what the user cannot see.
 | an action duplicated (the live region) | Duplicated. Email the team (copy) is right after it. | Dupliziert. „Email the team (Kopie)“ steht direkt danach. |
 | an action deleted (the toast) | Mark as approved deleted. [Undo] | „Mark as approved“ gelöscht. [Zurücknehmen] |
 | an outcome added to a published form | Added. Visitors get it once you publish. | Hinzugefügt. Auf der Website gilt es ab der nächsten Veröffentlichung. |
-| test email sent | Test email sent to you (ana@example.com). | Test-E-Mail an Sie gesendet (ana@example.com). |
-| an action's test reached what it is set up to reach (the type's own sentence under it) | Test sent. | Test gesendet. |
-| an action's test that reached nobody (what a run would do under it) | Nothing was sent or changed. | Nichts wurde gesendet oder geändert. |
-| an action's test failed (the reason under it, in the type's sentence for a reason the backoffice does not know) | The test failed. | Der Test ist fehlgeschlagen. |
-| … the tester has no address | Your account has no email address, so a test email has nowhere to go. | Ihr Konto hat keine E-Mail-Adresse, daher kann keine Test-E-Mail ankommen. |
-| … the site cannot send mail | This site can't send email yet: it has no mail server or pickup folder. | Diese Website kann noch keine E-Mails senden: Ihr fehlt ein Mailserver oder ein Ablageordner. |
+| test email sent (an action's test says all in its toast's message, which Umbraco reads aloud; each sentence says on its own what happened) | Test email sent to you (ana@example.com). | Test-E-Mail an Sie gesendet (ana@example.com). |
+| an action's test reached what it is set up to reach (the type's own sentence after it) | Test sent. | Test gesendet. |
+| an action's test that reached nobody (what a run would do on the lines under it) | Nothing was sent or changed. | Nichts wurde gesendet oder geändert. |
+| an action's test failed, the tester has no address (the type's own sentence for a reason the backoffice does not know) | Your account has no email address, so a test email has nowhere to go. | Ihr Konto hat keine E-Mail-Adresse, daher kann keine Test-E-Mail ankommen. | Your account has no email address, so a test email has nowhere to go. | Ihr Konto hat keine E-Mail-Adresse, daher kann keine Test-E-Mail ankommen. |
+| … the site cannot send mail | This site can't send email yet: it has no mail server or pickup folder. | Diese Website kann noch keine E-Mails senden: Es ist weder ein Mailserver noch ein Ablageordner eingerichtet. |
+| … actions and email are paused | Actions and email are paused on this site, so the test can't go out. | Aktionen und E-Mails sind auf dieser Website angehalten, daher kann der Test nicht gesendet werden. |
 | … the email's view is missing | This site has no Razor view the email names, and the email has no body of its own. | Diese Website hat die Razor-Ansicht nicht, die die E-Mail nennt, und die E-Mail hat keinen eigenen Text. |
 | … it threw | The test couldn't finish. The site's log says why. | Der Test konnte nicht abgeschlossen werden. Das Protokoll der Website nennt den Grund. |
 | … settings the type cannot read | This action's settings have errors. Fix them, then test again. | Die Einstellungen dieser Aktion haben Fehler. Beheben Sie sie, und testen Sie dann erneut. |
-| … no answer from the server | The test couldn't be run. Try again. | Der Test konnte nicht ausgeführt werden. Versuchen Sie es erneut. |
+| … no answer from the server | The test couldn't be run. | Der Test konnte nicht ausgeführt werden. |
+| an action's test running (the list's live region, or the sidebar's) | Testing Email the team… · Testing… | „Email the team“ wird getestet… · Wird getestet… |
 | a test mail's first line (in the tester's backoffice language; the rest is the real mail) | This is a test. The real email goes to sales@example.com, and to alex.berger@example.com in a mail of its own. | Dies ist ein Test. Die echte E-Mail geht an sales@example.com und in einer eigenen E-Mail an alex.berger@example.com. |
+| … only the visitor gets a mail (the test is the visitor's mail) | This is a test. The real email goes to alex.berger@example.com. | Dies ist ein Test. Die echte E-Mail geht an alex.berger@example.com. |
 | export ready | Your export of 12,400 entries is ready. [Download] | Ihr Export von 12.400 Einträgen ist fertig. [Herunterladen] |
 | one person's export ready (Privacy › People) | Your export for lena@example.com is ready. [Download] | Ihr Export für lena@example.com ist fertig. [Herunterladen] |
 | a person's data erased (the link only for users with `manageSettings`; others read "It's recorded in the audit log." · „Das ist im Protokoll vermerkt.“) | Everything about lena@example.com is erased: 6 entries in 3 forms, 2 uploaded files and 4 sent emails. Statistics stay. [Open the audit record] | Alle Daten zu lena@example.com sind gelöscht: 6 Einträge in 3 Formularen, 2 hochgeladene Dateien und 4 gesendete E-Mails. Die Statistik bleibt. [Protokolleintrag öffnen] |

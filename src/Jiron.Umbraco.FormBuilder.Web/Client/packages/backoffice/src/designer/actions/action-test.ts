@@ -18,19 +18,21 @@ export function testAnswer(data: ActionTestResponseModel | undefined, code: stri
   return { kind: 'noAnswer' };
 }
 
-/** What a toast says of a test: its look, its headline and what follows it. */
+/**
+ * What a toast says of a test: its look, and its words as one message, which Umbraco's toast reads aloud (a headline it
+ * does not); each sentence says on its own what happened.
+ */
 export interface TestToast {
   readonly color: 'positive' | 'danger';
-  readonly headline: string;
   readonly message: string;
 }
 
 // The failures the backoffice says in its words; another's sentence is the type's.
-const FAILURES = new Set(['no_address', 'mail_off', 'view_missing', 'failed']);
+const FAILURES = new Set(['no_address', 'mail_off', 'paused', 'view_missing', 'failed']);
 
 /** A test's answer in the backoffice's words. */
 export function testToast(answer: TestAnswer, term: (key: string, ...args: unknown[]) => string): TestToast {
-  const failed = (message: string): TestToast => ({ color: 'danger', headline: term('testFailed'), message });
+  const failed = (message: string): TestToast => ({ color: 'danger', message });
   switch (answer.kind) {
     case 'settingsInvalid':
       return failed(term('testSettingsInvalid'));
@@ -41,10 +43,10 @@ export function testToast(answer: TestAnswer, term: (key: string, ...args: unkno
       const { outcome, code, message, recipient, preview } = answer.result;
       if (outcome === 'failed')
         return failed(code && FAILURES.has(code) ? term(`testFailed_${code}`) : (message ?? term('testFailed_failed')));
-      if (code === 'sent_to_you' && recipient)
-        return { color: 'positive', headline: term('testSentToYou', recipient), message: '' };
-      if (outcome === 'dryRun') return { color: 'positive', headline: term('testDryRun'), message: preview.join(' ') };
-      return { color: 'positive', headline: term('testSent'), message: message ?? '' };
+      if (code === 'sent_to_you' && recipient) return { color: 'positive', message: term('testSentToYou', recipient) };
+      // A dry run's lines, each on its own line under what it was; the toast keeps the breaks.
+      if (outcome === 'dryRun') return { color: 'positive', message: [term('testDryRun'), ...preview].join('\n') };
+      return { color: 'positive', message: message ? `${term('testSent')} ${message}` : term('testSent') };
     }
   }
 }

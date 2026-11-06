@@ -503,9 +503,7 @@ export class FormActionsViewElement extends UmbLitElement {
         ),
       ask: (confirmed) => context.testActionOf(definition, key, confirmed),
       say: async (toast) => {
-        (await this.#getNotifications())?.peek(toast.color, {
-          data: { headline: toast.headline, message: toast.message },
-        });
+        (await this.#getNotifications())?.peek(toast.color, { data: { message: toast.message } });
       },
       term: this.#term,
     });

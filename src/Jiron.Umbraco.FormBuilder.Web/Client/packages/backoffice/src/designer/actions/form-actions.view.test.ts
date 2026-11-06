@@ -571,7 +571,7 @@ describe('the Actions view', () => {
     expect(confirming.asked).toBe(0);
     expect(toasts.shown.at(-1)).toEqual({
       color: 'positive',
-      data: { headline: 'Test email sent to you (ana@example.com).', message: '' },
+      data: { message: 'Test email sent to you (ana@example.com).' },
     });
   });
 
@@ -589,13 +589,18 @@ describe('the Actions view', () => {
     confirming.yes = true;
     workspace.testAnswer = {
       kind: 'done',
-      result: { outcome: 'failed', code: 'http_503', message: 'http_503', preview: [] },
+      result: {
+        outcome: 'failed',
+        code: 'http_503',
+        message: 'The webhook was not delivered (http_503).',
+        preview: [],
+      },
     };
     await list('submitted').test?.('b');
     expect(workspace.tested.map(([key, confirmed]) => [key, confirmed])).toEqual([['b', true]]);
     expect(toasts.shown.at(-1)).toEqual({
       color: 'danger',
-      data: { headline: 'The test failed.', message: 'http_503' },
+      data: { message: 'The webhook was not delivered (http_503).' },
     });
   });
 
