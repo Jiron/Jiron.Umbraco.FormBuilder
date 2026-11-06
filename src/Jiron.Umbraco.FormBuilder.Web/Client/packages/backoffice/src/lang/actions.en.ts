@@ -138,17 +138,17 @@ export default {
     addressHelp_teams:
       "Empty sends to the site's Microsoft Teams address. To send elsewhere, name the address as a reference, such as $JironFormBuilder:Secrets:SalesTeams, as it holds its key.",
     addressReference_slack:
-      "A Slack address holds its key, so it stays in the site's configuration: name it as a reference, such as $JironFormBuilder:Secrets:SalesSlack.",
+      "A Slack address holds its key, so it stays in the site's configuration: name it as a reference.",
     addressReference_teams:
-      "A Microsoft Teams address holds its key, so it stays in the site's configuration: name it as a reference, such as $JironFormBuilder:Secrets:SalesTeams.",
+      "A Microsoft Teams address holds its key, so it stays in the site's configuration: name it as a reference.",
     referenceWrong: 'After $JironFormBuilder:Secrets:, a reference has 1 to 64 letters, digits and _.',
     mode_answers: "Every answer, by its field's alias",
     modeLine_answers: 'Fields added later go too.',
     mode_mapping: 'The names and values you choose',
     modeLine_mapping: 'The list starts with every field. Each value can hold merge tags.',
     mode_body: 'A body you write',
-    modeLine_body: 'In the format above, with merge tags written for it.',
-    modeLine_body_chat: 'JSON as the chat reads it, with merge tags written for it.',
+    modeLine_body: 'Merge tags are escaped for the format above.',
+    modeLine_body_chat: 'JSON as the chat reads it. Merge tags are escaped for JSON.',
     mode_none: 'Only that something happened',
     modeLine_none: "No answers: what happened, the form and the entry's key.",
     mode_message: 'A message',
@@ -164,6 +164,7 @@ export default {
     pairRemove: (name: string) => `Remove ${name}`,
     pairAdd: 'Add a name',
     pairsNone: "No names yet, so every answer goes, by its field's alias.",
+    rowNumber: (row: number) => `row ${row}`,
     pair_name_empty: 'Give this value a name.',
     pair_name_wrong: 'A name has letters, digits, _, - and . only.',
     pair_name_twice: (name: string) => `${name} is there already.`,
@@ -179,14 +180,14 @@ export default {
     header_name_twice: (name: string) => `${name} is there already.`,
     header_value_wrong: 'A header carries plain ASCII text only.',
     header_value_credential: (name: string) =>
-      `${name} carries a credential, so it stays in the site's configuration: give it as a reference, such as $JironFormBuilder:Secrets:CrmToken.`,
-    secretReference:
-      "The secret stays in the site's configuration: give it as a reference, such as $JironFormBuilder:Secrets:CrmSigning.",
+      `${name} carries a credential: give it as a reference, such as $JironFormBuilder:Secrets:CrmToken.`,
+    secretReference: 'Give the secret as a reference, such as $JironFormBuilder:Secrets:CrmSigning.',
+    secretHidden: 'A secret written as itself, not shown. Replace it with a reference.',
     sends: (format: string, what: string) => `${format}: ${what}`,
     sends_answers: "every answer, by its field's alias",
     sends_none: 'only that something happened',
     sends_withMetadata: (what: string) => `${what}, with metadata`,
-    sends_body: 'A body of its own',
+    sends_body: 'a body you write',
     sends_message: "The form's name and the answers",
 
     preview: 'Preview with a sample entry',
@@ -213,6 +214,7 @@ export default {
     testSent: 'Test sent.',
     testSentStatus: (status: string) => `Test sent. The server answered ${status}.`,
     testFailed_webhook_http: (status: string) => `The server answered ${status}, so the test wasn't delivered.`,
+    testFailed_webhook_no_address_url: 'This webhook has no address yet. Give it one under Where it goes.',
     testFailed_webhook_no_address:
       'Nowhere to send it: the site has no address for this chat yet, and the action names none of its own.',
     testFailed_webhook_not_allowed:

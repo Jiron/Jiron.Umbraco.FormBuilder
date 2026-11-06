@@ -17,6 +17,7 @@ import {
   everyAnswer,
   formatOf,
   headerProblem,
+  holdsASecret,
   isChat,
   isReference,
   mappingProblem,
@@ -37,6 +38,8 @@ export function webhookEditors(context: ActionEditorContext) {
   return {
     webhookAddress: (setting: FieldSettingResponseModel, value: unknown, path: string) =>
       address(context, setting, value, path),
+    webhookUrl: (setting: FieldSettingResponseModel, value: unknown) =>
+      addressBox(context, { setting, value }, targetOf(context.value('target')), true),
     webhookBody: (setting: FieldSettingResponseModel, value: unknown, path: string) =>
       body(context, setting, value, path),
     headerMap: (setting: FieldSettingResponseModel, value: unknown, path: string) =>
@@ -62,6 +65,12 @@ export const webhookEditorStyles = css`
     min-inline-size: 0;
     padding-inline-start: var(--uui-size-space-4);
     border-inline-start: 2px solid var(--uui-color-border);
+  }
+
+  /* The chosen way's box under its own choice, from the choice's words on: the radio, its gap and the row's padding. */
+  .choices > .mode {
+    margin-block: var(--uui-size-space-1) var(--uui-size-space-4);
+    margin-inline-start: calc(18px + 2 * var(--uui-size-space-3));
   }
 
   textarea.body {
@@ -93,6 +102,11 @@ export const webhookEditorStyles = css`
     grid-column: 1 / -1;
   }
 
+  /* The columns' heads name the boxes; where they go, the boxes' own placeholders do. */
+  .pair-row > input::placeholder {
+    color: transparent;
+  }
+
   @container (max-width: 480px) {
     .pairs-head {
       display: none;
@@ -104,8 +118,17 @@ export const webhookEditorStyles = css`
       border-block-end: 1px solid var(--uui-color-divider-standalone);
     }
 
+    .pair-row > input::placeholder {
+      color: var(--jfb-bo-color-text-muted);
+    }
+
     .pair-row > .value {
       grid-column: 1;
+    }
+
+    .pair-row > .remove {
+      grid-row: 1 / span 2;
+      grid-column: 2;
     }
   }
 `;
@@ -118,6 +141,15 @@ function parts(context: ActionEditorContext, box: string): Map<string, Within> {
 }
 
 const textOf = (value: unknown) => (typeof value === 'string' ? value : '');
+
+const isObject = (value: unknown): value is Record<string, unknown> =>
+  value !== null && typeof value === 'object' && !Array.isArray(value);
+
+/** The keys of the sensitive fields the action may send. */
+function included(context: ActionEditorContext): string[] {
+  const keys = context.value('includeSensitive');
+  return Array.isArray(keys) ? keys.map(String) : [];
+}
 
 /** Sets a setting within a box. */
 function put(context: ActionEditorContext, part: Within | undefined, value: unknown, done = true) {
@@ -134,6 +166,9 @@ function typedText(
 ) {
   context.editor.set(path, setting, parseSetting(setting, raw), done);
 }
+
+/** The settings of a chat's ways, which a host's lock on one draws as they are. */
+const CHAT = new Set(['template', 'message']);
 
 /** The settings What it sends draws within it. */
 const BODY = ['format', 'withoutAnswers', 'metadata', 'template', 'message'] as const;
@@ -158,7 +193,13 @@ function address(context: ActionEditorContext, setting: FieldSettingResponseMode
     if (next === target) return;
     const body = parts(context, 'fields');
     const mapping = context.settingOf('fields');
-    context.kept.set(`webhook:${target}`, { url: url?.value, fields: context.value('fields'), ...bodyValues(body) });
+    const signing = context.settingOf('secret');
+    context.kept.set(`webhook:${target}`, {
+      url: url?.value,
+      fields: context.value('fields'),
+      secret: context.value('secret'),
+      ...bodyValues(body),
+    });
     const back = context.kept.get(`webhook:${next}`) as Record<string, unknown> | undefined;
     const start: Record<string, unknown> = back ?? {
       message: isChat(next) ? context.presetMessage(next) : undefined,
@@ -167,10 +208,13 @@ function address(context: ActionEditorContext, setting: FieldSettingResponseMode
     context.forget('setting-fields');
     context.forget('setting-template');
     context.forget('setting-message');
+    context.forget('setting-secret');
     context.kept.delete('rows:fields');
     context.editor.set(path, setting, { ok: true, value: next }, true);
     put(context, url, start['url']);
     if (mapping) context.editor.set(mapping.name, mapping, { ok: true, value: start['fields'] }, true);
+    // A chat checks no signature: its secret is kept for its own address, and comes back with it.
+    if (signing && !signing.lock) context.editor.set(signing.name, signing, { ok: true, value: start['secret'] }, true);
     for (const name of BODY) put(context, body.get(name), start[name]);
   };
   const own = foundAt(context.editor, id);
@@ -198,8 +242,8 @@ function address(context: ActionEditorContext, setting: FieldSettingResponseMode
 }
 
 // The address: an https address or a reference for its own; for a chat, empty for the site's, or a reference, as a
-// chat's address holds its key.
-function addressBox(context: ActionEditorContext, url: Within, target: WebhookTarget) {
+// chat's address holds its key. Within the target's box, or alone where a host locks the target.
+function addressBox(context: ActionEditorContext, url: Within, target: WebhookTarget, alone = false) {
   if (url.setting.lock) return settingEditor(context.editor, url.setting, url.value, url.setting.name);
   const id = boxId(url.setting.name);
   const help = `${id}-help`;
@@ -218,7 +262,7 @@ function addressBox(context: ActionEditorContext, url: Within, target: WebhookTa
     typedText(context, url.setting, url.setting.name, raw, done);
   };
   const own = foundAt(context.editor, id);
-  return html`<div class="item inner">
+  return html`<div class=${alone ? 'item' : 'item inner'}>
     <label class="label" for=${id}>${context.editor.say(url.setting.label)}</label>
     <p class="help" id=${help}>${context.words(`addressHelp_${target}`)}</p>
     <input
@@ -248,12 +292,15 @@ function body(context: ActionEditorContext, setting: FieldSettingResponseModel, 
   const mode = modeOf(target, values);
   const locked = ['template', 'withoutAnswers', 'message'].some((name) => within.get(name)?.setting.lock);
   const say = context.editor.say;
+  const id = boxId(path);
   if (locked)
     return html`<div class="item within">
-      <p class="label">${say(setting.label)}</p>
-      ${[...within.values()].map((part) => settingEditor(context.editor, part.setting, part.value, part.setting.name))}
+      <p class="label" id=${`${id}-label`}>${say(setting.label)}</p>
+      ${isChat(target) ? nothing : html`<div class="mode">${rowsEditor(context, setting, value, path, MAPPING, `${id}-label`)}</div>`}
+      ${[...within.values()]
+        .filter((part) => (isChat(target) ? CHAT.has(part.setting.name) : part.setting.name !== 'message'))
+        .map((part) => settingEditor(context.editor, part.setting, part.value, part.setting.name))}
     </div>`;
-  const id = boxId(path);
   const modes = MODES[isChat(target) ? 'chat' : 'own'];
   const choose = (next: BodyMode) => {
     if (next === mode) return;
@@ -261,18 +308,30 @@ function body(context: ActionEditorContext, setting: FieldSettingResponseModel, 
     const back = context.kept.get(`webhook-mode:${target}:${next}`) as Record<string, unknown> | undefined;
     context.forget(`${id}-`);
     context.forget('setting-template');
+    context.forget('setting-message');
+    // Leaving no answers, the metadata's switch comes back as it was before.
+    const metadata = mode === 'none' ? { metadata: context.kept.get(`webhook-metadata:${target}`) } : {};
     switch (next) {
       case 'answers':
-        settle(context, within, { fields: undefined, withoutAnswers: false, template: undefined }, path, setting);
+        settle(
+          context,
+          within,
+          { fields: undefined, withoutAnswers: false, template: undefined, ...metadata },
+          path,
+          setting,
+        );
         break;
       case 'mapping': {
-        const fields = back?.['fields'] ?? objectOf(everyAnswer(context.fields), mappingProblem);
+        const fields =
+          back?.['fields'] ??
+          (isObject(value) ? value : objectOf(everyAnswer(context.fields, included(context)), mappingProblem));
         context.kept.delete('rows:fields');
-        settle(context, within, { fields, withoutAnswers: false, template: undefined }, path, setting);
+        settle(context, within, { fields, withoutAnswers: false, template: undefined, ...metadata }, path, setting);
         break;
       }
       case 'none':
-        // Without answers the metadata says what happened, so it goes.
+        // Without answers the metadata says what happened, so it goes; its switch comes back after.
+        context.kept.set(`webhook-metadata:${target}`, values.metadata);
         settle(
           context,
           within,
@@ -282,7 +341,7 @@ function body(context: ActionEditorContext, setting: FieldSettingResponseModel, 
         );
         break;
       case 'body': {
-        const rows = rowsOf(value).length > 0 ? rowsOf(value) : everyAnswer(context.fields);
+        const rows = rowsOf(value).length > 0 ? rowsOf(value) : everyAnswer(context.fields, included(context));
         const message = textOf(within.get('message')?.value) || context.presetMessage(target) || '';
         const template =
           back?.['template'] ??
@@ -323,33 +382,56 @@ function body(context: ActionEditorContext, setting: FieldSettingResponseModel, 
     .map((name) => context.editor.found?.(boxId(name))?.lines ?? nothing);
   const none = boxId('withoutAnswers');
   const noneFound = foundAt(context.editor, none);
-  return html`<fieldset class="item">
+  return html`<fieldset class="item" id=${`${id}-box`}>
     <legend class="label">${say(setting.label)}</legend>
     ${!isChat(target) && format ? settingEditor(context.editor, format.setting, format.value, format.setting.name) : nothing}
     <div class="choices">
       ${modes.map(
         (each) =>
           html`<label class="choice">
-            <input
-              type="radio"
-              name="webhook-body"
-              value=${each}
-              id=${each === 'none' ? none : nothing}
-              aria-describedby=${[`webhook-body-${each}`, ...(each === 'none' ? noneFound.ids : [])].join(' ')}
-              .checked=${live(mode === each)}
-              @change=${() => choose(each)}
-            />
-            <span class="choice-name" id=${`webhook-body-${each}-name`}>${context.words(`mode_${each}`)}</span>
-            <span class="choice-line" id=${`webhook-body-${each}`}>${context.words(modeLine(each, target))}</span>
-          </label>`,
+              <input
+                type="radio"
+                name="webhook-body"
+                value=${each}
+                id=${each === 'none' ? none : nothing}
+                aria-labelledby=${`webhook-body-${each}-name`}
+                aria-describedby=${[`webhook-body-${each}`, ...(each === 'none' ? noneFound.ids : [])].join(' ')}
+                .checked=${live(mode === each)}
+                @change=${() => choose(each)}
+              />
+              <span class="choice-name" id=${`webhook-body-${each}-name`}>${context.words(`mode_${each}`)}</span>
+              <span class="choice-line" id=${`webhook-body-${each}`}>${context.words(modeLine(each, target))}</span>
+            </label>
+            ${each === mode ? modeBox(context, setting, value, path, within, mode, target) : nothing}`,
       )}
     </div>
     ${noneFound.lines} ${elsewhere}
-    ${mode === 'mapping' ? html`<div class="mode">${rowsEditor(context, setting, value, path, MAPPING)}</div>` : nothing}
-    ${mode === 'body' ? textBox(context, within.get('template'), 'body') : nothing}
-    ${mode === 'message' ? textBox(context, within.get('message'), 'message', context.presetMessage(target)) : nothing}
     ${(mode === 'answers' || mode === 'mapping') && metadata ? metadataSwitch(context, metadata) : nothing}
   </fieldset>`;
+}
+
+/** The chosen way's own box, under its choice: the table, the body or the message; none for the others. */
+function modeBox(
+  context: ActionEditorContext,
+  setting: FieldSettingResponseModel,
+  value: unknown,
+  path: string,
+  within: Map<string, Within>,
+  mode: BodyMode,
+  target: WebhookTarget,
+) {
+  switch (mode) {
+    case 'mapping':
+      return html`<div class="mode">
+        ${rowsEditor(context, setting, value, path, MAPPING, 'webhook-body-mapping-name')}
+      </div>`;
+    case 'body':
+      return textBox(context, within.get('template'), 'body');
+    case 'message':
+      return textBox(context, within.get('message'), 'message', context.presetMessage(target));
+    default:
+      return nothing;
+  }
 }
 
 /** The words under a way of sending: a body's and a message's say what they are written in. */
@@ -448,12 +530,19 @@ interface RowKind {
 const MAPPING: RowKind = { key: 'fields', words: 'pair', problem: mappingProblem, tags: true };
 const HEADERS: RowKind = { key: 'headers', words: 'header', problem: headerProblem, tags: false };
 
-/** The rows a table shows: those typed while the sidebar is open, while what they keep is what the setting holds. */
+/** The rows a table shows as they are typed, and the setting's value they were last in step with. */
+interface Typed {
+  readonly rows: Row[];
+  readonly from: string;
+}
+
+/** The rows a table shows: those typed while the sidebar is open, while the setting holds what they last wrote. */
 function rowsIn(context: ActionEditorContext, kind: RowKind, value: unknown): Row[] {
-  const typed = context.kept.get(`rows:${kind.key}`) as Row[] | undefined;
-  if (typed && JSON.stringify(rowsOf(objectOf(typed, kind.problem))) === JSON.stringify(rowsOf(value))) return typed;
+  const now = JSON.stringify(rowsOf(value));
+  const typed = context.kept.get(`rows:${kind.key}`) as Typed | undefined;
+  if (typed && typed.from === now) return typed.rows;
   const rows = rowsOf(value);
-  context.kept.set(`rows:${kind.key}`, rows);
+  context.kept.set(`rows:${kind.key}`, { rows, from: now });
   return rows;
 }
 
@@ -471,6 +560,7 @@ function rowsEditor(
   value: unknown,
   path: string,
   kind: RowKind,
+  labelledBy = `${boxId(path)}-label`,
 ): TemplateResult {
   const id = boxId(path);
   const words = (key: string, ...args: unknown[]) => context.words(`${kind.words}${key}`, ...args);
@@ -478,7 +568,12 @@ function rowsEditor(
   const nameId = (at: number) => `${id}-name-${at}`;
   const valueId = (at: number) => `${id}-value-${at}`;
   const write = (next: Row[], done: boolean) => {
-    context.kept.set(`rows:${kind.key}`, next);
+    const kept = objectOf(next, kind.problem);
+    const written = Object.keys(kept).length === 0 && kind.key === 'headers' ? undefined : kept;
+    context.kept.set(`rows:${kind.key}`, {
+      rows: next,
+      from: done ? JSON.stringify(rowsOf(written)) : JSON.stringify(rowsOf(value)),
+    });
     const shown = new Set([...context.editor.problems.keys()]);
     context.forget(`${id}-`);
     next.forEach((row, at) => {
@@ -486,9 +581,10 @@ function rowsEditor(
       if (problem)
         context.problem(problem.at === 'name' ? nameId(at) : valueId(at), rowWords(context, kind, problem, row));
     });
-    const kept = objectOf(next, kind.problem);
-    const empty = Object.keys(kept).length === 0;
-    context.editor.set(path, setting, { ok: true, value: empty && kind.key === 'headers' ? undefined : kept }, done);
+    // What is typed reaches the setting once its box is left (`done`); a credential's row is no row while its name is
+    // half typed.
+    if (done) context.editor.set(path, setting, { ok: true, value: written }, true);
+    else context.redraw();
   };
   const change = (at: number, row: Row, done: boolean) =>
     write(
@@ -502,7 +598,7 @@ function rowsEditor(
     class="pairs"
     id=${id}
     role="group"
-    aria-label=${context.editor.say(setting.label)}
+    aria-labelledby=${labelledBy}
     aria-describedby=${[help, ...own.ids].filter(Boolean).join(' ') || nothing}
   >
     ${
@@ -513,7 +609,7 @@ function rowsEditor(
         : nothing
     }
     ${rows.map((row, at) => {
-      const label = row.name || String(at + 1);
+      const label = row.name || context.words('rowNumber', at + 1);
       const nameWhy = context.editor.problems.has(nameId(at));
       const valueWhy = context.editor.problems.has(valueId(at));
       return html`<div class="pair-row">
@@ -524,6 +620,7 @@ function rowsEditor(
           autocomplete="off"
           spellcheck="false"
           aria-label=${words('NameOf', at + 1)}
+          placeholder=${words('Name')}
           aria-describedby=${nameWhy ? `${nameId(at)}-why` : nothing}
           aria-invalid=${nameWhy ? 'true' : 'false'}
           .value=${live(row.name)}
@@ -537,6 +634,7 @@ function rowsEditor(
           autocomplete="off"
           spellcheck="false"
           aria-label=${words('ValueOf', label)}
+          placeholder=${words('Value')}
           aria-describedby=${valueWhy ? `${valueId(at)}-why` : nothing}
           aria-invalid=${valueWhy ? 'true' : 'false'}
           .value=${live(row.value)}
@@ -569,7 +667,10 @@ function rowsEditor(
       id=${`${id}-add`}
       @click=${() => {
         // A blank row holds nothing the setting keeps: the sidebar draws it anew to show it.
-        context.kept.set(`rows:${kind.key}`, [...rows, { name: '', value: '' }]);
+        context.kept.set(`rows:${kind.key}`, {
+          rows: [...rows, { name: '', value: '' }],
+          from: JSON.stringify(rowsOf(value)),
+        });
         context.redraw();
         context.focus(nameId(rows.length));
       }}
@@ -589,6 +690,7 @@ function rowsEditor(
 
 // A reference to the host's secret, never the secret itself, which would be saved with the form.
 function secret(context: ActionEditorContext, setting: FieldSettingResponseModel, value: unknown, path: string) {
+  if (isChat(targetOf(context.value('target')))) return nothing;
   const id = boxId(path);
   const keep = (raw: string, done: boolean) => {
     const text = raw.trim();
@@ -626,12 +728,15 @@ export function webhookSettingText(
   value: unknown,
 ): string | undefined {
   const say = context.editor.say;
+  // A value where only a reference belongs is a secret written as itself: it is said to be there, never shown.
+  const shown = (text: string, secret: boolean) =>
+    secret && text !== '' && !isReference(text) ? context.words('secretHidden') : text;
   const choice = (part: FieldSettingResponseModel | undefined, chosen: unknown) =>
     say(part?.choices.find((each) => each.value === chosen)?.label ?? '');
   switch (setting.editor) {
     case 'webhookAddress': {
       const url = textOf(parts(context, setting.name).get('url')?.value);
-      return [choice(setting, targetOf(value)), url].filter(Boolean).join('\n');
+      return [choice(setting, targetOf(value)), shown(url, isChat(targetOf(value)))].filter(Boolean).join('\n');
     }
     case 'webhookBody': {
       const within = parts(context, setting.name);
@@ -639,23 +744,25 @@ export function webhookSettingText(
       const values = { ...bodyValues(within), fields: value };
       const mode = modeOf(target, values);
       if (mode === 'message') return textOf(values.message) || context.words('sends_message');
-      if (mode === 'body') return context.words('sends_body');
+      if (mode === 'body' && isChat(target)) return context.words('mode_body');
       const what =
-        mode === 'mapping'
-          ? rowsOf(value)
-              .map((row) => row.name)
-              .join(', ') || context.words('sends_answers')
-          : context.words(`sends_${mode}`);
+        mode === 'body'
+          ? context.words('sends_body')
+          : mode === 'mapping'
+            ? rowsOf(value)
+                .map((row) => row.name)
+                .join(', ') || context.words('sends_answers')
+            : context.words(`sends_${mode}`);
       const format = choice(within.get('format')?.setting, formatOf(values.format));
-      const withMetadata = mode !== 'none' && values.metadata !== false;
+      const withMetadata = (mode === 'answers' || mode === 'mapping') && values.metadata !== false;
       return context.words('sends', format, withMetadata ? context.words('sends_withMetadata', what) : what);
     }
     case 'headerMap':
       return rowsOf(value)
-        .map((row) => `${row.name}: ${row.value}`)
+        .map((row) => `${row.name}: ${shown(row.value, holdsASecret(row.name))}`)
         .join('\n');
     case 'secretReference':
-      return textOf(value);
+      return shown(textOf(value), true);
     default:
       return undefined;
   }

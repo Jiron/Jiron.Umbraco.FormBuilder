@@ -63,6 +63,8 @@ function failureWords(
   if (!code) return undefined;
   if (type === 'webhook') {
     if (/^http_\d{3}$/.test(code)) return term('testFailed_webhook_http', code.slice(5));
+    // Nowhere to go: its own address is missing, or the site has none for the chat.
+    if (code === 'no_address' && args[0] === 'url') return term('testFailed_webhook_no_address_url');
     if (WEBHOOK_FAILURES.has(code)) return term(`testFailed_webhook_${code}`, args[0] ?? '');
   }
   return FAILURES.has(code) ? term(`testFailed_${code}`) : undefined;

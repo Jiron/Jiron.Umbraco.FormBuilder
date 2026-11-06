@@ -40,7 +40,7 @@ import {
   type EditorContext,
   type Found as BoxFound,
 } from '../inspector/setting-editor';
-import { same, withText, type Parsed, type Problem } from '../inspector/setting-values';
+import { same, valueOf, withText, type Parsed, type Problem } from '../inspector/setting-values';
 import { NO_PREVIEW, type PreviewState } from '../preview/draft-previewer';
 import { textIn } from '../preview/field-models';
 import { RULE_BUILDER_MODAL } from '../rules/rule-builder.modal.token';
@@ -601,7 +601,16 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
 
   #focus(setting: ActionSetting) {
     const root = this.shadowRoot;
-    const box = root?.getElementById(this.#boxOf(setting)) ?? root?.getElementById(BOX.name);
+    // A setting its box's chosen way does not draw: that box, by its own id (`-box`), or the box it is within (ADR-0191).
+    const name = setting.kind === 'setting' ? setting.path.split('.')[0] : undefined;
+    const within = name ? this.#type()?.settings.find((one) => one.name === name)?.within : undefined;
+    const ids = [
+      this.#boxOf(setting),
+      ...(name ? [`${boxId(name)}-box`] : []),
+      ...(within ? [`${boxId(within)}-box`, boxId(within)] : []),
+      BOX.name,
+    ];
+    const box = ids.map((id) => root?.getElementById(id)).find((found) => found);
     if (!box) return;
     const focus =
       box.localName === 'fieldset'
@@ -910,7 +919,10 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
         if ([...this._typed.keys()].some((box) => box.startsWith(prefix)))
           this._typed = new Map([...this._typed].filter(([box]) => !box.startsWith(prefix)));
       },
-      value: (name) => settingAt(this._edit, name),
+      value: (name) => {
+        const setting = this.#type()?.settings.find((one) => one.name === name);
+        return setting ? this.#valueOf(setting) : settingAt(this._edit, name);
+      },
       settingOf: (name) => this.#type()?.settings.find((setting) => setting.name === name),
       tags: (id) => this.#tagPicker(id),
       kept: this.#kept,
@@ -990,9 +1002,9 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
     this.#change(withSettingAt(this._edit, path, value), id, done);
   }
 
+  // A setting's value: the host's where it locks the setting, else the action's, else the default (as the inspector's).
   #valueOf(setting: FieldSettingResponseModel): unknown {
-    const value = settingAt(this._edit, setting.name);
-    return value === undefined ? setting.default : value;
+    return valueOf(this._edit.settings, setting);
   }
 
   // A setting as it is, for who may not change it: its label and its value in words.

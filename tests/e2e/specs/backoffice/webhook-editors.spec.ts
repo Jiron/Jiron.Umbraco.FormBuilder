@@ -120,7 +120,7 @@ test('a webhook is configured with its names and values, a header and its secret
   await secret.fill('plain-signing-secret');
   await secret.blur();
   await expect(sidebar.locator('#setting-secret-why')).toHaveText(
-    "The secret stays in the site's configuration: give it as a reference, such as $JironFormBuilder:Secrets:CrmSigning.",
+    'Give the secret as a reference, such as $JironFormBuilder:Secrets:CrmSigning.',
   );
   await secret.fill('$JironFormBuilder:Secrets:E2EWebhook');
   await secret.blur();

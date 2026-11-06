@@ -180,7 +180,7 @@ describe('what an action does, in one line', () => {
     expect(of('email', {})).toEqual({ term: 'summary_emailNoOne', args: [] });
   });
 
-  it("says where a webhook goes: Slack, Teams, an address's host, or nowhere yet", () => {
+  it("says where a webhook goes: Slack, Teams, an address's host, one the site's configuration names, or nowhere yet", () => {
     expect(of('webhook', { target: 'slack' })?.term).toBe('summary_slack');
     expect(of('webhook', { target: 'teams' })?.term).toBe('summary_teams');
     expect(of('webhook', { url: 'https://crm.example.com/hooks/forms' })).toEqual({
@@ -190,6 +190,11 @@ describe('what an action does, in one line', () => {
     // An address made of a merge tag is said as it is.
     expect(of('webhook', { url: '{{ query.hook }}' })?.args).toEqual(['{{ query.hook }}']);
     expect(of('webhook', { url: ' ' })?.term).toBe('summary_webhookNowhere');
+    // A reference is named by its name, never read as a host (ADR-0191).
+    expect(of('webhook', { url: '$JironFormBuilder:Secrets:CrmHook' })).toEqual({
+      term: 'summary_webhookNamed',
+      args: ['CrmHook'],
+    });
   });
 
   it('says what a change of state and content do, and nothing of a type the view does not know', () => {

@@ -146,17 +146,17 @@ export default {
     addressHelp_teams:
       'Leer sendet an die Microsoft-Teams-Adresse der Website. Für eine andere nennen Sie die Adresse als Verweis, etwa $JironFormBuilder:Secrets:SalesTeams, da sie ihren Schlüssel enthält.',
     addressReference_slack:
-      'Eine Slack-Adresse enthält ihren Schlüssel und bleibt daher in der Konfiguration der Website: Nennen Sie sie als Verweis, etwa $JironFormBuilder:Secrets:SalesSlack.',
+      'Eine Slack-Adresse enthält ihren Schlüssel und bleibt daher in der Konfiguration der Website: Nennen Sie sie als Verweis.',
     addressReference_teams:
-      'Eine Microsoft-Teams-Adresse enthält ihren Schlüssel und bleibt daher in der Konfiguration der Website: Nennen Sie sie als Verweis, etwa $JironFormBuilder:Secrets:SalesTeams.',
+      'Eine Microsoft-Teams-Adresse enthält ihren Schlüssel und bleibt daher in der Konfiguration der Website: Nennen Sie sie als Verweis.',
     referenceWrong: 'Nach $JironFormBuilder:Secrets: hat ein Verweis 1 bis 64 Buchstaben, Ziffern und _.',
     mode_answers: 'Jede Antwort, unter dem Alias ihres Felds',
     modeLine_answers: 'Später hinzugefügte Felder gehen mit.',
     mode_mapping: 'Die Namen und Werte, die Sie wählen',
     modeLine_mapping: 'Die Liste beginnt mit jedem Feld. Jeder Wert kann Platzhalter enthalten.',
     mode_body: 'Ein Inhalt, den Sie schreiben',
-    modeLine_body: 'Im Format oben, mit Platzhaltern, die dafür geschrieben werden.',
-    modeLine_body_chat: 'JSON, wie der Chat es liest, mit Platzhaltern, die dafür geschrieben werden.',
+    modeLine_body: 'Platzhalter werden für das Format oben maskiert.',
+    modeLine_body_chat: 'JSON, wie der Chat es liest. Platzhalter werden für JSON maskiert.',
     mode_none: 'Nur, dass etwas geschehen ist',
     modeLine_none: 'Keine Antworten: was geschah, das Formular und der Schlüssel des Eintrags.',
     mode_message: 'Eine Nachricht',
@@ -172,6 +172,7 @@ export default {
     pairRemove: (name: string) => `${name} entfernen`,
     pairAdd: 'Namen hinzufügen',
     pairsNone: 'Noch keine Namen, daher geht jede Antwort, unter dem Alias ihres Felds.',
+    rowNumber: (row: number) => `Zeile ${row}`,
     pair_name_empty: 'Geben Sie diesem Wert einen Namen.',
     pair_name_wrong: 'Ein Name hat nur Buchstaben, Ziffern, _, - und .',
     pair_name_twice: (name: string) => `${name} gibt es schon.`,
@@ -187,14 +188,14 @@ export default {
     header_name_twice: (name: string) => `${name} gibt es schon.`,
     header_value_wrong: 'Eine Kopfzeile trägt nur einfachen ASCII-Text.',
     header_value_credential: (name: string) =>
-      `${name} trägt Zugangsdaten und bleibt daher in der Konfiguration der Website: Geben Sie sie als Verweis an, etwa $JironFormBuilder:Secrets:CrmToken.`,
-    secretReference:
-      'Das Geheimnis bleibt in der Konfiguration der Website: Geben Sie es als Verweis an, etwa $JironFormBuilder:Secrets:CrmSigning.',
+      `${name} trägt Zugangsdaten: Geben Sie sie als Verweis an, etwa $JironFormBuilder:Secrets:CrmToken.`,
+    secretReference: 'Geben Sie das Geheimnis als Verweis an, etwa $JironFormBuilder:Secrets:CrmSigning.',
+    secretHidden: 'Ein Geheimnis im Klartext, nicht angezeigt. Ersetzen Sie es durch einen Verweis.',
     sends: (format: string, what: string) => `${format}: ${what}`,
     sends_answers: 'jede Antwort, unter dem Alias ihres Felds',
     sends_none: 'nur, dass etwas geschehen ist',
     sends_withMetadata: (what: string) => `${what}, mit Metadaten`,
-    sends_body: 'Ein eigener Inhalt',
+    sends_body: 'ein Inhalt, den Sie schreiben',
     sends_message: 'Der Name des Formulars und die Antworten',
 
     preview: 'Vorschau mit einem Beispieleintrag',
@@ -224,12 +225,13 @@ export default {
     testSent: 'Test gesendet.',
     testSentStatus: (status: string) => `Test gesendet. Der Server antwortete ${status}.`,
     testFailed_webhook_http: (status: string) => `Der Server antwortete ${status}, daher kam der Test nicht an.`,
+    testFailed_webhook_no_address_url: 'Dieser Webhook hat noch keine Adresse. Geben Sie sie unter „Ziel“ an.',
     testFailed_webhook_no_address:
       'Kein Ziel: Die Website hat noch keine Adresse für diesen Chat, und die Aktion nennt keine eigene.',
     testFailed_webhook_not_allowed:
       'Diese Adresse ruft die Website nicht auf. Webhooks gehen an https-Adressen auf den Hosts in JironFormBuilder:Webhooks:AllowedHosts, nie ins eigene Netz der Website.',
     testFailed_webhook_secret_missing: (key: string) =>
-      `Die Konfiguration der Website hat noch kein ${key}, daher kann der Test nicht hinaus. Ein Entwickler trägt es ein.`,
+      `In der Konfiguration der Website fehlt noch ${key}, daher kann der Test nicht hinaus. Ein Entwickler trägt es ein.`,
     testFailed_webhook_secret_literal:
       'Diese Aktion enthält ein Geheimnis im Klartext. Geben Sie es als Verweis an, dann testen Sie erneut.',
     testFailed_webhook_header_invalid:

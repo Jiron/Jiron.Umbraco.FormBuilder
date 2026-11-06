@@ -102,9 +102,10 @@ describe("an action's test", () => {
     expect(hook('sent', ['201'], 'sent')).toBe('Test sent. The server answered 201.');
     expect(hook('http_404')).toBe("The server answered 404, so the test wasn't delivered.");
     expect(hook('http_503')).toBe("The server answered 503, so the test wasn't delivered.");
-    expect(hook('no_address')).toBe(
+    expect(hook('no_address', ['slack'])).toBe(
       'Nowhere to send it: the site has no address for this chat yet, and the action names none of its own.',
     );
+    expect(hook('no_address', ['url'])).toBe('This webhook has no address yet. Give it one under Where it goes.');
     expect(hook('not_allowed')).toBe(
       "The site doesn't call this address. Webhooks go to https addresses on the hosts in JironFormBuilder:Webhooks:AllowedHosts, never into the site's own network.",
     );

@@ -172,41 +172,72 @@ export function sameRows(a: unknown, b: unknown): boolean {
 const answerTag = (alias: string) => `{{ field.${alias} }}`;
 
 /**
- * The rows of every field with an answer a webhook sends by itself, by its alias: those of a sensitive field go only
- * where the action names it, so they start out of the table.
+ * The rows of every answer a webhook sends by itself, by its field's alias, as the server finds them: a field in a group,
+ * not inside a repeatable one, and a sensitive one only where the action names it.
  */
-export function everyAnswer(fields: readonly PickField[]): Row[] {
+export function everyAnswer(fields: readonly PickField[], included: readonly string[] = []): Row[] {
   return fields
-    .filter((field) => !field.sensitive && isMappingName(field.alias))
+    .filter((field) => field.top && (!field.sensitive || included.includes(field.key)) && isMappingName(field.alias))
     .map((field) => ({ name: field.alias, value: answerTag(field.alias) }));
 }
 
 const jsonText = (text: string) => JSON.stringify(text).slice(1, -1);
 
+const xmlText = (text: string) => text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+/** A value with what lies outside its merge tags written for the format, the tags as they are, which the server writes. */
+function outsideTags(value: string, write: (text: string) => string): string {
+  return value
+    .split(/(\{\{[\s\S]*?\}\})/)
+    .map((part, at) => (at % 2 === 1 ? part : write(part)))
+    .join('');
+}
+
 /** A body in the format's own language with the rows' names and values, for an editor to start from. */
 export function starterBody(format: WebhookFormat, rows: readonly Row[]): string {
   switch (format) {
     case 'form':
-      return rows.map((row) => `${encodeURIComponent(row.name)}=${row.value}`).join('&');
+      return rows
+        .map((row) => `${encodeURIComponent(row.name)}=${outsideTags(row.value, encodeURIComponent)}`)
+        .join('&');
     case 'xml':
       return [
         '<submission>',
-        ...rows.map((row) => `  <${xmlName(row.name)}>${row.value}</${xmlName(row.name)}>`),
+        ...rows.map((row) => `  <${xmlName(row.name)}>${outsideTags(row.value, xmlText)}</${xmlName(row.name)}>`),
         '</submission>',
       ].join('\n');
     default:
       return rows.length === 0
         ? '{}'
-        : ['{', rows.map((row) => `  "${jsonText(row.name)}": "${row.value}"`).join(',\n'), '}'].join('\n');
+        : [
+            '{',
+            rows.map((row) => `  "${jsonText(row.name)}": "${outsideTags(row.value, jsonText)}"`).join(',\n'),
+            '}',
+          ].join('\n');
   }
 }
 
 // An element's name from a mapping's: one that starts with a digit, a dot or a hyphen gets `_` before it.
 const xmlName = (name: string) => (/^[A-Za-z_]/.test(name) ? name : `_${name}`);
 
-/** A chat's own body to start from: its message as the chat reads it, in JSON. */
+/**
+ * A chat's own body to start from: its message as the chat reads it, in JSON; for Teams a text block a line, a blank
+ * line the space before the next, as a card breaks lines only between blocks (as the server writes a message).
+ */
 export function starterChatBody(target: WebhookTarget, message: string): string {
   const text = jsonText(message);
+  const blocks: string[] = [];
+  let apart = false;
+  for (const line of message.split('\n')) {
+    if (line.trim() === '') {
+      apart = blocks.length > 0;
+      continue;
+    }
+    blocks.push(
+      `{ "type": "TextBlock", "wrap": true, "spacing": "${apart ? 'Medium' : 'None'}", "text": "${jsonText(line)}" }`,
+    );
+    apart = false;
+  }
   return target === 'teams'
     ? [
         '{',
@@ -217,7 +248,9 @@ export function starterChatBody(target: WebhookTarget, message: string): string 
         '      "content": {',
         '        "type": "AdaptiveCard",',
         '        "version": "1.4",',
-        `        "body": [{ "type": "TextBlock", "wrap": true, "text": "${text}" }]`,
+        '        "body": [',
+        blocks.map((block) => `          ${block}`).join(',\n'),
+        '        ]',
         '      }',
         '    }',
         '  ]',

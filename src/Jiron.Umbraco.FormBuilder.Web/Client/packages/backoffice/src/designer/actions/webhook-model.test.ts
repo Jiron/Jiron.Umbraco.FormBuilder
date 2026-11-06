@@ -136,15 +136,18 @@ describe("the webhook's settings", () => {
     ]);
   });
 
-  it('starts a table with every field a webhook sends by itself, by its alias, a sensitive one left out', () => {
-    expect(
-      everyAnswer([
-        field('email'),
-        field('notes', { sensitive: true }),
-        field('name'),
-        field('', { label: 'No alias' }),
-      ]),
-    ).toEqual(rows(['email', '{{ field.email }}'], ['name', '{{ field.name }}']));
+  it('starts a table with every answer a webhook sends by itself, by its alias, as the server finds them', () => {
+    const fields = [
+      field('email'),
+      field('notes', { sensitive: true }),
+      field('pin', { sensitive: true }),
+      field('child', { top: false }),
+      field('name'),
+      field('', { label: 'No alias' }),
+    ];
+    expect(everyAnswer(fields)).toEqual(rows(['email', '{{ field.email }}'], ['name', '{{ field.name }}']));
+    // A sensitive field the action names goes; one inside a repeatable group never by itself.
+    expect(everyAnswer(fields, ['pin']).map((row) => row.name)).toEqual(['email', 'pin', 'name']);
   });
 
   it("starts a body in the format's own language with the rows, and a chat's with its message", () => {
@@ -155,14 +158,22 @@ describe("the webhook's settings", () => {
     expect(starterBody('xml', pairs)).toBe(
       '<submission>\n  <email>{{ field.email }}</email>\n  <_1st>{{ field.first }}</_1st>\n</submission>',
     );
+    // What lies outside the merge tags is written for the format; the tags stay for the server to write.
+    const quoted = rows(['source', 'Contact "form" & <more> {{ form.name }}']);
+    expect(JSON.parse(starterBody('json', quoted))).toEqual({ source: 'Contact "form" & <more> {{ form.name }}' });
+    expect(starterBody('xml', quoted)).toContain('<source>Contact "form" &amp; &lt;more&gt; {{ form.name }}</source>');
+    expect(starterBody('form', quoted)).toBe('source=Contact%20%22form%22%20%26%20%3Cmore%3E%20{{ form.name }}');
     const slack = JSON.parse(starterChatBody('slack', 'Hi "you"\n{{ entry.answers }}')) as { text: string };
     expect(slack).toEqual({ text: 'Hi "you"\n{{ entry.answers }}' });
-    const teams = JSON.parse(starterChatBody('teams', '**New**')) as {
-      attachments: { content: { type: string; body: { text: string }[] } }[];
+    const teams = JSON.parse(starterChatBody('teams', '**New**\n\n{{ entry.answers }}\nBye')) as {
+      attachments: { content: { type: string; body: { text: string; spacing: string }[] } }[];
     };
-    expect([teams.attachments[0]?.content.type, teams.attachments[0]?.content.body[0]?.text]).toEqual([
-      'AdaptiveCard',
-      '**New**',
+    expect(teams.attachments[0]?.content.type).toBe('AdaptiveCard');
+    // A text block a line, a blank line the space before the next.
+    expect(teams.attachments[0]?.content.body.map((block) => [block.text, block.spacing])).toEqual([
+      ['**New**', 'None'],
+      ['{{ entry.answers }}', 'Medium'],
+      ['Bye', 'None'],
     ]);
   });
 });
