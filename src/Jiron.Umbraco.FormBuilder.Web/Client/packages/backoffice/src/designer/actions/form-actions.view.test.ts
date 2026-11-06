@@ -7,7 +7,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { UMB_NOTIFICATION_CONTEXT } from '@umbraco-cms/backoffice/notification';
 import { UmbBasicState, UmbObjectState } from '@umbraco-cms/backoffice/observable-api';
-import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest';
 import type { ActionTypeResponseModel } from '../../api';
 import { deferred, must, registerEnglish, settle, shadow, testHost, text } from '../../testing';
 import type { UndoNotificationData } from '../../ui/undo-notification.element';
@@ -664,6 +664,12 @@ describe('the Actions view', () => {
   });
 
   it("says each action's last run on its card, and opens a failed one's Details, with Test for who may change actions (ADR-0195)", async () => {
+    // At midday, so a try a quarter of an hour ago and the next in half an hour fall on the same day as the clock.
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(2026, 10, 6, 12, 0));
+    onTestFinished(() => {
+      vi.useRealTimers();
+    });
     const ago = (hours: number) => new Date(Date.now() - hours * 3_600_000).toISOString();
     const runs: LastRun[] = [
       { actionKey: 'a', state: 'succeeded', attempts: 1, finishedUtc: ago(2) },
