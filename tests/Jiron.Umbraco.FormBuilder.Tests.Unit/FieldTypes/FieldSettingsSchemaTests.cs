@@ -51,6 +51,9 @@ public sealed class FieldSettingsSchemaTests
         yield return Case("within itself", typeof(WithinItself), "WithinItself.To is within 'to', which is no other setting of its class.");
         yield return Case("within one that is within another", typeof(WithinTwice), "WithinTwice.Field is within 'copy', which is itself within 'to'; a setting is within one that has its own place.");
         yield return Case("within inside an object", typeof(WithinInsideAnObject), "WithinInside.Field is within 'to' inside an object, whose editor draws all of its settings.");
+        yield return Case("within a box whose editor draws none within it", typeof(WithinAPlainBox), "WithinAPlainBox.Creator is within 'to', whose editor draws no setting within it; only the editor recipients does.");
+        yield return Case("within the recipients, of a kind they do not draw", typeof(WithinRecipientsANote), "WithinRecipientsANote.Note is within 'to', whose editor recipients draws only an email field's answer");
+        yield return Case("two of a kind within the recipients", typeof(TwoCreatorsWithin), "TwoCreatorsWithin.Second is within 'to', which already holds the person who created the form; the editor recipients draws one of each.");
         yield return Case("picking fields without a field picker", typeof(PicksWithoutPicker), "PicksWithoutPicker.Field picks fields of a kind, which only the editor fieldPicker offers.");
     }
 
@@ -472,6 +475,36 @@ public sealed class FieldSettingsSchemaTests
 
         [FormBuilderSetting("Any", Kind = FieldSettingKind.Key, Editor = "fieldPicker")]
         public Guid? Any { get; init; }
+    }
+
+    public sealed class WithinAPlainBox
+    {
+        [FormBuilderSetting("To")]
+        public IReadOnlyList<string> To { get; init; } = [];
+
+        [FormBuilderSetting("Creator", Within = "to")]
+        public bool Creator { get; init; }
+    }
+
+    public sealed class WithinRecipientsANote
+    {
+        [FormBuilderSetting("To", Editor = "recipients")]
+        public IReadOnlyList<string> To { get; init; } = [];
+
+        [FormBuilderSetting("Note", Within = "to")]
+        public string? Note { get; init; }
+    }
+
+    public sealed class TwoCreatorsWithin
+    {
+        [FormBuilderSetting("To", Editor = "recipients")]
+        public IReadOnlyList<string> To { get; init; } = [];
+
+        [FormBuilderSetting("First", Within = "to")]
+        public bool First { get; init; }
+
+        [FormBuilderSetting("Second", Within = "to")]
+        public bool Second { get; init; }
     }
 
     public sealed class WithinNothing

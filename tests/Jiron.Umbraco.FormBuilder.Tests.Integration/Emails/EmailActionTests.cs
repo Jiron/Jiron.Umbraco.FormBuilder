@@ -555,7 +555,7 @@ public sealed class EmailActionTests : EmailTestBase
     }
 
     [Test]
-    public async Task AVisitorsMail_CarriesNoCopyReplyToOrFile_AndACopyGoesAsAMailOfItsOwn()
+    public async Task AVisitorsMail_CarriesNoCopyReplyToOrFile_AndACopyGoesAsAMailOfItsOwn_ABlindCopyStillBlind()
     {
         var more = $$""","toField":"{{EmailField.Key}}","replyToField":"{{EmailField.Key}}","cc":["copy@jfb.test"],"bcc":["hidden@jfb.test"]""";
         var form = await FormAsync(Email(Texts(to: "[]", more: more)));
@@ -566,14 +566,33 @@ public sealed class EmailActionTests : EmailTestBase
 
         var written = Written();
         var visitor = written.Single(mail => mail.To.Mailboxes.First().Address == "stranger@jfb.test");
-        Assert.Multiple(async () =>
+        var stored = await Emails.ListForEntryAsync(entry.Id);
+        Assert.Multiple(() =>
         {
             Assert.That(written, Has.Count.EqualTo(2));
             Assert.That(visitor.Cc, Is.Empty);
             Assert.That(visitor.ReplyTo, Is.Empty);
-            Assert.That(written.Single(mail => mail != visitor).To.Mailboxes.Select(box => box.Address), Is.EqualTo(new[] { "copy@jfb.test", "hidden@jfb.test" }));
-            Assert.That((await Emails.ListForEntryAsync(entry.Id)).Count(mail => mail.RecipientKey is not null), Is.EqualTo(1));
+            Assert.That(written.Single(mail => mail != visitor).To.Mailboxes.Select(box => box.Address), Is.EqualTo(new[] { "copy@jfb.test" }), "the copy as its To");
+            Assert.That(stored.Single(mail => mail.RecipientKey is null).Bcc, Is.EqualTo("hidden@jfb.test"), "a blind copy still blind");
+            Assert.That(stored.Count(mail => mail.RecipientKey is not null), Is.EqualTo(1));
         });
+    }
+
+    [Test]
+    public async Task BlindCopiesAlone_OnAVisitorsMail_EachGoAlone()
+    {
+        var more = $$""","toField":"{{EmailField.Key}}","bcc":["one@jfb.test","two@jfb.test"]""";
+        var form = await FormAsync(Email(Texts(to: "[]", more: more)));
+        var entry = await SubmitAsync(form, """{"name":"Ada","email":"stranger@jfb.test"}""");
+
+        await DrainAsync(entry.Id);
+        await SendDueAsync();
+
+        var team = Written()
+            .Select(mail => mail.To.Mailboxes.Select(box => box.Address).ToArray())
+            .Where(to => to[0] != "stranger@jfb.test")
+            .ToList();
+        Assert.That(team, Is.EquivalentTo(new[] { new[] { "one@jfb.test" }, new[] { "two@jfb.test" } }), "each alone, so none sees another");
     }
 
     [Test]

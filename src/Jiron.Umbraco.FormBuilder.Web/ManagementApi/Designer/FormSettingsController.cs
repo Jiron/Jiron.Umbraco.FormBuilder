@@ -82,9 +82,7 @@ internal sealed class FormSettingsController(
         var storedLayouts = await AllAsync((page, token) => layouts.ListAsync(null, page, token), cancellationToken);
 
         // A default that is gone gives way to the card, as a mail's does (ADR-0159).
-        var defaultLayout = email.DefaultLayout is { } named && (EmailLayouts.BuiltIn.ContainsKey(named) || storedLayouts.Any(layout => layout.Key == named))
-            ? named
-            : EmailLayouts.CardKey;
+        var defaultLayout = EmailLayouts.KeyOf(email.DefaultLayout, storedLayouts.Select(layout => layout.Key));
 
         return Ok(new FormSettingsChoicesResponseModel
         {

@@ -57,3 +57,10 @@ address changed later is the one used.
 - The form check of 9.5b can warn about an email action on a form without an email field; publishing already refuses settings that
   could never send.
 - Mail to a visitor renders once per address, so a form with both kinds of recipients renders its template twice.
+
+## Amendment (2026-11-06, step 10.2b, ADR-0189)
+
+Copies on a mail with only a visitor's address go as a mail of their own, as above, and a blind copy stays blind there: the
+copies are its To and the blind copies its blind copies; blind copies alone each go in a mail of their own, so none sees
+another. Before, the copies and the blind copies shared that mail's To. The email action's preview routes a mail the same
+way, from the same rule.

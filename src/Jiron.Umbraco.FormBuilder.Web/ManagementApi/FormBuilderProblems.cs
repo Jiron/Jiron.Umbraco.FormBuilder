@@ -78,6 +78,9 @@ internal static class FormBuilderProblems
     /// <summary>A mail's preview whose action names a mail view the site lacks and has no body of its own (ADR-0189).</summary>
     public const string EmailViewMissingCode = "email_view_missing";
 
+    /// <summary>A mail's preview whose action has settings its type cannot read, as the form check says (ADR-0189).</summary>
+    public const string ActionSettingsInvalidCode = "action_settings_invalid";
+
     /// <summary>The code of a test mail while Umbraco can send no mail (ADR-0159).</summary>
     public const string EmailNotConfiguredCode = "email_not_configured";
 
@@ -175,6 +178,10 @@ internal static class FormBuilderProblems
     /// <summary>A mail's preview whose action names a mail view the site lacks and has no body of its own (ADR-0189).</summary>
     public static FormBuilderProblemResult EmailViewMissing() =>
         Problem(StatusCodes.Status409Conflict, EmailViewMissingCode, "The site has no such mail view, and the email has no body of its own.");
+
+    /// <summary>A mail's preview whose action has settings its type cannot read, as the form check says (ADR-0189).</summary>
+    public static FormBuilderProblemResult ActionSettingsInvalid() =>
+        Problem(StatusCodes.Status409Conflict, ActionSettingsInvalidCode, "The action's settings do not fit its type; the form check says where.");
 
     /// <summary>A test mail while no mail server or pickup folder is set up (ADR-0159).</summary>
     public static FormBuilderProblemResult EmailNotConfigured() =>

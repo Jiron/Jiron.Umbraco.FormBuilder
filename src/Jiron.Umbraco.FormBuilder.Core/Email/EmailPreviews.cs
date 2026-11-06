@@ -2,6 +2,7 @@ using System.Globalization;
 using Jiron.Umbraco.FormBuilder.Core.Actions;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Entries;
+using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 
 namespace Jiron.Umbraco.FormBuilder.Core.Email;
@@ -20,6 +21,9 @@ internal enum EmailPreviewStatus
 
     /// <summary>The action names a mail view the site lacks and has no body of its own.</summary>
     ViewMissing,
+
+    /// <summary>The action's settings do not fit its type, as the form check says; there is no mail until they do.</summary>
+    SettingsInvalid,
 }
 
 /// <summary>What a request for an email action's preview came to.</summary>
@@ -58,11 +62,19 @@ internal sealed class EmailPreviews(ActionTypeRegistry types, ActionSettingLocks
             return new EmailPreviewResult(EmailPreviewStatus.NotEmail);
         }
 
+        // Settings the type cannot read, such as a draft written before its editor, are the form check's to say; the type
+        // reads them only once the schema's check passes, as the form check does.
+        var locked = locks.Apply(found);
+        if (!FieldSettingsChecks.Check(email.SettingsSchema, locked.Settings, "$.settings", "An email action", new DefinitionProblems()))
+        {
+            return new EmailPreviewResult(EmailPreviewStatus.SettingsInvalid);
+        }
+
         var scope = await samples.ScopeAsync(definition, form.Name, form.Alias, culture, cancellationToken);
         var direction = CultureInfo.GetCultureInfo(culture).TextInfo.IsRightToLeft ? "rtl" : "ltr";
         try
         {
-            return new EmailPreviewResult(EmailPreviewStatus.Done, await email.PreviewAsync(locks.Apply(found), scope, cancellationToken), direction);
+            return new EmailPreviewResult(EmailPreviewStatus.Done, await email.PreviewAsync(locked, scope, cancellationToken), direction);
         }
         catch (ViewMissingException)
         {

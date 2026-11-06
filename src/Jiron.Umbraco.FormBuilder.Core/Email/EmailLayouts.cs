@@ -84,6 +84,12 @@ internal sealed partial class EmailLayouts(IEmailLayoutRepository layouts, ILogg
 
     private static readonly JsonSerializerOptions Json = Options();
 
+    /// <summary>The key of the layout a mail naming this one gets: itself when built in or in the library, else the card.</summary>
+    /// <param name="key">The layout named, or null for none.</param>
+    /// <param name="stored">The keys of the library's layouts.</param>
+    public static Guid KeyOf(Guid? key, IEnumerable<Guid> stored) =>
+        key is { } named && (BuiltIn.ContainsKey(named) || stored.Contains(named)) ? named : CardKey;
+
     /// <summary>The layout with this key; null, an unknown key or one that cannot be read give the built-in card.</summary>
     public async Task<EmailLayoutDesign> FindAsync(Guid? key, CancellationToken cancellationToken)
     {

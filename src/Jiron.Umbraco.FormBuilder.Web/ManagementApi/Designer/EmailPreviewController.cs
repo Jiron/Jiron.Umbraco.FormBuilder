@@ -59,6 +59,7 @@ internal sealed class EmailPreviewController(
             EmailPreviewStatus.Done => Ok(EmailPreviewResponseModel.Of(result.Preview!, result.Direction)),
             EmailPreviewStatus.NotEmail => FormBuilderProblems.ActionNotEmail(),
             EmailPreviewStatus.ViewMissing => FormBuilderProblems.EmailViewMissing(),
+            EmailPreviewStatus.SettingsInvalid => FormBuilderProblems.ActionSettingsInvalid(),
             _ => FormBuilderProblems.ActionNotFound(),
         };
     }

@@ -7,7 +7,9 @@ using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.MergeTags;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Core.Settings;
+using Jiron.Umbraco.FormBuilder.Tests.Integration.Support;
 using Jiron.Umbraco.FormBuilder.Web.ManagementApi;
+using Microsoft.Extensions.Logging;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Services;
@@ -20,7 +22,9 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Integration.ManagementApi;
 /// sidebar holds, as the team gets it for the sample entry, rendered as a run renders it: its tags hold the sample's answers,
 /// a sensitive one masked unless the action includes it; it goes to the team's addresses and those the sample's answer
 /// chooses, with its copies and reply-to, and the address a mail of its own goes to; it has the site's sender, the
-/// address the host locks, and the action's layout. It queues nothing and changes nothing.
+/// address the host locks, and the action's layout. A mail only a field's answer gets is the visitor's, which carries no
+/// copy and no reply-to, its copies the team's mail of their own, as a run sends them. It queues and logs nothing, changes
+/// nothing, and refuses settings the type cannot read.
 /// </summary>
 [TestFixture]
 [UmbracoTest(Database = UmbracoTestOptions.Database.NewSchemaPerTest, Boot = true)]
@@ -79,6 +83,46 @@ public sealed class EmailPreviewApiTests : ManagementApiTestBase
             Assert.That(masked.Body["replyTo"], Is.Null, "a sensitive field is no reply-to unless the action includes it");
             Assert.That(included.Body!["text"]!.GetValue<string>(), Does.Contain($"From {SampleEntries.Email}."));
             Assert.That(included.Body["replyTo"]!.GetValue<string>(), Is.EqualTo(SampleEntries.Email));
+        });
+    }
+
+    [Test]
+    public async Task AMailOnlyAFieldsAnswerGets_IsTheVisitorsOwn_ItsCopiesTheTeamsMail_AsARunSendsThem()
+    {
+        var (form, definition) = await DraftAsync();
+        var (_, address, _) = ContactFields(definition);
+        var alone = await PreviewAsync(form, definition, Action(definition, $$$"""{"toField":"{{{address}}}","replyToField":"{{{address}}}","subject":{"":"Hello"},"body":{"":"<p>Hi.</p>"}}"""));
+        var copied = await PreviewAsync(form, definition, Action(definition, $$$"""{"toField":"{{{address}}}","replyToField":"{{{address}}}","cc":["boss@example.com"],"bcc":["audit@example.com"],"subject":{"":"Hello"},"body":{"":"<p>Hi.</p>"}}"""));
+        var blind = await PreviewAsync(form, definition, Action(definition, $$$"""{"toField":"{{{address}}}","bcc":["audit@example.com","legal@example.com"],"subject":{"":"Hello"},"body":{"":"<p>Hi.</p>"}}"""));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(alone.Outcome, Is.EqualTo("200"), alone.ToString());
+            Assert.That((Texts(alone.Body!["to"]), alone.Body["visitor"]!.GetValue<string>()), Is.EqualTo((Array.Empty<string>(), SampleEntries.Email)), "the visitor's own mail");
+            Assert.That((Texts(alone.Body["cc"]), Texts(alone.Body["bcc"]), alone.Body["replyTo"]), Is.EqualTo((Array.Empty<string>(), Array.Empty<string>(), (JsonNode?)null)), "with no copy and no reply-to");
+            Assert.That(Texts(copied.Body!["to"]), Is.EqualTo(new[] { "boss@example.com" }), "the copies as the team's mail");
+            Assert.That((Texts(copied.Body["cc"]), Texts(copied.Body["bcc"])), Is.EqualTo((Array.Empty<string>(), new[] { "audit@example.com" })), "a blind copy still blind");
+            Assert.That(copied.Body["replyTo"]!.GetValue<string>(), Is.EqualTo(SampleEntries.Email));
+            Assert.That(copied.Body["visitor"]!.GetValue<string>(), Is.EqualTo(SampleEntries.Email));
+            Assert.That((Texts(blind.Body!["to"]), Texts(blind.Body["bcc"])), Is.EqualTo((new[] { "audit@example.com" }, Array.Empty<string>())), "blind copies alone each go alone; the first shows");
+        });
+    }
+
+    [Test]
+    public async Task APreview_WarnsOfNothingARunWould()
+    {
+        var (form, definition) = await DraftAsync();
+        ContactFields(definition);
+        var logs = GetRequiredService<LogCapture>();
+        var before = logs.Entries.Count;
+
+        // The form has no creator with an address, and the site no such view: a run would warn of both.
+        var answer = await PreviewAsync(form, definition, Action(definition, """{"to":["sales@example.com"],"toCreator":true,"view":"Nowhere","subject":{"":"Hello"},"body":{"":"<p>Hi.</p>"}}"""));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(answer.Outcome, Is.EqualTo("200"), answer.ToString());
+            Assert.That(logs.Entries.Skip(before).Where(entry => entry.Category == typeof(EmailActionType).FullName && entry.Level >= LogLevel.Warning), Is.Empty);
         });
     }
 
@@ -154,6 +198,8 @@ public sealed class EmailPreviewApiTests : ManagementApiTestBase
         var webhook = Action(definition, """{"url":"https://hooks.example.com/in"}""", type: "webhook");
         var notEmail = await PreviewAsync(form, definition, webhook);
         var viewless = await PreviewAsync(form, definition, Action(definition, """{"to":["sales@example.com"],"subject":{"":"Hello"},"view":"Nowhere"}"""));
+        // Written before the editor kept a text per language: the form check says where, and the preview waits.
+        var unfit = await PreviewAsync(form, definition, Action(definition, """{"to":"sales@example.com","subject":"Hello","body":{"":"<p>Hi.</p>"}}"""));
 
         Assert.Multiple(async () =>
         {
@@ -166,10 +212,20 @@ public sealed class EmailPreviewApiTests : ManagementApiTestBase
             Assert.That(notEmail.Body?["code"]?.GetValue<string>(), Is.EqualTo(FormBuilderProblems.ActionNotEmailCode));
             Assert.That(viewless.Status, Is.EqualTo(HttpStatusCode.Conflict), viewless.ToString());
             Assert.That(viewless.Body?["code"]?.GetValue<string>(), Is.EqualTo(FormBuilderProblems.EmailViewMissingCode));
+            Assert.That(unfit.Status, Is.EqualTo(HttpStatusCode.Conflict), unfit.ToString());
+            Assert.That(unfit.Body?["code"]?.GetValue<string>(), Is.EqualTo(FormBuilderProblems.ActionSettingsInvalidCode));
             Assert.That(await GetRequiredService<IEmailRepository>().DueAsync(10), Is.Empty, "nothing queued");
             Assert.That((await GetRequiredService<IFormBuilderFormService>().GetAsync(form))!.ConcurrencyVersion, Is.EqualTo(version), "nothing saved");
             Assert.That((await CallAsync("designer", HttpMethod.Get, $"form/{form}/draft")).Body!["definition"]!.ToJsonString(), Is.EqualTo(before));
         });
+    }
+
+    /// <inheritdoc />
+    protected override void CustomTestSetup(IUmbracoBuilder builder)
+    {
+        ArgumentNullException.ThrowIfNull(builder);
+        base.CustomTestSetup(builder);
+        builder.Services.AddLogCapture();
     }
 
     /// <inheritdoc />

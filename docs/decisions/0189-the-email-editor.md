@@ -57,8 +57,10 @@ For the preview:
   created the form, and Addresses chosen by an answer, which shows under the chips the choice field and, for each of
   its options, the addresses it sends to. A kind that can be there once is not offered twice. The schema says it: `to`
   names the editor `recipients`, and `toField`, `toCreator` and `recipientMap` say they are `within` it, so the sidebar
-  draws them nowhere else; a site's own type may do the same. The wireframe's member and user group are no settings
-  of the type and are not offered.
+  draws them nowhere else. A site's own type may do the same: the editor finds the kinds by their editors, one email
+  field's answer (a field picker of email fields), one switch for the form's creator and one recipient map, and the
+  schema refuses anything else within a box, or within a box of another editor. The wireframe's member and user group
+  are no settings of the type and are not offered.
 - **Copy to and Blind copy to** are address chips with a box that adds them (editor `addresses`), as the To box's
   addresses are; a list of addresses is no longer one a line.
 - **The order** is who gets it, then what it says: To, Subject, Body, Leave out unanswered fields, Reply to, Copy to.
@@ -75,18 +77,21 @@ For the preview:
   library's layouts, which the form's setting choices now list (`emailLayouts`, `defaultEmailLayout`).
 - **Subject and Body** offer Insert merge tag for mail, its paths from 9.4c's endpoint for the draft.
 - **The preview:** `POST form/{key}/email-preview` takes the draft as Add or Update would make it, the action's key and
-  the language shown, and answers the mail the team gets for the sample entry, as a run renders it with the site's
-  sender and layout and queueing nothing: From, To (and the address a mail of its own goes to, the sample's answer of
-  the recipient field), Copy to, Blind copy to, Reply to, the subject, the HTML (none for plain text) and its text,
-  and the language's direction. It needs `design` on the form, as the outcome preview does, so who may only read the
+  the language shown, and answers the mail the team gets for the sample entry, as a run renders and routes it with the
+  site's sender and layout and queueing nothing: From, To (and the address a mail of its own goes to, the sample's
+  answer of the recipient field), Copy to, Blind copy to, Reply to, the subject, the HTML (none for plain text) and its
+  text, and the language's direction. A mail only a field's answer gets is the visitor's own, with no copy and no
+  reply-to, and its copies are the team's mail of their own (ADR-0160, amended); a preview logs nothing a run would
+  warn of, as nothing is sent. It needs `design` on the form, as the outcome preview does, so who may only read the
   actions sees it too. The sidebar opens Umbraco's large sidebar for an email, the preview beside the settings where
   there is room for two columns and after them where there is not; it is asked once the changes pause and the newest
   answer wins (as an outcome's). The mail shows in a sandboxed frame that runs nothing, its height its own, with a
   Light/Dark switch that sets the frame's colour scheme; a mail with no recipient yet shows "No recipient yet" in To,
   a mail only a field's answer gets shows that address in To and says it is the visitor's mail, and a preview that
   fails says so with Try again.
-- **Fix it** of an email setting lands on its part of its editor: a chip or Add recipient for the To box's settings,
-  the field's box for the others.
+- **Fix it** of an email setting lands on its part of its editor: a recipient's row, or Add recipient for the To box
+  itself, which its problem describes; the field's box for the others, and the line that says so for a picker with
+  nothing to pick.
 
 ## Consequences
 
@@ -98,11 +103,16 @@ For the preview:
   box checks what is typed with the email field's own check (`isEmailAddress` of the shared logic), the server's
   check of the action having the last word.
 - A preview of an action that names a view the site lacks, with no body of its own, answers `email_view_missing`
-  (409), which the preview says in its words; an action of another type is `action_not_email` (409).
+  (409), and one whose settings its type cannot read, such as a draft written before its editor, answers
+  `action_settings_invalid` (409); the preview says each in its words, and the form check says where. An action of
+  another type is `action_not_email` (409).
 - The email type gives a preview its recipients and its mail without queueing it, and the outbox composes a mail
   without refusing one with no address (`EmailOutbox.ComposeAsync`, which `PrepareAsync` uses).
 - The form's setting choices list the layouts.
 - The backoffice's axe checks (the journeys' `axeInside`, the UX walk) leave frames alone: axe injects itself into
-  every frame and waited without end for the preview's, where no script may run. The mail's markup is the email
-  renderer's, which its own tests hold; Playwright's own locators read inside the frame.
+  every frame and waited without end for the preview's, where no script may run. The preview's journey runs axe on the
+  mail itself, in a page of its own, in each scheme, and Playwright's own locators read inside the frame. A test holds
+  the preview's frame as the backoffice's only one, so another frame comes with a check of its own.
+- The preview names the form's creator by their address to who may design the form, as the mail itself would go to
+  it; the test mail of 10.2c names the same recipients.
 - 10.2c tests the action as the sidebar holds it, the email to the tester with a line naming its real recipients.

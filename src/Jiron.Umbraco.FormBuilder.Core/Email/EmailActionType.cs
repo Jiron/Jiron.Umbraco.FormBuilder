@@ -298,13 +298,13 @@ internal sealed partial class EmailActionType(
                 return ActionResult.Succeeded;
             }
 
-            var (team, visitors) = await RecipientsAsync(settings, context, cancellationToken);
+            var (team, visitors) = await RecipientsAsync(settings, context, quiet: false, cancellationToken);
             if (team.Count > 0 || visitors.Count > 0)
             {
                 prepared.AddRange(await TeamMailAsync(settings, context, team, visitors.Count > 0, cancellationToken));
                 foreach (var visitor in visitors)
                 {
-                    var mail = await MailAsync(settings, context, [visitor], toVisitor: true, cancellationToken);
+                    var mail = await MailAsync(settings, context, [visitor], toVisitor: true, quiet: false, cancellationToken);
                     prepared.AddRange(await outbox.PrepareAsync(mail, cancellationToken) is { } ready ? [ready] : []);
                 }
             }
@@ -351,7 +351,7 @@ internal sealed partial class EmailActionType(
         OutgoingEmail mail;
         try
         {
-            mail = await MailAsync(settings, run, [context.User.Email!], toVisitor: false, cancellationToken);
+            mail = await MailAsync(settings, run, [context.User.Email!], toVisitor: false, quiet: false, cancellationToken);
         }
         catch (ViewMissingException exception)
         {
@@ -366,8 +366,10 @@ internal sealed partial class EmailActionType(
 
     /// <summary>
     /// The mail a run of the action sends for the scope's entry, as the team gets it, queueing nothing (ADR-0189): the
-    /// recipients as the run finds them, the copies, the reply-to, and the mail in the site's sender and layout. Without a
-    /// team, it is the mail to the visitor's address, and without either, the team's mail as it would be.
+    /// recipients as the run finds them, the copies, the reply-to, and the mail in the site's sender and layout, routed as
+    /// a run routes it. Without a team, it is the mail to the visitor's address, which carries no copy and no reply-to,
+    /// unless copies make a team's mail of their own; without either, the team's mail as it would be. It logs nothing a
+    /// run would warn of: nothing is sent.
     /// </summary>
     /// <param name="action">The action as the site runs it, its locks applied.</param>
     /// <param name="scope">The entry, such as the sample entry.</param>
@@ -379,18 +381,32 @@ internal sealed partial class EmailActionType(
         ArgumentNullException.ThrowIfNull(scope);
         var settings = ReadSettings(action.Settings);
         var run = new ActionRunContext { Action = action, Trigger = action.Trigger, Scope = scope, Attempt = 1, DeliveryKey = string.Empty };
-        var (team, visitors) = await RecipientsAsync(settings, run, cancellationToken);
+        var (team, visitors) = await RecipientsAsync(settings, run, quiet: true, cancellationToken);
         var visitor = visitors.FirstOrDefault();
-        var mail = await MailAsync(settings, run, team, toVisitor: team.Count == 0 && visitor is not null, cancellationToken);
-        var composed = await outbox.ComposeAsync(
-            mail with
+        if (TeamMails(settings, team, visitor is not null).FirstOrDefault() is { } first)
+        {
+            var mail = await MailAsync(settings, run, first.To, toVisitor: false, quiet: true, cancellationToken) with
             {
-                Cc = settings.Cc,
-                Bcc = settings.Bcc,
-                ReplyTo = settings.ReplyToField is { } field && MayShow(settings, scope, field) ? AnswerOf(scope, field)?.Trim() : null,
-            },
-            cancellationToken);
-        return new EmailPreview(composed, visitor);
+                Cc = first.Cc,
+                Bcc = first.Bcc,
+                ReplyTo = ReplyTo(settings, scope),
+            };
+            return new EmailPreview(await outbox.ComposeAsync(mail, cancellationToken), visitor);
+        }
+
+        if (visitor is not null)
+        {
+            // The visitor's own mail, by the address it goes to; its To is the team's, which has none.
+            return new EmailPreview(await outbox.ComposeAsync(await MailAsync(settings, run, team, toVisitor: true, quiet: true, cancellationToken), cancellationToken), visitor);
+        }
+
+        var nobody = await MailAsync(settings, run, team, toVisitor: false, quiet: true, cancellationToken) with
+        {
+            Cc = settings.Cc,
+            Bcc = settings.Bcc,
+            ReplyTo = ReplyTo(settings, scope),
+        };
+        return new EmailPreview(await outbox.ComposeAsync(nobody, cancellationToken), null);
     }
 
     private static void CheckAddresses(string setting, IReadOnlyList<string> addresses, ActionSettingsCheck check)
@@ -456,7 +472,31 @@ internal sealed partial class EmailActionType(
 
     private static string? AnswerOf(MergeTagScope scope, Guid field) => scope.Answers.Find(field)?.Values[0].Text;
 
-    private async Task<(List<string> Team, List<string> Visitors)> RecipientsAsync(EmailActionSettings settings, ActionRunContext context, CancellationToken cancellationToken)
+    // The answer of the reply-to field, unless it is a sensitive field the action does not name.
+    private static string? ReplyTo(EmailActionSettings settings, MergeTagScope scope) =>
+        settings.ReplyToField is { } field && MayShow(settings, scope, field) ? AnswerOf(scope, field)?.Trim() : null;
+
+    // Who the team's mails go to (ADR-0160): one mail to the team with its copies. Copies on a mail only a visitor's
+    // address gets go as a mail of their own: the copies as its To, a blind copy still blind; blind copies alone each go
+    // alone, so none sees another.
+    private static List<TeamMail> TeamMails(EmailActionSettings settings, List<string> team, bool hasVisitor)
+    {
+        if (team.Count > 0)
+        {
+            return [new TeamMail(team, settings.Cc, settings.Bcc)];
+        }
+
+        if (!hasVisitor)
+        {
+            return [];
+        }
+
+        return settings.Cc.Count > 0
+            ? [new TeamMail(settings.Cc, [], settings.Bcc)]
+            : [.. settings.Bcc.Select(address => new TeamMail([address], [], []))];
+    }
+
+    private async Task<(List<string> Team, List<string> Visitors)> RecipientsAsync(EmailActionSettings settings, ActionRunContext context, bool quiet, CancellationToken cancellationToken)
     {
         var team = new List<string>(settings.To);
         if (EmailRecipientMap.Of(settings.RecipientMap, out _) is { } map && context.Scope.Answers.Find(map.Field) is { } chosen)
@@ -471,7 +511,7 @@ internal sealed partial class EmailActionType(
             {
                 team.Add(creator);
             }
-            else
+            else if (!quiet)
             {
                 LogNoCreator(logger, context.Scope.FormAlias);
             }
@@ -484,7 +524,7 @@ internal sealed partial class EmailActionType(
             {
                 visitors.Add(typed);
             }
-            else
+            else if (!quiet)
             {
                 LogNotAnAddress(logger, field);
             }
@@ -520,34 +560,29 @@ internal sealed partial class EmailActionType(
         return [.. files.Where(file => wanted.Contains(file.FieldKey)).Select(file => file.Key)];
     }
 
-    // The team's one mail, with the copies, the reply-to and the files; none of those goes to an address a visitor typed. Copies on a
-    // mail that has only such an address go as a mail of their own.
+    // The team's mails, with the copies, the reply-to and the files; none of those goes to an address a visitor typed.
     private async Task<IEnumerable<NewEmail>> TeamMailAsync(EmailActionSettings settings, ActionRunContext context, List<string> team, bool hasVisitor, CancellationToken cancellationToken)
     {
-        var cc = settings.Cc;
-        var bcc = settings.Bcc;
-        if (team.Count == 0 && hasVisitor && (cc.Count > 0 || bcc.Count > 0))
+        var prepared = new List<NewEmail>();
+        foreach (var each in TeamMails(settings, team, hasVisitor))
         {
-            team = [.. cc, .. bcc];
-            (cc, bcc) = ([], []);
+            var mail = await MailAsync(settings, context, each.To, toVisitor: false, quiet: false, cancellationToken) with
+            {
+                Cc = each.Cc,
+                Bcc = each.Bcc,
+                ReplyTo = ReplyTo(settings, context.Scope),
+                Attachments = await AttachmentsAsync(settings, context, cancellationToken),
+            };
+            if (await outbox.PrepareAsync(mail, cancellationToken) is { } ready)
+            {
+                prepared.Add(ready);
+            }
         }
 
-        if (team.Count == 0)
-        {
-            return [];
-        }
-
-        var mail = await MailAsync(settings, context, team, toVisitor: false, cancellationToken) with
-        {
-            Cc = cc,
-            Bcc = bcc,
-            ReplyTo = settings.ReplyToField is { } field && MayShow(settings, context.Scope, field) ? AnswerOf(context.Scope, field)?.Trim() : null,
-            Attachments = await AttachmentsAsync(settings, context, cancellationToken),
-        };
-        return await outbox.PrepareAsync(mail, cancellationToken) is { } ready ? [ready] : [];
+        return prepared;
     }
 
-    private async Task<OutgoingEmail> MailAsync(EmailActionSettings settings, ActionRunContext context, IReadOnlyList<string> to, bool toVisitor, CancellationToken cancellationToken)
+    private async Task<OutgoingEmail> MailAsync(EmailActionSettings settings, ActionRunContext context, IReadOnlyList<string> to, bool toVisitor, bool quiet, CancellationToken cancellationToken)
     {
         var scope = context.Scope with
         {
@@ -563,7 +598,7 @@ internal sealed partial class EmailActionType(
             To = to,
             From = settings.From,
             Subject = rendered,
-            Body = await BodyAsync(settings, scope, rendered, cancellationToken),
+            Body = await BodyAsync(settings, scope, rendered, quiet, cancellationToken),
             PlainText = settings.PlainText,
             Culture = scope.Culture,
             ToVisitor = toVisitor,
@@ -574,7 +609,7 @@ internal sealed partial class EmailActionType(
         };
     }
 
-    private async Task<string> BodyAsync(EmailActionSettings settings, MergeTagScope scope, string subject, CancellationToken cancellationToken)
+    private async Task<string> BodyAsync(EmailActionSettings settings, MergeTagScope scope, string subject, bool quiet, CancellationToken cancellationToken)
     {
         if (settings.View is { } view)
         {
@@ -594,7 +629,11 @@ internal sealed partial class EmailActionType(
                 }
             }
 
-            LogViewMissing(logger, view);
+            if (!quiet)
+            {
+                LogViewMissing(logger, view);
+            }
+
             if (settings.Body is null)
             {
                 throw new ViewMissingException($"The site has no mail view '{view}', and the action has no body of its own.");
@@ -613,4 +652,7 @@ internal sealed partial class EmailActionType(
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "The site has no mail view {View}; the action's body is used instead")]
     private static partial void LogViewMissing(ILogger logger, string view);
+
+    // One of the team's mails: who it goes to and its copies.
+    private sealed record TeamMail(IReadOnlyList<string> To, IReadOnlyList<string> Cc, IReadOnlyList<string> Bcc);
 }

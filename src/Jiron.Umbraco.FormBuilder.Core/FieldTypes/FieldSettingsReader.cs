@@ -113,9 +113,11 @@ internal static class FieldSettingsReader
         return [.. found.OrderBy(each => each.Setting.Group).ThenBy(each => each.Setting.Order).ThenBy(each => each.Index).Select(each => each.Setting)];
     }
 
-    // A setting within another names one of its class at the top, which is itself within none (ADR-0189).
+    // A setting within another names one of its class at the top, which is itself within none, and whose editor draws it
+    // (ADR-0189): only the recipients editor draws settings within it, one of each kind it knows.
     private static void CheckWithin(List<(FieldSettingDescriptor Setting, string Where)> settings, bool nested, List<string> problems)
     {
+        var held = new HashSet<(string Box, string Kind)>();
         foreach (var (setting, where) in settings.Where(each => each.Setting.Within is not null))
         {
             var box = settings.FirstOrDefault(each => !ReferenceEquals(each.Setting, setting) && string.Equals(each.Setting.Name, setting.Within, StringComparison.Ordinal)).Setting;
@@ -131,8 +133,29 @@ internal static class FieldSettingsReader
             {
                 problems.Add($"{where} is within '{box.Name}', which is itself within '{outer}'; a setting is within one that has its own place.");
             }
+            else if (box.Editor != "recipients")
+            {
+                problems.Add($"{where} is within '{box.Name}', whose editor draws no setting within it; only the editor recipients does.");
+            }
+            else if (RecipientKind(setting) is not { } kind)
+            {
+                problems.Add($"{where} is within '{box.Name}', whose editor recipients draws only an email field's answer (a fieldPicker of email fields), the person who created the form (a boolean) and the addresses an answer chooses (a recipientMap).");
+            }
+            else if (!held.Add((box.Name, kind)))
+            {
+                problems.Add($"{where} is within '{box.Name}', which already holds {kind}; the editor recipients draws one of each.");
+            }
         }
     }
+
+    // The kind of recipient a setting is, as the recipients editor draws it; null for one it does not draw.
+    private static string? RecipientKind(FieldSettingDescriptor setting) => setting switch
+    {
+        { Editor: "fieldPicker", Picks: FieldPick.Email } => "an email field's answer",
+        { Editor: "boolean" } => "the person who created the form",
+        { Editor: "recipientMap" } => "the addresses an answer chooses",
+        _ => null,
+    };
 
     private static FieldSettingDescriptor? Describe(
         PropertyInfo property,
