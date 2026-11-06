@@ -131,6 +131,28 @@ public sealed class SettingsServiceTests : RepositoryTestBase
     }
 
     [Test]
+    public async Task AnUpdate_ChangesTheStoredValues_NotThisServersOlderCopy_AndIsRefusedWhenStale()
+    {
+        _ = await Service.GetAsync<GeneralSettings>();
+        await Settings.SaveAsync(new SettingsSave(SettingsScopes.Global, "general", 1, 1, """{"timeZone":"Asia/Tokyo"}""", null));
+
+        // Saved by another server at version 2, which an editor read there; this server still holds version 1.
+        var saved = await Service.UpdateAsync<GeneralSettings>(current => current with { History = new HistorySettings { DraftDays = 5, DraftCount = 7 } }, 2, Editor);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(saved.Value.TimeZone, Is.EqualTo("Asia/Tokyo"), "the stored value stays, not the cached one");
+            Assert.That(saved.Value.History?.DraftDays, Is.EqualTo(5));
+            Assert.That(saved.Value.History?.DraftCount, Is.EqualTo(7));
+            Assert.That(saved.Version, Is.EqualTo(3));
+            Assert.That(
+                () => Service.UpdateAsync<GeneralSettings>(current => current with { TimeZone = "Europe/Berlin" }, 2, Editor),
+                Throws.InstanceOf<FormBuilderConcurrencyException>(),
+                "an update of a version saved over since is refused");
+        });
+    }
+
+    [Test]
     public async Task ASite_OverridesTheFieldsItNames_AndOtherSitesFollowTheGlobalValues()
     {
         await Service.SaveAsync(new GeneralSettings { TimeZone = "Europe/Berlin" }, 1, Editor);

@@ -563,6 +563,18 @@ export type FormVersionResponseModel = {
     isLive: boolean;
 };
 
+export type GeneralSettingsRequestModel = {
+    version: number;
+    history?: HistorySettingsRequestModel | null;
+};
+
+export type GeneralSettingsResponseModel = {
+    version: number;
+    history: HistorySettingsResponseModel;
+    historyLimits: HistoryLimitsResponseModel;
+    locks: Array<SettingsLockResponseModel>;
+};
+
 export type HealthFindingResponseModel = {
     code: string;
     message: string;
@@ -572,6 +584,22 @@ export type HealthFindingResponseModel = {
 
 export type HealthResponseModel = {
     findings: Array<HealthFindingResponseModel>;
+};
+
+export type HistoryLimitsResponseModel = {
+    minDraftDays: number;
+    maxDraftDays: number;
+    maxDraftCount: number;
+};
+
+export type HistorySettingsRequestModel = {
+    draftDays: number;
+    draftCount: number;
+};
+
+export type HistorySettingsResponseModel = {
+    draftDays: number;
+    draftCount: number;
 };
 
 export type HoldingsResponseModel = {
@@ -828,6 +856,12 @@ export type SaveFormDraftRequestModel = {
     concurrencyVersion: number;
     definition: unknown;
     comment?: string | null;
+};
+
+export type SettingsLockResponseModel = {
+    field: string;
+    kind: string;
+    configurationKey: string;
 };
 
 export type TemplateResponseModel = {
@@ -3096,6 +3130,70 @@ export type PickerThemesResponses = {
 };
 
 export type PickerThemesResponse = PickerThemesResponses[keyof PickerThemesResponses];
+
+export type GeneralSettingsGetData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/settings/general';
+};
+
+export type GeneralSettingsGetErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+};
+
+export type GeneralSettingsGetResponses = {
+    /**
+     * OK
+     */
+    200: GeneralSettingsResponseModel;
+};
+
+export type GeneralSettingsGetResponse = GeneralSettingsGetResponses[keyof GeneralSettingsGetResponses];
+
+export type GeneralSettingsSaveData = {
+    body?: GeneralSettingsRequestModel;
+    path?: never;
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/settings/general';
+};
+
+export type GeneralSettingsSaveErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+};
+
+export type GeneralSettingsSaveError = GeneralSettingsSaveErrors[keyof GeneralSettingsSaveErrors];
+
+export type GeneralSettingsSaveResponses = {
+    /**
+     * OK
+     */
+    200: GeneralSettingsResponseModel;
+};
+
+export type GeneralSettingsSaveResponse = GeneralSettingsSaveResponses[keyof GeneralSettingsSaveResponses];
 
 export type MePermissionsData = {
     body?: never;

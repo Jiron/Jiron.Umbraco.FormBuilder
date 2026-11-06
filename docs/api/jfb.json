@@ -5059,6 +5059,133 @@
         ]
       }
     },
+    "/umbraco/jfb/management/api/v1/settings/general": {
+      "get": {
+        "tags": [
+          "Settings"
+        ],
+        "operationId": "GeneralSettingsGet",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/GeneralSettingsResponseModel"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The resource is protected and requires an authentication token"
+          },
+          "403": {
+            "description": "The authenticated user does not have access to this resource"
+          }
+        },
+        "security": [
+          {
+            "Backoffice-User": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "Settings"
+        ],
+        "operationId": "GeneralSettingsSave",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/GeneralSettingsRequestModel"
+                  }
+                ]
+              }
+            },
+            "text/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/GeneralSettingsRequestModel"
+                  }
+                ]
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/GeneralSettingsRequestModel"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/GeneralSettingsResponseModel"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The resource is protected and requires an authentication token"
+          },
+          "403": {
+            "description": "The authenticated user does not have access to this resource"
+          }
+        },
+        "security": [
+          {
+            "Backoffice-User": []
+          }
+        ]
+      }
+    },
     "/umbraco/jfb/management/api/v1/me": {
       "get": {
         "tags": [
@@ -8575,6 +8702,69 @@
         },
         "additionalProperties": false
       },
+      "GeneralSettingsRequestModel": {
+        "required": [
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "version": {
+            "maximum": 2147483647,
+            "minimum": 0,
+            "type": "integer",
+            "format": "int32"
+          },
+          "history": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/HistorySettingsRequestModel"
+              }
+            ],
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "GeneralSettingsResponseModel": {
+        "required": [
+          "history",
+          "historyLimits",
+          "locks",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "history": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/HistorySettingsResponseModel"
+              }
+            ]
+          },
+          "historyLimits": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/HistoryLimitsResponseModel"
+              }
+            ]
+          },
+          "locks": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/SettingsLockResponseModel"
+                }
+              ]
+            }
+          }
+        },
+        "additionalProperties": false
+      },
       "HealthFindingResponseModel": {
         "required": [
           "code",
@@ -8614,6 +8804,65 @@
                 }
               ]
             }
+          }
+        },
+        "additionalProperties": false
+      },
+      "HistoryLimitsResponseModel": {
+        "required": [
+          "maxDraftCount",
+          "maxDraftDays",
+          "minDraftDays"
+        ],
+        "type": "object",
+        "properties": {
+          "minDraftDays": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "maxDraftDays": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "maxDraftCount": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "HistorySettingsRequestModel": {
+        "required": [
+          "draftCount",
+          "draftDays"
+        ],
+        "type": "object",
+        "properties": {
+          "draftDays": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "draftCount": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "HistorySettingsResponseModel": {
+        "required": [
+          "draftCount",
+          "draftDays"
+        ],
+        "type": "object",
+        "properties": {
+          "draftDays": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "draftCount": {
+            "type": "integer",
+            "format": "int32"
           }
         },
         "additionalProperties": false
@@ -9633,6 +9882,26 @@
         },
         "additionalProperties": false
       },
+      "SettingsLockResponseModel": {
+        "required": [
+          "configurationKey",
+          "field",
+          "kind"
+        ],
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "configurationKey": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
       "TemplateResponseModel": {
         "required": [
           "builtIn",
@@ -9826,6 +10095,9 @@
     },
     {
       "name": "Picker"
+    },
+    {
+      "name": "Settings"
     },
     {
       "name": "Setup"

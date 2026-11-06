@@ -46,6 +46,17 @@ internal interface IFormBuilderSettingsService
         where T : class, ISettingsSection, new();
 
     /// <summary>
+    /// Validates and saves the global values of a section as <paramref name="change"/> makes them from the stored ones,
+    /// read in the save, not from a cached copy, so a field the change leaves keeps its stored value;
+    /// <paramref name="expectedVersion"/> is the version the editor read. The save is a unit of work of its own.
+    /// </summary>
+    /// <exception cref="FormBuilderSettingLockedException">The save changes what the host configuration locks.</exception>
+    /// <exception cref="FormBuilderSettingsValidationException">A value is not allowed.</exception>
+    /// <exception cref="FormBuilderConcurrencyException">Someone saved the section meanwhile.</exception>
+    Task<SettingsSnapshot<T>> UpdateAsync<T>(Func<T, T> change, int expectedVersion, Guid? userKey, CancellationToken cancellationToken = default)
+        where T : class, ISettingsSection, new();
+
+    /// <summary>
     /// Validates and saves what a site overrides of a per-site section: the top-level fields in
     /// <paramref name="overrides"/> take their values from <paramref name="values"/>, and every other field follows the
     /// global values. Without fields, the site follows the global values again and its row goes.
@@ -114,34 +125,46 @@ internal sealed partial class FormBuilderSettingsService(
 
     /// <inheritdoc />
     public Task<SettingsSnapshot<T>> SaveAsync<T>(T values, int expectedVersion, Guid? userKey, CancellationToken cancellationToken = default)
-        where T : class, ISettingsSection, new() =>
-        SaveAsync(null, values, overrides: null, expectedVersion, userKey, cancellationToken);
+        where T : class, ISettingsSection, new()
+    {
+        ArgumentNullException.ThrowIfNull(values);
+        return SaveAsync<T>(null, _ => values, overrides: null, expectedVersion, userKey, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public Task<SettingsSnapshot<T>> UpdateAsync<T>(Func<T, T> change, int expectedVersion, Guid? userKey, CancellationToken cancellationToken = default)
+        where T : class, ISettingsSection, new()
+    {
+        ArgumentNullException.ThrowIfNull(change);
+        return SaveAsync<T>(null, stored => change(SettingsSectionJson.Combine<T>(stored.Global, null)), overrides: null, expectedVersion, userKey, cancellationToken);
+    }
 
     /// <inheritdoc />
     public Task<SettingsSnapshot<T>> SaveSiteAsync<T>(Guid siteKey, T values, IReadOnlyCollection<string> overrides, int expectedVersion, Guid? userKey, CancellationToken cancellationToken = default)
         where T : class, ISettingsSection, new()
     {
+        ArgumentNullException.ThrowIfNull(values);
         ArgumentNullException.ThrowIfNull(overrides);
         if (!T.PerSite)
         {
             throw new ArgumentException($"Every site has the global values of the settings section '{T.Alias}'.", nameof(siteKey));
         }
 
-        return SaveAsync(siteKey, values, overrides, expectedVersion, userKey, cancellationToken);
+        return SaveAsync<T>(siteKey, _ => values, overrides, expectedVersion, userKey, cancellationToken);
     }
 
-    private async Task<SettingsSnapshot<T>> SaveAsync<T>(Guid? siteKey, T values, IReadOnlyCollection<string>? overrides, int expectedVersion, Guid? userKey, CancellationToken cancellationToken)
+    // The values to save come from the stored scope, as read here: a whole section saved, or a change of the stored one.
+    private async Task<SettingsSnapshot<T>> SaveAsync<T>(Guid? siteKey, Func<StoredScope, T> valuesOf, IReadOnlyCollection<string>? overrides, int expectedVersion, Guid? userKey, CancellationToken cancellationToken)
         where T : class, ISettingsSection, new()
     {
-        ArgumentNullException.ThrowIfNull(values);
         ArgumentOutOfRangeException.ThrowIfNegative(expectedVersion);
         changes.EnsureOwnUnit("A settings save is a unit of work of its own: it clears caches and tells handlers once it has committed (ADR-0043).");
 
         var scope = siteKey is { } key ? SettingsScopes.ForSite(key) : SettingsScopes.Global;
         var errors = new SettingsErrors(T.Alias);
         var written = overrides is null ? SettingsSectionJson.FieldNames<T>() : SiteFields<T>(overrides, errors);
-        var normalized = Validators<T>().Aggregate(values, (section, validator) => validator.Normalize(section));
         var stored = await ReadStoredAsync<T>(scope, cancellationToken);
+        var normalized = Validators<T>().Aggregate(valuesOf(stored), (section, validator) => validator.Normalize(section));
         var row = overrides is null ? SettingsSectionJson.ToNode(normalized) : SettingsSectionJson.SiteRow(normalized, written);
         var proposed = overrides is null ? normalized : SettingsSectionJson.Combine<T>(stored.Global, row);
 
