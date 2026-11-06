@@ -2742,7 +2742,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
     - Playwright edits the email's body and its preview shows the sample entry's answers in place of its merge tags;
     - Playwright follows the form check's Fix it of an email setting to its editor;
     - integration tests cover every new endpoint, with its row in the permission matrix and the OpenAPI snapshot.
-- [ ] **10.2c The actions view: Test** (10.2 split in four, then 10.2b in two, see WORKLOG)
+- [x] **10.2c The actions view: Test** (10.2 split in four, then 10.2b in two, see WORKLOG) (2026-11-06, c6cc659)
   - **Test run:** on a card and in the sidebar, for the action as the sidebar holds it, saved or not, against the sample entry (ADR-0187).
   - Done when:
     - Playwright configures an email action from a preset, and a test-run email lands in the pickup folder;
@@ -2755,7 +2755,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
     - **Content:** document type and property mapping; the site's document types come with the setting as its choices, as the option sources serve them (ADR-0173), since Umbraco lists them only to users of its Settings section.
     - **Set state.**
   - The form check's Fix it lands on each editor's own settings too.
-  - **Carried in from 10.2c** (ADR-0190): the webhook's, the content action's and Set state's tests answer with a code the backoffice says in its words (`ActionTestCodes`), and content and Set state test as dry runs whose lines say what a run would do, each with a test.
+  - **Carried in from 10.2c** (ADR-0190): the webhook's, the content action's and Set state's tests answer with a code the backoffice says in its words (`ActionTestCodes`), and content and Set state test as dry runs whose lines say what a run would do in the backoffice's words, each with a test. Since 10.2c's review the content action and Set state answer as dry runs and the webhook with `sent` or its run's code, each under an English sentence the toast shows until then.
   - Done when:
     - Playwright configures and test-runs each type (webhooks against the stub on 5560);
     - integration tests cover every new endpoint, with its row in the permission matrix and the OpenAPI snapshot.
