@@ -2756,7 +2756,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
   - Done when:
     - Playwright configures and test-runs a webhook, a Slack message and a Teams message against the stub on 5560;
     - integration tests cover every new endpoint, with its row in the permission matrix and the OpenAPI snapshot.
-- [ ] **10.2e The actions view: the content and Set state editors** (10.2 split in four, then 10.2d in two, see WORKLOG)
+- [x] **10.2e The actions view: the content and Set state editors** (10.2 split in four, then 10.2d in two, see WORKLOG) (2026-11-06, 4224674)
   - **Content:** document type and property mapping; the site's document types come with the setting as its choices, as the option sources serve them (ADR-0173), since Umbraco lists them only to users of its Settings section.
   - **Set state.**
   - The form check's Fix it lands on these editors' own settings too.
