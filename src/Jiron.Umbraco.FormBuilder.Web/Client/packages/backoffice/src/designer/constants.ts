@@ -30,6 +30,9 @@ export const VERSION_COMPARISON_MODAL_ALIAS = 'Jiron.FormBuilder.Modal.VersionCo
 /** A version's comment, in History (ROADMAP 10.3a, ADR-0196). */
 export const VERSION_COMMENT_MODAL_ALIAS = 'Jiron.FormBuilder.Modal.VersionComment';
 
+/** The earlier versions to restore one from, in the form's "..." (ROADMAP 10.3b, ADR-0198). */
+export const VERSION_PICKER_MODAL_ALIAS = 'Jiron.FormBuilder.Modal.VersionPicker';
+
 export const FORM_DETAIL_STORE_CONTEXT = new UmbContextToken<FormDetailStore>(FORM_DETAIL_STORE_ALIAS);
 
 /** The open form's workspace context, which the views and actions inside the form workspace consume. */

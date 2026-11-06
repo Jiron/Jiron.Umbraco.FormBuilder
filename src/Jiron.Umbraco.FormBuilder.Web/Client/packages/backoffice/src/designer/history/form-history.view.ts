@@ -1,31 +1,23 @@
 // The form's History view (ROADMAP 10.3a, IA 5.6, ADR-0196): its published versions newest first, the draft saves too
 // with "Show draft saves", each row when and by whom, what changed against the one before, its comment and pin, and a
 // "..." with Pin and Add comment.... Ticking two versions shows Compare; a version's name opens it compared with the current
-// draft. Both comparisons open Umbraco's medium sidebar, in words (change-words.ts). It reads again when a save moves
-// the draft or a publish moves the live version.
-import { UmbDocumentItemRepository } from '@umbraco-cms/backoffice/document';
-import { css, html, nothing, type TemplateResult } from '@umbraco-cms/backoffice/external/lit';
+// draft, which can restore it as a new draft; a row's "..." restores it at once, with Undo (ROADMAP 10.3b, ADR-0198).
+// Both comparisons open Umbraco's medium sidebar, in words (version-actions.ts). It reads again when a save moves the
+// draft or a publish moves the live version.
+import { css, html, nothing, repeat, type TemplateResult } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import { umbOpenModal } from '@umbraco-cms/backoffice/modal';
-import { tryExecute } from '@umbraco-cms/backoffice/resources';
-import { actionTypeList, type ActionTypeResponseModel, type FormVersionEntryResponseModel } from '../../api';
+import type { FormVersionEntryResponseModel } from '../../api';
 import { jfbBackofficeTokens, jfbVisuallyHidden } from '../../styles/tokens';
 import { jfbSkeleton, skeletonLines } from '../../ui/skeleton';
 import { FORM_WORKSPACE_CONTEXT } from '../constants';
-import type { DesignDefinition } from '../definition';
 import type { FormWorkspaceContext } from '../form-workspace.context';
-import { readLook, word, type CanvasLook } from '../preview/look';
-import { targetOf, type DesignOutcome } from '../settings/outcome-model';
-import { comparisonWords, type ChangeWordsContext } from './change-words';
 import { COMMENT_MODAL } from './comment.modal.token';
-import { COMPARISON_MODAL, type ComparisonRead } from './comparison.modal.token';
-import { headingCase, madeAt, momentText, rowName, summaryWords, versionName } from './history-model';
+import { madeAt, momentText, rowName, summaryWords } from './history-model';
 import { loadHistoryWords } from './history-words';
+import { VersionActions } from './version-actions';
 
 type Version = FormVersionEntryResponseModel['version'];
-
-/** The site's action types, read once per backoffice session; undefined when they can't be read, and tried again. */
-let actionTypes: Promise<Readonly<Record<string, ActionTypeResponseModel>> | undefined> | undefined;
 
 /** The versions newest first as the server lists them, with the current draft first, what the others compare with. */
 const currentFirst = (rows: readonly FormVersionEntryResponseModel[]): readonly FormVersionEntryResponseModel[] => [
@@ -295,7 +287,7 @@ export class FormHistoryViewElement extends UmbLitElement {
   #form: string | undefined;
   /** The live version's number as last seen; undefined before the form is read. */
   #published: number | null | undefined;
-  #look: CanvasLook | undefined;
+  #actions: VersionActions | undefined;
   /** Counts the reads of the list, so only the latest one's answer is said. */
   #reads = 0;
 
@@ -313,6 +305,7 @@ export class FormHistoryViewElement extends UmbLitElement {
     this._draft = null;
     this.consumeContext(FORM_WORKSPACE_CONTEXT, (context) => {
       this.#context = context;
+      this.#actions = context ? new VersionActions(this, context) : undefined;
       if (!context) return;
       this.observe(
         context.unique,
@@ -360,16 +353,14 @@ export class FormHistoryViewElement extends UmbLitElement {
   async #read() {
     const read = ++this.#reads;
     if (this._rows.length === 0) this._state = 'loading';
-    const [words, page, look] = await Promise.all([
+    const [words, page] = await Promise.all([
       loadHistoryWords(this.localize.lang()).then(
         () => true,
         () => false,
       ),
       this.#context?.versionsOf(this._drafts, 0),
-      readLook(this),
     ]);
     if (read !== this.#reads) return;
-    this.#look = look;
     this._words ||= words;
     if (!words || !page) {
       this._state = 'failed';
@@ -413,10 +404,6 @@ export class FormHistoryViewElement extends UmbLitElement {
 
   #now = () => new Date();
 
-  #nameOf(version: Version): string {
-    return versionName(version, this.#now(), this.localize.lang(), this.#full);
-  }
-
   /** A row's name as its controls and what is said of it name it, a draft save with its moment: there may be many. */
   #label(version: Version): string {
     const name = rowName(version, this.#full);
@@ -450,101 +437,24 @@ export class FormHistoryViewElement extends UmbLitElement {
     this._said = this.#term('ticked', this._ticked.length);
   }
 
-  async #words(older: DesignDefinition, newer: DesignDefinition): Promise<ChangeWordsContext> {
-    actionTypes ??= tryExecute(this, actionTypeList(), { disableNotifications: true }).then(({ data }) => {
-      if (!data) actionTypes = undefined;
-      return data ? Object.fromEntries(data.types.map((type) => [type.alias, type])) : undefined;
-    });
-    const look = this.#look ?? (await readLook(this));
-    const culture = look?.languages.find((language) => language.isDefault)?.culture ?? look?.culture ?? '';
-    return {
-      term: this.#full,
-      say: (text) => (text ? this.localize.string(text) : ''),
-      culture,
-      locale: this.localize.lang(),
-      languages: look?.languages ?? [],
-      fieldTypes: this.#context?.getFieldTypes() ?? {},
-      actionTypes: (await actionTypes) ?? {},
-      older,
-      newer,
-      pages: await this.#pages([older, newer], culture),
-      defaultMessage: look ? word(look, 'thankYou') : '',
-    };
-  }
-
-  /** The names of the pages the two versions' redirects lead to, in the site's default language where a page has it. */
-  async #pages(definitions: readonly DesignDefinition[], culture: string): Promise<ReadonlyMap<string, string>> {
-    const keys = [
-      ...new Set(
-        definitions.flatMap((definition) =>
-          ((definition['outcomes'] ?? []) as readonly DesignOutcome[])
-            .map((outcome) => targetOf(outcome))
-            .flatMap((target) => (target.kind === 'page' ? [target.key] : [])),
-        ),
-      ),
-    ];
-    const names = new Map<string, string>();
-    if (keys.length === 0) return names;
-    // A page that can't be read is said as "a page of the site".
-    const { data } = await new UmbDocumentItemRepository(this).requestItems(keys).catch(() => ({ data: undefined }));
-    const wanted = culture.toLowerCase();
-    for (const item of data ?? []) {
-      const variant =
-        item.variants.find((one) => one.culture?.toLowerCase() === wanted) ??
-        item.variants.find((one) => !one.culture) ??
-        item.variants[0];
-      if (variant?.name) names.set(item.unique, variant.name);
-    }
-    return names;
-  }
-
-  /** Opens two versions compared, the older first. */
-  async #compare(older: Version, newer: Version, made?: string) {
-    const read = async (): Promise<ComparisonRead> => {
-      const comparison = await this.#context?.comparisonOf(older.number, newer.number);
-      if (!comparison || comparison.kind === 'failed') return { kind: 'failed' };
-      if (comparison.kind === 'unreadable')
-        return {
-          kind: 'unreadable',
-          name: headingCase(this.#nameOf(comparison.number === older.number ? older : newer)),
-        };
-      return {
-        kind: 'compared',
-        parts: comparisonWords(comparison.changes, await this.#words(comparison.older, comparison.newer)),
-      };
-    };
-    await umbOpenModal(this, COMPARISON_MODAL, {
-      data: {
-        headline: this.#term('compare_headline', headingCase(this.#nameOf(older)), this.#nameOf(newer)),
-        ...(made ? { made } : {}),
-        olderName: headingCase(this.#nameOf(older)),
-        newerName: headingCase(this.#nameOf(newer)),
-        read,
-      },
-    }).catch(() => undefined);
-  }
-
   #compareTicked() {
     const ticked = this._rows
       .map((row) => row.version)
       .filter((version) => this._ticked.includes(version.number))
       .sort((a, b) => a.number - b.number);
     const [older, newer] = ticked;
-    if (older && newer) void this.#compare(older, newer);
+    if (older && newer) void this.#actions?.compare(older, newer);
   }
 
-  /** Opens a version compared with the current draft, the version first. */
-  #compareWithDraft(entry: FormVersionEntryResponseModel) {
-    const draft = this._draft;
-    if (draft === null) return;
-    const current: Version = {
-      ...entry.version,
-      number: draft,
-      kind: 'draft',
-      isDraft: true,
-      isLive: false,
-    };
-    void this.#compare(entry.version, current, this.#made(entry));
+  /** Opens a version compared with the current draft, the version first, which can restore it there, and publish it. */
+  async #compareWithDraft(entry: FormVersionEntryResponseModel) {
+    if ((await this.#actions?.offer(entry)) === 'publish') await this.#actions?.publish();
+  }
+
+  /** Restores a version as a new draft at once; the toast names what changed and offers Undo. */
+  #restore(version: Version) {
+    this.#closeMenu(version.number);
+    void this.#actions?.restore(version);
   }
 
   // ---- Pins and comments ---------------------------------------------------------------------------------------------
@@ -581,7 +491,7 @@ export class FormHistoryViewElement extends UmbLitElement {
 
   // ---- Drawing -------------------------------------------------------------------------------------------------------
 
-  #menu(version: Version, name: string): TemplateResult {
+  #menu(version: Version, name: string, restorable: boolean): TemplateResult {
     const id = `more-${version.number}`;
     return html`<button
         type="button"
@@ -600,6 +510,13 @@ export class FormHistoryViewElement extends UmbLitElement {
         }}
       >
         <div class="menu">
+          ${
+            restorable
+              ? html`<button type="button" @click=${() => this.#restore(version)}>
+                  <uui-icon name="icon-undo" aria-hidden="true"></uui-icon>${this.#term('restore')}
+                </button>`
+              : nothing
+          }
           <button type="button" @click=${() => void this.#pin(version)}>
             <uui-icon name="icon-pushpin" aria-hidden="true"></uui-icon
             >${this.#term(version.isPinned ? 'unpin' : 'pin')}
@@ -640,7 +557,7 @@ export class FormHistoryViewElement extends UmbLitElement {
                     type="button"
                     class="name"
                     aria-label=${this.#term('compareWithDraft', label)}
-                    @click=${() => this.#compareWithDraft(entry)}
+                    @click=${() => void this.#compareWithDraft(entry)}
                   >
                     ${name}
                   </button>`
@@ -678,7 +595,7 @@ export class FormHistoryViewElement extends UmbLitElement {
         }
       </td>
       <td class="comment comment-column ${comment ? '' : 'muted'}">${comment || this.#term('none')}</td>
-      <td class="end">${this.#menu(version, label)}</td>
+      <td class="end">${this.#menu(version, label, comparable)}</td>
     </tr>`;
   }
 
@@ -705,7 +622,14 @@ export class FormHistoryViewElement extends UmbLitElement {
           </tr>
         </thead>
         <tbody>
-          ${this._rows.map((row) => this.#row(row))}
+          ${
+            // Keyed by version, so a focused name or "..." stays with its version when a read adds a row above it.
+            repeat(
+              this._rows,
+              (row) => row.version.number,
+              (row) => this.#row(row),
+            )
+          }
         </tbody>
       </table>
       ${

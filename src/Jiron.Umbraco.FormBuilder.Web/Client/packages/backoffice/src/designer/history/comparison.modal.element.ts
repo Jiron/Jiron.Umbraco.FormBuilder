@@ -1,15 +1,18 @@
 // Two versions compared in words (ROADMAP 10.3a, IA 5.6, ADR-0196): fields, then settings, actions and rules, each part
 // what was added, removed or moved in sentences, then a table of what changed with both values, the older first. Where
 // the sidebar is narrow, each row stacks its values under its name, each said by its version. It reads as it opens,
-// with Try again where it gets no answer; Close is its one button.
+// with Try again where it gets no answer. Beside Close, a version compared with the current draft offers Restore and
+// publish... and the primary Restore as a new draft once it is read (ROADMAP 10.3b, ADR-0198); the caller restores. A
+// draft with changes not saved yet says that they are left out, as a restore saves them first. Where the buttons don't
+// fit the footer's row they wrap, and a narrow sidebar stacks them, the primary first, so none is cut off.
 import { css, html, nothing, type TemplateResult } from '@umbraco-cms/backoffice/external/lit';
 import { UmbModalBaseElement } from '@umbraco-cms/backoffice/modal';
 import { jfbBackofficeTokens } from '../../styles/tokens';
 import { jfbSkeleton, skeletonLines } from '../../ui/skeleton';
 import type { ChangePart } from './change-words';
-import type { ComparisonModalData, ComparisonRead } from './comparison.modal.token';
+import type { ComparisonModalData, ComparisonModalValue, ComparisonRead } from './comparison.modal.token';
 
-export class ComparisonModalElement extends UmbModalBaseElement<ComparisonModalData, never> {
+export class ComparisonModalElement extends UmbModalBaseElement<ComparisonModalData, ComparisonModalValue> {
   static override properties = {
     ...UmbModalBaseElement.properties,
     _read: { state: true },
@@ -19,6 +22,36 @@ export class ComparisonModalElement extends UmbModalBaseElement<ComparisonModalD
     jfbBackofficeTokens,
     jfbSkeleton,
     css`
+      :host {
+        /* The footer's own height, which the actions keep while they fit one row. */
+        --jfb-footer-height: var(--umb-footer-layout-height, 54px);
+      }
+
+      /* The layout, not the host, is the container: the host stays as Umbraco's sidebar places it, so the layout's
+         height still comes from the sidebar. */
+      umb-body-layout {
+        --umb-footer-layout-height: auto;
+        container: jfb-comparison / inline-size;
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        align-items: center;
+        gap: var(--uui-size-space-2);
+        box-sizing: border-box;
+        min-block-size: var(--jfb-footer-height);
+        padding-block: var(--uui-size-space-2);
+      }
+
+      @container jfb-comparison (width < 32rem) {
+        .actions {
+          flex-direction: column-reverse;
+          align-items: stretch;
+        }
+      }
+
       .room {
         display: grid;
         gap: var(--uui-size-space-6);
@@ -29,7 +62,8 @@ export class ComparisonModalElement extends UmbModalBaseElement<ComparisonModalD
         margin: 0;
       }
 
-      .made {
+      .made,
+      .unsaved {
         color: var(--jfb-bo-color-text-muted);
       }
 
@@ -149,6 +183,11 @@ export class ComparisonModalElement extends UmbModalBaseElement<ComparisonModalD
     this._read = await read().catch((): ComparisonRead => ({ kind: 'failed' }));
   }
 
+  #restore(restore: ComparisonModalValue['restore']) {
+    this.value = { restore };
+    this._submitModal();
+  }
+
   #part(part: ChangePart): TemplateResult {
     const older = this.data?.olderName ?? '';
     const newer = this.data?.newerName ?? '';
@@ -205,8 +244,34 @@ export class ComparisonModalElement extends UmbModalBaseElement<ComparisonModalD
     const data = this.data;
     if (!data) return nothing;
     return html`<umb-body-layout headline=${data.headline}>
-      <div class="room">${data.made ? html`<p class="made">${data.made}</p>` : nothing} ${this.#body()}</div>
-      <uui-button slot="actions" label=${this.#term('compare_close')} @click=${this._rejectModal}></uui-button>
+      <div class="room">
+        ${data.made ? html`<p class="made">${data.made}</p>` : nothing}
+        ${data.restorable && data.unsaved ? html`<p class="unsaved">${this.#term('compare_unsaved')}</p>` : nothing}
+        ${this.#body()}
+      </div>
+      <div slot="actions" class="actions">
+        <uui-button label=${this.#term('compare_close')} @click=${this._rejectModal}></uui-button>
+        ${
+          // A restore acts on what the comparison shows, so its buttons come once it is read.
+          data.restorable && this._read?.kind === 'compared'
+            ? html`${
+                  data.publishable
+                    ? html`<uui-button
+                        look="secondary"
+                        label=${this.#term('restoreAndPublish')}
+                        @click=${() => this.#restore('publish')}
+                      ></uui-button>`
+                    : nothing
+                }
+                <uui-button
+                  look="primary"
+                  color="positive"
+                  label=${this.#term('restore')}
+                  @click=${() => this.#restore('draft')}
+                ></uui-button>`
+            : nothing
+        }
+      </div>
     </umb-body-layout>`;
   }
 }

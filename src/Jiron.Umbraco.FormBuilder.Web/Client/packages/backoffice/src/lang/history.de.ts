@@ -38,7 +38,25 @@ export default {
     moreFor: (name: string) => `Weitere Aktionen: ${name}`,
     compareWithDraft: (name: string) => `${name}, verglichen mit dem aktuellen Entwurf`,
     nameDraftSave: (when: string) => `der gespeicherte Entwurf von ${when}`,
+    momentAt: (day: string, time: string) => `${day} um ${time}`,
     saveAt: (name: string, when: string) => `${name}, ${when}`,
+
+    restore: 'Als neuen Entwurf wiederherstellen',
+    restoreAndPublish: 'Wiederherstellen und veröffentlichen…',
+    restored: (name: string, changes: string) => `${name} ist der neue Entwurf: ${changes} geändert.`,
+    restoredPlain: (name: string) => `${name} ist der neue Entwurf.`,
+    restoredSame: (name: string) => `${name} ist der neue Entwurf. Er enthält, was der vorherige Entwurf enthielt.`,
+    listOf: (...parts: string[]) =>
+      parts.length < 2 ? parts.join('') : `${parts.slice(0, -1).join(', ')} und ${parts[parts.length - 1]}`,
+    afterInSentence: (name: string) => `„${name}“`,
+    undone: 'Der vorherige Entwurf ist wiederhergestellt.',
+    undoStale:
+      'Der Entwurf hat sich seither geändert, daher lässt sich das Wiederherstellen hier nicht zurücknehmen. Der vorherige Entwurf bleibt im Verlauf.',
+    unread: 'Der neue Entwurf konnte hier nicht gelesen werden. Laden Sie die Seite neu, um ihn zu sehen.',
+    pick_headline: 'Frühere Version wiederherstellen',
+    pick_empty: 'Es gibt noch keine frühere Version.',
+    pick_lead:
+      'Wählen Sie eine Version, um sie mit dem aktuellen Entwurf zu vergleichen, und stellen Sie sie dort wieder her.',
 
     pin: 'Anheften',
     unpin: 'Anheften aufheben',
@@ -67,6 +85,8 @@ export default {
     compare_failed: 'Die Versionen konnten nicht verglichen werden.',
     compare_unreadable: (name: string) => `${name} kann nicht gelesen und deshalb nicht verglichen werden.`,
     compare_none: 'Keine Unterschiede.',
+    compare_unsaved:
+      'Noch nicht gespeicherte Änderungen sind in diesem Vergleich nicht enthalten. Beim Wiederherstellen werden sie zuerst gespeichert und bleiben so im Verlauf.',
     compare_changed: 'Geändert',
     compare_close: 'Schließen',
 

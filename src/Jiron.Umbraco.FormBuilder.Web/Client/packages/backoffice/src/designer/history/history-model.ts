@@ -8,7 +8,7 @@ type Term = (key: string, ...args: unknown[]) => string;
 
 /**
  * A moment as a row says it: "Today, 09:12", "3 Oct, 14:02", with the year where it is another; within a sentence
- * "today" and "yesterday" are small.
+ * "today at 09:12", so no comma splits the sentence it is in.
  */
 export function momentText(when: Date, now: Date, locale: string, term: Term, inSentence = false): string {
   const small = (word: string) => (inSentence ? word.toLocaleLowerCase(locale) : word);
@@ -16,7 +16,8 @@ export function momentText(when: Date, now: Date, locale: string, term: Term, in
     today: small(term('jfbHistory_today')),
     yesterday: small(term('jfbHistory_yesterday')),
   });
-  return `${day}, ${new Intl.DateTimeFormat(locale, { timeStyle: 'short' }).format(when)}`;
+  const time = new Intl.DateTimeFormat(locale, { timeStyle: 'short' }).format(when);
+  return inSentence ? term('jfbHistory_momentAt', day, time) : `${day}, ${time}`;
 }
 
 /** When a version was made: a publish when it was published, a draft save when it was saved. */
@@ -49,6 +50,18 @@ const GROUPS = ['submission', 'availability', 'protection', 'privacy', 'appearan
  */
 export function summaryWords(changes: readonly DefinitionChangeSummaryResponseModel[], term: Term): string {
   if (changes.length === 0) return term('jfbHistory_changes_none');
+  return summaryParts(changes, term).join(', ');
+}
+
+/**
+ * The parts of a summary, each a kind of element or a settings group, for a sentence to join as its language does; in a
+ * sentence, After sending is set off as the language sets off a name.
+ */
+export function summaryParts(
+  changes: readonly DefinitionChangeSummaryResponseModel[],
+  term: Term,
+  inSentence = false,
+): string[] {
   const of = (kinds: readonly string[]) => changes.filter((change) => kinds.includes(change.kind));
   const named = (kind: string, countTerm: string): string[] => {
     const these = of([kind]);
@@ -65,8 +78,14 @@ export function summaryWords(changes: readonly DefinitionChangeSummaryResponseMo
     ...named('group', 'jfbHistory_changes_groups'),
     ...named('field', 'jfbHistory_changes_fields'),
     ...groups,
-    ...(of(['outcome']).length > 0 ? [term('jfbSettings_group_after')] : []),
+    ...(of(['outcome']).length > 0
+      ? [
+          inSentence
+            ? term('jfbHistory_afterInSentence', term('jfbSettings_group_after'))
+            : term('jfbSettings_group_after'),
+        ]
+      : []),
     ...named('action', 'jfbHistory_changes_actions'),
     ...(rules > 0 ? [term('jfbHistory_changes_rules', rules)] : []),
-  ].join(', ');
+  ];
 }

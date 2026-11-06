@@ -1,6 +1,7 @@
-// What History reads and writes of a form's versions (ROADMAP 10.3a, ADR-0045, ADR-0052, ADR-0196): a page of the list,
-// two versions compared with their definitions, so the comparison names elements as each version holds them, a pin and
-// a comment. A refusal is said in the user's words where the server gives a reason; otherwise the caller says it.
+// What History reads and writes of a form's versions (ROADMAP 10.3a and 10.3b, ADR-0045, ADR-0052, ADR-0196, ADR-0198):
+// a page of the list, two versions compared with their definitions, so the comparison names elements as each version
+// holds them, a pin, a comment and a restore. A refusal is said in the user's words where the server gives a reason;
+// otherwise the caller says it.
 import type { UmbClassInterface } from '@umbraco-cms/backoffice/class-api';
 import { tryExecute } from '@umbraco-cms/backoffice/resources';
 import {
@@ -9,6 +10,7 @@ import {
   versionGet,
   versionList,
   versionPin,
+  versionRestore,
   type DefinitionChangeResponseModel,
   type FormVersionEntryResponseModel,
   type FormVersionResponseModel,
@@ -91,6 +93,25 @@ export async function pinVersion(
   });
   if (!data) await sayRefusal(host, error);
   return data;
+}
+
+/**
+ * Copies a version into a new draft (ADR-0052, ADR-0198), based on the form as it was read; the new draft's number once it
+ * is restored, or undefined after a refusal, which is said.
+ */
+export async function restoreVersion(
+  host: UmbClassInterface,
+  key: string,
+  number: number,
+  concurrencyVersion: number,
+): Promise<number | undefined> {
+  const { data, error } = await tryExecute(
+    host,
+    versionRestore({ path: { key, number }, body: { concurrencyVersion } }),
+    { disableNotifications: true },
+  );
+  if (!data) await sayRefusal(host, error);
+  return data?.version ?? undefined;
 }
 
 /** Sets a version's comment, empty to remove it; the version as it is now, or undefined after a refusal, which is said. */

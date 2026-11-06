@@ -38,7 +38,23 @@ export default {
     moreFor: (name: string) => `More actions for ${name}`,
     compareWithDraft: (name: string) => `${name}, compared with the current draft`,
     nameDraftSave: (when: string) => `the draft save of ${when}`,
+    momentAt: (day: string, time: string) => `${day} at ${time}`,
     saveAt: (name: string, when: string) => `${name}, ${when}`,
+
+    restore: 'Restore as a new draft',
+    restoreAndPublish: 'Restore and publish…',
+    restored: (name: string, changes: string) => `${name} is the new draft: ${changes} changed.`,
+    restoredPlain: (name: string) => `${name} is the new draft.`,
+    restoredSame: (name: string) => `${name} is the new draft. It holds what the draft before held.`,
+    listOf: (...parts: string[]) =>
+      parts.length < 2 ? parts.join('') : `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}`,
+    afterInSentence: (name: string) => name,
+    undone: 'The draft before is back.',
+    undoStale: "The draft has changed since, so the restore can't be undone here. The draft before stays in History.",
+    unread: "The new draft couldn't be read here. Reload the page to see it.",
+    pick_headline: 'Restore an earlier version',
+    pick_empty: 'There is no earlier version yet.',
+    pick_lead: 'Choose a version to compare it with the current draft, then restore it from there.',
 
     pin: 'Pin',
     unpin: 'Unpin',
@@ -67,6 +83,8 @@ export default {
     compare_failed: "The versions couldn't be compared.",
     compare_unreadable: (name: string) => `${name} can't be read, so it can't be compared.`,
     compare_none: 'No differences.',
+    compare_unsaved:
+      "Changes not saved yet aren't in this comparison. A restore saves them first, so they stay in History.",
     compare_changed: 'Changed',
     compare_close: 'Close',
 

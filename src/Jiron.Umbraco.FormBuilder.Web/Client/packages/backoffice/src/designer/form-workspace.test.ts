@@ -229,4 +229,16 @@ describe("the form workspace's manifests", () => {
     expect(actions.map((action) => action.alias.split('.').at(-1))).toEqual(['SaveDraft', 'Publish']);
     expect(actions.map(holding)).toEqual([['design'], ['design']]);
   });
+
+  it('put Restore an earlier version... first in the form\'s "..." in the workspace, for who may design the form', () => {
+    const restore = all.find((manifest) => manifest.alias === 'Jiron.FormBuilder.EntityAction.RestoreEarlier') as
+      (Conditioned & { forEntityTypes: string[]; weight: number; meta: { label: string } }) | undefined;
+    expect(restore?.type).toBe('entityAction');
+    expect(restore?.forEntityTypes).toEqual(['jfb-form']);
+    expect(restore?.meta.label).toBe('#jfbDesigner_restoreEarlier');
+    // Above the tree's form actions (the highest, Duplicate, weighs 1000), and only where the form is open.
+    expect(restore?.weight).toBeGreaterThan(1000);
+    expect(restore?.conditions).toContainEqual({ alias: 'Umb.Condition.WorkspaceAlias', match: FORM_WORKSPACE_ALIAS });
+    expect(restore && holding(restore)).toEqual(['design']);
+  });
 });

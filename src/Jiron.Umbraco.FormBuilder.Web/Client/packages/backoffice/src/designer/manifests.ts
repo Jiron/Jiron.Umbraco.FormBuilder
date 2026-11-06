@@ -8,6 +8,7 @@ import {
   ACTION_MODAL_ALIAS,
   ACTION_RUN_MODAL_ALIAS,
   VERSION_COMMENT_MODAL_ALIAS,
+  VERSION_PICKER_MODAL_ALIAS,
   VERSION_COMPARISON_MODAL_ALIAS,
   FORM_DETAIL_REPOSITORY_ALIAS,
   FORM_DETAIL_STORE_ALIAS,
@@ -143,6 +144,24 @@ export const manifests: UmbExtensionManifest[] = [
     alias: VERSION_COMMENT_MODAL_ALIAS,
     name: "Jiron Form Builder version's comment",
     element: (() => import('./history/comment.modal.element')) as never,
+  },
+  {
+    type: 'modal',
+    alias: VERSION_PICKER_MODAL_ALIAS,
+    name: 'Jiron Form Builder earlier versions',
+    element: (() => import('./history/version-picker.modal.element')) as never,
+  },
+  {
+    // First in the form's "..." in the workspace, not in the tree, where the form isn't open (ADR-0198).
+    type: 'entityAction',
+    kind: 'default',
+    alias: 'Jiron.FormBuilder.EntityAction.RestoreEarlier',
+    name: 'Jiron Form Builder restore an earlier version',
+    forEntityTypes: [FORM_ENTITY_TYPE],
+    weight: 1300,
+    api: () => import('./history/restore-earlier.action'),
+    meta: { icon: 'icon-history', label: '#jfbDesigner_restoreEarlier' },
+    conditions: [IN_FORM_WORKSPACE, holding('design')],
   },
   {
     type: 'modal',

@@ -169,6 +169,7 @@ export default {
     formGone: 'Dieses Formular gibt es nicht mehr, oder Sie haben keinen Zugriff darauf.',
     folderGone: 'Diesen Ordner gibt es nicht mehr, oder Sie haben keinen Zugriff darauf.',
     templateGone: 'Diese Vorlage gibt es nicht mehr. Wählen Sie eine andere.',
+    versionGone: 'Diese Version gibt es nicht mehr. Wählen Sie eine andere.',
     changedMeanwhile:
       'Jemand hat das geändert, nachdem Sie es geöffnet haben. Laden Sie die Seite neu und versuchen Sie es erneut.',
     missingPermission: (permission: string) =>

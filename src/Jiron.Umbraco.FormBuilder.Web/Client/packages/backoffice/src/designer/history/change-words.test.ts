@@ -15,7 +15,7 @@ import { flatten } from '../actions/action-words';
 import type { DesignDefinition } from '../definition';
 import { builtInTypes } from '../preview/fixtures';
 import { comparisonWords, propertyName, VALUE_TERMS, VOCABULARY, type ChangeWordsContext } from './change-words';
-import { summaryWords } from './history-model';
+import { summaryParts, summaryWords } from './history-model';
 
 const ROOT = join(__dirname, '..', '..', '..', '..', '..', '..', '..', '..');
 const SCHEMA = JSON.parse(readFileSync(join(ROOT, 'schemas', 'jfb-form.v1.schema.json'), 'utf8')) as {
@@ -480,5 +480,25 @@ describe('a comparison in words', () => {
     expect(summary([{ kind: 'settings', settingsGroup: 'privacy' }, { kind: 'action' }, { kind: 'action' }])).toBe(
       'Privacy, 2 actions',
     );
+  });
+
+  it("joins a restore's changes as each language joins a list, After sending set off in German", () => {
+    const changes: DefinitionChangeResponseModel[] = [
+      { kind: 'field', key: 'a', change: 'changed', moved: false, label: 'A', properties: [] },
+      { kind: 'field', key: 'b', change: 'changed', moved: false, label: 'B', properties: [] },
+      { kind: 'outcome', key: 'o', change: 'changed', moved: false, properties: [] },
+      { kind: 'rule', key: 'r', change: 'added', moved: false, properties: [] },
+    ];
+    const sentence = (term: typeof english) =>
+      term('jfbHistory_restored', 'Version 13', term('jfbHistory_listOf', ...summaryParts(changes, term, true)));
+    // No comma before "and", whichever English the backoffice speaks.
+    expect(sentence(english)).toBe('Version 13 is the new draft: 2 fields, After sending and 1 rule changed.');
+    expect(sentence(german)).toBe(
+      'Version 13 ist der neue Entwurf: 2 Felder, \u201eNach dem Senden\u201c und 1 Regel ge\u00e4ndert.',
+    );
+    // A row's summary keeps the group's name as the Settings view shows it.
+    expect(summaryParts(changes, german)).toContain('Nach dem Senden');
+    expect(english('jfbHistory_listOf', 'A')).toBe('A');
+    expect(english('jfbHistory_listOf', 'A', 'B')).toBe('A and B');
   });
 });

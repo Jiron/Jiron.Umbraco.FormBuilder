@@ -10,6 +10,8 @@ export default {
     // The Actions view's words while its own load (ADR-0188).
     actionsLoading: 'Loading the actions…',
     historyFailed: "The History couldn't be shown. Try again in a moment.",
+    // The form's "…": its first item, for who may design the form (ADR-0198).
+    restoreEarlier: 'Restore an earlier version…',
     actionsFailed: "The actions couldn't be read. Try again in a moment.",
     view_entries: 'Entries',
     view_insights: 'Insights',

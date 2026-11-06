@@ -37,9 +37,11 @@ import {
   compareVersions,
   pinVersion,
   readVersions,
+  restoreVersion,
   type VersionComparison,
   type VersionPage,
 } from './history/versions';
+import { oneAtATime, restoreDraft, type RestoredDraft } from './history/restore-draft';
 import { previewAnswer, type EmailPreview } from './actions/email-preview';
 import { FORM_ENTITY_TYPE } from '../section/entity-types';
 import { issuesOf, type FixTarget } from './check/form-check';
@@ -130,6 +132,13 @@ export class FormWorkspaceContext
 
   /** The language the views show the form's texts in, as its switch chose it; null for the site's default. */
   #language: string | null = null;
+
+  /** Restores a version as a new draft, one at a time (ADR-0198). */
+  readonly #restore = oneAtATime((key: string, number: number) =>
+    restoreDraft(this, key, number, (form, version, concurrencyVersion) =>
+      restoreVersion(this, form, version, concurrencyVersion),
+    ),
+  );
 
   /** What the editor model asks of the workspace: the field types, fresh keys and the calculation language. */
   readonly model: ModelContext = {
@@ -478,6 +487,17 @@ export class FormWorkspaceContext
   commentVersion(number: number, comment: string): Promise<FormVersionResponseModel | undefined> {
     const key = this.getUnique();
     return key ? commentVersion(this, key, number, comment) : Promise.resolve(undefined);
+  }
+
+  /**
+   * Restores a version of the form `key` as a new draft (ADR-0198): changes not saved yet are saved first, as Publish...
+   * saves them, so they stay in the History; then the form is read again, so every view shows the new draft. The draft's
+   * number before, the new draft's, and whether the workspace shows it now; undefined after a refusal, which is said,
+   * where the workspace holds another form, or while another restore runs, as a second one would be refused as a change
+   * made meanwhile.
+   */
+  restoreVersion(key: string, number: number): Promise<RestoredDraft | undefined> {
+    return this.#restore(key, number);
   }
 
   /**

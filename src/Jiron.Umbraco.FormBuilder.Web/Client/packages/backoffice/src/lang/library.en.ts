@@ -151,6 +151,7 @@ export default {
     formGone: "This form doesn't exist any more, or you don't have access to it.",
     folderGone: "This folder doesn't exist any more, or you don't have access to it.",
     templateGone: "This template doesn't exist any more. Choose another one.",
+    versionGone: "This version doesn't exist any more. Choose another one.",
     changedMeanwhile: 'Someone changed this after you opened it. Reload the page, then try again.',
     missingPermission: (permission: string) =>
       `This needs the "${permission}" permission. An administrator can grant it in Settings › Access.`,

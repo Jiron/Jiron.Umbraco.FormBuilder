@@ -1,13 +1,9 @@
-// "Publish..." in the form workspace's footer (docs/ux/information-architecture.md, section 5.7): the dialog asks first,
-// with the form check's result and an optional comment for the version, then the workspace saves what is unsaved and
-// publishes. A Fix it chosen in the dialog leads to the view that makes it: the Settings view for a problem in the form's
-// settings (ADR-0184), the Design view for any other (ADR-0181). What changed joins the dialog with its step.
-import { umbOpenModal } from '@umbraco-cms/backoffice/modal';
+// "Publish..." in the form workspace's footer (docs/ux/information-architecture.md, section 5.7): the publish dialog's
+// flow (publish-flow.ts), with the button waiting while the form is published and showing a refusal.
 import type { UmbControllerHost } from '@umbraco-cms/backoffice/controller-api';
 import { UmbWorkspaceActionBase, type UmbWorkspaceActionArgs } from '@umbraco-cms/backoffice/workspace';
 import { FORM_WORKSPACE_CONTEXT } from './constants';
-import { followFix } from './form-views';
-import { PUBLISH_MODAL } from './publish.modal.token';
+import { publishWithDialog } from './publish-flow';
 
 export class PublishFormAction extends UmbWorkspaceActionBase {
   constructor(host: UmbControllerHost, args: UmbWorkspaceActionArgs<never>) {
@@ -18,38 +14,10 @@ export class PublishFormAction extends UmbWorkspaceActionBase {
 
   override async execute() {
     const context = await this.getContext(FORM_WORKSPACE_CONTEXT);
-    const form = context?.getData()?.form;
-    if (!context || !form) return;
-    // The draft as it is now is checked as the dialog opens, which shows the answer once it comes.
-    void context.checkNow();
-    let gone: (() => void) | undefined;
-    const closed = new Promise<void>((done) => (gone = done));
-    const value = await umbOpenModal(this, PUBLISH_MODAL, {
-      data: {
-        name: context.getName() ?? form.name,
-        check: context.check,
-        types: context.getFieldTypes(),
-        // The site's default texts name the elements, as everywhere outside the designer's language switch.
-        culture: '',
-        closed: () => gone?.(),
-      },
-    }).catch(() => undefined);
-    if (!value) return;
-    if ('fix' in value) {
-      // The view that makes the Fix it takes it up once it is shown: the Settings view one in the form's settings, the
-      // Design view any other. The dialog answers before it closes and gives the focus back to Publish... as it does, so
-      // the Fix it waits.
-      await Promise.race([closed, new Promise((done) => setTimeout(done, 2000))]);
-      followFix(value.fix, (fix) => context.requestFix(fix));
-      return;
-    }
-    this.setExecuting(true);
-    try {
-      // The refusal is said already; the button shows that it failed.
-      if (!(await context.publish(value.comment.trim() || null))) throw new Error('The form was not published.');
-    } finally {
-      this.setExecuting(false);
-    }
+    if (!context) return;
+    // The refusal is said already; the button shows that it failed.
+    if ((await publishWithDialog(this, context, (busy) => this.setExecuting(busy))) === 'refused')
+      throw new Error('The form was not published.');
   }
 }
 

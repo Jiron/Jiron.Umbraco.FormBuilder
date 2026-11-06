@@ -36,8 +36,8 @@ describe("a version's names", () => {
     expect(rowName(version({ kind: 'draft' }), term)).toBe('Draft save');
     expect(rowName(version({ kind: 'draft', isDraft: true }), term)).toBe('Current draft');
     expect(versionName(version({ isDraft: true }), now, 'en-GB', term)).toBe('version 14');
-    // Within a sentence "today" is small.
-    expect(versionName(version({ kind: 'draft' }), now, 'en-GB', term)).toBe('the draft save of today, 09:12');
+    // Within a sentence "today" is small, and the time follows it without a comma that would split the sentence.
+    expect(versionName(version({ kind: 'draft' }), now, 'en-GB', term)).toBe('the draft save of today at 09:12');
     expect(versionName(version({ kind: 'draft', isDraft: true }), now, 'en-GB', term)).toBe('the current draft');
     expect(headingCase('the current draft')).toBe('The current draft');
   });
@@ -46,7 +46,7 @@ describe("a version's names", () => {
     const at = (day: number, month = 10, year = 2026) => new Date(year, month, day, 16, 40);
     expect(momentText(at(6), now, 'en-GB', term)).toBe('Today, 16:40');
     expect(momentText(at(5), now, 'en-GB', term)).toBe('Yesterday, 16:40');
-    expect(momentText(at(5), now, 'en-GB', term, true)).toBe('yesterday, 16:40');
+    expect(momentText(at(5), now, 'en-GB', term, true)).toBe('yesterday at 16:40');
     expect(momentText(at(3), now, 'en-GB', term)).toBe('3 Nov, 16:40');
     expect(momentText(at(3, 10, 2025), now, 'en-GB', term)).toBe('3 Nov 2025, 16:40');
     const published = version({ createdUtc: at(1).toISOString(), publishedUtc: at(2).toISOString() });

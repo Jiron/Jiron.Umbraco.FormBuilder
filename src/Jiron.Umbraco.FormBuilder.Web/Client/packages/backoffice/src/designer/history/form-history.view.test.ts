@@ -1,21 +1,29 @@
 // The form's History view (ROADMAP 10.3a, IA 5.6, ADR-0196): the published versions newest first, each with when and by
 // whom, what changed, its comment and pin, the live one's chip; the draft saves on request, muted, the current draft
 // first; Show more; a pin and a comment from a row's "..."; two ticked versions compared, the older first, and a version
-// compared with the current draft; a read that fails; and a save that adds a version reads the list again.
+// compared with the current draft; a read that fails; and a save that adds a version reads the list again. A version is
+// restored as a new draft from its sidebar, with Restore and publish..., and from its row's "...", with Undo (10.3b).
 import { UmbBasicState } from '@umbraco-cms/backoffice/observable-api';
 import { UMB_NOTIFICATION_CONTEXT } from '@umbraco-cms/backoffice/notification';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DefinitionChangeResponseModel, FormVersionEntryResponseModel, FormVersionResponseModel } from '../../api';
 import { all, must, registerEnglish, settle, shadow, testHost, text } from '../../testing';
-import { FORM_WORKSPACE_CONTEXT } from '../constants';
+import { FORM_WORKSPACE_CONTEXT, VERSION_COMPARISON_MODAL_ALIAS } from '../constants';
 import type { DesignDefinition } from '../definition';
 import { builtInTypes, englishLook } from '../preview/fixtures';
+import { PUBLISH_MODAL_ALIAS } from '../publish.modal.token';
 import type { CommentModalData } from './comment.modal.token';
 import type { ComparisonModalData } from './comparison.modal.token';
+import type { RestoredDraft } from './restore-draft';
 import type { VersionComparison, VersionPage } from './versions';
 
 /** The modals opened, with their data, and what the one open answers. */
-const opened = vi.hoisted(() => ({ modals: [] as { token: string; data: unknown }[], answer: undefined as unknown }));
+const opened = vi.hoisted(() => ({
+  modals: [] as { token: string; data: unknown }[],
+  answer: undefined as unknown,
+  /** What a dialog answers by its alias, before the answer for every other. */
+  answers: {} as Record<string, unknown>,
+}));
 
 /** Whether the view's own words fail to load. */
 const words = vi.hoisted(() => ({ fail: false }));
@@ -35,8 +43,9 @@ vi.mock('@umbraco-cms/backoffice/modal', async (original) => ({
   ...(await original<typeof import('@umbraco-cms/backoffice/modal')>()),
   umbOpenModal: async (_host: unknown, token: { toString(): string }, args?: { data?: unknown }) => {
     opened.modals.push({ token: token.toString(), data: args?.data });
-    if (opened.answer === undefined) throw new Error('closed');
-    return opened.answer;
+    const answer = token.toString() in opened.answers ? opened.answers[token.toString()] : opened.answer;
+    if (answer === undefined) throw new Error('closed');
+    return answer;
   },
 }));
 
@@ -148,10 +157,33 @@ class StandIn {
     this.comments.push([number, comment]);
     return version(number, { comment: comment || null });
   };
+  /** The versions restored with their forms, and what a restore answers: the drafts before and after, or a refusal. */
+  readonly restores: number[] = [];
+  readonly restoredForms: string[] = [];
+  restoring: (number: number) => RestoredDraft | undefined = () => {
+    const before = this.drafts.getValue() ?? 0;
+    // The workspace reads the form again, which holds the new draft.
+    this.drafts.setValue(before + 1);
+    return { before, after: before + 1, shown: true };
+  };
+  restoreVersion = async (key: string, number: number) => {
+    this.restoredForms.push(key);
+    this.restores.push(number);
+    return this.restoring(number);
+  };
+  /** Whether the draft has changes not saved yet. */
+  unsaved = false;
+  getHasUnpersistedChanges = () => this.unsaved;
+  /** What the publish dialog's flow reads. */
+  getData = () => ({ draftVersion: this.drafts.getValue(), form: { name: 'Contact' } });
+  getName = () => 'Contact';
+  check = new UmbBasicState({}).asObservable();
+  checkNow = vi.fn();
+  publish = vi.fn(async () => true);
   getFieldTypes = () => builtInTypes;
   getHostElement = () => this.host;
   getEntityType = () => 'jfb-form';
-  getUnique = () => 'form1';
+  getUnique = () => this.uniques.getValue();
 }
 
 async function viewOf(prepare: (workspace: StandIn) => void = () => undefined) {
@@ -160,7 +192,8 @@ async function viewOf(prepare: (workspace: StandIn) => void = () => undefined) {
   const host = testHost();
   workspace.host = host;
   host.provideContext(FORM_WORKSPACE_CONTEXT, workspace as never);
-  host.provideContext(UMB_NOTIFICATION_CONTEXT, { peek: vi.fn(), getHostElement: () => host } as never);
+  const peek = vi.fn();
+  host.provideContext(UMB_NOTIFICATION_CONTEXT, { peek, getHostElement: () => host } as never);
   const view = new FormHistoryViewElement();
   host.append(view);
   await vi.waitFor(() => expect(shadow(view).querySelector('tbody tr, .empty, [role="alert"]')).not.toBeNull());
@@ -170,7 +203,7 @@ async function viewOf(prepare: (workspace: StandIn) => void = () => undefined) {
   const cell = (row: number, column: number) => text(rows()[row]?.querySelectorAll('td, th')[column]);
   const said = () => text(root.querySelector('[role="status"]'));
   const toggle = root.querySelector<HTMLInputElement>('uui-toggle') as HTMLInputElement;
-  return { workspace, view, root, rows, cell, said, toggle };
+  return { workspace, view, root, rows, cell, said, toggle, peek };
 }
 
 beforeAll(registerEnglish);
@@ -178,6 +211,7 @@ beforeAll(registerEnglish);
 beforeEach(() => {
   opened.modals = [];
   opened.answer = undefined;
+  opened.answers = {};
   words.fail = false;
   pages.asked = [];
 });
@@ -339,17 +373,17 @@ describe("a form's History", () => {
   it('pins and unpins a version from its "\u2026", and says so', async () => {
     const { rows, said, workspace } = await viewOf();
     const items = (row: number) => [...(rows()[row]?.querySelectorAll<HTMLElement>('.menu button') ?? [])];
-    expect(items(1).map((item) => text(item))).toEqual(['Pin', 'Add comment\u2026']);
-    expect(items(0).map((item) => text(item))).toEqual(['Unpin', 'Change comment\u2026']);
-    items(1)[0]?.click();
+    expect(items(1).map((item) => text(item))).toEqual(['Restore as a new draft', 'Pin', 'Add comment\u2026']);
+    expect(items(0).map((item) => text(item))).toEqual(['Restore as a new draft', 'Unpin', 'Change comment\u2026']);
+    items(1)[1]?.click();
     await vi.waitFor(() => expect(rows()[1]?.querySelector('uui-icon.pin')).not.toBeNull());
     expect(said()).toBe('Version 12 pinned. The cleanup keeps this version.');
-    items(0)[0]?.click();
+    items(0)[1]?.click();
     await vi.waitFor(() => expect(rows()[0]?.querySelector('uui-icon.pin')).toBeNull());
     expect(said()).toBe('Version 14 unpinned.');
     // A refused pin leaves the row as it was and says nothing of its own: the notification says why.
     workspace.refuses = true;
-    items(2)[0]?.click();
+    items(2)[1]?.click();
     await vi.waitFor(() => expect(workspace.pins).toHaveLength(3));
     await settle();
     expect(rows()[2]?.querySelector('uui-icon.pin')).toBeNull();
@@ -365,20 +399,20 @@ describe("a form's History", () => {
     const { rows, cell, said, workspace } = await viewOf();
     const menu = (row: number) => [...(rows()[row]?.querySelectorAll<HTMLElement>('.menu button') ?? [])];
     opened.answer = { comment: 'Shorter for the autumn' };
-    menu(1)[1]?.click();
+    menu(1)[2]?.click();
     await vi.waitFor(() => expect(cell(1, 3)).toBe('Shorter for the autumn'));
     expect(opened.modals[0]?.data as CommentModalData).toEqual({ name: 'Version 12', comment: '' });
     expect(said()).toBe('Comment on Version 12 saved.');
     opened.answer = { comment: '' };
-    menu(1)[1]?.click();
+    menu(1)[2]?.click();
     await vi.waitFor(() => expect(cell(1, 3)).toBe('none'));
     expect(said()).toBe('Comment on Version 12 removed.');
     // Cancelled, or saved as it was: nothing is sent.
     opened.answer = undefined;
-    menu(0)[1]?.click();
+    menu(0)[2]?.click();
     await settle();
     opened.answer = { comment: 'Press enquiries go to the press page' };
-    menu(0)[1]?.click();
+    menu(0)[2]?.click();
     await vi.waitFor(() => expect(opened.modals).toHaveLength(4));
     await settle();
     expect(workspace.comments).toEqual([
@@ -529,5 +563,185 @@ describe("a form's History", () => {
       [false, 0],
       [false, 0],
     ]);
+  });
+});
+
+describe('restoring a version (ROADMAP 10.3b, ADR-0198)', () => {
+  const twoChanges: DefinitionChangeResponseModel[] = [
+    { kind: 'field', key: 'mail', change: 'changed', moved: false, label: 'Email address', properties: [] },
+    { kind: 'settings', change: 'changed', moved: false, settingsGroup: 'appearance', properties: [] },
+  ];
+
+  /** The toasts said, with their data. */
+  const toasts = (peek: ReturnType<typeof vi.fn>) =>
+    peek.mock.calls.map(([, options]) => options as { elementName?: string; data: Record<string, unknown> });
+
+  it('restores from its sidebar as a new draft, names what changed, and Undo brings the draft before back', async () => {
+    const { rows, workspace, peek } = await viewOf((one) => {
+      one.comparison = { kind: 'compared', changes: twoChanges, older: definition, newer: definition };
+    });
+    opened.answers[VERSION_COMPARISON_MODAL_ALIAS] = { restore: 'draft' };
+    must(rows()[1]?.querySelector<HTMLElement>('button.name'), 'Version 12').click();
+    await vi.waitFor(() => expect(peek).toHaveBeenCalledOnce());
+
+    expect((opened.modals[0]?.data as ComparisonModalData).restorable).toBe(true);
+    expect((opened.modals[0]?.data as ComparisonModalData).publishable).toBe(true);
+    expect(workspace.restores).toEqual([12]);
+    // What changed is the new draft against the one before.
+    expect(workspace.compared).toEqual([[16, 17]]);
+    const [toast] = toasts(peek);
+    expect(toast?.elementName).toBe('jfb-undo-notification');
+    expect([toast?.data['message'], toast?.data['undoLabel']]).toEqual([
+      'Version 12 is the new draft: Email address and Appearance changed.',
+      'Undo',
+    ]);
+    expect(opened.modals.map((modal) => modal.token)).toEqual([VERSION_COMPARISON_MODAL_ALIAS]);
+
+    await (toast?.data['undo'] as () => Promise<void>)();
+    expect(workspace.restores).toEqual([12, 16]);
+    expect(toasts(peek)[1]?.data['message']).toBe('The draft before is back.');
+  });
+
+  it('keeps the draft as it is where Undo comes after a change since, with changes not saved, or in another form', async () => {
+    const { rows, workspace, peek } = await viewOf();
+    const stale =
+      "The draft has changed since, so the restore can't be undone here. The draft before stays in History.";
+    const restoreAt = async () => {
+      peek.mockClear();
+      rows()[1]?.querySelector<HTMLElement>('.menu button')?.click();
+      await vi.waitFor(() => expect(peek).toHaveBeenCalledOnce());
+      return toasts(peek)[0]?.data['undo'] as () => Promise<void>;
+    };
+
+    let undo = await restoreAt();
+    workspace.unsaved = true;
+    await undo();
+    expect([peek.mock.calls[1]?.[0], toasts(peek)[1]?.data['message']]).toEqual(['warning', stale]);
+    workspace.unsaved = false;
+
+    undo = await restoreAt();
+    workspace.drafts.setValue(30);
+    await undo();
+    expect(toasts(peek)[1]?.data['message']).toBe(stale);
+
+    undo = await restoreAt();
+    workspace.uniques.setValue('form2');
+    await undo();
+    expect(toasts(peek)[1]?.data['message']).toBe(stale);
+    // Each Undo restored nothing: only the three restores reached the workspace, each of the form it began in.
+    expect(workspace.restores).toEqual([12, 12, 12]);
+    expect(workspace.restoredForms).toEqual(['form1', 'form1', 'form1']);
+  });
+
+  it('says nothing more of a restore whose form was left meanwhile, and that a new draft not read again is not shown', async () => {
+    const left = await viewOf((one) => {
+      one.restoring = () => {
+        one.uniques.setValue('form2');
+        return { before: 16, after: 17, shown: false };
+      };
+    });
+    left.rows()[1]?.querySelector<HTMLElement>('.menu button')?.click();
+    await vi.waitFor(() => expect(left.workspace.restores).toEqual([12]));
+    await settle();
+    expect(left.peek).not.toHaveBeenCalled();
+
+    const unread = await viewOf((one) => (one.restoring = () => ({ before: 16, after: 17, shown: false })));
+    unread.rows()[1]?.querySelector<HTMLElement>('.menu button')?.click();
+    await vi.waitFor(() => expect(unread.peek).toHaveBeenCalledOnce());
+    expect([unread.peek.mock.calls[0]?.[0], toasts(unread.peek)[0]]).toEqual([
+      'warning',
+      { data: { message: "The new draft couldn't be read here. Reload the page to see it." } },
+    ]);
+  });
+
+  it('tells the sidebar of changes not saved yet, which its comparison leaves out', async () => {
+    const { rows } = await viewOf((one) => (one.unsaved = true));
+    must(rows()[1]?.querySelector<HTMLElement>('button.name'), 'Version 12').click();
+    await vi.waitFor(() => expect(opened.modals).toHaveLength(1));
+    expect((opened.modals[0]?.data as ComparisonModalData).unsaved).toBe(true);
+  });
+
+  it('keeps the focus on its version where a read adds a row above it', async () => {
+    const { rows, workspace, root, toggle } = await viewOf();
+    toggle.checked = true;
+    toggle.dispatchEvent(new Event('change'));
+    await vi.waitFor(() => expect(rows()).toHaveLength(5));
+    must(rows()[3]?.querySelector<HTMLElement>('button.more'), 'the "..." of version 12').focus();
+
+    // A restore elsewhere adds draft 17; draft 16 is a draft save now.
+    workspace.everything = [
+      entry(17, { kind: 'draft', isDraft: true, publishedUtc: null }, [], 'Lea Hoffmann'),
+      entry(16, { kind: 'draft', publishedUtc: null }, [], 'Lea Hoffmann'),
+      ...workspace.everything.slice(1),
+    ];
+    workspace.drafts.setValue(17);
+    await vi.waitFor(() => expect(rows()).toHaveLength(6));
+    expect((root.activeElement as HTMLElement | null)?.closest('tr')?.dataset['number']).toBe('12');
+  });
+
+  it('restores and then opens the publish dialog for the new draft, which may be closed without publishing', async () => {
+    const { rows, workspace } = await viewOf();
+    opened.answers[VERSION_COMPARISON_MODAL_ALIAS] = { restore: 'publish' };
+    must(rows()[1]?.querySelector<HTMLElement>('button.name'), 'Version 12').click();
+    await vi.waitFor(() => expect(opened.modals).toHaveLength(2));
+
+    expect(workspace.restores).toEqual([12]);
+    expect(opened.modals[1]?.token).toBe(PUBLISH_MODAL_ALIAS);
+    expect((opened.modals[1]?.data as { name: string }).name).toBe('Contact');
+    await settle();
+    expect(workspace.publish).not.toHaveBeenCalled();
+  });
+
+  it('restores at once from a row\'s "...", and says when the draft holds what it held', async () => {
+    const { rows, workspace, peek } = await viewOf();
+    const items = (row: number) => [...(rows()[row]?.querySelectorAll<HTMLElement>('.menu button') ?? [])];
+    items(1)[0]?.click();
+    await vi.waitFor(() => expect(peek).toHaveBeenCalledOnce());
+
+    expect(opened.modals).toEqual([]);
+    expect(workspace.restores).toEqual([12]);
+    expect(toasts(peek)[0]?.data['message']).toBe('Version 12 is the new draft. It holds what the draft before held.');
+  });
+
+  it("says a restore whose changes can't be read plainly, and nothing of one the server refuses", async () => {
+    const { rows, workspace, peek } = await viewOf((one) => (one.comparison = { kind: 'failed' }));
+    const items = (row: number) => [...(rows()[row]?.querySelectorAll<HTMLElement>('.menu button') ?? [])];
+    items(2)[0]?.click();
+    await vi.waitFor(() => expect(peek).toHaveBeenCalledOnce());
+    expect(toasts(peek)[0]?.data['message']).toBe('Version 10 is the new draft.');
+
+    // A refusal is said by the workspace, which notifies; nothing more is said here.
+    workspace.restoring = () => undefined;
+    items(1)[0]?.click();
+    await vi.waitFor(() => expect(workspace.restores).toEqual([10, 12]));
+    await settle();
+    expect(peek).toHaveBeenCalledOnce();
+  });
+
+  it('offers the live version back as a new draft, but not to publish again, which would change nothing', async () => {
+    const { rows } = await viewOf();
+    must(rows()[0]?.querySelector<HTMLElement>('button.name'), 'Version 14').click();
+    await vi.waitFor(() => expect(opened.modals).toHaveLength(1));
+    const data = opened.modals[0]?.data as ComparisonModalData;
+    expect([data.restorable, data.publishable]).toEqual([true, undefined]);
+  });
+
+  it('offers no restore on the current draft, nor for two ticked versions, where which one would come back is unclear', async () => {
+    const { rows, toggle, root } = await viewOf();
+    toggle.checked = true;
+    toggle.dispatchEvent(new Event('change'));
+    await vi.waitFor(() => expect(rows()).toHaveLength(5));
+    const firstItem = (row: number) => text(rows()[row]?.querySelector('.menu button'));
+    expect([firstItem(0), firstItem(1)]).toEqual(['Pin', 'Restore as a new draft']);
+
+    for (const row of [1, 2]) {
+      const box = must(rows()[row]?.querySelector<HTMLInputElement>('uui-checkbox'), `box ${row}`);
+      box.checked = true;
+      box.dispatchEvent(new Event('change'));
+    }
+    await settle();
+    must(root.querySelector<HTMLElement>('.toolbar uui-button'), 'Compare').click();
+    await vi.waitFor(() => expect(opened.modals).toHaveLength(1));
+    expect((opened.modals[0]?.data as ComparisonModalData).restorable).toBeUndefined();
   });
 });

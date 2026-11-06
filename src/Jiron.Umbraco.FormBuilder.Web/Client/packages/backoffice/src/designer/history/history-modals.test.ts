@@ -48,6 +48,69 @@ afterEach(() => {
   document.body.replaceChildren();
 });
 
+describe('a version compared with the current draft (ROADMAP 10.3b, ADR-0198)', () => {
+  // The footer's buttons, in one box that wraps them where they don't fit a row.
+  const buttons = (element: HTMLElement) =>
+    all<HTMLElement>(element, '[slot="actions"].actions uui-button').map((button) => [
+      button.getAttribute('label'),
+      button.getAttribute('look'),
+    ]);
+
+  it('offers both restores beside Close once the comparison is read, and answers the one chosen', async () => {
+    let answer: (read: ComparisonRead) => void = () => undefined;
+    const { element, context } = await comparisonOf(() => new Promise((done) => (answer = done)), {
+      restorable: true,
+      publishable: true,
+    });
+    // A restore acts on what the comparison shows, so it waits for it.
+    expect(buttons(element)).toEqual([['Close', 'default']]);
+
+    answer({ kind: 'compared', parts: [] });
+    await settle(element);
+    expect(buttons(element)).toEqual([
+      ['Close', 'default'],
+      ['Restore and publish' + String.fromCharCode(0x2026), 'secondary'],
+      ['Restore as a new draft', 'primary'],
+    ]);
+    all<HTMLElement>(element, '.actions uui-button')[1]?.click();
+    await settle(element);
+    expect(context.submit).toHaveBeenCalled();
+    expect(context.getValue()).toEqual({ restore: 'publish' });
+  });
+
+  it('offers no Restore and publish... for the live version, which visitors get already', async () => {
+    const { element } = await comparisonOf(async () => ({ kind: 'compared', parts: [] }), { restorable: true });
+    expect(buttons(element)).toEqual([
+      ['Close', 'default'],
+      ['Restore as a new draft', 'primary'],
+    ]);
+  });
+
+  it("offers no restore of a version that can't be read, nor where two versions are compared", async () => {
+    const unreadable = await comparisonOf(async () => ({ kind: 'unreadable', name: 'Version 12' }), {
+      restorable: true,
+    });
+    expect(buttons(unreadable.element)).toEqual([['Close', 'default']]);
+    document.body.replaceChildren();
+    const two = await comparisonOf(async () => ({ kind: 'compared', parts: [] }));
+    expect(buttons(two.element)).toEqual([['Close', 'default']]);
+  });
+
+  it('says that changes not saved yet are left out, which a restore saves first', async () => {
+    const unsaved = await comparisonOf(async () => ({ kind: 'compared', parts: [] }), {
+      restorable: true,
+      unsaved: true,
+    });
+    expect(text(unsaved.root.querySelector('.unsaved'))).toBe(
+      "Changes not saved yet aren't in this comparison. A restore saves them first, so they stay in History.",
+    );
+    document.body.replaceChildren();
+    // Two ticked versions restore nothing, so nothing is saved first either.
+    const two = await comparisonOf(async () => ({ kind: 'compared', parts: [] }), { unsaved: true });
+    expect(two.root.querySelector('.unsaved')).toBeNull();
+  });
+});
+
 describe('two versions compared', () => {
   it('say each part under its heading: what was added or removed, then what changed with both values', async () => {
     const { element, root } = await comparisonOf(async () => ({
@@ -108,7 +171,7 @@ describe('two versions compared', () => {
       expect(text(root.querySelector('[role="status"]'))).toBe("Version 12 can't be read, so it can't be compared."),
     );
     expect(read).toHaveBeenCalledTimes(2);
-    must(root.querySelector<HTMLElement>('uui-button[slot="actions"]'), 'Close').click();
+    must(root.querySelector<HTMLElement>('.actions uui-button'), 'Close').click();
     await settle(element);
     expect(context.reject).toHaveBeenCalled();
   });

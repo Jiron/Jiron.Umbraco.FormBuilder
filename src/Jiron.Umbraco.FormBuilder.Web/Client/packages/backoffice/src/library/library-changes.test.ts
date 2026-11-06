@@ -72,14 +72,20 @@ describe('a refusal', () => {
   it('says each code it knows in its own words', () => {
     expect(codeOf(problem({ code: 'folder_not_empty' }))).toBe('folder_not_empty');
     expect(
-      ['folder_not_empty', 'form_not_found', 'folder_not_found', 'template_not_found', 'concurrency_conflict'].map(
-        (code) => refusalText(localize, problem({ code })),
-      ),
+      [
+        'folder_not_empty',
+        'form_not_found',
+        'folder_not_found',
+        'template_not_found',
+        'version_not_found',
+        'concurrency_conflict',
+      ].map((code) => refusalText(localize, problem({ code }))),
     ).toEqual([
       'jfbLibrary_folderNotEmpty',
       'jfbLibrary_formGone',
       'jfbLibrary_folderGone',
       'jfbLibrary_templateGone',
+      'jfbLibrary_versionGone',
       'jfbLibrary_changedMeanwhile',
     ]);
   });
