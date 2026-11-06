@@ -340,6 +340,14 @@ flowchart LR
   with `startedUtc`, as it starts the attempts over. The view reads the last runs as it opens and when its page is
   shown again (`lastRunsOf`); `run-words.ts` says a run on its card in the reader's language and times, and a failed
   or uncertain one's Details (`jfb-action-run-modal`, Test for who may change actions).
+  From 10.3a (ADR-0196): the History view (`designer/history/`, `jfb-form-history-view`) lists `GET form/{key}/versions`,
+  whose items now carry `by`, the maker's name (`UserNames`, as the library's list), and compares versions with
+  `versions/compare` and both versions' definitions. `change-words.ts` says a comparison in words: a vocabulary names
+  every property of schema v1 (a Vitest test reads `schemas/jfb-form.v1.schema.json`), a type's own settings by the
+  labels its type serves, values as the canonical form writes them (a side without a value is a side without its
+  object), lists by what was added and removed, and rules as the rules builder says them. Redirect pages are named
+  through Umbraco's document items. The view watches the workspace's `draftVersion` and `publishedVersion`, as a save
+  moves the one and a publish the other. Its words load with the view (`history-words.ts`).
 
 ## 2. The definition model
 

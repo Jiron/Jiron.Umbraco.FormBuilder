@@ -560,13 +560,26 @@ so a form with pending changes shows which version they are pending against. His
 form, its settings included; the Audit log answers it for the site's settings and permissions, and for what was done
 with entries.
 
-- **Draft saves:** the switch "Show draft saves" adds them to the list. Settings › General says how long they are
-  kept; published and pinned versions are kept for good.
+- **Draft saves:** the switch "Show draft saves" adds them to the list, muted, with the current draft first as
+  "Current draft". Settings › General says how long they are kept (10.3b); published and pinned versions are kept for
+  good, which a line under the list says while the draft saves show.
+- **A row** (10.3a, ADR-0196): a box to tick; the version's name, the "Published" chip and the pin mark, and under
+  them when and by whom ("Today, 09:12 · Ana Novak"); what changed against the one before ("4 fields, After sending,
+  1 rule", "First published version" for the first publish); the comment ("none" without one), under what changed
+  where the view is narrow; and the "…". Twenty rows a page, with Show more. A draft save is named by its moment
+  wherever a control or a message names it, as there may be many. The list reads again after a save and after a
+  publish.
 - **Clicking a row** opens that version in a sidebar, compared with the current draft in plain language. Primary
   **Restore as a new draft**; secondary "Restore and publish…", which opens the publish dialog for the restored draft.
-- **Comparing:** ticking the boxes of two versions shows Compare, the view's main action, in the toolbar. The
-  comparison lists fields added, removed and changed, then settings, actions and rules.
-- **A row's "…":** Restore as a new draft · Pin · Add comment…. Restoring is reversible, so it acts at once (§4.13):
+- **Comparing:** ticking the boxes of two versions shows Compare, the view's main action, in the toolbar; while two
+  are ticked the other boxes rest. The comparison, "Version 12 and version 14" in a medium sidebar, lists fields added,
+  removed and changed, then settings, actions and rules: what was added, removed or moved in sentences, then a table of
+  what changed with both values, the older first, each row stacked under its name where the sidebar is narrow. A list
+  of addresses or names is said by what was added and removed, an outcome by its place in After sending, a redirect's
+  page by its name. A version's name opens the same comparison with the current draft; the current draft's own row
+  has no such link.
+- **A row's "…":** Restore as a new draft (10.3b) · Pin or Unpin · Add comment… or Change comment…, the comment in
+  Umbraco's dialog, at most 500 characters, saved empty to remove it. Restoring is reversible, so it acts at once (§4.13):
   the toast names what changed, since the menu skips the comparison, and Undo puts the draft before it back, which
   also stays in History.
 - **Restore an earlier version…,** first in the form's "…", offers the same from every view: a sidebar listing the

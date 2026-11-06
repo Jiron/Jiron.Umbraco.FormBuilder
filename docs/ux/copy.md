@@ -98,6 +98,7 @@ The chips in the lists and panels. The wireframes of step 2.2 use these words.
 | a mail held back by a sending limit | Limited | Begrenzt |
 | a delivery waiting while sending is paused | Waiting | Wartet |
 | the version visitors get, in History | Published | Veröffentlicht |
+| a version the cleanup keeps, in History (a mark with this name) | Pinned | Angeheftet |
 | an entry on legal hold, in Privacy › People | Legal hold until 30 Apr 2027 | Löschsperre bis 30. Apr. 2027 |
 
 ### Status lines
@@ -141,6 +142,7 @@ One line that says where something stands, next to the thing it is about.
 | the item picked under the chosen choice, its name for who hears it and for who may only read it | Under this item · Only within this item | Unter diesem Element · Nur innerhalb dieses Elements |
 | what a content action's property takes (each field it can hold the answer to, one it can't or that is gone, then a value) | The answer to Headline · The answer to Email address (Heading can't hold it) · A field that is gone · A value you write | Die Antwort auf Headline · Die Antwort auf Email address (Heading kann sie nicht aufnehmen) · Ein Feld, das es nicht mehr gibt · Einen Wert, den Sie schreiben |
 | a content action's property that nothing on the form fills | This form has no field whose answer Photo can hold, and Photo takes no value written for it. | Dieses Formular hat kein Feld, dessen Antwort Photo aufnehmen kann, und Photo nimmt keinen geschriebenen Wert auf. |
+| History's versions that could not be read; a page of Show more that could not be; History's own words that could not be loaded | The versions couldn't be read. · Try again · More versions couldn't be read. Try Show more again. · The History couldn't be shown. Try again in a moment. · Try again | Die Versionen konnten nicht gelesen werden. · Erneut versuchen · Weitere Versionen konnten nicht gelesen werden. Versuchen Sie „Mehr anzeigen“ erneut. · Der Verlauf konnte nicht angezeigt werden. Versuchen Sie es gleich noch einmal. · Erneut versuchen |
 | a content action's properties that could not be read | The document type's properties couldn't be read. · Try again | Die Eigenschaften des Dokumenttyps konnten nicht gelesen werden. · Erneut versuchen |
 | help under a content action's Publish it, Update an item of the same name and Media folder for files | Off, the item is saved for an editor to look at and publish. · Where the name comes from an answer, a visitor's answer chooses which item is overwritten. Turn it on only where that's what you want. · Without one, the files go at the root of the media library. | Aus: Der Inhalt wird gespeichert, damit ihn jemand im Team prüft und veröffentlicht. · Kommt der Name aus einer Antwort, wählt die Antwort einer Person, welcher Inhalt überschrieben wird. Schalten Sie es nur ein, wo das gewollt ist. · Ohne Ordner kommen die Dateien auf die oberste Ebene der Medienbibliothek. |
 | Change the entry's state: its choice and help | Move the entry to: Approved · Rejected · Spam (Approving or rejecting starts that trigger's actions for the entry.) | Eintrag verschieben nach: Genehmigt · Abgelehnt · Spam (Genehmigen oder Ablehnen startet die Aktionen dieses Auslösers für den Eintrag.) |
@@ -177,6 +179,10 @@ Use Umbraco's own words where Umbraco has the same action, so the section feels 
 | bring back from the Recycle Bin | Restore… | Wiederherstellen… |
 | go back to an earlier version of a form | Restore an earlier version… | Frühere Version wiederherstellen… |
 | make an earlier version the draft (in its sidebar, or in a row's "…"; it acts at once and offers Undo) | Restore as a new draft | Als neuen Entwurf wiederherstellen |
+| add the draft saves to History's list (a switch) | Show draft saves | Gespeicherte Entwürfe zeigen |
+| compare two ticked versions, in History's toolbar | Compare | Vergleichen |
+| a History row's "…" | Pin · Unpin · Add comment… · Change comment… | Anheften · Anheften aufheben · Kommentar hinzufügen… · Kommentar ändern… |
+| more rows of a list that reads a page at a time | Show more | Mehr anzeigen |
 | create the block that puts forms on pages | Create a form block type… | Formular-Blocktyp erstellen… |
 | start from a ready-made form (the checklist, an empty folder) | Choose a template… | Vorlage wählen… |
 | turn a list of questions into fields | Paste questions… | Fragen einfügen… |
@@ -297,6 +303,8 @@ useful action. One sentence, plus a button or link where there is one.
 | filters match nothing (Clear filters sits in the chip row above, so the empty state has no button of its own) | No entries match these filters. Remove one above, or clear them all. | Keine Einträge passen zu diesen Filtern. Entfernen Sie oben einen davon, oder setzen Sie alle zurück. |
 | a search finds nothing, and sensitive fields exist | No entries match "Jana". Sensitive fields aren't searched. [Clear search] | Keine Einträge passen zu „Jana“. Vertrauliche Felder werden nicht durchsucht. [Suche zurücksetzen] |
 | an empty folder (its footer holds Create form) | No forms here yet. A template gives you a working form in a minute. [Choose a template…] | Hier gibt es noch keine Formulare. Mit einer Vorlage haben Sie in einer Minute ein fertiges Formular. [Vorlage wählen…] |
+| History before the first publish | Nothing is published yet. Publishing keeps the first version here; until then, Show draft saves lists the saves. | Noch ist nichts veröffentlicht. Beim Veröffentlichen wird hier die erste Version festgehalten; bis dahin listet „Gespeicherte Entwürfe zeigen“ die Speicherungen. |
+| two versions that don't differ, in their comparison | No differences. | Keine Unterschiede. |
 | an empty Recycle Bin (no footer) | The Recycle Bin is empty. Trashed forms wait here with their entries until someone restores them or deletes them for good. | Der Papierkorb ist leer. Formulare im Papierkorb warten hier mit ihren Einträgen, bis jemand sie wiederherstellt oder endgültig löscht. |
 | no entries in any form (the Inbox, without its toolbar) | No entries yet. They arrive here from every form you may view. [Email me a summary…] | Noch keine Einträge. Hier kommen die Einträge aller Formulare an, die Sie sehen dürfen. [Zusammenfassung per E-Mail…] |
 | a member without entries (the member's Form entries view) | No entries yet. Entries this member sends while signed in appear here. | Noch keine Einträge. Einträge, die dieses Mitglied angemeldet sendet, erscheinen hier. |
@@ -396,6 +404,7 @@ Help text sits under its setting and answers the question the label leaves open;
 
 | Setting | English help | German help |
 | --- | --- | --- |
+| a version's comment (History's dialog) | At most 500 characters. Saving it empty removes the comment. | Höchstens 500 Zeichen. Leer gespeichert, wird der Kommentar entfernt. |
 | Keep approved entries for | Approved entries are deleted this many days after approval. Entries on legal hold stay. | Genehmigte Einträge werden so viele Tage nach der Genehmigung gelöscht. Einträge mit Löschsperre bleiben. |
 | Email verification | Visitors confirm their address through a link before any action runs. Use it for newsletters. | Wer das Formular sendet, bestätigt die eigene Adresse über einen Link, bevor eine Aktion ausgeführt wird. Sinnvoll für Newsletter. |
 | Sensitive | Answers are masked in the backoffice and left out of emails and exports. | Antworten werden im Backoffice verdeckt und in E-Mails und Exporten weggelassen. |
