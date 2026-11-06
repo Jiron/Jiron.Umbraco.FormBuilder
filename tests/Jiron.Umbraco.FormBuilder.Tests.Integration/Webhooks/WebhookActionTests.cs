@@ -527,6 +527,70 @@ public sealed class WebhookActionTests : ActionTestBase
     }
 
     [Test]
+    public async Task ATeamsMessage_KeepsTwoAnswersSideBySide_FromBeingALink()
+    {
+        var (call, _) = await SentAsync("""{"target":"teams","url":"$JironFormBuilder:Secrets:Address","message":"{{ field.name }}{{ field.message }}"}""", """{"name":"[Open]","message":"(https://evil.example)"}""");
+
+        var text = string.Join("\n", CardLines(JsonNode.Parse(call.Body)!));
+        Assert.Multiple(() =>
+        {
+            Assert.That(text.Contains("](", StringComparison.Ordinal), Is.False);
+            Assert.That(text.Replace(((char)0x200b).ToString(), string.Empty, StringComparison.Ordinal), Is.EqualTo("[Open](https://evil.example)"));
+        });
+    }
+
+    [Test]
+    public async Task WithoutAnswers_TheMetadataGoes_WhateverItsSwitchSays()
+    {
+        var (call, _) = await SentAsync(Settings(",\"withoutAnswers\":true,\"metadata\":false"));
+
+        var body = JsonNode.Parse(call.Body)!;
+        Assert.Multiple(() =>
+        {
+            Assert.That(body["event"]!.GetValue<string>(), Is.EqualTo("submitted"));
+            Assert.That(body["entry"]!["key"], Is.Not.Null);
+            Assert.That(body["fields"]!.AsObject(), Is.Empty);
+        });
+    }
+
+    [TestCase("""{"format":"json"}""", "url", TestName = "Its own address without one")]
+    [TestCase("""{"target":"teams"}""", "teams", TestName = "A Teams message the site has no address for")]
+    public async Task ATestWithNowhereToGo_SaysWhichTargetHasNone(string settings, string target)
+    {
+        // A draft, as publishing refuses a webhook without its address.
+        var form = await FormAsync(Hook(Settings()));
+        var draft = (await Forms.GetDraftAsync(form))!;
+        var action = Hook(settings);
+        await Forms.SaveDraftAsync(form, draft.Form.ConcurrencyVersion, draft.Definition! with { Actions = [action] }, null, Editor);
+
+        var test = await GetRequiredService<ActionTestRuns>().TestAsync(form, action.Key, new ActionTestUser(Guid.NewGuid(), "ada@jfb.test", "Ada"), confirmed: true);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That((test.Result!.Outcome, test.Result.Code), Is.EqualTo((ActionTestOutcome.Failed, WebhookActionType.NoAddress)));
+            Assert.That(test.Result.Args, Is.EqualTo(new[] { target }));
+        });
+    }
+
+    [Test]
+    public async Task ATeamsTest_SaysOnItsFirstBlockThatItIsOne_InGerman()
+    {
+        Stub.Answer(new StubAnswer("POST", Path, Status: 200));
+        var action = Hook("""{"target":"teams","url":"$JironFormBuilder:Secrets:Address"}""");
+        var form = await FormAsync(action);
+
+        await GetRequiredService<ActionTestRuns>().TestAsync(form, action.Key, new ActionTestUser(Guid.NewGuid(), "bea@jfb.test", "Bea") { Culture = "de-DE" }, confirmed: true);
+
+        var blocks = JsonNode.Parse(Stub.CallsTo(Path).Single().Body)!["attachments"]![0]!["content"]!["body"]!.AsArray();
+        Assert.Multiple(() =>
+        {
+            Assert.That(blocks[0]!["text"]!.GetValue<string>(), Is.EqualTo("Dies ist ein Test."));
+            Assert.That(blocks[1]!["text"]!.GetValue<string>(), Does.StartWith("**New entry in "));
+            Assert.That(blocks[1]!["spacing"]!.GetValue<string>(), Is.EqualTo("Medium"), "the blank line after the test's line");
+        });
+    }
+
+    [Test]
     public async Task ItsOwnAddress_SendsTheAnswers_WhateverMessageItHolds()
     {
         var (call, _) = await SentAsync(Settings(",\"message\":\"Unused\""));

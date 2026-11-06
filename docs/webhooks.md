@@ -43,15 +43,15 @@ The action's sidebar keeps these settings as references too: a credential, a sig
 | Address (`url`) | An address, or a reference to one; for Slack or Teams only a reference, and empty for the site's |
 | Format (`format`) | `json`, `form` (`application/x-www-form-urlencoded`) or `xml` |
 | What it sends (`fields`) | Names with templates, such as `{"email": "{{ field.email }}"}`. Without one, every field with an answer goes, by its alias |
-| Send no answers (`withoutAnswers`) | Only says that something happened; the receiver asks for what it may see |
+| Only that something happened (`withoutAnswers`) | Sends no answers; the receiver asks for what it may see. The metadata goes with it, whatever its switch says |
 | Send metadata too (`metadata`) | Adds the event, delivery, form and entry; on by default |
-| Own body (`template`) | The whole body as a template, in the format's own language; each merge tag is escaped for it |
+| A body you write (`template`) | The whole body as a template, in the format's own language; each merge tag is escaped for it |
 | Message (`message`) | A Slack or Teams message, as text with merge tags in the chat's own formatting |
 | Signing secret (`secret`) | A reference; without one, the integrations settings' secret signs, and with neither the request is unsigned |
-| More headers (`headers`) | Names with texts or references. Headers of the request itself and `X-Jfb-*` are refused |
+| Headers (`headers`) | Names with texts or references. Headers of the request itself and `X-Jfb-*` are refused |
 | Send sensitive fields (`includeSensitive`) | The sensitive fields it may send; none by default |
 
-In the sidebar, **What it sends** is one choice: every answer by its field's alias, the names and values you choose (a table that starts with every field), a body you write, or only that something happened. Only the chosen way's settings are saved; the sidebar keeps the others while it is open, so choosing back brings them back.
+The sidebar draws no signing secret for Slack or Teams, which check no signature. In the sidebar, **What it sends** is one choice: every answer by its field's alias, the names and values you choose (a table that starts with every field), a body you write, or only that something happened. Only the chosen way's settings are saved; the sidebar keeps the others while it is open, so choosing back brings them back.
 
 A field the rules hid is never sent. A sensitive field the action does not name goes as no field at all, and as a mask where a mapping or own body asks for it.
 
@@ -59,7 +59,7 @@ A field the rules hid is never sent. A sensitive field the action does not name 
 
 A field with several values goes as one text, its values joined by a comma.
 
-A preset that goes to Slack or Teams keeps what a visitor typed as text, so `<!channel>` calls nobody and `[Open](https://...)` is no link.
+A preset that goes to Slack or Teams keeps what a visitor typed as text, so `<!channel>` calls nobody and `[Open](https://...)` is no link, also where two answers stand side by side.
 
 ### The body
 

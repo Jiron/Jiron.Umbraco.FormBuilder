@@ -54,10 +54,10 @@ public sealed class FieldSettingsSchemaTests
         yield return Case("within a box whose editor draws none within it", typeof(WithinAPlainBox), "WithinAPlainBox.Creator is within 'to', whose editor draws no setting within it; only the editors recipients, webhookAddress, webhookBody do.");
         yield return Case("within the recipients, of a kind they do not draw", typeof(WithinRecipientsANote), "WithinRecipientsANote.Note is within 'to', whose editor recipients draws only an email field's answer");
         yield return Case("two of a kind within the recipients", typeof(TwoCreatorsWithin), "TwoCreatorsWithin.Second is within 'to', which already holds the person who created the form; the editor recipients draws one of each.");
-        yield return Case("within the webhook's address, of a kind it does not draw", typeof(WithinTheAddressAChoice), "WithinTheAddressAChoice.Format is within 'target', whose editor webhookAddress draws only an address (a text).");
-        yield return Case("two addresses within the webhook's address", typeof(TwoAddressesWithin), "TwoAddressesWithin.Second is within 'target', which already holds an address; the editor webhookAddress draws one of each.");
-        yield return Case("three switches within the webhook's body", typeof(ThreeSwitchesWithin), "ThreeSwitchesWithin.Third is within 'fields', which already holds 2 switches; the editor webhookBody draws at most 2.");
-        yield return Case("a number within the webhook's body", typeof(WithinTheBodyANumber), "WithinTheBodyANumber.Count is within 'fields', whose editor webhookBody draws only a format (a choice), a body and a message (texts) and two switches (booleans).");
+        yield return Case("within the webhook's address, of a kind it does not draw", typeof(WithinTheAddressAChoice), "WithinTheAddressAChoice.Url is within 'target', whose editor webhookAddress draws only the address (url, a text of the editor webhookUrl).");
+        yield return Case("an address of another name within the webhook's address", typeof(AnAddressOfAnotherName), "AnAddressOfAnotherName.Address is within 'target', whose editor webhookAddress draws only the address");
+        yield return Case("a switch of another name within the webhook's body", typeof(ASwitchOfAnotherName), "ASwitchOfAnotherName.Third is within 'fields', whose editor webhookBody draws only the format (format, a choice), the body and the message (template and message, texts) and the switches (withoutAnswers and metadata).");
+        yield return Case("a number within the webhook's body", typeof(WithinTheBodyANumber), "WithinTheBodyANumber.Metadata is within 'fields', whose editor webhookBody draws only the format");
         yield return Case("picking fields without a field picker", typeof(PicksWithoutPicker), "PicksWithoutPicker.Field picks fields of a kind, which only the editor fieldPicker offers.");
     }
 
@@ -516,32 +516,29 @@ public sealed class FieldSettingsSchemaTests
         [FormBuilderSetting("Target", Editor = "webhookAddress")]
         public Look Target { get; init; }
 
-        [FormBuilderSetting("Format", Within = "target")]
-        public Look Format { get; init; }
+        [FormBuilderSetting("Url", Within = "target")]
+        public Look Url { get; init; }
     }
 
-    public sealed class TwoAddressesWithin
+    public sealed class AnAddressOfAnotherName
     {
         [FormBuilderSetting("Target", Editor = "webhookAddress")]
         public Look Target { get; init; }
 
-        [FormBuilderSetting("First", Within = "target")]
-        public string? First { get; init; }
-
-        [FormBuilderSetting("Second", Within = "target")]
-        public string? Second { get; init; }
+        [FormBuilderSetting("Address", Editor = "webhookUrl", Within = "target")]
+        public string? Address { get; init; }
     }
 
-    public sealed class ThreeSwitchesWithin
+    public sealed class ASwitchOfAnotherName
     {
         [FormBuilderSetting("Fields", Editor = "webhookBody")]
         public JsonElement? Fields { get; init; }
 
-        [FormBuilderSetting("First", Within = "fields")]
-        public bool First { get; init; }
+        [FormBuilderSetting("WithoutAnswers", Within = "fields")]
+        public bool WithoutAnswers { get; init; }
 
-        [FormBuilderSetting("Second", Within = "fields")]
-        public bool Second { get; init; }
+        [FormBuilderSetting("Metadata", Within = "fields")]
+        public bool Metadata { get; init; }
 
         [FormBuilderSetting("Third", Within = "fields")]
         public bool Third { get; init; }
@@ -552,8 +549,8 @@ public sealed class FieldSettingsSchemaTests
         [FormBuilderSetting("Fields", Editor = "webhookBody")]
         public JsonElement? Fields { get; init; }
 
-        [FormBuilderSetting("Count", Within = "fields")]
-        public int Count { get; init; }
+        [FormBuilderSetting("Metadata", Within = "fields")]
+        public int Metadata { get; init; }
     }
 
     public sealed class WithinNothing

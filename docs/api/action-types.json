@@ -538,7 +538,7 @@
         "default": null,
         "label": "#jfbActionSettings_webhookUrl",
         "description": null,
-        "editor": "text",
+        "editor": "webhookUrl",
         "group": "essentials",
         "supportsMergeTags": false,
         "isPublic": false,

@@ -57,7 +57,7 @@ public sealed class WebhookActionSettings
     /// The address, or a <c>$JironFormBuilder:Secrets:&lt;Name&gt;</c> reference to one that is a secret itself; for Slack or Teams
     /// only such a reference, null for the integrations settings' address.
     /// </summary>
-    [FormBuilderSetting("#jfbActionSettings_webhookUrl", Order = 2, Within = "target")]
+    [FormBuilderSetting("#jfbActionSettings_webhookUrl", Order = 2, Editor = "webhookUrl", Within = "target")]
     public string? Url { get; init; }
 
     /// <summary>What the body is written as.</summary>
@@ -263,10 +263,11 @@ internal sealed class WebhookActionType(OutboundHttp outbound, IFormBuilderMerge
             return new ActionTestResult(ActionTestOutcome.Sent, $"The host answered {answered}.") { Code = ActionTestCodes.Sent, Args = [answered] };
         }
 
-        // The run's code, which the backoffice says in its words, with the configuration key a secret the host lacks has; the
-        // sentence names it for any other reader.
+        // The run's code, which the backoffice says in its words, with the configuration key a secret the host lacks has, or the
+        // target that has no address; the sentence names it for any other reader.
         var code = result.Code ?? ActionTestCodes.Failed;
-        return new ActionTestResult(ActionTestOutcome.Failed, $"The webhook was not delivered ({code}).") { Code = code, Args = missing is null ? [] : [missing] };
+        IReadOnlyList<string> args = missing is not null ? [missing] : code == NoAddress ? [JsonNamingPolicy.CamelCase.ConvertName(settings.Target.ToString())] : [];
+        return new ActionTestResult(ActionTestOutcome.Failed, $"The webhook was not delivered ({code}).") { Code = code, Args = args };
     }
 
     private static ActionResult ResultOf(int status) => status switch
@@ -452,8 +453,11 @@ internal static class WebhookChatText
         .Replace("<", "&lt;", StringComparison.Ordinal)
         .Replace(">", "&gt;", StringComparison.Ordinal);
 
-    /// <summary>The text with a zero-width space where an Adaptive Card would see a link's text meet its address, as a reader sees the same words.</summary>
-    public static string Teams(string text) => text.Replace("](", "]" + (char)0x200b + "(", StringComparison.Ordinal);
+    /// <summary>
+    /// The text with a zero-width space after each <c>]</c>, so no link's text ends in it to meet an address, in this answer or the
+    /// next one; a reader sees the same words.
+    /// </summary>
+    public static string Teams(string text) => text.Replace("]", "]" + (char)0x200b, StringComparison.Ordinal);
 }
 
 /// <summary>The mapping and header objects of a webhook's settings.</summary>

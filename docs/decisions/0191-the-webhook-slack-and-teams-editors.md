@@ -45,12 +45,16 @@ For Slack and Teams:
 
 **Option 2 in each.**
 
-- **Within boxes.** The schema's `within` (ADR-0189) also holds for two webhook editors: `webhookAddress` draws a text
-  within it (the address within the target), and `webhookBody` draws a choice, two texts and two booleans within it
-  (the format, the own body, the message, "Send no answers" and "Send metadata too" within the field mapping). The
-  reader refuses any other setting within them, as it does for `recipients`; the editors find their settings by name, as
-  they are the webhook type's own.
-- **Where it goes:** the target's select, then the address, its help saying what it takes for the target chosen: an
+- **Within boxes.** The schema's `within` (ADR-0189) also holds for two webhook editors: `webhookAddress` draws the
+  address within it (`url`, whose own editor is `webhookUrl`), and `webhookBody` draws the format, the own body, the
+  message and the two switches within it (`format`, `template`, `message`, `withoutAnswers`, `metadata`, within the
+  mapping). The editors find their settings by those names, as they are the webhook type's own, so the reader refuses any
+  other setting within them, by name and kind, as it refuses for `recipients` what that box does not draw. Where a host
+  locks the target, the address is drawn alone by `webhookUrl`, with the same guard; a box that depends on another
+  setting reads the host's value where it is locked, as the inspector does.
+- **Where it goes:** the target's select (An address of its own, Slack, Microsoft Teams: the address's help says
+  where an empty one goes, so the choice need not), then the address, its help saying what it takes for the target
+  chosen: an
   https address on a host the site allows (`JironFormBuilder:Webhooks:AllowedHosts`) or a reference where the address is
   a secret; for Slack or Teams, empty for the site's address from Settings › Integrations, or a reference to this
   action's own, as a chat's address holds its key.
@@ -66,6 +70,8 @@ For Slack and Teams:
   starts from the table's rows (or every field) in the format's own language, a chat's from its message as the chat
   reads it; a body cleared to nothing is said under its box and not kept, as no body is no way of sending. **Only that
   something happened** sends the metadata, which then is what says what happened, so its switch is not shown.
+- **The chosen way's box** is drawn under its own choice, the choices after it following, so the eye ties the box to
+  the words above it; the format and the metadata are the whole box's, flush with it.
 - **The table's values** take merge tags through one Insert merge tag under the table, which puts the tag into the value
   last in focus (the last row's before any): a picker on every row would repeat one button down the table (section
   4.13), and one that shows only on the row in focus would move the rows under it each time the focus moves.
@@ -76,7 +82,8 @@ For Slack and Teams:
 - **Headers:** rows of a name and a value, Add header, each row's remove button; a name the request may not carry, a
   name twice, or a credential (a name with auth, key, token, secret, password or cookie) given as itself is said under
   its row as it is typed, as the check says it, and such a row is not kept: a credential typed as itself never reaches
-  the draft, which is saved. Its help says that a credential is a reference such as
+  the draft, which is saved. A row reaches the draft once its box is left, so a value never sits there under a name
+  half typed. The headers' help names the words that make a credential's name. Its help says that a credential is a reference such as
   `$JironFormBuilder:Secrets:CrmToken`. The table's rows follow the server's rules for a mapping's names the same way.
   The rules are the server's (`WebhookMaps`, `FormBuilderSecrets`) written again in the client, which the server's
   check still holds to.
@@ -84,7 +91,9 @@ For Slack and Teams:
   of the time and the body, and that it takes a reference; empty uses the site's, and with neither a request goes
   unsigned. How a receiver checks it stays in `docs/webhooks.md`, which the help names until the documentation's Learn
   more links come (17.2a). Its editor is `secretReference`, which keeps only a reference, as a chat's address box does
-  for a chat's address.
+  for a chat's address. The design review shortened its help to what the secret is for, two sentences (copy.md), and
+  left the signature's working to `docs/webhooks.md`; a chat checks no signature, so a chat's sidebar draws none, and
+  its address's secret comes back with that address.
 - **Test** (ADR-0190): a webhook's test answers with its run's code and, for a host that answered, the status, in a new
   `args` of the answer; the backoffice says each code in its words (`sent` with the status, `http_<status>`,
   `no_address`, `not_allowed`, `secret_missing`, `secret_literal`, `header_invalid`, `timed_out`, `no_connection`,
@@ -97,7 +106,16 @@ For Slack and Teams:
 - **Fix it** lands on the control a problem names: the target, the address, the format, the choice, the table, the
   body, the message, a switch, the headers' box or the secret.
 - **Who may only read** the action sees each box in words: where it goes, and what it sends (the names, the message,
-  or that it writes its own body), never a secret's value, which is only ever a reference.
+  or that it writes its own body), never a secret's value, which is only ever a reference. A secret written as itself
+  where a reference belongs (by an earlier draft, an import or the API) is said to be there and never shown.
+- **Without answers the metadata goes,** whatever its switch says (`WebhookBody`): it is then all that says what
+  happened, and a draft from before these editors could hold both switches off, which would send an empty body.
+- **Teams:** each `]` of a visitor's answer is followed by a zero-width space, so no link's text ends in an answer to
+  meet an address, in that answer or the next one written beside it.
+- **Where an editor starts:** the table from what Every answer sends (the fields in a group, not inside a repeatable
+  one, and a sensitive one where the action names it), keeping a mapping the draft holds; a body you write from the
+  table's rows, the text outside their merge tags written for the format; a Teams body a text block a line.
+- **A test with nowhere to go** says which target has no address (`no_address` with the target in `args`).
 
 ## Consequences
 

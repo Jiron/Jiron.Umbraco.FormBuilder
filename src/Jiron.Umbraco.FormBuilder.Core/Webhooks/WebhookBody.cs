@@ -49,12 +49,14 @@ internal sealed class WebhookBody(IFormBuilderMergeTagService tags)
             return null;
         }
 
-        var metadata = action.Metadata ? Metadata(scope, trigger, delivery) : [];
+        // Without answers the metadata is all that says what happened, so it goes whatever its switch says (ADR-0191).
+        var withMetadata = action.Metadata || action.WithoutAnswers;
+        var metadata = withMetadata ? Metadata(scope, trigger, delivery) : [];
         return action.Format switch
         {
-            WebhookFormat.Form => FormOf(metadata, fields, action.Metadata),
+            WebhookFormat.Form => FormOf(metadata, fields, withMetadata),
             WebhookFormat.Xml => XmlOf(metadata, fields),
-            _ => JsonOf(metadata, fields, action.Metadata),
+            _ => JsonOf(metadata, fields, withMetadata),
         };
     }
 
