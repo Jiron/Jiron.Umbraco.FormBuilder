@@ -704,8 +704,13 @@ for (const combo of COMBOS) {
       await actionsView.locator('#add').click();
       await expect(actionSidebar.locator('input[name="what-happens"]:checked')).toBeVisible();
     });
-    await walk.shot('view-coming', async () => {
+    // The History view (10.3a): the published versions; Entries is still to come.
+    await walk.shot('history', async () => {
       await page.goto(`${workspaceOf(made.feedback)}/view/history`);
+      await expect(page.locator('jfb-form-history-view uui-toggle')).toBeVisible();
+    });
+    await walk.shot('view-coming', async () => {
+      await page.goto(`${workspaceOf(made.feedback)}/view/entries`);
       await expect(page.locator('jfb-coming-screen')).toBeVisible();
     });
 
