@@ -24,6 +24,8 @@ export interface ActionCard {
   readonly on: boolean;
   /** The form check's problems in it. */
   readonly flag?: Flag | undefined;
+  /** What its type's test does, said before it runs; none for a kind the backoffice does not know. */
+  readonly testHint?: string | undefined;
 }
 
 /** What a card's "..." asks for. */
@@ -297,14 +299,20 @@ export class ActionListElement extends UmbLitElement {
   declare toggle: (key: string, on: boolean) => void;
   /** What a card's "..." asks for. */
   declare request: (key: string, request: CardRequest) => void;
-  /** Tests an action as the draft holds it (ADR-0190); without it, no card offers Test. */
-  declare test: ((key: string) => Promise<void>) | undefined;
+  /**
+   * Tests an action as the draft holds it (ADR-0190), calling `started` once it runs, after a yes where it asks first;
+   * without it, no card offers Test.
+   */
+  declare test: ((key: string, started: () => void) => Promise<void>) | undefined;
   declare private _testing: ReadonlySet<string>;
   declare private _drag: { readonly from: number; readonly to: number } | null;
   declare private _said: string;
 
   /** The action whose handle takes the focus once it is drawn in its new place. */
   #moved: string | null = null;
+
+  /** The actions whose test was pressed and has not answered, its question included. */
+  readonly #pending = new Set<string>();
 
   constructor() {
     super();
@@ -404,16 +412,20 @@ export class ActionListElement extends UmbLitElement {
 
   // ---- Test ---------------------------------------------------------------------------------------------------------
 
-  // A card's test, its button busy until it answers and the list saying so; a second press waits for the first.
+  // A card's test: once it runs, after a yes where it asks first, its button is busy until it answers and the list says
+  // so; a second press waits for the first.
   async #test(key: string) {
     const test = this.test;
-    if (!test || this._testing.has(key)) return;
-    this._testing = new Set([...this._testing, key]);
-    const card = this.cards.find((one) => one.key === key);
-    if (card) this.announce(this.#term('testingNamed', card.name));
+    if (!test || this.#pending.has(key)) return;
+    this.#pending.add(key);
     try {
-      await test(key);
+      await test(key, () => {
+        this._testing = new Set([...this._testing, key]);
+        const card = this.cards.find((one) => one.key === key);
+        if (card) this.announce(this.#term('testingNamed', card.name));
+      });
     } finally {
+      this.#pending.delete(key);
       this._testing = new Set([...this._testing].filter((each) => each !== key));
     }
   }
@@ -455,6 +467,7 @@ export class ActionListElement extends UmbLitElement {
               ? html`<button
                   type="button"
                   class="test-item"
+                  title=${card.testHint ?? nothing}
                   @click=${() => {
                     this.#closeMenu(card.key);
                     void this.#test(card.key);
@@ -545,6 +558,7 @@ export class ActionListElement extends UmbLitElement {
                                 look="outline"
                                 compact
                                 label=${this.#term('testNamed', card.name)}
+                                title=${card.testHint ?? nothing}
                                 .state=${this._testing.has(card.key) ? 'waiting' : undefined}
                                 @click=${() => void this.#test(card.key)}
                                 >${this.#term('test')}</uui-button

@@ -565,13 +565,15 @@ describe('the Actions view', () => {
       kind: 'done',
       result: { outcome: 'sent', code: 'sent_to_you', recipient: 'ana@example.com', preview: [] },
     };
-    await list('submitted').test?.('a');
+    const started = vi.fn();
+    await list('submitted').test?.('a', started);
     expect(workspace.tested.map(([key, confirmed]) => [key, confirmed])).toEqual([['a', false]]);
     expect(workspace.tested[0]?.[2]).toEqual(workspace.getEditorState().definition);
-    expect(confirming.asked).toBe(0);
+    expect([confirming.asked, started.mock.calls.length]).toEqual([0, 1]);
+    // Led by the action's name, so toasts of several tests tell their actions apart.
     expect(toasts.shown.at(-1)).toEqual({
       color: 'positive',
-      data: { message: 'Test email sent to you (ana@example.com).' },
+      data: { message: 'Action a: Test email sent to you (ana@example.com).' },
     });
   });
 
@@ -580,11 +582,15 @@ describe('the Actions view', () => {
       definitionWith([action('b', { type: 'webhook', settings: { url: 'https://x.example.com' } })]),
     );
     confirming.yes = false;
-    await list('submitted').test?.('b');
-    expect([confirming.asked, workspace.tested.length, toasts.shown.length]).toEqual([1, 0, 0]);
+    const started = vi.fn();
+    await list('submitted').test?.('b', started);
+    // Declined: nothing asked of the server, nothing said, and it never started.
+    expect([confirming.asked, workspace.tested.length, toasts.shown.length, started.mock.calls.length]).toEqual([
+      1, 0, 0, 0,
+    ]);
     // It names where the test goes, as the card says it.
     expect(confirming.said).toEqual([
-      ['Send a test?', 'Webhook to x.example.com. A sample entry goes there, marked as a test.'],
+      ['Send a test?', 'Webhook to x.example.com. A sample entry goes there as a real one would, marked as a test.'],
     ]);
     confirming.yes = true;
     workspace.testAnswer = {
@@ -596,11 +602,12 @@ describe('the Actions view', () => {
         preview: [],
       },
     };
-    await list('submitted').test?.('b');
+    await list('submitted').test?.('b', started);
     expect(workspace.tested.map(([key, confirmed]) => [key, confirmed])).toEqual([['b', true]]);
+    expect(started.mock.calls.length).toBe(1);
     expect(toasts.shown.at(-1)).toEqual({
       color: 'danger',
-      data: { message: 'The webhook was not delivered (http_503).' },
+      data: { message: 'Action b: The webhook was not delivered (http_503).' },
     });
   });
 
@@ -611,7 +618,7 @@ describe('the Actions view', () => {
     await settle(view);
     const data = opened.sidebars[0] as ActionModalData;
     const held = { ...data.definition, actions: [{ ...action('a'), name: 'Held' }] };
-    await data.test?.(held, 'a');
+    await data.test?.(held, 'a', () => undefined);
     expect(workspace.tested.map(([key, , definition]) => [key, definition])).toEqual([['a', held]]);
   });
 

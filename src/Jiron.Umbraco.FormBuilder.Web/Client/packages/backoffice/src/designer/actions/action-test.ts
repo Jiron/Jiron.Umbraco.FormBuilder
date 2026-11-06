@@ -8,14 +8,25 @@ export type TestAnswer =
   | { readonly kind: 'done'; readonly result: ActionTestResponseModel }
   | { readonly kind: 'needsConfirmation' }
   | { readonly kind: 'settingsInvalid' }
-  | { readonly kind: 'noAnswer' };
+  /** No result: the server's problem by its code, or no code where the site did not answer at all. */
+  | { readonly kind: 'noAnswer'; readonly code?: string | undefined };
 
 /** The server's answer as the test takes it: the result, or why there is none by the problem's code. */
 export function testAnswer(data: ActionTestResponseModel | undefined, code: string | undefined): TestAnswer {
   if (data) return { kind: 'done', result: data };
   if (code === 'test_needs_confirmation') return { kind: 'needsConfirmation' };
   if (code === 'action_settings_invalid') return { kind: 'settingsInvalid' };
-  return { kind: 'noAnswer' };
+  return { kind: 'noAnswer', code };
+}
+
+/** What a type's test does, said before it runs (the Test button's title); none for a kind the backoffice does not know. */
+export function testHint(
+  kind: string | undefined,
+  term: (key: string, ...args: unknown[]) => string,
+): string | undefined {
+  return kind === 'dryRun' || kind === 'toCurrentUser' || kind === 'afterConfirmation'
+    ? term(`testHint_${kind}`)
+    : undefined;
 }
 
 /**
@@ -30,15 +41,25 @@ export interface TestToast {
 // The failures the backoffice says in its words; another's sentence is the type's.
 const FAILURES = new Set(['no_address', 'mail_off', 'paused', 'view_missing', 'failed']);
 
-/** A test's answer in the backoffice's words. */
-export function testToast(answer: TestAnswer, term: (key: string, ...args: unknown[]) => string): TestToast {
+/**
+ * A test's answer in the backoffice's words, led by the action's name where it has one, so toasts of several tests tell
+ * their actions apart.
+ */
+export function testToast(answer: TestAnswer, term: (key: string, ...args: unknown[]) => string, name = ''): TestToast {
+  const said = answerToast(answer, term);
+  return name ? { ...said, message: term('testOf', name, said.message) } : said;
+}
+
+function answerToast(answer: TestAnswer, term: (key: string, ...args: unknown[]) => string): TestToast {
   const failed = (message: string): TestToast => ({ color: 'danger', message });
   switch (answer.kind) {
     case 'settingsInvalid':
       return failed(term('testSettingsInvalid'));
     case 'needsConfirmation':
-    case 'noAnswer':
       return failed(term('testNoAnswer'));
+    case 'noAnswer':
+      // Without a problem's code the site did not answer at all, which trying again may mend.
+      return failed(term(answer.code ? 'testNoAnswer' : 'testNoReply'));
     case 'done': {
       const { outcome, code, message, recipient, preview } = answer.result;
       if (outcome === 'failed')
@@ -53,10 +74,14 @@ export function testToast(answer: TestAnswer, term: (key: string, ...args: unkno
 
 /** What a test needs of the screen it runs from. */
 export interface TestRun {
+  /** The action's name, which its toast leads with. */
+  readonly name: string;
   /** Whether the type reaches what the action is set up to reach, so the user confirms first. */
   readonly asksFirst: boolean;
   /** Asks the user; true once they confirmed. */
   readonly confirm: () => Promise<boolean>;
+  /** Says the test has started: once the user said yes where it asks first, never before. */
+  readonly started?: (() => void) | undefined;
   /** Asks the server, with whether the user confirmed. */
   readonly ask: (confirmed: boolean) => Promise<TestAnswer>;
   /** Says what it came to. */
@@ -64,13 +89,17 @@ export interface TestRun {
   readonly term: (key: string, ...args: unknown[]) => string;
 }
 
-/** Runs a test: asks first where it must, or where the server asks for it, then says what it came to. */
+/**
+ * Runs a test: asks first where it must, says it started only then, asks the user again where the server asks for it,
+ * then says what it came to.
+ */
 export async function runTest(run: TestRun): Promise<void> {
   if (run.asksFirst && !(await run.confirm())) return;
+  run.started?.();
   let answer = await run.ask(run.asksFirst);
   if (answer.kind === 'needsConfirmation' && !run.asksFirst) {
     if (!(await run.confirm())) return;
     answer = await run.ask(true);
   }
-  await run.say(testToast(answer, run.term));
+  await run.say(testToast(answer, run.term, run.name));
 }

@@ -62,14 +62,16 @@ For what a test says:
   the visitor gets them, and its line names the visitor's address alone. Where the site cannot send mail, the test says
   so (`mail_off`) and queues nothing.
 - **In the backoffice,** Test is on each card beside the switch and in the sidebar's footer, for who may manage the
-  actions; a card too narrow to keep its name readable beside Test offers it in its "…" instead, once either way:
+  actions; a card too narrow to keep its name readable beside Test offers it in its "…" instead, once either way. Its
+  title says what its type's test does before it runs ("Sends a test to you alone."):
   - a type that tests after a confirmation asks first, in Umbraco's confirm dialog, naming where it goes in its card's
-    own line ("Webhook to hooks.example.com. A sample entry goes there, marked as a test.");
-  - what a test came to is a toast whose message says it on its own, since Umbraco's toast reads its message aloud and
-    not a headline: "Test email sent to you (ana@example.com).", a failure's reason, or a dry run's "Nothing was sent or
-    changed." with what a run would do, one line each;
-  - while it runs, its button is busy and the list or the sidebar says "Testing …" in its live region, and a second
-    press waits for the first.
+    own line ("Webhook to hooks.example.com. A sample entry goes there as a real one would, marked as a test.");
+  - what a test came to is a toast whose message says it on its own, led by the action's name so that several tests'
+    toasts tell their actions apart, since Umbraco's toast reads its message aloud and not a headline: "Email the team:
+    Test email sent to you (ana@example.com).", a failure's reason with what to do about it, or a dry run's "Nothing was
+    sent or changed." with what a run would do, one line each;
+  - once it runs, after a yes where it asks first and never before, its button is busy and the list or the sidebar
+    says "Testing …" in its live region; a second press waits for the first.
 
 ## Consequences
 

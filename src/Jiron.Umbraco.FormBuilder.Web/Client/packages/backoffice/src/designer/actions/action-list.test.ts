@@ -56,18 +56,30 @@ afterEach(() => {
 
 describe("a trigger's cards", () => {
   it('offer Test beside the switch, busy while it runs and saying so, a second press waiting for the first (ADR-0190)', async () => {
-    const { list, root, rows, said } = await listOf([card('a'), card('b')]);
+    const { list, root, rows, said } = await listOf([card('a', { testHint: 'Sends a test to you alone.' }), card('b')]);
     expect(root.querySelector('.test')).toBeNull();
     let finish: () => void = () => undefined;
+    let start: () => void = () => undefined;
     const tested: string[] = [];
-    list.test = (key) => {
+    list.test = (key, started) => {
       tested.push(key);
+      start = started;
       return new Promise<void>((done) => (finish = done));
     };
     await settle(list);
     const test = must(rows()[0]?.querySelector<HTMLElement>('.test'), 'Test');
-    expect([test.getAttribute('label'), text(test)]).toEqual(['Test Action a', 'Test']);
+    expect([test.getAttribute('label'), text(test), test.getAttribute('title')]).toEqual([
+      'Test Action a',
+      'Test',
+      'Sends a test to you alone.',
+    ]);
     test.click();
+    await settle(list);
+    // Not busy while a question may come first: only once the test starts.
+    expect([test.hasAttribute('state'), said()]).toEqual([false, '']);
+    test.click();
+    expect(tested).toEqual(['a']);
+    start();
     await settle(list);
     expect(test.getAttribute('state')).toBe('waiting');
     expect(said()).toBe('Testing Action a\u2026');

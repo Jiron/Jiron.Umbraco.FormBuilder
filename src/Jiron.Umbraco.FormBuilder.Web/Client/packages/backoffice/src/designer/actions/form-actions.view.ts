@@ -55,7 +55,7 @@ import {
   type TriggerNeed,
 } from './action-model';
 import type { LayoutChoice } from './action-editors';
-import { runTest } from './action-test';
+import { runTest, testHint } from './action-test';
 import { ACTION_MODAL } from './action.modal.token';
 import { loadActionWords } from './action-words';
 
@@ -478,7 +478,7 @@ export class FormActionsViewElement extends UmbLitElement {
    * Tests an action as this definition holds it, saved or not (ADR-0190): a type that reaches what the action is set up
    * to reach asks first, and a toast says what it came to.
    */
-  async #test(definition: DesignDefinition, key: string): Promise<void> {
+  async #test(definition: DesignDefinition, key: string, started?: () => void): Promise<void> {
     const context = this.#context;
     const action = actionsOf(definition).find((one) => one.key === key);
     if (!context || !action || !this._manage) return;
@@ -491,7 +491,9 @@ export class FormActionsViewElement extends UmbLitElement {
       ),
     );
     await runTest({
+      name: this.#nameOf(action),
       asksFirst: type?.test === 'afterConfirmation',
+      started,
       confirm: () =>
         confirmText(this, {
           headline: this.#term('testConfirmHeadline'),
@@ -586,7 +588,7 @@ export class FormActionsViewElement extends UmbLitElement {
           layouts: this._layouts.items,
           defaultLayout: this._layouts.defaultKey,
           preview: (asked, key, culture) => context.emailPreviewOf(asked, key, culture),
-          test: (asked, key) => this.#test(asked, key),
+          test: (asked, key, started) => this.#test(asked, key, started),
           ...(focus ? { focus } : {}),
           closed: () => gone?.(),
         },
@@ -707,6 +709,7 @@ export class FormActionsViewElement extends UmbLitElement {
         rule: said && rule?.enabled === false ? this.#term('ruleOff', said) : said,
         on: isOn(action),
         flag: flags.get(action.key),
+        testHint: testHint(type?.test, this.#term),
       };
     });
   }
@@ -747,7 +750,7 @@ export class FormActionsViewElement extends UmbLitElement {
               .move=${(from: number, to: number) => this.#move(trigger, from, to)}
               .toggle=${(key: string, on: boolean) => this.#toggle(key, on)}
               .request=${(key: string, request: CardRequest) => void this.#request(key, request)}
-              .test=${this._manage ? (key: string) => this.#test(this.#definition(), key) : undefined}
+              .test=${this._manage ? (key: string, started: () => void) => this.#test(this.#definition(), key, started) : undefined}
             ></jfb-action-list>`
           : need
             ? nothing

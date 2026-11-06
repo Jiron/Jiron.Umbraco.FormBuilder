@@ -648,15 +648,27 @@ describe("an action's sidebar", () => {
   it('tests the action as the sidebar holds it, saved or not, its button busy until it answers (ADR-0190)', async () => {
     let finish: () => void = () => undefined;
     const tests: [DesignDefinition, string][] = [];
-    const test = (definition: DesignDefinition, key: string) => {
+    let start: () => void = () => undefined;
+    const test = (definition: DesignDefinition, key: string, started: () => void) => {
       tests.push([definition, key]);
+      start = started;
       return new Promise<void>((done) => (finish = done));
     };
     const { element, root, type } = await sidebarOf({ test });
     await type('name', 'Tell the team');
     const button = must(root.querySelector<HTMLElement>('uui-button.test'), 'Test');
-    expect([button.getAttribute('slot'), button.getAttribute('label')]).toEqual(['footer-info', 'Test']);
+    // Outlined, as on its card, unlike Delete action beside it; its title says what an email's test does.
+    expect(['slot', 'label', 'look', 'title'].map((name) => button.getAttribute(name))).toEqual([
+      'footer-info',
+      'Test',
+      'outline',
+      'Sends a test to you alone.',
+    ]);
     button.click();
+    await settle(element);
+    // Not busy while a question may come first: only once the test starts.
+    expect(button.hasAttribute('state')).toBe(false);
+    start();
     await settle(element);
     expect(button.getAttribute('state')).toBe('waiting');
     // Said in the sidebar's own live region: the view's is behind the modal.

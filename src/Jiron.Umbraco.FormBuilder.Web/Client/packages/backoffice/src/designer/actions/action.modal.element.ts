@@ -73,6 +73,7 @@ import {
   type ActionEdit,
   type ActionSetting,
 } from './action-model';
+import { testHint } from './action-test';
 import type { ActionModalData, ActionModalValue } from './action.modal.token';
 import { EmailPreviewer, type EmailPreview } from './email-preview';
 import './email-preview.element';
@@ -245,9 +246,18 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
         display: none;
       }
 
+      /* Test keeps apart from Delete action, which acts at once. */
+      .delete-footer + .test {
+        margin-inline-start: var(--uui-size-space-3);
+      }
+
       @media (max-width: 600px) {
         .delete-footer {
           display: none;
+        }
+
+        .delete-footer + .test {
+          margin-inline-start: 0;
         }
 
         .delete-body {
@@ -636,17 +646,21 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
     this._submitModal();
   }
 
-  // Tests the action as Add or Update would make it, saved or not (ADR-0190); a second press waits for the first.
+  // Tests the action as Add or Update would make it, saved or not (ADR-0190): busy once it runs, after a yes where it
+  // asks first; a second press waits for the first.
   async #test() {
     const test = this.data?.test;
-    if (!test || this._testing) return;
-    this._testing = true;
+    if (!test || this.#testPending) return;
+    this.#testPending = true;
     try {
-      await test(this.#draft(), this._edit.key);
+      await test(this.#draft(), this._edit.key, () => (this._testing = true));
     } finally {
+      this.#testPending = false;
       this._testing = false;
     }
   }
+
+  #testPending = false;
 
   #delete() {
     this.value = { deleted: true };
@@ -1123,8 +1137,9 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
           ? html`<uui-button
               slot="footer-info"
               class="test"
-              look="secondary"
+              look="outline"
               label=${this.#term('test')}
+              title=${testHint(this.#type()?.test, this.#term) ?? nothing}
               .state=${this._testing ? 'waiting' : undefined}
               @click=${() => void this.#test()}
             ></uui-button>`

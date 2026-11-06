@@ -151,25 +151,33 @@ export default {
       'Die Einstellungen dieser E-Mail haben Fehler. Die Vorschau erscheint, sobald sie behoben sind.',
     test: 'Testen',
     testNamed: (name: string) => `„${name}“ testen`,
+    testOf: (name: string, said: string) => `„${name}“: ${said}`,
+    testHint_dryRun: 'Zeigt, was ein Lauf täte. Nichts wird gesendet oder geändert.',
+    testHint_toCurrentUser: 'Sendet einen Test nur an Sie.',
+    testHint_afterConfirmation: 'Sendet nach einer Rückfrage einen Beispieleintrag dorthin, wohin diese Aktion sendet.',
     testing: 'Wird getestet…',
     testingNamed: (name: string) => `„${name}“ wird getestet…`,
     testConfirmHeadline: 'Test senden?',
     testConfirmText: 'Damit geht ein Beispieleintrag dorthin, wohin diese Aktion sendet, als Test gekennzeichnet.',
-    testConfirmWhere: (line: string) => `${line}. Ein Beispieleintrag geht dorthin, als Test gekennzeichnet.`,
+    testConfirmWhere: (line: string) =>
+      `${line}. Ein Beispieleintrag geht dorthin wie ein echter, als Test gekennzeichnet.`,
     testConfirmButton: 'Test senden',
     testSentToYou: (address: string) => `Test-E-Mail an Sie gesendet (${address}).`,
     testSent: 'Test gesendet.',
     testDryRun: 'Nichts wurde gesendet oder geändert.',
     testFailed_no_address: 'Ihr Konto hat keine E-Mail-Adresse, daher kann keine Test-E-Mail ankommen.',
     testFailed_mail_off:
-      'Diese Website kann noch keine E-Mails senden: Es ist weder ein Mailserver noch ein Ablageordner eingerichtet.',
+      'Diese Website kann noch keine E-Mails senden: Es ist weder ein Mailserver noch ein Ablageordner eingerichtet. Den Versand richtet jemand aus der Entwicklung in den Einstellungen Umbraco:CMS:Global:Smtp der Website ein.',
     testFailed_paused:
       'Aktionen und E-Mails sind auf dieser Website angehalten, daher kann der Test nicht gesendet werden.',
     testFailed_view_missing:
       'Diese Website hat die Razor-Ansicht nicht, die die E-Mail nennt, und die E-Mail hat keinen eigenen Text.',
-    testFailed_failed: 'Der Test konnte nicht abgeschlossen werden. Das Protokoll der Website nennt den Grund.',
-    testSettingsInvalid: 'Die Einstellungen dieser Aktion haben Fehler. Beheben Sie sie, und testen Sie dann erneut.',
+    testFailed_failed:
+      'Der Test konnte nicht abgeschlossen werden. Den Grund findet jemand aus der Entwicklung im Protokoll der Website.',
+    testSettingsInvalid:
+      'Die Einstellungen dieser Aktion haben Fehler. Öffnen Sie die Aktion, beheben Sie sie, und testen Sie dann erneut.',
     testNoAnswer: 'Der Test konnte nicht ausgeführt werden.',
+    testNoReply: 'Die Website hat nicht geantwortet. Versuchen Sie es gleich noch einmal.',
     previewFrom: 'Von',
     previewTo: 'An',
     previewVisitor: 'Auch an',
