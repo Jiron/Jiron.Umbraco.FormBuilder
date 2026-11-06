@@ -2734,7 +2734,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
     - Playwright opens the view as a user without `manageActions` and finds it read-only;
     - Playwright follows a link of 9.2's copy-actions result, which opens the target's Actions view with the copied action selected (`?action=`, ADR-0166);
     - Playwright follows the form check's Fix it of an action's setting to it.
-- [ ] **10.2b The actions view: the email editor and its preview** (10.2 split in four, then 10.2b in two, see WORKLOG)
+- [x] **10.2b The actions view: the email editor and its preview** (10.2 split in four, then 10.2b in two, see WORKLOG) (2026-11-06, 818d1c3)
   - **The email editor:** a recipient builder, the merge-tag picker (its paths from 9.4c's endpoint, for mail), and a live preview with a sample entry.
   - The form check's Fix it lands on the email editor's own settings too.
   - Done when:
