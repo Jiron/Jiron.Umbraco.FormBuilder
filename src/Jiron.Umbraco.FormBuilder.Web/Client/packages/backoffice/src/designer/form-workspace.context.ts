@@ -26,11 +26,20 @@ import {
   type FieldGroupResponseModel,
   type FieldTypeChangeResponseModel,
   type FieldTypeResponseModel,
+  type FormVersionResponseModel,
 } from '../api';
 import { codeOf, sayRefusal } from '../library/library-changes';
 import { testAnswer, type TestAnswer } from './actions/action-test';
 import { contentTypeOf, type ContentType } from './actions/content-model';
 import type { LastRun } from './actions/run-words';
+import {
+  commentVersion,
+  compareVersions,
+  pinVersion,
+  readVersions,
+  type VersionComparison,
+  type VersionPage,
+} from './history/versions';
 import { previewAnswer, type EmailPreview } from './actions/email-preview';
 import { FORM_ENTITY_TYPE } from '../section/entity-types';
 import { issuesOf, type FixTarget } from './check/form-check';
@@ -138,6 +147,14 @@ export class FormWorkspaceContext
 
   /** The form as the last answer gave it. */
   readonly form = this._data.createObservablePartOfCurrent((data) => data?.form);
+
+  /** The draft's version number, which History compares a version with (ADR-0196); null without the draft. */
+  readonly draftVersion = this._data.createObservablePartOfCurrent((data) => data?.draftVersion ?? null);
+
+  /** The live version's number, which a publish moves; null with nothing published, undefined before the form is read. */
+  readonly publishedVersion = this._data.createObservablePartOfCurrent((data) =>
+    data ? data.publishedVersion : undefined,
+  );
 
   /** The state chip's state. */
   readonly state = this._data.createObservablePartOfCurrent((data): FormState | undefined =>
@@ -437,6 +454,30 @@ export class FormWorkspaceContext
     if (!key) return undefined;
     const { data } = await tryExecute(this, actionLastRunList({ path: { key } }), { disableNotifications: true });
     return data?.runs;
+  }
+
+  /** A page of the form's versions, newest first, the draft saves too when asked (ADR-0196); undefined without an answer. */
+  versionsOf(includeDrafts: boolean, skip: number): Promise<VersionPage | undefined> {
+    const key = this.getUnique();
+    return key ? readVersions(this, key, includeDrafts, skip) : Promise.resolve(undefined);
+  }
+
+  /** Two versions compared, the older first, with both definitions (ADR-0196). */
+  comparisonOf(from: number, to: number): Promise<VersionComparison> {
+    const key = this.getUnique();
+    return key ? compareVersions(this, key, from, to) : Promise.resolve({ kind: 'failed' });
+  }
+
+  /** Pins or unpins a version; the version as it is now, or undefined after a refusal, which is said. */
+  pinVersion(number: number, pinned: boolean): Promise<FormVersionResponseModel | undefined> {
+    const key = this.getUnique();
+    return key ? pinVersion(this, key, number, pinned) : Promise.resolve(undefined);
+  }
+
+  /** Sets a version's comment, empty to remove it; the version as it is now, or undefined after a refusal. */
+  commentVersion(number: number, comment: string): Promise<FormVersionResponseModel | undefined> {
+    const key = this.getUnique();
+    return key ? commentVersion(this, key, number, comment) : Promise.resolve(undefined);
   }
 
   /**

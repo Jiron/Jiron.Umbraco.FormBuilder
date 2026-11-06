@@ -8,6 +8,7 @@ export default {
     view_settings: 'Einstellungen',
     view_actions: 'Aktionen',
     actionsLoading: 'Die Aktionen werden geladen…',
+    historyFailed: 'Der Verlauf konnte nicht angezeigt werden. Versuchen Sie es gleich noch einmal.',
     actionsFailed: 'Die Aktionen konnten nicht gelesen werden. Versuchen Sie es gleich noch einmal.',
     view_entries: 'Einträge',
     view_insights: 'Auswertung',

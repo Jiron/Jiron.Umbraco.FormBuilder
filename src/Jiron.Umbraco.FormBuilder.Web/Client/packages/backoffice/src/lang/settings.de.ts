@@ -9,7 +9,7 @@ export default {
   jfbSettings: {
     loading: 'Die Einstellungen werden geladen…',
     failed: 'Die Einstellungen konnten nicht gelesen werden. Versuchen Sie es gleich noch einmal.',
-    retry: 'Noch einmal versuchen',
+    retry: 'Erneut versuchen',
     siteDefault: (what: string) => `Wie die Website (${what})`,
     problems: (number: number) => count(number, 'Problem', 'Probleme'),
     severity_warning: 'Warnung:',

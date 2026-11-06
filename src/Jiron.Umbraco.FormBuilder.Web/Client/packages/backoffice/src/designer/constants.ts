@@ -24,6 +24,12 @@ export const ACTION_MODAL_ALIAS = 'Jiron.FormBuilder.Modal.Action';
 /** The Details of an action's last run (ROADMAP 10.2f, ADR-0195), named here for the same reason. */
 export const ACTION_RUN_MODAL_ALIAS = 'Jiron.FormBuilder.Modal.ActionRun';
 
+/** Two versions compared in words, in History (ROADMAP 10.3a, ADR-0196), named here for the same reason. */
+export const VERSION_COMPARISON_MODAL_ALIAS = 'Jiron.FormBuilder.Modal.VersionComparison';
+
+/** A version's comment, in History (ROADMAP 10.3a, ADR-0196). */
+export const VERSION_COMMENT_MODAL_ALIAS = 'Jiron.FormBuilder.Modal.VersionComment';
+
 export const FORM_DETAIL_STORE_CONTEXT = new UmbContextToken<FormDetailStore>(FORM_DETAIL_STORE_ALIAS);
 
 /** The open form's workspace context, which the views and actions inside the form workspace consume. */

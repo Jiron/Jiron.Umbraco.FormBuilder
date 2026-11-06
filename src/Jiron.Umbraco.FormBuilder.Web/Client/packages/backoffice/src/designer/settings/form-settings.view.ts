@@ -71,8 +71,15 @@ import {
 } from './settings-model';
 import { choiceStyles } from './choice.styles';
 import './outcome-list.element';
-import { outcomeName, type OutcomeListElement } from './outcome-list.element';
-import { outcomesOf, settingAtPath, withOutcome, withOutcomes, type OutcomeSetting } from './outcome-model';
+import type { OutcomeListElement } from './outcome-list.element';
+import {
+  outcomeName,
+  outcomesOf,
+  settingAtPath,
+  withOutcome,
+  withOutcomes,
+  type OutcomeSetting,
+} from './outcome-model';
 import { OUTCOME_MODAL } from './outcome.modal.token';
 import { described, flagLine, flagWith, NO_FLAG, whyLine, whys, type Flag, type Shown } from './problem-lines';
 import { settingsStyles } from './settings.styles';

@@ -265,3 +265,22 @@ export function excerptOf(text: string, most = EXCERPT): string {
   const space = cut.lastIndexOf(' ');
   return `${(space > most / 2 ? cut.slice(0, space) : words.slice(0, most)).trimEnd()}${String.fromCharCode(0x2026)}`;
 }
+
+/** What an outcome gives visitors, in words, with the names of the pages read so far. */
+export function outcomeName(
+  outcome: DesignOutcome,
+  culture: string,
+  defaultMessage: string,
+  pages: ReadonlyMap<string, string>,
+  term: (key: string, ...args: unknown[]) => string,
+): string {
+  const kind = kindOf(outcome);
+  const target = targetOf(outcome);
+  const where =
+    target.kind === 'page' ? (pages.get(target.key) ?? null) : target.kind === 'address' ? target.url : undefined;
+  if (kind === 'message')
+    return term('outcome_name_message', excerptOf(messageLine(outcome, culture) || defaultMessage));
+  const prefix = kind === 'redirect' ? 'outcome_name_redirect' : 'outcome_name_messageThen';
+  if (where === undefined) return term(`${prefix}Nowhere`);
+  return where === null ? term(`${prefix}SomePage`) : term(prefix, excerptOf(where));
+}

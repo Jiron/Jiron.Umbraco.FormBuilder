@@ -7,6 +7,8 @@ import { FORM_ENTITY_TYPE } from '../section/entity-types';
 import {
   ACTION_MODAL_ALIAS,
   ACTION_RUN_MODAL_ALIAS,
+  VERSION_COMMENT_MODAL_ALIAS,
+  VERSION_COMPARISON_MODAL_ALIAS,
   FORM_DETAIL_REPOSITORY_ALIAS,
   FORM_DETAIL_STORE_ALIAS,
   FORM_PERMISSION_CONDITION,
@@ -43,7 +45,7 @@ const VIEWS: readonly { id: string; icon: string; anyOf: string[]; element?: Vie
   },
   { id: 'entries', icon: 'icon-inbox', anyOf: ['viewEntries'] },
   { id: 'insights', icon: 'icon-chart', anyOf: ['viewEntries'] },
-  { id: 'history', icon: 'icon-history', anyOf: ['design'] },
+  { id: 'history', icon: 'icon-history', anyOf: ['design'], element: () => import('./history/form-history.view') },
 ];
 
 const pascal = (id: string): string => id.charAt(0).toUpperCase() + id.slice(1);
@@ -129,6 +131,18 @@ export const manifests: UmbExtensionManifest[] = [
     alias: ACTION_RUN_MODAL_ALIAS,
     name: "Jiron Form Builder last run's Details",
     element: (() => import('./actions/action-run.modal.element')) as never,
+  },
+  {
+    type: 'modal',
+    alias: VERSION_COMPARISON_MODAL_ALIAS,
+    name: 'Jiron Form Builder versions compared',
+    element: (() => import('./history/comparison.modal.element')) as never,
+  },
+  {
+    type: 'modal',
+    alias: VERSION_COMMENT_MODAL_ALIAS,
+    name: "Jiron Form Builder version's comment",
+    element: (() => import('./history/comment.modal.element')) as never,
   },
   {
     type: 'modal',

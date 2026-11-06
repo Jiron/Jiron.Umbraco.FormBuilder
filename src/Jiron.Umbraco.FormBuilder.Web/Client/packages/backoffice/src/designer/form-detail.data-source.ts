@@ -27,6 +27,8 @@ export interface FormDetailModel {
   readonly definition: DesignDefinition;
   /** What the server's check says of the draft. */
   readonly problems: readonly DefinitionProblemResponseModel[];
+  /** The draft's version number, which History compares a version with (ADR-0196); null without the draft. */
+  readonly draftVersion: number | null;
   readonly publishedVersion: number | null;
   readonly hasUnpublishedChanges: boolean;
   /** Whether the form has entries, so a field's alias changed asks first and keeps the one before (section 4.3.1). */
@@ -53,6 +55,7 @@ export function detailOf(draft: FormDraftResponseModel): FormDetailModel {
     form: draft.form,
     definition: normalise(draft.definition),
     problems: draft.problems,
+    draftVersion: draft.draftVersion,
     publishedVersion: draft.publishedVersion ?? null,
     hasUnpublishedChanges: draft.hasUnpublishedChanges,
     hasEntries: draft.hasEntries,
@@ -68,6 +71,7 @@ export function detailOfForm(form: FormResponseModel): FormDetailModel {
     form,
     definition: { pages: [] },
     problems: [],
+    draftVersion: null,
     publishedVersion: null,
     hasUnpublishedChanges: false,
     hasEntries: false,
