@@ -66,6 +66,15 @@ export interface ChangePart {
   readonly rows: readonly ChangeRow[];
 }
 
+/** How many elements a line of the publish dialog names; it counts the rest. */
+export const MOST_NAMES = 5;
+
+/** A part of the comparison in a few words (ROADMAP 10.3d): a sentence for each change, each changed element once. */
+export interface ChangeSummaryPart {
+  readonly name: ChangePartName;
+  readonly lines: readonly string[];
+}
+
 /** How a property's value reads. */
 type Value =
   | 'flag'
@@ -857,6 +866,79 @@ class Words {
       .filter((part) => part.lines.length > 0 || part.rows.length > 0);
   }
 
+  /**
+   * The changes of a comparison in a few words, in its parts, as the publish dialog lists them (ROADMAP 10.3d): what was
+   * added, removed or moved, as the comparison says it, and each element that changed once, with what changed of it.
+   */
+  summary(changes: readonly DefinitionChangeResponseModel[]): ChangeSummaryPart[] {
+    const term = this.#context.term;
+    const lines = new Map<ChangePartName, string[]>();
+    const add = (part: ChangePartName, line: string) => lines.set(part, [...(lines.get(part) ?? []), line]);
+    const grouped = new Map<string, string[]>();
+    const changed = new Map<
+      string,
+      { readonly part: ChangePartName; readonly element: string; readonly what: string[] }
+    >();
+    for (const change of changes) {
+      const part = PARTS[change.kind];
+      if (!part) continue;
+      if (change.kind === 'rule' || change.kind === 'validationRule') {
+        if (change.change !== 'changed')
+          this.#rule(
+            change,
+            (line) => add(part, line),
+            () => undefined,
+          );
+        else
+          add(
+            part,
+            term(
+              change.kind === 'rule' ? 'jfbHistory_publish_ruleChanged' : 'jfbHistory_publish_checkChanged',
+              this.#ruleElement(change),
+            ),
+          );
+        continue;
+      }
+      if (change.kind !== 'settings' && (change.change !== 'changed' || change.moved)) {
+        const how = change.change === 'changed' ? 'moved' : change.change;
+        const name = change.kind === 'outcome' ? this.#outcomeOf(change) : this.elementOf(change);
+        const key = `${part}|${change.kind}|${how}`;
+        grouped.set(key, [...(grouped.get(key) ?? []), name]);
+      }
+      if (change.change !== 'changed') continue;
+      const id = `${change.kind}|${change.key ?? change.settingsGroup ?? ''}`;
+      for (const property of change.properties) {
+        // A former alias comes with its alias, which says the change once.
+        if (change.kind === 'field' && property.path[0] === 'formerAliases') continue;
+        const entry = changed.get(id) ?? { part, element: this.#rowElement(change), what: [] };
+        const name = this.property(change, property.path).name;
+        if (!entry.what.includes(name)) entry.what.push(name);
+        changed.set(id, entry);
+      }
+    }
+    for (const [key, names] of grouped) {
+      const [part = 'fields', kind = '', how = ''] = key.split('|');
+      // A line names a few, and counts the rest, so it stays a line.
+      const named =
+        names.length > MOST_NAMES
+          ? [...names.slice(0, MOST_NAMES), term('jfbHistory_publish_moreNames', names.length - MOST_NAMES)]
+          : names;
+      add(
+        part as ChangePartName,
+        term(
+          'jfbHistory_line',
+          term(`jfbHistory_kind_${kind}`, names.length),
+          term(`jfbHistory_change_${how}`),
+          named.join(', '),
+        ),
+      );
+    }
+    for (const { part, element, what } of changed.values())
+      add(part, term('jfbHistory_publish_changed', element, term('jfbHistory_listOf', ...what)));
+    const order: ChangePartName[] = ['fields', 'settings', 'actions', 'rules'];
+    return order.map((name) => ({ name, lines: lines.get(name) ?? [] })).filter((part) => part.lines.length > 0);
+  }
+
   /** One difference: its own change first, then those of what it holds, which come and go with it. */
   difference(changes: readonly DefinitionChangeResponseModel[]): DifferenceWords {
     const term = this.#context.term;
@@ -1013,12 +1095,18 @@ class Words {
       : this.#context.term('jfbHistory_unnamed');
   }
 
+  /** The element a rule is on, or the field a check is of. */
+  #ruleElement(change: DefinitionChangeResponseModel): string {
+    const term = this.#context.term;
+    return change.kind === 'validationRule'
+      ? this.nameOf(((change.after ?? change.before) as Json | null)?.['field'] as string) || term('jfbHistory_aField')
+      : this.nameOf(change.parentKey) || term('jfbHistory_unnamed');
+  }
+
   #rule(change: DefinitionChangeResponseModel, line: (text: string) => void, row: (row: ChangeRow) => void) {
     const term = this.#context.term;
     const validation = change.kind === 'validationRule';
-    const element = validation
-      ? this.nameOf(((change.after ?? change.before) as Json | null)?.['field'] as string) || term('jfbHistory_aField')
-      : this.nameOf(change.parentKey) || term('jfbHistory_unnamed');
+    const element = this.#ruleElement(change);
     if (change.change === 'added') {
       line(
         term(
@@ -1059,6 +1147,14 @@ export function comparisonWords(
   context: ChangeWordsContext,
 ): ChangePart[] {
   return new Words(context).parts(changes);
+}
+
+/** A comparison in a few words, in its parts, as the publish dialog lists it; an empty list where nothing differs. */
+export function publishWords(
+  changes: readonly DefinitionChangeResponseModel[],
+  context: ChangeWordsContext,
+): ChangeSummaryPart[] {
+  return new Words(context).summary(changes);
 }
 
 /** One difference of Review both versions in words: its own change first, then those of what it holds. */

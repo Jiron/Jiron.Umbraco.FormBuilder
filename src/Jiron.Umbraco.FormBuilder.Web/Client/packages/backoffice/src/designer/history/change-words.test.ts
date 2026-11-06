@@ -17,12 +17,13 @@ import { flatten } from '../actions/action-words';
 import type { DesignDefinition } from '../definition';
 import { builtInTypes } from '../preview/fixtures';
 import {
+  type ChangeWordsContext,
   comparisonWords,
   differenceWords,
   propertyName,
+  publishWords,
   VALUE_TERMS,
   VOCABULARY,
-  type ChangeWordsContext,
 } from './change-words';
 import { summaryParts, summaryWords } from './history-model';
 
@@ -585,5 +586,93 @@ describe('a difference of Review both versions in words (ROADMAP 10.3c, ADR-0200
     expect(words([fax as DefinitionChangeResponseModel], german).rows).toEqual([
       { what: 'Im Formular', older: 'Ja', newer: 'Nein' },
     ]);
+  });
+});
+
+describe('a comparison in a few words, as the publish dialog lists it (ROADMAP 10.3d)', () => {
+  const said = (changes: DefinitionChangeResponseModel[], term = english) => publishWords(changes, context(term));
+  const [settings, email, topic] = CHANGES as [DefinitionChangeResponseModel, ...DefinitionChangeResponseModel[]];
+
+  it('groups the changes in their parts: what came, went or moved, then each changed element once with what changed', () => {
+    const parts = said(CHANGES);
+    expect(parts.map((part) => part.name)).toEqual(['fields', 'settings', 'actions', 'rules']);
+    const names = (change: DefinitionChangeResponseModel | undefined) =>
+      english(
+        'jfbHistory_listOf',
+        ...[
+          ...new Set(
+            (change?.properties ?? []).map((property) =>
+              propertyName(change as DefinitionChangeResponseModel, property.path, context()),
+            ),
+          ),
+        ],
+      );
+    expect(parts[0]?.lines).toEqual([
+      'Field moved: Email address',
+      'Field added: Order number',
+      'Field removed: Fax',
+      `Email address: ${names(email)}`,
+      `Topic: ${names(topic)}`,
+    ]);
+    expect(parts[0]?.lines[3]).toBe(
+      'Email address: Label, Label (German), Required and Message when no answer is given',
+    );
+    // An outcome is After sending's, in the Settings view.
+    expect(parts[1]?.lines).toEqual([
+      expect.stringMatching(/^Outcome added: /) as unknown,
+      `Submission: ${names(settings)}`,
+    ]);
+    expect(parts[2]?.lines).toEqual(['Action added: Email the team']);
+    expect(parts[3]?.lines.map((line) => line.slice(0, line.indexOf(':')))).toEqual([
+      'Rule added to Order number',
+      'Check added to Email address',
+    ]);
+  });
+
+  it('says a rule or a check that changed by what it is on, and names a property once', () => {
+    const rule = change({
+      kind: 'rule',
+      key: RULE,
+      parentKey: FIELDS.order,
+      before: { effect: 'require', conditions: [] },
+      after: { effect: 'hide', conditions: [] },
+      properties: [{ path: ['effect'], from: 'require', to: 'hide' }],
+    });
+    const check = change({
+      kind: 'validationRule',
+      key: CHECK,
+      before: { field: FIELDS.email, conditions: [] },
+      after: { field: FIELDS.email, conditions: [], message: { '': 'Work address' } },
+      properties: [{ path: ['message', ''], from: null, to: 'Work address' }],
+    });
+    const twice = change({
+      key: FIELDS.email,
+      label: 'Email address',
+      properties: [
+        { path: ['required'], from: false, to: true },
+        { path: ['required'], from: false, to: true },
+        // A former alias comes with its alias, which says the change once.
+        { path: ['formerAliases'], from: [], to: ['mail'] },
+      ],
+    });
+    expect(said([rule, check, twice])).toEqual([
+      { name: 'fields', lines: ['Email address: Required'] },
+      { name: 'rules', lines: ['Rule changed on Order number', 'Check of Email address changed'] },
+    ]);
+  });
+
+  it('names a few elements a line holds and counts the rest, so a line stays a line', () => {
+    const many = ['A', 'B', 'C', 'D', 'E', 'F', 'G'].map((label) =>
+      change({ key: label, parentKey: 'g1', change: 'added', label }),
+    );
+    expect(said(many)).toEqual([{ name: 'fields', lines: ['Fields added: A, B, C, D, E, 2 more'] }]);
+    expect(said(many.slice(0, 5))[0]?.lines).toEqual(['Fields added: A, B, C, D, E']);
+  });
+
+  it('says it in German too, and nothing for no changes', () => {
+    expect(said([email as DefinitionChangeResponseModel], german)[0]?.lines[1]).toMatch(
+      /^Email address: Beschriftung, /,
+    );
+    expect(said([])).toEqual([]);
   });
 });

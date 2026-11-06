@@ -40,14 +40,15 @@ export type VersionComparison =
 /** How many versions a page of the list holds. */
 export const PAGE = 20;
 
-/** A page of the form's versions; undefined without an answer. */
+/** A page of the form's versions, `take` of them; undefined without an answer. */
 export async function readVersions(
   host: UmbClassInterface,
   key: string,
   includeDrafts: boolean,
   skip: number,
+  take = PAGE,
 ): Promise<VersionPage | undefined> {
-  const { data } = await tryExecute(host, versionList({ path: { key }, query: { includeDrafts, skip, take: PAGE } }), {
+  const { data } = await tryExecute(host, versionList({ path: { key }, query: { includeDrafts, skip, take } }), {
     disableNotifications: true,
   });
   return data ? { total: data.total, items: data.items } : undefined;
@@ -81,6 +82,17 @@ export async function compareVersions(
     older: normalise(older.data.definition),
     newer: normalise(newer.data.definition),
   };
+}
+
+/** A version's definition; null where its stored definition can't be read, undefined without an answer. */
+export async function readDefinition(
+  host: UmbClassInterface,
+  key: string,
+  number: number,
+): Promise<DesignDefinition | null | undefined> {
+  const { data } = await tryExecute(host, versionGet({ path: { key, number } }), { disableNotifications: true });
+  if (!data) return undefined;
+  return data.definition === null || data.definition === undefined ? null : normalise(data.definition);
 }
 
 /** The changes from one version to another, without their definitions; undefined without an answer. */

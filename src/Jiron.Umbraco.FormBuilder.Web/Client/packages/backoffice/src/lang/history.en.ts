@@ -83,6 +83,23 @@ export default {
     review_save: 'Save',
     review_cancel: 'Cancel',
 
+    // What the publish dialog says of the draft (ROADMAP 10.3d), changes not saved yet included.
+    publish_since: 'Since the published version',
+    publish_sinceLast: 'Since the last published version',
+    publish_comparing: 'Comparing with the published version…',
+    publish_reading: 'Reading the draft…',
+    publish_said: (parts: string) => `Changed since the published version: ${parts}.`,
+    publish_saidLast: (parts: string) => `Changed since the last published version: ${parts}.`,
+    publish_failed: "What changed couldn't be read. Publishing works all the same.",
+    publish_none: 'Nothing changed since the published version.',
+    publish_noneLast: 'Nothing changed since the last published version.',
+    publish_first: (holds: string) => `The first version holds ${holds}.`,
+    publish_more: (number: number) => `And ${number} more.`,
+    publish_moreNames: (number: number) => `${number} more`,
+    publish_changed: (element: string, what: string) => `${element}: ${what}`,
+    publish_ruleChanged: (element: string) => `Rule changed on ${element}`,
+    publish_checkChanged: (field: string) => `Check of ${field} changed`,
+
     pin: 'Pin',
     unpin: 'Unpin',
     addComment: 'Add comment…',
@@ -124,6 +141,7 @@ export default {
     changes_groups: (number: number) => count(number, 'group', 'groups'),
     changes_actions: (number: number) => count(number, 'action', 'actions'),
     changes_rules: (number: number) => count(number, 'rule', 'rules'),
+    changes_checks: (number: number) => count(number, 'check', 'checks'),
 
     part_fields: 'Fields',
     part_settings: 'Settings',
