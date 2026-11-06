@@ -14,6 +14,7 @@ public sealed class VersionModelsTests
 {
     private static readonly DateTimeOffset Created = new(2026, 10, 1, 8, 0, 0, TimeSpan.Zero);
     private static readonly DateTimeOffset Published = Created.AddHours(1);
+    private static readonly IReadOnlyDictionary<Guid, string> NoNames = new Dictionary<Guid, string>();
 
     [Test]
     public void AVersion_SaysWhatItIs_WhoMadeIt_AndWhereItStands()
@@ -40,8 +41,8 @@ public sealed class VersionModelsTests
         var key = Guid.NewGuid();
         var parent = Guid.NewGuid();
 
-        var entry = FormVersionEntryResponseModel.Of(new FormVersionEntry(version, [new DefinitionChangeSummary(DefinitionElementKind.ValidationRule, key, null, parent, DefinitionChangeKind.Removed, true, "Check", "check")]));
-        var first = FormVersionEntryResponseModel.Of(new FormVersionEntry(version, null));
+        var entry = FormVersionEntryResponseModel.Of(new FormVersionEntry(version, [new DefinitionChangeSummary(DefinitionElementKind.ValidationRule, key, null, parent, DefinitionChangeKind.Removed, true, "Check", "check")]), NoNames);
+        var first = FormVersionEntryResponseModel.Of(new FormVersionEntry(version, null), NoNames);
 
         Assert.Multiple(() =>
         {
@@ -49,6 +50,23 @@ public sealed class VersionModelsTests
             var change = entry.Changes!.Single();
             Assert.That((change.Kind, change.Key, change.SettingsGroup, change.ParentKey, change.Change, change.Moved, change.Label, change.Alias), Is.EqualTo(("validationRule", (Guid?)key, (string?)null, (Guid?)parent, "removed", true, "Check", "check")));
             Assert.That(first.Changes, Is.Null);
+        });
+    }
+
+    [Test]
+    public void AnEntry_NamesWhoMadeIt_ThePublisherOfAPublish_TheSaverOfADraftSave()
+    {
+        var (saver, publisher, gone) = (Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid());
+        var names = new Dictionary<Guid, string> { [saver] = "Lea Hoffmann", [publisher] = "Ana Novak" };
+
+        string? By(FormVersion version) => FormVersionEntryResponseModel.Of(new FormVersionEntry(version, null), names).By;
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(By(new FormVersion(3, FormVersionKind.Published, 2, null, false, Created, saver, Published, publisher, false, true)), Is.EqualTo("Ana Novak"));
+            Assert.That(By(new FormVersion(4, FormVersionKind.Draft, null, null, false, Created, saver, null, null, true, false)), Is.EqualTo("Lea Hoffmann"));
+            Assert.That(By(new FormVersion(5, FormVersionKind.Draft, null, null, false, Created, gone, null, null, true, false)), Is.Null, "a user who no longer exists");
+            Assert.That(By(new FormVersion(6, FormVersionKind.Draft, null, null, false, Created, null, null, null, true, false)), Is.Null, "made by Jiron Form Builder");
         });
     }
 

@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Jiron.Umbraco.FormBuilder.Core.Definitions.Comparison;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
+using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 
 namespace Jiron.Umbraco.FormBuilder.Web.ManagementApi.Library;
 
@@ -74,15 +75,30 @@ internal sealed record FormVersionEntryResponseModel
     /// </summary>
     public IReadOnlyList<DefinitionChangeSummaryResponseModel>? Changes { get; init; }
 
-    /// <summary>The model of an entry.</summary>
-    public static FormVersionEntryResponseModel Of(FormVersionEntry entry)
+    /// <summary>
+    /// The name of who made it: for a publish who published it, for a draft save who saved it (ADR-0196). Null when Jiron
+    /// Form Builder made it, or the user no longer exists.
+    /// </summary>
+    public string? By { get; init; }
+
+    /// <summary>The model of an entry, with the names of the users who made the versions by key.</summary>
+    public static FormVersionEntryResponseModel Of(FormVersionEntry entry, IReadOnlyDictionary<Guid, string> names)
     {
         ArgumentNullException.ThrowIfNull(entry);
+        ArgumentNullException.ThrowIfNull(names);
         return new FormVersionEntryResponseModel
         {
             Version = FormVersionResponseModel.Of(entry.Version),
             Changes = entry.Changes is { } changes ? [.. changes.Select(DefinitionChangeSummaryResponseModel.Of)] : null,
+            By = MakerOf(entry.Version) is { } key ? names.GetValueOrDefault(key) : null,
         };
+    }
+
+    /// <summary>Who made a version: who published a publish, who saved a draft save.</summary>
+    public static Guid? MakerOf(FormVersion version)
+    {
+        ArgumentNullException.ThrowIfNull(version);
+        return version.Kind == FormVersionKind.Published ? version.PublishedByUserKey ?? version.CreatedByUserKey : version.CreatedByUserKey;
     }
 }
 

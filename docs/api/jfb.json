@@ -8509,6 +8509,10 @@
               ]
             },
             "nullable": true
+          },
+          "by": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false

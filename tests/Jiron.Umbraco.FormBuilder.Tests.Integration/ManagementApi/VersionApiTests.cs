@@ -63,6 +63,11 @@ public sealed class VersionApiTests : ManagementApiTestBase
             Assert.That(newest["changes"]!.AsArray().Select(change => $"{change!["kind"]} {change["change"]} {change["label"]}"), Is.EqualTo(new[] { "action added Notify" }));
             Assert.That(all.Body!["items"]![3]!["changes"], Is.Null, "the first version has nothing before it");
             Assert.That(newest["version"]!["createdByUserKey"]!.GetValue<Guid>(), Is.Not.EqualTo(Guid.Empty));
+            var saver = await GetRequiredService<IUserService>().GetAsync(newest["version"]!["createdByUserKey"]!.GetValue<Guid>());
+            Assert.That(saver?.Name, Is.Not.Null.And.Not.Empty);
+            Assert.That(newest["by"]?.GetValue<string>(), Is.EqualTo(saver?.Name), "who saved it, by name (ADR-0196)");
+            var publisher = all.Body!["items"]![1]!;
+            Assert.That(publisher["by"]?.GetValue<string>(), Is.Not.Null.And.Not.Empty, "who published it");
             Assert.That((await _api.CallAsync("designer", HttpMethod.Get, $"form/{_spring}/versions?take=51")).Outcome, Is.EqualTo("400 invalid_request"), "at most 50 a page");
             var viewer = await _api.CallAsync("viewer", HttpMethod.Get, $"form/{_spring}/versions");
             Assert.That((viewer.Outcome, viewer.Body?["permission"]?.GetValue<string>()), Is.EqualTo(("403 forbidden", "design")));

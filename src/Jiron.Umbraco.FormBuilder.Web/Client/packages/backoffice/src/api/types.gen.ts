@@ -546,6 +546,7 @@ export type FormVersionDocumentResponseModel = {
 export type FormVersionEntryResponseModel = {
     version: FormVersionResponseModel;
     changes?: Array<DefinitionChangeSummaryResponseModel> | null;
+    by?: string | null;
 };
 
 export type FormVersionResponseModel = {

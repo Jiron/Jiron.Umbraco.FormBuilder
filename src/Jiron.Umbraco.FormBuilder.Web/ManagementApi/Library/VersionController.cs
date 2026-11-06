@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Umbraco.Cms.Api.Common.ViewModels.Pagination;
+using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Web.Common.Routing;
 
 namespace Jiron.Umbraco.FormBuilder.Web.ManagementApi.Library;
@@ -22,7 +23,7 @@ namespace Jiron.Umbraco.FormBuilder.Web.ManagementApi.Library;
 [ApiVersion("1.0")]
 [BackOfficeRoute(FormBuilderManagementApi.Route + "/form/{key:guid}/versions")]
 [ApiExplorerSettings(GroupName = "Version")]
-internal sealed class VersionController(IFormBuilderFormVersionService versions, IFormBuilderFormService forms, IFormBuilderAccessService access, FormSensitivityChecks sensitivity) : FormBuilderManagementApiController
+internal sealed class VersionController(IFormBuilderFormVersionService versions, IFormBuilderFormService forms, IFormBuilderAccessService access, FormSensitivityChecks sensitivity, IUserService users) : FormBuilderManagementApiController
 {
     /// <summary>A page of the form's versions, newest first: the publishes, and the draft saves too when asked.</summary>
     /// <param name="key">The form.</param>
@@ -41,10 +42,16 @@ internal sealed class VersionController(IFormBuilderFormVersionService versions,
         [FromQuery] bool includeDrafts = false,
         [FromQuery, Range(0, int.MaxValue)] int skip = 0,
         [FromQuery, Range(1, FormBuilderFormVersionService.MaxVersionsPerPage)] int take = 20,
-        CancellationToken cancellationToken = default) =>
-        await versions.ListVersionsAsync(key, includeDrafts, new PageRequest(skip, take), cancellationToken) is { } page
-            ? Ok(new PagedViewModel<FormVersionEntryResponseModel> { Total = page.Total, Items = page.Items.Select(FormVersionEntryResponseModel.Of).ToList() })
-            : FormBuilderProblems.NotFound(FormBuilderAccessResourceKind.Form);
+        CancellationToken cancellationToken = default)
+    {
+        if (await versions.ListVersionsAsync(key, includeDrafts, new PageRequest(skip, take), cancellationToken) is not { } page)
+        {
+            return FormBuilderProblems.NotFound(FormBuilderAccessResourceKind.Form);
+        }
+
+        var names = await UserNames.OfAsync(users, page.Items.Select(item => FormVersionEntryResponseModel.MakerOf(item.Version)));
+        return Ok(new PagedViewModel<FormVersionEntryResponseModel> { Total = page.Total, Items = [.. page.Items.Select(item => FormVersionEntryResponseModel.Of(item, names))] });
+    }
 
     /// <summary>A version with its definition document, and why a restore of it would be refused now.</summary>
     /// <param name="key">The form.</param>
