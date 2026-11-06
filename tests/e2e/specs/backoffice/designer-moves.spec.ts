@@ -277,9 +277,12 @@ test('fields, a group and a page move with the mouse; a refused drop says why wh
     design.locator('jfb-canvas-field').evaluateAll((all) => all.map((each) => each.getAttribute('key')));
   await expect(field('Last name')).toBeVisible();
 
-  /** Drags by a handle to a point, in small steps as a hand does, and lets go there. */
+  /**
+   * Drags by a handle to a point, in small steps as a hand does, and lets go there. The pointer goes straight to the
+   * handle the hover before showed: a scroll on the way, as the test runner's own hover may make, would take the element
+   * from under the pointer, and its handle would hide again.
+   */
   async function drag(handle: Locator, to: { x: number; y: number }, release = true) {
-    await handle.hover({ force: true });
     const from = (await handle.boundingBox())!;
     await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
     await page.mouse.down();
@@ -336,12 +339,14 @@ test('fields, a group and a page move with the mouse; a refused drop says why wh
   await drag(email, { x: guests.x + 60, y: guests.y + guests.height - 6 });
   await expect(design.getByRole('button', { name: /^Email, email field$/ })).toBeFocused();
 
-  // Escape ends a drag without a drop.
+  // Escape ends a drag without a drop. The pointer rests over the repeatable group's title, inside the canvas: at its
+  // edge the canvas would scroll for as long as the pointer stayed there.
   const now = await order();
   await field('Last name').hover();
+  const over = (await design.locator('[data-group]').nth(1).boundingBox())!;
   await drag(
     design.getByRole('button', { name: 'Move Last name', exact: true }),
-    { x: guests.x + 60, y: guests.y + guests.height - 6 },
+    { x: over.x + 60, y: over.y + 24 },
     false,
   );
   await page.keyboard.press('Escape');
@@ -349,14 +354,19 @@ test('fields, a group and a page move with the mouse; a refused drop says why wh
   await expect(design.locator('.bo-drag')).toHaveCount(0);
   expect(await order()).toEqual(now);
 
-  // The group "Guests" above "You", by its handle.
-  const you = (await design.locator('[data-group]').first().boundingBox())!;
+  // The group "Guests" above "You", by its handle, dropped over the upper part of "You", which is scrolled into view
+  // first and measured last, once nothing scrolls any more.
+  await design.locator('[data-group]').first().scrollIntoViewIfNeeded();
   // A group's handle shows over its title or its border, not over one of its fields.
   await design
     .locator('[data-group]')
     .nth(1)
     .hover({ position: { x: 40, y: 6 } });
-  await drag(design.getByRole('button', { name: 'Move Guests', exact: true }).first(), { x: you.x + 40, y: you.y + 4 });
+  const you = (await design.locator('[data-group]').first().boundingBox())!;
+  await drag(design.getByRole('button', { name: 'Move Guests', exact: true }).first(), {
+    x: you.x + 40,
+    y: you.y + you.height / 4,
+  });
   await expect(design.locator('[data-group]').first()).toContainText('Guests');
 
   // A field onto page 2's step lands at the end of that page, which shows.
