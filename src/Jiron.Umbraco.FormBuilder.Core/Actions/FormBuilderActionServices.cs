@@ -37,6 +37,7 @@ internal static class FormBuilderActionServices
         builder.Services.TryAddSingleton<ActionSettlement>();
         builder.Services.TryAddSingleton<ActionAttempts>();
         builder.Services.TryAddSingleton<ActionRunRetries>();
+        builder.Services.TryAddSingleton<ActionLastRuns>();
         builder.Services.TryAddSingleton<ActionTestRuns>();
         builder.Services.TryAddSingleton<OutboxWake>();
         builder.Services.TryAddSingleton<JobHeartbeat>();

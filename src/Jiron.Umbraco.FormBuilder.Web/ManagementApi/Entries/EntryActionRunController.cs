@@ -94,7 +94,7 @@ internal sealed record ActionRunResponseModel
     /// <summary>When it was queued.</summary>
     public required DateTimeOffset CreatedUtc { get; init; }
 
-    /// <summary>When its first attempt started.</summary>
+    /// <summary>When its first attempt started, since a retry, which starts the attempts over.</summary>
     public DateTimeOffset? StartedUtc { get; init; }
 
     /// <summary>When it reached a final state.</summary>

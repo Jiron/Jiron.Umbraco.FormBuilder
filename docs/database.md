@@ -56,6 +56,7 @@ idempotent, so a rerun changes nothing.
 | `jfb-007-email-time-index` | `AddEmailTimeIndexV1` | Adds `IX_jfbEmail_createdUtc_recipientKey`, so the site's mail limit reads the last hour and not all kept mail ([ADR-0159](decisions/0159-mail-the-queue-the-layouts-and-the-limits.md)), where it is missing. |
 | `jfb-008-entry-event-due` | `AddEntryEventDueV1` | Adds `jfbEntryEvent.dueUtc` and `IX_jfbEntryEvent_dueUtc`, so what a user's change leaves until its undo window is over is found by a queue (ADR-0162). |
 | `jfb-009-entry-time-index` | `AddEntryTimeIndexV1` | Adds `IX_jfbEntry_submittedUtc`, so the Overview's newest entries across forms don't sort all of a site's entries ([ADR-0165](decisions/0165-the-section-shell.md)), where it is missing. |
+| `jfb-010-action-run-last-attempt` | `AddActionRunLastAttemptV1` | Adds `jfbActionRun.lastAttemptUtc`, which a claim writes, and `IX_jfbActionRun_actionKey_id_state_attempts_entryId`, so an action's card finds its last run without its entries ([ADR-0195](decisions/0195-an-actions-last-run-and-its-details.md)). |
 
 A step that has shipped is never edited; a change to the schema is a new step with snapshot classes of its own. Step 1
 is frozen since the end of Phase 4, the tag `baseline/schema-v1`: `SchemaV1FreezeTests` pins the SHA-256 of a
@@ -301,6 +302,7 @@ erDiagram
         datetime createdUtc
         datetime startedUtc "null"
         datetime finishedUtc "null"
+        datetime lastAttemptUtc "null"
     }
     jfbEmail {
         bigint id PK
@@ -587,10 +589,13 @@ Internal notes on an entry, never sent anywhere.
 The outbox: one row per action an entry triggered, with its order (`sortOrder`), state, attempts and the lease of the
 server that is running it (`lockedBy`, `lockedUntilUtc`). Errors are stored sanitised, as a code and a message; a
 skipped run says why with the code `stopped` (an earlier run stopped the rest) or `undone` (ADR-0023, ADR-0040).
+`startedUtc` is when the first attempt started and `lastAttemptUtc` when the latest did; a retry from the log starts
+the attempts over, their times with them (ADR-0195).
 
 - `IX_jfbActionRun_state_nextAttemptUtc`: what is due.
 - `IX_jfbActionRun_entryId_sortOrder`: the runs of an entry in order.
 - `IX_jfbActionRun_changeKey`: the runs one change queued, a batch (ADR-0040), and for undo.
+- `IX_jfbActionRun_actionKey_id_state_attempts_entryId`: an action's newest runs, for its last run in the Actions view; it holds what that read filters on, so runs waiting for their first try cost no lookups (ADR-0195).
 
 ### `jfbEmail`
 

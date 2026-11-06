@@ -38,6 +38,9 @@ internal sealed class FormBuilderMigrationPlan : PackageMigrationPlan
     /// <summary>The state after the index that finds the newest entries of every form (ADR-0165).</summary>
     public const string StateEntryTimeIndex = "jfb-009-entry-time-index";
 
+    /// <summary>The state after a run keeps when its latest attempt started, with the index of an action's runs (ADR-0195).</summary>
+    public const string StateActionRunLastAttempt = "jfb-010-action-run-last-attempt";
+
     /// <summary>The steps in order, with the state each one leaves. The tests build their copies of the plan from it.</summary>
     internal static readonly IReadOnlyList<(string State, Type Step)> Steps =
     [
@@ -50,6 +53,7 @@ internal sealed class FormBuilderMigrationPlan : PackageMigrationPlan
         (StateEmailTimeIndex, typeof(AddEmailTimeIndexV1)),
         (StateEntryEventDue, typeof(AddEntryEventDueV1)),
         (StateEntryTimeIndex, typeof(AddEntryTimeIndexV1)),
+        (StateActionRunLastAttempt, typeof(AddActionRunLastAttemptV1)),
     ];
 
     /// <summary>Creates the plan with Jiron Form Builder's package id, name and plan name.</summary>

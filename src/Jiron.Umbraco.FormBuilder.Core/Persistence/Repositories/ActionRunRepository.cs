@@ -222,7 +222,7 @@ internal sealed class ActionRunRepository(FormBuilderDatabase database) : IActio
                 var runs = n.T(FormBuilderTables.ActionRun);
                 var now = database.UtcNow;
                 var changed = await db.ExecAsync(
-                    $"UPDATE {runs} SET {n.C("state")} = '{Pending}', {n.C("attempts")} = 0, {n.C("nextAttemptUtc")} = @2, {n.C("lockedBy")} = NULL, {n.C("lockedUntilUtc")} = NULL, {n.C("finishedUtc")} = NULL WHERE {n.C("id")} = @0 AND {n.C("state")} = @1",
+                    $"UPDATE {runs} SET {n.C("state")} = '{Pending}', {n.C("attempts")} = 0, {n.C("nextAttemptUtc")} = @2, {n.C("lockedBy")} = NULL, {n.C("lockedUntilUtc")} = NULL, {n.C("startedUtc")} = NULL, {n.C("lastAttemptUtc")} = NULL, {n.C("finishedUtc")} = NULL WHERE {n.C("id")} = @0 AND {n.C("state")} = @1",
                     runId,
                     StoredNames.Of(expected),
                     now);
@@ -304,6 +304,46 @@ internal sealed class ActionRunRepository(FormBuilderDatabase database) : IActio
             },
             cancellationToken);
 
+    /// <inheritdoc />
+    public Task<IReadOnlyList<StoredActionRun>> LastOfActionsAsync(int formId, IReadOnlyCollection<Guid> actionKeys, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(actionKeys);
+        if (actionKeys.Count > Outbox.MaxTake)
+        {
+            throw new ArgumentOutOfRangeException(nameof(actionKeys), $"At most {Outbox.MaxTake} actions at once.");
+        }
+
+        return database.ReadAsync<IReadOnlyList<StoredActionRun>>(
+            async db =>
+            {
+                var n = new SqlNames(db);
+                var sql = LastSql(n);
+                var found = new List<StoredActionRun>();
+                // One seek an action, by its index, which stops at the newest run that counts.
+                foreach (var key in actionKeys.Distinct())
+                {
+                    if (await db.FirstOrNullAsync<ActionRunDto>(sql, key, formId) is { } row)
+                    {
+                        found.Add(FromDto(row));
+                    }
+                }
+
+                return found;
+            },
+            cancellationToken);
+    }
+
+    /// <summary>
+    /// The last run of an action (<c>@0</c> the action, <c>@1</c> the form): the newest by the action's index that has been
+    /// tried or has settled, and that belongs to an entry of the form.
+    /// </summary>
+    internal static string LastSql(SqlNames n)
+    {
+        var runs = n.T(FormBuilderTables.ActionRun);
+        var entries = n.T(FormBuilderTables.Entry);
+        return $"SELECT r.* FROM {runs} r WHERE r.{n.C("actionKey")} = @0 AND (r.{n.C("state")} <> '{Pending}' OR r.{n.C("attempts")} > 0) AND EXISTS (SELECT 1 FROM {entries} e WHERE e.{n.C("id")} = r.{n.C("entryId")} AND e.{n.C("formId")} = @1) ORDER BY r.{n.C("id")} DESC {n.Page(0, 1)}";
+    }
+
     internal static StoredActionRun FromDto(ActionRunDto d) => new(
         d.Id,
         d.EntryId,
@@ -322,7 +362,10 @@ internal sealed class ActionRunRepository(FormBuilderDatabase database) : IActio
         d.LastErrorCode is { } code ? new DeliveryError(code, d.LastErrorMessage) : null,
         FormBuilderDbTime.Read(d.CreatedUtc),
         FormBuilderDbTime.Read(d.StartedUtc),
-        FormBuilderDbTime.Read(d.FinishedUtc));
+        FormBuilderDbTime.Read(d.FinishedUtc))
+    {
+        LastAttemptUtc = FormBuilderDbTime.Read(d.LastAttemptUtc),
+    };
 
     /// <summary>
     /// The due list (<c>@0</c> the time): the ids of the pending runs whose time came and that nothing holds back, the
@@ -335,14 +378,14 @@ internal sealed class ActionRunRepository(FormBuilderDatabase database) : IActio
     }
 
     /// <summary>
-    /// The claim (<c>@0</c> the run, <c>@1</c> the token, <c>@2</c> the lease's end, <c>@3</c> the time): one update of
-    /// a run that is pending, due and not held back, whose check of the earlier runs holds their rows on SQL Server
-    /// until the claim commits.
+    /// The claim (<c>@0</c> the run, <c>@1</c> the token, <c>@2</c> the lease's end, <c>@3</c> the time, which is when the
+    /// attempt starts): one update of a run that is pending, due and not held back, whose check of the earlier runs holds
+    /// their rows on SQL Server until the claim commits.
     /// </summary>
     internal static string ClaimSql(SqlNames n)
     {
         var runs = n.T(FormBuilderTables.ActionRun);
-        return $"UPDATE {runs} SET {n.C("state")} = '{Running}', {n.C("lockedBy")} = @1, {n.C("lockedUntilUtc")} = @2, {n.C("attempts")} = {n.C("attempts")} + 1, {n.C("startedUtc")} = COALESCE({n.C("startedUtc")}, @3) WHERE {n.C("id")} = @0 AND {n.C("state")} = '{Pending}' AND {n.C("nextAttemptUtc")} <= @3 AND {Unblocked(n, runs, runs, locking: true)}";
+        return $"UPDATE {runs} SET {n.C("state")} = '{Running}', {n.C("lockedBy")} = @1, {n.C("lockedUntilUtc")} = @2, {n.C("attempts")} = {n.C("attempts")} + 1, {n.C("startedUtc")} = COALESCE({n.C("startedUtc")}, @3), {n.C("lastAttemptUtc")} = @3 WHERE {n.C("id")} = @0 AND {n.C("state")} = '{Pending}' AND {n.C("nextAttemptUtc")} <= @3 AND {Unblocked(n, runs, runs, locking: true)}";
     }
 
     private static string? Message(DeliveryError error) => Outbox.Cut(error.Message, MaxErrorMessageLength);

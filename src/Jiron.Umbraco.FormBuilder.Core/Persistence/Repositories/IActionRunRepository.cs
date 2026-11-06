@@ -50,14 +50,14 @@ internal sealed record NewActionRun(
 /// <param name="SortOrder">The action's position.</param>
 /// <param name="StopOnFailure">Whether a failure for good skips the later runs of its batch.</param>
 /// <param name="State">Where it is.</param>
-/// <param name="Attempts">The attempts claimed so far.</param>
+/// <param name="Attempts">The attempts claimed so far; a retry from the log starts them over.</param>
 /// <param name="NextAttemptUtc">When it may be claimed; null once it is final.</param>
 /// <param name="ChangeKey">The change that queued it with its batch; this repository always sets it.</param>
 /// <param name="LockedUntilUtc">When the lease of its claim ends, while an attempt holds it or it is uncertain.</param>
 /// <param name="LockedBy">The token of its last claim, kept in a final state; null while it waits for a claim.</param>
 /// <param name="LastError">Why its last attempt did not succeed, or why it was skipped.</param>
 /// <param name="CreatedUtc">When it was queued.</param>
-/// <param name="StartedUtc">When its first attempt started.</param>
+/// <param name="StartedUtc">When its first attempt started, since a retry from the log, which starts the attempts over.</param>
 /// <param name="FinishedUtc">When it reached a final state.</param>
 internal sealed record StoredActionRun(
     long Id,
@@ -77,7 +77,11 @@ internal sealed record StoredActionRun(
     DeliveryError? LastError,
     DateTimeOffset CreatedUtc,
     DateTimeOffset? StartedUtc,
-    DateTimeOffset? FinishedUtc);
+    DateTimeOffset? FinishedUtc)
+{
+    /// <summary>When its latest attempt started; null before its first, after a retry from the log until its next, and for a run whose attempts ran before step 10 (ADR-0195).</summary>
+    public DateTimeOffset? LastAttemptUtc { get; init; }
+}
 
 /// <summary>
 /// The action outbox in <c>jfbActionRun</c> (D6, ADR-0007, ADR-0040). Every state change is one conditional statement
@@ -147,8 +151,8 @@ internal interface IActionRunRepository
 
     /// <summary>
     /// Retries a run from the deliveries log (section 4.4): from the state the user saw, <see cref="ActionRunState.Failed"/>
-    /// or <see cref="ActionRunState.Uncertain"/>, back to pending and due now, with its attempts at 0 and its token
-    /// cleared; a failed run that stopped the rest brings back the runs of its batch it skipped. The run as it is then, or
+    /// or <see cref="ActionRunState.Uncertain"/>, back to pending and due now, with its attempts at 0, their times and its
+    /// token cleared; a failed run that stopped the rest brings back the runs of its batch it skipped. The run as it is then, or
     /// null when it does not exist; throws <see cref="FormBuilderConcurrencyException"/> when it was no longer in that
     /// state.
     /// </summary>
@@ -168,4 +172,14 @@ internal interface IActionRunRepository
 
     /// <summary>How many runs a change queued, which an Undo holds against how many it could still call back.</summary>
     Task<int> CountOfChangeAsync(Guid changeKey, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// The last run of each of a form's actions (ADR-0195): the newest that has been tried or has settled, of an entry of
+    /// the form, so a run that waits for its first attempt never hides the one before; an action without one is left
+    /// out.
+    /// </summary>
+    /// <param name="formId">The form.</param>
+    /// <param name="actionKeys">Its actions, at most <see cref="Outbox.MaxTake"/>.</param>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    Task<IReadOnlyList<StoredActionRun>> LastOfActionsAsync(int formId, IReadOnlyCollection<Guid> actionKeys, CancellationToken cancellationToken = default);
 }

@@ -236,6 +236,43 @@ public sealed class ActionApiTests : ManagementApiTestBase
     }
 
     [Test]
+    public async Task TheLastRunOfEachAction_IsListedForWhoDesignsTheForm_NamingNoEntryAndNoAnswer()
+    {
+        var (form, entry, run) = await RunInAsync(ActionRunState.Failed);
+
+        var answer = await CallAsync(Admin, HttpMethod.Get, $"form/{form}/action/last-run");
+        var nothing = await CallAsync(Admin, HttpMethod.Get, $"form/{Guid.NewGuid()}/action/last-run");
+
+        var only = answer.Body!["runs"]!.AsArray().Single()!.AsObject();
+        Assert.Multiple(() =>
+        {
+            Assert.That(answer.Outcome, Is.EqualTo("200"), answer.ToString());
+            // A run is its action, its state, its attempts and its failure: nothing that names the entry or its answers.
+            Assert.That(
+                only.Select(property => property.Key),
+                Is.SubsetOf(new[] { "actionKey", "state", "attempts", "firstAttemptUtc", "lastAttemptUtc", "nextAttemptUtc", "finishedUtc", "errorCode", "errorMessage" }));
+            Assert.That(answer.ToString(), Does.Not.Contain(entry.ToString()).And.Not.Contain($"\"id\""));
+            Assert.That(only["actionKey"]!.GetValue<Guid>(), Is.EqualTo(run.ActionKey));
+            Assert.That(only["state"]!.GetValue<string>(), Is.EqualTo("failed"));
+            Assert.That(only["attempts"]!.GetValue<int>(), Is.EqualTo(1));
+            Assert.That((only["errorCode"]!.GetValue<string>(), only["errorMessage"]!.GetValue<string>()), Is.EqualTo(("refused", "It said no.")));
+            Assert.That(only["lastAttemptUtc"]!.GetValue<DateTimeOffset>(), Is.EqualTo(run.LastAttemptUtc));
+            Assert.That(only["finishedUtc"]!.GetValue<DateTimeOffset>(), Is.EqualTo(run.FinishedUtc));
+            Assert.That(nothing.Outcome, Is.EqualTo("404 form_not_found"), nothing.ToString());
+        });
+    }
+
+    [Test]
+    public async Task AnActionThatHasNotRun_HasNoLastRun()
+    {
+        var form = await PublishedAsync(Scripted0("target"));
+
+        var answer = await CallAsync(Admin, HttpMethod.Get, $"form/{form}/action/last-run");
+
+        Assert.That(answer.Body!["runs"]!.AsArray(), Is.Empty, answer.ToString());
+    }
+
+    [Test]
     public async Task ARetryOfAFailedRun_QueuesItAgain_WithItsAttemptsStartingOver_AndIsAudited()
     {
         var (form, entry, run) = await RunInAsync(ActionRunState.Failed);

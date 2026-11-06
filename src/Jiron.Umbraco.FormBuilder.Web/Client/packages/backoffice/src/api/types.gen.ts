@@ -9,6 +9,22 @@ export type ActionConfirmationRequestModel = {
     confirmed: boolean;
 };
 
+export type ActionLastRunResponseModel = {
+    actionKey: string;
+    state: string;
+    attempts: number;
+    firstAttemptUtc?: string | null;
+    lastAttemptUtc?: string | null;
+    nextAttemptUtc?: string | null;
+    finishedUtc?: string | null;
+    errorCode?: string | null;
+    errorMessage?: string | null;
+};
+
+export type ActionLastRunsResponseModel = {
+    runs: Array<ActionLastRunResponseModel>;
+};
+
 export type ActionPresetResponseModel = {
     name: string;
     settings: string;
@@ -968,6 +984,41 @@ export type ActionTestTestResponses = {
 };
 
 export type ActionTestTestResponse = ActionTestTestResponses[keyof ActionTestTestResponses];
+
+export type ActionLastRunListData = {
+    body?: never;
+    path: {
+        key: string;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/form/{key}/action/last-run';
+};
+
+export type ActionLastRunListErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type ActionLastRunListError = ActionLastRunListErrors[keyof ActionLastRunListErrors];
+
+export type ActionLastRunListResponses = {
+    /**
+     * OK
+     */
+    200: ActionLastRunsResponseModel;
+};
+
+export type ActionLastRunListResponse = ActionLastRunListResponses[keyof ActionLastRunListResponses];
 
 export type EmailPreviewRenderData = {
     body?: EmailPreviewRequestModel;

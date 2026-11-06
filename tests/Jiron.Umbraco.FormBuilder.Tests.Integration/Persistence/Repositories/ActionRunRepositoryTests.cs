@@ -127,7 +127,7 @@ public sealed class ActionRunRepositoryTests : RepositoryTestBase
 
         Assert.Multiple(async () =>
         {
-            Assert.That(claimed, Is.EqualTo(due with { State = ActionRunState.Running, Attempts = 1, LockedBy = claimed?.LockedBy, LockedUntilUtc = Now + Lease, StartedUtc = Now }));
+            Assert.That(claimed, Is.EqualTo(due with { State = ActionRunState.Running, Attempts = 1, LockedBy = claimed?.LockedBy, LockedUntilUtc = Now + Lease, StartedUtc = Now, LastAttemptUtc = Now }));
             Assert.That(claimed?.LockedBy, Does.Match("^server-a JFB_TEST/[0-9a-f]{32}$"), "the claimant's name and 128 random bits");
             Assert.That(await ActionRuns.ClaimAsync(due.Id, "server-b JFB_TEST", Lease), Is.Null, "claimed once");
             Assert.That(await ActionRuns.GetAsync(due.Id), Is.EqualTo(claimed), "the second claim changed nothing");
@@ -154,7 +154,7 @@ public sealed class ActionRunRepositoryTests : RepositoryTestBase
         {
             Assert.That(second, Is.Not.EqualTo(first), "the same claimant, another token");
             Assert.That(await ActionRuns.SucceedAsync(run.Id, first), Is.False, "the first attempt finishes late");
-            Assert.That(await ActionRuns.GetAsync(run.Id), Is.EqualTo(run with { State = ActionRunState.Running, Attempts = 1, LockedBy = second, LockedUntilUtc = Now + Lease, StartedUtc = Now, LastError = new DeliveryError("host_stopped") }));
+            Assert.That(await ActionRuns.GetAsync(run.Id), Is.EqualTo(run with { State = ActionRunState.Running, Attempts = 1, LockedBy = second, LockedUntilUtc = Now + Lease, StartedUtc = Now, LastAttemptUtc = Now, LastError = new DeliveryError("host_stopped") }));
         });
     }
 
@@ -310,6 +310,93 @@ public sealed class ActionRunRepositoryTests : RepositoryTestBase
     }
 
     [Test]
+    public async Task EachAttempt_KeepsWhenItStarted_BesideWhenTheFirstDid()
+    {
+        var run = (await NewRunsAsync(1))[0];
+        var first = Now;
+        await ActionRuns.RetryAsync(run.Id, await TakeAsync(run), TimeSpan.FromMinutes(1), Refused);
+        Clock.Advance(TimeSpan.FromMinutes(1));
+
+        await TakeAsync(run);
+
+        var again = await ActionRuns.GetAsync(run.Id);
+        Assert.That((again!.StartedUtc, again.LastAttemptUtc), Is.EqualTo(((DateTimeOffset?)first, (DateTimeOffset?)first.AddMinutes(1))));
+    }
+
+    [Test]
+    public async Task AnActionsLastRun_IsItsNewestTriedOrSettled_OfAnEntryOfTheForm()
+    {
+        var form = await CreateFormAsync();
+        var version = form.DraftVersionId!.Value;
+        var other = await CreateFormAsync();
+        var (tried, settled, waiting, elsewhere, never) = (Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid());
+        static NewActionRun Of(Guid key) => new(key, "Jiron.FormBuilder.Webhook", ActionTrigger.Submitted, 0, false);
+        async Task<StoredActionRun> QueueForAsync(int formId, int versionId, Guid key) =>
+            (await QueueAsync(await AddEntryAsync(formId, versionId), versionId, [Of(key)]))[0];
+
+        // An older run that went through, then a newer one that failed and is tried again.
+        var older = await QueueForAsync(form.Id, version, tried);
+        await ActionRuns.SucceedAsync(older.Id, await TakeAsync(older));
+        var newer = await QueueForAsync(form.Id, version, tried);
+        await ActionRuns.RetryAsync(newer.Id, await TakeAsync(newer), TimeSpan.FromMinutes(5), Refused);
+        // A run that went through, then one that waits for its first attempt and hides nothing.
+        var done = await QueueForAsync(form.Id, version, settled);
+        await ActionRuns.SucceedAsync(done.Id, await TakeAsync(done));
+        await QueueForAsync(form.Id, version, settled);
+        // Only a run that waits.
+        await QueueForAsync(form.Id, version, waiting);
+        // A run of another form's entry under the same key, as a copy that kept it would have.
+        var foreign = await QueueForAsync(other.Id, other.DraftVersionId!.Value, elsewhere);
+        await ActionRuns.SucceedAsync(foreign.Id, await TakeAsync(foreign));
+
+        var last = await ActionRuns.LastOfActionsAsync(form.Id, [tried, settled, waiting, elsewhere, never, tried]);
+
+        Assert.That(
+            last.Select(run => (run.ActionKey, run.Id, run.State, run.Attempts, run.LastError)),
+            Is.EquivalentTo(new[] { (tried, newer.Id, ActionRunState.Pending, 1, (DeliveryError?)Refused), (settled, done.Id, ActionRunState.Succeeded, 1, null) }));
+    }
+
+    [Test]
+    public async Task AnActionsLastRun_MayBeUncertainOrSkipped_ButIsNeitherARetryThatWaits_NorAnotherFormsNewerRun()
+    {
+        var form = await CreateFormAsync();
+        var version = form.DraftVersionId!.Value;
+        var other = await CreateFormAsync();
+        var (cutOff, skipped, retried, shared) = (Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid());
+        static NewActionRun Of(Guid key) => new(key, "Jiron.FormBuilder.Webhook", ActionTrigger.Submitted, 0, false);
+        async Task<StoredActionRun> QueueForAsync(int formId, int versionId, Guid key, Guid? change = null, TimeSpan wait = default) =>
+            (await QueueAsync(await AddEntryAsync(formId, versionId), versionId, [Of(key)], change, wait))[0];
+
+        // Cut off, and skipped before its first try by an undo.
+        var uncertain = await QueueForAsync(form.Id, version, cutOff);
+        await ActionRuns.CutOffAsync(uncertain.Id, await TakeAsync(uncertain), new DeliveryError("host_stopped"));
+        var change = Guid.NewGuid();
+        var undone = await QueueForAsync(form.Id, version, skipped, change, TimeSpan.FromMinutes(1));
+        await ActionRuns.SkipChangeAsync(change);
+        // A run that went through, then one that failed and was retried from the log: it waits for its first try again.
+        var before = await QueueForAsync(form.Id, version, retried);
+        await ActionRuns.SucceedAsync(before.Id, await TakeAsync(before));
+        var failed = await QueueForAsync(form.Id, version, retried);
+        await ActionRuns.FailAsync(failed.Id, await TakeAsync(failed), Refused);
+        await ActionRuns.RequeueAsync(failed.Id, ActionRunState.Failed);
+        // The form's run of a key, then a newer one of another form's entry under the same key.
+        var own = await QueueForAsync(form.Id, version, shared);
+        await ActionRuns.SucceedAsync(own.Id, await TakeAsync(own));
+        var foreign = await QueueForAsync(other.Id, other.DraftVersionId!.Value, shared);
+        await ActionRuns.FailAsync(foreign.Id, await TakeAsync(foreign), Refused);
+
+        var last = await ActionRuns.LastOfActionsAsync(form.Id, [cutOff, skipped, retried, shared]);
+
+        Assert.That(
+            last.Select(run => (run.ActionKey, run.Id, run.State)),
+            Is.EquivalentTo(new[] { (cutOff, uncertain.Id, ActionRunState.Uncertain), (skipped, undone.Id, ActionRunState.Skipped), (retried, before.Id, ActionRunState.Succeeded), (shared, own.Id, ActionRunState.Succeeded) }));
+    }
+
+    [Test]
+    public void LastRuns_OfMoreActionsThanATakeHolds_AreRefused() =>
+        Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => ActionRuns.LastOfActionsAsync(1, [.. Enumerable.Range(0, Outbox.MaxTake + 1).Select(_ => Guid.NewGuid())]));
+
+    [Test]
     public async Task ALeaseThatRanOut_MakesTheRunUncertain_AndTheLateFinisherStillRecordsItsResult()
     {
         var runs = await NewRunsAsync(2);
@@ -438,7 +525,7 @@ public sealed class ActionRunRepositoryTests : RepositoryTestBase
         Assert.Multiple(async () =>
         {
             Assert.That(retried!.State, Is.EqualTo(ActionRunState.Pending));
-            Assert.That(retried, Is.EqualTo(retried with { Attempts = 0, NextAttemptUtc = later, LockedBy = null, LockedUntilUtc = null, FinishedUtc = null, LastError = Refused }), "the last error stays until the next attempt");
+            Assert.That(retried, Is.EqualTo(retried with { Attempts = 0, NextAttemptUtc = later, LockedBy = null, LockedUntilUtc = null, StartedUtc = null, LastAttemptUtc = null, FinishedUtc = null, LastError = Refused }), "the attempts start over with their times; the last error stays until the next attempt");
             Assert.That(await ActionRuns.GetAsync(rest.Id), Is.EqualTo(rest with { NextAttemptUtc = later }), "the rest it stopped waits for it again");
             Assert.That(await ActionRuns.GetAsync(other[1].Id), Is.EqualTo(stopped), "another change's stopped run stays");
             Assert.That(await ActionRuns.GetAsync(bulk[1].Id), Is.EqualTo(stoppedElsewhere), "and another entry's of the same change");

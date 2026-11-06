@@ -103,10 +103,15 @@ public sealed partial class DatabaseDocsTests
                 text.Append('\n');
             }
 
-            // A column a later step adds (ADR-0162).
+            // The columns later steps add (ADR-0162, ADR-0195).
             if (table.Name == FormBuilderTables.EntryEvent)
             {
                 text.Append("        datetime dueUtc \"null\"\n");
+            }
+
+            if (table.Name == FormBuilderTables.ActionRun)
+            {
+                text.Append("        datetime lastAttemptUtc \"null\"\n");
             }
 
             text.Append("    }\n");
@@ -139,6 +144,7 @@ public sealed partial class DatabaseDocsTests
         indexes[FormBuilderTables.Email].Add(AddEmailTimeIndexV1.IndexName);
         indexes[FormBuilderTables.Entry].Add(AddEntryTimeIndexV1.IndexName);
         indexes[FormBuilderTables.EntryEvent].Add(AddEntryEventDueV1.IndexName);
+        indexes[FormBuilderTables.ActionRun].Add(AddActionRunLastAttemptV1.IndexName);
 
         return indexes;
     }

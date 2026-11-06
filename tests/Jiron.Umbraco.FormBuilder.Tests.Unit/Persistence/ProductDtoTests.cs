@@ -41,7 +41,7 @@ public sealed class ProductDtoTests
     ];
 
     // The columns a later migration added, which the snapshot of schema v1 never holds; MigrationPlanTests checks they arrive.
-    private static readonly FrozenSet<(Type Row, string Column)> Added = new[] { (typeof(Dtos.EntryEventDto), "dueUtc DateTime?") }.ToFrozenSet();
+    private static readonly FrozenSet<(Type Row, string Column)> Added = new[] { (typeof(Dtos.EntryEventDto), "dueUtc DateTime?"), (typeof(Dtos.ActionRunDto), "lastAttemptUtc DateTime?") }.ToFrozenSet();
 
     [TestCaseSource(nameof(Pairs))]
     public void AProductRow_HasTheColumnsOfItsTable(Type product, Type snapshot)

@@ -68,6 +68,10 @@ internal sealed class ActionRunDto
 
     [Column("finishedUtc")]
     public DateTime? FinishedUtc { get; set; }
+
+    // When its latest attempt started (step 10, ADR-0195).
+    [Column("lastAttemptUtc")]
+    public DateTime? LastAttemptUtc { get; set; }
 }
 
 /// <summary>A row of <c>jfbEmail</c>.</summary>

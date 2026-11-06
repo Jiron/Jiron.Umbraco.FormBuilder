@@ -333,6 +333,13 @@ flowchart LR
   their problems codes (`ActionCheckCodes`, `ActionSettingsCheck.Invalid(setting, code, message)`), which the form
   check words as its own (`OWN_WORDS`). `SetStateActionType`'s check refuses two actions that would move an entry
   between Approved and Rejected for ever.
+  From 10.2f (ADR-0195): `GET form/{key}/action/last-run` (`ActionLastRuns`, `design` on the form) answers the last run
+  of each action of the stored draft without its entry: `IActionRunRepository.LastOfActionsAsync` takes, an action at a
+  time by `IX_jfbActionRun_actionKey_id_state_attempts_entryId`, the newest run of an entry of the form that has
+  been tried or has settled. A claim writes `lastAttemptUtc` (migration step 10), and a retry from the log clears it
+  with `startedUtc`, as it starts the attempts over. The view reads the last runs as it opens and when its page is
+  shown again (`lastRunsOf`); `run-words.ts` says a run on its card in the reader's language and times, and a failed
+  or uncertain one's Details (`jfb-action-run-modal`, Test for who may change actions).
 
 ## 2. The definition model
 
