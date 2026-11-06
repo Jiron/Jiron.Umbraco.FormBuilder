@@ -2748,7 +2748,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
     - Playwright configures an email action from a preset, and a test-run email lands in the pickup folder;
     - Playwright test-runs an action from its card, and one from its sidebar before it is saved;
     - integration tests cover every new endpoint, with its row in the permission matrix and the OpenAPI snapshot.
-- [ ] **10.2d The actions view: the webhook, Slack and Teams editors** (10.2 split in four, then 10.2d in two, see WORKLOG)
+- [x] **10.2d The actions view: the webhook, Slack and Teams editors** (10.2 split in four, then 10.2d in two, see WORKLOG) (2026-11-06, e7fe1c3)
   - **Webhook:** a mapping table, a signature help text and a test.
   - **Slack and Teams.**
   - The form check's Fix it lands on these editors' own settings too.
