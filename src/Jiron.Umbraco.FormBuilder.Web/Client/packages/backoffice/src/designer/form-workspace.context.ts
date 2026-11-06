@@ -21,9 +21,9 @@ import {
   contentDocumentTypeGet,
   emailPreviewRender,
   outcomePreviewRender,
-  formGet,
   formPublish,
   type FieldGroupResponseModel,
+  type FormDraftResponseModel,
   type FieldTypeChangeResponseModel,
   type FieldTypeResponseModel,
   type FormVersionResponseModel,
@@ -47,9 +47,9 @@ import { FORM_ENTITY_TYPE } from '../section/entity-types';
 import { issuesOf, type FixTarget } from './check/form-check';
 import { FormChecker, UNCHECKED, type CheckState } from './check/form-checker';
 import { FORM_DETAIL_REPOSITORY_ALIAS, FORM_WORKSPACE_ALIAS } from './constants';
-import { locate, type DesignDefinition } from './definition';
+import { locate, normalise, type DesignDefinition } from './definition';
 import { select, type Edit, type EditorState, type FieldTraits, type ModelContext } from './editor-model';
-import { keptAlias, type FormDetailModel } from './form-detail.data-source';
+import { detailOf, keptAlias, SAVE_CONFLICT, type FormDetailModel } from './form-detail.data-source';
 import { actionOfQuery, fieldOfQuery, formState, type FormState } from './form-state';
 import { followFix } from './form-views';
 import { EditorHistory } from './history';
@@ -133,6 +133,13 @@ export class FormWorkspaceContext
   /** The language the views show the form's texts in, as its switch chose it; null for the site's default. */
   #language: string | null = null;
 
+  /** Whether the save on its way was refused as a conflict, as the data source says (ADR-0200). */
+  #conflicted = false;
+
+  readonly #onConflict = () => {
+    this.#conflicted = true;
+  };
+
   /** Restores a version as a new draft, one at a time (ADR-0198). */
   readonly #restore = oneAtATime((key: string, number: number) =>
     restoreDraft(this, key, number, (form, version, concurrencyVersion) =>
@@ -199,6 +206,7 @@ export class FormWorkspaceContext
       },
     ]);
     void this.#loadTypes();
+    this.getHostElement().addEventListener(SAVE_CONFLICT, this.#onConflict);
   }
 
   /**
@@ -277,15 +285,17 @@ export class FormWorkspaceContext
   /**
    * Saves, as Umbraco's base does, then puts the saved definition in the history's present place, unless the draft
    * changed while the save was on its way: that change, an edit or an undo, stays, unsaved, where Umbraco's base put the
-   * saved copy in its place. When a save fails after its rename went through, the form is read again, so the next save
-   * sends the version the rename gave.
+   * saved copy in its place. A save refused because someone saved meanwhile offers to review both versions (ADR-0200);
+   * the form stays as it was read, so every later save is refused the same way until the review.
    */
   override async submit(): Promise<void> {
     const sent = this.#history.state.definition;
+    this.#conflicted = false;
     try {
       await super.submit();
     } catch (error) {
-      await this.#refreshForm();
+      // Umbraco's base doesn't pass a save's error on: the data source said a conflict as it answered.
+      if (this.#conflicted) void import('./conflict/conflict-flow').then(({ sayConflict }) => sayConflict(this));
       throw error;
     }
     const saved = this._data.getPersisted()?.definition;
@@ -294,13 +304,29 @@ export class FormWorkspaceContext
     this.#publish();
   }
 
-  async #refreshForm() {
-    const key = this.getUnique();
-    if (!key) return;
-    const { data: form } = await tryExecute(this, formGet({ path: { key } }), { disableNotifications: true });
-    if (!form) return;
-    this._data.updatePersisted({ form, name: form.name });
-    this._data.updateCurrent({ form });
+  /** The form as it was last read or saved: the draft the user's changes start from, and its name. */
+  getBase(): { readonly draftVersion: number | null; readonly name: string } | undefined {
+    const persisted = this._data.getPersisted();
+    return persisted ? { draftVersion: persisted.draftVersion, name: persisted.name } : undefined;
+  }
+
+  /**
+   * Takes Review both versions' draft (ADR-0200): the draft saved meanwhile becomes the one the user's changes start
+   * from, and the draft the review made, with the name chosen, the user's changes, which a save then saves. It is a
+   * step to undo, so Undo takes the user's own version back.
+   */
+  takeReview(theirs: FormDraftResponseModel, definition: DesignDefinition, name: string) {
+    const saved = detailOf(theirs);
+    const kept = this.#history.state.selection;
+    const draft = normalise(definition);
+    this._data.setPersisted(saved);
+    const said = new UmbLocalizationController(this).term('jfbDesigner_saidReviewed');
+    this.#history.apply(
+      { ok: true, state: { definition: draft, selection: kept && locate(draft, kept) ? kept : null } },
+      said,
+    );
+    this._data.setCurrent({ ...saved, name, definition: draft });
+    this.#publish();
   }
 
   /**
@@ -544,6 +570,7 @@ export class FormWorkspaceContext
   }
 
   override destroy() {
+    this.getHostElement().removeEventListener(SAVE_CONFLICT, this.#onConflict);
     this.#checker.stop();
     this.#editor.destroy();
     this.#types.destroy();

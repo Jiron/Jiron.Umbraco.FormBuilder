@@ -1,6 +1,8 @@
 // How the form workspace reads and saves a form (ROADMAP 9.3a): the draft endpoint's answer as Umbraco's detail
-// workspace takes it, and a save that renames the form when its name changed and saves the draft when its definition
-// did, each with the concurrency version the last answer gave, so that a change someone made meanwhile is refused.
+// workspace takes it, and a save that saves the draft when its definition changed, then renames the form when its name
+// did, each with the concurrency version the last answer gave. A change someone made since the form was read is a
+// conflict (ROADMAP 10.3c, ADR-0200): nothing is sent, and the workspace offers to review both versions, never to
+// overwrite theirs.
 import { UmbControllerBase } from '@umbraco-cms/backoffice/class-api';
 import type { UmbDataSourceResponse, UmbDetailDataSource } from '@umbraco-cms/backoffice/repository';
 import { tryExecute } from '@umbraco-cms/backoffice/resources';
@@ -13,7 +15,7 @@ import {
   type FormDraftResponseModel,
   type FormResponseModel,
 } from '../api';
-import { sayRefusal } from '../library/library-changes';
+import { codeOf, sayRefusal } from '../library/library-changes';
 import { FORM_ENTITY_TYPE } from '../section/entity-types';
 import { locate, normalise, type DesignDefinition } from './definition';
 
@@ -78,19 +80,28 @@ export function detailOfForm(form: FormResponseModel): FormDetailModel {
   };
 }
 
-/** What a save sends: a new name, a new definition, or both; nothing for neither. */
+/**
+ * What a save sends: a new name, a new definition, or both; nothing for neither. A name goes only where the user changed
+ * it from the one read, so a rename someone made meanwhile stays.
+ */
 export function changesOf(
   saved: FormDraftResponseModel,
   model: FormDetailModel,
 ): { name?: string; definition?: DesignDefinition } {
   const name = model.name.trim();
   return {
-    ...(name !== '' && name !== saved.form.name ? { name } : {}),
+    ...(name !== '' && name !== model.form.name && name !== saved.form.name ? { name } : {}),
     ...(JSON.stringify(model.definition) !== JSON.stringify(normalise(saved.definition))
       ? { definition: model.definition }
       : {}),
   };
 }
+
+/**
+ * A save refused as a conflict (ADR-0200): the error it answers, unsaid, and the event it sends its host element first,
+ * as Umbraco's workspace doesn't pass a save's error on; the workspace takes the event to offer the review.
+ */
+export const SAVE_CONFLICT = 'jfb:save-conflict';
 
 const notHere = (what: string): UmbDataSourceResponse<never> => ({
   error: new Error(`A form is ${what} in the forms tree, not in its workspace.`),
@@ -120,18 +131,16 @@ export class FormDetailDataSource extends UmbControllerBase implements UmbDetail
     });
     if (!saved) return this.#refused(unread);
 
+    // Someone saved the draft since it was read, or renamed the form the user renamed: a save would replace their change,
+    // so it is a conflict, and nothing is sent. A change of neither (another folder, who may open it, a publish) is
+    // none: the save goes on from the version it gave.
+    const renamed = model.name.trim() !== '' && model.name.trim() !== model.form.name;
+    if (saved.draftVersion !== model.draftVersion || (renamed && saved.form.name !== model.form.name))
+      return this.#conflict();
     const changes = changesOf(saved, model);
     if (changes.name === undefined && changes.definition === undefined) return { data: detailOf(saved) };
-    let version = model.form.concurrencyVersion;
-    if (changes.name !== undefined) {
-      const { data, error } = await tryExecute(
-        this,
-        formRename({ path: { key }, body: { concurrencyVersion: version, name: changes.name } }),
-        { disableNotifications: true },
-      );
-      if (!data) return this.#refused(error);
-      version = data.concurrencyVersion;
-    }
+    let version = saved.form.concurrencyVersion;
+    // The draft first: a draft that is refused leaves the name as it was, so nothing is half saved.
     if (changes.definition !== undefined) {
       const { data, error } = await tryExecute(
         this,
@@ -139,8 +148,24 @@ export class FormDetailDataSource extends UmbControllerBase implements UmbDetail
         { disableNotifications: true },
       );
       if (!data) return this.#refused(error);
+      version = data.form.concurrencyVersion;
+    }
+    if (changes.name !== undefined) {
+      const { data, error } = await tryExecute(
+        this,
+        formRename({ path: { key }, body: { concurrencyVersion: version, name: changes.name } }),
+        { disableNotifications: true },
+      );
+      // A refused name after a saved draft is said, and the form as saved is read: the draft is in.
+      if (!data && codeOf(error) !== 'concurrency_conflict') await sayRefusal(this, error);
+      else if (!data) return this.#conflict();
     }
     return this.read(key);
+  }
+
+  #conflict(): UmbDataSourceResponse<never> {
+    this.getHostElement().dispatchEvent(new Event(SAVE_CONFLICT));
+    return { error: new Error(SAVE_CONFLICT) };
   }
 
   createScaffold(): Promise<UmbDataSourceResponse<FormDetailModel>> {
@@ -155,8 +180,10 @@ export class FormDetailDataSource extends UmbControllerBase implements UmbDetail
     return Promise.resolve(notHere('trashed'));
   }
 
-  // A refusal is said in the user's words (a change someone made meanwhile, a permission), then passed on.
+  // A refusal is said in the user's words (a permission, a value), then passed on; a change someone made meanwhile is a
+  // conflict, which the workspace says.
   async #refused(error: unknown): Promise<UmbDataSourceResponse<FormDetailModel>> {
+    if (codeOf(error) === 'concurrency_conflict') return this.#conflict();
     await sayRefusal(this, error);
     return { error: error as Error };
   }

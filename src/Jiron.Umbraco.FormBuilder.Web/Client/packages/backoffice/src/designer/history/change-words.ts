@@ -49,6 +49,16 @@ export interface ChangeRow {
 
 export type ChangePartName = 'fields' | 'settings' | 'actions' | 'rules';
 
+/**
+ * One difference of Review both versions in words (ROADMAP 10.3c, ADR-0200): what it is about, then a row for each
+ * property that differs, the older side's value first, its place where it moved, and whether it is in the form at all
+ * where one side has it and the other not.
+ */
+export interface DifferenceWords {
+  readonly title: string;
+  readonly rows: readonly ChangeRow[];
+}
+
 /** A part of the comparison: what was added, removed or moved in sentences, then what changed in rows. */
 export interface ChangePart {
   readonly name: ChangePartName;
@@ -847,6 +857,111 @@ class Words {
       .filter((part) => part.lines.length > 0 || part.rows.length > 0);
   }
 
+  /** One difference: its own change first, then those of what it holds, which come and go with it. */
+  difference(changes: readonly DefinitionChangeResponseModel[]): DifferenceWords {
+    const term = this.#context.term;
+    const own = changes[0];
+    if (!own) return { title: '', rows: [] };
+    const yesNo = (side: boolean) => this.#yesNo(side);
+    if (own.kind === 'rule' || own.kind === 'validationRule') {
+      const validation = own.kind === 'validationRule';
+      const title = validation
+        ? this.elementOf(own)
+        : term('jfbHistory_what', this.nameOf(own.parentKey) || term('jfbHistory_unnamed'), term('jfbHistory_rule'));
+      const say = (rule: unknown, side: Side) => (rule ? this.ruleOf(rule, side, validation) : term('jfbHistory_none'));
+      return {
+        title,
+        rows: [
+          { what: term('jfbHistory_review_rule'), older: say(own.before, 'older'), newer: say(own.after, 'newer') },
+        ],
+      };
+    }
+    const title = this.#title(own);
+    if (own.change !== 'changed') {
+      const rows: ChangeRow[] = [
+        {
+          what: term('jfbHistory_review_inForm'),
+          older: yesNo(own.change === 'removed'),
+          newer: yesNo(own.change === 'added'),
+        },
+      ];
+      // What it holds comes and goes with it, so the side that has it names it.
+      const held = changes
+        .slice(1)
+        .filter((change) => change.kind !== 'rule')
+        .map((change) => this.#title(change));
+      if (held.length > 0) {
+        const list = held.join(', ');
+        const none = term('jfbHistory_none');
+        rows.push({
+          what: term('jfbHistory_review_holds'),
+          older: own.change === 'removed' ? list : none,
+          newer: own.change === 'added' ? list : none,
+        });
+      }
+      return { title, rows };
+    }
+    // A change of its place alone is the choice of its place.
+    if (own.kind !== 'settings' && own.properties.length === 0)
+      return {
+        title: term('jfbHistory_review_placeOf', title),
+        rows: [this.#placeRow(own)],
+      };
+    const rows: ChangeRow[] = [];
+    for (const property of own.properties) {
+      if (own.kind === 'field' && property.path[0] === 'formerAliases') continue;
+      const { name, say } = this.property(own, property.path);
+      rows.push(this.#apart({ what: name, older: say(property.from, 'older'), newer: say(property.to, 'newer') }));
+    }
+    if (own.moved || own.previousParentKey) rows.push(this.#placeRow(own));
+    return { title, rows };
+  }
+
+  #placeRow(change: DefinitionChangeResponseModel): ChangeRow {
+    return {
+      what: this.#context.term('jfbHistory_review_place'),
+      older: this.#placeOf(change.key ?? '', 'older'),
+      newer: this.#placeOf(change.key ?? '', 'newer'),
+    };
+  }
+
+  /** What a difference is about: its kind and name, a settings group, or an outcome by its place in After sending. */
+  #title(change: DefinitionChangeResponseModel): string {
+    const term = this.#context.term;
+    if (change.kind === 'settings') return term('jfbHistory_review_settings', this.elementOf(change));
+    if (change.kind === 'outcome') return this.#rowElement(change);
+    return term('jfbHistory_review_title', term(`jfbHistory_kind_${change.kind}`, 1), this.elementOf(change));
+  }
+
+  /** Where an element is in a version: first in what holds it, or after the element before it. */
+  #placeOf(key: string, side: Side): string {
+    const term = this.#context.term;
+    const definition = this.#definition(side) as Json | null;
+    if (!definition) return term('jfbHistory_none');
+    const find = (list: readonly Json[], parent: string | null, holds: string): string | null => {
+      for (let at = 0; at < list.length; at++) {
+        const node = list[at] as Json;
+        if (node['key'] === key) {
+          const before = at > 0 ? (list[at - 1] as Json)['key'] : null;
+          if (typeof before === 'string')
+            return term('jfbHistory_review_after', this.nameOf(before, side) || term('jfbHistory_unnamed'));
+          return term('jfbHistory_review_first', parent ? this.nameOf(parent, side) : '');
+        }
+        const inner = holds ? (node[holds] as readonly Json[] | undefined) : undefined;
+        const found = inner ? find(inner, String(node['key'] ?? ''), 'fields') : null;
+        if (found) return found;
+      }
+      return null;
+    };
+    return (
+      find((definition['pages'] ?? []) as readonly Json[], null, 'groups') ??
+      (['actions', 'outcomes', 'validationRules'] as const)
+        .map((holder) => find((definition[holder] ?? []) as readonly Json[], null, ''))
+        .find((one) => one !== null) ??
+      term('jfbHistory_none')
+    );
+  }
+
   /** An element as a row names it: an outcome by its place in After sending, which its own cells say the rest of. */
   #rowElement(change: DefinitionChangeResponseModel): string {
     if (change.kind !== 'outcome') return this.elementOf(change);
@@ -944,6 +1059,14 @@ export function comparisonWords(
   context: ChangeWordsContext,
 ): ChangePart[] {
   return new Words(context).parts(changes);
+}
+
+/** One difference of Review both versions in words: its own change first, then those of what it holds. */
+export function differenceWords(
+  changes: readonly DefinitionChangeResponseModel[],
+  context: ChangeWordsContext,
+): DifferenceWords {
+  return new Words(context).difference(changes);
 }
 
 /** Each property path of a comparison, named as a row names it: for tests and for whoever words one property. */

@@ -12,6 +12,18 @@ export default {
     historyFailed: "The History couldn't be shown. Try again in a moment.",
     // The form's "…": its first item, for who may design the form (ADR-0198).
     restoreEarlier: 'Restore an earlier version…',
+    // A save someone else's save refused, from any view (ADR-0200); Review both versions has its words with the History's.
+    conflict_headline: "Your draft wasn't saved",
+    conflict_text: (who: string, when: string) =>
+      `${who} saved this form ${when}, after you opened it. Review both versions before you save. Your changes are still here.`,
+    conflict_textUnknown:
+      'Someone changed this form after you opened it. Review both versions before you save. Your changes are still here.',
+    conflict_at: (time: string) => `at ${time}`,
+    conflict_on: (day: string, time: string) => `on ${day} at ${time}`,
+    conflict_review: 'Review both versions',
+    conflict_reviewFailed: "Both versions couldn't be read. Your changes are still here; try again in a moment.",
+    // What Undo takes back after the review saved: "Undone: Merged both versions".
+    saidReviewed: 'Merged both versions',
     actionsFailed: "The actions couldn't be read. Try again in a moment.",
     view_entries: 'Entries',
     view_insights: 'Insights',

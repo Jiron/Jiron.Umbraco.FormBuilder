@@ -58,6 +58,33 @@ export default {
     pick_lead:
       'Wählen Sie eine Version, um sie mit dem aktuellen Entwurf zu vergleichen, und stellen Sie sie dort wieder her.',
 
+    // Beide Versionen prüfen (ADR-0200), nach einem Speichern, das ein zwischendurch gespeicherter Stand verhindert hat.
+    review_headline: 'Beide Versionen prüfen',
+    review_lead:
+      'Wählen Sie für jeden Unterschied die Version, die bleiben soll, und speichern Sie dann. Wo nur einer von Ihnen etwas geändert hat, ist diese Version schon gewählt.',
+    review_leadOpen: 'Wählen Sie für jeden Unterschied die Version, die bleiben soll, und speichern Sie dann.',
+    review_theirs: (who: string) => `Version von ${who}`,
+    review_theirsUnknown: 'Die zwischendurch gespeicherte Version',
+    review_yours: 'Ihre Version',
+    review_both: 'Von beiden geändert',
+    review_form: 'Das Formular',
+    review_name: 'Name',
+    review_title: (kind: string, name: string) => `${kind} „${name}“`,
+    review_settings: (group: string) => `Einstellungen: ${group}`,
+    review_rule: 'Regel',
+    review_inForm: 'Im Formular',
+    review_holds: 'Enthält',
+    review_place: 'Platz',
+    review_placeOf: (title: string) => `${title}: Platz`,
+    review_first: (parent: string) => (parent ? `An erster Stelle in „${parent}“` : 'An erster Stelle'),
+    review_after: (name: string) => `Nach „${name}“`,
+    review_none: 'Die beiden Versionen unterscheiden sich nicht. Beim Speichern bleibt Ihr Entwurf, wie er ist.',
+    review_choose: 'Version wählen',
+    review_missing: (count: number) =>
+      count === 1 ? 'Für einen Unterschied fehlt noch die Wahl.' : `Für ${count} Unterschiede fehlt noch die Wahl.`,
+    review_save: 'Speichern',
+    review_cancel: 'Abbrechen',
+
     pin: 'Anheften',
     unpin: 'Anheften aufheben',
     addComment: 'Kommentar hinzufügen…',

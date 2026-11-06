@@ -11,6 +11,18 @@ export default {
     historyFailed: 'Der Verlauf konnte nicht angezeigt werden. Versuchen Sie es gleich noch einmal.',
     // Das „…“ des Formulars: sein erster Eintrag, für alle, die das Formular gestalten dürfen (ADR-0198).
     restoreEarlier: 'Frühere Version wiederherstellen…',
+    // Ein Speichern, das ein zwischendurch gespeicherter Stand verhindert hat (ADR-0200).
+    conflict_headline: 'Ihr Entwurf wurde nicht gespeichert',
+    conflict_text: (who: string, when: string) =>
+      `${who} hat dieses Formular ${when} gespeichert, nachdem Sie es geöffnet haben. Prüfen Sie beide Versionen, bevor Sie speichern. Ihre Änderungen sind noch da.`,
+    conflict_textUnknown:
+      'Jemand hat dieses Formular geändert, nachdem Sie es geöffnet haben. Prüfen Sie beide Versionen, bevor Sie speichern. Ihre Änderungen sind noch da.',
+    conflict_at: (time: string) => `um ${time}`,
+    conflict_on: (day: string, time: string) => `am ${day} um ${time}`,
+    conflict_review: 'Beide Versionen prüfen',
+    conflict_reviewFailed:
+      'Die beiden Versionen konnten nicht gelesen werden. Ihre Änderungen sind noch da; versuchen Sie es gleich noch einmal.',
+    saidReviewed: 'Beide Versionen zusammengeführt',
     actionsFailed: 'Die Aktionen konnten nicht gelesen werden. Versuchen Sie es gleich noch einmal.',
     view_entries: 'Einträge',
     view_insights: 'Auswertung',

@@ -14,7 +14,14 @@ import historyEn from '../../lang/history.en';
 import { flatten } from '../actions/action-words';
 import type { DesignDefinition } from '../definition';
 import { builtInTypes } from '../preview/fixtures';
-import { comparisonWords, propertyName, VALUE_TERMS, VOCABULARY, type ChangeWordsContext } from './change-words';
+import {
+  comparisonWords,
+  differenceWords,
+  propertyName,
+  VALUE_TERMS,
+  VOCABULARY,
+  type ChangeWordsContext,
+} from './change-words';
 import { summaryParts, summaryWords } from './history-model';
 
 const ROOT = join(__dirname, '..', '..', '..', '..', '..', '..', '..', '..');
@@ -500,5 +507,81 @@ describe('a comparison in words', () => {
     expect(summaryParts(changes, german)).toContain('Nach dem Senden');
     expect(english('jfbHistory_listOf', 'A')).toBe('A');
     expect(english('jfbHistory_listOf', 'A', 'B')).toBe('A and B');
+  });
+});
+
+describe('a difference of Review both versions in words (ROADMAP 10.3c, ADR-0200)', () => {
+  const words = (changes: DefinitionChangeResponseModel[], term = english) => differenceWords(changes, context(term));
+  const [settings, email, , order, rule, check, action, outcome, fax] = CHANGES as [
+    DefinitionChangeResponseModel,
+    ...DefinitionChangeResponseModel[],
+  ];
+
+  it("says what it is about, then each property's value on both sides, and its place where it moved", () => {
+    expect(words([email as DefinitionChangeResponseModel])).toEqual({
+      title: 'Field "Email address"',
+      rows: [
+        { what: 'Label', older: 'Your email', newer: 'Email address' },
+        { what: 'Label (German)', older: 'E-Mail', newer: 'E-Mail-Adresse' },
+        { what: 'Required', older: 'No', newer: 'Yes' },
+        { what: 'Message when no answer is given', older: 'none', newer: 'We need your address.' },
+        // A group without a title is named by its place.
+        { what: 'Place', older: 'After "Name"', newer: 'First in "Group 1"' },
+      ],
+    });
+    expect(words([settings]).title).toBe('Settings: Submission');
+  });
+
+  it('says a change of its place alone as the choice of its place', () => {
+    const moved = { ...(email as DefinitionChangeResponseModel), properties: [] };
+    expect(words([moved])).toEqual({
+      title: 'Field "Email address": place',
+      rows: [{ what: 'Place', older: 'After "Name"', newer: 'First in "Group 1"' }],
+    });
+    expect(words([moved], german).title).toBe('Feld \u201eEmail address\u201c: Platz');
+  });
+
+  it('names what an element added or removed holds, on the side that has it', () => {
+    const group: DefinitionChangeResponseModel = {
+      kind: 'group',
+      key: 'gx',
+      change: 'removed',
+      moved: false,
+      properties: [],
+    };
+    const said = words([group, fax as DefinitionChangeResponseModel, rule as DefinitionChangeResponseModel]);
+    expect(said.rows).toEqual([
+      { what: 'In the form', older: 'Yes', newer: 'No' },
+      // A rule goes with its element, unnamed.
+      { what: 'Holds', older: words([fax as DefinitionChangeResponseModel]).title, newer: 'none' },
+    ]);
+  });
+
+  it('says whether an element added or removed is in the form, on both sides, whatever it holds', () => {
+    expect(words([order as DefinitionChangeResponseModel, rule as DefinitionChangeResponseModel])).toEqual({
+      title: 'Field "Order number"',
+      rows: [{ what: 'In the form', older: 'No', newer: 'Yes' }],
+    });
+    expect(words([fax as DefinitionChangeResponseModel]).rows).toEqual([
+      { what: 'In the form', older: 'Yes', newer: 'No' },
+    ]);
+    expect(words([action as DefinitionChangeResponseModel]).title).toBe('Action "Email the team"');
+    expect(words([outcome as DefinitionChangeResponseModel]).title).toBe('After sending, Outcome 1');
+  });
+
+  it('says a rule and a check as the rules builder does, on each side', () => {
+    expect(words([rule as DefinitionChangeResponseModel])).toEqual({
+      title: 'Order number, rule',
+      rows: [{ what: 'Rule', older: 'none', newer: 'Required when Topic is Sales' }],
+    });
+    const said = words([check as DefinitionChangeResponseModel]);
+    expect([said.title, said.rows[0]?.older]).toEqual(['Check of Email address', 'none']);
+  });
+
+  it('says it in German too', () => {
+    expect(words([email as DefinitionChangeResponseModel], german).title).toBe('Feld \u201eEmail address\u201c');
+    expect(words([fax as DefinitionChangeResponseModel], german).rows).toEqual([
+      { what: 'Im Formular', older: 'Ja', newer: 'Nein' },
+    ]);
   });
 });

@@ -56,6 +56,33 @@ export default {
     pick_empty: 'There is no earlier version yet.',
     pick_lead: 'Choose a version to compare it with the current draft, then restore it from there.',
 
+    // Review both versions (ADR-0200), after a save someone else's save refused.
+    review_headline: 'Review both versions',
+    review_lead:
+      'For each difference, choose the version to keep, then save. Where only one of you changed something, that version is chosen already.',
+    review_leadOpen: 'For each difference, choose the version to keep, then save.',
+    review_theirs: (who: string) => `${who}'s version`,
+    review_theirsUnknown: 'The version saved meanwhile',
+    review_yours: 'Your version',
+    review_both: 'Changed in both',
+    review_form: 'The form',
+    review_name: 'Name',
+    review_title: (kind: string, name: string) => `${kind} "${name}"`,
+    review_settings: (group: string) => `Settings: ${group}`,
+    review_rule: 'Rule',
+    review_inForm: 'In the form',
+    review_holds: 'Holds',
+    review_place: 'Place',
+    review_placeOf: (title: string) => `${title}: place`,
+    review_first: (parent: string) => (parent ? `First in "${parent}"` : 'First'),
+    review_after: (name: string) => `After "${name}"`,
+    review_none: "The two versions don't differ. Saving keeps your draft as it is.",
+    review_choose: 'Choose a version',
+    review_missing: (count: number) =>
+      count === 1 ? 'One difference still needs a choice.' : `${count} differences still need a choice.`,
+    review_save: 'Save',
+    review_cancel: 'Cancel',
+
     pin: 'Pin',
     unpin: 'Unpin',
     addComment: 'Add comment…',

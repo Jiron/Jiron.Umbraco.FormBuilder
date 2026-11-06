@@ -1,7 +1,8 @@
 // What History reads and writes of a form's versions (ROADMAP 10.3a and 10.3b, ADR-0045, ADR-0052, ADR-0196, ADR-0198):
 // a page of the list, two versions compared with their definitions, so the comparison names elements as each version
-// holds them, a pin, a comment and a restore. A refusal is said in the user's words where the server gives a reason;
-// otherwise the caller says it.
+// holds them, a pin, a comment and a restore; and for Review both versions (ROADMAP 10.3c, ADR-0200) a draft not saved
+// yet compared with a version. A refusal is said in the user's words where the server gives a reason; otherwise the
+// caller says it.
 import type { UmbClassInterface } from '@umbraco-cms/backoffice/class-api';
 import { tryExecute } from '@umbraco-cms/backoffice/resources';
 import {
@@ -10,6 +11,7 @@ import {
   versionGet,
   versionList,
   versionPin,
+  versionCompareWith,
   versionRestore,
   type DefinitionChangeResponseModel,
   type FormVersionEntryResponseModel,
@@ -79,6 +81,37 @@ export async function compareVersions(
     older: normalise(older.data.definition),
     newer: normalise(newer.data.definition),
   };
+}
+
+/** The changes from one version to another, without their definitions; undefined without an answer. */
+export async function changesBetween(
+  host: UmbClassInterface,
+  key: string,
+  from: number,
+  to: number,
+): Promise<readonly DefinitionChangeResponseModel[] | undefined> {
+  const { data } = await tryExecute(host, versionCompare({ path: { key }, query: { from, to } }), {
+    disableNotifications: true,
+  });
+  return data?.changes;
+}
+
+/**
+ * A draft not saved yet compared with a version, the version the older side, and the draft as a save would store it;
+ * undefined without an answer.
+ */
+export async function compareWithDraft(
+  host: UmbClassInterface,
+  key: string,
+  number: number,
+  definition: DesignDefinition,
+): Promise<
+  { readonly changes: readonly DefinitionChangeResponseModel[]; readonly definition: DesignDefinition } | undefined
+> {
+  const { data } = await tryExecute(host, versionCompareWith({ path: { key, number }, body: { definition } }), {
+    disableNotifications: true,
+  });
+  return data ? { changes: data.changes, definition: normalise(data.definition) } : undefined;
 }
 
 /** Pins a version, or unpins it; the version as it is now, or undefined after a refusal, which is said. */

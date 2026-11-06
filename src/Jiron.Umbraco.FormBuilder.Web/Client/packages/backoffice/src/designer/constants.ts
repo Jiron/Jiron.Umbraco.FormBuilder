@@ -30,6 +30,9 @@ export const VERSION_COMPARISON_MODAL_ALIAS = 'Jiron.FormBuilder.Modal.VersionCo
 /** A version's comment, in History (ROADMAP 10.3a, ADR-0196). */
 export const VERSION_COMMENT_MODAL_ALIAS = 'Jiron.FormBuilder.Modal.VersionComment';
 
+/** Review both versions, after a save someone else's save refused (ROADMAP 10.3c, ADR-0200). */
+export const REVIEW_MODAL_ALIAS = 'Jiron.FormBuilder.Modal.ReviewBoth';
+
 /** The earlier versions to restore one from, in the form's "..." (ROADMAP 10.3b, ADR-0198). */
 export const VERSION_PICKER_MODAL_ALIAS = 'Jiron.FormBuilder.Modal.VersionPicker';
 
