@@ -15,7 +15,8 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Unit.PublicApi;
 /// <summary>
 /// The filter that applies each public action's declarations (ADR-0012, ADR-0084), without a host: the body limit
 /// before a byte is read and as the server's own, the largest upload from the host's limits for files (ADR-0087), the
-/// time limit on the site's clock, the pending migrations, and the strictest declarations for an action without any.
+/// time limit on the site's clock and the answer it writes past it (ADR-0193), the pending migrations, and the strictest
+/// declarations for an action without any.
 /// </summary>
 [TestFixture]
 public sealed class FormBuilderPublicApiFilterTests
@@ -137,6 +138,58 @@ public sealed class FormBuilderPublicApiFilterTests
     }
 
     [Test]
+    public async Task AnAnswerBuilt_IsWrittenOnTheVisitorsOwnToken_EvenPastTheTimeLimit()
+    {
+        var context = Context(new FormBuilderTimeLimitAttribute(10));
+        using var left = new CancellationTokenSource();
+        context.HttpContext.RequestAborted = left.Token;
+        var written = CancellationToken.None;
+
+        await _filter.OnResourceExecutionAsync(context, async () =>
+        {
+            _timers.Timers.Single().Fire();
+            written = await WrittenWithAsync(context, new FileContentResult([123, 125], "application/json"));
+            return Executed(context);
+        });
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(written, Is.EqualTo(left.Token), "the visitor's own token");
+            Assert.That(written.IsCancellationRequested, Is.False);
+            Assert.That(context.HttpContext.Features.Get<FormBuilderTimeLimitFeature>()!.TimedOut, Is.True, "the limit still says it ran out");
+        });
+    }
+
+    [Test]
+    public async Task AResultThatWorksAsItWrites_KeepsTheTimeLimit()
+    {
+        var context = Context(new FormBuilderTimeLimitAttribute(10));
+        using var left = new CancellationTokenSource();
+        context.HttpContext.RequestAborted = left.Token;
+        var written = CancellationToken.None;
+
+        await _filter.OnResourceExecutionAsync(context, async () =>
+        {
+            var limited = context.HttpContext.RequestAborted;
+            written = await WrittenWithAsync(context, new ViewComponentResult { ViewComponentName = "Rendered" });
+            Assert.That(written, Is.EqualTo(limited));
+            return Executed(context);
+        });
+
+        Assert.That(written, Is.Not.EqualTo(left.Token), "the time limit's token");
+    }
+
+    [Test]
+    public async Task AnAnswerWithoutATimeLimit_IsWrittenAsItIs()
+    {
+        var context = Context();
+        using var left = new CancellationTokenSource();
+        context.HttpContext.RequestAborted = left.Token;
+
+        Assert.That(await WrittenWithAsync(context, new FileContentResult([1], "application/json")), Is.EqualTo(left.Token));
+    }
+
+    [Test]
     public async Task AVisitorWhoLeaves_CancelsTheEndpointsToken_WithoutATimeout()
     {
         var context = Context(new FormBuilderTimeLimitAttribute(10));
@@ -232,6 +285,19 @@ public sealed class FormBuilderPublicApiFilterTests
     }
 
     private static ResourceExecutedContext Executed(ResourceExecutingContext context) => new(context, []);
+
+    // The token the result is written on, after the filter's result stage.
+    private async Task<CancellationToken> WrittenWithAsync(ActionContext context, IActionResult answer)
+    {
+        var result = new ResultExecutingContext(context, [], answer, new object());
+        var written = CancellationToken.None;
+        await _filter.OnResultExecutionAsync(result, () =>
+        {
+            written = context.HttpContext.RequestAborted;
+            return Task.FromResult(new ResultExecutedContext(context, [], answer, new object()));
+        });
+        return written;
+    }
 
     // Whether the action ran, or the refusal the filter answered with and whether it closes the connection.
     private async Task<string> RunAsync(ResourceExecutingContext context)

@@ -209,8 +209,12 @@ internal sealed class NoFormFeature : IFormFeature
 
 /// <summary>An endpoint's time limit, which the public API's filter starts and its middleware reads when a request is cancelled.</summary>
 /// <param name="limit">Cancelled when the time limit runs out.</param>
-internal sealed class FormBuilderTimeLimitFeature(CancellationToken limit)
+/// <param name="left">The visitor's own token, cancelled when they leave, which writes an answer already built (ADR-0193).</param>
+internal sealed class FormBuilderTimeLimitFeature(CancellationToken limit, CancellationToken left)
 {
     /// <summary>Whether the time limit ran out.</summary>
     public bool TimedOut => limit.IsCancellationRequested;
+
+    /// <summary>The visitor's own token.</summary>
+    public CancellationToken Left => left;
 }

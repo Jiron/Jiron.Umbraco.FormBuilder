@@ -3,6 +3,7 @@ using Jiron.Umbraco.FormBuilder.Core.Persistence.Migrations;
 using Jiron.Umbraco.FormBuilder.Web.PublicApi.RateLimiting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -15,12 +16,13 @@ namespace Jiron.Umbraco.FormBuilder.Web.PublicApi;
 /// <c>413 payload_too_large</c> and closes the connection; a body without a declared length is held to the limit by
 /// the server while it is read; and while Jiron Form Builder's migrations are pending, every action answers
 /// <c>503 migrations_pending</c> with <c>Retry-After</c> and touches no table (ADR-0033). An action without a
-/// declaration gets the strictest: no body and <see cref="DefaultTimeLimit"/>.
+/// declaration gets the strictest: no body and <see cref="DefaultTimeLimit"/>. An answer whose bytes the action built is
+/// written on the visitor's own token, past the time limit too (ADR-0193).
 /// </summary>
 /// <param name="migrations">Whether the migration plan has run.</param>
 /// <param name="time">The site's clock.</param>
 /// <param name="host">The host's limits for files, which give the largest upload.</param>
-internal sealed class FormBuilderPublicApiFilter(IFormBuilderMigrationState migrations, TimeProvider time, FieldHostLimits host) : IAsyncResourceFilter
+internal sealed class FormBuilderPublicApiFilter(IFormBuilderMigrationState migrations, TimeProvider time, FieldHostLimits host) : IAsyncResourceFilter, IAsyncAlwaysRunResultFilter
 {
     /// <summary>The time limit of an action that declares none.</summary>
     public static readonly TimeSpan DefaultTimeLimit = TimeSpan.FromSeconds(10);
@@ -52,7 +54,7 @@ internal sealed class FormBuilderPublicApiFilter(IFormBuilderMigrationState migr
         var left = http.RequestAborted;
         using var timer = new CancellationTokenSource(limit, time);
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(left, timer.Token);
-        http.Features.Set(new FormBuilderTimeLimitFeature(timer.Token));
+        http.Features.Set(new FormBuilderTimeLimitFeature(timer.Token, left));
         http.RequestAborted = linked.Token;
         try
         {
@@ -76,6 +78,25 @@ internal sealed class FormBuilderPublicApiFilter(IFormBuilderMigrationState migr
         {
             http.RequestAborted = left;
         }
+    }
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// MVC writes a file result on the request's token and, should that be cancelled, aborts the connection rather than
+    /// send part of a file: a time limit that ran out after the action built its answer would cut the connection, with no
+    /// answer and no <c>504</c>. The bytes are built, so the visitor's own token writes them (ADR-0193). A result that does
+    /// its work as it writes, such as a rendered view, keeps the time limit.
+    /// </remarks>
+    public async Task OnResultExecutionAsync(ResultExecutingContext context, ResultExecutionDelegate next)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(next);
+        if (context.Result is FileContentResult && context.HttpContext.Features.Get<FormBuilderTimeLimitFeature>() is { } limit)
+        {
+            context.HttpContext.RequestAborted = limit.Left;
+        }
+
+        await next();
     }
 
     // A declared length past the limit, or a body of any length for an action that takes none.

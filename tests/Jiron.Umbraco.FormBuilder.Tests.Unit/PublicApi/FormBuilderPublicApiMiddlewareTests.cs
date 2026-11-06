@@ -202,7 +202,7 @@ public sealed class FormBuilderPublicApiMiddlewareTests
     {
         using var limit = new CancellationTokenSource();
         var http = Request("GET", "/jfb/api/v1/forms/contact");
-        http.Features.Set(new FormBuilderTimeLimitFeature(limit.Token));
+        http.Features.Set(new FormBuilderTimeLimitFeature(limit.Token, CancellationToken.None));
 
         var (answered, passed) = await SendAsync(http, async context =>
         {
