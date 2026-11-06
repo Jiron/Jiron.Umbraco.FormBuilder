@@ -1,4 +1,4 @@
-import { E2E_WEBHOOK_SECRET, STATIC_ORIGIN, STUB_PORT } from './paths.ts';
+import { E2E_WEBHOOK_SECRET, STATIC_ORIGIN, STUB_PORT, STUB_URL } from './paths.ts';
 
 /** What one address may ask about one form in a minute on the test host. */
 export const E2E_FORM_LIMIT = 200;
@@ -34,6 +34,9 @@ export function hostEnvironment(secrets: E2ESecrets, options: { deliveryApi: boo
     JironFormBuilder__Webhooks__AllowedHosts__0: `127.0.0.1:${STUB_PORT}`,
     JironFormBuilder__Webhooks__AllowHttp: 'true',
     JironFormBuilder__Secrets__E2EWebhook: E2E_WEBHOOK_SECRET,
+    // A Slack and a Teams address of the host's own, which the stub answers (ROADMAP 10.2d).
+    JironFormBuilder__Secrets__E2ESlack: `${STUB_URL}/webhooks/slack`,
+    JironFormBuilder__Secrets__E2ETeams: `${STUB_URL}/webhooks/teams`,
     // The static page's origin may call the public API (ROADMAP 6.6f), as a headless site's would.
     JironFormBuilder__PublicApi__AllowedOrigins__0: STATIC_ORIGIN,
   };
