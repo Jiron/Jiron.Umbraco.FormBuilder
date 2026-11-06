@@ -2769,19 +2769,29 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
   - Done when:
     - Playwright shows an action's last run, and a failed one's Details with the server's answer and its tries (the webhook stub answering with an error);
     - integration tests cover the endpoint, with its row in the permission matrix and the OpenAPI snapshot, and show it naming no entry and no answer.
-- [ ] **10.3 Preview, publishing and history**
-  - **Preview:** a modal with the draft rendered by the chosen theme in an iframe (from a preview endpoint), device widths, light and dark, and a culture switch. Test submissions are marked `IsTest`. **Fill with sample answers** (added in 1.1) fills every field with valid values in one click, so editors can try rules and outcomes quickly.
-  - **Publish:** a summary of the changes against the live version, and draft and unpublished badges.
-  - **Conflicts:** when someone else saved first, show both versions and let the user choose; never overwrite silently.
-  - **A guard** against leaving with unsaved changes.
-  - **History:**
-    - **The list:** versions (draft saves and published), with pins and comments.
-    - **The diff:** a side-by-side comparison in plain language (fields added, removed and changed; settings, actions and rules).
-    - **Restore** as a new version, and the version-cleanup settings.
+- [ ] **10.3a History: the list, pins, comments and the comparison** (10.3 split in six, see WORKLOG)
+  - **The list:** versions (draft saves and published), with pins and comments (IA 5.6): the published versions newest first, each with when, who and what changed against the one before, its comment and pin, the live one's "Published" chip; the "Show draft saves" switch; a row's "…" with Pin and Add comment….
+  - **The diff:** a side-by-side comparison in plain language (fields added, removed and changed; settings, actions and rules): Compare for two ticked versions, and a clicked row's sidebar comparing that version with the current draft. The server sends paths and values (ADR-0045), and the backoffice says them in its own words, in English and German.
+  - Done when: tests and Playwright cover the history: the list with its draft saves, the diff, pins and comments; Vitest says every kind of change the comparison sends in words.
+- [ ] **10.3b History: restoring as a new version, and how long draft saves are kept** (10.3 split in six, see WORKLOG)
+  - **Restore** as a new version (IA 5.6): Restore as a new draft in the sidebar, Restore and publish…, a row's "…" restoring at once with Undo, and Restore an earlier version… in the form's "…".
+  - **The version-cleanup settings:** how long a form's History keeps draft saves, read by the draft cleanup (`HistorySettings`), with an endpoint and their place in Settings › General (the rest of General is 12.4a's).
+  - Done when: tests and Playwright cover restoring as a new version from the sidebar, from a row's "…" with Undo and from the form's "…"; an integration test shows the cleanup keeping draft saves as the changed setting says; every new endpoint has its row in the permission matrix and the OpenAPI snapshot.
+- [ ] **10.3c Conflicts, and the guard against leaving unsaved** (10.3 split in six, see WORKLOG)
+  - **Conflicts:** when someone else saved first, show both versions and let the user choose; never overwrite silently (IA 5.7: the save conflict says who saved and when, and that the user's changes are still here; Review both versions takes each difference from either side). A Save after a refused one is refused again until the user has chosen (the survey for this split found the re-read after a failed save taking the newer version, so a second Save would overwrite).
+  - **A guard** against leaving with unsaved changes: Umbraco's, for a change on the canvas and in a view as for the name, and for closing or reloading the browser's tab.
+  - Done when: Playwright covers a two-browser concurrency conflict, choosing differences from both sides and saving; a test shows a second Save after a conflict refused; Playwright leaves a canvas change unsaved and is asked first.
+- [ ] **10.3d Publish: what changed since the live version** (10.3 split in six, see WORKLOG)
+  - **Publish:** a summary of the changes against the live version, and draft and unpublished badges (the badges came with 9.3a): the publish dialog groups what changed (fields, settings, actions, rules), with unsaved changes included, or, on a first publish, says what the first version holds (IA 5.7).
+  - Done when: Playwright covers publishing: a changed form's dialog lists its changes, grouped, and a first publish says what the first version holds; tests cover the grouping.
+- [ ] **10.3e Preview: the frame, its ticket and its choices** (10.3 split in six, see WORKLOG)
+  - **Preview:** a modal with the draft rendered by the chosen theme in an iframe (from a preview endpoint), device widths, light and dark, and a culture switch (IA 5.7: Preview in the footer, the form's widths with "Narrowed to fit"). The frame is sandboxed without `allow-same-origin`; its requests reach the public API with the origin `null` and a short-lived signed preview ticket bound to the form (§4.10, ADR-0012), issued to who may design it.
   - Done when:
-    - Playwright covers preview, sample answers that pass validation for every field type, a test entry, publishing, and a two-browser concurrency conflict;
-    - the preview frame has an opaque origin (§4.10), and integration tests show the public API refusing a `null`-origin request without a valid preview ticket, with an expired one and with one for another form;
-    - tests and Playwright cover the history: the diff, pins, comments and restoring as a new version.
+    - Playwright covers preview: its widths, light and dark, and another language;
+    - the preview frame has an opaque origin (§4.10), and integration tests show the public API refusing a `null`-origin request without a valid preview ticket, with an expired one and with one for another form; the ticket's endpoint has its row in the permission matrix and the OpenAPI snapshot.
+- [ ] **10.3f Preview: test entries and sample answers** (10.3 split in six, see WORKLOG)
+  - Test submissions are marked `IsTest`: the preview sends against the draft, and a test entry runs no actions unless "Run actions for test entries" is on; after sending, Run actions… runs them for that one test entry, asking first (IA 5.7). **Fill with sample answers** (added in 1.1) fills every field with valid values in one click, so editors can try rules and outcomes quickly (Start again, after sending).
+  - Done when: Playwright covers sample answers that pass validation for every field type and a test entry, which runs no action; tests cover a test entry's actions with and without the setting and Run actions….
 - [ ] **10.4 Phase review**
   - UX review as in 9.6, plus the handover note.
   - The option editor's rows get a way to move without dragging, as an outcome's Place in the list (WCAG 2.5.7,
