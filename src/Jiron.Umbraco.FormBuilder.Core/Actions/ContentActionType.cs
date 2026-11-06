@@ -301,7 +301,7 @@ internal sealed partial class ContentActionType(
         var type = string.IsNullOrWhiteSpace(settings.DocumentType) ? null : contentTypes.Get(settings.DocumentType);
         return Task.FromResult(type is null
             ? new ActionTestResult(ActionTestOutcome.Failed, "This site has no such document type.")
-            : new ActionTestResult(ActionTestOutcome.Sent, $"An entry would {(settings.Publish ? "publish" : "save")} a {type.Name}. Nothing was created."));
+            : new ActionTestResult(ActionTestOutcome.DryRun, Preview: [$"An entry would {(settings.Publish ? "publish" : "save")} a {type.Name}."]) { Code = ActionTestCodes.DryRun });
     }
 
     // The key of what a run creates: the same for every attempt of the run, and for no other run.

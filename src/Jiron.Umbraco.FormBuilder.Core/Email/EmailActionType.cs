@@ -360,14 +360,16 @@ internal sealed partial class EmailActionType(
         OutgoingEmail mail;
         try
         {
-            // The real mail, to the tester alone, its first line naming whom the real one goes to, routed as a run routes it.
+            // The real mail, to the tester alone, its first line naming whom the real one goes to, routed as a run routes it
+            // and as the outbox keeps addresses: trimmed, each one address, once.
             var (team, visitors) = await RecipientsAsync(settings, run, quiet: true, cancellationToken);
-            var real = TeamMails(settings, team, visitors.Count > 0)
-                .SelectMany(each => each.To.Concat(each.Cc).Concat(each.Bcc))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToList();
-            var line = TestLine(context.User.Culture, real, visitors);
-            mail = await MailAsync(settings, run, [context.User.Email!], toVisitor: false, quiet: true, cancellationToken);
+            var mails = TeamMails(settings, team, visitors.Count > 0);
+            var line = TestLine(context.User.Culture, Real(mails.SelectMany(each => each.To.Concat(each.Cc).Concat(each.Bcc))), Real(visitors));
+
+            // Without a team's mail, the real one is the visitor's own, its answers' links as the visitor gets them; the test
+            // still goes to the tester, so it counts against no visitor's mailbox.
+            var visitorsOwn = mails.Count == 0 && visitors.Count > 0;
+            mail = await MailAsync(settings, run, [context.User.Email!], toVisitor: visitorsOwn, quiet: true, cancellationToken) with { ToVisitor = false };
             mail = mail with { Body = settings.PlainText ? line + "\n\n" + mail.Body : "<p>" + WebUtility.HtmlEncode(line) + "</p>" + mail.Body };
         }
         catch (ViewMissingException exception)
@@ -381,6 +383,9 @@ internal sealed partial class EmailActionType(
             : new ActionTestResult(ActionTestOutcome.Sent, $"Sent to {context.User.Email}", [stored.Subject, stored.TextBody]) { Code = ActionTestCodes.SentToYou };
     }
 
+    private static List<string> Real(IEnumerable<string> addresses) =>
+        [.. addresses.Select(address => address.Trim()).Where(EmailAddresses.IsOne).Distinct(StringComparer.OrdinalIgnoreCase)];
+
     // A test mail's first line, in the tester's backoffice language (English or German, as the setup test mail): that it is
     // one, and whom the real mail goes to (ADR-0190).
     private static string TestLine(string? culture, List<string> team, List<string> visitors)
@@ -392,11 +397,11 @@ internal sealed partial class EmailActionType(
         {
             (true, true, false) => $"This is a test. The real email goes to {to}, and to {own} in a mail of its own.",
             (true, false, false) => $"This is a test. The real email goes to {to}.",
-            (false, true, false) => $"This is a test. The real email goes to {own}, in a mail of its own.",
+            (false, true, false) => $"This is a test. The real email goes to {own}.",
             (false, false, false) => "This is a test. The real email goes to no one yet.",
             (true, true, true) => $"Dies ist ein Test. Die echte E-Mail geht an {to} und in einer eigenen E-Mail an {own}.",
             (true, false, true) => $"Dies ist ein Test. Die echte E-Mail geht an {to}.",
-            (false, true, true) => $"Dies ist ein Test. Die echte E-Mail geht in einer eigenen E-Mail an {own}.",
+            (false, true, true) => $"Dies ist ein Test. Die echte E-Mail geht an {own}.",
             _ => "Dies ist ein Test. Die echte E-Mail geht noch an niemanden.",
         };
     }

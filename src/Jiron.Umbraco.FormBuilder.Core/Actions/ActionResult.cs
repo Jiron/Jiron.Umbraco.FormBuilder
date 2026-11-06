@@ -107,6 +107,12 @@ public static class ActionTestCodes
     /// <summary>The site cannot send mail yet: it has no mail server or pickup folder.</summary>
     public const string MailOff = "mail_off";
 
+    /// <summary>
+    /// Actions and email are paused on this site (section 4.4), so what the test would reach would not go out; a dry run
+    /// still runs.
+    /// </summary>
+    public const string Paused = "paused";
+
     /// <summary>The test could not finish; the type's log says why.</summary>
     public const string Failed = "failed";
 }

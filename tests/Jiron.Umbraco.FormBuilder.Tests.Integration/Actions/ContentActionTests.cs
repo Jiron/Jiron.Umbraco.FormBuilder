@@ -74,6 +74,22 @@ public sealed class ContentActionTests : ActionTestBase
     }
 
     [Test]
+    public async Task ATestRun_IsADryRun_ThatCreatesNothing()
+    {
+        var action = Create(Settings());
+        var form = await FormAsync(action);
+
+        var test = await GetRequiredService<ActionTestRuns>().TestAsync(form, action.Key, new ActionTestUser(Guid.NewGuid(), "ada@jfb.test", "Ada"), confirmed: false);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That((test.Result!.Outcome, test.Result.Code), Is.EqualTo((ActionTestOutcome.DryRun, ActionTestCodes.DryRun)));
+            Assert.That(test.Result.Preview, Is.EqualTo(new[] { "An entry would save a Note." }));
+            Assert.That(Contents.GetRootContent(), Is.Empty, "nothing was created");
+        });
+    }
+
+    [Test]
     public async Task AnEntry_CreatesAnItem_WithItsMappedAndFixedValues_SavedOnly()
     {
         var form = await FormAsync(Create(Settings()));

@@ -68,5 +68,5 @@ internal sealed class SetStateActionType(EntryStateChanges changes, IFormReposit
 
     /// <inheritdoc />
     protected override Task<ActionTestResult> TestAsync(SetStateActionSettings settings, ActionTestContext context, CancellationToken cancellationToken) =>
-        Task.FromResult(new ActionTestResult(ActionTestOutcome.Sent, $"An entry would move to {settings.State}. Nothing changed."));
+        Task.FromResult(new ActionTestResult(ActionTestOutcome.DryRun, Preview: [$"An entry would move to {settings.State}."]) { Code = ActionTestCodes.DryRun });
 }

@@ -545,7 +545,8 @@ public sealed class WebhookActionTests : ActionTestBase
         Assert.Multiple(() =>
         {
             Assert.That(result.Result!.Outcome, Is.EqualTo(ActionTestOutcome.Failed));
-            Assert.That(result.Result!.Message, Is.EqualTo(WebhookActionType.SecretLiteral));
+            Assert.That(result.Result!.Code, Is.EqualTo(WebhookActionType.SecretLiteral));
+            Assert.That(result.Result!.Message, Does.Contain(WebhookActionType.SecretLiteral), "a sentence that names it");
             Assert.That(Stub.Calls, Is.Empty);
         });
     }
@@ -559,6 +560,24 @@ public sealed class WebhookActionTests : ActionTestBase
         {
             Assert.That(run.State, Is.EqualTo(ActionRunState.Failed));
             Assert.That(run.LastError?.Code, Is.EqualTo(WebhookActionType.NoAddress));
+        });
+    }
+
+    [Test]
+    public async Task ATestRun_WhileActionsArePaused_ReachesNothing_AndAsksNothing()
+    {
+        Stub.Answer(new StubAnswer("POST", Path, Status: 201));
+        var action = Hook(Settings());
+        var form = await FormAsync(action);
+        Pause(true);
+
+        var test = await GetRequiredService<ActionTestRuns>().TestAsync(form, action.Key, new ActionTestUser(Guid.NewGuid(), "tester@jfb.test", "Tester"), confirmed: false);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(test.Status, Is.EqualTo(ActionTestStatus.Done), "nobody is asked to confirm what cannot happen");
+            Assert.That((test.Result!.Outcome, test.Result.Code), Is.EqualTo((ActionTestOutcome.Failed, ActionTestCodes.Paused)));
+            Assert.That(Stub.Calls, Is.Empty);
         });
     }
 
@@ -582,6 +601,7 @@ public sealed class WebhookActionTests : ActionTestBase
             Assert.That(answers, Is.Zero);
             Assert.That(confirmed.Result!.Outcome, Is.EqualTo(ActionTestOutcome.Sent));
             Assert.That(confirmed.Result!.Message, Does.Contain("201"));
+            Assert.That(confirmed.Result!.Code, Is.EqualTo(ActionTestCodes.Sent));
             Assert.That(call.Header("X-Jfb-Test"), Is.EqualTo("true"));
             Assert.That(call.Header("X-Jfb-Delivery"), Is.EqualTo("test"));
         });

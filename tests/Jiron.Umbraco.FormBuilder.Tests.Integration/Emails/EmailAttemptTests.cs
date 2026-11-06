@@ -66,6 +66,28 @@ public sealed class EmailAttemptTests : EmailTestBase
     }
 
     [Test]
+    public async Task ATestRun_WhileActionsArePaused_SaysSo_AndQueuesNothing()
+    {
+        var action = new FormAction
+        {
+            Key = Guid.NewGuid(),
+            Type = EmailActionType.Alias,
+            Name = "Mail",
+            Settings = SettingsObject.Parse("""{"to":["team@jfb.test"],"subject":{"":"S"},"body":{"":"<p>B</p>"}}"""),
+        };
+        var form = await ActionFormAsync(action);
+        Pause(true);
+
+        var test = await GetRequiredService<ActionTestRuns>().TestAsync(form, action.Key, new ActionTestUser(Guid.NewGuid(), "ada@jfb.test", "Ada"), confirmed: false);
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That((test.Result!.Outcome, test.Result.Code), Is.EqualTo((ActionTestOutcome.Failed, ActionTestCodes.Paused)));
+            Assert.That(await Emails.DueAsync(10), Is.Empty, "nothing waits to go out later unasked");
+        });
+    }
+
+    [Test]
     public async Task TheSender_IsToldItsTypeAndTime_AndItsHandlersSeeTheMail()
     {
         await Outbox.QueueAsync(Mail());

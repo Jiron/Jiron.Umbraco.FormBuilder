@@ -193,6 +193,22 @@ public sealed class EntryStateChangeTests : ActionTestBase
     }
 
     [Test]
+    public async Task ATestRun_OfASetStateAction_IsADryRun_ThatRunsEvenWhilePaused()
+    {
+        var approve = new FormAction { Key = Guid.NewGuid(), Type = SetStateActionType.Alias, Name = "Approve", Settings = SettingsObject.Parse("""{"state":"approved"}""") };
+        var form = await WaitingFormAsync(approve);
+        Pause(true);
+
+        var test = await GetRequiredService<ActionTestRuns>().TestAsync(form, approve.Key, new ActionTestUser(Guid.NewGuid(), "ada@jfb.test", "Ada"), confirmed: false);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That((test.Result!.Outcome, test.Result.Code), Is.EqualTo((ActionTestOutcome.DryRun, ActionTestCodes.DryRun)));
+            Assert.That(test.Result.Preview, Is.EqualTo(new[] { "An entry would move to Approved." }));
+        });
+    }
+
+    [Test]
     public async Task ASetStateAction_MovesTheEntry_UnderItsRule_AndTheTriggerFiresAtOnce()
     {
         var approve = new FormAction { Key = Guid.NewGuid(), Type = SetStateActionType.Alias, Name = "Approve", Settings = SettingsObject.Parse("""{"state":"approved"}""") };

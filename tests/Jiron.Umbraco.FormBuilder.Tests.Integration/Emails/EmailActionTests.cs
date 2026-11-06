@@ -507,6 +507,56 @@ public sealed class EmailActionTests : EmailTestBase
         Assert.That(((TextPart)Written().Single().Body!).Text, Does.StartWith("This is a test. The real email goes to no one yet."));
     }
 
+    [Test]
+    public async Task ATestRun_NamesOnlyTheAddressesARunMails_EncodedInItsFirstLine()
+    {
+        var form = await FormAsync(Email(Texts()));
+        var draft = (await Forms.GetDraftAsync(form))!.Definition!;
+        var held = draft with { Actions = [draft.Actions[0] with { Settings = SettingsObject.Parse(Texts(to: """[" team@jfb.test ","not an address","a&b@jfb.test","TEAM@jfb.test"]""")) }] };
+
+        await GetRequiredService<ActionTestRuns>().TestAsync(form, draft.Actions[0].Key, new ActionTestUser(Guid.NewGuid(), "ada@jfb.test", "Ada"), confirmed: false, held);
+        await SendDueAsync();
+
+        Assert.That(HtmlOf(Written().Single()), Does.Contain(">This is a test. The real email goes to team@jfb.test, a&amp;b@jfb.test.</p>"), "trimmed, each one address, once, and encoded");
+    }
+
+    [Test]
+    public async Task ATestRun_OfAVisitorsOwnMail_IsTheMailTheVisitorGets_ToWhoAsks()
+    {
+        var website = new FormField { Key = Guid.Parse("c0000000-0000-4000-8000-000000000006"), Type = "url", Alias = "website", Label = new LocalizedText("Website") };
+        var form = await PublishAsync(name: Guid.NewGuid().ToString("N"), change: definition => definition with { Actions = [Email(ToVisitor(body: "<p>{{ field.website }}</p>"))] }, fields: [NameField, EmailField, website]);
+        var draft = (await Forms.GetDraftAsync(form))!.Definition!;
+
+        await GetRequiredService<ActionTestRuns>().TestAsync(form, draft.Actions[0].Key, new ActionTestUser(Guid.NewGuid(), "ada@jfb.test", "Ada"), confirmed: false);
+        var queued = await Emails.GetAsync((await Emails.DueAsync(10)).Single());
+        await SendDueAsync();
+
+        var breaker = ((char)0x200b).ToString();
+        var html = HtmlOf(Written().Single());
+        Assert.Multiple(() =>
+        {
+            Assert.That(html, Does.Contain($">This is a test. The real email goes to {SampleEntries.Email}.</p>"), "no team's mail beside it");
+            Assert.That(html.Contains($"https:{breaker}//example.{breaker}com/", StringComparison.Ordinal), Is.True, "its answers' links as the visitor gets them");
+            Assert.That(queued!.RecipientKey, Is.Null, "it counts against no visitor's mailbox");
+        });
+    }
+
+    [Test]
+    public async Task ATestRun_OfAMailWhoseViewIsMissing_SaysSoByItsCode()
+    {
+        var form = await FormAsync(Email(Texts()));
+        var draft = (await Forms.GetDraftAsync(form))!.Definition!;
+        var held = draft with { Actions = [draft.Actions[0] with { Settings = SettingsObject.Parse($$"""{"to":["{{To}}"],"subject":{"":"S"},"view":"missing"}""") }] };
+
+        var test = await GetRequiredService<ActionTestRuns>().TestAsync(form, draft.Actions[0].Key, new ActionTestUser(Guid.NewGuid(), "ada@jfb.test", "Ada"), confirmed: false, held);
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That((test.Result!.Outcome, test.Result.Code), Is.EqualTo((ActionTestOutcome.Failed, EmailActionType.ViewMissing)));
+            Assert.That(await Emails.DueAsync(10), Is.Empty);
+        });
+    }
+
     [TestCase("""{"subject":{"":"S"},"body":{"":"B"}}""", "to", TestName = "no recipient at all")]
     [TestCase("""{"to":["a@jfb.test"],"body":{"":"B"}}""", "subject", TestName = "no subject")]
     [TestCase("""{"to":["a@jfb.test"],"subject":{"":"S"}}""", "body", TestName = "no body and no view")]

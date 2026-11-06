@@ -128,12 +128,16 @@ internal sealed record ActionTest(ActionTestStatus Status, ActionTestResult? Res
 /// Test runs of a draft's actions against the sample entry (section 4.4, ADR-0158, ADR-0187): nothing is stored and no run changes. What
 /// a test run reaches is the type's, by its <see cref="ActionTypeDeclaration.Test"/>: a type that reaches what the action is
 /// set up to reach runs only after a confirmation. The draft is the one the designer holds, saved or not, or the stored one
-/// (ADR-0190); settings the type cannot read are refused before anything runs.
+/// (ADR-0190); settings the type cannot read are refused before anything runs, and while actions and email are paused only a
+/// dry run runs.
 /// </summary>
-internal sealed class ActionTestRuns(IFormBuilderFormService forms, ActionTypeRegistry types, ActionSettingLocks locks, SampleEntries samples, TimeProvider time)
+internal sealed class ActionTestRuns(IFormBuilderFormService forms, ActionTypeRegistry types, ActionSettingLocks locks, SampleEntries samples, OutboxWake wake, TimeProvider time)
 {
     /// <summary>The message a type's failure stands under when it threw.</summary>
     public const string FailedMessage = "The test could not finish.";
+
+    /// <summary>The message of a test refused while actions and email are paused.</summary>
+    public const string PausedMessage = "Actions and email are paused on this site, so the test cannot go out.";
 
     /// <summary>Runs an action of the form's draft against a sample entry.</summary>
     /// <param name="formKey">The form.</param>
@@ -172,6 +176,13 @@ internal sealed class ActionTestRuns(IFormBuilderFormService forms, ActionTypeRe
         if (!FieldSettingsChecks.Check(type.SettingsSchema, locked.Settings, "$.settings", "An action", new DefinitionProblems()))
         {
             return new ActionTest(ActionTestStatus.SettingsInvalid);
+        }
+
+        // While paused, what a test reaches would not go out, or would go out later unasked (ADR-0190); a dry run reaches
+        // nothing, so it still runs. Before the confirmation: nobody is asked about a test that cannot happen.
+        if (type.Declaration.Test != ActionTestKind.DryRun && wake.Paused)
+        {
+            return new ActionTest(ActionTestStatus.Done, new ActionTestResult(ActionTestOutcome.Failed, PausedMessage) { Code = ActionTestCodes.Paused });
         }
 
         if (type.Declaration.Test == ActionTestKind.AfterConfirmation && !confirmed)

@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Jiron.Umbraco.FormBuilder.Core.Actions;
 using Jiron.Umbraco.FormBuilder.Core.Composing;
+using Jiron.Umbraco.FormBuilder.Core.Configuration;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Email;
 using Jiron.Umbraco.FormBuilder.Core.Entries;
@@ -13,7 +14,10 @@ using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Testing;
 using Jiron.Umbraco.FormBuilder.Tests.Integration.Actions;
 using Jiron.Umbraco.FormBuilder.Tests.Integration.Emails;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 using Umbraco.Cms.Core.Mail;
+using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Tests.Common.Testing;
 
 namespace Jiron.Umbraco.FormBuilder.Tests.Integration.ManagementApi;
@@ -34,6 +38,13 @@ public sealed class ActionApiTests : ManagementApiTestBase
     private IEntryRepository Entries => GetRequiredService<IEntryRepository>();
 
     private ScriptedActionType Scripted => GetRequiredService<FormBuilderActionTypeCollection>().OfType<ScriptedActionType>().Single();
+
+    /// <summary>
+    /// A site whose actions are not paused, as test runs need since they are refused while paused (ADR-0190); the host has no
+    /// worker, so nothing goes out in the background.
+    /// </summary>
+    [SetUp]
+    public void Unpause() => GetRequiredService<IOptionsMonitor<FormBuilderOptions>>().CurrentValue.Actions.Paused = false;
 
     [Test]
     public async Task TheActionTypes_AreServedToAUserOfTheSection_WithTheirSettings()
@@ -230,6 +241,7 @@ public sealed class ActionApiTests : ManagementApiTestBase
         var unreadable = await CallAsync(Admin, HttpMethod.Post, $"form/{form}/action/{stored.Key}/test", new { confirmed = true, definition = new JsonArray() });
         held["actions"]![0]!["settings"] = JsonNode.Parse("""{"target":["not","a","text"]}""");
         var unfit = await CallAsync(Admin, HttpMethod.Post, $"form/{form}/action/{stored.Key}/test", new { confirmed = true, definition = held });
+        var unfitUnasked = await CallAsync(Admin, HttpMethod.Post, $"form/{form}/action/{stored.Key}/test", new { definition = held });
 
         Assert.Multiple(() =>
         {
@@ -239,6 +251,7 @@ public sealed class ActionApiTests : ManagementApiTestBase
             Assert.That(notStored.Outcome, Is.EqualTo("404 action_not_found"), "the stored draft has no such action");
             Assert.That(unreadable.Status, Is.EqualTo(HttpStatusCode.BadRequest), unreadable.ToString());
             Assert.That(unfit.Outcome, Is.EqualTo("409 action_settings_invalid"), unfit.ToString());
+            Assert.That(unfitUnasked.Outcome, Is.EqualTo("409 action_settings_invalid"), "nobody is asked to confirm a test that cannot run");
             Assert.That(Scripted.Tests, Has.Count.EqualTo(2), "nothing ran for settings its type cannot read");
             Assert.That(changed.Body!["code"], Is.Null, "a type without codes leaves the message");
             Assert.That(changed.Body!["recipient"], Is.Null);
@@ -259,6 +272,7 @@ public sealed class ActionApiTests : ManagementApiTestBase
             Assert.That(answer.Body!["outcome"]!.GetValue<string>(), Is.EqualTo("failed"));
             Assert.That(answer.Body["code"]!.GetValue<string>(), Is.EqualTo(ActionTestCodes.Failed));
             Assert.That(answer.Body["message"]!.GetValue<string>(), Is.EqualTo(ActionTestRuns.FailedMessage), "never what it threw");
+            Assert.That(answer.Body["recipient"], Is.Null, "an address only for a mail to who asks");
         });
     }
 
@@ -285,6 +299,32 @@ public sealed class ActionApiTests : ManagementApiTestBase
     }
 
     [Test]
+    public async Task AnEmailsTestRun_SaysItsFirstLine_InTheTestersLanguage()
+    {
+        var mail = new FormAction
+        {
+            Key = Guid.NewGuid(),
+            Type = EmailActionType.Alias,
+            Name = "Mail",
+            Settings = SettingsObject.Parse("""{"to":["team@jfb.test"],"subject":{"":"S"},"body":{"":"<p>B</p>"}}"""),
+        };
+        var form = await PublishedAsync(mail);
+        var english = await CallAsync(Admin, HttpMethod.Post, $"form/{form}/action/{mail.Key}/test", new { });
+        var users = GetRequiredService<IUserService>();
+        var admin = users.GetByEmail(english.Body!["recipient"]!.GetValue<string>())!;
+        admin.Language = "de-DE";
+        users.Save(admin);
+
+        var german = await CallAsync(Admin, HttpMethod.Post, $"form/{form}/action/{mail.Key}/test", new { });
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(english.Body!["preview"]![1]!.GetValue<string>(), Does.Contain("This is a test. The real email goes to team@jfb.test."), english.ToString());
+            Assert.That(german.Body!["preview"]![1]!.GetValue<string>(), Does.Contain("Dies ist ein Test. Die echte E-Mail geht an team@jfb.test."), german.ToString());
+        });
+    }
+
+    [Test]
     public async Task ATestRun_OfAnActionTheDraftLacks_IsNotFound()
     {
         var form = await PublishedAsync(Scripted0("target"));
@@ -300,6 +340,7 @@ public sealed class ActionApiTests : ManagementApiTestBase
         ArgumentNullException.ThrowIfNull(builder);
         base.CustomTestSetup(builder);
         builder.JironFormBuilder().ActionTypes().Append<ScriptedActionType>();
+        builder.Services.RemoveAll(descriptor => descriptor.ServiceType == typeof(IHostedService) && descriptor.ImplementationType == typeof(OutboxWorker));
 
         // A sender that can send, so an email's test goes into the queue (ADR-0190).
         builder.Services.AddUnique<IEmailSender, ScriptedEmailSender>();

@@ -246,9 +246,14 @@ internal sealed class WebhookActionType(OutboundHttp outbound, IFormBuilderMerge
     {
         var (status, failure) = await CallAsync(settings, context.Scope, nameof(ActionTrigger.Submitted), "test", test: true, cancellationToken);
         var result = failure ?? ResultOf(status);
-        return result.Kind == ActionResultKind.Succeeded
-            ? new ActionTestResult(ActionTestOutcome.Sent, string.Create(CultureInfo.InvariantCulture, $"The host answered {status}."))
-            : new ActionTestResult(ActionTestOutcome.Failed, result.Code ?? "failed");
+        if (result.Kind == ActionResultKind.Succeeded)
+        {
+            return new ActionTestResult(ActionTestOutcome.Sent, string.Create(CultureInfo.InvariantCulture, $"The host answered {status}.")) { Code = ActionTestCodes.Sent };
+        }
+
+        // The run's code, which the backoffice says in its words from ROADMAP 10.2d; until then the sentence names it.
+        var code = result.Code ?? ActionTestCodes.Failed;
+        return new ActionTestResult(ActionTestOutcome.Failed, $"The webhook was not delivered ({code}).") { Code = code };
     }
 
     private static ActionResult ResultOf(int status) => status switch

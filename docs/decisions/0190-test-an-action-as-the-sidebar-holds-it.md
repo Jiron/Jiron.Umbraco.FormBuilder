@@ -48,28 +48,36 @@ For what a test says:
 - **Settings the type cannot read** answer `action_settings_invalid` (409), as the preview does, the schema checked
   first.
 - **A result has a code** (`ActionTestResult.Code`, optional, so a site's own type need not give one): `sent_to_you`,
-  `dry_run`, and for a failure `no_address`, `mail_off`, `view_missing`, `failed`, or the type's own. The response adds
-  the code, and `recipient`, the address a test that reaches the asking user went to. The backoffice says a code it
-  knows in its words and the type's sentence for one it does not.
+  `sent`, `dry_run`, and for a failure `no_address`, `mail_off`, `paused`, `view_missing`, `failed`, or the type's own.
+  The response adds the code, and `recipient`, the address a test that reaches the asking user went to. The backoffice
+  says a code it knows in its words and the type's sentence for one it does not.
+- **While actions and email are paused** (section 4.4), a test that would reach anything answers `paused` and nothing
+  runs or waits in the queue, so no test goes out later unasked; this comes before the confirmation, so nobody confirms
+  a test that cannot happen. A dry run reaches nothing and still runs.
 - **The test mail** goes to the tester alone, as before, and its first line, in the tester's backoffice language (English
   or German, as the setup test mail), says it is a test and names who the real mail goes to for the sample entry,
-  routed as a run routes it: "This is a test of "Email the team". The real email goes to sales@example.com and to
-  alex.berger@example.com, in a mail of its own." The rest of the mail is the real one, in the form's language. Where
-  the site cannot send mail, the test says so (`mail_off`) and queues nothing.
+  routed as a run routes it and as the outbox keeps addresses (trimmed, each one address, once): "This is a test. The
+  real email goes to sales@example.com, and to alex.berger@example.com in a mail of its own." The rest of the mail is
+  the real one, in the form's language: where only the visitor gets a mail, it is the visitor's, its answers' links as
+  the visitor gets them, and its line names the visitor's address alone. Where the site cannot send mail, the test says
+  so (`mail_off`) and queues nothing.
 - **In the backoffice,** Test is on each card beside the switch and in the sidebar's footer, for who may manage the
-  actions:
-  - a type that tests after a confirmation asks first, in Umbraco's confirm dialog, naming what it reaches and saying
-    the request is marked as a test;
-  - a test that reaches the tester says so in a toast ("Test email sent to you (ana@example.com)."), a failure says why
-    in one, and a dry run shows what a run would do, one line each, in a dialog;
-  - while it runs, its button is busy and says so, and a second press waits for the first.
+  actions; a card too narrow to keep its name readable beside Test offers it in its "…" instead, once either way:
+  - a type that tests after a confirmation asks first, in Umbraco's confirm dialog, naming where it goes in its card's
+    own line ("Webhook to hooks.example.com. A sample entry goes there, marked as a test.");
+  - what a test came to is a toast whose message says it on its own, since Umbraco's toast reads its message aloud and
+    not a headline: "Test email sent to you (ana@example.com).", a failure's reason, or a dry run's "Nothing was sent or
+    changed." with what a run would do, one line each;
+  - while it runs, its button is busy and the list or the sidebar says "Testing …" in its live region, and a second
+    press waits for the first.
 
 ## Consequences
 
 - `ActionTestResult` gains `Code` and `ActionTestCodes` names the shared ones; the email type and a test that throws
-  set theirs here. The webhook (`sent`, and `http_<status>` as its runs record them) and the content and state types,
-  whose tests answer "Sent" with an English sentence though they reach nobody, get their codes and dry runs with their
-  editors in 10.2d; until then the backoffice shows their sentence.
+  set theirs here. So that no toast contradicts itself, the content and state types, which reach nobody, answer as dry
+  runs here (`dry_run`, their sentence as the preview), and the webhook `sent` or its run's code (`http_<status>`,
+  `not_allowed`, …) under a sentence naming it. 10.2d says those codes and lines in the backoffice's words, with the
+  editors.
 - The test endpoint's request gains `definition`, which the OpenAPI snapshot shows, and its answer `code` and
   `recipient`.
 - The mail of a test carries a line no real mail has; its recipients are the run's own, from the rule a run and the
