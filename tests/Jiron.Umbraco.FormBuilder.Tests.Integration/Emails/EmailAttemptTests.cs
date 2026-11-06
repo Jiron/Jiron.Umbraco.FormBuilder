@@ -431,6 +431,26 @@ public sealed class EmailAttemptTests : EmailTestBase
         });
     }
 
+    [Test]
+    public async Task ComposingAMail_NeedsNoRecipient_QueuesNothing_AndIsRefusedInsideAUnit()
+    {
+        var database = GetRequiredService<Core.Persistence.FormBuilderDatabase>();
+
+        var composed = await Outbox.ComposeAsync(Mail() with { To = ["not an address"], Cc = ["copy@jfb.test", "COPY@jfb.test"] });
+        var refused = Assert.ThrowsAsync<InvalidOperationException>(() => database.WriteAsync(_ => Outbox.ComposeAsync(Mail()), CancellationToken.None));
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(composed.To, Is.Empty, "what is no address is left out, as the queue leaves it out");
+            Assert.That(composed.Cc, Is.EqualTo(new[] { "copy@jfb.test" }), "each address once");
+            Assert.That((composed.Subject, composed.Text.Trim()), Is.EqualTo(("Your answers", "Thank you.")));
+            Assert.That(composed.Html, Does.Contain(">Thank you.</p>").And.Contain("prefers-color-scheme"), "the one body in the layout");
+            Assert.That(await Outbox.PrepareAsync(Mail() with { To = ["not an address"] }), Is.Null, "a mail to nobody is not prepared for the queue");
+            Assert.That(refused!.Message, Does.Contain("before the unit of work"));
+            Assert.That(await Emails.DueAsync(1), Is.Empty);
+        });
+    }
+
     /// <inheritdoc />
     protected override void CustomTestSetup(IUmbracoBuilder builder)
     {

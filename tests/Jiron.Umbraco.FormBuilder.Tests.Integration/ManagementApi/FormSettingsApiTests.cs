@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
+using Jiron.Umbraco.FormBuilder.Core.Email;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Core.Settings;
 using Jiron.Umbraco.FormBuilder.Core.Submissions;
@@ -17,7 +18,8 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Integration.ManagementApi;
 /// What a form's Settings view reads of the site (ROADMAP 10.1a, ADR-0184): the captcha providers with whether each has
 /// its keys and the settings it describes, never a key, as the reviewed snapshot <c>docs/api/captcha-providers.json</c>
 /// holds them on a site with reCAPTCHA v2's keys; the site's defaults, time zone, themes and member groups; and the
-/// bounds the save checks hold settings to.
+/// bounds the save checks hold settings to; and the email layouts an action may choose, with the one a mail has by default
+/// (ADR-0189).
 /// </summary>
 [TestFixture]
 [UmbracoTest(Database = UmbracoTestOptions.Database.NewSchemaPerTest, Boot = true)]
@@ -104,6 +106,33 @@ public sealed class FormSettingsApiTests : ManagementApiTestBase
                 Is.EqualTo((DefinitionSaveChecks.LineLength, DefinitionSaveChecks.HtmlLength, DefinitionStructureChecks.MaxNameLength, DefinitionSaveChecks.MaxVerificationDays, DefinitionSaveChecks.MaxReferenceDigits)));
             Assert.That(limits["outcomes"]!.GetValue<int>(), Is.EqualTo(GetRequiredService<DefinitionLimits>().MaxOutcomes), "the host's limit of outcomes");
             Assert.That(limits["actions"]!.GetValue<int>(), Is.EqualTo(GetRequiredService<DefinitionLimits>().MaxActions), "the host's limit of actions");
+        });
+    }
+
+    [Test]
+    public async Task AFormsChoices_ListTheEmailLayouts_BuiltInFirst_WithTheSitesDefault_AndTheCardForADefaultThatIsGone()
+    {
+        var library = GetRequiredService<IEmailLayoutRepository>();
+        var zebra = await library.CreateAsync(new NewEmailLayout(Guid.NewGuid(), "zebra", "Zebra"));
+        var brand = await library.CreateAsync(new NewEmailLayout(Guid.NewGuid(), "brand", "Brand mail"));
+        var settings = GetRequiredService<IFormBuilderSettingsService>();
+        var email = await settings.GetAsync<EmailSettings>();
+        await settings.SaveAsync(email.Value with { DefaultLayout = brand.Key }, email.Version, null);
+        var form = await FormAsync("Contact");
+
+        var named = (await CallAsync("designer", HttpMethod.Get, $"form/{form}/setting-choices")).Body!;
+        email = await settings.GetAsync<EmailSettings>();
+        await settings.SaveAsync(email.Value with { DefaultLayout = Guid.NewGuid() }, email.Version, null);
+        var gone = (await CallAsync("designer", HttpMethod.Get, $"form/{form}/setting-choices")).Body!;
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(
+                named["emailLayouts"]!.AsArray().Select(layout => (layout!["key"]!.GetValue<Guid>(), layout["name"]!.GetValue<string>())),
+                Is.EqualTo(new[] { (EmailLayouts.CardKey, "#jfbEmailLayouts_card"), (EmailLayouts.LetterKey, "#jfbEmailLayouts_letter"), (brand.Key, "Brand mail"), (zebra.Key, "Zebra") }),
+                "the built-in card and letter, then the library's by name");
+            Assert.That(named["defaults"]!["emailLayout"]!.GetValue<Guid>(), Is.EqualTo(brand.Key), "the site's default");
+            Assert.That(gone["defaults"]!["emailLayout"]!.GetValue<Guid>(), Is.EqualTo(EmailLayouts.CardKey), "a default that is gone gives way to the card, as a mail's does");
         });
     }
 

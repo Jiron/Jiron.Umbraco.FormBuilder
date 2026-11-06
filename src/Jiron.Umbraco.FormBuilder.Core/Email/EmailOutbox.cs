@@ -60,6 +60,27 @@ internal sealed record OutgoingEmail
     public IReadOnlyList<Guid> Attachments { get; init; } = [];
 }
 
+/// <summary>A mail as the site sends it (ADR-0189), whoever it goes to; each recipient is one address.</summary>
+/// <param name="To">The recipients, each once; none when it has no recipient yet.</param>
+/// <param name="From">The sender, with its name; empty when the site has none.</param>
+/// <param name="Subject">The subject, one clean line.</param>
+/// <param name="Html">The one HTML body in its layout; null for plain text.</param>
+/// <param name="Text">The text version, never empty.</param>
+/// <param name="Culture">The culture it is written in.</param>
+/// <param name="Cc">The copy recipients.</param>
+/// <param name="Bcc">The blind copy recipients.</param>
+/// <param name="ReplyTo">The reply-to address, or null.</param>
+internal sealed record ComposedEmail(
+    IReadOnlyList<string> To,
+    string From,
+    string Subject,
+    string? Html,
+    string Text,
+    string Culture,
+    IReadOnlyList<string> Cc,
+    IReadOnlyList<string> Bcc,
+    string? ReplyTo);
+
 /// <summary>
 /// Puts mail in the queue (ADR-0007, ADR-0159): it takes the site's sender and layout, renders the one body with its text
 /// version, cleans the header values and counts mail to visitors against the limits. Sending is <see cref="EmailQueue"/>'s.
@@ -111,11 +132,7 @@ internal sealed partial class EmailOutbox(
     public async Task<NewEmail?> PrepareAsync(OutgoingEmail email, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(email);
-        if (database.InUnitOfWork)
-        {
-            throw new InvalidOperationException("A mail is prepared before the unit of work that queues it starts: its reads would wait for that unit.");
-        }
-
+        RefuseInUnitOfWork();
         if (email.ToVisitor && email.To.Count != 1)
         {
             throw new ArgumentException("A mail to an address a visitor typed goes to that address alone.", nameof(email));
@@ -129,24 +146,60 @@ internal sealed partial class EmailOutbox(
             return null;
         }
 
-        var site = (await settings.GetAsync<EmailSettings>(email.Site, cancellationToken)).Value;
-        var subject = Subject(email.Subject);
-        var (html, text) = await BodyAsync(email, site, subject, cancellationToken);
+        var composed = await ComposedAsync(email, cancellationToken);
         return new NewEmail(
             email.Kind,
-            string.Join(", ", to),
-            Sender(site, email.From),
-            subject,
-            text,
-            Culture(email.Culture),
-            html,
-            List(email.Cc),
-            List(email.Bcc),
-            EmailAddresses.IsOne(email.ReplyTo) ? email.ReplyTo : null,
+            string.Join(", ", composed.To),
+            composed.From,
+            composed.Subject,
+            composed.Text,
+            composed.Culture,
+            composed.Html,
+            List(composed.Cc),
+            List(composed.Bcc),
+            composed.ReplyTo,
             email.EntryId,
             email.ActionRunId,
             email.Attachments.Distinct().ToArray(),
             key);
+    }
+
+    /// <summary>
+    /// The mail as the site sends it, queueing nothing (ADR-0189): the site's sender and layout, the one body with its text
+    /// version, and clean header values, even without a recipient yet, as a preview shows it while it is written. It reads
+    /// settings and layouts, so it is refused inside a unit of work, as <see cref="PrepareAsync"/> is.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">A unit of work runs.</exception>
+    public Task<ComposedEmail> ComposeAsync(OutgoingEmail email, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(email);
+        RefuseInUnitOfWork();
+        return ComposedAsync(email, cancellationToken);
+    }
+
+    private async Task<ComposedEmail> ComposedAsync(OutgoingEmail email, CancellationToken cancellationToken)
+    {
+        var site = (await settings.GetAsync<EmailSettings>(email.Site, cancellationToken)).Value;
+        var subject = Subject(email.Subject);
+        var (html, text) = await BodyAsync(email, site, subject, cancellationToken);
+        return new ComposedEmail(
+            Addresses(email.To),
+            Sender(site, email.From),
+            subject,
+            html,
+            text,
+            Culture(email.Culture),
+            Addresses(email.Cc),
+            Addresses(email.Bcc),
+            EmailAddresses.IsOne(email.ReplyTo) ? email.ReplyTo : null);
+    }
+
+    private void RefuseInUnitOfWork()
+    {
+        if (database.InUnitOfWork)
+        {
+            throw new InvalidOperationException("A mail is prepared before the unit of work that queues it starts: its reads would wait for that unit.");
+        }
     }
 
     private static string Subject(string subject)
@@ -166,7 +219,7 @@ internal sealed partial class EmailOutbox(
     private static List<string> Addresses(IReadOnlyList<string> addresses) =>
         [.. addresses.Select(address => address?.Trim()).Where(EmailAddresses.IsOne).Select(address => address!).Distinct(StringComparer.OrdinalIgnoreCase)];
 
-    private static string? List(IReadOnlyList<string> addresses) => Addresses(addresses) is { Count: > 0 } list ? string.Join(", ", list) : null;
+    private static string? List(IReadOnlyList<string> addresses) => addresses.Count > 0 ? string.Join(", ", addresses) : null;
 
     // The site's sender, with its name on Umbraco's address when it has no address of its own; empty when there is neither,
     // and Umbraco then says so when it is sent: the health check names it, and the mail waits in the log for a retry.

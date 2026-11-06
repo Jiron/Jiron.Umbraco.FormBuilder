@@ -16,54 +16,54 @@ namespace Jiron.Umbraco.FormBuilder.Core.Email;
 /// <summary>The settings of the email action (ROADMAP 8.3, ADR-0160).</summary>
 public sealed class EmailActionSettings
 {
-    /// <summary>Fixed addresses it goes to, usually the team's.</summary>
-    [FormBuilderSetting("#jfbActionSettings_emailTo", Order = 1)]
+    /// <summary>Fixed addresses it goes to, usually the team's; its editor holds every kind of recipient (ADR-0189).</summary>
+    [FormBuilderSetting("#jfbActionSettings_emailTo", Order = 1, Editor = "recipients")]
     public IReadOnlyList<string> To { get; init; } = [];
 
     /// <summary>
     /// An email field whose answer it goes to. That address is one a visitor typed: it gets a mail of its own, which the limits
     /// of section 4.10 count, and links in what visitors typed are broken there.
     /// </summary>
-    [FormBuilderSetting("#jfbActionSettings_emailToField", Order = 2, Kind = FieldSettingKind.Key, Editor = "fieldPicker")]
+    [FormBuilderSetting("#jfbActionSettings_emailToField", Order = 2, Kind = FieldSettingKind.Key, Editor = "fieldPicker", Picks = FieldPick.Email, Within = "to")]
     public Guid? ToField { get; init; }
 
     /// <summary>Whether it goes to the user who created the form.</summary>
-    [FormBuilderSetting("#jfbActionSettings_emailToCreator", Order = 3)]
+    [FormBuilderSetting("#jfbActionSettings_emailToCreator", Order = 3, Within = "to")]
     public bool ToCreator { get; init; }
 
     /// <summary>
     /// Addresses chosen by a choice field's answer, as <c>{"field": key, "routes": [{"value": "sales", "to": ["a@example.com"]}]}</c>.
     /// They stay on the server, as actions do (section 4.3.1).
     /// </summary>
-    [FormBuilderSetting("#jfbActionSettings_emailRecipientMap", Order = 4, Editor = "recipientMap")]
+    [FormBuilderSetting("#jfbActionSettings_emailRecipientMap", Order = 4, Editor = "recipientMap", Within = "to")]
     public JsonElement? RecipientMap { get; init; }
 
     /// <summary>Fixed addresses that get a copy.</summary>
-    [FormBuilderSetting("#jfbActionSettings_emailCc", Order = 5)]
+    [FormBuilderSetting("#jfbActionSettings_emailCc", Order = 9, Editor = "addresses")]
     public IReadOnlyList<string> Cc { get; init; } = [];
 
     /// <summary>Fixed addresses that get a blind copy.</summary>
-    [FormBuilderSetting("#jfbActionSettings_emailBcc", Order = 6)]
+    [FormBuilderSetting("#jfbActionSettings_emailBcc", Order = 10, Editor = "addresses", Group = FieldSettingGroup.Advanced)]
     public IReadOnlyList<string> Bcc { get; init; } = [];
 
     /// <summary>An email field whose answer replies go to, when that answer is an address.</summary>
-    [FormBuilderSetting("#jfbActionSettings_emailReplyTo", Order = 7, Kind = FieldSettingKind.Key, Editor = "fieldPicker")]
+    [FormBuilderSetting("#jfbActionSettings_emailReplyTo", Order = 8, Kind = FieldSettingKind.Key, Editor = "fieldPicker", Picks = FieldPick.Email)]
     public Guid? ReplyToField { get; init; }
 
     /// <summary>The address it comes from instead of the site's; a host usually locks it. Never a visitor's.</summary>
-    [FormBuilderSetting("#jfbActionSettings_emailFrom", Order = 8, Group = FieldSettingGroup.Advanced)]
+    [FormBuilderSetting("#jfbActionSettings_emailFrom", Order = 11, Group = FieldSettingGroup.Advanced)]
     public string? From { get; init; }
 
     /// <summary>The subject per culture, with merge tags.</summary>
-    [FormBuilderSetting("#jfbActionSettings_emailSubject", Order = 9, SupportsMergeTags = true)]
+    [FormBuilderSetting("#jfbActionSettings_emailSubject", Order = 5, SupportsMergeTags = true)]
     public LocalizedText? Subject { get; init; }
 
     /// <summary>The body per culture, with merge tags; <c>{{ entry.table }}</c> gives every answer as a table.</summary>
-    [FormBuilderSetting("#jfbActionSettings_emailBody", Order = 10, SupportsMergeTags = true)]
+    [FormBuilderSetting("#jfbActionSettings_emailBody", Order = 6, SupportsMergeTags = true)]
     public LocalizedHtml? Body { get; init; }
 
     /// <summary>Whether <c>{{ entry.table }}</c> leaves out the fields without an answer.</summary>
-    [FormBuilderSetting("#jfbActionSettings_emailWithoutUnanswered", Order = 11)]
+    [FormBuilderSetting("#jfbActionSettings_emailWithoutUnanswered", Order = 7)]
     public bool WithoutUnanswered { get; init; }
 
     /// <summary>Whether it is one plain-text body instead of HTML (ADR-0007).</summary>
@@ -79,11 +79,11 @@ public sealed class EmailActionSettings
     public string? View { get; init; }
 
     /// <summary>The sensitive fields it may show (ADR-0014); none by default.</summary>
-    [FormBuilderSetting("#jfbActionSettings_emailIncludeSensitive", Order = 15, Kind = FieldSettingKind.Key, Editor = "fieldPicker", Group = FieldSettingGroup.Advanced)]
+    [FormBuilderSetting("#jfbActionSettings_emailIncludeSensitive", Order = 15, Kind = FieldSettingKind.Key, Editor = "fieldPicker", Picks = FieldPick.Sensitive, Group = FieldSettingGroup.Advanced)]
     public IReadOnlyList<Guid> IncludeSensitive { get; init; } = [];
 
     /// <summary>The upload fields whose files go along; none by default.</summary>
-    [FormBuilderSetting("#jfbActionSettings_emailAttachments", Order = 16, Kind = FieldSettingKind.Key, Editor = "fieldPicker", Group = FieldSettingGroup.Advanced)]
+    [FormBuilderSetting("#jfbActionSettings_emailAttachments", Order = 16, Kind = FieldSettingKind.Key, Editor = "fieldPicker", Picks = FieldPick.File, Group = FieldSettingGroup.Advanced)]
     public IReadOnlyList<Guid> Attachments { get; init; } = [];
 }
 
@@ -127,6 +127,14 @@ internal static class EmailViewNames
 
 /// <summary>A run's view the site lacks, with no body of its own to fall back on.</summary>
 internal sealed class ViewMissingException(string message) : Exception(message);
+
+/// <summary>
+/// The mail an email action sends for an entry, as the team gets it, with everyone a run sends it to (ADR-0189); nothing
+/// is queued.
+/// </summary>
+/// <param name="Mail">The team's mail as the site sends it, its recipients the team's addresses; none when it has only a visitor's.</param>
+/// <param name="Visitor">The address a mail of its own goes to: the answer of the recipient field, when it is one address.</param>
+internal sealed record EmailPreview(ComposedEmail Mail, string? Visitor);
 
 /// <summary>A route of the recipient map: an option's value, and who hears of it.</summary>
 internal sealed record EmailRoute
@@ -354,6 +362,35 @@ internal sealed partial class EmailActionType(
         return stored is null
             ? new ActionTestResult(ActionTestOutcome.Failed, "The test mail could not be queued.")
             : new ActionTestResult(ActionTestOutcome.Sent, $"Sent to {context.User.Email}", [stored.Subject, stored.TextBody]);
+    }
+
+    /// <summary>
+    /// The mail a run of the action sends for the scope's entry, as the team gets it, queueing nothing (ADR-0189): the
+    /// recipients as the run finds them, the copies, the reply-to, and the mail in the site's sender and layout. Without a
+    /// team, it is the mail to the visitor's address, and without either, the team's mail as it would be.
+    /// </summary>
+    /// <param name="action">The action as the site runs it, its locks applied.</param>
+    /// <param name="scope">The entry, such as the sample entry.</param>
+    /// <param name="cancellationToken">Cancels the reads.</param>
+    /// <exception cref="ViewMissingException">The action names a view the site lacks and has no body of its own.</exception>
+    internal async Task<EmailPreview> PreviewAsync(FormAction action, MergeTagScope scope, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(action);
+        ArgumentNullException.ThrowIfNull(scope);
+        var settings = ReadSettings(action.Settings);
+        var run = new ActionRunContext { Action = action, Trigger = action.Trigger, Scope = scope, Attempt = 1, DeliveryKey = string.Empty };
+        var (team, visitors) = await RecipientsAsync(settings, run, cancellationToken);
+        var visitor = visitors.FirstOrDefault();
+        var mail = await MailAsync(settings, run, team, toVisitor: team.Count == 0 && visitor is not null, cancellationToken);
+        var composed = await outbox.ComposeAsync(
+            mail with
+            {
+                Cc = settings.Cc,
+                Bcc = settings.Bcc,
+                ReplyTo = settings.ReplyToField is { } field && MayShow(settings, scope, field) ? AnswerOf(scope, field)?.Trim() : null,
+            },
+            cancellationToken);
+        return new EmailPreview(composed, visitor);
     }
 
     private static void CheckAddresses(string setting, IReadOnlyList<string> addresses, ActionSettingsCheck check)

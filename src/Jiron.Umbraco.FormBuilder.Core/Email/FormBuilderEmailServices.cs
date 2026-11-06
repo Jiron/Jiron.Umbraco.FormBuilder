@@ -13,7 +13,7 @@ namespace Jiron.Umbraco.FormBuilder.Core.Email;
 /// <summary>The registrations of mail (ADR-0007, ADR-0159), which the registrations of the action framework make, whose worker sends it.</summary>
 internal static class FormBuilderEmailServices
 {
-    /// <summary>Registers the renderer, the layouts, the outbox, the test mail, the queue after the action runs, and the purge.</summary>
+    /// <summary>Registers the renderer, the layouts, the outbox, the test mail, the previews, the queue after the action runs, and the purge.</summary>
     public static IUmbracoBuilder AddFormBuilderEmail(this IUmbracoBuilder builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
@@ -23,6 +23,7 @@ internal static class FormBuilderEmailServices
         builder.Services.TryAddSingleton<EmailAttempts>();
         builder.Services.TryAddSingleton<DeliveryNotices>();
         builder.Services.TryAddSingleton<TestEmails>();
+        builder.Services.TryAddSingleton<EmailPreviews>();
         builder.JironFormBuilder().ActionTypes().Append<EmailActionType>();
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IOutboxQueue, EmailQueue>());
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IFormBuilderRetentionPart, EmailPurge>());

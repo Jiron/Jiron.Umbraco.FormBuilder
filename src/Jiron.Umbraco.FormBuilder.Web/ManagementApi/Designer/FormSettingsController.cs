@@ -2,6 +2,7 @@ using Asp.Versioning;
 using Jiron.Umbraco.FormBuilder.Core;
 using Jiron.Umbraco.FormBuilder.Core.Access;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
+using Jiron.Umbraco.FormBuilder.Core.Email;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Core.Settings;
@@ -42,8 +43,9 @@ internal sealed class CaptchaProviderController(FormBuilderCaptchaProviderCollec
 }
 
 /// <summary>
-/// What a form's Settings view needs of the site (ADR-0184): the site's defaults that "Site default" stands for, its time
-/// zone, the themes and member groups a form may name, and the bounds the save checks hold settings to. It needs
+/// What a form's Settings and Actions views need of the site (ADR-0184, ADR-0189): the site's defaults that "Site default"
+/// stands for, its time zone, the themes, member groups and email layouts a form may name, and the bounds the save checks
+/// hold settings to. It needs
 /// <c>design</c> on the form, whose settings these are: the member groups' names are the Members section's to show, so
 /// only who may set a form's access reads them here.
 /// </summary>
@@ -54,13 +56,14 @@ internal sealed class FormSettingsController(
     IFormBuilderSettingsService settings,
     FormBuilderThemes themes,
     IThemeRepository library,
+    IEmailLayoutRepository layouts,
     IMemberGroupService memberGroups,
     DefinitionLimits limits) : FormBuilderManagementApiController
 {
-    // A page of the library's themes, read until the last.
-    private const int ThemePage = 200;
+    // A page of the library's themes or layouts, read until the last.
+    private const int LibraryPage = 200;
 
-    /// <summary>The site's defaults, time zone, themes, member groups and the settings' bounds, for a form.</summary>
+    /// <summary>The site's defaults, time zone, themes, member groups, email layouts and the settings' bounds, for a form.</summary>
     /// <param name="key">The form.</param>
     /// <param name="cancellationToken">The request's cancellation.</param>
     [HttpGet]
@@ -74,16 +77,14 @@ internal sealed class FormSettingsController(
         _ = key;
         var general = (await settings.GetAsync<GeneralSettings>(cancellationToken: cancellationToken)).Value;
         var protection = (await settings.GetAsync<ProtectionSettings>(cancellationToken: cancellationToken)).Value;
-        var stored = new List<StoredTheme>();
-        for (var skip = 0; ; skip += ThemePage)
-        {
-            var page = await library.ListAsync(null, new PageRequest(skip, ThemePage), cancellationToken);
-            stored.AddRange(page.Items);
-            if (page.Items.Count < ThemePage || stored.Count >= page.Total)
-            {
-                break;
-            }
-        }
+        var email = (await settings.GetAsync<EmailSettings>(cancellationToken: cancellationToken)).Value;
+        var stored = await AllAsync((page, token) => library.ListAsync(null, page, token), cancellationToken);
+        var storedLayouts = await AllAsync((page, token) => layouts.ListAsync(null, page, token), cancellationToken);
+
+        // A default that is gone gives way to the card, as a mail's does (ADR-0159).
+        var defaultLayout = email.DefaultLayout is { } named && (EmailLayouts.BuiltIn.ContainsKey(named) || storedLayouts.Any(layout => layout.Key == named))
+            ? named
+            : EmailLayouts.CardKey;
 
         return Ok(new FormSettingsChoicesResponseModel
         {
@@ -95,6 +96,7 @@ internal sealed class FormSettingsController(
                 ContentRules = EnumNames<ContentRuleLevel>.ByValue[protection.ContentRules],
                 RequiredMarker = EnumNames<RequiredMarker>.ByValue[general.RequiredMarker],
                 Theme = general.Theme ?? BuiltInThemes.DefaultAlias,
+                EmailLayout = defaultLayout,
                 SubmitLabel = general.SubmitLabel,
                 NextLabel = general.NextLabel,
                 BackLabel = general.BackLabel,
@@ -103,6 +105,12 @@ internal sealed class FormSettingsController(
             [
                 .. themes.All.Select(theme => new FormSettingsThemeResponseModel { Alias = theme.Name, Label = theme.Label }),
                 .. stored.Select(theme => new FormSettingsThemeResponseModel { Alias = theme.Alias, Label = theme.Name }),
+            ],
+            EmailLayouts =
+            [
+                new FormSettingsEmailLayoutResponseModel { Key = EmailLayouts.CardKey, Name = "#jfbEmailLayouts_card" },
+                new FormSettingsEmailLayoutResponseModel { Key = EmailLayouts.LetterKey, Name = "#jfbEmailLayouts_letter" },
+                .. storedLayouts.Select(layout => new FormSettingsEmailLayoutResponseModel { Key = layout.Key, Name = layout.Name }),
             ],
             MemberGroups =
             [
@@ -121,6 +129,20 @@ internal sealed class FormSettingsController(
                 Actions = limits.MaxActions,
             },
         });
+    }
+
+    private static async Task<List<T>> AllAsync<T>(Func<PageRequest, CancellationToken, Task<Page<T>>> list, CancellationToken cancellationToken)
+    {
+        var all = new List<T>();
+        for (var skip = 0; ; skip += LibraryPage)
+        {
+            var page = await list(new PageRequest(skip, LibraryPage), cancellationToken);
+            all.AddRange(page.Items);
+            if (page.Items.Count < LibraryPage || all.Count >= page.Total)
+            {
+                return all;
+            }
+        }
     }
 }
 
@@ -155,6 +177,9 @@ internal sealed record FormSettingsChoicesResponseModel
     /// <summary>The member groups a form may admit, by name.</summary>
     public required IReadOnlyList<FormSettingsMemberGroupResponseModel> MemberGroups { get; init; }
 
+    /// <summary>The layouts an email action may choose: the built-in card and letter, then the library's in name order.</summary>
+    public required IReadOnlyList<FormSettingsEmailLayoutResponseModel> EmailLayouts { get; init; }
+
     /// <summary>The bounds the save checks hold settings to.</summary>
     public required FormSettingsLimitsResponseModel Limits { get; init; }
 }
@@ -177,6 +202,9 @@ internal sealed record FormSettingsDefaultsResponseModel
     /// <summary>The alias of the site's default theme.</summary>
     public required string Theme { get; init; }
 
+    /// <summary>The key of the layout a mail has without one of its own, one of <see cref="FormSettingsChoicesResponseModel.EmailLayouts"/>.</summary>
+    public required Guid EmailLayout { get; init; }
+
     /// <summary>
     /// The site's label of the send button, per culture (<c>""</c> the default); none for the package's word in the
     /// page's language.
@@ -198,6 +226,16 @@ internal sealed record FormSettingsThemeResponseModel
 
     /// <summary>Its name.</summary>
     public required string Label { get; init; }
+}
+
+/// <summary>An email layout an action may choose (ADR-0159).</summary>
+internal sealed record FormSettingsEmailLayoutResponseModel
+{
+    /// <summary>The key an action's settings name it by.</summary>
+    public required Guid Key { get; init; }
+
+    /// <summary>Its name; for a built-in one, a key of the backoffice's localisation that starts with <c>#</c>.</summary>
+    public required string Name { get; init; }
 }
 
 /// <summary>A member group a form may admit.</summary>

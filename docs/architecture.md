@@ -300,7 +300,16 @@ flowchart LR
   view's words load with it (`action-words.ts` registers `lang/actions.<xx>.ts` with Umbraco's localization manager),
   so the backoffice's start does not carry them. Fix it of an action carries its key; `?action=` on a form's address
   hands the view a Fix it at that action once the name box has held the focus Umbraco gives it past its second look
-  (`name-focus.ts`).
+  (`name-focus.ts`). From 10.2b (ADR-0189): the action types' own editors are `action-editors.ts`, which the sidebar
+  hands the inspector's `settingEditor` through its `editors`: a field picker of the draft's fields of the setting's
+  `picks`, addresses as chips, the email's To box (`recipients`), which draws the settings `within` it, the recipient
+  map, and the layout from the setting choices' `emailLayouts`. An email's sidebar is Umbraco's large one, with its
+  mail's preview (`email-preview.element.ts`) asked as an outcome's is: both previewers are
+  `preview/draft-previewer.ts`. `form/{key}/email-preview`, which needs `design`, answers the mail of the draft's email
+  action for the sample entry: `EmailPreviews` (Core) finds the action, applies its locks and asks
+  `EmailActionType.PreviewAsync`, which finds the recipients as a run does and has the outbox compose the mail without
+  queueing it (`EmailOutbox.ComposeAsync`, which `PrepareAsync` shares); the frame reads the layout's colours for the
+  scheme chosen (`mailDocument`).
 
 ## 2. The definition model
 
@@ -394,7 +403,8 @@ Text        LocalizedText: culture → text, "" is the default; "#key" reads the
   a collection builder that holds the 33 built-in types from its start, so a site's composer adds, replaces or removes
   one whatever order the composers run in. Each type declares its alias, icon, palette group, storage, rule kind,
   common properties and error kinds, and its settings class with `[FormBuilderSetting]` becomes its settings schema
-  (kinds, defaults, editors, and which settings visitors see), with the rules that `[Required]`, `[Range]`,
+  (kinds, defaults, editors, which settings visitors see, and for an editor that draws several, which settings it
+  holds (`Within`) and which fields a picker offers (`Picks`), ADR-0189), with the rules that `[Required]`, `[Range]`,
   `[StringLength]`, `[Length]` and `[AllowedValues]` give it (ADR-0056). `FieldTypeRegistry` builds the traits that the
   validation, the projection and the field catalogue read; start-up refuses an alias taken twice and a declaration
   or settings class that contradicts itself, naming the type. The backoffice reads every type with its settings, rules

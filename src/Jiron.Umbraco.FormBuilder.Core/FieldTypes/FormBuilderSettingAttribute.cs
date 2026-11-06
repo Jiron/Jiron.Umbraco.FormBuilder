@@ -47,6 +47,19 @@ public sealed class FormBuilderSettingAttribute : Attribute
     public bool SupportsMergeTags { get; set; }
 
     /// <summary>
+    /// The setting of the same class whose editor draws this one as well, by its name in JSON; none by default. The email's
+    /// To box, for example, holds the field, the creator and the map it goes to (ADR-0189), which the designer then draws
+    /// nowhere else. The setting it names is at the top of the class and within no other.
+    /// </summary>
+    public string? Within { get; set; }
+
+    /// <summary>
+    /// The fields a field picker (the editor <c>fieldPicker</c>) offers: any field that holds a value by default, or only
+    /// those of one kind (ADR-0189). The type's own check still says which fields it takes.
+    /// </summary>
+    public FieldPick Picks { get; set; } = FieldPick.Any;
+
+    /// <summary>
     /// Whether visitors see the setting: it is then part of the public projection (ADR-0002), as a browser needs it to show
     /// and check the field. Off by default, so a setting stays on the server unless its type says otherwise.
     /// </summary>
@@ -97,6 +110,25 @@ public enum FieldSettingKind
 
     /// <summary>Any JSON, which the type checks itself (for example a date or a date relative to today).</summary>
     Json,
+}
+
+/// <summary>The fields a field picker offers (ADR-0189).</summary>
+public enum FieldPick
+{
+    /// <summary>Any field that holds a value.</summary>
+    Any,
+
+    /// <summary>The fields of the email type.</summary>
+    Email,
+
+    /// <summary>The fields with options.</summary>
+    Choice,
+
+    /// <summary>The fields that store files.</summary>
+    File,
+
+    /// <summary>The fields marked sensitive.</summary>
+    Sensitive,
 }
 
 /// <summary>The sections of the designer's inspector that settings appear in (section 4.13).</summary>

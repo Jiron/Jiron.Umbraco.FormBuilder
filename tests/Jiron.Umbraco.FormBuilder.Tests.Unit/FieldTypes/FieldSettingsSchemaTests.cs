@@ -47,6 +47,11 @@ public sealed class FieldSettingsSchemaTests
         yield return Case("a nested class without a constructor", typeof(WithBadObject), typeof(WithoutConstructor).FullName + " is a settings class only as a class");
         yield return Case("a text that starts null where it cannot be", typeof(NullWhereNotNullable), "NullWhereNotNullable.Title starts null, though the class says it cannot be null: give it an initial value, or make it nullable.");
         yield return Case("a constructor that throws", typeof(ThrowingConstructor), "ThrowingConstructor cannot be written as JSON: Not today.");
+        yield return Case("within a setting the class lacks", typeof(WithinNothing), "WithinNothing.Field is within 'box', which is no other setting of its class.");
+        yield return Case("within itself", typeof(WithinItself), "WithinItself.To is within 'to', which is no other setting of its class.");
+        yield return Case("within one that is within another", typeof(WithinTwice), "WithinTwice.Field is within 'copy', which is itself within 'to'; a setting is within one that has its own place.");
+        yield return Case("within inside an object", typeof(WithinInsideAnObject), "WithinInside.Field is within 'to' inside an object, whose editor draws all of its settings.");
+        yield return Case("picking fields without a field picker", typeof(PicksWithoutPicker), "PicksWithoutPicker.Field picks fields of a kind, which only the editor fieldPicker offers.");
     }
 
     [Test]
@@ -156,6 +161,22 @@ public sealed class FieldSettingsSchemaTests
             IsPublic = true,
             Rules = new FieldSettingRules { MaximumLength = FieldSettingRules.TextLength },
         }).Using<FieldSettingDescriptor>(SameSetting));
+    }
+
+    [Test]
+    public void ASettingWithinAnother_AndAFieldPickersKind_AreWhatTheAttributeSays()
+    {
+        var schema = FieldSettingsReader.Read(typeof(Boxed));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(schema.Find("to")!.Within, Is.Null, "The box has its own place.");
+            Assert.That(schema.Find("field")!.Within, Is.EqualTo("to"));
+            Assert.That(schema.Find("field")!.Picks, Is.EqualTo(FieldPick.Email));
+            Assert.That(schema.Find("files")!.Picks, Is.EqualTo(FieldPick.File), "A list of fields picks too.");
+            Assert.That(schema.Find("any")!.Picks, Is.EqualTo(FieldPick.Any), "Any field unless the setting says otherwise.");
+            Assert.That(schema.Settings.Select(setting => setting.Name), Is.EqualTo(new[] { "to", "field", "files", "any" }), "A setting within another keeps its place among the settings.");
+        });
     }
 
     [Test]
@@ -436,6 +457,66 @@ public sealed class FieldSettingsSchemaTests
             Public = true)]
         [JsonPropertyName("intro")]
         public LocalizedText? Introduction { get; init; }
+    }
+
+    public sealed class Boxed
+    {
+        [FormBuilderSetting("To", Editor = "recipients")]
+        public IReadOnlyList<string> To { get; init; } = [];
+
+        [FormBuilderSetting("Field", Kind = FieldSettingKind.Key, Editor = "fieldPicker", Picks = FieldPick.Email, Within = "to")]
+        public Guid? Field { get; init; }
+
+        [FormBuilderSetting("Files", Kind = FieldSettingKind.Key, Editor = "fieldPicker", Picks = FieldPick.File)]
+        public IReadOnlyList<Guid> Files { get; init; } = [];
+
+        [FormBuilderSetting("Any", Kind = FieldSettingKind.Key, Editor = "fieldPicker")]
+        public Guid? Any { get; init; }
+    }
+
+    public sealed class WithinNothing
+    {
+        [FormBuilderSetting("Field", Within = "box")]
+        public string? Field { get; init; }
+    }
+
+    public sealed class WithinItself
+    {
+        [FormBuilderSetting("To", Within = "to")]
+        public string? To { get; init; }
+    }
+
+    public sealed class WithinTwice
+    {
+        [FormBuilderSetting("To")]
+        public string? To { get; init; }
+
+        [FormBuilderSetting("Copy", Within = "to")]
+        public string? Copy { get; init; }
+
+        [FormBuilderSetting("Field", Within = "copy")]
+        public string? Field { get; init; }
+    }
+
+    public sealed class WithinInsideAnObject
+    {
+        [FormBuilderSetting("Box")]
+        public WithinInside Box { get; init; } = new();
+    }
+
+    public sealed class WithinInside
+    {
+        [FormBuilderSetting("To")]
+        public string? To { get; init; }
+
+        [FormBuilderSetting("Field", Within = "to")]
+        public string? Field { get; init; }
+    }
+
+    public sealed class PicksWithoutPicker
+    {
+        [FormBuilderSetting("Field", Kind = FieldSettingKind.Key, Editor = "mediaPicker", Picks = FieldPick.Email)]
+        public Guid? Field { get; init; }
     }
 
     public sealed class PublicObject

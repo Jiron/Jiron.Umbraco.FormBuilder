@@ -68,6 +68,12 @@ public sealed record FieldSettingDescriptor
     /// <summary>Whether its text may hold merge tags (ADR-0014).</summary>
     public bool SupportsMergeTags { get; init; }
 
+    /// <summary>The setting whose editor draws this one as well, by its name; null when it has its own place (ADR-0189).</summary>
+    public string? Within { get; init; }
+
+    /// <summary>The fields a field picker offers (ADR-0189); <see cref="FieldPick.Any"/> for any other editor.</summary>
+    public FieldPick Picks { get; init; }
+
     /// <summary>Whether visitors see it in the public projection (ADR-0002); read for the settings at the top only.</summary>
     public bool IsPublic { get; init; }
 

@@ -109,7 +109,29 @@ internal static class FieldSettingsReader
             }
         }
 
+        CheckWithin(found.Select(each => (each.Setting, $"{NameOf(type)}.{properties[each.Index].Name}")).ToList(), nested, problems);
         return [.. found.OrderBy(each => each.Setting.Group).ThenBy(each => each.Setting.Order).ThenBy(each => each.Index).Select(each => each.Setting)];
+    }
+
+    // A setting within another names one of its class at the top, which is itself within none (ADR-0189).
+    private static void CheckWithin(List<(FieldSettingDescriptor Setting, string Where)> settings, bool nested, List<string> problems)
+    {
+        foreach (var (setting, where) in settings.Where(each => each.Setting.Within is not null))
+        {
+            var box = settings.FirstOrDefault(each => !ReferenceEquals(each.Setting, setting) && string.Equals(each.Setting.Name, setting.Within, StringComparison.Ordinal)).Setting;
+            if (nested)
+            {
+                problems.Add($"{where} is within '{setting.Within}' inside an object, whose editor draws all of its settings.");
+            }
+            else if (box is null)
+            {
+                problems.Add($"{where} is within '{setting.Within}', which is no other setting of its class.");
+            }
+            else if (box.Within is { } outer)
+            {
+                problems.Add($"{where} is within '{box.Name}', which is itself within '{outer}'; a setting is within one that has its own place.");
+            }
+        }
     }
 
     private static FieldSettingDescriptor? Describe(
@@ -185,6 +207,12 @@ internal static class FieldSettingsReader
             return null;
         }
 
+        if (attribute.Picks != FieldPick.Any && editor != "fieldPicker")
+        {
+            problems.Add($"{where} picks fields of a kind, which only the editor fieldPicker offers.");
+            return null;
+        }
+
         var setting = new FieldSettingDescriptor
         {
             Name = name,
@@ -200,6 +228,8 @@ internal static class FieldSettingsReader
             Order = attribute.Order,
             SupportsMergeTags = attribute.SupportsMergeTags,
             IsPublic = attribute.Public && !nested,
+            Within = attribute.Within,
+            Picks = attribute.Picks,
         };
         if (Rules(property, setting, ListItem(type) ?? type, where, problems) is not { } rules)
         {

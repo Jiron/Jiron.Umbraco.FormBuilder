@@ -266,6 +266,15 @@ internal sealed record FieldSettingResponseModel
     /// <summary>Whether visitors see it; read for the settings at the top only.</summary>
     public required bool IsPublic { get; init; }
 
+    /// <summary>The setting whose editor draws this one as well, by its name; null when it has its own place.</summary>
+    public string? Within { get; init; }
+
+    /// <summary>
+    /// For a field picker, the fields it offers: <c>any</c> (that holds a value), <c>email</c>, <c>choice</c> (with options),
+    /// <c>file</c> (that stores files) or <c>sensitive</c>; null for any other editor.
+    /// </summary>
+    public string? Picks { get; init; }
+
     /// <summary>The rules its value keeps, which publishing checks.</summary>
     public required FieldSettingRulesResponseModel Rules { get; init; }
 
@@ -290,6 +299,8 @@ internal sealed record FieldSettingResponseModel
         Group = FieldTypeNames.Of(setting.Group),
         SupportsMergeTags = setting.SupportsMergeTags,
         IsPublic = setting.IsPublic,
+        Within = setting.Within,
+        Picks = setting.Editor == "fieldPicker" ? FieldTypeNames.Of(setting.Picks) : null,
         Rules = FieldSettingRulesResponseModel.Of(setting.Rules),
         Lock = settingLock is null ? null : new FieldSettingLockResponseModel(settingLock.Hidden, settingLock.ConfigurationKey, settingLock.Hidden ? null : settingLock.Value),
     };

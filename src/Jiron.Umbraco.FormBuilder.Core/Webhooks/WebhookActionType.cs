@@ -93,7 +93,7 @@ public sealed class WebhookActionSettings
     public JsonElement? Headers { get; init; }
 
     /// <summary>The sensitive fields it may send (ADR-0014); none by default.</summary>
-    [FormBuilderSetting("#jfbActionSettings_webhookIncludeSensitive", Order = 10, Kind = FieldSettingKind.Key, Editor = "fieldPicker", Group = FieldSettingGroup.Advanced)]
+    [FormBuilderSetting("#jfbActionSettings_webhookIncludeSensitive", Order = 10, Kind = FieldSettingKind.Key, Editor = "fieldPicker", Picks = FieldPick.Sensitive, Group = FieldSettingGroup.Advanced)]
     public IReadOnlyList<Guid> IncludeSensitive { get; init; } = [];
 }
 

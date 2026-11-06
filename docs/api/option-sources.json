@@ -16,6 +16,8 @@
           "group": "essentials",
           "supportsMergeTags": false,
           "isPublic": false,
+          "within": null,
+          "picks": null,
           "rules": {
             "required": false,
             "minimum": null,
@@ -43,6 +45,8 @@
           "group": "essentials",
           "supportsMergeTags": false,
           "isPublic": false,
+          "within": null,
+          "picks": null,
           "rules": {
             "required": false,
             "minimum": null,
@@ -70,6 +74,8 @@
           "group": "essentials",
           "supportsMergeTags": false,
           "isPublic": false,
+          "within": null,
+          "picks": null,
           "rules": {
             "required": false,
             "minimum": null,
@@ -97,6 +103,8 @@
           "group": "essentials",
           "supportsMergeTags": false,
           "isPublic": false,
+          "within": null,
+          "picks": null,
           "rules": {
             "required": false,
             "minimum": null,
@@ -124,6 +132,8 @@
           "group": "essentials",
           "supportsMergeTags": false,
           "isPublic": false,
+          "within": null,
+          "picks": null,
           "rules": {
             "required": false,
             "minimum": null,
@@ -160,6 +170,8 @@
           "group": "essentials",
           "supportsMergeTags": false,
           "isPublic": false,
+          "within": null,
+          "picks": null,
           "rules": {
             "required": false,
             "minimum": null,
@@ -209,6 +221,8 @@
           "group": "essentials",
           "supportsMergeTags": false,
           "isPublic": false,
+          "within": null,
+          "picks": null,
           "rules": {
             "required": true,
             "minimum": null,
@@ -241,6 +255,8 @@
           "group": "essentials",
           "supportsMergeTags": false,
           "isPublic": false,
+          "within": null,
+          "picks": null,
           "rules": {
             "required": true,
             "minimum": null,
@@ -268,6 +284,8 @@
           "group": "essentials",
           "supportsMergeTags": false,
           "isPublic": false,
+          "within": null,
+          "picks": null,
           "rules": {
             "required": false,
             "minimum": null,
@@ -295,6 +313,8 @@
           "group": "essentials",
           "supportsMergeTags": false,
           "isPublic": false,
+          "within": null,
+          "picks": null,
           "rules": {
             "required": false,
             "minimum": null,
@@ -322,6 +342,8 @@
           "group": "essentials",
           "supportsMergeTags": false,
           "isPublic": false,
+          "within": null,
+          "picks": null,
           "rules": {
             "required": false,
             "minimum": null,
@@ -354,6 +376,8 @@
           "group": "essentials",
           "supportsMergeTags": false,
           "isPublic": false,
+          "within": null,
+          "picks": null,
           "rules": {
             "required": false,
             "minimum": null,
@@ -386,6 +410,8 @@
           "group": "essentials",
           "supportsMergeTags": false,
           "isPublic": false,
+          "within": null,
+          "picks": null,
           "rules": {
             "required": true,
             "minimum": null,

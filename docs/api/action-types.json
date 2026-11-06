@@ -14,10 +14,12 @@
         "default": null,
         "label": "#jfbActionSettings_emailTo",
         "description": null,
-        "editor": "list",
+        "editor": "recipients",
         "group": "essentials",
         "supportsMergeTags": false,
         "isPublic": false,
+        "within": null,
+        "picks": null,
         "rules": {
           "required": false,
           "minimum": null,
@@ -45,6 +47,8 @@
         "group": "essentials",
         "supportsMergeTags": false,
         "isPublic": false,
+        "within": "to",
+        "picks": "email",
         "rules": {
           "required": false,
           "minimum": null,
@@ -72,6 +76,8 @@
         "group": "essentials",
         "supportsMergeTags": false,
         "isPublic": false,
+        "within": "to",
+        "picks": null,
         "rules": {
           "required": false,
           "minimum": null,
@@ -99,87 +105,8 @@
         "group": "essentials",
         "supportsMergeTags": false,
         "isPublic": false,
-        "rules": {
-          "required": false,
-          "minimum": null,
-          "minimumIsExclusive": false,
-          "maximum": null,
-          "maximumIsExclusive": false,
-          "minimumLength": null,
-          "maximumLength": null,
-          "minimumCount": null,
-          "maximumCount": null,
-          "allowedValues": []
-        },
-        "lock": null
-      },
-      {
-        "name": "cc",
-        "kind": "list",
-        "itemKind": "text",
-        "choices": [],
-        "settings": [],
-        "default": null,
-        "label": "#jfbActionSettings_emailCc",
-        "description": null,
-        "editor": "list",
-        "group": "essentials",
-        "supportsMergeTags": false,
-        "isPublic": false,
-        "rules": {
-          "required": false,
-          "minimum": null,
-          "minimumIsExclusive": false,
-          "maximum": null,
-          "maximumIsExclusive": false,
-          "minimumLength": null,
-          "maximumLength": 2000,
-          "minimumCount": null,
-          "maximumCount": 1000,
-          "allowedValues": []
-        },
-        "lock": null
-      },
-      {
-        "name": "bcc",
-        "kind": "list",
-        "itemKind": "text",
-        "choices": [],
-        "settings": [],
-        "default": null,
-        "label": "#jfbActionSettings_emailBcc",
-        "description": null,
-        "editor": "list",
-        "group": "essentials",
-        "supportsMergeTags": false,
-        "isPublic": false,
-        "rules": {
-          "required": false,
-          "minimum": null,
-          "minimumIsExclusive": false,
-          "maximum": null,
-          "maximumIsExclusive": false,
-          "minimumLength": null,
-          "maximumLength": 2000,
-          "minimumCount": null,
-          "maximumCount": 1000,
-          "allowedValues": []
-        },
-        "lock": null
-      },
-      {
-        "name": "replyToField",
-        "kind": "key",
-        "itemKind": null,
-        "choices": [],
-        "settings": [],
-        "default": null,
-        "label": "#jfbActionSettings_emailReplyTo",
-        "description": null,
-        "editor": "fieldPicker",
-        "group": "essentials",
-        "supportsMergeTags": false,
-        "isPublic": false,
+        "within": "to",
+        "picks": null,
         "rules": {
           "required": false,
           "minimum": null,
@@ -207,6 +134,8 @@
         "group": "essentials",
         "supportsMergeTags": true,
         "isPublic": false,
+        "within": null,
+        "picks": null,
         "rules": {
           "required": false,
           "minimum": null,
@@ -234,6 +163,8 @@
         "group": "essentials",
         "supportsMergeTags": true,
         "isPublic": false,
+        "within": null,
+        "picks": null,
         "rules": {
           "required": false,
           "minimum": null,
@@ -261,6 +192,8 @@
         "group": "essentials",
         "supportsMergeTags": false,
         "isPublic": false,
+        "within": null,
+        "picks": null,
         "rules": {
           "required": false,
           "minimum": null,
@@ -271,6 +204,64 @@
           "maximumLength": null,
           "minimumCount": null,
           "maximumCount": null,
+          "allowedValues": []
+        },
+        "lock": null
+      },
+      {
+        "name": "replyToField",
+        "kind": "key",
+        "itemKind": null,
+        "choices": [],
+        "settings": [],
+        "default": null,
+        "label": "#jfbActionSettings_emailReplyTo",
+        "description": null,
+        "editor": "fieldPicker",
+        "group": "essentials",
+        "supportsMergeTags": false,
+        "isPublic": false,
+        "within": null,
+        "picks": "email",
+        "rules": {
+          "required": false,
+          "minimum": null,
+          "minimumIsExclusive": false,
+          "maximum": null,
+          "maximumIsExclusive": false,
+          "minimumLength": null,
+          "maximumLength": null,
+          "minimumCount": null,
+          "maximumCount": null,
+          "allowedValues": []
+        },
+        "lock": null
+      },
+      {
+        "name": "cc",
+        "kind": "list",
+        "itemKind": "text",
+        "choices": [],
+        "settings": [],
+        "default": null,
+        "label": "#jfbActionSettings_emailCc",
+        "description": null,
+        "editor": "addresses",
+        "group": "essentials",
+        "supportsMergeTags": false,
+        "isPublic": false,
+        "within": null,
+        "picks": null,
+        "rules": {
+          "required": false,
+          "minimum": null,
+          "minimumIsExclusive": false,
+          "maximum": null,
+          "maximumIsExclusive": false,
+          "minimumLength": null,
+          "maximumLength": 2000,
+          "minimumCount": null,
+          "maximumCount": 1000,
           "allowedValues": []
         },
         "lock": null
@@ -288,6 +279,8 @@
         "group": "appearance",
         "supportsMergeTags": false,
         "isPublic": false,
+        "within": null,
+        "picks": null,
         "rules": {
           "required": false,
           "minimum": null,
@@ -315,6 +308,8 @@
         "group": "appearance",
         "supportsMergeTags": false,
         "isPublic": false,
+        "within": null,
+        "picks": null,
         "rules": {
           "required": false,
           "minimum": null,
@@ -325,6 +320,35 @@
           "maximumLength": null,
           "minimumCount": null,
           "maximumCount": null,
+          "allowedValues": []
+        },
+        "lock": null
+      },
+      {
+        "name": "bcc",
+        "kind": "list",
+        "itemKind": "text",
+        "choices": [],
+        "settings": [],
+        "default": null,
+        "label": "#jfbActionSettings_emailBcc",
+        "description": null,
+        "editor": "addresses",
+        "group": "advanced",
+        "supportsMergeTags": false,
+        "isPublic": false,
+        "within": null,
+        "picks": null,
+        "rules": {
+          "required": false,
+          "minimum": null,
+          "minimumIsExclusive": false,
+          "maximum": null,
+          "maximumIsExclusive": false,
+          "minimumLength": null,
+          "maximumLength": 2000,
+          "minimumCount": null,
+          "maximumCount": 1000,
           "allowedValues": []
         },
         "lock": null
@@ -342,6 +366,8 @@
         "group": "advanced",
         "supportsMergeTags": false,
         "isPublic": false,
+        "within": null,
+        "picks": null,
         "rules": {
           "required": false,
           "minimum": null,
@@ -369,6 +395,8 @@
         "group": "advanced",
         "supportsMergeTags": false,
         "isPublic": false,
+        "within": null,
+        "picks": null,
         "rules": {
           "required": false,
           "minimum": null,
@@ -396,6 +424,8 @@
         "group": "advanced",
         "supportsMergeTags": false,
         "isPublic": false,
+        "within": null,
+        "picks": "sensitive",
         "rules": {
           "required": false,
           "minimum": null,
@@ -423,6 +453,8 @@
         "group": "advanced",
         "supportsMergeTags": false,
         "isPublic": false,
+        "within": null,
+        "picks": "file",
         "rules": {
           "required": false,
           "minimum": null,
@@ -481,6 +513,8 @@
         "group": "essentials",
         "supportsMergeTags": false,
         "isPublic": false,
+        "within": null,
+        "picks": null,
         "rules": {
           "required": false,
           "minimum": null,
@@ -508,6 +542,8 @@
         "group": "essentials",
         "supportsMergeTags": false,
         "isPublic": false,
+        "within": null,
+        "picks": null,
         "rules": {
           "required": false,
           "minimum": null,
@@ -548,6 +584,8 @@
         "group": "essentials",
         "supportsMergeTags": false,
         "isPublic": false,
+        "within": null,
+        "picks": null,
         "rules": {
           "required": false,
           "minimum": null,
@@ -575,6 +613,8 @@
         "group": "essentials",
         "supportsMergeTags": false,
         "isPublic": false,
+        "within": null,
+        "picks": null,
         "rules": {
           "required": false,
           "minimum": null,
@@ -602,6 +642,8 @@
         "group": "essentials",
         "supportsMergeTags": false,
         "isPublic": false,
+        "within": null,
+        "picks": null,
         "rules": {
           "required": false,
           "minimum": null,
@@ -629,6 +671,8 @@
         "group": "essentials",
         "supportsMergeTags": false,
         "isPublic": false,
+        "within": null,
+        "picks": null,
         "rules": {
           "required": false,
           "minimum": null,
@@ -656,6 +700,8 @@
         "group": "advanced",
         "supportsMergeTags": true,
         "isPublic": false,
+        "within": null,
+        "picks": null,
         "rules": {
           "required": false,
           "minimum": null,
@@ -683,6 +729,8 @@
         "group": "advanced",
         "supportsMergeTags": false,
         "isPublic": false,
+        "within": null,
+        "picks": null,
         "rules": {
           "required": false,
           "minimum": null,
@@ -710,6 +758,8 @@
         "group": "advanced",
         "supportsMergeTags": false,
         "isPublic": false,
+        "within": null,
+        "picks": null,
         "rules": {
           "required": false,
           "minimum": null,
@@ -737,6 +787,8 @@
         "group": "advanced",
         "supportsMergeTags": false,
         "isPublic": false,
+        "within": null,
+        "picks": "sensitive",
         "rules": {
           "required": false,
           "minimum": null,
@@ -799,6 +851,8 @@
         "group": "essentials",
         "supportsMergeTags": false,
         "isPublic": false,
+        "within": null,
+        "picks": null,
         "rules": {
           "required": false,
           "minimum": null,
@@ -835,6 +889,8 @@
         "group": "essentials",
         "supportsMergeTags": false,
         "isPublic": false,
+        "within": null,
+        "picks": null,
         "rules": {
           "required": false,
           "minimum": null,
@@ -875,6 +931,8 @@
         "group": "essentials",
         "supportsMergeTags": false,
         "isPublic": false,
+        "within": null,
+        "picks": null,
         "rules": {
           "required": false,
           "minimum": null,
@@ -902,6 +960,8 @@
         "group": "essentials",
         "supportsMergeTags": false,
         "isPublic": false,
+        "within": null,
+        "picks": null,
         "rules": {
           "required": false,
           "minimum": null,
@@ -929,6 +989,8 @@
         "group": "essentials",
         "supportsMergeTags": true,
         "isPublic": false,
+        "within": null,
+        "picks": null,
         "rules": {
           "required": false,
           "minimum": null,
@@ -956,6 +1018,8 @@
         "group": "essentials",
         "supportsMergeTags": false,
         "isPublic": false,
+        "within": null,
+        "picks": null,
         "rules": {
           "required": false,
           "minimum": null,
@@ -983,6 +1047,8 @@
         "group": "essentials",
         "supportsMergeTags": false,
         "isPublic": false,
+        "within": null,
+        "picks": null,
         "rules": {
           "required": false,
           "minimum": null,
@@ -1010,6 +1076,8 @@
         "group": "advanced",
         "supportsMergeTags": false,
         "isPublic": false,
+        "within": null,
+        "picks": null,
         "rules": {
           "required": false,
           "minimum": null,
@@ -1037,6 +1105,8 @@
         "group": "advanced",
         "supportsMergeTags": false,
         "isPublic": false,
+        "within": null,
+        "picks": null,
         "rules": {
           "required": false,
           "minimum": null,
@@ -1064,6 +1134,8 @@
         "group": "advanced",
         "supportsMergeTags": false,
         "isPublic": false,
+        "within": null,
+        "picks": "sensitive",
         "rules": {
           "required": false,
           "minimum": null,

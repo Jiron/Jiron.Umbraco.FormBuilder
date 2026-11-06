@@ -23,6 +23,8 @@
         "group": "essentials",
         "supportsMergeTags": false,
         "isPublic": false,
+        "within": null,
+        "picks": null,
         "rules": {
           "required": false,
           "minimum": "0",
