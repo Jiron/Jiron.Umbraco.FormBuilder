@@ -17,6 +17,7 @@ import {
   fieldTypeList,
   formCheckCheck,
   actionTestTest,
+  actionLastRunList,
   contentDocumentTypeGet,
   emailPreviewRender,
   outcomePreviewRender,
@@ -29,6 +30,7 @@ import {
 import { codeOf, sayRefusal } from '../library/library-changes';
 import { testAnswer, type TestAnswer } from './actions/action-test';
 import { contentTypeOf, type ContentType } from './actions/content-model';
+import type { LastRun } from './actions/run-words';
 import { previewAnswer, type EmailPreview } from './actions/email-preview';
 import { FORM_ENTITY_TYPE } from '../section/entity-types';
 import { issuesOf, type FixTarget } from './check/form-check';
@@ -427,6 +429,14 @@ export class FormWorkspaceContext
       { disableNotifications: true },
     );
     return testAnswer(data, codeOf(error));
+  }
+
+  /** The last run of each action of the stored draft that has run (ADR-0195); undefined without an answer. */
+  async lastRunsOf(): Promise<readonly LastRun[] | undefined> {
+    const key = this.getUnique();
+    if (!key) return undefined;
+    const { data } = await tryExecute(this, actionLastRunList({ path: { key } }), { disableNotifications: true });
+    return data?.runs;
   }
 
   /**

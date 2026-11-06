@@ -6,6 +6,7 @@ import { UmbSubmitWorkspaceAction } from '@umbraco-cms/backoffice/workspace';
 import { FORM_ENTITY_TYPE } from '../section/entity-types';
 import {
   ACTION_MODAL_ALIAS,
+  ACTION_RUN_MODAL_ALIAS,
   FORM_DETAIL_REPOSITORY_ALIAS,
   FORM_DETAIL_STORE_ALIAS,
   FORM_PERMISSION_CONDITION,
@@ -122,6 +123,12 @@ export const manifests: UmbExtensionManifest[] = [
     alias: ACTION_MODAL_ALIAS,
     name: 'Jiron Form Builder action sidebar',
     element: (() => import('./actions/action.modal.element')) as never,
+  },
+  {
+    type: 'modal',
+    alias: ACTION_RUN_MODAL_ALIAS,
+    name: "Jiron Form Builder last run's Details",
+    element: (() => import('./actions/action-run.modal.element')) as never,
   },
   {
     type: 'modal',

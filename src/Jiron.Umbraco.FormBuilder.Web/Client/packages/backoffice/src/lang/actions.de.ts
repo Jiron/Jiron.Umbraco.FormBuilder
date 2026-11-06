@@ -8,6 +8,9 @@ const count = (number: number, one: string, many: string) => (number === 1 ? `1 
 /** When a trigger runs, after a verb: a clause with „wenn“ takes a comma, „bei jedem …“ none. */
 const after = (when: string) => (/^wenn /.test(when) ? `, ${when}` : ` ${when}`);
 
+/** A time that starts a sentence: „vor 2 Stunden“ becomes „Vor 2 Stunden“. */
+const upperFirst = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
+
 export default {
   jfbActions: {
     empty:
@@ -346,6 +349,63 @@ export default {
     scheme: 'Farbschema',
     scheme_light: 'Hell',
     scheme_dark: 'Dunkel',
+    // Der letzte Lauf einer Aktion und seine Details (ADR-0195).
+    runAt: (time: string) => `um ${time}`,
+    runOn: (day: string, time: string) => `am ${day} um ${time}`,
+    runOnDay: (day: string) => `am ${day}`,
+    runJustNow: 'gerade eben',
+    runRunning: 'Läuft gerade',
+    runDelivered: (when: string) => `${upperFirst(when)} zugestellt`,
+    runDeliveredNow: 'Zugestellt',
+    runQueued: (when: string) => `${upperFirst(when)} zum Versand übergeben`,
+    runQueuedNow: 'Zum Versand übergeben',
+    runRan: (when: string) => `${upperFirst(when)} ausgeführt`,
+    runRanNow: 'Ausgeführt',
+    runSkipped: (when: string) => `${upperFirst(when)} übersprungen`,
+    runSkippedNow: 'Übersprungen',
+    runFailed: (when: string) => `Fehlgeschlagen ${when}.`,
+    runFailedNow: 'Fehlgeschlagen.',
+    runNextTry: (when: string) => `Nächster Versuch ${when}.`,
+    runNextTrySoon: 'Nächster Versuch in Kürze.',
+    runUncertain: (when: string) => `Unklar ${when}. Möglicherweise wurde der Lauf trotzdem ausgeführt.`,
+    runUncertainNow: 'Unklar. Möglicherweise wurde der Lauf trotzdem ausgeführt.',
+    runDetails: 'Details',
+    runDetailsOf: (name: string) => `Details zum letzten Lauf von ${name}`,
+    runLast: 'Letzter Lauf',
+    runHappened: 'Was passiert ist',
+    runTries: 'Versuche',
+    runTriedOnce: 'Einmal versucht.',
+    runTried: (count: number, first: string) => `${count}-mal versucht, zuerst ${first}.`,
+    runTriedCount: (count: number) => (count === 1 ? 'Einmal versucht.' : `${count}-mal versucht.`),
+    runWhatNow: 'Was sich tun lässt',
+    runTestHelp_webhook: 'Testen sendet einen Beispieleintrag, so sehen Sie, ob der Server wieder antwortet.',
+    runTestHelp: 'Testen führt die Aktion mit einem Beispieleintrag aus, so sehen Sie, ob sie jetzt funktioniert.',
+    runRetryWho:
+      'Wer die Einträge dieses Formulars sieht und seine Aktionen ändern darf, findet den Eintrag unter Einträge mit dem Filter Aktionen und kann den Lauf dort wiederholen. Wer Administratorrechte hat, kann ihn auch unter Aktivität › Zustellungen wiederholen.',
+    runError_http: (status: string) => `Der Server antwortete mit ${status}.`,
+    runError_timed_out: 'Der Server hat nicht rechtzeitig geantwortet.',
+    runError_no_connection: 'Der Server war nicht erreichbar.',
+    runError_not_allowed: 'An diese Adresse darf diese Website nicht senden.',
+    runError_no_address: 'Die Aktion hatte keine Adresse, an die sie senden konnte.',
+    runError_secret_missing: 'Der Konfiguration der Website fehlt ein Geheimnis, das die Aktion nennt.',
+    runError_secret_literal: 'Die Aktion enthält ein Geheimnis im Klartext, das nie gesendet wird.',
+    runError_header_invalid: 'Ein Header enthielt Zeichen, die ein Header nicht tragen kann.',
+    runError_too_long: 'Der Text war zu lang zum Senden.',
+    runError_view_missing:
+      'Die Website hat keine Razor-Ansicht, die die E-Mail nennt, und die E-Mail hat keinen eigenen Text.',
+    runError_target_missing: 'Der Dokumenttyp oder das Element, unter das das neue Element kommt, ist nicht mehr da.',
+    runError_no_name: 'Der Name des Elements war für diesen Eintrag leer.',
+    runError_content_refused: 'Umbraco hat das Element nicht gespeichert oder veröffentlicht.',
+    runError_scan_pending: 'Eine Datei des Eintrags wartete noch auf ihre Virenprüfung.',
+    runError_cannot_move: 'Der Zustand des Eintrags lässt diesen Wechsel nicht zu.',
+    runError_attempt_timed_out: 'Der Versuch hat länger gedauert, als ein Versuch darf.',
+    runError_host_stopped: 'Die Website wurde beendet, während der Versuch lief.',
+    runError_lease_expired: 'Der Server, der ihn ausführte, wurde beendet, bevor er das Ergebnis meldete.',
+    runError_exception: 'Er brach mit einem Fehler ab. Den Grund findet jemand aus der Entwicklung im Log der Website.',
+    runError_unknown_type: 'Diese Website hat den Typ der Aktion nicht mehr.',
+    runError_unknown_action: 'Die Version, mit der der Eintrag gesendet wurde, hat diese Aktion nicht.',
+    runError_unknown:
+      'Er ist fehlgeschlagen, ohne zu sagen, warum. Den Grund findet jemand aus der Entwicklung im Log der Website.',
   },
   jfbEmailLayouts: {
     card: 'Karte',

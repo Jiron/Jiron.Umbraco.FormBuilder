@@ -57,6 +57,8 @@ import {
 import type { LayoutChoice } from './action-editors';
 import { runTest, testHint } from './action-test';
 import { ACTION_MODAL } from './action.modal.token';
+import { ACTION_RUN_MODAL } from './action-run.modal.token';
+import { runDetails, runLine, type LastRun } from './run-words';
 import { loadActionWords } from './action-words';
 
 /** The setting a trigger needs, as a Fix it in the Settings view names it. */
@@ -77,6 +79,7 @@ export class FormActionsViewElement extends UmbLitElement {
     _check: { state: true },
     _manage: { state: true },
     _said: { state: true },
+    _runs: { state: true },
   };
 
   static override styles = [
@@ -213,6 +216,8 @@ export class FormActionsViewElement extends UmbLitElement {
   /** Whether the user may change the form's actions. */
   declare private _manage: boolean;
   declare private _said: string;
+  /** Each action's last run, by its key (ADR-0195). */
+  declare private _runs: ReadonlyMap<string, LastRun>;
 
   #context: FormWorkspaceContext | undefined;
   /** The form whose action types and choices were read, so another form open reads them again. */
@@ -221,6 +226,8 @@ export class FormActionsViewElement extends UmbLitElement {
   #published = false;
   /** Whether an action's sidebar is open, so a second never opens over it. */
   #editing = false;
+  /** How many reads of the last runs were made, so only the latest one's answer is said. */
+  #runReads = 0;
   /** The last toast with Undo, closed by the next one: its Undo would take back another change. */
   #undoToast: { close(): void } | undefined;
 
@@ -233,6 +240,7 @@ export class FormActionsViewElement extends UmbLitElement {
     this._check = UNCHECKED;
     this._manage = false;
     this._said = '';
+    this._runs = new Map();
     this.consumeContext(FORM_WORKSPACE_CONTEXT, (context) => {
       this.#context = context;
       if (!context) return;
@@ -250,6 +258,8 @@ export class FormActionsViewElement extends UmbLitElement {
         (unique) => {
           if (!unique || unique === this.#form) return;
           this.#form = unique;
+          // Another form's runs are never said on this one's cards, even while its own are not read yet.
+          this._runs = new Map();
           void this.#read();
         },
         'unique',
@@ -292,8 +302,33 @@ export class FormActionsViewElement extends UmbLitElement {
     this._limit = choices.data.limits.actions;
     this._layouts = { items: choices.data.emailLayouts, defaultKey: choices.data.defaults.emailLayout };
     this._look = look;
+    void this.#readRuns();
     await this.updateComplete;
     await this.#fixPending();
+  }
+
+  // The last runs, which change as entries come in: read with the view, and again when its page is shown again. Only the
+  // latest read's answer counts, so one that comes late never takes newer runs back.
+  async #readRuns() {
+    const form = this.#form;
+    const read = ++this.#runReads;
+    const runs = await this.#context?.lastRunsOf();
+    if (!runs || form !== this.#form || read !== this.#runReads) return;
+    this._runs = new Map(runs.map((run) => [run.actionKey, run]));
+  }
+
+  #shown = () => {
+    if (document.visibilityState === 'visible' && this._actionTypes) void this.#readRuns();
+  };
+
+  override connectedCallback() {
+    super.connectedCallback();
+    document.addEventListener('visibilitychange', this.#shown);
+  }
+
+  override disconnectedCallback() {
+    document.removeEventListener('visibilitychange', this.#shown);
+    super.disconnectedCallback();
   }
 
   // ---- Words --------------------------------------------------------------------------------------------------------
@@ -720,8 +755,32 @@ export class FormActionsViewElement extends UmbLitElement {
         on: isOn(action),
         flag: flags.get(action.key),
         testHint: testHint(type?.test, this.#term),
+        run: this.#runOf(action),
       };
     });
+  }
+
+  // An action's last run in the reader's language, as its card says it.
+  #runOf(action: DesignAction) {
+    const run = this._runs.get(action.key);
+    return run ? (runLine(run, action.type, new Date(), this.localize.lang(), this.#term) ?? undefined) : undefined;
+  }
+
+  // The Details of a failed or uncertain last run, with Test for who may change actions (ADR-0195).
+  async #details(key: string) {
+    const action = actionsOf(this.#definition()).find((one) => one.key === key);
+    const run = this._runs.get(key);
+    if (!action || !run) return;
+    const details = runDetails(run, action.type, new Date(), this.localize.lang(), this.#term);
+    if (!details) return;
+    await umbOpenModal(this, ACTION_RUN_MODAL, {
+      data: {
+        name: this.#nameOf(action),
+        details,
+        webhook: action.type === 'webhook',
+        ...(this._manage ? { test: (started: () => void) => this.#test(this.#definition(), key, started) } : {}),
+      },
+    }).catch(() => undefined);
   }
 
   #trigger(definition: DesignDefinition, trigger: Trigger, flags: ReadonlyMap<string, Flag>): TemplateResult {
@@ -761,6 +820,7 @@ export class FormActionsViewElement extends UmbLitElement {
               .toggle=${(key: string, on: boolean) => this.#toggle(key, on)}
               .request=${(key: string, request: CardRequest) => void this.#request(key, request)}
               .test=${this._manage ? (key: string, started: () => void) => this.#test(this.#definition(), key, started) : undefined}
+              .details=${(key: string) => void this.#details(key)}
             ></jfb-action-list>`
           : need
             ? nothing

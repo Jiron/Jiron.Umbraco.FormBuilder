@@ -21,6 +21,9 @@ export const FORM_PERMISSION_CONDITION = 'Jiron.FormBuilder.Condition.FormPermis
  */
 export const ACTION_MODAL_ALIAS = 'Jiron.FormBuilder.Modal.Action';
 
+/** The Details of an action's last run (ROADMAP 10.2f, ADR-0195), named here for the same reason. */
+export const ACTION_RUN_MODAL_ALIAS = 'Jiron.FormBuilder.Modal.ActionRun';
+
 export const FORM_DETAIL_STORE_CONTEXT = new UmbContextToken<FormDetailStore>(FORM_DETAIL_STORE_ALIAS);
 
 /** The open form's workspace context, which the views and actions inside the form workspace consume. */

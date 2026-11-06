@@ -11,6 +11,7 @@ import { dragFrom } from '../drag/pointer-drag';
 import { controlStyles } from '../inspector/control.styles';
 import { flagLine, type Flag } from '../settings/problem-lines';
 import { DOT } from '../settings/settings-model';
+import type { RunLine } from './run-words';
 
 /** A card as the view gives it: what it shows of an action, in words. */
 export interface ActionCard {
@@ -26,6 +27,8 @@ export interface ActionCard {
   readonly flag?: Flag | undefined;
   /** What its type's test does, said before it runs; none for a kind the backoffice does not know. */
   readonly testHint?: string | undefined;
+  /** Its last run in words (ADR-0195); none for an action that has not run. */
+  readonly run?: RunLine | undefined;
 }
 
 /** What a card's "..." asks for. */
@@ -37,6 +40,7 @@ export class ActionListElement extends UmbLitElement {
     label: {},
     readOnly: { type: Boolean, attribute: 'read-only' },
     test: { attribute: false },
+    details: { attribute: false },
     _testing: { state: true },
     full: { type: Boolean },
     open: { attribute: false },
@@ -204,7 +208,10 @@ export class ActionListElement extends UmbLitElement {
         overflow-wrap: anywhere;
       }
 
+      /* On the card's first row, though the last run under the name comes before it, as it is read. */
       .end {
+        grid-row: 1;
+        grid-column: 4;
         display: flex;
         align-items: center;
         gap: var(--uui-size-space-2);
@@ -227,6 +234,53 @@ export class ActionListElement extends UmbLitElement {
       .state {
         color: var(--jfb-bo-color-text-muted);
         font-size: var(--uui-type-small-size);
+      }
+
+      /* The last run, on a line of its own under the name, its summary and its rule, as they are: muted, a failure in the
+         danger colour and an uncertain run in the warning colour, with its Details (ADR-0195). It takes the width under
+         the switch too, so a long line wraps less on a phone. */
+      .run {
+        grid-row: 2;
+        grid-column: 3 / -1;
+        margin: 0;
+        padding: 0 var(--uui-size-space-2) var(--uui-size-space-1);
+        color: var(--jfb-bo-color-text-muted);
+        font-size: var(--uui-type-small-size);
+        overflow-wrap: anywhere;
+      }
+
+      .run[data-tone='danger'] {
+        color: var(--jfb-bo-color-danger-text);
+      }
+
+      .run[data-tone='warning'] {
+        color: var(--jfb-bo-color-warning-text);
+      }
+
+      /* A taller target than its words, under the card's 44 px button, without moving the line. */
+      .details {
+        margin: -4px 0 -4px var(--uui-size-space-1);
+        padding: 4px 0;
+        border: 0;
+        background: none;
+        color: var(--uui-color-interactive);
+        font: inherit;
+        font-weight: 600;
+        text-decoration: underline;
+        text-underline-offset: 2px;
+        cursor: pointer;
+      }
+
+      @media (hover: hover) {
+        .details:hover {
+          color: var(--uui-color-interactive-emphasis);
+        }
+      }
+
+      .details:focus-visible {
+        outline: 2px solid var(--jfb-bo-color-focus);
+        outline-offset: 2px;
+        border-radius: 2px;
       }
 
       .more {
@@ -304,6 +358,8 @@ export class ActionListElement extends UmbLitElement {
    * without it, no card offers Test.
    */
   declare test: ((key: string, started: () => void) => Promise<void>) | undefined;
+  /** Opens the Details of an action's last run, a failed or uncertain one (ADR-0195). */
+  declare details: ((key: string) => void) | undefined;
   declare private _testing: ReadonlySet<string>;
   declare private _drag: { readonly from: number; readonly to: number } | null;
   declare private _said: string;
@@ -325,6 +381,7 @@ export class ActionListElement extends UmbLitElement {
     this.toggle = () => undefined;
     this.request = () => undefined;
     this.test = undefined;
+    this.details = undefined;
     this._testing = new Set();
     this._drag = null;
     this._said = '';
@@ -496,6 +553,24 @@ export class ActionListElement extends UmbLitElement {
 
   // ---- Drawing ------------------------------------------------------------------------------------------------------
 
+  // The last run's line, with Details where it has them; named for the action, as several cards offer Details.
+  #run(card: ActionCard, run: RunLine) {
+    return html`<p class="run" data-tone=${run.tone}>
+      ${run.text}${
+        run.details && this.details
+          ? html`<button
+              type="button"
+              class="details"
+              aria-label=${this.#term('runDetailsOf', card.name)}
+              @click=${() => this.details?.(card.key)}
+            >
+              ${this.#term('runDetails')}
+            </button>`
+          : nothing
+      }
+    </p>`;
+  }
+
   override render() {
     const cards = this.cards;
     const drag = this._drag;
@@ -545,6 +620,7 @@ export class ActionListElement extends UmbLitElement {
                     : nothing
                 }
               </button>
+              ${card.run ? this.#run(card, card.run) : nothing}
               <div class="end">
                 ${
                   this.readOnly

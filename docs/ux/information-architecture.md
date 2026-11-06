@@ -406,7 +406,13 @@ it runs ("when an entry comes in"). The actions one event queues run in the orde
     the team runs when an entry comes in."), and on a published form the toast says when it starts to run.
 - **A card:**
   - the type icon, the name, a one-line summary ("To sales@example.com", "Webhook to crm.example.com"), its problems
-    counted in front of it, and the rule chip; the last run follows with 10.2f;
+    counted in front of it, and the rule chip; then its last run on a line of its own (10.2f, ADR-0195), in the type's
+    words: "Delivered 2 hours ago" for a webhook, Slack or Teams, "Mail queued 2 hours ago" for an email, "Ran 2 hours
+    ago" for another, muted; "Failed at 14:02. Next try at 14:30." while it is tried again ("Next try soon." once that
+    time has passed) and "Failed at 14:02." once it has failed for good, in the danger colour; "Uncertain at 14:02. It
+    may have gone through." in the warning colour; "Running now"; "Skipped 2 hours ago". An action that has never run
+    says nothing. The line has the card's width under the name, and comes before the card's controls as it is read.
+    The view reads the last runs as it opens and again when its page is shown again;
   - visible: the on/off switch, named for what it turns on ("Use Email the team"), and **Test** (10.2c), which a card
     too narrow to keep its name readable beside it offers first in its "…" instead; "…": Duplicate · Move to another
     trigger… · Delete. Duplicate puts "<name> (copy)" right after it, and is not offered at
@@ -416,9 +422,13 @@ it runs ("when an entry comes in"). The actions one event queues run in the orde
     on hover and on focus (always on touch); the live region says where a card went. A change closes the toast whose
     Undo would take back another, and Undo and Redo keep the focus on the card it was on;
   - clicking a card opens its sidebar (footer: Delete action · Test · Cancel · **Update**);
-  - a failed or uncertain last run ("Failed at 14:02. Next try at 14:30.") links to **Details**, a sidebar with what
-    the server answered and the tries, never the entry. It says who can retry the run (ADR-0013, amendment) and
-    offers Test, which sends a sample entry to see whether the server answers again.
+  - a failed or uncertain last run ("Failed at 14:02. Next try at 14:30.") links to **Details**, a small sidebar
+    named for the action, in four parts under small headings: Last run, the line again; What happened ("The server
+    answered 503.", or a site type's own message where the backoffice has no words for its code); Tries ("Tried 3
+    times, the first at 13:40.", as the line says the latest's time); and What can be done, never the entry. It says
+    who can retry the run, and where: the entry, found in Entries with the Actions filter, or Activity › Deliveries
+    (ADR-0013, amendment), and offers Test, which sends a sample entry to see whether the server answers again; who may
+    only read sees it without Test. Its footer: Test · Close.
 - **The email editor** (10.2b, ADR-0189), in Umbraco's large sidebar:
   - **To** is one box: the addresses as chips, then the other kinds of recipient there are, each a row with its remove
     button: The answer of [an email field], The person who created the form, and Addresses chosen by [a choice field],

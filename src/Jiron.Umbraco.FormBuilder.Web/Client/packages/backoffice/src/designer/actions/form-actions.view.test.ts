@@ -9,7 +9,7 @@ import { UMB_NOTIFICATION_CONTEXT } from '@umbraco-cms/backoffice/notification';
 import { UmbBasicState, UmbObjectState } from '@umbraco-cms/backoffice/observable-api';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ActionTypeResponseModel } from '../../api';
-import { must, registerEnglish, settle, shadow, testHost, text } from '../../testing';
+import { deferred, must, registerEnglish, settle, shadow, testHost, text } from '../../testing';
 import type { UndoNotificationData } from '../../ui/undo-notification.element';
 import type { FixTarget } from '../check/form-check';
 import { UNCHECKED, type CheckState } from '../check/form-checker';
@@ -23,6 +23,8 @@ import type { ActionListElement } from './action-list.element';
 import { actionsOf, type DesignAction } from './action-model';
 import type { TestAnswer } from './action-test';
 import type { ActionModalData } from './action.modal.token';
+import type { ActionRunModalData } from './action-run.modal.token';
+import type { LastRun } from './run-words';
 
 /** The built-in action types, as the snapshot holds what the server serves. */
 const ACTION_TYPES = JSON.parse(
@@ -145,7 +147,8 @@ class StandIn {
   readonly check = this.checks.asObservable();
   readonly fixes = new UmbBasicState<FixTarget | null>(null);
   readonly fixRequest = this.fixes.asObservable();
-  readonly unique = new UmbBasicState<string | undefined>('form1').asObservable();
+  readonly uniques = new UmbBasicState<string | undefined>('form1');
+  readonly unique = this.uniques.asObservable();
   readonly states = new UmbBasicState<string | undefined>('draft');
   readonly state = this.states.asObservable();
   readonly forms = new UmbBasicState<{ permissions: string[] } | undefined>({
@@ -166,6 +169,13 @@ class StandIn {
   testActionOf = async (definition: DesignDefinition, key: string, confirmed: boolean) => {
     this.tested.push([key, confirmed, definition]);
     return this.testAnswer;
+  };
+  /** The last runs the server answers, and how often they were asked for (ADR-0195). */
+  runs: readonly LastRun[] | undefined = [];
+  runReads = 0;
+  lastRunsOf = async () => {
+    this.runReads++;
+    return this.runs;
   };
 
   constructor(definition: DesignDefinition) {
@@ -225,8 +235,13 @@ const toasts = {
   },
 };
 
-async function viewOf(definition: DesignDefinition, permissions = ['design', 'manageActions']) {
+async function viewOf(
+  definition: DesignDefinition,
+  permissions = ['design', 'manageActions'],
+  runs: readonly LastRun[] = [],
+) {
   const workspace = new StandIn(definition);
+  workspace.runs = runs;
   workspace.forms.setValue({ permissions });
   const host = testHost();
   workspace.host = host;
@@ -646,6 +661,105 @@ describe('the Actions view', () => {
     workspace.testAnswer = dryRun('content_root', ['save', 'Demo page', 'Story']);
     await list('submitted').test?.('a', vi.fn());
     expect([toasts.shown.at(-1)?.color, toasts.shown.at(-1)?.stays]).toEqual(['positive', undefined]);
+  });
+
+  it("says each action's last run on its card, and opens a failed one's Details, with Test for who may change actions (ADR-0195)", async () => {
+    const ago = (hours: number) => new Date(Date.now() - hours * 3_600_000).toISOString();
+    const runs: LastRun[] = [
+      { actionKey: 'a', state: 'succeeded', attempts: 1, finishedUtc: ago(2) },
+      {
+        actionKey: 'b',
+        state: 'pending',
+        attempts: 2,
+        firstAttemptUtc: ago(0.5),
+        lastAttemptUtc: ago(0.25),
+        nextAttemptUtc: new Date(Date.now() + 1_800_000).toISOString(),
+        errorCode: 'http_503',
+      },
+    ];
+    const definition = definitionWith([
+      action('a', { name: 'Email the team' }),
+      action('b', { type: 'webhook', name: 'Send to the CRM', settings: { url: 'https://crm.example.com/hooks' } }),
+      action('c', { name: 'Never ran' }),
+    ]);
+    const { workspace, cards } = await viewOf(definition, ['design', 'manageActions'], runs);
+    await vi.waitFor(() => expect(text(cards('submitted')[0]?.querySelector('.run'))).not.toBe(''));
+    expect(workspace.runReads).toBe(1);
+    const lines = cards('submitted').map((card) => text(card.querySelector('.run')));
+    expect(lines[0]).toBe('Mail queued 2 hours ago');
+    expect(lines[1]).toMatch(/^Failed at .+\. Next try at .+\. Details$/);
+    expect(lines[2]).toBe('');
+
+    must(cards('submitted')[1]?.querySelector<HTMLButtonElement>('.details'), 'Details').click();
+    await vi.waitFor(() => expect(opened.sidebars).toHaveLength(1));
+    const data = opened.sidebars[0] as ActionRunModalData;
+    expect([data.name, data.webhook, data.details.happened, data.details.tries]).toEqual([
+      'Send to the CRM',
+      true,
+      'The server answered 503.',
+      expect.stringMatching(/^Tried 2 times, the first at .+\.$/),
+    ]);
+    // Its Test is the card's.
+    workspace.testAnswer = { kind: 'done', result: { outcome: 'sent', code: 'sent', preview: [], args: ['200'] } };
+    await data.test?.(() => undefined);
+    expect(workspace.tested.map(([key, confirmed]) => [key, confirmed])).toEqual([['b', true]]);
+  });
+
+  it("opens a last run's Details without Test for who may only read the actions", async () => {
+    const runs: LastRun[] = [
+      { actionKey: 'a', state: 'failed', attempts: 1, finishedUtc: new Date().toISOString(), errorCode: 'refused' },
+    ];
+    const { cards } = await viewOf(definitionWith([action('a')]), ['design'], runs);
+    await vi.waitFor(() => expect(cards('submitted')[0]?.querySelector('.details')).not.toBeNull());
+    must(cards('submitted')[0]?.querySelector<HTMLButtonElement>('.details'), 'Details').click();
+    await vi.waitFor(() => expect(opened.sidebars).toHaveLength(1));
+    const data = opened.sidebars[0] as ActionRunModalData;
+    expect([data.test, data.details.line.tone]).toEqual([undefined, 'danger']);
+  });
+
+  it('reads the last runs again when its page is shown again, and keeps them when the read fails', async () => {
+    const { workspace, cards } = await viewOf(definitionWith([action('a')]));
+    expect(workspace.runReads).toBe(1);
+    workspace.runs = [{ actionKey: 'a', state: 'running', attempts: 1 }];
+    document.dispatchEvent(new Event('visibilitychange'));
+    await vi.waitFor(() => expect(text(cards('submitted')[0]?.querySelector('.run'))).toBe('Running now'));
+    expect(workspace.runReads).toBe(2);
+    workspace.runs = undefined;
+    document.dispatchEvent(new Event('visibilitychange'));
+    await vi.waitFor(() => expect(workspace.runReads).toBe(3));
+    expect(text(cards('submitted')[0]?.querySelector('.run'))).toBe('Running now');
+  });
+
+  it("says only the latest read's runs, and never another form's on this one's cards", async () => {
+    const { workspace, view, cards } = await viewOf(definitionWith([action('a')]), undefined, [
+      { actionKey: 'a', state: 'running', attempts: 1 },
+    ]);
+    const run = () => text(cards('submitted')[0]?.querySelector('.run'));
+    await vi.waitFor(() => expect(run()).toBe('Running now'));
+    // Two reads, the older answering last.
+    const older = deferred<readonly LastRun[]>();
+    const newer = deferred<readonly LastRun[]>();
+    const answers = [older, newer];
+    workspace.lastRunsOf = async () => {
+      workspace.runReads++;
+      return must(answers.shift(), 'an answer').promise;
+    };
+    document.dispatchEvent(new Event('visibilitychange'));
+    document.dispatchEvent(new Event('visibilitychange'));
+    newer.resolve([{ actionKey: 'a', state: 'succeeded', attempts: 1, finishedUtc: new Date().toISOString() }]);
+    await vi.waitFor(() => expect(run()).toBe('Mail queued just now'));
+    older.resolve([{ actionKey: 'a', state: 'running', attempts: 1 }]);
+    await settle(view);
+    expect(run()).toBe('Mail queued just now');
+    // Another form, whose runs are not read: this one's are not said on its cards.
+    workspace.lastRunsOf = async () => {
+      workspace.runReads++;
+      return undefined;
+    };
+    workspace.uniques.setValue('form2');
+    await vi.waitFor(() => expect(workspace.runReads).toBe(4));
+    await settle(view);
+    expect(run()).toBe('');
   });
 
   it('asks before a test that reaches what the action is set up to reach, and sends nothing when declined', async () => {

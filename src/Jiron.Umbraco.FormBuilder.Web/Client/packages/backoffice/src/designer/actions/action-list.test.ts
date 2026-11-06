@@ -193,6 +193,46 @@ describe("a trigger's cards", () => {
     expect(moves).toHaveLength(1);
   });
 
+  it("say each action's last run under it, and offer a failed or uncertain one's Details, named for its action (ADR-0195)", async () => {
+    const { list, rows } = await listOf([
+      card('a', { run: { text: 'Delivered 2 hours ago', tone: 'muted', details: false } }),
+      card('b', { run: { text: 'Failed at 14:02. Next try at 14:30.', tone: 'danger', details: true } }),
+      card('c', { run: { text: 'Uncertain at 14:02. It may have gone through.', tone: 'warning', details: true } }),
+      card('d'),
+    ]);
+    const shown: string[] = [];
+    list.details = (key) => shown.push(key);
+    list.requestUpdate();
+    await settle(list);
+    expect(
+      rows().map((row) => [
+        text(row.querySelector('.run')),
+        row.querySelector('.run')?.getAttribute('data-tone') ?? null,
+      ]),
+    ).toEqual([
+      ['Delivered 2 hours ago', 'muted'],
+      ['Failed at 14:02. Next try at 14:30. Details', 'danger'],
+      ['Uncertain at 14:02. It may have gone through. Details', 'warning'],
+      ['', null],
+    ]);
+    // On a line of its own, not inside the button that opens the sidebar.
+    expect(rows()[1]?.querySelector('.open .run')).toBeNull();
+    const details = must(rows()[1]?.querySelector<HTMLButtonElement>('.details'), 'Details of b');
+    expect(details.getAttribute('aria-label')).toBe('Details of the last run of Action b');
+    details.click();
+    expect(shown).toEqual(['b']);
+  });
+
+  it('say the last run and offer its Details read-only too, and no Details without a way to open them', async () => {
+    const failed = { text: 'Failed at 14:02.', tone: 'danger', details: true } as const;
+    const { list, root } = await listOf([card('a', { run: failed })], true);
+    expect(root.querySelector('.details')).toBeNull();
+    list.details = () => undefined;
+    list.requestUpdate();
+    await settle(list);
+    expect(text(root.querySelector('.run'))).toBe('Failed at 14:02. Details');
+  });
+
   it('put the focus on an action by its key, and say false for one it does not hold', async () => {
     const { list, root } = await listOf([card('a'), card('b')]);
     expect(await list.focusAction('b')).toBe(true);
