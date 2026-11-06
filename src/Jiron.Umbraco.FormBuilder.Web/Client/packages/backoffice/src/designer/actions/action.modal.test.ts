@@ -666,8 +666,11 @@ describe("an action's sidebar", () => {
     ]);
     button.click();
     await settle(element);
-    // Not busy while a question may come first: only once the test starts.
+    // Not busy while a question may come first: only once the test starts. A second press meanwhile waits for the
+    // first (a busy button takes no press of its own).
     expect(button.hasAttribute('state')).toBe(false);
+    button.click();
+    expect(tests).toHaveLength(1);
     start();
     await settle(element);
     expect(button.getAttribute('state')).toBe('waiting');
