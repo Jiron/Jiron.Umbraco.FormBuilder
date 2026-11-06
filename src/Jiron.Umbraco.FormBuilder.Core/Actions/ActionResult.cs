@@ -76,11 +76,34 @@ public enum ActionTestOutcome
     Failed,
 }
 
+/// <summary>
+/// One line of what a run would do, for a test run's preview (ADR-0192): an English sentence, and a code with what its
+/// words take, which the backoffice says in its own words. A plain sentence, which a type of a site may give, converts to
+/// a line without a code.
+/// </summary>
+/// <param name="Text">The line as an English sentence, which the backoffice shows where it does not know the code.</param>
+public sealed record ActionTestLine(string Text)
+{
+    /// <summary>What the line says as a code, such as <c>content_under</c>; null leaves the editor the sentence.</summary>
+    public string? Code { get; init; }
+
+    /// <summary>What the code's words take, such as a document type's name; empty for a code that takes none.</summary>
+    public IReadOnlyList<string> Args { get; init; } = [];
+
+    /// <summary>A line of a plain sentence, without a code.</summary>
+    /// <param name="text">The sentence.</param>
+    public static implicit operator ActionTestLine(string text) => FromString(text);
+
+    /// <summary>A line of a plain sentence, without a code.</summary>
+    /// <param name="text">The sentence.</param>
+    public static ActionTestLine FromString(string text) => new(text);
+}
+
 /// <summary>What a test run came to, for the designer.</summary>
 /// <param name="Outcome">What it came to.</param>
 /// <param name="Message">What to tell the editor: a sentence without a secret, or null.</param>
 /// <param name="Preview">What a run would do, one line each, such as the content it would create; empty when there is nothing to show.</param>
-public sealed record ActionTestResult(ActionTestOutcome Outcome, string? Message = null, IReadOnlyList<string>? Preview = null)
+public sealed record ActionTestResult(ActionTestOutcome Outcome, string? Message = null, IReadOnlyList<ActionTestLine>? Preview = null)
 {
     /// <summary>
     /// What it came to as a code the backoffice says in its own words (ADR-0190), such as <c>sent_to_you</c>,

@@ -114,10 +114,13 @@ internal static class FieldSettingsReader
     }
 
     // The editors that draw settings within them, each with the kinds of setting it draws, one of each: the email's
-    // recipients (ADR-0189), by their editors, and the webhook's address and body (ADR-0191), which find the webhook's own
-    // settings by their names.
+    // recipients (ADR-0189), by their editors, and the webhook's address and body (ADR-0191) and the content action's place
+    // (ADR-0192), which find their type's own settings by their names.
     private static readonly ImmutableSortedDictionary<string, BoxEditor> Boxes = new Dictionary<string, BoxEditor>(StringComparer.Ordinal)
     {
+        ["contentParent"] = new(
+            setting => setting is { Name: "parent", Kind: FieldSettingKind.Key, Editor: "documentPicker" } ? "the item picked" : null,
+            "the item picked (parent, a key of the editor documentPicker)"),
         ["recipients"] = new(
             setting => setting switch
             {

@@ -51,7 +51,9 @@ public sealed class FieldSettingsSchemaTests
         yield return Case("within itself", typeof(WithinItself), "WithinItself.To is within 'to', which is no other setting of its class.");
         yield return Case("within one that is within another", typeof(WithinTwice), "WithinTwice.Field is within 'copy', which is itself within 'to'; a setting is within one that has its own place.");
         yield return Case("within inside an object", typeof(WithinInsideAnObject), "WithinInside.Field is within 'to' inside an object, whose editor draws all of its settings.");
-        yield return Case("within a box whose editor draws none within it", typeof(WithinAPlainBox), "WithinAPlainBox.Creator is within 'to', whose editor draws no setting within it; only the editors recipients, webhookAddress, webhookBody do.");
+        yield return Case("within a box whose editor draws none within it", typeof(WithinAPlainBox), "WithinAPlainBox.Creator is within 'to', whose editor draws no setting within it; only the editors contentParent, recipients, webhookAddress, webhookBody do.");
+        yield return Case("a text where the content action's place draws the item picked", typeof(WithinThePlaceAText), "WithinThePlaceAText.Parent is within 'parentSource', whose editor contentParent draws only the item picked (parent, a key of the editor documentPicker).");
+        yield return Case("an item of another name within the content action's place", typeof(AnItemOfAnotherName), "AnItemOfAnotherName.Under is within 'parentSource', whose editor contentParent draws only the item picked");
         yield return Case("within the recipients, of a kind they do not draw", typeof(WithinRecipientsANote), "WithinRecipientsANote.Note is within 'to', whose editor recipients draws only an email field's answer");
         yield return Case("two of a kind within the recipients", typeof(TwoCreatorsWithin), "TwoCreatorsWithin.Second is within 'to', which already holds the person who created the form; the editor recipients draws one of each.");
         yield return Case("within the webhook's address, of a kind it does not draw", typeof(WithinTheAddressAChoice), "WithinTheAddressAChoice.Url is within 'target', whose editor webhookAddress draws only the address (url, a text of the editor webhookUrl).");
@@ -518,6 +520,24 @@ public sealed class FieldSettingsSchemaTests
 
         [FormBuilderSetting("Url", Within = "target")]
         public Look Url { get; init; }
+    }
+
+    public sealed class WithinThePlaceAText
+    {
+        [FormBuilderSetting("Source", Editor = "contentParent")]
+        public Look ParentSource { get; init; }
+
+        [FormBuilderSetting("Parent", Within = "parentSource")]
+        public string? Parent { get; init; }
+    }
+
+    public sealed class AnItemOfAnotherName
+    {
+        [FormBuilderSetting("Source", Editor = "contentParent")]
+        public Look ParentSource { get; init; }
+
+        [FormBuilderSetting("Under", Kind = FieldSettingKind.Key, Editor = "documentPicker", Within = "parentSource")]
+        public Guid? Under { get; init; }
     }
 
     public sealed class AnAddressOfAnotherName

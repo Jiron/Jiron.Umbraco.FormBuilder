@@ -1,5 +1,6 @@
 using Jiron.Umbraco.FormBuilder.Core.Actions;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
+using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Core.Submissions;
@@ -29,6 +30,15 @@ public sealed class EntryStateChangeTests : ActionTestBase
 
     private Task<Guid> WaitingFormAsync(params FormAction[] actions) =>
         PublishAsync(name: Guid.NewGuid().ToString("N"), change: Waits(actions));
+
+    private static FormAction SetState(string name, ActionTrigger trigger, string state) => new()
+    {
+        Key = Guid.NewGuid(),
+        Type = SetStateActionType.Alias,
+        Name = name,
+        Trigger = trigger,
+        Settings = SettingsObject.Parse($$"""{"state":"{{state}}"}"""),
+    };
 
     [Test]
     public async Task WithoutApproval_AnEntryIsApprovedAtOnce_AndItsApprovedActionsRunWithTheOthers()
@@ -204,7 +214,7 @@ public sealed class EntryStateChangeTests : ActionTestBase
         Assert.Multiple(() =>
         {
             Assert.That((test.Result!.Outcome, test.Result.Code), Is.EqualTo((ActionTestOutcome.DryRun, ActionTestCodes.DryRun)));
-            Assert.That(test.Result.Preview, Is.EqualTo(new[] { "An entry would move to Approved." }));
+            Assert.That(test.Result.Preview!.Select(line => line.Text), Is.EqualTo(new[] { "A run would move the entry to Approved." }));
         });
     }
 
@@ -256,6 +266,71 @@ public sealed class EntryStateChangeTests : ActionTestBase
             Assert.That(runs.Single().State, Is.EqualTo(ActionRunState.Succeeded));
             Assert.That(Heard.Heard.OfType<EntryApprovedNotification>().Count(), Is.EqualTo(1), "approved as it came in, and not again");
         });
+    }
+
+    [Test]
+    public void TwoSetStateActions_ThatWouldMoveAnEntryBackAndForth_AreRefused_EachAtItsState()
+    {
+        var reject = SetState("Reject again", ActionTrigger.Approved, "rejected");
+        var approve = SetState("Approve again", ActionTrigger.Rejected, "approved");
+
+        var refused = Assert.ThrowsAsync<FormBuilderValidationException>(async () => await WaitingFormAsync(reject, approve));
+
+        Assert.That(refused!.Problems.Select(problem => (problem.Path, problem.Code)), Is.SupersetOf(new[] { ("$.actions[0].settings.state", "state_loop"), ("$.actions[1].settings.state", "state_loop") }), string.Join(", ", refused.Problems));
+    }
+
+    [Test]
+    public async Task ASetStateActionThatIsOff_MovesNothing_SoThePairPublishes()
+    {
+        var reject = SetState("Reject again", ActionTrigger.Approved, "rejected");
+        var approve = SetState("Approve again", ActionTrigger.Rejected, "approved") with { Enabled = false };
+
+        Assert.Multiple(async () =>
+        {
+            // Either one off, in either place.
+            Assert.That(await WaitingFormAsync(reject, approve), Is.Not.EqualTo(Guid.Empty));
+            Assert.That(await WaitingFormAsync(reject with { Enabled = false }, approve with { Enabled = true }), Is.Not.EqualTo(Guid.Empty));
+        });
+    }
+
+    [TestCase(ActionTrigger.Approved, "approved")]
+    [TestCase(ActionTrigger.Rejected, "rejected")]
+    public async Task ASetStateAction_ToItsTriggersOwnState_StillPublishes_AndTheFormCheckSaysItChangesNothing(ActionTrigger trigger, string state)
+    {
+        var form = await WaitingFormAsync(SetState("Same", trigger, state));
+
+        var issues = await GetRequiredService<FormCheck>().CheckAsync((await GetRequiredService<IFormBuilderFormService>().GetDraftAsync(form))!.Definition!, CancellationToken.None);
+
+        Assert.That(issues.Where(issue => issue.Code == "state_already").Select(issue => (issue.Severity, issue.Path)), Is.EqualTo(new[]
+        {
+            (FormCheckSeverity.Warning, "$.actions[0].settings.state"),
+        }));
+    }
+
+    [TestCase("approved")]
+    [TestCase("rejected")]
+    [TestCase("spam")]
+    public async Task ASetStateActionsTest_SaysTheStateARunWouldMoveTheEntryTo(string state)
+    {
+        var move = SetState("Move", ActionTrigger.Submitted, state);
+        var form = await ActionFormAsync(move);
+
+        var test = await GetRequiredService<ActionTestRuns>().TestAsync(form, move.Key, new ActionTestUser(Guid.NewGuid(), "ada@jfb.test", "Ada"), confirmed: false);
+
+        var line = test.Result!.Preview!.Single();
+        Assert.That((test.Result.Outcome, test.Result.Code, line.Code, string.Join("|", line.Args)), Is.EqualTo((ActionTestOutcome.DryRun, ActionTestCodes.DryRun, "state_move", $"{state}|0")));
+    }
+
+    [Test]
+    public async Task ASetStateActionsTest_SaysHowManyActionsTheMoveStarts_ThoseThatAreOn()
+    {
+        var move = SetState("Move", ActionTrigger.Submitted, "approved");
+        var form = await ActionFormAsync(move, SetState("Then", ActionTrigger.Approved, "spam"), SetState("Off", ActionTrigger.Approved, "spam") with { Enabled = false });
+
+        var test = await GetRequiredService<ActionTestRuns>().TestAsync(form, move.Key, new ActionTestUser(Guid.NewGuid(), "ada@jfb.test", "Ada"), confirmed: false);
+
+        var line = test.Result!.Preview!.Single();
+        Assert.That((string.Join("|", line.Args), line.Text), Is.EqualTo(("approved|1", "A run would move the entry to Approved, which starts 1 Approved action.")));
     }
 
     [Test]

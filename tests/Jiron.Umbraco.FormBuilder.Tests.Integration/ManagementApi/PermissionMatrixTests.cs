@@ -7,6 +7,9 @@ using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Tests.Integration.Access;
 using Jiron.Umbraco.FormBuilder.Web.ManagementApi.Access;
 using Jiron.Umbraco.FormBuilder.Web.ManagementApi.Authorization;
+using Umbraco.Cms.Core;
+using Umbraco.Cms.Core.Services;
+using Umbraco.Cms.Core.Strings;
 using Umbraco.Cms.Tests.Common.Testing;
 
 namespace Jiron.Umbraco.FormBuilder.Tests.Integration.ManagementApi;
@@ -77,6 +80,7 @@ public sealed class PermissionMatrixTests : ManagementApiTestBase
         ["GET field-type"] = (FormBuilderPermissions.None, FormBuilderAccessResourceKind.Global, null),
         ["GET field-type/{alias}/changes"] = (FormBuilderPermissions.None, FormBuilderAccessResourceKind.Global, null),
         ["GET action-type"] = (FormBuilderPermissions.None, FormBuilderAccessResourceKind.Global, null),
+        ["GET action-type/content/document-type/{alias}"] = (FormBuilderPermissions.None, FormBuilderAccessResourceKind.Global, null),
         ["GET canvas"] = (FormBuilderPermissions.None, FormBuilderAccessResourceKind.Global, null),
         ["GET option-source"] = (FormBuilderPermissions.None, FormBuilderAccessResourceKind.Global, null),
         ["GET option-list"] = (FormBuilderPermissions.None, FormBuilderAccessResourceKind.Global, null),
@@ -122,6 +126,9 @@ public sealed class PermissionMatrixTests : ManagementApiTestBase
         var forms = GetRequiredService<IFormBuilderFormService>();
         _spring = (await forms.CreateAsync(new NewFormRequest("Spring", FolderKey: _events))).Key;
         _payroll = (await forms.CreateAsync(new NewFormRequest("Payroll", FolderKey: _hr))).Key;
+        // The document type a content action's table reads.
+        var matrix = new global::Umbraco.Cms.Core.Models.ContentType(GetRequiredService<IShortStringHelper>(), Constants.System.Root) { Alias = ManagementApiEndpoint.DocumentTypeAlias, Name = "Matrix" };
+        await GetRequiredService<IContentTypeService>().CreateAsync(matrix, Constants.Security.SuperUserKey);
     }
 
     /// <summary>What the table's declarations cannot say: lowering a field's sensitivity also takes <c>viewSensitive</c> (ADR-0150).</summary>

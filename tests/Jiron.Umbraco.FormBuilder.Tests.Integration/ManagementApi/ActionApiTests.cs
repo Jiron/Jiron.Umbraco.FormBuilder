@@ -16,9 +16,16 @@ using Jiron.Umbraco.FormBuilder.Tests.Integration.Actions;
 using Jiron.Umbraco.FormBuilder.Tests.Integration.Emails;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
+using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Mail;
 using Umbraco.Cms.Core.Services;
+using Umbraco.Cms.Core.Strings;
 using Umbraco.Cms.Tests.Common.Testing;
+using ContentType = Umbraco.Cms.Core.Models.ContentType;
+using IDataType = Umbraco.Cms.Core.Models.IDataType;
+using PropertyGroup = Umbraco.Cms.Core.Models.PropertyGroup;
+using PropertyGroupType = Umbraco.Cms.Core.Models.PropertyGroupType;
+using PropertyType = Umbraco.Cms.Core.Models.PropertyType;
 
 namespace Jiron.Umbraco.FormBuilder.Tests.Integration.ManagementApi;
 
@@ -106,6 +113,100 @@ public sealed class ActionApiTests : ManagementApiTestBase
             Assert.That(presets.Select(preset => preset!["name"]!.GetValue<string>()), Is.EqualTo(new[] { "#jfbActionTypes_webhook", "#jfbActionPresets_webhookSlack", "#jfbActionPresets_webhookTeams" }));
             Assert.That(JsonNode.Parse(presets[0]!["settings"]!.GetValue<string>())!.AsObject(), Is.Empty, "a plain webhook starts with the type's defaults");
         });
+    }
+
+    [Test]
+    public async Task TheContentType_OffersTheSitesDocumentTypes_ByName_ElementTypesLeftOut()
+    {
+        await StoryTypeAsync();
+
+        var answer = await CallAsync("noAccess", HttpMethod.Get, "action-type");
+
+        var content = answer.Body!["types"]!.AsArray().Single(type => type!["alias"]!.GetValue<string>() == ContentActionType.Alias)!;
+        var choices = content["settings"]!.AsArray().Single(setting => setting!["name"]!.GetValue<string>() == "documentType")!["choices"]!.AsArray();
+        Assert.That(choices.Select(choice => (choice!["value"]!.GetValue<string>(), choice["label"]!.GetValue<string>())), Is.EqualTo(new[] { ("jfbStory", "Story") }));
+    }
+
+    [Test]
+    public async Task ADocumentType_IsServedWithThePropertiesAFormCanSet_AndWhatEachTakes()
+    {
+        await StoryTypeAsync();
+
+        var answer = await CallAsync("noAccess", HttpMethod.Get, "action-type/content/document-type/jfbStory");
+
+        var properties = answer.Body!["properties"]!.AsArray().Select(property => property!).ToList();
+        string? Text(JsonNode property, string name) => property[name]?.GetValue<string>();
+        string[] Types(JsonNode property) => [.. property["fieldTypes"]!.AsArray().Select(type => type!.GetValue<string>())];
+        Assert.Multiple(() =>
+        {
+            Assert.That(answer.Outcome, Is.EqualTo("200"), answer.ToString());
+            Assert.That((Text(answer.Body!, "alias"), Text(answer.Body!, "name")), Is.EqualTo(("jfbStory", "Story")));
+            // Rich text holds no answer and no value written: it is left out.
+            Assert.That(properties.Select(property => (Text(property, "alias"), Text(property, "name"), Text(property, "group"), Text(property, "value"))), Is.EqualTo(new (string?, string?, string?, string?)[]
+            {
+                ("title", "Title", "Content", "text"),
+                ("count", "Count", "Content", "wholeNumber"),
+                ("photo", "Photo", null, null),
+            }));
+            Assert.That(Types(properties[0]), Does.Contain("text").And.Contain("email").And.Not.Contain("file").And.Not.Contain("heading"));
+            Assert.That(Types(properties[1]), Does.Contain("number").And.Not.Contain("text"));
+            Assert.That(Types(properties[2]), Is.EqualTo(new[] { "file" }));
+        });
+    }
+
+    [Test]
+    public async Task ADocumentTypesProperties_ComeInTheOrderUmbracoShowsThem_TabsAndCompositionsIncluded()
+    {
+        var dataTypes = (await GetRequiredService<IDataTypeService>().GetAllAsync()).ToList();
+        var strings = GetRequiredService<IShortStringHelper>();
+        var types = GetRequiredService<IContentTypeService>();
+        PropertyType Text(string alias, int order) =>
+            new(strings, dataTypes.First(item => item.EditorAlias == Constants.PropertyEditors.Aliases.TextBox), alias) { Name = alias, SortOrder = order };
+        // A composition whose group of the same alias is the type's own; its property comes by its order within it.
+        var shared = new ContentType(strings, Constants.System.Root) { Alias = "jfbShared", Name = "Shared" };
+        shared.AddPropertyType(Text("subtitle", 2), "content", "Content");
+        // A composition's tab sorted before the type's own, which Umbraco lists after them.
+        shared.PropertyGroups.Add(new PropertyGroup(true) { Alias = "media", Name = "Media", Type = PropertyGroupType.Tab, SortOrder = 0 });
+        shared.AddPropertyType(Text("picture", 0), "media", "Media");
+        await types.CreateAsync(shared, Constants.Security.SuperUserKey);
+        var tabbed = new ContentType(strings, Constants.System.Root) { Alias = "jfbTabbed", Name = "Tabbed" };
+        tabbed.PropertyGroups.Add(new PropertyGroup(true) { Alias = "settings", Name = "Settings", Type = PropertyGroupType.Tab, SortOrder = 2 });
+        tabbed.PropertyGroups.Add(new PropertyGroup(true) { Alias = "about", Name = "About", Type = PropertyGroupType.Tab, SortOrder = 1 });
+        // A group in the second tab, sorted before the first tab's: tabs come first by their order.
+        tabbed.AddPropertyType(Text("metaTitle", 0), "settings/seo", "SEO");
+        tabbed.AddPropertyType(Text("hidden", 0), "settings", "Settings");
+        tabbed.AddPropertyType(Text("lede", 0), "about/intro", "Intro");
+        tabbed.AddPropertyType(Text("title", 1), "content", "Content");
+        tabbed.PropertyGroups["settings/seo"]!.SortOrder = 0;
+        tabbed.PropertyGroups["content"]!.SortOrder = 5;
+        tabbed.AddContentType(shared);
+        await types.CreateAsync(tabbed, Constants.Security.SuperUserKey);
+
+        var answer = await CallAsync("noAccess", HttpMethod.Get, "action-type/content/document-type/jfbTabbed");
+
+        Assert.That(
+            answer.Body!["properties"]!.AsArray().Select(property => (property!["alias"]!.GetValue<string>(), property["group"]?.GetValue<string>())),
+            Is.EqualTo(new (string, string?)[]
+            {
+                ("title", "Content"),
+                ("subtitle", "Content"),
+                ("picture", "Media"),
+                ("lede", "Intro"),
+                ("hidden", "Settings"),
+                ("metaTitle", "SEO"),
+            }),
+            answer.ToString());
+    }
+
+    [TestCase("nothere", TestName = "A document type the site lacks is not found")]
+    [TestCase("jfbPart", TestName = "An element type is not found")]
+    public async Task ADocumentTypeNoItemCanHave_IsNotFound(string alias)
+    {
+        await StoryTypeAsync();
+
+        var answer = await CallAsync("noAccess", HttpMethod.Get, $"action-type/content/document-type/{alias}");
+
+        Assert.That(answer.Outcome, Is.EqualTo("404 document_type_not_found"), answer.ToString());
     }
 
     [Test]
@@ -215,7 +316,7 @@ public sealed class ActionApiTests : ManagementApiTestBase
             Assert.That(confirmed.Outcome, Is.EqualTo("200"), confirmed.ToString());
             Assert.That(confirmed.Body!["outcome"]!.GetValue<string>(), Is.EqualTo("sent"));
             Assert.That(confirmed.Body!["message"]!.GetValue<string>(), Is.EqualTo("Sent to target-of-the-test"));
-            Assert.That(confirmed.Body!["preview"]!.AsArray().Select(line => line!.GetValue<string>()), Is.EqualTo(new[] { "one line" }));
+            Assert.That(confirmed.Body!["preview"]!.AsArray().Select(line => (line!["text"]!.GetValue<string>(), line["code"]?.GetValue<string>(), line["args"]!.AsArray().Count)), Is.EqualTo(new[] { ("one line", (string?)null, 0) }), "a line of plain words");
             Assert.That(context.Action.Key, Is.EqualTo(action.Key));
             Assert.That(context.Scope.Entry!.Number, Is.EqualTo(SampleEntries.Number), "the sample entry previews show (ADR-0187)");
             Assert.That(context.User.Name, Is.Not.Empty);
@@ -319,8 +420,8 @@ public sealed class ActionApiTests : ManagementApiTestBase
 
         Assert.Multiple(() =>
         {
-            Assert.That(english.Body!["preview"]![1]!.GetValue<string>(), Does.Contain("This is a test. The real email goes to team@jfb.test."), english.ToString());
-            Assert.That(german.Body!["preview"]![1]!.GetValue<string>(), Does.Contain("Dies ist ein Test. Die echte E-Mail geht an team@jfb.test."), german.ToString());
+            Assert.That(english.Body!["preview"]![1]!["text"]!.GetValue<string>(), Does.Contain("This is a test. The real email goes to team@jfb.test."), english.ToString());
+            Assert.That(german.Body!["preview"]![1]!["text"]!.GetValue<string>(), Does.Contain("Dies ist ein Test. Die echte E-Mail geht an team@jfb.test."), german.ToString());
         });
     }
 
@@ -347,6 +448,23 @@ public sealed class ActionApiTests : ManagementApiTestBase
     }
 
     private static string Path(Guid form, Guid entry) => $"form/{form}/entry/{entry}/action-run";
+
+    // A document type an item may have, Story, with a title and a count in a group, a photo outside one and rich text, and
+    // an element type, Part, which no item has.
+    private async Task StoryTypeAsync()
+    {
+        var dataTypes = (await GetRequiredService<IDataTypeService>().GetAllAsync()).ToList();
+        var strings = GetRequiredService<IShortStringHelper>();
+        var types = GetRequiredService<IContentTypeService>();
+        IDataType Of(string editor) => dataTypes.First(item => item.EditorAlias == editor);
+        var story = new ContentType(strings, Constants.System.Root) { Alias = "jfbStory", Name = "Story", AllowedAsRoot = true };
+        story.AddPropertyType(new PropertyType(strings, Of(Constants.PropertyEditors.Aliases.TextBox), "title") { Name = "Title" }, "content", "Content");
+        story.AddPropertyType(new PropertyType(strings, Of(Constants.PropertyEditors.Aliases.Integer), "count") { Name = "Count" }, "content", "Content");
+        story.AddPropertyType(new PropertyType(strings, Of(Constants.PropertyEditors.Aliases.RichText), "body") { Name = "Body" }, "content", "Content");
+        story.AddPropertyType(new PropertyType(strings, Of(Constants.PropertyEditors.Aliases.MediaPicker3), "photo") { Name = "Photo" });
+        await types.CreateAsync(story, Constants.Security.SuperUserKey);
+        await types.CreateAsync(new ContentType(strings, Constants.System.Root) { Alias = "jfbPart", Name = "Part", IsElement = true }, Constants.Security.SuperUserKey);
+    }
 
     private static FormAction Scripted0(string target) => new()
     {

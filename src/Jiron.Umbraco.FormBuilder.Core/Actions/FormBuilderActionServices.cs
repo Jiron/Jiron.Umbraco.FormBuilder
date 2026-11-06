@@ -45,6 +45,7 @@ internal static class FormBuilderActionServices
         builder.AddFormBuilderEmail();
         builder.AddFormBuilderWebhooks();
         builder.JironFormBuilder().ActionTypes().Append<SetStateActionType>().Append<ContentActionType>();
+        builder.Services.TryAddSingleton<ContentItemTypes>();
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IOutboxQueue, EntryChangeQueue>());
         builder.Services.AddHostedService<OutboxWorker>();
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IDistributedBackgroundJob, FormBuilderOutboxJob>());

@@ -46,6 +46,11 @@ public abstract class FormBuilderActionTypeBase<TSettings> : IFormBuilderActionT
     public TSettings ReadSettings(SettingsObject? settings) => settings?.Bind(_settingsInfo) ?? new TSettings();
 
     /// <inheritdoc />
+    /// <remarks>None unless a type overrides it.</remarks>
+    public virtual ValueTask<IReadOnlyDictionary<string, IReadOnlyList<FieldSettingChoice>>> SiteChoicesAsync(CancellationToken cancellationToken) =>
+        ValueTask.FromResult<IReadOnlyDictionary<string, IReadOnlyList<FieldSettingChoice>>>(new Dictionary<string, IReadOnlyList<FieldSettingChoice>>(StringComparer.Ordinal));
+
+    /// <inheritdoc />
     public void CheckSettings(ActionSettingsCheck check)
     {
         ArgumentNullException.ThrowIfNull(check);

@@ -41,6 +41,65 @@
         ]
       }
     },
+    "/umbraco/jfb/management/api/v1/action-type/content/document-type/{alias}": {
+      "get": {
+        "tags": [
+          "Action type"
+        ],
+        "operationId": "ContentDocumentTypeGet",
+        "parameters": [
+          {
+            "name": "alias",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ContentDocumentTypeResponseModel"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The resource is protected and requires an authentication token"
+          },
+          "403": {
+            "description": "The authenticated user does not have access to this resource"
+          }
+        },
+        "security": [
+          {
+            "Backoffice-User": []
+          }
+        ]
+      }
+    },
     "/umbraco/jfb/management/api/v1/form/{key}/action/{actionKey}/test": {
       "post": {
         "tags": [
@@ -6209,6 +6268,29 @@
         },
         "additionalProperties": false
       },
+      "ActionTestLineResponseModel": {
+        "required": [
+          "args",
+          "text"
+        ],
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string",
+            "nullable": true
+          },
+          "args": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
       "ActionTestRequestModel": {
         "required": [
           "confirmed"
@@ -6256,7 +6338,11 @@
           "preview": {
             "type": "array",
             "items": {
-              "type": "string"
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/ActionTestLineResponseModel"
+                }
+              ]
             }
           }
         },
@@ -6505,6 +6591,64 @@
         "type": "object",
         "properties": {
           "comment": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ContentDocumentTypeResponseModel": {
+        "required": [
+          "alias",
+          "name",
+          "properties"
+        ],
+        "type": "object",
+        "properties": {
+          "alias": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "properties": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/ContentPropertyResponseModel"
+                }
+              ]
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "ContentPropertyResponseModel": {
+        "required": [
+          "alias",
+          "fieldTypes",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "alias": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "group": {
+            "type": "string",
+            "nullable": true
+          },
+          "fieldTypes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "value": {
             "type": "string",
             "nullable": true
           }

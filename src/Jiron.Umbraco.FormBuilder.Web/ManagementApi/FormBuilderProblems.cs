@@ -75,6 +75,9 @@ internal static class FormBuilderProblems
     /// <summary>An action of a type that sends no mail of its own, asked for a mail's preview (ADR-0189).</summary>
     public const string ActionNotEmailCode = "action_not_email";
 
+    /// <summary>A document type the site does not have, or an element type, which no content item has (ADR-0192).</summary>
+    public const string DocumentTypeNotFoundCode = "document_type_not_found";
+
     /// <summary>A mail's preview whose action names a mail view the site lacks and has no body of its own (ADR-0189).</summary>
     public const string EmailViewMissingCode = "email_view_missing";
 
@@ -170,6 +173,10 @@ internal static class FormBuilderProblems
     /// <summary>An action whose type the site lacks (ADR-0158).</summary>
     public static FormBuilderProblemResult ActionTypeUnknown() =>
         Problem(StatusCodes.Status409Conflict, ActionTypeUnknownCode, "This site does not have the type of this action, so it cannot be tested.");
+
+    /// <summary>A document type the site does not have, or an element type, which no content item has (ADR-0192).</summary>
+    public static FormBuilderProblemResult DocumentTypeNotFound() =>
+        Problem(StatusCodes.Status404NotFound, DocumentTypeNotFoundCode, "This site has no document type of that alias that a content item may have.");
 
     /// <summary>An action of a type that sends no mail of its own, asked for a mail's preview (ADR-0189).</summary>
     public static FormBuilderProblemResult ActionNotEmail() =>

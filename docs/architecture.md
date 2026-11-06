@@ -320,6 +320,19 @@ flowchart LR
   a host locks the target), `headerMap` the headers' rows and `secretReference` the signing secret. The sidebar reads a
   locked setting's value as the inspector does (`valueOf`). The sidebar's `kept` holds another choice's values and rows being typed while it is open. A chat's message is
   written by `WebhookChat` (Core); a test's `args` carry a host's status or the key of a secret the site lacks.
+  From 10.2e (ADR-0192): the content action's editors are `content-editors.ts`, on `content-model.ts`:
+  `contentParent` draws where it goes with the item picked `within` it (`FieldSettingsReader.Boxes`), named for the
+  choice, and `contentMapping` the table of properties, each row's boxes under the ids of the check's paths
+  (`mapping[2].field`, which `settingAtPath` keeps as the row and the sidebar's `ROW_EDITORS` lead to). An action type
+  may serve the site's items as a setting's choices (`IFormBuilderActionType.SiteChoicesAsync`, which `GET action-type`
+  applies): the content type its document types. `GET action-type/content/document-type/{alias}` answers a document
+  type's properties a form can set (`ContentItemTypes`, by `ContentActionType.Fits` and `ValueKindOf`), which the
+  sidebar reads once each while it is open (`documentTypeOf`, `readAgain` for Try again), and `contentMediaFolder`
+  the media picker where a row takes a file upload's answer. A test's preview is lines (`ActionTestLine`) with codes
+  the backoffice words (`lineWords`), a plain sentence for a site's own type. The content and Set state checks give
+  their problems codes (`ActionCheckCodes`, `ActionSettingsCheck.Invalid(setting, code, message)`), which the form
+  check words as its own (`OWN_WORDS`). `SetStateActionType`'s check refuses two actions that would move an entry
+  between Approved and Rejected for ever.
 
 ## 2. The definition model
 

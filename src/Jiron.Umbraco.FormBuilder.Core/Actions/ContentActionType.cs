@@ -49,18 +49,18 @@ internal sealed record ContentMapping(string Property, Guid? Field, string? Valu
 public sealed class ContentActionSettings
 {
     /// <summary>The alias of the document type it creates.</summary>
-    [FormBuilderSetting("#jfbActionSettings_contentDocumentType", Order = 1, Editor = "documentTypePicker")]
+    [FormBuilderSetting("#jfbActionSettings_contentDocumentType", Description = "#jfbActionSettings_contentDocumentTypeHelp", Order = 1, Editor = "documentTypePicker")]
     public string? DocumentType { get; init; }
 
-    /// <summary>Where the parent comes from.</summary>
-    [FormBuilderSetting("#jfbActionSettings_contentParentSource", Order = 2)]
+    /// <summary>Where the parent comes from; its editor draws the item picked within it (ADR-0192).</summary>
+    [FormBuilderSetting("#jfbActionSettings_contentParentSource", Order = 2, Editor = "contentParent")]
     public ContentParentSource ParentSource { get; init; }
 
     /// <summary>
     /// The picked parent, empty for the content root. For the other sources it is required and marks how far a visitor's page can reach:
     /// a form's page comes from the request, so what it creates stays at this item or below it.
     /// </summary>
-    [FormBuilderSetting("#jfbActionSettings_contentParent", Order = 3, Kind = FieldSettingKind.Key, Editor = "documentPicker")]
+    [FormBuilderSetting("#jfbActionSettings_contentParent", Order = 3, Kind = FieldSettingKind.Key, Editor = "documentPicker", Within = "parentSource")]
     public Guid? Parent { get; init; }
 
     /// <summary>The name of the item, which may hold merge tags.</summary>
@@ -72,18 +72,21 @@ public sealed class ContentActionSettings
     public JsonElement? Mapping { get; init; }
 
     /// <summary>Whether it publishes the item, or only saves it for an editor to look at first.</summary>
-    [FormBuilderSetting("#jfbActionSettings_contentPublish", Order = 6)]
+    [FormBuilderSetting("#jfbActionSettings_contentPublish", Description = "#jfbActionSettings_contentPublishHelp", Order = 6)]
     public bool Publish { get; init; }
 
     /// <summary>
     /// Whether a child of the same type and name under the parent is updated instead of a new one created. What a visitor typed can
     /// choose the item, so a site turns it on only where that is what it wants.
     /// </summary>
-    [FormBuilderSetting("#jfbActionSettings_contentUpdateExisting", Order = 7, Group = FieldSettingGroup.Advanced)]
+    [FormBuilderSetting("#jfbActionSettings_contentUpdateExisting", Description = "#jfbActionSettings_contentUpdateExistingHelp", Order = 7, Group = FieldSettingGroup.Advanced)]
     public bool UpdateExisting { get; init; }
 
-    /// <summary>The media folder uploaded files go to when the mapping names a file field; empty for the media root.</summary>
-    [FormBuilderSetting("#jfbActionSettings_contentMediaFolder", Order = 8, Kind = FieldSettingKind.Key, Editor = "mediaPicker", Group = FieldSettingGroup.Advanced)]
+    /// <summary>
+    /// The media folder uploaded files go to when the mapping names a file field; empty for the media root. Its editor draws
+    /// it where a row takes a file upload's answer, or where it holds a folder (ADR-0192).
+    /// </summary>
+    [FormBuilderSetting("#jfbActionSettings_contentMediaFolder", Description = "#jfbActionSettings_contentMediaFolderHelp", Order = 8, Kind = FieldSettingKind.Key, Editor = "contentMediaFolder", Group = FieldSettingGroup.Advanced)]
     public Guid? MediaFolder { get; init; }
 
     /// <summary>The sensitive fields it may copy (ADR-0014); none by default.</summary>
@@ -157,6 +160,20 @@ internal sealed partial class ContentActionType(
         _ => IsText(editor),
     };
 
+    /// <summary>
+    /// What a value written for a property with this editor must be (ADR-0192): <c>text</c>, which may hold merge tags,
+    /// <c>wholeNumber</c>, <c>decimal</c>, <c>date</c> or <c>boolean</c>; null where only a field's answer fits, as for media.
+    /// </summary>
+    /// <param name="editor">The property's editor alias.</param>
+    internal static string? ValueKindOf(string editor) => IsText(editor) ? "text" : editor switch
+    {
+        Constants.PropertyEditors.Aliases.Integer => "wholeNumber",
+        Constants.PropertyEditors.Aliases.Decimal => "decimal",
+        Constants.PropertyEditors.Aliases.DateTime => "date",
+        Constants.PropertyEditors.Aliases.Boolean => "boolean",
+        _ => null,
+    };
+
     /// <summary>What an editor stores for an answer as it is read, or the text itself where the editor holds text; false when it cannot be.</summary>
     /// <param name="editor">The property's editor alias.</param>
     /// <param name="text">The answer as it is read.</param>
@@ -175,7 +192,7 @@ internal sealed partial class ContentActionType(
                 value = whole;
                 return fits;
             case Constants.PropertyEditors.Aliases.Decimal when text.Length > 0:
-                var isNumber = decimal.TryParse(text, NumberStyles.Number, CultureInfo.InvariantCulture, out var number);
+                var isNumber = decimal.TryParse(text, NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite | NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out var number);
                 value = number;
                 return isNumber;
             case Constants.PropertyEditors.Aliases.DateTime when text.Length > 0:
@@ -191,22 +208,41 @@ internal sealed partial class ContentActionType(
     }
 
     /// <inheritdoc />
+    /// <remarks>The document types a content item may have, by name, as <c>documentType</c> offers them: element types, which no item has, left out.</remarks>
+    public override ValueTask<IReadOnlyDictionary<string, IReadOnlyList<FieldSettingChoice>>> SiteChoicesAsync(CancellationToken cancellationToken)
+    {
+        IReadOnlyList<FieldSettingChoice> types =
+        [
+            .. contentTypes.GetAll()
+                .Where(type => !type.IsElement)
+                .OrderBy(type => type.Name ?? type.Alias, StringComparer.CurrentCultureIgnoreCase)
+                .Select(type => new FieldSettingChoice(type.Alias, type.Name ?? type.Alias)),
+        ];
+        return ValueTask.FromResult<IReadOnlyDictionary<string, IReadOnlyList<FieldSettingChoice>>>(
+            new Dictionary<string, IReadOnlyList<FieldSettingChoice>>(StringComparer.Ordinal) { ["documentType"] = types });
+    }
+
+    /// <inheritdoc />
     protected override void CheckSettings(ContentActionSettings settings, ActionSettingsCheck check)
     {
-        var type = string.IsNullOrWhiteSpace(settings.DocumentType) ? null : contentTypes.Get(settings.DocumentType);
-        if (type is null)
+        var type = ItemType(settings.DocumentType);
+        if (string.IsNullOrWhiteSpace(settings.DocumentType))
         {
-            check.Invalid("documentType", "This site has no such document type.");
+            check.Invalid("documentType", ActionCheckCodes.ContentTypeMissing, "Choose the document type each entry becomes.");
+        }
+        else if (type is null)
+        {
+            check.Invalid("documentType", ActionCheckCodes.ContentTypeGone, "This site has no such document type.");
         }
 
         if (settings.ParentSource != ContentParentSource.Picked && settings.Parent is null)
         {
-            check.Invalid("parent", "A parent taken from the visitor's page needs an item it must stay under.");
+            check.Invalid("parent", ActionCheckCodes.ContentParentMissing, "A parent taken from the visitor's page needs an item it must stay under.");
         }
 
         if (string.IsNullOrWhiteSpace(settings.Name))
         {
-            check.Invalid("name", "An item needs a name.");
+            check.Invalid("name", ActionCheckCodes.ContentNameMissing, "An item needs a name.");
         }
         else
         {
@@ -219,7 +255,7 @@ internal sealed partial class ContentActionType(
                 }
                 else
                 {
-                    check.Invalid("name", $"A merge tag at {problem.At} cannot be used here: {problem.Code}.");
+                    check.Invalid("name", problem.Code, $"A merge tag at {problem.At} cannot be used here: {problem.Code}.");
                 }
             }
         }
@@ -227,26 +263,33 @@ internal sealed partial class ContentActionType(
         var known = DefinitionKeys.Fields(check.Definition).ToDictionary(field => field.Key);
         if (settings.IncludeSensitive.Any(field => !known.ContainsKey(field)))
         {
-            check.Invalid("includeSensitive", "Each must be a field of this form.");
+            check.Invalid("includeSensitive", ActionCheckCodes.ContentSensitiveUnknown, "Each must be a field of this form.");
         }
 
         if (MappingOf(settings.Mapping) is not { } mapping)
         {
-            check.Invalid("mapping", "The mapping is a list of properties, each with a field or a value.");
+            check.Invalid("mapping", ActionCheckCodes.ContentMappingInvalid, "The mapping is a list of properties, each with a field or a value.");
             return;
         }
 
+        // Each row's problem names its row, so the designer marks the box it is in (ADR-0192).
         var properties = type?.CompositionPropertyTypes.ToDictionary(property => property.Alias, StringComparer.Ordinal);
-        foreach (var item in mapping)
+        var named = new HashSet<string>(StringComparer.Ordinal);
+        for (var at = 0; at < mapping.Count; at++)
         {
-            CheckItem(item, properties, known, check);
+            var item = mapping[at];
+            CheckItem(item, $"mapping[{at}]", properties, known, check);
+            if (!named.Add(item.Property))
+            {
+                check.Warn($"mapping[{at}].property", ActionCheckCodes.ContentPropertyTwice, $"'{item.Property}' is set by a row before this one; this row's value wins.");
+            }
         }
     }
 
     /// <inheritdoc />
     protected override async Task<ActionResult> RunAsync(ContentActionSettings settings, ActionRunContext context, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(settings.DocumentType) || contentTypes.Get(settings.DocumentType) is null)
+        if (ItemType(settings.DocumentType) is not { } itemType)
         {
             return ActionResult.Failed(TargetMissing);
         }
@@ -269,7 +312,7 @@ internal sealed partial class ContentActionType(
             return ActionResult.TryAgain(ScanPending);
         }
 
-        var item = Find(settings, context, parent, name) ?? content.Create(name, parent == Guid.Empty ? Constants.System.Root : content.GetById(parent)!.Id, settings.DocumentType);
+        var item = Find(settings, context, parent, name) ?? content.Create(name, parent == Guid.Empty ? Constants.System.Root : content.GetById(parent)!.Id, itemType.Alias);
         item.Key = item.HasIdentity ? item.Key : KeyOf(context.DeliveryKey);
         item.Name = name;
         var culture = item.ContentType.VariesByCulture() ? await CultureAsync(scope.Culture) : null;
@@ -296,13 +339,133 @@ internal sealed partial class ContentActionType(
     }
 
     /// <inheritdoc />
-    protected override Task<ActionTestResult> TestAsync(ContentActionSettings settings, ActionTestContext context, CancellationToken cancellationToken)
+    /// <remarks>
+    /// A dry run (ADR-0192): with the sample entry, what a run would save or publish, its name and where, which properties
+    /// it sets, and each it would leave out or could not set; it creates nothing. A test fails as a run would where the
+    /// document type or the parent is gone, or the name comes out empty.
+    /// </remarks>
+    protected override async Task<ActionTestResult> TestAsync(ContentActionSettings settings, ActionTestContext context, CancellationToken cancellationToken)
     {
-        var type = string.IsNullOrWhiteSpace(settings.DocumentType) ? null : contentTypes.Get(settings.DocumentType);
-        return Task.FromResult(type is null
-            ? new ActionTestResult(ActionTestOutcome.Failed, "This site has no such document type.")
-            : new ActionTestResult(ActionTestOutcome.DryRun, Preview: [$"An entry would {(settings.Publish ? "publish" : "save")} a {type.Name}."]) { Code = ActionTestCodes.DryRun });
+        if (ItemType(settings.DocumentType) is not { } type)
+        {
+            return new ActionTestResult(ActionTestOutcome.Failed, "This site has no such document type.") { Code = TargetMissing, Args = ["documentType"] };
+        }
+
+        var scope = context.Scope with { IncludedSensitive = settings.IncludeSensitive.ToHashSet() };
+        var name = Cut((await tags.RenderAsync(settings.Name ?? string.Empty, MergeTagPlace.Action, MergeTagContext.Text, scope, cancellationToken)).Text.Trim());
+        if (name.Length == 0)
+        {
+            return new ActionTestResult(ActionTestOutcome.Failed, "The item's name comes out empty for the sample entry.") { Code = NoName };
+        }
+
+        // A parent from the visitor's page or site root needs the item it must stay within, which the form check asks for.
+        if (settings.ParentSource != ContentParentSource.Picked && settings.Parent is null)
+        {
+            return new ActionTestResult(ActionTestOutcome.Failed, "Where it goes needs the item it must stay within.") { Code = TargetMissing, Args = ["within"] };
+        }
+
+        if (Where(settings, type.Name ?? type.Alias, name) is not { } where)
+        {
+            return new ActionTestResult(ActionTestOutcome.Failed, "The item picked as the parent is gone.") { Code = TargetMissing, Args = ["parent"] };
+        }
+
+        var lines = new List<ActionTestLine> { where };
+        if (settings.UpdateExisting)
+        {
+            lines.Add(Line("content_update", "If an item of that type and name is there already, a run updates it instead."));
+        }
+
+        var properties = type.CompositionPropertyTypes.ToDictionary(property => property.Alias, StringComparer.Ordinal);
+        var set = new List<string>();
+        foreach (var mapping in MappingOf(settings.Mapping) ?? [])
+        {
+            if (!properties.TryGetValue(mapping.Property, out var property))
+            {
+                lines.Add(Line("content_property_gone", $"The document type has no property '{mapping.Property}', so a run leaves it out.", mapping.Property));
+                continue;
+            }
+
+            var said = property.Name ?? property.Alias;
+            if (await TestValueAsync(mapping, property, settings, scope, cancellationToken) is { } problem)
+            {
+                lines.Add(problem with { Args = [said, .. problem.Args] });
+            }
+            else
+            {
+                set.Add(said);
+            }
+        }
+
+        if (set.Count > 0)
+        {
+            lines.Add(Line("content_sets", $"It would set {string.Join(", ", set)}.", [.. set]));
+        }
+
+        return new ActionTestResult(ActionTestOutcome.DryRun, Preview: lines) { Code = ActionTestCodes.DryRun };
     }
+
+    private static ActionTestLine Line(string code, string text, params string[] args) => new(text) { Code = code, Args = args };
+
+    // Where a run puts the item, as a line: under the item picked or at the content root, or under the visitor's page or
+    // site root within the item picked; null when the item picked is gone.
+    private ActionTestLine? Where(ContentActionSettings settings, string type, string name)
+    {
+        var verb = settings.Publish ? "publish" : "save";
+        var start = $"A run would {verb} an item of type {type} named \"{name}\"";
+        string? Named(Guid? key) => key is { } picked && content.GetById(picked) is { Trashed: false } item ? item.Name ?? string.Empty : null;
+        return settings.ParentSource switch
+        {
+            ContentParentSource.Page when Named(settings.Parent) is { } within =>
+                Line("content_page", $"{start} under the page the form is sent from, within {within}.", verb, type, name, within),
+            ContentParentSource.SiteRoot when Named(settings.Parent) is { } within =>
+                Line("content_site", $"{start} under the root of the visitor's site, within {within}.", verb, type, name, within),
+            ContentParentSource.Picked when settings.Parent is null =>
+                Line("content_root", $"{start} at the content root.", verb, type, name),
+            ContentParentSource.Picked when Named(settings.Parent) is { } parent =>
+                Line("content_under", $"{start} under {parent}.", verb, type, name, parent),
+            _ => null,
+        };
+    }
+
+    // Why a run would not set a property from the sample entry, as a line whose args the property's name comes before;
+    // null when it would set it.
+    private async Task<ActionTestLine?> TestValueAsync(ContentMapping mapping, IPropertyType property, ContentActionSettings settings, MergeTagScope scope, CancellationToken cancellationToken)
+    {
+        var editor = property.PropertyEditorAlias;
+        string text;
+        if (mapping.Field is { } key)
+        {
+            if (DefinitionKeys.Fields(scope.Form).FirstOrDefault(field => field.Key == key) is not { } field)
+            {
+                return Line(ActionCheckCodes.ContentFieldGone, $"The field mapped to '{property.Alias}' is not a field of this form, so a run leaves it out.");
+            }
+
+            var label = LabelOf(field, scope.Culture);
+            if (!MayCopy(field, scope.Form, settings))
+            {
+                return Line("content_sensitive", $"{label} is sensitive, so a run leaves '{property.Alias}' empty.", label);
+            }
+
+            if (field.Type == FileFieldType)
+            {
+                return editor == Constants.PropertyEditors.Aliases.MediaPicker3
+                    ? null
+                    : Line("content_cannot_hold", $"'{property.Alias}' cannot hold the files of {label}.", label);
+            }
+
+            text = IsText(editor)
+                ? (await tags.RenderAsync($"{{{{ field.{field.Alias ?? string.Empty} }}}}", MergeTagPlace.Action, MergeTagContext.Text, scope, cancellationToken)).Text
+                : WireTextOf(field, scope);
+            return TryConvert(editor, text, out _) ? null : Line("content_cannot_hold", $"'{property.Alias}' cannot hold the sample entry's answer to {label}.", label);
+        }
+
+        text = (await tags.RenderAsync(mapping.Value ?? string.Empty, MergeTagPlace.Action, MergeTagContext.Text, scope, cancellationToken)).Text;
+        return TryConvert(editor, text, out _) ? null : Line("content_cannot_hold_value", $"'{property.Alias}' cannot hold the value written for it.");
+    }
+
+    // A field's label in the culture, or its alias where it has none or names a dictionary item.
+    private static string LabelOf(FormField field, string culture) =>
+        field.Label?.Resolve(culture) is { Length: > 0 } label && !LocalizedString.TryGetDictionaryKey(label, out _) ? label : field.Alias ?? field.Type;
 
     // The key of what a run creates: the same for every attempt of the run, and for no other run.
     // It is laid out as a version 4 key, as Umbraco's media paths refuse the time-ordered kind, which any 16 bytes might read as.
@@ -320,7 +483,9 @@ internal sealed partial class ContentActionType(
     private static bool IsFileMapping(ContentMapping mapping, FormDefinition form) =>
         mapping.Field is { } key && DefinitionKeys.Fields(form).Any(field => field.Key == key && field.Type == FileFieldType);
 
-    // Whether the action may copy a field: not a sensitive one, or a sensitive repeatable group's, unless it names the one or the other (ADR-0014).
+    // Whether the action may copy a field: not a sensitive one, or a sensitive repeatable group's, unless it names the one or
+    // the other (ADR-0014). A form publishes no mapping of a repeatable group's field any more (ADR-0192); a version published
+    // before still runs, and its group's sensitivity still holds.
     private static bool MayCopy(FormField field, FormDefinition form, ContentActionSettings settings)
     {
         var group = form.Pages.SelectMany(page => page.Groups).SelectMany(group => group.Fields).FirstOrDefault(each => each.Fields.Any(child => child.Key == field.Key));
@@ -386,7 +551,7 @@ internal sealed partial class ContentActionType(
         return mapping;
     }
 
-    private void CheckItem(ContentMapping item, Dictionary<string, IPropertyType>? properties, Dictionary<Guid, FormField> fields, ActionSettingsCheck check)
+    private void CheckItem(ContentMapping item, string row, Dictionary<string, IPropertyType>? properties, Dictionary<Guid, FormField> fields, ActionSettingsCheck check)
     {
         if (item.Value is { } written)
         {
@@ -394,13 +559,18 @@ internal sealed partial class ContentActionType(
             {
                 if (problem.IsWarning)
                 {
-                    check.Warn("mapping", problem.Code, $"In the value of '{item.Property}': {MergeTagFormCheck.Sentence(problem)}");
+                    check.Warn($"{row}.value", problem.Code, $"In the value of '{item.Property}': {MergeTagFormCheck.Sentence(problem)}");
                 }
                 else
                 {
-                    check.Invalid("mapping", $"A merge tag at {problem.At} in the value of '{item.Property}' cannot be used here: {problem.Code}.");
+                    check.Invalid($"{row}.value", problem.Code, $"A merge tag at {problem.At} in the value of '{item.Property}' cannot be used here: {problem.Code}.");
                 }
             }
+        }
+
+        if (item.Field is { } named && fields.ContainsKey(named) && InRepeatableGroup(check.Definition, named))
+        {
+            check.Invalid($"{row}.field", ActionCheckCodes.ContentGroupField, $"The field mapped to '{item.Property}' is in a repeatable group, which has an answer for each row; a property holds one.");
         }
 
         if (properties is null)
@@ -410,7 +580,7 @@ internal sealed partial class ContentActionType(
 
         if (!properties.TryGetValue(item.Property, out var property))
         {
-            check.Invalid("mapping", $"The document type has no property '{item.Property}'.");
+            check.Invalid($"{row}.property", ActionCheckCodes.ContentPropertyGone, $"The document type has no property '{item.Property}'.");
             return;
         }
 
@@ -419,7 +589,7 @@ internal sealed partial class ContentActionType(
             // Text can go anywhere text goes; anything else has to be what the editor stores, known now, which no tag is.
             if (!IsText(property.PropertyEditorAlias) && (!IsConvertible(property.PropertyEditorAlias) || !TryConvert(property.PropertyEditorAlias, item.Value!, out _)))
             {
-                check.Invalid("mapping", $"The property '{item.Property}' cannot hold this value.");
+                check.Invalid($"{row}.value", ActionCheckCodes.ContentValueCannotHold, $"The property '{item.Property}' cannot hold this value.");
             }
 
             return;
@@ -427,13 +597,21 @@ internal sealed partial class ContentActionType(
 
         if (!fields.TryGetValue(key, out var field))
         {
-            check.Invalid("mapping", $"The field mapped to '{item.Property}' is not a field of this form.");
+            check.Invalid($"{row}.field", ActionCheckCodes.ContentFieldGone, $"The field mapped to '{item.Property}' is not a field of this form.");
         }
         else if (!Fits(field.Type, property.PropertyEditorAlias))
         {
-            check.Invalid("mapping", $"The property '{item.Property}' cannot hold an answer of a {field.Type} field.");
+            check.Invalid($"{row}.field", ActionCheckCodes.ContentFieldCannotHold, $"The property '{item.Property}' cannot hold an answer of a {field.Type} field.");
         }
     }
+
+    // Whether a field is a repeatable group's child, which has an answer for each row.
+    private static bool InRepeatableGroup(FormDefinition form, Guid key) =>
+        form.Pages.SelectMany(page => page.Groups).SelectMany(group => group.Fields).Any(field => field.Fields.Any(child => child.Key == key));
+
+    // The document type an item may have by its alias: null for none, or for an element type, which no item has.
+    private IContentType? ItemType(string? alias) =>
+        string.IsNullOrWhiteSpace(alias) || contentTypes.Get(alias) is not { IsElement: false } type ? null : type;
 
     private static bool IsConvertible(string editor) =>
         editor is Constants.PropertyEditors.Aliases.Boolean or Constants.PropertyEditors.Aliases.Integer or Constants.PropertyEditors.Aliases.Decimal or Constants.PropertyEditors.Aliases.DateTime;

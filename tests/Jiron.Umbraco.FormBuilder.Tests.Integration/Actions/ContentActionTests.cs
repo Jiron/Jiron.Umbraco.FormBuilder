@@ -1,3 +1,4 @@
+using System.Globalization;
 using Jiron.Umbraco.FormBuilder.Core.Actions;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Files;
@@ -81,12 +82,145 @@ public sealed class ContentActionTests : ActionTestBase
 
         var test = await GetRequiredService<ActionTestRuns>().TestAsync(form, action.Key, new ActionTestUser(Guid.NewGuid(), "ada@jfb.test", "Ada"), confirmed: false);
 
+        var lines = test.Result!.Preview!;
         Assert.Multiple(() =>
         {
             Assert.That((test.Result!.Outcome, test.Result.Code), Is.EqualTo((ActionTestOutcome.DryRun, ActionTestCodes.DryRun)));
-            Assert.That(test.Result.Preview, Is.EqualTo(new[] { "An entry would save a Note." }));
+            Assert.That(lines.Select(line => line.Code), Is.EqualTo(new[] { "content_root", "content_sets" }));
+            Assert.That(lines[0].Args.Take(2), Is.EqualTo(new[] { "save", "Note" }));
+            Assert.That(lines[0].Args[2], Does.StartWith("From "), "the name, from the sample entry");
+            Assert.That(lines[0].Text, Is.EqualTo($"A run would save an item of type Note named \"{lines[0].Args[2]}\" at the content root."));
+            Assert.That(lines[1].Args, Is.EqualTo(new[] { "body", "title" }));
             Assert.That(Contents.GetRootContent(), Is.Empty, "nothing was created");
         });
+    }
+
+    [Test]
+    public async Task ATestRun_SaysWhatARunWouldDo_WhereAndWhichProperties_AndWhatItWouldLeaveOut()
+    {
+        var home = HomeItem();
+        var form = await FormAsync(Create(Settings()));
+
+        var lines = (await TestHeldAsync(form, $$"""
+            {"documentType":"{{TypeAlias}}","name":"Story","publish":true,"updateExisting":true,"parent":"{{home.Key}}","mapping":[
+              {"property":"body","field":"{{Message.Key}}"},
+              {"property":"title","field":"{{Note.Key}}"},
+              {"property":"gone","value":"x"},
+              {"property":"count","value":"many"},
+              {"property":"flag","field":"{{Message.Key}}"},
+              {"property":"files","field":"{{Upload.Key}}"}]}
+            """)).Preview!;
+
+        Assert.That(lines.Select(line => (line.Code, string.Join("|", line.Args))), Is.EqualTo(new[]
+        {
+            ("content_under", "publish|Note|Story|Home"),
+            ("content_update", string.Empty),
+            ("content_sensitive", "title|Note"),
+            ("content_property_gone", "gone"),
+            ("content_cannot_hold_value", "count"),
+            ("content_cannot_hold", "flag|Message"),
+            ("content_sets", "body|files"),
+        }));
+    }
+
+    [Test]
+    public async Task ATestRun_SaysTheOnePropertyItWouldSet()
+    {
+        var form = await FormAsync(Create(Settings()));
+
+        var lines = (await TestHeldAsync(form, $$"""{"documentType":"{{TypeAlias}}","name":"Story","mapping":[{"property":"body","field":"{{Message.Key}}"}]}""")).Preview!;
+
+        Assert.That(lines.Select(line => (line.Code, line.Text, string.Join("|", line.Args))).Last(), Is.EqualTo(("content_sets", "It would set body.", "body")));
+    }
+
+    [Test]
+    public async Task ATestRun_SaysAPropertyThatCannotHoldTheFilesOfAnUpload()
+    {
+        var form = await FormAsync(Create(Settings()));
+
+        var lines = (await TestHeldAsync(form, $$"""{"documentType":"{{TypeAlias}}","name":"Story","mapping":[{"property":"body","field":"{{Upload.Key}}"}]}""")).Preview!;
+
+        Assert.That(lines.Select(line => (line.Code, string.Join("|", line.Args))).Last(), Is.EqualTo(("content_cannot_hold", "body|Upload")));
+    }
+
+    [TestCase("page", "content_page", TestName = "Under the visitor's page, within the item picked")]
+    [TestCase("siteRoot", "content_site", TestName = "Under the visitor's site root, within the item picked")]
+    public async Task ATestRun_SaysWhereAVisitorsPageWouldTakeIt(string source, string code)
+    {
+        var home = HomeItem();
+        var form = await FormAsync(Create(Settings()));
+
+        var where = (await TestHeldAsync(form, $$"""{"documentType":"{{TypeAlias}}","name":"Story","parentSource":"{{source}}","parent":"{{home.Key}}"}""")).Preview![0];
+
+        Assert.That((where.Code, string.Join("|", where.Args)), Is.EqualTo((code, "save|Note|Story|Home")));
+    }
+
+    [TestCase("""{"documentType":"nothere","name":"N"}""", "target_missing", "documentType", TestName = "A document type the site lacks fails the test")]
+    [TestCase("""{"documentType":"jfbNote","name":"N","parent":"c2000000-0000-4000-8000-0000000000ee"}""", "target_missing", "parent", TestName = "A parent that is gone fails the test")]
+    [TestCase("""{"documentType":"jfbNote","name":"N","parentSource":"page"}""", "target_missing", "within", TestName = "A page parent without the item it must stay within fails the test")]
+    [TestCase("""{"documentType":"jfbNote","name":"{{ nothing.here }}"}""", "no_name", "", TestName = "A name that comes out empty fails the test")]
+    public async Task ATestRun_FailsWhereARunWould(string settings, string code, string what)
+    {
+        var form = await FormAsync(Create(Settings()));
+
+        var result = await TestHeldAsync(form, settings);
+
+        Assert.That((result.Outcome, result.Code, string.Join("|", result.Args)), Is.EqualTo((ActionTestOutcome.Failed, code, what)));
+    }
+
+    [Test]
+    public async Task TheDocumentTypes_AreOfferedByName_ElementTypesLeftOut()
+    {
+        await ElementTypeAsync();
+
+        var choices = await GetRequiredService<ActionTypeRegistry>().Find(ContentActionType.Alias)!.SiteChoicesAsync(CancellationToken.None);
+
+        Assert.That(choices["documentType"].Select(choice => (choice.Value, choice.Label)), Does.Contain((TypeAlias, "Note")).And.Not.Contains(("jfbPart", "Part")));
+    }
+
+    [TestCase("""{"name":"N"}""", "Choose the document type each entry becomes.", TestName = "No document type is asked for")]
+    [TestCase("""{"documentType":"nothere","name":"N"}""", "This site has no such document type.", TestName = "A document type the site lacks is said to be missing")]
+    public void Publishing_SaysWhatTheDocumentTypeLacks(string settings, string message)
+    {
+        var refused = Assert.ThrowsAsync<FormBuilderValidationException>(async () => await FormAsync(Create(settings)));
+
+        Assert.That(refused!.Problems.Where(problem => problem.Path == "$.actions[0].settings.documentType").Select(problem => problem.Message), Is.EqualTo(new[] { message }));
+    }
+
+    [Test]
+    public async Task AnElementType_IsNoTypeAnItemCanHave()
+    {
+        await ElementTypeAsync();
+
+        var refused = Assert.ThrowsAsync<FormBuilderValidationException>(async () => await FormAsync(Create("""{"documentType":"jfbPart","name":"N"}""")));
+
+        Assert.That(refused!.Problems.Select(problem => problem.Path), Does.Contain("$.actions[0].settings.documentType"));
+    }
+
+    [Test]
+    public async Task AFieldOfARepeatableGroup_HasAnAnswerForEachRow_SoNoPropertyTakesIt()
+    {
+        var guest = new FormField { Key = Guid.NewGuid(), Type = "text", Alias = "guest", Label = new LocalizedText("Guest") };
+        var guests = new FormField { Key = Guid.NewGuid(), Type = "repeater", Alias = "guests", Label = new LocalizedText("Guests"), Fields = [guest] };
+        var action = Create($$"""{"documentType":"{{TypeAlias}}","name":"N","mapping":[{"property":"title","field":"{{guest.Key}}"}]}""");
+
+        var refused = Assert.ThrowsAsync<FormBuilderValidationException>(async () =>
+            await PublishAsync(name: Guid.NewGuid().ToString("N"), change: definition => definition with { Actions = [action] }, fields: [NameField, guests]));
+
+        Assert.That(refused!.Problems.Select(problem => problem.Path), Does.Contain("$.actions[0].settings.mapping[0].field"), string.Join(", ", refused.Problems));
+    }
+
+    [Test]
+    public async Task APropertySetTwice_StillPublishes_AndTheFormCheckWarnsAtTheLaterRow()
+    {
+        var form = await FormAsync(Create($$"""{"documentType":"{{TypeAlias}}","name":"N","mapping":[{"property":"title","value":"A"},{"property":"body","value":"B"},{"property":"title","value":"C"}]}"""));
+
+        var issues = await GetRequiredService<FormCheck>().CheckAsync((await GetRequiredService<IFormBuilderFormService>().GetDraftAsync(form))!.Definition!, CancellationToken.None);
+
+        Assert.That(issues.Where(issue => issue.Code == "content_property_twice").Select(issue => (issue.Severity, issue.Path)), Is.EqualTo(new[]
+        {
+            (FormCheckSeverity.Warning, "$.actions[0].settings.mapping[2].property"),
+        }));
     }
 
     [Test]
@@ -337,6 +471,19 @@ public sealed class ContentActionTests : ActionTestBase
         });
     }
 
+    [TestCase("1.5", "1.5")]
+    [TestCase("-2.25", "-2.25")]
+    [TestCase(" 3 ", "3")]
+    [TestCase("1,5", null, TestName = "A decimal comma is no thousands separator: 1,5 is refused, never 15")]
+    [TestCase("1,234.5", null)]
+    [TestCase("1e3", null)]
+    public void ADecimal_IsReadWithAPointOnly(string text, string? expected)
+    {
+        var converted = ContentActionType.TryConvert(Constants.PropertyEditors.Aliases.Decimal, text, out var value);
+
+        Assert.That((converted, converted ? value : null), Is.EqualTo((expected is not null, expected is null ? null : (object)decimal.Parse(expected, CultureInfo.InvariantCulture))));
+    }
+
     [TestCase("number", Constants.PropertyEditors.Aliases.Integer, true)]
     [TestCase("scale", Constants.PropertyEditors.Aliases.Decimal, true)]
     [TestCase("calculation", Constants.PropertyEditors.Aliases.Label, true)]
@@ -529,24 +676,39 @@ public sealed class ContentActionTests : ActionTestBase
         });
     }
 
-    [Test]
-    public async Task AChildOfASensitiveGroup_IsNotCopied_UntilTheActionNamesTheGroup()
+    [TestCase(false, TestName = "A child of a sensitive group is refused")]
+    [TestCase(true, TestName = "A child of a sensitive group is refused, even with the group named")]
+    public void AChildOfASensitiveGroup_IsRefused_LikeAnyRepeatableGroupsField(bool named)
     {
         var child = new FormField { Key = Guid.NewGuid(), Type = "number", Alias = "count", Label = new LocalizedText("Count") };
         var group = new FormField { Key = Guid.NewGuid(), Type = "repeater", Alias = "rows", Label = new LocalizedText("Rows"), Sensitive = true, Fields = [child] };
-        var mapping = $$"""{"documentType":"{{TypeAlias}}","name":"Group","mapping":[{"property":"count","field":"{{child.Key}}"}]""";
-        var without = await PublishAsync(name: Guid.NewGuid().ToString("N"), change: definition => definition with { Actions = [Create(mapping + "}")] }, fields: [NameField, group]);
-        var named = await PublishAsync(name: Guid.NewGuid().ToString("N"), change: definition => definition with { Actions = [Create(mapping + $$""","includeSensitive":["{{group.Key}}"]}""")] }, fields: [NameField, group]);
+        var naming = named ? $$""","includeSensitive":["{{group.Key}}"]""" : string.Empty;
+        var action = Create($$"""{"documentType":"{{TypeAlias}}","name":"Group","mapping":[{"property":"count","field":"{{child.Key}}"}]{{naming}}}""");
 
-        await DrainAsync((await SubmitAsync(without, """{"name":"Ada","rows":[{"count":"4"}]}""")).Id);
-        var left = OnlyItem().GetValue<int?>("count");
-        Contents.Delete(OnlyItem());
-        await DrainAsync((await SubmitAsync(named, """{"name":"Ada","rows":[{"count":"4"}]}""")).Id);
+        var refused = Assert.ThrowsAsync<FormBuilderValidationException>(async () =>
+            await PublishAsync(name: Guid.NewGuid().ToString("N"), change: definition => definition with { Actions = [action] }, fields: [NameField, group]));
+
+        Assert.That(refused!.Problems.Select(problem => problem.Path), Does.Contain("$.actions[0].settings.mapping[0].field"), string.Join(", ", refused.Problems));
+    }
+
+    [TestCase(false, 0, TestName = "A version published before keeps a sensitive group's child out")]
+    [TestCase(true, 4, TestName = "A version published before copies a sensitive group's child once the action names the group")]
+    public async Task AVersionPublishedBefore_KeepsASensitiveGroupsChildOut_UntilTheActionNamesTheGroup(bool named, int copied)
+    {
+        var child = new FormField { Key = Guid.NewGuid(), Type = "number", Alias = "count", Label = new LocalizedText("Count") };
+        var group = new FormField { Key = Guid.NewGuid(), Type = "repeater", Alias = "rows", Label = new LocalizedText("Rows"), Sensitive = true, Fields = [child] };
+        var form = await PublishAsync(name: Guid.NewGuid().ToString("N"), change: definition => definition with { Actions = [Create($$"""{"documentType":"{{TypeAlias}}","name":"Group"}""")] }, fields: [NameField, group]);
+        var entry = await SubmitAsync(form, """{"name":"Ada","rows":[{"count":"4"}]}""");
+        // The action as a version published before the rule holds it: it maps the group's field, which no form publishes now.
+        var naming = named ? $$""","includeSensitive":["{{group.Key}}"]""" : string.Empty;
+        var action = Create($$"""{"documentType":"{{TypeAlias}}","name":"Group","mapping":[{"property":"count","field":"{{child.Key}}"}]{{naming}}}""");
+
+        var result = await RunDirectlyAsync(form, action, scope => scope, entry);
 
         Assert.Multiple(() =>
         {
-            Assert.That(left, Is.Null.Or.Zero);
-            Assert.That(OnlyItem().GetValue<int>("count"), Is.EqualTo(4));
+            Assert.That(result.Kind, Is.EqualTo(ActionResultKind.Succeeded), result.Code);
+            Assert.That(OnlyItem().GetValue<int?>("count") ?? 0, Is.EqualTo(copied));
         });
     }
 
@@ -581,28 +743,31 @@ public sealed class ContentActionTests : ActionTestBase
         });
     }
 
-    [TestCase("""{"documentType":"jfbNote","name":"N","mapping":[{"property":"title","value":"{{ form.name"}]}""", "mapping", TestName = "A value whose tag does not close")]
-    [TestCase("""{"documentType":"jfbNote","name":"N","mapping":[{"property":"count","value":"{{ field.name }}"}]}""", "mapping", TestName = "A tag where a number goes")]
-    [TestCase("""{"documentType":"jfbNote","name":"N","mapping":[{"property":"count","value":"many"}]}""", "mapping", TestName = "Words where a number goes")]
-    [TestCase("""{"documentType":"jfbNote","name":"N","mapping":[{"property":"files","value":"x"}]}""", "mapping", TestName = "A value where media goes")]
-    [TestCase("""{"documentType":"jfbNote","name":"N","parentSource":"page"}""", "parent", TestName = "A page parent without a limit")]
-    [TestCase("""{"documentType":"jfbNote","name":"N","parentSource":"siteRoot"}""", "parent", TestName = "A site root parent without a limit")]
-    [TestCase("""{"documentType":"nothere","name":"N"}""", "documentType", TestName = "A document type the site lacks")]
-    [TestCase("""{"documentType":"jfbNote"}""", "name", TestName = "No name")]
-    [TestCase("""{"documentType":"jfbNote","name":"N","mapping":[{"property":"gone","value":"x"}]}""", "mapping", TestName = "A property the type lacks")]
-    [TestCase("""{"documentType":"jfbNote","name":"N","mapping":[{"property":"count","field":"c2000000-0000-4000-8000-000000000001"}]}""", "mapping", TestName = "A text answer into a number")]
-    [TestCase("""{"documentType":"jfbNote","name":"N","mapping":[{"property":"title","field":"c2000000-0000-4000-8000-000000000003"}]}""", "mapping", TestName = "A file into a text")]
-    [TestCase("""{"documentType":"jfbNote","name":"N","mapping":[{"property":"files","field":"c2000000-0000-4000-8000-000000000001"}]}""", "mapping", TestName = "A text answer into media")]
-    [TestCase("""{"documentType":"jfbNote","name":"N","mapping":[{"property":"title"}]}""", "mapping", TestName = "Neither a field nor a value")]
-    [TestCase("""{"documentType":"jfbNote","name":"N","mapping":[{"property":"title","value":"x","field":"c2000000-0000-4000-8000-000000000001"}]}""", "mapping", TestName = "Both a field and a value")]
-    [TestCase("""{"documentType":"jfbNote","name":"N","mapping":[{"property":"title","field":"c2000000-0000-4000-8000-0000000000ff"}]}""", "mapping", TestName = "A field of another form")]
-    [TestCase("""{"documentType":"jfbNote","name":"N","mapping":{"title":"x"}}""", "mapping", TestName = "A mapping that is no list")]
-    [TestCase("""{"documentType":"jfbNote","name":"{{ form.name"}""", "name", TestName = "A name whose tag does not close")]
-    public void Publishing_RefusesWhatCannotBeStored(string settings, string setting)
+    [TestCase("""{"documentType":"jfbNote","name":"N","mapping":[{"property":"title","value":"{{ form.name"}]}""", "mapping[0].value", "unclosed_tag", TestName = "A value whose tag does not close")]
+    [TestCase("""{"documentType":"jfbNote","name":"N","mapping":[{"property":"count","value":"{{ field.name }}"}]}""", "mapping[0].value", "content_value_cannot_hold", TestName = "A tag where a number goes")]
+    [TestCase("""{"documentType":"jfbNote","name":"N","mapping":[{"property":"title","value":"x"},{"property":"count","value":"many"}]}""", "mapping[1].value", "content_value_cannot_hold", TestName = "Words where a number goes, in the row it is in")]
+    [TestCase("""{"documentType":"jfbNote","name":"N","mapping":[{"property":"files","value":"x"}]}""", "mapping[0].value", "content_value_cannot_hold", TestName = "A value where media goes")]
+    [TestCase("""{"documentType":"jfbNote","name":"N","parentSource":"page"}""", "parent", "content_parent_missing", TestName = "A page parent without a limit")]
+    [TestCase("""{"documentType":"jfbNote","name":"N","parentSource":"siteRoot"}""", "parent", "content_parent_missing", TestName = "A site root parent without a limit")]
+    [TestCase("""{"documentType":"nothere","name":"N"}""", "documentType", "content_type_gone", TestName = "A document type the site lacks")]
+    [TestCase("""{"name":"N"}""", "documentType", "content_type_missing", TestName = "No document type")]
+    [TestCase("""{"documentType":" ","name":"N"}""", "documentType", "content_type_missing", TestName = "A blank document type")]
+    [TestCase("""{"documentType":"jfbNote"}""", "name", "content_name_missing", TestName = "No name")]
+    [TestCase("""{"documentType":"jfbNote","name":"N","mapping":[{"property":"gone","value":"x"}]}""", "mapping[0].property", "content_property_gone", TestName = "A property the type lacks")]
+    [TestCase("""{"documentType":"jfbNote","name":"N","mapping":[{"property":"count","field":"c2000000-0000-4000-8000-000000000001"}]}""", "mapping[0].field", "content_field_cannot_hold", TestName = "A text answer into a number")]
+    [TestCase("""{"documentType":"jfbNote","name":"N","mapping":[{"property":"title","field":"c2000000-0000-4000-8000-000000000003"}]}""", "mapping[0].field", "content_field_cannot_hold", TestName = "A file into a text")]
+    [TestCase("""{"documentType":"jfbNote","name":"N","mapping":[{"property":"files","field":"c2000000-0000-4000-8000-000000000001"}]}""", "mapping[0].field", "content_field_cannot_hold", TestName = "A text answer into media")]
+    [TestCase("""{"documentType":"jfbNote","name":"N","mapping":[{"property":"title"}]}""", "mapping", "content_mapping_invalid", TestName = "Neither a field nor a value")]
+    [TestCase("""{"documentType":"jfbNote","name":"N","mapping":[{"property":"title","value":"x","field":"c2000000-0000-4000-8000-000000000001"}]}""", "mapping", "content_mapping_invalid", TestName = "Both a field and a value")]
+    [TestCase("""{"documentType":"jfbNote","name":"N","mapping":[{"property":"title","field":"c2000000-0000-4000-8000-0000000000ff"}]}""", "mapping[0].field", "content_field_gone", TestName = "A field of another form")]
+    [TestCase("""{"documentType":"jfbNote","name":"N","mapping":{"title":"x"}}""", "mapping", "content_mapping_invalid", TestName = "A mapping that is no list")]
+    [TestCase("""{"documentType":"jfbNote","name":"{{ form.name"}""", "name", "unclosed_tag", TestName = "A name whose tag does not close")]
+    public void Publishing_RefusesWhatCannotBeStored(string settings, string setting, string code)
     {
         var refused = Assert.ThrowsAsync<FormBuilderValidationException>(async () => await FormAsync(Create(settings)));
 
-        Assert.That(refused!.Problems.Select(problem => problem.Path), Does.Contain($"$.actions[0].settings.{setting}"), string.Join(", ", refused.Problems));
+        // Each with its code, which the backoffice says in its own words (ADR-0192).
+        Assert.That(refused!.Problems.Select(problem => (problem.Path, problem.Code)), Does.Contain(($"$.actions[0].settings.{setting}", code)), string.Join(", ", refused.Problems));
     }
 
     [Test]
@@ -616,7 +781,7 @@ public sealed class ContentActionTests : ActionTestBase
         Assert.That(issues.Where(issue => issue.Severity != FormCheckSeverity.Hint).Select(issue => (issue.Severity, issue.Code, issue.Path, issue.Message)), Is.EqualTo(new[]
         {
             (FormCheckSeverity.Warning, "unknown_path", "$.actions[0].settings.name", "The merge tag at character 9 names nothing this form or site has, so it shows nothing."),
-            (FormCheckSeverity.Warning, "unknown_path", "$.actions[0].settings.mapping", "In the value of 'title': The merge tag at character 7 names nothing this form or site has, so it shows nothing."),
+            (FormCheckSeverity.Warning, "unknown_path", "$.actions[0].settings.mapping[0].value", "In the value of 'title': The merge tag at character 7 names nothing this form or site has, so it shows nothing."),
         }));
     }
 
@@ -627,6 +792,30 @@ public sealed class ContentActionTests : ActionTestBase
         builder.Services.AddSingleton<MemoryFileStore>();
         builder.Services.AddUnique<IFormBuilderFileStore>(provider => provider.GetRequiredService<MemoryFileStore>());
         builder.Services.AddSingleton<IFormBuilderFileScanner, FindsNothing>();
+    }
+
+    // A test run of the form's action with these settings, as the designer holds its draft, saved or not (ADR-0190).
+    private async Task<ActionTestResult> TestHeldAsync(Guid form, string settings)
+    {
+        var draft = (await GetRequiredService<IFormBuilderFormService>().GetDraftAsync(form))!.Definition!;
+        var action = draft.Actions[0] with { Settings = SettingsObject.Parse(settings) };
+        var test = await GetRequiredService<ActionTestRuns>().TestAsync(form, action.Key, new ActionTestUser(Guid.NewGuid(), "ada@jfb.test", "Ada"), confirmed: false, held: draft with { Actions = [action] });
+        return test.Result!;
+    }
+
+    // An item at the root named Home, of the action's own type, which an item may go under.
+    private IContent HomeItem()
+    {
+        var home = Contents.Create("Home", Constants.System.Root, TypeAlias);
+        Contents.Save(home);
+        return home;
+    }
+
+    // An element type, which blocks have and no content item does.
+    private async Task ElementTypeAsync()
+    {
+        var type = new ContentType(GetRequiredService<IShortStringHelper>(), Constants.System.Root) { Alias = "jfbPart", Name = "Part", IsElement = true };
+        await GetRequiredService<IContentTypeService>().CreateAsync(type, Constants.Security.SuperUserKey);
     }
 
     // One attempt of the action as the outbox makes it, with what the request brought; the outbox never calls it twice with the same key on its own.

@@ -15,9 +15,9 @@ using Umbraco.Cms.Web.Common.Routing;
 namespace Jiron.Umbraco.FormBuilder.Web.ManagementApi.Designer;
 
 /// <summary>
-/// The site's action types for the designer (ADR-0158), each with its settings schema and the host's locks of its settings.
-/// Any user of the Forms section may ask: the registry and the locks describe the site's code and configuration, the same
-/// for everyone.
+/// The site's action types for the designer (ADR-0158), each with its settings schema, the host's locks of its settings
+/// and the site's items its settings offer (ADR-0192). Any user of the Forms section may ask: the registry and the locks
+/// describe the site's code and configuration, and the items its structure, the same for everyone.
 /// </summary>
 [ApiVersion("1.0")]
 [BackOfficeRoute(FormBuilderManagementApi.Route + "/action-type")]
@@ -25,11 +25,99 @@ namespace Jiron.Umbraco.FormBuilder.Web.ManagementApi.Designer;
 internal sealed class ActionTypeController(ActionTypeRegistry registry, ActionSettingLocks locks) : FormBuilderManagementApiController
 {
     /// <summary>Every action type of the site, in the designer's order.</summary>
+    /// <param name="cancellationToken">The request's cancellation.</param>
     [HttpGet]
     [MapToApiVersion("1.0")]
     [FormBuilderSection]
     [ProducesResponseType(typeof(ActionTypesResponseModel), StatusCodes.Status200OK)]
-    public IActionResult List() => Ok(new ActionTypesResponseModel { Types = [.. registry.Types.Select(type => ActionTypeResponseModel.Of(type, locks.Of(type.Declaration.Alias)))] });
+    public async Task<IActionResult> List(CancellationToken cancellationToken = default)
+    {
+        var types = new List<ActionTypeResponseModel>();
+        foreach (var type in registry.Types)
+        {
+            types.Add(ActionTypeResponseModel.Of(type, locks.Of(type.Declaration.Alias), await type.SiteChoicesAsync(cancellationToken)));
+        }
+
+        return Ok(new ActionTypesResponseModel { Types = types });
+    }
+}
+
+/// <summary>
+/// A document type a content action can create, with the properties a form can set and what each takes (ADR-0192). Any
+/// user of the Forms section may ask, as for the action types: it describes the site's structure, which Umbraco shows
+/// only to users of its Settings section.
+/// </summary>
+[ApiVersion("1.0")]
+[BackOfficeRoute(FormBuilderManagementApi.Route + "/action-type/content/document-type/{alias}")]
+[ApiExplorerSettings(GroupName = "Action type")]
+internal sealed class ContentDocumentTypeController(ContentItemTypes types) : FormBuilderManagementApiController
+{
+    /// <summary>A document type a content item may have, with its properties a form can set.</summary>
+    /// <param name="alias">The document type's alias.</param>
+    [HttpGet]
+    [MapToApiVersion("1.0")]
+    [FormBuilderSection]
+    [ProducesResponseType(typeof(ContentDocumentTypeResponseModel), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public IActionResult Get(string alias) =>
+        types.Find(alias) is { } type ? Ok(ContentDocumentTypeResponseModel.Of(type)) : FormBuilderProblems.DocumentTypeNotFound();
+}
+
+/// <summary>A document type a content action can create (ADR-0192).</summary>
+internal sealed record ContentDocumentTypeResponseModel
+{
+    /// <summary>The type's alias, which the action names.</summary>
+    public required string Alias { get; init; }
+
+    /// <summary>The type's name.</summary>
+    public required string Name { get; init; }
+
+    /// <summary>The properties a form can set, its compositions' included, in the order its groups show them.</summary>
+    public required IReadOnlyList<ContentPropertyResponseModel> Properties { get; init; }
+
+    /// <summary>The model of a type.</summary>
+    public static ContentDocumentTypeResponseModel Of(ContentItemType type)
+    {
+        ArgumentNullException.ThrowIfNull(type);
+        return new ContentDocumentTypeResponseModel
+        {
+            Alias = type.Alias,
+            Name = type.Name,
+            Properties =
+            [
+                .. type.Properties.Select(property => new ContentPropertyResponseModel
+                {
+                    Alias = property.Alias,
+                    Name = property.Name,
+                    Group = property.Group,
+                    FieldTypes = property.FieldTypes,
+                    Value = property.Value,
+                }),
+            ],
+        };
+    }
+}
+
+/// <summary>A property a content action can set (ADR-0192).</summary>
+internal sealed record ContentPropertyResponseModel
+{
+    /// <summary>The property's alias, which the mapping names.</summary>
+    public required string Alias { get; init; }
+
+    /// <summary>The property's name, as Umbraco shows it.</summary>
+    public required string Name { get; init; }
+
+    /// <summary>The name of the group it sits in; null for none.</summary>
+    public string? Group { get; init; }
+
+    /// <summary>The field types whose answer it can hold, in the palette's order.</summary>
+    public required IReadOnlyList<string> FieldTypes { get; init; }
+
+    /// <summary>
+    /// What a value written for it must be: <c>text</c>, which may hold merge tags, <c>wholeNumber</c>, <c>decimal</c>,
+    /// <c>date</c> or <c>boolean</c>; null where it takes only a field's answer.
+    /// </summary>
+    public string? Value { get; init; }
 }
 
 /// <summary>
@@ -109,10 +197,14 @@ internal sealed record ActionTypeResponseModel
     /// <summary>The ready-made starts the designer offers, each with its name and its settings as JSON.</summary>
     public required IReadOnlyList<ActionPresetResponseModel> Presets { get; init; }
 
-    /// <summary>The model of a type, with the host's locks of its settings.</summary>
-    public static ActionTypeResponseModel Of(IFormBuilderActionType type, IReadOnlyList<FieldSettingLock> locks)
+    /// <summary>The model of a type, with the host's locks of its settings and the site's items as the choices of the settings that offer them.</summary>
+    public static ActionTypeResponseModel Of(
+        IFormBuilderActionType type,
+        IReadOnlyList<FieldSettingLock> locks,
+        IReadOnlyDictionary<string, IReadOnlyList<FieldSettingChoice>>? choices = null)
     {
         ArgumentNullException.ThrowIfNull(type);
+        var settings = FieldSettingResponseModel.Of(type.SettingsSchema.Settings, locks);
         return new ActionTypeResponseModel
         {
             Alias = type.Declaration.Alias,
@@ -124,7 +216,12 @@ internal sealed record ActionTypeResponseModel
                 ActionTestKind.AfterConfirmation => "afterConfirmation",
                 _ => "dryRun",
             },
-            Settings = FieldSettingResponseModel.Of(type.SettingsSchema.Settings, locks),
+            Settings =
+            [
+                .. settings.Select(setting => choices is not null && choices.TryGetValue(setting.Name, out var items)
+                    ? setting with { Choices = [.. items.Select(item => new FieldSettingChoiceResponseModel(item.Value, item.Label))] }
+                    : setting),
+            ],
             Presets = [.. type.Declaration.Presets.Select(preset => new ActionPresetResponseModel { Name = preset.Name, Settings = preset.Settings })],
         };
     }
@@ -178,7 +275,7 @@ internal sealed record ActionTestResponseModel
     public string? Recipient { get; init; }
 
     /// <summary>What a run would do, one line each.</summary>
-    public required IReadOnlyList<string> Preview { get; init; }
+    public required IReadOnlyList<ActionTestLineResponseModel> Preview { get; init; }
 
     /// <summary>The model of a type's result, for the user who asked.</summary>
     public static ActionTestResponseModel Of(ActionTestResult result, string? address)
@@ -196,7 +293,20 @@ internal sealed record ActionTestResponseModel
             Args = result.Args,
             Message = result.Message,
             Recipient = result.Code == ActionTestCodes.SentToYou ? address : null,
-            Preview = result.Preview ?? [],
+            Preview = [.. (result.Preview ?? []).Select(line => new ActionTestLineResponseModel { Text = line.Text, Code = line.Code, Args = line.Args })],
         };
     }
+}
+
+/// <summary>One line of what a run would do (ADR-0192).</summary>
+internal sealed record ActionTestLineResponseModel
+{
+    /// <summary>The line as an English sentence, for a code the backoffice does not know.</summary>
+    public required string Text { get; init; }
+
+    /// <summary>What the line says as a code the backoffice words, such as <c>content_under</c>; null for none.</summary>
+    public string? Code { get; init; }
+
+    /// <summary>What the code's words take, such as a document type's name; empty for none.</summary>
+    public required IReadOnlyList<string> Args { get; init; }
 }

@@ -65,6 +65,15 @@ public interface IFormBuilderActionType
     FieldSettingsSchema SettingsSchema { get; }
 
     /// <summary>
+    /// The site's own items a setting offers as its choices, by the setting's name, such as the document types a content
+    /// item may have (ADR-0173, ADR-0192): the designer gets them with the type, so a user who may not browse the site's
+    /// structure in Umbraco can still pick one. None unless a type gives them.
+    /// </summary>
+    /// <param name="cancellationToken">Cancelled when the request ends.</param>
+    ValueTask<IReadOnlyDictionary<string, IReadOnlyList<FieldSettingChoice>>> SiteChoicesAsync(CancellationToken cancellationToken) =>
+        ValueTask.FromResult<IReadOnlyDictionary<string, IReadOnlyList<FieldSettingChoice>>>(new Dictionary<string, IReadOnlyList<FieldSettingChoice>>(StringComparer.Ordinal));
+
+    /// <summary>
     /// The type's own check of an action's settings: publishing runs it once they keep the schema and the rules of its
     /// attributes, so they read as the type's settings class.
     /// </summary>

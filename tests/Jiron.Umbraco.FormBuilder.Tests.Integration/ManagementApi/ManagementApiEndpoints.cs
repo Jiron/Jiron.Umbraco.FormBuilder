@@ -47,6 +47,9 @@ internal static partial class ManagementApiEndpoints
 /// <param name="Declarations">Its access declarations; one, unless it is broken.</param>
 internal sealed record ManagementApiEndpoint(ApiDescription Description, IReadOnlyList<FormBuilderAccessAttribute> Declarations)
 {
+    /// <summary>The document type a route's alias names, which a test that calls such a route creates.</summary>
+    public const string DocumentTypeAlias = "jfbMatrix";
+
     private const string Prefix = "umbraco/jfb/management/api/v1/";
 
     /// <summary>Its HTTP method.</summary>
@@ -66,14 +69,15 @@ internal sealed record ManagementApiEndpoint(ApiDescription Description, IReadOn
 
     /// <summary>
     /// Its path with every route value filled, and in the query the declared key when it lives there and every other
-    /// value it requires, each by its type; a field type's alias is the built-in <c>text</c>, which every site has.
+    /// value it requires, each by its type; a field type's alias is the built-in <c>text</c>, which every site has, and a
+    /// document type's is <see cref="DocumentTypeAlias"/>.
     /// </summary>
     public string PathFor(Guid key)
     {
         string RouteValueOf(string name) =>
             Description.ParameterDescriptions.FirstOrDefault(parameter => parameter.Source == BindingSource.Path && parameter.Name == name)?.Type is { } routed && (routed == typeof(int) || routed == typeof(long))
                 ? "1"
-                : name == "alias" ? "text" : key.ToString();
+                : name == "alias" ? (Template.Contains("/document-type/", StringComparison.Ordinal) ? DocumentTypeAlias : "text") : key.ToString();
         var path = ManagementApiEndpoints.RouteValue().Replace(Template[Prefix.Length..], match => RouteValueOf(match.Groups[1].Value));
         var query = Description.ParameterDescriptions
             .Where(parameter => parameter.Source == BindingSource.Query && (parameter.Name == Key || IsRequired(parameter)))

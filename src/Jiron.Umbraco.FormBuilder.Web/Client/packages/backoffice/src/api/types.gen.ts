@@ -29,6 +29,12 @@ export type ActionRunResponseModel = {
     finishedUtc?: string | null;
 };
 
+export type ActionTestLineResponseModel = {
+    text: string;
+    code?: string | null;
+    args: Array<string>;
+};
+
 export type ActionTestRequestModel = {
     confirmed: boolean;
     definition?: unknown;
@@ -40,7 +46,7 @@ export type ActionTestResponseModel = {
     args: Array<string>;
     message?: string | null;
     recipient?: string | null;
-    preview: Array<string>;
+    preview: Array<ActionTestLineResponseModel>;
 };
 
 export type ActionTypeResponseModel = {
@@ -101,6 +107,20 @@ export type ChecklistResponseModel = {
 
 export type CommentVersionRequestModel = {
     comment?: string | null;
+};
+
+export type ContentDocumentTypeResponseModel = {
+    alias: string;
+    name: string;
+    properties: Array<ContentPropertyResponseModel>;
+};
+
+export type ContentPropertyResponseModel = {
+    alias: string;
+    name: string;
+    group?: string | null;
+    fieldTypes: Array<string>;
+    value?: string | null;
 };
 
 export type CopiedActionResponseModel = {
@@ -869,6 +889,41 @@ export type ActionTypeListResponses = {
 };
 
 export type ActionTypeListResponse = ActionTypeListResponses[keyof ActionTypeListResponses];
+
+export type ContentDocumentTypeGetData = {
+    body?: never;
+    path: {
+        alias: string;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/action-type/content/document-type/{alias}';
+};
+
+export type ContentDocumentTypeGetErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type ContentDocumentTypeGetError = ContentDocumentTypeGetErrors[keyof ContentDocumentTypeGetErrors];
+
+export type ContentDocumentTypeGetResponses = {
+    /**
+     * OK
+     */
+    200: ContentDocumentTypeResponseModel;
+};
+
+export type ContentDocumentTypeGetResponse = ContentDocumentTypeGetResponses[keyof ContentDocumentTypeGetResponses];
 
 export type ActionTestTestData = {
     body?: ActionTestRequestModel;

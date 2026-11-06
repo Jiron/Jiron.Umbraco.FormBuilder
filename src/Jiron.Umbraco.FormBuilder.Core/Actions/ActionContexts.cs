@@ -92,7 +92,17 @@ public sealed class ActionSettingsCheck
     /// </param>
     /// <param name="message">What is wrong, as a sentence the editor reads.</param>
     /// <exception cref="ArgumentException">The place is not written that way, or the message is blank.</exception>
-    public void Invalid(string setting, string message)
+    public void Invalid(string setting, string message) => Invalid(setting, DefinitionErrors.SettingInvalid, message);
+
+    /// <summary>
+    /// Refuses a value of the action's settings with a code of the type's own, which a backoffice that knows the code says
+    /// in its own words (ADR-0192); one that does not shows the sentence.
+    /// </summary>
+    /// <param name="setting">Where the value is in the settings, written as for <see cref="Invalid(string, string)"/>.</param>
+    /// <param name="code">What is wrong, in lowercase words joined by underscores, such as <c>content_property_gone</c>.</param>
+    /// <param name="message">What is wrong, as a sentence the editor reads.</param>
+    /// <exception cref="ArgumentException">The place or the code is not written that way, or the message is blank.</exception>
+    public void Invalid(string setting, string code, string message)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(message);
         if (!FieldSettingsCheck.IsSettingPath(setting))
@@ -100,7 +110,12 @@ public sealed class ActionSettingsCheck
             throw new ArgumentException($"'{setting}' is no place in the settings: a setting's name, then .name or [index].", nameof(setting));
         }
 
-        _problems.Add(DefinitionErrors.SettingInvalid, $"{_path}.{setting}", message);
+        if (!IsCode(code))
+        {
+            throw new ArgumentException($"'{code}' is no code: lowercase words joined by underscores.", nameof(code));
+        }
+
+        _problems.Add(code, $"{_path}.{setting}", message);
     }
 
     /// <summary>
@@ -108,7 +123,7 @@ public sealed class ActionSettingsCheck
     /// think, such as a merge tag that names nothing (ADR-0177); the form check lists it, and it never keeps a form from
     /// going live.
     /// </summary>
-    /// <param name="setting">Where the value is in the settings, written as for <see cref="Invalid"/>.</param>
+    /// <param name="setting">Where the value is in the settings, written as for <see cref="Invalid(string, string)"/>.</param>
     /// <param name="code">What the warning is, in lowercase words joined by underscores, such as <c>unknown_path</c>.</param>
     /// <param name="message">What will not work, as a sentence the editor reads.</param>
     /// <exception cref="ArgumentException">The place or the code is not written that way, or the message is blank.</exception>
@@ -120,13 +135,15 @@ public sealed class ActionSettingsCheck
             throw new ArgumentException($"'{setting}' is no place in the settings: a setting's name, then .name or [index].", nameof(setting));
         }
 
-        if (string.IsNullOrEmpty(code) || !code.All(letter => letter is (>= 'a' and <= 'z') or '_'))
+        if (!IsCode(code))
         {
             throw new ArgumentException($"'{code}' is no code: lowercase words joined by underscores.", nameof(code));
         }
 
         Warnings.Add((code, $"{_path}.{setting}", message));
     }
+
+    private static bool IsCode(string code) => !string.IsNullOrEmpty(code) && code.All(letter => letter is (>= 'a' and <= 'z') or '_');
 
     /// <summary>The warnings reported, each with its code, its path and its sentence.</summary>
     internal List<(string Code, string Path, string Message)> Warnings { get; } = [];
