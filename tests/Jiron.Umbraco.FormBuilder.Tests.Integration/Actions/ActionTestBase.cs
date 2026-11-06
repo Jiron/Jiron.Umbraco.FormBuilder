@@ -67,6 +67,11 @@ internal class ScriptedActionType : FormBuilderActionTypeBase<ScriptedSettings>
 
     protected override Task<ActionTestResult> TestAsync(ScriptedSettings settings, ActionTestContext context, CancellationToken cancellationToken)
     {
+        if (settings.Target == "throws")
+        {
+            throw new InvalidOperationException("A secret detail of the host.");
+        }
+
         Tests.Enqueue(context);
         return Task.FromResult(new ActionTestResult(ActionTestOutcome.Sent, $"Sent to {settings.Target}", ["one line"]));
     }

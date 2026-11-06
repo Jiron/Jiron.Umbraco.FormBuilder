@@ -12,6 +12,8 @@ using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Testing;
 using Jiron.Umbraco.FormBuilder.Tests.Integration.Actions;
+using Jiron.Umbraco.FormBuilder.Tests.Integration.Emails;
+using Umbraco.Cms.Core.Mail;
 using Umbraco.Cms.Tests.Common.Testing;
 
 namespace Jiron.Umbraco.FormBuilder.Tests.Integration.ManagementApi;
@@ -244,6 +246,45 @@ public sealed class ActionApiTests : ManagementApiTestBase
     }
 
     [Test]
+    public async Task ATestRun_ThatThrows_FailsWithoutWhatItThrew()
+    {
+        var action = Scripted0("throws");
+        var form = await PublishedAsync(action);
+
+        var answer = await CallAsync(Admin, HttpMethod.Post, $"form/{form}/action/{action.Key}/test", new { confirmed = true });
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(answer.Status, Is.EqualTo(HttpStatusCode.OK), answer.ToString());
+            Assert.That(answer.Body!["outcome"]!.GetValue<string>(), Is.EqualTo("failed"));
+            Assert.That(answer.Body["code"]!.GetValue<string>(), Is.EqualTo(ActionTestCodes.Failed));
+            Assert.That(answer.Body["message"]!.GetValue<string>(), Is.EqualTo(ActionTestRuns.FailedMessage), "never what it threw");
+        });
+    }
+
+    [Test]
+    public async Task AnEmailsTestRun_SaysItsCode_AndTheTestersAddress()
+    {
+        var mail = new FormAction
+        {
+            Key = Guid.NewGuid(),
+            Type = EmailActionType.Alias,
+            Name = "Mail",
+            Settings = SettingsObject.Parse("""{"to":["team@jfb.test"],"subject":{"":"S"},"body":{"":"<p>B</p>"}}"""),
+        };
+        var form = await PublishedAsync(mail);
+
+        var answer = await CallAsync(Admin, HttpMethod.Post, $"form/{form}/action/{mail.Key}/test", new { });
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(answer.Status, Is.EqualTo(HttpStatusCode.OK), answer.ToString());
+            Assert.That(answer.Body!["code"]!.GetValue<string>(), Is.EqualTo(ActionTestCodes.SentToYou));
+            Assert.That(answer.Body["recipient"]!.GetValue<string>(), Does.StartWith("api-").And.EndWith("@jfb.test"), "the asking user's address");
+        });
+    }
+
+    [Test]
     public async Task ATestRun_OfAnActionTheDraftLacks_IsNotFound()
     {
         var form = await PublishedAsync(Scripted0("target"));
@@ -259,6 +300,9 @@ public sealed class ActionApiTests : ManagementApiTestBase
         ArgumentNullException.ThrowIfNull(builder);
         base.CustomTestSetup(builder);
         builder.JironFormBuilder().ActionTypes().Append<ScriptedActionType>();
+
+        // A sender that can send, so an email's test goes into the queue (ADR-0190).
+        builder.Services.AddUnique<IEmailSender, ScriptedEmailSender>();
     }
 
     private static string Path(Guid form, Guid entry) => $"form/{form}/entry/{entry}/action-run";
