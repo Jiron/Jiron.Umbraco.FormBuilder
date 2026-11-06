@@ -370,6 +370,11 @@ flowchart LR
   17.6.0), so the workspace adds no guard of its own. The workspace's own words, the inspector's, the rules', the
   Settings view's and the form check's, load before its editor does (`workspace-words.ts`, ADR-0201), not with the
   backoffice's start.
+  From 10.3d (ADR-0202): the publish flow (`publish-flow.ts`) loads History's words and hands the dialog
+  `changesSinceLive` (`history/publish-changes.ts`), which compares the workspace's draft as it is now with the version
+  visitors get through `POST form/{key}/versions/{number}/compare`, or with the last published one for a form taken
+  offline, and says it with `publishWords` (`change-words.ts`), History's parts in a few words; a form never published
+  says what its first version holds, counted from the draft.
 
 ## 2. The definition model
 
