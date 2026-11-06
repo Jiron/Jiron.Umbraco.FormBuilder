@@ -19,11 +19,18 @@ const pascal = (id: string): string => id.charAt(0).toUpperCase() + id.slice(1);
 /** The weight that keeps things in the table's order: Umbraco puts the higher first. */
 const weightOf = (index: number, count: number): number => (count - index) * 100;
 
+/** The screens built so far, by their item; every other item shows the coming screen until its step builds it. */
+type ScreenLoader = NonNullable<Extract<UmbExtensionManifest, { type: 'workspace' }>['element']>;
+
+const SCREENS: Readonly<Record<string, ScreenLoader>> = {
+  general: () => import('../settings/general-settings.element'),
+};
+
 const comingScreen = (id: string, entityType: string): UmbExtensionManifest => ({
   type: 'workspace',
   alias: `Jiron.FormBuilder.Workspace.${pascal(id)}`,
   name: `Jiron Form Builder ${id} screen`,
-  element: () => import('./coming-screen.element'),
+  element: SCREENS[id] ?? (() => import('./coming-screen.element')),
   meta: { entityType },
 });
 

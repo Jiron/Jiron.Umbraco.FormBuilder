@@ -13,6 +13,7 @@ import options from './options.en';
 import picker from './picker.en';
 import rules from './rules.en';
 import section from './section.en';
+import general from './general.en';
 import settings from './settings.en';
 
 export default {
@@ -27,5 +28,6 @@ export default {
   ...mergeTags,
   ...rules,
   ...settings,
+  ...general,
   ...check,
 } satisfies UmbLocalizationDictionary;
