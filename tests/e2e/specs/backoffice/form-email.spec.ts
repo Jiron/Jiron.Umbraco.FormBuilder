@@ -1,3 +1,4 @@
+import AxeBuilder from '@axe-core/playwright';
 import type { APIRequestContext, Locator, Page } from '@playwright/test';
 import { expect, test } from '../../fixtures.ts';
 import { axeInside } from '../../support/axe.ts';
@@ -6,7 +7,8 @@ import { API, formWithFields, unique } from '../../support/forms-api.ts';
 // An email action's editor and its preview (ROADMAP 10.2b, IA 5.3, ADR-0189). Its To box holds every kind of
 // recipient, added from Add recipient: addresses, an email field's answer and the addresses an answer chooses, which
 // Save draft keeps as the server writes them; its body takes merge tags, and its preview shows the mail for the sample
-// entry with the sample's answers in their place; the form check's Fix it of an email setting lands on its editor.
+// entry with the sample's answers in their place, in a frame as tall as the mail whose links open nothing, and the mail
+// itself meets axe in each scheme; the form check's Fix it of an email setting lands on its editor.
 
 const SECTION = '/umbraco/section/jfb-forms';
 
@@ -92,6 +94,29 @@ async function openActions(page: Page, key: string) {
 
 const cardOf = (view: Locator, name: string) =>
   view.locator('.open').filter({ has: view.page().locator('.name', { hasText: name }) });
+
+/**
+ * Axe's WCAG 2.2 A and AA rules on the mail itself, in a page of its own: the backoffice's checks leave the preview's
+ * frame alone, where no script may run (ADR-0189).
+ */
+async function axeOnTheMail(page: Page, preview: Locator, scheme: string) {
+  const html = await preview.locator('iframe').evaluate((frame) => (frame as HTMLIFrameElement).srcdoc);
+  const sheet = await page.context().newPage();
+  try {
+    await sheet.setContent(html);
+    const result = await new AxeBuilder({ page: sheet })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
+      .analyze();
+    expect(
+      result.violations.map(
+        (violation) => `${violation.id}: ${violation.nodes.map((node) => node.target.join(' ')).join(', ')}`,
+      ),
+      `axe on the mail, ${scheme}`,
+    ).toEqual([]);
+  } finally {
+    await sheet.close();
+  }
+}
 
 /** Saves the draft and waits for the save's own answer, which the button does not wait for. */
 async function saveDraft(page: Page, key: string) {
@@ -181,7 +206,9 @@ test("an email's preview shows the mail for the sample entry, its answers in pla
     to: ['sales@example.com'],
     toField: form.email,
     subject: { '': 'New from {{ field.name }}' },
-    body: { '': '<p>Hello.</p>' },
+    body: {
+      '': '<p>Hello.</p><p><a href="https://example.com/more">Read more</a></p><p>Line three.</p><p>Line four.</p><p>Line five.</p>',
+    },
   });
   await loginAs('designer');
   const view = await openActions(page, form.key);
@@ -200,11 +227,21 @@ test("an email's preview shows the mail for the sample entry, its answers in pla
   const [settings, shown] = [await sidebar.locator('.action').boundingBox(), await preview.boundingBox()];
   expect(shown!.x, 'the preview beside the settings').toBeGreaterThanOrEqual(settings!.x + settings!.width);
 
+  // A link in the mail opens nothing: no window, and the frame keeps the mail.
+  const opened: Page[] = [];
+  page.context().on('page', (other) => opened.push(other));
+  await mail.getByRole('link', { name: 'Read more' }).click();
+  await page.waitForTimeout(500);
+  expect(opened, 'no window opened').toHaveLength(0);
+  await expect(mail.getByText('Line five.')).toBeVisible();
+  const frame = preview.locator('iframe');
+  const tall = (await frame.boundingBox())!.height;
+
   // The body with the sample's name in place of its tag, asked once the changes pause.
   const body = sidebar.locator('#setting-body [contenteditable="true"]');
   await body.click();
-  await body.press('End');
-  await body.pressSequentially(' From ');
+  await body.press('Control+A');
+  await body.pressSequentially('Hello. From ');
   await sidebar
     .locator('.item')
     .filter({ has: page.locator('#setting-body') })
@@ -212,6 +249,10 @@ test("an email's preview shows the mail for the sample entry, its answers in pla
     .click();
   await sidebar.getByRole('button', { name: 'Your name {{ field.name }}' }).click();
   await expect(mail.getByText('Hello. From Alex Berger')).toBeVisible();
+  // One line now: the frame is as short as its mail.
+  await expect
+    .poll(async () => (await frame.boundingBox())!.height, { message: 'the frame shrinks with its mail' })
+    .toBeLessThan(tall);
 
   // Dark shows the layout's dark colours, whatever the device's own scheme.
   const pageColour = async () =>
@@ -220,9 +261,11 @@ test("an email's preview shows the mail for the sample entry, its answers in pla
       .first()
       .evaluate((element) => getComputedStyle(element).backgroundColor);
   const light = await pageColour();
+  await axeOnTheMail(page, preview, 'light');
   await preview.getByRole('button', { name: 'Dark' }).click();
   await expect(preview.getByRole('button', { name: 'Dark' })).toHaveAttribute('aria-pressed', 'true');
   await expect.poll(pageColour, { message: 'the dark page' }).not.toBe(light);
+  await axeOnTheMail(page, preview, 'dark');
   await axeInside(page, 'jfb-action-modal');
 });
 
