@@ -114,6 +114,7 @@ export default {
     pickNoneOf_any: 'Dieses Formular hat noch kein Feld.',
     addressAdd: 'Hinzufügen',
     addressAddNamed: 'Adresse hinzufügen',
+    addressAddTo: (box: string) => `Zu „${box}“ hinzufügen`,
     addressHelp: 'Mehrere auf einmal: durch Kommas getrennt.',
     addressRemove: (address: string) => `${address} entfernen`,
     notAnAddress: (text: string) => `Geben Sie Adressen wie hallo@example.com ein: „${text}“ ist keine.`,

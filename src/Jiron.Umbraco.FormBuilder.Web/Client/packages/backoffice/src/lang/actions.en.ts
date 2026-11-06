@@ -107,6 +107,7 @@ export default {
     pickNoneOf_any: 'This form has no field yet.',
     addressAdd: 'Add',
     addressAddNamed: 'Add address',
+    addressAddTo: (box: string) => `Add to ${box}`,
     addressHelp: 'Several at once: separate them with commas.',
     addressRemove: (address: string) => `Remove ${address}`,
     notAnAddress: (text: string) => `Enter addresses such as hello@example.com: "${text}" isn't one.`,

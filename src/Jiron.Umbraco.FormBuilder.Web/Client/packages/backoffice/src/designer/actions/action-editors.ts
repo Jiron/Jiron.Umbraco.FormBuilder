@@ -530,6 +530,8 @@ function addressBox(
   described: string | undefined,
   invalid: boolean,
   add: (addresses: string[]) => void,
+  /** The Add button's name, which says what it adds to; its word is Add. */
+  name: string,
   sayHow = false,
 ) {
   const keep = (input: HTMLInputElement | null) => {
@@ -562,7 +564,7 @@ function addressBox(
       />
       <uui-button
         look="outline"
-        label=${context.words('addressAddNamed')}
+        label=${name}
         @click=${(event: Event) =>
           keep((event.target as HTMLElement).parentElement?.querySelector<HTMLInputElement>('input') ?? null)}
         >${context.words('addressAdd')}</uui-button
@@ -598,7 +600,7 @@ function addresses(context: ActionEditorContext, setting: FieldSettingResponseMo
         put(list.filter((_, at) => at !== index));
         focusAfterRemove(context, id, id, index, list.length - 1);
       })}
-      ${addressBox(context, id, id, described, invalid, (added) => put(withAddresses(list, added)))}`,
+      ${addressBox(context, id, id, described, invalid, (added) => put(withAddresses(list, added)), context.words('addressAddTo', label))}`,
   );
 }
 
@@ -703,7 +705,7 @@ function recipients(context: ActionEditorContext, setting: FieldSettingResponseM
       <summary id=${id}><uui-icon name="icon-add" aria-hidden="true"></uui-icon>${words('recipientsAdd')}</summary>
       <div class="add-panel">
         <label class="label" for=${`${id}-address`}>${words('recipientAddress')}</label>
-        ${addressBox(context, `${id}-address`, `${id}-address`, context.editor.problems.has(`${id}-address`) ? `${id}-address-why` : undefined, context.editor.problems.has(`${id}-address`), (added) => put(withAddresses(list, added)), true)}
+        ${addressBox(context, `${id}-address`, `${id}-address`, context.editor.problems.has(`${id}-address`) ? `${id}-address-why` : undefined, context.editor.problems.has(`${id}-address`), (added) => put(withAddresses(list, added)), context.words('addressAddNamed'), true)}
         ${typedLine(context, `${id}-address`)}
         <div class="kinds">${kinds}</div>
       </div>

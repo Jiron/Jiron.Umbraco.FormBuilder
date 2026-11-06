@@ -154,7 +154,7 @@ Use Umbraco's own words where Umbraco has the same action, so the section feels 
 | turn lines into a choice field's options, or a grid's rows (one a line) | Paste options… · Paste rows… | Optionen einfügen… · Zeilen einfügen… |
 | add a merge tag to a text | Insert merge tag | Platzhalter einfügen |
 | add who gets an email (its To box; it offers An address, The answer of a field, The person who created the form, Addresses chosen by an answer, each kind once) | Add recipient | Empfänger hinzufügen |
-| keep the addresses typed in a box (Enter and leaving the box keep them too; its accessible name is Add address · Adresse hinzufügen, apart from the sidebar's own Add) | Add | Hinzufügen |
+| keep the addresses typed in a box (Enter and leaving the box keep them too; its accessible name says what it adds to, apart from the sidebar's own Add: Add address · Adresse hinzufügen under Add recipient, Add to Copy to · Zu „Kopie an“ hinzufügen for another box) | Add | Hinzufügen |
 | take a recipient away (an icon button, named for it) | Remove sales@example.com · Remove the answer of Email address | sales@example.com entfernen · Die Antwort von „Email address“ entfernen |
 | show an email's preview in a colour scheme (two pressed buttons) | Light · Dark | Hell · Dunkel |
 | delete for good (asks first) | Delete… | Löschen… |

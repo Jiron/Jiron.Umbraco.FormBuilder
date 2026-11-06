@@ -861,6 +861,10 @@ describe("an email's sidebar", () => {
     const { element, root, type, keep, kept } = await sidebarOf({ definition: emailForm([TEAM]) });
     await frame();
     expect(text(root.querySelector('label[for="setting-cc"]'))).toBe('Copy to');
+    // Each box's Add names what it adds to, apart from the To box's and the footer's.
+    expect(must(root.querySelector('.item:has(#setting-cc) uui-button'), 'Add').getAttribute('label')).toBe(
+      'Add to Copy to',
+    );
     // That several go at once is said once, under the To box's address.
     expect(root.getElementById('setting-cc-several')).toBeNull();
     expect(text(root.getElementById('setting-to-address-several'))).toBe('Several at once: separate them with commas.');
