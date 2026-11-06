@@ -118,7 +118,7 @@ server's, in the tester's backoffice language, as the setup test mail is.
 - **A card with a problem still offers Test:** the test says what fails (a host the site does not allow, say), which is
   how an editor finds out; the problems stay counted on the card.
 - **Every webhook test asks again:** each reaches a real system (ADR-0190).
-- **A card that remembers its last test:** a test is no run; the last run's line and its Details come with 10.2e.
+- **A card that remembers its last test:** a test is no run; the last run's line and its Details come with 10.2f.
 - **The question names the host, not the action:** the card's own line is what the editor sees on the card, and the
   toast that follows names the action.
 - **The live region keeps "Testing …" after the test:** a live region speaks when it changes; the toast then says what
@@ -159,7 +159,7 @@ settings checked; nothing a user typed is drawn as HTML. These findings were fix
    footer lacked Test.
 
 A dry run's lines go in the toast, one line each, which keeps the breaks, rather than in a dialog as the ADR first said:
-10.2d's dry runs are a line or two, and the last run's Details (10.2e) is where a longer answer is read.
+10.2d's dry runs are a line or two, and the last run's Details (10.2f) is where a longer answer is read.
 
 ## The tamper round
 

@@ -2724,7 +2724,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
   - The outcome's sidebar shows the outcome beside its settings as visitors get it with a sample entry made from the form's fields, as each setting changes: the server renders it, as it renders a real entry's, from the draft.
   - Done when: Playwright edits an outcome's message and its preview shows the sample entry's answers in place of its merge tags, a sensitive field's masked; integration tests cover the preview endpoint, with its row in the permission matrix and the OpenAPI snapshot.
 - [x] **10.2a The actions view: the list and an action's sidebar** (10.2 split in four, see WORKLOG) (2026-11-06, eb5ae73)
-  - **The list:** action cards per trigger (Submitted, Approved, Rejected, Verified), with order (drag and keyboard), an on/off switch and a rule chip; the last-run status is 10.2e's. Each card says what the action does in one line, and its "…" duplicates it, moves it to another trigger and deletes it with Undo (IA 5.3). Without `manageActions` the view is read-only and says which permission changes it.
+  - **The list:** action cards per trigger (Submitted, Approved, Rejected, Verified), with order (drag and keyboard), an on/off switch and a rule chip; the last-run status is 10.2f's. Each card says what the action does in one line, and its "…" duplicates it, moves it to another trigger and deletes it with Undo (IA 5.3). Without `manageActions` the view is read-only and says which permission changes it.
   - **Verification** is no action of its own: the Verified trigger's list says that it needs the form's email verification setting (10.1) and links to it; Rejected says so of manual approval.
   - **Adding:** an "add action" modal with presets: the action's sidebar, its first setting choosing what happens among the types and their presets (IA 5.3), then the trigger and the type's settings, drawn by the inspector's setting editors. The editors no type has yet are 10.2b's and 10.2c's.
   - **The action's rule** in the rules builder, whose effect is `run` (§4.3.3), as 10.1b's outcome rule is `use`.
@@ -2748,18 +2748,23 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
     - Playwright configures an email action from a preset, and a test-run email lands in the pickup folder;
     - Playwright test-runs an action from its card, and one from its sidebar before it is saved;
     - integration tests cover every new endpoint, with its row in the permission matrix and the OpenAPI snapshot.
-- [ ] **10.2d The actions view: the other action editors** (10.2 split in four, see WORKLOG)
-  - **The other action editors:**
-    - **Webhook:** a mapping table, a signature help text and a test.
-    - **Slack and Teams.**
-    - **Content:** document type and property mapping; the site's document types come with the setting as its choices, as the option sources serve them (ADR-0173), since Umbraco lists them only to users of its Settings section.
-    - **Set state.**
-  - The form check's Fix it lands on each editor's own settings too.
-  - **Carried in from 10.2c** (ADR-0190): the webhook's, the content action's and Set state's tests answer with a code the backoffice says in its words (`ActionTestCodes`), and content and Set state test as dry runs whose lines say what a run would do in the backoffice's words, each with a test. Since 10.2c's review the content action and Set state answer as dry runs and the webhook with `sent` or its run's code, each under an English sentence the toast shows until then.
+- [ ] **10.2d The actions view: the webhook, Slack and Teams editors** (10.2 split in four, then 10.2d in two, see WORKLOG)
+  - **Webhook:** a mapping table, a signature help text and a test.
+  - **Slack and Teams.**
+  - The form check's Fix it lands on these editors' own settings too.
+  - **Carried in from 10.2c** (ADR-0190): the webhook's test answers with a code the backoffice says in its words (`ActionTestCodes`), each with a test. Since 10.2c's review it answers with `sent` or its run's code, under an English sentence the toast shows until then.
   - Done when:
-    - Playwright configures and test-runs each type (webhooks against the stub on 5560);
+    - Playwright configures and test-runs a webhook, a Slack message and a Teams message against the stub on 5560;
     - integration tests cover every new endpoint, with its row in the permission matrix and the OpenAPI snapshot.
-- [ ] **10.2e The actions view: the last run and its details** (10.2 split in four, see WORKLOG)
+- [ ] **10.2e The actions view: the content and Set state editors** (10.2 split in four, then 10.2d in two, see WORKLOG)
+  - **Content:** document type and property mapping; the site's document types come with the setting as its choices, as the option sources serve them (ADR-0173), since Umbraco lists them only to users of its Settings section.
+  - **Set state.**
+  - The form check's Fix it lands on these editors' own settings too.
+  - **Carried in from 10.2c** (ADR-0190): the content action's and Set state's tests answer with a code the backoffice says in its words (`ActionTestCodes`), as dry runs whose lines say what a run would do in the backoffice's words, each with a test. Since 10.2c's review they answer as dry runs, their sentence an English preview the toast shows until then.
+  - Done when:
+    - Playwright configures and test-runs a content action and a Set state action;
+    - integration tests cover every new endpoint, with its row in the permission matrix and the OpenAPI snapshot.
+- [ ] **10.2f The actions view: the last run and its details** (10.2 split in four, then 10.2d in two, see WORKLOG)
   - **The last-run status** on each card ("Delivered 2 hours ago"); a failed or uncertain last run links to **Details**: what the server answered and the tries, never the entry, who can retry the run (ADR-0013, amendment), and Test (IA 5.3).
   - Done when:
     - Playwright shows an action's last run, and a failed one's Details with the server's answer and its tries (the webhook stub answering with an error);

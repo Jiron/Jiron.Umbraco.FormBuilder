@@ -406,7 +406,7 @@ it runs ("when an entry comes in"). The actions one event queues run in the orde
     the team runs when an entry comes in."), and on a published form the toast says when it starts to run.
 - **A card:**
   - the type icon, the name, a one-line summary ("To sales@example.com", "Webhook to crm.example.com"), its problems
-    counted in front of it, and the rule chip; the last run follows with 10.2e;
+    counted in front of it, and the rule chip; the last run follows with 10.2f;
   - visible: the on/off switch, named for what it turns on ("Use Email the team"), and **Test** (10.2c), which a card
     too narrow to keep its name readable beside it offers first in its "…" instead; "…": Duplicate · Move to another
     trigger… · Delete. Duplicate puts "<name> (copy)" right after it, and is not offered at

@@ -84,4 +84,4 @@ For what a test says:
   `recipient`.
 - The mail of a test carries a line no real mail has; its recipients are the run's own, from the rule a run and the
   preview share (ADR-0160, amended in ADR-0189).
-- 10.2d test-runs the other types through the same button and dialogs; 10.2e's Details offers the same Test.
+- 10.2d test-runs the other types through the same button and dialogs; 10.2f's Details offers the same Test.
