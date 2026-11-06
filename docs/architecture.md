@@ -359,6 +359,17 @@ flowchart LR
   reads and saves `GET` and `PUT settings/general` (`manageSettings`): the section's version, the History group with
   its limits, and the host's locks. A save changes the groups it sends in the stored values as the settings service's
   `UpdateAsync` reads them in the save, so the rest of the section, which 12.4a adds, keeps its stored values.
+  From 10.3c (ADR-0200): a save (`form-detail.data-source.ts`) reads the stored draft and refuses a draft saved, or a name
+  both changed, since the form was read, then saves the draft before the name; a refused save sends its host element
+  `jfb:save-conflict`, as Umbraco's workspace passes no save's error on, and the workspace offers to review both
+  versions (`designer/conflict/`), one review at a time; the form stays as read, so every save is refused until then.
+  The review compares the user's draft with the one saved meanwhile and both with the draft they started from through
+  `POST form/{key}/versions/{number}/compare`, merges key by key in `review-model.ts`, and saves the merged draft
+  through `takeReview`, a step Undo takes back, and an ordinary save. History's words and the review's share
+  `history/words-context.ts`. Umbraco's detail workspace asks before leaving the route and before the tab closes (from
+  17.6.0), so the workspace adds no guard of its own. The workspace's own words, the inspector's, the rules', the
+  Settings view's and the form check's, load before its editor does (`workspace-words.ts`, ADR-0201), not with the
+  backoffice's start.
 
 ## 2. The definition model
 
@@ -966,7 +977,7 @@ The budgets are §4.12's; the measured starting points come from the spikes.
 | The first page of 100,000 entries; a 10,000-entry CSV | ≤ 300 ms; ≤ 5 s | 7.9 to 16.7 ms by date; 0.77 to 1.09 s (ADR-0003) |
 | The first email after a submission | ≤ 10 s | median 7.8 ms, highest 22.7 ms after the commit (ADR-0007) |
 | The designer with 300 fields; the tree with 1,000 forms | < 100 ms per interaction; < 1 s | 72 to 80 ms at the slowest interaction alone (9.4d, ADR-0176); the tree – (16.2) |
-| The backoffice's files | ≤ 64 KB gzip at each start, in any section (the entry, its static imports, English's words and the largest other language's); ≤ 64 KB any one file; ≤ 512 KB the whole (ADR-0183) | at start 54.47 KB, the Design view's chunk 55.14 KB, the whole 246.76 KB (9.6b) |
+| The backoffice's files | ≤ 64 KB gzip at each start, in any section (the entry, its static imports, English's words and the largest other language's); ≤ 64 KB any one file; ≤ 512 KB the whole (ADR-0183) | at start 54.47 KB, the Design view's chunk 55.14 KB, the whole 246.76 KB (9.6b); at start 42.28 KB, the Design view's 45.20 KB, the whole 378.65 KB once the workspace's words load with it (10.3c, ADR-0201) |
 | Accessibility | WCAG 2.2 AA for every theme and screen | – (6.8, 16.3) |
 | Coverage | ≥ 85% of Core's lines; every endpoint; every vector in both runtimes | – (ADR-0011) |
 | Builds | zero warnings, formatters and analyzers clean | – (3.1) |

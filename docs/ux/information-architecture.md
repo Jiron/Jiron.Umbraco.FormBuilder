@@ -174,7 +174,8 @@ with `design`, who can act on it; to others the chip says what visitors get, "Pu
 their permissions allow (section 11). A form opens on Design for users with `design`, otherwise on Entries.
 
 **Footer** (users with `design`): Preview · Save draft · **Publish…**. Leaving with unsaved changes asks first
-(Umbraco's "Discard unsaved changes", with Stay and Discard changes).
+(Umbraco's "Discard unsaved changes", with Stay and Discard changes), for a change on the canvas and in a view as for the
+name; closing or reloading the tab asks the browser's own question, which Umbraco's workspace asks (10.3c, ADR-0200).
 
 ### 5.1 Design
 
@@ -599,8 +600,8 @@ with entries.
 | --- | --- | --- | --- |
 | Preview (full-screen modal) | the draft rendered by its theme in a frame, at the form's width as in the designer (Desktop 960 px, Tablet 768 px, Phone 375 px), with "Narrowed to fit" when the window has less room. Submissions there are test entries, which run no actions unless "Run actions for test entries" is on. After sending, the note offers **Run actions…** for that one test entry, which asks first and lists the actions, because their emails and messages then really go out. | – (sending the form is the action) | the canvas width · Fill with sample answers (Start again, after sending) · "…" (Light or dark · Language · Run actions for test entries) |
 | Publish dialog | what changed since the live version, grouped (fields, settings, actions, rules), or, on a first publish, what the first version holds; the form check's result, where errors block with **Fix it** and warnings are listed too, with Fix it, without blocking; an optional comment for the version. After a first publish, while no page shows the form, the toast offers Show how, which opens the "Used on" sidebar. | **Publish** | Cancel |
-| Save conflict | that the draft wasn't saved, who saved, and when, after this user opened the form, and that the user's changes are still here | **Review both versions** | Cancel |
-| Review both versions | the two versions side by side; each difference can be taken from either side | **Save** | Cancel |
+| Save conflict (Umbraco's dialog; 10.3c, ADR-0200) | that the draft wasn't saved, who saved, and when, after this user opened the form, and that the user's changes are still here; "Someone changed this form" where no newer draft was saved (a rename). A move, an access change or a publish meanwhile is no conflict. Until both versions are reviewed, every Save shows it again and sends nothing | **Review both versions** | Cancel |
+| Review both versions (a large sidebar; 10.3c, ADR-0200) | each difference under what it is about (an element's properties, its place, a settings group, the form's name), each side's values side by side under the versions' names, which head the columns as the choice. A difference only one side made since the draft both started from starts on that side; one both made is marked "Changed in both" and waits, as does one whose maker isn't known, unmarked; Save says once how many still wait, and marks each with "Choose a version". An element added or removed comes with everything it holds, which it names. Undo on the canvas takes the saved merge back to the user's own version | **Save** | Cancel |
 
 ## 6. Entries
 
