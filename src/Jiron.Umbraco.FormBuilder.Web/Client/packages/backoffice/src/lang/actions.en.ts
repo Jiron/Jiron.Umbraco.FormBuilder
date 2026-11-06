@@ -138,6 +138,7 @@ export default {
     previewRetry: 'Try again',
     previewViewMissing: (view: string) =>
       `This site has no Razor view "${view}", and this email has no body of its own. Write a body, or name a view the site has.`,
+    previewSettingsInvalid: "This email's settings have errors. The preview shows once they're fixed.",
     previewFrom: 'From',
     previewTo: 'To',
     previewVisitor: 'Also to',

@@ -5,8 +5,25 @@
 import type { EmailPreviewResponseModel } from '../../api';
 import { DraftPreviewer } from '../preview/draft-previewer';
 
-/** What the server answers for an email action: its mail, or that the action's view is missing and it has no body. */
-export type EmailPreview = EmailPreviewResponseModel | { readonly viewMissing: true };
+/** Why the server shows no mail: the view is missing with no body, or the settings don't fit the type. */
+export type Unshown = 'viewMissing' | 'settingsInvalid';
+
+/** What the server answers for an email action: its mail, or why it shows none. */
+export type EmailPreview = EmailPreviewResponseModel | { readonly unshown: Unshown };
+
+const UNSHOWN: Readonly<Record<string, Unshown>> = {
+  email_view_missing: 'viewMissing',
+  action_settings_invalid: 'settingsInvalid',
+};
+
+/** The server's answer as the preview takes it: the mail, or why it shows none by the problem's code. */
+export function previewAnswer(
+  data: EmailPreviewResponseModel | undefined,
+  code: string | undefined,
+): EmailPreview | undefined {
+  const unshown = code === undefined ? undefined : UNSHOWN[code];
+  return unshown ? { unshown } : data;
+}
 
 /** The email action's previewer: the draft's, for a mail. */
 export class EmailPreviewer extends DraftPreviewer<EmailPreview> {}

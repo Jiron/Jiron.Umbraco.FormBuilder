@@ -25,7 +25,7 @@ import {
   type FieldTypeResponseModel,
 } from '../api';
 import { codeOf, sayRefusal } from '../library/library-changes';
-import type { EmailPreview } from './actions/email-preview';
+import { previewAnswer, type EmailPreview } from './actions/email-preview';
 import { FORM_ENTITY_TYPE } from '../section/entity-types';
 import { issuesOf, type FixTarget } from './check/form-check';
 import { FormChecker, UNCHECKED, type CheckState } from './check/form-checker';
@@ -406,7 +406,7 @@ export class FormWorkspaceContext
       emailPreviewRender({ path: { key }, body: { definition, action, culture } }),
       { disableNotifications: true },
     );
-    return codeOf(error) === 'email_view_missing' ? { viewMissing: true } : data;
+    return previewAnswer(data, codeOf(error));
   }
 
   /** Checks the draft as it is now, as Publish does and Try again; it settles once the check shows the answer. */

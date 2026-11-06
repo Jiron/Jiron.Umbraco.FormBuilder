@@ -757,6 +757,87 @@ describe("an email's sidebar", () => {
     });
   });
 
+  it("lets what was typed under an option's box go with its boxes, so Update keeps nothing back for it", async () => {
+    const routed = action('a1', {
+      settings: { to: ['sales@example.com'], recipientMap: { field: 'topic', routes: [] } },
+    });
+    const region: DesignField = {
+      key: 'region',
+      type: 'dropdown',
+      alias: 'region',
+      label: { '': 'Region' },
+      options: { items: [{ value: 'north', label: { '': 'North' } }] },
+    };
+    const { element, root, box, type, keep, modal } = await sidebarOf({
+      action: routed,
+      definition: emailForm([routed], [region]),
+    });
+    await frame();
+    await type('setting-recipientMap-route-0', 'sales');
+    expect(root.getElementById('setting-recipientMap-route-0-why')).not.toBeNull();
+    // Another field: its first option's box starts empty, nothing said under it.
+    const map = box<HTMLSelectElement>('setting-recipientMap');
+    map.value = 'region';
+    map.dispatchEvent(new Event('change'));
+    await settle(element);
+    expect([
+      box('setting-recipientMap-route-0').value,
+      root.getElementById('setting-recipientMap-route-0-why'),
+    ]).toEqual(['', null]);
+    await type('setting-recipientMap-route-0', 'north');
+    // The map goes with its boxes, and what was typed in them.
+    press(root, 'Remove the addresses chosen by Region');
+    await settle(element);
+    await keep();
+    expect(modal.submit).toHaveBeenCalled();
+  });
+
+  it('draws a map that is no map as one of a field that is gone, to be removed', async () => {
+    const odd = action('a1', { settings: { to: ['sales@example.com'], recipientMap: { routes: [] } } });
+    const { element, root, box, keep, kept } = await sidebarOf({ action: odd, definition: emailForm([odd]) });
+    await frame();
+    expect(text(box<HTMLSelectElement>('setting-recipientMap').selectedOptions[0])).toBe('A field that is gone');
+    openAdd(root);
+    expect(kinds(root)).not.toContain('Addresses chosen by an answer');
+    press(root, 'Remove the addresses chosen by A field that is gone');
+    await settle(element);
+    await keep();
+    expect(kept().settings).toEqual({ to: ['sales@example.com'] });
+  });
+
+  it('draws each kind of recipient on its own where a host locks the To box', async () => {
+    const locked = ACTION_TYPES.map((type) =>
+      type.alias !== 'email'
+        ? type
+        : {
+            ...type,
+            settings: type.settings.map((setting) =>
+              setting.name === 'to'
+                ? {
+                    ...setting,
+                    lock: { hidden: false, configurationKey: 'JironFormBuilder:Lock', value: ['ops@example.com'] },
+                  }
+                : setting,
+            ),
+          },
+    );
+    const routed = action('a1', { settings: { toField: 'mail', recipientMap: { field: 'topic', routes: [] } } });
+    const { root, box } = await sidebarOf({
+      action: routed,
+      definition: emailForm([routed]),
+      actionTypes: locked,
+      choices: choicesOf(locked),
+    });
+    await frame();
+    expect(root.querySelector('.recipients')).toBeNull();
+    expect(root.querySelector('[data-locked="to"]')).not.toBeNull();
+    expect([
+      box<HTMLSelectElement>('setting-toField').value,
+      box<HTMLSelectElement>('setting-recipientMap').value,
+      box('setting-toCreator').localName,
+    ]).toEqual(['mail', 'topic', 'input']);
+  });
+
   it('takes each recipient away with its remove button, the focus on the next chip or on Add recipient', async () => {
     const everyone = action('a1', {
       settings: {
@@ -907,6 +988,24 @@ describe("an email's sidebar", () => {
     must(plain.root.querySelector<HTMLButtonElement>('.more'), 'More options').click();
     await settle(plain.element);
     expect(text(plain.root.querySelector('#setting-attachments .help'))).toBe('This form has no file upload yet.');
+    // One field, none to pick: the label is no label of a box, and the line takes Fix it's focus.
+    document.body.replaceChildren();
+    const named = await sidebarOf({
+      definition: {
+        ...definitionWith([TEAM]),
+        pages: [
+          {
+            key: 'p1',
+            groups: [{ key: 'g1', fields: [{ key: 'n', type: 'text', alias: 'name', label: { '': 'Name' } }] }],
+          },
+        ],
+      },
+    });
+    expect([
+      named.root.querySelector('label[for="setting-replyToField"]'),
+      named.root.getElementById('setting-replyToField')?.getAttribute('tabindex'),
+      text(named.root.getElementById('setting-replyToField')),
+    ]).toEqual([null, '-1', 'This form has no email field yet.']);
     expect(text(plain.root.querySelector('#setting-includeSensitive .help'))).toBe(
       'This form has no field marked sensitive.',
     );
@@ -1002,7 +1101,17 @@ describe("an email's sidebar", () => {
     expect([webhook.root.querySelector('jfb-email-preview'), asked]).toEqual([null, []]);
   });
 
-  it('says the To box in words for who may only read it', async () => {
+  it("describes Add recipient with the To box's problem, where Fix it lands", async () => {
+    const nobody = action('a1', { settings: { subject: { '': 'Hello' }, body: { '': '<p>Hi.</p>' } } });
+    checking.answer = () => [problem('$.actions[0].settings.to', 'invalid', 'A mail needs someone to go to.')];
+    const { root } = await sidebarOf({ action: nobody, definition: emailForm([nobody]) });
+    await frame();
+    const summary = must(root.querySelector('details.add summary'), 'Add recipient');
+    expect(summary.getAttribute('aria-describedby')).toBe('setting-to-found-0');
+    expect(text(root.getElementById('setting-to-found-0'))).toBe('A mail needs someone to go to.');
+  });
+
+  it('says the To box and the layout in words for who may only read them', async () => {
     const everyone = action('a1', {
       settings: {
         to: ['a@example.com'],
@@ -1010,12 +1119,22 @@ describe("an email's sidebar", () => {
         toCreator: true,
         recipientMap: { field: 'topic', routes: [] },
         cc: ['boss@example.com'],
+        layout: 'letter',
       },
     });
-    const { root } = await sidebarOf({ action: everyone, definition: emailForm([everyone]), readOnly: true });
-    expect(text(root.getElementById('setting-to'))).toBe(
-      'a@example.com, The answer of Email address, The person who created the form, Addresses chosen by Topic',
+    const { element, root } = await sidebarOf({
+      action: everyone,
+      definition: emailForm([everyone]),
+      readOnly: true,
+      layouts: [{ key: 'letter', name: '#jfbEmailLayouts_letter' }],
+    });
+    // One recipient a line: each kind is a phrase of its own.
+    expect(root.getElementById('setting-to')?.textContent).toBe(
+      'a@example.com\nThe answer of Email address\nThe person who created the form\nAddresses chosen by Topic',
     );
     expect(text(root.getElementById('setting-cc'))).toBe('boss@example.com');
+    must(root.querySelector<HTMLButtonElement>('.more'), 'More options').click();
+    await settle(element);
+    expect(text(root.getElementById('setting-layout'))).toBe('Letter');
   });
 });

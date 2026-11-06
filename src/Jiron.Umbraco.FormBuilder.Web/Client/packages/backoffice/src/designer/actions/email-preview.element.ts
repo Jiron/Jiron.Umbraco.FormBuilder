@@ -6,6 +6,7 @@ import { css, html, nothing } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import { jfbBackofficeTokens } from '../../styles/tokens';
 import { NO_PREVIEW, type PreviewState } from '../preview/draft-previewer';
+import type { EmailPreviewResponseModel } from '../../api';
 import { mailDocument, type EmailPreview, type Scheme } from './email-preview';
 
 // A press on the mail, with any button of the pointer: a link of the preview leads nowhere.
@@ -180,10 +181,12 @@ export class EmailPreviewElement extends UmbLitElement {
     return text;
   }
 
-  /** The frame as tall as its mail, at its width now. */
+  /** The frame as tall as its mail, at its width now: measured from the least height, so it grows and shrinks. */
   #fit(frame: HTMLIFrameElement) {
     const root = frame.contentDocument?.documentElement;
-    if (root) frame.style.blockSize = `${Math.max(root.scrollHeight, LEAST)}px`;
+    if (!root) return;
+    frame.style.blockSize = `${LEAST}px`;
+    frame.style.blockSize = `${Math.max(root.scrollHeight, LEAST)}px`;
   }
 
   #loaded(frame: HTMLIFrameElement) {
@@ -197,7 +200,7 @@ export class EmailPreviewElement extends UmbLitElement {
     this.#observer.observe(frame);
   }
 
-  #meta(mail: Exclude<EmailPreview, { viewMissing: true }>) {
+  #meta(mail: EmailPreviewResponseModel) {
     const line = (label: string, text: string, kind?: string) =>
       html`<dt>${label}</dt>
         <dd class=${kind ?? nothing}>${text}</dd>`;
@@ -215,7 +218,8 @@ export class EmailPreviewElement extends UmbLitElement {
       ${mail.cc.length > 0 ? line(this.#term('previewCc'), mail.cc.join(', ')) : nothing}
       ${mail.bcc.length > 0 ? line(this.#term('previewBcc'), mail.bcc.join(', ')) : nothing}
       ${mail.replyTo ? line(this.#term('previewReplyTo'), mail.replyTo) : nothing}
-      ${line(this.#term('previewSubject'), mail.subject, 'subject')}
+      <dt>${this.#term('previewSubject')}</dt>
+      <dd class="subject" lang=${this.culture || nothing} dir=${mail.direction}>${mail.subject}</dd>
     </dl>`;
   }
 
@@ -242,7 +246,10 @@ export class EmailPreviewElement extends UmbLitElement {
         <uui-button look="outline" label=${this.#term('previewRetry')} @click=${() => this.retry()}></uui-button>
       </div>`;
     if (!preview) return html`<div class="text" aria-hidden="true"></div>`;
-    if ('viewMissing' in preview) return html`<p class="said">${this.#term('previewViewMissing', this.view)}</p>`;
+    if ('unshown' in preview)
+      return html`<p class="said">
+        ${preview.unshown === 'viewMissing' ? this.#term('previewViewMissing', this.view) : this.#term('previewSettingsInvalid')}
+      </p>`;
     return html`${this.#meta(preview)}
     ${
       preview.html
@@ -261,7 +268,7 @@ export class EmailPreviewElement extends UmbLitElement {
   override render() {
     const { status, preview } = this.state;
     const busy = status === 'idle' || status === 'asking';
-    const mail = preview && !('viewMissing' in preview) ? preview : null;
+    const mail = preview && !('unshown' in preview) ? preview : null;
     const mailHtml = mail?.html;
     return html`<section class="preview" aria-labelledby="preview-heading">
       <div class="head">

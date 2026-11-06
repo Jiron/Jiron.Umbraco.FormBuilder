@@ -254,7 +254,7 @@ export default {
     emailRecipientMap: 'An Adressen nach einer Auswahl',
     emailCc: 'Kopie an',
     emailBcc: 'Blindkopie an',
-    emailReplyTo: 'Antworten an die Adresse aus einem Feld',
+    emailReplyTo: 'Antwort an',
     emailFrom: 'Absenderadresse',
     emailSubject: 'Betreff',
     emailBody: 'Text',

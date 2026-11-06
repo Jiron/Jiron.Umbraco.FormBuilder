@@ -64,6 +64,8 @@ export interface ActionEditorContext {
   readonly options: (field: string) => void;
   /** The addresses each choice field's options had while the sidebar is open, by the field's key. */
   readonly routes: Map<string, readonly RecipientRoute[]>;
+  /** Takes back what was typed under every box whose id starts so, as when those boxes go. */
+  readonly forget: (prefix: string) => void;
 }
 
 export type ActionEditor = (
@@ -393,7 +395,7 @@ export function actionSettingText(
     case 'addresses':
       return list.join(', ');
     case 'recipients':
-      return [...list, ...context.within(setting.name).flatMap((part) => recipientWords(context, part))].join(', ');
+      return [...list, ...context.within(setting.name).flatMap((part) => recipientWords(context, part))].join('\n');
     case 'recipientMap': {
       const map = readMap(value);
       return map ? context.words('recipientOf_map', labelOf(context, map.field)) : '';
@@ -437,24 +439,34 @@ function fieldPicker(context: ActionEditorContext, setting: FieldSettingResponse
       .filter((key) => !known.has(key))
       .map((key) => ({ value: key, label: unoffered(context, key, setting.picks) })),
   ];
-  const none = html`<p class="help" id=${id} tabindex="-1">${words(`pickNoneOf_${setting.picks ?? 'any'}`)}</p>`;
+  if (setting.kind !== 'list' && choices.length === 0) {
+    // Nothing to pick: no box for a label to name, the line that says why takes Fix it's focus.
+    const found = context.editor.found?.(id);
+    return html`<div class="item">
+      <p class="label">${context.editor.say(setting.label)}</p>
+      <p class="help" id=${id} tabindex="-1">${words(`pickNoneOf_${setting.picks ?? 'any'}`)}</p>
+      ${found?.lines ?? nothing}
+    </div>`;
+  }
   if (setting.kind !== 'list')
-    return settingFrame(context.editor, setting, path, (described, invalid) =>
-      choices.length === 0
-        ? none
-        : html`<select
-            id=${id}
-            aria-describedby=${described ?? nothing}
-            aria-invalid=${invalid ? 'true' : 'false'}
-            .value=${live(picked[0] ?? '')}
-            @change=${(event: Event) => {
-              const chosen = (event.target as HTMLSelectElement).value;
-              context.editor.set(path, setting, { ok: true, value: chosen === '' ? undefined : chosen }, true);
-            }}
-          >
-            <option value="" ?selected=${picked.length === 0}>${words('pickNone')}</option>
-            ${choices.map((choice) => html`<option value=${choice.value} ?selected=${picked[0] === choice.value}>${choice.label}</option>`)}
-          </select>`,
+    return settingFrame(
+      context.editor,
+      setting,
+      path,
+      (described, invalid) =>
+        html`<select
+          id=${id}
+          aria-describedby=${described ?? nothing}
+          aria-invalid=${invalid ? 'true' : 'false'}
+          .value=${live(picked[0] ?? '')}
+          @change=${(event: Event) => {
+            const chosen = (event.target as HTMLSelectElement).value;
+            context.editor.set(path, setting, { ok: true, value: chosen === '' ? undefined : chosen }, true);
+          }}
+        >
+          <option value="" ?selected=${picked.length === 0}>${words('pickNone')}</option>
+          ${choices.map((choice) => html`<option value=${choice.value} ?selected=${picked[0] === choice.value}>${choice.label}</option>`)}
+        </select>`,
     );
   const found = context.editor.found?.(id);
   const help = setting.description ? `${id}-help` : undefined;
@@ -623,10 +635,11 @@ function recipients(context: ActionEditorContext, setting: FieldSettingResponseM
   const id = boxId(path);
   const words = context.words;
   const list = Array.isArray(value) ? value.map(String) : [];
+  // The kinds it holds by their editors, one of each, as the schema allows nothing else within it (ADR-0189).
   const parts = context.within(setting.name);
-  const part = (name: string) => parts.find((each) => each.setting.name === name);
-  const field = part('toField');
-  const creator = part('toCreator');
+  const part = (editor: string) => parts.find((each) => each.setting.editor === editor);
+  const field = part('fieldPicker');
+  const creator = part('boolean');
   const map = part('recipientMap');
   const put = (next: readonly string[]) =>
     context.editor.set(path, setting, { ok: true, value: next.length > 0 ? [...next] : undefined }, true);
@@ -672,7 +685,7 @@ function recipients(context: ActionEditorContext, setting: FieldSettingResponseM
           <uui-icon name="icon-add" aria-hidden="true"></uui-icon>${words('recipientCreator')}
         </button>`
       : nothing,
-    free(map) && !readMap(map?.value) && choices.length > 0
+    free(map) && map?.value == null && choices.length > 0
       ? html`<button
           type="button"
           class="add-kind"
@@ -702,7 +715,9 @@ function recipients(context: ActionEditorContext, setting: FieldSettingResponseM
     ${creator ? creatorRow(context, creator, () => context.focus(id)) : nothing}
     ${map ? mapRow(context, map, choices, false, () => context.focus(id)) : nothing}
     <details class="add">
-      <summary id=${id}><uui-icon name="icon-add" aria-hidden="true"></uui-icon>${words('recipientsAdd')}</summary>
+      <summary id=${id} aria-describedby=${own.ids.join(' ') || nothing}>
+        <uui-icon name="icon-add" aria-hidden="true"></uui-icon>${words('recipientsAdd')}
+      </summary>
       <div class="add-panel">
         <label class="label" for=${`${id}-address`}>${words('recipientAddress')}</label>
         ${addressBox(context, `${id}-address`, `${id}-address`, context.editor.problems.has(`${id}-address`) ? `${id}-address-why` : undefined, context.editor.problems.has(`${id}-address`), (added) => put(withAddresses(list, added)), context.words('addressAddNamed'), true)}
@@ -762,7 +777,7 @@ function creatorRow(context: ActionEditorContext, creator: Within, removed: () =
   const id = boxId(creator.setting.name);
   const shown = foundAt(context, id);
   return html`<div class="recipient">
-    <span class="grow" id=${`${id}-label`}>${context.words('recipientCreator')}</span>
+    <span class="grow">${context.words('recipientCreator')}</span>
     <button
       type="button"
       class="remove"
@@ -790,7 +805,7 @@ function mapRow(
   removed: () => void,
 ) {
   if (map.setting.lock) return settingEditor(context.editor, map.setting, map.value, map.setting.name);
-  const read = readMap(map.value);
+  const read = readMap(map.value) ?? (map.value == null ? null : { field: '', routes: [] });
   if (!read && !alone) return nothing;
   const id = boxId(map.setting.name);
   const words = context.words;
@@ -827,7 +842,7 @@ function mapRow(
         spellcheck="false"
         aria-describedby=${[`${id}-routes-help`, why ? `${box}-why` : undefined].filter(Boolean).join(' ')}
         aria-invalid=${why ? 'true' : 'false'}
-        .value=${route(value)}
+        .value=${live(route(value))}
         @change=${(event: Event) => keep(value, event.target as HTMLInputElement)}
       />
       ${typedLine(context, box)}`;
@@ -841,8 +856,10 @@ function mapRow(
       .value=${live(read?.field ?? '')}
       @change=${(event: Event) => {
         const field = (event.target as HTMLSelectElement).value;
-        // Another field has other options: the addresses of the one before stay with it, and come back with it.
+        // Another field has other options: the addresses of the one before stay with it, and come back with it; what
+        // was typed under its options goes with their boxes.
         if (read) context.routes.set(read.field, read.routes);
+        context.forget(`${id}-route-`);
         if (field === '') {
           put(undefined);
           return;
@@ -852,7 +869,7 @@ function mapRow(
       }}
     >
       ${alone ? html`<option value="" ?selected=${!read}>${words('pickNone')}</option>` : nothing}
-      ${known || !read ? nothing : html`<option value=${read.field} selected>${unoffered(context, read.field, 'choice')}</option>`}
+      ${known || !read || (alone && read.field === '') ? nothing : html`<option value=${read.field} selected>${unoffered(context, read.field, 'choice')}</option>`}
       ${offered.map((field) => html`<option value=${field.key} ?selected=${field.key === read?.field}>${field.label}</option>`)}
     </select>
     ${
@@ -863,6 +880,7 @@ function mapRow(
             class="remove"
             aria-label=${words('removeMap', read ? labelOf(context, read.field) : '')}
             @click=${() => {
+              context.forget(`${id}-route-`);
               put(undefined);
               removed();
             }}

@@ -122,7 +122,7 @@ export default {
     recipientAddress: 'Eine Adresse',
     recipientField: 'Die Antwort eines Feldes',
     recipientCreator: 'Die Person, die das Formular erstellt hat',
-    recipientMap: 'Adressen je nach einer Antwort',
+    recipientMap: 'Adressen je nach Antwort',
     recipientFieldRow: 'Die Antwort von',
     recipientMapRow: 'Adressen je nach',
     recipientMapAlone: 'Adressen je nach der Antwort von',
@@ -142,11 +142,13 @@ export default {
     preview: 'Vorschau mit einem Beispieleintrag',
     previewHelp: 'So bekommt das Team sie, mit Beispielantworten aus den Feldern des Formulars.',
     previewHelpVisitor:
-      'So bekommt sie die Person, die das Formular sendet, mit Beispielantworten aus den Feldern des Formulars.',
+      'So bekommt die Person, die das Formular sendet, die E-Mail, mit Beispielantworten aus den Feldern des Formulars.',
     previewFailed: 'Die Vorschau konnte nicht angezeigt werden.',
     previewRetry: 'Erneut versuchen',
     previewViewMissing: (view: string) =>
       `Diese Website hat keine Razor-Ansicht „${view}“, und diese E-Mail hat keinen eigenen Text. Schreiben Sie einen Text, oder nennen Sie eine Ansicht, die die Website hat.`,
+    previewSettingsInvalid:
+      'Die Einstellungen dieser E-Mail haben Fehler. Die Vorschau erscheint, sobald sie behoben sind.',
     previewFrom: 'Von',
     previewTo: 'An',
     previewVisitor: 'Auch an',

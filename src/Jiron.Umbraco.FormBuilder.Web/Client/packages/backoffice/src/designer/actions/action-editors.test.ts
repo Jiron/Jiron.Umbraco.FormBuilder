@@ -80,7 +80,8 @@ describe('the action editors', () => {
       routes: [{ value: 'sales', to: ['s@example.com'] }],
     });
     expect(readMap({ field: 'topic' })).toEqual({ field: 'topic', routes: [] });
-    for (const none of [undefined, null, 'topic', [], { routes: [] }]) expect(readMap(none)).toBeNull();
+    for (const none of [undefined, null, 'topic', [], { routes: [] }, { field: 3 }, { field: null }])
+      expect(readMap(none)).toBeNull();
   });
 
   it("puts an option's addresses in its route, in the options' order, and drops a route without addresses", () => {

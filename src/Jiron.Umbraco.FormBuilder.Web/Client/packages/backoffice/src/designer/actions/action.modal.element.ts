@@ -192,6 +192,7 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
 
       .value {
         overflow-wrap: anywhere;
+        white-space: pre-line;
       }
 
       .needs {
@@ -597,7 +598,8 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
   async #submit() {
     if (this.#submitting) return;
     // The first box that says why, as the sidebar shows them, takes the focus. Each is drawn: another choice of what
-    // happens takes the typed problems of the settings it replaces with them, and More options stay open over one.
+    // happens takes the typed problems of the settings it replaces with them, More options stay open over one, and the
+    // boxes of a recipient map take theirs when they go.
     const typed = [...this._typed.keys()][0];
     if (typed) {
       const box = this.shadowRoot?.getElementById(typed);
@@ -867,6 +869,10 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
       problem: (id, text) => this.#typedProblem(id, text),
       options: (field) => this.#readOptions(field),
       routes: this.#routes,
+      forget: (prefix) => {
+        if ([...this._typed.keys()].some((box) => box.startsWith(prefix)))
+          this._typed = new Map([...this._typed].filter(([box]) => !box.startsWith(prefix)));
+      },
     };
   }
 
