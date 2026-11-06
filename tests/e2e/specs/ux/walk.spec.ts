@@ -58,10 +58,12 @@ async function settle(page: Page): Promise<void> {
 
 /** Axe's WCAG 2.2 A and AA findings on the page, each with its ancestry. */
 async function axeNodes(page: Page): Promise<AxeNode[]> {
-  // The options first: AxeBuilder's options() replaces what withTags() set, which would run every rule axe has.
+  // The options first: AxeBuilder's options() replaces what withTags() set, which would run every rule axe has. Frames
+  // are left alone, as in axeInside: an email's preview is a sandboxed frame that runs no script (ADR-0189).
   const result = await new AxeBuilder({ page })
-    .options({ ancestry: true })
+    .options({ ancestry: true, iframes: false })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
+    .setLegacyMode(true)
     .analyze();
   return result.violations.flatMap((violation) =>
     violation.nodes.map((node) => ({

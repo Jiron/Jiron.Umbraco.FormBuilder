@@ -49,7 +49,9 @@ async function twinOf(page: Page, browser: Browser): Promise<Page> {
 
 /**
  * Axe's WCAG 2.2 A and AA rules on a backoffice page, counting what lies inside one of Jiron Form Builder's elements:
- * Umbraco's own are its to answer for, as on the Overview (section.spec.ts).
+ * Umbraco's own are its to answer for, as on the Overview (section.spec.ts). It leaves frames alone (`iframes: false`,
+ * in axe's own run): an email's preview shows the mail in a sandboxed frame that runs no script, which axe would wait
+ * for without end, and the mail's markup is the email renderer's, which its own tests hold (ADR-0189).
  */
 export async function axeInside(page: Page, element: string): Promise<void> {
   await expect(page.locator(`${element} [aria-busy="true"]`)).toHaveCount(0);
@@ -58,7 +60,8 @@ export async function axeInside(page: Page, element: string): Promise<void> {
   await page.waitForFunction(() => document.getAnimations().every((animation) => animation.playState !== 'running'));
   const result = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
-    .options({ ancestry: true })
+    .options({ ancestry: true, iframes: false })
+    .setLegacyMode(true)
     .analyze();
   const ours = result.violations.flatMap((violation) =>
     violation.nodes

@@ -117,12 +117,14 @@ test('the Actions view adds an action from a preset, moves it by drag and keyboa
   await expect(sidebar.getByRole('textbox', { name: 'Name', exact: true })).toHaveValue('Email the team');
   await expect(sidebar.getByRole('textbox', { name: 'Subject' })).toHaveValue('New entry in {{ form.name }}');
   await axeInside(page, 'jfb-action-modal');
-  await sidebar.getByRole('button', { name: 'Add', exact: true }).click();
-  const to = sidebar.getByRole('textbox', { name: 'To', exact: true });
+  await sidebar.locator('[slot="actions"]').getByRole('button', { name: 'Add', exact: true }).click();
+  // The To box's Add recipient takes the focus, the problem said under the box (ADR-0189).
+  const to = sidebar.locator('summary', { hasText: 'Add recipient' });
   await expect(to).toBeFocused();
   await expect(sidebar.locator('#setting-to-found-0')).toHaveText('A mail needs someone to go to.');
-  await enter(to, 'sales@example.com');
-  await sidebar.getByRole('button', { name: 'Add', exact: true }).click();
+  await to.click();
+  await enter(sidebar.getByRole('textbox', { name: 'An address' }), 'sales@example.com');
+  await sidebar.locator('[slot="actions"]').getByRole('button', { name: 'Add', exact: true }).click();
   await expect(sidebar).toHaveCount(0);
   await expect(names).toHaveText(['Email the team']);
   await expect(cardsOf(view, 'submitted').locator('.line')).toHaveText(['To sales@example.com']);
@@ -136,7 +138,7 @@ test('the Actions view adds an action from a preset, moves it by drag and keyboa
   await expect(sidebar.getByRole('combobox', { name: 'State' })).toHaveValue('approved');
   await expect(sidebar.getByRole('textbox', { name: 'Subject' })).toHaveCount(0);
   await enter(sidebar.getByRole('textbox', { name: 'Name', exact: true }), 'Mark as approved');
-  await sidebar.getByRole('button', { name: 'Add', exact: true }).click();
+  await sidebar.locator('[slot="actions"]').getByRole('button', { name: 'Add', exact: true }).click();
   await expect(sidebar).toHaveCount(0);
   await expect(names).toHaveText(['Email the team', 'Mark as approved']);
   await expect(cardsOf(view, 'submitted').locator('.line')).toHaveText(['To sales@example.com', 'Approves the entry']);
