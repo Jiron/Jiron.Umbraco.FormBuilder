@@ -143,6 +143,7 @@ export default {
     testNamed: (name: string) => `Test ${name}`,
     testConfirmHeadline: 'Send a test?',
     testConfirmText: 'This sends a sample entry where this action is set up to send it, marked as a test.',
+    testConfirmWhere: (line: string) => `${line}. A sample entry goes there, marked as a test.`,
     testConfirmButton: 'Send test',
     testSentToYou: (address: string) => `Test email sent to you (${address}).`,
     testSent: 'Test sent.',

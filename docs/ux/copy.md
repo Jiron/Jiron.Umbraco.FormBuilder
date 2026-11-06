@@ -175,7 +175,7 @@ Use Umbraco's own words where Umbraco has the same action, so the section feels 
 | send an entry to a colleague | Forward… | Weiterleiten… |
 | show one masked value, and mask it again | Reveal · Hide | Anzeigen · Verbergen |
 | try an action against a sample entry (on its card, named "Test Email the team" · „Email the team“ testen, and in its sidebar's footer) | Test | Testen |
-| test an action that reaches what it is set up to reach, after its question "Send a test?" · „Test senden?": "This sends a sample entry where this action is set up to send it, marked as a test." · „Damit geht ein Beispieleintrag dorthin, wohin diese Aktion sendet, als Test gekennzeichnet." | Send test | Test senden |
+| test an action that reaches what it is set up to reach, after its question "Send a test?" · „Test senden?", which names the place in the card's own line: "Webhook to hooks.example.com. A sample entry goes there, marked as a test." · „Webhook an hooks.example.com. Ein Beispieleintrag geht dorthin, als Test gekennzeichnet." (an action whose card says nothing yet: "This sends a sample entry where this action is set up to send it, marked as a test." · „Damit geht ein Beispieleintrag dorthin, wohin diese Aktion sendet, als Test gekennzeichnet.") | Send test | Test senden |
 | run a test entry's actions, from the preview (asks first) | Run actions… | Aktionen ausführen… |
 | narrow a list | Filter | Filtern |
 | keep the current filters under a name | Save as… | Speichern unter… |

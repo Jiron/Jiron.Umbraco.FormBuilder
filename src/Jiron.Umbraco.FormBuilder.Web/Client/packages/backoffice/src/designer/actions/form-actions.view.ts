@@ -483,12 +483,19 @@ export class FormActionsViewElement extends UmbLitElement {
     const action = actionsOf(definition).find((one) => one.key === key);
     if (!context || !action || !this._manage) return;
     const type = this._actionTypes?.find((one) => one.alias === action.type);
+    // Where it goes, as the card says it.
+    const line = this.#line(
+      action,
+      elementNames(definition, this._look?.culture ?? '', (term: string, ...args: unknown[]) =>
+        this.localize.term(term, ...args),
+      ),
+    );
     await runTest({
       asksFirst: type?.test === 'afterConfirmation',
       confirm: () =>
         confirmText(this, {
           headline: this.#term('testConfirmHeadline'),
-          content: this.#term('testConfirmText'),
+          content: line ? this.#term('testConfirmWhere', line) : this.#term('testConfirmText'),
           confirmLabel: this.#term('testConfirmButton'),
         }).then(
           () => true,
@@ -673,29 +680,32 @@ export class FormActionsViewElement extends UmbLitElement {
     return flags;
   }
 
+  // What an action does in one line, as its card says it; empty for an action whose settings say nothing yet.
+  #line(action: DesignAction, names: ReturnType<typeof elementNames>): string {
+    const summary = summaryOf(action, (key) => names[key]);
+    if (!summary) return '';
+    const list = new Intl.ListFormat(this.localize.lang(), { type: 'conjunction' });
+    return this.#term(
+      summary.term,
+      ...summary.args.map((arg) => (Array.isArray(arg) ? list.format(arg as string[]) : arg)),
+    );
+  }
+
   #cards(definition: DesignDefinition, trigger: Trigger, flags: ReadonlyMap<string, Flag>): ActionCard[] {
     const look = this._look;
     const term = (key: string, ...args: unknown[]) => this.localize.term(key, ...args);
     const names = elementNames(definition, look?.culture ?? '', term);
     const words = look ? inspectorRuleWords(definition, this._types, look.culture, look.languages, term) : null;
-    const list = new Intl.ListFormat(this.localize.lang(), { type: 'conjunction' });
     return inTrigger(actionsOf(definition), trigger).map((action) => {
       const type = this.#typeOf(action.type);
-      const summary = summaryOf(action, (key) => names[key]);
+      const line = this.#line(action, names);
       const rule = runRuleOf(action);
       const said = rule && words ? ruleWords(words, rule) : null;
       return {
         key: action.key,
         name: this.#nameOf(action),
         icon: type?.icon ?? 'icon-lightning',
-        summary: summary
-          ? this.#term(
-              summary.term,
-              ...summary.args.map((arg) => (Array.isArray(arg) ? list.format(arg as string[]) : arg)),
-            )
-          : action.name?.trim()
-            ? this.#say(type?.name) || action.type
-            : '',
+        summary: line ? line : action.name?.trim() ? this.#say(type?.name) || action.type : '',
         rule: said && rule?.enabled === false ? this.#term('ruleOff', said) : said,
         on: isOn(action),
         flag: flags.get(action.key),

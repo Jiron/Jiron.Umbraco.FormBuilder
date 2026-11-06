@@ -36,15 +36,16 @@ const ACTION_TYPES = JSON.parse(
 const server = vi.hoisted(() => ({ fails: false, limit: 50 }));
 const opened = vi.hoisted(() => ({ sidebars: [] as unknown[], sizes: [] as unknown[], answer: undefined as unknown }));
 /** Umbraco's confirm dialog: whether the user confirms, and how often it was asked. */
-const confirming = vi.hoisted(() => ({ yes: true, asked: 0 }));
+const confirming = vi.hoisted(() => ({ yes: true, asked: 0, said: [] as unknown[] }));
 
 /** The form's address, at its Actions view. */
 const ADDRESS = '/umbraco/section/jfb-forms/workspace/jfb-form/edit/form1/view/actions';
 
 vi.mock('@umbraco-cms/backoffice/modal', async (original) => ({
   ...(await original<typeof import('@umbraco-cms/backoffice/modal')>()),
-  umbConfirmModal: async () => {
+  umbConfirmModal: async (_host: unknown, data: { headline: string; content: { values: unknown[] } }) => {
     confirming.asked++;
+    confirming.said.push([data.headline, data.content.values[0]]);
     if (!confirming.yes) throw new Error('declined');
   },
   umbOpenModal: async (
@@ -244,6 +245,7 @@ beforeEach(() => {
   toasts.closed = 0;
   confirming.yes = true;
   confirming.asked = 0;
+  confirming.said = [];
   history.replaceState(null, '', ADDRESS);
 });
 
@@ -580,6 +582,10 @@ describe('the Actions view', () => {
     confirming.yes = false;
     await list('submitted').test?.('b');
     expect([confirming.asked, workspace.tested.length, toasts.shown.length]).toEqual([1, 0, 0]);
+    // It names where the test goes, as the card says it.
+    expect(confirming.said).toEqual([
+      ['Send a test?', 'Webhook to x.example.com. A sample entry goes there, marked as a test.'],
+    ]);
     confirming.yes = true;
     workspace.testAnswer = {
       kind: 'done',
