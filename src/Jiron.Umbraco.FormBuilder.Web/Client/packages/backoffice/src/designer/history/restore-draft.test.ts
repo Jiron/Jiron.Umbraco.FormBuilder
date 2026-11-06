@@ -89,11 +89,14 @@ describe('restoring a version as a new draft', () => {
   });
 
   it('holds to its form: another form stops it before the server is asked, and keeps its views after', async () => {
+    // Another form's changes not saved yet aren't saved for it either.
     const elsewhere = new Workspace();
     elsewhere.unique = 'form2';
+    elsewhere.unsaved = true;
     const first = server(elsewhere);
     expect(await restoreDraft(elsewhere, 'form1', 12, first.send)).toBeUndefined();
     expect(first.sent).toEqual([]);
+    expect(elsewhere.steps).toEqual([]);
 
     // Another form opened while the changes were saved.
     const saving = new Workspace();
