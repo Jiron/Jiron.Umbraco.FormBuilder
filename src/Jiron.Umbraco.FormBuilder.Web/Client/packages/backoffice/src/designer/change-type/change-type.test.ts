@@ -5,7 +5,8 @@
 import { UmbObjectState } from '@umbraco-cms/backoffice/observable-api';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import type { FieldTypeChangeResponseModel, FieldTypeResponseModel } from '../../api';
-import en from '../../lang/en';
+import start from '../../lang/en';
+import workspace from '../../lang/workspace.en';
 import { must, registerEnglish, settle, shadow, text } from '../../testing';
 import type { DesignDefinition, DesignField } from '../definition';
 import { builtInChanges, builtInTypes } from '../preview/fixtures';
@@ -19,7 +20,7 @@ type Dictionary = Readonly<Record<string, Readonly<Record<string, unknown>>>>;
 /** A term of the English dictionary by its whole key, as the backoffice's localization reads it. */
 function term(key: string, ...args: unknown[]): string {
   const at = key.indexOf('_');
-  const entry = (en as Dictionary)[key.slice(0, at)]?.[key.slice(at + 1)];
+  const entry = ({ ...start, ...workspace } as Dictionary)[key.slice(0, at)]?.[key.slice(at + 1)];
   if (entry === undefined) throw new Error(`No term ${key}`);
   return typeof entry === 'function' ? String((entry as (...values: unknown[]) => unknown)(...args)) : String(entry);
 }

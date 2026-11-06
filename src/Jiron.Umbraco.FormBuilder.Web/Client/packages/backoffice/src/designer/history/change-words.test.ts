@@ -11,6 +11,8 @@ import startDe from '../../lang/de';
 import startEn from '../../lang/en';
 import historyDe from '../../lang/history.de';
 import historyEn from '../../lang/history.en';
+import workspaceDe from '../../lang/workspace.de';
+import workspaceEn from '../../lang/workspace.en';
 import { flatten } from '../actions/action-words';
 import type { DesignDefinition } from '../definition';
 import { builtInTypes } from '../preview/fixtures';
@@ -43,8 +45,8 @@ function termIn(...dictionaries: UmbLocalizationDictionary[]) {
   };
 }
 
-const english = termIn(startEn, historyEn);
-const german = termIn(startDe, historyDe);
+const english = termIn(startEn, workspaceEn, historyEn);
+const german = termIn(startDe, workspaceDe, historyDe);
 
 const FIELDS = {
   name: '00000000-0000-4000-8000-000000000001',

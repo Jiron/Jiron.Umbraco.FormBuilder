@@ -2,7 +2,8 @@
 // user's language with what it names read from the form at the path; the server's sentence for the codes whose words
 // only it has.
 import { describe, expect, it } from 'vitest';
-import en from '../../lang/en';
+import start from '../../lang/en';
+import workspace from '../../lang/workspace.en';
 import type { DesignDefinition } from '../definition';
 import { builtInTypes } from '../preview/fixtures';
 import { elementNames } from '../rules/rule-names';
@@ -14,7 +15,7 @@ type Dictionary = Record<string, Record<string, unknown>>;
 /** A term as the backoffice gives it: the English text, a function given its values, the key where there is none. */
 const term = (key: string, ...args: unknown[]): string => {
   const at = key.indexOf('_');
-  const text = (en as Dictionary)[key.slice(0, at)]?.[key.slice(at + 1)];
+  const text = ({ ...start, ...workspace } as Dictionary)[key.slice(0, at)]?.[key.slice(at + 1)];
   return typeof text === 'function' ? (text as (...values: unknown[]) => string)(...args) : String(text ?? key);
 };
 

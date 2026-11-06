@@ -4,7 +4,8 @@
 import { html } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import { umbLocalizationManager } from '@umbraco-cms/backoffice/localization-api';
-import en from './lang/en';
+import start from './lang/en';
+import workspace from './lang/workspace.en';
 
 /** Umbraco's own words the elements use, as Umbraco's English dictionary has them. */
 const umbracoTerms = {
@@ -14,10 +15,13 @@ const umbracoTerms = {
   general_remove: 'Remove',
 };
 
-/** Registers the English dictionary, `<area>_<key>` as the backoffice flattens it, with Umbraco's words above. */
+/**
+ * Registers the English dictionary, `<area>_<key>` as the backoffice flattens it, with Umbraco's words above: the start's
+ * words and the form workspace's, which a test of its screens reads as the workspace has them (ADR-0201).
+ */
 export function registerEnglish(): void {
   const flat: Record<string, unknown> = { $code: 'en', ...umbracoTerms };
-  for (const [area, texts] of Object.entries(en as Record<string, Record<string, unknown>>)) {
+  for (const [area, texts] of Object.entries({ ...start, ...workspace } as Record<string, Record<string, unknown>>)) {
     for (const [key, text] of Object.entries(texts)) flat[`${area}_${key}`] = text;
   }
   umbLocalizationManager.registerLocalization(flat as never);

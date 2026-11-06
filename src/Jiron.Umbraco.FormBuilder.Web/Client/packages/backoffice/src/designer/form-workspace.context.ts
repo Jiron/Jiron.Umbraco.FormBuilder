@@ -54,6 +54,7 @@ import { actionOfQuery, fieldOfQuery, formState, type FormState } from './form-s
 import { followFix } from './form-views';
 import { EditorHistory } from './history';
 import { afterNameFocus } from './name-focus';
+import { loadWorkspaceWords } from './workspace-words';
 
 /** What the views draw: the editor's state and whether undo and redo can do anything. */
 export interface EditorView {
@@ -186,7 +187,11 @@ export class FormWorkspaceContext
     this.routes.setRoutes([
       {
         path: 'edit/:unique',
-        component: () => import('./form-workspace-editor.element'),
+        // The workspace's own words come with it, before anything of it draws (ADR-0201); without them it still opens.
+        component: async () => {
+          await loadWorkspaceWords(new UmbLocalizationController(this).lang()).catch(() => undefined);
+          return import('./form-workspace-editor.element');
+        },
         setup: async (_component, info) => {
           // Read before the router moves on to a view, which drops the query.
           const wanted = fieldOfQuery(window.location.search);

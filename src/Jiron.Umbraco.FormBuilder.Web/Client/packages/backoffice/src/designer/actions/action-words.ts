@@ -8,9 +8,6 @@ import {
   type UmbLocalizationSet,
 } from '@umbraco-cms/backoffice/localization-api';
 
-/** The words of each language asked for, loaded once. */
-const loaded = new Map<string, Promise<void>>();
-
 /** A dictionary's words as Umbraco looks them up: `<area>_<key>`, for one language. */
 export function flatten(code: string, dictionary: UmbLocalizationDictionary): UmbLocalizationSet {
   const set: UmbLocalizationSet = { $code: code, $dir: 'ltr' };
@@ -23,23 +20,30 @@ export function flatten(code: string, dictionary: UmbLocalizationDictionary): Um
 export const languagesFor = (lang: string): readonly ('en' | 'de')[] =>
   lang.toLowerCase().split('-')[0] === 'de' ? ['en', 'de'] : ['en'];
 
-/** Loads the Actions area's words for a user's language, once each; the view waits for them before it draws. */
-export function loadActionWords(lang: string): Promise<void> {
-  const languages = languagesFor(lang);
-  const key = languages.join('+');
-  let loading = loaded.get(key);
-  if (!loading) {
-    loading = Promise.all(
-      languages.map(async (code) =>
-        flatten(
-          code,
-          (code === 'de' ? await import('../../lang/actions.de') : await import('../../lang/actions.en')).default,
-        ),
-      ),
-    ).then((sets) => umbLocalizationManager.registerManyLocalizations(sets));
-    // A load that failed is tried again by the next view.
-    loading.catch(() => loaded.delete(key));
-    loaded.set(key, loading);
-  }
-  return loading;
+/**
+ * A loader of some words not at the backoffice's start: for a user's language it loads the words of each language they
+ * read, once, and registers them; a load that failed is tried again by the next caller.
+ */
+export function wordsLoader(
+  wordsOf: (code: 'en' | 'de') => Promise<{ readonly default: UmbLocalizationDictionary }>,
+): (lang: string) => Promise<void> {
+  const loaded = new Map<string, Promise<void>>();
+  return (lang) => {
+    const languages = languagesFor(lang);
+    const key = languages.join('+');
+    let loading = loaded.get(key);
+    if (!loading) {
+      loading = Promise.all(languages.map(async (code) => flatten(code, (await wordsOf(code)).default))).then((sets) =>
+        umbLocalizationManager.registerManyLocalizations(sets),
+      );
+      loading.catch(() => loaded.delete(key));
+      loaded.set(key, loading);
+    }
+    return loading;
+  };
 }
+
+/** Loads the Actions area's words for a user's language, once each; the view waits for them before it draws. */
+export const loadActionWords = wordsLoader((code) =>
+  code === 'de' ? import('../../lang/actions.de') : import('../../lang/actions.en'),
+);

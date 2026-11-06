@@ -4,8 +4,9 @@
 // option-sources.json and captcha-providers.json (the snapshots integration tests hold the endpoints to) have them
 // (ADR-0172, ADR-0184); they hold
 // every `#jfbPicker_` key the form picker's checks send (ADR-0129), and its area no other; the form picker's screens
-// (ADR-0134, ADR-0135) hold the keys their elements and manifests use, and no other; and the field types' areas hold no
-// key nothing uses.
+// (ADR-0134, ADR-0135) hold the keys their elements and manifests use, and no other; the field types' areas hold no
+// key nothing uses; and the form workspace's own areas load with it, not at the start, and nothing outside it asks for
+// them (ADR-0201). The start's words and the workspace's are checked together.
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -13,10 +14,15 @@ import { describe, expect, it } from 'vitest';
 import { CANVAS_WIDTHS } from '../designer/canvas/widths';
 import { OWN_WORDS, SERVER_WORDS } from '../designer/check/check-words';
 import { SIDEBAR } from '../section/sidebar';
-import de from './de';
-import en from './en';
+import startDe from './de';
+import startEn from './en';
+import workspaceDe from './workspace.de';
+import workspaceEn from './workspace.en';
 
 type Dictionary = Record<string, Record<string, unknown>>;
+
+const en: Dictionary = { ...startEn, ...workspaceEn };
+const de: Dictionary = { ...startDe, ...workspaceDe };
 
 /** The repository root: the nearest folder above this file that holds the solution. */
 function repositoryRoot(): string {
@@ -313,6 +319,20 @@ describe('the dictionaries', () => {
     );
     expect(unused).toEqual([]);
     expect(termsOf(en)).toEqual(expect.arrayContaining(servedOtherwise));
+  });
+
+  it("hold the form workspace's own areas apart from the start, asked for only inside the workspace (ADR-0201)", () => {
+    const areas = Object.keys(workspaceEn).sort();
+    expect(areas).toEqual(['jfbCheck', 'jfbInspector', 'jfbRules', 'jfbSettings']);
+    expect(Object.keys(workspaceDe).sort()).toEqual(areas);
+    expect([...Object.keys(startEn), ...Object.keys(startDe)].filter((area) => areas.includes(area))).toEqual([]);
+    const source = join(dirname(fileURLToPath(import.meta.url)), '..');
+    const asking = new RegExp(`(${areas.join('|')})_`);
+    const outside = readdirSync(source, { recursive: true, encoding: 'utf8' })
+      .filter((file) => file.endsWith('.ts') && !file.endsWith('.test.ts'))
+      .filter((file) => !/^(designer|lang)[\\/]/.test(file))
+      .filter((file) => asking.test(readFileSync(join(source, file), 'utf8')));
+    expect(outside).toEqual([]);
   });
 
   it('give each culture a different text where the words differ', () => {

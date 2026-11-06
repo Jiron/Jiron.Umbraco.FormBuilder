@@ -1,12 +1,13 @@
 // A rule in words (ROADMAP 9.5a, ADR-0175): how each kind of condition, value, group and effect is said, in English.
 import type { Kind } from '@jfb/logic';
 import { describe, expect, it } from 'vitest';
-import en from '../../lang/en';
+import start from '../../lang/en';
+import workspace from '../../lang/workspace.en';
 import { valueText } from './rule-names';
 import { conditionWords, operatorTerm, relativeWords, ruleWords, type RuleWordsContext } from './rule-words';
 
 const flat = Object.fromEntries(
-  Object.entries(en as Record<string, Record<string, unknown>>).flatMap(([area, texts]) =>
+  Object.entries({ ...start, ...workspace } as Record<string, Record<string, unknown>>).flatMap(([area, texts]) =>
     Object.entries(texts).map(([key, value]) => [`${area}_${key}`, value]),
   ),
 );
