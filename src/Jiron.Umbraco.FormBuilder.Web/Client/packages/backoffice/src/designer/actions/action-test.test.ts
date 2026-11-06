@@ -9,7 +9,7 @@ import { loadActionWords } from './action-words';
 
 const result = (more: Partial<ActionTestResponseModel>): TestAnswer => ({
   kind: 'done',
-  result: { outcome: 'sent', preview: [], ...more },
+  result: { outcome: 'sent', preview: [], args: [], ...more },
 });
 
 let term: (key: string, ...args: unknown[]) => string;
@@ -26,7 +26,7 @@ beforeAll(async () => {
 
 describe("an action's test", () => {
   it("takes the server's answer, or why there is none by the problem's code", () => {
-    const shown: ActionTestResponseModel = { outcome: 'sent', preview: [] };
+    const shown: ActionTestResponseModel = { outcome: 'sent', preview: [], args: [] };
     expect(testAnswer(shown, undefined)).toEqual({ kind: 'done', result: shown });
     expect(testAnswer(undefined, 'test_needs_confirmation')).toEqual({ kind: 'needsConfirmation' });
     expect(testAnswer(undefined, 'action_settings_invalid')).toEqual({ kind: 'settingsInvalid' });
@@ -81,6 +81,7 @@ describe("an action's test", () => {
       'This site has no Razor view the email names, and the email has no body of its own.',
     );
     expect(failed('failed', null).message).toBe("The test couldn't finish. A developer finds why in the site's log.");
+    // Another type's code the backoffice does not know: its sentence.
     expect(failed('http_503', 'The webhook was not delivered (http_503).').message).toBe(
       'The webhook was not delivered (http_503).',
     );
@@ -95,6 +96,39 @@ describe("an action's test", () => {
     expect(testToast({ kind: 'noAnswer' }, term).message).toBe("The site didn't answer. Try again in a moment.");
   });
 
+  it("says a webhook's codes in its own words, with the status a host answered or the key a site lacks (ADR-0191)", () => {
+    const hook = (code: string, args: string[] = [], outcome = 'failed') =>
+      testToast(result({ outcome, code, args, message: 'English sentence' }), term, '', 'webhook').message;
+    expect(hook('sent', ['201'], 'sent')).toBe('Test sent. The server answered 201.');
+    expect(hook('http_404')).toBe("The server answered 404, so the test wasn't delivered.");
+    expect(hook('http_503')).toBe("The server answered 503, so the test wasn't delivered.");
+    expect(hook('no_address')).toBe(
+      'Nowhere to send it: the site has no address for this chat yet, and the action names none of its own.',
+    );
+    expect(hook('not_allowed')).toBe(
+      "The site doesn't call this address. Webhooks go to https addresses on the hosts in JironFormBuilder:Webhooks:AllowedHosts, never into the site's own network.",
+    );
+    expect(hook('secret_missing', ['JironFormBuilder:Secrets:CrmToken'])).toBe(
+      "The site's configuration has no JironFormBuilder:Secrets:CrmToken yet, so the test can't go out. A developer adds it.",
+    );
+    expect(hook('secret_literal')).toBe(
+      'This action holds a secret as itself. Give it as a reference, then test again.',
+    );
+    expect(hook('header_invalid')).toBe(
+      "A header from the site's configuration holds characters a header can't carry.",
+    );
+    expect(hook('timed_out')).toBe("The server didn't answer in time. The test may have arrived anyway.");
+    expect(hook('no_connection')).toBe("The server couldn't be reached.");
+    expect(hook('too_long')).toBe('The body is too long to send.');
+    expect(hook('paused')).toBe("Actions and email are paused on this site, so the test can't go out.");
+    expect(hook('failed')).toBe("The test couldn't finish. A developer finds why in the site's log.");
+    // A code no word knows: the type's sentence; an email's no_address is its own.
+    expect(hook('http_5x')).toBe('English sentence');
+    expect(testToast(result({ outcome: 'failed', code: 'no_address' }), term, '', 'email').message).toBe(
+      'Your account has no email address, so a test email has nowhere to go.',
+    );
+  });
+
   it('asks first where the type reaches what the action is set up to reach, starting only after a yes', async () => {
     const steps: string[] = [];
     const ask = vi.fn(async () => {
@@ -103,9 +137,27 @@ describe("an action's test", () => {
     });
     const say = vi.fn();
     const started = () => steps.push('started');
-    await runTest({ name: 'Hook', asksFirst: true, confirm: async () => false, started, ask, say, term });
+    await runTest({
+      name: 'Hook',
+      type: 'webhook',
+      asksFirst: true,
+      confirm: async () => false,
+      started,
+      ask,
+      say,
+      term,
+    });
     expect([steps, say.mock.calls.length]).toEqual([[], 0]);
-    await runTest({ name: 'Hook', asksFirst: true, confirm: async () => true, started, ask, say, term });
+    await runTest({
+      name: 'Hook',
+      type: 'webhook',
+      asksFirst: true,
+      confirm: async () => true,
+      started,
+      ask,
+      say,
+      term,
+    });
     expect([steps, ask.mock.calls, say.mock.calls[0]?.[0]?.message]).toEqual([
       ['started', 'ask'],
       [[true]],
@@ -118,7 +170,7 @@ describe("an action's test", () => {
     const ask = vi.fn(async () => answers.shift() ?? { kind: 'noAnswer' as const });
     const say = vi.fn();
     const confirm = vi.fn(async () => true);
-    await runTest({ name: 'Hook', asksFirst: false, confirm, ask, say, term });
+    await runTest({ name: 'Hook', type: 'webhook', asksFirst: false, confirm, ask, say, term });
     expect([ask.mock.calls, confirm.mock.calls.length, say.mock.calls[0]?.[0]?.message]).toEqual([
       [[false], [true]],
       1,

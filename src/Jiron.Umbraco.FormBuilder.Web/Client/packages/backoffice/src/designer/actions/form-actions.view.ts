@@ -492,6 +492,7 @@ export class FormActionsViewElement extends UmbLitElement {
     );
     await runTest({
       name: this.#nameOf(action),
+      type: action.type,
       asksFirst: type?.test === 'afterConfirmation',
       started,
       confirm: () =>

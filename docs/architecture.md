@@ -313,7 +313,12 @@ flowchart LR
   action for the sample entry: `EmailPreviews` (Core) finds the action, applies its locks and asks
   `EmailActionType.PreviewAsync`, which finds the recipients as a run does and has the outbox compose the mail without
   queueing it (`EmailOutbox.ComposeAsync`, which `PrepareAsync` shares); the frame reads the layout's colours for the
-  scheme chosen (`mailDocument`).
+  scheme chosen (`mailDocument`). From 10.2d (ADR-0191): the webhook's editors are `webhook-editors.ts`, on the
+  values and rules of `webhook-model.ts` (the server's `WebhookMaps` and `FormBuilderSecrets` rules, written again so a
+  credential typed as itself never reaches the draft): `webhookAddress` and `webhookBody` draw the settings `within`
+  them, which `FieldSettingsReader.Boxes` allows them, `headerMap` the headers' rows and `secretReference` the signing
+  secret. The sidebar's `kept` holds another choice's values and rows being typed while it is open. A chat's message is
+  written by `WebhookChat` (Core); a test's `args` carry a host's status or the key of a secret the site lacks.
 
 ## 2. The definition model
 

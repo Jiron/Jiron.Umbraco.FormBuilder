@@ -441,11 +441,32 @@ it runs ("when an entry comes in"). The actions one event queues run in the orde
     asked once the changes pause, and who may only read the actions sees it too.
   - The form check's Fix it of an email setting lands on its part: a recipient's row, or Add recipient for the To
     box itself.
+- **The webhook editor** (10.2d, ADR-0191), for a webhook and its Slack and Microsoft Teams presets:
+  - **Where it goes:** the target (Its own address, The site's Slack address, The site's Microsoft Teams address), then
+    the address, whose help says what it takes there: an https address on a host the site allows, or a reference where
+    it holds a key; for a chat, empty for the site's, or a reference, as a chat's address holds its key. One typed as
+    itself for a chat is said under the box and not kept.
+  - **What it sends:** for its own address, the format, then one choice, each with its line: Every answer, by its
+    field's alias; The names and values you choose (a table of names and values that starts with every field, Add a
+    name, a remove button a row, and one Insert merge tag that puts a tag into the value last in focus); A body you
+    write (in the format's own language, with Insert merge tag); Only that something happened. Send metadata too
+    follows the first two. For a chat: A message (with Insert merge tag; empty sends the form's name and the answers)
+    or A body you write (JSON). Another choice, or another target, keeps what the one before held while the sidebar is
+    open; only the chosen one is saved.
+  - **More options:** the signing secret, whose help says what `X-Jfb-Signature` signs, and More headers, rows of a
+    name and a value with Add header; a credential, the secret above all, is taken only as a reference, and one typed
+    as itself is said under its box and never kept. Send sensitive fields follows.
+  - The form check's Fix it of a webhook setting lands on its box: the target, the address, the format, the table, the
+    body, the message, a switch, the headers or the secret; a problem of a way not chosen is said under the choices.
+  - **Who may only read it** sees each box in words: the target and the address, then the format and what goes
+    ("JSON: every answer, by its field's alias, with metadata"), or the chat's message; the headers a line each.
 - **Test** runs the action as the card's draft or its sidebar holds it, saved or not, against a sample entry made
   from the form's fields (8.1, ADR-0190); its button is busy until the answer, and a toast says what it came to:
   - an email goes only to the user who tests, and its first line, in their backoffice language, names the recipients
     the real one would go to; where the site cannot send mail, the toast says so and nothing is queued;
-  - a webhook asks first ("Send a test?"), then sends with `X-Jfb-Test: true`;
+  - a webhook asks first ("Send a test?"), then sends with `X-Jfb-Test: true`; a chat's message starts with a line
+    that says it is a test, and the toast says what the server answered, or why it did not go, in the backoffice's
+    words;
   - content actions show what they would create, and create nothing.
 - **Without `manageActions`,** the view is read-only, and one line at the top says which permission changes it. It
   names no folder: the grant that decides can be global, a folder's or a restricted folder's (ADR-0188). It has no Add

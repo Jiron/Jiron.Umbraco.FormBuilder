@@ -6,7 +6,10 @@
 // a check that gives no answer, and kept once for two presses; the rule in the rules builder as a `run` rule; Fix it and
 // Move to another trigger...; read-only, every setting as it is with Close only; and Delete action. An email (ADR-0189):
 // its To box with every kind of recipient, each added and taken away again; Copy to's addresses; fields picked by
-// kind; the layouts; Insert merge tag for mail; and its mail's preview, asked once the changes pause.
+// kind; the layouts; Insert merge tag for mail; and its mail's preview, asked once the changes pause. A webhook
+// (ADR-0191): where it goes and its address, each target's kept while another is chosen; the ways of sending, only the
+// chosen one in the draft; the table's rows, the headers and the secret, a credential never kept as itself; the check's
+// problems at their box; and its boxes in words for who may only read them.
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { UmbObjectState } from '@umbraco-cms/backoffice/observable-api';
@@ -518,21 +521,17 @@ describe("an action's sidebar", () => {
   });
 
   it("says a problem of a setting without its editor yet under what happens, by the setting's name, and leads there", async () => {
-    checking.answer = () => [problem('$.actions[0].settings.headers', 'setting_invalid', 'Each header has a name.')];
-    const hook = action('a1', {
-      type: 'webhook',
-      name: 'CRM',
-      settings: { url: 'https://crm.example.com', headers: [{}] },
-    });
+    checking.answer = () => [problem('$.actions[0].settings.mapping', 'setting_invalid', 'Each property has a value.')];
+    const hook = action('a1', { type: 'content', name: 'Page', settings: { mapping: [{}] } });
     const { root, keep, why, modal } = await sidebarOf({ action: hook });
-    expect(why('what-happens')).toEqual(['More headers: Each header has a name.']);
+    expect(why('what-happens')).toEqual(['Properties: Each property has a value.']);
     // The sidebar's own first focus, on its name, comes first.
     await frame();
     await keep();
     expect([modal.submit.mock.calls.length, root.activeElement?.id]).toEqual([0, 'what-happens']);
     // Its Fix it leads there too.
     document.body.replaceChildren();
-    const fixing = await sidebarOf({ action: hook, focus: { kind: 'setting', path: 'headers' } });
+    const fixing = await sidebarOf({ action: hook, focus: { kind: 'setting', path: 'mapping' } });
     await frame();
     expect(fixing.root.activeElement?.id).toBe('what-happens');
   });
@@ -1194,5 +1193,300 @@ describe("an email's sidebar", () => {
     must(root.querySelector<HTMLButtonElement>('.more'), 'More options').click();
     await settle(element);
     expect(text(root.getElementById('setting-layout'))).toBe('Letter');
+  });
+});
+
+describe("a webhook's sidebar", () => {
+  const press = (root: ShadowRoot, label: string) =>
+    must(
+      [...root.querySelectorAll<HTMLButtonElement>('button')].find(
+        (one) => text(one) === label || one.getAttribute('aria-label') === label,
+      ),
+      label,
+    ).click();
+  const select = async (element: { updateComplete: Promise<unknown> }, box: HTMLSelectElement, value: string) => {
+    box.value = value;
+    box.dispatchEvent(new Event('change'));
+    await settle(element);
+  };
+  const names = (root: ShadowRoot) =>
+    [...root.querySelectorAll<HTMLInputElement>('.pairs input.name')].map((one) => one.value);
+  const values = (root: ShadowRoot) =>
+    [...root.querySelectorAll<HTMLInputElement>('.pairs input.value')].map((one) => one.value);
+  const hook = (settings: Record<string, unknown>) => action('a1', { type: 'webhook', name: 'CRM', settings });
+
+  it("says where it goes in one box, the address's help for its target, and keeps each target's while another is chosen", async () => {
+    const { element, root, box, type, keep, kept } = await sidebarOf({
+      action: hook({ url: 'https://crm.example.com/in' }),
+    });
+    const target = box<HTMLSelectElement>('setting-target');
+    expect([text(root.querySelector('label[for="setting-target"]')), target.value]).toEqual(['Where it goes', 'url']);
+    expect([...target.options].map((option) => text(option))).toEqual([
+      'Its own address',
+      "The site's Slack address",
+      "The site's Microsoft Teams address",
+    ]);
+    expect(text(root.getElementById('setting-url-help'))).toBe(
+      'An https address on a host the site allows. Where the address holds a key, name it as a reference, such as $JironFormBuilder:Secrets:CrmHook.',
+    );
+    await select(element, target, 'slack');
+    // A chat: empty for the site's address, the preset's message to start from, the format and the answers gone.
+    expect(box('setting-url').value).toBe('');
+    expect(text(root.getElementById('setting-url-help'))).toContain("Empty sends to the site's Slack address.");
+    expect(box<HTMLTextAreaElement>('setting-message').value).toBe(
+      '*New entry in {{ form.name }}*\n{{ entry.answers }}',
+    );
+    expect(root.getElementById('setting-format')).toBeNull();
+    // A Slack address holds its key: one typed as itself is said under the box and never kept.
+    await type('setting-url', 'https://hooks.slack.com/services/T0/B0/xyz');
+    expect(text(root.getElementById('setting-url-why'))).toBe(
+      "A Slack address holds its key, so it stays in the site's configuration: name it as a reference, such as $JironFormBuilder:Secrets:SalesSlack.",
+    );
+    await type('setting-url', '$JironFormBuilder:Secrets:SalesSlack');
+    expect(root.getElementById('setting-url-why')).toBeNull();
+    // Back to its own address: its address comes back, and the chat's stays for when it is chosen again.
+    await select(element, box<HTMLSelectElement>('setting-target'), 'url');
+    expect(box('setting-url').value).toBe('https://crm.example.com/in');
+    await select(element, box<HTMLSelectElement>('setting-target'), 'slack');
+    expect(box('setting-url').value).toBe('$JironFormBuilder:Secrets:SalesSlack');
+    await keep();
+    expect(kept().settings).toEqual({
+      target: 'slack',
+      url: '$JironFormBuilder:Secrets:SalesSlack',
+      message: '*New entry in {{ form.name }}*\n{{ entry.answers }}',
+    });
+  });
+
+  it('refuses a reference that is none, under the address, for its own address too', async () => {
+    const { root, type } = await sidebarOf({ action: hook({ url: 'https://crm.example.com/in' }) });
+    await type('setting-url', '$JironFormBuilder:Secrets:crm hook');
+    expect(text(root.getElementById('setting-url-why'))).toBe(
+      'After $JironFormBuilder:Secrets:, a reference has 1 to 64 letters, digits and _.',
+    );
+  });
+
+  it('offers the ways of sending with what each means, and keeps only the chosen way in the draft', async () => {
+    const { element, root, box, choose, keep, kept } = await sidebarOf({
+      action: hook({ url: 'https://crm.example.com/in' }),
+    });
+    expect(text(root.querySelector('fieldset:has(input[name="webhook-body"]) > legend'))).toBe('What it sends');
+    expect(
+      [...root.querySelectorAll('fieldset:has(input[name="webhook-body"]) .choice')].map((one) => text(one)),
+    ).toEqual([
+      "Every answer, by its field's alias Fields added later go too.",
+      'The names and values you choose The list starts with every field. Each value can hold merge tags.',
+      'A body you write In the format above, with merge tags written for it.',
+      "Only that something happened No answers: what happened, the form and the entry's key.",
+    ]);
+    expect(root.querySelector<HTMLInputElement>('input[name="webhook-body"]:checked')?.value).toBe('answers');
+    expect(text(root.querySelector('label[for="setting-metadata"]'))).toBe('Send metadata too');
+    // The table starts with every field, by its alias.
+    await choose('webhook-body', 'mapping');
+    expect([names(root), values(root)]).toEqual([
+      ['email', 'topic'],
+      ['{{ field.email }}', '{{ field.topic }}'],
+    ]);
+    expect([...root.querySelectorAll('.pairs-head span')].map((one) => text(one))).toEqual(['Name', 'Value']);
+    // A body to write starts from them in the format's language; the table comes back as it was.
+    await choose('webhook-body', 'body');
+    expect(box<HTMLTextAreaElement>('setting-template').value).toBe(
+      '{\n  "email": "{{ field.email }}",\n  "topic": "{{ field.topic }}"\n}',
+    );
+    expect(box<HTMLTextAreaElement>('setting-template').getAttribute('aria-labelledby')).toBe('webhook-body-body-name');
+    expect(root.getElementById('setting-metadata')).toBeNull();
+    const pickers = [...root.querySelectorAll('jfb-merge-tag-picker')] as unknown as { place: string }[];
+    expect(pickers.map((picker) => picker.place)).toEqual(['action']);
+    await choose('webhook-body', 'mapping');
+    expect(names(root)).toEqual(['email', 'topic']);
+    // Only that something happened: no answers, the metadata with it.
+    await choose('webhook-body', 'none');
+    expect(root.getElementById('setting-metadata')).toBeNull();
+    await keep();
+    expect(kept().settings).toEqual({ url: 'https://crm.example.com/in', withoutAnswers: true });
+    void element;
+  });
+
+  it("edits the table's names and values, says what can't be kept as it is typed, and keeps the rows that can", async () => {
+    const { element, root, box, type, keep, kept } = await sidebarOf({
+      action: hook({ url: 'https://crm.example.com/in', fields: { email: '{{ field.email }}' } }),
+    });
+    // The sidebar's own first focus, on its name, comes first.
+    await frame();
+    await type('setting-fields-name-0', 'e mail', false);
+    expect(text(root.getElementById('setting-fields-name-0-why'))).toBe('A name has letters, digits, _, - and . only.');
+    await type('setting-fields-name-0', 'mail');
+    press(root, 'Add a name');
+    await settle(element);
+    expect(root.activeElement?.id).toBe('setting-fields-name-1');
+    // A value without its name is said once its box is left.
+    await type('setting-fields-value-1', 'Contact form', false);
+    expect(root.getElementById('setting-fields-name-1-why')).toBeNull();
+    await type('setting-fields-value-1', 'Contact form');
+    expect(text(root.getElementById('setting-fields-name-1-why'))).toBe('Give this value a name.');
+    await type('setting-fields-name-1', 'mail');
+    expect(text(root.getElementById('setting-fields-name-1-why'))).toBe('mail is there already.');
+    await type('setting-fields-name-1', 'source');
+    expect(box('setting-fields-value-1').getAttribute('aria-label')).toBe('Value of source');
+    // Remove puts the focus on the row in its place, or Add once none is left.
+    press(root, 'Remove mail');
+    await settle(element);
+    expect([names(root), root.activeElement?.id]).toEqual([['source'], 'setting-fields-name-0']);
+    await keep();
+    expect(kept().settings).toEqual({ url: 'https://crm.example.com/in', fields: { source: 'Contact form' } });
+  });
+
+  it("puts a merge tag into the table's value last in focus", async () => {
+    const { element, root, box } = await sidebarOf({
+      action: hook({ url: 'https://crm.example.com/in', fields: { a: '', b: '' } }),
+    });
+    const picker = must(root.querySelector('.pairs jfb-merge-tag-picker'), 'the picker') as unknown as {
+      insert: (tag: string) => void;
+    };
+    picker.insert('{{ field.email }}');
+    await settle(element);
+    expect(values(root)).toEqual(['', '{{ field.email }}']);
+    box('setting-fields-value-0').dispatchEvent(new Event('focus'));
+    picker.insert('{{ form.name }}');
+    await settle(element);
+    expect(values(root)).toEqual(['{{ form.name }}', '{{ field.email }}']);
+  });
+
+  it("says a chat's message, or a body of its own in JSON as the chat reads it", async () => {
+    const { root, box, choose, keep, kept } = await sidebarOf({ action: hook({ target: 'teams' }) });
+    expect(
+      [...root.querySelectorAll('fieldset:has(input[name="webhook-body"]) .choice-name')].map((one) => text(one)),
+    ).toEqual(['A message', 'A body you write']);
+    const message = box<HTMLTextAreaElement>('setting-message');
+    // Without a message of its own, the default goes; the box says so.
+    expect([message.value, message.getAttribute('aria-labelledby'), message.placeholder]).toEqual([
+      '',
+      'webhook-body-message-name',
+      '**New entry in {{ form.name }}**\n{{ entry.answers }}',
+    ]);
+    expect(text(root.getElementById('setting-message-help'))).toBe("Empty sends the form's name and the answers.");
+    expect(text(root.getElementById('webhook-body-message'))).toBe(
+      "In Teams' formatting, such as **bold**, with merge tags.",
+    );
+    await choose('webhook-body', 'body');
+    const body = JSON.parse(box<HTMLTextAreaElement>('setting-template').value) as {
+      attachments: { content: { body: { text: string }[] } }[];
+    };
+    expect(body.attachments[0]?.content.body[0]?.text).toBe('**New entry in {{ form.name }}**\n{{ entry.answers }}');
+    await keep();
+    expect(Object.keys(kept().settings ?? {})).toEqual(['target', 'template']);
+  });
+
+  it('refuses a cleared body under its box, and keeps the last one', async () => {
+    const { root, type } = await sidebarOf({ action: hook({ url: 'https://crm.example.com/in', template: '{}' }) });
+    await type('setting-template', '  ');
+    expect(text(root.getElementById('setting-template-why'))).toBe(
+      'Write the body, or choose another way of sending above.',
+    );
+  });
+
+  it('takes headers as rows, a credential and the signing secret only as references, never as themselves', async () => {
+    const { element, root, box, type, keep, kept } = await sidebarOf({
+      action: hook({ url: 'https://crm.example.com/in', headers: { 'X-Source': 'forms' } }),
+    });
+    await frame();
+    must(root.querySelector<HTMLButtonElement>('.more'), 'More options').click();
+    await settle(element);
+    expect(text(root.getElementById('setting-headers-help'))).toBe(
+      'Sent with each request. A header that carries a credential takes a reference, such as $JironFormBuilder:Secrets:CrmToken.',
+    );
+    expect(text(root.getElementById('setting-secret-help'))).toContain('X-Jfb-Signature');
+    press(root, 'Add header');
+    await settle(element);
+    await type('setting-headers-name-1', 'Authorization');
+    await type('setting-headers-value-1', 'Bearer abc');
+    expect(text(root.getElementById('setting-headers-value-1-why'))).toBe(
+      "Authorization carries a credential, so it stays in the site's configuration: give it as a reference, such as $JironFormBuilder:Secrets:CrmToken.",
+    );
+    expect(box('setting-headers-value-1').getAttribute('aria-invalid')).toBe('true');
+    await type('setting-headers-value-1', '$JironFormBuilder:Secrets:CrmToken');
+    press(root, 'Add header');
+    await settle(element);
+    await type('setting-headers-name-2', 'Host');
+    expect(text(root.getElementById('setting-headers-name-2-why'))).toBe('The request sets Host itself.');
+    press(root, 'Remove Host');
+    await settle(element);
+    await type('setting-secret', 'my-signing-secret');
+    expect(text(root.getElementById('setting-secret-why'))).toBe(
+      "The secret stays in the site's configuration: give it as a reference, such as $JironFormBuilder:Secrets:CrmSigning.",
+    );
+    await type('setting-secret', '$JironFormBuilder:Secrets:CrmSigning');
+    await keep();
+    expect(kept().settings).toEqual({
+      url: 'https://crm.example.com/in',
+      headers: { 'X-Source': 'forms', Authorization: '$JironFormBuilder:Secrets:CrmToken' },
+      secret: '$JironFormBuilder:Secrets:CrmSigning',
+    });
+  });
+
+  it("keeps Update back while a row can't be kept, the focus on it", async () => {
+    const { element, root, type, keep, modal } = await sidebarOf({
+      action: hook({ url: 'https://crm.example.com/in', fields: { a: 'b' } }),
+    });
+    await frame();
+    await type('setting-fields-name-0', 'a b');
+    await keep();
+    expect([modal.submit.mock.calls.length, root.activeElement?.id]).toEqual([0, 'setting-fields-name-0']);
+    void element;
+  });
+
+  it("says the check's problems at the box they name, where Fix it lands, and those of a way not drawn under the choices", async () => {
+    checking.answer = () => [
+      problem('$.actions[0].settings.url', 'invalid', 'The address must be one the host configuration allows.'),
+      problem('$.actions[0].settings.fields', 'invalid', 'A merge tag at 0 cannot be used here.'),
+      problem('$.actions[0].settings.template', 'invalid', 'A merge tag at 3 cannot be used here.'),
+    ];
+    const settings = { url: 'http://crm', fields: { a: '{{ nope }}' } };
+    const { root, box } = await sidebarOf({ action: hook(settings), definition: definitionWith([hook(settings)]) });
+    await frame();
+    expect(box('setting-url').getAttribute('aria-describedby')).toBe('setting-url-help setting-url-found-0');
+    expect(text(root.getElementById('setting-url-found-0'))).toBe(
+      'The address must be one the host configuration allows.',
+    );
+    expect(root.getElementById('setting-fields')?.getAttribute('aria-describedby')).toBe('setting-fields-found-0');
+    // The body is no way this action sends, so its problem is said under the choices.
+    expect(text(root.getElementById('setting-template-found-0'))).toBe('A merge tag at 3 cannot be used here.');
+  });
+
+  it('says where it goes and what it sends in words for who may only read them', async () => {
+    const reader = async (settings: Record<string, unknown>) => {
+      document.body.replaceChildren();
+      const { element, root } = await sidebarOf({ action: hook(settings), readOnly: true });
+      const more = root.querySelector<HTMLButtonElement>('.more');
+      if (more) {
+        more.click();
+        await settle(element);
+      }
+      return (id: string) => root.getElementById(id)?.textContent ?? '';
+    };
+    let said = await reader({
+      url: 'https://crm.example.com/in',
+      headers: { Authorization: '$JironFormBuilder:Secrets:CrmToken' },
+    });
+    expect([said('setting-target'), said('setting-fields'), said('setting-headers')]).toEqual([
+      'Its own address\nhttps://crm.example.com/in',
+      "JSON: every answer, by its field's alias, with metadata",
+      'Authorization: $JironFormBuilder:Secrets:CrmToken',
+    ]);
+    said = await reader({
+      url: 'https://crm.example.com/in',
+      format: 'xml',
+      fields: { email: 'x', topic: 'y' },
+      metadata: false,
+    });
+    expect(said('setting-fields')).toBe('XML: email, topic');
+    said = await reader({ url: 'https://crm.example.com/in', withoutAnswers: true });
+    expect(said('setting-fields')).toBe('JSON: only that something happened');
+    said = await reader({ target: 'slack', message: 'Hi {{ field.email }}' });
+    expect([said('setting-target'), said('setting-fields')]).toEqual([
+      "The site's Slack address",
+      'Hi {{ field.email }}',
+    ]);
+    said = await reader({ target: 'teams', template: '{}' });
+    expect(said('setting-fields')).toBe('A body of its own');
   });
 });

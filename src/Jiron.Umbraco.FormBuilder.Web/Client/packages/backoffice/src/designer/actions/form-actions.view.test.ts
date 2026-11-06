@@ -563,7 +563,7 @@ describe('the Actions view', () => {
     const { workspace, list } = await viewOf(definitionWith([action('a')]));
     workspace.testAnswer = {
       kind: 'done',
-      result: { outcome: 'sent', code: 'sent_to_you', recipient: 'ana@example.com', preview: [] },
+      result: { outcome: 'sent', code: 'sent_to_you', recipient: 'ana@example.com', preview: [], args: [] },
     };
     // Its card says what its test does before it runs.
     expect(list('submitted').cards[0]?.testHint).toBe('Sends a test to you alone.');
@@ -602,6 +602,7 @@ describe('the Actions view', () => {
         code: 'http_503',
         message: 'The webhook was not delivered (http_503).',
         preview: [],
+        args: [],
       },
     };
     await list('submitted').test?.('b', started);
@@ -609,7 +610,7 @@ describe('the Actions view', () => {
     expect(started.mock.calls.length).toBe(1);
     expect(toasts.shown.at(-1)).toEqual({
       color: 'danger',
-      data: { message: 'Action b: The webhook was not delivered (http_503).' },
+      data: { message: "Action b: The server answered 503, so the test wasn't delivered." },
     });
   });
 

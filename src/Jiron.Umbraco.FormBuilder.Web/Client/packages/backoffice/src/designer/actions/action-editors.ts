@@ -2,16 +2,21 @@
 // that offers the draft's fields of the setting's kind; addresses as a list with a box that adds them; the email's To
 // box, which holds every kind of recipient the schema puts within it (addresses, an email field's answer, the person
 // who created the form, the addresses an answer chooses) and offers the others under Add recipient; the addresses an
-// answer chooses on their own, where a host locks the To box; and the layout. Each is labelled, described and says its
-// problems as the inspector's editors do, under ids the form check's Fix it lands on.
+// answer chooses on their own, where a host locks the To box; and the layout; and the webhook's (ADR-0191,
+// webhook-editors.ts). Each is labelled, described and says its problems as the inspector's editors do, under ids the
+// form check's Fix it lands on.
 import { isEmailAddress } from '@jfb/logic';
 import { css, html, live, nothing, type TemplateResult } from '@umbraco-cms/backoffice/external/lit';
 import type { FieldSettingResponseModel } from '../../api';
 import { boxId, pickedKeys, settingEditor, settingFrame, type EditorContext } from '../inspector/setting-editor';
+import { foundAt, typedLine } from './editor-lines';
+import { webhookEditors, webhookSettingText } from './webhook-editors';
 
 /** A field of the draft as a picker offers it. */
 export interface PickField {
   readonly key: string;
+  /** Its alias, by which a webhook sends its answer. */
+  readonly alias: string;
   /** Its label in the language shown, or its alias. */
   readonly label: string;
   /** Whether it is of the email type. */
@@ -66,6 +71,21 @@ export interface ActionEditorContext {
   readonly routes: Map<string, readonly RecipientRoute[]>;
   /** Takes back what was typed under every box whose id starts so, as when those boxes go. */
   readonly forget: (prefix: string) => void;
+  /** Another setting's value by its name, for a box that depends on it (ADR-0191). */
+  readonly value: (name: string) => unknown;
+  /** Another setting of the type by its name, for a box that sets it with its own. */
+  readonly settingOf: (name: string) => FieldSettingResponseModel | undefined;
+  /** "Insert merge tag" for the box whose id it gives when a tag is picked, its tags those of the action's place. */
+  readonly tags: (id: () => string) => TemplateResult | typeof nothing;
+  /**
+   * What the sidebar keeps while it is open: the values of a choice while another is chosen, and rows while they are
+   * typed, by the editor's own keys.
+   */
+  readonly kept: Map<string, unknown>;
+  /** The message the type's preset for a webhook's target starts with, if it has one. */
+  readonly presetMessage: (target: string) => string | undefined;
+  /** Draws the sidebar anew, for what the sidebar keeps that no setting holds, such as a blank row. */
+  readonly redraw: () => void;
 }
 
 export type ActionEditor = (
@@ -82,6 +102,7 @@ export function actionEditors(context: ActionEditorContext): Readonly<Record<str
     recipients: (setting, value, path) => recipients(context, setting, value, path),
     recipientMap: (setting, value, path) => mapAlone(context, setting, value, path),
     emailLayoutPicker: (setting, value, path) => layoutPicker(context, setting, value, path),
+    ...webhookEditors(context),
   };
 }
 
@@ -403,7 +424,7 @@ export function actionSettingText(
     case 'emailLayoutPicker':
       return layoutName(context, typeof value === 'string' ? value : '');
     default:
-      return undefined;
+      return webhookSettingText(context, setting, value);
   }
 }
 
@@ -585,12 +606,6 @@ function addressBox(
     ${sayHow ? html`<p class="help" id=${`${id}-several`}>${context.words('addressHelp')}</p>` : nothing}`;
 }
 
-/** The line under a box that says why what was typed in it can't be kept. */
-function typedLine(context: ActionEditorContext, id: string) {
-  const text = context.editor.problems.get(id);
-  return text ? html`<p class="why" id=${`${id}-why`}>${text}</p>` : nothing;
-}
-
 /** After a chip is removed, its place's chip takes the focus, or the one before it, or the box. */
 function focusAfterRemove(context: ActionEditorContext, id: string, input: string, index: number, left: number) {
   context.focus(left === 0 ? input : `${id}-remove-${Math.min(index, left - 1)}`);
@@ -618,17 +633,6 @@ function addresses(context: ActionEditorContext, setting: FieldSettingResponseMo
 
 // ---- The To box ---------------------------------------------------------------------------------------------------
 
-// The problems the check found at a part of the To box, said under it.
-function foundAt(context: ActionEditorContext, id: string) {
-  const typed = context.editor.problems.get(id);
-  const found = context.editor.found?.(id);
-  return {
-    ids: [...(typed ? [`${id}-why`] : []), ...(found?.ids ?? [])],
-    invalid: typed !== undefined || (found?.error ?? false),
-    lines: html`${typed ? html`<p class="why" id=${`${id}-why`}>${typed}</p>` : nothing}${found?.lines ?? nothing}`,
-  };
-}
-
 // Who gets the mail, in one box: the addresses as chips, then each other kind of recipient the schema puts within it,
 // and Add recipient, which offers the kinds not there yet; a kind a host locks shows as the host set it.
 function recipients(context: ActionEditorContext, setting: FieldSettingResponseModel, value: unknown, path: string) {
@@ -654,7 +658,7 @@ function recipients(context: ActionEditorContext, setting: FieldSettingResponseM
     then();
   };
   const label = context.editor.say(setting.label);
-  const own = foundAt(context, id);
+  const own = foundAt(context.editor, id);
   const help = setting.description ? `${id}-help` : undefined;
   const kinds = [
     free(field) && !field?.value && emails.length > 0
@@ -721,7 +725,7 @@ function recipients(context: ActionEditorContext, setting: FieldSettingResponseM
       <div class="add-panel">
         <label class="label" for=${`${id}-address`}>${words('recipientAddress')}</label>
         ${addressBox(context, `${id}-address`, `${id}-address`, context.editor.problems.has(`${id}-address`) ? `${id}-address-why` : undefined, context.editor.problems.has(`${id}-address`), (added) => put(withAddresses(list, added)), context.words('addressAddNamed'), true)}
-        ${typedLine(context, `${id}-address`)}
+        ${typedLine(context.editor, `${id}-address`)}
         <div class="kinds">${kinds}</div>
       </div>
     </details>
@@ -736,7 +740,7 @@ function fieldRow(context: ActionEditorContext, field: Within, offered: readonly
   const id = boxId(field.setting.name);
   const key = field.value;
   const known = offered.some((each) => each.key === key);
-  const shown = foundAt(context, id);
+  const shown = foundAt(context.editor, id);
   return html`<div class="recipient">
     <label for=${id}>${context.words('recipientFieldRow')}</label>
     <select
@@ -775,7 +779,7 @@ function creatorRow(context: ActionEditorContext, creator: Within, removed: () =
   if (creator.setting.lock) return settingEditor(context.editor, creator.setting, creator.value, creator.setting.name);
   if (creator.value !== true) return nothing;
   const id = boxId(creator.setting.name);
-  const shown = foundAt(context, id);
+  const shown = foundAt(context.editor, id);
   return html`<div class="recipient">
     <span class="grow">${context.words('recipientCreator')}</span>
     <button
@@ -812,7 +816,7 @@ function mapRow(
   const name = map.setting.name;
   const put = (next: RecipientMap | undefined) =>
     context.editor.set(name, map.setting, { ok: true, value: next }, true);
-  const shown = foundAt(context, id);
+  const shown = foundAt(context.editor, id);
   const chosen = read ? context.fields.find((field) => field.key === read.field) : undefined;
   if (read && chosen && chosen.options === null) context.options(chosen.key);
   const known = read ? offered.some((field) => field.key === read.field) : true;
@@ -845,7 +849,7 @@ function mapRow(
         .value=${live(route(value))}
         @change=${(event: Event) => keep(value, event.target as HTMLInputElement)}
       />
-      ${typedLine(context, box)}`;
+      ${typedLine(context.editor, box)}`;
   };
   return html`<div class="recipient">
     <label for=${id}>${words(alone ? 'recipientMapAlone' : 'recipientMapRow')}</label>

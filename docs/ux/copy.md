@@ -122,6 +122,11 @@ One line that says where something stands, next to the thing it is about.
 | an email's To box for who may only read it (one recipient a line) | sales@example.com · The answer of Email address · The person who created the form | sales@example.com · Die Antwort von „Email address“ · Die Person, die das Formular erstellt hat |
 | an email's reply-to (a field picker of email fields) | Reply to | Antwort an |
 | an email's layout left to the site (the select names the layout it is) | Site default (Card) | Standard der Website (Karte) |
+| a webhook's ways of sending (each with its line under it) | Every answer, by its field's alias · The names and values you choose · A body you write · Only that something happened · A message (Slack and Teams) | Jede Antwort, unter dem Alias ihres Felds · Die Namen und Werte, die Sie wählen · Ein Inhalt, den Sie schreiben · Nur, dass etwas geschehen ist · Eine Nachricht |
+| a credential, a signing secret or a chat's address typed as itself (under its box; it is not kept) | Authorization carries a credential, so it stays in the site's configuration: give it as a reference, such as $JironFormBuilder:Secrets:CrmToken. | Authorization trägt Zugangsdaten und bleibt daher in der Konfiguration der Website: Geben Sie sie als Verweis an, etwa $JironFormBuilder:Secrets:CrmToken. |
+| a webhook's test, as the server answered | Test sent. The server answered 201. · The server answered 404, so the test wasn't delivered. | Test gesendet. Der Server antwortete 201. · Der Server antwortete 404, daher kam der Test nicht an. |
+| a webhook's test of a secret the site lacks (the key, never a value) | The site's configuration has no JironFormBuilder:Secrets:CrmToken yet, so the test can't go out. A developer adds it. | Die Konfiguration der Website hat noch kein JironFormBuilder:Secrets:CrmToken, daher kann der Test nicht hinaus. Ein Entwickler trägt es ein. |
+| a webhook's card whose address is a reference | Webhook to the address CrmHook | Webhook an die Adresse CrmHook |
 | a picked field or layout the form or site no longer has | A field that is gone · A layout that is gone | Ein Feld, das es nicht mehr gibt · Ein Layout, das es nicht mehr gibt |
 | a picked field of another kind, which the picker shows while it is picked | Your name (no email field) · Topic (in a repeatable group) | Your name (kein E-Mail-Feld) · Topic (in einer wiederholbaren Gruppe) |
 | beside the canvas width switch, when the canvas has less room than the chosen width | Narrowed to fit | Schmaler als gewählt |
@@ -159,6 +164,7 @@ Use Umbraco's own words where Umbraco has the same action, so the section feels 
 | turn lines into a choice field's options, or a grid's rows (one a line) | Paste options… · Paste rows… | Optionen einfügen… · Zeilen einfügen… |
 | add a merge tag to a text | Insert merge tag | Platzhalter einfügen |
 | add who gets an email (its To box; it offers An address, The answer of a field, The person who created the form, Addresses chosen by an answer, each kind once) | Add recipient | Empfänger hinzufügen |
+| add a row to a webhook's names and values, or to its headers | Add a name · Add header | Namen hinzufügen · Kopfzeile hinzufügen |
 | keep the addresses typed in a box (Enter and leaving the box keep them too; its accessible name says what it adds to, apart from the sidebar's own Add: Add address · Adresse hinzufügen under Add recipient, Add to Copy to · Zu „Kopie an“ hinzufügen for another box) | Add | Hinzufügen |
 | take a recipient away (an icon button, named for it) | Remove sales@example.com · Remove the answer of Email address | sales@example.com entfernen · Die Antwort von „Email address“ entfernen |
 | show an email's preview in a colour scheme (two pressed buttons) | Light · Dark | Hell · Dunkel |

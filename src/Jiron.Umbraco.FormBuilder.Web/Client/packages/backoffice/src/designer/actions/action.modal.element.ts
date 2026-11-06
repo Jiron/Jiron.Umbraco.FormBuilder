@@ -8,7 +8,8 @@
 // `manageActions` every setting shows as it is, and only Close is offered. An email has its own editors (ADR-0189): its
 // To box holds every kind of recipient, its fields are picked by kind, its subject and body offer merge tags for mail,
 // and the mail it sends for the sample entry shows beside the settings where there is room, after them where there is
-// not, asked once the changes pause.
+// not, asked once the changes pause. A webhook's (ADR-0191) say where it goes and what it sends in a box each, its texts
+// offering merge tags for actions, and keep what another choice of theirs held while the sidebar is open.
 import {
   css,
   html,
@@ -77,6 +78,7 @@ import { testHint } from './action-test';
 import type { ActionModalData, ActionModalValue } from './action.modal.token';
 import { EmailPreviewer, type EmailPreview } from './email-preview';
 import './email-preview.element';
+import { webhookEditorStyles } from './webhook-editors';
 
 /** The ids of the sidebar's own boxes; a type's settings have the inspector's (`boxId`). */
 const BOX = {
@@ -121,6 +123,7 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
     controlStyles,
     choiceStyles,
     actionEditorStyles,
+    webhookEditorStyles,
     css`
       .action {
         display: grid;
@@ -431,6 +434,7 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
       return [
         {
           key: field.key,
+          alias: field.alias ?? '',
           label: textIn(field.label, data.culture) || field.alias || field.key,
           email: field.type === 'email',
           choice: options !== undefined && options !== null,
@@ -734,6 +738,7 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
     }
     const choose = (choice: ActionChoice) => {
       this._typed = new Map([...this._typed].filter(([box]) => !box.startsWith('setting-')));
+      this.#kept.clear();
       this.#change(withChoice(this._edit, choice, this.#say(choice.name)), BOX.whatHappens, true);
     };
     return html`<fieldset
@@ -880,6 +885,9 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
   // The addresses of each choice field's options, kept while another field is chosen (ADR-0189).
   readonly #routes = new Map<string, readonly RecipientRoute[]>();
 
+  // What the webhook's editors keep while the sidebar is open: another choice's values, rows being typed (ADR-0191).
+  readonly #kept = new Map<string, unknown>();
+
   /** What the action's own editors need beyond the inspector's context. */
   #actionContext(editor: EditorContext): ActionEditorContext {
     const data = this.data;
@@ -902,20 +910,34 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
         if ([...this._typed.keys()].some((box) => box.startsWith(prefix)))
           this._typed = new Map([...this._typed].filter(([box]) => !box.startsWith(prefix)));
       },
+      value: (name) => settingAt(this._edit, name),
+      settingOf: (name) => this.#type()?.settings.find((setting) => setting.name === name),
+      tags: (id) => this.#tagPicker(id),
+      kept: this.#kept,
+      presetMessage: (target) => {
+        const preset = data?.choices.find(
+          (choice) => choice.type === 'webhook' && choice.settings['target'] === target,
+        );
+        const message = preset?.settings['message'];
+        return typeof message === 'string' ? message : undefined;
+      },
+      redraw: () => this.requestUpdate(),
     };
   }
 
-  // "Insert merge tag" under a box of the mail, its tags those mail may use in the draft as it is (ADR-0189).
-  #tagPicker(id: string): TemplateResult | typeof nothing {
+  // "Insert merge tag" under a box of the action, its tags those its place may use in the draft as it is: mail's for an
+  // email (ADR-0189), the other actions' for a webhook (ADR-0191).
+  #tagPicker(id: string | (() => string)): TemplateResult | typeof nothing {
     const data = this.data;
     if (!data || data.readOnly) return nothing;
+    const box = () => (typeof id === 'string' ? id : id());
     return html`<jfb-merge-tag-picker
-      .place=${'mail'}
+      .place=${this._edit.type === 'email' ? 'mail' : 'action'}
       .form=${data.form}
       .owner=${''}
       .culture=${data.culture}
       .definition=${() => this.#draft()}
-      .insert=${(tag: string) => insertTagInto(this.shadowRoot?.getElementById(id), tag)}
+      .insert=${(tag: string) => insertTagInto(this.shadowRoot?.getElementById(box()), tag)}
     ></jfb-merge-tag-picker>`;
   }
 

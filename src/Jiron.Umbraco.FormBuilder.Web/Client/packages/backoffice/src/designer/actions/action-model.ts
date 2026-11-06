@@ -4,6 +4,7 @@
 // or Update writes it back the way the server keeps it. Pure.
 import type { ActionTypeResponseModel } from '../../api';
 import type { DesignDefinition, DesignRule } from '../definition';
+import { REFERENCE } from './webhook-model';
 
 /** An action as the definition holds it; what the editor does not know about stays as it came. */
 export interface DesignAction {
@@ -219,7 +220,11 @@ export function summaryOf(action: DesignAction, fieldName: (key: string) => stri
       if (settings['target'] === 'slack') return line('summary_slack');
       if (settings['target'] === 'teams') return line('summary_teams');
       const url = isText(settings['url']) ? settings['url'].trim() : '';
-      return url === '' ? line('summary_webhookNowhere') : line('summary_webhook', hostOf(url));
+      if (url === '') return line('summary_webhookNowhere');
+      // An address that is a secret of the site's configuration is named by its name, never read.
+      return url.startsWith(REFERENCE)
+        ? line('summary_webhookNamed', url.slice(REFERENCE.length))
+        : line('summary_webhook', hostOf(url));
     }
     case 'setState': {
       const state = settings['state'];

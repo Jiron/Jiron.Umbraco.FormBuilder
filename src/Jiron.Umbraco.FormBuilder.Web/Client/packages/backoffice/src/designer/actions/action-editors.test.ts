@@ -14,6 +14,7 @@ import {
 
 const field = (key: string, more: Partial<PickField> = {}): PickField => ({
   key,
+  alias: key,
   label: key,
   email: false,
   choice: false,
