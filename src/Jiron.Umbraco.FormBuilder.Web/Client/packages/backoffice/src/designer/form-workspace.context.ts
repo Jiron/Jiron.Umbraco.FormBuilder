@@ -245,18 +245,22 @@ export class FormWorkspaceContext
   }
 
   /**
-   * Saves, as Umbraco's base does, then puts the saved definition in the history's present place. When a save fails
-   * after its rename went through, the form is read again, so the next save sends the version the rename gave.
+   * Saves, as Umbraco's base does, then puts the saved definition in the history's present place, unless the draft
+   * changed while the save was on its way: that change, an edit or an undo, stays, unsaved, where Umbraco's base put the
+   * saved copy in its place. When a save fails after its rename went through, the form is read again, so the next save
+   * sends the version the rename gave.
    */
   override async submit(): Promise<void> {
+    const sent = this.#history.state.definition;
     try {
       await super.submit();
     } catch (error) {
       await this.#refreshForm();
       throw error;
     }
-    const saved = this.getData()?.definition;
-    if (saved) this.#history.rebase(saved);
+    const saved = this._data.getPersisted()?.definition;
+    if (saved && !this.#history.settle(sent, saved))
+      this._data.updateCurrent({ definition: this.#history.state.definition });
     this.#publish();
   }
 

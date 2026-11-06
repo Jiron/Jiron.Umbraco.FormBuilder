@@ -100,6 +100,17 @@ export class EditorHistory {
     this.#present = { ...this.#present, definition };
   }
 
+  /**
+   * After a save of `sent` came back as `saved`: the present takes the server's copy where it is still what was sent,
+   * as `rebase` does. A change made while the save was on its way, an edit or an undo, stays the present, unsaved against
+   * the saved copy. True where it took the saved copy.
+   */
+  settle(sent: EditorState['definition'], saved: EditorState['definition']): boolean {
+    if (this.#present.definition !== sent) return false;
+    this.rebase(saved);
+    return true;
+  }
+
   /** Starts over from a state, as a load or a reload does: nothing to undo or redo. */
   reset(state: EditorState): void {
     this.#merging = null;

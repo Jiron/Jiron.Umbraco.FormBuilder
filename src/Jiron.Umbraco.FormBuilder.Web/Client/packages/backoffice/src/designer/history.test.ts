@@ -64,6 +64,23 @@ describe('the history', () => {
     expect(history.state.definition).toBe(saved);
   });
 
+  it('after a save, takes the saved copy where nothing changed meanwhile, and keeps a change made while it was on its way', () => {
+    const history = new EditorHistory(START);
+    history.apply(changed('one'), 'first');
+    const sent = history.state.definition;
+    const saved = definition('one');
+    expect(history.settle(sent, saved)).toBe(true);
+    expect(history.state.definition).toBe(saved);
+
+    // An undo while the next save is on its way stays: the saved copy does not take its place.
+    history.apply(changed('two'), 'second');
+    const sentAgain = history.state.definition;
+    history.undo();
+    expect(history.settle(sentAgain, definition('two'))).toBe(false);
+    expect(history.state.definition).toBe(saved);
+    expect(history.redo()).toBe('second');
+  });
+
   it('forgets the oldest changes past its limit, and starts over on a reset', () => {
     const history = new EditorHistory(START, 2);
     history.apply(changed('one'), 'first');

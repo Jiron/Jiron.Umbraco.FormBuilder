@@ -72,6 +72,47 @@ async function saveDraft(page: Page) {
   expect((await saved).ok()).toBe(true);
 }
 
+test('an undo while the save is on its way stays, unsaved against what was saved', async ({ page, loginAs, apiAs }) => {
+  test.setTimeout(120_000);
+  const api = await apiAs('designer');
+  const key = await formWithFields(api, unique('Inspector undo while saving'), [
+    { type: 'text', alias: 'name', label: { '': 'Your name' } },
+  ]);
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await loginAs('designer');
+  const design = await open(page, key);
+  const inspector = design.locator('jfb-designer-inspector');
+  await design.getByRole('button', { name: /^Your name, / }).click();
+  await openAll(inspector);
+  await typeIn(inspector.getByLabel('Text before'), 'Dr.');
+
+  // The save's answer is held back until the undo is done.
+  let release: () => void = () => undefined;
+  const held = new Promise<void>((done) => (release = done));
+  await page.route(/\/draft$/, async (route) => {
+    if (route.request().method() !== 'PUT') return route.fallback();
+    const response = await route.fetch();
+    await held;
+    await route.fulfill({ response });
+  });
+  const save = page.locator('uui-button[label="Save draft"]');
+  await page.getByRole('button', { name: 'Save draft' }).click();
+  await expect(save).toHaveAttribute('state', 'waiting');
+  await design.getByRole('button', { name: /^Your name, / }).focus();
+  await page.keyboard.press('Control+z');
+  await expect(inspector.getByLabel('Text before')).toHaveValue('');
+  release();
+  // Once the save has settled, the undo still stands, and what was saved holds the text.
+  await expect(save).not.toHaveAttribute('state', 'waiting');
+  await page.unroute(/\/draft$/);
+  await expect(inspector.getByLabel('Text before')).toHaveValue('');
+  expect((await draftOf(api, key)).fields.get('name')?.settings).toEqual({ prefix: { '': 'Dr.' } });
+
+  // The undo is a change of its own, which the next save keeps.
+  await saveDraft(page);
+  expect((await draftOf(api, key)).fields.get('name')?.settings ?? {}).toEqual({});
+});
+
 test('every setting of the text, number and date types is set with the plain editors, axe clean with each section open', async ({
   page,
   loginAs,
