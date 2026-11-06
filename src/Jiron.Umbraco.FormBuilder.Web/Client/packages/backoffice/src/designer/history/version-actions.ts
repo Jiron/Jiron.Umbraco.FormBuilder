@@ -5,26 +5,19 @@
 // "..." share it.
 import { UmbControllerBase } from '@umbraco-cms/backoffice/class-api';
 import type { UmbControllerHost } from '@umbraco-cms/backoffice/controller-api';
-import { UmbDocumentItemRepository } from '@umbraco-cms/backoffice/document';
 import { UmbLocalizationController } from '@umbraco-cms/backoffice/localization-api';
 import { umbOpenModal } from '@umbraco-cms/backoffice/modal';
 import { UMB_NOTIFICATION_CONTEXT } from '@umbraco-cms/backoffice/notification';
-import { tryExecute } from '@umbraco-cms/backoffice/resources';
-import { actionTypeList, type ActionTypeResponseModel, type FormVersionEntryResponseModel } from '../../api';
+import type { FormVersionEntryResponseModel } from '../../api';
 import { UNDO_DURATION_MS, UNDO_NOTIFICATION, type UndoNotificationData } from '../../ui/undo-notification.element';
-import type { DesignDefinition } from '../definition';
 import type { FormWorkspaceContext } from '../form-workspace.context';
-import { readLook, word } from '../preview/look';
 import { publishWithDialog } from '../publish-flow';
-import { targetOf, type DesignOutcome } from '../settings/outcome-model';
-import { comparisonWords, type ChangeWordsContext } from './change-words';
+import { comparisonWords } from './change-words';
 import { COMPARISON_MODAL, type ComparisonModalValue, type ComparisonRead } from './comparison.modal.token';
 import { headingCase, madeAt, momentText, summaryParts, versionName } from './history-model';
+import { wordsContextOf } from './words-context';
 
 type Version = FormVersionEntryResponseModel['version'];
-
-/** The site's action types, read once per backoffice session; undefined when they can't be read, and tried again. */
-let actionTypes: Promise<Readonly<Record<string, ActionTypeResponseModel>> | undefined> | undefined;
 
 export class VersionActions extends UmbControllerBase {
   readonly #context: FormWorkspaceContext;
@@ -72,7 +65,10 @@ export class VersionActions extends UmbControllerBase {
         };
       return {
         kind: 'compared',
-        parts: comparisonWords(comparison.changes, await this.#words(comparison.older, comparison.newer)),
+        parts: comparisonWords(
+          comparison.changes,
+          await wordsContextOf(this, this.#localize, this.#context.getFieldTypes(), comparison.older, comparison.newer),
+        ),
       };
     };
     return umbOpenModal(this, COMPARISON_MODAL, {
@@ -163,55 +159,5 @@ export class VersionActions extends UmbControllerBase {
     const parts = summaryParts(comparison.changes, this.#full, true);
     if (parts.length === 0) return this.#full('jfbHistory_restoredSame', name);
     return this.#full('jfbHistory_restored', name, this.#full('jfbHistory_listOf', ...parts));
-  }
-
-  // ---- The words' context -------------------------------------------------------------------------------------------
-
-  async #words(older: DesignDefinition, newer: DesignDefinition): Promise<ChangeWordsContext> {
-    actionTypes ??= tryExecute(this, actionTypeList(), { disableNotifications: true }).then(({ data }) => {
-      if (!data) actionTypes = undefined;
-      return data ? Object.fromEntries(data.types.map((type) => [type.alias, type])) : undefined;
-    });
-    const look = await readLook(this);
-    const culture = look?.languages.find((language) => language.isDefault)?.culture ?? look?.culture ?? '';
-    return {
-      term: this.#full,
-      say: (text) => (text ? this.#localize.string(text) : ''),
-      culture,
-      locale: this.#localize.lang(),
-      languages: look?.languages ?? [],
-      fieldTypes: this.#context.getFieldTypes(),
-      actionTypes: (await actionTypes) ?? {},
-      older,
-      newer,
-      pages: await this.#pages([older, newer], culture),
-      defaultMessage: look ? word(look, 'thankYou') : '',
-    };
-  }
-
-  /** The names of the pages the two versions' redirects lead to, in the site's default language where a page has it. */
-  async #pages(definitions: readonly DesignDefinition[], culture: string): Promise<ReadonlyMap<string, string>> {
-    const keys = [
-      ...new Set(
-        definitions.flatMap((definition) =>
-          ((definition['outcomes'] ?? []) as readonly DesignOutcome[])
-            .map((outcome) => targetOf(outcome))
-            .flatMap((target) => (target.kind === 'page' ? [target.key] : [])),
-        ),
-      ),
-    ];
-    const names = new Map<string, string>();
-    if (keys.length === 0) return names;
-    // A page that can't be read is said as "a page of the site".
-    const { data } = await new UmbDocumentItemRepository(this).requestItems(keys).catch(() => ({ data: undefined }));
-    const wanted = culture.toLowerCase();
-    for (const item of data ?? []) {
-      const variant =
-        item.variants.find((one) => one.culture?.toLowerCase() === wanted) ??
-        item.variants.find((one) => !one.culture) ??
-        item.variants[0];
-      if (variant?.name) names.set(item.unique, variant.name);
-    }
-    return names;
   }
 }
