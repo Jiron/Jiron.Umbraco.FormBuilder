@@ -179,9 +179,10 @@ Use Umbraco's own words where Umbraco has the same action, so the section feels 
 | bring back from the Recycle Bin | Restore… | Wiederherstellen… |
 | go back to an earlier version of a form | Restore an earlier version… | Frühere Version wiederherstellen… |
 | make an earlier version the draft (in its sidebar, or in a row's "…"; it acts at once and offers Undo) | Restore as a new draft | Als neuen Entwurf wiederherstellen |
+| restore a version, then open the publish dialog for it (beside Restore as a new draft in the sidebar that compares it with the current draft; not for the live version) | Restore and publish… | Wiederherstellen und veröffentlichen… |
 | add the draft saves to History's list (a switch) | Show draft saves | Gespeicherte Entwürfe zeigen |
 | compare two ticked versions, in History's toolbar | Compare | Vergleichen |
-| a History row's "…" | Pin · Unpin · Add comment… · Change comment… | Anheften · Anheften aufheben · Kommentar hinzufügen… · Kommentar ändern… |
+| a History row's "…" (the current draft's own row has no restore) | Restore as a new draft · Pin · Unpin · Add comment… · Change comment… | Als neuen Entwurf wiederherstellen · Anheften · Anheften aufheben · Kommentar hinzufügen… · Kommentar ändern… |
 | more rows of a list that reads a page at a time | Show more | Mehr anzeigen |
 | create the block that puts forms on pages | Create a form block type… | Formular-Blocktyp erstellen… |
 | start from a ready-made form (the checklist, an empty folder) | Choose a template… | Vorlage wählen… |
@@ -268,6 +269,13 @@ code as the message, never blames the user, and never claims a cause it cannot k
 
 | Case | English | German |
 | --- | --- | --- |
+| a value of Settings › General out of range (under its box, before anything is sent) | Use a whole number from 1 to 3650. | Verwenden Sie eine ganze Zahl von 1 bis 3650. |
+| Settings › General saved by someone else meanwhile (the values saved are shown) | Someone else saved these settings meanwhile. Their values are shown now; make your change again if it is still needed. | Jemand anderes hat diese Einstellungen inzwischen gespeichert. Jetzt sehen Sie deren Werte; nehmen Sie Ihre Änderung erneut vor, falls sie noch nötig ist. |
+| a settings section the host configuration locks (no Save) | The site's configuration sets these settings (JironFormBuilder:LockedSections:0), so they can't be changed here. | Die Konfiguration der Website legt diese Einstellungen fest (JironFormBuilder:LockedSections:0); hier lassen sie sich nicht ändern. |
+| Settings › General not read, or not saved | The settings couldn't be read. [Try again] · The settings couldn't be saved. Try again in a moment. | Die Einstellungen konnten nicht gelesen werden. [Erneut versuchen] · Die Einstellungen konnten nicht gespeichert werden. Versuchen Sie es gleich noch einmal. |
+| Undo after a restore, once the draft has changed since (Undo would lose that change) | The draft has changed since, so the restore can't be undone here. The draft before stays in History. | Der Entwurf hat sich seither geändert, daher lässt sich das Wiederherstellen hier nicht zurücknehmen. Der vorherige Entwurf bleibt im Verlauf. |
+| a restored draft the backoffice couldn't read again (no Undo) | The new draft couldn't be read here. Reload the page to see it. | Der neue Entwurf konnte hier nicht gelesen werden. Laden Sie die Seite neu, um ihn zu sehen. |
+| a version the cleanup removed while the list showed it | This version doesn't exist any more. Choose another one. | Diese Version gibt es nicht mehr. Wählen Sie eine andere. |
 | saving failed (network) | Couldn't save the draft. Check your connection, then try again. Your changes are still here. [Try again] | Der Entwurf konnte nicht gespeichert werden. Prüfen Sie die Verbindung und versuchen Sie es erneut. Ihre Änderungen sind noch da. [Erneut versuchen] |
 | someone saved first | **Your draft wasn't saved** Ana Novak saved this form at 14:02, after you opened it. Review both versions before you save. Your changes are still here. [Review both versions] | **Ihr Entwurf wurde nicht gespeichert** Ana Novak hat dieses Formular um 14:02 gespeichert, nachdem Sie es geöffnet haben. Prüfen Sie beide Versionen, bevor Sie speichern. Ihre Änderungen sind noch da. [Beide Versionen prüfen] |
 | publishing blocked (the publish dialog; each error has its own Fix it) | This form can't be published yet: 1 error needs fixing. | Dieses Formular lässt sich noch nicht veröffentlichen: 1 Fehler muss behoben werden. |
@@ -298,6 +306,7 @@ useful action. One sentence, plus a button or link where there is one.
 
 | Case | English | German |
 | --- | --- | --- |
+| Restore an earlier version… on a form without one (the current draft is never listed) | There is no earlier version yet. | Es gibt noch keine frühere Version. |
 | no entries yet, for a user who may design the form | No entries yet. Share the form, or preview it and send a test entry. | Noch keine Einträge. Teilen Sie das Formular, oder öffnen Sie die Vorschau und senden Sie einen Testeintrag. |
 | no entries yet, for everyone else (they can neither share nor preview it) | No entries yet. They appear here as soon as visitors send the form. [Email me a summary…] | Noch keine Einträge. Sie erscheinen hier, sobald jemand das Formular sendet. [Zusammenfassung per E-Mail…] |
 | filters match nothing (Clear filters sits in the chip row above, so the empty state has no button of its own) | No entries match these filters. Remove one above, or clear them all. | Keine Einträge passen zu diesen Filtern. Entfernen Sie oben einen davon, oder setzen Sie alle zurück. |
@@ -356,7 +365,11 @@ toast adds only what the user cannot see.
 | draft saved | Draft saved | Entwurf gespeichert |
 | published (the chip already says Published) | Visitors get the new version now. | Auf der Website gilt jetzt die neue Version. |
 | published for the first time, while no page shows it ("Show how" opens the "Used on" sidebar) | Visitors can fill it in once it's on a page. [Show how] | Besucher können es ausfüllen, sobald es auf einer Seite eingebunden ist. [Anleitung zeigen] |
-| a version restored from a History row's "…" | Version 13 is the new draft: 4 fields, After sending, 1 rule and 1 action changed. [Undo] | Version 13 ist der neue Entwurf: 4 Felder, „Nach dem Senden“, 1 Regel und 1 Aktion geändert. [Zurücknehmen] |
+| a version restored as a new draft (from its sidebar, a History row's "…" or Restore an earlier version…; the list joins as the reader's language does) | Version 13 is the new draft: 4 fields, After sending, 1 rule and 1 action changed. [Undo] | Version 13 ist der neue Entwurf: 4 Felder, „Nach dem Senden“, 1 Regel und 1 Aktion geändert. [Zurücknehmen] |
+| a version restored that holds what the draft before held | Version 13 is the new draft. It holds what the draft before held. [Undo] | Version 13 ist der neue Entwurf. Er enthält, was der vorherige Entwurf enthielt. [Zurücknehmen] |
+| a version restored whose changes couldn't be read | Version 13 is the new draft. [Undo] | Version 13 ist der neue Entwurf. [Zurücknehmen] |
+| a restore undone (the draft before comes back as a new draft) | The draft before is back. | Der vorherige Entwurf ist wiederhergestellt. |
+| Settings › General saved | The settings are saved. | Die Einstellungen sind gespeichert. |
 | one entry approved, in the entry panel | Entry #214 approved. [Undo] | Eintrag #214 genehmigt. [Zurücknehmen] |
 | entries approved | 12 entries approved. [Undo] | 12 Einträge genehmigt. [Zurücknehmen] |
 | some selected entries left out | 3 entries approved. 3 weren't waiting for approval. [Undo] | 3 Einträge genehmigt. 3 warteten nicht auf Genehmigung. [Zurücknehmen] |
@@ -405,6 +418,11 @@ Help text sits under its setting and answers the question the label leaves open;
 | Setting | English help | German help |
 | --- | --- | --- |
 | a version's comment (History's dialog) | At most 500 characters. Saving it empty removes the comment. | Höchstens 500 Zeichen. Leer gespeichert, wird der Kommentar entfernt. |
+| Settings › General, History (the group's sentence) | How long each form's History keeps its draft saves. Published and pinned versions, each form's current draft and the versions entries were sent with are always kept. | Wie lange der Verlauf jedes Formulars seine gespeicherten Entwürfe behält. Veröffentlichte und angeheftete Versionen, der aktuelle Entwurf jedes Formulars und die Versionen, mit denen Einträge gesendet wurden, bleiben immer erhalten. |
+| Keep draft saves for … days · Gespeicherte Entwürfe behalten für … Tage | Every draft save stays at least this long. | Jeder gespeicherte Entwurf bleibt mindestens so lange erhalten. |
+| Always keep the newest … draft saves · Immer behalten … neueste gespeicherte Entwürfe | However old they are, each form keeps this many of its newest draft saves. | Unabhängig von ihrem Alter behält jedes Formular so viele seiner neuesten gespeicherten Entwürfe. |
+| a version compared with a draft that has changes not saved yet (its sidebar, under when and by whom) | Changes not saved yet aren't in this comparison. A restore saves them first, so they stay in History. | Noch nicht gespeicherte Änderungen sind in diesem Vergleich nicht enthalten. Beim Wiederherstellen werden sie zuerst gespeichert und bleiben so im Verlauf. |
+| Restore an earlier version (its sidebar's sentence) | Choose a version to compare it with the current draft, then restore it from there. | Wählen Sie eine Version, um sie mit dem aktuellen Entwurf zu vergleichen, und stellen Sie sie dort wieder her. |
 | Keep approved entries for | Approved entries are deleted this many days after approval. Entries on legal hold stay. | Genehmigte Einträge werden so viele Tage nach der Genehmigung gelöscht. Einträge mit Löschsperre bleiben. |
 | Email verification | Visitors confirm their address through a link before any action runs. Use it for newsletters. | Wer das Formular sendet, bestätigt die eigene Adresse über einen Link, bevor eine Aktion ausgeführt wird. Sinnvoll für Newsletter. |
 | Sensitive | Answers are masked in the backoffice and left out of emails and exports. | Antworten werden im Backoffice verdeckt und in E-Mails und Exporten weggelassen. |

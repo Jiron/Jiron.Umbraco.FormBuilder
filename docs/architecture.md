@@ -348,6 +348,17 @@ flowchart LR
   object), lists by what was added and removed, and rules as the rules builder says them. Redirect pages are named
   through Umbraco's document items. The view watches the workspace's `draftVersion` and `publishedVersion`, as a save
   moves the one and a publish the other. Its words load with the view (`history-words.ts`).
+  From 10.3b (ADR-0198): `VersionActions` (`history/version-actions.ts`) opens a comparison and restores a version as a
+  new draft through `POST form/{key}/versions/{number}/restore`. The workspace's `restoreVersion` runs the steps in
+  `history/restore-draft.ts`, one restore at a time and held to the form it began in: it saves what is unsaved, takes
+  the new draft's number from the server's answer, and reads the form again. The toast names what changed (the
+  History's summary, joined by the dictionary's `listOf`), and Undo restores the draft before while the draft is still
+  the restored one. The History view, a row's "…" and the form's "Restore an earlier version…" (an entity action shown
+  only in the workspace, with its picker sidebar) share it; after Restore and publish… the caller opens the publish
+  dialog through `publish-flow.ts`, the flow Publish… uses. Settings › General (`settings/general-settings.element.ts`)
+  reads and saves `GET` and `PUT settings/general` (`manageSettings`): the section's version, the History group with
+  its limits, and the host's locks. A save changes the groups it sends in the stored values as the settings service's
+  `UpdateAsync` reads them in the save, so the rest of the section, which 12.4a adds, keeps its stored values.
 
 ## 2. The definition model
 

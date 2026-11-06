@@ -570,7 +570,11 @@ with entries.
   wherever a control or a message names it, as there may be many. The list reads again after a save and after a
   publish.
 - **Clicking a row** opens that version in a sidebar, compared with the current draft in plain language. Primary
-  **Restore as a new draft**; secondary "Restore and publish…", which opens the publish dialog for the restored draft.
+  **Restore as a new draft**; secondary "Restore and publish…", which opens the publish dialog for the restored draft
+  (10.3b, ADR-0198), except on the live version, which visitors get already. Both come once the comparison is read, as
+  they act on what it shows; the comparison of two ticked versions has Close only. A restore saves the changes not
+  saved yet first, so they stay in History too; the sidebar says so where there are any, as its comparison leaves them
+  out. Where the buttons don't fit one row they wrap, and a phone stacks them, the primary first.
 - **Comparing:** ticking the boxes of two versions shows Compare, the view's main action, in the toolbar; while two
   are ticked the other boxes rest. The comparison, "Version 12 and version 14" in a medium sidebar, lists fields added,
   removed and changed, then settings, actions and rules: what was added, removed or moved in sentences, then a table of
@@ -578,13 +582,16 @@ with entries.
   of addresses or names is said by what was added and removed, an outcome by its place in After sending, a redirect's
   page by its name. A version's name opens the same comparison with the current draft; the current draft's own row
   has no such link.
-- **A row's "…":** Restore as a new draft (10.3b) · Pin or Unpin · Add comment… or Change comment…, the comment in
-  Umbraco's dialog, at most 500 characters, saved empty to remove it. Restoring is reversible, so it acts at once (§4.13):
-  the toast names what changed, since the menu skips the comparison, and Undo puts the draft before it back, which
-  also stays in History.
+- **A row's "…":** Restore as a new draft (10.3b; not on the current draft's own row) · Pin or Unpin · Add comment…
+  or Change comment…, the comment in Umbraco's dialog, at most 500 characters, saved empty to remove it. Restoring is
+  reversible, so it acts at once (§4.13): the toast names what changed, since the menu skips the comparison, and Undo
+  puts the draft before it back, which also stays in History. Undo does so only while the draft is still the restored
+  one: after a change since, it says the draft before stays in History, as going back would lose that change.
 - **Restore an earlier version…,** first in the form's "…", offers the same from every view: a sidebar listing the
-  versions by date, with the same "Show draft saves" switch, where choosing one shows the same comparison and the same
-  two buttons.
+  versions by date, newest first, with the same "Show draft saves" switch, where choosing one shows the same comparison
+  on top and the same two buttons; a restore there closes both, and only then does Restore and publish… open the
+  publish dialog. The current draft is not listed: there is nothing to compare it with. The menu item is the
+  workspace's only, not the tree's, where the form isn't open.
 
 ### 5.7 Preview, publishing and conflicts
 
@@ -750,7 +757,7 @@ with its own value for the chosen site says so, and offers to use the value for 
 
 | Item | What it holds | Primary | Visible secondary |
 | --- | --- | --- | --- |
-| General | default theme, which fields get a mark (the optional or the required ones), default labels, new-form defaults, how long a form's History keeps draft saves; per site the base URL and the time zone; the form block type, with Create a form block type… while there is none (section 10) | **Save** | site switch |
+| General | default theme, which fields get a mark (the optional or the required ones), default labels, new-form defaults, how long a form's History keeps draft saves (built in 10.3b: a History box with Keep draft saves for … days and Always keep the newest … draft saves, ADR-0198; no title of its own, as the sidebar names it); per site the base URL and the time zone; the form block type, with Create a form block type… while there is none (section 10) | **Save** | site switch (from 12.4a, with the first setting a site can have of its own) |
 | Email | sender name and address, default layout, team recipients for system notices, team addresses that entries may be forwarded to | **Save** | site switch · Send test email (to the user who sends it), offered only while Umbraco can send mail; until then one line at the top says so and names the key that sets up sending |
 | Spam protection | default level, each choice with its provider's key status (a captcha without keys can't be chosen, and names the key that adds them); content checks (blocked words, blocked email domains, the most links an entry may hold); blocked address ranges, compared when an entry arrives and never stored. A blocked email domain is enough to send an entry to Spam; blocked words and extra links add up (at the default strictness, three blocked words, or two with too many links). Entries are never refused for what they say (D14). A form sets only how strict its checks are, and its Spam protection group says where the words are kept. | **Save** | – |
 | Files | allowed type groups; the largest size any file field may allow; the scanner and storage status. Each file field sets its own limit, up to this one, in its Essentials, whose help names this limit and, for users who may change it, opens it in a sidebar. | **Save** | – |
