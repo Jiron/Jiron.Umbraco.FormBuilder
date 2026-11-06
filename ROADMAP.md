@@ -1003,7 +1003,7 @@ A settings change raises a notification and a cache refresher: the saving server
   - Their scripts load only on forms that use them, and only after consent.
   - **Consent modes:**
     - `explicit` (default): a short notice and a "Load the check" button, or the consent field, before anything loads;
-    - `cookiebot` (a chosen category);
+    - `cookiebot` (a switch between `necessary`, the default, as Cookiebot files a captcha's cookie, and `marketing`; the owner, 2026-11-06, ADR-0199);
     - `cmp`: `JironFormBuilder.consent.grant('captcha')` from any consent manager;
     - `implicit`: only if the host allows it (`Privacy:AllowImplicitCaptchaConsent`, a restriction like `AllowFullIp`).
   - reCAPTCHA can use `recaptcha.net`. Verification checks hostname, action, score and token age (ported from Ligata.Forms).
@@ -2918,7 +2918,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
   - Done when: every part's "Done when" above passes, as each part says.
 - [ ] **12.4 Global settings and access, deliveries and the audit log, forms as files, and phase review** (12.4a, 12.4b, 12.5 and 12.6 in one, ADR-0197)
   - **12.4a Global settings and access**:
-    - **Settings:** the sections of §4.8 with host locks, for the features that exist by now. The privacy section's retention and IP settings come with 13.1 and 13.3 ("Settings come with their feature").
+    - **Settings:** the sections of §4.8 with host locks, for the features that exist by now. The privacy section's retention and IP settings come with 13.1 and 13.3 ("Settings come with their feature"). The captcha consent mode's Cookiebot category is a switch between necessary, the default, and marketing, and says that Cookiebot files a captcha's cookie as necessary (the owner, 2026-11-06, ADR-0199).
     - **Scopes and the time zone** (ADR-0043): a site scope must name a root content node, and a save for any other key is refused with nothing written. The time zone is picked from a list of zones (the browser's `Intl.supportedValuesOf('timeZone')`), so nobody types its spelling, and a zone the server refuses shows its message at the field.
     - **Access:** a permissions editor (a matrix of groups and permissions, with folder and form overrides).
     - Done when: Playwright passes per section, the permission matrix covers the new endpoints, and a test enumerates every setting and fails unless each has a screen (or is marked host-only) and is read by product code outside the settings module. A site save whose key names no root content is refused, and a time zone picked from the list saves (ADR-0043).
