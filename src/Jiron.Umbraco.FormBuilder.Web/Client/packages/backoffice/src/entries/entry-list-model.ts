@@ -1,6 +1,7 @@
-// What a form's Entries view says of its entries and filters (ROADMAP 11.1, IA 6.1, ADR-0207): a row's name and its
-// action status, the chips of the filters, the columns a filter fixes, which bulk actions apply to the ticked entries,
-// and the request a list sends. Pure, so the view, its dialogs and the tests say each thing alike.
+// What a form's Entries view, the Inbox and Spam say of their entries and filters (ROADMAP 11.1, IA 6.1 and 6.2,
+// ADR-0207, ADR-0209): a row's name and its action status, the chips of the filters, the columns a filter fixes, which
+// bulk actions apply to the ticked entries, what each place offers, and the request a list sends. Pure, so the view, its
+// dialogs and the tests say each thing alike.
 import type {
   EntryFieldFilterRequestModel,
   EntryListActionsResponseModel,
@@ -21,6 +22,12 @@ export type EntryState = 'unverified' | 'submitted' | 'approved' | 'rejected' | 
 /** The states a filter offers, in the order an entry passes them. */
 export const FILTER_STATES: readonly EntryState[] = ['unverified', 'submitted', 'approved', 'rejected', 'spam'];
 
+/** The states the Inbox's filter offers: Spam has a list of its own. */
+export const INBOX_STATES: readonly EntryState[] = FILTER_STATES.filter((state) => state !== 'spam');
+
+/** Where a list lives: a form's Entries view, or the Inbox or Spam of every form the user may view (ADR-0209). */
+export type ListPlace = 'form' | 'inbox' | 'spam';
+
 /** The Received presets, in the order the menu lists them. */
 export const PRESETS = ['today', 'thisWeek', 'last7Days', 'thisMonth', 'lastMonth'] as const;
 
@@ -32,7 +39,43 @@ export const emptyFilter = (): EntryListFilterRequestModel => ({ states: [], fie
 
 /** Whether a filter narrows the list by anything but its search and sort, which the chips show. */
 export const isFiltered = (filter: EntryListFilterRequestModel): boolean =>
-  filter.states.length > 0 || !!filter.received || !!filter.actions || filter.fields.length > 0;
+  filter.forms.length > 0 ||
+  filter.states.length > 0 ||
+  !!filter.received ||
+  !!filter.actions ||
+  filter.fields.length > 0;
+
+/** The one form a filter of the Inbox or Spam chooses, whose fields it then offers; undefined for none or several. */
+export const oneForm = (filter: EntryListFilterRequestModel): string | undefined =>
+  filter.forms.length === 1 ? filter.forms[0] : undefined;
+
+/**
+ * The filter with these forms chosen. The fields belong to the one form chosen, so its field filters and a sort by one
+ * of its fields go once that form is no longer the only one (IA 6.1).
+ */
+export function withForms(filter: EntryListFilterRequestModel, forms: readonly string[]): EntryListFilterRequestModel {
+  const chosen = [...new Set(forms)];
+  const same = chosen.length === 1 && chosen[0] === oneForm(filter);
+  if (same) return { ...filter, forms: chosen };
+  const { sort, ...rest } = filter;
+  return { ...rest, forms: chosen, fields: [], ...(sort && !sort.field ? { sort } : {}) };
+}
+
+/**
+ * A filter set's filter as a place applies it: a form's own view filters by its form only; the Inbox and Spam choose a
+ * set's form when it has one (IA 6.1), the Inbox never asks for Spam and Spam asks for nothing else.
+ */
+export function filterOfSet(
+  filter: EntryListFilterRequestModel,
+  place: ListPlace,
+  setForm: string | null | undefined,
+): EntryListFilterRequestModel {
+  const clean = cleanFilter(filter);
+  if (place === 'form') return { ...clean, forms: [] };
+  const forms = clean.forms.length > 0 ? clean.forms : setForm ? [setForm] : [];
+  const states = place === 'spam' ? [] : clean.states.filter((state) => state !== 'spam');
+  return { ...clean, forms, states };
+}
 
 /** A row's name: its title, or its number when the form has none. */
 export const rowName = (row: Pick<EntryListRowResponseModel, 'title' | 'number'>, term: Term): string =>
@@ -90,7 +133,7 @@ export function fixedColumns(filter: EntryListFilterRequestModel): { state: bool
 export interface Chip {
   id: string;
   text: string;
-  kind: 'state' | 'received' | 'actions' | 'field';
+  kind: 'form' | 'state' | 'received' | 'actions' | 'field';
   /** The field filter's place, for a field's chip. */
   index?: number;
 }
@@ -144,14 +187,25 @@ export function conditionText(
   }
 }
 
-/** The chips of a filter, in the order the menu lists its parts: state, Received, Actions, then the fields. */
+/** The chips of a filter, in the order the menu lists its parts: form, state, Received, Actions, then the fields. */
 export function chipsOf(
   filter: EntryListFilterRequestModel,
   fields: ReadonlyMap<string, EntryListFieldResponseModel>,
   culture: string,
   term: Term,
+  formNames: ReadonlyMap<string, string> = new Map(),
 ): Chip[] {
   const chips: Chip[] = [];
+  if (filter.forms.length > 0) {
+    // A form not named yet is said by how many there are, until the list names it.
+    const names = filter.forms.map((form) => formNames.get(form)).filter((name): name is string => name !== undefined);
+    const text =
+      names.length === filter.forms.length
+        ? joined(names, term)
+        : term('jfbEntries_chip_formCount', filter.forms.length);
+    chips.push({ id: 'form', kind: 'form', text: term('jfbEntries_chip_form', text) });
+  }
+
   if (filter.states.length > 0) {
     const states = FILTER_STATES.filter((state) => filter.states.includes(state)).map((state) =>
       stateText(state, term),
@@ -204,6 +258,9 @@ export const MOVE_STATE: Partial<Record<BulkAction, string>> = {
   notSpam: 'submitted',
 };
 
+/** The actions Spam's bulk bar offers (IA 6.2). */
+export const SPAM_ACTIONS: readonly BulkAction[] = ['notSpam', 'delete'];
+
 /** Whether an action applies to an entry in a state, as the server moves or runs it. */
 export const APPLIES: Record<BulkAction, (state: string) => boolean> = {
   approve: (state) => state === 'submitted' || state === 'rejected',
@@ -226,8 +283,24 @@ export const NEEDS: Record<BulkAction, string> = {
 
 /** The bulk actions offered for the ticked entries: those the user may use that apply to one of them at least. */
 export function bulkActions(states: readonly string[], permissions: readonly string[]): BulkAction[] {
+  return bulkActionsOf(states.map((state) => ({ state, permissions })));
+}
+
+/** A ticked entry as the bulk bar weighs it: its state, and what the user may do on its form. */
+export interface TickedEntry {
+  state: string;
+  permissions: readonly string[];
+}
+
+/**
+ * The bulk actions offered for ticked entries of one form or several: each one the user may use on the form of an entry
+ * it applies to; Spam offers only its own two (IA 6.2).
+ */
+export function bulkActionsOf(ticked: readonly TickedEntry[], place: ListPlace = 'form'): BulkAction[] {
   return BULK_ORDER.filter(
-    (action) => permissions.includes(NEEDS[action]) && states.some((state) => APPLIES[action](state)),
+    (action) =>
+      (place !== 'spam' || SPAM_ACTIONS.includes(action)) &&
+      ticked.some((entry) => entry.permissions.includes(NEEDS[action]) && APPLIES[action](entry.state)),
   );
 }
 
@@ -235,12 +308,25 @@ export function bulkActions(states: readonly string[], permissions: readonly str
 export const leftOut = (action: BulkAction, states: readonly string[]): number =>
   states.filter((state) => !APPLIES[action](state)).length;
 
+/**
+ * What an action does with ticked entries across forms: those it acts on, those it leaves out for their state, and
+ * those of forms where the user may not use it, which the toast says apart.
+ */
+export function splitTicked<T extends TickedEntry>(
+  action: BulkAction,
+  ticked: readonly T[],
+): { acting: T[]; leftOut: number; notAllowed: number } {
+  const allowed = ticked.filter((entry) => entry.permissions.includes(NEEDS[action]));
+  const acting = allowed.filter((entry) => APPLIES[action](entry.state));
+  return { acting, leftOut: allowed.length - acting.length, notAllowed: ticked.length - allowed.length };
+}
+
 /** A filter as a list sends it and a set keeps it: the parts it sets, and no blank search. */
 export function cleanFilter(filter: EntryListFilterRequestModel): EntryListFilterRequestModel {
   const search = filter.search?.trim();
   return {
-    states: [...filter.states],
     forms: [...filter.forms],
+    states: [...filter.states],
     fields: filter.fields.map((condition) => ({ ...condition, values: [...condition.values] })),
     ...(filter.received ? { received: { ...filter.received } } : {}),
     ...(filter.actions ? { actions: filter.actions } : {}),
@@ -258,12 +344,16 @@ export function requestOf(
   return { filter: cleanFilter(filter), columns: [...columns], ...(after ? { after } : {}), count: after === null };
 }
 
-/** The sort after a header is chosen: the same column turns, another starts with its natural order. */
+/**
+ * The sort after a header is chosen: the same column turns, another starts with its natural order. Without a sort of its
+ * own a list is newest first, so Received counts as chosen; the Inbox's own order, unseen first, counts as none.
+ */
 export function nextSort(
   current: EntryListFilterRequestModel['sort'],
   field: string | null,
+  newestByDefault = true,
 ): NonNullable<EntryListFilterRequestModel['sort']> {
-  const same = (current?.field ?? null) === field;
+  const same = current ? (current.field ?? null) === field : newestByDefault && field === null;
   if (same) return { field, descending: !(current?.descending ?? true) };
   // Received starts newest first; a field starts from its smallest, as a reader expects of a column.
   return { field, descending: field === null };

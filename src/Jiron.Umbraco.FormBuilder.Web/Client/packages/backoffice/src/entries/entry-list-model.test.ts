@@ -1,20 +1,27 @@
 // What the Entries view says of its entries and filters (ROADMAP 11.1, IA 6.1, ADR-0207): names, action status, the chips
-// of each filter, the columns a filter fixes, which bulk actions apply, the request a list sends, and the sort's turn.
+// of each filter, the columns a filter fixes, which bulk actions apply, the request a list sends, and the sort's turn;
+// and what the Inbox and Spam add (IA 6.1, 6.2, ADR-0209): the Form chip, a set as each place applies it, the forms'
+// fields going with their one form, actions weighed per form, and the Inbox's own order.
 import { beforeAll, describe, expect, it } from 'vitest';
 import type { EntryListFieldResponseModel } from '../api';
 import { flatten } from '../designer/actions/action-words';
 import entriesEn from '../lang/entries.en';
 import {
   bulkActions,
+  bulkActionsOf,
   chipsOf,
   cleanFilter,
   conditionText,
   emptyFilter,
+  filterOfSet,
   fixedColumns,
   isFiltered,
   isTyping,
   leftOut,
   nextSort,
+  oneForm,
+  splitTicked,
+  withForms,
   receivedText,
   requestOf,
   rowLabel,
@@ -188,6 +195,74 @@ describe('the bulk bar', () => {
   it('counts the entries an action leaves out', () => {
     expect(leftOut('approve', ['submitted', 'approved', 'rejected', 'spam'])).toBe(2);
     expect(leftOut('delete', ['spam'])).toBe(0);
+  });
+
+  it('weighs each ticked entry by what its own form lets the user do, and Spam offers its two only', () => {
+    const viewer = { state: 'submitted', permissions: ['viewEntries'] };
+    const handler = { state: 'submitted', permissions: ['viewEntries', 'editEntries'] };
+    const spam = { state: 'spam', permissions: everything };
+
+    expect(bulkActionsOf([viewer])).toEqual([]);
+    expect(bulkActionsOf([viewer, handler])).toEqual(['approve', 'reject', 'markSpam']);
+    expect(bulkActionsOf([spam, handler], 'spam')).toEqual(['notSpam', 'delete']);
+    // Re-run applies to the waiting entry, but only the spam entry's form lets the user run actions: not offered.
+    expect(bulkActionsOf([spam, handler])).toEqual(['approve', 'reject', 'markSpam', 'notSpam', 'delete']);
+
+    const split = splitTicked('approve', [viewer, handler, { ...handler, state: 'approved' }]);
+    expect(split.acting).toEqual([handler]);
+    expect([split.leftOut, split.notAllowed]).toEqual([1, 1]);
+  });
+});
+
+describe('the Inbox and Spam', () => {
+  it('say the forms filtered by in one chip, by name once known, before the other chips', () => {
+    const filter = { ...emptyFilter(), forms: ['f1', 'f2'], states: ['approved'] };
+    const names = new Map([
+      ['f1', 'Contact'],
+      ['f2', 'Job application'],
+    ]);
+
+    expect(chipsOf(filter, new Map(), 'en-GB', term, names).map((chip) => [chip.kind, chip.text])).toEqual([
+      ['form', 'Form: Contact or Job application'],
+      ['state', 'State: Approved'],
+    ]);
+    expect(chipsOf(filter, new Map(), 'en-GB', term)[0]?.text).toBe('Form: 2 forms');
+    expect(isFiltered({ ...emptyFilter(), forms: ['f1'] })).toBe(true);
+  });
+
+  it("let a form's fields go once it is no longer the only form chosen, and keep them while it is", () => {
+    const one = {
+      ...emptyFilter(),
+      forms: ['f1'],
+      fields: [{ field: 'position', test: 'answered', values: [] }],
+      sort: { field: 'position', descending: false },
+      actions: 'failed',
+    };
+
+    expect(oneForm(one)).toBe('f1');
+    expect(withForms(one, ['f1', 'f1'])).toEqual(one);
+    expect(withForms(one, ['f1', 'f2'])).toEqual({ ...emptyFilter(), forms: ['f1', 'f2'], actions: 'failed' });
+    expect(withForms({ ...one, sort: { field: null, descending: false } }, [])).toEqual({
+      ...emptyFilter(),
+      actions: 'failed',
+      sort: { field: null, descending: false },
+    });
+    expect(oneForm(withForms(one, ['f2', 'f3']))).toBeUndefined();
+  });
+
+  it('apply a set as each place may: its form chosen, no Spam in the Inbox, only Spam in Spam', () => {
+    const set = { ...emptyFilter(), states: ['approved', 'spam'], received: { preset: 'today' } };
+
+    expect(filterOfSet(set, 'inbox', 'f1')).toEqual({ ...set, forms: ['f1'], states: ['approved'] });
+    expect(filterOfSet(set, 'spam', null)).toEqual({ ...set, states: [] });
+    expect(filterOfSet({ ...set, forms: ['f2', 'f3'] }, 'form', 'f1')).toEqual(set);
+    expect(filterOfSet({ ...set, forms: ['f2', 'f3'] }, 'inbox', null).forms).toEqual(['f2', 'f3']);
+  });
+
+  it('start the Inbox newest first at the first click on Received, as its own order is unseen first', () => {
+    expect(nextSort(undefined, null, false)).toEqual({ field: null, descending: true });
+    expect(nextSort({ field: null, descending: true }, null, false)).toEqual({ field: null, descending: false });
+    expect(nextSort(undefined, 'amount', false)).toEqual({ field: 'amount', descending: false });
   });
 });
 

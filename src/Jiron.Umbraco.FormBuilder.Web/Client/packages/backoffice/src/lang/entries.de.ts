@@ -1,5 +1,6 @@
-// Die Ansicht Einträge eines Formulars auf Deutsch (ROADMAP 11.1, IA 6.1, ADR-0207, docs/ux/copy.md): die Liste, ihre
-// Filter und Chips, die Spaltenauswahl, die Leiste für ausgewählte Einträge mit ihren Dialogen und die Tastenkürzel. Sie
+// Die Ansicht Einträge eines Formulars, der Posteingang und der Spam auf Deutsch (ROADMAP 11.1, IA 6.1 und 6.2,
+// ADR-0207, ADR-0209, docs/ux/copy.md): die Liste, ihre Filter und Chips, die Spaltenauswahl, die Leiste für ausgewählte
+// Einträge mit ihren Dialogen, „Spam leeren…“ und die Tastenkürzel. Sie
 // werden mit der Ansicht geladen (`entries/entry-words.ts`); entries.en.ts hat dieselben Schlüssel.
 import type { UmbLocalizationDictionary } from '@umbraco-cms/backoffice/localization-api';
 
@@ -24,6 +25,7 @@ export default {
 
     column_select: 'Auswählen',
     column_entry: 'Eintrag',
+    column_form: 'Formular',
     column_state: 'Status',
     column_received: 'Eingegangen',
     column_actions: 'Aktionen',
@@ -54,6 +56,7 @@ export default {
     runs_waiting: (number: number) => `${number} wartet${number === 1 ? '' : 'n'}`,
     runs_skipped: 'Nicht ausgeführt',
 
+    menu_form: 'Formular',
     menu_state: 'Status',
     menu_received: 'Eingegangen',
     menu_actions: 'Aktionen',
@@ -79,6 +82,11 @@ export default {
     test_notAnswered: 'Nicht beantwortet',
 
     edit_headline: (what: string) => `Nach ${what} filtern`,
+    // Ein Teil des Filters, wie ihn die Überschrift im Satz nennt.
+    edit_part_form: 'Formular',
+    edit_part_state: 'Status',
+    edit_part_received: 'Eingang',
+    edit_part_actions: 'Aktionen',
     edit_apply: 'Filter anwenden',
     edit_cancel: 'Abbrechen',
     edit_states: 'Status',
@@ -97,6 +105,8 @@ export default {
     edit_needsValue: 'Geben Sie einen Wert an.',
     edit_order: 'Der erste Wert kommt vor dem letzten.',
 
+    chip_form: (forms: string) => `Formular: ${forms}`,
+    chip_formCount: (number: number) => `${number.toLocaleString('de')} Formulare`,
     chip_state: (states: string) => `Status: ${states}`,
     chip_received: (span: string) => `Eingegangen: ${span}`,
     chip_actions: (which: string) => `Aktionen: ${which}`,
@@ -133,6 +143,14 @@ export default {
     chooser_sensitive: 'Vertrauliche Felder erscheinen nur im Eintrag.',
     chooser_most: 'Eine Liste zeigt bis zu 20 Spalten.',
     chooser_none: 'Das Formular hat noch keine Felder, die als Spalten erscheinen können.',
+    chooser_noForm: 'Filtern Sie die Liste nach einem Formular, um dessen Felder als Spalten zu wählen.',
+
+    forms_legend: 'Formulare',
+    forms_search: 'Formular suchen',
+    forms_finding: 'Formulare werden gesucht…',
+    forms_failed: 'Die Formulare konnten nicht gefunden werden.',
+    forms_none: (text: string) => `Kein Formular, das Sie sehen dürfen, hat „${text}“ im Namen.`,
+    forms_most: 'Eine Liste lässt sich nach bis zu 100 Formularen filtern.',
     chooser_apply: 'Spalten zeigen',
     chooser_cancel: 'Abbrechen',
 
@@ -156,6 +174,8 @@ export default {
       `${number.toLocaleString('de')} ${number === 1 ? 'war' : 'waren'} schon abgelehnt oder ${number === 1 ? 'wartet' : 'warten'} auf Bestätigung.`,
     left_spam: (number: number) => `${number.toLocaleString('de')} ${number === 1 ? 'war' : 'waren'} schon im Spam.`,
     left_notSpam: (number: number) => `${number.toLocaleString('de')} ${number === 1 ? 'war' : 'waren'} nicht im Spam.`,
+    left_notAllowed: (number: number) =>
+      `${number.toLocaleString('de')} ${number === 1 ? 'wurde' : 'wurden'} ausgelassen, weil Sie das in ${number === 1 ? 'seinem' : 'ihrem'} Formular nicht dürfen.`,
     left_rerun: (number: number) =>
       `${number.toLocaleString('de')} ${number === 1 ? 'wurde' : 'wurden'} ausgelassen: im Spam, wartend auf Bestätigung oder ohne Aktionen.`,
     moveFailed: 'Die Einträge konnten nicht geändert werden. Versuchen Sie es erneut.',
@@ -192,6 +212,23 @@ export default {
     empty_design:
       'Noch keine Einträge. Teilen Sie das Formular, oder öffnen Sie die Vorschau und senden Sie einen Testeintrag.',
     empty_others: 'Noch keine Einträge. Sie erscheinen hier, sobald jemand das Formular sendet.',
+    inbox_empty: 'Noch keine Einträge. Hier kommen die Einträge aller Formulare an, die Sie sehen dürfen.',
+    spam_empty: 'Kein Spam. Einträge, die automatisiert wirken, landen hier, und nichts davon geht verloren.',
+
+    emptySpam: 'Spam leeren…',
+    empty_headline: 'Spam leeren?',
+    empty_body: (number: number) =>
+      `${entries(number)} im Spam ${number === 1 ? 'wird' : 'werden'} endgültig gelöscht.`,
+    empty_filtered: 'Filter und Suche schränken das nicht ein.',
+    empty_staying: (number: number) =>
+      number === 1
+        ? '1 Eintrag bleibt, weil Sie in seinem Formular keine Einträge löschen dürfen.'
+        : `${number.toLocaleString('de')} Einträge bleiben, weil Sie in ihren Formularen keine Einträge löschen dürfen.`,
+    empty_more: 'Der Spam enthält mehr, als ein Durchgang löscht: „Spam leeren…“ löscht danach den Rest.',
+    empty_none: 'Der Spam enthält keinen Eintrag, den Sie löschen dürfen.',
+    emptied: (number: number) => `${entries(number)} aus dem Spam gelöscht.`,
+    emptiedMore: 'Der Spam enthält noch mehr. „Spam leeren…“ löscht den Rest.',
+    emptyFailed: 'Der Spam konnte nicht geleert werden. Versuchen Sie es erneut.',
     noResults: 'Keine Einträge passen zu diesen Filtern. Entfernen Sie oben einen davon, oder setzen Sie alle zurück.',
     noSearch: (term: string) => `Keine Einträge passen zu „${term}“.`,
     noSearchSensitive: (term: string) =>

@@ -13,8 +13,11 @@ namespace Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries;
 /// <summary>What the Inbox and Spam open with: the user's filter sets, of every form and of each.</summary>
 public sealed class EntryInboxViewResponseModel
 {
-    /// <summary>The user's filter sets.</summary>
+    /// <summary>The user's filter sets: those of every form, and those of a form the user may still view entries of.</summary>
     public required IReadOnlyList<EntryFilterSetResponseModel> FilterSets { get; init; }
+
+    /// <summary>The forms the sets name, so the menu names each set's form, with what the user may do on each.</summary>
+    public required IReadOnlyList<EntryListFormResponseModel> Forms { get; init; }
 }
 
 /// <summary>How many entries nobody opened yet the Inbox holds, for its badge.</summary>
@@ -72,14 +75,57 @@ internal sealed class EntryInboxController(
     /// <summary>The most forms the Form filter offers for one search.</summary>
     internal const int MostForms = 50;
 
-    /// <summary>What the Inbox and Spam open with: the user's filter sets.</summary>
+    /// <summary>
+    /// What the Inbox and Spam open with: the user's filter sets with the forms they name. A set of a form the user may no
+    /// longer view entries of, or that is gone or in the Recycle Bin, is left out, as it could not filter the list; so are
+    /// such forms among those a set filters by, and a set none of whose forms is left, which would otherwise widen to every
+    /// form.
+    /// </summary>
     /// <param name="cancellationToken">The request's cancellation.</param>
     [HttpGet("view")]
     [MapToApiVersion("1.0")]
     [FormBuilderSection]
     [ProducesResponseType(typeof(EntryInboxViewResponseModel), StatusCodes.Status200OK)]
-    public async Task<IActionResult> View(CancellationToken cancellationToken = default) =>
-        Ok(new EntryInboxViewResponseModel { FilterSets = [.. (await settings.GetFilterSetsAsync(RequestAccess.User.Key, cancellationToken)).Select(EntryListMapping.Model)] });
+    public async Task<IActionResult> View(CancellationToken cancellationToken = default)
+    {
+        var named = new Dictionary<Guid, EntryListFormResponseModel?>();
+        async Task<bool> ViewsAsync(Guid key)
+        {
+            if (!named.TryGetValue(key, out var form))
+            {
+                named[key] = form = await ViewableAsync(key, cancellationToken);
+            }
+
+            return form is not null;
+        }
+
+        var shown = new List<EntryFilterSetResponseModel>();
+        foreach (var set in await settings.GetFilterSetsAsync(RequestAccess.User.Key, cancellationToken))
+        {
+            if (set.Form is { } key && !await ViewsAsync(key))
+            {
+                continue;
+            }
+
+            var kept = new List<Guid>();
+            foreach (var form in set.Filter.Forms)
+            {
+                if (await ViewsAsync(form))
+                {
+                    kept.Add(form);
+                }
+            }
+
+            if (set.Filter.Forms.Count > 0 && kept.Count == 0)
+            {
+                continue;
+            }
+
+            shown.Add(EntryListMapping.Model(kept.Count == set.Filter.Forms.Count ? set : set with { Filter = set.Filter with { Forms = kept } }));
+        }
+
+        return Ok(new EntryInboxViewResponseModel { FilterSets = shown, Forms = [.. named.Values.OfType<EntryListFormResponseModel>()] });
+    }
 
     /// <summary>A page of the Inbox: every form's entries the user may view, unseen first unless sorted, 50 at a time.</summary>
     /// <param name="request">Which entries, the columns (with one form chosen) and the page.</param>
@@ -150,6 +196,20 @@ internal sealed class EntryInboxController(
             ? await spam.EmptyAsync(visibility, RequestAccess.User.Key, cancellationToken)
             : await spam.PlanAsync(visibility, cancellationToken);
         return Ok(new EntrySpamEmptyResponseModel { Entries = emptying.Entries, Files = emptying.Files, Deleted = request.Confirm && emptying.Entries > 0, More = emptying.More });
+    }
+
+    // A form the user may view entries of, named with what the user may do on it; null for one gone, trashed or out of reach.
+    private async Task<EntryListFormResponseModel?> ViewableAsync(Guid key, CancellationToken cancellationToken)
+    {
+        if (await forms.GetAsync(key, cancellationToken) is not { TrashedUtc: null } info)
+        {
+            return null;
+        }
+
+        var permissions = await access.GetForFormAsync(RequestAccess.User, FormAccessTarget.Of(info), cancellationToken);
+        return permissions.HasFlag(FormBuilderPermissions.ViewEntries)
+            ? new EntryListFormResponseModel { Key = info.Key, Name = info.Name, Permissions = PermissionRules.NamesOf(permissions) }
+            : null;
     }
 
     // A page of the place, its forms named with what the user may do on each.

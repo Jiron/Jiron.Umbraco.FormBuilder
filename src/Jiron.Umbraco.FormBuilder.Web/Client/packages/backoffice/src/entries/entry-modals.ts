@@ -1,12 +1,15 @@
-// The dialogs of a form's Entries view (ROADMAP 11.1, IA 6.1, ADR-0207): one part of the filter, the columns, the name of
-// a filter set, and the keyboard shortcuts. Each is Umbraco's dialog or sidebar; the view loads their words first.
+// The dialogs of a form's Entries view, the Inbox and Spam (ROADMAP 11.1, IA 6.1, ADR-0207, ADR-0209): one part of the
+// filter, the forms to filter by, the columns, the name of a filter set, and the keyboard shortcuts. Each is Umbraco's
+// dialog or sidebar; the view loads their words first.
 import { UmbModalToken } from '@umbraco-cms/backoffice/modal';
 import type { EntryListFieldResponseModel, EntryListFilterRequestModel } from '../api';
+import type { EntryState } from './entry-list-model';
 
 export const ENTRY_FILTER_MODAL_ALIAS = 'Jiron.FormBuilder.Modal.EntryFilter';
 export const ENTRY_COLUMNS_MODAL_ALIAS = 'Jiron.FormBuilder.Modal.EntryColumns';
 export const ENTRY_SET_NAME_MODAL_ALIAS = 'Jiron.FormBuilder.Modal.EntrySetName';
 export const ENTRY_KEYS_MODAL_ALIAS = 'Jiron.FormBuilder.Modal.EntryKeys';
+export const ENTRY_FORMS_MODAL_ALIAS = 'Jiron.FormBuilder.Modal.EntryForms';
 
 /** The part of the filter a dialog changes. */
 export type FilterPart = 'state' | 'received' | 'actions' | 'field';
@@ -19,6 +22,8 @@ export interface EntryFilterModalData {
   readonly field?: EntryListFieldResponseModel;
   /** The place of the field's filter being changed; none for a new one. */
   readonly index?: number;
+  /** The states to offer, where the list holds fewer than all of them (the Inbox has no Spam). */
+  readonly states?: readonly EntryState[];
 }
 
 export interface EntryFilterModalValue {
@@ -33,6 +38,8 @@ export const ENTRY_FILTER_MODAL = new UmbModalToken<EntryFilterModalData, EntryF
 export interface EntryColumnsModalData {
   readonly fields: readonly EntryListFieldResponseModel[];
   readonly columns: readonly string[];
+  /** The Inbox or Spam, not filtered to one form: there are no fields to choose, which one line says. */
+  readonly noForm?: boolean;
 }
 
 export interface EntryColumnsModalValue {
@@ -56,6 +63,29 @@ export const ENTRY_SET_NAME_MODAL = new UmbModalToken<EntrySetNameModalData, nev
 export const ENTRY_KEYS_MODAL = new UmbModalToken<never, never>(ENTRY_KEYS_MODAL_ALIAS, {
   modal: { type: 'dialog', size: 'small' },
 });
+
+/** A form as the Form filter names it. */
+export interface NamedForm {
+  readonly key: string;
+  readonly name: string;
+}
+
+export interface EntryFormsModalData {
+  /** The forms chosen so far, with their names. */
+  readonly chosen: readonly NamedForm[];
+}
+
+export interface EntryFormsModalValue {
+  readonly forms: readonly NamedForm[];
+}
+
+/** The Form filter of the Inbox and Spam (IA 6.1): Umbraco's dialog, a search over the forms the user may view. */
+export const ENTRY_FORMS_MODAL = new UmbModalToken<EntryFormsModalData, EntryFormsModalValue>(ENTRY_FORMS_MODAL_ALIAS, {
+  modal: { type: 'dialog', size: 'small' },
+});
+
+/** The most forms the Inbox or Spam is filtered to, as the server takes them. */
+export const MOST_FORMS = 100;
 
 /** The most columns a list shows beside its details, as the server keeps them. */
 export const MOST_COLUMNS = 20;

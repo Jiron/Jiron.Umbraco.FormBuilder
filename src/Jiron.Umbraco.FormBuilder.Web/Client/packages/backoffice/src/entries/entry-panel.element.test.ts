@@ -308,6 +308,16 @@ describe("the entry panel's header", () => {
     expect(alone.root.querySelector('.head uui-button')).toBeNull();
   });
 
+  it('names the form for the Inbox, and in Spam leaves the state out even where it covers the list', async () => {
+    const inbox = await open('beside', { showsForm: true });
+    expect(text(inbox.root.querySelector('h2'))).toBe('Job application \u00b7 Entry #7');
+    document.body.replaceChildren();
+
+    const spam = await open('covering', { showsForm: true, hidesState: true });
+    expect(text(spam.root.querySelector('h2'))).toBe('Jane Doe \u00b7 Job application \u00b7 Entry #7');
+    expect(spam.root.querySelector('.head uui-tag')).toBeNull();
+  });
+
   it('says so where the entry could not be read', async () => {
     server.panel = undefined;
     const beside = await open('beside');

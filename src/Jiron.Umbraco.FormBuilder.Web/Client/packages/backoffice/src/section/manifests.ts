@@ -24,6 +24,8 @@ const weightOf = (index: number, count: number): number => (count - index) * 100
 type ScreenLoader = NonNullable<Extract<UmbExtensionManifest, { type: 'workspace' }>['element']>;
 
 const SCREENS: Readonly<Record<string, ScreenLoader>> = {
+  inbox: () => import('../entries/inbox.screen'),
+  spam: () => import('../entries/spam.screen'),
   general: () => import('../settings/general-settings.element'),
   entry: () => import('../entries/entry.workspace'),
 };

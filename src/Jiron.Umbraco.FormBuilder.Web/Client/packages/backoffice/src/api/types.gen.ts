@@ -347,6 +347,7 @@ export type EntryHeldAnswerResponseModel = {
 
 export type EntryInboxViewResponseModel = {
     filterSets: Array<EntryFilterSetResponseModel>;
+    forms: Array<EntryListFormResponseModel>;
 };
 
 export type EntryListActionsResponseModel = {

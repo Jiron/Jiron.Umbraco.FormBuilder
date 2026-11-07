@@ -1,12 +1,18 @@
-// What a form's Entries view reads and writes (ROADMAP 11.1, ADR-0207): what it opens with, a page of entries, the
-// user's columns and filter sets, a change of state and its Undo, and the bulk bar's delete and re-run, each asked first.
-// Each answer is the server's, or undefined after a refusal; the view says what went wrong in its own words, as only it
-// knows what the user was doing.
+// What a form's Entries view, the Inbox and Spam read and write (ROADMAP 11.1, ADR-0207, ADR-0209): what each opens
+// with, a page of entries, the user's columns and filter sets, a change of state and its Undo, the bulk bar's delete and
+// re-run, each asked first, the forms of the Form filter, and Empty spam. Each answer is the server's, or undefined after
+// a refusal; the view says what went wrong in its own words, as only it knows what the user was doing. A change across
+// forms goes through each form's own endpoints, so each is checked as on its own Entries view.
 import type { UmbClassInterface } from '@umbraco-cms/backoffice/class-api';
 import { tryExecute } from '@umbraco-cms/backoffice/resources';
 import {
   entryFilterSetDelete,
   entryFilterSetSave,
+  entryInboxEmptySpam,
+  entryInboxForms,
+  entryInboxInbox,
+  entryInboxSpam,
+  entryInboxView,
   entryListColumns,
   entryListDelete,
   entryListList,
@@ -16,11 +22,14 @@ import {
   entryStateUndo,
   type EntryDeleteResponseModel,
   type EntryFilterSetResponseModel,
+  type EntryInboxViewResponseModel,
   type EntryListFilterRequestModel,
+  type EntryListFormResponseModel,
   type EntryListPageResponseModel,
   type EntryListRequestModel,
   type EntryListViewResponseModel,
   type EntryRerunResponseModel,
+  type EntrySpamEmptyResponseModel,
   type EntryStateResponseModel,
 } from '../api';
 import { codeOf } from '../library/library-changes';
@@ -41,18 +50,50 @@ export async function readPage(
   return (await tryExecute(host, entryListList({ path: { key: form }, body: request }), quiet)).data;
 }
 
+/** What the Inbox and Spam open with: the user's filter sets and the forms they name. */
+export async function readInboxView(host: UmbClassInterface): Promise<EntryInboxViewResponseModel | undefined> {
+  return (await tryExecute(host, entryInboxView(), quiet)).data;
+}
+
+/** A page of the Inbox or of Spam; undefined when it can't be read. */
+export async function readAcross(
+  host: UmbClassInterface,
+  place: 'inbox' | 'spam',
+  request: EntryListRequestModel,
+): Promise<EntryListPageResponseModel | undefined> {
+  const call = place === 'inbox' ? entryInboxInbox({ body: request }) : entryInboxSpam({ body: request });
+  return (await tryExecute(host, call, quiet)).data;
+}
+
+/** The forms the user may view entries of whose name holds the text, for the Form filter; undefined on a failure. */
+export async function findForms(
+  host: UmbClassInterface,
+  search: string,
+): Promise<EntryListFormResponseModel[] | undefined> {
+  const text = search.trim();
+  return (await tryExecute(host, entryInboxForms({ query: text ? { search: text } : {} }), quiet)).data;
+}
+
+/** What emptying Spam deletes, without <code>confirm</code>, or what it deleted. */
+export async function emptySpam(
+  host: UmbClassInterface,
+  confirm: boolean,
+): Promise<EntrySpamEmptyResponseModel | undefined> {
+  return (await tryExecute(host, entryInboxEmptySpam({ body: { confirm } }), quiet)).data;
+}
+
 /** Keeps the user's columns for the form; whether the server kept them. */
 export async function saveColumns(host: UmbClassInterface, form: string, columns: readonly string[]): Promise<boolean> {
   return !(await tryExecute(host, entryListColumns({ path: { key: form }, body: { columns: [...columns] } }), quiet))
     .error;
 }
 
-/** Saves a filter set of the form: a new one, or the one with this key. */
+/** Saves a filter set, of a form or of every form (null): a new one, or the one with this key. */
 export async function saveSet(
   host: UmbClassInterface,
   key: string,
   name: string,
-  form: string,
+  form: string | null,
   filter: EntryListFilterRequestModel,
 ): Promise<{ set?: EntryFilterSetResponseModel; code?: string }> {
   const { data, error } = await tryExecute(

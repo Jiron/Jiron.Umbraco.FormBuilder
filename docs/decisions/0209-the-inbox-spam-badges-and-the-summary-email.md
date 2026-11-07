@@ -33,7 +33,10 @@ badge. The owner answers no questions during the run (CLAUDE.md rule 8), so each
 3. **The Form filter** (Inbox and Spam) chooses one form or several; a chip names them. The form's fields, as filters,
    columns and sorts, are offered while exactly one form is chosen, as IA 6.1 says; otherwise one line in the column
    chooser says that filtering by a form offers its fields. A filter set saved on the Inbox keeps its forms; choosing
-   a set with one form filters the Inbox to it.
+   a set with one form filters the Inbox to it, and a set saved while one form is chosen is that form's. So that every
+   name is at hand, the Inbox's view names the forms of the user's sets (leaving out a set whose form the user may no
+   longer view, as it could not filter the list), and a page names the forms its filter chose even where none of their
+   entries is on it.
 4. **Acting across forms.** The bulk bar sends one request per form, each through the form's own endpoints and checks;
    the toast says the total and its Undo takes back every change it made. A move back out of Spam or Rejected asks
    first once for all of them, with every full option and held answer (ADR-0208). The entry panel opens beside the
@@ -41,7 +44,9 @@ badge. The owner answers no questions during the run (CLAUDE.md rule 8), so each
 5. **Spam** (IA 6.2) has no state column and no chip; its bar holds Not spam and Delete…, its toolbar Empty spam…
    (`deleteEntries`), which asks with the count and files of the forms the user may delete entries of, and deletes
    only those, 500 at a time through the deletes of ADR-0207, up to 10,000 a call; a Spam larger than that says so
-   and empties on the next call. Not spam asks first, as a move back does, when an option is full or a unique answer is held by then.
+   and empties on the next call. Not spam asks first, as a move back does, when an option is full or a unique answer is
+   held by then. A row Not spam took out stays where it is, its state said under its name, until the list reads
+   again, as a form's list changes rows in place; Spam's filter has neither State nor Actions.
 6. **The badge.** `GET entries/unseen` (section-wide) counts the unseen entries of the forms the user may view entries
    of, as the tree marks them (arrived, no test), up to 99, so the menu item reads "99+" beyond; it reads at most 100
    rows of the new index. The Inbox's menu item is a small element of its own, Umbraco's

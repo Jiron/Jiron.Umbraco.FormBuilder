@@ -10001,7 +10001,8 @@
       },
       "EntryInboxViewResponseModel": {
         "required": [
-          "filterSets"
+          "filterSets",
+          "forms"
         ],
         "type": "object",
         "properties": {
@@ -10011,6 +10012,16 @@
               "oneOf": [
                 {
                   "$ref": "#/components/schemas/EntryFilterSetResponseModel"
+                }
+              ]
+            }
+          },
+          "forms": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/EntryListFormResponseModel"
                 }
               ]
             }

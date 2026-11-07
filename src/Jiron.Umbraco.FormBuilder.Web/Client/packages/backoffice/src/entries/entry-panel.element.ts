@@ -82,6 +82,7 @@ export class EntryPanelElement extends UmbLitElement {
     entry: { type: String },
     place: { type: String },
     showsForm: { type: Boolean, attribute: 'shows-form' },
+    hidesState: { type: Boolean, attribute: 'hides-state' },
     rowShowsTitle: { type: Boolean, attribute: 'row-shows-title' },
     _words: { state: true },
     _state: { state: true },
@@ -466,6 +467,8 @@ export class EntryPanelElement extends UmbLitElement {
   declare place: PanelPlace;
   /** Whether the header names the form, as on the Inbox where rows come from many forms. */
   declare showsForm: boolean;
+  /** Whether the header leaves out the state chip, as in Spam, where the place says it (IA 6.3). */
+  declare hidesState: boolean;
   /** Whether the row beside the panel shows the entry's title, so the header names its number. */
   declare rowShowsTitle: boolean;
 
@@ -502,6 +505,7 @@ export class EntryPanelElement extends UmbLitElement {
     this.entry = '';
     this.place = 'beside';
     this.showsForm = false;
+    this.hidesState = false;
     this.rowShowsTitle = true;
     this._words = false;
     this._state = 'loading';
@@ -929,7 +933,7 @@ export class EntryPanelElement extends UmbLitElement {
     ];
     const shown = parts.length > 0;
     const name = shown ? parts.join(JOIN) : number;
-    const chip = alone || covering;
+    const chip = (alone || covering) && !this.hidesState;
     return html`<header class="head">
       <div class="names">
         <h2 tabindex="-1" class=${shown ? '' : 'visually-hidden'}>${name}</h2>

@@ -155,9 +155,14 @@ export class EntryFilterModalElement extends UmbModalBaseElement<EntryFilterModa
 
   #headline(): string {
     const data = this.data;
-    const what =
-      data?.part === 'field' ? (data.field?.label ?? '') : this.#term(`menu_${data?.part ?? 'state'}`).toLowerCase();
+    // A part is named as the headline's language writes it within a sentence: "Filter by state", "Nach Status filtern".
+    const what = data?.part === 'field' ? (data.field?.label ?? '') : this.#term(`edit_part_${data?.part ?? 'state'}`);
     return this.#term('edit_headline', what);
+  }
+
+  /** The states this list offers. */
+  get #offered(): readonly string[] {
+    return this.data?.states ?? FILTER_STATES;
   }
 
   // ---- Applying ------------------------------------------------------------------------------------------------------
@@ -177,7 +182,7 @@ export class EntryFilterModalElement extends UmbModalBaseElement<EntryFilterModa
     switch (data.part) {
       case 'state':
         if (this._states.length === 0) return this.#refuse('edit_needsOne');
-        return { ...filter, states: FILTER_STATES.filter((state) => this._states.includes(state)) };
+        return { ...filter, states: this.#offered.filter((state) => this._states.includes(state)) };
       case 'received': {
         if (this._preset !== 'range') return { ...filter, received: { preset: this._preset } };
         if (!this._from && !this._to) return this.#refuse('edit_needsBound');
@@ -252,7 +257,7 @@ export class EntryFilterModalElement extends UmbModalBaseElement<EntryFilterModa
   #states(): TemplateResult {
     return html`<fieldset>
       <legend>${this.#term('edit_states')}</legend>
-      ${FILTER_STATES.map(
+      ${this.#offered.map(
         (state) =>
           html`<uui-checkbox
             label=${this.#term(`state_${state}`)}

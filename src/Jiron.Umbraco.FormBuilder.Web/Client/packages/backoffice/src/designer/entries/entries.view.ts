@@ -5,6 +5,9 @@
 // and Re-run actions after asking. The keys of section 4.13 move through the list without any motion. An entry opens in
 // the entry panel beside the list (11.2, IA 6.3, ADR-0208), which narrows the rows to name, state and time, or covers the
 // list where the view is too narrow for both; the list keeps its place, its ticks and its scroll meanwhile.
+// The same list is the Inbox and Spam (IA 6.1 and 6.2, ADR-0209), the entries of every form the user may view: a form
+// column, the Form filter, whose one form offers its fields, the Inbox unseen first, Spam without a state and with Empty
+// spam.... A change across forms goes through each form's own endpoints, one request per form, with one toast and one Undo.
 import {
   css,
   html,
@@ -21,7 +24,11 @@ import type {
   EntryFilterSetResponseModel,
   EntryListFieldResponseModel,
   EntryListFilterRequestModel,
+  EntryListFormResponseModel,
+  EntryListPageResponseModel,
+  EntryListRequestModel,
   EntryListRowResponseModel,
+  EntryStateResponseModel,
 } from '../../api';
 import { FORM_WORKSPACE_CONTEXT } from '../constants';
 import { pressOf } from '../../styles/press';
@@ -29,10 +36,14 @@ import { jfbBackofficeTokens, jfbVisuallyHidden } from '../../styles/tokens';
 import { confirmList, confirmText } from '../../ui/confirm';
 import { jfbSkeleton, skeletonLines } from '../../ui/skeleton';
 import { UNDO_NOTIFICATION, type UndoNotificationData } from '../../ui/undo-notification.element';
+import { myPermissions } from '../../section/my-permissions';
 import {
   changeState,
   deleteEntries,
   deleteSet,
+  emptySpam,
+  readAcross,
+  readInboxView,
   readPage,
   readView,
   rerunActions,
@@ -41,29 +52,34 @@ import {
   undoChange,
 } from '../../entries/entries-api';
 import {
-  APPLIES,
+  INBOX_STATES,
   MOVE_STATE,
-  bulkActions,
+  bulkActionsOf,
   chipsOf,
   cleanFilter,
   emptyFilter,
+  filterOfSet,
   fixedColumns,
   isFiltered,
   isTyping,
-  leftOut,
   nextSort,
+  oneForm,
   receivedText,
   requestOf,
   rowLabel,
   rowName,
   runsText,
+  splitTicked,
   stateText,
+  withForms,
   type BulkAction,
   type Chip,
+  type ListPlace,
 } from '../../entries/entry-list-model';
 import {
   ENTRY_COLUMNS_MODAL,
   ENTRY_FILTER_MODAL,
+  ENTRY_FORMS_MODAL,
   ENTRY_KEYS_MODAL,
   ENTRY_SET_NAME_MODAL,
   type FilterPart,
@@ -107,8 +123,24 @@ const MASKED = String.fromCharCode(0x2022).repeat(3);
 /** The tone of a state's chip: what waits for someone, what is done, and the rest. */
 const STATE_COLOR: Record<string, string> = { submitted: 'warning', approved: 'positive' };
 
+/** What joins the parts of a line, such as an action's trigger and its form. */
+const JOIN = ` ${String.fromCharCode(0xb7)} `;
+
+/** One form's share of a change of state across forms. */
+interface FormMove {
+  form: string;
+  keys: string[];
+  change: EntryStateResponseModel | undefined;
+  /** The user said no to the move back this form asked about. */
+  declined?: boolean;
+}
+
+/** A form's share whose change the server made. */
+type MadeMove = FormMove & { change: EntryStateResponseModel };
+
 export class EntriesViewElement extends UmbLitElement {
   static override properties = {
+    place: { type: String, reflect: true },
     _words: { state: true },
     _state: { state: true },
     _fields: { state: true },
@@ -128,7 +160,10 @@ export class EntriesViewElement extends UmbLitElement {
     _said: { state: true },
     _permissions: { state: true },
     _open: { state: true },
+    _openForm: { state: true },
     _covering: { state: true },
+    _forms: { state: true },
+    _mayEmpty: { state: true },
   };
 
   static override styles = [
@@ -336,6 +371,36 @@ export class EntriesViewElement extends UmbLitElement {
         white-space: nowrap;
       }
 
+      /* The Inbox and Spam: the form has a column; at 620 px it moves under the entry's name, and beside the panel the
+         panel's header names it (IA 6.1, 6.3). */
+      .form-below {
+        display: none;
+      }
+
+      @container entries (width < 38.75rem) {
+        .form-column {
+          display: none;
+        }
+
+        .form-below {
+          display: block;
+          margin-block-start: var(--uui-size-space-1);
+          color: var(--jfb-bo-color-text-muted);
+          font-size: var(--uui-type-small-size);
+        }
+      }
+
+      .narrowed .form-below {
+        display: none;
+      }
+
+      /* In Spam, an entry Not spam took out says its state until the list reads again. */
+      .moved-state {
+        display: block;
+        margin-block-start: var(--uui-size-space-1);
+        font-size: var(--uui-type-small-size);
+      }
+
       .tone-danger {
         color: var(--jfb-bo-color-danger-text);
       }
@@ -467,6 +532,13 @@ export class EntriesViewElement extends UmbLitElement {
         flex: 1 1 auto;
       }
 
+      .menu .set-form {
+        margin-inline-start: auto;
+        padding-inline-start: var(--uui-size-space-4);
+        color: var(--jfb-bo-color-text-muted);
+        font-size: var(--uui-type-small-size);
+      }
+
       @media (hover: hover) {
         .menu button:hover,
         .choose:hover,
@@ -537,6 +609,9 @@ export class EntriesViewElement extends UmbLitElement {
     `,
   ];
 
+  /** Where the list lives: a form's Entries view (in its workspace), the Inbox or Spam. */
+  declare place: ListPlace;
+
   declare private _words: boolean;
   declare private _state: 'loading' | 'ready' | 'failed';
   declare private _fields: readonly EntryListFieldResponseModel[];
@@ -559,10 +634,19 @@ export class EntriesViewElement extends UmbLitElement {
   declare private _permissions: readonly string[];
   /** The entry open in the panel, by its key. */
   declare private _open: string | undefined;
+  /** The open entry's form. */
+  declare private _openForm: string | undefined;
   /** Whether the view is too narrow for the panel beside the list, so it covers the list. */
   declare private _covering: boolean;
+  /** In the Inbox and Spam, the forms named so far, with what the user may do on each. */
+  declare private _forms: ReadonlyMap<string, EntryListFormResponseModel>;
+  /** Whether the user may delete entries of any form, so Spam offers Empty spam.... */
+  declare private _mayEmpty: boolean;
 
   #form: string | undefined;
+  /** In the Inbox and Spam, the form whose fields the list holds, or undefined for none. */
+  #fieldsForm: string | undefined;
+  #started = false;
   /** Counts the reads of the list, so only the latest one's answer is shown. */
   #reads = 0;
   #searchTimer: ReturnType<typeof setTimeout> | undefined;
@@ -593,8 +677,11 @@ export class EntriesViewElement extends UmbLitElement {
     this._said = '';
     this._permissions = [];
     this._covering = false;
+    this._forms = new Map();
+    this._mayEmpty = false;
+    this.place = 'form';
     this.consumeContext(FORM_WORKSPACE_CONTEXT, (context) => {
-      if (!context) return;
+      if (!context || this.place !== 'form') return;
       this.observe(context.form, (form) => (this._permissions = form?.permissions ?? []), 'permissions');
       this.observe(
         context.unique,
@@ -619,6 +706,12 @@ export class EntriesViewElement extends UmbLitElement {
     super.connectedCallback();
     window.addEventListener('keydown', this.#keys);
     this.#resize.observe(this);
+    // The Inbox and Spam have no workspace to name their form: they open once they are on screen.
+    if (this.place === 'form' || this.#started) return;
+    this.#started = true;
+    void this.#open();
+    if (this.place === 'spam')
+      void myPermissions(this).then((held) => (this._mayEmpty = !!held?.anywhere.includes('deleteEntries')));
   }
 
   override disconnectedCallback() {
@@ -646,6 +739,7 @@ export class EntriesViewElement extends UmbLitElement {
     if (!row) return;
     this._cursor = index;
     this._open = row.key;
+    this._openForm = this.#formOf(row);
     await this.updateComplete;
     if (focusPanel || this._covering) this.#panel?.focusHeading();
   }
@@ -687,41 +781,105 @@ export class EntriesViewElement extends UmbLitElement {
     return new Map(this._fields.map((field) => [field.key, field]));
   }
 
+  // ---- The place ----------------------------------------------------------------------------------------------------
+
+  /** A row's form: the view's own, or the row's in the Inbox and Spam. */
+  #formOf(row: EntryListRowResponseModel): string | undefined {
+    return this.place === 'form' ? this.#form : row.form;
+  }
+
+  /** What the user may do on a row's form. */
+  #permissionsOf(row: EntryListRowResponseModel): readonly string[] {
+    return this.place === 'form' ? this._permissions : (this._forms.get(row.form)?.permissions ?? []);
+  }
+
+  /** The one form whose fields the list offers: the view's own, or the one the Inbox or Spam is filtered to. */
+  #fieldsFormOf(filter: EntryListFilterRequestModel): string | undefined {
+    return this.place === 'form' ? this.#form : oneForm(filter);
+  }
+
+  /** Whether rows name their form: in the Inbox and Spam, unless the Form filter fixes one form, which its chip says. */
+  #showsForm(): boolean {
+    return this.place !== 'form' && oneForm(this._filter) === undefined;
+  }
+
+  get #formNames(): ReadonlyMap<string, string> {
+    return new Map([...this._forms].map(([key, form]) => [key, form.name]));
+  }
+
+  /** Learns forms' names, and what the user may do on each where the answer says it (a search for forms doesn't). */
+  #learn(forms: readonly EntryListFormResponseModel[]) {
+    if (forms.length === 0) return;
+    const known = new Map(this._forms);
+    for (const form of forms) {
+      const before = known.get(form.key);
+      known.set(form.key, form.permissions.length === 0 && before ? { ...before, name: form.name } : form);
+    }
+    this._forms = known;
+  }
+
+  /** The rows by their form, each form in the order it first appears. */
+  #byForm(rows: readonly EntryListRowResponseModel[]): { form: string; keys: string[] }[] {
+    const groups = new Map<string, string[]>();
+    for (const row of rows) {
+      const form = this.#formOf(row);
+      if (form) groups.set(form, [...(groups.get(form) ?? []), row.key]);
+    }
+    return [...groups].map(([form, keys]) => ({ form, keys }));
+  }
+
+  /** The ticked rows as the bulk bar weighs them: each with its state and what the user may do on its form. */
+  #weighed(rows: readonly EntryListRowResponseModel[]) {
+    return rows.map((row) => ({ row, state: row.state, permissions: this.#permissionsOf(row) }));
+  }
+
+  /** The bulk actions offered for these rows. */
+  #offered(rows: readonly EntryListRowResponseModel[]): BulkAction[] {
+    return bulkActionsOf(this.#weighed(rows), this.place);
+  }
+
   // ---- Reading ------------------------------------------------------------------------------------------------------
 
-  /** Opens the form's list: its words, what the view offers and the first page. */
+  /** Opens the list: its words, what the place offers and the first page. */
   async #open() {
     const form = this.#form;
-    if (!form) return;
+    const own = this.place === 'form';
+    if (own && !form) return;
     const read = ++this.#reads;
     this._state = 'loading';
-    const [words, view] = await Promise.all([
+    const [words, view, across] = await Promise.all([
       loadEntryWords(this.localize.lang()).then(
         () => true,
         () => false,
       ),
-      readView(this, form),
+      own && form ? readView(this, form) : undefined,
+      own ? undefined : readInboxView(this),
     ]);
     if (read !== this.#reads) return;
     this._words ||= words;
-    if (!words || !view) {
+    const opened = own ? view : across;
+    if (!words || !opened) {
       this._state = 'failed';
       return;
     }
 
-    this._fields = view.fields;
-    this._columns = view.columns;
-    this._sets = view.filterSets;
+    if (view) {
+      this._fields = view.fields;
+      this._columns = view.columns;
+    }
+
+    if (across) this.#learn(across.forms);
+    this._sets = opened.filterSets;
     await this.#read();
   }
 
   /** Reads the first page again for the filter, the search and the columns as they are. */
   async #read(say = false) {
-    const form = this.#form;
-    if (!form) return;
+    if (this.place === 'form' && !this.#form) return;
     const read = ++this.#reads;
     if (this._rows.length === 0) this._state = 'loading';
-    const page = await readPage(this, form, requestOf(this._filter, this.#shownColumns(), null));
+    if (!(await this.#readFields(read))) return;
+    const page = await this.#page(requestOf(this._filter, this.#shownColumns(), null));
     if (read !== this.#reads) return;
     if (!page) {
       this._state = 'failed';
@@ -739,13 +897,41 @@ export class EntriesViewElement extends UmbLitElement {
     if (say) this._said = this.#countText();
   }
 
+  /**
+   * In the Inbox and Spam, reads the fields and columns of the one form the filter chose once that form changes; false
+   * when a newer read came meanwhile, or when they couldn't be read, which the list then says.
+   */
+  async #readFields(read: number): Promise<boolean> {
+    if (this.place === 'form') return true;
+    const one = oneForm(this._filter);
+    if (one === this.#fieldsForm) return true;
+    const view = one ? await readView(this, one) : { fields: [], columns: [] };
+    if (read !== this.#reads) return false;
+    if (!view) {
+      this._state = 'failed';
+      return false;
+    }
+
+    this._fields = view.fields;
+    this._columns = view.columns;
+    this.#fieldsForm = one;
+    return true;
+  }
+
+  /** A page of the place's list; a page of the Inbox or Spam names its forms. */
+  async #page(request: EntryListRequestModel): Promise<EntryListPageResponseModel | undefined> {
+    if (this.place === 'form') return this.#form ? readPage(this, this.#form, request) : undefined;
+    const page = await readAcross(this, this.place, request);
+    if (page) this.#learn(page.forms);
+    return page;
+  }
+
   async #showMore() {
-    const form = this.#form;
-    if (!form || !this._next) return;
+    if (!this._next) return;
     const read = this.#reads;
     this._more = true;
     const before = this._rows.length;
-    const page = await readPage(this, form, requestOf(this._filter, this.#shownColumns(), this._next));
+    const page = await this.#page(requestOf(this._filter, this.#shownColumns(), this._next));
     this._more = false;
     if (read !== this.#reads) return;
     this._moreFailed = !page;
@@ -798,18 +984,44 @@ export class EntriesViewElement extends UmbLitElement {
   }
 
   #sortBy(field: string | null) {
-    this.#filterBy({ ...this._filter, sort: nextSort(this._filter.sort, field) });
+    this.#filterBy({ ...this._filter, sort: nextSort(this._filter.sort, field, this.place !== 'inbox') });
   }
 
   async #edit(part: FilterPart, field?: EntryListFieldResponseModel, index?: number) {
     this.#closeMenus();
     const answer = await umbOpenModal(this, ENTRY_FILTER_MODAL, {
-      data: { part, filter: this._filter, ...(field ? { field } : {}), ...(index !== undefined ? { index } : {}) },
+      data: {
+        part,
+        filter: this._filter,
+        ...(field ? { field } : {}),
+        ...(index !== undefined ? { index } : {}),
+        ...(this.place === 'inbox' ? { states: INBOX_STATES } : {}),
+      },
     }).catch(() => undefined);
     if (answer) this.#filterBy(answer.filter);
   }
 
+  /** The Form filter of the Inbox and Spam: the dialog answers the forms with their names, so the chip names them. */
+  async #chooseForms() {
+    this.#closeMenus();
+    const chosen = this._filter.forms.map((key) => ({ key, name: this._forms.get(key)?.name ?? '' }));
+    const answer = await umbOpenModal(this, ENTRY_FORMS_MODAL, { data: { chosen } }).catch(() => undefined);
+    if (!answer) return;
+    this.#learn(answer.forms.map(({ key, name }) => ({ key, name, permissions: [] })));
+    this.#filterBy(
+      withForms(
+        this._filter,
+        answer.forms.map((form) => form.key),
+      ),
+    );
+  }
+
   #editChip(chip: Chip) {
+    if (chip.kind === 'form') {
+      void this.#chooseForms();
+      return;
+    }
+
     if (chip.kind !== 'field') {
       void this.#edit(chip.kind);
       return;
@@ -821,6 +1033,11 @@ export class EntriesViewElement extends UmbLitElement {
   }
 
   #removeChip(chip: Chip) {
+    if (chip.kind === 'form') {
+      this.#filterBy(withForms(this._filter, []));
+      return;
+    }
+
     const filter = { ...this._filter };
     if (chip.kind === 'state') filter.states = [];
     else if (chip.kind === 'received') delete filter.received;
@@ -830,22 +1047,25 @@ export class EntriesViewElement extends UmbLitElement {
   }
 
   #clearFilters() {
-    this.#filterBy({
+    const cleared = {
       ...emptyFilter(),
       ...(this._filter.search ? { search: this._filter.search } : {}),
       ...(this._filter.sort ? { sort: this._filter.sort } : {}),
-    });
+    };
+    // Without a form chosen the Inbox has no fields, so a sort by one goes too.
+    this.#filterBy(this.place === 'form' ? cleared : withForms(cleared, []));
   }
 
   #applySet(set: EntryFilterSetResponseModel) {
     this.#closeMenus();
     this._search = set.filter.search ?? '';
-    this.#filterBy(cleanFilter(set.filter));
+    this.#filterBy(filterOfSet(set.filter, this.place, set.form));
   }
 
   async #saveAs() {
-    const form = this.#form;
-    if (!form) return;
+    // A set of the one form whose fields the list offers belongs to that form; one of several forms, or none, to all.
+    const form = this.#fieldsFormOf(this._filter) ?? null;
+    if (this.place === 'form' && !form) return;
     await umbOpenModal(this, ENTRY_SET_NAME_MODAL, {
       data: {
         save: async (name) => {
@@ -871,10 +1091,10 @@ export class EntriesViewElement extends UmbLitElement {
   }
 
   async #chooseColumns() {
+    const form = this.#fieldsFormOf(this._filter);
     const answer = await umbOpenModal(this, ENTRY_COLUMNS_MODAL, {
-      data: { fields: this._fields, columns: this._columns },
+      data: { fields: this._fields, columns: this._columns, ...(form ? {} : { noForm: true }) },
     }).catch(() => undefined);
-    const form = this.#form;
     if (!answer || !form) return;
     this._columns = answer.columns;
     void this.#read();
@@ -918,61 +1138,79 @@ export class EntriesViewElement extends UmbLitElement {
     }
   }
 
-  /** Moves the entries the action applies to; the rows change in place and the toast offers Undo until the window ends. */
+  /**
+   * Moves the entries the action applies to, one request per form; the rows change in place and one toast offers Undo
+   * until the first window ends, which takes back every form's change.
+   */
   async #move(action: BulkAction, rows: readonly EntryListRowResponseModel[]) {
-    const form = this.#form;
     const state = MOVE_STATE[action];
-    if (!form || !state) return;
-    const applying = rows.filter((row) => APPLIES[action](row.state));
-    const left = leftOut(
-      action,
-      rows.map((row) => row.state),
-    );
+    if (!state) return;
+    const split = splitTicked(action, this.#weighed(rows));
+    const applying = split.acting.map((one) => one.row);
     if (applying.length === 0) return;
     const before = new Map(applying.map((row) => [row.key, row.state]));
-    const keys = applying.map((row) => row.key);
-    let change = await changeState(this, form, keys, state);
-    // A move back onto full options or doubled unique answers moves nothing until the user agrees (ADR-0208).
-    if (change?.asks) {
+    const moves: FormMove[] = await Promise.all(
+      this.#byForm(applying).map(async (group) => ({
+        ...group,
+        change: await changeState(this, group.form, group.keys, state),
+      })),
+    );
+    // A move back onto full options or doubled unique answers moves nothing until the user agrees, asked once for every
+    // form that asks (ADR-0208, ADR-0209).
+    const asking = moves.filter((one) => one.change?.asks);
+    if (asking.length > 0) {
       const agreed = await confirmText(this, {
-        headline: this.#term(keys.length === 1 ? 'asks_moveHeadline' : 'asks_moveHeadlineMany'),
-        content: asksLines(change.asks, this.#full).join(' '),
+        headline: this.#term(applying.length === 1 ? 'asks_moveHeadline' : 'asks_moveHeadlineMany'),
+        content: asksLines(
+          {
+            full: asking.flatMap((one) => one.change?.asks?.full ?? []),
+            held: asking.flatMap((one) => one.change?.asks?.held ?? []),
+          },
+          this.#full,
+        ).join(' '),
         confirmLabel: this.#term('asks_moveConfirm'),
         color: 'warning',
       }).then(
         () => true,
         () => false,
       );
-      if (!agreed) return;
-      change = await changeState(this, form, keys, state, true);
+      for (const one of asking) {
+        if (agreed) one.change = await changeState(this, one.form, one.keys, state, true);
+        else one.declined = true;
+      }
     }
 
-    if (!change) {
-      await this.#notify('danger', this.#term('moveFailed'));
-      return;
-    }
+    const done = moves.filter((one) => !one.declined);
+    if (done.length === 0) return;
+    const made = done.filter((one): one is MadeMove => one.change !== undefined);
+    if (made.length < done.length) await this.#notify('danger', this.#term('moveFailed'));
+    if (made.length === 0) return;
 
-    const reached = new Map(change.moved.map((moved) => [moved.key, moved.state]));
+    const reached = new Map(made.flatMap((one) => one.change.moved.map((moved) => [moved.key, moved.state] as const)));
     this._rows = this._rows.map((row) =>
       reached.has(row.key) ? { ...row, state: reached.get(row.key) ?? row.state } : row,
     );
     this.#reloadPanel(reached);
     this._ticked = [];
     const name = action === 'markSpam' ? 'spam' : action === 'notSpam' ? 'notSpam' : (MOVE_STATE[action] ?? state);
-    const unmoved = left + change.unmoved.length;
+    const unmoved = split.leftOut + made.reduce((sum, one) => sum + one.change.unmoved.length, 0);
     const message = [
-      this.#term(`moved_${name}`, change.moved.length),
+      this.#term(`moved_${name}`, reached.size),
       unmoved > 0 ? this.#term(`left_${name}`, unmoved) : '',
+      split.notAllowed > 0 ? this.#term('left_notAllowed', split.notAllowed) : '',
     ]
       .filter(Boolean)
       .join(' ');
     this._said = message;
-    if (change.moved.length === 0) {
+    if (reached.size === 0) {
       await this.#notify('warning', message);
       return;
     }
 
-    const until = change.undoUntilUtc ? new Date(change.undoUntilUtc).getTime() : 0;
+    const undoable = made.filter((one) => one.change.moved.length > 0);
+    const until = Math.min(
+      ...undoable.map((one) => (one.change.undoUntilUtc ? new Date(one.change.undoUntilUtc).getTime() : 0)),
+    );
     const open = until - Date.now();
     if (open < UNDO_SHORTEST_MS) {
       await this.#notify('positive', message);
@@ -985,20 +1223,29 @@ export class EntriesViewElement extends UmbLitElement {
       until,
       tooLate: this.#term('undoTooLate'),
       undo: async () => {
-        const undone = await undoChange(this, form, change.changeKey);
-        if (undone === 'done') {
+        const answers = await Promise.all(
+          undoable.map(async (one) => ({ one, undone: await undoChange(this, one.form, one.change.changeKey) })),
+        );
+        const back = new Set(
+          answers
+            .filter((answer) => answer.undone === 'done')
+            .flatMap((answer) => answer.one.change.moved.map((moved) => moved.key)),
+        );
+        if (back.size > 0) {
           this._rows = this._rows.map((row) =>
-            before.has(row.key) && reached.has(row.key) ? { ...row, state: before.get(row.key) ?? row.state } : row,
+            back.has(row.key) ? { ...row, state: before.get(row.key) ?? row.state } : row,
           );
           this.#reloadPanel(reached);
+        }
+
+        if (answers.every((answer) => answer.undone === 'done')) {
           this._said = this.#term('undone');
           return;
         }
 
-        await this.#notify(
-          undone === 'tooLate' ? 'warning' : 'danger',
-          this.#term(undone === 'tooLate' ? 'undoTooLate' : 'undoFailed'),
-        );
+        // A form whose window ended, or whose Undo failed, keeps its change; the toast says which happened.
+        const late = answers.some((answer) => answer.undone === 'tooLate');
+        await this.#notify(late ? 'warning' : 'danger', this.#term(late ? 'undoTooLate' : 'undoFailed'));
       },
     };
     const notifications = await this.getContext(UMB_NOTIFICATION_CONTEXT);
@@ -1014,85 +1261,173 @@ export class EntriesViewElement extends UmbLitElement {
     if (this._open !== undefined && moved.has(this._open)) void this.#panel?.reload();
   }
 
-  /** Deletes the entries for good, after asking with what goes with them. */
+  /** Deletes the entries for good, one request per form, after asking once with what goes with them. */
   async #delete(rows: readonly EntryListRowResponseModel[]) {
-    const form = this.#form;
-    if (!form) return;
-    const keys = rows.map((row) => row.key);
-    const plan = await deleteEntries(this, form, keys, false);
-    if (!plan) {
+    const split = splitTicked('delete', this.#weighed(rows));
+    const groups = this.#byForm(split.acting.map((one) => one.row));
+    if (groups.length === 0) return;
+    const plans = await Promise.all(groups.map((group) => deleteEntries(this, group.form, group.keys, false)));
+    if (plans.some((plan) => !plan)) {
       await this.#notify('danger', this.#term('deleteFailed'));
       return;
     }
 
-    if (plan.entries === 0) return;
+    const entries = plans.reduce((sum, plan) => sum + (plan?.entries ?? 0), 0);
+    const files = plans.reduce((sum, plan) => sum + (plan?.files ?? 0), 0);
+    if (entries === 0) return;
     const confirmed = await confirmText(this, {
-      headline: this.#term('delete_headline', plan.entries),
-      content: this.#term('delete_body', plan.entries, plan.files),
-      confirmLabel: this.#term('delete_confirm', plan.entries),
+      headline: this.#term('delete_headline', entries),
+      content: this.#term('delete_body', entries, files),
+      confirmLabel: this.#term('delete_confirm', entries),
       color: 'danger',
     }).then(
       () => true,
       () => false,
     );
     if (!confirmed) return;
-    const done = await deleteEntries(this, form, keys, true);
-    if (!done?.deleted) {
-      await this.#notify('danger', this.#term('deleteFailed'));
-      return;
-    }
+    const done = await Promise.all(
+      groups.map(async (group) => ({ group, done: await deleteEntries(this, group.form, group.keys, true) })),
+    );
+    const deleted = done.filter((one) => one.done?.deleted);
+    if (deleted.length < done.length) await this.#notify('danger', this.#term('deleteFailed'));
+    if (deleted.length === 0) return;
 
-    const gone = new Set(keys);
+    const gone = new Set(deleted.flatMap((one) => one.group.keys));
+    const count = deleted.reduce((sum, one) => sum + (one.done?.entries ?? 0), 0);
     this._rows = this._rows.filter((row) => !gone.has(row.key));
     this._ticked = [];
     this._cursor = -1;
     if (this._open !== undefined && gone.has(this._open)) this._open = undefined;
-    if (this._total !== null && !this._totalMore) this._total = Math.max(0, this._total - done.entries);
-    await this.#notify('positive', this.#term('deleted', done.entries));
+    if (this._total !== null && !this._totalMore) this._total = Math.max(0, this._total - count);
+    await this.#notify(
+      'positive',
+      [this.#term('deleted', count), split.notAllowed > 0 ? this.#term('left_notAllowed', split.notAllowed) : '']
+        .filter(Boolean)
+        .join(' '),
+    );
   }
 
-  /** Runs the entries' actions again, after asking with the actions that run. */
+  /** Runs the entries' actions again, one request per form, after asking once with the actions that run. */
   async #rerun(rows: readonly EntryListRowResponseModel[]) {
-    const form = this.#form;
-    if (!form) return;
-    const keys = rows.map((row) => row.key);
-    const plan = await rerunActions(this, form, keys, false);
-    if (!plan) {
+    // The server says which entries it leaves out for their state, so every entry of a form the user may run goes.
+    const allowed = this.#weighed(rows).filter((one) => one.permissions.includes('manageActions'));
+    const notAllowed = rows.length - allowed.length;
+    const groups = this.#byForm(allowed.map((one) => one.row));
+    if (groups.length === 0) return;
+    const plans = await Promise.all(groups.map((group) => rerunActions(this, group.form, group.keys, false)));
+    if (plans.some((plan) => !plan)) {
       await this.#notify('danger', this.#term('rerunFailed'));
       return;
     }
 
-    if (plan.entries === 0) {
+    const entries = plans.reduce((sum, plan) => sum + (plan?.entries ?? 0), 0);
+    if (entries === 0) {
       await this.#notify('warning', this.#term('rerun_none'));
       return;
     }
 
+    // Across forms, each action names its form, since two forms' actions may share a name.
+    const several = groups.length > 1;
     const confirmed = await confirmList(this, {
-      headline: this.#term('rerun_headline', plan.entries),
+      headline: this.#term('rerun_headline', entries),
       content: this.#term('rerun_body'),
-      items: plan.actions.map((action) => ({
-        name: action.name || action.type,
-        detail: this.#term(`rerun_trigger_${action.trigger}`),
-      })),
-      confirmLabel: this.#term('rerun_confirm', plan.entries),
+      items: groups.flatMap((group, index) =>
+        (plans[index]?.actions ?? []).map((action) => ({
+          name: action.name || action.type,
+          detail: [
+            this.#term(`rerun_trigger_${action.trigger}`),
+            ...(several ? [this._forms.get(group.form)?.name ?? ''] : []),
+          ]
+            .filter(Boolean)
+            .join(JOIN),
+        })),
+      ),
+      confirmLabel: this.#term('rerun_confirm', entries),
     }).then(
       () => true,
       () => false,
     );
     if (!confirmed) return;
-    const done = await rerunActions(this, form, keys, true);
-    if (!done?.queued) {
-      await this.#notify('danger', this.#term('rerunFailed'));
-      return;
-    }
+    const done = await Promise.all(groups.map((group) => rerunActions(this, group.form, group.keys, true)));
+    const queued = done.filter((one) => one?.queued);
+    if (queued.length < done.length) await this.#notify('danger', this.#term('rerunFailed'));
+    if (queued.length === 0) return;
 
     this._ticked = [];
+    const count = queued.reduce((sum, one) => sum + (one?.entries ?? 0), 0);
+    const left = queued.reduce((sum, one) => sum + (one?.leftOut ?? 0), 0);
     await this.#notify(
       'positive',
-      [this.#term('rerun_done', done.entries), done.leftOut > 0 ? this.#term('left_rerun', done.leftOut) : '']
+      [
+        this.#term('rerun_done', count),
+        left > 0 ? this.#term('left_rerun', left) : '',
+        notAllowed > 0 ? this.#term('left_notAllowed', notAllowed) : '',
+      ]
         .filter(Boolean)
         .join(' '),
     );
+  }
+
+  /**
+   * Empty spam...: deletes for good the entries in Spam of every form the user may delete entries of, whatever the list
+   * shows, after asking with how many go and how many stay.
+   */
+  async #emptySpam() {
+    if (this._busy) return;
+    this._busy = true;
+    try {
+      const plan = await emptySpam(this, false);
+      if (!plan) {
+        await this.#notify('danger', this.#term('emptyFailed'));
+        return;
+      }
+
+      if (plan.entries === 0) {
+        await this.#notify('warning', this.#term('empty_none'));
+        return;
+      }
+
+      // While nothing narrows the list its count is how many Spam holds; those beyond the plan's stay. While something
+      // does, the dialog says that it doesn't narrow what goes.
+      // Rows Not spam took out since the list was read still count in its total, but are no longer in Spam.
+      const narrowed = isFiltered(this._filter) || !!this._filter.search;
+      const out = this._rows.filter((row) => row.state !== 'spam').length;
+      const staying = !narrowed && this._total !== null && !this._totalMore ? this._total - out - plan.entries : 0;
+      const confirmed = await confirmText(this, {
+        headline: this.#term('empty_headline'),
+        content: [
+          this.#term('empty_body', plan.entries),
+          narrowed ? this.#term('empty_filtered') : '',
+          staying > 0 ? this.#term('empty_staying', staying) : '',
+          plan.more ? this.#term('empty_more') : '',
+          this.#term('delete_body', plan.entries, plan.files),
+        ]
+          .filter(Boolean)
+          .join(' '),
+        confirmLabel: this.#term('delete_confirm', plan.entries),
+        color: 'danger',
+      }).then(
+        () => true,
+        () => false,
+      );
+      if (!confirmed) return;
+      const done = await emptySpam(this, true);
+      if (!done?.deleted) {
+        await this.#notify('danger', this.#term('emptyFailed'));
+        return;
+      }
+
+      this._open = undefined;
+      this._ticked = [];
+      this._rows = [];
+      await this.#notify(
+        'positive',
+        [this.#term('emptied', done.entries), done.more ? this.#term('emptiedMore') : ''].filter(Boolean).join(' '),
+      );
+      await this.#read();
+    } finally {
+      this._busy = false;
+    }
   }
 
   async #notify(color: 'positive' | 'warning' | 'danger', message: string) {
@@ -1132,7 +1467,7 @@ export class EntriesViewElement extends UmbLitElement {
           break;
         }
 
-        if (!row || !bulkActions([row.state], this._permissions).includes(action)) return;
+        if (!row || !this.#offered([row]).includes(action)) return;
         void this.#act(action, [row]);
         break;
       }
@@ -1201,6 +1536,8 @@ export class EntriesViewElement extends UmbLitElement {
 
   #filterMenu(): TemplateResult {
     const fields = this._fields.filter((field) => field.tests.length > 0);
+    // The Form filter is the Inbox's and Spam's; in Spam every entry is in Spam and runs no action, so neither filter is.
+    const place = this.place;
     return html`<uui-button look="outline" label=${this.#term('filter')} popovertarget="filter-menu">
         <uui-icon name="icon-filter" aria-hidden="true"></uui-icon> ${this.#term('filter')}
       </uui-button>
@@ -1212,9 +1549,10 @@ export class EntriesViewElement extends UmbLitElement {
         }}
       >
         <div class="menu">
-          ${this.#menuButton(this.#term('menu_state'), () => void this.#edit('state'))}
+          ${place === 'form' ? nothing : this.#menuButton(this.#term('menu_form'), () => void this.#chooseForms())}
+          ${place === 'spam' ? nothing : this.#menuButton(this.#term('menu_state'), () => void this.#edit('state'))}
           ${this.#menuButton(this.#term('menu_received'), () => void this.#edit('received'))}
-          ${this.#menuButton(this.#term('menu_actions'), () => void this.#edit('actions'))}
+          ${place === 'spam' ? nothing : this.#menuButton(this.#term('menu_actions'), () => void this.#edit('actions'))}
           ${
             fields.length > 0
               ? html`<h3>${this.#term('menu_fields')}</h3>
@@ -1232,7 +1570,7 @@ export class EntriesViewElement extends UmbLitElement {
                   ${this._sets.map(
                     (set) =>
                       html`<div class="set">
-                        ${this.#menuButton(set.name, () => this.#applySet(set))}
+                        ${this.#setButton(set)}
                         <button
                           type="button"
                           aria-label=${this.#term('menu_deleteSet', set.name)}
@@ -1247,6 +1585,14 @@ export class EntriesViewElement extends UmbLitElement {
           }
         </div>
       </uui-popover-container>`;
+  }
+
+  /** A filter set in the menu; on the Inbox and Spam it names its form, when it has one (IA 6.1). */
+  #setButton(set: EntryFilterSetResponseModel): TemplateResult {
+    const form = this.place !== 'form' && set.form ? this._forms.get(set.form)?.name : undefined;
+    return html`<button type="button" @click=${() => this.#applySet(set)}>
+      ${set.name}${form ? html`<span class="set-form">${form}</span>` : nothing}
+    </button>`;
   }
 
   #toolbar(): TemplateResult {
@@ -1269,6 +1615,16 @@ export class EntriesViewElement extends UmbLitElement {
         <uui-icon slot="prepend" name="icon-search" aria-hidden="true"></uui-icon>
       </uui-input>
       ${this.#filterMenu()}
+      ${
+        this.place === 'spam' && this._mayEmpty
+          ? html`<uui-button
+              look="outline"
+              label=${this.#term('emptySpam')}
+              ?disabled=${this._busy}
+              @click=${() => void this.#emptySpam()}
+            ></uui-button>`
+          : nothing
+      }
       <span class="count">${this.#countText()}</span>
       <uui-button compact look="secondary" label=${this.#term('more')} popovertarget="more-menu">
         <uui-symbol-more></uui-symbol-more>
@@ -1290,7 +1646,7 @@ export class EntriesViewElement extends UmbLitElement {
 
   #chips(): TemplateResult | typeof nothing {
     if (!isFiltered(this._filter)) return nothing;
-    const chips = chipsOf(this._filter, this.#byKey, this.localize.lang(), this.#full);
+    const chips = chipsOf(this._filter, this.#byKey, this.localize.lang(), this.#full, this.#formNames);
     return html`<div class="chips" role="group" aria-label=${this.#term('filters')}>
       ${chips.map(
         (chip) =>
@@ -1331,8 +1687,8 @@ export class EntriesViewElement extends UmbLitElement {
 
   #sortHeader(label: string, field: string | null): TemplateResult {
     const sort = this._filter.sort;
-    // Without a sort of its own, the list is newest first: Received is sorted.
-    const sorted = (sort?.field ?? null) === field;
+    // Without a sort of its own a list is newest first, so Received is sorted; the Inbox's own order is unseen first.
+    const sorted = sort ? (sort.field ?? null) === field : this.place !== 'inbox' && field === null;
     const descending = sorted ? (sort?.descending ?? true) : undefined;
     const ariaSort = !sorted ? 'none' : descending ? 'descending' : 'ascending';
     return html`<th scope="col" aria-sort=${ariaSort}>
@@ -1359,6 +1715,12 @@ export class EntriesViewElement extends UmbLitElement {
     const alarming = runs && (runs.tone === 'danger' || runs.tone === 'warning');
     const below = alarming ? html`<span class="below tone-${runs.tone}">${runs.text}</span>` : nothing;
     const open = row.key === this._open;
+    const form = this.#showsForm() ? (this._forms.get(row.form)?.name ?? '') : undefined;
+    // In Spam a row says its state only once Not spam took it out, until the list reads again (IA 6.2).
+    const moved =
+      this.place === 'spam' && row.state !== 'spam'
+        ? html`<span class="moved-state tone-muted">${stateText(row.state, this.#full)}</span>`
+        : nothing;
     return html`<tr
       data-key=${row.key}
       tabindex="-1"
@@ -1382,8 +1744,10 @@ export class EntriesViewElement extends UmbLitElement {
             row.unseen ? html`<span class="visually-hidden">, ${this.#term('unseen')}</span>` : nothing
           }
         </button>
+        ${form === undefined ? nothing : html`<span class="form-below">${form}</span>`} ${moved}
         ${showState ? nothing : below}
       </th>
+      ${form === undefined || narrowed ? nothing : html`<td class="form-column">${form}</td>`}
       ${
         showState
           ? html`<td>
@@ -1410,7 +1774,7 @@ export class EntriesViewElement extends UmbLitElement {
 
   #table(): TemplateResult {
     const fixed = fixedColumns(this._filter);
-    const showState = !fixed.state;
+    const showState = !fixed.state && this.place !== 'spam';
     const byKey = this.#byKey;
     const narrowed = this._open !== undefined && !this._covering;
     const columns = narrowed
@@ -1434,6 +1798,11 @@ export class EntriesViewElement extends UmbLitElement {
                 ></uui-checkbox>
               </th>
               <th scope="col">${this.#term('column_entry')}</th>
+              ${
+                this.#showsForm() && !narrowed
+                  ? html`<th scope="col" class="form-column">${this.#term('column_form')}</th>`
+                  : nothing
+              }
               ${showState ? html`<th scope="col">${this.#term('column_state')}</th>` : nothing}
               ${this.#sortHeader(this.#term('column_received'), null)}
               <th scope="col" class="runs-column">${this.#term('column_actions')}</th>
@@ -1498,18 +1867,21 @@ export class EntriesViewElement extends UmbLitElement {
     }
 
     if (isFiltered(this._filter)) return html`<div class="empty"><p>${this.#term('noResults')}</p></div>`;
-    return html`<div class="empty">
-      <p>${this.#term(this._permissions.includes('design') ? 'empty_design' : 'empty_others')}</p>
-    </div>`;
+    const first =
+      this.place === 'inbox'
+        ? 'inbox_empty'
+        : this.place === 'spam'
+          ? 'spam_empty'
+          : this._permissions.includes('design')
+            ? 'empty_design'
+            : 'empty_others';
+    return html`<div class="empty"><p>${this.#term(first)}</p></div>`;
   }
 
   #bulk(): TemplateResult | typeof nothing {
     const rows = this.#tickedRows();
     if (rows.length === 0) return nothing;
-    const offered = bulkActions(
-      rows.map((row) => row.state),
-      this._permissions,
-    );
+    const offered = this.#offered(rows);
     const shown = offered.slice(0, SHOWN_ACTIONS);
     const rest = offered.slice(SHOWN_ACTIONS);
     return html`<div class="bulk" role="region" aria-label=${this.#term('selected', rows.length)}>
@@ -1581,6 +1953,7 @@ export class EntriesViewElement extends UmbLitElement {
     const firstUse =
       this._state === 'ready' && this._rows.length === 0 && !isFiltered(this._filter) && !this._filter.search;
     const open = this._open;
+    const openForm = this._openForm;
     const row = open === undefined ? undefined : this._rows.find((one) => one.key === open);
     // Covered by the panel, the list is out of reach of the keyboard and of screen readers until the panel closes.
     const covered = open !== undefined && this._covering;
@@ -1589,11 +1962,13 @@ export class EntriesViewElement extends UmbLitElement {
         <div class="visually-hidden" role="status">${this._said}</div>
       </div>
       ${
-        open !== undefined && this.#form
+        open !== undefined && openForm
           ? html`<jfb-entry-panel
-              .form=${this.#form}
+              .form=${openForm}
               .entry=${open}
               place=${this._covering ? 'covering' : 'beside'}
+              ?shows-form=${this.place !== 'form'}
+              ?hides-state=${this.place === 'spam'}
               .rowShowsTitle=${row ? Boolean(row.title) : true}
               @jfb-entry-seen=${this.#rowSeen}
               @jfb-entry-moved=${this.#rowMoved}

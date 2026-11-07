@@ -827,8 +827,16 @@ offering one form's fields and columns, refusing them for several and a form out
 Spam only; the badge's count stopping at its most; and Empty spam counting first, then deleting.
 `ManagementApi/EntryInboxApiTests` holds the endpoints to the same with each persona: the viewer's Inbox without the
 restricted folder's form while that folder's own group sees it, the forms named with what the user may do on each, a
-user without grants answered with empty lists, opening an entry taking it off the badge, and Empty spam deleting only
-what the user may delete.
+user without grants answered with empty lists, opening an entry taking it off the badge, Empty spam deleting only
+what the user may delete, a chosen form named on a page without its entries, and the view naming the forms of the
+user's sets while leaving out a set of a trashed form. In the client, `entries/entry-list-model.test.ts` holds the Form
+chip, a form's fields going once it is no longer the only one chosen, a set as each place applies it, actions weighed by
+each entry's form and the Inbox's own order; `entries/entry-dialogs.test.ts` the State part offering each place's
+states with the headline in each language, the column chooser's line without one form, and the Form filter's search,
+ticks and limits; and `designer/entries/entries.view.test.ts` the Inbox and Spam against a fake server (the form
+column, one form's fields and columns, a bulk action per form with one Undo, a move back asked once for several forms,
+Spam without a state and with Not spam and Delete…, Empty spam… asking how many go and stay, each place's first use,
+and the panel naming the form).
 
 ## The access tests
 

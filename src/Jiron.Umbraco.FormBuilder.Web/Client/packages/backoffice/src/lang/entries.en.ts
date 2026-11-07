@@ -1,5 +1,6 @@
-// A form's Entries view in English (ROADMAP 11.1, IA 6.1, ADR-0207, docs/ux/copy.md): the list, its filters and chips,
-// the column chooser, the bulk bar and its dialogs, and the keyboard shortcuts. These words load with the view, not with
+// A form's Entries view, the Inbox and Spam in English (ROADMAP 11.1, IA 6.1 and 6.2, ADR-0207, ADR-0209,
+// docs/ux/copy.md): the list, its filters and chips, the column chooser, the bulk bar and its dialogs, Empty spam..., and
+// the keyboard shortcuts. These words load with the view, not with
 // the backoffice's start (`entries/entry-words.ts`); entries.de.ts has the same keys.
 import type { UmbLocalizationDictionary } from '@umbraco-cms/backoffice/localization-api';
 
@@ -25,6 +26,7 @@ export default {
 
     column_select: 'Select',
     column_entry: 'Entry',
+    column_form: 'Form',
     column_state: 'State',
     column_received: 'Received',
     column_actions: 'Actions',
@@ -56,6 +58,7 @@ export default {
     runs_waiting: (number: number) => `${number} waiting`,
     runs_skipped: 'Not run',
 
+    menu_form: 'Form',
     menu_state: 'State',
     menu_received: 'Received',
     menu_actions: 'Actions',
@@ -81,6 +84,11 @@ export default {
     test_notAnswered: 'Not answered',
 
     edit_headline: (what: string) => `Filter by ${what}`,
+    // A part of the filter as the headline names it, within the sentence.
+    edit_part_form: 'form',
+    edit_part_state: 'state',
+    edit_part_received: 'received',
+    edit_part_actions: 'actions',
     edit_apply: 'Apply filter',
     edit_cancel: 'Cancel',
     edit_states: 'States',
@@ -99,6 +107,8 @@ export default {
     edit_needsValue: 'Give a value.',
     edit_order: 'The first comes before the last.',
 
+    chip_form: (forms: string) => `Form: ${forms}`,
+    chip_formCount: (number: number) => `${number.toLocaleString('en')} forms`,
     chip_state: (states: string) => `State: ${states}`,
     chip_received: (span: string) => `Received: ${span}`,
     chip_actions: (which: string) => `Actions: ${which}`,
@@ -135,6 +145,14 @@ export default {
     chooser_sensitive: 'Sensitive fields show in an entry only.',
     chooser_most: 'A list shows up to 20 columns.',
     chooser_none: 'The form has no fields to show as columns yet.',
+    chooser_noForm: "Filter the list by one form to choose that form's fields as columns.",
+
+    forms_legend: 'Forms',
+    forms_search: 'Find a form',
+    forms_finding: 'Finding forms…',
+    forms_failed: "The forms couldn't be found.",
+    forms_none: (text: string) => `No form you may view has “${text}” in its name.`,
+    forms_most: 'A list is filtered by up to 100 forms.',
     chooser_apply: 'Show columns',
     chooser_cancel: 'Cancel',
 
@@ -156,6 +174,7 @@ export default {
     left_rejected: (number: number) => `${were(number)} rejected already or waiting for confirmation.`,
     left_spam: (number: number) => `${were(number)} in Spam already.`,
     left_notSpam: (number: number) => `${were(number)}n't in Spam.`,
+    left_notAllowed: (number: number) => `${were(number)} left out: their form doesn't let you do this.`,
     left_rerun: (number: number) =>
       `${were(number)} left out: in Spam, waiting for confirmation, or without actions to run.`,
     moveFailed: "The entries couldn't be changed. Try again.",
@@ -193,6 +212,22 @@ export default {
 
     empty_design: 'No entries yet. Share the form, or preview it and send a test entry.',
     empty_others: 'No entries yet. They appear here as soon as visitors send the form.',
+    inbox_empty: 'No entries yet. They arrive here from every form you may view.',
+    spam_empty: 'No spam. Entries that look automated land here, and nothing in them is lost.',
+
+    emptySpam: 'Empty spam…',
+    empty_headline: 'Empty Spam?',
+    empty_body: (number: number) => `${entries(number)} in Spam ${number === 1 ? 'goes' : 'go'} for good.`,
+    empty_filtered: "The filters and the search don't narrow this.",
+    empty_staying: (number: number) =>
+      number === 1
+        ? "1 entry stays: its form doesn't let you delete entries."
+        : `${number.toLocaleString('en')} entries stay: their forms don't let you delete entries.`,
+    empty_more: 'Spam holds more than one go deletes: Empty spam… again deletes the rest.',
+    empty_none: 'Spam holds no entry you may delete.',
+    emptied: (number: number) => `${entries(number)} deleted from Spam.`,
+    emptiedMore: 'Spam holds more. Empty spam… again deletes the rest.',
+    emptyFailed: "Spam couldn't be emptied. Try again.",
     noResults: 'No entries match these filters. Remove one above, or clear them all.',
     noSearch: (term: string) => `No entries match “${term}”.`,
     noSearchSensitive: (term: string) => `No entries match “${term}”. Sensitive fields aren't searched.`,

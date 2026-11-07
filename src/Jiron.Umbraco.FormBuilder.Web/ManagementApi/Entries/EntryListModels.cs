@@ -115,7 +115,10 @@ public sealed class EntryListPageResponseModel
     /// <summary>Whether more than <c>total</c> match, which only a search's count says.</summary>
     public bool More { get; init; }
 
-    /// <summary>In the Inbox and Spam, the forms of the page's entries, with what the user may do on each; none in a form's list.</summary>
+    /// <summary>
+    /// In the Inbox and Spam, the forms of the page's entries and then the forms the filter chose, with what the user may do
+    /// on each; none in a form's list.
+    /// </summary>
     public IReadOnlyList<EntryListFormResponseModel> Forms { get; init; } = [];
 }
 

@@ -1,6 +1,8 @@
 // A form's Entries view (ROADMAP 11.1, IA 6.1, ADR-0207): its rows, names and marks, the count, the columns and what a
 // filter fixes, the search with its empty state, the chips with Save as... and Clear filters, Show more, the bulk bar
-// with Undo, Delete... and Re-run actions asked first, the keys of section 4.13, the first use and a read that fails.
+// with Undo, Delete... and Re-run actions asked first, the keys of section 4.13, the first use and a read that fails;
+// and the same list as the Inbox and Spam (ADR-0209): every form's entries with their form, the Form filter and its one
+// form's fields, acting per form with one Undo, Spam without a state, Empty spam... and each place's first use.
 import { UmbBasicState } from '@umbraco-cms/backoffice/observable-api';
 import { UMB_NOTIFICATION_CONTEXT } from '@umbraco-cms/backoffice/notification';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -19,6 +21,7 @@ import { FORM_WORKSPACE_CONTEXT } from '../constants';
 import {
   ENTRY_COLUMNS_MODAL_ALIAS,
   ENTRY_FILTER_MODAL_ALIAS,
+  ENTRY_FORMS_MODAL_ALIAS,
   ENTRY_KEYS_MODAL_ALIAS,
   ENTRY_SET_NAME_MODAL_ALIAS,
   type EntrySetNameModalData,
@@ -66,13 +69,58 @@ const server = vi.hoisted(() => ({
   reruns: [] as { entries: readonly string[]; confirm: boolean }[],
   rerunActions: [{ key: 'a1', type: 'webhook', name: 'Tell the team', trigger: 'approved' }],
   savedSets: [] as { name: string; filter: EntryListFilterRequestModel }[],
+  setForms: [] as (string | null)[],
   setCode: undefined as string | undefined,
   savedColumns: [] as (readonly string[])[],
+  // The Inbox and Spam: the forms' names, what the user may do on each, and what their calls were.
+  everything: ['viewEntries', 'editEntries', 'deleteEntries', 'manageActions'],
+  formNames: { form1: 'Job application', form2: 'Contact', form3: 'Newsletter' } as Record<string, string>,
+  formPermissions: {} as Record<string, string[]>,
+  inboxSets: [] as { key: string; name: string; form?: string | null; filter: EntryListFilterRequestModel }[],
+  inboxForms: [] as { key: string; name: string; permissions: string[] }[],
+  across: [] as { place: string; request: EntryListRequestModel }[],
+  viewsRead: [] as string[],
+  moveForms: [] as string[],
+  empties: [] as boolean[],
+  emptyPlan: { entries: 0, files: 0, more: false },
+  anywhere: [] as string[],
 }));
 
 vi.mock('../../entries/entries-api', () => ({
-  readView: async () =>
-    server.failsView ? undefined : { fields: server.fields, columns: server.columns, filterSets: server.sets },
+  readView: async (_host: unknown, form: string) => {
+    server.viewsRead.push(form);
+    return server.failsView ? undefined : { fields: server.fields, columns: server.columns, filterSets: server.sets };
+  },
+  readInboxView: async () =>
+    server.failsView ? undefined : { filterSets: server.inboxSets, forms: server.inboxForms },
+  readAcross: async (
+    _host: unknown,
+    place: 'inbox' | 'spam',
+    request: EntryListRequestModel,
+  ): Promise<EntryListPageResponseModel | undefined> => {
+    server.across.push({ place, request });
+    if (server.failsPage) return undefined;
+    const chosen = request.filter?.forms ?? [];
+    const items = server.rows.filter(
+      (one) => (place === 'spam') === (one.state === 'spam') && (chosen.length === 0 || chosen.includes(one.form)),
+    );
+    const forms = [...new Set([...items.map((one) => one.form), ...chosen])];
+    return {
+      items,
+      next: null,
+      ...(request.count ? { total: items.length } : {}),
+      more: false,
+      forms: forms.map((key) => ({
+        key,
+        name: server.formNames[key] ?? key,
+        permissions: server.formPermissions[key] ?? server.everything,
+      })),
+    };
+  },
+  emptySpam: async (_host: unknown, confirm: boolean) => {
+    server.empties.push(confirm);
+    return { ...server.emptyPlan, deleted: confirm };
+  },
   readPage: async (
     _host: unknown,
     _form: string,
@@ -89,18 +137,26 @@ vi.mock('../../entries/entries-api', () => ({
     server.savedColumns.push(columns);
     return true;
   },
-  saveSet: async (_host: unknown, key: string, name: string, form: string, filter: EntryListFilterRequestModel) => {
+  saveSet: async (
+    _host: unknown,
+    key: string,
+    name: string,
+    form: string | null,
+    filter: EntryListFilterRequestModel,
+  ) => {
     if (server.setCode) return { code: server.setCode };
     server.savedSets.push({ name, filter });
+    server.setForms.push(form);
     return { set: { key, name, form, filter } };
   },
   deleteSet: async () => true,
-  changeState: async (_host: unknown, _form: string, entries: readonly string[], state: string, overbook = false) => {
+  changeState: async (_host: unknown, form: string, entries: readonly string[], state: string, overbook = false) => {
     server.moves.push({ entries, state, ...(overbook ? { overbook } : {}) });
+    server.moveForms.push(form);
     if (server.asks && !overbook)
       return { changeKey: 'change0', undoUntilUtc: null, moved: [], unmoved: [], asks: server.asks };
     return {
-      changeKey: 'change1',
+      changeKey: form === 'form1' ? 'change1' : `change-${form}`,
       undoUntilUtc: new Date(Date.now() + 10_000).toISOString(),
       moved: entries.map((key) => ({ key, state })),
       unmoved: [],
@@ -123,6 +179,11 @@ vi.mock('../../entries/entries-api', () => ({
       queued: confirm,
     };
   },
+}));
+
+// What the user holds on any form, which offers Empty spam... to who may delete entries.
+vi.mock('../../section/my-permissions', () => ({
+  myPermissions: async () => ({ global: [], anywhere: server.anywhere }),
 }));
 
 // The entry panel reads each entry as its row says it is.
@@ -220,6 +281,24 @@ async function viewOf(prepare: (workspace: StandIn) => void = () => undefined) {
   host.append(view);
   await vi.waitFor(() => expect(shadow(view).querySelector('tbody tr, .empty, [role="alert"]')).not.toBeNull());
   await settle(view);
+  return { workspace, ...helpersOf(view, peek) };
+}
+
+/** Opens the Inbox or Spam as their screens do: no workspace, the place set before the list is on screen. */
+async function placeOf(place: 'inbox' | 'spam') {
+  const host = testHost();
+  const peek = vi.fn();
+  host.provideContext(UMB_NOTIFICATION_CONTEXT, { peek, getHostElement: () => host } as never);
+  const view = new EntriesViewElement();
+  view.place = place;
+  host.append(view);
+  await vi.waitFor(() => expect(shadow(view).querySelector('tbody tr, .empty, [role="alert"]')).not.toBeNull());
+  await settle(view);
+  return helpersOf(view, peek);
+}
+
+/** What a test reads and does on a list. */
+function helpersOf(view: InstanceType<typeof EntriesViewElement>, peek: ReturnType<typeof vi.fn>) {
   const root = shadow(view);
   const rows = () => all(view, 'tbody tr');
   const said = () => text(root.querySelector('[role="status"]'));
@@ -240,7 +319,7 @@ async function viewOf(prepare: (workspace: StandIn) => void = () => undefined) {
     target.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, composed: true }));
     await settle(view);
   };
-  return { workspace, view, root, rows, said, button, tick, press, peek };
+  return { view, root, rows, said, button, tick, press, peek };
 }
 
 beforeAll(registerEnglish);
@@ -285,8 +364,18 @@ beforeEach(() => {
     reruns: [],
     rerunActions: [{ key: 'a1', type: 'webhook', name: 'Tell the team', trigger: 'approved' }],
     savedSets: [],
+    setForms: [],
     setCode: undefined,
     savedColumns: [],
+    formPermissions: {},
+    inboxSets: [],
+    inboxForms: [],
+    across: [],
+    viewsRead: [],
+    moveForms: [],
+    empties: [],
+    emptyPlan: { entries: 0, files: 0, more: false },
+    anywhere: [],
   });
 });
 
@@ -413,7 +502,9 @@ describe("a form's Entries view", () => {
     expect(await save('Done')).toBe('Another filter set of this form has this name.');
     server.setCode = undefined;
     expect(await save('Done')).toBeUndefined();
-    expect(server.savedSets).toEqual([{ name: 'Done', filter: { states: ['approved', 'rejected'], forms: [], fields: [] } }]);
+    expect(server.savedSets).toEqual([
+      { name: 'Done', filter: { states: ['approved', 'rejected'], forms: [], fields: [] } },
+    ]);
 
     button('Remove the filter State: Approved or Rejected').click();
     await settle(view);
@@ -715,5 +806,242 @@ describe('the entry panel beside the list', () => {
     } finally {
       globalThis.ResizeObserver = before;
     }
+  });
+});
+
+describe('the Inbox and Spam', () => {
+  const tags = (rows: HTMLElement[]) => rows.map((one) => text(one.querySelector('uui-tag')));
+
+  it("lists every form's entries with their form, in the Inbox's own order, and offers the Form filter", async () => {
+    server.rows = [row(1, { unseen: true }), row(2, { form: 'form2' }), row(3, { state: 'spam' })];
+    const { rows, root, button, view } = await placeOf('inbox');
+    expect(server.across[0]).toEqual({
+      place: 'inbox',
+      request: { filter: { states: [], forms: [], fields: [] }, columns: [], count: true },
+    });
+    expect(rows().map((one) => one.dataset['key'])).toEqual(['e1', 'e2']);
+    expect(rows().map((one) => text(one.querySelector('td.form-column')))).toEqual(['Job application', 'Contact']);
+    expect([...root.querySelectorAll('thead th')].map((th) => text(th))).toContain('Form');
+    expect(server.viewsRead).toEqual([]);
+
+    // Unseen first is the Inbox's own order, so Received is sorted only once chosen, and then newest first.
+    expect(root.querySelector('thead th[aria-sort="descending"]')).toBeNull();
+    must(root.querySelector<HTMLElement>('thead .sort'), 'the Received header').click();
+    await settle(view);
+    expect(server.across.at(-1)?.request.filter?.sort).toEqual({ field: null, descending: true });
+
+    // The menu starts with Form; its State dialog offers no Spam, which has a list of its own.
+    expect([...root.querySelectorAll('#filter-menu .menu > button')].map((one) => text(one))).toEqual([
+      'Form',
+      'State',
+      'Received',
+      'Actions',
+    ]);
+    button('State').click();
+    await settle(view);
+    expect((opened.modals.at(-1)?.data as { states: string[] }).states).toEqual([
+      'unverified',
+      'submitted',
+      'approved',
+      'rejected',
+    ]);
+  });
+
+  it("offers one chosen form's fields and columns, and none while no form or several are chosen", async () => {
+    server.rows = [row(1), row(2, { form: 'form2' })];
+    const { root, button, view } = await placeOf('inbox');
+    opened.answers[ENTRY_FORMS_MODAL_ALIAS] = { forms: [{ key: 'form1', name: 'Job application' }] };
+    button('Form').click();
+    await settle(view);
+    expect(opened.modals.at(-1)).toEqual({ token: ENTRY_FORMS_MODAL_ALIAS, data: { chosen: [] } });
+    expect(server.viewsRead).toEqual(['form1']);
+    expect(server.across.at(-1)?.request.filter?.forms).toEqual(['form1']);
+    expect([...root.querySelectorAll('.chip-text')].map((chip) => text(chip))).toEqual(['Form: Job application']);
+    // The chip says the form once: the rows leave it out while it is the only one.
+    expect(root.querySelector('.form-column, .form-below')).toBeNull();
+
+    // Its fields are filters now, and the columns chosen are the user's for that form.
+    expect(button('Position')).toBeTruthy();
+    opened.answers[ENTRY_COLUMNS_MODAL_ALIAS] = { columns: ['position'] };
+    button('Choose columns').click();
+    await settle(view);
+    expect(server.savedColumns).toEqual([['position']]);
+    expect(server.across.at(-1)?.request.columns).toEqual(['position']);
+
+    // Without it, its fields and columns go, and the chooser says why there are none.
+    button('Remove the filter Form: Job application').click();
+    await settle(view);
+    expect(server.across.at(-1)?.request).toEqual({
+      filter: { states: [], forms: [], fields: [] },
+      columns: [],
+      count: true,
+    });
+    opened.answers = {};
+    button('Choose columns').click();
+    await settle(view);
+    expect(opened.modals.at(-1)?.data).toEqual({ fields: [], columns: [], noForm: true });
+  });
+
+  it('acts on each form in a request of its own, leaves out what a form does not allow, and one Undo takes all back', async () => {
+    server.formPermissions = { form2: ['viewEntries'] };
+    server.rows = [row(1), row(2), row(4, { form: 'form3' }), row(5, { form: 'form2' })];
+    const { rows, tick, button, view, peek } = await placeOf('inbox');
+    for (const index of [0, 1, 2, 3]) await tick(index);
+    button('Approve').click();
+    await settle(view);
+    expect(server.moveForms).toEqual(['form1', 'form3']);
+    expect(server.moves).toEqual([
+      { entries: ['e1', 'e2'], state: 'approved' },
+      { entries: ['e4'], state: 'approved' },
+    ]);
+    expect(tags(rows())).toEqual(['Approved', 'Approved', 'Approved', 'Waiting for approval']);
+    const toast = peek.mock.calls.at(-1)?.[1] as { data: { message: string; undo: () => Promise<void> } };
+    expect(toast.data.message).toBe("3 entries approved. 1 was left out: their form doesn't let you do this.");
+
+    await toast.data.undo();
+    await settle(view);
+    expect(server.undos).toEqual(['change1', 'change-form3']);
+    expect(tags(rows())).toEqual(Array.from({ length: 4 }, () => 'Waiting for approval'));
+  });
+
+  it('asks once before moving entries of several forms back, and moves each form only once agreed', async () => {
+    server.asks = { full: [], held: [{ field: 'email', fieldLabel: 'Email', value: 'a@b.c' }] } as never;
+    server.rows = [row(1, { state: 'rejected' }), row(2, { state: 'rejected', form: 'form2' })];
+    const { tick, button, view } = await placeOf('inbox');
+    await tick(0);
+    await tick(1);
+    button('Approve').click();
+    await settle(view);
+    expect(opened.confirmations).toHaveLength(1);
+    expect(server.moves.map((one) => one.overbook ?? false)).toEqual([false, false, true, true]);
+    expect(server.moveForms).toEqual(['form1', 'form2', 'form1', 'form2']);
+  });
+
+  it('lists Spam without a state, offers Not spam and Delete..., and a row Not spam took out says its state', async () => {
+    server.rows = [row(1, { state: 'spam' }), row(2, { state: 'spam', form: 'form2' }), row(3)];
+    const { rows, root, tick, button, view } = await placeOf('spam');
+    expect(server.across[0]?.place).toBe('spam');
+    expect(rows().map((one) => one.dataset['key'])).toEqual(['e1', 'e2']);
+    expect([...root.querySelectorAll('thead th')].map((th) => text(th))).not.toContain('State');
+    expect(root.querySelector('tbody uui-tag')).toBeNull();
+    // In Spam every entry is in Spam and runs no action: the menu has neither State nor Actions.
+    expect([...root.querySelectorAll('#filter-menu .menu > button')].map((one) => text(one))).toEqual([
+      'Form',
+      'Received',
+    ]);
+
+    await tick(0);
+    expect([...root.querySelectorAll('.bulk .actions > uui-button')].map((one) => one.getAttribute('label'))).toEqual([
+      'Not spam',
+      'Delete\u2026',
+    ]);
+    button('Not spam').click();
+    await settle(view);
+    expect(server.moves).toEqual([{ entries: ['e1'], state: 'submitted' }]);
+    expect(text(rows()[0]?.querySelector('.moved-state'))).toBe('Waiting for approval');
+    expect(rows()[1]?.querySelector('.moved-state')).toBeNull();
+  });
+
+  it('empties Spam after asking how many go and stay, and offers it only to who may delete entries', async () => {
+    server.anywhere = ['viewEntries', 'deleteEntries'];
+    server.rows = [
+      row(1, { state: 'spam' }),
+      row(2, { state: 'spam', form: 'form2' }),
+      row(3, { state: 'spam', form: 'form3' }),
+    ];
+    server.emptyPlan = { entries: 2, files: 1, more: false };
+    const { button, view, peek } = await placeOf('spam');
+    button('Empty spam\u2026').click();
+    await settle(view);
+    expect(server.empties).toEqual([false, true]);
+    expect(opened.confirmations.at(-1)).toMatchObject({ headline: 'Empty Spam?', confirmLabel: 'Delete 2 entries' });
+    // The content goes as text, in a template of its one value (ui/confirm.ts).
+    expect((opened.confirmations.at(-1) as { content?: { values: unknown[] } }).content?.values).toEqual([
+      "2 entries in Spam go for good. 1 entry stays: its form doesn't let you delete entries. " +
+        "This also deletes their uploaded file and their timelines. You can't undo this.",
+    ]);
+    expect(peek).toHaveBeenCalledWith('positive', { data: { message: '2 entries deleted from Spam.' } });
+    // Emptied, the list reads again.
+    expect(server.across.filter((one) => one.request.count)).toHaveLength(2);
+
+    document.body.replaceChildren();
+    server.anywhere = ['viewEntries'];
+    const viewer = await placeOf('spam');
+    expect(viewer.root.querySelector('uui-button[label="Empty spam\u2026"]')).toBeNull();
+  });
+
+  it('counts no entry as staying that Not spam already took out of Spam', async () => {
+    server.anywhere = ['deleteEntries'];
+    server.rows = [row(1, { state: 'spam' }), row(2, { state: 'spam' }), row(3, { state: 'spam' })];
+    server.emptyPlan = { entries: 2, files: 0, more: false };
+    const { tick, button, view } = await placeOf('spam');
+    await tick(0);
+    button('Not spam').click();
+    await settle(view);
+    button('Empty spam\u2026').click();
+    await settle(view);
+    expect((opened.confirmations.at(-1) as { content?: { values: unknown[] } }).content?.values).toEqual([
+      "2 entries in Spam go for good. This also deletes their timelines. You can't undo this.",
+    ]);
+  });
+
+  it('says its own first use, without a toolbar', async () => {
+    server.rows = [];
+    const inbox = await placeOf('inbox');
+    expect(text(inbox.root.querySelector('.empty p'))).toBe(
+      'No entries yet. They arrive here from every form you may view.',
+    );
+    expect(inbox.root.querySelector('.toolbar')).toBeNull();
+    document.body.replaceChildren();
+    const spam = await placeOf('spam');
+    expect(text(spam.root.querySelector('.empty p'))).toBe(
+      'No spam. Entries that look automated land here, and nothing in them is lost.',
+    );
+  });
+
+  it('opens an entry on its own form, the panel naming the form, and in Spam without the state', async () => {
+    server.rows = [row(1), row(2, { form: 'form2' })];
+    const inbox = await placeOf('inbox');
+    must(inbox.rows()[1]?.querySelector<HTMLElement>('.name'), 'the second name').click();
+    await settle(inbox.view);
+    const panel = must(shadow(inbox.view).querySelector<EntryPanelElement>('jfb-entry-panel'), 'the panel');
+    expect([panel.form, panel.showsForm, panel.hidesState]).toEqual(['form2', true, false]);
+    // Beside the panel the rows leave their form out, which the panel's header names.
+    expect(inbox.root.querySelector('td.form-column, th.form-column')).toBeNull();
+
+    document.body.replaceChildren();
+    server.rows = [row(1, { state: 'spam' })];
+    const spam = await placeOf('spam');
+    must(spam.rows()[0]?.querySelector<HTMLElement>('.name'), 'the name').click();
+    await settle(spam.view);
+    expect(shadow(spam.view).querySelector<EntryPanelElement>('jfb-entry-panel')?.hidesState).toBe(true);
+  });
+
+  it("names the form of a set, filters the Inbox to it when chosen, and saves a set of one form as that form's", async () => {
+    server.inboxSets = [
+      {
+        key: 's1',
+        name: 'Accountants',
+        form: 'form1',
+        filter: { states: ['submitted', 'spam'], forms: [], fields: [] },
+      },
+    ];
+    server.inboxForms = [{ key: 'form1', name: 'Job application', permissions: server.everything }];
+    const { root, button, view } = await placeOf('inbox');
+    const set = must(
+      [...root.querySelectorAll<HTMLElement>('.set button')].find((one) => text(one).startsWith('Accountants')),
+      'the set',
+    );
+    expect(text(set.querySelector('.set-form'))).toBe('Job application');
+    set.click();
+    await settle(view);
+    expect(server.across.at(-1)?.request.filter).toEqual({ forms: ['form1'], states: ['submitted'], fields: [] });
+    expect(server.viewsRead).toEqual(['form1']);
+
+    opened.answers[ENTRY_SET_NAME_MODAL_ALIAS] = true;
+    button('Save as\u2026').click();
+    await settle(view);
+    expect(await (opened.modals.at(-1)?.data as EntrySetNameModalData).save('Mine')).toBeUndefined();
+    expect(server.setForms).toEqual(['form1']);
   });
 });

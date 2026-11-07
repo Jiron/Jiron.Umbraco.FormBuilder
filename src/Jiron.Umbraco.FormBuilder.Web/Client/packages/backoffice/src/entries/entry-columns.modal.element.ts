@@ -1,7 +1,8 @@
 // The column chooser of a form's Entries view (ROADMAP 11.1, IA 6.1, ADR-0207): a sidebar of the form's fields to tick, the
 // live version's in their order and then those it removed, up to 20. Every entry shows its details, which one line says;
 // sensitive fields are no columns, which one line says too, only where the form has one. Show columns keeps the choice
-// for the user, the same on every device.
+// for the user, the same on every device. The Inbox and Spam offer a form's fields while filtered to it; otherwise one
+// line says so, in the fields' place (ADR-0209).
 import { css, html, nothing } from '@umbraco-cms/backoffice/external/lit';
 import { UmbModalBaseElement } from '@umbraco-cms/backoffice/modal';
 import { jfbBackofficeTokens } from '../styles/tokens';
@@ -90,7 +91,7 @@ export class EntryColumnsModalElement extends UmbModalBaseElement<EntryColumnsMo
         <p>${this.#term('chooser_details')}</p>
         ${
           fields.length === 0
-            ? html`<p>${this.#term('chooser_none')}</p>`
+            ? html`<p>${this.#term(this.data?.noForm ? 'chooser_noForm' : 'chooser_none')}</p>`
             : html`<fieldset>
                 <legend>${this.#term('chooser_fields')}</legend>
                 ${fields.map((field) => {

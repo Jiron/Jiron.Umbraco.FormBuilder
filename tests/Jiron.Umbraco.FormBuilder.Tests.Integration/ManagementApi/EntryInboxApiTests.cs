@@ -33,9 +33,12 @@ public sealed class EntryInboxApiTests : ManagementApiTestBase
         var hrForms = await CallAsync("hr", HttpMethod.Get, "entries/forms?search=appl");
         var viewerUnseen = await CallAsync("viewer", HttpMethod.Get, "entries/unseen");
         var adminUnseen = await CallAsync(Admin, HttpMethod.Get, "entries/unseen");
+        var quiet = await PublishedAsync("Survey");
+        var chosen = await CallAsync("viewer", HttpMethod.Post, "entries/inbox", new { filter = new { forms = new[] { open, quiet } } });
 
         Assert.Multiple(() =>
         {
+            Assert.That(Keys(chosen, "forms"), Is.EqualTo(new[] { open, quiet }), "a chosen form without entries is named too, for its chip");
             Assert.That(viewer.Outcome, Is.EqualTo("200"), viewer.ToString());
             Assert.That(Keys(viewer, "items"), Is.EqualTo(new[] { openEntry.Key }), "no entry of the restricted folder's form");
             Assert.That(viewer.Body!["total"]!.GetValue<int>(), Is.EqualTo(1));
@@ -50,6 +53,40 @@ public sealed class EntryInboxApiTests : ManagementApiTestBase
             Assert.That(hrForms.Body!.AsArray().Select(form => form!["name"]!.GetValue<string>()), Is.EqualTo(new[] { "Applications" }));
             Assert.That((viewerUnseen.Outcome, viewerUnseen.Body!["count"]!.GetValue<int>(), viewerUnseen.Body!["more"]!.GetValue<bool>()), Is.EqualTo(("200", 1, false)));
             Assert.That(adminUnseen.Body!["count"]!.GetValue<int>(), Is.EqualTo(2));
+        });
+    }
+
+    [Test]
+    public async Task TheView_NamesTheFormsOfTheSets_AndLeavesOutWhatIsGone()
+    {
+        var open = await PublishedAsync("Contact");
+        var other = await PublishedAsync("Newsletter");
+        var trashed = await PublishedAsync("Old survey");
+        var ofForm = Guid.NewGuid();
+        var everywhere = Guid.NewGuid();
+        var ofTrashed = Guid.NewGuid();
+        var someForms = Guid.NewGuid();
+        var trashedOnly = Guid.NewGuid();
+
+        var saved = new[]
+        {
+            await CallAsync(Admin, HttpMethod.Put, $"entry/filter-set/{ofForm}", new { name = "Contact waiting", form = open, filter = new { forms = new[] { open }, states = new[] { "submitted" } } }),
+            await CallAsync(Admin, HttpMethod.Put, $"entry/filter-set/{everywhere}", new { name = "Failed anywhere", filter = new { actions = "failed" } }),
+            await CallAsync(Admin, HttpMethod.Put, $"entry/filter-set/{ofTrashed}", new { name = "Survey", form = trashed, filter = new { } }),
+            await CallAsync(Admin, HttpMethod.Put, $"entry/filter-set/{someForms}", new { name = "Both", filter = new { forms = new[] { other, trashed } } }),
+            await CallAsync(Admin, HttpMethod.Put, $"entry/filter-set/{trashedOnly}", new { name = "Old only", filter = new { forms = new[] { trashed } } }),
+        };
+        await TrashFormAsync(trashed);
+        var view = await CallAsync(Admin, HttpMethod.Get, "entries/view");
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(saved.Select(answer => answer.Outcome), Is.All.EqualTo("200"), string.Join(", ", saved.Select(answer => answer.ToString())));
+            Assert.That(view.Outcome, Is.EqualTo("200"), view.ToString());
+            Assert.That(Keys(view, "filterSets"), Is.EquivalentTo(new[] { ofForm, everywhere, someForms }), "a set of a trashed form could not filter the Inbox, nor one of no form left");
+            var both = view.Body!["filterSets"]!.AsArray().Single(set => set!["key"]!.GetValue<Guid>() == someForms)!;
+            Assert.That(both["filter"]!["forms"]!.AsArray().Select(form => form!.GetValue<Guid>()), Is.EqualTo(new[] { other }), "the trashed form goes, the other stays");
+            Assert.That(view.Body!["forms"]!.AsArray().Select(form => form!["name"]!.GetValue<string>()), Is.EquivalentTo(new[] { "Contact", "Newsletter" }));
         });
     }
 

@@ -98,7 +98,10 @@ internal sealed record EntryListRow(Guid Key, int Number, string? Title, EntrySt
 /// <param name="Count">How many entries match, when asked for.</param>
 internal sealed record EntryListPage(IReadOnlyList<EntryListRow> Rows, string? Next, EntryCount? Count)
 {
-    /// <summary>The forms the rows belong to, in the order they first appear: in a list across forms, which names them.</summary>
+    /// <summary>
+    /// In a list across forms, which names them: the forms the rows belong to, in the order they first appear, then the
+    /// forms its filter chose that no row of the page holds.
+    /// </summary>
     public IReadOnlyList<EntryListForm> Forms { get; init; } = [];
 }
 
@@ -308,7 +311,9 @@ internal sealed partial class EntryLists(
             }
         }
 
-        // The groups keep the order their forms first appear in, so the forms do too.
+        // The groups keep the order their forms first appear in, so the forms do too; then come the forms the filter
+        // chose that no row holds, so a chip can name every form it filters by.
+        named.AddRange(chosen.Where(form => named.TrueForAll(seen => seen.Key != form.Key)).Select(form => new EntryListForm(form.Key, form.Name)));
         return new EntryListPage([.. page.Entries.Where(entry => rows.ContainsKey(entry.Key)).Select(entry => rows[entry.Key])], page.Next is { } next ? Encode(next) : null, page.Count)
         {
             Forms = named,

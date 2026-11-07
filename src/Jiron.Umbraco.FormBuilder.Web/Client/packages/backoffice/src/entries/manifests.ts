@@ -1,8 +1,10 @@
-// The dialogs of a form's Entries view and its entry panel (ROADMAP 11.1 and 11.2, ADR-0207, ADR-0208); the view itself
-// is one of the form workspace's views (designer/manifests.ts).
+// The dialogs of a form's Entries view, the Inbox and Spam and of the entry panel (ROADMAP 11.1 and 11.2, ADR-0207 to
+// ADR-0209); the view itself is one of the form workspace's views (designer/manifests.ts), and the Inbox's and Spam's
+// screens are the sidebar's (section/manifests.ts).
 import {
   ENTRY_COLUMNS_MODAL_ALIAS,
   ENTRY_FILTER_MODAL_ALIAS,
+  ENTRY_FORMS_MODAL_ALIAS,
   ENTRY_FORWARD_MODAL_ALIAS,
   ENTRY_IMAGE_MODAL_ALIAS,
   ENTRY_KEYS_MODAL_ALIAS,
@@ -15,6 +17,12 @@ export const manifests: UmbExtensionManifest[] = [
     alias: ENTRY_FILTER_MODAL_ALIAS,
     name: 'Jiron Form Builder entries filter',
     element: (() => import('./entry-filter.modal.element')) as never,
+  },
+  {
+    type: 'modal',
+    alias: ENTRY_FORMS_MODAL_ALIAS,
+    name: 'Jiron Form Builder entries form filter',
+    element: (() => import('./entry-forms.modal.element')) as never,
   },
   {
     type: 'modal',
