@@ -138,6 +138,12 @@ internal static class FormBuilderProblems
     /// <summary>The code of a test entry whose actions ran, or wait for its address to be confirmed (ADR-0204).</summary>
     public const string ActionsRanCode = "actions_ran";
 
+    /// <summary>The code of an export that is not the user's, or whose file expired (ADR-0210).</summary>
+    public const string ExportNotFoundCode = "export_not_found";
+
+    /// <summary>The code of an export too large to stream, which runs in the background instead (ADR-0210).</summary>
+    public const string ExportInBackgroundCode = "export_in_background";
+
     /// <summary>How long a client waits before asking again while the plan has not run.</summary>
     public static readonly TimeSpan RetryAfter = TimeSpan.FromSeconds(10);
 
@@ -279,6 +285,14 @@ internal static class FormBuilderProblems
     /// <summary>A forward that names no recipient or both, or whose message is too long (ADR-0208).</summary>
     public static FormBuilderProblemResult ForwardInvalid() =>
         Problem(StatusCodes.Status400BadRequest, ForwardInvalidCode, "Choose one user or one address, and write a message of at most 2,000 characters.");
+
+    /// <summary>An export of the form that is not the user's, never was, or whose file expired (ADR-0210).</summary>
+    public static FormBuilderProblemResult ExportNotFound() =>
+        Problem(StatusCodes.Status404NotFound, ExportNotFoundCode, "The export does not exist, or its file has expired.");
+
+    /// <summary>An export asked for at once that holds more entries than a download takes (ADR-0210).</summary>
+    public static FormBuilderProblemResult ExportInBackground() =>
+        Problem(StatusCodes.Status409Conflict, ExportInBackgroundCode, "This export is too large to download at once. Start it in the background.");
 
     /// <summary>A test entry the form does not hold, or one that is gone (ADR-0204).</summary>
     public static FormBuilderProblemResult TestEntryNotFound() =>

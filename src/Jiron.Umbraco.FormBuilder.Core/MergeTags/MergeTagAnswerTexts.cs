@@ -326,6 +326,71 @@ internal sealed partial class MergeTagAnswerTexts(
     }
 
     /// <summary>
+    /// A field's answer as an export writes it (ADR-0210): the texts of its values as the summary page lists them, none
+    /// where it is unanswered or the rules hid it or its repeatable group. The export decided already whether a sensitive
+    /// field goes along, so nothing is masked here.
+    /// </summary>
+    /// <param name="target">The field, and its repeatable group for a child.</param>
+    /// <param name="scope">The answers, with the fields the rules hid.</param>
+    /// <param name="texts">The dictionary's texts and the options' labels the scope's fields show.</param>
+    /// <param name="row">The row of a repeatable group's child, from 0; 0 for any other field.</param>
+    internal IReadOnlyList<string> ExportTexts(AnswerField target, MergeTagScope scope, ScopeTexts texts, int row = 0) =>
+        IsHidden(target, scope) || scope.Answers.Find(target.Field.Key, row) is not { } answer
+            ? []
+            : Visible(Texts(target.Field, answer, scope.Culture, listing: true, texts));
+
+    /// <summary>One row of a grid's answer as an export writes it (ADR-0210): the columns chosen in it, without its statement.</summary>
+    /// <param name="grid">The grid.</param>
+    /// <param name="row">The row.</param>
+    /// <param name="scope">The answers, with the fields the rules hid.</param>
+    /// <param name="texts">The dictionary's texts and the options' labels the scope's fields show.</param>
+    internal IReadOnlyList<string> ExportGridRow(FormField grid, GridRow row, MergeTagScope scope, ScopeTexts texts)
+    {
+        ArgumentNullException.ThrowIfNull(grid);
+        ArgumentNullException.ThrowIfNull(row);
+        if (IsHidden(new AnswerField(grid, null), scope) || scope.Answers.Find(grid.Key) is not { } answer)
+        {
+            return [];
+        }
+
+        var values = answer.Values.Where(value => value.Row == row.Key).ToList();
+        return values.Count == 0
+            ? []
+            : Visible(Texts(grid with { Rows = [row with { Label = null }] }, new MergeTagAnswer(grid.Key, values), scope.Culture, listing: true, texts));
+    }
+
+    /// <summary>
+    /// A repeatable group's answered rows as an export writes them (ADR-0210): for each row in its order, its children's
+    /// texts in the order asked for; none where the rules hid the group.
+    /// </summary>
+    /// <param name="repeater">The repeatable group.</param>
+    /// <param name="children">The keys of the children the export writes, in its order.</param>
+    /// <param name="scope">The answers, with the fields the rules hid.</param>
+    /// <param name="texts">The dictionary's texts and the options' labels the scope's fields show.</param>
+    internal IReadOnlyList<IReadOnlyList<IReadOnlyList<string>>> ExportRows(FormField repeater, IReadOnlyList<Guid> children, MergeTagScope scope, ScopeTexts texts)
+    {
+        ArgumentNullException.ThrowIfNull(repeater);
+        ArgumentNullException.ThrowIfNull(children);
+        if (scope.Answers.Hidden.Contains(repeater.Key))
+        {
+            return [];
+        }
+
+        var byKey = repeater.Fields.ToDictionary(child => child.Key);
+        var rows = new List<IReadOnlyList<IReadOnlyList<string>>>();
+        foreach (var row in scope.Answers.Rows(repeater.Fields.Select(child => child.Key)))
+        {
+            IReadOnlyList<IReadOnlyList<string>> cells = [.. children.Select(key => byKey.TryGetValue(key, out var child) ? ExportTexts(new AnswerField(child, repeater), scope, texts, row) : [])];
+            if (cells.Any(cell => cell.Count > 0))
+            {
+                rows.Add(cells);
+            }
+        }
+
+        return rows;
+    }
+
+    /// <summary>
     /// The texts a field's answer shows as, in a culture, as its type writes them, with the dictionary's texts for the
     /// field's texts that name an item and the labels its list or source resolved; the values as they are for a type the
     /// site no longer has, and the default display for a type whose own throws. Where the browser renders the same texts
@@ -472,6 +537,9 @@ internal sealed partial class MergeTagAnswerTexts(
 
     /// <summary>Whether the browser renders the place's texts too, from the same answers (ADR-0068).</summary>
     private static bool Shared(MergeTagPlace place) => place == MergeTagPlace.VisitorText;
+
+    // The texts that show something.
+    private static List<string> Visible(IReadOnlyList<FieldDisplay.DisplayText> texts) => [.. texts.Select(text => text.Text).Where(text => text.Length > 0)];
 
     private static bool IsHidden(AnswerField target, MergeTagScope scope) =>
         scope.Answers.Hidden.Contains(target.Field.Key) || (target.Repeater is { } repeater && scope.Answers.Hidden.Contains(repeater.Key));

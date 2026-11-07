@@ -302,6 +302,67 @@ export type EntryEditResponseModel = {
     asks: EntryMoveAsksResponseModel | null;
 };
 
+export type EntryExportChoicesResponseModel = {
+    format: string;
+    fields?: Array<string> | null;
+    sensitive: boolean;
+    options: EntryExportOptionsResponseModel;
+};
+
+export type EntryExportFormatResponseModel = {
+    name: string;
+    displayName: string;
+    writesFiles: boolean;
+    takesDelimiter: boolean;
+    takesHeaders: boolean;
+    fileName: string;
+};
+
+export type EntryExportOptionsRequestModel = {
+    delimiter: string;
+    headers: string;
+    byteOrderMark: boolean;
+};
+
+export type EntryExportOptionsResponseModel = {
+    delimiter: string;
+    headers: string;
+    byteOrderMark: boolean;
+};
+
+export type EntryExportPlanResponseModel = {
+    entries: number;
+    more: boolean;
+    background: boolean;
+};
+
+export type EntryExportRequestModel = {
+    format: string;
+    filter?: EntryListFilterRequestModel | null;
+    entries?: Array<string> | null;
+    fields?: Array<string> | null;
+    sensitive: boolean;
+    options?: EntryExportOptionsRequestModel | null;
+};
+
+export type EntryExportStatusResponseModel = {
+    key: string;
+    state: string;
+    total: number;
+    more: boolean;
+    done: number;
+    fileName?: string | null;
+    expiresUtc?: string | null;
+    problem?: string | null;
+};
+
+export type EntryExportViewResponseModel = {
+    formats: Array<EntryExportFormatResponseModel>;
+    choices?: EntryExportChoicesResponseModel | null;
+    maySeeSensitive: boolean;
+    exports: Array<EntryExportStatusResponseModel>;
+};
+
 export type EntryFieldFilterRequestModel = {
     field: string;
     test: string;
@@ -2607,6 +2668,234 @@ export type EntryActionRunRetryResponses = {
 };
 
 export type EntryActionRunRetryResponse = EntryActionRunRetryResponses[keyof EntryActionRunRetryResponses];
+
+export type EntryExportViewData = {
+    body?: never;
+    path: {
+        key: string;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/form/{key}/entries/export';
+};
+
+export type EntryExportViewErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type EntryExportViewError = EntryExportViewErrors[keyof EntryExportViewErrors];
+
+export type EntryExportViewResponses = {
+    /**
+     * OK
+     */
+    200: EntryExportViewResponseModel;
+};
+
+export type EntryExportViewResponse = EntryExportViewResponses[keyof EntryExportViewResponses];
+
+export type EntryExportWriteFileData = {
+    body?: EntryExportRequestModel;
+    path: {
+        key: string;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/form/{key}/entries/export/file';
+};
+
+export type EntryExportWriteFileErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+};
+
+export type EntryExportWriteFileError = EntryExportWriteFileErrors[keyof EntryExportWriteFileErrors];
+
+export type EntryExportWriteFileResponses = {
+    /**
+     * OK
+     */
+    200: Blob | File;
+};
+
+export type EntryExportWriteFileResponse = EntryExportWriteFileResponses[keyof EntryExportWriteFileResponses];
+
+export type EntryExportStartData = {
+    body?: EntryExportRequestModel;
+    path: {
+        key: string;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/form/{key}/entries/export/jobs';
+};
+
+export type EntryExportStartErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type EntryExportStartError = EntryExportStartErrors[keyof EntryExportStartErrors];
+
+export type EntryExportStartResponses = {
+    /**
+     * OK
+     */
+    200: EntryExportStatusResponseModel;
+};
+
+export type EntryExportStartResponse = EntryExportStartResponses[keyof EntryExportStartResponses];
+
+export type EntryExportStatusData = {
+    body?: never;
+    path: {
+        key: string;
+        exportKey: string;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/form/{key}/entries/export/jobs/{exportKey}';
+};
+
+export type EntryExportStatusErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type EntryExportStatusError = EntryExportStatusErrors[keyof EntryExportStatusErrors];
+
+export type EntryExportStatusResponses = {
+    /**
+     * OK
+     */
+    200: EntryExportStatusResponseModel;
+};
+
+export type EntryExportStatusResponse = EntryExportStatusResponses[keyof EntryExportStatusResponses];
+
+export type EntryExportDownloadData = {
+    body?: never;
+    path: {
+        key: string;
+        exportKey: string;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/form/{key}/entries/export/jobs/{exportKey}/file';
+};
+
+export type EntryExportDownloadErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type EntryExportDownloadError = EntryExportDownloadErrors[keyof EntryExportDownloadErrors];
+
+export type EntryExportDownloadResponses = {
+    /**
+     * OK
+     */
+    200: Blob | File;
+};
+
+export type EntryExportDownloadResponse = EntryExportDownloadResponses[keyof EntryExportDownloadResponses];
+
+export type EntryExportPlanData = {
+    body?: EntryExportRequestModel;
+    path: {
+        key: string;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/form/{key}/entries/export/plan';
+};
+
+export type EntryExportPlanErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type EntryExportPlanError = EntryExportPlanErrors[keyof EntryExportPlanErrors];
+
+export type EntryExportPlanResponses = {
+    /**
+     * OK
+     */
+    200: EntryExportPlanResponseModel;
+};
+
+export type EntryExportPlanResponse = EntryExportPlanResponses[keyof EntryExportPlanResponses];
 
 export type EntryFileDownloadData = {
     body?: never;

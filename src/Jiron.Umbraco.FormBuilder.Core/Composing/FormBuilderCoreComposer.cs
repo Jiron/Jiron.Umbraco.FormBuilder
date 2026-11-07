@@ -144,6 +144,13 @@ public sealed class FormBuilderCoreComposer : IComposer
         _ = builder.JironFormBuilder().SpamChecks();
         _ = builder.JironFormBuilder().CaptchaProviders();
         _ = builder.JironFormBuilder().FileScanners();
+        // Exports (ADR-0210): the formats, the service, and the background exports with their worker and job.
+        _ = builder.JironFormBuilder().ExportFormats();
+        builder.Services.TryAddSingleton<Exports.EntryExports>();
+        builder.Services.TryAddSingleton<Exports.EntryExportWake>();
+        builder.Services.TryAddSingleton<Exports.EntryExportJobs>();
+        builder.Services.AddHostedService<Exports.EntryExportWorker>();
+        builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IDistributedBackgroundJob, Exports.FormBuilderExportJob>());
         builder.Services.TryAddSingleton<FileScans>();
         builder.Services.TryAddSingleton<EntryFileDownloads>();
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IRecurringBackgroundJob, FileScanJob>());

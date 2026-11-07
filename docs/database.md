@@ -458,7 +458,9 @@ erDiagram
 ### `jfbKeyValue`
 
 One-time flags and small markers, such as the record that the Form Builder section was granted, or the hashes of mirrored
-definition files. No indexes besides the primary key on `key`.
+definition files. No indexes besides the primary key on `key`. A background export keeps its record under
+`jfb.export.<export key>` (ADR-0210): its owner, form and request, where it stands, its worker's lease and, once ready,
+the file store's id of its file; the exports' job removes both a day after it was ready or failed.
 
 ### `jfbFolder`
 
@@ -662,6 +664,9 @@ owns the name checks; a value it cannot read counts as none (ADR-0207):
 - `entries.columns.<form key>`: the fields a user shows as a form's columns, at most 20, in their order;
 - `entries.filterSets`: the user's filter sets, at most 50, each with its key, a name of at most 60 characters, the
   form it belongs to or none, and its filter in the shape the entries list's request sends;
+- `entries.export.<form key>`: what the user last exported of a form, which the export dialog opens with: the format's
+  name, the fields (none for every field), whether sensitive fields went along, the delimiter, the headers and the
+  byte-order mark (ADR-0210);
 - `entries.digest`: how often the user gets the summary email, `daily` or `weekly`; none means off (ADR-0209);
 - `entries.digest.sent`: the last day the summary job covered for the user, written with the mail it queued, so a
   period goes out once; turning the summary on writes the period due by then.

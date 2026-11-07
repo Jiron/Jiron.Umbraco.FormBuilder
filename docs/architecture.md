@@ -77,6 +77,7 @@ database connection of its own. Its areas:
 | Actions and email | action types, action runs, the worker; the mail queue with its renderer, layouts, limits and test mail (`Email`, [ADR-0159](decisions/0159-mail-the-queue-the-layouts-and-the-limits.md)); the email action (`EmailActionType`, [ADR-0160](decisions/0160-the-email-action.md)) | ADR-0007 |
 | Protection | the spam score, content rules, captcha provider contract, mail caps | ADR-0012 |
 | Files | the file store contract and the physical store, whose root is checked against the web root at start-up; the host's limits for files (`Files:MaxFileBytes`, `Files:MaxWaitingBytes`, `Files:MaxWaitingBytesPerAddress`, `Files:BlockedExtensions`); the uploads before a submission: the name cleaned, the first bytes checked against the kinds of file (`FileKinds`), the bytes counted, hashed and stored, a row without an entry; the bytes that may wait for an entry (`WaitingUploads`, ADR-0148); scanning in the background, what an entry holds first, and the quarantine (`FileScans`, ADR-0144, ADR-0148); an entry's files for a user, one or a form's in a ZIP under names that stay in their folder (`EntryFileDownloads`, `FileArchiveNames`, ADR-0145); a typed signature drawn as its PNG in the package's own hand (`TypedSignature`, `SignatureHand`, `PenCanvas`, `Png`), the name kept in an `iTXt` chunk | ADR-0006, ADR-0041, ADR-0087, ADR-0103, ADR-0148 |
+| Exports | the export of a form's entries over the entries list's own query or the ticked entries (`EntryExports`: keyset pages of 250 entries, each its own gated read; the columns from the field catalogue, a grid by row, a ranking by position, a repeatable group as a table; sensitive fields only when asked for and allowed; audited as `entries.exported` and announced with `ExportCompletedNotification`), the built-in formats through `ExportFormats()` (CSV with the formula guard, Excel from a small own writer, JSON, a printable view, a ZIP of the files), and the exports too large to stream (`EntryExportJobs`: a record in `jfbKeyValue` per export, this server's worker, a lease renewed after each page, three attempts, three exports under way per user, the file kept 24 hours for its owner only) | ADR-0003, ADR-0210 |
 | Privacy | retention, holds, data subject tools, masking, IP handling | ADR-0009 |
 | Retention | the hourly retention job and its parts, so far the draft-version cleanup; the cleanup of uploads no entry took, on a timer of its own (`OrphanFileCleanup`, `OrphanFileJob`) | ADR-0007, ADR-0045, ADR-0148 |
 | Access | the permission model (the flags, what each needs and where it may be granted), the evaluation from one cached snapshot per server with its refresher, the lists' filter, grants and restrictions with their audit entries, host grants and the access lock, and the grants of a user group Umbraco deletes | ADR-0013, ADR-0048 |
@@ -867,7 +868,7 @@ names and traits are read once, at start-up
 | `IFormBuilderFieldType` (`FormBuilderFieldTypeBase<TSettings>`) | a field with settings, parsing, validation, storage kind, its answers' display in merge tags, view and client behaviour | §4.3.2, ADR-0002, ADR-0055, ADR-0066 |
 | `IFormBuilderActionType` (`FormBuilderActionTypeBase<TSettings>`) | an action with settings, a test run and retries | ADR-0007 |
 | `IFormBuilderOptionSource` | options from code, with parent filtering, by a name start-up checks; the standard lists are sources a site may replace or remove | ADR-0002, ADR-0073 |
-| `IFormBuilderExportFormat` | an export | §4.9 |
+| `IFormBuilderExportFormat` | an export format, through `ExportFormats()`: it writes the export's columns, tables and entries, read page by page, to a stream, and may open the entries' files; the built-in formats are its implementations, a site's follow them in the dialog, and the last of a name wins | §4.9, ADR-0210 |
 | `IFormBuilderCaptchaProvider` | a captcha a form can choose, through `CaptchaProviders()`; the last of a name wins, so a site can replace a built-in one; one that fails or lost its keys sends the entry to Spam; its `Label` names it in the backoffice, and its `SettingsType` describes the settings a form gives it with the attributes a field type's settings use | ADR-0012, ADR-0142, ADR-0184 |
 | `IFormBuilderSpamCheck` | a spam signal with a score and a reason, through `SpamChecks()`; one that fails or takes over 5 seconds counts for nothing | ADR-0012, ADR-0140 |
 | `IFormBuilderMergeTagSource`, `IFormBuilderMergeTagFilter` | merge-tag sources and filters of a site's own, in the places their traits allow | ADR-0014, ADR-0065 |
@@ -922,8 +923,11 @@ when it was published again) and its `jfb:rendered` event.
 - **Distributed jobs**, each returning within 10 seconds and working in bounded batches, a minute apart or more:
   `Jiron.FormBuilder.Outbox` (wakes the worker), `Jiron.FormBuilder.Retention` (hourly, its parts in order within
   8 seconds: the draft-version cleanup, ADR-0045, then entries, mail and files, ADR-0009), `Jiron.FormBuilder.Digest`
-  (hourly, the users' summary emails once the site's 07:00 has passed, each period once, ADR-0209), statistics roll-ups
-  and the file mirror (D25).
+  (hourly, the users' summary emails once the site's 07:00 has passed, each period once, ADR-0209),
+  `Jiron.FormBuilder.Exports` (every minute: removes the exports whose day is up, file and record, and wakes its server's
+  export worker, which restarts an export whose lease ran out, ADR-0210), statistics roll-ups and the file mirror (D25).
+- **The export worker** (`EntryExportWorker`), one per server, writes the background exports one after the other; queueing
+  one wakes it at once (ADR-0210).
 - **Jobs on timers of their own,** on the server that schedules, because they can take longer than a distributed job may:
   `FileScanJob` every half minute, up to two minutes (ADR-0144), and `OrphanFileJob` for uploads no entry took, every minute,
   up to 30 seconds (ADR-0148).

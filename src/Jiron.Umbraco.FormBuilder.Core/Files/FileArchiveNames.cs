@@ -24,15 +24,20 @@ internal sealed class FileArchiveNames
     /// <summary>The next file's path in the archive, as a ZIP writes one: <c>entry-12/report.pdf</c>, with a number on a name its folder holds already.</summary>
     /// <param name="entryId">The entry that holds the file.</param>
     /// <param name="name">The file's stored name.</param>
-    public string Next(long entryId, string name)
+    public string Next(long entryId, string name) => NextIn($"entry-{entryId}", name);
+
+    /// <summary>The next file's path in a folder of the archive, such as <c>entry-42/report.pdf</c> for an export's entry number 42 (ADR-0210).</summary>
+    /// <param name="folder">The folder, one plain segment the caller makes.</param>
+    /// <param name="name">The file's stored name.</param>
+    public string NextIn(string folder, string name)
     {
         var safe = Safe(name);
         var point = safe.LastIndexOf('.');
         var (stem, extension) = point < 0 ? (safe, string.Empty) : (safe[..point], safe[point..]);
-        var path = $"entry-{entryId}/{safe}";
+        var path = $"{folder}/{safe}";
         for (var number = 2; !_taken.Add(path); number++)
         {
-            path = $"entry-{entryId}/{stem} ({number}){extension}";
+            path = $"{folder}/{stem} ({number}){extension}";
         }
 
         return path;

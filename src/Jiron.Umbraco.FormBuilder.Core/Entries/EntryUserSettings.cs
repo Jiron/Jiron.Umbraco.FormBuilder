@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Jiron.Umbraco.FormBuilder.Core.Exports;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 
@@ -11,9 +12,16 @@ namespace Jiron.Umbraco.FormBuilder.Core.Entries;
 /// <param name="Filter">What it filters.</param>
 internal sealed record EntryFilterSet(Guid Key, string Name, Guid? Form, EntryListFilter Filter);
 
+/// <summary>What the export dialog last exported of a form, which it opens with (ADR-0210).</summary>
+/// <param name="Format">The format's name.</param>
+/// <param name="Fields">The fields chosen, or null for every field.</param>
+/// <param name="Sensitive">Whether sensitive fields went along.</param>
+/// <param name="Options">The delimiter, the headers and the byte-order mark.</param>
+internal sealed record EntryExportChoices(string Format, IReadOnlyList<Guid>? Fields, bool Sensitive, FormBuilderExportOptions Options);
+
 /// <summary>
 /// A user's own choices for the entries lists (ADR-0207) in <c>jfbUserSetting</c> (ADR-0008): the columns chosen for
-/// each form and the filter sets, the same on every device. It checks their shape; <see cref="EntryLists"/> checks
+/// each form, the filter sets and each form's last export (ADR-0210), the same on every device. It checks their shape; <see cref="EntryLists"/> checks
 /// them against the forms. A stored value it cannot read counts as none, so a list always opens.
 /// </summary>
 /// <param name="settings">The user settings.</param>
@@ -33,6 +41,26 @@ internal sealed class EntryUserSettings(IUserSettingRepository settings)
 
     /// <summary>The start of the name a form's columns are stored under; the form's key follows.</summary>
     public const string ColumnsPrefix = "entries.columns.";
+
+    /// <summary>The start of the name a form's last export is stored under; the form's key follows.</summary>
+    public const string ExportPrefix = "entries.export.";
+
+    /// <summary>What the user last exported of a form; null until they export it.</summary>
+    /// <param name="userKey">The user.</param>
+    /// <param name="formKey">The form.</param>
+    /// <param name="cancellationToken">Stops the read.</param>
+    public async Task<EntryExportChoices?> GetExportChoicesAsync(Guid userKey, Guid formKey, CancellationToken cancellationToken = default) =>
+        Read<EntryExportChoices>(await settings.GetAsync(userKey, ExportPrefix + formKey.ToString("D"), cancellationToken)) is { Format: not null, Options: not null } choices
+            ? choices with { Fields = choices.Fields?.Distinct().ToList() }
+            : null;
+
+    /// <summary>Keeps what the user exported of a form, for the dialog to open with next time.</summary>
+    /// <param name="userKey">The user.</param>
+    /// <param name="formKey">The form.</param>
+    /// <param name="choices">The choices, as the export checked them.</param>
+    /// <param name="cancellationToken">Stops the write.</param>
+    public Task SetExportChoicesAsync(Guid userKey, Guid formKey, EntryExportChoices choices, CancellationToken cancellationToken = default) =>
+        settings.SetAsync(userKey, ExportPrefix + formKey.ToString("D"), JsonSerializer.Serialize(choices, EntryListJson.Options), cancellationToken);
 
     /// <summary>The fields a user chose as a form's columns, in their order; none until they choose.</summary>
     /// <param name="userKey">The user.</param>

@@ -1,4 +1,5 @@
 using Jiron.Umbraco.FormBuilder.Core.Actions;
+using Jiron.Umbraco.FormBuilder.Core.Exports;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Core.Files;
 using Jiron.Umbraco.FormBuilder.Core.MergeTags;
@@ -46,6 +47,9 @@ public sealed class FormBuilderComposition
 
     /// <summary>The themes of the website forms, the built-in ones among them (ADR-0105).</summary>
     public FormBuilderThemeCollectionBuilder Themes() => Builder.WithCollectionBuilder<FormBuilderThemeCollectionBuilder>();
+
+    /// <summary>The formats entries export to, the built-in ones among them (ADR-0210).</summary>
+    public FormBuilderExportFormatCollectionBuilder ExportFormats() => Builder.WithCollectionBuilder<FormBuilderExportFormatCollectionBuilder>();
 }
 
 /// <summary>The way into Jiron Form Builder's composition from a composer (section 4.9).</summary>

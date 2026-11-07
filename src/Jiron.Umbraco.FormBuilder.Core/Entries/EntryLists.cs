@@ -243,6 +243,22 @@ internal sealed partial class EntryLists(
     }
 
     /// <summary>
+    /// The query of an export of the form's entries (ADR-0210): the list's own, so an export holds what the list shows.
+    /// </summary>
+    /// <param name="form">The form.</param>
+    /// <param name="filter">The list's filter.</param>
+    /// <param name="problems">Where a filter's problems go, each by its path in the request.</param>
+    /// <param name="cancellationToken">The request's cancellation.</param>
+    internal async Task<EntryQuery> ExportQueryAsync(StoredForm form, EntryListFilter filter, List<DefinitionProblem> problems, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(form);
+        var catalogue = await forms.ListFieldsAsync(form.Id, cancellationToken);
+        var fields = Fields(catalogue).ToDictionary(field => field.Key);
+        var ids = catalogue.ToDictionary(row => row.Values.FieldKey, row => row.Id);
+        return await QueryAsync(form, fields, ids, filter, problems, cancellationToken);
+    }
+
+    /// <summary>
     /// A page of the entries of every form the user may view entries of (ADR-0209): the Inbox, unseen first unless the
     /// filter sorts, or Spam. A filter of one form offers that form's fields as filters, columns and sorts; of several,
     /// none. The caller passes the user's visibility with <c>viewEntries</c>.
