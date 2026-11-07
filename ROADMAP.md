@@ -2771,7 +2771,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
   - Done when:
     - Playwright shows an action's last run, and a failed one's Details with the server's answer and its tries (the webhook stub answering with an error);
     - integration tests cover the endpoint, with its row in the permission matrix and the OpenAPI snapshot, and show it naming no entry and no answer.
-- [ ] **10.3 Preview, publishing and history, and phase review** (10.3a, 10.3b, 10.3c, 10.3d, 10.3e, 10.3f and 10.4 in one, ADR-0197)
+- [x] **10.3 Preview, publishing and history, and phase review** (10.3a, 10.3b, 10.3c, 10.3d, 10.3e, 10.3f and 10.4 in one, ADR-0197) (2026-11-07, ff38c58)
   - **10.3a History: the list, pins, comments and the comparison**:
     - **The list:** versions (draft saves and published), with pins and comments (IA 5.6): the published versions newest first, each with when, who and what changed against the one before, its comment and pin, the live one's "Published" chip; the "Show draft saves" switch; a row's "…" with Pin and Add comment….
     - **The diff:** a side-by-side comparison in plain language (fields added, removed and changed; settings, actions and rules): Compare for two ticked versions, and a clicked row's sidebar comparing that version with the current draft. The server sends paths and values (ADR-0045), and the backoffice says them in its own words, in English and German.
