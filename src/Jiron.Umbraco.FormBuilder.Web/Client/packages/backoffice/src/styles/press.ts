@@ -3,9 +3,12 @@
 // An element adds the rule for its small buttons to its styles: a "...", a remove button, a choice of a few.
 import { css, unsafeCSS, type CSSResult } from '@umbraco-cms/backoffice/external/lit';
 
-/** The press for the buttons a selector names, which an element's own styles define. */
+/**
+ * The press for the buttons a selector names, which an element's own styles define. A list of selectors is one `:is()`,
+ * so `:active` holds for each of them and none is pressed at rest.
+ */
 export function pressOf(selector: string): CSSResult {
-  const buttons = unsafeCSS(selector);
+  const buttons = unsafeCSS(selector.includes(',') ? `:is(${selector})` : selector);
   return css`
     ${buttons} {
       transition: transform var(--jfb-bo-motion-fast) var(--jfb-bo-motion-ease);

@@ -30,6 +30,13 @@ describe("a small button's press", () => {
     );
   });
 
+  it('presses each of a list of selectors only while it is pressed', () => {
+    const text = textOf(pressOf('.chip button, .menu button'));
+    expect(text).toContain(':is(.chip button, .menu button):active { transform: scale(0.97); }');
+    // Without :is() the list's last selector alone would wait for a press, and the others would shrink at rest.
+    expect(text).not.toMatch(/.chip button, .menu button:active/);
+  });
+
   it.each([
     [ActionListElement, '.more'],
     [ActionModalElement, '.remove'],
