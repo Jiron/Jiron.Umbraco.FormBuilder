@@ -86,9 +86,15 @@ internal sealed class EntryQueryRepository : IEntryQueryRepository
         return new EntryPage(await LoadAsync(db, n, rows), more ? Cursor(query.Sort, rows[^1]) : null, total);
     }
 
-    // The positions of the next entries: by submission, or the walk of a value sort and then its tail.
+    // The positions of the next entries: by submission, the unseen and then the seen ones, or the walk of a value sort and
+    // then its tail.
     private static async Task<List<EntryPositionRow>> PositionsAsync(IUmbracoDatabase db, EntryQuerySql sql, EntrySort sort, EntryCursor? after, int limit)
     {
+        if (sort.Column == EntrySortColumn.Unseen)
+        {
+            return await UnseenFirstAsync(db, sql, after, limit);
+        }
+
         if (!sort.ByField)
         {
             return await FetchAsync<EntryPositionRow>(db, sql.BySubmission(after, limit));
@@ -108,6 +114,32 @@ internal sealed class EntryQueryRepository : IEntryQueryRepository
         }
 
         rows.AddRange(await FetchAsync<EntryPositionRow>(db, sql.Tail(after, limit - rows.Count)));
+        return rows;
+    }
+
+    // Unseen first (ADR-0209): the entries nobody opened yet, then, once they run out on a page, the others from their start.
+    // An entry opened while the list pages moves to the second part, where it shows again; none is ever skipped.
+    private static async Task<List<EntryPositionRow>> UnseenFirstAsync(IUmbracoDatabase db, EntryQuerySql sql, EntryCursor? after, int limit)
+    {
+        var rows = new List<EntryPositionRow>(limit);
+        if (after is null || !after.Seen)
+        {
+            rows.AddRange(await FetchAsync<EntryPositionRow>(db, sql.Unseen(after, limit, seen: false)));
+            if (rows.Count == limit)
+            {
+                return rows;
+            }
+
+            after = null;
+        }
+
+        var seen = await FetchAsync<EntryPositionRow>(db, sql.Unseen(after, limit - rows.Count, seen: true));
+        foreach (var row in seen)
+        {
+            row.Seen = true;
+        }
+
+        rows.AddRange(seen);
         return rows;
     }
 
@@ -148,7 +180,8 @@ internal sealed class EntryQueryRepository : IEntryQueryRepository
         DateTime.SpecifyKind(last.SubmittedUtc, DateTimeKind.Utc),
         last.ValueId is { } valueId
             ? new EntryValuePosition(valueId, last.TextKey, last.Number, last.Date is { } date ? DateTime.SpecifyKind(date, DateTimeKind.Utc) : null)
-            : null);
+            : null,
+        last.Seen);
 
     private static EntryCount Counted(int matches, bool search) =>
         search && matches > EntryQuerySql.SearchCountLimit ? new EntryCount(EntryQuerySql.SearchCountLimit, More: true) : new EntryCount(matches, More: false);

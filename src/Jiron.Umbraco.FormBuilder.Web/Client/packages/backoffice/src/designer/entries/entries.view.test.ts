@@ -83,7 +83,7 @@ vi.mock('../../entries/entries-api', () => ({
     const start = request.after ? Number(request.after) : 0;
     const items = server.rows.slice(start, start + server.page);
     const next = start + server.page < server.rows.length ? String(start + server.page) : null;
-    return { items, next, ...(request.count ? { total: server.rows.length } : {}), more: false };
+    return { items, next, ...(request.count ? { total: server.rows.length } : {}), more: false, forms: [] };
   },
   saveColumns: async (_host: unknown, _form: string, columns: readonly string[]) => {
     server.savedColumns.push(columns);
@@ -164,6 +164,7 @@ const MIDDAY = new Date(2026, 10, 7, 12, 0);
 
 const row = (number: number, more: Partial<EntryListRowResponseModel> = {}): EntryListRowResponseModel => ({
   key: `e${number}`,
+  form: 'form1',
   number,
   title: `Person ${number}`,
   state: 'submitted',
@@ -297,7 +298,7 @@ afterEach(() => {
 describe("a form's Entries view", () => {
   it('lists the entries by title or number, with the unseen mark, the state, when received and the action status', async () => {
     const { rows, root } = await viewOf();
-    expect(server.requests[0]).toEqual({ filter: { states: [], fields: [] }, columns: [], count: true });
+    expect(server.requests[0]).toEqual({ filter: { states: [], forms: [], fields: [] }, columns: [], count: true });
     expect(rows().map((one) => text(one.querySelector('th .name')))).toEqual(['Person 1, unseen', '#2', 'Person 3']);
     expect(rows()[0]?.classList.contains('unseen')).toBe(true);
     expect(rows()[0]?.querySelector('.dot')?.getAttribute('aria-hidden')).toBe('true');
@@ -351,14 +352,14 @@ describe("a form's Entries view", () => {
         key: 's1',
         name: 'Accountants waiting',
         form: 'form1',
-        filter: { states: ['submitted'], fields: [{ field: 'position', test: 'oneOf', values: ['p2'] }] },
+        filter: { states: ['submitted'], forms: [], fields: [{ field: 'position', test: 'oneOf', values: ['p2'] }] },
       },
     ];
     const { root, button, view } = await viewOf();
     button('Accountants waiting').click();
     await settle(view);
     expect(server.requests.at(-1)).toEqual({
-      filter: { states: ['submitted'], fields: [{ field: 'position', test: 'oneOf', values: ['p2'] }] },
+      filter: { states: ['submitted'], forms: [], fields: [{ field: 'position', test: 'oneOf', values: ['p2'] }] },
       columns: [],
       count: true,
     });
@@ -396,10 +397,10 @@ describe("a form's Entries view", () => {
 
   it('filters through a dialog, shows the chips, removes one, saves the filters as a set and clears them', async () => {
     const { root, button, view } = await viewOf();
-    opened.answers[ENTRY_FILTER_MODAL_ALIAS] = { filter: { states: ['approved', 'rejected'], fields: [] } };
+    opened.answers[ENTRY_FILTER_MODAL_ALIAS] = { filter: { states: ['approved', 'rejected'], forms: [], fields: [] } };
     button('State').click();
     await settle(view);
-    expect(opened.modals.at(-1)?.data).toEqual({ part: 'state', filter: { states: [], fields: [] } });
+    expect(opened.modals.at(-1)?.data).toEqual({ part: 'state', filter: { states: [], forms: [], fields: [] } });
     expect(text(root.querySelector('.chip-text'))).toBe('State: Approved or Rejected');
     expect(server.requests.at(-1)?.filter?.states).toEqual(['approved', 'rejected']);
 
@@ -412,7 +413,7 @@ describe("a form's Entries view", () => {
     expect(await save('Done')).toBe('Another filter set of this form has this name.');
     server.setCode = undefined;
     expect(await save('Done')).toBeUndefined();
-    expect(server.savedSets).toEqual([{ name: 'Done', filter: { states: ['approved', 'rejected'], fields: [] } }]);
+    expect(server.savedSets).toEqual([{ name: 'Done', filter: { states: ['approved', 'rejected'], forms: [], fields: [] } }]);
 
     button('Remove the filter State: Approved or Rejected').click();
     await settle(view);
@@ -427,7 +428,7 @@ describe("a form's Entries view", () => {
     button('Show more').click();
     await vi.waitFor(() => expect(rows()).toHaveLength(3));
     expect(server.requests.at(-1)).toEqual({
-      filter: { states: [], fields: [] },
+      filter: { states: [], forms: [], fields: [] },
       columns: [],
       after: '2',
       count: false,

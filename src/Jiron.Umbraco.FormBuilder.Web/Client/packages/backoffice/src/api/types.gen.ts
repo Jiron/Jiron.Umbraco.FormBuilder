@@ -345,6 +345,10 @@ export type EntryHeldAnswerResponseModel = {
     fieldLabel: string;
 };
 
+export type EntryInboxViewResponseModel = {
+    filterSets: Array<EntryFilterSetResponseModel>;
+};
+
 export type EntryListActionsResponseModel = {
     delivered: number;
     failed: number;
@@ -380,7 +384,14 @@ export type EntryListFilterRequestModel = {
     actions?: string | null;
     fields: Array<EntryFieldFilterRequestModel>;
     search?: string | null;
+    forms: Array<string>;
     sort?: EntryListSortRequestModel | null;
+};
+
+export type EntryListFormResponseModel = {
+    key: string;
+    name: string;
+    permissions: Array<string>;
 };
 
 export type EntryListOptionResponseModel = {
@@ -393,11 +404,12 @@ export type EntryListPageResponseModel = {
     next?: string | null;
     total?: number | null;
     more: boolean;
+    forms: Array<EntryListFormResponseModel>;
 };
 
 export type EntryListRequestModel = {
     filter?: EntryListFilterRequestModel | null;
-    columns: Array<string>;
+    columns?: Array<string> | null;
     after?: string | null;
     count: boolean;
 };
@@ -411,6 +423,7 @@ export type EntryListRowResponseModel = {
     unseen: boolean;
     actions: EntryListActionsResponseModel;
     cells: Array<EntryListCellResponseModel>;
+    form: string;
 };
 
 export type EntryListSortRequestModel = {
@@ -543,6 +556,17 @@ export type EntryRevealRequestModel = {
     field: string;
 };
 
+export type EntrySpamEmptyRequestModel = {
+    confirm: boolean;
+};
+
+export type EntrySpamEmptyResponseModel = {
+    entries: number;
+    files: number;
+    deleted: boolean;
+    more: boolean;
+};
+
 export type EntryStateMovedResponseModel = {
     key: string;
     state: string;
@@ -610,6 +634,11 @@ export type EntryTimelineRunResponseModel = {
     state: string;
     attempts: number;
     error: string | null;
+};
+
+export type EntryUnseenResponseModel = {
+    count: number;
+    more: boolean;
 };
 
 export type FieldGroupResponseModel = {
@@ -1528,6 +1557,190 @@ export type TestEmailSendResponses = {
 };
 
 export type TestEmailSendResponse = TestEmailSendResponses[keyof TestEmailSendResponses];
+
+export type EntryInboxFormsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        search?: string;
+    };
+    url: '/umbraco/jfb/management/api/v1/entries/forms';
+};
+
+export type EntryInboxFormsErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+};
+
+export type EntryInboxFormsResponses = {
+    /**
+     * OK
+     */
+    200: Array<EntryListFormResponseModel>;
+};
+
+export type EntryInboxFormsResponse = EntryInboxFormsResponses[keyof EntryInboxFormsResponses];
+
+export type EntryInboxInboxData = {
+    body?: EntryListRequestModel;
+    path?: never;
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/entries/inbox';
+};
+
+export type EntryInboxInboxErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type EntryInboxInboxError = EntryInboxInboxErrors[keyof EntryInboxInboxErrors];
+
+export type EntryInboxInboxResponses = {
+    /**
+     * OK
+     */
+    200: EntryListPageResponseModel;
+};
+
+export type EntryInboxInboxResponse = EntryInboxInboxResponses[keyof EntryInboxInboxResponses];
+
+export type EntryInboxSpamData = {
+    body?: EntryListRequestModel;
+    path?: never;
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/entries/spam';
+};
+
+export type EntryInboxSpamErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type EntryInboxSpamError = EntryInboxSpamErrors[keyof EntryInboxSpamErrors];
+
+export type EntryInboxSpamResponses = {
+    /**
+     * OK
+     */
+    200: EntryListPageResponseModel;
+};
+
+export type EntryInboxSpamResponse = EntryInboxSpamResponses[keyof EntryInboxSpamResponses];
+
+export type EntryInboxEmptySpamData = {
+    body?: EntrySpamEmptyRequestModel;
+    path?: never;
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/entries/spam/empty';
+};
+
+export type EntryInboxEmptySpamErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+};
+
+export type EntryInboxEmptySpamResponses = {
+    /**
+     * OK
+     */
+    200: EntrySpamEmptyResponseModel;
+};
+
+export type EntryInboxEmptySpamResponse = EntryInboxEmptySpamResponses[keyof EntryInboxEmptySpamResponses];
+
+export type EntryInboxUnseenData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/entries/unseen';
+};
+
+export type EntryInboxUnseenErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+};
+
+export type EntryInboxUnseenResponses = {
+    /**
+     * OK
+     */
+    200: EntryUnseenResponseModel;
+};
+
+export type EntryInboxUnseenResponse = EntryInboxUnseenResponses[keyof EntryInboxUnseenResponses];
+
+export type EntryInboxViewData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/entries/view';
+};
+
+export type EntryInboxViewErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+};
+
+export type EntryInboxViewResponses = {
+    /**
+     * OK
+     */
+    200: EntryInboxViewResponseModel;
+};
+
+export type EntryInboxViewResponse = EntryInboxViewResponses[keyof EntryInboxViewResponses];
 
 export type EntryLocationFormData = {
     body?: never;

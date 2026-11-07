@@ -44,7 +44,7 @@ public sealed partial class MigrationPlanTests : FormBuilderMigrationTestBase
                 Is.EqualTo(typeof(FormBuilderMigrationPlan)),
                 "the plan states IgnoreCurrentState itself (ADR-0003)");
             Assert.That(walked, Is.EqualTo(Steps), "the plan's transitions are its steps, in order");
-            Assert.That(Steps.Select(s => s.Step), Is.EqualTo(new[] { typeof(CreateSchemaV1), typeof(CreateDefaultSettingsV1), typeof(GrantFormsSectionV1), typeof(RequestReferenceRebuildV1), typeof(AddFileScanIndexV1), typeof(ChangeFileScanIndexV1), typeof(AddEmailTimeIndexV1), typeof(AddEntryEventDueV1), typeof(AddEntryTimeIndexV1), typeof(AddActionRunLastAttemptV1) }));
+            Assert.That(Steps.Select(s => s.Step), Is.EqualTo(new[] { typeof(CreateSchemaV1), typeof(CreateDefaultSettingsV1), typeof(GrantFormsSectionV1), typeof(RequestReferenceRebuildV1), typeof(AddFileScanIndexV1), typeof(ChangeFileScanIndexV1), typeof(AddEmailTimeIndexV1), typeof(AddEntryEventDueV1), typeof(AddEntryTimeIndexV1), typeof(AddActionRunLastAttemptV1), typeof(AddEntryUnseenIndexV1) }));
             Assert.That(plan.FinalState, Is.EqualTo(FinalState));
             Assert.That(new TestPlan().FinalState, Is.EqualTo(plan.FinalState), "the tests' copy follows the plan");
             Assert.That(CreateSchemaV1.Tables.Select(t => t.Name), Is.EqualTo(FormBuilderTables.All), "the step creates every table in order");
@@ -69,7 +69,7 @@ public sealed partial class MigrationPlanTests : FormBuilderMigrationTestBase
                 Assert.That(schema.PrimaryKeys.GetValueOrDefault(table), Is.EqualTo(ExpectedSchemaV1.PrimaryKey(table)), $"primary key of {table}");
             }
 
-            Assert.That(schema.Indexes, Is.EqualTo(ExpectedSchemaV1.Indexes.Append("jfbEntry.IX_jfbEntry_submittedUtc(submittedUtc)").Append("jfbEntryEvent.IX_jfbEntryEvent_dueUtc(dueUtc)").Append("jfbEntryFile.IX_jfbEntryFile_scanState_entryId_id(scanState,entryId,id)").Append("jfbEmail.IX_jfbEmail_createdUtc_recipientKey(createdUtc,recipientKey)").Append("jfbActionRun.IX_jfbActionRun_actionKey_id_state_attempts_entryId(actionKey,id,state,attempts,entryId)").Order(StringComparer.Ordinal)), "indexes, the filtered ones included");
+            Assert.That(schema.Indexes, Is.EqualTo(ExpectedSchemaV1.Indexes.Append("jfbEntry.IX_jfbEntry_submittedUtc(submittedUtc)").Append("jfbEntry.IX_jfbEntry_firstSeenUtc_submittedUtc(firstSeenUtc,submittedUtc)").Append("jfbEntryEvent.IX_jfbEntryEvent_dueUtc(dueUtc)").Append("jfbEntryFile.IX_jfbEntryFile_scanState_entryId_id(scanState,entryId,id)").Append("jfbEmail.IX_jfbEmail_createdUtc_recipientKey(createdUtc,recipientKey)").Append("jfbActionRun.IX_jfbActionRun_actionKey_id_state_attempts_entryId(actionKey,id,state,attempts,entryId)").Order(StringComparer.Ordinal)), "indexes, the filtered ones included");
             Assert.That(schema.ForeignKeys, Is.EqualTo(ExpectedSchemaV1.ForeignKeys), "foreign keys");
         });
     }
@@ -83,7 +83,7 @@ public sealed partial class MigrationPlanTests : FormBuilderMigrationTestBase
         Assert.Multiple(() =>
         {
             Assert.That(
-                schema.Indexes.Where(index => (index.StartsWith("jfbEntry.", StringComparison.Ordinal) || index.StartsWith("jfbEntryValue.", StringComparison.Ordinal)) && !index.Contains(AddEntryTimeIndexV1.IndexName, StringComparison.Ordinal)),
+                schema.Indexes.Where(index => (index.StartsWith("jfbEntry.", StringComparison.Ordinal) || index.StartsWith("jfbEntryValue.", StringComparison.Ordinal)) && !index.Contains(AddEntryTimeIndexV1.IndexName, StringComparison.Ordinal) && !index.Contains(AddEntryUnseenIndexV1.IndexName, StringComparison.Ordinal)),
                 Is.EqualTo(ExpectedSchemaV1.IndexesOf("jfbEntry", "jfbEntryValue")));
             Assert.That(schema.ForeignKeys, Does.Contain("jfbEntryValue.fieldId -> jfbFormField on delete no action"));
             Assert.That(schema.ForeignKeys.Where(key => key.StartsWith("jfbEntryValue.fieldId ", StringComparison.Ordinal)).ToList(), Has.Count.EqualTo(1));
@@ -213,6 +213,7 @@ public sealed partial class MigrationPlanTests : FormBuilderMigrationTestBase
             Assert.That(Inspect().Indexes, Has.One.Contains(AddEntryEventDueV1.IndexName));
             Assert.That(Inspect().Indexes, Has.One.Contains(AddEntryTimeIndexV1.IndexName));
             Assert.That(Inspect().Indexes, Has.One.Contains(AddActionRunLastAttemptV1.IndexName));
+            Assert.That(Inspect().Indexes, Has.One.Contains(AddEntryUnseenIndexV1.IndexName));
             Assert.That(Inspect().Columns[FormBuilderTables.ActionRun], Does.EndWith("lastAttemptUtc?"));
         });
     }

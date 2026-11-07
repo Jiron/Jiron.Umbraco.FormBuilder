@@ -820,6 +820,16 @@ and moves only once confirmed; forwards an entry to a team address that the pick
 refuses a stranger's; and opens the `{{ entry.url }}` of a notice from the pickup folder, as a user who may view the
 form and as one who may not. `/jfb-testing/entries-form` takes `places`, `unique`, `notice` and `forward` for these.
 
+The Inbox and Spam (ROADMAP 11.1, ADR-0209): `Entries/EntryInboxTests` lists every form's entries through
+`EntryLists`: the Inbox unseen first across the seam of its two phases in pages of 50, without the forms of a
+restricted folder or the Recycle Bin, Spam or test entries; a sort the user picks replacing that order; the Form filter
+offering one form's fields and columns, refusing them for several and a form out of reach by its path; Spam holding
+Spam only; the badge's count stopping at its most; and Empty spam counting first, then deleting.
+`ManagementApi/EntryInboxApiTests` holds the endpoints to the same with each persona: the viewer's Inbox without the
+restricted folder's form while that folder's own group sees it, the forms named with what the user may do on each, a
+user without grants answered with empty lists, opening an entry taking it off the badge, and Empty spam deleting only
+what the user may delete.
+
 ## The access tests
 
 `Tests.Unit/Access/` covers the permission model without a host (ADR-0013, ADR-0048): the flags' names in any letter

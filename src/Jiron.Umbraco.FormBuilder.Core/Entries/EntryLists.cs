@@ -1,5 +1,6 @@
 using System.Buffers.Text;
 using System.Text.Json;
+using Jiron.Umbraco.FormBuilder.Core.Access;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.MergeTags;
@@ -88,13 +89,33 @@ internal sealed record EntryListCell(Guid Field, IReadOnlyList<string> Texts, bo
 /// <param name="Unseen">Whether no backoffice user has opened it.</param>
 /// <param name="Actions">Its action runs, counted.</param>
 /// <param name="Cells">The columns' cells, in the columns' order.</param>
-internal sealed record EntryListRow(Guid Key, int Number, string? Title, EntryState State, DateTimeOffset Received, bool Unseen, ActionRunTally Actions, IReadOnlyList<EntryListCell> Cells);
+/// <param name="Form">Its form.</param>
+internal sealed record EntryListRow(Guid Key, int Number, string? Title, EntryState State, DateTimeOffset Received, bool Unseen, ActionRunTally Actions, IReadOnlyList<EntryListCell> Cells, Guid Form);
 
 /// <summary>A page of a list.</summary>
 /// <param name="Rows">The page's entries.</param>
 /// <param name="Next">Where the next page starts, or none on the last page.</param>
 /// <param name="Count">How many entries match, when asked for.</param>
-internal sealed record EntryListPage(IReadOnlyList<EntryListRow> Rows, string? Next, EntryCount? Count);
+internal sealed record EntryListPage(IReadOnlyList<EntryListRow> Rows, string? Next, EntryCount? Count)
+{
+    /// <summary>The forms the rows belong to, in the order they first appear: in a list across forms, which names them.</summary>
+    public IReadOnlyList<EntryListForm> Forms { get; init; } = [];
+}
+
+/// <summary>A form a page of a list across forms names.</summary>
+/// <param name="Key">The form.</param>
+/// <param name="Name">Its name.</param>
+internal sealed record EntryListForm(Guid Key, string Name);
+
+/// <summary>Where a list across forms looks (ADR-0209).</summary>
+internal enum EntryListPlace
+{
+    /// <summary>The Inbox: every state but drafts and Spam, the entries nobody opened yet first.</summary>
+    Inbox,
+
+    /// <summary>Spam, newest first.</summary>
+    Spam,
+}
 
 /// <summary>What a list asks for: which entries, the columns to show, and the page.</summary>
 /// <param name="Filter">Which entries, in which order.</param>
@@ -123,6 +144,7 @@ internal sealed record EntryListView(IReadOnlyList<EntryListField> Fields, IRead
 /// and refuses one on a sensitive field. The caller checks that the user may view the form's entries.
 /// </summary>
 /// <param name="forms">The forms.</param>
+/// <param name="entries">The entries, for the unseen count.</param>
 /// <param name="queries">The entries query.</param>
 /// <param name="runs">The action runs.</param>
 /// <param name="scopes">Reads a page's scopes.</param>
@@ -135,6 +157,7 @@ internal sealed record EntryListView(IReadOnlyList<EntryListField> Fields, IRead
 /// <param name="logger">Where a row that cannot be read goes.</param>
 internal sealed partial class EntryLists(
     IFormRepository forms,
+    IEntryRepository entries,
     IEntryQueryRepository queries,
     IActionRunRepository runs,
     SubmissionEntries scopes,
@@ -154,6 +177,9 @@ internal sealed partial class EntryLists(
 
     /// <summary>The longest value a text filter compares with.</summary>
     public const int MaxFilterValueLength = 1000;
+
+    /// <summary>The most forms the Inbox or Spam is filtered to.</summary>
+    public const int MaxForms = 100;
 
     /// <summary>The states a list holds when it names none: every state but drafts and Spam.</summary>
     public static readonly IReadOnlyList<EntryState> ListedStates = [EntryState.Unverified, EntryState.Submitted, EntryState.Approved, EntryState.Rejected];
@@ -213,6 +239,152 @@ internal sealed partial class EntryLists(
         return new EntryListPage(await RowsAsync(form, page.Entries, columns, cancellationToken), page.Next is { } next ? Encode(next) : null, page.Count);
     }
 
+    /// <summary>
+    /// A page of the entries of every form the user may view entries of (ADR-0209): the Inbox, unseen first unless the
+    /// filter sorts, or Spam. A filter of one form offers that form's fields as filters, columns and sorts; of several,
+    /// none. The caller passes the user's visibility with <c>viewEntries</c>.
+    /// </summary>
+    /// <param name="place">The Inbox or Spam.</param>
+    /// <param name="visibility">The forms the user may view entries of.</param>
+    /// <param name="request">Which entries, the columns and the page.</param>
+    /// <param name="cancellationToken">The request's cancellation.</param>
+    /// <exception cref="FormBuilderValidationException">A form, filter, sort, column or cursor the list cannot answer, each by its path.</exception>
+    /// <exception cref="FormBuilderQueryTimeoutException">The read ran past its time budget.</exception>
+    public async Task<EntryListPage> ListAcrossAsync(EntryListPlace place, FormVisibility visibility, EntryListRequest request, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(visibility);
+        ArgumentNullException.ThrowIfNull(request);
+        if (visibility.IsNothing)
+        {
+            // A user who may view no form's entries has an empty list, whatever it asks for.
+            return new EntryListPage([], null, request.Count ? new EntryCount(0, More: false) : null);
+        }
+
+        var filter = request.Filter;
+        var problems = new List<DefinitionProblem>();
+        var chosen = await ChosenFormsAsync(filter.Forms, visibility, problems, cancellationToken);
+        var one = chosen.Count == 1 ? chosen[0] : null;
+        var fields = new Dictionary<Guid, EntryListField>();
+        var ids = new Dictionary<Guid, int>();
+        if (one is not null)
+        {
+            var catalogue = await forms.ListFieldsAsync(one.Id, cancellationToken);
+            fields = Fields(catalogue).ToDictionary(field => field.Key);
+            ids = catalogue.ToDictionary(row => row.Values.FieldKey, row => row.Id);
+        }
+
+        var found = new List<DefinitionProblem>();
+        var states = PlaceStates(place, filter.States, found);
+        var query = await FilterQueryAsync(EntryQuery.Across(new EntryFormScope(visibility, [.. chosen.Select(form => form.Id)])), one, fields, ids, filter with { States = states }, found, cancellationToken);
+        problems.AddRange(found.Select(problem => problem with { Path = FilterPath + problem.Path }));
+        if (place == EntryListPlace.Inbox && filter.Sort is null)
+        {
+            query = query with { Sort = EntrySort.UnseenFirst };
+        }
+
+        var columns = Columns(request.Columns, fields, problems);
+        var after = request.After is null ? null : Decode(request.After, query.Sort, problems);
+        if (problems.Count > 0)
+        {
+            throw new FormBuilderValidationException(problems);
+        }
+
+        var page = await queries.ListAsync(query, after, PageSize, request.Count, cancellationToken);
+        var rows = new Dictionary<Guid, EntryListRow>();
+        var named = new List<EntryListForm>();
+        foreach (var group in page.Entries.GroupBy(entry => entry.FormId))
+        {
+            var form = one?.Id == group.Key ? one : await forms.GetByIdAsync(group.Key, cancellationToken);
+            if (form is null)
+            {
+                // Deleted for good since the page was read.
+                continue;
+            }
+
+            named.Add(new EntryListForm(form.Key, form.Name));
+            foreach (var row in await RowsAsync(form, [.. group], columns, cancellationToken))
+            {
+                rows[row.Key] = row;
+            }
+        }
+
+        // The groups keep the order their forms first appear in, so the forms do too.
+        return new EntryListPage([.. page.Entries.Where(entry => rows.ContainsKey(entry.Key)).Select(entry => rows[entry.Key])], page.Next is { } next ? Encode(next) : null, page.Count)
+        {
+            Forms = named,
+        };
+    }
+
+    /// <summary>
+    /// How many entries nobody opened yet the forms the user may view entries of hold, as the tree marks them: at most
+    /// <paramref name="most"/>, and whether there are more (the Inbox's badge, ADR-0209).
+    /// </summary>
+    /// <param name="visibility">The forms the user may view entries of.</param>
+    /// <param name="most">The most the badge says.</param>
+    /// <param name="cancellationToken">The request's cancellation.</param>
+    public async Task<EntryCount> CountUnseenAsync(FormVisibility visibility, int most, CancellationToken cancellationToken = default)
+    {
+        var counted = await entries.CountUnseenAsync(visibility, most, cancellationToken);
+        return counted > most ? new EntryCount(most, More: true) : new EntryCount(counted, More: false);
+    }
+
+    /// <summary>The forms the user may view entries of whose name contains the text, by name, for the Form filter.</summary>
+    /// <param name="visibility">The forms the user may view entries of.</param>
+    /// <param name="search">What the name contains, or none.</param>
+    /// <param name="take">How many at most.</param>
+    /// <param name="cancellationToken">The request's cancellation.</param>
+    public async Task<IReadOnlyList<EntryListForm>> ListFormsAsync(FormVisibility visibility, string? search, int take, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(visibility);
+        var page = await forms.ListAsync(
+            new FormFilter { AllFolders = true, Visibility = visibility, Search = string.IsNullOrWhiteSpace(search) ? null : search.Trim() },
+            PageRequest.First(take),
+            cancellationToken);
+        return [.. page.Items.Select(form => new EntryListForm(form.Key, form.Name))];
+    }
+
+    // The forms a filter names, each one the user may view entries of; one it may not, or that is gone, is a problem.
+    private async Task<IReadOnlyList<StoredForm>> ChosenFormsAsync(IReadOnlyList<Guid> keys, FormVisibility visibility, List<DefinitionProblem> problems, CancellationToken cancellationToken)
+    {
+        if (keys.Count == 0)
+        {
+            return [];
+        }
+
+        if (keys.Count > MaxForms)
+        {
+            problems.Add(new DefinitionProblem("too_many_forms", FilterPath + "forms", $"A list is filtered to at most {MaxForms} forms."));
+            return [];
+        }
+
+        var distinct = keys.Distinct().ToList();
+        var visible = (await forms.ListAsync(new FormFilter { AllFolders = true, Visibility = visibility, Keys = distinct }, PageRequest.First(MaxForms), cancellationToken)).Items
+            .ToDictionary(form => form.Key);
+        for (var index = 0; index < keys.Count; index++)
+        {
+            if (!visible.ContainsKey(keys[index]))
+            {
+                problems.Add(new DefinitionProblem("form_not_found", $"{FilterPath}forms[{index}]", "The user may not view this form's entries, or it is gone."));
+            }
+        }
+
+        return [.. distinct.Where(visible.ContainsKey).Select(key => visible[key])];
+    }
+
+    // The states of a place: the Inbox's, as a form's list has them, but never Spam; Spam's, Spam alone.
+    private static IReadOnlyList<EntryState> PlaceStates(EntryListPlace place, IReadOnlyList<EntryState> states, List<DefinitionProblem> problems)
+    {
+        for (var index = 0; index < states.Count; index++)
+        {
+            if ((place == EntryListPlace.Spam) != (states[index] == EntryState.Spam))
+            {
+                problems.Add(new DefinitionProblem("invalid_state", $"states[{index}]", place == EntryListPlace.Spam ? "Spam holds the entries in Spam only." : "Spam has a list of its own."));
+            }
+        }
+
+        return place == EntryListPlace.Spam ? [EntryState.Spam] : [.. states.Where(state => state != EntryState.Spam)];
+    }
+
     /// <summary>Checks a form's columns as a list request checks them; false when the form does not exist.</summary>
     /// <param name="formKey">The form.</param>
     /// <param name="columns">The fields to show as columns.</param>
@@ -266,7 +438,7 @@ internal sealed partial class EntryLists(
                 found.Add(new DefinitionProblem("no_form", "fields", "A filter set of every form filters by no field."));
             }
 
-            if (filter.Sort.Field is not null)
+            if (filter.Sort?.Field is not null)
             {
                 found.Add(new DefinitionProblem("no_form", "sort.field", "A filter set of every form sorts by no field."));
             }
@@ -353,13 +525,20 @@ internal sealed partial class EntryLists(
         CancellationToken cancellationToken)
     {
         var found = new List<DefinitionProblem>();
-        var query = await FilterQueryAsync(form, fields, ids, filter, found, cancellationToken);
+        if (filter.Forms.Any(key => key != form.Key))
+        {
+            found.Add(new DefinitionProblem("form_not_allowed", "forms", "A form's list holds its own entries only."));
+        }
+
+        var query = await FilterQueryAsync(new EntryQuery(form.Id), form, fields, ids, filter, found, cancellationToken);
         problems.AddRange(found.Select(problem => problem with { Path = FilterPath + problem.Path }));
         return query;
     }
 
+    // The query of a filter, for a form's list or a list across forms; a list of several forms filters by no field.
     private async Task<EntryQuery> FilterQueryAsync(
-        StoredForm form,
+        EntryQuery scope,
+        StoredForm? form,
         IReadOnlyDictionary<Guid, EntryListField> fields,
         IReadOnlyDictionary<Guid, int> ids,
         EntryListFilter filter,
@@ -391,8 +570,8 @@ internal sealed partial class EntryLists(
         }
 
         var search = CheckSearch(filter.Search, problems);
-        var numbers = search is null ? [] : EntryReferences.Numbers(await ReferenceFormatAsync(form, cancellationToken), search);
-        return new EntryQuery(form.Id)
+        var numbers = search is null ? [] : EntryReferences.Numbers(form is null ? null : await ReferenceFormatAsync(form, cancellationToken), search);
+        return scope with
         {
             States = states,
             Tests = EntryTestFilter.Exclude,
@@ -707,7 +886,7 @@ internal sealed partial class EntryLists(
                 }
             }
 
-            rows.Add(new EntryListRow(entry.Key, entry.Number, title, entry.State, entry.SubmittedUtc, entry.FirstSeenUtc is null, tallies.GetValueOrDefault(entry.Id), cells));
+            rows.Add(new EntryListRow(entry.Key, entry.Number, title, entry.State, entry.SubmittedUtc, entry.FirstSeenUtc is null, tallies.GetValueOrDefault(entry.Id), cells, form.Key));
         }
 
         return rows;
@@ -753,7 +932,8 @@ internal sealed partial class EntryLists(
                 cursor.Value?.ValueId,
                 cursor.Value?.Text,
                 cursor.Value?.Number,
-                cursor.Value?.Date?.Ticks),
+                cursor.Value?.Date?.Ticks,
+                cursor.Seen),
             CursorJson));
 
     // A cursor of the same sort, or null with its problem.
@@ -766,10 +946,11 @@ internal sealed partial class EntryLists(
                 && new EntrySort((EntrySortColumn)read.C, read.D, read.F) == sort
                 && read.E > 0
                 && read.T is >= 0 and <= 3155378975999999999
-                && read.A is null or (>= 0 and <= 3155378975999999999))
+                && read.A is null or (>= 0 and <= 3155378975999999999)
+                && (!read.S || (sort.Column == EntrySortColumn.Unseen && read.V is null)))
             {
                 var position = read.V is { } valueId ? new EntryValuePosition(valueId, read.X, read.N, read.A is { } date ? new DateTime(date, DateTimeKind.Utc) : null) : null;
-                return new EntryCursor(sort, read.E, new DateTime(read.T, DateTimeKind.Utc), position);
+                return new EntryCursor(sort, read.E, new DateTime(read.T, DateTimeKind.Utc), position, read.S);
             }
         }
         catch (Exception exception) when (exception is FormatException or JsonException or ArgumentException)
@@ -783,8 +964,9 @@ internal sealed partial class EntryLists(
 
     private static readonly JsonSerializerOptions CursorJson = Definitions.Serialization.FrozenOptions.Of(new(JsonSerializerDefaults.Web));
 
-    // A cursor's parts, by short names: its sort's column, direction and field, its entry and time, and its value position.
-    private sealed record CursorText(int C, bool D, int F, long E, long T, long? V, string? X, double? N, long? A);
+    // A cursor's parts, by short names: its sort's column, direction and field, its entry and time, its value position, and
+    // whether it stands among the entries seen already.
+    private sealed record CursorText(int C, bool D, int F, long E, long T, long? V, string? X, double? N, long? A, bool S = false);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "The answers of the entry {Entry} could not be read for its row.")]
     private static partial void LogUnreadable(ILogger logger, Exception exception, Guid entry);

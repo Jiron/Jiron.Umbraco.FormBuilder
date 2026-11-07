@@ -23,6 +23,7 @@ internal static class FormBuilderEntryServices
         builder.Services.TryAddSingleton<EntryUserSettings>();
         builder.Services.TryAddSingleton<EntryLists>();
         builder.Services.TryAddSingleton<EntryDeletions>();
+        builder.Services.TryAddSingleton<EntrySpamBin>();
         builder.Services.TryAddSingleton<EntryActionReruns>();
         builder.Services.TryAddSingleton<EntryPanels>();
         builder.Services.TryAddSingleton<EntryTimelines>();

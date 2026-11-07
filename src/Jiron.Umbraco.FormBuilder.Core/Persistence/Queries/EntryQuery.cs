@@ -1,3 +1,4 @@
+using Jiron.Umbraco.FormBuilder.Core.Access;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 
 namespace Jiron.Umbraco.FormBuilder.Core.Persistence.Queries;
@@ -45,6 +46,9 @@ internal enum EntrySortColumn
 
     /// <summary>A field's date.</summary>
     Date,
+
+    /// <summary>The entries nobody opened yet first, then the others, each newest first (the Inbox, ADR-0209).</summary>
+    Unseen,
 }
 
 /// <summary>
@@ -62,12 +66,23 @@ internal sealed record EntrySort(EntrySortColumn Column, bool Descending, int Fi
     /// <summary>Oldest first.</summary>
     public static EntrySort Oldest { get; } = new(EntrySortColumn.Submitted, Descending: false);
 
+    /// <summary>Unseen first, then the rest, each newest first (ADR-0209).</summary>
+    public static EntrySort UnseenFirst { get; } = new(EntrySortColumn.Unseen, Descending: true);
+
     /// <summary>A sort by a field's text key, number or date.</summary>
     public static EntrySort ByValue(int fieldId, EntrySortColumn column, bool descending) => new(column, descending, fieldId);
 
     /// <summary>Whether the sort walks a field's values.</summary>
-    public bool ByField => Column != EntrySortColumn.Submitted;
+    public bool ByField => Column is EntrySortColumn.Text or EntrySortColumn.Number or EntrySortColumn.Date;
 }
+
+/// <summary>
+/// The forms of a list across forms (ADR-0209): those the access filter keeps, outside the Recycle Bin, and of them only
+/// the ones named when any are.
+/// </summary>
+/// <param name="Visibility">The forms the user may see as the list needs them (ADR-0048).</param>
+/// <param name="FormIds">The forms the list is filtered to, or none for every visible form.</param>
+internal sealed record EntryFormScope(FormVisibility Visibility, IReadOnlyCollection<int> FormIds);
 
 /// <summary>How a text filter compares (ADR-0039).</summary>
 internal enum EntryTextMatch
@@ -119,10 +134,17 @@ internal sealed record EntryCheckedFilter(int FieldId, bool Checked) : EntryFiel
 /// <param name="Answered">Whether it is answered.</param>
 internal sealed record EntryAnsweredFilter(int FieldId, bool Answered) : EntryFieldFilter(FieldId);
 
-/// <summary>Which entries of one form a list holds, and in which order (ADR-0039).</summary>
-/// <param name="FormId">The form.</param>
+/// <summary>Which entries of one form, or of several (<see cref="Scope"/>), a list holds, and in which order (ADR-0039).</summary>
+/// <param name="FormId">The form; 0 for a list across forms.</param>
 internal sealed record EntryQuery(int FormId)
 {
+    /// <summary>A list across the forms of a scope (ADR-0209).</summary>
+    /// <param name="scope">The forms.</param>
+    public static EntryQuery Across(EntryFormScope scope) => new(0) { Scope = scope };
+
+    /// <summary>The forms of a list across forms; none for one form's list.</summary>
+    public EntryFormScope? Scope { get; init; }
+
     /// <summary>The states; none means every state.</summary>
     public IReadOnlyCollection<EntryState> States { get; init; } = [];
 
@@ -169,7 +191,8 @@ internal sealed record EntryValuePosition(long ValueId, string? Text, double? Nu
 /// <param name="EntryId">The last entry.</param>
 /// <param name="SubmittedUtc">Its submission time as stored, for an entry deleted meanwhile.</param>
 /// <param name="Value">In the walk of a value sort, where it stood; none by submission and in the tail.</param>
-internal sealed record EntryCursor(EntrySort Sort, long EntryId, DateTime SubmittedUtc, EntryValuePosition? Value);
+/// <param name="Seen">In an unseen-first list, whether it stood among the entries seen already.</param>
+internal sealed record EntryCursor(EntrySort Sort, long EntryId, DateTime SubmittedUtc, EntryValuePosition? Value, bool Seen = false);
 
 /// <summary>How many entries match: exact, or at least <see cref="Value"/> when <see cref="More"/> (a search).</summary>
 /// <param name="Value">The count, at most 1,000 for a search.</param>

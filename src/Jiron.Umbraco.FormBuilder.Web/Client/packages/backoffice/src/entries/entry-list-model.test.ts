@@ -101,6 +101,7 @@ describe('the chips', () => {
     const chips = chipsOf(
       {
         states: ['rejected', 'submitted'],
+        forms: [],
         received: { preset: 'last7Days' },
         actions: 'failed',
         fields: [
@@ -144,8 +145,12 @@ describe('the chips', () => {
       'not Frontend developer',
     );
     expect(
-      chipsOf({ states: [], fields: [], received: { from: '2026-10-01', to: '2026-10-15' } }, fields, 'en-GB', term)[0]
-        ?.text,
+      chipsOf(
+        { states: [], forms: [], fields: [], received: { from: '2026-10-01', to: '2026-10-15' } },
+        fields,
+        'en-GB',
+        term,
+      )[0]?.text,
     ).toBe('Received: 1 Oct 2026 to 15 Oct 2026');
   });
 });
@@ -154,6 +159,7 @@ describe('the columns a filter fixes', () => {
   it('hide the state for one state and a field fixed to one value; a range keeps its column', () => {
     const fixed = fixedColumns({
       states: ['approved'],
+      forms: [],
       fields: [
         { field: 'position', test: 'oneOf', values: ['Accountant'] },
         { field: 'team', test: 'oneOf', values: ['A', 'B'] },
@@ -164,7 +170,7 @@ describe('the columns a filter fixes', () => {
 
     expect(fixed.state).toBe(true);
     expect([...fixed.fields]).toEqual(['position', 'agreed']);
-    expect(fixedColumns({ states: ['approved', 'rejected'], fields: [] }).state).toBe(false);
+    expect(fixedColumns({ states: ['approved', 'rejected'], forms: [], fields: [] }).state).toBe(false);
   });
 });
 
@@ -190,17 +196,17 @@ describe('the request', () => {
     const filter = { ...emptyFilter(), search: '  ada ', sort: { field: null, descending: false } };
 
     expect(requestOf(filter, ['position'], null)).toEqual({
-      filter: { states: [], fields: [], search: 'ada', sort: { field: null, descending: false } },
+      filter: { states: [], forms: [], fields: [], search: 'ada', sort: { field: null, descending: false } },
       columns: ['position'],
       count: true,
     });
     expect(requestOf(emptyFilter(), [], 'cursor')).toEqual({
-      filter: { states: [], fields: [] },
+      filter: { states: [], forms: [], fields: [] },
       columns: [],
       after: 'cursor',
       count: false,
     });
-    expect(cleanFilter({ ...emptyFilter(), search: '   ' })).toEqual({ states: [], fields: [] });
+    expect(cleanFilter({ ...emptyFilter(), search: '   ' })).toEqual({ states: [], forms: [], fields: [] });
     expect(isFiltered(emptyFilter())).toBe(false);
     expect(isFiltered({ ...emptyFilter(), search: 'ada' })).toBe(false);
     expect(isFiltered({ ...emptyFilter(), actions: 'failed' })).toBe(true);

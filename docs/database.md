@@ -57,6 +57,7 @@ idempotent, so a rerun changes nothing.
 | `jfb-008-entry-event-due` | `AddEntryEventDueV1` | Adds `jfbEntryEvent.dueUtc` and `IX_jfbEntryEvent_dueUtc`, so what a user's change leaves until its undo window is over is found by a queue (ADR-0162). |
 | `jfb-009-entry-time-index` | `AddEntryTimeIndexV1` | Adds `IX_jfbEntry_submittedUtc`, so the Overview's newest entries across forms don't sort all of a site's entries ([ADR-0165](decisions/0165-the-section-shell.md)), where it is missing. |
 | `jfb-010-action-run-last-attempt` | `AddActionRunLastAttemptV1` | Adds `jfbActionRun.lastAttemptUtc`, which a claim writes, and `IX_jfbActionRun_actionKey_id_state_attempts_entryId`, so an action's card finds its last run without its entries ([ADR-0195](decisions/0195-an-actions-last-run-and-its-details.md)). |
+| `jfb-011-entry-unseen-index` | `AddEntryUnseenIndexV1` | Adds `IX_jfbEntry_firstSeenUtc_submittedUtc`, so the Inbox finds the entries nobody opened yet, newest first, across forms, and its badge counts them ([ADR-0209](decisions/0209-the-inbox-spam-badges-and-the-summary-email.md)). |
 
 A step that has shipped is never edited; a change to the schema is a new step with snapshot classes of its own. Step 1
 is frozen since the end of Phase 4, the tag `baseline/schema-v1`: `SchemaV1FreezeTests` pins the SHA-256 of a
@@ -521,6 +522,7 @@ Resume tokens and challenges are stored only as hashes and ids.
 - `IX_jfbEntry_resumeTokenHash`: unique, over the entries that have a resume token (filtered).
 - `IX_jfbEntry_formId_submittedUtc`, `IX_jfbEntry_formId_state_submittedUtc`: the entry lists.
 - `IX_jfbEntry_submittedUtc`: the newest entries across forms, for the Overview.
+- `IX_jfbEntry_firstSeenUtc_submittedUtc`: the entries nobody opened yet, newest first, for the Inbox and its badge.
 - `IX_jfbEntry_formVersionId`: the versions entries point at, so pruning a draft save checks without a scan.
 - `IX_jfbEntry_memberKey`: a member's entries, for privacy requests.
 - `IX_jfbEntry_purgeAfterUtc`: retention.

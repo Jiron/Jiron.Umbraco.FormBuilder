@@ -28,6 +28,10 @@ internal sealed class EntryPositionRow
 
     /// <summary>In the walk of a date sort, the value's date.</summary>
     public DateTime? Date { get; set; }
+
+    /// <summary>In an unseen-first list, whether it came from the part of the entries seen already; set by the reader.</summary>
+    [NPoco.Ignore]
+    public bool Seen { get; set; }
 }
 
 /// <summary>
@@ -139,6 +143,12 @@ internal sealed class EntryQuerySql
     public SqlStatement Tail(EntryCursor? after, int limit) => ByDate(after, limit, tail: true);
 
     /// <summary>
+    /// One part of an unseen-first list (ADR-0209): the entries nobody opened yet, or those opened, newest first, after
+    /// <paramref name="after"/> when the cursor stands in that part.
+    /// </summary>
+    public SqlStatement Unseen(EntryCursor? after, int limit, bool seen) => ByDate(after, limit, tail: false, seen);
+
+    /// <summary>
     /// The walk of a value sort: the field's values in the order of their index, every entry once at its first answer,
     /// after <paramref name="after"/> when the cursor stands in the walk.
     /// </summary>
@@ -191,7 +201,11 @@ internal sealed class EntryQuerySql
         ArgumentNullException.ThrowIfNull(query);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(take);
         ArgumentOutOfRangeException.ThrowIfGreaterThan(take, MaxTake);
-        Require(query.FormId > 0, "A query names its form.", nameof(query));
+        Require(query.Scope is null ? query.FormId > 0 : query.FormId == 0, "A query names its form, or the forms of its scope.", nameof(query));
+        Require(
+            query.Scope is null || (query.Scope.Visibility is not null && query.Scope.FormIds is { Count: <= SqlArgs.MaxListLength } ids && ids.All(id => id > 0)),
+            $"A scope keeps the visible forms, and of them names at most {SqlArgs.MaxListLength}.",
+            nameof(query));
         Require(query.States is not null && query.States.All(Enum.IsDefined), "The states are entry states.", nameof(query));
         Require(Enum.IsDefined(query.Tests), "The test entries are left out, included or the only ones.", nameof(query));
         Require(IsUtc(query.SubmittedFrom) && IsUtc(query.SubmittedBefore), "Submission times are UTC.", nameof(query));
@@ -244,14 +258,16 @@ internal sealed class EntryQuerySql
 
     private static void CheckSort(EntrySort sort, string parameter)
     {
-        Require(sort is not null && Enum.IsDefined(sort.Column), "A query is sorted by submission, or by a field's text, number or date.", parameter);
+        Require(sort is not null && Enum.IsDefined(sort.Column), "A query is sorted by submission, unseen first, or by a field's text, number or date.", parameter);
         Require(sort!.ByField ? sort.FieldId > 0 : sort.FieldId == 0, "A value sort names its field, and a sort by submission none.", parameter);
+        Require(sort.Column != EntrySortColumn.Unseen || sort.Descending, "Unseen first goes newest first.", parameter);
     }
 
     private static void CheckCursor(EntrySort sort, EntryCursor after)
     {
         Require(after.Sort == sort, "A cursor goes on only with the sort it came from.", nameof(after));
         Require(after.EntryId > 0 && after.SubmittedUtc.Kind == DateTimeKind.Utc, "A cursor names an entry and its UTC submission time.", nameof(after));
+        Require(!after.Seen || (sort.Column == EntrySortColumn.Unseen && after.Value is null), "Only an unseen-first list's cursor stands among the seen entries.", nameof(after));
         if (after.Value is not { } position)
         {
             return;
@@ -296,7 +312,7 @@ internal sealed class EntryQuerySql
 
     private string C(string column) => _n.C(column);
 
-    private SqlStatement ByDate(EntryCursor? after, int limit, bool tail)
+    private SqlStatement ByDate(EntryCursor? after, int limit, bool tail, bool? seen = null)
     {
         var a = new SqlArgs();
         var (id, submitted) = (C("id"), C("submittedUtc"));
@@ -307,11 +323,16 @@ internal sealed class EntryQuerySql
             where += $" AND e.{id} NOT IN (SELECT vt.{C("entryId")} FROM {_values} vt WHERE vt.{C("fieldId")} = {a.Add(_query.Sort.FieldId)} AND vt.{C(SortColumn(_query.Sort.Column))} IS NOT NULL)";
         }
 
+        if (seen is { } opened)
+        {
+            where += $" AND e.{C("firstSeenUtc")} IS {(opened ? "NOT NULL" : "NULL")}";
+        }
+
         if (after is not null && (!tail || after.Value is null))
         {
             // Column against column: the cursor's own row says where it stood, exact also on SQL Server's DATETIME. Only
-            // a row of the form counts, so a cursor never places a page by another form's entry.
-            string At() => $"{_n.IfNull}((SELECT ec.{submitted} FROM {_entry} ec WHERE ec.{id} = {a.Add(after.EntryId)} AND ec.{C("formId")} = {a.Add(_query.FormId)}), {a.Add(after.SubmittedUtc)})";
+            // a row of the list's forms counts, so a cursor never places a page by another form's entry.
+            string At() => $"{_n.IfNull}((SELECT ec.{submitted} FROM {_entry} ec WHERE ec.{id} = {a.Add(after.EntryId)} AND {FormCondition(a, "ec")}), {a.Add(after.SubmittedUtc)})";
             var (edge, beyond) = descending ? ("<=", "<") : (">=", ">");
             where += $" AND e.{submitted} {edge} {At()} AND (e.{submitted} {beyond} {At()} OR e.{id} {beyond} {a.Add(after.EntryId)})";
         }
@@ -336,10 +357,32 @@ internal sealed class EntryQuerySql
         return $" AND v.{column} {edge} {At()} AND (v.{column} {beyond} {At()} OR v.{C("entryId")} {beyond} {a.Add(entryId)})";
     }
 
+    // The entry row's form: the list's own, or one of its scope's forms, outside the Recycle Bin and kept by the access filter.
+    private string FormCondition(SqlArgs a, string entry)
+    {
+        if (_query.Scope is not { } scope)
+        {
+            return $"{entry}.{C("formId")} = {a.Add(_query.FormId)}";
+        }
+
+        var forms = new List<string> { $"f.{C("trashedUtc")} IS NULL" };
+        if (AccessSql.FormClause(scope.Visibility, _n, "f.", a.Add) is { } access)
+        {
+            forms.Add(access);
+        }
+
+        if (scope.FormIds.Count > 0)
+        {
+            forms.Add($"f.{C("id")} IN ({a.List(scope.FormIds.Distinct().Select(form => (object?)form))})");
+        }
+
+        return $"{entry}.{C("formId")} IN (SELECT f.{C("id")} FROM {_n.T(FormBuilderTables.Form)} f WHERE {string.Join(" AND ", forms)})";
+    }
+
     // The conditions on the entry row e, the field filters included.
     private string Where(SqlArgs a)
     {
-        var parts = new List<string> { $"e.{C("formId")} = {a.Add(_query.FormId)}" };
+        var parts = new List<string> { FormCondition(a, "e") };
         var states = _query.States.Distinct().ToList();
         if (states.Count > 0 && states.Count < Enum.GetValues<EntryState>().Length)
         {

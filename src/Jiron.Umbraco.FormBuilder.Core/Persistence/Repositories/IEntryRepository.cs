@@ -415,6 +415,15 @@ internal interface IEntryRepository
     Task<IReadOnlySet<int>> ListFormIdsWithUnseenAsync(IReadOnlyCollection<int> formIds, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// How many entries nobody opened yet the forms of <paramref name="visibility"/> hold outside the Recycle Bin, as the
+    /// tree marks them (arrived, no test), up to <paramref name="most"/> + 1, which says "more" (the Inbox's badge, ADR-0209).
+    /// </summary>
+    /// <param name="visibility">The forms the user may view entries of.</param>
+    /// <param name="most">The most the badge says, 1 to 500.</param>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    Task<int> CountUnseenAsync(FormVisibility visibility, int most, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// How many entries, in any state, and uploaded files, with an entry or waiting for one, these forms hold (ADR-0166): what
     /// a permanent delete of them takes, as its confirmation says.
     /// </summary>

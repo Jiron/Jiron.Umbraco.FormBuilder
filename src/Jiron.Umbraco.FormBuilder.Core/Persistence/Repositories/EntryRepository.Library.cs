@@ -1,3 +1,5 @@
+using Jiron.Umbraco.FormBuilder.Core.Access;
+using Jiron.Umbraco.FormBuilder.Core.Persistence.Queries;
 using NPoco;
 
 namespace Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
@@ -55,6 +57,37 @@ internal sealed partial class EntryRepository
         }
 
         return found;
+    }
+
+    /// <inheritdoc />
+    /// <remarks>Newest first on the index of the unseen entries, so it reads at most <paramref name="most"/> + 1 of them.</remarks>
+    public Task<int> CountUnseenAsync(FormVisibility visibility, int most, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(visibility);
+        CheckTake(most);
+        return database.ReadAsync(
+            db =>
+            {
+                var n = new SqlNames(db);
+                var a = new SqlArgs();
+                var where = new List<string>
+                {
+                    $"f.{n.C("trashedUtc")} IS NULL",
+                    $"e.{n.C("firstSeenUtc")} IS NULL",
+                    $"e.{n.C("isTest")} = {a.Add(false)}",
+                    $"e.{n.C("state")} IN ({a.Add(StoredNames.Of(EntryState.Submitted))}, {a.Add(StoredNames.Of(EntryState.Approved))}, {a.Add(StoredNames.Of(EntryState.Rejected))})",
+                };
+                if (AccessSql.FormClause(visibility, n, "f.", a.Add) is { } access)
+                {
+                    where.Add(access);
+                }
+
+                return db.ScalarAsync<int>(
+                    $"SELECT COUNT(*) FROM (SELECT e.{n.C("id")} AS {n.C("id")} FROM {n.T(FormBuilderTables.Entry)} e INNER JOIN {n.T(FormBuilderTables.Form)} f ON f.{n.C("id")} = e.{n.C("formId")} "
+                    + $"WHERE {string.Join(" AND ", where)} ORDER BY e.{n.C("submittedUtc")} DESC, e.{n.C("id")} DESC {n.Page(0, most + 1)}) c",
+                    a.Values);
+            },
+            cancellationToken);
     }
 
     /// <inheritdoc />

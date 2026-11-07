@@ -125,8 +125,14 @@ internal sealed record EntryListFilter
     /// <summary>The words, number or reference to look for, or none.</summary>
     public string? Search { get; init; }
 
-    /// <summary>The order.</summary>
-    public EntryListSort Sort { get; init; } = new();
+    /// <summary>
+    /// The forms of a list across forms (the Inbox and Spam, ADR-0209); none for every form the user may view. A form's own
+    /// list names none, or only its form.
+    /// </summary>
+    public IReadOnlyList<Guid> Forms { get; init; } = [];
+
+    /// <summary>The order; none for the list's own: newest first, or in the Inbox the unseen entries first.</summary>
+    public EntryListSort? Sort { get; init; }
 }
 
 /// <summary>The JSON a filter set keeps its filter in: the shape the management API reads and writes, names in camelCase.</summary>

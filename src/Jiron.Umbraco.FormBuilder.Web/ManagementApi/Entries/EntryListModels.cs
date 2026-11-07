@@ -26,7 +26,10 @@ public sealed class EntryListFilterRequestModel
     /// <summary>The words, number or reference to look for.</summary>
     public string? Search { get; init; }
 
-    /// <summary>The order; none for the newest first.</summary>
+    /// <summary>The forms of the Inbox or Spam, at most 100; none for every form the user may view. A form's list names none, or its own.</summary>
+    public IReadOnlyList<Guid> Forms { get; init; } = [];
+
+    /// <summary>The order; none for the list's own: newest first, or in the Inbox the unseen entries first.</summary>
     public EntryListSortRequestModel? Sort { get; init; }
 }
 
@@ -87,8 +90,8 @@ public sealed class EntryListRequestModel
     /// <summary>Which entries; none for every entry a list holds, newest first.</summary>
     public EntryListFilterRequestModel? Filter { get; init; }
 
-    /// <summary>The fields to show as columns, at most 20, each one whose <c>column</c> is true.</summary>
-    public IReadOnlyList<Guid> Columns { get; init; } = [];
+    /// <summary>The fields to show as columns, at most 20, each one whose <c>column</c> is true; none for the entries' details only.</summary>
+    public IReadOnlyList<Guid>? Columns { get; init; }
 
     /// <summary>The <c>next</c> of the page before; none for the first page.</summary>
     public string? After { get; init; }
@@ -111,6 +114,22 @@ public sealed class EntryListPageResponseModel
 
     /// <summary>Whether more than <c>total</c> match, which only a search's count says.</summary>
     public bool More { get; init; }
+
+    /// <summary>In the Inbox and Spam, the forms of the page's entries, with what the user may do on each; none in a form's list.</summary>
+    public IReadOnlyList<EntryListFormResponseModel> Forms { get; init; } = [];
+}
+
+/// <summary>A form the Inbox or Spam names: on a page, with what the user may do on it, or for the Form filter.</summary>
+public sealed class EntryListFormResponseModel
+{
+    /// <summary>The form's key.</summary>
+    public required Guid Key { get; init; }
+
+    /// <summary>Its name.</summary>
+    public required string Name { get; init; }
+
+    /// <summary>The user's permissions on it, by name; none where the answer names forms only.</summary>
+    public IReadOnlyList<string> Permissions { get; init; } = [];
 }
 
 /// <summary>An entry as the list shows it.</summary>
@@ -139,6 +158,9 @@ public sealed class EntryListRowResponseModel
 
     /// <summary>The columns' cells, in the columns' order.</summary>
     public required IReadOnlyList<EntryListCellResponseModel> Cells { get; init; }
+
+    /// <summary>Its form.</summary>
+    public required Guid Form { get; init; }
 }
 
 /// <summary>An entry's action runs, counted by where they are.</summary>
@@ -425,7 +447,8 @@ internal static class EntryListMapping
             Actions = actions,
             Fields = fields,
             Search = model.Search,
-            Sort = new EntryListSort { Field = model.Sort?.Field, Descending = model.Sort?.Descending ?? true },
+            Forms = model.Forms ?? [],
+            Sort = model.Sort is { } sort ? new EntryListSort { Field = sort.Field, Descending = sort.Descending } : null,
         };
     }
 
@@ -437,7 +460,8 @@ internal static class EntryListMapping
         Actions = filter.Actions == EntryActionFilter.Any ? null : NameOf(filter.Actions),
         Fields = [.. filter.Fields.Select(field => new EntryFieldFilterRequestModel { Field = field.Field, Test = NameOf(field.Test), Values = field.Values, Min = field.Min, Max = field.Max, From = field.From, To = field.To })],
         Search = filter.Search,
-        Sort = new EntryListSortRequestModel { Field = filter.Sort.Field, Descending = filter.Sort.Descending },
+        Forms = filter.Forms,
+        Sort = filter.Sort is { } sort ? new EntryListSortRequestModel { Field = sort.Field, Descending = sort.Descending } : null,
     };
 
     /// <summary>The model of a filter set.</summary>
@@ -473,6 +497,7 @@ internal static class EntryListMapping
             Unseen = row.Unseen,
             Actions = new EntryListActionsResponseModel { Delivered = row.Actions.Delivered, Failed = row.Actions.Failed, Uncertain = row.Actions.Uncertain, Waiting = row.Actions.Waiting, Skipped = row.Actions.Skipped },
             Cells = [.. row.Cells.Select(cell => new EntryListCellResponseModel { Field = cell.Field, Texts = cell.Texts, Masked = cell.Masked })],
+            Form = row.Form,
         })],
         Next = page.Next,
         Total = page.Count?.Value,

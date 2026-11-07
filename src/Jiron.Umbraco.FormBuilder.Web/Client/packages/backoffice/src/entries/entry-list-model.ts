@@ -28,7 +28,7 @@ export const PRESETS = ['today', 'thisWeek', 'last7Days', 'thisMonth', 'lastMont
 export const ACTION_FILTERS = ['failed', 'uncertain', 'delivered'] as const;
 
 /** A filter with nothing set: every entry a list holds, newest first. */
-export const emptyFilter = (): EntryListFilterRequestModel => ({ states: [], fields: [] });
+export const emptyFilter = (): EntryListFilterRequestModel => ({ states: [], fields: [], forms: [] });
 
 /** Whether a filter narrows the list by anything but its search and sort, which the chips show. */
 export const isFiltered = (filter: EntryListFilterRequestModel): boolean =>
@@ -240,6 +240,7 @@ export function cleanFilter(filter: EntryListFilterRequestModel): EntryListFilte
   const search = filter.search?.trim();
   return {
     states: [...filter.states],
+    forms: [...filter.forms],
     fields: filter.fields.map((condition) => ({ ...condition, values: [...condition.values] })),
     ...(filter.received ? { received: { ...filter.received } } : {}),
     ...(filter.actions ? { actions: filter.actions } : {}),
