@@ -6,7 +6,7 @@ namespace Jiron.Umbraco.FormBuilder.Core.Persistence.Queries;
 
 /// <summary>
 /// Lists one form's entries for the entries screen and the exports (ADR-0003, ADR-0039): filtered, searched and
-/// sorted, a page at a time, within a time budget.
+/// sorted, a page at a time, within a time budget; and summarises their answers for the Insights view (ADR-0212).
 /// </summary>
 internal interface IEntryQueryRepository
 {
@@ -22,6 +22,29 @@ internal interface IEntryQueryRepository
     /// <exception cref="ArgumentException">A query, cursor or page size the builder cannot answer as asked.</exception>
     /// <exception cref="FormBuilderQueryTimeoutException">The read ran past its time budget (<c>query_timeout</c>).</exception>
     Task<EntryPage> ListAsync(EntryQuery query, EntryCursor? after, int take, bool count, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// The answers of the entries <paramref name="query"/> holds, summarised in the database (ADR-0212), in one read within
+    /// the time budget: how many entries match, and for the fields <paramref name="fields"/> names what each is summarised
+    /// by, with the newest <paramref name="texts"/> answers of each free-text field.
+    /// </summary>
+    /// <param name="query">Which entries; its sort is not read.</param>
+    /// <param name="fields">The fields, by what each is summarised by.</param>
+    /// <param name="texts">How many free-text answers each field's first page holds: 1 to <see cref="PageRequest.MaxTake"/>.</param>
+    /// <param name="cancellationToken">Stops the read.</param>
+    /// <exception cref="ArgumentException">A query the builder cannot answer as asked.</exception>
+    /// <exception cref="FormBuilderQueryTimeoutException">The read ran past its time budget (<c>query_timeout</c>).</exception>
+    Task<AnswerSummaryRows> SummarizeAsync(EntryQuery query, AnswerSummaryFields fields, int texts, CancellationToken cancellationToken = default);
+
+    /// <summary>A free-text field's answers in the entries <paramref name="query"/> holds, after <paramref name="after"/>, newest entry first.</summary>
+    /// <param name="query">Which entries; its sort is not read.</param>
+    /// <param name="fieldId">The field.</param>
+    /// <param name="after">Where the page before ended; none for the first page.</param>
+    /// <param name="take">How many: 1 to <see cref="PageRequest.MaxTake"/>.</param>
+    /// <param name="cancellationToken">Stops the read.</param>
+    /// <exception cref="ArgumentException">A query the builder cannot answer as asked.</exception>
+    /// <exception cref="FormBuilderQueryTimeoutException">The read ran past its time budget (<c>query_timeout</c>).</exception>
+    Task<AnswerTextPage> TextsAsync(EntryQuery query, int fieldId, AnswerTextCursor? after, int take, CancellationToken cancellationToken = default);
 }
 
 /// <inheritdoc />
@@ -49,7 +72,99 @@ internal sealed class EntryQueryRepository : IEntryQueryRepository
     public Task<EntryPage> ListAsync(EntryQuery query, EntryCursor? after, int take, bool count, CancellationToken cancellationToken = default)
     {
         EntryQuerySql.Check(query, after, take);
-        return _database.QueryAsync(db => ListAsync(db, query, after, take, count), _budget, cancellationToken);
+        return BudgetedAsync(db => ListAsync(db, query, after, take, count), cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public Task<AnswerSummaryRows> SummarizeAsync(EntryQuery query, AnswerSummaryFields fields, int texts, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(fields);
+        EntryQuerySql.Check(query, after: null, texts);
+        return BudgetedAsync(db => SummarizeAsync(db, query, fields, texts), cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public Task<AnswerTextPage> TextsAsync(EntryQuery query, int fieldId, AnswerTextCursor? after, int take, CancellationToken cancellationToken = default)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(fieldId);
+        EntryQuerySql.Check(query, after: null, take);
+        return BudgetedAsync(
+            async db =>
+            {
+                var n = new SqlNames(db);
+                return await TextsAsync(db, new EntryQuerySql(n, query, await LongTextsAsync(db, n, query)), fieldId, after, take);
+            },
+            cancellationToken);
+    }
+
+    // Every read of the builder: one read within the time budget, and no other unit of work.
+    private Task<T> BudgetedAsync<T>(Func<IUmbracoDatabase, Task<T>> read, CancellationToken cancellationToken) => _database.QueryAsync(read, _budget, cancellationToken);
+
+    private static async Task<AnswerSummaryRows> SummarizeAsync(IUmbracoDatabase db, EntryQuery query, AnswerSummaryFields fields, int texts)
+    {
+        var n = new SqlNames(db);
+        var sql = new EntryQuerySql(n, query, await LongTextsAsync(db, n, query));
+        var total = sql.Total();
+        var entries = await db.ScalarAsync<long>(total.Text, total.Args);
+        var answered = (await GroupedAsync(db, fields.Answered, sql.Answered)).ToDictionary(row => row.FieldId, row => row.Total);
+        var optionRows = await GroupedAsync(db, fields.Options, sql.Options);
+        var options = optionRows.Select(row => new AnswerOptionCount(row.FieldId, row.TextKey ?? string.Empty, row.Total, row.Positions ?? 0, row.Sample ?? row.TextKey ?? string.Empty)).ToList();
+        foreach (var field in optionRows.GroupBy(row => row.FieldId))
+        {
+            answered[field.Key] = field.Sum(row => row.Firsts ?? 0);
+        }
+
+        // A grid's answers, each entry or row once whichever of its rows it answered.
+        foreach (var (grid, rowIds) in fields.Grids)
+        {
+            var statement = sql.GridAnswered([.. rowIds.Distinct().Take(EntryQuerySql.MaxSummaryFields)]);
+            answered[grid] = await db.ScalarAsync<long>(statement.Text, statement.Args);
+        }
+
+        var numbers = new Dictionary<int, AnswerNumbers>();
+        foreach (var row in await GroupedAsync(db, fields.Numbers, sql.Numbers))
+        {
+            // The middle one, or the two in the middle of an even count.
+            var middle = await FetchAsync<double>(db, sql.Middle(row.FieldId, (row.Total - 1) / 2, row.Total % 2 == 0 ? 2 : 1));
+            answered[row.FieldId] = row.Total;
+            numbers[row.FieldId] = new AnswerNumbers(row.Total, row.Sum ?? 0, row.Lowest ?? 0, row.Highest ?? 0, middle.Count == 0 ? 0 : middle.Average(), row.Low ?? 0, row.Middle ?? 0, row.High ?? 0);
+        }
+
+        var ticked = new Dictionary<int, long>();
+        foreach (var row in await GroupedAsync(db, fields.Ticked, sql.Ticked))
+        {
+            answered[row.FieldId] = row.Total;
+            ticked[row.FieldId] = row.Ticks ?? 0;
+        }
+
+        var pages = new Dictionary<int, AnswerTextPage>();
+        foreach (var field in fields.Texts.Distinct())
+        {
+            pages[field] = await TextsAsync(db, sql, field, after: null, texts);
+        }
+
+        return new AnswerSummaryRows(entries, answered, options, numbers, ticked, pages);
+    }
+
+    // One grouped statement for each chunk of the fields the database takes in one list; none for no field.
+    private static async Task<List<AnswerSummaryRow>> GroupedAsync(IUmbracoDatabase db, IReadOnlyCollection<int> fieldIds, Func<IReadOnlyCollection<int>, SqlStatement> statement)
+    {
+        var rows = new List<AnswerSummaryRow>();
+        foreach (var chunk in fieldIds.Distinct().Chunk(EntryQuerySql.MaxSummaryFields))
+        {
+            rows.AddRange(await FetchAsync<AnswerSummaryRow>(db, statement(chunk)));
+        }
+
+        return rows;
+    }
+
+    // A page of a field's texts, and where the next starts when one more came.
+    private static async Task<AnswerTextPage> TextsAsync(IUmbracoDatabase db, EntryQuerySql sql, int fieldId, AnswerTextCursor? after, int take)
+    {
+        var rows = await FetchAsync<AnswerTextRow>(db, sql.Texts(fieldId, after, take + 1));
+        var page = rows.Take(take).ToList();
+        var texts = page.Select(row => new AnswerText(row.EntryKey, new DateTimeOffset(DateTime.SpecifyKind(row.SubmittedUtc, DateTimeKind.Utc)), row.RowIndex, row.Text ?? string.Empty)).ToList();
+        return new AnswerTextPage(texts, rows.Count > take ? new AnswerTextCursor(page[^1].EntryId, DateTime.SpecifyKind(page[^1].SubmittedUtc, DateTimeKind.Utc), page[^1].RowIndex) : null);
     }
 
     private static async Task<EntryPage> ListAsync(IUmbracoDatabase db, EntryQuery query, EntryCursor? after, int take, bool count)

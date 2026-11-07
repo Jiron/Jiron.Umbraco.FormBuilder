@@ -109,6 +109,10 @@ internal sealed class TestEndpointsStartupFilter(IOptions<FormBuilderTestingOpti
 /// <item><description><c>POST /jfb-testing/insights-form {"name": "..."}</c>: publishes a headless form of two pages (Name and
 /// Email, then Your message) and counts 60 days of visits to it in <c>jfbDailyStat</c> as its beacons and entries would, the
 /// same numbers each time, so the Insights view and Forms at a glance show a month against the one before (ADR-0211).</description></item>
+/// <item><description><c>POST /jfb-testing/answers-form {"name": "...", "count": 120}</c>: publishes a headless form with an answer
+/// of every kind (one choice with Other, several, a ranking, a grid, a scale from 0 to 10, a number, a checkbox, a paragraph of text,
+/// an email and a repeatable group) and sends it that many entries through the submission pipeline, the same answers each time;
+/// the first twelve before an option of its first field is taken away (ADR-0212).</description></item>
 /// <item><description><c>GET /jfb-testing/audit?entity=&lt;key&gt;</c>: the audit log's entries about one item, oldest first, each with
 /// its action, user and details (ADR-0041), which no screen lists yet.</description></item>
 /// </list>
@@ -434,6 +438,157 @@ internal sealed class TestEndpointsMiddleware(RequestDelegate next)
         await context.Response.WriteAsJsonAsync(new { key = created.Key }, Json, context.RequestAborted);
     }
 
+    // The comments of the answers form's entries, one in four of them; the last runs past two lines.
+    private static readonly string[] Comments =
+    [
+        "The workshop on accessible forms was the highlight of my day.",
+        "Please offer more vegetarian dishes at lunch.",
+        "The venue was hard to find from the station; a sign at the exit would help.",
+        "Great speakers, but the afternoon sessions ran late.",
+        "I would love the slides to be shared afterwards.",
+        "The wireless network dropped out during the opening talk.",
+        "Loved the networking hour: I met three people I will work with.",
+        "Seats at the back could not see the screen well.",
+        "More time for questions after each talk, please.",
+        "The panel on data protection answered exactly the questions our team had been asking for months, and I came away with a clear plan for our own forms, which is more than I expected from a single afternoon.",
+    ];
+
+    private static async Task AnswersFormAsync(HttpContext context)
+    {
+        var body = await JsonSerializer.DeserializeAsync<EntriesFormRequest>(context.Request.Body, Json, context.RequestAborted);
+        var count = Math.Clamp(body?.Count ?? 120, 12, 2000);
+        var forms = context.RequestServices.GetRequiredService<IFormBuilderFormService>();
+        var submissions = context.RequestServices.GetRequiredService<FormSubmissions>();
+        var created = await forms.CreateAsync(new NewFormRequest(body?.Name ?? $"Event feedback {Guid.NewGuid():N}"), context.RequestAborted);
+        static FieldOption Option(string value, string label) => new() { Value = value, Label = new LocalizedText(label) };
+        static FormField Field(string type, string alias, string label) => new() { Key = Guid.NewGuid(), Type = type, Alias = alias, Label = new LocalizedText(label) };
+        FieldOption[] ways = [Option("search", "Search engine"), Option("friend", "A friend"), Option("social", "Social media"), Option("newsletter", "Our newsletter")];
+        var heard = Field("radio", "heard", "How did you hear about us?") with
+        {
+            Settings = SettingsObject.Parse("""{"other":true}"""),
+            Options = new FieldOptions { Items = [.. ways, Option("radio", "Radio advert")] },
+        };
+        var sessions = Field("checkboxes", "sessions", "Which sessions did you join?") with
+        {
+            Options = new FieldOptions { Items = [Option("opening", "Opening talk"), Option("workshops", "Workshops"), Option("panel", "Panel"), Option("networking", "Networking hour")] },
+        };
+        var matters = Field("ranking", "matters", "Rank what matters most to you") with
+        {
+            Options = new FieldOptions { Items = [Option("content", "Content"), Option("speakers", "Speakers"), Option("venue", "Venue"), Option("price", "Price")] },
+        };
+        GridRow[] parts = [new() { Key = Guid.NewGuid(), Label = new LocalizedText("Talks") }, new() { Key = Guid.NewGuid(), Label = new LocalizedText("Organisation") }, new() { Key = Guid.NewGuid(), Label = new LocalizedText("Food") }];
+        var day = Field("grid", "day", "How was the day?") with
+        {
+            Options = new FieldOptions { Items = [Option("poor", "Poor"), Option("fair", "Fair"), Option("good", "Good"), Option("excellent", "Excellent")] },
+            Rows = parts,
+        };
+        var recommend = Field("scale", "recommend", "How likely are you to recommend us to a friend?");
+        var age = Field("number", "age", "Your age");
+        var newsletter = Field("checkbox", "newsletter", "Send me the newsletter");
+        var comments = Field("textarea", "comments", "Anything else you would like to tell us?");
+        var email = Field("email", "email", "Email address");
+        var meal = Field("radio", "meal", "Meal") with
+        {
+            Options = new FieldOptions { Items = [Option("veggie", "Vegetarian"), Option("fish", "Fish"), Option("meat", "Meat")] },
+        };
+        var guests = Field("repeater", "guests", "Guests") with { Fields = [meal] };
+
+        async Task<int> PublishAsync(FormField first)
+        {
+            var draft = (await forms.GetDraftAsync(created.Key, cancellationToken: context.RequestAborted))!;
+            var definition = draft.Definition!;
+            var saved = (await forms.SaveDraftAsync(
+                created.Key,
+                draft.Form.ConcurrencyVersion,
+                definition with
+                {
+                    Pages = [definition.Pages[0] with { Groups = [definition.Pages[0].Groups[0] with { Fields = [first, sessions, matters, day, recommend, age, newsletter, comments, email, guests] }] }],
+                    Settings = definition.Settings with { Developer = definition.Settings.Developer with { Headless = true } },
+                },
+                null,
+                null,
+                context.RequestAborted))!;
+            _ = await forms.PublishAsync(created.Key, saved.Form.ConcurrencyVersion, null, null, context.RequestAborted);
+            return (await forms.GetAsync(created.Key, context.RequestAborted))!.PublicRevision;
+        }
+
+        static PostedAnswer One(string text) => new([text]);
+        string[] orders = ["content speakers venue price", "speakers content price venue", "content price speakers venue", "venue content speakers price", "content speakers price venue"];
+        string[] columns = ["excellent", "good", "good", "fair", "good", "poor"];
+        int[] scores = [10, 9, 8, 9, 7, 10, 6, 9, 4, 8, 10, 9];
+        string[] cycle = ["search", "friend", "search", "social", "friend", "search", "newsletter"];
+        var revision = await PublishAsync(heard);
+        for (var i = 1; i <= count; i++)
+        {
+            if (i == 13)
+            {
+                // The radio advert is no longer offered: the entries before keep it, under their field.
+                revision = await PublishAsync(heard with { Options = new FieldOptions { Items = ways } });
+            }
+
+            var answers = new Dictionary<string, PostedAnswer>(StringComparer.Ordinal)
+            {
+                ["heard"] = i % 11 == 0
+                    ? new PostedAnswer([], new Dictionary<string, IReadOnlyList<string?>>(StringComparer.Ordinal) { ["other"] = ["A colleague told me"] })
+                    : One(i <= 12 && i % 3 == 0 ? "radio" : cycle[i % cycle.Length]),
+                ["sessions"] = new([.. new[] { i % 3 != 0 ? "opening" : null, i % 2 == 0 ? "workshops" : null, i % 5 == 0 ? "panel" : null, i % 4 == 1 ? "networking" : null }.Where(value => value is not null)]),
+                ["matters"] = new([.. orders[i % orders.Length].Split(' ')]),
+                ["day"] = new([], new Dictionary<string, IReadOnlyList<string?>>(StringComparer.Ordinal)
+                {
+                    [parts[0].Key.ToString("D")] = [columns[i % columns.Length]],
+                    [parts[1].Key.ToString("D")] = [columns[(i + 2) % columns.Length]],
+                    [parts[2].Key.ToString("D")] = [i % 6 == 0 ? null : columns[(i + 4) % columns.Length]],
+                }),
+                ["recommend"] = One(scores[i % scores.Length].ToString(System.Globalization.CultureInfo.InvariantCulture)),
+            };
+            if (i % 9 != 0)
+            {
+                answers["age"] = One((19 + (i * 7 % 48)).ToString(System.Globalization.CultureInfo.InvariantCulture));
+            }
+
+            if (i % 3 == 0)
+            {
+                answers["newsletter"] = One("true");
+            }
+
+            if (i % 4 == 0)
+            {
+                answers["comments"] = One(Comments[i / 4 % Comments.Length]);
+            }
+
+            if (i % 5 != 0)
+            {
+                answers["email"] = One($"guest{i}@visitor.jfb.test");
+            }
+
+            IReadOnlyDictionary<string, PostedAnswer> Row(string choice) => new Dictionary<string, PostedAnswer>(StringComparer.Ordinal) { ["meal"] = One(choice) };
+            IReadOnlyList<IReadOnlyDictionary<string, PostedAnswer>> rows = (i % 4) switch
+            {
+                1 => [Row("veggie"), Row("fish")],
+                2 => [Row("meat")],
+                _ => [],
+            };
+            var result = await submissions.SubmitAsync(
+                new SubmissionRequest
+                {
+                    Form = created.Key,
+                    Revision = revision,
+                    SubmissionId = Guid.NewGuid(),
+                    Culture = "en-US",
+                    ServerKey = "e2e-seed",
+                    Fields = answers,
+                    Rows = new Dictionary<string, IReadOnlyList<IReadOnlyDictionary<string, PostedAnswer>>>(StringComparer.Ordinal) { ["guests"] = rows },
+                },
+                context.RequestAborted);
+            if (result.Receipt is null)
+            {
+                throw new InvalidOperationException($"The test host could not send entry {i}: {result.Refusal}.");
+            }
+        }
+
+        await context.Response.WriteAsJsonAsync(new { key = created.Key }, Json, context.RequestAborted);
+    }
+
     // The site's own address, from this request, unless the settings name one, so links in mails lead back here.
     private static async Task KnowBaseUrlAsync(HttpContext context)
     {
@@ -535,6 +690,9 @@ internal sealed class TestEndpointsMiddleware(RequestDelegate next)
                 return;
             case "insights-form" when HttpMethods.IsPost(context.Request.Method):
                 await InsightsFormAsync(context);
+                return;
+            case "answers-form" when HttpMethods.IsPost(context.Request.Method):
+                await AnswersFormAsync(context);
                 return;
             case "audit" when HttpMethods.IsGet(context.Request.Method):
                 await AuditAsync(context);

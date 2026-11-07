@@ -39,7 +39,7 @@ internal sealed class EntryPositionRow
 /// ADR-0003 measured and only those. Field filters are <c>IN</c> subqueries, pages go on from a keyset, a sort by a
 /// value walks the value index, and a search counts up to 1,000 in one pass.
 /// </summary>
-internal sealed class EntryQuerySql
+internal sealed partial class EntryQuerySql
 {
     /// <summary>The most field filters one query holds.</summary>
     public const int MaxFilters = 10;

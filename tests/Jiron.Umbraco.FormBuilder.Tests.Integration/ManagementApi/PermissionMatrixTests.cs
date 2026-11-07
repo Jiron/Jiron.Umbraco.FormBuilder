@@ -75,6 +75,8 @@ public sealed class PermissionMatrixTests : ManagementApiTestBase
         ["GET form/{key}/files/archive"] = (FormBuilderPermissions.Export, FormBuilderAccessResourceKind.Form, "key"),
         ["GET form/{key}/entries/export"] = (FormBuilderPermissions.Export, FormBuilderAccessResourceKind.Form, "key"),
         ["GET form/{key}/insights"] = (FormBuilderPermissions.ViewEntries, FormBuilderAccessResourceKind.Form, "key"),
+        ["POST form/{key}/insights/answers"] = (FormBuilderPermissions.ViewEntries, FormBuilderAccessResourceKind.Form, "key"),
+        ["POST form/{key}/insights/answers/{field}/texts"] = (FormBuilderPermissions.ViewEntries, FormBuilderAccessResourceKind.Form, "key"),
         ["POST form/{key}/entries/export/plan"] = (FormBuilderPermissions.Export, FormBuilderAccessResourceKind.Form, "key"),
         ["POST form/{key}/entries/export/file"] = (FormBuilderPermissions.Export, FormBuilderAccessResourceKind.Form, "key"),
         ["POST form/{key}/entries/export/jobs"] = (FormBuilderPermissions.Export, FormBuilderAccessResourceKind.Form, "key"),

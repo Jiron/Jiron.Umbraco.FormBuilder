@@ -15,7 +15,8 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Integration.ManagementApi;
 /// Insights through the management API (ROADMAP 11.4, ADR-0211): the site's switch on Privacy, Data collection, which
 /// needs <c>manageSettings</c>; a form's report over a span, compared with another, by day, week or month, which needs
 /// <c>viewEntries</c> on the form and refuses a span it cannot read; the site's table of the forms the user may view
-/// entries of; and the boxes a user shows as tables, kept for them.
+/// entries of; the boxes a user shows as tables, kept for them; and the answers' summaries, which need <c>viewEntries</c>
+/// on the form too and read only what they show.
 /// </summary>
 [TestFixture]
 [UmbracoTest(Database = UmbracoTestOptions.Database.NewSchemaPerTest, Boot = true)]
@@ -155,6 +156,38 @@ public sealed class InsightApiTests : ManagementApiTestBase
             Assert.That(noCompare.Outcome, Is.EqualTo("200"), noCompare.ToString());
             Assert.That(noCompare.Body!["items"]![0]!["before"]!["entries"]!.GetValue<long>(), Is.EqualTo(2), "without a span to compare with, as many days just before");
             Assert.That(Paths(before1753), Is.EqualTo(new[] { "from" }), "the days just before would start before 1753");
+        });
+    }
+
+    [Test]
+    public async Task TheAnswers_NeedTheRightToViewTheFormsEntries_AndReadOnlyWhatTheSummariesShow()
+    {
+        var key = await PublishedAsync("Answers");
+        var path = $"form/{key}/insights/answers";
+        const string Cursor = "eyJlIjoxLCJ0IjowLCJyIjowfQ";
+
+        var viewer = await Api.CallAsync("viewer", HttpMethod.Post, path, new { from = Day(0), to = Day(0) });
+        var designer = await Api.CallAsync("designer", HttpMethod.Post, path, new { });
+        var missing = await Api.CallAsync(Admin, HttpMethod.Post, $"form/{Guid.NewGuid()}/insights/answers", new { });
+        var badState = await Api.CallAsync("viewer", HttpMethod.Post, path, new { filter = new { states = new[] { "sleeping" } } });
+        var backwards = await Api.CallAsync("viewer", HttpMethod.Post, path, new { from = Day(0), to = Day(-1) });
+        var texts = await Api.CallAsync("viewer", HttpMethod.Post, $"form/{key}/insights/answers/{NameField.Key}/texts", new { after = Cursor });
+        var noField = await Api.CallAsync("viewer", HttpMethod.Post, $"form/{key}/insights/answers/{Guid.NewGuid()}/texts", new { after = Cursor });
+        var badCursor = await Api.CallAsync("viewer", HttpMethod.Post, $"form/{key}/insights/answers/{NameField.Key}/texts", new { after = "not a cursor" });
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(viewer.Outcome, Is.EqualTo("200"), viewer.ToString());
+            Assert.That(viewer.Body!["entries"]!.GetValue<long>(), Is.Zero);
+            Assert.That(viewer.Body["fields"]!.AsArray().Select(field => (field!["key"]!.GetValue<Guid>(), field["kind"]!.GetValue<string>())), Does.Contain((NameField.Key, "texts")));
+            Assert.That(designer.Outcome, Is.EqualTo("403 forbidden"), designer.ToString());
+            Assert.That(missing.Outcome, Is.EqualTo("404 form_not_found"), missing.ToString());
+            Assert.That(Paths(badState), Is.EqualTo(new[] { "filter.states[0]" }), badState.ToString());
+            Assert.That(Paths(backwards), Is.EqualTo(new[] { "to" }), backwards.ToString());
+            Assert.That(texts.Outcome, Is.EqualTo("200"), texts.ToString());
+            Assert.That(texts.Body!["texts"]!.AsArray(), Is.Empty);
+            Assert.That(noField.Outcome, Is.EqualTo("404 field_not_found"), noField.ToString());
+            Assert.That(Paths(badCursor), Is.EqualTo(new[] { "after" }), badCursor.ToString());
         });
     }
 

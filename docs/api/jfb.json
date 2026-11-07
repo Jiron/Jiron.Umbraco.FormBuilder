@@ -7259,6 +7259,225 @@
         ]
       }
     },
+    "/umbraco/jfb/management/api/v1/form/{key}/insights/answers": {
+      "post": {
+        "tags": [
+          "Insights"
+        ],
+        "operationId": "InsightAnswers",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/InsightAnswersRequestModel"
+                  }
+                ]
+              }
+            },
+            "text/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/InsightAnswersRequestModel"
+                  }
+                ]
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/InsightAnswersRequestModel"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/InsightAnswersResponseModel"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The resource is protected and requires an authentication token"
+          },
+          "403": {
+            "description": "The authenticated user does not have access to this resource"
+          }
+        },
+        "security": [
+          {
+            "Backoffice-User": []
+          }
+        ]
+      }
+    },
+    "/umbraco/jfb/management/api/v1/form/{key}/insights/answers/{field}/texts": {
+      "post": {
+        "tags": [
+          "Insights"
+        ],
+        "operationId": "InsightAnswerTexts",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "field",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/InsightAnswerTextsRequestModel"
+                  }
+                ]
+              }
+            },
+            "text/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/InsightAnswerTextsRequestModel"
+                  }
+                ]
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/InsightAnswerTextsRequestModel"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/InsightAnswerTextsResponseModel"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The resource is protected and requires an authentication token"
+          },
+          "403": {
+            "description": "The authenticated user does not have access to this resource"
+          }
+        },
+        "security": [
+          {
+            "Backoffice-User": []
+          }
+        ]
+      }
+    },
     "/umbraco/jfb/management/api/v1/insights/glance": {
       "get": {
         "tags": [
@@ -14450,6 +14669,349 @@
           "alias": {
             "type": "string",
             "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "InsightAnswerGridRowResponseModel": {
+        "required": [
+          "answered",
+          "key",
+          "label",
+          "options",
+          "removed"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "label": {
+            "type": "string"
+          },
+          "answered": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/InsightAnswerOptionResponseModel"
+                }
+              ]
+            }
+          },
+          "removed": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "InsightAnswerNumbersResponseModel": {
+        "required": [
+          "average",
+          "highest",
+          "lowest",
+          "median"
+        ],
+        "type": "object",
+        "properties": {
+          "average": {
+            "type": "number",
+            "format": "double"
+          },
+          "median": {
+            "type": "number",
+            "format": "double"
+          },
+          "lowest": {
+            "type": "number",
+            "format": "double"
+          },
+          "highest": {
+            "type": "number",
+            "format": "double"
+          },
+          "groups": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/InsightAnswerScaleResponseModel"
+              }
+            ],
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "InsightAnswerOptionResponseModel": {
+        "required": [
+          "count",
+          "label",
+          "older",
+          "other"
+        ],
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string"
+          },
+          "count": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "position": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "older": {
+            "type": "boolean"
+          },
+          "other": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "InsightAnswerResponseModel": {
+        "required": [
+          "answered",
+          "key",
+          "kind",
+          "label",
+          "options",
+          "removed",
+          "rows",
+          "several",
+          "texts",
+          "ticked"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "label": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "answered": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "parent": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "parentLabel": {
+            "type": "string",
+            "nullable": true
+          },
+          "removed": {
+            "type": "boolean"
+          },
+          "several": {
+            "type": "boolean"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/InsightAnswerOptionResponseModel"
+                }
+              ]
+            }
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/InsightAnswerGridRowResponseModel"
+                }
+              ]
+            }
+          },
+          "numbers": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/InsightAnswerNumbersResponseModel"
+              }
+            ],
+            "nullable": true
+          },
+          "ticked": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "texts": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/InsightAnswerTextResponseModel"
+                }
+              ]
+            }
+          },
+          "more": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "InsightAnswerScaleResponseModel": {
+        "required": [
+          "high",
+          "low",
+          "middle",
+          "score"
+        ],
+        "type": "object",
+        "properties": {
+          "low": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "middle": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "high": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "score": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "InsightAnswerTextResponseModel": {
+        "required": [
+          "entry",
+          "received",
+          "text"
+        ],
+        "type": "object",
+        "properties": {
+          "entry": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "received": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "text": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "InsightAnswerTextsRequestModel": {
+        "required": [
+          "after"
+        ],
+        "type": "object",
+        "properties": {
+          "from": {
+            "type": "string",
+            "nullable": true
+          },
+          "to": {
+            "type": "string",
+            "nullable": true
+          },
+          "filter": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/EntryListFilterRequestModel"
+              }
+            ],
+            "nullable": true
+          },
+          "after": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "InsightAnswerTextsResponseModel": {
+        "required": [
+          "texts"
+        ],
+        "type": "object",
+        "properties": {
+          "texts": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/InsightAnswerTextResponseModel"
+                }
+              ]
+            }
+          },
+          "more": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "InsightAnswersRequestModel": {
+        "type": "object",
+        "properties": {
+          "from": {
+            "type": "string",
+            "nullable": true
+          },
+          "to": {
+            "type": "string",
+            "nullable": true
+          },
+          "filter": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/EntryListFilterRequestModel"
+              }
+            ],
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "InsightAnswersResponseModel": {
+        "required": [
+          "entries",
+          "fields"
+        ],
+        "type": "object",
+        "properties": {
+          "entries": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "fields": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/InsightAnswerResponseModel"
+                }
+              ]
+            }
           }
         },
         "additionalProperties": false

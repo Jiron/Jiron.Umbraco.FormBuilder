@@ -45,6 +45,9 @@ internal static class FormBuilderProblems
     /// <summary>A file the form's entries do not hold (ADR-0145).</summary>
     public const string FileNotFoundCode = "file_not_found";
 
+    /// <summary>A field the form's answer summaries show no texts of (ADR-0212).</summary>
+    public const string FieldNotFoundCode = "field_not_found";
+
     /// <summary>An action run, or the entry it is asked for, that the form does not hold (ADR-0158).</summary>
     public const string ActionRunNotFoundCode = "action_run_not_found";
 
@@ -173,6 +176,10 @@ internal static class FormBuilderProblems
     /// <summary>A file the form's entries do not hold, or whose bytes are gone (ADR-0145).</summary>
     public static FormBuilderProblemResult FileNotFound() =>
         Problem(StatusCodes.Status404NotFound, FileNotFoundCode, "The form's entries hold no such file.");
+
+    /// <summary>A field the form's answer summaries show no texts of: none of the form, a sensitive one, or one that is no free text (ADR-0212).</summary>
+    public static FormBuilderProblemResult FieldNotFound() =>
+        Problem(StatusCodes.Status404NotFound, FieldNotFoundCode, "The form has no such field whose answers are shown.");
 
     /// <summary>An action run, or the entry it is asked for, that the form does not hold (ADR-0158).</summary>
     public static FormBuilderProblemResult ActionRunNotFound() =>

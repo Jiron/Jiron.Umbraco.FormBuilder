@@ -8,6 +8,7 @@ using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Core.Settings;
 using Jiron.Umbraco.FormBuilder.Web.ManagementApi.Access;
 using Jiron.Umbraco.FormBuilder.Web.ManagementApi.Authorization;
+using Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Umbraco.Cms.Core.Cache;
@@ -21,11 +22,13 @@ using Umbraco.Extensions;
 namespace Jiron.Umbraco.FormBuilder.Web.ManagementApi.Insights;
 
 /// <summary>
-/// The insights of forms (ADR-0211): a form's report, which needs <c>viewEntries</c> on the form; the site's table of
-/// the forms the user may view entries of, for the Overview; and the boxes the user shows as tables. A span is UTC days
+/// The insights of forms (ADR-0211): a form's report and its answers' summaries (ADR-0212), which need <c>viewEntries</c> on
+/// the form; the site's table of the forms the user may view entries of, for the Overview; and the boxes the user shows as
+/// tables. A span is UTC days
 /// from <c>from</c> to <c>to</c> (<c>yyyy-MM-dd</c>), at most 366 of them; without both, the last 30 days to today.
 /// </summary>
 /// <param name="reports">The reports.</param>
+/// <param name="answers">The answers' summaries.</param>
 /// <param name="published">The published forms, whose pages a report follows.</param>
 /// <param name="tables">The boxes the user shows as tables.</param>
 /// <param name="access">Which forms the user may view entries of.</param>
@@ -39,6 +42,7 @@ namespace Jiron.Umbraco.FormBuilder.Web.ManagementApi.Insights;
 [ApiExplorerSettings(GroupName = "Insights")]
 internal sealed class InsightController(
     InsightReports reports,
+    AnswerSummaries answers,
     PublishedFormCache published,
     InsightUserSettings tables,
     IFormBuilderAccessService access,
@@ -161,6 +165,53 @@ internal sealed class InsightController(
         });
     }
 
+    /// <summary>
+    /// The answers of a form's entries summarised per field (ADR-0212): those the entries list's filter holds among the
+    /// entries received in the span, never a test entry, one in Spam, a sensitive field or one kept only until the actions
+    /// run; each field by what its type says its answers are, with the newest free-text answers.
+    /// </summary>
+    /// <param name="key">The form.</param>
+    /// <param name="request">The span and the filter.</param>
+    /// <param name="cancellationToken">The request's cancellation.</param>
+    [HttpPost("form/{key:guid}/insights/answers")]
+    [MapToApiVersion("1.0")]
+    [FormBuilderPermission(FormBuilderPermissions.ViewEntries, On = FormBuilderAccessResourceKind.Form, Key = "key")]
+    [ProducesResponseType(typeof(InsightAnswersResponseModel), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Answers(Guid key, InsightAnswersRequestModel request, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        return await answers.SummarizeAsync(key, AnswerRequestOf(request.From, request.To, request.Filter), cancellationToken) is { } report
+            ? Ok(InsightAnswersResponseModel.Of(report))
+            : FormBuilderProblems.NotFound(FormBuilderAccessResourceKind.Form);
+    }
+
+    /// <summary>
+    /// The next free-text answers of a field, from where the summary or the page before ended, as the summary read them;
+    /// 404 for a field the summaries show no texts of.
+    /// </summary>
+    /// <param name="key">The form.</param>
+    /// <param name="field">The field.</param>
+    /// <param name="request">The span, the filter and where to start.</param>
+    /// <param name="cancellationToken">The request's cancellation.</param>
+    [HttpPost("form/{key:guid}/insights/answers/{field:guid}/texts")]
+    [MapToApiVersion("1.0")]
+    [FormBuilderPermission(FormBuilderPermissions.ViewEntries, On = FormBuilderAccessResourceKind.Form, Key = "key")]
+    [ProducesResponseType(typeof(InsightAnswerTextsResponseModel), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> AnswerTexts(Guid key, Guid field, InsightAnswerTextsRequestModel request, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        if (await answers.TextsAsync(key, field, AnswerRequestOf(request.From, request.To, request.Filter), request.After, cancellationToken) is not { } page)
+        {
+            return FormBuilderProblems.FieldNotFound();
+        }
+
+        return Ok(new InsightAnswerTextsResponseModel { Texts = [.. page.Texts.Select(InsightAnswerTextResponseModel.Of)], More = page.More });
+    }
+
     /// <summary>Keeps the boxes the user shows as tables, the same on every device and for every form; the answer is what it kept.</summary>
     /// <param name="request">The boxes.</param>
     /// <param name="cancellationToken">The request's cancellation.</param>
@@ -174,6 +225,20 @@ internal sealed class InsightController(
         ArgumentNullException.ThrowIfNull(request);
         await tables.SetTablesAsync(RequestAccess.User.Key, request.Tables ?? [], cancellationToken);
         return Ok(new InsightTablesResponseModel { Tables = await tables.GetTablesAsync(RequestAccess.User.Key, cancellationToken) });
+    }
+
+    // The span and the filter of a request for answers; its problems refused together.
+    private AnswerRequest AnswerRequestOf(string? from, string? to, EntryListFilterRequestModel? filter)
+    {
+        var problems = new List<DefinitionProblem>();
+        var span = Span(from, to, "from", "to", problems) ?? Default();
+        var read = EntryListMapping.Filter(filter, "filter", problems);
+        if (problems.Count > 0)
+        {
+            throw new FormBuilderValidationException(problems);
+        }
+
+        return new AnswerRequest(span, read);
     }
 
     // As many days as a span, just before it.
