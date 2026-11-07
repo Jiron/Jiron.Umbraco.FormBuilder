@@ -1,8 +1,9 @@
 // What the preview's frame and the backoffice say to each other (ADR-0203, ADR-0204), on the `jfb` key of each message.
 // Once the frame's document has loaded, the backoffice hands it a port of a channel of their own, with the one message
 // it posts to the frame's window; everything else goes over that port, which a page the frame goes on to never gets.
-// Over it the frame asks for a new ticket for its form and says which submission it sent; the backoffice answers with a
-// ticket, hands one over unasked when the test entries' actions are switched, and tells it the colour scheme.
+// Over it the frame asks for a new ticket for its form, says which submission it sent and that its ticket no longer
+// holds; the backoffice answers with a ticket, hands one over unasked when the test entries' actions are switched, and
+// tells it the colour scheme.
 
 /** The backoffice hands the frame its port. */
 export const PORT_MESSAGE = 'preview-port';
@@ -15,6 +16,9 @@ export const SCHEME_MESSAGE = 'preview-scheme';
 
 /** The frame says which submission the public API took, a test entry the backoffice may run the actions of. */
 export const SENT_MESSAGE = 'preview-sent';
+
+/** The frame says the public API refused its ticket, which no renewal brings back: the preview must load again. */
+export const EXPIRED_MESSAGE = 'preview-expired';
 
 /** A ticket is renewed once less than this is left of it, in milliseconds; the backoffice answers no sooner. */
 export const RENEW_BEFORE = 120_000;
@@ -69,6 +73,16 @@ export const isTicketAnswer = (data: unknown, form: string): data is TicketAnswe
   data['ticket'] !== '' &&
   typeof data['lifetime'] === 'number' &&
   data['lifetime'] > 0;
+
+/** The frame's word that the public API refused its ticket, for its form. */
+export interface ExpiredMessage {
+  readonly jfb: typeof EXPIRED_MESSAGE;
+  readonly form: string;
+}
+
+/** Whether a message says the frame's ticket for this form no longer holds. */
+export const isExpiredMessage = (data: unknown, form: string): data is ExpiredMessage =>
+  record(data) && data['jfb'] === EXPIRED_MESSAGE && data['form'] === form;
 
 /** A submission id as the public API makes one: a UUID. */
 const SUBMISSION_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

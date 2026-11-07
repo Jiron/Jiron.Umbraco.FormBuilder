@@ -34,5 +34,7 @@ export default {
         : `These ${count} actions run as they would for a real entry, so their emails and messages really go out.`,
     runConfirm: (count: number) => (count === 1 ? 'Run 1 action' : `Run ${count} actions`),
     runFailed: "The actions couldn't be run.",
+    expired: "This preview can't send any more: its access has run out.",
+    loadAgain: 'Load again',
   },
 };

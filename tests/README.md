@@ -841,14 +841,17 @@ tests that use it call a new endpoint by themselves:
 In the client, the preview's script (`packages/runtime/src/preview.test.ts`) lends the ticket to the public API's
 requests alone, an upload's too, asks over the port the backoffice handed it, once for requests at once, and goes with
 the ticket held when no answer comes; it sends a ticket handed over the port unasked from then on, says which
-submission the public API took (from its answer's receipt; a refusal or an answer without one says nothing), makes a
+submission the public API took (from its answer's receipt; a refusal or an answer without one says nothing), says once
+that the public API refused its ticket (`401 preview_ticket_invalid` alone, the page still reading the answer), makes a
 sample file of the first kind a field accepts, and gives each file field of a document of sample answers its file once
 the field has woken, none to one that does not wake in time. `visitor-preview/frame-host.test.ts` hands that port to
 the frame's first document only, answers an ask once the last ticket is about to run out and one at a time, closes the
 port when the frame goes on or the preview closes, tells of each submission the frame sent, by a UUID, once, and of ten
-for one document, and hands a switch of the test entries' actions over as a ticket that its renewals keep, the latest
-switch deciding and the one that settles telling what the frame holds; `preview.modal.test.ts` and `preview.action.test.ts` hold the sidebar (Fill with sample
-answers and Start again, the note as the frame's ticket has it and for an entry waiting for its confirmation, Run
+for one document, and of a refused ticket for its form only, and hands a switch of the test entries' actions over as a
+ticket that its renewals keep, the latest switch deciding and the one that settles telling what the frame holds;
+`preview.modal.test.ts` and `preview.action.test.ts` hold the sidebar (Fill with sample
+answers and Start again, the note as the frame's ticket has it, for an entry waiting for its confirmation and for a
+ticket refused, with Load again, Run
 actions... after its confirmation, the switch for who may manage actions) and the
 footer's Preview, which names the actions as the Actions view does; `preview-read.test.ts` what the preview reads, and
 `ui/confirm.test.ts` a confirmation's list as text. `e2e/specs/backoffice/preview.spec.ts` opens the preview in Edge: the frame's opaque origin, a

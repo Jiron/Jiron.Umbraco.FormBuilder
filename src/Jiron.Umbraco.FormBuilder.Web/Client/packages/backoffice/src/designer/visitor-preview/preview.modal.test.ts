@@ -8,7 +8,13 @@
 // actions did not run, after the list of what goes out; Run actions for test entries, for who may manage them, hands
 // the frame a ticket that says so.
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
-import { PORT_MESSAGE, SCHEME_MESSAGE, SENT_MESSAGE, TICKET_MESSAGE } from '@jfb/runtime/preview-protocol';
+import {
+  EXPIRED_MESSAGE,
+  PORT_MESSAGE,
+  SCHEME_MESSAGE,
+  SENT_MESSAGE,
+  TICKET_MESSAGE,
+} from '@jfb/runtime/preview-protocol';
 import { all, deferred, must, registerEnglish, settle, shadow, text } from '../../testing';
 import { readWidth } from '../canvas/widths';
 import { FRAME_SANDBOX, PreviewModalElement } from './preview.modal.element';
@@ -311,6 +317,24 @@ describe('the preview', () => {
     port.postMessage({ jfb: TICKET_MESSAGE, form: FORM });
     await across();
     expect(tickets).toHaveBeenCalledTimes(1);
+  });
+
+  it('says when the frame can send no more, as the public API refused its ticket, and loads it again', async () => {
+    const { element, root, reads, port: frame } = await previewListening(() => shownIn('en-US'));
+    frame.port.postMessage({ jfb: EXPIRED_MESSAGE, form: FORM });
+    await vi.waitFor(() =>
+      expect(text(root.querySelector('.note > span'))).toBe(
+        "This preview can't send any more: its access has run out.",
+      ),
+    );
+    expect(must(root.querySelector('.note'), 'note').getAttribute('role')).toBe('alert');
+    const again = must(root.querySelector<HTMLElement>('.note uui-button'), 'Load again');
+    expect(again.getAttribute('label')).toBe('Load again');
+    const before = reads.mock.calls.length;
+    again.click();
+    await vi.waitFor(() => expect(reads.mock.calls.length).toBe(before + 1));
+    await settle(element);
+    expect(noteOf(root)).toBe('Entries sent here are test entries. They run no actions.');
   });
 
   it('fills the draft with the sample answers, and once sent starts again afresh', async () => {

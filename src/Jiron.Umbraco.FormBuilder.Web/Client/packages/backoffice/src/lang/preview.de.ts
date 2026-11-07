@@ -33,5 +33,7 @@ export default {
         : `Diese ${count} Aktionen laufen wie bei einem echten Eintrag; ihre E-Mails und Nachrichten gehen also wirklich hinaus.`,
     runConfirm: (count: number) => (count === 1 ? '1 Aktion ausführen' : `${count} Aktionen ausführen`),
     runFailed: 'Die Aktionen konnten nicht ausgeführt werden.',
+    expired: 'Diese Vorschau kann nichts mehr senden: Ihr Zugang ist abgelaufen.',
+    loadAgain: 'Neu laden',
   },
 };

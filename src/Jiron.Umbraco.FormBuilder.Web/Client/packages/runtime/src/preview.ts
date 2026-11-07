@@ -5,16 +5,19 @@
 // the backoffice hands the document once it has loaded, which a page the frame goes on to never gets; over it the
 // backoffice hands a new ticket unasked too, as when the test entries' actions are switched, and says when the page turns
 // light or dark, which keeps the answers given. Once the public API took a submission, the script says which over the
-// port, so the backoffice can say which test entry it made. A document of sample answers gets a sample file in each
+// port, so the backoffice can say which test entry it made; once it refused the ticket, which no renewal brings back, the
+// script says so, once, so the backoffice can load the preview again. A document of sample answers gets a sample file in each
 // file field once the runtime, which loads after this script, has taken its form on, which goes up as a visitor's file
 // does.
 import {
+  EXPIRED_MESSAGE,
   isPortMessage,
   isSchemeMessage,
   isTicketAnswer,
   RENEW_BEFORE,
   SENT_MESSAGE,
   TICKET_MESSAGE,
+  type ExpiredMessage,
   type SentMessage,
   type TicketAsk,
 } from './preview-protocol';
@@ -104,6 +107,21 @@ export function lend(win: PreviewWindow, now: () => number = Date.now): void {
       .catch(() => undefined);
   };
 
+  /** Tells the backoffice, once, that the public API refused the ticket: `401 preview_ticket_invalid`. */
+  let refused = false;
+  const tellRefused = (answer: Response): void => {
+    if (refused || answer.status !== 401) return;
+    void answer
+      .clone()
+      .json()
+      .then((body: unknown) => {
+        if (refused || (body as { code?: unknown } | null)?.code !== 'preview_ticket_invalid') return;
+        refused = true;
+        port?.postMessage({ jfb: EXPIRED_MESSAGE, form } satisfies ExpiredMessage);
+      })
+      .catch(() => undefined);
+  };
+
   /** The backoffice's new ticket, or the one held when none comes in time. */
   const ask = (): Promise<string> =>
     new Promise<string>((resolve) => {
@@ -135,6 +153,7 @@ export function lend(win: PreviewWindow, now: () => number = Date.now): void {
     headers.set('Authorization', `Jfb-Preview ${await current()}`);
     const answer = await fetchAlone(input, { ...init, headers });
     if (sends(address, init?.method ?? (input instanceof Request ? input.method : 'GET'))) tell(answer);
+    tellRefused(answer);
     return answer;
   };
 

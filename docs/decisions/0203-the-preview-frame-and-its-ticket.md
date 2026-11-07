@@ -113,3 +113,11 @@ preview's (ADR-0189); the browser tests check its document with axe in the frame
 - Negative: an open preview shows the draft as it was saved when it opened; a save from another tab shows once the
   language or the preview is opened again.
 - Negative: a draft with a broken rule cannot be previewed until the rule is fixed; the form check leads to it.
+
+## Amendment (2026-11-07, step 10.4)
+
+A ticket can still run out with the preview open: a backoffice that slept past it, or a session that ended, answers no
+ask, and the script goes with the ticket it holds. The public API then answers `401 preview_ticket_invalid`, which no
+renewal brings back, and the frame's page would only say it could not send. The script now says so over the port, once
+for its document, and the sidebar's note says, as an alert, that the preview can send no more, with Load again, which
+renders the saved draft afresh with a new ticket. Any other refusal says nothing over the port.

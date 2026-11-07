@@ -6,6 +6,7 @@
 // out, one at a time, so a frame that keeps asking cannot keep the backoffice's session alive (section 4.10). For the
 // same reason it hears of each submission once, and of a few for each document.
 import {
+  isExpiredMessage,
   isSentMessage,
   isTicketAsk,
   PORT_MESSAGE,
@@ -41,6 +42,8 @@ export interface FrameHostOptions {
   readonly sent?: (submissionId: string) => void;
   /** Told, once a switch of the test entries' actions settles, whether the frame's ticket runs them: the switch's, or the one it kept. */
   readonly held?: (runsActions: boolean) => void;
+  /** Told that the public API refused the frame's ticket, which no renewal brings back. */
+  readonly expired?: () => void;
   /** The clock. */
   readonly now?: () => number;
 }
@@ -136,6 +139,10 @@ export class FrameHost {
   // port it came on while that is still open; and the submission it sent, which the preview is told of.
   async #heard(port: MessagePort, data: unknown): Promise<void> {
     if (port !== this.#port) return;
+    if (isExpiredMessage(data, this.#form)) {
+      this.#options.expired?.();
+      return;
+    }
     if (isSentMessage(data, this.#form)) {
       const id = data.submissionId.toLowerCase();
       if (this.#sent.has(id) || this.#sent.size >= SENT_LIMIT) return;

@@ -47,6 +47,7 @@ export class PreviewModalElement extends UmbModalBaseElement<PreviewModalData, n
     _sample: { state: true },
     _runs: { state: true },
     _held: { state: true },
+    _expired: { state: true },
     _sent: { state: true },
     _running: { state: true },
   };
@@ -267,6 +268,8 @@ export class PreviewModalElement extends UmbModalBaseElement<PreviewModalData, n
   declare private _runs: boolean;
   // Whether the frame's ticket runs the test entries' actions, which the note says: the switch's once its ticket came.
   declare private _held: boolean;
+  // Whether the public API refused the frame's ticket: the preview must load again to send.
+  declare private _expired: boolean;
   declare private _sent: Sent | null;
   declare private _running: boolean;
 
@@ -286,6 +289,7 @@ export class PreviewModalElement extends UmbModalBaseElement<PreviewModalData, n
     this._sample = false;
     this._runs = false;
     this._held = false;
+    this._expired = false;
     this._sent = null;
     this._running = false;
   }
@@ -333,6 +337,7 @@ export class PreviewModalElement extends UmbModalBaseElement<PreviewModalData, n
     this.#host = null;
     this._shown = { kind: 'loading' };
     this._sent = null;
+    this._expired = false;
     const runs = this._runs;
     const read = await data.read(this._culture, { dark: this._dark, sample: this._sample, actions: runs });
     if (asked !== this.#asked) return;
@@ -352,6 +357,9 @@ export class PreviewModalElement extends UmbModalBaseElement<PreviewModalData, n
           if (asked !== this.#asked) return;
           this._runs = runs;
           this._held = runs;
+        },
+        expired: () => {
+          if (asked === this.#asked) this._expired = true;
         },
       });
       this._held = runs;
@@ -480,6 +488,17 @@ export class PreviewModalElement extends UmbModalBaseElement<PreviewModalData, n
   // not run and the user may run them.
   #note(): TemplateResult | typeof nothing {
     if (this._shown.kind !== 'shown') return nothing;
+    // A ticket the public API refused comes back with no renewal: the frame can send nothing until it loads again.
+    if (this._expired)
+      return html`<p class="note" data-sent role="alert">
+        <span>${this.#term('expired')}</span
+        ><uui-button
+          look="outline"
+          compact
+          label=${this.#term('loadAgain')}
+          @click=${() => void this.#read()}
+        ></uui-button>
+      </p>`;
     const sent = this._sent;
     if (sent === null) return html`<p class="note">${this._held ? this.#term('noteOn') : this.#term('noteOff')}</p>`;
     const entry = sent.entry;

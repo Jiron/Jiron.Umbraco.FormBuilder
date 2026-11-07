@@ -6,6 +6,7 @@
 // one that settles tells what the frame holds.
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
+  EXPIRED_MESSAGE,
   PORT_MESSAGE,
   RENEW_BEFORE,
   SCHEME_MESSAGE,
@@ -32,6 +33,7 @@ function hosted(answer: PreviewTicket | null = { ticket: 'new-ticket', lifetime:
   const asked: [number, boolean][] = [];
   const sent: string[] = [];
   const held: boolean[] = [];
+  let expired = 0;
   const clock = { now: 0 };
   const answers: ((value: PreviewTicket | undefined) => void)[] = [];
   const ticket = vi.fn((version: number, runActions: boolean) => {
@@ -43,6 +45,7 @@ function hosted(answer: PreviewTicket | null = { ticket: 'new-ticket', lifetime:
     runsActions,
     sent: (submissionId) => sent.push(submissionId),
     held: (runs) => held.push(runs),
+    expired: () => expired++,
     now: () => clock.now,
   });
   /** The frame's end of the port it was handed, with what came over it. */
@@ -56,7 +59,19 @@ function hosted(answer: PreviewTicket | null = { ticket: 'new-ticket', lifetime:
   /** Answers an ask for a ticket, the latest unless told which, with the ticket given or none. */
   const reply = (index = answers.length - 1, given: PreviewTicket | null = answer) =>
     answers[index]?.(given ?? undefined);
-  return { host, frame, posted, asked, sent, held, clock, portOfFrame, answer: () => reply(), reply };
+  return {
+    host,
+    frame,
+    posted,
+    asked,
+    sent,
+    held,
+    expired: () => expired,
+    clock,
+    portOfFrame,
+    answer: () => reply(),
+    reply,
+  };
 }
 
 /** Lets the port's messages go across. */
@@ -253,6 +268,17 @@ describe('the frame host', () => {
     await failed;
     await across();
     expect([heard.length, held]).toEqual([1, [false, false]]);
+  });
+
+  it("tells that the public API refused its frame's ticket, for its form only", async () => {
+    const { host, expired, portOfFrame } = hosted();
+    host.loaded();
+    const { port } = portOfFrame();
+    port.postMessage({ jfb: EXPIRED_MESSAGE, form: 'another' });
+    port.postMessage({ jfb: EXPIRED_MESSAGE, form: FORM });
+    await vi.waitFor(() => expect(expired()).toBe(1));
+    await across();
+    expect(expired()).toBe(1);
   });
 
   it("drops a renewal's ticket when a switch handed the frame one meanwhile", async () => {

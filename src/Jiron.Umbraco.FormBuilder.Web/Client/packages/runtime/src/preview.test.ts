@@ -6,7 +6,14 @@
 // which; a document of sample answers gives each file field a sample file of a kind it accepts once it has woken.
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ASK_WAIT, DARK_CLASS, lend, SAMPLE_WAIT, sampleFile, type PreviewWindow } from './preview';
-import { PORT_MESSAGE, RENEW_BEFORE, SCHEME_MESSAGE, SENT_MESSAGE, TICKET_MESSAGE } from './preview-protocol';
+import {
+  EXPIRED_MESSAGE,
+  PORT_MESSAGE,
+  RENEW_BEFORE,
+  SCHEME_MESSAGE,
+  SENT_MESSAGE,
+  TICKET_MESSAGE,
+} from './preview-protocol';
 
 const FORM = '3f2504e0-4f89-41d3-9a0c-0305e82c3301';
 const SITE = 'https://site.test';
@@ -386,6 +393,27 @@ describe('the preview script', () => {
     }
     await new Promise((done) => setTimeout(done, 20));
     expect(heard).toEqual([]);
+  });
+
+  it('tells the backoffice once that the public API refused its ticket, and nothing for another refusal', async () => {
+    const problem = (code: string) =>
+      new Response(JSON.stringify({ status: 401, code }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/problem+json' },
+      });
+    const codes = ['challenge_expired', 'preview_ticket_invalid', 'preview_ticket_invalid'];
+    const frame = frameWith({}, { respond: () => problem(codes.shift() ?? 'preview_ticket_invalid') });
+    const { asked } = portOf(frame);
+    const first = await frame.win.fetch('/jfb/api/v1/forms/x/challenge', { method: 'POST' });
+    await new Promise((done) => setTimeout(done, 20));
+    expect(asked).toEqual([]);
+    await frame.win.fetch('/jfb/api/v1/forms/x/challenge', { method: 'POST' });
+    await frame.win.fetch('/jfb/api/v1/forms/x/validate', { method: 'POST' });
+    await vi.waitFor(() => expect(asked).toEqual([{ jfb: EXPIRED_MESSAGE, form: FORM }]));
+    await new Promise((done) => setTimeout(done, 20));
+    expect(asked).toHaveLength(1);
+    // The page still reads the answer it asked for.
+    expect([first.status, first.bodyUsed]).toEqual([401, false]);
   });
 
   it('makes a sample file of the first kind a field accepts, a PNG for one that names none', async () => {
