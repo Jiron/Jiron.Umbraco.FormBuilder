@@ -208,6 +208,22 @@ public sealed class PublicFormInsightTests : PublicApiTestBase
     }
 
     [Test]
+    public async Task ASpamEntry_CountsOnlySpam_NotItsPageItsHourOrItsTimeToComplete()
+    {
+        var content = await PageAsync();
+        var key = await PublishAsync(fields: [NameField]);
+        using var sent = await SendAsync(HttpMethod.Post, $"{Root}/forms/{key}/entries", request => request.Content = new StringContent(
+            $$$"""{"revision":1,"contentKey":"{{{content}}}","values":{"name":"Ada"},"honeypot":"Buy now"}""", Encoding.UTF8, "application/json"));
+        var stats = await StatsAsync(key);
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(sent.IsSuccessStatusCode, Is.True, await sent.Content.ReadAsStringAsync());
+            Assert.That(stats.Select(stat => (stat.Metric, stat.Value)), Is.EqualTo(new[] { ("spam", 1L) }), "its page, hour and time are those of an entry nobody counts");
+        });
+    }
+
+    [Test]
     public async Task AUnitThatFailsAfterTheEntrysCounts_KeepsNoneOfThem_NorTheEntry()
     {
         var key = await PublishAsync(fields: [NameField]);

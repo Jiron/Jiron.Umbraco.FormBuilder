@@ -64,6 +64,19 @@ describe('Forms at a glance', () => {
     expect(text(root.querySelector('caption'))).toBe('Forms at a glance');
   });
 
+  it("ends its period on the UTC day the stats count, not the user's own", async () => {
+    const instants = [Date.UTC(2026, 10, 7, 0, 30), Date.UTC(2026, 10, 7, 23, 30)];
+    const now = instants.find((at) => new Date(at).getDate() !== new Date(at).getUTCDate()) ?? instants[0];
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(now);
+    try {
+      await boxOf([]);
+      expect(api.asked[0]?.span.to).toBe('2026-11-07');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('reads another period from its menu, and says when numbers appear while there is none', async () => {
     const { box, root } = await boxOf([], []);
     expect(text(root.querySelector('p'))).toBe(

@@ -232,6 +232,26 @@ describe('the Insights view', () => {
     expect(chevron()).toBe(false);
   });
 
+  it("ends each range on the UTC day the stats count, not the user's own", async () => {
+    const instants = [Date.UTC(2026, 10, 7, 0, 30), Date.UTC(2026, 10, 7, 23, 30)];
+    const now = instants.find((at) => new Date(at).getDate() !== new Date(at).getUTCDate()) ?? instants[0];
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(now);
+    try {
+      const { root, view } = await viewOf(report());
+      expect(api.asked[0]?.span).toEqual({ from: '2026-10-09', to: '2026-11-07' });
+      must(
+        all<HTMLButtonElement>(root.host, '.menu button').find((each) => text(each) === 'Last 7 days'),
+        'last 7 days',
+      ).click();
+      await vi.waitFor(() => expect(api.asked).toHaveLength(2));
+      await settle(view);
+      expect(api.asked[1]?.span).toEqual({ from: '2026-11-01', to: '2026-11-07' });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('reads the report again for another date range and another grouping', async () => {
     const { root, view } = await viewOf(report());
     const button = (name: string) =>
