@@ -207,7 +207,22 @@ public sealed class ContentActionTests : ActionTestBase
         var refused = Assert.ThrowsAsync<FormBuilderValidationException>(async () =>
             await PublishAsync(name: Guid.NewGuid().ToString("N"), change: definition => definition with { Actions = [action] }, fields: [NameField, guests]));
 
-        Assert.That(refused!.Problems.Select(problem => problem.Path), Does.Contain("$.actions[0].settings.mapping[0].field"), string.Join(", ", refused.Problems));
+        Assert.That(
+            refused!.Problems.Where(problem => problem.Path == "$.actions[0].settings.mapping[0].field").Select(problem => problem.Code),
+            Is.EqualTo(new[] { "content_group_field" }),
+            string.Join(", ", refused.Problems));
+    }
+
+    [Test]
+    public void ASensitiveFieldTheFormLacks_IsRefused()
+    {
+        var refused = Assert.ThrowsAsync<FormBuilderValidationException>(async () =>
+            await FormAsync(Create($$"""{"documentType":"{{TypeAlias}}","name":"N","includeSensitive":["c0000000-0000-4000-8000-000000000099"]}""")));
+
+        Assert.That(
+            refused!.Problems.Where(problem => problem.Path == "$.actions[0].settings.includeSensitive").Select(problem => problem.Code),
+            Is.EqualTo(new[] { "content_sensitive_unknown" }),
+            string.Join(", ", refused.Problems));
     }
 
     [Test]

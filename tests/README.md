@@ -1147,7 +1147,9 @@ their places refuse (`Support/RefusedTags.cs`) leave the merge-tag check out, as
 a warning and a test site's hint, each at its path; a duplicate alias and a rule on a removed field among its errors;
 nothing saved; a definition it cannot read refused) and publishes
 through the API: refused at the label's path, then live with a warning only. `EmailActionTests` and
-`ContentActionTests` publish templates whose tags name nothing and find the form check's warnings at their settings.
+`ContentActionTests` publish templates whose tags name nothing and find the form check's warnings at their settings,
+and `ContentActionTests` find a repeatable group's field mapped, and a sensitive field the form lacks, refused by
+their codes.
 
 The checks of the form's rules (9.5d, ADR-0179): `tests/vectors/search.json` holds the rule search's cases, which the
 Vitest runner runs through `search.ts` of `@jfb/logic` and the NUnit runner through Core's `RuleSearch`
