@@ -57,7 +57,12 @@ badge. The owner answers no questions during the run (CLAUDE.md rule 8), so each
    ported from the chat package's (the owner's code, ADR-0051 there): while the site does not keep users signed in,
    the access token has run out and nobody has used the backoffice since it was last renewed, the poll waits instead
    of renewing it, so Umbraco's own timeout signs the person out on time. Input in any tab of the browser, shared on a
-   `BroadcastChannel`, or another tab's renewal lets it go. A hidden tab skips its turns.
+   `BroadcastChannel`, or another tab's renewal lets it go. Once the session has ended and Umbraco asks the person to
+   sign in again, nobody is signed in to poll for, so the poll waits for the next sign-in. A hidden tab skips its
+   turns. Each input allows one renewal
+   (opening the page counts as input), so with Umbraco's defaults (a 20-minute session, its access token a quarter of
+   that) an idle person is signed out at most about 25 minutes after their last input, where an ungated poll would
+   keep them signed in for good. The backoffice's other calls are the person's own and are not held.
 8. **The summary email** (IA 6.4, "Email me a summary…" in the list's "…"): off, daily, or weekly on Mondays, kept in
    the user's settings (`entries.digest`). An hourly job sends each user's summary once the site's 07:00 has passed in
    its time zone (Settings › General of the default site), for the day or the week before, and records the period

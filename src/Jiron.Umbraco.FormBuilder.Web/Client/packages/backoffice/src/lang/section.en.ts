@@ -10,6 +10,8 @@ export default {
     comingScreen: 'This screen is still being built.',
     entries: 'Entries',
     inbox: 'Inbox',
+    // The Inbox's item for screen readers, while its badge shows the unseen count ("12", "99+").
+    inboxUnseen: (label: string, count: string) => `${label}, ${count} unseen`,
     spam: 'Spam',
     library: 'Library',
     optionLists: 'Option lists',

@@ -48,6 +48,7 @@ import {
   type PanelAction,
 } from './entry-panel-model';
 import { loadEntryWords } from './entry-words';
+import { refreshUnseen } from './unseen-poll';
 
 /** Where the panel is: beside its list, covering it on a narrow screen, or alone from the entry's own link. */
 export type PanelPlace = 'beside' | 'covering' | 'alone';
@@ -588,6 +589,8 @@ export class EntryPanelElement extends UmbLitElement {
 
   #tell(name: string, detail: EntryMovedDetail) {
     this.dispatchEvent(new CustomEvent(name, { detail, bubbles: true, composed: true }));
+    // Opening, moving or deleting an entry changes the Inbox's unseen count too (ADR-0209).
+    refreshUnseen();
   }
 
   async #notify(color: 'positive' | 'warning' | 'danger', message: string) {

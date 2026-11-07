@@ -12,6 +12,7 @@ import {
   entryInboxForms,
   entryInboxInbox,
   entryInboxSpam,
+  entryInboxUnseen,
   entryInboxView,
   entryListColumns,
   entryListDelete,
@@ -31,6 +32,7 @@ import {
   type EntryRerunResponseModel,
   type EntrySpamEmptyResponseModel,
   type EntryStateResponseModel,
+  type EntryUnseenResponseModel,
 } from '../api';
 import { codeOf } from '../library/library-changes';
 
@@ -72,6 +74,11 @@ export async function findForms(
 ): Promise<EntryListFormResponseModel[] | undefined> {
   const text = search.trim();
   return (await tryExecute(host, entryInboxForms({ query: text ? { search: text } : {} }), quiet)).data;
+}
+
+/** How many entries nobody opened yet the Inbox holds, up to 99, for its badge; undefined on a failure. */
+export async function readUnseen(host: UmbClassInterface): Promise<EntryUnseenResponseModel | undefined> {
+  return (await tryExecute(host, entryInboxUnseen(), quiet)).data;
 }
 
 /** What emptying Spam deletes, without <code>confirm</code>, or what it deleted. */

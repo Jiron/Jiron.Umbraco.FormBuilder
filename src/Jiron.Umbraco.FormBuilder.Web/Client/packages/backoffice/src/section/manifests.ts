@@ -30,6 +30,13 @@ const SCREENS: Readonly<Record<string, ScreenLoader>> = {
   entry: () => import('../entries/entry.workspace'),
 };
 
+/** The items drawn by an element of their own: the Inbox carries its unseen count (IA 1, ADR-0209). */
+type ItemLoader = NonNullable<Extract<UmbExtensionManifest, { type: 'menuItem' }>['element']>;
+
+const ITEM_ELEMENTS: Readonly<Record<string, ItemLoader>> = {
+  inbox: () => import('./inbox-menu-item.element'),
+};
+
 const comingScreen = (id: string, entityType: string): UmbExtensionManifest => ({
   type: 'workspace',
   alias: `Jiron.FormBuilder.Workspace.${pascal(id)}`,
@@ -43,6 +50,7 @@ const itemManifests = (group: SidebarGroup, item: SidebarItem, index: number): U
     type: 'menuItem',
     alias: `Jiron.FormBuilder.MenuItem.${pascal(item.id)}`,
     name: `Jiron Form Builder ${item.id} menu item`,
+    ...(ITEM_ELEMENTS[item.id] ? { element: ITEM_ELEMENTS[item.id] } : {}),
     weight: weightOf(index, group.items.length),
     meta: {
       label: `#jfbSection_${item.id}`,

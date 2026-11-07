@@ -37,6 +37,7 @@ import { confirmList, confirmText } from '../../ui/confirm';
 import { jfbSkeleton, skeletonLines } from '../../ui/skeleton';
 import { UNDO_NOTIFICATION, type UndoNotificationData } from '../../ui/undo-notification.element';
 import { myPermissions } from '../../section/my-permissions';
+import { refreshUnseen } from '../../entries/unseen-poll';
 import {
   changeState,
   deleteEntries,
@@ -1187,6 +1188,7 @@ export class EntriesViewElement extends UmbLitElement {
     if (made.length === 0) return;
 
     const reached = new Map(made.flatMap((one) => one.change.moved.map((moved) => [moved.key, moved.state] as const)));
+    refreshUnseen();
     this._rows = this._rows.map((row) =>
       reached.has(row.key) ? { ...row, state: reached.get(row.key) ?? row.state } : row,
     );
@@ -1293,6 +1295,7 @@ export class EntriesViewElement extends UmbLitElement {
     if (deleted.length === 0) return;
 
     const gone = new Set(deleted.flatMap((one) => one.group.keys));
+    refreshUnseen();
     const count = deleted.reduce((sum, one) => sum + (one.done?.entries ?? 0), 0);
     this._rows = this._rows.filter((row) => !gone.has(row.key));
     this._ticked = [];
@@ -1420,6 +1423,7 @@ export class EntriesViewElement extends UmbLitElement {
       this._open = undefined;
       this._ticked = [];
       this._rows = [];
+      refreshUnseen();
       await this.#notify(
         'positive',
         [this.#term('emptied', done.entries), done.more ? this.#term('emptiedMore') : ''].filter(Boolean).join(' '),

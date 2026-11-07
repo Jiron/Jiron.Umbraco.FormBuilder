@@ -836,7 +836,19 @@ states with the headline in each language, the column chooser's line without one
 ticks and limits; and `designer/entries/entries.view.test.ts` the Inbox and Spam against a fake server (the form
 column, one form's fields and columns, a bulk action per form with one Undo, a move back asked once for several forms,
 Spam without a state and with Not spam and Delete…, Empty spam… asking how many go and stay, each place's first use,
-and the panel naming the form).
+and the panel naming the form). The Inbox's badge: `entries/unseen-poll.test.ts` reads the count when heard, every
+minute while the tab is on screen and at once when it comes back, waits at the gate before every read without piling
+reads up, and stops with its last listener; `ui/idle-gate.test.ts` holds the rule that a call waits while the token has
+run out and nobody used the backoffice since its last renewal, or once the session has ended until the next sign-in,
+and the input of other tabs; and
+`section/inbox-menu-item.element.test.ts` the badge up to "99+", the item's name with the count for screen readers and
+the open item marked. In the browser, `specs/backoffice/inbox.spec.ts` holds the viewer's Inbox without the restricted
+folder HR's form, in its rows, its Form filter and its badge, while the HR team sees it; Not spam on an entry whose
+unique answer a visitor sent again meanwhile, which asks first and moves only once confirmed; and, with the page's clock
+(`page.clock`), the badge's poll renewing the access token once after the page opened, then waiting while nobody uses
+the backoffice, until Umbraco ends the session 20 minutes after that renewal and asks to sign in again, with no poll
+since. The test server's clock is real, so at that point it is told to refuse the session's refresh token, as a server
+20 minutes on does.
 
 ## The access tests
 

@@ -34,7 +34,7 @@ export default {
     select: (name: string) => `${name} auswählen`,
     number: (number: number) => `#${number}`,
     entryNumber: (number: number) => `Eintrag ${number}`,
-    unseen: 'ungesehen',
+    unseen: 'ungelesen',
     none: 'keine',
     today: 'Heute',
     yesterday: 'Gestern',

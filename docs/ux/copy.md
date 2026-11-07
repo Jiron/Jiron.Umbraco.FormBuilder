@@ -100,6 +100,8 @@ The chips in the lists and panels. The wireframes of step 2.2 use these words.
 | the version visitors get, in History | Published | Veröffentlicht |
 | a version the cleanup keeps, in History (a mark with this name) | Pinned | Angeheftet |
 | an entry on legal hold, in Privacy › People | Legal hold until 30 Apr 2027 | Löschsperre bis 30. Apr. 2027 |
+| the Inbox's sidebar item with unseen entries (its badge shows the number, up to 99 and then "99+"; screen readers hear the item's name with it) | Inbox, 12 unseen · Inbox, 99+ unseen | Posteingang, 12 ungelesen · Posteingang, 99+ ungelesen |
+| an unseen entry, for screen readers (a dot shows) | unseen | ungelesen |
 
 ### Status lines
 

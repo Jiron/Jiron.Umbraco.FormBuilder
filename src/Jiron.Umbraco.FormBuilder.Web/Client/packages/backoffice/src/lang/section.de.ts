@@ -11,6 +11,7 @@ export default {
     comingScreen: 'Diese Seite wird noch gebaut.',
     entries: 'Einträge',
     inbox: 'Posteingang',
+    inboxUnseen: (label: string, count: string) => `${label}, ${count} ungelesen`,
     spam: 'Spam',
     library: 'Bibliothek',
     optionLists: 'Optionslisten',
