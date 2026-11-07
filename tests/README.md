@@ -795,6 +795,17 @@ Undo toast ending with its window. In the browser, `specs/backoffice/entries-lis
 `/jfb-testing/entries-form`, pages, searches, reopens a filter set in a second browser, and undoes a bulk approval
 inside its window with no approval's webhook sent, then lets another's window pass (`page.clock`).
 
+The entry panel (ROADMAP 11.2, ADR-0208): `EntryAnswerStoreTests` opens an entry of every type through `EntryPanels`
+and finds each value as its type reads it from what `EntryAnswerStore.ReadAsync` gives, a typed signature's name read
+from its PNG, a consent's exact wording and which answers the panel edits. `Entries/EntryPanelTests` marks an entry
+seen once, naming who opened it first; masks a sensitive answer until a reveal, which is audited without the value;
+marks a field the live version lost; keeps notes their author's to change; asks before a move back overbooks an
+option, its own or an option list's, or doubles a unique answer, and moves only when agreed; and edits answers, each
+checked by its type, a choice moving its place, the old values on the timeline and masked there for a reader who may
+not see them. `ManagementApi/EntryPanelApiTests` answers each persona by what it may do, keeps a note its author's,
+answers an edit's problems by their path, forwards only to users who may view the form's entries and the site's
+forward addresses, sensitive values only when chosen, and names an entry's form to its link only for who may view it.
+
 ## The access tests
 
 `Tests.Unit/Access/` covers the permission model without a host (ADR-0013, ADR-0048): the flags' names in any letter

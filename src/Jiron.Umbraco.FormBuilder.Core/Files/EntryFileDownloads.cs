@@ -169,6 +169,10 @@ internal sealed partial class EntryFileDownloads(
         await held.FlushAsync(cancellationToken);
     }
 
+    /// <summary>Whether a file is held back from everybody: quarantined, or waiting for a scanner the site has (ADR-0144).</summary>
+    /// <param name="file">The file.</param>
+    public bool IsHeld(StoredEntryFile file) => IsHeldBack(file) is not null;
+
     // Why a file is held back from everybody. A site that took its scanner away has nothing left to wait for (ADR-0144).
     private EntryFileStatus? IsHeldBack(StoredEntryFile file) => file.ScanState switch
     {

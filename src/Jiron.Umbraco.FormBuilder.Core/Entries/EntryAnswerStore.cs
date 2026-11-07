@@ -87,12 +87,13 @@ internal sealed class EntryAnswerStore(
     /// <param name="definition">The version the entry was submitted with.</param>
     /// <param name="catalogue">The form's field catalogue.</param>
     /// <param name="values">The values that stay.</param>
-    public string SearchTextOf(FormDefinition definition, IReadOnlyList<CatalogueField> catalogue, IEnumerable<StoredEntryValue> values) =>
+    /// <param name="added">New values beside them, such as an edit's (ADR-0208).</param>
+    public string SearchTextOf(FormDefinition definition, IReadOnlyList<CatalogueField> catalogue, IEnumerable<StoredEntryValue> values, IEnumerable<NewEntryValue>? added = null) =>
         EntrySearchText.For(Searchable(definition, catalogue, [.. values.Select(value => new NewEntryValue(value.FieldId, value.Text, value.Number, value.Date, value.Bool, value.FileId, value.RowIndex, value.ValueIndex)
         {
             // A value with parts stores JSON, and searches by the parts' texts in its key; any other by all of its text, as the key is cut.
             KeyText = value.Text is { } text && value.TextKey is { } key && !string.Equals(EntryTextKey.For(text), key, StringComparison.Ordinal) ? key : null,
-        })]));
+        }), .. added ?? []]));
 
     // The texts search finds the entry by: its values' texts, a value with parts by its parts' texts (its key's text),
     // but no sensitive field's, no file, no yes or no and no consent's wording hash.

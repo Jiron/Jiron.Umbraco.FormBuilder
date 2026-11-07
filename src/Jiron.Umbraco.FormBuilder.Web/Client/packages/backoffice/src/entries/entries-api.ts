@@ -68,15 +68,23 @@ export async function deleteSet(host: UmbClassInterface, key: string): Promise<b
   return !(await tryExecute(host, entryFilterSetDelete({ path: { setKey: key } }), quiet)).error;
 }
 
-/** Moves entries to a state, with the change's Undo window. */
+/**
+ * Moves entries to a state, with the change's Undo window; a move back that would overbook or double a unique answer
+ * moves nothing and says so in `asks`, until `overbook` agrees to it (ADR-0208).
+ */
 export async function changeState(
   host: UmbClassInterface,
   form: string,
   entries: readonly string[],
   state: string,
+  overbook = false,
 ): Promise<EntryStateResponseModel | undefined> {
   return (
-    await tryExecute(host, entryStateChange({ path: { key: form }, body: { entries: [...entries], state } }), quiet)
+    await tryExecute(
+      host,
+      entryStateChange({ path: { key: form }, body: { entries: [...entries], state, overbook } }),
+      quiet,
+    )
   ).data;
 }
 

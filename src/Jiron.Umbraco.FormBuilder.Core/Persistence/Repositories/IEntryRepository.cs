@@ -512,6 +512,9 @@ internal interface IEntryRepository
     /// <summary>Records that an entry's address is confirmed, once; false when it was confirmed already (ADR-0162).</summary>
     Task<bool> MarkVerifiedAsync(long entryId, CancellationToken cancellationToken = default);
 
+    /// <summary>Records that a backoffice user opened an entry, once; false when someone had opened it already (ADR-0208).</summary>
+    Task<bool> MarkSeenAsync(long entryId, CancellationToken cancellationToken = default);
+
     /// <summary>
     /// Replaces the values of some fields of an entry, and its search text; null when it does not exist. Every value
     /// names one of <paramref name="fieldIds"/>, and a file value one of the entry's files. Refused with

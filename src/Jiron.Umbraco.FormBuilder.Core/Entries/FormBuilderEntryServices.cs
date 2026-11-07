@@ -1,3 +1,4 @@
+using Jiron.Umbraco.FormBuilder.Core.Submissions;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Umbraco.Cms.Core.DependencyInjection;
 
@@ -23,6 +24,12 @@ internal static class FormBuilderEntryServices
         builder.Services.TryAddSingleton<EntryLists>();
         builder.Services.TryAddSingleton<EntryDeletions>();
         builder.Services.TryAddSingleton<EntryActionReruns>();
+        builder.Services.TryAddSingleton<EntryPanels>();
+        builder.Services.TryAddSingleton<EntryTimelines>();
+        builder.Services.TryAddSingleton<EntryNotes>();
+        builder.Services.TryAddSingleton<EntryMoveChecks>();
+        builder.Services.TryAddSingleton<EntryEdits>();
+        builder.Services.TryAddSingleton<EntryForwards>();
         return builder;
     }
 }

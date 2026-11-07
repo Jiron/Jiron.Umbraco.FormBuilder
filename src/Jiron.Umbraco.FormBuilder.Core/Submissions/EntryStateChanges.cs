@@ -15,7 +15,8 @@ namespace Jiron.Umbraco.FormBuilder.Core.Submissions;
 /// <param name="UndoUntilUtc">Until when a user can undo it; null for a change nobody can undo, or one that moved nothing.</param>
 /// <param name="Moved">The entries it moved, as they are now.</param>
 /// <param name="Unmoved">The keys of the entries it could not move: gone, of another form, already there, or in a state it does not leave that way.</param>
-internal sealed record EntryChange(Guid ChangeKey, DateTimeOffset? UndoUntilUtc, IReadOnlyList<StoredEntry> Moved, IReadOnlyList<Guid> Unmoved);
+/// <param name="Asks">What a move back would overbook or double, which the user must agree to first; then nothing moved (ADR-0208).</param>
+internal sealed record EntryChange(Guid ChangeKey, DateTimeOffset? UndoUntilUtc, IReadOnlyList<StoredEntry> Moved, IReadOnlyList<Guid> Unmoved, EntryMoveCheck? Asks = null);
 
 /// <summary>What came of an Undo.</summary>
 internal enum EntryUndoStatus
@@ -46,6 +47,7 @@ internal sealed class EntryStateChanges(
     FormDocuments documents,
     ActionSettlement settlement,
     EntrySpamFolder spam,
+    EntryMoveChecks checks,
     EntryEvents entryEvents,
     OutboxWake wake,
     TimeProvider time,
@@ -100,13 +102,26 @@ internal sealed class EntryStateChanges(
         return details.RootElement.GetProperty(name).GetString()!;
     }
 
-    /// <summary>Moves entries of a form to a state.</summary>
+    /// <summary>Moves entries of a form to a state, as <see cref="ChangeAsync(Guid, IReadOnlyList{Guid}, EntryState, Guid?, bool, CancellationToken)"/> without agreeing to overbook.</summary>
     /// <param name="formKey">The form.</param>
     /// <param name="entryKeys">The entries; each counts once.</param>
     /// <param name="to">The state.</param>
     /// <param name="userKey">The backoffice user who asks, whose change waits for its undo window; null for the system.</param>
     /// <param name="cancellationToken">Cancels what has not started.</param>
-    public async Task<EntryChange> ChangeAsync(Guid formKey, IReadOnlyList<Guid> entryKeys, EntryState to, Guid? userKey, CancellationToken cancellationToken = default)
+    public Task<EntryChange> ChangeAsync(Guid formKey, IReadOnlyList<Guid> entryKeys, EntryState to, Guid? userKey, CancellationToken cancellationToken = default) =>
+        ChangeAsync(formKey, entryKeys, to, userKey, overbook: false, cancellationToken);
+
+    /// <summary>
+    /// Moves entries of a form to a state. A user's move of entries back into a state that holds places and unique answers
+    /// first reads what it would overbook or double, and moves nothing until the user agrees (ADR-0208).
+    /// </summary>
+    /// <param name="formKey">The form.</param>
+    /// <param name="entryKeys">The entries; each counts once.</param>
+    /// <param name="to">The state.</param>
+    /// <param name="userKey">The backoffice user who asks, whose change waits for its undo window; null for the system.</param>
+    /// <param name="overbook">Whether the user agreed to overbook options and double unique answers.</param>
+    /// <param name="cancellationToken">Cancels what has not started.</param>
+    public async Task<EntryChange> ChangeAsync(Guid formKey, IReadOnlyList<Guid> entryKeys, EntryState to, Guid? userKey, bool overbook, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(entryKeys);
         if (entryKeys.Count > MaxEntries)
@@ -120,6 +135,23 @@ internal sealed class EntryStateChanges(
         var moved = new List<StoredEntry>();
         var unmoved = new List<Guid>();
         var form = await forms.GetAsync(formKey, cancellationToken);
+        if (form is not null && userKey is not null && !overbook && EntryLimits.CountingStates.Contains(to))
+        {
+            var coming = new List<StoredEntry>();
+            foreach (var key in entryKeys.Distinct())
+            {
+                if (await entries.GetAsync(key, cancellationToken) is { } entry && entry.FormId == form.Id && entry.State is EntryState.Rejected or EntryState.Spam)
+                {
+                    coming.Add(entry);
+                }
+            }
+
+            if (await checks.MoveAsync(form, coming, cancellationToken) is { IsEmpty: false } asks)
+            {
+                return new EntryChange(change, null, [], [], asks);
+            }
+        }
+
         foreach (var key in entryKeys.Distinct())
         {
             var entry = form is null ? null : await entries.GetAsync(key, cancellationToken);

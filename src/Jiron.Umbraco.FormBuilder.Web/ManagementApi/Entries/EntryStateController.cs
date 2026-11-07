@@ -19,6 +19,9 @@ public sealed class EntryStateRequestModel
 
     /// <summary>The state: <c>submitted</c>, <c>approved</c>, <c>rejected</c> or <c>spam</c>.</summary>
     public string State { get; init; } = string.Empty;
+
+    /// <summary>Whether the user agreed to overbook options and double unique answers by moving entries back (ADR-0208).</summary>
+    public bool Overbook { get; init; }
 }
 
 /// <summary>What a change of state did.</summary>
@@ -35,6 +38,9 @@ public sealed class EntryStateResponseModel
 
     /// <summary>The entries it could not move: gone, already there, or in a state it does not leave that way.</summary>
     public required IReadOnlyList<Guid> Unmoved { get; init; }
+
+    /// <summary>What moving entries back would overbook or double, which the user must agree to first; then nothing moved.</summary>
+    public EntryMoveAsksResponseModel? Asks { get; init; }
 }
 
 /// <summary>An entry a change moved.</summary>
@@ -80,13 +86,14 @@ internal sealed class EntryStateController(EntryStateChanges changes) : FormBuil
             return FormBuilderProblems.EntryStateInvalid();
         }
 
-        var change = await changes.ChangeAsync(key, request.Entries, state, RequestAccess.User.Key, cancellationToken);
+        var change = await changes.ChangeAsync(key, request.Entries, state, RequestAccess.User.Key, request.Overbook, cancellationToken);
         return Ok(new EntryStateResponseModel
         {
             ChangeKey = change.ChangeKey,
             UndoUntilUtc = change.UndoUntilUtc,
             Moved = [.. change.Moved.Select(entry => new EntryStateMovedResponseModel { Key = entry.Key, State = StoredNames.Of(entry.State) })],
             Unmoved = change.Unmoved,
+            Asks = change.Asks is { } asks ? EntryPanelMapping.Asks(asks) : null,
         });
     }
 

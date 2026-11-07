@@ -272,6 +272,21 @@ export type EntryDeleteResponseModel = {
     deleted: boolean;
 };
 
+export type EntryEditAnswerRequestModel = {
+    field: string;
+    values: Array<string>;
+};
+
+export type EntryEditRequestModel = {
+    answers: Array<EntryEditAnswerRequestModel>;
+    overbook: boolean;
+};
+
+export type EntryEditResponseModel = {
+    changed: number;
+    asks: EntryMoveAsksResponseModel | null;
+};
+
 export type EntryFieldFilterRequestModel = {
     field: string;
     test: string;
@@ -297,6 +312,37 @@ export type EntryFilterSetResponseModel = {
     name: string;
     form?: string | null;
     filter: EntryListFilterRequestModel;
+};
+
+export type EntryForwardRecipientsResponseModel = {
+    users: Array<EntryForwardUserResponseModel>;
+    addresses: Array<string>;
+};
+
+export type EntryForwardRequestModel = {
+    user?: string | null;
+    address?: string | null;
+    message?: string | null;
+    includeSensitive: boolean;
+};
+
+export type EntryForwardUserResponseModel = {
+    key: string;
+    name: string;
+};
+
+export type EntryFullOptionResponseModel = {
+    field: string;
+    fieldLabel: string;
+    option: string;
+    optionLabel: string;
+    places: number;
+    taken: number;
+};
+
+export type EntryHeldAnswerResponseModel = {
+    field: string;
+    fieldLabel: string;
 };
 
 export type EntryListActionsResponseModel = {
@@ -378,6 +424,96 @@ export type EntryListViewResponseModel = {
     filterSets: Array<EntryFilterSetResponseModel>;
 };
 
+export type EntryLocationResponseModel = {
+    form: string | null;
+};
+
+export type EntryMoveAsksResponseModel = {
+    full: Array<EntryFullOptionResponseModel>;
+    held: Array<EntryHeldAnswerResponseModel>;
+};
+
+export type EntryNoteRequestModel = {
+    body: string;
+};
+
+export type EntryNoteResponseModel = {
+    id: number;
+    author: string;
+    mine: boolean;
+    body: string;
+    created: string;
+    edited: string | null;
+};
+
+export type EntryPanelAnswerResponseModel = {
+    field: string;
+    label: string;
+    removed: boolean;
+    sensitive: boolean;
+    masked: boolean;
+    notKept: boolean;
+    texts: Array<string>;
+    files: Array<EntryPanelFileResponseModel>;
+    consent: string | null;
+    signedName: string | null;
+    edit: EntryPanelEditResponseModel | null;
+};
+
+export type EntryPanelDetailsResponseModel = {
+    page: string | null;
+    culture: string;
+    duration: number | null;
+    member: string | null;
+    memberName: string | null;
+    ipAddress: string | null;
+    spamReasons: Array<string>;
+};
+
+export type EntryPanelEditResponseModel = {
+    kind: string;
+    values: Array<string>;
+    options: Array<EntryListOptionResponseModel>;
+    required: boolean;
+};
+
+export type EntryPanelFileResponseModel = {
+    key: string;
+    name: string;
+    contentType: string;
+    size: number;
+    image: boolean;
+    held: boolean;
+};
+
+export type EntryPanelGroupResponseModel = {
+    key: string;
+    title: string | null;
+    answers: Array<EntryPanelAnswerResponseModel>;
+};
+
+export type EntryPanelPageResponseModel = {
+    key: string;
+    title: string | null;
+    groups: Array<EntryPanelGroupResponseModel>;
+};
+
+export type EntryPanelResponseModel = {
+    key: string;
+    form: string;
+    formName: string;
+    number: number;
+    title: string | null;
+    state: string;
+    received: string;
+    manualApproval: boolean;
+    isTest: boolean;
+    details: EntryPanelDetailsResponseModel;
+    pages: Array<EntryPanelPageResponseModel>;
+    notes: number;
+    permissions: Array<string>;
+};
+
 export type EntryReceivedRequestModel = {
     preset?: string | null;
     from?: string | null;
@@ -403,6 +539,10 @@ export type EntryRerunResponseModel = {
     queued: boolean;
 };
 
+export type EntryRevealRequestModel = {
+    field: string;
+};
+
 export type EntryStateMovedResponseModel = {
     key: string;
     state: string;
@@ -411,6 +551,7 @@ export type EntryStateMovedResponseModel = {
 export type EntryStateRequestModel = {
     entries: Array<string>;
     state: string;
+    overbook: boolean;
 };
 
 export type EntryStateResponseModel = {
@@ -418,10 +559,45 @@ export type EntryStateResponseModel = {
     undoUntilUtc: string | null;
     moved: Array<EntryStateMovedResponseModel>;
     unmoved: Array<string>;
+    asks?: EntryMoveAsksResponseModel | null;
 };
 
 export type EntryStateUndoRequestModel = {
     changeKey: string;
+};
+
+export type EntryTimelineChangeResponseModel = {
+    label: string;
+    before: Array<string>;
+    after: Array<string>;
+    masked: boolean;
+};
+
+export type EntryTimelineEventResponseModel = {
+    id: number;
+    when: string;
+    kind: string;
+    user: string | null;
+    from: string | null;
+    to: string | null;
+    count: number | null;
+    recipient: string | null;
+    changes: Array<EntryTimelineChangeResponseModel>;
+};
+
+export type EntryTimelineMailResponseModel = {
+    id: number;
+    when: string;
+    kind: string;
+    to: string;
+    subject: string;
+    state: string;
+    actionRun: number | null;
+};
+
+export type EntryTimelineResponseModel = {
+    events: Array<EntryTimelineEventResponseModel>;
+    mail: Array<EntryTimelineMailResponseModel>;
 };
 
 export type FieldGroupResponseModel = {
@@ -1341,6 +1517,35 @@ export type TestEmailSendResponses = {
 
 export type TestEmailSendResponse = TestEmailSendResponses[keyof TestEmailSendResponses];
 
+export type EntryLocationFormData = {
+    body?: never;
+    path: {
+        entryKey: string;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/entry/{entryKey}/form';
+};
+
+export type EntryLocationFormErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+};
+
+export type EntryLocationFormResponses = {
+    /**
+     * OK
+     */
+    200: EntryLocationResponseModel;
+};
+
+export type EntryLocationFormResponse = EntryLocationFormResponses[keyof EntryLocationFormResponses];
+
 export type EntryFilterSetDeleteData = {
     body?: never;
     path: {
@@ -1614,6 +1819,347 @@ export type EntryListViewResponses = {
 };
 
 export type EntryListViewResponse = EntryListViewResponses[keyof EntryListViewResponses];
+
+export type EntryPanelOpenData = {
+    body?: never;
+    path: {
+        key: string;
+        entryKey: string;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/form/{key}/entry/{entryKey}';
+};
+
+export type EntryPanelOpenErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type EntryPanelOpenError = EntryPanelOpenErrors[keyof EntryPanelOpenErrors];
+
+export type EntryPanelOpenResponses = {
+    /**
+     * OK
+     */
+    200: EntryPanelResponseModel;
+};
+
+export type EntryPanelOpenResponse = EntryPanelOpenResponses[keyof EntryPanelOpenResponses];
+
+export type EntryPanelEditData = {
+    body?: EntryEditRequestModel;
+    path: {
+        key: string;
+        entryKey: string;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/form/{key}/entry/{entryKey}/answers';
+};
+
+export type EntryPanelEditErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type EntryPanelEditError = EntryPanelEditErrors[keyof EntryPanelEditErrors];
+
+export type EntryPanelEditResponses = {
+    /**
+     * OK
+     */
+    200: EntryEditResponseModel;
+};
+
+export type EntryPanelEditResponse = EntryPanelEditResponses[keyof EntryPanelEditResponses];
+
+export type EntryPanelRecipientsData = {
+    body?: never;
+    path: {
+        key: string;
+        entryKey: string;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/form/{key}/entry/{entryKey}/forward';
+};
+
+export type EntryPanelRecipientsErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type EntryPanelRecipientsError = EntryPanelRecipientsErrors[keyof EntryPanelRecipientsErrors];
+
+export type EntryPanelRecipientsResponses = {
+    /**
+     * OK
+     */
+    200: EntryForwardRecipientsResponseModel;
+};
+
+export type EntryPanelRecipientsResponse = EntryPanelRecipientsResponses[keyof EntryPanelRecipientsResponses];
+
+export type EntryPanelForwardData = {
+    body?: EntryForwardRequestModel;
+    path: {
+        key: string;
+        entryKey: string;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/form/{key}/entry/{entryKey}/forward';
+};
+
+export type EntryPanelForwardErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type EntryPanelForwardError = EntryPanelForwardErrors[keyof EntryPanelForwardErrors];
+
+export type EntryPanelForwardResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type EntryPanelForwardResponse = EntryPanelForwardResponses[keyof EntryPanelForwardResponses];
+
+export type EntryPanelNotesData = {
+    body?: never;
+    path: {
+        key: string;
+        entryKey: string;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/form/{key}/entry/{entryKey}/notes';
+};
+
+export type EntryPanelNotesErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type EntryPanelNotesError = EntryPanelNotesErrors[keyof EntryPanelNotesErrors];
+
+export type EntryPanelNotesResponses = {
+    /**
+     * OK
+     */
+    200: Array<EntryNoteResponseModel>;
+};
+
+export type EntryPanelNotesResponse = EntryPanelNotesResponses[keyof EntryPanelNotesResponses];
+
+export type EntryPanelAddNoteData = {
+    body?: EntryNoteRequestModel;
+    path: {
+        key: string;
+        entryKey: string;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/form/{key}/entry/{entryKey}/notes';
+};
+
+export type EntryPanelAddNoteErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type EntryPanelAddNoteError = EntryPanelAddNoteErrors[keyof EntryPanelAddNoteErrors];
+
+export type EntryPanelAddNoteResponses = {
+    /**
+     * OK
+     */
+    200: EntryNoteResponseModel;
+};
+
+export type EntryPanelAddNoteResponse = EntryPanelAddNoteResponses[keyof EntryPanelAddNoteResponses];
+
+export type EntryPanelChangeNoteData = {
+    body?: EntryNoteRequestModel;
+    path: {
+        key: string;
+        entryKey: string;
+        noteId: number;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/form/{key}/entry/{entryKey}/notes/{noteId}';
+};
+
+export type EntryPanelChangeNoteErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type EntryPanelChangeNoteError = EntryPanelChangeNoteErrors[keyof EntryPanelChangeNoteErrors];
+
+export type EntryPanelChangeNoteResponses = {
+    /**
+     * OK
+     */
+    200: EntryNoteResponseModel;
+};
+
+export type EntryPanelChangeNoteResponse = EntryPanelChangeNoteResponses[keyof EntryPanelChangeNoteResponses];
+
+export type EntryPanelRevealData = {
+    body?: EntryRevealRequestModel;
+    path: {
+        key: string;
+        entryKey: string;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/form/{key}/entry/{entryKey}/reveal';
+};
+
+export type EntryPanelRevealErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type EntryPanelRevealError = EntryPanelRevealErrors[keyof EntryPanelRevealErrors];
+
+export type EntryPanelRevealResponses = {
+    /**
+     * OK
+     */
+    200: EntryPanelAnswerResponseModel;
+};
+
+export type EntryPanelRevealResponse = EntryPanelRevealResponses[keyof EntryPanelRevealResponses];
+
+export type EntryPanelTimelineData = {
+    body?: never;
+    path: {
+        key: string;
+        entryKey: string;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/form/{key}/entry/{entryKey}/timeline';
+};
+
+export type EntryPanelTimelineErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type EntryPanelTimelineError = EntryPanelTimelineErrors[keyof EntryPanelTimelineErrors];
+
+export type EntryPanelTimelineResponses = {
+    /**
+     * OK
+     */
+    200: EntryTimelineResponseModel;
+};
+
+export type EntryPanelTimelineResponse = EntryPanelTimelineResponses[keyof EntryPanelTimelineResponses];
 
 export type EntryActionRunListData = {
     body?: never;

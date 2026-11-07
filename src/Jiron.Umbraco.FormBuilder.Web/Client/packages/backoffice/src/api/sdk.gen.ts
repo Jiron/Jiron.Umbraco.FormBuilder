@@ -3,7 +3,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { ActionLastRunListData, ActionLastRunListErrors, ActionLastRunListResponses, ActionTestTestData, ActionTestTestErrors, ActionTestTestResponses, ActionTypeListData, ActionTypeListErrors, ActionTypeListResponses, CanvasGetData, CanvasGetErrors, CanvasGetResponses, CaptchaProviderListData, CaptchaProviderListErrors, CaptchaProviderListResponses, ContentDocumentTypeGetData, ContentDocumentTypeGetErrors, ContentDocumentTypeGetResponses, DraftOptionsResolveData, DraftOptionsResolveErrors, DraftOptionsResolveResponses, EmailPreviewRenderData, EmailPreviewRenderErrors, EmailPreviewRenderResponses, EntryActionRunListData, EntryActionRunListErrors, EntryActionRunListResponses, EntryActionRunRetryData, EntryActionRunRetryErrors, EntryActionRunRetryResponses, EntryFileArchiveData, EntryFileArchiveErrors, EntryFileArchiveResponses, EntryFileDownloadData, EntryFileDownloadErrors, EntryFileDownloadResponses, EntryFilterSetDeleteData, EntryFilterSetDeleteErrors, EntryFilterSetDeleteResponses, EntryFilterSetSaveData, EntryFilterSetSaveErrors, EntryFilterSetSaveResponses, EntryListColumnsData, EntryListColumnsErrors, EntryListColumnsResponses, EntryListDeleteData, EntryListDeleteErrors, EntryListDeleteResponses, EntryListListData, EntryListListErrors, EntryListListResponses, EntryListRunActionsData, EntryListRunActionsErrors, EntryListRunActionsResponses, EntryListViewData, EntryListViewErrors, EntryListViewResponses, EntryStateChangeData, EntryStateChangeErrors, EntryStateChangeResponses, EntryStateUndoData, EntryStateUndoErrors, EntryStateUndoResponses, FieldTypeChangesData, FieldTypeChangesErrors, FieldTypeChangesResponses, FieldTypeListData, FieldTypeListErrors, FieldTypeListResponses, FolderCreateData, FolderCreateErrors, FolderCreateResponses, FolderDeleteData, FolderDeleteErrors, FolderDeleteResponses, FolderGetData, FolderGetErrors, FolderGetResponses, FolderMoveData, FolderMoveErrors, FolderMoveResponses, FolderRenameData, FolderRenameErrors, FolderRenameResponses, FolderRestoreData, FolderRestoreErrors, FolderRestoreResponses, FolderTrashData, FolderTrashErrors, FolderTrashResponses, FormCheckCheckData, FormCheckCheckErrors, FormCheckCheckResponses, FormCreateData, FormCreateErrors, FormCreateResponses, FormDeleteData, FormDeleteErrors, FormDeleteResponses, FormDraftData, FormDraftErrors, FormDraftResponses, FormExchangeCheckImportData, FormExchangeCheckImportErrors, FormExchangeCheckImportResponses, FormExchangeCopyActionsData, FormExchangeCopyActionsErrors, FormExchangeCopyActionsResponses, FormExchangeDuplicateData, FormExchangeDuplicateErrors, FormExchangeDuplicateResponses, FormExchangeExportData, FormExchangeExportErrors, FormExchangeExportResponses, FormExchangeFromTemplateData, FormExchangeFromTemplateErrors, FormExchangeFromTemplateResponses, FormExchangeImportData, FormExchangeImportErrors, FormExchangeImportResponses, FormGetData, FormGetErrors, FormGetResponses, FormHoldingsData, FormHoldingsErrors, FormHoldingsResponses, FormMoveData, FormMoveErrors, FormMoveResponses, FormPreviewRenderData, FormPreviewRenderErrors, FormPreviewRenderResponses, FormPreviewRunActionsData, FormPreviewRunActionsErrors, FormPreviewRunActionsResponses, FormPreviewTestEntryData, FormPreviewTestEntryErrors, FormPreviewTestEntryResponses, FormPreviewTicketData, FormPreviewTicketErrors, FormPreviewTicketResponses, FormPublishData, FormPublishErrors, FormPublishResponses, FormReferenceListData, FormReferenceListErrors, FormReferenceListResponses, FormRenameData, FormRenameErrors, FormRenameResponses, FormRestoreData, FormRestoreErrors, FormRestoreResponses, FormSaveDraftData, FormSaveDraftErrors, FormSaveDraftResponses, FormSearchData, FormSearchErrors, FormSearchFieldsData, FormSearchFieldsErrors, FormSearchFieldsResponses, FormSearchResponses, FormSettingsChoicesData, FormSettingsChoicesErrors, FormSettingsChoicesResponses, FormTrashData, FormTrashErrors, FormTrashResponses, FormUnpublishData, FormUnpublishErrors, FormUnpublishResponses, GeneralSettingsGetData, GeneralSettingsGetErrors, GeneralSettingsGetResponses, GeneralSettingsSaveData, GeneralSettingsSaveErrors, GeneralSettingsSaveResponses, LibraryListItemsData, LibraryListItemsErrors, LibraryListItemsResponses, LibraryListTrashData, LibraryListTrashErrors, LibraryListTrashResponses, MePermissionsData, MePermissionsErrors, MePermissionsResponses, MergeTagPathListData, MergeTagPathListErrors, MergeTagPathListResponses, OptionListListData, OptionListListErrors, OptionListListResponses, OptionSourceListData, OptionSourceListErrors, OptionSourceListResponses, OutcomePreviewRenderData, OutcomePreviewRenderErrors, OutcomePreviewRenderResponses, PickerChildrenData, PickerChildrenErrors, PickerChildrenResponses, PickerFoldersData, PickerFoldersErrors, PickerFoldersResponses, PickerFormsData, PickerFormsErrors, PickerFormsResponses, PickerSearchData, PickerSearchErrors, PickerSearchResponses, PickerThemesData, PickerThemesErrors, PickerThemesResponses, RecentEntryListData, RecentEntryListErrors, RecentEntryListResponses, SetupChecklistData, SetupChecklistErrors, SetupChecklistResponses, SetupCreateFormBlockData, SetupCreateFormBlockErrors, SetupCreateFormBlockResponses, SetupHealthData, SetupHealthErrors, SetupHealthResponses, TemplateListData, TemplateListErrors, TemplateListResponses, TestEmailSendData, TestEmailSendErrors, TestEmailSendResponses, TrashEmptyData, TrashEmptyErrors, TrashEmptyResponses, TrashHoldingsData, TrashHoldingsErrors, TrashHoldingsResponses, TrashListData, TrashListErrors, TrashListResponses, TreeChildrenData, TreeChildrenErrors, TreeChildrenResponses, TreeRootData, TreeRootErrors, TreeRootResponses, VersionCommentData, VersionCommentErrors, VersionCommentResponses, VersionCompareData, VersionCompareErrors, VersionCompareResponses, VersionCompareWithData, VersionCompareWithErrors, VersionCompareWithResponses, VersionGetData, VersionGetErrors, VersionGetResponses, VersionListData, VersionListErrors, VersionListResponses, VersionPinData, VersionPinErrors, VersionPinResponses, VersionRestoreData, VersionRestoreErrors, VersionRestoreResponses } from './types.gen';
+import type { ActionLastRunListData, ActionLastRunListErrors, ActionLastRunListResponses, ActionTestTestData, ActionTestTestErrors, ActionTestTestResponses, ActionTypeListData, ActionTypeListErrors, ActionTypeListResponses, CanvasGetData, CanvasGetErrors, CanvasGetResponses, CaptchaProviderListData, CaptchaProviderListErrors, CaptchaProviderListResponses, ContentDocumentTypeGetData, ContentDocumentTypeGetErrors, ContentDocumentTypeGetResponses, DraftOptionsResolveData, DraftOptionsResolveErrors, DraftOptionsResolveResponses, EmailPreviewRenderData, EmailPreviewRenderErrors, EmailPreviewRenderResponses, EntryActionRunListData, EntryActionRunListErrors, EntryActionRunListResponses, EntryActionRunRetryData, EntryActionRunRetryErrors, EntryActionRunRetryResponses, EntryFileArchiveData, EntryFileArchiveErrors, EntryFileArchiveResponses, EntryFileDownloadData, EntryFileDownloadErrors, EntryFileDownloadResponses, EntryFilterSetDeleteData, EntryFilterSetDeleteErrors, EntryFilterSetDeleteResponses, EntryFilterSetSaveData, EntryFilterSetSaveErrors, EntryFilterSetSaveResponses, EntryListColumnsData, EntryListColumnsErrors, EntryListColumnsResponses, EntryListDeleteData, EntryListDeleteErrors, EntryListDeleteResponses, EntryListListData, EntryListListErrors, EntryListListResponses, EntryListRunActionsData, EntryListRunActionsErrors, EntryListRunActionsResponses, EntryListViewData, EntryListViewErrors, EntryListViewResponses, EntryLocationFormData, EntryLocationFormErrors, EntryLocationFormResponses, EntryPanelAddNoteData, EntryPanelAddNoteErrors, EntryPanelAddNoteResponses, EntryPanelChangeNoteData, EntryPanelChangeNoteErrors, EntryPanelChangeNoteResponses, EntryPanelEditData, EntryPanelEditErrors, EntryPanelEditResponses, EntryPanelForwardData, EntryPanelForwardErrors, EntryPanelForwardResponses, EntryPanelNotesData, EntryPanelNotesErrors, EntryPanelNotesResponses, EntryPanelOpenData, EntryPanelOpenErrors, EntryPanelOpenResponses, EntryPanelRecipientsData, EntryPanelRecipientsErrors, EntryPanelRecipientsResponses, EntryPanelRevealData, EntryPanelRevealErrors, EntryPanelRevealResponses, EntryPanelTimelineData, EntryPanelTimelineErrors, EntryPanelTimelineResponses, EntryStateChangeData, EntryStateChangeErrors, EntryStateChangeResponses, EntryStateUndoData, EntryStateUndoErrors, EntryStateUndoResponses, FieldTypeChangesData, FieldTypeChangesErrors, FieldTypeChangesResponses, FieldTypeListData, FieldTypeListErrors, FieldTypeListResponses, FolderCreateData, FolderCreateErrors, FolderCreateResponses, FolderDeleteData, FolderDeleteErrors, FolderDeleteResponses, FolderGetData, FolderGetErrors, FolderGetResponses, FolderMoveData, FolderMoveErrors, FolderMoveResponses, FolderRenameData, FolderRenameErrors, FolderRenameResponses, FolderRestoreData, FolderRestoreErrors, FolderRestoreResponses, FolderTrashData, FolderTrashErrors, FolderTrashResponses, FormCheckCheckData, FormCheckCheckErrors, FormCheckCheckResponses, FormCreateData, FormCreateErrors, FormCreateResponses, FormDeleteData, FormDeleteErrors, FormDeleteResponses, FormDraftData, FormDraftErrors, FormDraftResponses, FormExchangeCheckImportData, FormExchangeCheckImportErrors, FormExchangeCheckImportResponses, FormExchangeCopyActionsData, FormExchangeCopyActionsErrors, FormExchangeCopyActionsResponses, FormExchangeDuplicateData, FormExchangeDuplicateErrors, FormExchangeDuplicateResponses, FormExchangeExportData, FormExchangeExportErrors, FormExchangeExportResponses, FormExchangeFromTemplateData, FormExchangeFromTemplateErrors, FormExchangeFromTemplateResponses, FormExchangeImportData, FormExchangeImportErrors, FormExchangeImportResponses, FormGetData, FormGetErrors, FormGetResponses, FormHoldingsData, FormHoldingsErrors, FormHoldingsResponses, FormMoveData, FormMoveErrors, FormMoveResponses, FormPreviewRenderData, FormPreviewRenderErrors, FormPreviewRenderResponses, FormPreviewRunActionsData, FormPreviewRunActionsErrors, FormPreviewRunActionsResponses, FormPreviewTestEntryData, FormPreviewTestEntryErrors, FormPreviewTestEntryResponses, FormPreviewTicketData, FormPreviewTicketErrors, FormPreviewTicketResponses, FormPublishData, FormPublishErrors, FormPublishResponses, FormReferenceListData, FormReferenceListErrors, FormReferenceListResponses, FormRenameData, FormRenameErrors, FormRenameResponses, FormRestoreData, FormRestoreErrors, FormRestoreResponses, FormSaveDraftData, FormSaveDraftErrors, FormSaveDraftResponses, FormSearchData, FormSearchErrors, FormSearchFieldsData, FormSearchFieldsErrors, FormSearchFieldsResponses, FormSearchResponses, FormSettingsChoicesData, FormSettingsChoicesErrors, FormSettingsChoicesResponses, FormTrashData, FormTrashErrors, FormTrashResponses, FormUnpublishData, FormUnpublishErrors, FormUnpublishResponses, GeneralSettingsGetData, GeneralSettingsGetErrors, GeneralSettingsGetResponses, GeneralSettingsSaveData, GeneralSettingsSaveErrors, GeneralSettingsSaveResponses, LibraryListItemsData, LibraryListItemsErrors, LibraryListItemsResponses, LibraryListTrashData, LibraryListTrashErrors, LibraryListTrashResponses, MePermissionsData, MePermissionsErrors, MePermissionsResponses, MergeTagPathListData, MergeTagPathListErrors, MergeTagPathListResponses, OptionListListData, OptionListListErrors, OptionListListResponses, OptionSourceListData, OptionSourceListErrors, OptionSourceListResponses, OutcomePreviewRenderData, OutcomePreviewRenderErrors, OutcomePreviewRenderResponses, PickerChildrenData, PickerChildrenErrors, PickerChildrenResponses, PickerFoldersData, PickerFoldersErrors, PickerFoldersResponses, PickerFormsData, PickerFormsErrors, PickerFormsResponses, PickerSearchData, PickerSearchErrors, PickerSearchResponses, PickerThemesData, PickerThemesErrors, PickerThemesResponses, RecentEntryListData, RecentEntryListErrors, RecentEntryListResponses, SetupChecklistData, SetupChecklistErrors, SetupChecklistResponses, SetupCreateFormBlockData, SetupCreateFormBlockErrors, SetupCreateFormBlockResponses, SetupHealthData, SetupHealthErrors, SetupHealthResponses, TemplateListData, TemplateListErrors, TemplateListResponses, TestEmailSendData, TestEmailSendErrors, TestEmailSendResponses, TrashEmptyData, TrashEmptyErrors, TrashEmptyResponses, TrashHoldingsData, TrashHoldingsErrors, TrashHoldingsResponses, TrashListData, TrashListErrors, TrashListResponses, TreeChildrenData, TreeChildrenErrors, TreeChildrenResponses, TreeRootData, TreeRootErrors, TreeRootResponses, VersionCommentData, VersionCommentErrors, VersionCommentResponses, VersionCompareData, VersionCompareErrors, VersionCompareResponses, VersionCompareWithData, VersionCompareWithErrors, VersionCompareWithResponses, VersionGetData, VersionGetErrors, VersionGetResponses, VersionListData, VersionListErrors, VersionListResponses, VersionPinData, VersionPinErrors, VersionPinResponses, VersionRestoreData, VersionRestoreErrors, VersionRestoreResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -73,6 +73,12 @@ export const testEmailSend = <ThrowOnError extends boolean = false>(options?: Op
     }
 });
 
+export const entryLocationForm = <ThrowOnError extends boolean = false>(options: Options<EntryLocationFormData, ThrowOnError>): RequestResult<EntryLocationFormResponses, EntryLocationFormErrors, ThrowOnError> => (options.client ?? client).get<EntryLocationFormResponses, EntryLocationFormErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/jfb/management/api/v1/entry/{entryKey}/form',
+    ...options
+});
+
 export const entryFilterSetDelete = <ThrowOnError extends boolean = false>(options: Options<EntryFilterSetDeleteData, ThrowOnError>): RequestResult<EntryFilterSetDeleteResponses, EntryFilterSetDeleteErrors, ThrowOnError> => (options.client ?? client).delete<EntryFilterSetDeleteResponses, EntryFilterSetDeleteErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/umbraco/jfb/management/api/v1/entry/filter-set/{setKey}',
@@ -138,6 +144,80 @@ export const entryListRunActions = <ThrowOnError extends boolean = false>(option
 export const entryListView = <ThrowOnError extends boolean = false>(options: Options<EntryListViewData, ThrowOnError>): RequestResult<EntryListViewResponses, EntryListViewErrors, ThrowOnError> => (options.client ?? client).get<EntryListViewResponses, EntryListViewErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/umbraco/jfb/management/api/v1/form/{key}/entries/view',
+    ...options
+});
+
+export const entryPanelOpen = <ThrowOnError extends boolean = false>(options: Options<EntryPanelOpenData, ThrowOnError>): RequestResult<EntryPanelOpenResponses, EntryPanelOpenErrors, ThrowOnError> => (options.client ?? client).get<EntryPanelOpenResponses, EntryPanelOpenErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/jfb/management/api/v1/form/{key}/entry/{entryKey}',
+    ...options
+});
+
+export const entryPanelEdit = <ThrowOnError extends boolean = false>(options: Options<EntryPanelEditData, ThrowOnError>): RequestResult<EntryPanelEditResponses, EntryPanelEditErrors, ThrowOnError> => (options.client ?? client).put<EntryPanelEditResponses, EntryPanelEditErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/jfb/management/api/v1/form/{key}/entry/{entryKey}/answers',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const entryPanelRecipients = <ThrowOnError extends boolean = false>(options: Options<EntryPanelRecipientsData, ThrowOnError>): RequestResult<EntryPanelRecipientsResponses, EntryPanelRecipientsErrors, ThrowOnError> => (options.client ?? client).get<EntryPanelRecipientsResponses, EntryPanelRecipientsErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/jfb/management/api/v1/form/{key}/entry/{entryKey}/forward',
+    ...options
+});
+
+export const entryPanelForward = <ThrowOnError extends boolean = false>(options: Options<EntryPanelForwardData, ThrowOnError>): RequestResult<EntryPanelForwardResponses, EntryPanelForwardErrors, ThrowOnError> => (options.client ?? client).post<EntryPanelForwardResponses, EntryPanelForwardErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/jfb/management/api/v1/form/{key}/entry/{entryKey}/forward',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const entryPanelNotes = <ThrowOnError extends boolean = false>(options: Options<EntryPanelNotesData, ThrowOnError>): RequestResult<EntryPanelNotesResponses, EntryPanelNotesErrors, ThrowOnError> => (options.client ?? client).get<EntryPanelNotesResponses, EntryPanelNotesErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/jfb/management/api/v1/form/{key}/entry/{entryKey}/notes',
+    ...options
+});
+
+export const entryPanelAddNote = <ThrowOnError extends boolean = false>(options: Options<EntryPanelAddNoteData, ThrowOnError>): RequestResult<EntryPanelAddNoteResponses, EntryPanelAddNoteErrors, ThrowOnError> => (options.client ?? client).post<EntryPanelAddNoteResponses, EntryPanelAddNoteErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/jfb/management/api/v1/form/{key}/entry/{entryKey}/notes',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const entryPanelChangeNote = <ThrowOnError extends boolean = false>(options: Options<EntryPanelChangeNoteData, ThrowOnError>): RequestResult<EntryPanelChangeNoteResponses, EntryPanelChangeNoteErrors, ThrowOnError> => (options.client ?? client).put<EntryPanelChangeNoteResponses, EntryPanelChangeNoteErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/jfb/management/api/v1/form/{key}/entry/{entryKey}/notes/{noteId}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const entryPanelReveal = <ThrowOnError extends boolean = false>(options: Options<EntryPanelRevealData, ThrowOnError>): RequestResult<EntryPanelRevealResponses, EntryPanelRevealErrors, ThrowOnError> => (options.client ?? client).post<EntryPanelRevealResponses, EntryPanelRevealErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/jfb/management/api/v1/form/{key}/entry/{entryKey}/reveal',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const entryPanelTimeline = <ThrowOnError extends boolean = false>(options: Options<EntryPanelTimelineData, ThrowOnError>): RequestResult<EntryPanelTimelineResponses, EntryPanelTimelineErrors, ThrowOnError> => (options.client ?? client).get<EntryPanelTimelineResponses, EntryPanelTimelineErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/jfb/management/api/v1/form/{key}/entry/{entryKey}/timeline',
     ...options
 });
 

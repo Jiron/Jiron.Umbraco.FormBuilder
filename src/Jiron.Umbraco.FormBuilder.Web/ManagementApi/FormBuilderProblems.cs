@@ -114,6 +114,24 @@ internal static class FormBuilderProblems
     /// <summary>The code of a bulk action that names no entries, or too many (ADR-0207).</summary>
     public const string EntriesInvalidCode = "entries_invalid";
 
+    /// <summary>The code of an entry the form does not hold, or one the user may not see (ADR-0208).</summary>
+    public const string EntryNotFoundCode = "entry_not_found";
+
+    /// <summary>The code of a note the entry does not have (ADR-0208).</summary>
+    public const string NoteNotFoundCode = "note_not_found";
+
+    /// <summary>The code of a note someone else wrote, which only they change (ADR-0208).</summary>
+    public const string NoteNotYoursCode = "note_not_yours";
+
+    /// <summary>The code of a note that is empty or too long (ADR-0208).</summary>
+    public const string NoteInvalidCode = "note_invalid";
+
+    /// <summary>The code of a forward to someone the site does not trust (ADR-0208).</summary>
+    public const string ForwardRecipientNotAllowedCode = "forward_recipient_not_allowed";
+
+    /// <summary>The code of a forward without a recipient, or with a message too long (ADR-0208).</summary>
+    public const string ForwardInvalidCode = "forward_invalid";
+
     /// <summary>The code of a test entry the form does not hold (ADR-0204).</summary>
     public const string TestEntryNotFoundCode = "test_entry_not_found";
 
@@ -237,6 +255,30 @@ internal static class FormBuilderProblems
     /// <summary>A bulk action that names no entries, or more than a page of them (ADR-0207).</summary>
     public static FormBuilderProblemResult EntriesInvalid() =>
         Problem(StatusCodes.Status400BadRequest, EntriesInvalidCode, "Choose from 1 to 500 entries.");
+
+    /// <summary>An entry the form does not hold, a draft, or one the user may not see (ADR-0208).</summary>
+    public static FormBuilderProblemResult EntryNotFound() =>
+        Problem(StatusCodes.Status404NotFound, EntryNotFoundCode, "The form has no such entry.");
+
+    /// <summary>A note the entry does not have (ADR-0208).</summary>
+    public static FormBuilderProblemResult NoteNotFound() =>
+        Problem(StatusCodes.Status404NotFound, NoteNotFoundCode, "The entry has no such note.");
+
+    /// <summary>A note someone else wrote (ADR-0208).</summary>
+    public static FormBuilderProblemResult NoteNotYours() =>
+        Problem(StatusCodes.Status403Forbidden, NoteNotYoursCode, "Only the note's author changes it.");
+
+    /// <summary>A note that is empty or longer than it may be (ADR-0208).</summary>
+    public static FormBuilderProblemResult NoteInvalid() =>
+        Problem(StatusCodes.Status400BadRequest, NoteInvalidCode, "Write a note of 1 to 10,000 characters.");
+
+    /// <summary>A forward to someone who is no user who may view the form's entries and no forward address of the site (ADR-0208).</summary>
+    public static FormBuilderProblemResult ForwardRecipientNotAllowed() =>
+        Problem(StatusCodes.Status400BadRequest, ForwardRecipientNotAllowedCode, "Entries go only to users who may view this form's entries, or to the forward addresses of Settings, Email.");
+
+    /// <summary>A forward that names no recipient or both, or whose message is too long (ADR-0208).</summary>
+    public static FormBuilderProblemResult ForwardInvalid() =>
+        Problem(StatusCodes.Status400BadRequest, ForwardInvalidCode, "Choose one user or one address, and write a message of at most 2,000 characters.");
 
     /// <summary>A test entry the form does not hold, or one that is gone (ADR-0204).</summary>
     public static FormBuilderProblemResult TestEntryNotFound() =>

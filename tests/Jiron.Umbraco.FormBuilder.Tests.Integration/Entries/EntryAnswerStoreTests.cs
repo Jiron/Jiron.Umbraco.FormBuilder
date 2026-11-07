@@ -1,10 +1,12 @@
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Entries;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
+using Jiron.Umbraco.FormBuilder.Core.Files;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.MergeTags;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
+using Jiron.Umbraco.FormBuilder.Core.Signatures;
 using Jiron.Umbraco.FormBuilder.Tests.Integration.Persistence.Repositories;
 using Umbraco.Cms.Tests.Common.Testing;
 using static Jiron.Umbraco.FormBuilder.Tests.Integration.Forms.FormServiceTesting;
@@ -65,6 +67,10 @@ public sealed class EntryAnswerStoreTests : RepositoryTestBase
     private ConsentWordings Wordings => GetRequiredService<ConsentWordings>();
 
     private FieldTypeRegistry Types => GetRequiredService<FieldTypeRegistry>();
+
+    private EntryPanels Panels => GetRequiredService<EntryPanels>();
+
+    private MergeTagAnswerTexts AnswerTexts => GetRequiredService<MergeTagAnswerTexts>();
 
     [Test]
     public async Task EveryType_IsStored_AndReadBackTyped()
@@ -160,6 +166,71 @@ public sealed class EntryAnswerStoreTests : RepositoryTestBase
             }
         });
     }
+
+    [Test]
+    public async Task ThePanel_ShowsEveryType_AsTheStoreReadsIt_AndATypedSignatureWithItsName()
+    {
+        var form = await PublishAsync();
+        var plan = await UploadAsync(form, Attachments, "plan.pdf");
+        var typed = await UploadAsync(form, Signature, "signature.png");
+        await using (var png = new MemoryStream(TypedSignature.Draw("Ada Lovelace", 400, 150)))
+        {
+            await GetRequiredService<IFormBuilderFileStore>().SaveAsync(typed.StoredName, png);
+        }
+
+        var wording = (await Wordings.ShownAsync(Terms, Scope(form.Definition)))!;
+        EntryFieldAnswer[] answers =
+        [
+            Answer(FullName, "Ada Lovelace"),
+            Answer(Message, "Line one" + (char)10 + "line two"),
+            Answer(Email, "ada@example.org"),
+            Answer(Age, "42"),
+            Answer(Birthday, "1990-03-14"),
+            Answer(Toppings, "ham", "olives"),
+            Answer(Fruit, new FieldAnswers(["b", "a"], [Part("other", "Quince")])),
+            Answer(Satisfaction, new FieldAnswers([], [Part(Price.Key.ToString("D"), "bad"), Part(Speed.Key.ToString("D"), "good")])),
+            Answer(Priorities, new FieldAnswers([], [Part("a", "10"), Part("b", "2"), Part("c", "7")])),
+            Answer(Newsletter, "true"),
+            Answer(Terms, new FieldAnswers(["true"], [Part("wording", wording.Hash)])),
+            Answer(Name, new FieldAnswers([], [Part("last", "Lovelace"), Part("first", "Ada")])),
+            Answer(Attachments, Token(plan)) with { Files = [plan] },
+            Answer(Signature, Token(typed)) with { Files = [typed] },
+            Answer(GuestName, new FieldAnswers(["Ada"])),
+            Answer(GuestName, new FieldAnswers(["Grace"]), row: 1),
+        ];
+        var entry = (await Store.CreateAsync(NewEntry(form), form.Definition, answers, new Dictionary<Guid, ConsentWording> { [Terms.Key] = wording }))!;
+
+        var panel = (await Panels.OpenAsync(form.Key, entry.Key, Editor, mayEdit: true))!;
+        var shown = panel.Pages.SelectMany(page => page.Groups).SelectMany(group => group.Answers).ToDictionary(answer => answer.Field);
+        var read = (await Store.ReadAsync(entry.Id))!.ForMergeTags();
+        var scope = Scope(form.Definition) with { Answers = read };
+        var texts = await AnswerTexts.TextsAsync(scope, form.Definition.Pages.SelectMany(page => page.Groups).SelectMany(group => group.Fields).Select(field => new AnswerField(field, null)));
+
+        Assert.Multiple(() =>
+        {
+            foreach (var answer in answers.Where(answer => answer.Row == 0 && shown.ContainsKey(answer.Field) && answer.Field != Attachments.Key && answer.Field != Signature.Key))
+            {
+                var field = form.Definition.Pages.SelectMany(page => page.Groups).SelectMany(group => group.Fields).Single(item => item.Key == answer.Field);
+                var stored = AnswerTexts.Texts(field, read.Find(answer.Field)!, Culture, listing: true, texts).Select(text => text.Text);
+                Assert.That(shown[answer.Field].Texts, Is.EqualTo(new[] { string.Join(", ", stored) }), $"{field.Alias} shows each value as its type read it");
+            }
+
+            Assert.That(shown[FullName.Key].Texts, Is.EqualTo(new[] { "Ada Lovelace" }));
+            Assert.That(shown[Attachments.Key].Files.Select(found => (found.Key, found.Name, found.Size)), Is.EqualTo(new[] { (plan.Key, "plan.pdf", 1234L) }));
+            Assert.That(shown[Signature.Key].SignedName, Is.EqualTo("Ada Lovelace"), "the name a typed signature was signed with");
+            Assert.That(shown[Terms.Key].Consent, Is.EqualTo("I agree to the terms of Every type."), "the exact wording the visitor saw");
+            Assert.That(shown[Guests.Key].Texts, Has.Count.EqualTo(2), "a repeatable group's rows");
+            Assert.That(shown[Website.Key].Texts, Is.Empty, "an unanswered field shows none");
+            Assert.That(panel.Pages.SelectMany(page => page.Groups).SelectMany(group => group.Answers).Select(answer => answer.Field), Does.Not.Contain(GuestName.Key), "a repeatable group's child shows in its rows");
+            Assert.That(shown[FullName.Key].Edit, Is.EqualTo(new EntryPanelEdit("text", ["Ada Lovelace"], [], false)).Using<EntryPanelEdit>(SameEdit));
+            Assert.That(shown[Message.Key].Edit!.Kind, Is.EqualTo("longText"));
+            Assert.That(shown[Toppings.Key].Edit!.Options.Select(option => option.Value), Is.EqualTo(new[] { "ham", "olives", "pineapple" }));
+            Assert.That(new[] { Terms, Signature, Satisfaction, Priorities, Total, Attachments, Name, Guests }.Select(field => shown[field.Key].Edit), Is.All.Null, "consents, files, grids, rankings, calculations, parts and rows stay as they are");
+        });
+    }
+
+    private static bool SameEdit(EntryPanelEdit left, EntryPanelEdit right) =>
+        left.Kind == right.Kind && left.Values.SequenceEqual(right.Values) && left.Options.SequenceEqual(right.Options) && left.Required == right.Required;
 
     [Test]
     public async Task AWording_IsStoredOnce_ForEveryEntryThatAgreedToIt()
@@ -281,8 +352,8 @@ public sealed class EntryAnswerStoreTests : RepositoryTestBase
         var saved = (await Service.SaveDraftAsync(created.Key, created.ConcurrencyVersion, definition, null, Editor))!;
         await Service.PublishAsync(created.Key, saved.Form.ConcurrencyVersion, null, Editor);
         var row = (await Forms.GetAsync(created.Key))!;
-        return new PublishedForm(row.Id, row.PublishedVersionId!.Value, (await Service.GetDraftAsync(created.Key))!.Definition!);
+        return new PublishedForm(row.Id, row.PublishedVersionId!.Value, (await Service.GetDraftAsync(created.Key))!.Definition!, created.Key);
     }
 
-    private sealed record PublishedForm(int Id, int VersionId, FormDefinition Definition);
+    private sealed record PublishedForm(int Id, int VersionId, FormDefinition Definition, Guid Key);
 }

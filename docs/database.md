@@ -511,7 +511,8 @@ One row per entry, numbered per form from `jfbForm.lastEntryNumber` (drafts and 
 with the same id is refused (§4.4). `state` is the entry's place in the review workflow; `isTest` marks
 entries from the preview. The search text holds the answers cleaned and folded the way rules compare text, one per
 line, and leaves out sensitive fields (ADR-0039). `spamScore` and `spamReasons` are what the protection found (ADR-0139), kept
-for the folder's review; an entry in `Spam` runs no actions until someone says it is not spam.
+for the folder's review; an entry in `Spam` runs no actions until someone says it is not spam. `firstSeenUtc` is set
+the first time a backoffice user opens the entry, for everyone (ADR-0166, ADR-0208).
 Resume tokens and challenges are stored only as hashes and ids.
 
 - `IX_jfbEntry_key`: unique.
@@ -571,7 +572,9 @@ entry's unit of work, insert-once (ADR-0070). No indexes besides the primary key
 ### `jfbEntryEvent`
 
 The timeline of an entry: submitted, changed, forwarded, `notSpam` when someone takes it out of the spam folder (ADR-0140),
-`fileQuarantined` when a scanner finds malware in a file it holds (ADR-0144), and so on. `changeKey` ties together the events of one
+`fileQuarantined` when a scanner finds malware in a file it holds (ADR-0144), `opened` the first time a backoffice user
+opens it, `answersEdited` with each field's old and new texts, and `forwarded` with whom it went to (ADR-0208), and so
+on. `changeKey` ties together the events of one
 change by a user, a bulk change included, so it can be undone (ADR-0023). `dueUtc` says when something the event leaves to do falls due, and is cleared by whoever does it or by an Undo (ADR-0162).
 
 - `IX_jfbEntryEvent_entryId_occurredUtc`: an entry's timeline.
@@ -580,7 +583,8 @@ change by a user, a bulk change included, so it can be undone (ADR-0023). `dueUt
 
 ### `jfbEntryNote`
 
-Internal notes on an entry, never sent anywhere.
+Internal notes on an entry, never sent anywhere: everyone who may open the entry reads them and adds one, and each
+author changes their own (ADR-0208).
 
 - `IX_jfbEntryNote_entryId`: the notes of an entry.
 

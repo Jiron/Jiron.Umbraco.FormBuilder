@@ -74,6 +74,12 @@ internal sealed record SubmittedEntry(StoredEntry Entry, SubmissionReceipt Recei
 /// <param name="Submitted">When the entry was submitted.</param>
 internal sealed record EntryCopy(MergeTagScope Scope, IReadOnlySet<Guid>? Hidden, DateTimeOffset Submitted);
 
+/// <summary>An entry as the entry panel reads it (ADR-0208).</summary>
+/// <param name="Scope">The scope: the entry's version as its form, its culture, its page and its stored answers.</param>
+/// <param name="Answers">The answers as stored, with their files and consent wordings; null when none could be read.</param>
+/// <param name="Timeline">Its events, oldest first.</param>
+internal sealed record EntryRead(MergeTagScope Scope, EntryAnswers? Answers, IReadOnlyList<StoredEntryEvent> Timeline);
+
 /// <summary>
 /// The entries of submissions (ADR-0088): stores a submission's entry in one transaction with its <c>submitted</c>
 /// event, its action runs and its daily count, once its choices are held against the places left (ADR-0090) and its
@@ -341,6 +347,30 @@ internal sealed class SubmissionEntries(
         }
 
         return (await ReadAsync(entry, locks.Apply(documents.Readable(version)), form.Name, form.Alias, cancellationToken)).Scope;
+    }
+
+    /// <summary>
+    /// What the entry panel shows of an entry (ADR-0208): its scope as <see cref="ScopeAsync"/> makes it, with the
+    /// answers as stored (their files and consent wordings) and its whole timeline, each read once. Null when the
+    /// version is gone.
+    /// </summary>
+    /// <param name="entry">The entry.</param>
+    /// <param name="form">Its form.</param>
+    /// <param name="cancellationToken">Cancels the reads.</param>
+    public async Task<EntryRead?> ReadWholeAsync(StoredEntry entry, StoredForm form, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(entry);
+        ArgumentNullException.ThrowIfNull(form);
+        if (await forms.GetVersionByIdAsync(entry.FormVersionId, cancellationToken) is not { } version)
+        {
+            return null;
+        }
+
+        var definition = locks.Apply(documents.Readable(version));
+        var page = await pages.PageAsync(entry.ContentKey);
+        var timeline = await events.ListForEntryAsync(entry.Id, cancellationToken);
+        var answers = await store.ReadAsync(entry.Id, cancellationToken);
+        return new EntryRead(ScopeOf(entry, definition, form.Name, form.Alias, page, timeline, answers), answers, timeline);
     }
 
     /// <summary>

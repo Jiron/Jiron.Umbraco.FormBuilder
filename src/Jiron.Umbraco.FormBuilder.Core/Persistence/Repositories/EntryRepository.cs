@@ -206,6 +206,19 @@ internal sealed partial class EntryRepository(FormBuilderDatabase database) : IE
             cancellationToken) == 1;
 
     /// <inheritdoc />
+    public async Task<bool> MarkSeenAsync(long entryId, CancellationToken cancellationToken = default) =>
+        await database.WriteAsync(
+            db =>
+            {
+                var n = new SqlNames(db);
+                return db.ExecAsync(
+                    $"UPDATE {n.T(FormBuilderTables.Entry)} SET {n.C("firstSeenUtc")} = @0 WHERE {n.C("id")} = @1 AND {n.C("firstSeenUtc")} IS NULL",
+                    database.UtcNow,
+                    entryId);
+            },
+            cancellationToken) == 1;
+
+    /// <inheritdoc />
     public Task<StoredEntry?> ChangeStateAsync(long entryId, EntryState expected, EntryState state, Guid? userKey, CancellationToken cancellationToken = default)
     {
         CheckState(expected, nameof(expected));
