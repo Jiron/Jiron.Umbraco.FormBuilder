@@ -5,6 +5,7 @@ import type { APIRequestContext, Locator, Page } from '@playwright/test';
 import { expect, test } from '../../fixtures.ts';
 import { inLanguage, inTheme } from '../../support/backoffice-look.ts';
 import { API, blankForm, contactForm, created, formOf, KEY, unique } from '../../support/forms-api.ts';
+import { STUB_URL } from '../../support/paths.ts';
 import {
   COMBOS,
   comboName,
@@ -17,8 +18,9 @@ import {
   type ShotReport,
 } from '../../support/ux-walk.ts';
 
-// The UX walk of Phase 9 (ROADMAP 9.6a): every screen of the Form Builder section, its library and its designer, once in
-// each of the twelve ways of support/ux-walk.ts, as the admin, with the form made for the walk through the API. Each
+// The UX walk of Phase 9 (ROADMAP 9.6a), and of Phase 10 (10.4): every screen of the Form Builder section, its library,
+// its designer, a form's settings, actions, history, publishing, conflicts and preview, and the general settings, once in
+// each of the twelve ways of support/ux-walk.ts, as the admin, with the forms made for the walk through the API. Each
 // shot keeps what axe found inside our own elements, how far the page scrolls sideways, what scrolls inside it and what
 // an ellipsis cuts short; the ux-sheets project puts each screen's twelve shots on one sheet. The walk finds its way
 // without words, by tags, data marks and icons, so it walks the German backoffice the same way. It runs only when asked:
@@ -29,6 +31,8 @@ const workspaceOf = (key: string) => `${SECTION}/workspace/jfb-form/edit/${key}`
 const entityAction = (id: string) => `[data-mark="entity-action:Jiron.FormBuilder.EntityAction.${id}"]`;
 const createOption = (icon: string) => `umb-entity-create-option-action-list-modal umb-ref-item[icon="${icon}"]`;
 const PUBLISH = '[data-mark="workspace-action:Jiron.FormBuilder.WorkspaceAction.Form.Publish"]';
+const SAVE_DRAFT = '[data-mark="workspace-action:Jiron.FormBuilder.WorkspaceAction.Form.SaveDraft"]';
+const PREVIEW = '[data-mark="workspace-action:Jiron.FormBuilder.WorkspaceAction.Form.Preview"]';
 
 /** Dresses a page for a combination: its window, Umbraco's theme, and the backoffice's language, which the walk gives by
  * answering the current user's language as the combination's, so nothing changes on the shared host. */
@@ -185,8 +189,62 @@ async function fieldsOf(api: APIRequestContext, key: string): Promise<WalkField[
   );
 }
 
+/** Gives the draft's first field another label and saves the draft. */
+async function relabelFirst(api: APIRequestContext, key: string, label: string): Promise<void> {
+  const read = await api.get(`${API}/form/${key}/draft`);
+  expect(read.ok(), await read.text()).toBe(true);
+  const draft = (await read.json()) as {
+    form: { concurrencyVersion: number };
+    definition: { pages: { groups: { fields: { label?: Record<string, string> }[] }[] }[] };
+  };
+  const field = draft.definition.pages[0]?.groups[0]?.fields[0];
+  if (field) field.label = { '': label, 'de-DE': label };
+  const saved = await api.put(`${API}/form/${key}/draft`, {
+    data: { concurrencyVersion: draft.form.concurrencyVersion, definition: draft.definition },
+  });
+  expect(saved.ok(), await saved.text()).toBe(true);
+}
+
+/** Adds a webhook to the draft's actions whose address the stub answers 503, so a run of them leaves one failed. */
+async function addFailingWebhook(api: APIRequestContext, request: APIRequestContext, key: string): Promise<void> {
+  const path = `/broken/${crypto.randomUUID()}`;
+  const scripted = await request.put(`${STUB_URL}/_stub/answers`, {
+    data: { method: 'POST', path, status: 503, body: '{"down":true}' },
+  });
+  expect(scripted.ok(), await scripted.text()).toBe(true);
+  const read = await api.get(`${API}/form/${key}/draft`);
+  expect(read.ok(), await read.text()).toBe(true);
+  const draft = (await read.json()) as {
+    form: { concurrencyVersion: number };
+    definition: Record<string, unknown> & { actions?: unknown[] };
+  };
+  const webhook = {
+    key: crypto.randomUUID(),
+    type: 'webhook',
+    name: 'Tell the archive',
+    enabled: true,
+    trigger: 'submitted',
+    stopOnFailure: false,
+    settings: { url: `${STUB_URL}${path}` },
+  };
+  const saved = await api.put(`${API}/form/${key}/draft`, {
+    data: {
+      concurrencyVersion: draft.form.concurrencyVersion,
+      definition: { ...draft.definition, actions: [...(draft.definition.actions ?? []), webhook] },
+    },
+  });
+  expect(saved.ok(), await saved.text()).toBe(true);
+}
+
+async function publishForm(api: APIRequestContext, key: string): Promise<void> {
+  const published = await api.post(`${API}/form/${key}/publish`, {
+    data: { concurrencyVersion: (await formOf(api, key)).concurrencyVersion },
+  });
+  expect(published.ok(), await published.text()).toBe(true);
+}
+
 /** What the walk shows, made for it through the API, its names unique to the walk. */
-async function seed(api: APIRequestContext, label: string, importPath: string) {
+async function seed(api: APIRequestContext, request: APIRequestContext, label: string, importPath: string) {
   const name = (what: string) => unique(`UX ${label} ${what}`);
   const folderName = name('folder');
   const folder = await created(await api.post(`${API}/folder`, { data: { name: folderName } }), folderName);
@@ -262,8 +320,19 @@ async function seed(api: APIRequestContext, label: string, importPath: string) {
   const sourceName = name('with actions');
   // Its two emails, one to the team and one to the visitor, which the Actions view shows (10.2a).
   const withActions = await duplicate(api, (await demoForm(api, 'contact')).key, sourceName, true);
+  // Its archive is down, so the preview's Run actions leaves a failed run with its Details (10.2f).
+  await addFailingWebhook(api, request, withActions);
   const targetName = name('target');
   await blankForm(api, targetName);
+  // A form with two published versions, draft saves between them and a change since (10.3a to 10.3d), and one whose
+  // draft another save takes over while the walk edits it (10.3c).
+  const versioned = await contactForm(api, name('versioned'));
+  await publishForm(api, versioned);
+  await relabelFirst(api, versioned, 'Full name');
+  await relabelFirst(api, versioned, 'Your full name');
+  await publishForm(api, versioned);
+  await relabelFirst(api, versioned, 'Name and surname');
+  const conflicted = await contactForm(api, name('conflicted'));
   const trashedName = name('trashed');
   const trashed = await contactForm(api, trashedName);
   const { concurrencyVersion } = await formOf(api, trashed);
@@ -290,6 +359,8 @@ async function seed(api: APIRequestContext, label: string, importPath: string) {
     withActions,
     targetName,
     trashedName,
+    versioned,
+    conflicted,
   };
 }
 
@@ -338,9 +409,27 @@ async function pageThatPicks(api: APIRequestContext, formKey: string, name: stri
 const treeRow = (page: Page, name: string): Locator =>
   page.locator(`umb-section-sidebar uui-menu-item[label="${name}"]`).filter({ visible: true }).first();
 
+/**
+ * Presses a tree's "Load more" until it shows the row: the twelve looks' forms share the root, and a look's last names
+ * fall past the tree's first page.
+ */
+async function loadedIn(tree: Locator, row: Locator): Promise<Locator> {
+  const more = tree.locator('umb-tree-load-more-button').filter({ visible: true }).first();
+  const items = tree.locator('uui-menu-item');
+  for (let round = 0; round < 10 && (await row.count()) === 0 && (await more.count()) > 0; round++) {
+    const before = await items.count();
+    await more.click();
+    await expect.poll(() => items.count()).toBeGreaterThan(before);
+  }
+  return row;
+}
+
+const shownRow = (page: Page, name: string): Promise<Locator> =>
+  loadedIn(page.locator('umb-section-sidebar'), treeRow(page, name));
+
 /** Opens a tree row's "..." and chooses one of our actions by its alias. */
 async function rowAction(page: Page, name: string, id: string): Promise<void> {
-  const row = treeRow(page, name);
+  const row = await shownRow(page, name);
   // The row comes into sight before the hover that shows its "...", so no scroll takes the hover away.
   await row.scrollIntoViewIfNeeded();
   await row.hover();
@@ -418,11 +507,11 @@ async function openInspectorSection(design: Locator, id: string): Promise<void> 
 }
 
 for (const combo of COMBOS) {
-  test(`the walk, ${comboName(combo)}`, async ({ page, browser, loginAs, apiAs }, testInfo) => {
+  test(`the walk, ${comboName(combo)}`, async ({ page, browser, request, loginAs, apiAs }, testInfo) => {
     test.setTimeout(20 * 60_000);
     const api = await apiAs('admin');
     const label = comboName(combo);
-    const made = await seed(api, label, testInfo.outputPath('import.json'));
+    const made = await seed(api, request, label, testInfo.outputPath('import.json'));
     await dress(page, combo);
     await loginAs('admin');
     const walk = new Walk(page, join(walkDir(), label));
@@ -496,7 +585,7 @@ for (const combo of COMBOS) {
       const modal = page.locator('jfb-copy-actions-modal');
       await modal.locator('uui-button').first().click();
       const picker = page.locator('umb-tree-picker-modal');
-      await picker.locator(`uui-menu-item[label="${made.targetName}"]`).click();
+      await (await loadedIn(picker, picker.locator(`uui-menu-item[label="${made.targetName}"]`))).click();
       await picker.locator('uui-button[look="primary"]').click();
       await expect(modal).toContainText(made.targetName);
     });
@@ -566,6 +655,15 @@ for (const combo of COMBOS) {
       const design = await openDesign(page, made.feedback);
       await select(page, design, fieldOf(feedback, 'dropdown'));
       await scrollTo(design.locator('jfb-option-editor').first());
+    });
+    // A press on an option's handle opens its place in the list (10.4, ADR-0205).
+    await walk.shot('option-place', async () => {
+      const design = await openDesign(page, made.feedback);
+      await select(page, design, fieldOf(feedback, 'dropdown'));
+      const editor = design.locator('jfb-option-editor').first();
+      await scrollTo(editor);
+      await editor.locator('.option-row .row-handle').first().click();
+      await expect(editor.locator('.row-place select')).toBeFocused();
     });
     await walk.shot('grid', async () => {
       const design = await openDesign(page, made.feedback);
@@ -704,14 +802,140 @@ for (const combo of COMBOS) {
       await actionsView.locator('#add').click();
       await expect(actionSidebar.locator('input[name="what-happens"]:checked')).toBeVisible();
     });
-    // The History view (10.3a): the published versions; Entries is still to come.
+    // A new action of each other kind, with its own editor (10.2d, 10.2e): a webhook, content, the entry's state.
+    for (const [kind, choice] of [
+      ['action-webhook', 'webhook:0'],
+      ['action-content', 'content'],
+      ['action-set-state', 'setState'],
+    ] as const) {
+      await walk.shot(kind, async () => {
+        await page.goto(`${workspaceOf(made.withActions)}/view/actions`);
+        await actionsView.locator('#add').click();
+        await actionSidebar.locator(`input[name="what-happens"][value="${choice}"]`).check();
+        await expect(actionSidebar.locator('[id^="setting-"]').first()).toBeVisible();
+      });
+    }
+    // The History view (10.3a, 10.3b): a form's versions, with its draft saves, one beside the current draft, two
+    // compared, and an earlier version chosen from the form's "...".
+    const historyView = page.locator('jfb-form-history-view');
+    const comparison = page.locator('jfb-version-comparison-modal');
+    const openHistory = async (key: string) => {
+      await page.goto(`${workspaceOf(key)}/view/history`);
+      await expect(historyView.locator('uui-toggle')).toBeVisible();
+    };
     await walk.shot('history', async () => {
-      await page.goto(`${workspaceOf(made.feedback)}/view/history`);
-      await expect(page.locator('jfb-form-history-view uui-toggle')).toBeVisible();
+      await openHistory(made.feedback);
+    });
+    await walk.shot('history-versions', async () => {
+      await openHistory(made.versioned);
+      await expect(historyView.locator('tbody tr[data-number] button.name').first()).toBeVisible();
+    });
+    await walk.shot('history-drafts', async () => {
+      await openHistory(made.versioned);
+      await historyView.locator('uui-toggle').click();
+      await expect(historyView.locator('tbody tr.draft').first()).toBeVisible();
+    });
+    await walk.shot('history-version', async () => {
+      await openHistory(made.versioned);
+      await historyView.locator('tbody tr[data-number] button.name').first().click();
+      await expect(comparison.locator('.part').first()).toBeVisible();
+    });
+    await walk.shot('history-compare', async () => {
+      await openHistory(made.versioned);
+      const boxes = historyView.locator('tbody tr[data-number] uui-checkbox');
+      await expect(boxes.nth(1)).toBeVisible();
+      const count = await boxes.count();
+      await boxes.nth(count - 1).click();
+      await boxes.nth(count - 2).click();
+      await historyView.locator('.toolbar uui-button').first().click();
+      await expect(comparison.locator('.part').first()).toBeVisible();
+    });
+    await walk.shot('history-picker', async () => {
+      await openDesign(page, made.versioned);
+      await page.locator('umb-workspace-entity-action-menu uui-button').first().click();
+      await page.locator(entityAction('RestoreEarlier')).filter({ visible: true }).first().click();
+      await expect(page.locator('jfb-version-picker-modal .version').first()).toBeVisible();
+    });
+    // Publish with what changed since the published version (10.3d).
+    await walk.shot('publish-changes', async () => {
+      await openDesign(page, made.versioned);
+      await page.locator(PUBLISH).click();
+      await expect(page.locator('jfb-publish-modal .changes dd li').first()).toBeVisible();
+    });
+    // An action tested from its card (10.2b).
+    await walk.shot('action-test', async () => {
+      await page.goto(`${workspaceOf(made.withActions)}/view/actions`);
+      await actionsView.locator('jfb-action-list uui-button.test').first().click();
+      await expect(page.locator('umb-confirm-modal, uui-toast-notification').first()).toBeVisible();
+    });
+    // The preview (10.3e, 10.3f): the draft in its frame under the note, the "...", the sample answers, a test entry
+    // sent, and Run actions...'s confirmation, which the walk confirms, so the Actions view has a last run to show.
+    const previewModal = page.locator('jfb-preview-modal');
+    const shownForm = page.frameLocator('jfb-preview-modal iframe').locator('form[data-jfb-form]');
+    const openPreview = async () => {
+      await openDesign(page, made.withActions);
+      await page.locator(PREVIEW).click();
+      await expect(shownForm).toBeVisible();
+    };
+    await walk.shot('preview', openPreview);
+    await walk.shot('preview-menu', async () => {
+      await openPreview();
+      await previewModal.locator('.more').click();
+      await expect(previewModal.locator('.menu [role="group"]').first()).toBeVisible();
+    });
+    await walk.shot('preview-sampled', async () => {
+      await openPreview();
+      await previewModal.locator('uui-button.fill').click();
+      await expect(shownForm.locator('input[type="email"]').first()).not.toHaveValue('');
+    });
+    await walk.shot('preview-sent', async () => {
+      await shownForm.locator('button[type="submit"]').last().click();
+      await expect(previewModal.locator('.note[data-sent] uui-button')).toBeVisible({ timeout: 30_000 });
+    });
+    await walk.shot('preview-run-actions', async () => {
+      await previewModal.locator('.note[data-sent] uui-button').click();
+      await expect(page.locator('umb-confirm-modal li').first()).toBeVisible();
+    });
+    await walk.shot('action-runs', async () => {
+      await page.locator('umb-confirm-modal uui-button[look="primary"]').click();
+      await expect(previewModal.locator('.note[data-sent] uui-button')).toHaveCount(0);
+      await page.goto(`${workspaceOf(made.withActions)}/view/actions`);
+      await expect(actionsView.locator('jfb-action-list .run').first()).toBeVisible({ timeout: 30_000 });
+    });
+    await walk.shot('action-run', async () => {
+      // The archive's run shows once its first try has failed; the view reads the runs as it opens.
+      const details = actionsView.locator('jfb-action-list .run button.details').first();
+      await expect(async () => {
+        await page.goto(`${workspaceOf(made.withActions)}/view/actions`);
+        await expect(details).toBeVisible({ timeout: 5_000 });
+      }).toPass({ timeout: 90_000 });
+      await details.click();
+      await expect(page.locator('jfb-action-run-modal .part').first()).toBeVisible();
+    });
+    // The general settings (10.3b): how long draft saves are kept.
+    await walk.shot('general-settings', async () => {
+      await page.goto(`${SECTION}/workspace/jfb-settings-general`);
+      await expect(page.locator('jfb-general-settings input').first()).toBeVisible();
     });
     await walk.shot('view-coming', async () => {
       await page.goto(`${workspaceOf(made.feedback)}/view/entries`);
       await expect(page.locator('jfb-coming-screen')).toBeVisible();
+    });
+    // A save another took over (10.3c): the dialog, then Review both versions. The walk leaves the changes unsaved, so
+    // it comes last of the admin's shots.
+    await walk.shot('conflict', async () => {
+      await openDesign(page, made.conflicted);
+      // A sign-in of its own saves meanwhile: the one the walk seeded with no longer holds this late in the walk.
+      await relabelFirst(await apiAs('admin'), made.conflicted, 'Name, saved meanwhile');
+      await page
+        .locator('jfb-form-workspace-editor umb-workspace-header-name-editable input')
+        .fill(`Conflicted ${label}`);
+      await page.locator(SAVE_DRAFT).click();
+      await expect(page.locator('umb-confirm-modal')).toBeVisible();
+    });
+    await walk.shot('conflict-review', async () => {
+      await page.locator('umb-confirm-modal uui-button[look="primary"]').click();
+      await expect(page.locator('jfb-review-modal section.difference').first()).toBeVisible();
     });
 
     // Who may only read entries sees the entry views and the form's name, and no designer.

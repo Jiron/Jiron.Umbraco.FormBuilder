@@ -94,7 +94,7 @@ for (const window of [
     // The longest state wraps in its chip rather than squeeze the name, whose box keeps 6rem at least.
     const header = page.locator('jfb-form-workspace-editor');
     await expect(header.locator('uui-tag')).toHaveText('Ver\u00f6ffentlicht (\u00c4nderungen bereit)');
-    const name = await header.locator('.name').boundingBox();
+    const name = await header.locator('umb-workspace-header-name-editable uui-input').boundingBox();
     expect(name?.width ?? 0, "the name's box").toBeGreaterThanOrEqual(96);
 
     const found = await measure(page);
