@@ -39,7 +39,9 @@ badge. The owner answers no questions during the run (CLAUDE.md rule 8), so each
    entries is on it.
 4. **Acting across forms.** The bulk bar sends one request per form, each through the form's own endpoints and checks;
    the toast says the total and its Undo takes back every change it made. A move back out of Spam or Rejected asks
-   first once for all of them, with every full option and held answer (ADR-0208). The entry panel opens beside the
+   first once for all of them, with every full option and held answer (ADR-0208): each form's move is checked first
+   (the state change's `check`, which reads what the move would ask and moves nothing), so a Cancel leaves every form
+   as it was, and only then does each form move, overbooking only where it asked. The entry panel opens beside the
    Inbox's rows as beside a form's, its header naming the form (IA 6.3).
 5. **Spam** (IA 6.2) has no state column and no chip; its bar holds Not spam and Delete…, its toolbar Empty spam…
    (`deleteEntries`), which asks with the count and files of the forms the user may delete entries of, and deletes
@@ -68,8 +70,9 @@ badge. The owner answers no questions during the run (CLAUDE.md rule 8), so each
    its time zone (Settings › General of the default site), for the day or the week before, and records the last day
    it covered in a setting of its own (`entries.digest.sent`), in the unit of work that queues the mail, so a period
    goes out once, even across servers (the job is a distributed one) and after a pause, and a user's change never
-   races the job. Turning the summary on records the period due by then, so the first one covers the first period
-   that ends after the choice, rather than days that passed before it. It counts the entries that arrived in each form
+   races the job. Turning the summary on, or changing how often, records the period due by then (never an earlier day
+   than the one recorded), so the first one covers the first period that ends after the choice, rather than days that
+   passed before it; saving the same choice again changes nothing, so the summary that is due still goes. It counts the entries that arrived in each form
    the user may view entries of (drafts, Spam and test entries left out), names each form with its count and a link to
    its Entries view, says how many are waiting for approval, and never holds an answer. Without the site's address
    (Settings › General, which the health check names), it names the forms without links, as Forward leaves its link
@@ -87,3 +90,6 @@ badge. The owner answers no questions during the run (CLAUDE.md rule 8), so each
 - Positive: the badge never keeps a session alive, and the summary never carries an answer.
 - Negative: a bulk action across many forms makes one request per form; 500 entries in 500 forms make 500 requests.
 - Negative: a site of several time zones sends every summary at the default site's 07:00.
+- Negative: the summary counts an entry by the day it was sent, in the state it holds when the summary goes; one
+  confirmed by its visitor, or moved out of Spam, after that day's summary went is in no summary. The Inbox shows it,
+  unseen first, which the summary only points to.

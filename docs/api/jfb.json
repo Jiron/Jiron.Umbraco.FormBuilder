@@ -11322,6 +11322,7 @@
       },
       "EntryStateRequestModel": {
         "required": [
+          "check",
           "entries",
           "overbook",
           "state"
@@ -11339,6 +11340,9 @@
             "type": "string"
           },
           "overbook": {
+            "type": "boolean"
+          },
+          "check": {
             "type": "boolean"
           }
         },

@@ -22,6 +22,12 @@ public sealed class EntryStateRequestModel
 
     /// <summary>Whether the user agreed to overbook options and double unique answers by moving entries back (ADR-0208).</summary>
     public bool Overbook { get; init; }
+
+    /// <summary>
+    /// Only reads what the move would overbook or double, and moves nothing: a move across forms asks once for all of them
+    /// before any moves (ADR-0209).
+    /// </summary>
+    public bool Check { get; init; }
 }
 
 /// <summary>What a change of state did.</summary>
@@ -84,6 +90,19 @@ internal sealed class EntryStateController(EntryStateChanges changes) : FormBuil
         if (StateOf(request.State) is not { } state || request.Entries.Count is 0 or > EntryStateChanges.MaxEntries)
         {
             return FormBuilderProblems.EntryStateInvalid();
+        }
+
+        if (request.Check)
+        {
+            var asked = request.Overbook ? null : await changes.AsksAsync(key, request.Entries, state, cancellationToken);
+            return Ok(new EntryStateResponseModel
+            {
+                ChangeKey = Guid.Empty,
+                UndoUntilUtc = null,
+                Moved = [],
+                Unmoved = [],
+                Asks = asked is { } checkedAsks ? EntryPanelMapping.Asks(checkedAsks) : null,
+            });
         }
 
         var change = await changes.ChangeAsync(key, request.Entries, state, RequestAccess.User.Key, request.Overbook, cancellationToken);

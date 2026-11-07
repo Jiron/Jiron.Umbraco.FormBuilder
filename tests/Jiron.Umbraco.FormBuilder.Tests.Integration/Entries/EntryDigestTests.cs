@@ -58,11 +58,13 @@ public sealed class EntryDigestTests : ActionTestBase
         await StoreAsync(open, EntryState.Submitted, test: true);
         await StoreAsync(hidden, EntryState.Submitted);
 
-        // 06:30 in Berlin: not yet. 07:30: once, however often the job runs.
+        // 06:30 in Berlin: not yet. 07:30: once, however often the job runs, and also when the user saved the same choice
+        // again just before it ran.
         MoveTo(new DateTimeOffset(2026, 11, 3, 5, 30, 0, TimeSpan.Zero));
         await RunAsync();
         var early = await DigestsSentAsync();
         MoveTo(new DateTimeOffset(2026, 11, 3, 6, 30, 0, TimeSpan.Zero));
+        await Digests.SaveAsync(_people["viewer"].Key, EntryDigestFrequency.Daily);
         await RunAsync();
         await RunAsync();
         var sent = await DigestsSentAsync();
@@ -120,6 +122,39 @@ public sealed class EntryDigestTests : ActionTestBase
             Assert.That(mail.HtmlBody, Does.Contain("3 entries arrived from Monday, November 2, 2026 to Sunday, November 8, 2026."));
             Assert.That(mail.HtmlBody, Does.Contain("3 entries are waiting for approval."), "only the forms the user may view");
             Assert.That(mail.HtmlBody, Does.Contain("Applications").And.Not.Contain("Contact us"));
+        });
+    }
+
+    [Test]
+    public async Task ChangingHowOften_SendsNothingForWhatPassedBefore_AndNeverAgainWhatWasSent()
+    {
+        // Monday, 2 November 2026, 09:00 UTC: a weekly user has the week before covered.
+        var open = await PublishAsync(name: "Contact us");
+        var viewer = _people["viewer"].Key;
+        await Digests.SaveAsync(viewer, EntryDigestFrequency.Weekly);
+        await StoreAsync(open, EntryState.Submitted);
+
+        // Wednesday, 07:30: daily from now; Tuesday passed before the choice, so nothing goes for it.
+        MoveTo(new DateTimeOffset(2026, 11, 4, 7, 30, 0, TimeSpan.Zero));
+        await Digests.SaveAsync(viewer, EntryDigestFrequency.Daily);
+        await RunAsync();
+        var afterChange = await DigestsSentAsync();
+
+        // Thursday, 07:30: Wednesday's summary, the first period that ended after the choice.
+        await StoreAsync(open, EntryState.Submitted);
+        MoveTo(new DateTimeOffset(2026, 11, 5, 7, 30, 0, TimeSpan.Zero));
+        await RunAsync();
+        var next = await DigestsSentAsync();
+
+        // Back to weekly on Thursday: the job covered Wednesday, and the record never goes back to the week before.
+        await Digests.SaveAsync(viewer, EntryDigestFrequency.Weekly);
+        var recorded = await GetRequiredService<IUserSettingRepository>().GetAsync(viewer, EntryDigests.SentSetting);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(afterChange, Is.Empty, "nothing for the days before the change");
+            Assert.That(next.Select(mail => mail.Subject), Is.EqualTo(new[] { "Summary of entries, Wednesday, November 4, 2026" }));
+            Assert.That(recorded, Does.Contain("2026-11-04"), "the covered day stays covered");
         });
     }
 

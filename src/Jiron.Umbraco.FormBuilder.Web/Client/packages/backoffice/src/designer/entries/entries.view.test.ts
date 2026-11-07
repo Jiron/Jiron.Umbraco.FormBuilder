@@ -64,6 +64,10 @@ const server = vi.hoisted(() => ({
   moves: [] as { entries: readonly string[]; state: string; overbook?: boolean }[],
   /** What a move back asks first, until the user agrees to overbook. */
   asks: undefined as EntryMoveAsksResponseModel | undefined,
+  /** The forms whose move back asks; every form when none is named. */
+  askingForms: undefined as string[] | undefined,
+  /** The forms a move was checked for, without moving. */
+  checks: [] as string[],
   undos: [] as string[],
   undoAnswer: 'done' as 'done' | 'tooLate' | 'failed',
   deletes: [] as { entries: readonly string[]; confirm: boolean }[],
@@ -151,10 +155,14 @@ vi.mock('../../entries/entries-api', () => ({
     return { set: { key, name, form, filter } };
   },
   deleteSet: async () => true,
+  checkMove: async (_host: unknown, form: string) => {
+    server.checks.push(form);
+    return server.asks && (server.askingForms?.includes(form) ?? true) ? server.asks : undefined;
+  },
   changeState: async (_host: unknown, form: string, entries: readonly string[], state: string, overbook = false) => {
     server.moves.push({ entries, state, ...(overbook ? { overbook } : {}) });
     server.moveForms.push(form);
-    if (server.asks && !overbook)
+    if (server.asks && !overbook && (server.askingForms?.includes(form) ?? true))
       return { changeKey: 'change0', undoUntilUtc: null, moved: [], unmoved: [], asks: server.asks };
     return {
       changeKey: form === 'form1' ? 'change1' : `change-${form}`,
@@ -359,6 +367,8 @@ beforeEach(() => {
     requests: [],
     moves: [],
     asks: undefined,
+    askingForms: undefined,
+    checks: [],
     undos: [],
     undoAnswer: 'done',
     deletes: [],
@@ -926,17 +936,32 @@ describe('the Inbox and Spam', () => {
     expect(tags(rows())).toEqual(Array.from({ length: 4 }, () => 'Waiting for approval'));
   });
 
-  it('asks once before moving entries of several forms back, and moves each form only once agreed', async () => {
+  it('asks once before moving entries of several forms back, and moves no form before the user agrees', async () => {
     server.asks = { full: [], held: [{ field: 'email', fieldLabel: 'Email', value: 'a@b.c' }] } as never;
+    server.askingForms = ['form2'];
     server.rows = [row(1, { state: 'rejected' }), row(2, { state: 'rejected', form: 'form2' })];
-    const { tick, button, view } = await placeOf('inbox');
+    const { tick, button, view, peek } = await placeOf('inbox');
     await tick(0);
     await tick(1);
+
+    // Cancelled, nothing moved, also in the form that asked nothing.
+    opened.confirms = false;
     button('Approve').click();
     await settle(view);
+    await settle(view);
+    expect(server.checks).toEqual(['form1', 'form2']);
     expect(opened.confirmations).toHaveLength(1);
-    expect(server.moves.map((one) => one.overbook ?? false)).toEqual([false, false, true, true]);
-    expect(server.moveForms).toEqual(['form1', 'form2', 'form1', 'form2']);
+    expect(server.moves).toEqual([]);
+    expect(peek).not.toHaveBeenCalled();
+
+    // Agreed, each form moves once, overbooking only where it asked.
+    opened.confirms = true;
+    button('Approve').click();
+    await settle(view);
+    await settle(view);
+    expect(opened.confirmations).toHaveLength(2);
+    expect(server.moveForms).toEqual(['form1', 'form2']);
+    expect(server.moves.map((one) => one.overbook ?? false)).toEqual([false, true]);
   });
 
   it('lists Spam without a state, offers Not spam and Delete..., and a row Not spam took out says its state', async () => {

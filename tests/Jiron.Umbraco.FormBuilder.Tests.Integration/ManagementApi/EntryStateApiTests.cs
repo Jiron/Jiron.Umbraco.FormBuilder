@@ -65,6 +65,24 @@ public sealed class EntryStateApiTests : ManagementApiTestBase
         });
     }
 
+    [Test]
+    public async Task ACheck_MovesNothing_AndOffersNoUndo()
+    {
+        var (form, entry) = await EntryAsync();
+
+        var check = await CallAsync(Admin, HttpMethod.Post, $"form/{form}/entry-state", new { entries = new[] { entry.Key }, state = "approved", check = true });
+        var stayed = await Entries.GetByIdAsync(entry.Id);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(check.Outcome, Is.EqualTo("200"), check.ToString());
+            Assert.That((check.Body!["moved"]!.AsArray().Count, check.Body!["unmoved"]!.AsArray().Count), Is.EqualTo((0, 0)));
+            Assert.That(check.Body!["undoUntilUtc"], Is.Null);
+            Assert.That(check.Body!["asks"], Is.Null, "a move that holds no places asks nothing");
+            Assert.That(stayed!.State, Is.EqualTo(EntryState.Submitted), "the check moves nothing");
+        });
+    }
+
     [TestCase("draft", TestName = "A state nobody chooses")]
     [TestCase("unverified", TestName = "The state only a form sets")]
     [TestCase("", TestName = "No state")]

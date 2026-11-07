@@ -35,6 +35,7 @@ import {
   type EntryListPageResponseModel,
   type EntryListRequestModel,
   type EntryListViewResponseModel,
+  type EntryMoveAsksResponseModel,
   type EntryRerunResponseModel,
   type EntrySpamEmptyResponseModel,
   type EntryStateResponseModel,
@@ -162,10 +163,28 @@ export async function changeState(
   return (
     await tryExecute(
       host,
-      entryStateChange({ path: { key: form }, body: { entries: [...entries], state, overbook } }),
+      entryStateChange({ path: { key: form }, body: { entries: [...entries], state, overbook, check: false } }),
       quiet,
     )
   ).data;
+}
+
+/**
+ * What moving entries to a state would overbook or double, read without moving anything, so a move across forms asks
+ * once before any form moves (ADR-0209); undefined when it asks nothing or can't be read.
+ */
+export async function checkMove(
+  host: UmbClassInterface,
+  form: string,
+  entries: readonly string[],
+  state: string,
+): Promise<EntryMoveAsksResponseModel | undefined> {
+  const { data } = await tryExecute(
+    host,
+    entryStateChange({ path: { key: form }, body: { entries: [...entries], state, overbook: false, check: true } }),
+    quiet,
+  );
+  return data?.asks ?? undefined;
 }
 
 /** Undoes a change: done, too late, or failed. */

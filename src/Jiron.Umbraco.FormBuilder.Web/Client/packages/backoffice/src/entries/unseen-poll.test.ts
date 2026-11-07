@@ -99,6 +99,32 @@ describe('the unseen poll', () => {
     stop();
   });
 
+  it('reads once more when started again while the stopped read was under way, and tells only the new listener', async () => {
+    const { page } = pageOf();
+    let finish: (count: UnseenCount) => void = () => undefined;
+    let slow = true;
+    const slowRead = () => {
+      reads++;
+      return slow ? new Promise<UnseenCount>((resolve) => (finish = resolve)) : Promise.resolve(answer);
+    };
+    const poll = new UnseenPoll(slowRead, gateOf().gate, page);
+    const first: UnseenCount[] = [];
+    const stopFirst = poll.listen((count) => first.push(count));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(reads, 'the first read waits for its answer').toBe(1);
+
+    // The menu item goes and comes back while that read waits; its answer, for the stopped poll, tells nobody.
+    stopFirst();
+    const again: UnseenCount[] = [];
+    const stop = poll.listen((count) => again.push(count));
+    slow = false;
+    finish({ count: 1, more: false });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(reads, 'the new poll reads once the old read is done').toBe(2);
+    expect([first, again]).toEqual([[], [{ count: 3, more: false }]]);
+    stop();
+  });
+
   it('stops with its last listener, and refreshes only while it runs', async () => {
     const { page, show } = pageOf();
     const poll = new UnseenPoll(read, gateOf().gate, page);

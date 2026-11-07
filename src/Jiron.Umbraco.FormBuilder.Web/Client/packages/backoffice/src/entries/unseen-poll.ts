@@ -104,7 +104,9 @@ export class UnseenPoll {
       for (const listener of this.#listeners) listener(count);
     } finally {
       this.#reading = false;
-      if (this.#again && !abort.signal.aborted) {
+      // A read asked for meanwhile follows, for the poll that runs now: also the first read of a poll started again while
+      // the stopped one's read was under way.
+      if (this.#again && this.#abort && !this.#abort.signal.aborted) {
         this.#again = false;
         void this.#poll(true);
       }

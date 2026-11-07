@@ -153,7 +153,8 @@ internal sealed partial class EntryDigests(
 
     /// <summary>
     /// Keeps how often the user gets the summary. The first one covers the first period that ends after the choice, so
-    /// turning it on sends nothing for days that passed before.
+    /// turning it on, or changing how often, sends nothing for days that passed before; saving the same choice again
+    /// changes nothing, so the summary that is due still goes.
     /// </summary>
     /// <param name="userKey">The user.</param>
     /// <param name="frequency">How often.</param>
@@ -166,12 +167,20 @@ internal sealed partial class EntryDigests(
             return;
         }
 
+        if (await GetAsync(userKey, cancellationToken) == frequency)
+        {
+            return;
+        }
+
+        // The record never goes back: a period the job covered stays covered when weekly becomes daily.
         var due = await DueAsync(frequency, cancellationToken);
+        var covered = LastSent(await settings.GetAsync(userKey, SentSetting, cancellationToken));
+        var last = covered > due.Last ? covered : due.Last;
         await database.WriteAsync(
             async _ =>
             {
                 await settings.SetAsync(userKey, Setting, JsonSerializer.Serialize(new Choice(Name(frequency)), Json), cancellationToken);
-                await settings.SetAsync(userKey, SentSetting, JsonSerializer.Serialize(new Sent(due.Last), Json), cancellationToken);
+                await settings.SetAsync(userKey, SentSetting, JsonSerializer.Serialize(new Sent(last), Json), cancellationToken);
                 return true;
             },
             cancellationToken);

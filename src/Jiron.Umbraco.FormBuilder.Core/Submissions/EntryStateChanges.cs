@@ -135,21 +135,9 @@ internal sealed class EntryStateChanges(
         var moved = new List<StoredEntry>();
         var unmoved = new List<Guid>();
         var form = await forms.GetAsync(formKey, cancellationToken);
-        if (form is not null && userKey is not null && !overbook && EntryLimits.CountingStates.Contains(to))
+        if (form is not null && userKey is not null && !overbook && await AsksAsync(form, entryKeys, to, cancellationToken) is { } asks)
         {
-            var coming = new List<StoredEntry>();
-            foreach (var key in entryKeys.Distinct())
-            {
-                if (await entries.GetAsync(key, cancellationToken) is { } entry && entry.FormId == form.Id && entry.State is EntryState.Rejected or EntryState.Spam)
-                {
-                    coming.Add(entry);
-                }
-            }
-
-            if (await checks.MoveAsync(form, coming, cancellationToken) is { IsEmpty: false } asks)
-            {
-                return new EntryChange(change, null, [], [], asks);
-            }
+            return new EntryChange(change, null, [], [], asks);
         }
 
         foreach (var key in entryKeys.Distinct())
@@ -176,6 +164,40 @@ internal sealed class EntryStateChanges(
         wake.WakeAfter(EntrySpamFolder.UndoWindow, time);
         var undoable = !(await events.ListForChangeAsync(change, cancellationToken)).Any(item => item.Kind == ChangedEvent && Replaced(item));
         return new EntryChange(change, undoable ? started + EntrySpamFolder.UndoWindow : null, moved, unmoved);
+    }
+
+    /// <summary>
+    /// What a user's move of entries to a state would overbook or double, which the user must agree to first; null when it
+    /// asks nothing. It moves nothing, so a move across forms can ask once for all of them before any moves (ADR-0209).
+    /// </summary>
+    /// <param name="formKey">The form.</param>
+    /// <param name="entryKeys">The entries; each counts once.</param>
+    /// <param name="to">The state.</param>
+    /// <param name="cancellationToken">Cancels the reads.</param>
+    public async Task<EntryMoveCheck?> AsksAsync(Guid formKey, IReadOnlyList<Guid> entryKeys, EntryState to, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(entryKeys);
+        return await forms.GetAsync(formKey, cancellationToken) is { } form ? await AsksAsync(form, entryKeys, to, cancellationToken) : null;
+    }
+
+    // What moving the form's entries back out of Rejected or Spam into a state that holds places would overbook or double.
+    private async Task<EntryMoveCheck?> AsksAsync(StoredForm form, IReadOnlyList<Guid> entryKeys, EntryState to, CancellationToken cancellationToken)
+    {
+        if (!EntryLimits.CountingStates.Contains(to))
+        {
+            return null;
+        }
+
+        var coming = new List<StoredEntry>();
+        foreach (var key in entryKeys.Distinct())
+        {
+            if (await entries.GetAsync(key, cancellationToken) is { } entry && entry.FormId == form.Id && entry.State is EntryState.Rejected or EntryState.Spam)
+            {
+                coming.Add(entry);
+            }
+        }
+
+        return await checks.MoveAsync(form, coming, cancellationToken) is { IsEmpty: false } asks ? asks : null;
     }
 
     /// <summary>Whether an entry is in a state now.</summary>

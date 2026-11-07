@@ -850,12 +850,18 @@ the backoffice, until Umbraco ends the session 20 minutes after that renewal and
 since. The test server's clock is real, so at that point it is told to refuse the session's refresh token, as a server
 20 minutes on does.
 
+A move back across forms asks once before any form moves: `Entries/EntryPanelTests.cs` holds the check that reads
+what a move back would ask and moves nothing, `ManagementApi/EntryStateApiTests.cs` the state change's `check`, and
+`designer/entries/entries.view.test.ts` a Cancel that leaves every form as it was. `entries/unseen-poll.test.ts` also
+holds a poll started again while the stopped one's read was under way, which reads once more for its new listener.
+
 The summary email (ADR-0209): `Entries/EntryDigestTests.cs` moves the test clock (which each test sets to its own start,
 since a fixture's clock carries over between its tests) past the site's 07:00 in Berlin and on Mondays, and holds one
 summary per user and period however often the job runs, nothing before 07:00, nothing for a user who has not asked or
 for a day without entries, no form the user may not view entries of, no answer in the mail, the links only with the
-site's address, the weekly count of what waits for approval, and the test mail at once, marked as a test, with a
-German preview; `ManagementApi/EntryDigestApiTests.cs` each user's own choice with when and where it goes, the preview
+site's address, the weekly count of what waits for approval, a summary that still goes when the user saved the same
+choice again just before the job ran, a change of how often that sends nothing for the days before it and never moves
+the record back, and the test mail at once, marked as a test, with a German preview; `ManagementApi/EntryDigestApiTests.cs` each user's own choice with when and where it goes, the preview
 that sends nothing and the test to the user's own address. `entries/entry-digest.modal.test.ts` holds the sidebar's
 choices, its sentence by the time zone's place or UTC, the preview it asks for (off shows the daily one), saving, a
 failed save, the test toast and a user without an address; and `specs/backoffice/inbox.spec.ts` the sidebar in the

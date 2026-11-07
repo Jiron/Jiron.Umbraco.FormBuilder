@@ -28,6 +28,7 @@ import type {
   EntryListPageResponseModel,
   EntryListRequestModel,
   EntryListRowResponseModel,
+  EntryMoveAsksResponseModel,
   EntryStateResponseModel,
 } from '../../api';
 import { FORM_WORKSPACE_CONTEXT } from '../constants';
@@ -40,6 +41,7 @@ import { myPermissions } from '../../section/my-permissions';
 import { refreshUnseen } from '../../entries/unseen-poll';
 import {
   changeState,
+  checkMove,
   deleteEntries,
   deleteSet,
   emptySpam,
@@ -1147,6 +1149,22 @@ export class EntriesViewElement extends UmbLitElement {
     }
   }
 
+  /** Whether the user agrees to move entries back although it overbooks or doubles what the forms' answers say. */
+  async #agreeToMove(count: number, asks: readonly EntryMoveAsksResponseModel[]): Promise<boolean> {
+    return confirmText(this, {
+      headline: this.#term(count === 1 ? 'asks_moveHeadline' : 'asks_moveHeadlineMany'),
+      content: asksLines(
+        { full: asks.flatMap((one) => one.full), held: asks.flatMap((one) => one.held) },
+        this.#full,
+      ).join(' '),
+      confirmLabel: this.#term('asks_moveConfirm'),
+      color: 'warning',
+    }).then(
+      () => true,
+      () => false,
+    );
+  }
+
   /**
    * Moves the entries the action applies to, one request per form; the rows change in place and one toast offers Undo
    * until the first window ends, which takes back every form's change.
@@ -1158,30 +1176,33 @@ export class EntriesViewElement extends UmbLitElement {
     const applying = split.acting.map((one) => one.row);
     if (applying.length === 0) return;
     const before = new Map(applying.map((row) => [row.key, row.state]));
+    const groups = this.#byForm(applying);
+    // A move back onto full options or doubled unique answers moves nothing until the user agrees (ADR-0208). Across
+    // forms, every form is checked first and the user asked once, so a Cancel leaves every form as it was (ADR-0209).
+    let agreedFor = new Set<string>();
+    if (groups.length > 1 && applying.some((row) => row.state === 'spam' || row.state === 'rejected')) {
+      const checked = await Promise.all(
+        groups.map(async (group) => ({ form: group.form, asks: await checkMove(this, group.form, group.keys, state) })),
+      );
+      const asks = checked.flatMap((one) => (one.asks ? [one.asks] : []));
+      if (asks.length > 0) {
+        if (!(await this.#agreeToMove(applying.length, asks))) return;
+        agreedFor = new Set(checked.filter((one) => one.asks).map((one) => one.form));
+      }
+    }
+
     const moves: FormMove[] = await Promise.all(
-      this.#byForm(applying).map(async (group) => ({
+      groups.map(async (group) => ({
         ...group,
-        change: await changeState(this, group.form, group.keys, state),
+        change: await changeState(this, group.form, group.keys, state, agreedFor.has(group.form)),
       })),
     );
-    // A move back onto full options or doubled unique answers moves nothing until the user agrees, asked once for every
-    // form that asks (ADR-0208, ADR-0209).
+    // One form's move asks in its own answer, as does a form that asks only now, filled up since it was checked.
     const asking = moves.filter((one) => one.change?.asks);
     if (asking.length > 0) {
-      const agreed = await confirmText(this, {
-        headline: this.#term(applying.length === 1 ? 'asks_moveHeadline' : 'asks_moveHeadlineMany'),
-        content: asksLines(
-          {
-            full: asking.flatMap((one) => one.change?.asks?.full ?? []),
-            held: asking.flatMap((one) => one.change?.asks?.held ?? []),
-          },
-          this.#full,
-        ).join(' '),
-        confirmLabel: this.#term('asks_moveConfirm'),
-        color: 'warning',
-      }).then(
-        () => true,
-        () => false,
+      const agreed = await this.#agreeToMove(
+        applying.length,
+        asking.flatMap((one) => (one.change?.asks ? [one.change.asks] : [])),
       );
       for (const one of asking) {
         if (agreed) one.change = await changeState(this, one.form, one.keys, state, true);

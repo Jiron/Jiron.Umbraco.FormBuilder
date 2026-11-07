@@ -592,6 +592,7 @@ export type EntryStateRequestModel = {
     entries: Array<string>;
     state: string;
     overbook: boolean;
+    check: boolean;
 };
 
 export type EntryStateResponseModel = {

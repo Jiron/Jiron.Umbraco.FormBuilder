@@ -175,6 +175,31 @@ public sealed class EntryPanelTests : ActionTestBase
     }
 
     [Test]
+    public async Task TheCheck_ReadsWhatAMoveBackWouldAsk_AndMovesNothing()
+    {
+        var form = await FormAsync();
+        var first = await SubmitAsync(form, """{"name":"Ada","seat":"front","code":"A1"}""");
+        await Changes.ChangeAsync(form, [first.Key], EntryState.Rejected, Editor);
+        var second = await SubmitAsync(form, """{"name":"Grace","seat":"front","code":"A1"}""");
+
+        var asks = await Changes.AsksAsync(form, [first.Key], EntryState.Submitted);
+        var staying = await Changes.AsksAsync(form, [second.Key], EntryState.Approved);
+        var holding = await Changes.AsksAsync(form, [first.Key], EntryState.Spam);
+        var nowhere = await Changes.AsksAsync(Guid.NewGuid(), [first.Key], EntryState.Submitted);
+        var stayed = (await Entries.GetAsync(first.Key))!.State;
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(asks!.Full, Is.EqualTo(new[] { new EntryFullOption(Seat.Key, "Seat", "front", "Front", 1, 1) }), "what the move would ask");
+            Assert.That(asks.Held, Is.EqualTo(new[] { new EntryHeldAnswer(Code.Key, "Code") }));
+            Assert.That(staying, Is.Null, "an entry that holds its places already moves without asking");
+            Assert.That(holding, Is.Null, "a move into a holding state asks nothing");
+            Assert.That(nowhere, Is.Null, "a form that is gone");
+            Assert.That(stayed, Is.EqualTo(EntryState.Rejected), "the check moves nothing");
+        });
+    }
+
+    [Test]
     public async Task TheTimeline_NamesEachRunByItsAction_NewestFirst()
     {
         var form = await ActionFormAsync(Action("Tell the team"));
