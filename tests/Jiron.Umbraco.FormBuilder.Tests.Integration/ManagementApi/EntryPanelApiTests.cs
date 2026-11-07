@@ -134,6 +134,7 @@ public sealed class EntryPanelApiTests : ManagementApiTestBase
         var toDesigner = await CallAsync(Admin, HttpMethod.Post, path, new { user = designerKey });
         var toNobody = await CallAsync(Admin, HttpMethod.Post, path, new { message = "Hello" });
         var mail = await GetRequiredService<IEmailRepository>().ListForEntryAsync(entry.Id);
+        var formName = (await GetRequiredService<IFormRepository>().GetAsync(form))!.Name;
 
         Assert.Multiple(() =>
         {
@@ -149,6 +150,7 @@ public sealed class EntryPanelApiTests : ManagementApiTestBase
             var plain = mail.Single(item => item.To == "api-viewer@jfb.test").HtmlBody!;
             Assert.That(plain, Does.Contain("Could you look at this one?").And.Contain("Ada").And.Not.Contain("90000"), "sensitive values stay out unless chosen");
             Assert.That(mail.Single(item => item.To == "hr@example.org").HtmlBody, Does.Contain("90000"), "chosen by a user who may see them");
+            Assert.That(mail.Select(item => item.Subject).Distinct(), Is.EqualTo(new[] { $"Entry #{entry.Number} of {formName}" }), "the subject names the form");
         });
     }
 

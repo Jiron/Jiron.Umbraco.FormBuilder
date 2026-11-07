@@ -46,12 +46,24 @@ export async function waitForMailIn(
   }
 }
 
-/** A header's value (the first one), unfolded; empty when the mail has none. */
+/** A header's value (the first one), unfolded, its encoded words (RFC 2047) decoded; empty when the mail has none. */
 export function headerOf(raw: string, name: string): string {
   const head = raw.split(/\r?\n\r?\n/)[0] ?? '';
   const unfolded = head.replace(/\r?\n[ \t]+/g, ' ');
   const line = unfolded.split(/\r?\n/).find((each) => each.toLowerCase().startsWith(`${name.toLowerCase()}:`));
-  return line ? line.slice(name.length + 1).trim() : '';
+  return line ? decodeWords(line.slice(name.length + 1).trim()) : '';
+}
+
+// A header's encoded words, as a mail with text beyond ASCII writes them: base64 (B) or quoted (Q) UTF-8. The space
+// between two encoded words belongs to neither.
+function decodeWords(value: string): string {
+  return value
+    .replace(/(\?=)\s+(?==\?)/g, '$1')
+    .replace(/=\?[^?]+\?([BbQq])\?([^?]*)\?=/g, (_, encoding: string, text: string) =>
+      encoding.toUpperCase() === 'B'
+        ? Buffer.from(text, 'base64').toString('utf8')
+        : decodeQuotedPrintable(text.replace(/_/g, ' ')),
+    );
 }
 
 function decodeQuotedPrintable(text: string): string {

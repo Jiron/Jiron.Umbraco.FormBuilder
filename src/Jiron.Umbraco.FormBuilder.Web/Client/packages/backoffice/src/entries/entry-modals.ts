@@ -62,3 +62,38 @@ export const MOST_COLUMNS = 20;
 
 /** The longest name of a filter set. */
 export const MOST_SET_NAME = 60;
+
+export const ENTRY_FORWARD_MODAL_ALIAS = 'Jiron.FormBuilder.Modal.EntryForward';
+export const ENTRY_IMAGE_MODAL_ALIAS = 'Jiron.FormBuilder.Modal.EntryImage';
+
+export interface EntryForwardModalData {
+  readonly form: string;
+  readonly entry: string;
+  readonly number: number;
+  /** Whether the user may send sensitive values along. */
+  readonly maySendSensitive: boolean;
+}
+
+export interface EntryForwardModalValue {
+  /** Whom it went to, as the toast names them. */
+  readonly to: string;
+}
+
+/** Forward... (IA 6.3): a sidebar, its primary Forward. */
+export const ENTRY_FORWARD_MODAL = new UmbModalToken<EntryForwardModalData, EntryForwardModalValue>(
+  ENTRY_FORWARD_MODAL_ALIAS,
+  { modal: { type: 'sidebar', size: 'small' } },
+);
+
+export interface EntryImageModalData {
+  readonly form: string;
+  readonly file: string;
+  readonly name: string;
+  /** The line under the name: its field, type and size. */
+  readonly meta: string;
+}
+
+/** An uploaded image, through the authorised download (IA 6.3, Files). */
+export const ENTRY_IMAGE_MODAL = new UmbModalToken<EntryImageModalData, never>(ENTRY_IMAGE_MODAL_ALIAS, {
+  modal: { type: 'dialog', size: 'medium' },
+});

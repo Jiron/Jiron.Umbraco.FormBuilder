@@ -57,6 +57,12 @@ if (!('ResizeObserver' in globalThis)) {
   };
 }
 
+// jsdom has no popovers, which UUI's tab group opens and closes for the tabs that don't fit; nothing is shown either way.
+if (typeof HTMLElement !== 'undefined' && !('hidePopover' in HTMLElement.prototype)) {
+  for (const name of ['showPopover', 'hidePopover', 'togglePopover'])
+    Object.defineProperty(HTMLElement.prototype, name, { value: (): undefined => undefined });
+}
+
 // jsdom lays nothing out, so it scrolls nothing into view either; the elements that ask for it go on as in a browser.
 if (typeof Element !== 'undefined' && !('scrollIntoView' in Element.prototype)) {
   Object.defineProperty(Element.prototype, 'scrollIntoView', { value: (): undefined => undefined });

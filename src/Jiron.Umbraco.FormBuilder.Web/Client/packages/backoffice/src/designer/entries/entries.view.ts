@@ -2,8 +2,17 @@
 // each named by its title or number, with its state, when it was received, its action status and the columns the user
 // chose. The toolbar searches and filters, the chips under it say what is filtered and save it as a set, a column's header
 // sorts, and the bulk bar acts on the ticked entries: a change of state with Undo until its window ends (ADR-0023), Delete...
-// and Re-run actions after asking. The keys of section 4.13 move through the list without any motion.
-import { css, html, nothing, repeat, type TemplateResult } from '@umbraco-cms/backoffice/external/lit';
+// and Re-run actions after asking. The keys of section 4.13 move through the list without any motion. An entry opens in
+// the entry panel beside the list (11.2, IA 6.3, ADR-0208), which narrows the rows to name, state and time, or covers the
+// list where the view is too narrow for both; the list keeps its place, its ticks and its scroll meanwhile.
+import {
+  css,
+  html,
+  nothing,
+  repeat,
+  type PropertyValues,
+  type TemplateResult,
+} from '@umbraco-cms/backoffice/external/lit';
 import { UmbId } from '@umbraco-cms/backoffice/id';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import { umbOpenModal } from '@umbraco-cms/backoffice/modal';
@@ -59,7 +68,22 @@ import {
   ENTRY_SET_NAME_MODAL,
   type FilterPart,
 } from '../../entries/entry-modals';
+import type { EntryMovedDetail, EntryPanelElement } from '../../entries/entry-panel.element';
+import '../../entries/entry-panel.element';
+import { asksLines, type PanelAction } from '../../entries/entry-panel-model';
 import { loadEntryWords } from '../../entries/entry-words';
+
+/** The widest the view is where the panel covers the list rather than sitting beside it (IA, "Rules": up to 700 px). */
+const COVERS = 700;
+
+/** Whether a step of an event's path is an open popover, such as a menu; false where the browser can't tell. */
+function isOpenPopover(step: EventTarget): boolean {
+  try {
+    return step instanceof HTMLElement && step.matches(':popover-open');
+  } catch {
+    return false;
+  }
+}
 
 /** The most entries one bulk action takes, as the server moves them. */
 const MOST_TICKED = 500;
@@ -103,6 +127,8 @@ export class EntriesViewElement extends UmbLitElement {
     _busy: { state: true },
     _said: { state: true },
     _permissions: { state: true },
+    _open: { state: true },
+    _covering: { state: true },
   };
 
   static override styles = [
@@ -111,10 +137,42 @@ export class EntriesViewElement extends UmbLitElement {
     jfbSkeleton,
     pressOf('.chip button, .menu button, .choose, .sort'),
     css`
+      /* The view takes its workspace's height, so the list scrolls on its own and keeps its place beside the panel. */
       :host {
-        display: block;
+        position: relative;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: minmax(0, 1fr);
+        block-size: 100%;
+        min-inline-size: 0;
+        min-block-size: 0;
+        /* As in the Design view: the workspace's fading scrollbar colour stops here, so the rows are not restyled. */
+        scrollbar-color: var(--uui-color-disabled-standalone) transparent;
+      }
+
+      :host([split]) {
+        grid-template-columns: minmax(18rem, 1fr) minmax(24rem, 40rem);
+      }
+
+      .list {
+        min-inline-size: 0;
+        min-block-size: 0;
+        overflow: auto;
         padding: var(--uui-size-layout-1);
         container: entries / inline-size;
+      }
+
+      jfb-entry-panel {
+        min-inline-size: 0;
+        min-block-size: 0;
+        border-inline-start: 1px solid var(--uui-color-border);
+      }
+
+      :host([covering]) jfb-entry-panel {
+        position: absolute;
+        inset: 0;
+        z-index: 2;
+        border: 0;
       }
 
       .toolbar {
@@ -230,11 +288,34 @@ export class EntriesViewElement extends UmbLitElement {
         text-align: end;
       }
 
+      /* The open entry's row: Umbraco's colour for what is open, as the tree marks its item, under the cursor's ring. */
+      tbody tr.open {
+        background: var(--uui-color-current);
+        color: var(--uui-color-current-contrast);
+      }
+
       .name {
         display: inline-flex;
         align-items: baseline;
         gap: var(--uui-size-space-2);
+        margin: 0;
+        padding: 0;
+        border: 0;
+        background: none;
+        color: inherit;
+        font: inherit;
+        text-align: start;
         overflow-wrap: anywhere;
+        cursor: pointer;
+      }
+
+      .name:hover {
+        text-decoration: underline;
+      }
+
+      .name:focus-visible {
+        outline: 2px solid var(--jfb-bo-color-focus);
+        outline-offset: 2px;
       }
 
       tr.unseen .name {
@@ -295,6 +376,21 @@ export class EntriesViewElement extends UmbLitElement {
         table:not(.no-state) th .below {
           display: none;
         }
+      }
+
+      /* Beside the panel, a row is its name, state and time; a failure still shows, under the state. */
+      .narrowed .runs-column {
+        display: none;
+      }
+
+      .narrowed .below {
+        display: block;
+        margin-block-start: var(--uui-size-space-1);
+        font-size: var(--uui-type-small-size);
+      }
+
+      .narrowed:not(.no-state) th .below {
+        display: none;
       }
 
       .sort,
@@ -461,11 +557,20 @@ export class EntriesViewElement extends UmbLitElement {
   declare private _busy: boolean;
   declare private _said: string;
   declare private _permissions: readonly string[];
+  /** The entry open in the panel, by its key. */
+  declare private _open: string | undefined;
+  /** Whether the view is too narrow for the panel beside the list, so it covers the list. */
+  declare private _covering: boolean;
 
   #form: string | undefined;
   /** Counts the reads of the list, so only the latest one's answer is shown. */
   #reads = 0;
   #searchTimer: ReturnType<typeof setTimeout> | undefined;
+  #resize = new ResizeObserver(([entry]) => {
+    const width = entry?.contentRect.width;
+    const covering = width !== undefined && width <= COVERS;
+    if (covering !== this._covering) this._covering = covering;
+  });
 
   constructor() {
     super();
@@ -487,6 +592,7 @@ export class EntriesViewElement extends UmbLitElement {
     this._busy = false;
     this._said = '';
     this._permissions = [];
+    this._covering = false;
     this.consumeContext(FORM_WORKSPACE_CONTEXT, (context) => {
       if (!context) return;
       this.observe(context.form, (form) => (this._permissions = form?.permissions ?? []), 'permissions');
@@ -501,6 +607,7 @@ export class EntriesViewElement extends UmbLitElement {
           this._rows = [];
           this._ticked = [];
           this._cursor = -1;
+          this._open = undefined;
           void this.#open();
         },
         'unique',
@@ -511,13 +618,67 @@ export class EntriesViewElement extends UmbLitElement {
   override connectedCallback() {
     super.connectedCallback();
     window.addEventListener('keydown', this.#keys);
+    this.#resize.observe(this);
   }
 
   override disconnectedCallback() {
     super.disconnectedCallback();
     window.removeEventListener('keydown', this.#keys);
+    this.#resize.disconnect();
     clearTimeout(this.#searchTimer);
   }
+
+  protected override updated(changed: PropertyValues<this>) {
+    super.updated(changed);
+    this.toggleAttribute('split', this._open !== undefined && !this._covering);
+    this.toggleAttribute('covering', this._open !== undefined && this._covering);
+  }
+
+  get #panel(): EntryPanelElement | null {
+    return this.shadowRoot?.querySelector('jfb-entry-panel') ?? null;
+  }
+
+  // ---- The entry panel ----------------------------------------------------------------------------------------------
+
+  /** Opens a row's entry in the panel; the focus goes there, unless the keys are moving through the list beside it. */
+  async #openRow(index: number, focusPanel = true) {
+    const row = this._rows[index];
+    if (!row) return;
+    this._cursor = index;
+    this._open = row.key;
+    await this.updateComplete;
+    if (focusPanel || this._covering) this.#panel?.focusHeading();
+  }
+
+  async #closePanel() {
+    const open = this._open;
+    this._open = undefined;
+    await this.updateComplete;
+    const index = this._rows.findIndex((row) => row.key === open);
+    if (index >= 0) this.#focusRow(index);
+  }
+
+  #rowSeen = (event: CustomEvent<EntryMovedDetail>) => {
+    const { key, state } = event.detail;
+    this._rows = this._rows.map((row) => (row.key === key ? { ...row, unseen: false, state } : row));
+  };
+
+  #rowMoved = (event: CustomEvent<EntryMovedDetail>) => {
+    const { key, state } = event.detail;
+    this._rows = this._rows.map((row) => (row.key === key ? { ...row, state } : row));
+  };
+
+  #rowGone = (event: CustomEvent<EntryMovedDetail>) => {
+    const { key } = event.detail;
+    const index = this._rows.findIndex((row) => row.key === key);
+    this._rows = this._rows.filter((row) => row.key !== key);
+    this._ticked = this._ticked.filter((one) => one !== key);
+    if (this._total !== null && !this._totalMore) this._total = Math.max(0, this._total - 1);
+    this._open = undefined;
+    this._cursor = -1;
+    // The keyboard reads on at the row that took its place.
+    void this.updateComplete.then(() => this.#focusRow(Math.min(index, this._rows.length - 1)));
+  };
 
   #term = (key: string, ...args: unknown[]) => this.localize.term(`jfbEntries_${key}`, ...args);
   #full = (key: string, ...args: unknown[]) => this.localize.term(key, ...args);
@@ -769,12 +930,23 @@ export class EntriesViewElement extends UmbLitElement {
     );
     if (applying.length === 0) return;
     const before = new Map(applying.map((row) => [row.key, row.state]));
-    const change = await changeState(
-      this,
-      form,
-      applying.map((row) => row.key),
-      state,
-    );
+    const keys = applying.map((row) => row.key);
+    let change = await changeState(this, form, keys, state);
+    // A move back onto full options or doubled unique answers moves nothing until the user agrees (ADR-0208).
+    if (change?.asks) {
+      const agreed = await confirmText(this, {
+        headline: this.#term(keys.length === 1 ? 'asks_moveHeadline' : 'asks_moveHeadlineMany'),
+        content: asksLines(change.asks, this.#full).join(' '),
+        confirmLabel: this.#term('asks_moveConfirm'),
+        color: 'warning',
+      }).then(
+        () => true,
+        () => false,
+      );
+      if (!agreed) return;
+      change = await changeState(this, form, keys, state, true);
+    }
+
     if (!change) {
       await this.#notify('danger', this.#term('moveFailed'));
       return;
@@ -784,6 +956,7 @@ export class EntriesViewElement extends UmbLitElement {
     this._rows = this._rows.map((row) =>
       reached.has(row.key) ? { ...row, state: reached.get(row.key) ?? row.state } : row,
     );
+    this.#reloadPanel(reached);
     this._ticked = [];
     const name = action === 'markSpam' ? 'spam' : action === 'notSpam' ? 'notSpam' : (MOVE_STATE[action] ?? state);
     const unmoved = left + change.unmoved.length;
@@ -817,6 +990,7 @@ export class EntriesViewElement extends UmbLitElement {
           this._rows = this._rows.map((row) =>
             before.has(row.key) && reached.has(row.key) ? { ...row, state: before.get(row.key) ?? row.state } : row,
           );
+          this.#reloadPanel(reached);
           this._said = this.#term('undone');
           return;
         }
@@ -833,6 +1007,11 @@ export class EntriesViewElement extends UmbLitElement {
       duration: open > UNDO_LONGEST_MS ? UNDO_LONGEST_MS : open + UNDO_LATE_MS,
       data,
     });
+  }
+
+  /** Reads the open entry again when a change of the list moved it, so its bar and chip are those of its state now. */
+  #reloadPanel(moved: ReadonlyMap<string, string>) {
+    if (this._open !== undefined && moved.has(this._open)) void this.#panel?.reload();
   }
 
   /** Deletes the entries for good, after asking with what goes with them. */
@@ -867,6 +1046,7 @@ export class EntriesViewElement extends UmbLitElement {
     this._rows = this._rows.filter((row) => !gone.has(row.key));
     this._ticked = [];
     this._cursor = -1;
+    if (this._open !== undefined && gone.has(this._open)) this._open = undefined;
     if (this._total !== null && !this._totalMore) this._total = Math.max(0, this._total - done.entries);
     await this.#notify('positive', this.#term('deleted', done.entries));
   }
@@ -936,10 +1116,22 @@ export class EntriesViewElement extends UmbLitElement {
       case 'k':
         this.#moveCursor(-1);
         break;
+      case 'Enter':
+        // Only on the cursor's row itself: Enter on a button or a box inside it is that control's.
+        if (!row || !(path[0] instanceof HTMLTableRowElement)) return;
+        void this.#openRow(this._cursor);
+        break;
       case 'a':
       case 'r':
       case 's': {
-        const action: BulkAction = event.key === 'a' ? 'approve' : event.key === 'r' ? 'reject' : 'markSpam';
+        const action: BulkAction & PanelAction =
+          event.key === 'a' ? 'approve' : event.key === 'r' ? 'reject' : 'markSpam';
+        // With an entry open, the keys act on it, as its bar would; otherwise on the cursor's row.
+        if (this._open !== undefined) {
+          this.#panel?.act(action);
+          break;
+        }
+
         if (!row || !bulkActions([row.state], this._permissions).includes(action)) return;
         void this.#act(action, [row]);
         break;
@@ -948,6 +1140,13 @@ export class EntriesViewElement extends UmbLitElement {
         this.shadowRoot?.querySelector<HTMLElement>('.search')?.focus();
         break;
       case 'Escape':
+        // Esc with a menu open closes the menu only, wherever the focus is (on the button that opened it, say).
+        if (path.some(isOpenPopover) || this.#menuOpen()) return;
+        if (this._open !== undefined) {
+          void this.#closePanel();
+          break;
+        }
+
         if (this._cursor < 0) return;
         this._cursor = -1;
         (document.activeElement as HTMLElement | null)?.blur?.();
@@ -962,10 +1161,25 @@ export class EntriesViewElement extends UmbLitElement {
     event.preventDefault();
   };
 
+  /** Whether a menu of the view, or of the open entry's panel, is open. */
+  #menuOpen(): boolean {
+    return [this.shadowRoot, this.#panel?.shadowRoot].some((root) =>
+      [...(root?.querySelectorAll('uui-popover-container') ?? [])].some(isOpenPopover),
+    );
+  }
+
+  /** Moves the cursor; with an entry open, the panel follows it, so `j` reads on through the entries. */
   #moveCursor(by: number) {
     if (this._rows.length === 0) return;
     const at = this._cursor < 0 ? (by > 0 ? 0 : this._rows.length - 1) : this._cursor + by;
-    this.#focusRow(Math.max(0, Math.min(this._rows.length - 1, at)));
+    const index = Math.max(0, Math.min(this._rows.length - 1, at));
+    if (this._open === undefined) {
+      this.#focusRow(index);
+      return;
+    }
+
+    if (!this._covering) this.#focusRow(index);
+    void this.#openRow(index, false);
   }
 
   #focusRow(index: number) {
@@ -1138,15 +1352,20 @@ export class EntriesViewElement extends UmbLitElement {
     index: number,
     showState: boolean,
     columns: readonly EntryListFieldResponseModel[],
+    narrowed: boolean,
   ): TemplateResult {
     const label = rowLabel(row, this.#full);
     const runs = runsText(row.actions, this.#full);
     const alarming = runs && (runs.tone === 'danger' || runs.tone === 'warning');
     const below = alarming ? html`<span class="below tone-${runs.tone}">${runs.text}</span>` : nothing;
+    const open = row.key === this._open;
     return html`<tr
       data-key=${row.key}
       tabindex="-1"
-      class=${[row.unseen ? 'unseen' : '', index === this._cursor ? 'cursor' : ''].filter(Boolean).join(' ')}
+      aria-current=${open ? 'true' : nothing}
+      class=${[row.unseen ? 'unseen' : '', index === this._cursor ? 'cursor' : '', open ? 'open' : '']
+        .filter(Boolean)
+        .join(' ')}
       @focus=${() => (this._cursor = index)}
     >
       <td class="tick">
@@ -1158,11 +1377,11 @@ export class EntriesViewElement extends UmbLitElement {
         ></uui-checkbox>
       </td>
       <th scope="row">
-        <span class="name">
+        <button type="button" class="name" @click=${() => void this.#openRow(index)}>
           ${row.unseen ? html`<span class="dot" aria-hidden="true"></span>` : nothing}${rowName(row, this.#full)}${
             row.unseen ? html`<span class="visually-hidden">, ${this.#term('unseen')}</span>` : nothing
           }
-        </span>
+        </button>
         ${showState ? nothing : below}
       </th>
       ${
@@ -1185,7 +1404,7 @@ export class EntriesViewElement extends UmbLitElement {
           ${text ? html`<span class="cell">${text}</span>` : html`<span class="tone-muted">${this.#term('none')}</span>`}
         </td>`;
       })}
-      <td class="end"></td>
+      ${narrowed ? nothing : html`<td class="end"></td>`}
     </tr>`;
   }
 
@@ -1193,14 +1412,17 @@ export class EntriesViewElement extends UmbLitElement {
     const fixed = fixedColumns(this._filter);
     const showState = !fixed.state;
     const byKey = this.#byKey;
-    const columns = this.#shownColumns()
-      .map((key) => byKey.get(key))
-      .filter((field): field is EntryListFieldResponseModel => !!field);
+    const narrowed = this._open !== undefined && !this._covering;
+    const columns = narrowed
+      ? []
+      : this.#shownColumns()
+          .map((key) => byKey.get(key))
+          .filter((field): field is EntryListFieldResponseModel => !!field);
     const all =
       this._rows.length > 0 && this._rows.slice(0, MOST_TICKED).every((row) => this._ticked.includes(row.key));
     return html`<uui-box class="box--flush">
       <div class="scroller">
-        <table class=${showState ? '' : 'no-state'}>
+        <table class=${[showState ? '' : 'no-state', narrowed ? 'narrowed' : ''].filter(Boolean).join(' ')}>
           <thead>
             <tr>
               <th scope="col" class="tick">
@@ -1218,24 +1440,29 @@ export class EntriesViewElement extends UmbLitElement {
               ${columns.map((field) =>
                 field.sorts ? this.#sortHeader(field.label, field.key) : html`<th scope="col">${field.label}</th>`,
               )}
-              <th scope="col" class="end">
-                <button
-                  type="button"
-                  class="choose"
-                  aria-label=${this.#term('column_choose')}
-                  title=${this.#term('column_choose')}
-                  @click=${() => void this.#chooseColumns()}
-                >
-                  <uui-icon name="icon-columns" aria-hidden="true"></uui-icon>
-                </button>
-              </th>
+              ${
+                // Beside the panel the rows show no chosen columns, so there is nothing to choose, and no column for it.
+                narrowed
+                  ? nothing
+                  : html`<th scope="col" class="end">
+                      <button
+                        type="button"
+                        class="choose"
+                        aria-label=${this.#term('column_choose')}
+                        title=${this.#term('column_choose')}
+                        @click=${() => void this.#chooseColumns()}
+                      >
+                        <uui-icon name="icon-columns" aria-hidden="true"></uui-icon>
+                      </button>
+                    </th>`
+              }
             </tr>
           </thead>
           <tbody>
             ${repeat(
               this._rows,
               (row) => row.key,
-              (row, index) => this.#row(row, index, showState, columns),
+              (row, index) => this.#row(row, index, showState, columns, narrowed),
             )}
           </tbody>
         </table>
@@ -1337,22 +1564,44 @@ export class EntriesViewElement extends UmbLitElement {
     // workspace's words, which load with the workspace (ADR-0201).
     if (!this._words)
       return this._state === 'failed'
-        ? html`<uui-box>
-            <div class="failed" role="alert">
-              <span>${this.#full('jfbDesigner_entriesFailed')}</span>
-              <uui-button
-                look="outline"
-                label=${this.#full('jfbSettings_retry')}
-                @click=${() => void this.#open()}
-              ></uui-button>
-            </div>
-          </uui-box>`
-        : html`<uui-box class="box--flush">${skeletonLines('', [70, 64, 58, 52])}</uui-box>`;
+        ? html`<div class="list">
+            <uui-box>
+              <div class="failed" role="alert">
+                <span>${this.#full('jfbDesigner_entriesFailed')}</span>
+                <uui-button
+                  look="outline"
+                  label=${this.#full('jfbSettings_retry')}
+                  @click=${() => void this.#open()}
+                ></uui-button>
+              </div>
+            </uui-box>
+          </div>`
+        : html`<div class="list"><uui-box class="box--flush">${skeletonLines('', [70, 64, 58, 52])}</uui-box></div>`;
     // A form without any entry yet shows only the sentence: there is nothing to search, filter or tick (IA 6.1).
     const firstUse =
       this._state === 'ready' && this._rows.length === 0 && !isFiltered(this._filter) && !this._filter.search;
-    return html`${firstUse ? nothing : this.#toolbar()} ${this.#chips()} ${this.#list()} ${this.#bulk()}
-      <div class="visually-hidden" role="status">${this._said}</div>`;
+    const open = this._open;
+    const row = open === undefined ? undefined : this._rows.find((one) => one.key === open);
+    // Covered by the panel, the list is out of reach of the keyboard and of screen readers until the panel closes.
+    const covered = open !== undefined && this._covering;
+    return html`<div class="list" ?inert=${covered}>
+        ${firstUse ? nothing : this.#toolbar()} ${this.#chips()} ${this.#list()} ${this.#bulk()}
+        <div class="visually-hidden" role="status">${this._said}</div>
+      </div>
+      ${
+        open !== undefined && this.#form
+          ? html`<jfb-entry-panel
+              .form=${this.#form}
+              .entry=${open}
+              place=${this._covering ? 'covering' : 'beside'}
+              .rowShowsTitle=${row ? Boolean(row.title) : true}
+              @jfb-entry-seen=${this.#rowSeen}
+              @jfb-entry-moved=${this.#rowMoved}
+              @jfb-entry-gone=${this.#rowGone}
+              @jfb-entry-close=${() => void this.#closePanel()}
+            ></jfb-entry-panel>`
+          : nothing
+      }`;
   }
 }
 

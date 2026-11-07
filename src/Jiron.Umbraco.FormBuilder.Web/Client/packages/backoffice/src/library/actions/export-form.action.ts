@@ -10,7 +10,12 @@ import { sayRefusal } from '../library-changes';
  * the page for a navigation, and would try to open the file's address as a screen.
  */
 export function saveFile(name: string, text: string, type = 'application/json'): void {
-  const url = URL.createObjectURL(new Blob([text], { type }));
+  saveBlob(name, new Blob([text], { type }));
+}
+
+/** Hands the browser bytes to save under a name, as {@link saveFile} hands it a text. */
+export function saveBlob(name: string, blob: Blob): void {
+  const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
   link.download = name;

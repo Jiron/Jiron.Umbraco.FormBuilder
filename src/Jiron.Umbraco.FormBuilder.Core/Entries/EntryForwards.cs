@@ -188,13 +188,15 @@ internal sealed class EntryForwards(
         var site = (await pages.PageAsync(entry.ContentKey)).Site;
         var body = await BodyAsync(read, entry, sender?.Name ?? sender?.Username ?? string.Empty, message, includeSensitive, site, culture, cancellationToken);
         var words = WordsOf(culture);
+        // "Entry #3 of Job application", after the entry's title, and a middle dot, when it has one.
         var title = await titles.RenderAsync(read.Scope, entry.Key, cancellationToken);
+        var subject = string.Format(CultureInfo.InvariantCulture, words.Subject, entry.Number, form.Name);
         var prepared = await outbox.PrepareAsync(
             new OutgoingEmail
             {
                 Kind = EmailKind.Forward,
                 To = [to],
-                Subject = string.Format(CultureInfo.InvariantCulture, words.Subject, entry.Number, title ?? form.Name),
+                Subject = string.IsNullOrWhiteSpace(title) ? subject : string.Concat(title, " " + (char)0xB7 + " ", subject),
                 Body = body,
                 Culture = culture,
                 Site = site,

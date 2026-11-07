@@ -407,7 +407,9 @@ A host turns these on in the `JironFormBuilderTesting` section; everything is of
 | Setting | Effect |
 | --- | --- |
 | `Endpoints` | Answers `/jfb-testing/status`, `/jfb-testing/clock`, `/jfb-testing/access` (each backoffice user's effective permissions, globally, at the root and in each root folder), `/jfb-testing/entries` (a form's stored entries), `/jfb-testing/entries-form` (a published form of job applications
-with up to 2,000 entries sent through the pipeline, waiting for approval, and a webhook on approval to a given address),
+with up to 2,000 entries sent through the pipeline, waiting for approval, and a webhook on approval to a given address;
+optionally with places on one option, a unique name, a notice holding each entry's link and a forward address),
+`/jfb-testing/audit` (the audit log's entries about one item),
 `/jfb-testing/sent-expired` (a sent page's token again, expired a minute ago, ADR-0123) and `/jfb-testing/form-restriction` (a form's own restriction, which no screen sets yet, ADR-0166; `TestFormRestrictionEndpointTests`), only in Development and only for requests from this machine. |
 | `Clock` | Runs the host on `TestClock`. |
 | `StubPort` | Starts the stub on that port (5560 for the browser tests' host), only in Development, where calls to other hosts may then reach it on loopback at that port only (ADR-0076). |
@@ -805,6 +807,18 @@ checked by its type, a choice moving its place, the old values on the timeline a
 not see them. `ManagementApi/EntryPanelApiTests` answers each persona by what it may do, keeps a note its author's,
 answers an edit's problems by their path, forwards only to users who may view the form's entries and the site's
 forward addresses, sensitive values only when chosen, and names an entry's form to its link only for who may view it.
+In the client, `entries/entry-panel-model.test.ts` holds the bar of each state and user, the details line, sizes, the
+timeline's order with Retry, and what a move back asks; `entries/entry-panel.element.test.ts` the panel against a fake
+server (its header in each place, Reveal and Hide, files, the bar, Approve staying on the entry with Undo, a move back
+asking first, Edit answers with its problems and its asks, Retry, notes, Delete… and Forward…);
+`entries/entry-screen.test.ts` the entry's own screen and the Forward… sidebar; and `designer/entries/entries.view.test.ts`
+the panel beside the list (narrowed rows, Enter, `j` with the panel following, `a` on the open entry, Esc, a deleted
+entry's row, the panel covering a narrow view) and the bulk bar's move back asking first. In the browser,
+`specs/backoffice/entry-panel.spec.ts` approves in the panel and undoes it, the audit log (`/jfb-testing/audit`) and
+the timeline holding both; moves a rejected entry back onto a full option and a name another entry holds, which asks
+and moves only once confirmed; forwards an entry to a team address that the pickup folder receives while the API
+refuses a stranger's; and opens the `{{ entry.url }}` of a notice from the pickup folder, as a user who may view the
+form and as one who may not. `/jfb-testing/entries-form` takes `places`, `unique`, `notice` and `forward` for these.
 
 ## The access tests
 

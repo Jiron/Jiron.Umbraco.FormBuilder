@@ -61,20 +61,28 @@ questions during the run (CLAUDE.md rule 8), so each choice below is this record
 9. **Forward** (`editEntries`, as the permission model has it; a privacy officer's bar holds no Forward…) sends the
    entry through the outbox (`EmailKind.Forward`) to a backoffice user who may view the form's
    entries and has an address, or to one of the forward addresses of the entry's site (Settings › Email); any other
-   recipient is refused (`400 forward_recipient_not_allowed`). The mail holds the optional message, the answers and
+   recipient is refused (`400 forward_recipient_not_allowed`). Its subject names the entry, its form and its title
+   when it has one ("Ada Lovelace · Entry #3 of Job application"). The mail holds the optional message, the answers and
    the entry's link; sensitive values go along only when the sender may see them and chooses to. It is audited
    (`entry.forwarded`) and shows on the timeline as a `forwarded` event and as the mail it sent.
 10. **The panel's actions** are IA 6.3's table, filtered by what the user may do and whether the form approves by
     hand. Delete… asks with the files that go too (ADR-0207), and Re-run actions asks with the actions, as the bulk bar
     does, for the one entry. **Print** comes with 11.4's printable view of an entry, as Export comes with 11.4.
-11. **Beside the list:** opening a row narrows the list to each row's name, state and time, and the panel takes the
-    rest; where the view is narrower than 50rem the panel covers the list and its header adds what the row showed.
-    The list keeps its place, its ticks and its scroll. `Enter` opens the cursor's entry, `j` and `k` move on with the
-    panel following, `a`, `r` and `s` act on the open entry, and `Esc` closes it, the focus back on its row.
+11. **Beside the list:** opening a row narrows the list to each row's name, state and time (a failed delivery shows
+    under the state, the chosen columns and their chooser give way), the open row in Umbraco's colour for what is
+    open, and the panel takes the rest, up to 40rem. Where the view is 700 px or narrower (IA "Rules": the 620 px
+    workspace, and any up to 700 px) the panel covers the list, which is inert meanwhile, and its header adds the
+    title and the state. The view takes its workspace's height and the list scrolls in its own column, so it keeps its
+    place, its ticks and its scroll while the panel opens and closes. `Enter` opens the cursor's entry, `j` and `k`
+    move on with the panel following, `a`, `r` and `s` act on the open entry as its bar would, and `Esc` closes it, the
+    focus back on its row (Esc in an open menu closes the menu only). Between two entries the panel shows its skeleton,
+    and a key acts on nothing until the next entry is read, never on the one shown before. Nothing animates.
 12. **The entry's link** (`/umbraco/section/jfb-forms/workspace/jfb-entry/edit/<key>`) opens the panel alone, its header
-    naming the entry's title, the form and the state. Its form is found through `GET entry/{key}/form`, which names none
-    to a user who may not view that form's entries, as for an entry that is gone (every endpoint of the whole section
-    answers a user of the section), so the link shows the backoffice's "not found" and nothing of the entry.
+    naming the entry's title and number, the form as a link to its Entries view, and the state. Its form is found
+    through `GET entry/{key}/form`, which names none to a user who may not view that form's entries, as for an entry
+    that is gone (every endpoint of the whole section answers a user of the section), so the link shows the
+    backoffice's own "not found" (Umbraco's `umb-entity-detail-not-found`, naming an entry), the same for both, and
+    nothing of the entry. Deleted there, the screen moves on to its form's Entries view.
 13. **The routes** sit under the form, as the list's do, so the permission attribute guards them:
     `GET form/{key}/entry/{entryKey}`, `POST …/reveal`, `GET …/timeline`, `GET`/`POST …/notes`,
     `PUT …/notes/{noteId}`, `PUT …/answers`, `GET`/`POST …/forward`; the move's `overbook` joins the state endpoint.

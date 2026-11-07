@@ -25,6 +25,7 @@ type ScreenLoader = NonNullable<Extract<UmbExtensionManifest, { type: 'workspace
 
 const SCREENS: Readonly<Record<string, ScreenLoader>> = {
   general: () => import('../settings/general-settings.element'),
+  entry: () => import('../entries/entry.workspace'),
 };
 
 const comingScreen = (id: string, entityType: string): UmbExtensionManifest => ({

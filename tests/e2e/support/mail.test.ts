@@ -40,6 +40,13 @@ test('a header is unfolded, and a missing one is empty', () => {
   assert.equal(headerOf(multipart, 'Reply-To'), '');
 });
 
+test('a header is decoded from its encoded words, base64 and quoted alike', () => {
+  const dot = String.fromCharCode(0xb7);
+  const b = Buffer.from(`Ada ${dot} Entry #3`, 'utf8').toString('base64');
+  const raw = `Subject: =?utf-8?B?${b}?=\r\n =?utf-8?Q?_of_Job_application?=\r\n\r\nBody`;
+  assert.equal(headerOf(raw, 'Subject'), `Ada ${dot} Entry #3 of Job application`);
+});
+
 test('each part is decoded from its transfer encoding', () => {
   assert.equal(bodyOf(multipart, 'text/plain').trim(), `Gr${u}ezi Mila`);
   assert.match(bodyOf(multipart, 'text/html'), /&amp; <b>welcome<\/b>, a long line that goes on and on and on/);

@@ -10,7 +10,10 @@ import type {
   EntryListPageResponseModel,
   EntryListRequestModel,
   EntryListRowResponseModel,
+  EntryMoveAsksResponseModel,
+  EntryPanelResponseModel,
 } from '../../api';
+import type { EntryPanelElement } from '../../entries/entry-panel.element';
 import { all, must, registerEnglish, settle, shadow, testHost, text } from '../../testing';
 import { FORM_WORKSPACE_CONTEXT } from '../constants';
 import {
@@ -54,7 +57,9 @@ const server = vi.hoisted(() => ({
   failsView: false,
   failsPage: false,
   requests: [] as EntryListRequestModel[],
-  moves: [] as { entries: readonly string[]; state: string }[],
+  moves: [] as { entries: readonly string[]; state: string; overbook?: boolean }[],
+  /** What a move back asks first, until the user agrees to overbook. */
+  asks: undefined as EntryMoveAsksResponseModel | undefined,
   undos: [] as string[],
   undoAnswer: 'done' as 'done' | 'tooLate' | 'failed',
   deletes: [] as { entries: readonly string[]; confirm: boolean }[],
@@ -90,8 +95,10 @@ vi.mock('../../entries/entries-api', () => ({
     return { set: { key, name, form, filter } };
   },
   deleteSet: async () => true,
-  changeState: async (_host: unknown, _form: string, entries: readonly string[], state: string) => {
-    server.moves.push({ entries, state });
+  changeState: async (_host: unknown, _form: string, entries: readonly string[], state: string, overbook = false) => {
+    server.moves.push({ entries, state, ...(overbook ? { overbook } : {}) });
+    if (server.asks && !overbook)
+      return { changeKey: 'change0', undoUntilUtc: null, moved: [], unmoved: [], asks: server.asks };
     return {
       changeKey: 'change1',
       undoUntilUtc: new Date(Date.now() + 10_000).toISOString(),
@@ -115,6 +122,38 @@ vi.mock('../../entries/entries-api', () => ({
       leftOut: 0,
       queued: confirm,
     };
+  },
+}));
+
+// The entry panel reads each entry as its row says it is.
+vi.mock('../../entries/entry-panel-api', () => ({
+  openEntry: async (_host: unknown, _form: string, entry: string): Promise<EntryPanelResponseModel | undefined> => {
+    const found = server.rows.find((one) => one.key === entry);
+    return found
+      ? {
+          key: found.key,
+          form: 'form1',
+          formName: 'Job application',
+          number: found.number,
+          title: found.title ?? null,
+          state: found.state,
+          received: found.received,
+          manualApproval: true,
+          isTest: false,
+          details: {
+            page: null,
+            culture: 'en',
+            duration: null,
+            member: null,
+            memberName: null,
+            ipAddress: null,
+            spamReasons: [],
+          },
+          pages: [],
+          notes: 0,
+          permissions: ['viewEntries', 'editEntries', 'deleteEntries', 'manageActions'],
+        }
+      : undefined;
   },
 }));
 
@@ -238,6 +277,7 @@ beforeEach(() => {
     failsPage: false,
     requests: [],
     moves: [],
+    asks: undefined,
     undos: [],
     undoAnswer: 'done',
     deletes: [],
@@ -556,5 +596,123 @@ describe("a form's Entries view", () => {
     button('Try again').click();
     await vi.waitFor(() => expect(rows()).toHaveLength(3));
     await settle(view);
+  });
+
+  it('asks before moving entries back onto a full option, and overbooks only once the user agrees', async () => {
+    server.asks = {
+      full: [{ field: 'seat', fieldLabel: 'Seat', option: 'front', optionLabel: 'Front row', places: 2, taken: 2 }],
+      held: [],
+    };
+    opened.confirms = false;
+    const { tick, button, view, rows } = await viewOf();
+    await tick(2);
+    button('Approve').click();
+    await settle(view);
+    expect(opened.confirmations.at(-1)).toMatchObject({
+      headline: 'Move it back anyway?',
+      confirmLabel: 'Move back anyway',
+    });
+    expect(server.moves).toEqual([{ entries: ['e3'], state: 'approved' }]);
+    expect(text(rows()[2]?.querySelector('uui-tag'))).toBe('Rejected');
+
+    opened.confirms = true;
+    await tick(2);
+    button('Approve').click();
+    await settle(view);
+    expect(server.moves.slice(1)).toEqual([
+      { entries: ['e3'], state: 'approved' },
+      { entries: ['e3'], state: 'approved', overbook: true },
+    ]);
+    expect(text(rows()[2]?.querySelector('uui-tag'))).toBe('Approved');
+  });
+});
+
+describe('the entry panel beside the list', () => {
+  const panelIn = (view: Element) => shadow(view).querySelector<EntryPanelElement>('jfb-entry-panel');
+
+  it('opens an entry beside the list, narrows the rows to name, state and time, and Esc closes it where it was', async () => {
+    const { rows, root, view, press } = await viewOf();
+    must(rows()[0]?.querySelector<HTMLElement>('.name'), 'the first name').click();
+    await settle(view);
+    const panel = must(panelIn(view), 'the panel');
+    expect([panel.entry, panel.place, panel.rowShowsTitle]).toEqual(['e1', 'beside', true]);
+    expect(view.hasAttribute('split')).toBe(true);
+    expect(rows()[0]?.getAttribute('aria-current')).toBe('true');
+    expect(root.querySelector('table')?.classList.contains('narrowed')).toBe(true);
+    // Beside the panel no chosen column shows, so there is nothing to choose, and no empty column for it.
+    expect(root.querySelector('.choose, th.end, td.end')).toBeNull();
+    // Opening marks the entry seen.
+    await vi.waitFor(() => expect(rows()[0]?.classList.contains('unseen')).toBe(false));
+    await settle(view);
+
+    // While the panel's "..." is open, Esc closes that menu only (here the browser's own light dismiss).
+    const menu = must(panel.shadowRoot?.querySelector<HTMLElement>('uui-popover-container'), 'the menu');
+    const open = vi.spyOn(menu, 'matches').mockImplementation((selector: string) => selector === ':popover-open');
+    await press('Escape', panel);
+    expect(panelIn(view)).not.toBeNull();
+    open.mockRestore();
+
+    await press('Escape', panel);
+    expect(panelIn(view)).toBeNull();
+    expect(view.hasAttribute('split')).toBe(false);
+    expect(view.shadowRoot?.activeElement).toBe(rows()[0]);
+  });
+
+  it('opens the cursor row on Enter, reads on with j, and a approves the open entry', async () => {
+    const { rows, view, press } = await viewOf();
+    await press('j');
+    await press('Enter', must(rows()[0], 'the first row'));
+    expect(panelIn(view)?.entry).toBe('e1');
+    await press('j');
+    // The second entry has no title, so its row names it by number and the panel's header leaves the number out.
+    expect([panelIn(view)?.entry, panelIn(view)?.rowShowsTitle]).toEqual(['e2', false]);
+    expect(view.shadowRoot?.activeElement).toBe(rows()[1]);
+    await press('k');
+    await settle(must(panelIn(view), 'the panel'));
+    await press('a', must(rows()[0], 'the first row'));
+    await settle(must(panelIn(view), 'the panel'));
+    expect(server.moves).toEqual([{ entries: ['e1'], state: 'approved' }]);
+    // The panel stays on the entry and the row's chip changes in place.
+    expect(panelIn(view)?.entry).toBe('e1');
+    expect(text(rows()[0]?.querySelector('uui-tag'))).toBe('Approved');
+  });
+
+  it('takes the row away when the entry is deleted in the panel', async () => {
+    const { rows, root, view } = await viewOf();
+    must(rows()[1]?.querySelector<HTMLElement>('.name'), 'the second name').click();
+    await settle(view);
+    must(panelIn(view), 'the panel').dispatchEvent(
+      new CustomEvent('jfb-entry-gone', { detail: { key: 'e2', state: 'approved' }, bubbles: true, composed: true }),
+    );
+    await settle(view);
+    expect(rows().map((one) => one.dataset['key'])).toEqual(['e1', 'e3']);
+    expect(panelIn(view)).toBeNull();
+    expect(text(root.querySelector('.count'))).toBe('2 entries');
+  });
+
+  it('covers the list where the view is narrow, which is out of reach until the panel closes', async () => {
+    const before = globalThis.ResizeObserver;
+    globalThis.ResizeObserver = class {
+      constructor(private readonly report: ResizeObserverCallback) {}
+      // Only the view is measured: the panel's own elements watch their size too.
+      observe = (target: Element) => {
+        if (target.localName === 'jfb-entries-view')
+          this.report([{ contentRect: { width: 620 } } as ResizeObserverEntry], this as never);
+      };
+      unobserve = () => undefined;
+      disconnect = () => undefined;
+    } as never;
+    try {
+      const { rows, root, view } = await viewOf();
+      must(rows()[0]?.querySelector<HTMLElement>('.name'), 'the first name').click();
+      await settle(view);
+      expect(panelIn(view)?.place).toBe('covering');
+      expect(view.hasAttribute('covering')).toBe(true);
+      expect(root.querySelector('.list')?.hasAttribute('inert')).toBe(true);
+      // Covered, the rows keep their columns for when the panel closes.
+      expect(root.querySelector('table')?.classList.contains('narrowed')).toBe(false);
+    } finally {
+      globalThis.ResizeObserver = before;
+    }
   });
 });

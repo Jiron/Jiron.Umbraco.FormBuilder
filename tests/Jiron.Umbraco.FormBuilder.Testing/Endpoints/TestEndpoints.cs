@@ -103,7 +103,11 @@ internal sealed class TestEndpointsStartupFilter(IOptions<FormBuilderTestingOpti
 /// <item><description><c>POST /jfb-testing/entries-form {"count": 1000, "url": "..."}</c>: publishes a form whose entries wait
 /// for approval, named by their name, with a position to choose, an amount, a sensitive salary and a webhook on approval to
 /// this address, and sends it that many entries through the submission pipeline, as a server key would (ADR-0207); at most
-/// 2,000.</description></item>
+/// 2,000. <c>"places"</c> gives the accountant's position that many places, <c>"unique"</c> makes the name unique per form,
+/// <c>"notice"</c> adds a mail of each entry with its <c>{{ entry.url }}</c> to this address, and <c>"forward"</c> makes this
+/// address one entries may be forwarded to (ADR-0208).</description></item>
+/// <item><description><c>GET /jfb-testing/audit?entity=&lt;key&gt;</c>: the audit log's entries about one item, oldest first, each with
+/// its action, user and details (ADR-0041), which no screen lists yet.</description></item>
 /// </list>
 /// Requests from another machine, and paths outside <c>/jfb-testing/</c>, go on to the site as if this did not exist.
 /// </summary>
@@ -179,13 +183,7 @@ internal sealed class TestEndpointsMiddleware(RequestDelegate next)
     private static async Task VerificationFormAsync(HttpContext context)
     {
         var body = await JsonSerializer.DeserializeAsync<WebhookFormRequest>(context.Request.Body, Json, context.RequestAborted);
-        var settingsService = context.RequestServices.GetRequiredService<IFormBuilderSettingsService>();
-        var general = await settingsService.GetAsync<GeneralSettings>(null, context.RequestAborted);
-        if (general.Value.BaseUrl is null)
-        {
-            _ = await settingsService.SaveAsync(general.Value with { BaseUrl = $"{context.Request.Scheme}://{context.Request.Host}" }, general.Version, null, context.RequestAborted);
-        }
-
+        await KnowBaseUrlAsync(context);
         var forms = context.RequestServices.GetRequiredService<IFormBuilderFormService>();
         var created = await forms.CreateAsync(new NewFormRequest($"Opt-in {Guid.NewGuid():N}"), context.RequestAborted);
         var draft = (await forms.GetDraftAsync(created.Key, cancellationToken: context.RequestAborted))!;
@@ -257,14 +255,26 @@ internal sealed class TestEndpointsMiddleware(RequestDelegate next)
         var draft = (await forms.GetDraftAsync(created.Key, cancellationToken: context.RequestAborted))!;
         var definition = draft.Definition!;
         string[] positions = ["Frontend developer", "Backend developer", "Accountant", "Office manager"];
-        var name = new FormField { Key = Guid.NewGuid(), Type = "text", Alias = "name", Label = new LocalizedText("Name") };
+        var name = new FormField
+        {
+            Key = Guid.NewGuid(),
+            Type = "text",
+            Alias = "name",
+            Label = new LocalizedText("Name"),
+            Validation = body?.Unique == true ? [new UniquePerFormCheck()] : [],
+        };
+
+        // The accountant's position, the third, holds as many places as asked, so a move back onto it can find it full (ADR-0090).
         var position = new FormField
         {
             Key = Guid.NewGuid(),
             Type = "dropdown",
             Alias = "position",
             Label = new LocalizedText("Position"),
-            Options = new FieldOptions { Items = [.. positions.Select((label, index) => new FieldOption { Value = $"p{index + 1}", Label = new LocalizedText(label) })] },
+            Options = new FieldOptions
+            {
+                Items = [.. positions.Select((label, index) => new FieldOption { Value = $"p{index + 1}", Label = new LocalizedText(label), Places = index == 2 ? body?.Places : null })],
+            },
         };
         var amount = new FormField { Key = Guid.NewGuid(), Type = "number", Alias = "amount", Label = new LocalizedText("Amount") };
         var salary = new FormField { Key = Guid.NewGuid(), Type = "text", Alias = "salary", Label = new LocalizedText("Salary"), Sensitive = true };
@@ -276,6 +286,32 @@ internal sealed class TestEndpointsMiddleware(RequestDelegate next)
             Trigger = ActionTrigger.Approved,
             Settings = SettingsObject.Parse(JsonSerializer.Serialize(new { url = body?.Url ?? "http://127.0.0.1:5560/approved", secret = "$JironFormBuilder:Secrets:E2EWebhook" })),
         };
+        List<FormAction> actions = [hook];
+        if (body?.Notice is { Length: > 0 } notice)
+        {
+            // A notice of each entry with its own link, on a site that knows its address, as the team gets one.
+            await KnowBaseUrlAsync(context);
+            var texts = new Dictionary<string, object>
+            {
+                ["to"] = new[] { notice },
+                ["subject"] = new Dictionary<string, string> { [""] = "Entry {{ entry.number }}" },
+                // A merge tag never goes inside markup (ADR-0064), so the link is the text itself.
+                ["body"] = new Dictionary<string, string> { [""] = "<p>Open entry {{ entry.number }}: {{ entry.url }}</p>" },
+            };
+            actions.Add(new FormAction { Key = Guid.NewGuid(), Type = EmailActionType.Alias, Name = "Notice", Settings = SettingsObject.Parse(JsonSerializer.Serialize(texts)) });
+        }
+
+        if (body?.Forward is { Length: > 0 } forward)
+        {
+            await KnowBaseUrlAsync(context);
+            var settingsService = context.RequestServices.GetRequiredService<IFormBuilderSettingsService>();
+            var email = await settingsService.GetAsync<EmailSettings>(null, context.RequestAborted);
+            if (!email.Value.ForwardAddresses.Contains(forward, StringComparer.OrdinalIgnoreCase))
+            {
+                _ = await settingsService.SaveAsync(email.Value with { ForwardAddresses = [.. email.Value.ForwardAddresses, forward] }, email.Version, null, context.RequestAborted);
+            }
+        }
+
         var saved = (await forms.SaveDraftAsync(
             created.Key,
             draft.Form.ConcurrencyVersion,
@@ -287,7 +323,7 @@ internal sealed class TestEndpointsMiddleware(RequestDelegate next)
                     Developer = definition.Settings.Developer with { Headless = true },
                     Submission = definition.Settings.Submission with { Approval = ApprovalMode.Manual, EntryTitle = "{{ field.name }}" },
                 },
-                Actions = [hook],
+                Actions = actions,
             },
             null,
             null,
@@ -323,7 +359,35 @@ internal sealed class TestEndpointsMiddleware(RequestDelegate next)
         await context.Response.WriteAsJsonAsync(new { key = created.Key, alias = published.Alias, positions }, Json, context.RequestAborted);
     }
 
-    private sealed record EntriesFormRequest(int? Count, string? Url, string? Name);
+    private sealed record EntriesFormRequest(int? Count, string? Url, string? Name, int? Places = null, bool? Unique = null, string? Notice = null, string? Forward = null);
+
+    // The site's own address, from this request, unless the settings name one, so links in mails lead back here.
+    private static async Task KnowBaseUrlAsync(HttpContext context)
+    {
+        var settingsService = context.RequestServices.GetRequiredService<IFormBuilderSettingsService>();
+        var general = await settingsService.GetAsync<GeneralSettings>(null, context.RequestAborted);
+        if (general.Value.BaseUrl is null)
+        {
+            _ = await settingsService.SaveAsync(general.Value with { BaseUrl = $"{context.Request.Scheme}://{context.Request.Host}" }, general.Version, null, context.RequestAborted);
+        }
+    }
+
+    // What the audit log holds of one item, oldest first, with the details as stored.
+    private static async Task AuditAsync(HttpContext context)
+    {
+        if (!Guid.TryParse(context.Request.Query["entity"], out var entity))
+        {
+            context.Response.StatusCode = StatusCodes.Status400BadRequest;
+            return;
+        }
+
+        var audit = context.RequestServices.GetRequiredService<IAuditRepository>();
+        var page = await audit.QueryAsync(new AuditQuery { EntityKey = entity }, PageRequest.First(PageRequest.MaxTake), context.RequestAborted);
+        var entries = page.Items
+            .OrderBy(item => item.Id)
+            .Select(item => new { action = item.Action, user = item.UserKey, details = JsonDocument.Parse(item.Details).RootElement });
+        await context.Response.WriteAsJsonAsync(new { entries }, Json, context.RequestAborted);
+    }
 
     // The states of the mail one mailbox got, as the deliveries log has them, by any spelling of it.
     private static async Task MailLogAsync(HttpContext context)
@@ -395,6 +459,9 @@ internal sealed class TestEndpointsMiddleware(RequestDelegate next)
                 return;
             case "entries-form" when HttpMethods.IsPost(context.Request.Method):
                 await EntriesFormAsync(context);
+                return;
+            case "audit" when HttpMethods.IsGet(context.Request.Method):
+                await AuditAsync(context);
                 return;
             default:
                 context.Response.StatusCode = StatusCodes.Status404NotFound;
