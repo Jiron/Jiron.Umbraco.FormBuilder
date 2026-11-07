@@ -77,7 +77,9 @@ vi.mock('../preview/look', async (original) => ({
 
 const { FormHistoryViewElement } = await import('./form-history.view');
 
-const minutesAgo = (minutes: number) => new Date(Date.now() - minutes * 60_000).toISOString();
+// The tests run at a fixed midday, so a version made some minutes before was made today whenever they run.
+const MIDDAY = new Date(2026, 10, 6, 12, 0);
+const minutesAgo = (minutes: number) => new Date(MIDDAY.getTime() - minutes * 60_000).toISOString();
 
 const version = (number: number, more: Partial<FormVersionResponseModel> = {}): FormVersionResponseModel => ({
   number,
@@ -209,6 +211,8 @@ async function viewOf(prepare: (workspace: StandIn) => void = () => undefined) {
 beforeAll(registerEnglish);
 
 beforeEach(() => {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(MIDDAY);
   opened.modals = [];
   opened.answer = undefined;
   opened.answers = {};
@@ -217,6 +221,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.useRealTimers();
   document.body.replaceChildren();
 });
 

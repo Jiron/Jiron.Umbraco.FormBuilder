@@ -48,7 +48,9 @@ const { VersionPickerModalElement } = await import('./version-picker.modal.eleme
 const { RestoreEarlierAction } = await import('./restore-earlier.action');
 const { loadHistoryWords } = await import('./history-words');
 
-const minutesAgo = (minutes: number) => new Date(Date.now() - minutes * 60_000).toISOString();
+// The tests run at a fixed midday, so a version made some minutes before was made today whenever they run.
+const MIDDAY = new Date(2026, 10, 6, 12, 0);
+const minutesAgo = (minutes: number) => new Date(MIDDAY.getTime() - minutes * 60_000).toISOString();
 
 const entry = (number: number, more: Partial<FormVersionResponseModel> = {}): FormVersionEntryResponseModel => ({
   version: {
@@ -113,12 +115,15 @@ beforeAll(async () => {
 });
 
 beforeEach(() => {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(MIDDAY);
   opened.modals = [];
   opened.wordsFail = false;
   opened.answer = undefined;
 });
 
 afterEach(() => {
+  vi.useRealTimers();
   document.body.replaceChildren();
 });
 
