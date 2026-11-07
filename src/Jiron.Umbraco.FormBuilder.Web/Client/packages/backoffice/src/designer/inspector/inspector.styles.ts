@@ -387,6 +387,21 @@ export const inspectorStyles = css`
     inline-size: 32px;
   }
 
+  /* A row's "Place in the list", under its line, as its details are. */
+  .row-place {
+    display: grid;
+    gap: var(--uui-size-space-1);
+    margin: var(--uui-size-space-2) 0 var(--uui-size-space-3);
+    margin-inline-start: 36px;
+    padding-inline-start: var(--uui-size-space-3);
+    border-inline-start: 2px solid var(--uui-color-border);
+  }
+
+  .row-place select {
+    justify-self: start;
+    min-inline-size: 10ch;
+  }
+
   .row-details {
     display: grid;
     gap: var(--uui-size-space-4);

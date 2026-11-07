@@ -3,9 +3,18 @@
 // site, a data type (ADR-0173), the country list or a JSON address; a kind's configuration is drawn by the generic renderer over its served schema. Each own option
 // is a row with its handle, its label in the language shown and a button for its details: what entries store, a place
 // limit, a description and an image on cards, and the answers of the field it depends on that it is shown for. A row
-// moves by its handle with the pointer, or with Alt+Up and Alt+Down, which says where it went; "Paste options..." adds
-// one option a line. Every change goes to the inspector, which makes it one step to undo.
-import { html, nothing, repeat, type PropertyValues, type TemplateResult } from '@umbraco-cms/backoffice/external/lit';
+// moves by its handle with the pointer, or with Alt+Up and Alt+Down, which says where it went; a press on the handle
+// that never became a drag opens its "Place in the list", as an outcome's and an action's, so a pointer moves it without
+// dragging (WCAG 2.5.7). "Paste options..." adds one option a line. Every change goes to the inspector, which makes it
+// one step to undo.
+import {
+  html,
+  live,
+  nothing,
+  repeat,
+  type PropertyValues,
+  type TemplateResult,
+} from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import { UMB_MEDIA_PICKER_MODAL } from '@umbraco-cms/backoffice/media';
 import { umbOpenModal } from '@umbraco-cms/backoffice/modal';
@@ -75,6 +84,7 @@ export class OptionEditorElement extends UmbLitElement {
     _said: { state: true },
     _problems: { state: true },
     _drag: { state: true },
+    _placing: { state: true },
   };
 
   declare field: DesignField;
@@ -98,6 +108,8 @@ export class OptionEditorElement extends UmbLitElement {
   declare private _said: string;
   declare private _problems: ReadonlyMap<string, string>;
   declare private _drag: RowDrag | null;
+  /** The row whose "Place in the list" is open, by an option's value or a row's key. */
+  declare private _placing: string | null;
 
   constructor() {
     super();
@@ -114,6 +126,7 @@ export class OptionEditorElement extends UmbLitElement {
     this._said = '';
     this._problems = new Map();
     this._drag = null;
+    this._placing = null;
   }
 
   #reading = { sources: false, lists: false };
@@ -446,8 +459,11 @@ export class OptionEditorElement extends UmbLitElement {
           type="button"
           class="row-handle"
           aria-label=${this.#term('options_move', label)}
+          aria-expanded=${count < 2 ? nothing : this._placing === item.value ? 'true' : 'false'}
+          aria-controls=${count < 2 ? nothing : `option-${at}-place`}
           @pointerdown=${(event: PointerEvent) => this.#dragRow(event, at, label)}
           @keydown=${(event: KeyboardEvent) => this.#keyMove(event, at, count, label)}
+          @click=${() => this.#togglePlace(item.value, at, count)}
         >
           <uui-icon name="icon-grip" aria-hidden="true"></uui-icon>
         </button>
@@ -492,6 +508,7 @@ export class OptionEditorElement extends UmbLitElement {
           <uui-icon name="icon-trash" aria-hidden="true"></uui-icon>
         </button>
       </div>
+      ${this._placing === item.value ? this.#place(`option-${at}-place`, at, count, label) : nothing}
       ${open ? html`<div class="row-details" id=${details}>${this.#details(item, at)}</div>` : nothing}
     </li>`;
   }
@@ -735,6 +752,54 @@ export class OptionEditorElement extends UmbLitElement {
 
   // ---- Moving a row -------------------------------------------------------------------------------------------------
 
+  // A press on the handle that never became a drag opens the row's "Place in the list", or closes it; a list of one
+  // row has no other place.
+  #togglePlace(key: string, at: number, count: number) {
+    if (count < 2) return;
+    this._placing = this._placing === key ? null : key;
+    if (this._placing !== null)
+      void this.updateComplete.then(() => this.querySelector<HTMLElement>(`#${this.#placeIdOf(at)}-select`)?.focus());
+  }
+
+  #placeIdOf(at: number): string {
+    return `${this.edits === 'rows' ? 'row' : 'option'}-${at}-place`;
+  }
+
+  // Where the row is in the list, which a pointer chooses with single presses (WCAG 2.5.7); choosing moves it there,
+  // its handle keeping the focus, and Escape closes it.
+  #place(id: string, at: number, count: number, label: string): TemplateResult {
+    const handle = () => this.querySelector<HTMLElement>(`.option-rows > .option-row[data-at="${at}"] .row-handle`);
+    return html`<div class="row-place" id=${id}>
+      <label class="label" for=${`${id}-select`}>${this.#term('options_place')}</label>
+      <select
+        id=${`${id}-select`}
+        .value=${live(String(at))}
+        @change=${(event: Event) => {
+          const to = Number((event.target as HTMLSelectElement).value);
+          this._placing = null;
+          if (to !== at) this.#move(at, to, label);
+          else void this.updateComplete.then(() => handle()?.focus());
+        }}
+        @keydown=${(event: KeyboardEvent) => {
+          if (event.key !== 'Escape') return;
+          // The inspector's own Escape leaves the field; here it closes the place.
+          event.preventDefault();
+          event.stopPropagation();
+          this._placing = null;
+          void this.updateComplete.then(() => handle()?.focus());
+        }}
+      >
+        ${Array.from(
+          { length: count },
+          (_, place) =>
+            html`<option value=${String(place)} ?selected=${place === at}>
+              ${this.#term('options_placeOf', place + 1, count)}
+            </option>`,
+        )}
+      </select>
+    </div>`;
+  }
+
   #keyMove(event: KeyboardEvent, at: number, count: number, label: string) {
     if (!event.altKey || (event.key !== 'ArrowUp' && event.key !== 'ArrowDown')) return;
     // The canvas's own Alt+Up and Alt+Down move the selected field; here they move the row.
@@ -906,8 +971,11 @@ export class OptionEditorElement extends UmbLitElement {
           type="button"
           class="row-handle"
           aria-label=${this.#term('options_move', label)}
+          aria-expanded=${count < 2 ? nothing : this._placing === row.key ? 'true' : 'false'}
+          aria-controls=${count < 2 ? nothing : `row-${at}-place`}
           @pointerdown=${(event: PointerEvent) => this.#dragRow(event, at, label)}
           @keydown=${(event: KeyboardEvent) => this.#keyMove(event, at, count, label)}
+          @click=${() => this.#togglePlace(row.key, at, count)}
         >
           <uui-icon name="icon-grip" aria-hidden="true"></uui-icon>
         </button>
@@ -953,6 +1021,7 @@ export class OptionEditorElement extends UmbLitElement {
           <uui-icon name="icon-trash" aria-hidden="true"></uui-icon>
         </button>
       </div>
+      ${this._placing === row.key ? this.#place(`row-${at}-place`, at, count, label) : nothing}
     </li>`;
   }
 

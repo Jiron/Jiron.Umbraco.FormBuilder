@@ -190,6 +190,7 @@ Use Umbraco's own words where Umbraco has the same action, so the section feels 
 | start from a ready-made form (the checklist, an empty folder) | Choose a template… | Vorlage wählen… |
 | turn a list of questions into fields | Paste questions… | Fragen einfügen… |
 | turn lines into a choice field's options, or a grid's rows (one a line) | Paste options… · Paste rows… | Optionen einfügen… · Zeilen einfügen… |
+| move an option or a grid's row with single presses: what its handle opens under it | Place in the list · 1 of 3 | Platz in der Liste · 1 von 3 |
 | add a merge tag to a text | Insert merge tag | Platzhalter einfügen |
 | add who gets an email (its To box; it offers An address, The answer of a field, The person who created the form, Addresses chosen by an answer, each kind once) | Add recipient | Empfänger hinzufügen |
 | add a row to a webhook's names and values, or to its headers | Add a name · Add header | Namen hinzufügen · Kopfzeile hinzufügen |

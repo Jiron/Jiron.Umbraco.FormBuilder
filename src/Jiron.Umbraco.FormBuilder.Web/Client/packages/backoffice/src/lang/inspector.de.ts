@@ -206,6 +206,8 @@ export default {
     options_moved: (label: string, position: number, count: number) =>
       `Verschoben. ${label}: Position ${position} von ${count}.`,
     options_edge: 'Weiter geht es nicht.',
+    options_place: 'Platz in der Liste',
+    options_placeOf: (place: number, count: number) => `${place} von ${count}`,
     options_labelOf: (number: number) => `Beschriftung der Option ${number}`,
     options_details: (label: string) => `Details zu ${label}`,
     options_remove: (label: string) => `${label} entfernen`,

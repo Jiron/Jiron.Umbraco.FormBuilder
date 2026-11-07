@@ -317,6 +317,81 @@ describe('the option editor', () => {
     expect(focused()).toBe('Move Option 3');
   });
 
+  it('moves a row with single presses: its handle opens its place in the list, and choosing one moves it there', async () => {
+    const field: DesignField = {
+      ...RADIO,
+      options: { items: [...(RADIO.options as { items: unknown[] }).items, { value: 'blue', label: { '': 'Blue' } }] },
+    };
+    const { element, options, changes } = await editorOf(field);
+    const values = () => ((options()?.['items'] as { value: string }[] | undefined) ?? []).map((item) => item.value);
+    const handle = (label: string) => must(element.querySelector<HTMLElement>(`[aria-label="Move ${label}"]`), label);
+    expect([handle('Red').getAttribute('aria-expanded'), element.querySelector('.row-place')]).toEqual(['false', null]);
+
+    press(handle('Red'));
+    await settle(element);
+    const select = must(element.querySelector<HTMLSelectElement>('#option-0-place-select'), 'the place');
+    expect(handle('Red').getAttribute('aria-expanded')).toBe('true');
+    expect(handle('Red').getAttribute('aria-controls')).toBe('option-0-place');
+    expect(text(element.querySelector('.row-place label'))).toBe('Place in the list');
+    expect([...select.options].map((option) => [text(option), option.selected])).toEqual([
+      ['1 of 3', true],
+      ['2 of 3', false],
+      ['3 of 3', false],
+    ]);
+    await vi.waitFor(() => expect(document.activeElement).toBe(select));
+
+    choose(select, '2');
+    await settle(element);
+    expect(values()).toEqual(['green', 'blue', 'red']);
+    expect(changes.at(-1)?.name).toBe('Moved Red');
+    expect(await said(element)).toBe('Moved. Red: position 3 of 3.');
+    expect(element.querySelector('.row-place')).toBeNull();
+    await vi.waitFor(() => expect(document.activeElement?.getAttribute('aria-label')).toBe('Move Red'));
+
+    // Its own place, or Escape, closes it and moves nothing; a second press closes it too.
+    press(handle('Blue'));
+    await settle(element);
+    choose(must(element.querySelector<HTMLSelectElement>('#option-1-place-select'), 'the place'), '1');
+    await settle(element);
+    press(handle('Blue'));
+    await settle(element);
+    must(element.querySelector('#option-1-place-select'), 'the place').dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+    );
+    await settle(element);
+    press(handle('Green'));
+    await settle(element);
+    press(handle('Green'));
+    await settle(element);
+    expect([values(), element.querySelector('.row-place')]).toEqual([['green', 'blue', 'red'], null]);
+
+    // A grid's rows move the same way, and a list of one has no other place.
+    const grid = await editorOf(
+      {
+        key: 'g',
+        type: 'grid',
+        alias: 'rating',
+        label: { '': 'Rating' },
+        rows: [
+          { key: 'r1', label: { '': 'Talks' } },
+          { key: 'r2', label: { '': 'Food' } },
+        ],
+      },
+      { edits: 'rows' },
+    );
+    press(must(grid.element.querySelector<HTMLElement>('[aria-label="Move Talks"]'), 'Move Talks'));
+    await settle(grid.element);
+    choose(must(grid.element.querySelector<HTMLSelectElement>('#row-0-place-select'), 'the row place'), '1');
+    await settle(grid.element);
+    expect((grid.element.field['rows'] as { key: string }[]).map((row) => row.key)).toEqual(['r2', 'r1']);
+
+    const single = await editorOf({ ...RADIO, options: { items: [{ value: 'red', label: { '': 'Red' } }] } });
+    const only = must(single.element.querySelector<HTMLElement>('[aria-label="Move Red"]'), 'Move Red');
+    press(only);
+    await settle(single.element);
+    expect([only.hasAttribute('aria-expanded'), single.element.querySelector('.row-place')]).toEqual([false, null]);
+  });
+
   it("keeps the canvas's Alt+Up and Alt+Down for the canvas, outside a row's handle", async () => {
     const { element } = await editorOf(RADIO);
     const outside = vi.fn();

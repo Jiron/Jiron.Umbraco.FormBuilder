@@ -224,6 +224,8 @@ progress, since the steps across its top stand in for it.
   - **Choice fields** add "Options from" (this field, an option list, a standard list, content, a data type, a JSON
     address, the country list), "Depends on" for a field whose options follow another's answer, and the options
     themselves, or a grid's rows and columns ([ADR-0172](../decisions/0172-the-option-editor-and-the-option-sources.md)).
+    A row moves by dragging its handle, with Alt+Up and Alt+Down on it, or with single presses: a press on the handle
+    opens its "Place in the list" under it ([ADR-0205](../decisions/0205-moving-an-option-without-dragging.md)).
     The option list picker ends with "Create an option list…" for users with `manageLibrary`, which makes one in a
     sidebar without leaving the form.
   - **Rich text** (a paragraph) is edited in place with a small toolbar: Bold, Italic, Link, Bulleted list and
