@@ -2809,7 +2809,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
   - **11.1 The entries list**:
     - **The table:** a collection table per form, a column chooser (saved per user in `jfbUserSetting`), server-side paging, "new" markers and mark-as-seen, and an action status ("3/3 delivered"). Each entry is named by its entry title (§4.3.4), or by its number when the form has none.
     - **Finding entries:** filters as chips (date presets and ranges, state, typed field filters), search and sort. A set of filters can be saved under a name (per user). A search shows its count exactly up to 1,000 and as "more than 1,000" beyond (ADR-0003).
-    - **Working on many:** bulk actions (approve, reject, spam, not spam, delete, export selected, re-run actions) and the keyboard shortcuts of §4.13.
+    - **Working on many:** bulk actions (approve, reject, spam, not spam, delete, export selected, re-run actions) and the keyboard shortcuts of §4.13. Export selected… opens 11.4's export dialog and comes with it, its check there (ADR-0207).
     - **Drafts stay out** (ADR-0163): an empty state filter means every state to the repository, so the list, its counts, search and exports name the states they show and leave `Draft` out, with a test.
     - Done when: Playwright passes with 1,000 seeded entries, including a saved filter set reopened in a second browser and a bulk approval undone from its toast inside the window (`page.clock`; every entry back in its state, no approved action run, and no Undo offered once the window has passed, ADR-0023), and the 100,000-entry budget of §4.12 is measured and met.
   - **11.2 The entry panel**:
@@ -2842,7 +2842,8 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
     - **The export dialog** remembers the last format, fields and delimiter per user and form (`jfbUserSetting`).
     - **Large exports:** a background job, a notification, and a time-limited download. Every export reads in keyset pages of 250 entries, each its own gated read, so submissions wait behind one page at most (ADR-0003).
     - **Rules:** every export respects the filters, the permissions and the sensitive-data rules, and is audited.
-    - Done when: tests open the produced files (the XLSX with a test-only reader, CSV round trip, ZIP listing), and the 10,000-entry budget is met.
+    - **Export selected** (moved from 11.1, ADR-0207): the entries list's bulk bar opens the export dialog for the ticked entries.
+    - Done when: tests open the produced files (the XLSX with a test-only reader, CSV round trip, ZIP listing), and the 10,000-entry budget is met; Playwright ticks entries in a form's list, chooses Export selected… and finds only those entries in the file.
   - **11.5 Insights**:
     - **Collection:**
       - the runtime sends `view`, `start` and `page` beacons (`navigator.sendBeacon`) to `events`, unless insights are off;
