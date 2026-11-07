@@ -325,6 +325,7 @@ export type EntryListFieldResponseModel = {
     column: boolean;
     sorts: boolean;
     tests: Array<string>;
+    options: Array<EntryListOptionResponseModel>;
 };
 
 export type EntryListFilterRequestModel = {
@@ -334,6 +335,11 @@ export type EntryListFilterRequestModel = {
     fields: Array<EntryFieldFilterRequestModel>;
     search?: string | null;
     sort?: EntryListSortRequestModel | null;
+};
+
+export type EntryListOptionResponseModel = {
+    value: string;
+    label: string;
 };
 
 export type EntryListPageResponseModel = {

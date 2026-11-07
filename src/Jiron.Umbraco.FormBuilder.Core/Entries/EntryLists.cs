@@ -60,7 +60,18 @@ internal sealed record EntryListField(Guid Key, string Label, string Alias, stri
 
     /// <summary>The tests its filter makes; none for a field that is no filter.</summary>
     public IReadOnlyList<EntryFieldTest> Tests { get; init; } = [];
+
+    /// <summary>
+    /// The field's own options in the version the site serves, which a filter offers to tick; none for a field whose
+    /// options come from a list or a source, or hang on another field's answer, whose values it types.
+    /// </summary>
+    public IReadOnlyList<EntryListOption> Options { get; init; } = [];
 }
+
+/// <summary>One of a choice field's own options, as a filter offers it to tick.</summary>
+/// <param name="Value">What entries store.</param>
+/// <param name="Label">Its label in the default culture, or its value without one.</param>
+internal sealed record EntryListOption(string Value, string Label);
 
 /// <summary>A column's cell: the answer's texts as the summary page lists them, one for each row of a repeatable group.</summary>
 /// <param name="Field">The column's field.</param>
@@ -162,7 +173,10 @@ internal sealed partial class EntryLists(
             return null;
         }
 
-        var fields = Fields(await forms.ListFieldsAsync(form.Id, cancellationToken));
+        var options = await OptionsAsync(form, cancellationToken);
+        var fields = Fields(await forms.ListFieldsAsync(form.Id, cancellationToken))
+            .Select(field => options.TryGetValue(field.Key, out var own) && field.Tests.Count > 0 ? field with { Options = own } : field)
+            .ToList();
         var columns = fields.Where(field => field.Column).Select(field => field.Key).ToHashSet();
         var chosen = (await settings.GetColumnsAsync(userKey, formKey, cancellationToken)).Where(columns.Contains).ToList();
         var sets = (await settings.GetFilterSetsAsync(userKey, cancellationToken)).Where(set => set.Form is null || set.Form == formKey).ToList();
@@ -641,6 +655,26 @@ internal sealed partial class EntryLists(
         }
 
         return [.. columns.Distinct()];
+    }
+
+    // The own options of the choice fields of the version the site serves, by field; none before a first publish.
+    private async Task<Dictionary<Guid, IReadOnlyList<EntryListOption>>> OptionsAsync(StoredForm form, CancellationToken cancellationToken)
+    {
+        var options = new Dictionary<Guid, IReadOnlyList<EntryListOption>>();
+        if (form.PublishedVersionId is not { } versionId || await forms.GetVersionByIdAsync(versionId, cancellationToken) is not { } version)
+        {
+            return options;
+        }
+
+        foreach (var field in documents.Readable(version).Pages.SelectMany(page => page.Groups).SelectMany(group => group.Fields).SelectMany(field => field.Fields.Prepend(field)))
+        {
+            if (field.Options is { Source: OptionSource.Items, Parent: null, Items.Count: > 0 } own)
+            {
+                options.TryAdd(field.Key, [.. own.Items.Select(item => new EntryListOption(item.Value, item.Label?.Default is { Length: > 0 } label ? label : item.Value))]);
+            }
+        }
+
+        return options;
     }
 
     // The reference format of the version the site serves, or of the draft before a publish.

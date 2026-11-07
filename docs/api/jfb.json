@@ -8632,6 +8632,7 @@
           "key",
           "kind",
           "label",
+          "options",
           "removed",
           "sensitive",
           "sorts",
@@ -8677,6 +8678,16 @@
             "type": "array",
             "items": {
               "type": "string"
+            }
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/EntryListOptionResponseModel"
+                }
+              ]
             }
           }
         },
@@ -8728,6 +8739,22 @@
               }
             ],
             "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "EntryListOptionResponseModel": {
+        "required": [
+          "label",
+          "value"
+        ],
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
           }
         },
         "additionalProperties": false

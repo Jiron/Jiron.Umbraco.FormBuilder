@@ -3,12 +3,14 @@ using System.Text.Json;
 using Jiron.Umbraco.FormBuilder.Core.Access;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Email;
+using Jiron.Umbraco.FormBuilder.Core.Entries;
 using Jiron.Umbraco.FormBuilder.Core.Files;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Core.Settings;
 using Jiron.Umbraco.FormBuilder.Core.Signatures;
+using Jiron.Umbraco.FormBuilder.Core.Submissions;
 using Jiron.Umbraco.FormBuilder.Testing.Stub;
 using Jiron.Umbraco.FormBuilder.Testing.Time;
 using Jiron.Umbraco.FormBuilder.Web.Rendering;
@@ -98,6 +100,10 @@ internal sealed class TestEndpointsStartupFilter(IOptions<FormBuilderTestingOpti
 /// <item><description><c>POST /jfb-testing/webhook-form {"url": "..."}</c>: publishes a headless form whose webhook action calls this address (ROADMAP 8.4).</description></item>
 /// <item><description><c>GET /jfb-testing/mail-log?key=...</c>: the states of the mail one mailbox got, by any spelling of it (ADR-0159).</description></item>
 /// <item><description><c>GET /jfb-testing/mail-view?view=...</c>: what the site's view of a mail writes for a fixed model (ADR-0160).</description></item>
+/// <item><description><c>POST /jfb-testing/entries-form {"count": 1000, "url": "..."}</c>: publishes a form whose entries wait
+/// for approval, named by their name, with a position to choose, an amount, a sensitive salary and a webhook on approval to
+/// this address, and sends it that many entries through the submission pipeline, as a server key would (ADR-0207); at most
+/// 2,000.</description></item>
 /// </list>
 /// Requests from another machine, and paths outside <c>/jfb-testing/</c>, go on to the site as if this did not exist.
 /// </summary>
@@ -241,6 +247,84 @@ internal sealed class TestEndpointsMiddleware(RequestDelegate next)
 
     private sealed record MailLayoutsRequest(string? Marker, string? Word);
 
+    // A form whose entries wait for approval, and its entries, each sent as the public API sends a server key's.
+    private static async Task EntriesFormAsync(HttpContext context)
+    {
+        var body = await JsonSerializer.DeserializeAsync<EntriesFormRequest>(context.Request.Body, Json, context.RequestAborted);
+        var count = Math.Clamp(body?.Count ?? 0, 0, 2000);
+        var forms = context.RequestServices.GetRequiredService<IFormBuilderFormService>();
+        var created = await forms.CreateAsync(new NewFormRequest(body?.Name ?? $"Applications {Guid.NewGuid():N}"), context.RequestAborted);
+        var draft = (await forms.GetDraftAsync(created.Key, cancellationToken: context.RequestAborted))!;
+        var definition = draft.Definition!;
+        string[] positions = ["Frontend developer", "Backend developer", "Accountant", "Office manager"];
+        var name = new FormField { Key = Guid.NewGuid(), Type = "text", Alias = "name", Label = new LocalizedText("Name") };
+        var position = new FormField
+        {
+            Key = Guid.NewGuid(),
+            Type = "dropdown",
+            Alias = "position",
+            Label = new LocalizedText("Position"),
+            Options = new FieldOptions { Items = [.. positions.Select((label, index) => new FieldOption { Value = $"p{index + 1}", Label = new LocalizedText(label) })] },
+        };
+        var amount = new FormField { Key = Guid.NewGuid(), Type = "number", Alias = "amount", Label = new LocalizedText("Amount") };
+        var salary = new FormField { Key = Guid.NewGuid(), Type = "text", Alias = "salary", Label = new LocalizedText("Salary"), Sensitive = true };
+        var hook = new FormAction
+        {
+            Key = Guid.NewGuid(),
+            Type = "webhook",
+            Name = "Tell the team",
+            Trigger = ActionTrigger.Approved,
+            Settings = SettingsObject.Parse(JsonSerializer.Serialize(new { url = body?.Url ?? "http://127.0.0.1:5560/approved", secret = "$JironFormBuilder:Secrets:E2EWebhook" })),
+        };
+        var saved = (await forms.SaveDraftAsync(
+            created.Key,
+            draft.Form.ConcurrencyVersion,
+            definition with
+            {
+                Pages = [definition.Pages[0] with { Groups = [definition.Pages[0].Groups[0] with { Fields = [name, position, amount, salary] }] }],
+                Settings = definition.Settings with
+                {
+                    Developer = definition.Settings.Developer with { Headless = true },
+                    Submission = definition.Settings.Submission with { Approval = ApprovalMode.Manual, EntryTitle = "{{ field.name }}" },
+                },
+                Actions = [hook],
+            },
+            null,
+            null,
+            context.RequestAborted))!;
+        _ = await forms.PublishAsync(created.Key, saved.Form.ConcurrencyVersion, null, null, context.RequestAborted);
+        var published = (await forms.GetAsync(created.Key, context.RequestAborted))!;
+        var submissions = context.RequestServices.GetRequiredService<FormSubmissions>();
+        for (var i = 1; i <= count; i++)
+        {
+            var result = await submissions.SubmitAsync(
+                new SubmissionRequest
+                {
+                    Form = created.Key,
+                    Revision = published.PublicRevision,
+                    SubmissionId = Guid.NewGuid(),
+                    Culture = "en-US",
+                    ServerKey = "e2e-seed",
+                    Fields = new Dictionary<string, PostedAnswer>
+                    {
+                        ["name"] = new([$"Person {i:0000}"]),
+                        ["position"] = new([$"p{(i % positions.Length) + 1}"]),
+                        ["amount"] = new([(i % 500).ToString(System.Globalization.CultureInfo.InvariantCulture)]),
+                        ["salary"] = new([$"{30000 + i}"]),
+                    },
+                },
+                context.RequestAborted);
+            if (result.Receipt is null)
+            {
+                throw new InvalidOperationException($"The test host could not send entry {i}: {result.Refusal}.");
+            }
+        }
+
+        await context.Response.WriteAsJsonAsync(new { key = created.Key, alias = published.Alias, positions }, Json, context.RequestAborted);
+    }
+
+    private sealed record EntriesFormRequest(int? Count, string? Url, string? Name);
+
     // The states of the mail one mailbox got, as the deliveries log has them, by any spelling of it.
     private static async Task MailLogAsync(HttpContext context)
     {
@@ -308,6 +392,9 @@ internal sealed class TestEndpointsMiddleware(RequestDelegate next)
                 return;
             case "mail-layouts" when HttpMethods.IsPost(context.Request.Method):
                 await MailLayoutsAsync(context);
+                return;
+            case "entries-form" when HttpMethods.IsPost(context.Request.Method):
+                await EntriesFormAsync(context);
                 return;
             default:
                 context.Response.StatusCode = StatusCodes.Status404NotFound;

@@ -2,6 +2,7 @@
 // and a workspace behind each item. The table in sidebar.ts holds the items; screens that later phases build replace
 // their workspace's element here, and show coming-screen.element until then.
 import { manifests as designer } from '../designer/manifests';
+import { manifests as entries } from '../entries/manifests';
 import { manifests as library } from '../library/manifests';
 import { manifests as overview } from '../overview/manifests';
 import { manifests as tree } from '../tree/manifests';
@@ -106,5 +107,6 @@ export const manifests: UmbExtensionManifest[] = [
   ...tree(FORMS_MENU_ALIAS, SECTION_ALIAS),
   ...library,
   ...designer,
+  ...entries,
   ...overview,
 ];

@@ -298,6 +298,37 @@ public sealed class EntryListTests : ActionTestBase
     }
 
     [Test]
+    public async Task AChoiceFieldsOwnOptions_AreOfferedToTick_AndThoseFromElsewhereAreNot()
+    {
+        var position = new FormField
+        {
+            Key = Guid.Parse("c4000000-0000-4000-8000-000000000105"),
+            Type = "dropdown",
+            Alias = "position",
+            Label = new LocalizedText("Position"),
+            Options = new FieldOptions { Items = [new FieldOption { Value = "p1", Label = new LocalizedText("Accountant") }, new FieldOption { Value = "p2" }] },
+        };
+        var team = new FormField
+        {
+            Key = Guid.Parse("c4000000-0000-4000-8000-000000000106"),
+            Type = "dropdown",
+            Alias = "team",
+            Label = new LocalizedText("Team"),
+            Options = new FieldOptions { Items = [new FieldOption { Value = "t1", ParentValues = ["p1"] }], Parent = position.Key },
+        };
+        var form = await PublishAsync(name: $"Choices {Guid.NewGuid():N}", fields: [NameField, position, team]);
+
+        var view = (await Lists.ViewAsync(Editor, form))!;
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(view.Fields.Single(field => field.Key == position.Key).Options, Is.EqualTo(new[] { new EntryListOption("p1", "Accountant"), new EntryListOption("p2", "p2") }), "a value without a label names itself");
+            Assert.That(view.Fields.Single(field => field.Key == team.Key).Options, Is.Empty, "options that hang on another answer are typed");
+            Assert.That(view.Fields.Single(field => field.Key == NameField.Key).Options, Is.Empty);
+        });
+    }
+
+    [Test]
     public async Task AFormThatIsGone_HasNoList()
     {
         Assert.Multiple(async () =>

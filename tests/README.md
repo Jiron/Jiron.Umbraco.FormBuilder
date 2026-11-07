@@ -406,7 +406,9 @@ A host turns these on in the `JironFormBuilderTesting` section; everything is of
 
 | Setting | Effect |
 | --- | --- |
-| `Endpoints` | Answers `/jfb-testing/status`, `/jfb-testing/clock`, `/jfb-testing/access` (each backoffice user's effective permissions, globally, at the root and in each root folder), `/jfb-testing/entries` (a form's stored entries), `/jfb-testing/sent-expired` (a sent page's token again, expired a minute ago, ADR-0123) and `/jfb-testing/form-restriction` (a form's own restriction, which no screen sets yet, ADR-0166; `TestFormRestrictionEndpointTests`), only in Development and only for requests from this machine. |
+| `Endpoints` | Answers `/jfb-testing/status`, `/jfb-testing/clock`, `/jfb-testing/access` (each backoffice user's effective permissions, globally, at the root and in each root folder), `/jfb-testing/entries` (a form's stored entries), `/jfb-testing/entries-form` (a published form of job applications
+with up to 2,000 entries sent through the pipeline, waiting for approval, and a webhook on approval to a given address),
+`/jfb-testing/sent-expired` (a sent page's token again, expired a minute ago, ADR-0123) and `/jfb-testing/form-restriction` (a form's own restriction, which no screen sets yet, ADR-0166; `TestFormRestrictionEndpointTests`), only in Development and only for requests from this machine. |
 | `Clock` | Runs the host on `TestClock`. |
 | `StubPort` | Starts the stub on that port (5560 for the browser tests' host), only in Development, where calls to other hosts may then reach it on loopback at that port only (ADR-0076). |
 | `StartupMarker` | Logs `Jiron Form Builder test host: indexes rebuilt` after each rebuild of Umbraco's indexes. |
@@ -776,6 +778,22 @@ results the pipeline gives.
 `Tests.Integration/Entries/EntryAnswerStoreTests` publishes a form with every type through the form service, stores
 an entry with uploads and a consent wording in SQLite, and reads every type back typed, each value as its type read it;
 a wording is stored once for many entries, and an entry refused for an upload another entry took stores nothing.
+
+The entries list (ROADMAP 11.1, ADR-0207): `Tests.Integration/Entries/EntryListTests` sends entries through the
+pipeline and lists them: no state named leaves out drafts, Spam and test entries, and a draft is no state to ask for;
+the Actions filter, the search by answers, numbers and references, Received's presets in the site's time zone, each
+kind's field tests, the sorts, a row's title, unseen mark and cells, no column, filter or sort on a sensitive field,
+pages of 50 with the first one counting, a cursor refused by its path, and a choice field offering its own options and
+not those of another answer or a source. `EntryBulkTests` deletes for good with the files counted first, the site told
+and the numbers audited 200 to an entry, and re-runs what the rules chose. `EntryUserSettingsTests` keeps a user's
+columns and filter sets, and `EntryListBudgetTests` measures the first page of 100,000 entries against §4.12's 300 ms.
+`ManagementApi/EntryListApiTests` holds the endpoints to the same with each permission. In the client,
+`entries/entry-list-model.test.ts` holds what the view says (names, action status, chips with options by their labels,
+the columns a filter fixes, the bulk actions that apply), `entries/entry-words.test.ts` its words in both languages,
+`designer/entries/entries.view.test.ts` the view against a fake server, and `ui/undo-notification.element.test.ts` the
+Undo toast ending with its window. In the browser, `specs/backoffice/entries-list.spec.ts` seeds 1,000 entries through
+`/jfb-testing/entries-form`, pages, searches, reopens a filter set in a second browser, and undoes a bulk approval
+inside its window with no approval's webhook sent, then lets another's window pass (`page.clock`).
 
 ## The access tests
 

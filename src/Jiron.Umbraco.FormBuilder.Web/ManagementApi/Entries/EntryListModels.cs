@@ -221,6 +221,19 @@ public sealed class EntryListFieldResponseModel
 
     /// <summary>The tests its filter makes; none for a field that is no filter.</summary>
     public required IReadOnlyList<string> Tests { get; init; }
+
+    /// <summary>Its own options, which a filter offers to tick; none where its options come from elsewhere.</summary>
+    public required IReadOnlyList<EntryListOptionResponseModel> Options { get; init; }
+}
+
+/// <summary>One of a choice field's own options.</summary>
+public sealed class EntryListOptionResponseModel
+{
+    /// <summary>What entries store.</summary>
+    public required string Value { get; init; }
+
+    /// <summary>Its label in the default culture.</summary>
+    public required string Label { get; init; }
 }
 
 /// <summary>A filter set.</summary>
@@ -444,6 +457,7 @@ internal static class EntryListMapping
         Column = field.Column,
         Sorts = field.Sorts,
         Tests = [.. field.Tests.Select(NameOf)],
+        Options = [.. field.Options.Select(option => new EntryListOptionResponseModel { Value = option.Value, Label = option.Label })],
     };
 
     /// <summary>The model of a page.</summary>

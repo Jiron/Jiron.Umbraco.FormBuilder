@@ -117,3 +117,27 @@ Building the service settled what the decisions left open:
   not run. Without `confirm` the endpoint answers what would run, which the dialog shows before anything runs.
 - **The notifications** of a delete are published in their order under one limit of 5 seconds (`EntryEvents`), so a
   delete of 500 entries never holds the user up for each.
+
+## Amendment (2026-11-07, step 11.1, the Entries view)
+
+Building the view settled what the decisions left open for the browser:
+
+- **Where its code lives.** The view is one of the form workspace's views, so it lives with them
+  (`designer/entries/`) and may ask for the workspace's words, which load with the workspace (ADR-0201): a view whose
+  own words fail to load says so in them. What the Inbox and Spam share with it (the list's model, its calls, its
+  dialogs and its words) lives in `entries/`, and its words load with the view, not with the backoffice's start
+  (ADR-0183).
+- **The details are fixed columns.** Entry, State, Received and Actions always show, so a list never loses what names
+  or sorts an entry; the column chooser offers the form's fields only, at most 20, in a sidebar.
+- **A choice field's filter ticks the live version's own options,** by their labels, and its chip names them so;
+  options that hang on another answer, or that come from an option list or a source, are typed, as a text field's are.
+- **Delete… says what goes with the entries.** Without `confirm` the endpoint answers how many entries and files the
+  delete takes, which the dialog names before anything is deleted.
+- **The Undo toast follows the change's window** (`undoUntilUtc`, by the browser's clock): until it ends, the toast
+  offers Undo; then the button leaves and the toast says for six seconds more that it is too late (copy.md,
+  Confirmations), so it never offers an Undo the server refuses. A window under a second offers none, and one over a
+  minute offers Undo for a minute. An Undo the server finds too late says the same sentence.
+- **The keys act where the list is:** inside the view, or with nothing focused; never while the user types in a field,
+  and not inside a dialog. The dialog of `?` lists one key per line.
+- **Narrower than 57.5rem,** the action status gives way, and a failure shows under the state, so the names keep
+  their width.

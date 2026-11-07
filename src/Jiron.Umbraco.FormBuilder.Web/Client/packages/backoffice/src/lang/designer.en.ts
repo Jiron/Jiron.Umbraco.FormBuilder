@@ -10,6 +10,7 @@ export default {
     // The Actions view's words while its own load (ADR-0188).
     actionsLoading: 'Loading the actions…',
     historyFailed: "The History couldn't be shown. Try again in a moment.",
+    entriesFailed: "The entries couldn't be shown. Try again in a moment.",
     // The form's "…": its first item, for who may design the form (ADR-0198).
     restoreEarlier: 'Restore an earlier version…',
     // A save someone else's save refused, from any view (ADR-0200); Review both versions has its words with the History's.
