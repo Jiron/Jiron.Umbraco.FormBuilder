@@ -685,8 +685,10 @@ internal sealed partial class EntryLists(
         return true;
     }
 
-    // Midnight of a day in a zone, in UTC; a midnight the clocks skip is the first hour that exists.
-    private static DateTime StartOf(DateOnly day, TimeZoneInfo zone)
+    /// <summary>Midnight of a day in a zone, in UTC; a midnight the clocks skip is the first hour that exists.</summary>
+    /// <param name="day">The day.</param>
+    /// <param name="zone">The zone it is a day of.</param>
+    internal static DateTime StartOf(DateOnly day, TimeZoneInfo zone)
     {
         var local = day.ToDateTime(TimeOnly.MinValue, DateTimeKind.Unspecified);
         while (zone.IsInvalidTime(local))

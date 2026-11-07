@@ -272,6 +272,21 @@ export type EntryDeleteResponseModel = {
     deleted: boolean;
 };
 
+export type EntryDigestRequestModel = {
+    frequency: string;
+};
+
+export type EntryDigestResponseModel = {
+    frequency: string;
+    sendsAt: string;
+    timeZone: string;
+    address: string;
+};
+
+export type EntryDigestTestResponseModel = {
+    to: string;
+};
+
 export type EntryEditAnswerRequestModel = {
     field: string;
     values: Array<string>;
@@ -1558,6 +1573,134 @@ export type TestEmailSendResponses = {
 };
 
 export type TestEmailSendResponse = TestEmailSendResponses[keyof TestEmailSendResponses];
+
+export type EntryDigestGetData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/entries/digest';
+};
+
+export type EntryDigestGetErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+};
+
+export type EntryDigestGetResponses = {
+    /**
+     * OK
+     */
+    200: EntryDigestResponseModel;
+};
+
+export type EntryDigestGetResponse = EntryDigestGetResponses[keyof EntryDigestGetResponses];
+
+export type EntryDigestSaveData = {
+    body?: EntryDigestRequestModel;
+    path?: never;
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/entries/digest';
+};
+
+export type EntryDigestSaveErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+};
+
+export type EntryDigestSaveError = EntryDigestSaveErrors[keyof EntryDigestSaveErrors];
+
+export type EntryDigestSaveResponses = {
+    /**
+     * OK
+     */
+    200: EntryDigestResponseModel;
+};
+
+export type EntryDigestSaveResponse = EntryDigestSaveResponses[keyof EntryDigestSaveResponses];
+
+export type EntryDigestPreviewData = {
+    body?: never;
+    path?: never;
+    query?: {
+        frequency?: string;
+    };
+    url: '/umbraco/jfb/management/api/v1/entries/digest/preview';
+};
+
+export type EntryDigestPreviewErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+};
+
+export type EntryDigestPreviewError = EntryDigestPreviewErrors[keyof EntryDigestPreviewErrors];
+
+export type EntryDigestPreviewResponses = {
+    /**
+     * OK
+     */
+    200: EmailPreviewResponseModel;
+};
+
+export type EntryDigestPreviewResponse = EntryDigestPreviewResponses[keyof EntryDigestPreviewResponses];
+
+export type EntryDigestTestData = {
+    body?: EntryDigestRequestModel;
+    path?: never;
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/entries/digest/test';
+};
+
+export type EntryDigestTestErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+};
+
+export type EntryDigestTestError = EntryDigestTestErrors[keyof EntryDigestTestErrors];
+
+export type EntryDigestTestResponses = {
+    /**
+     * OK
+     */
+    200: EntryDigestTestResponseModel;
+};
+
+export type EntryDigestTestResponse = EntryDigestTestResponses[keyof EntryDigestTestResponses];
 
 export type EntryInboxFormsData = {
     body?: never;

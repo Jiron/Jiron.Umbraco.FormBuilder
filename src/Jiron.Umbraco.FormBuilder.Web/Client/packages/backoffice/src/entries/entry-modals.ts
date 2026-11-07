@@ -1,8 +1,9 @@
 // The dialogs of a form's Entries view, the Inbox and Spam (ROADMAP 11.1, IA 6.1, ADR-0207, ADR-0209): one part of the
-// filter, the forms to filter by, the columns, the name of a filter set, and the keyboard shortcuts. Each is Umbraco's
-// dialog or sidebar; the view loads their words first.
+// filter, the forms to filter by, the columns, the name of a filter set, the keyboard shortcuts and the summary email.
+// Each is Umbraco's dialog or sidebar; the view loads their words first.
 import { UmbModalToken } from '@umbraco-cms/backoffice/modal';
 import type { EntryListFieldResponseModel, EntryListFilterRequestModel } from '../api';
+import type { DigestFrequency } from './entries-api';
 import type { EntryState } from './entry-list-model';
 
 export const ENTRY_FILTER_MODAL_ALIAS = 'Jiron.FormBuilder.Modal.EntryFilter';
@@ -10,6 +11,7 @@ export const ENTRY_COLUMNS_MODAL_ALIAS = 'Jiron.FormBuilder.Modal.EntryColumns';
 export const ENTRY_SET_NAME_MODAL_ALIAS = 'Jiron.FormBuilder.Modal.EntrySetName';
 export const ENTRY_KEYS_MODAL_ALIAS = 'Jiron.FormBuilder.Modal.EntryKeys';
 export const ENTRY_FORMS_MODAL_ALIAS = 'Jiron.FormBuilder.Modal.EntryForms';
+export const ENTRY_DIGEST_MODAL_ALIAS = 'Jiron.FormBuilder.Modal.EntryDigest';
 
 /** The part of the filter a dialog changes. */
 export type FilterPart = 'state' | 'received' | 'actions' | 'field';
@@ -92,6 +94,15 @@ export const MOST_COLUMNS = 20;
 
 /** The longest name of a filter set. */
 export const MOST_SET_NAME = 60;
+
+/** What Email me a summary... saved: how often the summary goes out now. */
+export interface EntryDigestModalValue {
+  readonly frequency: DigestFrequency;
+}
+
+export const ENTRY_DIGEST_MODAL = new UmbModalToken<never, EntryDigestModalValue>(ENTRY_DIGEST_MODAL_ALIAS, {
+  modal: { type: 'sidebar', size: 'small' },
+});
 
 export const ENTRY_FORWARD_MODAL_ALIAS = 'Jiron.FormBuilder.Modal.EntryForward';
 export const ENTRY_IMAGE_MODAL_ALIAS = 'Jiron.FormBuilder.Modal.EntryImage';

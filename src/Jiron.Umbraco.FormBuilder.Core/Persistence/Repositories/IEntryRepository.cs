@@ -407,6 +407,21 @@ internal interface IEntryRepository
     Task<IReadOnlyDictionary<int, long>> CountSinceAsync(IReadOnlyCollection<int> formIds, DateTimeOffset since, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// How many entries each of these forms received from one moment up to another, as <see cref="CountSinceAsync"/> counts
+    /// them: the summary email's counts (ADR-0209). A form without any is left out.
+    /// </summary>
+    /// <param name="formIds">The forms, any number.</param>
+    /// <param name="from">From when, inclusive.</param>
+    /// <param name="to">Until when, exclusive.</param>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    Task<IReadOnlyDictionary<int, long>> CountBetweenAsync(IReadOnlyCollection<int> formIds, DateTimeOffset from, DateTimeOffset to, CancellationToken cancellationToken = default);
+
+    /// <summary>How many entries of these forms wait for approval now, test entries left out (ADR-0209).</summary>
+    /// <param name="formIds">The forms, any number.</param>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    Task<long> CountWaitingAsync(IReadOnlyCollection<int> formIds, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Which of these forms have an entry nobody has opened yet (ADR-0166): one the recent list holds whose first view is
     /// not on record.
     /// </summary>

@@ -65,13 +65,20 @@ badge. The owner answers no questions during the run (CLAUDE.md rule 8), so each
    keep them signed in for good. The backoffice's other calls are the person's own and are not held.
 8. **The summary email** (IA 6.4, "Email me a summary…" in the list's "…"): off, daily, or weekly on Mondays, kept in
    the user's settings (`entries.digest`). An hourly job sends each user's summary once the site's 07:00 has passed in
-   its time zone (Settings › General of the default site), for the day or the week before, and records the period
-   sent in the same setting, so a period goes out once, even across servers (the job is a distributed one) and after
-   a pause. It counts the entries that arrived in each form the user may view entries of (drafts, Spam and test entries
-   left out), names each form with its count and a link to its Entries view, says how many are waiting for approval,
-   and never holds an answer. A period with no entries sends nothing. It goes through the outbox (`EmailKind.Digest`)
-   in the user's backoffice language, to the user's own address. Send test email sends the summary of the period
-   before at once, marked as a test.
+   its time zone (Settings › General of the default site), for the day or the week before, and records the last day
+   it covered in a setting of its own (`entries.digest.sent`), in the unit of work that queues the mail, so a period
+   goes out once, even across servers (the job is a distributed one) and after a pause, and a user's change never
+   races the job. Turning the summary on records the period due by then, so the first one covers the first period
+   that ends after the choice, rather than days that passed before it. It counts the entries that arrived in each form
+   the user may view entries of (drafts, Spam and test entries left out), names each form with its count and a link to
+   its Entries view, says how many are waiting for approval, and never holds an answer. Without the site's address
+   (Settings › General, which the health check names), it names the forms without links, as Forward leaves its link
+   out. A period with no entries sends nothing. It goes through the outbox (`EmailKind.Digest`) in the user's
+   backoffice language, its dates as that language writes them, to the user's own address. Send test email sends the
+   summary of the period due now (the day or the week before) at once, marked as a test, even when no entry arrived,
+   and records nothing; the sidebar's preview shows that same mail in the site's layout. The sidebar says when it goes
+   out by the place the time zone is named after ("07:00 Berlin time"; "07:00 UTC" on UTC), and says the user's
+   address once, under the preview, whose head leaves out its To line.
 
 ## Consequences
 

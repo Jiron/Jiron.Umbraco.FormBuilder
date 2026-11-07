@@ -13,8 +13,16 @@ internal static class BackofficeLinks
     /// <summary>The entity type of an entry, whose workspace opens the entry panel on its own.</summary>
     public const string EntryEntityType = "jfb-entry";
 
+    /// <summary>The path of the Inbox, after the site's base URL (ADR-0209).</summary>
+    public const string Inbox = "/umbraco/section/" + SectionPathname + "/workspace/jfb-inbox";
+
     /// <summary>The path of an entry's workspace, after the site's base URL.</summary>
     /// <param name="entry">The entry's key.</param>
     public static string Entry(Guid entry) =>
         string.Concat("/umbraco/section/", SectionPathname, "/workspace/", EntryEntityType, "/edit/", entry.ToString("D"));
+
+    /// <summary>The path of a form's Entries view, after the site's base URL (ADR-0209).</summary>
+    /// <param name="form">The form's key.</param>
+    public static string FormEntries(Guid form) =>
+        string.Concat("/umbraco/section/", SectionPathname, "/workspace/jfb-form/edit/", form.ToString("D"), "/view/entries");
 }

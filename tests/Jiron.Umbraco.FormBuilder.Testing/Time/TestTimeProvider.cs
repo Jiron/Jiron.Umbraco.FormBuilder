@@ -17,6 +17,12 @@ public sealed class TestTimeProvider(DateTimeOffset start) : TimeProvider
     /// <inheritdoc />
     public override DateTimeOffset GetUtcNow() => new(Interlocked.Read(ref _ticks), TimeSpan.Zero);
 
+    /// <summary>
+    /// Sets the clock to a moment, an earlier one too: for a test that starts its own story on a clock an earlier test of
+    /// its fixture moved on (NUnit keeps one fixture instance for all its tests).
+    /// </summary>
+    public void SetUtcNow(DateTimeOffset now) => Interlocked.Exchange(ref _ticks, now.UtcTicks);
+
     /// <summary>Moves the clock forward.</summary>
     public void Advance(TimeSpan by)
     {

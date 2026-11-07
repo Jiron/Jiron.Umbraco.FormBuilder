@@ -22,6 +22,9 @@ export class EmailPreviewElement extends UmbLitElement {
     culture: { type: String },
     view: { type: String },
     retry: { attribute: false },
+    heading: { type: String },
+    help: { type: String },
+    hidesTo: { type: Boolean, attribute: 'hides-to' },
     _scheme: { state: true },
   };
 
@@ -152,6 +155,12 @@ export class EmailPreviewElement extends UmbLitElement {
   declare view: string;
   /** Asks again after an ask that got no answer. */
   declare retry: () => void;
+  /** The preview's heading, when not an action's. */
+  declare heading: string | undefined;
+  /** The line under the heading, when not an action's; empty for none. */
+  declare help: string | undefined;
+  /** Leaves out the To line, for a mail whose sidebar names its one recipient already. */
+  declare hidesTo: boolean;
   declare private _scheme: Scheme;
 
   #observer: ResizeObserver | undefined;
@@ -164,6 +173,7 @@ export class EmailPreviewElement extends UmbLitElement {
     this.culture = '';
     this.view = '';
     this.retry = () => undefined;
+    this.hidesTo = false;
     this._scheme = 'light';
   }
 
@@ -208,14 +218,18 @@ export class EmailPreviewElement extends UmbLitElement {
         <dd class=${kind ?? nothing}>${text}</dd>`;
     return html`<dl class="meta">
       ${line(this.#term('previewFrom'), mail.from || this.#term('previewNoSender'))}
-      ${line(
-        this.#term('previewTo'),
-        mail.to.length > 0
-          ? mail.to.join(', ')
-          : mail.visitor
-            ? this.#term('previewOwnMail', mail.visitor)
-            : this.#term('previewNoRecipient'),
-      )}
+      ${
+        this.hidesTo
+          ? nothing
+          : line(
+              this.#term('previewTo'),
+              mail.to.length > 0
+                ? mail.to.join(', ')
+                : mail.visitor
+                  ? this.#term('previewOwnMail', mail.visitor)
+                  : this.#term('previewNoRecipient'),
+            )
+      }
       ${mail.to.length > 0 && mail.visitor ? line(this.#term('previewVisitor'), this.#term('previewOwnMail', mail.visitor)) : nothing}
       ${mail.cc.length > 0 ? line(this.#term('previewCc'), mail.cc.join(', ')) : nothing}
       ${mail.bcc.length > 0 ? line(this.#term('previewBcc'), mail.bcc.join(', ')) : nothing}
@@ -272,14 +286,14 @@ export class EmailPreviewElement extends UmbLitElement {
     const busy = status === 'idle' || status === 'asking';
     const mail = preview && !('unshown' in preview) ? preview : null;
     const mailHtml = mail?.html;
+    const help =
+      this.help ?? this.#term(mail && mail.to.length === 0 && mail.visitor ? 'previewHelpVisitor' : 'previewHelp');
     return html`<section class="preview" aria-labelledby="preview-heading">
       <div class="head">
-        <h4 id="preview-heading">${this.#term('preview')}</h4>
+        <h4 id="preview-heading">${this.heading ?? this.#term('preview')}</h4>
         ${mailHtml ? this.#schemes() : nothing}
       </div>
-      <p class="help">
-        ${this.#term(mail && mail.to.length === 0 && mail.visitor ? 'previewHelpVisitor' : 'previewHelp')}
-      </p>
+      ${help ? html`<p class="help">${help}</p>` : nothing}
       <div class="shown" aria-busy=${busy ? 'true' : 'false'}>${this.#shown()}</div>
     </section>`;
   }

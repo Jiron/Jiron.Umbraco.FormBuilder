@@ -79,6 +79,7 @@ import {
 } from '../../entries/entry-list-model';
 import {
   ENTRY_COLUMNS_MODAL,
+  ENTRY_DIGEST_MODAL,
   ENTRY_FILTER_MODAL,
   ENTRY_FORMS_MODAL,
   ENTRY_KEYS_MODAL,
@@ -1002,6 +1003,13 @@ export class EntriesViewElement extends UmbLitElement {
     if (answer) this.#filterBy(answer.filter);
   }
 
+  /** Email me a summary...: the sidebar saves the user's choice, and the toast says what it is now. */
+  async #chooseDigest() {
+    this.#closeMenus();
+    const answer = await umbOpenModal(this, ENTRY_DIGEST_MODAL).catch(() => undefined);
+    if (answer) await this.#notify('positive', this.#term(`digest_saved_${answer.frequency}`));
+  }
+
   /** The Form filter of the Inbox and Spam: the dialog answers the forms with their names, so the chip names them. */
   async #chooseForms() {
     this.#closeMenus();
@@ -1635,6 +1643,12 @@ export class EntriesViewElement extends UmbLitElement {
       </uui-button>
       <uui-popover-container id="more-menu" placement="bottom-end">
         <div class="menu">
+          ${
+            // The summary counts the entries that arrive, so Spam doesn't offer it (IA 6.2).
+            this.place === 'spam'
+              ? nothing
+              : this.#menuButton(this.#term('digest'), () => void this.#chooseDigest(), 'icon-message')
+          }
           ${this.#menuButton(
             this.#term('shortcuts'),
             () => {
@@ -1862,11 +1876,7 @@ export class EntriesViewElement extends UmbLitElement {
       const sensitive = this._fields.some((field) => field.sensitive);
       return html`<div class="empty">
         <p>${this.#term(sensitive ? 'noSearchSensitive' : 'noSearch', search)}</p>
-        <uui-button
-          look="secondary"
-          label=${this.#term('clearSearch')}
-          @click=${() => this.#clearSearch()}
-        ></uui-button>
+        <uui-button look="outline" label=${this.#term('clearSearch')} @click=${() => this.#clearSearch()}></uui-button>
       </div>`;
     }
 
@@ -1879,7 +1889,20 @@ export class EntriesViewElement extends UmbLitElement {
           : this._permissions.includes('design')
             ? 'empty_design'
             : 'empty_others';
-    return html`<div class="empty"><p>${this.#term(first)}</p></div>`;
+    // Whoever can neither share nor preview the form, and the Inbox, are offered the summary email instead (IA 6.1).
+    const offers = first === 'inbox_empty' || first === 'empty_others';
+    return html`<div class="empty">
+      <p>${this.#term(first)}</p>
+      ${
+        offers
+          ? html`<uui-button
+              look="outline"
+              label=${this.#term('digest')}
+              @click=${() => void this.#chooseDigest()}
+            ></uui-button>`
+          : nothing
+      }
+    </div>`;
   }
 
   #bulk(): TemplateResult | typeof nothing {

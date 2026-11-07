@@ -232,6 +232,31 @@ export default {
     noSearch: (term: string) => `No entries match “${term}”.`,
     noSearchSensitive: (term: string) => `No entries match “${term}”. Sensitive fields aren't searched.`,
 
+    digest: 'Email me a summary…',
+    digest_headline: 'Email me a summary',
+    digest_often: 'How often',
+    digest_off: 'Off',
+    digest_daily: 'Daily',
+    digest_weekly: 'Weekly, on Mondays',
+    digest_when: (time: string, place: string) =>
+      `It goes out at ${time} ${place} time, the site's time zone, and covers the day or week before.`,
+    digest_whenUtc: (time: string) =>
+      `It goes out at ${time} UTC, the site's time zone, and covers the day or week before.`,
+    digest_preview: 'What it looks like',
+    digest_note: (address: string) =>
+      `It holds counts and links, never answers, and only the forms you may view. It goes to your own address, ${address}.`,
+    digest_noAddress: 'Your user has no email address yet, so no summary can go out.',
+    digest_test: 'Send test email',
+    digest_testSent: (address: string) => `Test email sent to ${address}.`,
+    digest_testFailed: "The test email couldn't be sent. Try again.",
+    digest_cancel: 'Cancel',
+    digest_save: 'Save',
+    digest_saved_off: 'The summary email is off.',
+    digest_saved_daily: "You'll get a summary each morning.",
+    digest_saved_weekly: "You'll get a summary each Monday morning.",
+    digest_failed: "Your choice couldn't be read. Try again.",
+    digest_saveFailed: "Your choice couldn't be saved. Try again.",
+
     keys_headline: 'Keyboard shortcuts',
     keys_close: 'Close',
     key_next: 'Next entry',

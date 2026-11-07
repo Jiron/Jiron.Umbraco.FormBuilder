@@ -661,7 +661,10 @@ owns the name checks; a value it cannot read counts as none (ADR-0207):
 
 - `entries.columns.<form key>`: the fields a user shows as a form's columns, at most 20, in their order;
 - `entries.filterSets`: the user's filter sets, at most 50, each with its key, a name of at most 60 characters, the
-  form it belongs to or none, and its filter in the shape the entries list's request sends.
+  form it belongs to or none, and its filter in the shape the entries list's request sends;
+- `entries.digest`: how often the user gets the summary email, `daily` or `weekly`; none means off (ADR-0209);
+- `entries.digest.sent`: the last day the summary job covered for the user, written with the mail it queued, so a
+  period goes out once; turning the summary on writes the period due by then.
 
 ### `jfbPermission`
 

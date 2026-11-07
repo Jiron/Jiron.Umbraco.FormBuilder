@@ -1,4 +1,11 @@
+using NPoco;
+
 namespace Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
+
+/// <summary>A user's setting under a name, as a list of every user's holds it.</summary>
+/// <param name="UserKey">The backoffice user.</param>
+/// <param name="Json">The setting, as JSON.</param>
+internal sealed record StoredUserSetting(Guid UserKey, string Json);
 
 /// <summary>
 /// A backoffice user's own choices in <c>jfbUserSetting</c> (section 4.5, ADR-0008): column sets, saved filters, export
@@ -19,6 +26,11 @@ internal interface IUserSettingRepository
     /// <param name="json">The setting, as JSON.</param>
     /// <param name="cancellationToken">Stops the write.</param>
     Task SetAsync(Guid userKey, string name, string json, CancellationToken cancellationToken = default);
+
+    /// <summary>Every user's setting under a name, by user: what a job reads of the choices users made (ADR-0209).</summary>
+    /// <param name="name">The setting's name.</param>
+    /// <param name="cancellationToken">Stops the read.</param>
+    Task<IReadOnlyList<StoredUserSetting>> ListAsync(string name, CancellationToken cancellationToken = default);
 
     /// <summary>Removes a setting. True when it was stored.</summary>
     /// <param name="userKey">The backoffice user.</param>
@@ -80,6 +92,23 @@ internal sealed class UserSettingRepository(FormBuilderDatabase database) : IUse
     }
 
     /// <inheritdoc />
+    public async Task<IReadOnlyList<StoredUserSetting>> ListAsync(string name, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(name);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(name.Length, MaxNameLength, nameof(name));
+        var rows = await database.ReadAsync(
+            db =>
+            {
+                var n = new SqlNames(db);
+                return db.FetchListAsync<SettingRow>(
+                    $"SELECT {n.C("userKey")} AS userKey, {n.C("json")} AS json FROM {n.T(FormBuilderTables.UserSetting)} WHERE {n.C("name")} = @0 ORDER BY {n.C("userKey")}",
+                    name);
+            },
+            cancellationToken);
+        return [.. rows.Select(row => new StoredUserSetting(row.UserKey, row.Json))];
+    }
+
+    /// <inheritdoc />
     public Task<bool> DeleteAsync(Guid userKey, string name, CancellationToken cancellationToken = default)
     {
         Check(userKey, name);
@@ -93,6 +122,16 @@ internal sealed class UserSettingRepository(FormBuilderDatabase database) : IUse
                     name) == 1;
             },
             cancellationToken);
+    }
+
+    [ExplicitColumns]
+    private sealed class SettingRow
+    {
+        [Column("userKey")]
+        public Guid UserKey { get; set; }
+
+        [Column("json")]
+        public string Json { get; set; } = string.Empty;
     }
 
     private static void Check(Guid userKey, string name)

@@ -6,6 +6,10 @@
 import type { UmbClassInterface } from '@umbraco-cms/backoffice/class-api';
 import { tryExecute } from '@umbraco-cms/backoffice/resources';
 import {
+  entryDigestGet,
+  entryDigestPreview,
+  entryDigestSave,
+  entryDigestTest,
   entryFilterSetDelete,
   entryFilterSetSave,
   entryInboxEmptySpam,
@@ -21,7 +25,9 @@ import {
   entryListView,
   entryStateChange,
   entryStateUndo,
+  type EmailPreviewResponseModel,
   type EntryDeleteResponseModel,
+  type EntryDigestResponseModel,
   type EntryFilterSetResponseModel,
   type EntryInboxViewResponseModel,
   type EntryListFilterRequestModel,
@@ -79,6 +85,32 @@ export async function findForms(
 /** How many entries nobody opened yet the Inbox holds, up to 99, for its badge; undefined on a failure. */
 export async function readUnseen(host: UmbClassInterface): Promise<EntryUnseenResponseModel | undefined> {
   return (await tryExecute(host, entryInboxUnseen(), quiet)).data;
+}
+
+/** How often the summary email goes out to the user. */
+export type DigestFrequency = 'off' | 'daily' | 'weekly';
+
+/** The user's choice of the summary email, with when and where it goes; undefined on a failure. */
+export async function readDigest(host: UmbClassInterface): Promise<EntryDigestResponseModel | undefined> {
+  return (await tryExecute(host, entryDigestGet(), quiet)).data;
+}
+
+/** Keeps how often the user gets the summary email; whether the server kept it. */
+export async function saveDigest(host: UmbClassInterface, frequency: DigestFrequency): Promise<boolean> {
+  return !(await tryExecute(host, entryDigestSave({ body: { frequency } }), quiet)).error;
+}
+
+/** The summary email as it would go out now, daily or weekly; undefined on a failure. */
+export async function previewDigest(
+  host: UmbClassInterface,
+  frequency: 'daily' | 'weekly',
+): Promise<EmailPreviewResponseModel | undefined> {
+  return (await tryExecute(host, entryDigestPreview({ query: { frequency } }), quiet)).data;
+}
+
+/** Sends the summary email now, marked as a test; the address it went to, or undefined on a failure. */
+export async function testDigest(host: UmbClassInterface, frequency: 'daily' | 'weekly'): Promise<string | undefined> {
+  return (await tryExecute(host, entryDigestTest({ body: { frequency } }), quiet)).data?.to;
 }
 
 /** What emptying Spam deletes, without <code>confirm</code>, or what it deleted. */

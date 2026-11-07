@@ -3,6 +3,7 @@
 // screens are the sidebar's (section/manifests.ts).
 import {
   ENTRY_COLUMNS_MODAL_ALIAS,
+  ENTRY_DIGEST_MODAL_ALIAS,
   ENTRY_FILTER_MODAL_ALIAS,
   ENTRY_FORMS_MODAL_ALIAS,
   ENTRY_FORWARD_MODAL_ALIAS,
@@ -41,6 +42,12 @@ export const manifests: UmbExtensionManifest[] = [
     alias: ENTRY_KEYS_MODAL_ALIAS,
     name: 'Jiron Form Builder entries keyboard shortcuts',
     element: (() => import('./entry-keys.modal.element')) as never,
+  },
+  {
+    type: 'modal',
+    alias: ENTRY_DIGEST_MODAL_ALIAS,
+    name: 'Jiron Form Builder summary email',
+    element: (() => import('./entry-digest.modal.element')) as never,
   },
   {
     type: 'modal',

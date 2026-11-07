@@ -234,6 +234,31 @@ export default {
     noSearchSensitive: (term: string) =>
       `Keine Einträge passen zu „${term}“. Vertrauliche Felder werden nicht durchsucht.`,
 
+    digest: 'Zusammenfassung per E-Mail…',
+    digest_headline: 'Zusammenfassung per E-Mail',
+    digest_often: 'Wie oft',
+    digest_off: 'Aus',
+    digest_daily: 'Täglich',
+    digest_weekly: 'Wöchentlich, montags',
+    digest_when: (time: string, place: string) =>
+      `Sie geht um ${time} Uhr Ortszeit ${place}, der Zeitzone der Website, raus und umfasst den Tag oder die Woche davor.`,
+    digest_whenUtc: (time: string) =>
+      `Sie geht um ${time} Uhr UTC, der Zeitzone der Website, raus und umfasst den Tag oder die Woche davor.`,
+    digest_preview: 'So sieht sie aus',
+    digest_note: (address: string) =>
+      `Sie enthält Zahlen und Links, nie Antworten, und nur die Formulare, die Sie sehen dürfen. Sie geht an Ihre eigene Adresse, ${address}.`,
+    digest_noAddress: 'Ihr Benutzer hat noch keine E-Mail-Adresse, deshalb kann keine Zusammenfassung rausgehen.',
+    digest_test: 'Test-E-Mail senden',
+    digest_testSent: (address: string) => `Test-E-Mail an ${address} gesendet.`,
+    digest_testFailed: 'Die Test-E-Mail konnte nicht gesendet werden. Versuchen Sie es erneut.',
+    digest_cancel: 'Abbrechen',
+    digest_save: 'Speichern',
+    digest_saved_off: 'Die Zusammenfassung per E-Mail ist aus.',
+    digest_saved_daily: 'Sie erhalten jeden Morgen eine Zusammenfassung.',
+    digest_saved_weekly: 'Sie erhalten jeden Montagmorgen eine Zusammenfassung.',
+    digest_failed: 'Ihre Auswahl konnte nicht gelesen werden. Versuchen Sie es erneut.',
+    digest_saveFailed: 'Ihre Auswahl konnte nicht gespeichert werden. Versuchen Sie es erneut.',
+
     keys_headline: 'Tastenkürzel',
     keys_close: 'Schließen',
     key_next: 'Nächster Eintrag',

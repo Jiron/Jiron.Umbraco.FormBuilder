@@ -9,7 +9,8 @@ import { STUB_URL } from '../../support/paths.ts';
 // restricted folder's forms, nor offers them in the Form filter, and the Inbox's badge counts what the viewer may view;
 // Not spam on an entry whose unique answer another entry holds by then asks first and moves only once confirmed; and the
 // badge's poll never keeps an idle user signed in: once nobody uses the backoffice, it waits instead of renewing the
-// access token, and Umbraco ends the session on time, 20 minutes after the last renewal (page.clock).
+// access token, and Umbraco ends the session on time, 20 minutes after the last renewal (page.clock). Email me a
+// summary... keeps the user's choice, shows the mail it sends and sends a test of it.
 
 const SCREENS = '/umbraco/section/jfb-forms/workspace';
 
@@ -215,4 +216,54 @@ test("the Inbox badge's poll never keeps an idle user signed in, and Umbraco end
   } finally {
     await context.close();
   }
+});
+
+test('Email me a summary\u2026 keeps the choice, shows the mail it sends, and sends a test to the own address', async ({
+  page,
+  loginAs,
+  apiAs,
+}) => {
+  test.setTimeout(240_000);
+  // An entry the viewer may see, so the Inbox has its toolbar.
+  await seed(await apiAs('admin'), `Summary ${String(Date.now())}`);
+  await loginAs('viewer');
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto(`${SCREENS}/jfb-inbox`);
+  const view = page.locator('jfb-entries-view');
+  await expect(view.locator('tbody tr').first()).toBeVisible({ timeout: 60_000 });
+
+  const open = async () => {
+    await view.locator('.toolbar').getByRole('button', { name: 'More', exact: true }).click();
+    await view.locator('#more-menu').getByRole('button', { name: 'Email me a summary\u2026' }).click();
+    const sidebar = page.locator('jfb-entry-digest-modal');
+    await expect(sidebar.locator('uui-radio-group')).toBeVisible();
+    return sidebar;
+  };
+
+  const sidebar = await open();
+  await expect(sidebar.locator('#when')).toContainText("the site's time zone, and covers the day or week before.");
+  await sidebar.locator('uui-radio[value="weekly"]').click();
+  // The weekly mail of the week before, in the site's layout, its address said once below it.
+  await expect(sidebar.locator('jfb-email-preview .subject')).toContainText(' to ');
+  await expect(sidebar.locator('jfb-email-preview iframe')).toBeVisible();
+  await expect(sidebar.locator('jfb-email-preview .meta dt')).toHaveText(['From', 'Subject']);
+  await expect(sidebar.locator('.note')).toContainText('It goes to your own address, ');
+  await axeInside(page, 'jfb-entry-digest-modal');
+
+  await sidebar.getByRole('button', { name: 'Send test email', exact: true }).click();
+  await expect(page.locator('uui-toast-notification', { hasText: 'Test email sent to ' })).toBeVisible();
+  await sidebar.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(
+    page.locator('uui-toast-notification', { hasText: "You'll get a summary each Monday morning." }),
+  ).toBeVisible();
+  await expect(sidebar).toHaveCount(0);
+
+  // Opened again, it holds the choice; Off turns it off.
+  const again = await open();
+  await expect
+    .poll(async () => again.locator('uui-radio-group').evaluate((group) => (group as HTMLInputElement).value))
+    .toBe('weekly');
+  await again.locator('uui-radio[value="off"]').click();
+  await again.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(page.locator('uui-toast-notification', { hasText: 'The summary email is off.' })).toBeVisible();
 });

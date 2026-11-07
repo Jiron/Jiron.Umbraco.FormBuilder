@@ -20,6 +20,7 @@ import { all, must, registerEnglish, settle, shadow, testHost, text } from '../.
 import { FORM_WORKSPACE_CONTEXT } from '../constants';
 import {
   ENTRY_COLUMNS_MODAL_ALIAS,
+  ENTRY_DIGEST_MODAL_ALIAS,
   ENTRY_FILTER_MODAL_ALIAS,
   ENTRY_FORMS_MODAL_ALIAS,
   ENTRY_KEYS_MODAL_ALIAS,
@@ -673,11 +674,32 @@ describe("a form's Entries view", () => {
       'No entries yet. Share the form, or preview it and send a test entry.',
     );
     expect(designer.root.querySelector('.toolbar')).toBeNull();
+    expect(designer.root.querySelector('.empty uui-button'), 'who may share it is told to').toBeNull();
     document.body.replaceChildren();
     const handler = await viewOf();
     expect(text(handler.root.querySelector('.empty p'))).toBe(
       'No entries yet. They appear here as soon as visitors send the form.',
     );
+    // Everyone else is offered the summary email; the toast says what it is now.
+    opened.answers[ENTRY_DIGEST_MODAL_ALIAS] = { frequency: 'daily' };
+    handler.button('Email me a summary\u2026').click();
+    await settle(handler.view);
+    await settle(handler.view);
+    expect(opened.modals.at(-1)?.token).toBe(ENTRY_DIGEST_MODAL_ALIAS);
+    expect(handler.peek).toHaveBeenLastCalledWith('positive', {
+      data: { message: "You'll get a summary each morning." },
+    });
+  });
+
+  it("offers the summary email in the toolbar's menu, before the shortcuts, and says nothing when it is cancelled", async () => {
+    const { root, button, view, peek } = await viewOf();
+    const menu = [...root.querySelectorAll('#more-menu .menu > *')].map((item) => text(item));
+    expect(menu).toEqual(['Email me a summary\u2026', 'Keyboard shortcuts']);
+    button('Email me a summary\u2026').click();
+    await settle(view);
+    await settle(view);
+    expect(opened.modals.at(-1)?.token).toBe(ENTRY_DIGEST_MODAL_ALIAS);
+    expect(peek).not.toHaveBeenCalled();
   });
 
   it('says when the entries cannot be read, and reads them again on Try again', async () => {
@@ -992,11 +1014,28 @@ describe('the Inbox and Spam', () => {
       'No entries yet. They arrive here from every form you may view.',
     );
     expect(inbox.root.querySelector('.toolbar')).toBeNull();
+    expect(
+      inbox.root.querySelector('.empty uui-button')?.getAttribute('label'),
+      'the Inbox offers the summary email',
+    ).toBe('Email me a summary\u2026');
     document.body.replaceChildren();
     const spam = await placeOf('spam');
     expect(text(spam.root.querySelector('.empty p'))).toBe(
       'No spam. Entries that look automated land here, and nothing in them is lost.',
     );
+    expect(spam.root.querySelector('.empty uui-button')).toBeNull();
+  });
+
+  it("offers the summary email in the Inbox's menu, not in Spam's", async () => {
+    server.rows = [row(1), row(2, { state: 'spam' })];
+    const menuOf = async (place: 'inbox' | 'spam') => {
+      const list = await placeOf(place);
+      const items = [...list.root.querySelectorAll('#more-menu .menu > *')].map((item) => text(item));
+      document.body.replaceChildren();
+      return items;
+    };
+    expect(await menuOf('inbox')).toEqual(['Email me a summary\u2026', 'Keyboard shortcuts']);
+    expect(await menuOf('spam')).toEqual(['Keyboard shortcuts']);
   });
 
   it('opens an entry on its own form, the panel naming the form, and in Spam without the state', async () => {

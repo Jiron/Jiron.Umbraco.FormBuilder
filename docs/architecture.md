@@ -921,8 +921,9 @@ when it was published again) and its `jfb:rendered` event.
   entry of a form that stores none, go once no run is open and no trigger can still fire.
 - **Distributed jobs**, each returning within 10 seconds and working in bounded batches, a minute apart or more:
   `Jiron.FormBuilder.Outbox` (wakes the worker), `Jiron.FormBuilder.Retention` (hourly, its parts in order within
-  8 seconds: the draft-version cleanup, ADR-0045, then entries, mail and files, ADR-0009), statistics roll-ups and the
-  file mirror (D25).
+  8 seconds: the draft-version cleanup, ADR-0045, then entries, mail and files, ADR-0009), `Jiron.FormBuilder.Digest`
+  (hourly, the users' summary emails once the site's 07:00 has passed, each period once, ADR-0209), statistics roll-ups
+  and the file mirror (D25).
 - **Jobs on timers of their own,** on the server that schedules, because they can take longer than a distributed job may:
   `FileScanJob` every half minute, up to two minutes (ADR-0144), and `OrphanFileJob` for uploads no entry took, every minute,
   up to 30 seconds (ADR-0148).

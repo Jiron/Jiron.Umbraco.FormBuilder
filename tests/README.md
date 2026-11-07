@@ -850,6 +850,17 @@ the backoffice, until Umbraco ends the session 20 minutes after that renewal and
 since. The test server's clock is real, so at that point it is told to refuse the session's refresh token, as a server
 20 minutes on does.
 
+The summary email (ADR-0209): `Entries/EntryDigestTests.cs` moves the test clock (which each test sets to its own start,
+since a fixture's clock carries over between its tests) past the site's 07:00 in Berlin and on Mondays, and holds one
+summary per user and period however often the job runs, nothing before 07:00, nothing for a user who has not asked or
+for a day without entries, no form the user may not view entries of, no answer in the mail, the links only with the
+site's address, the weekly count of what waits for approval, and the test mail at once, marked as a test, with a
+German preview; `ManagementApi/EntryDigestApiTests.cs` each user's own choice with when and where it goes, the preview
+that sends nothing and the test to the user's own address. `entries/entry-digest.modal.test.ts` holds the sidebar's
+choices, its sentence by the time zone's place or UTC, the preview it asks for (off shows the daily one), saving, a
+failed save, the test toast and a user without an address; and `specs/backoffice/inbox.spec.ts` the sidebar in the
+browser from the Inbox's "…", its preview, Send test email, Save and Off, with axe.
+
 ## The access tests
 
 `Tests.Unit/Access/` covers the permission model without a host (ADR-0013, ADR-0048): the flags' names in any letter

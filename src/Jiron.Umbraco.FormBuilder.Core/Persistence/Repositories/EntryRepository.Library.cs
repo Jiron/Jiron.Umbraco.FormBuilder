@@ -5,11 +5,43 @@ using NPoco;
 namespace Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 
 // What the form library says of the entries of its forms (ADR-0166): the last days' entries in a folder's list, the
-// tree's mark for unseen entries, and what a permanent delete takes. Each reads its forms in chunks the database takes.
+// tree's mark for unseen entries, and what a permanent delete takes; and what the summary email counts (ADR-0209). Each
+// reads its forms in chunks the database takes.
 internal sealed partial class EntryRepository
 {
     /// <inheritdoc />
-    public async Task<IReadOnlyDictionary<int, long>> CountSinceAsync(IReadOnlyCollection<int> formIds, DateTimeOffset since, CancellationToken cancellationToken = default)
+    public Task<IReadOnlyDictionary<int, long>> CountSinceAsync(IReadOnlyCollection<int> formIds, DateTimeOffset since, CancellationToken cancellationToken = default) =>
+        CountArrivedAsync(formIds, since, null, cancellationToken);
+
+    /// <inheritdoc />
+    public Task<IReadOnlyDictionary<int, long>> CountBetweenAsync(IReadOnlyCollection<int> formIds, DateTimeOffset from, DateTimeOffset to, CancellationToken cancellationToken = default) =>
+        CountArrivedAsync(formIds, from, to, cancellationToken);
+
+    /// <inheritdoc />
+    public async Task<long> CountWaitingAsync(IReadOnlyCollection<int> formIds, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(formIds);
+        long waiting = 0;
+        foreach (var chunk in formIds.Distinct().Chunk(SqlArgs.MaxListLength))
+        {
+            waiting += await database.ReadAsync(
+                db =>
+                {
+                    var n = new SqlNames(db);
+                    var a = new SqlArgs();
+                    return db.ScalarAsync<long>(
+                        $"SELECT COUNT(*) FROM {n.T(FormBuilderTables.Entry)} "
+                        + $"WHERE {n.C("formId")} IN ({a.List(chunk.Cast<object?>())}) AND {n.C("isTest")} = {a.Add(false)} AND {n.C("state")} = {a.Add(StoredNames.Of(EntryState.Submitted))}",
+                        a.Values);
+                },
+                cancellationToken);
+        }
+
+        return waiting;
+    }
+
+    // The entries that arrived in each form from a moment on, up to another when one is given.
+    private async Task<IReadOnlyDictionary<int, long>> CountArrivedAsync(IReadOnlyCollection<int> formIds, DateTimeOffset from, DateTimeOffset? to, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(formIds);
         var counts = new Dictionary<int, long>();
@@ -20,9 +52,10 @@ internal sealed partial class EntryRepository
                 {
                     var n = new SqlNames(db);
                     var a = new SqlArgs();
+                    var until = to is { } end ? $" AND {n.C("submittedUtc")} < {a.Add(FormBuilderDbTime.Write(end))}" : string.Empty;
                     return db.FetchListAsync<FormCount>(
                         $"SELECT {n.C("formId")} AS formId, COUNT(*) AS total FROM {n.T(FormBuilderTables.Entry)} "
-                        + $"WHERE {n.C("formId")} IN ({a.List(chunk.Cast<object?>())}) AND {Arrived(n, a)} AND {n.C("submittedUtc")} >= {a.Add(FormBuilderDbTime.Write(since))} "
+                        + $"WHERE {n.C("formId")} IN ({a.List(chunk.Cast<object?>())}) AND {Arrived(n, a)} AND {n.C("submittedUtc")} >= {a.Add(FormBuilderDbTime.Write(from))}{until} "
                         + $"GROUP BY {n.C("formId")}",
                         a.Values);
                 },
