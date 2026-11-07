@@ -227,6 +227,8 @@ Use Umbraco's own words where Umbraco has the same action, so the section feels 
 | open a problem from the form check | Fix it | Beheben |
 | the "…" of an action's card | Duplicate · Move to another trigger… · Delete | Duplizieren · Zu einem anderen Auslöser verschieben… · Löschen |
 | fill the preview with valid answers | Fill with sample answers | Mit Beispielantworten füllen |
+| render the preview afresh, once its frame sent the form (in place of Fill with sample answers) | Start again | Neu beginnen |
+| the preview's "…", for who may manage the form's actions: whether test entries run them (a switch) | Test entries · Run actions for test entries | Testeinträge · Aktionen für Testeinträge ausführen |
 | reach the canvas past the header and the palette (the workspace's first stop) | Skip to the form | Zum Formular springen |
 | list the keyboard shortcuts | Keyboard shortcuts | Tastenkürzel |
 
@@ -337,6 +339,9 @@ useful action. One sentence, plus a button or link where there is one.
 | the preview while the draft is rendered | Loading the preview… | Die Vorschau wird geladen… |
 | the preview got no answer | The preview couldn't be loaded. [Try again] | Die Vorschau konnte nicht geladen werden. [Erneut versuchen] |
 | the preview of a draft whose rules have errors, which it never runs | This draft's rules have errors, so it can't be shown as visitors would get it. The form check on the Design view lists them. | Die Regeln dieses Entwurfs haben Fehler, deshalb lässt er sich nicht so zeigen, wie Besucher ihn bekämen. Die Formularprüfung in der Ansicht „Gestaltung“ listet sie auf. |
+| the note above the preview's frame, as the frame's ticket has it, its test entries' actions off · on | Entries sent here are test entries. They run no actions. · Entries sent here are test entries. Their actions run, so their emails and messages really go out. | Hier gesendete Einträge sind Testeinträge. Sie führen keine Aktionen aus. · Hier gesendete Einträge sind Testeinträge. Ihre Aktionen laufen, ihre E-Mails und Nachrichten gehen also wirklich hinaus. |
+| the note once the frame sent the form (Run actions… only for who may run them, while its actions wait) · its actions running · waiting for its address to be confirmed · no test entry found | Saved as test entry #1044. No actions ran. [Run actions…] · Saved as test entry #1044. Its actions are running. · Saved as test entry #1044. Its actions run once its email address is confirmed. · Sent as a test entry. | Als Testeintrag #1044 gespeichert. Es liefen keine Aktionen. [Aktionen ausführen…] · Als Testeintrag #1044 gespeichert. Seine Aktionen laufen. · Als Testeintrag #1044 gespeichert. Seine Aktionen laufen, sobald seine E-Mail-Adresse bestätigt ist. · Als Testeintrag gesendet. |
+| a test entry's actions got no answer (in the note, Run actions… kept) | The actions couldn't be run. | Die Aktionen konnten nicht ausgeführt werden. |
 
 An empty value inside a table or panel reads "none" ("keine") or "no data" ("keine Daten"), never a dash (§4.13).
 

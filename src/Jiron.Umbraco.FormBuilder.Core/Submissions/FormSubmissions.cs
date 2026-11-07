@@ -61,7 +61,7 @@ internal sealed class FormSubmissions(
     public async Task<SubmissionResult> SubmitAsync(SubmissionRequest request, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
-        if (await ServedAsync(request.Form, cancellationToken) is not { } served
+        if (await ServedAsync(request.Form, request.Preview, cancellationToken) is not { } served
             || await forms.GetVersionAsync(served.Row.Id, served.Form.Version, cancellationToken) is not { } version)
         {
             return SubmissionResult.Refused(SubmissionRefusal.FormNotFound);
@@ -101,7 +101,12 @@ internal sealed class FormSubmissions(
         // One transaction (section 4.4, step 8).
         var (scope, page, read, wordings) = reading.Read;
         var draft = await drafts.FindAsync(request.ResumeToken, served.Row.Id, cancellationToken);
-        var submission = new NewSubmission(served.Row.Id, version.Info.Id, served.Form, read, wordings, request.SubmissionId ?? Guid.NewGuid(), digest, scope.Culture, page, scope.Context, request.Redirect, request.Ticket is { } used ? FormChallenges.StoredId(used) : null, reading.Verdict, draft);
+        var submission = new NewSubmission(served.Row.Id, version.Info.Id, served.Form, read, wordings, request.SubmissionId ?? Guid.NewGuid(), digest, scope.Culture, page, scope.Context, request.Redirect, request.Ticket is { } used ? FormChallenges.StoredId(used) : null, reading.Verdict, draft)
+        {
+            // A preview's entry is a test entry, which sets off nothing unless its ticket runs actions (ADR-0204).
+            IsTest = request.Preview is not null,
+            RunsActions = request.Preview is null || request.PreviewRunsActions,
+        };
         try
         {
             return await recorder.CreateAsync(submission, scope, cancellationToken) is { } created
@@ -290,22 +295,24 @@ internal sealed class FormSubmissions(
     /// <param name="challenge">The challenge the request posted, or null.</param>
     /// <param name="challenges">Reads the challenge.</param>
     /// <param name="placement">The page the placement names (ADR-0129), which no entry keeps, or null.</param>
+    /// <param name="preview">The version a preview ticket names, whose request finds only a test entry (ADR-0204); null for a visitor's.</param>
     /// <param name="cancellationToken">Cancelled when the request is.</param>
-    public async Task<SubmissionResult> ReceiptAsync(Guid form, Guid submissionId, string? serverKey, string? challenge, IChallengeReader challenges, Guid? placement = null, CancellationToken cancellationToken = default)
+    public async Task<SubmissionResult> ReceiptAsync(Guid form, Guid submissionId, string? serverKey, string? challenge, IChallengeReader challenges, Guid? placement = null, int? preview = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(challenges);
-        if (await ServedAsync(form, cancellationToken) is not { } served)
+        if (await ServedAsync(form, preview, cancellationToken) is not { } served)
         {
             return SubmissionResult.Refused(SubmissionRefusal.FormNotFound);
         }
 
-        if (IsForMembers(served.Form))
+        if (IsForMembers(served.Form) && preview is null)
         {
             return SubmissionResult.Refused(SubmissionRefusal.MemberRequired);
         }
 
         var ticket = serverKey is null ? challenges.Read(challenge, form, FormChallenges.ReceiptGrace) : null;
         return await entries.GetBySubmissionAsync(served.Row.Id, submissionId, cancellationToken) is { State: not EntryState.Draft } entry
+            && entry.IsTest == (preview is not null)
             && (serverKey is not null ? string.Equals(KeyThatSubmitted(entry), serverKey, StringComparison.Ordinal) : ticket is not null && entry.ChallengeId == FormChallenges.StoredId(ticket))
             ? await ReplayAsync(entry, served.Form, placement, cancellationToken)
             : SubmissionResult.Refused(SubmissionRefusal.EntryNotFound);
@@ -467,9 +474,12 @@ internal sealed class FormSubmissions(
             return Reading.Refused(SubmissionResult.Invalid([new SubmissionProblem(SubmissionProblems.Empty, string.Empty)]));
         }
 
-        // The puzzle comes with the challenge, so an answer that does not solve it asks for a new challenge (ADR-0141).
+        // The puzzle comes with the challenge, so an answer that does not solve it asks for a new challenge (ADR-0141). A
+        // preview's ticket stands in for the puzzle, the captcha and the spam score, which tell a person from a script, not
+        // an editor from a visitor: a test entry never lands in Spam (ADR-0204).
+        var tested = request.Preview is not null;
         var protects = await protection.SettingsOfAsync(form.Form.Key, page, cancellationToken);
-        if (pageKey is null && !SubmissionProtection.HasItsProof(request, definition, protects))
+        if (pageKey is null && !tested && !SubmissionProtection.HasItsProof(request, definition, protects))
         {
             return Reading.Refused(SubmissionResult.Refused(SubmissionRefusal.ChallengeRequired));
         }
@@ -489,7 +499,7 @@ internal sealed class FormSubmissions(
         var paths = new FieldPaths(definition);
 
         // A token is spent when it is verified, so only answers that can be stored ask the provider (ADR-0142).
-        var captcha = pageKey is null && (draft || read.Errors.IsEmpty) ? await protection.CheckCaptchaAsync(request, definition, protects, cancellationToken) : FormBuilderCaptchaOutcome.Passed;
+        var captcha = pageKey is null && !tested && (draft || read.Errors.IsEmpty) ? await protection.CheckCaptchaAsync(request, definition, protects, cancellationToken) : FormBuilderCaptchaOutcome.Passed;
         if (captcha == FormBuilderCaptchaOutcome.Failed)
         {
             return Reading.Refused(SubmissionResult.Refused(SubmissionRefusal.CaptchaFailed));
@@ -497,7 +507,7 @@ internal sealed class FormSubmissions(
 
         // The protection, for a submission (section 4.4, step 6), on the answers as they were read: Spam is told nothing of
         // places or unique answers, which it neither takes nor holds (ADR-0090, ADR-0091).
-        var verdict = pageKey is null ? await protection.ScoreAsync(request, definition, read, scope.Culture, page, protects, captcha, cancellationToken) : SpamVerdict.None;
+        var verdict = pageKey is null && !tested ? await protection.ScoreAsync(request, definition, read, scope.Culture, page, protects, captcha, cancellationToken) : SpamVerdict.None;
         if (draft)
         {
             return new Reading(null, new ReadSubmission(scope, page, read, wordings), verdict);

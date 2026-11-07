@@ -52,9 +52,12 @@ internal sealed class EntryRequests(FormSubmissions submissions, UploadTokens to
             return refusal;
         }
 
+        // A preview's submission is a test entry of the version its ticket names, with a test member who has no key; it
+        // runs its actions only when its ticket says so (ADR-0204).
         var invalid = new List<string>();
+        var preview = PreviewRequest.Of(http);
         return EntryBodies.Read(body.Bytes, formKey, invalid, placements) is { } submission
-            ? Answer(await submissions.SubmitAsync(submission with { Tokens = tokens, Challenges = challenges, Address = http.Connection.RemoteIpAddress, Member = await MemberAsync(http), ServerKey = ServerKeyRequest.NameOf(http) }, cancellationToken), formKey, EntryBodies.InstanceOf(body.Bytes))
+            ? Answer(await submissions.SubmitAsync(submission with { Preview = preview?.Version, PreviewRunsActions = preview?.RunsActions ?? false, Tokens = tokens, Challenges = challenges, Address = http.Connection.RemoteIpAddress, Member = preview is null ? await MemberAsync(http) : null, ServerKey = ServerKeyRequest.NameOf(http) }, cancellationToken), formKey, EntryBodies.InstanceOf(body.Bytes))
             : FormBuilderPublicProblems.InvalidRequest([.. invalid]);
     }
 
@@ -148,7 +151,7 @@ internal sealed class EntryRequests(FormSubmissions submissions, UploadTokens to
 
         var invalid = new List<string>();
         return EntryBodies.ReadReceipt(body.Bytes, invalid, placements, formKey) is ({ } submissionId, var challenge, var placement)
-            ? Answer(await submissions.ReceiptAsync(formKey, submissionId, ServerKeyRequest.NameOf(http), challenge, challenges, placement, cancellationToken))
+            ? Answer(await submissions.ReceiptAsync(formKey, submissionId, ServerKeyRequest.NameOf(http), challenge, challenges, placement, PreviewRequest.Of(http)?.Version, cancellationToken))
             : FormBuilderPublicProblems.InvalidRequest([.. invalid]);
     }
 

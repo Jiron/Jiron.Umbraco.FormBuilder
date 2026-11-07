@@ -1,7 +1,8 @@
-// What the preview's frame and the backoffice say to each other (ADR-0203), on the `jfb` key of each message. Once the
-// frame's document has loaded, the backoffice hands it a port of a channel of their own, with the one message it posts
-// to the frame's window; everything else goes over that port, which a page the frame goes on to never gets. Over it the
-// frame asks for a new ticket for its form, and the backoffice answers with one or tells it the colour scheme.
+// What the preview's frame and the backoffice say to each other (ADR-0203, ADR-0204), on the `jfb` key of each message.
+// Once the frame's document has loaded, the backoffice hands it a port of a channel of their own, with the one message
+// it posts to the frame's window; everything else goes over that port, which a page the frame goes on to never gets.
+// Over it the frame asks for a new ticket for its form and says which submission it sent; the backoffice answers with a
+// ticket, hands one over unasked when the test entries' actions are switched, and tells it the colour scheme.
 
 /** The backoffice hands the frame its port. */
 export const PORT_MESSAGE = 'preview-port';
@@ -11,6 +12,9 @@ export const TICKET_MESSAGE = 'preview-ticket';
 
 /** The backoffice tells the frame to show the page light or dark. */
 export const SCHEME_MESSAGE = 'preview-scheme';
+
+/** The frame says which submission the public API took, a test entry the backoffice may run the actions of. */
+export const SENT_MESSAGE = 'preview-sent';
 
 /** A ticket is renewed once less than this is left of it, in milliseconds; the backoffice answers no sooner. */
 export const RENEW_BEFORE = 120_000;
@@ -31,6 +35,13 @@ export interface TicketAsk {
 export interface TicketAnswer extends TicketAsk {
   readonly ticket: string;
   readonly lifetime: number;
+}
+
+/** The submission the frame sent, by the submission id it sent it with. */
+export interface SentMessage {
+  readonly jfb: typeof SENT_MESSAGE;
+  readonly form: string;
+  readonly submissionId: string;
 }
 
 /** The page's colour scheme. */
@@ -58,6 +69,17 @@ export const isTicketAnswer = (data: unknown, form: string): data is TicketAnswe
   data['ticket'] !== '' &&
   typeof data['lifetime'] === 'number' &&
   data['lifetime'] > 0;
+
+/** A submission id as the public API makes one: a UUID. */
+const SUBMISSION_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Whether a message says which submission the frame sent for this form, by an id as the public API makes one. */
+export const isSentMessage = (data: unknown, form: string): data is SentMessage =>
+  record(data) &&
+  data['jfb'] === SENT_MESSAGE &&
+  data['form'] === form &&
+  typeof data['submissionId'] === 'string' &&
+  SUBMISSION_ID.test(data['submissionId']);
 
 /** Whether a message tells the page's colour scheme. */
 export const isSchemeMessage = (data: unknown): data is SchemeMessage =>

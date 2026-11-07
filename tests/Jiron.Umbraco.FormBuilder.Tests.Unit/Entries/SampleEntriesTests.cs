@@ -2,6 +2,7 @@ using Jiron.Umbraco.FormBuilder.Core.Configuration;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Entries;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
+using Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn;
 using Jiron.Umbraco.FormBuilder.Core.MergeTags;
 using Jiron.Umbraco.FormBuilder.Core.OptionLists;
 using Jiron.Umbraco.FormBuilder.Core.Settings;
@@ -17,8 +18,9 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Entries;
 /// The sample entry of previews and test runs (ROADMAP 10.1c, ADR-0187): number 42, submitted now, in the state an entry
 /// of the form arrives in, for the form with the site's setting locks applied; for every field that holds a value the
 /// first candidate of its own kind that the field takes, its default value first and a hidden field's only answer, read
-/// by its type and passed by its checks; a calculation worked out from the others; a file, a signature, a grid and a
-/// field of choices without options not answered.
+/// by its type and passed by its checks; a calculation worked out from the others; a file, a signature, a grid without
+/// columns and a field of choices without options not answered. As a page posts them (ADR-0204), the sample answers hold
+/// each grid row's first column and a signature's typed name too.
 /// </summary>
 [TestFixture]
 public sealed class SampleEntriesTests
@@ -188,6 +190,35 @@ public sealed class SampleEntriesTests
         {
             Assert.That(Texts(scope.Answers, country.Key), Is.EqualTo(new[] { "CH" }), "not GB, which the site's lock leaves out");
             Assert.That(scope.Form.Pages[0].Groups[0].Fields[0].Settings?.ToString(), Does.Contain("CH"), "the form as the site runs it");
+        });
+    }
+
+    [Test]
+    public async Task ThePostedAnswers_HoldEachGridRowsFirstColumn_AndASignaturesTypedName_ForThePageToDraw()
+    {
+        var email = Field("email", "email");
+        var grid = Field("grid", "satisfaction") with { Rows = [new GridRow { Key = Guid.NewGuid() }, new GridRow { Key = Guid.NewGuid() }], Options = Items("good", "poor") };
+        var signature = Field("signature", "signed");
+        var guests = Field("repeater", "guests") with { Fields = [Field("text", "guestName")] };
+        var definition = Definition(email, grid, signature, guests);
+
+        var posted = await Samples().PostedAsync(definition, "Contact", "contact", "en-GB");
+        var answers = await Samples().AnswersAsync(Scope(definition, "en-GB"), Today);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(posted[email.Key].Values, Is.EqualTo(new[] { SampleEntries.Email }));
+            Assert.That(
+                posted[grid.Key].Parts.Select(part => (part.Key, part.Value.Single())),
+                Is.EquivalentTo(grid.Rows.Select(row => (GridFieldType.RowPart(row.Key), "good"))),
+                "each row's first column");
+            Assert.That(posted[signature.Key].Parts[SignatureFieldType.TypedPart], Is.EqualTo(new[] { SampleEntries.GivenName + " " + SampleEntries.FamilyName }));
+            Assert.That(posted[guests.Fields[0].Key].Values, Is.EqualTo(new[] { "guestName" }), "a repeatable group's field, as its one row posts it");
+            Assert.That(posted.ContainsKey(guests.Key), Is.False, "the group itself posts nothing");
+            Assert.That(answers.Find(grid.Key), Is.Not.Null, "the merge tags read the grid too");
+            Assert.That(answers.Find(signature.Key), Is.Null, "a signature's tag reads a file, which no sample has");
+            Assert.That(() => Samples().PostedAsync(null!, "Contact", "contact", "en-GB"), Throws.ArgumentNullException);
+            Assert.That(() => Samples().PostedAsync(definition, "Contact", "contact", null!), Throws.ArgumentNullException);
         });
     }
 

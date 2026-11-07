@@ -85,7 +85,7 @@ internal sealed partial class FormBuilderPublicApiMiddleware(FormBuilderPublicAp
                 return;
             }
 
-            context.Features.Set(new PreviewRequest(preview.FormKey, preview.Version));
+            context.Features.Set(new PreviewRequest(preview.FormKey, preview.Version, preview.RunsActions));
         }
 
         if (origin is not null)

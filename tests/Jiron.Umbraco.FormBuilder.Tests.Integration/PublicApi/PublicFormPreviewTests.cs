@@ -72,7 +72,7 @@ public sealed class PublicFormPreviewTests : PublicApiTestBase
             request.Content = Json("{}");
         });
         using var anotherForms = await FromFrameAsync(HttpMethod.Post, $"{Root}/forms/{key}/challenge", Tickets.Issue(other, otherVersion).Value, "{}");
-        using var entries = await FromFrameAsync(HttpMethod.Post, $"{Root}/forms/{key}/entries", ticket, """{"revision":1,"values":{}}""");
+        using var resume = await FromFrameAsync(HttpMethod.Post, $"{Root}/drafts/resume", ticket, """{"token":"x"}""");
         using var drafts = await FromFrameAsync(HttpMethod.Post, $"{Root}/forms/{key}/drafts", ticket, """{"revision":1,"values":{}}""");
         using var render = await FromFrameAsync(HttpMethod.Get, $"{Root}/forms/{key}/render?instance=jfb-1&page=/", ticket);
         using var byAlias = await FromFrameAsync(HttpMethod.Get, $"{Root}/forms/{(await Forms.GetAsync(key))!.Alias}", ticket);
@@ -84,7 +84,7 @@ public sealed class PublicFormPreviewTests : PublicApiTestBase
 
         Assert.Multiple(async () =>
         {
-            foreach (var answer in new[] { malformed, schemeAlone, anotherForms, entries, drafts, render, byAlias, expired })
+            foreach (var answer in new[] { malformed, schemeAlone, anotherForms, resume, drafts, render, byAlias, expired })
             {
                 Assert.That(await RefusalAsync(answer), Is.EqualTo("401 preview_ticket_invalid"), answer.RequestMessage?.RequestUri?.ToString());
                 Assert.That(Header(answer, "WWW-Authenticate"), Is.EqualTo(PreviewTickets.Scheme));

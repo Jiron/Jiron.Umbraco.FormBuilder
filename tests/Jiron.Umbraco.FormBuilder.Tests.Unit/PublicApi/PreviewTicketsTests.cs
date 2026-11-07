@@ -12,7 +12,9 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Unit.PublicApi;
 /// The preview's tickets (ADR-0203): each names the form and the version for ten minutes on the site's clock, and reads
 /// as nothing once expired, changed, cut, protected for another purpose or by another site, or longer than any is; the
 /// frame sends one after the scheme <c>Jfb-Preview</c> in any letter case, and the scheme alone or twice carries one that
-/// does not hold. A ticket never prints its value, nor does a record that holds one: the document and the answers.
+/// does not hold. A ticket never prints its value, nor does a record that holds one: the document and the answers. With
+/// 10.3f (ADR-0204) a ticket says whether the test entries sent with it run their actions; one with a flag no ticket sets,
+/// or of the first layout, reads as nothing.
 /// </summary>
 public sealed class PreviewTicketsTests
 {
@@ -89,6 +91,31 @@ public sealed class PreviewTicketsTests
             Assert.That(_tickets.Read("not a ticket!"), Is.Null);
             Assert.That(_tickets.Read(string.Empty), Is.Null);
             Assert.That(_tickets.Read(null), Is.Null);
+        });
+    }
+
+    [Test]
+    public void ATicket_SaysWhetherItsTestEntriesRunTheirActions_AndAnUnknownFlagOrTheFirstLayout_ReadsAsNothing()
+    {
+        var protector = _protection.CreateProtector(PreviewTickets.Purpose);
+
+        // A ticket that runs actions, its payload changed and protected again as the site would.
+        string Changed(Func<byte[], byte[]> change)
+        {
+            var payload = protector.Unprotect(Base64Url.DecodeFromChars(_tickets.Issue(Form, 7, runsActions: true).Value));
+            return Base64Url.EncodeToString(protector.Protect(change(payload)));
+        }
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(_tickets.Read(_tickets.Issue(Form, 7, runsActions: true).Value)?.RunsActions, Is.True);
+            Assert.That(_tickets.Issue(Form, 7, runsActions: true).RunsActions, Is.True);
+            Assert.That(_tickets.Read(_tickets.Issue(Form, 7).Value)?.RunsActions, Is.False, "running nothing unless asked");
+            Assert.That(_tickets.Read(Changed(payload => payload))?.RunsActions, Is.True, "protected again unchanged, it holds");
+            Assert.That(_tickets.Read(Changed(payload => { payload[^1] = 2; return payload; })), Is.Null, "a flag no ticket sets");
+            Assert.That(_tickets.Read(Changed(payload => { payload[^1] = 3; return payload; })), Is.Null);
+            Assert.That(_tickets.Read(Changed(payload => { payload[0] = 1; return payload; })), Is.Null, "the first layout's version");
+            Assert.That(_tickets.Read(Changed(payload => { payload[0] = 1; return payload[..^1]; })), Is.Null, "a ticket of the first layout");
         });
     }
 

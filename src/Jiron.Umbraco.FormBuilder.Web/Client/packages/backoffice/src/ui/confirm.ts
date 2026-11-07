@@ -13,3 +13,36 @@ export function confirmText(
 ): Promise<undefined> {
   return umbConfirmModal(host, { ...data, content: html`${data.content}` });
 }
+
+/** One of the things a confirmation lists: its name, and a line on it in a quieter voice. */
+export interface ConfirmItem {
+  readonly name: string;
+  readonly detail: string;
+}
+
+/**
+ * Asks before a step whose effects leave the backoffice, listing what it sets off (ADR-0204): its content and each item as
+ * text, as {@link confirmText} has them.
+ */
+export function confirmList(
+  host: UmbControllerHost,
+  data: Omit<UmbConfirmModalData, 'content'> & { content: string; items: readonly ConfirmItem[] },
+): Promise<undefined> {
+  const { items, content, ...rest } = data;
+  return umbConfirmModal(host, {
+    ...rest,
+    content: html`<p style="margin: 0">${content}</p>
+      <ul
+        style="display: grid; gap: var(--uui-size-space-3); margin: var(--uui-size-space-4) 0 0; padding: 0; list-style: none"
+      >
+        ${items.map(
+          (item) =>
+            html`<li>
+              <strong>${item.name}</strong>${
+                item.detail ? html` <span style="color: var(--uui-color-text-alt)">${item.detail}</span>` : ''
+              }
+            </li>`,
+        )}
+      </ul>`,
+  });
+}

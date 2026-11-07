@@ -387,6 +387,7 @@ internal sealed class FormController(
     /// connection on HTTP/1.x.
     /// </remarks>
     [HttpPost("{key}/uploads")]
+    [FormBuilderPreview]
     [FormBuilderRateLimit(FormBuilderRateLimitPolicies.Upload)]
     [FormBuilderBodyLimit(FormBuilderBodyLimitAttribute.LargestUpload)]
     [FormBuilderTimeLimit(300)]
@@ -407,7 +408,7 @@ internal sealed class FormController(
             return FormBuilderPublicProblems.InvalidRequest("fieldKey");
         }
 
-        if (!Guid.TryParseExact(key, "D", out var formKey) || await forms.GetAsync(formKey, cancellationToken) is not { } form)
+        if (!Guid.TryParseExact(key, "D", out var formKey) || await ServedAsync(formKey, cancellationToken) is not { } form)
         {
             FormBuilderPublicProblems.CloseConnection(HttpContext);
             return FormBuilderPublicProblems.FormNotFound();
@@ -425,9 +426,10 @@ internal sealed class FormController(
             return unavailable == FormUnavailable.Closed ? FormBuilderPublicProblems.FormClosed() : FormBuilderPublicProblems.EntryLimitReached();
         }
 
-        // A form for members takes files only from a member it admits, with their own challenge (ADR-0012, ADR-0138).
+        // A form for members takes files only from a member it admits, with their own challenge (ADR-0012, ADR-0138); a
+        // preview's ticket stands in for a test member, who has no key (ADR-0203).
         Guid? member = null;
-        if (form.Published.Definition.Settings.Availability is { Access: not MemberAccess.Anyone } forMembers)
+        if (form.Published.Definition.Settings.Availability is { Access: not MemberAccess.Anyone } forMembers && PreviewRequest.Of(HttpContext) is null)
         {
             if (!await ChallengeRequests.AdmitsAsync(HttpContext, forMembers))
             {
@@ -489,6 +491,7 @@ internal sealed class FormController(
     /// missing, forged, expired, another form's, or used for another entry.
     /// </remarks>
     [HttpPost("{key}/entries")]
+    [FormBuilderPreview]
     [FormBuilderRateLimit(FormBuilderRateLimitPolicies.Submit)]
     [FormBuilderBodyLimit(EntryRequests.MaxBodyBytes)]
     [FormBuilderTimeLimit(30)]
@@ -506,7 +509,7 @@ internal sealed class FormController(
     public async Task<IActionResult> Entries(string key, CancellationToken cancellationToken)
     {
         // A form the site does not serve answers before its body is read.
-        if (!Guid.TryParseExact(key, "D", out var formKey) || await forms.GetAsync(formKey, cancellationToken) is null)
+        if (!Guid.TryParseExact(key, "D", out var formKey) || await ServedAsync(formKey, cancellationToken) is null)
         {
             FormBuilderPublicProblems.CloseConnection(HttpContext);
             return FormBuilderPublicProblems.FormNotFound();
@@ -598,6 +601,7 @@ internal sealed class FormController(
     /// <param name="key">The form's key.</param>
     /// <param name="cancellationToken">The request's cancellation, with its time limit.</param>
     [HttpPost("{key}/receipt")]
+    [FormBuilderPreview]
     [FormBuilderRateLimit(FormBuilderRateLimitPolicies.Submit)]
     [FormBuilderBodyLimit(EntryRequests.MaxReceiptBodyBytes)]
     [FormBuilderTimeLimit(30)]
@@ -612,7 +616,7 @@ internal sealed class FormController(
     public async Task<IActionResult> Receipt(string key, CancellationToken cancellationToken)
     {
         // A form the site does not serve answers before its body is read.
-        if (!Guid.TryParseExact(key, "D", out var formKey) || await forms.GetAsync(formKey, cancellationToken) is null)
+        if (!Guid.TryParseExact(key, "D", out var formKey) || await ServedAsync(formKey, cancellationToken) is null)
         {
             FormBuilderPublicProblems.CloseConnection(HttpContext);
             return FormBuilderPublicProblems.FormNotFound();

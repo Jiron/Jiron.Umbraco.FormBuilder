@@ -111,6 +111,12 @@ internal static class FormBuilderProblems
     /// <summary>The code of a draft whose rules the check both runtimes run refuses, which the preview does not show (ADR-0203).</summary>
     public const string RulesInvalidCode = "rules_invalid";
 
+    /// <summary>The code of a test entry the form does not hold (ADR-0204).</summary>
+    public const string TestEntryNotFoundCode = "test_entry_not_found";
+
+    /// <summary>The code of a test entry whose actions ran, or wait for its address to be confirmed (ADR-0204).</summary>
+    public const string ActionsRanCode = "actions_ran";
+
     /// <summary>How long a client waits before asking again while the plan has not run.</summary>
     public static readonly TimeSpan RetryAfter = TimeSpan.FromSeconds(10);
 
@@ -224,6 +230,14 @@ internal static class FormBuilderProblems
     /// <summary>A field type the site does not have (ADR-0059).</summary>
     public static FormBuilderProblemResult FieldTypeNotFound() =>
         Problem(StatusCodes.Status404NotFound, FieldTypeNotFoundCode, "The site has no such field type.");
+
+    /// <summary>A test entry the form does not hold, or one that is gone (ADR-0204).</summary>
+    public static FormBuilderProblemResult TestEntryNotFound() =>
+        Problem(StatusCodes.Status404NotFound, TestEntryNotFoundCode, "The form has no such test entry.");
+
+    /// <summary>Run actions for a test entry whose actions ran, or wait for its address to be confirmed (ADR-0204).</summary>
+    public static FormBuilderProblemResult ActionsRan() =>
+        Problem(StatusCodes.Status409Conflict, ActionsRanCode, "This test entry's actions have run already.");
 
     /// <summary>A draft whose rules the check both runtimes run refuses (ADR-0002, ADR-0203): the preview evaluates none of them.</summary>
     public static FormBuilderProblemResult RulesInvalid() =>

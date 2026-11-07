@@ -109,6 +109,52 @@ internal static class FieldCatalogue
         return changes;
     }
 
+    /// <summary>
+    /// The rows a preview's test entry adds before its first value, for the fields only the draft has (ADR-0003,
+    /// ADR-0204): the definition's rows the catalogue lacks, with no first version until a publish includes them, so the
+    /// columns, filters and exports of real entries leave them out.
+    /// </summary>
+    /// <param name="entries">The rows of the version the test entry was sent with.</param>
+    /// <param name="stored">The rows the catalogue holds.</param>
+    public static IReadOnlyList<CatalogueFieldValues> DraftOnly(IReadOnlyList<CatalogueEntry> entries, IReadOnlyList<CatalogueField> stored)
+    {
+        ArgumentNullException.ThrowIfNull(entries);
+        ArgumentNullException.ThrowIfNull(stored);
+        var known = stored.Select(field => field.Values.FieldKey).ToHashSet();
+        return [.. entries
+            .Select((entry, index) => (Entry: entry, Index: index))
+            .Where(item => !known.Contains(item.Entry.FieldKey))
+            .Select(item => new CatalogueFieldValues(item.Entry.FieldKey, item.Entry.Alias, item.Entry.Label, item.Entry.Type, item.Entry.Storage, item.Entry.IsSensitive, item.Index, FirstVersionNumber: null, LastVersionNumber: null, item.Entry.ParentFieldKey))];
+    }
+
+    /// <summary>
+    /// The fields whose values a preview's test entry cannot hold (ADR-0204): those the draft stores otherwise than the
+    /// row the catalogue keeps for them, or under another parent, with the field that holds such a grid row's answers.
+    /// That row stays the published versions' until a publish changes it.
+    /// </summary>
+    /// <param name="entries">The rows of the version the test entry was sent with.</param>
+    /// <param name="stored">The rows the catalogue holds.</param>
+    public static IReadOnlySet<Guid> Unlike(IReadOnlyList<CatalogueEntry> entries, IReadOnlyList<CatalogueField> stored)
+    {
+        ArgumentNullException.ThrowIfNull(entries);
+        ArgumentNullException.ThrowIfNull(stored);
+        var rows = stored.ToDictionary(field => field.Values.FieldKey, field => field.Values);
+        var unlike = new HashSet<Guid>();
+        foreach (var entry in entries)
+        {
+            if (rows.TryGetValue(entry.FieldKey, out var row) && (row.StorageKind != entry.Storage || row.ParentFieldKey != entry.ParentFieldKey))
+            {
+                unlike.Add(entry.FieldKey);
+                if (entry.ParentFieldKey is { } parent)
+                {
+                    unlike.Add(parent);
+                }
+            }
+        }
+
+        return unlike;
+    }
+
     private static void Add(FormField field, Guid? parent, FieldTypeRegistry types, List<CatalogueEntry> entries)
     {
         if (types.Find(field.Type) is not { HoldsValue: true } type || field.Alias is not { } alias)

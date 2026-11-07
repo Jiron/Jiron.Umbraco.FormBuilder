@@ -29,6 +29,10 @@ namespace Jiron.Umbraco.FormBuilder.Core.Submissions;
 /// <param name="ChallengeId">The id of the challenge that made it, which makes one entry (ADR-0012); null for a request without one.</param>
 /// <param name="Verdict">Its spam score and why (ADR-0012); null for none.</param>
 /// <param name="Draft">The draft it finishes, which goes in its unit (ADR-0163); null for none.</param>
+/// <remarks>
+/// A preview's submission is a test entry (<see cref="IsTest"/>), which sets off nothing unless <see cref="RunsActions"/>
+/// (ADR-0204).
+/// </remarks>
 internal sealed record NewSubmission(
     int FormId,
     int FormVersionId,
@@ -43,7 +47,17 @@ internal sealed record NewSubmission(
     Guid? Redirect = null,
     string? ChallengeId = null,
     SpamVerdict? Verdict = null,
-    long? Draft = null);
+    long? Draft = null)
+{
+    /// <summary>Whether it is a test entry, sent from the preview (ADR-0204).</summary>
+    public bool IsTest { get; init; }
+
+    /// <summary>
+    /// Whether it sets off what an entry sets off as it arrives: its actions, its confirmation mail and the notification
+    /// Umbraco's webhooks hear. Always for a visitor's; for a test entry only when its ticket says so (ADR-0204).
+    /// </summary>
+    public bool RunsActions { get; init; } = true;
+}
 
 /// <summary>An entry with its receipt and outcome (ADR-0088).</summary>
 /// <param name="Entry">The entry.</param>
@@ -63,7 +77,9 @@ internal sealed record EntryCopy(MergeTagScope Scope, IReadOnlySet<Guid>? Hidden
 /// <summary>
 /// The entries of submissions (ADR-0088): stores a submission's entry in one transaction with its <c>submitted</c>
 /// event, its action runs and its daily count, once its choices are held against the places left (ADR-0090) and its
-/// answers that must be unique against the other entries' (ADR-0091), and gives
+/// answers that must be unique against the other entries' (ADR-0091). A test entry (ADR-0204) holds no place or answer,
+/// counts nowhere, and sets off nothing unless its ticket runs actions; its event keeps the actions its rules chose, which
+/// Run actions... runs later. It gives
 /// an entry's receipt and outcome again for a retry of the same answers, rendered with the version it was submitted
 /// with, its stored answers and the outcome its event names.
 /// </summary>
@@ -86,7 +102,8 @@ internal sealed class SubmissionEntries(
     EntryEvents entryEvents,
     OutboxWake wake,
     IEntryRepository entries,
-    IEmailRepository emails)
+    IEmailRepository emails,
+    FieldTypeRegistry types)
 {
     /// <summary>The kind of the event that records a submission.</summary>
     public const string SubmittedEvent = "submitted";
@@ -123,9 +140,14 @@ internal sealed class SubmissionEntries(
         ArgumentNullException.ThrowIfNull(scope);
         var definition = submission.Form.Definition;
         var verdict = submission.Verdict ?? SpamVerdict.None;
-        var state = verdict.IsSpam ? EntryState.Spam : definition.Settings.Submission.Verification is null ? ArrivalState(definition) : EntryState.Unverified;
-        var queued = state is EntryState.Unverified or EntryState.Spam ? [] : Runs(definition, submission.Answers.State.Actions, ArrivalTriggers(definition, verified: false));
-        var kept = queued.Count > 0 || ActionSettlement.TriggerCanFire(definition, state);
+        // A test entry that sets off nothing arrives as confirmed, with no mail asking for it (ADR-0204).
+        var state = verdict.IsSpam ? EntryState.Spam : definition.Settings.Submission.Verification is null || !submission.RunsActions ? ArrivalState(definition) : EntryState.Unverified;
+        var queued = !submission.RunsActions || state is EntryState.Unverified or EntryState.Spam ? [] : Runs(definition, submission.Answers.State.Actions, ArrivalTriggers(definition, verified: false));
+        // A test entry whose actions wait for Run actions... keeps what they may use until they ran (ADR-0204); one whose
+        // rules chose none that its arrival could run has nothing to wait for.
+        var waits = !submission.RunsActions
+            && Runs(definition, submission.Answers.State.Actions, ArrivalTriggers(definition, verified: definition.Settings.Submission.Verification is not null)).Count > 0;
+        var kept = queued.Count > 0 || waits || ActionSettlement.TriggerCanFire(definition, state);
         var answers = kept ? submission.Answers.Answers : [.. submission.Answers.Answers.Where(answer => !ActionSettlement.KeptUntilActions(definition, answer.Field))];
         var entry = new NewEntry
         {
@@ -143,7 +165,39 @@ internal sealed class SubmissionEntries(
             SpamScore = verdict.Score,
             SpamReasons = SpamReasons.Stored(verdict.Reasons),
             EntryLimit = definition.Settings.Availability.MaxEntries,
+            IsTest = submission.IsTest,
         };
+
+        // A field only the draft has gets its catalogue row before its first value; a second test entry, or one sent at
+        // the same moment, adds none. A field the draft stores otherwise than the row its published versions keep, or
+        // under another parent, keeps no value in a test entry: the row stays theirs until a publish changes it
+        // (ADR-0003, ADR-0204).
+        if (submission.IsTest)
+        {
+            var known = await forms.ListFieldsAsync(submission.FormId, cancellationToken);
+            var drafted = FieldCatalogue.Of(definition, types);
+            var raced = false;
+            foreach (var row in FieldCatalogue.DraftOnly(drafted, known))
+            {
+                try
+                {
+                    await forms.AddFieldAsync(submission.FormId, row, cancellationToken);
+                }
+                catch (FormBuilderConflictException conflict) when (conflict.Conflict == FormBuilderConflict.DuplicateKey)
+                {
+                    // Another submission, or a publish, added the row a moment ago: the catalogue is read again.
+                    raced = true;
+                }
+            }
+
+            if (raced)
+            {
+                known = await forms.ListFieldsAsync(submission.FormId, cancellationToken);
+            }
+
+            var unlike = FieldCatalogue.Unlike(drafted, known);
+            answers = [.. answers.Where(answer => !unlike.Contains(answer.Field))];
+        }
 
         var outcome = submission.Answers.State.Outcome;
         var stored = await store.CreateAsync(
@@ -173,13 +227,18 @@ internal sealed class SubmissionEntries(
                     }
                 }
 
-                await events.AddAsync(new NewEntryEvent(created.Id, SubmittedEvent, Details: Details(outcome, submission.Answers.State.Hidden, KeepsChosenActions(definition, state) ? submission.Answers.State.Actions : null)), cancellationToken);
+                await events.AddAsync(new NewEntryEvent(created.Id, SubmittedEvent, Details: Details(outcome, submission.Answers.State.Hidden, waits || KeepsChosenActions(definition, state) ? submission.Answers.State.Actions : null)), cancellationToken);
                 if (queued.Count > 0)
                 {
                     await runs.AddAsync(created.Id, created.FormVersionId, Guid.NewGuid(), queued, cancellationToken: cancellationToken);
                 }
 
-                await stats.IncrementAsync(created.FormId, [new DailyStatCount(verdict.IsSpam ? SpamMetric : SubmissionsMetric)], cancellationToken);
+                // A test entry adds nothing to the form's counts, which insights read (section 4.4).
+                if (!submission.IsTest)
+                {
+                    await stats.IncrementAsync(created.FormId, [new DailyStatCount(verdict.IsSpam ? SpamMetric : SubmissionsMetric)], cancellationToken);
+                }
+
                 if (submission.Draft is { } draft)
                 {
                     // The unit holds the form's row, so of two submits that name one draft only the first finds it.
@@ -207,8 +266,9 @@ internal sealed class SubmissionEntries(
             wake.Wake();
         }
 
-        // An entry that waits for a confirmation or sits in Spam is told of when it gets here (8.5, EntrySpamFolder).
-        if (stored.State is EntryState.Submitted or EntryState.Approved)
+        // An entry that waits for a confirmation or sits in Spam is told of when it gets here (8.5, EntrySpamFolder); a
+        // test entry that sets off nothing is told of to nobody (ADR-0204).
+        if (submission.RunsActions && stored.State is EntryState.Submitted or EntryState.Approved)
         {
             await entryEvents.TellArrivedAsync(stored, scope.FormAlias);
         }
@@ -223,7 +283,7 @@ internal sealed class SubmissionEntries(
         {
             // A form that stores no entries lets it go at once when no action can run for it (section 4.4, ADR-0158), with the
             // receipt and the outcome made or not, and whether the visitor is still there or not.
-            if (queued.Count == 0 && definition.Settings.Submission.Store == EntryStorage.Never)
+            if (queued.Count == 0 && !waits && definition.Settings.Submission.Store == EntryStorage.Never)
             {
                 await settlement.SettleAsync(stored.Id, definition, CancellationToken.None);
             }

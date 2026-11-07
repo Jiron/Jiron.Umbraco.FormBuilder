@@ -20,8 +20,9 @@ namespace Jiron.Umbraco.FormBuilder.Core.Entries;
 /// to its limits, read by its type and passed by its type's checks and its own, with the answers before it, as a member's
 /// value that stands in for a hidden field is (ADR-0124). A field's own default value comes first, rendered as the page
 /// renders it for the sample, and is a hidden field's only answer, as visitors send no other; a calculation is worked out
-/// from the answers. The rules are not applied: a preview shows the text it is asked about, not the one the rules would
-/// choose. A field that takes none of the candidates, such as a file, is not answered.
+/// from the answers, and a grid takes each row's first column. The rules are not applied: a preview shows the text it is
+/// asked about, not the one the rules would choose. A field that takes none of the candidates, such as a file, is not
+/// answered. The preview's Fill with sample answers renders the same answers as a page posts them (ADR-0204).
 /// </summary>
 /// <param name="types">The field types.</param>
 /// <param name="options">The options of a field with a list or another source.</param>
@@ -74,6 +75,32 @@ internal sealed class SampleEntries(
     {
         ArgumentNullException.ThrowIfNull(definition);
         ArgumentNullException.ThrowIfNull(culture);
+        var (scope, today) = await BareAsync(definition, formName, formAlias, culture, cancellationToken);
+        return scope with { Answers = (await SampleAsync(scope, today, cancellationToken)).Answers };
+    }
+
+    /// <summary>
+    /// The sample answers of a form's definition as a page posts them (ADR-0204), by the field's key, a repeatable group's
+    /// fields as one row's: what the preview renders as the starting values of its pages. Beside the answers of
+    /// <see cref="ScopeAsync"/> they hold a signature's, the sample person's typed name, which the page draws and sends as
+    /// the signature's image; a calculation's is the page's to work out.
+    /// </summary>
+    /// <param name="definition">The definition, such as the version the preview shows.</param>
+    /// <param name="formName">The form's name.</param>
+    /// <param name="formAlias">The form's alias.</param>
+    /// <param name="culture">The culture its texts are in; empty for the default.</param>
+    /// <param name="cancellationToken">Cancels resolving the options and rendering the default values.</param>
+    public async Task<IReadOnlyDictionary<Guid, FieldAnswers>> PostedAsync(FormDefinition definition, string formName, string formAlias, string culture, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(definition);
+        ArgumentNullException.ThrowIfNull(culture);
+        var (scope, today) = await BareAsync(definition, formName, formAlias, culture, cancellationToken);
+        return (await SampleAsync(scope, today, cancellationToken)).Posted;
+    }
+
+    // The sample entry's scope without its answers, and today in the site's time zone.
+    private async Task<(MergeTagScope Scope, DateOnly Today)> BareAsync(FormDefinition definition, string formName, string formAlias, string culture, CancellationToken cancellationToken)
+    {
         var form = locks.Apply(definition);
         var now = time.GetUtcNow();
         var zone = await zones.GetAsync(null, cancellationToken);
@@ -87,7 +114,7 @@ internal sealed class SampleEntries(
             Culture = culture,
             Entry = new MergeTagEntry { Key = Guid.Empty, Number = Number, State = StoredNames.Of(state), Submitted = now },
         };
-        return scope with { Answers = await AnswersAsync(scope, today, cancellationToken) };
+        return (scope, today);
     }
 
     /// <summary>
@@ -100,11 +127,26 @@ internal sealed class SampleEntries(
     public async Task<MergeTagAnswers> AnswersAsync(MergeTagScope scope, DateOnly today, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(scope);
+        return (await SampleAsync(scope, today, cancellationToken)).Answers;
+    }
+
+    // The sample answers, as the merge tags read them and as a page posts them.
+    private async Task<(MergeTagAnswers Answers, Dictionary<Guid, FieldAnswers> Posted)> SampleAsync(MergeTagScope scope, DateOnly today, CancellationToken cancellationToken)
+    {
         var values = new Dictionary<Guid, ImmutableArray<string>>();
         var answers = new List<MergeTagAnswer>();
+        var posted = new Dictionary<Guid, FieldAnswers>();
         var fields = scope.Form.Pages.SelectMany(page => page.Groups).SelectMany(group => group.Fields).SelectMany(field => field.Fields.Prepend(field)).ToList();
         foreach (var field in fields)
         {
+            // A signature's answer is an image the page draws from a typed name; its merge tag reads a file, which no
+            // sample has.
+            if (types.Find(field.Type)?.Type is SignatureFieldType)
+            {
+                posted[field.Key] = new FieldAnswers([], [new KeyValuePair<string, IEnumerable<string>>(SignatureFieldType.TypedPart, [GivenName + " " + FamilyName])]);
+                continue;
+            }
+
             if (types.Find(field.Type) is not { HoldsValue: true } traits || traits.Type is CalculationFieldType || field.Fields.Count > 0)
             {
                 continue;
@@ -123,6 +165,7 @@ internal sealed class SampleEntries(
                     var read = FieldValues.Read(traits.Type, field, candidate).Values;
                     values[field.Key] = [.. read.Select(value => value.Text)];
                     answers.Add(new MergeTagAnswer(field.Key, read));
+                    posted[field.Key] = candidate;
                     break;
                 }
             }
@@ -137,7 +180,7 @@ internal sealed class SampleEntries(
             }
         }
 
-        return new MergeTagAnswers(answers);
+        return (new MergeTagAnswers(answers), posted);
     }
 
     // A field's default value as the page renders it for the sample, its tags reading the answers before it; null for a
@@ -253,6 +296,14 @@ internal sealed class SampleEntries(
                 // Ticked, with the hash of the wording a visitor is shown, as the form posts it (ADR-0009).
                 var wording = consent.ReadSettings(field.Settings).Text?.Resolve(culture) is { Length: > 0 } text ? text : LabelOf(field, culture);
                 yield return new FieldAnswers(["true"], [new KeyValuePair<string, IEnumerable<string>>(ConsentFieldType.WordingPart, [ConsentTextHash.For(culture, wording)])]);
+                yield break;
+            case GridFieldType:
+                // Each row's first column, which every row offers.
+                if (offered.Count > 0 && field.Rows.Count > 0)
+                {
+                    yield return new FieldAnswers([], field.Rows.Select(row => new KeyValuePair<string, IEnumerable<string>>(GridFieldType.RowPart(row.Key), [offered[0]])));
+                }
+
                 yield break;
             case CountryFieldType country:
                 var settings = country.ReadSettings(field.Settings);

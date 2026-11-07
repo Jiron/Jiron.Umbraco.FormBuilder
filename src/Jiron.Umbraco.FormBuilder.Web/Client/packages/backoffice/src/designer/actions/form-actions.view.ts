@@ -45,7 +45,6 @@ import {
   placeOf,
   runRuleOf,
   settingAtPath,
-  summaryOf,
   triggerNeed,
   triggerOf,
   withActions,
@@ -55,6 +54,7 @@ import {
   type TriggerNeed,
 } from './action-model';
 import type { LayoutChoice } from './action-editors';
+import { actionLine, actionName, typeOf, type ActionWords } from './action-lines';
 import { runTest, testHint } from './action-test';
 import { ACTION_MODAL } from './action.modal.token';
 import { ACTION_RUN_MODAL } from './action-run.modal.token';
@@ -343,12 +343,16 @@ export class FormActionsViewElement extends UmbLitElement {
   }
 
   #typeOf(alias: string): ActionTypeResponseModel | undefined {
-    return this._actionTypes?.find((type) => type.alias === alias);
+    return typeOf(this.#words(), alias);
   }
 
   /** An action's name as it shows: its own, else its type's, else its type's alias. */
   #nameOf(action: DesignAction): string {
-    return action.name?.trim() || this.#say(this.#typeOf(action.type)?.name) || action.type;
+    return actionName(this.#words(), action);
+  }
+
+  #words(): ActionWords {
+    return { types: this._actionTypes, localize: this.localize };
   }
 
   /** When a trigger runs, in words: Approved, on a form without manual approval, as each entry comes in. */
@@ -721,19 +725,7 @@ export class FormActionsViewElement extends UmbLitElement {
 
   // What an action does in one line, as its card says it; empty for an action whose settings say nothing yet.
   #line(action: DesignAction, names: ReturnType<typeof elementNames>): string {
-    // A content action's document type by the name the site gives it, among the choices its type serves.
-    const types = this.#typeOf('content')?.settings.find((setting) => setting.name === 'documentType')?.choices ?? [];
-    const summary = summaryOf(
-      action,
-      (key) => names[key],
-      (alias) => types.find((choice) => choice.value === alias)?.label,
-    );
-    if (!summary) return '';
-    const list = new Intl.ListFormat(this.localize.lang(), { type: 'conjunction' });
-    return this.#term(
-      summary.term,
-      ...summary.args.map((arg) => (Array.isArray(arg) ? list.format(arg as string[]) : arg)),
-    );
+    return actionLine(this.#words(), action, names);
   }
 
   #cards(definition: DesignDefinition, trigger: Trigger, flags: ReadonlyMap<string, Flag>): ActionCard[] {

@@ -123,7 +123,7 @@ internal sealed partial class UploadRequests(FileUploads uploads, UploadTokens t
         FileUploadResult result;
         try
         {
-            result = await uploads.StoreAsync(formKey, type, field, part.Name, part.Section.Body, next => EndsAsync(reader, next), cancellationToken);
+            result = await uploads.StoreAsync(formKey, type, field, part.Name, part.Section.Body, next => EndsAsync(reader, next), PreviewRequest.Of(http) is not null, cancellationToken);
         }
         catch (Exception exception) when (exception is FileUploadReadException or InvalidDataException)
         {

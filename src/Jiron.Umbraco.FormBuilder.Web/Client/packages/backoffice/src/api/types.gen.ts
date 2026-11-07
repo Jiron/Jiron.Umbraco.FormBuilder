@@ -479,6 +479,7 @@ export type FormPreviewResponseModel = {
 
 export type FormPreviewTicketRequestModel = {
     version: number;
+    runActions: boolean;
 };
 
 export type FormPreviewTicketResponseModel = {
@@ -908,6 +909,13 @@ export type TestEmailRequestModel = {
 
 export type TestEmailResponseModel = {
     to: string;
+};
+
+export type TestEntryResponseModel = {
+    number: number;
+    actionsRan: boolean;
+    awaitsConfirmation: boolean;
+    actions: Array<string>;
 };
 
 export type TrashEmptiedResponseModel = {
@@ -1828,6 +1836,8 @@ export type FormPreviewRenderData = {
     query?: {
         culture?: string;
         dark?: boolean;
+        sample?: boolean;
+        actions?: boolean;
     };
     url: '/umbraco/jfb/management/api/v1/form/{key}/preview';
 };
@@ -1861,6 +1871,82 @@ export type FormPreviewRenderResponses = {
 };
 
 export type FormPreviewRenderResponse = FormPreviewRenderResponses[keyof FormPreviewRenderResponses];
+
+export type FormPreviewTestEntryData = {
+    body?: never;
+    path: {
+        key: string;
+        submissionId: string;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/form/{key}/preview/entries/{submissionId}';
+};
+
+export type FormPreviewTestEntryErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type FormPreviewTestEntryError = FormPreviewTestEntryErrors[keyof FormPreviewTestEntryErrors];
+
+export type FormPreviewTestEntryResponses = {
+    /**
+     * OK
+     */
+    200: TestEntryResponseModel;
+};
+
+export type FormPreviewTestEntryResponse = FormPreviewTestEntryResponses[keyof FormPreviewTestEntryResponses];
+
+export type FormPreviewRunActionsData = {
+    body?: never;
+    path: {
+        key: string;
+        submissionId: string;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/form/{key}/preview/entries/{submissionId}/actions';
+};
+
+export type FormPreviewRunActionsErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+};
+
+export type FormPreviewRunActionsError = FormPreviewRunActionsErrors[keyof FormPreviewRunActionsErrors];
+
+export type FormPreviewRunActionsResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type FormPreviewRunActionsResponse = FormPreviewRunActionsResponses[keyof FormPreviewRunActionsResponses];
 
 export type FormPreviewTicketData = {
     body?: FormPreviewTicketRequestModel;

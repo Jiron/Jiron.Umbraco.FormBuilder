@@ -10,7 +10,8 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Forms;
 /// <summary>
 /// The field catalogue a publish keeps (ADR-0003, ADR-0044): a row per field that holds a value, per repeater child,
 /// per grid row and for the grid or repeater itself, in document order, each with how its values are stored; and the
-/// rows a publish adds, brings back, ends or leaves alone.
+/// rows a publish adds, brings back, ends or leaves alone; and the rows a preview's test entry adds for the fields only the
+/// draft has (ADR-0204).
 /// </summary>
 [TestFixture]
 public sealed class FieldCatalogueTests
@@ -234,6 +235,41 @@ public sealed class FieldCatalogueTests
         {
             Assert.That(without.Select(change => change.Values.FieldKey), Is.EqualTo(new[] { Email }), "the row of the preview entries stays");
             Assert.That(with, Is.EqualTo(new[] { (Values(Age, "age", sortOrder: 0, first: 3, last: null), false) }), "published from this version");
+        });
+    }
+
+    [Test]
+    public void ATestEntry_AddsTheRowsOnlyTheDraftHas_WithoutAFirstVersion_InTheDraftsOrder()
+    {
+        var stored = Stored(FieldCatalogue.Changes(Entries(Row(Email, "email")), [], 1, null));
+        var ended = Stored([(Values(Age, "age", sortOrder: 1, first: 1, last: 1), true)]);
+        var entries = Entries(Row(Email, "email"), Row(Grid, "satisfaction"), Row(Speed, "satisfaction") with { ParentFieldKey = Grid }, Row(Age, "age"));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(FieldCatalogue.DraftOnly(entries, [.. stored, .. ended]), Is.EqualTo(new[]
+            {
+                new CatalogueFieldValues(Grid, "satisfaction", "SATISFACTION", "text", FieldStorageKind.Text, false, 1, null, null, null),
+                new CatalogueFieldValues(Speed, "satisfaction", "SATISFACTION", "text", FieldStorageKind.Text, false, 2, null, null, Grid),
+            }), "an ended row stays as it is, which a test entry's value may name");
+            Assert.That(FieldCatalogue.DraftOnly(entries.Take(1).ToList(), stored), Is.Empty, "the catalogue holds every row");
+            Assert.That(() => FieldCatalogue.DraftOnly(null!, stored), Throws.ArgumentNullException);
+            Assert.That(() => FieldCatalogue.DraftOnly(entries, null!), Throws.ArgumentNullException);
+        });
+    }
+
+    [Test]
+    public void ATestEntry_HoldsNoValue_OfAFieldTheDraftStoresOtherwise_OrUnderAnotherParent()
+    {
+        var stored = Stored(FieldCatalogue.Changes(Entries(Row(Email, "email"), Row(Age, "age") with { Storage = FieldStorageKind.Number }, Row(Speed, "speed") with { ParentFieldKey = Grid }), [], 1, null));
+        var entries = Entries(Row(Email, "email"), Row(Age, "age"), Row(Speed, "speed") with { ParentFieldKey = Price }, Row(Visit, "visit"));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(FieldCatalogue.Unlike(entries, stored), Is.EquivalentTo(new[] { Age, Speed, Price }), "a number now a text, and a grid's row now another's, with the field that holds its answers");
+            Assert.That(FieldCatalogue.Unlike(Entries(Row(Email, "email"), Row(Visit, "visit")), stored), Is.Empty, "a field stored as before, and one only the draft has");
+            Assert.That(() => FieldCatalogue.Unlike(null!, stored), Throws.ArgumentNullException);
+            Assert.That(() => FieldCatalogue.Unlike(entries, null!), Throws.ArgumentNullException);
         });
     }
 

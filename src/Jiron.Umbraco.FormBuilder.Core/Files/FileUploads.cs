@@ -125,12 +125,13 @@ internal sealed partial class FileUploads(
     /// with the bytes deleted again. An exception reading <paramref name="content"/> arrives as
     /// <see cref="FileUploadReadException"/>.
     /// </summary>
-    /// <param name="formKey">The published form's key.</param>
+    /// <param name="formKey">The form's key, published unless <paramref name="preview"/>.</param>
     /// <param name="type">The field's type, which stores files (<see cref="TypeOf"/>).</param>
     /// <param name="field">The field.</param>
     /// <param name="name">The file's name as the visitor's device gave it, or null.</param>
     /// <param name="content">The file's bytes, read from their position to their end; the caller owns the stream.</param>
     /// <param name="endsAfter">Reads what follows the file once its bytes are stored: false when the request goes on.</param>
+    /// <param name="preview">Whether the preview's frame sends it, for a version its ticket names, which may be a draft never published (ADR-0204).</param>
     /// <param name="cancellationToken">Cancels the upload, which then keeps nothing.</param>
     public async Task<FileUploadResult> StoreAsync(
         Guid formKey,
@@ -139,6 +140,7 @@ internal sealed partial class FileUploads(
         string? name,
         Stream content,
         Func<CancellationToken, Task<bool>> endsAfter,
+        bool preview,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(content);
@@ -161,7 +163,8 @@ internal sealed partial class FileUploads(
             return new(FileUploadStatus.Refused, Error: error);
         }
 
-        if (await forms.GetAsync(formKey, cancellationToken) is not { TrashedUtc: null, PublishedVersionId: not null } form)
+        // A preview's file needs the form only, not a publish (ADR-0204).
+        if (await forms.GetAsync(formKey, cancellationToken) is not { TrashedUtc: null } form || (form.PublishedVersionId is null && !preview))
         {
             return new(FileUploadStatus.FormGone);
         }

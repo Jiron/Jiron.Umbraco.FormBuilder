@@ -214,6 +214,7 @@ public sealed class FormBuilderPublicApiMiddlewareTests
         }
 
         var held = await SendAsync("null", "Jfb-Preview " + ticket);
+        var runs = await SendAsync("null", "Jfb-Preview " + tickets.Issue(form, 3, runsActions: true).Value);
         var none = await SendAsync("null", null);
         var noneRead = await SendAsync("null", null, "GET");
         var forged = await SendAsync("null", "Jfb-Preview forged");
@@ -227,6 +228,7 @@ public sealed class FormBuilderPublicApiMiddlewareTests
         {
             Assert.That(held.Answer, Is.EqualTo("passed, allowed null"));
             Assert.That(held.Preview, Is.EqualTo(new PreviewRequest(form, 3)), "the endpoints read the version it names");
+            Assert.That(runs.Preview, Is.EqualTo(new PreviewRequest(form, 3, RunsActions: true)), "and whether its test entries run their actions");
             Assert.That(held.Http.Response.Headers.AccessControlExposeHeaders.ToString(), Is.EqualTo("ETag, Retry-After"));
             Assert.That(none.Answer, Is.EqualTo("403 origin_denied"), "the null origin without a ticket, as before");
             Assert.That((noneRead.Answer, noneRead.Preview), Is.EqualTo(("passed", (PreviewRequest?)null)), "a read without a ticket runs without CORS headers, as before");

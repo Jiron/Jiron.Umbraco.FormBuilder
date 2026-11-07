@@ -361,7 +361,7 @@ internal sealed class FormPostHandler(
             }
 
             await using var content = file.OpenReadStream();
-            var stored = await uploads.StoreAsync(formKey, type, found.Field, file.FileName, content, _ => Task.FromResult(true), cancellationToken);
+            var stored = await uploads.StoreAsync(formKey, type, found.Field, file.FileName, content, _ => Task.FromResult(true), preview: false, cancellationToken);
             if (stored is { Status: FileUploadStatus.NoRoom })
             {
                 return (problems, true);
@@ -402,7 +402,7 @@ internal sealed class FormPostHandler(
 
             var pad = signature.ReadSettings(field.Settings);
             await using var drawn = new MemoryStream(TypedSignature.Draw(name, pad.Width ?? TypedSignature.DefaultWidth, pad.Height ?? TypedSignature.DefaultHeight));
-            var stored = await uploads.StoreAsync(formKey, signature, field, TypedSignature.FileName, drawn, _ => Task.FromResult(true), cancellationToken);
+            var stored = await uploads.StoreAsync(formKey, signature, field, TypedSignature.FileName, drawn, _ => Task.FromResult(true), preview: false, cancellationToken);
             if (stored is { Status: FileUploadStatus.NoRoom })
             {
                 return (problems, true);

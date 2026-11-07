@@ -9,8 +9,9 @@ namespace Jiron.Umbraco.FormBuilder.Web.PublicApi;
 /// <summary>
 /// The preview's tickets (ADR-0012, ADR-0203): what lets the preview frame, whose origin is <c>null</c>, call the public
 /// API for one version of one form, for ten minutes on the site's clock. The management API issues them to who may design
-/// the form; the frame sends one as <c>Authorization: Jfb-Preview &lt;ticket&gt;</c>, never in an address. Data Protection
-/// protects them under a purpose of their own, so no other token reads as one; a load-balanced site shares its key ring.
+/// the form, and one whose test entries run their actions only to who may manage its actions (ADR-0204); the frame sends
+/// one as <c>Authorization: Jfb-Preview &lt;ticket&gt;</c>, never in an address. Data Protection protects them under a
+/// purpose of their own, so no other token reads as one; a load-balanced site shares its key ring.
 /// </summary>
 /// <param name="protection">The site's Data Protection.</param>
 /// <param name="time">The site's clock.</param>
@@ -28,16 +29,20 @@ internal sealed class PreviewTickets(IDataProtectionProvider protection, TimePro
     /// <summary>The longest ticket the public API reads; one is about 200 characters.</summary>
     public const int MaxLength = 1_024;
 
-    private const byte Version = 1;
+    // The payload's layout: its version, the form's key, the version's number, the expiry's ticks and the flags.
+    private const byte Version = 2;
     private const int KeyLength = 16;
-    private const int PayloadLength = 1 + KeyLength + sizeof(int) + sizeof(long);
+    private const int FlagsAt = 1 + KeyLength + sizeof(int) + sizeof(long);
+    private const int PayloadLength = FlagsAt + 1;
+    private const byte RunsActionsFlag = 1;
 
     private readonly IDataProtector _protector = protection.CreateProtector(Purpose);
 
     /// <summary>A ticket for a version of a form, which expires <see cref="Lifetime"/> from now.</summary>
     /// <param name="formKey">The form's key.</param>
     /// <param name="version">The number of the version the preview shows.</param>
-    public PreviewTicket Issue(Guid formKey, int version)
+    /// <param name="runsActions">Whether the test entries sent with it run their actions (ADR-0204).</param>
+    public PreviewTicket Issue(Guid formKey, int version, bool runsActions = false)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(version);
         var expires = time.GetUtcNow() + Lifetime;
@@ -46,7 +51,8 @@ internal sealed class PreviewTickets(IDataProtectionProvider protection, TimePro
         formKey.TryWriteBytes(payload.AsSpan(1, KeyLength));
         BinaryPrimitives.WriteInt32BigEndian(payload.AsSpan(1 + KeyLength), version);
         BinaryPrimitives.WriteInt64BigEndian(payload.AsSpan(1 + KeyLength + sizeof(int)), expires.UtcTicks);
-        return new PreviewTicket(Base64Url.EncodeToString(_protector.Protect(payload)), formKey, version, expires);
+        payload[FlagsAt] = runsActions ? RunsActionsFlag : (byte)0;
+        return new PreviewTicket(Base64Url.EncodeToString(_protector.Protect(payload)), formKey, version, expires, runsActions);
     }
 
     /// <summary>
@@ -71,14 +77,16 @@ internal sealed class PreviewTickets(IDataProtectionProvider protection, TimePro
             return null;
         }
 
-        if (payload.Length != PayloadLength || payload[0] != Version)
+        if (payload.Length != PayloadLength || payload[0] != Version || (payload[FlagsAt] & ~RunsActionsFlag) != 0)
         {
             return null;
         }
 
         var version = BinaryPrimitives.ReadInt32BigEndian(payload.AsSpan(1 + KeyLength));
         var expires = new DateTimeOffset(BinaryPrimitives.ReadInt64BigEndian(payload.AsSpan(1 + KeyLength + sizeof(int))), TimeSpan.Zero);
-        return version > 0 && expires > time.GetUtcNow() ? new PreviewTicket(ticket, new Guid(payload.AsSpan(1, KeyLength)), version, expires) : null;
+        return version > 0 && expires > time.GetUtcNow()
+            ? new PreviewTicket(ticket, new Guid(payload.AsSpan(1, KeyLength)), version, expires, payload[FlagsAt] == RunsActionsFlag)
+            : null;
     }
 
     /// <summary>Whether a request carries the preview's scheme in its <c>Authorization</c> header, with a ticket or without.</summary>
@@ -116,7 +124,8 @@ internal sealed class PreviewTickets(IDataProtectionProvider protection, TimePro
 /// <param name="FormKey">The form it is for.</param>
 /// <param name="Version">The number of the version the preview shows.</param>
 /// <param name="ExpiresUtc">When it stops counting.</param>
-internal sealed record PreviewTicket(string Value, Guid FormKey, int Version, DateTimeOffset ExpiresUtc)
+/// <param name="RunsActions">Whether the test entries sent with it run their actions (ADR-0204).</param>
+internal sealed record PreviewTicket(string Value, Guid FormKey, int Version, DateTimeOffset ExpiresUtc, bool RunsActions = false)
 {
     /// <inheritdoc />
     public override string ToString() => nameof(PreviewTicket);
@@ -128,7 +137,8 @@ internal sealed record PreviewTicket(string Value, Guid FormKey, int Version, Da
 /// </summary>
 /// <param name="FormKey">The form the ticket is for.</param>
 /// <param name="Version">The number of the version the preview shows.</param>
-internal sealed record PreviewRequest(Guid FormKey, int Version)
+/// <param name="RunsActions">Whether the test entries it sends run their actions (ADR-0204).</param>
+internal sealed record PreviewRequest(Guid FormKey, int Version, bool RunsActions = false)
 {
     /// <summary>The preview the request comes from, or null for a visitor's.</summary>
     public static PreviewRequest? Of(HttpContext http) => http?.Features.Get<PreviewRequest>();

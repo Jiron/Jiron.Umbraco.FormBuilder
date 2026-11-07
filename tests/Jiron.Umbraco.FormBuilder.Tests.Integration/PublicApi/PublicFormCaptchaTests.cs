@@ -12,6 +12,7 @@ using Jiron.Umbraco.FormBuilder.Core.Settings;
 using Jiron.Umbraco.FormBuilder.Core.Submissions;
 using Jiron.Umbraco.FormBuilder.Testing.Stub;
 using Jiron.Umbraco.FormBuilder.Tests.Integration.Forms;
+using Jiron.Umbraco.FormBuilder.Web.PublicApi;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Umbraco.Cms.Tests.Common.Testing;
@@ -323,6 +324,37 @@ public sealed class PublicFormCaptchaTests : PublicApiTestBase
         {
             Assert.That(answer.StatusCode, Is.EqualTo(HttpStatusCode.OK), await answer.Content.ReadAsStringAsync());
             Assert.That((await StoredAsync(key)).Single().State, Is.Not.EqualTo(EntryState.Spam));
+            Assert.That(_transport.Calls, Is.Zero);
+        });
+    }
+
+    [Test]
+    public async Task APreviewsTicket_SkipsTheCaptcha_ForItsTestEntry()
+    {
+        var key = await PublishAsync(change: Choosing(Hcaptcha));
+        var ticket = GetRequiredService<PreviewTickets>().Issue(key, (await Forms.GetDraftAsync(key))!.DraftVersion).Value;
+        void FromFrame(HttpRequestMessage request)
+        {
+            request.Headers.TryAddWithoutValidation("Origin", "null");
+            request.Headers.TryAddWithoutValidation("Authorization", $"{PreviewTickets.Scheme} {ticket}");
+        }
+
+        using var challenged = await SendAsync(HttpMethod.Post, $"{Root}/forms/{key}/challenge", request =>
+        {
+            FromFrame(request);
+            request.Content = Json("{}");
+        });
+        var challenge = (await JsonAsync(challenged))["challenge"]!.GetValue<string>();
+        using var answer = await SendAsync(HttpMethod.Post, $"{Root}/forms/{key}/entries", request =>
+        {
+            FromFrame(request);
+            request.Content = Json($$"""{"revision":1,"values":{"name":"Ada"},"challenge":"{{challenge}}"}""");
+        });
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(answer.StatusCode, Is.EqualTo(HttpStatusCode.OK), await answer.Content.ReadAsStringAsync());
+            Assert.That((await StoredAsync(key)).Single() is { IsTest: true, State: not EntryState.Spam }, Is.True, "a test entry, never in Spam");
             Assert.That(_transport.Calls, Is.Zero);
         });
     }

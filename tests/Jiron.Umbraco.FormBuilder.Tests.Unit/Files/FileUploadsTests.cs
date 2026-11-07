@@ -13,7 +13,8 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Files;
 /// <summary>
 /// One upload before its submission (ADR-0087): the name cleaned for downloads, the first bytes checked in their order,
 /// and the bytes stored and recorded only once the form, the size, the request's end and the row all passed, so that
-/// whatever is not kept leaves nothing in the store, and the file's name is never logged.
+/// whatever is not kept leaves nothing in the store, and the file's name is never logged. The preview's file needs the form,
+/// not its publish (ADR-0204).
 /// </summary>
 public sealed class FileUploadsTests
 {
@@ -214,8 +215,8 @@ public sealed class FileUploadsTests
         using var first = new MemoryStream(Pdf);
         using var second = new MemoryStream(Pdf);
 
-        var stored = await uploads.StoreAsync(FormKey, uploads.TypeOf(field)!, field, "a.pdf", first, _ => Task.FromResult(true), CancellationToken.None);
-        var past = await uploads.StoreAsync(FormKey, uploads.TypeOf(field)!, field, "b.pdf", second, _ => Task.FromResult(true), CancellationToken.None);
+        var stored = await uploads.StoreAsync(FormKey, uploads.TypeOf(field)!, field, "a.pdf", first, _ => Task.FromResult(true), preview: false, CancellationToken.None);
+        var past = await uploads.StoreAsync(FormKey, uploads.TypeOf(field)!, field, "b.pdf", second, _ => Task.FromResult(true), preview: false, CancellationToken.None);
 
         Assert.Multiple(() =>
         {
@@ -379,6 +380,25 @@ public sealed class FileUploadsTests
     }
 
     [Test]
+    public async Task ThePreviewsFile_NeedsTheFormOnly_NotAPublish()
+    {
+        _forms.GetAsync(FormKey, Arg.Any<CancellationToken>()).Returns(Form() with { PublishedVersionId = null });
+        var drafted = await StoreAsync(File(), "report.pdf", Pdf, preview: true);
+        _forms.GetAsync(FormKey, Arg.Any<CancellationToken>()).Returns(Form() with { PublishedVersionId = null, TrashedUtc = DateTimeOffset.UnixEpoch });
+        var trashed = await StoreAsync(File(), "report.pdf", Pdf, preview: true);
+        _forms.GetAsync(FormKey, Arg.Any<CancellationToken>()).Returns((StoredForm?)null);
+        var gone = await StoreAsync(File(), "report.pdf", Pdf, preview: true);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(Answer(drafted), Is.EqualTo("Stored"), "a draft never published");
+            Assert.That(Answer(trashed), Is.EqualTo("FormGone"), "not in the trash");
+            Assert.That(Answer(gone), Is.EqualTo("FormGone"));
+            Assert.That(_store.Files, Has.Count.EqualTo(1));
+        });
+    }
+
+    [Test]
     public async Task AFormThatGoesWhileTheFileIsRead_LeavesNoBytes()
     {
         _entries.AddFileAsync(Arg.Any<NewEntryFile>(), Arg.Any<CancellationToken>()).Returns((StoredEntryFile?)null);
@@ -459,7 +479,7 @@ public sealed class FileUploadsTests
         var uploads = Uploads();
         using var cut = new CutStream([.. Pdf, .. new byte[length]]);
 
-        var error = Assert.ThrowsAsync<FileUploadReadException>(() => uploads.StoreAsync(FormKey, uploads.TypeOf(field)!, field, "report.pdf", cut, _ => Task.FromResult(true), CancellationToken.None));
+        var error = Assert.ThrowsAsync<FileUploadReadException>(() => uploads.StoreAsync(FormKey, uploads.TypeOf(field)!, field, "report.pdf", cut, _ => Task.FromResult(true), preview: false, CancellationToken.None));
 
         Assert.Multiple(() =>
         {
@@ -519,11 +539,11 @@ public sealed class FileUploadsTests
             new WaitingUploads(entries ?? _entries, Microsoft.Extensions.Options.Options.Create(new Core.Configuration.FormBuilderOptions()), new TestTimeProvider(), Microsoft.Extensions.Logging.Abstractions.NullLogger<WaitingUploads>.Instance),
             _logger);
 
-    private async Task<FileUploadResult> StoreAsync(FormField field, string? name, byte[] bytes, Func<CancellationToken, Task<bool>>? endsAfter = null, IEntryRepository? entries = null)
+    private async Task<FileUploadResult> StoreAsync(FormField field, string? name, byte[] bytes, Func<CancellationToken, Task<bool>>? endsAfter = null, IEntryRepository? entries = null, bool preview = false)
     {
         var uploads = Uploads(entries: entries);
         using var content = new MemoryStream(bytes);
-        return await uploads.StoreAsync(FormKey, uploads.TypeOf(field)!, field, name, content, endsAfter ?? (_ => Task.FromResult(true)), CancellationToken.None);
+        return await uploads.StoreAsync(FormKey, uploads.TypeOf(field)!, field, name, content, endsAfter ?? (_ => Task.FromResult(true)), preview, CancellationToken.None);
     }
 
     // A store that keeps all of a file or nothing, as the contract says, and can read only once or refuse its deletes.

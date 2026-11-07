@@ -25,6 +25,12 @@ internal sealed record SubmissionRequest
     /// </summary>
     public int? Preview { get; init; }
 
+    /// <summary>
+    /// For a preview's submission, whether its test entry runs its actions as a visitor's entry would (ADR-0204), as its
+    /// ticket says; a test entry otherwise sets off nothing.
+    /// </summary>
+    public bool PreviewRunsActions { get; init; }
+
     /// <summary>The public revision the visitor's page showed (ADR-0002).</summary>
     public required int Revision { get; init; }
 

@@ -22,6 +22,8 @@ import {
   emailPreviewRender,
   outcomePreviewRender,
   formPreviewRender,
+  formPreviewRunActions,
+  formPreviewTestEntry,
   formPreviewTicket,
   formPublish,
   type FieldGroupResponseModel,
@@ -57,7 +59,17 @@ import { followFix } from './form-views';
 import { EditorHistory } from './history';
 import { afterNameFocus } from './name-focus';
 import { loadWorkspaceWords } from './workspace-words';
-import { FAILED, previewRead, type PreviewRead, type PreviewTicket } from './visitor-preview/preview-read';
+import {
+  FAILED,
+  previewRead,
+  runAnswer,
+  testEntryRead,
+  type PreviewAsk,
+  type PreviewRead,
+  type PreviewTicket,
+  type RunAnswer,
+  type TestEntryRead,
+} from './visitor-preview/preview-read';
 
 /** What the views draw: the editor's state and whether undo and redo can do anything. */
 export interface EditorView {
@@ -491,26 +503,55 @@ export class FormWorkspaceContext
     return testAnswer(data, codeOf(error));
   }
 
-  /** The saved draft as visitors would get it, in a language of the site, light or dark (ADR-0203). */
-  async visitorPreviewOf(culture: string | null, dark: boolean): Promise<PreviewRead> {
+  /**
+   * The saved draft as visitors would get it, in a language of the site, light or dark, empty or with the sample answers,
+   * its test entries running their actions or not (ADR-0203, ADR-0204).
+   */
+  async visitorPreviewOf(culture: string | null, ask: PreviewAsk): Promise<PreviewRead> {
     const key = this.getUnique();
     if (!key) return FAILED;
     const { data, error } = await tryExecute(
       this,
-      formPreviewRender({ path: { key }, query: { ...(culture ? { culture } : {}), dark } }),
+      formPreviewRender({
+        path: { key },
+        query: { ...(culture ? { culture } : {}), dark: ask.dark, sample: ask.sample, actions: ask.actions },
+      }),
       { disableNotifications: true },
     );
     return previewRead(data, codeOf(error));
   }
 
-  /** A new ticket for the version of the form the preview shows (ADR-0203); undefined without an answer. */
-  async previewTicketOf(version: number): Promise<PreviewTicket | undefined> {
+  /**
+   * A new ticket for the version of the form the preview shows, whose test entries run their actions or not (ADR-0203,
+   * ADR-0204); undefined without an answer.
+   */
+  async previewTicketOf(version: number, runActions: boolean): Promise<PreviewTicket | undefined> {
     const key = this.getUnique();
     if (!key) return undefined;
-    const { data } = await tryExecute(this, formPreviewTicket({ path: { key }, body: { version } }), {
+    const { data } = await tryExecute(this, formPreviewTicket({ path: { key }, body: { version, runActions } }), {
       disableNotifications: true,
     });
     return data ? { ticket: data.ticket, lifetime: data.lifetimeSeconds } : undefined;
+  }
+
+  /** The test entry the preview sent with a submission id (ADR-0204). */
+  async testEntryOf(submissionId: string): Promise<TestEntryRead> {
+    const key = this.getUnique();
+    if (!key) return { kind: 'missing' };
+    const { data } = await tryExecute(this, formPreviewTestEntry({ path: { key, submissionId } }), {
+      disableNotifications: true,
+    });
+    return testEntryRead(data);
+  }
+
+  /** Runs the actions of the test entry the preview sent with a submission id, once (ADR-0204). */
+  async runTestEntryActions(submissionId: string): Promise<RunAnswer> {
+    const key = this.getUnique();
+    if (!key) return 'failed';
+    const { error } = await tryExecute(this, formPreviewRunActions({ path: { key, submissionId } }), {
+      disableNotifications: true,
+    });
+    return runAnswer(!error, codeOf(error));
   }
 
   /** The last run of each action of the stored draft that has run (ADR-0195); undefined without an answer. */
