@@ -668,10 +668,14 @@ class Words {
     return this.any(value, side);
   }
 
-  /** A property's name and how its values read, by its path from its element. */
+  /**
+   * A property's name and how its values read, by its path from its element; without its language where `languages` is
+   * false, as a summary names a text once however many of its languages changed.
+   */
   property(
     change: DefinitionChangeResponseModel,
     path: readonly string[],
+    languages = true,
   ): {
     name: string;
     say: (value: unknown, side: Side) => string;
@@ -697,7 +701,7 @@ class Words {
         const { name, setting, rest } = this.#setting(schema, path.slice(at + 1));
         names.push(name);
         // A text setting's language comes last in its path; what is deeper keeps its own names.
-        if (rest.length > 0) names.push(...this.#culture(rest));
+        if (rest.length > 0) names.push(...this.#culture(rest, languages));
         return { name: this.#joined(names), say: (v, s) => this.#settingValue(setting, v, s), list: true };
       }
       // An option of a field, by its value, or a grid's row, by its key.
@@ -736,7 +740,7 @@ class Words {
       if (rest.length > 0)
         names.push(
           ...(property.value === 'texts' || property.value === 'html'
-            ? this.#culture(rest)
+            ? this.#culture(rest, languages)
             : rest.filter((one) => one !== '')),
         );
       return {
@@ -749,10 +753,10 @@ class Words {
   }
 
   /** A text's language, where it is another than the default: "German"; a segment that is no language, by itself. */
-  #culture(rest: readonly string[]): string[] {
+  #culture(rest: readonly string[], languages = true): string[] {
     const culture = rest[0] ?? '';
     if (!isCulture(culture)) return rest.filter((segment) => segment !== '');
-    return culture === '' || culture.toLowerCase() === this.#context.culture.toLowerCase()
+    return !languages || culture === '' || culture.toLowerCase() === this.#context.culture.toLowerCase()
       ? []
       : [`(${this.languageOf(culture)})`];
   }
@@ -911,7 +915,8 @@ class Words {
         // A former alias comes with its alias, which says the change once.
         if (change.kind === 'field' && property.path[0] === 'formerAliases') continue;
         const entry = changed.get(id) ?? { part, element: this.#rowElement(change), what: [] };
-        const name = this.property(change, property.path).name;
+        // A text changed in several languages is named once: the comparison says each.
+        const name = this.property(change, property.path, false).name;
         if (!entry.what.includes(name)) entry.what.push(name);
         changed.set(id, entry);
       }
@@ -1170,6 +1175,7 @@ export function propertyName(
   change: DefinitionChangeResponseModel,
   path: readonly string[],
   context: ChangeWordsContext,
+  languages = true,
 ): string {
-  return new Words(context).property(change, path).name;
+  return new Words(context).property(change, path, languages).name;
 }

@@ -602,7 +602,7 @@ describe('a comparison in a few words, as the publish dialog lists it (ROADMAP 1
         ...[
           ...new Set(
             (change?.properties ?? []).map((property) =>
-              propertyName(change as DefinitionChangeResponseModel, property.path, context()),
+              propertyName(change as DefinitionChangeResponseModel, property.path, context(), false),
             ),
           ),
         ],
@@ -614,9 +614,8 @@ describe('a comparison in a few words, as the publish dialog lists it (ROADMAP 1
       `Email address: ${names(email)}`,
       `Topic: ${names(topic)}`,
     ]);
-    expect(parts[0]?.lines[3]).toBe(
-      'Email address: Label, Label (German), Required and Message when no answer is given',
-    );
+    // Its label changed in two languages, named once: the comparison says each.
+    expect(parts[0]?.lines[3]).toBe('Email address: Label, Required and Message when no answer is given');
     // An outcome is After sending's, in the Settings view.
     expect(parts[1]?.lines).toEqual([
       expect.stringMatching(/^Outcome added: /) as unknown,
