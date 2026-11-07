@@ -111,6 +111,9 @@ internal static class FormBuilderProblems
     /// <summary>The code of a draft whose rules the check both runtimes run refuses, which the preview does not show (ADR-0203).</summary>
     public const string RulesInvalidCode = "rules_invalid";
 
+    /// <summary>The code of a bulk action that names no entries, or too many (ADR-0207).</summary>
+    public const string EntriesInvalidCode = "entries_invalid";
+
     /// <summary>The code of a test entry the form does not hold (ADR-0204).</summary>
     public const string TestEntryNotFoundCode = "test_entry_not_found";
 
@@ -230,6 +233,10 @@ internal static class FormBuilderProblems
     /// <summary>A field type the site does not have (ADR-0059).</summary>
     public static FormBuilderProblemResult FieldTypeNotFound() =>
         Problem(StatusCodes.Status404NotFound, FieldTypeNotFoundCode, "The site has no such field type.");
+
+    /// <summary>A bulk action that names no entries, or more than a page of them (ADR-0207).</summary>
+    public static FormBuilderProblemResult EntriesInvalid() =>
+        Problem(StatusCodes.Status400BadRequest, EntriesInvalidCode, "Choose from 1 to 500 entries.");
 
     /// <summary>A test entry the form does not hold, or one that is gone (ADR-0204).</summary>
     public static FormBuilderProblemResult TestEntryNotFound() =>

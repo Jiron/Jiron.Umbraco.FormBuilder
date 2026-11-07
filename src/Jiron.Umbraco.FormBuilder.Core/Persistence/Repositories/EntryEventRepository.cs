@@ -36,6 +36,12 @@ internal interface IEntryEventRepository
     /// <summary>The events of one change, a bulk change over many entries included, in the order they were added.</summary>
     Task<IReadOnlyList<StoredEntryEvent>> ListForChangeAsync(Guid changeKey, CancellationToken cancellationToken = default);
 
+    /// <summary>The events of one kind of these entries, by entry and oldest first: a page of a list reads its entries' <c>submitted</c> events at once.</summary>
+    /// <param name="entryIds">The entries.</param>
+    /// <param name="kind">The kind.</param>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    Task<IReadOnlyList<StoredEntryEvent>> ListOfKindAsync(IReadOnlyCollection<long> entryIds, string kind, CancellationToken cancellationToken = default);
+
     /// <summary>The events whose work has fallen due, oldest first (ADR-0162).</summary>
     Task<IReadOnlyList<StoredEntryEvent>> DueAsync(int take, CancellationToken cancellationToken = default);
 
@@ -111,6 +117,32 @@ internal sealed class EntryEventRepository(FormBuilderDatabase database) : IEntr
                 return rows.Select(FromDto).ToList();
             },
             cancellationToken);
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<StoredEntryEvent>> ListOfKindAsync(IReadOnlyCollection<long> entryIds, string kind, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(entryIds);
+        ArgumentException.ThrowIfNullOrWhiteSpace(kind);
+        var found = new List<StoredEntryEvent>();
+
+        // The ids are in order and each statement sorts its own, so the statements' rows follow one another.
+        foreach (var chunk in entryIds.Distinct().Order().Chunk(SqlArgs.MaxListLength - 1))
+        {
+            var rows = await database.ReadAsync(
+                db =>
+                {
+                    var n = new SqlNames(db);
+                    var a = new SqlArgs();
+                    return db.FetchListAsync<EntryEventDto>(
+                        $"SELECT * FROM {n.T(FormBuilderTables.EntryEvent)} WHERE {n.C("entryId")} IN ({a.List(chunk.Cast<object?>())}) AND {n.C("kind")} = {a.Add(kind)} ORDER BY {n.C("entryId")}, {n.C("occurredUtc")}, {n.C("id")}",
+                        a.Values);
+                },
+                cancellationToken);
+            found.AddRange(rows.Select(FromDto));
+        }
+
+        return found;
+    }
 
     /// <inheritdoc />
     public Task<IReadOnlyList<StoredEntryEvent>> ListForChangeAsync(Guid changeKey, CancellationToken cancellationToken = default) =>

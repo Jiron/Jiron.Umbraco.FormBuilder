@@ -83,6 +83,18 @@ internal sealed record StoredActionRun(
     public DateTimeOffset? LastAttemptUtc { get; init; }
 }
 
+/// <summary>An entry's action runs counted by where they are, for its row in a list (ADR-0207).</summary>
+/// <param name="Delivered">The runs that succeeded.</param>
+/// <param name="Failed">The runs that failed for good.</param>
+/// <param name="Uncertain">The runs whose outcome is uncertain.</param>
+/// <param name="Waiting">The runs that wait for an attempt or hold one.</param>
+/// <param name="Skipped">The runs that were never run.</param>
+internal readonly record struct ActionRunTally(int Delivered, int Failed, int Uncertain, int Waiting, int Skipped)
+{
+    /// <summary>Every run.</summary>
+    public int Total => Delivered + Failed + Uncertain + Waiting + Skipped;
+}
+
 /// <summary>
 /// The action outbox in <c>jfbActionRun</c> (D6, ADR-0007, ADR-0040). Every state change is one conditional statement
 /// that names the run and its state, and for an attempt's outcome the token of its claim; a change that finds the run
@@ -106,6 +118,11 @@ internal interface IActionRunRepository
 
     /// <summary>An entry's runs, in the order they were queued.</summary>
     Task<IReadOnlyList<StoredActionRun>> ListForEntryAsync(long entryId, CancellationToken cancellationToken = default);
+
+    /// <summary>The runs of these entries counted by where they are, by entry; an entry without runs is left out.</summary>
+    /// <param name="entryIds">The entries, as many as a page of a list holds.</param>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    Task<IReadOnlyDictionary<long, ActionRunTally>> TallyOfEntriesAsync(IReadOnlyCollection<long> entryIds, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// The ids of up to <paramref name="take"/> runs that are due and that no earlier run of their batch holds back, the

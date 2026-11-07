@@ -137,7 +137,7 @@ internal sealed record NewEntry
     /// <summary>How long the visitor took.</summary>
     public int? DurationSeconds { get; init; }
 
-    /// <summary>When the visitor first saw the form.</summary>
+    /// <summary>When a backoffice user first opened the entry (ADR-0166, ADR-0207); null while it is unseen, as a new entry is.</summary>
     public DateTimeOffset? FirstSeenUtc { get; init; }
 
     /// <summary>When the email address was verified.</summary>
@@ -262,7 +262,7 @@ internal sealed record StoredEntry
     /// <summary>Who last changed its state, or null for the visitor or the system.</summary>
     public required Guid? StateChangedByUserKey { get; init; }
 
-    /// <summary>When the visitor first saw the form.</summary>
+    /// <summary>When a backoffice user first opened the entry (ADR-0166, ADR-0207); null while nobody has, and it is unseen.</summary>
     public required DateTimeOffset? FirstSeenUtc { get; init; }
 
     /// <summary>When the email address was verified.</summary>

@@ -343,6 +343,63 @@ internal sealed class SubmissionEntries(
         return (await ReadAsync(entry, locks.Apply(documents.Readable(version)), form.Name, form.Alias, cancellationToken)).Scope;
     }
 
+    /// <summary>
+    /// What a list shows of a page of a form's entries (ADR-0207): the scope of each, as <see cref="ScopeAsync"/> makes
+    /// it, from one read of their answers and one of their <c>submitted</c> events, each version and page they name read
+    /// once. An entry whose version is gone is left out.
+    /// </summary>
+    /// <param name="form">The form.</param>
+    /// <param name="page">Its entries.</param>
+    /// <param name="cancellationToken">Cancels the reads.</param>
+    public async Task<IReadOnlyDictionary<long, MergeTagScope>> ScopesAsync(StoredForm form, IReadOnlyList<StoredEntry> page, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(form);
+        ArgumentNullException.ThrowIfNull(page);
+        var scopes = new Dictionary<long, MergeTagScope>();
+        if (page.Count == 0)
+        {
+            return scopes;
+        }
+
+        var ids = page.Select(entry => entry.Id).ToArray();
+        var answers = await store.ReadManyAsync(form.Id, ids, cancellationToken);
+        var submitted = (await events.ListOfKindAsync(ids, SubmittedEvent, cancellationToken)).ToLookup(entryEvent => entryEvent.EntryId);
+        var definitions = new Dictionary<int, FormDefinition?>();
+        var places = new Dictionary<Guid, RequestPage>();
+        RequestPage? nowhere = null;
+        foreach (var entry in page)
+        {
+            if (!definitions.TryGetValue(entry.FormVersionId, out var definition))
+            {
+                definition = definitions[entry.FormVersionId] = await forms.GetVersionByIdAsync(entry.FormVersionId, cancellationToken) is { } version
+                    ? locks.Apply(documents.Readable(version))
+                    : null;
+            }
+
+            if (definition is null)
+            {
+                continue;
+            }
+
+            RequestPage place;
+            if (entry.ContentKey is { } content)
+            {
+                if (!places.TryGetValue(content, out place!))
+                {
+                    place = places[content] = await pages.PageAsync(content);
+                }
+            }
+            else
+            {
+                place = nowhere ??= await pages.PageAsync(null);
+            }
+
+            scopes[entry.Id] = ScopeOf(entry, definition, form.Name, form.Alias, place, [.. submitted[entry.Id]], answers.GetValueOrDefault(entry.Id));
+        }
+
+        return scopes;
+    }
+
     // An entry as its replay and its copy read it.
     private async Task<(MergeTagScope Scope, IReadOnlyList<StoredEntryEvent> Timeline)> ReadAsync(StoredEntry entry, PublishedForm form, CancellationToken cancellationToken)
     {
@@ -361,20 +418,22 @@ internal sealed class SubmissionEntries(
         var page = await pages.PageAsync(entry.ContentKey);
         var timeline = await events.ListForEntryAsync(entry.Id, cancellationToken);
         var answers = await store.ReadAsync(entry.Id, cancellationToken);
-        var scope = new MergeTagScope
-        {
-            Form = definition,
-            FormName = formName,
-            FormAlias = formAlias,
-            Culture = entry.Culture,
-            Site = page.Site,
-            Page = page.Content,
-            Entry = EntryOf(entry, definition),
-            Context = Context(entry.Context),
-            Answers = answers?.ForMergeTags(Hidden(timeline)) ?? MergeTagAnswers.None,
-        };
-        return (scope, timeline);
+        return (ScopeOf(entry, definition, formName, formAlias, page, timeline, answers), timeline);
     }
+
+    // The scope of an entry from what was read for it: the events need hold only its submitted one.
+    private static MergeTagScope ScopeOf(StoredEntry entry, FormDefinition definition, string formName, string formAlias, RequestPage page, IReadOnlyList<StoredEntryEvent> timeline, EntryAnswers? answers) => new()
+    {
+        Form = definition,
+        FormName = formName,
+        FormAlias = formAlias,
+        Culture = entry.Culture,
+        Site = page.Site,
+        Page = page.Content,
+        Entry = EntryOf(entry, definition),
+        Context = Context(entry.Context),
+        Answers = answers?.ForMergeTags(Hidden(timeline)) ?? MergeTagAnswers.None,
+    };
 
     // The runs of the enabled actions the rules let run that fire on these triggers, in the form's order.
     internal static List<NewActionRun> Runs(FormDefinition definition, IReadOnlyList<string> running, params ActionTrigger[] triggers)

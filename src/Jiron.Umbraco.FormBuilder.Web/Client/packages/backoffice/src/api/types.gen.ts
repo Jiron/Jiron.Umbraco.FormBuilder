@@ -257,6 +257,146 @@ export type EmailPreviewResponseModel = {
     direction: string;
 };
 
+export type EntryColumnsRequestModel = {
+    columns: Array<string>;
+};
+
+export type EntryDeleteRequestModel = {
+    entries: Array<string>;
+    confirm: boolean;
+};
+
+export type EntryDeleteResponseModel = {
+    entries: number;
+    files: number;
+    deleted: boolean;
+};
+
+export type EntryFieldFilterRequestModel = {
+    field: string;
+    test: string;
+    values: Array<string>;
+    min?: number | null;
+    max?: number | null;
+    from?: string | null;
+    to?: string | null;
+};
+
+export type EntryFilterSetDeleteResponseModel = {
+    deleted: boolean;
+};
+
+export type EntryFilterSetRequestModel = {
+    name: string;
+    form?: string | null;
+    filter?: EntryListFilterRequestModel | null;
+};
+
+export type EntryFilterSetResponseModel = {
+    key: string;
+    name: string;
+    form?: string | null;
+    filter: EntryListFilterRequestModel;
+};
+
+export type EntryListActionsResponseModel = {
+    delivered: number;
+    failed: number;
+    uncertain: number;
+    waiting: number;
+    skipped: number;
+};
+
+export type EntryListCellResponseModel = {
+    field: string;
+    texts: Array<string>;
+    masked: boolean;
+};
+
+export type EntryListFieldResponseModel = {
+    key: string;
+    label: string;
+    alias: string;
+    type: string;
+    kind: string;
+    parent?: string | null;
+    sensitive: boolean;
+    removed: boolean;
+    column: boolean;
+    sorts: boolean;
+    tests: Array<string>;
+};
+
+export type EntryListFilterRequestModel = {
+    states: Array<string>;
+    received?: EntryReceivedRequestModel | null;
+    actions?: string | null;
+    fields: Array<EntryFieldFilterRequestModel>;
+    search?: string | null;
+    sort?: EntryListSortRequestModel | null;
+};
+
+export type EntryListPageResponseModel = {
+    items: Array<EntryListRowResponseModel>;
+    next?: string | null;
+    total?: number | null;
+    more: boolean;
+};
+
+export type EntryListRequestModel = {
+    filter?: EntryListFilterRequestModel | null;
+    columns: Array<string>;
+    after?: string | null;
+    count: boolean;
+};
+
+export type EntryListRowResponseModel = {
+    key: string;
+    number: number;
+    title?: string | null;
+    state: string;
+    received: string;
+    unseen: boolean;
+    actions: EntryListActionsResponseModel;
+    cells: Array<EntryListCellResponseModel>;
+};
+
+export type EntryListSortRequestModel = {
+    field?: string | null;
+    descending: boolean;
+};
+
+export type EntryListViewResponseModel = {
+    fields: Array<EntryListFieldResponseModel>;
+    columns: Array<string>;
+    filterSets: Array<EntryFilterSetResponseModel>;
+};
+
+export type EntryReceivedRequestModel = {
+    preset?: string | null;
+    from?: string | null;
+    to?: string | null;
+};
+
+export type EntryRerunActionResponseModel = {
+    key: string;
+    type: string;
+    name?: string | null;
+    trigger: string;
+};
+
+export type EntryRerunRequestModel = {
+    entries: Array<string>;
+    confirm: boolean;
+};
+
+export type EntryRerunResponseModel = {
+    actions: Array<EntryRerunActionResponseModel>;
+    entries: number;
+    leftOut: number;
+    queued: boolean;
+};
+
 export type EntryStateMovedResponseModel = {
     key: string;
     state: string;
@@ -1195,6 +1335,74 @@ export type TestEmailSendResponses = {
 
 export type TestEmailSendResponse = TestEmailSendResponses[keyof TestEmailSendResponses];
 
+export type EntryFilterSetDeleteData = {
+    body?: never;
+    path: {
+        setKey: string;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/entry/filter-set/{setKey}';
+};
+
+export type EntryFilterSetDeleteErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+};
+
+export type EntryFilterSetDeleteResponses = {
+    /**
+     * OK
+     */
+    200: EntryFilterSetDeleteResponseModel;
+};
+
+export type EntryFilterSetDeleteResponse = EntryFilterSetDeleteResponses[keyof EntryFilterSetDeleteResponses];
+
+export type EntryFilterSetSaveData = {
+    body?: EntryFilterSetRequestModel;
+    path: {
+        setKey: string;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/entry/filter-set/{setKey}';
+};
+
+export type EntryFilterSetSaveErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type EntryFilterSetSaveError = EntryFilterSetSaveErrors[keyof EntryFilterSetSaveErrors];
+
+export type EntryFilterSetSaveResponses = {
+    /**
+     * OK
+     */
+    200: EntryFilterSetResponseModel;
+};
+
+export type EntryFilterSetSaveResponse = EntryFilterSetSaveResponses[keyof EntryFilterSetSaveResponses];
+
 export type RecentEntryListData = {
     body?: never;
     path?: never;
@@ -1221,6 +1429,185 @@ export type RecentEntryListResponses = {
 };
 
 export type RecentEntryListResponse = RecentEntryListResponses[keyof RecentEntryListResponses];
+
+export type EntryListListData = {
+    body?: EntryListRequestModel;
+    path: {
+        key: string;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/form/{key}/entries';
+};
+
+export type EntryListListErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type EntryListListError = EntryListListErrors[keyof EntryListListErrors];
+
+export type EntryListListResponses = {
+    /**
+     * OK
+     */
+    200: EntryListPageResponseModel;
+};
+
+export type EntryListListResponse = EntryListListResponses[keyof EntryListListResponses];
+
+export type EntryListColumnsData = {
+    body?: EntryColumnsRequestModel;
+    path: {
+        key: string;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/form/{key}/entries/columns';
+};
+
+export type EntryListColumnsErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+};
+
+export type EntryListColumnsError = EntryListColumnsErrors[keyof EntryListColumnsErrors];
+
+export type EntryListColumnsResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type EntryListColumnsResponse = EntryListColumnsResponses[keyof EntryListColumnsResponses];
+
+export type EntryListDeleteData = {
+    body?: EntryDeleteRequestModel;
+    path: {
+        key: string;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/form/{key}/entries/delete';
+};
+
+export type EntryListDeleteErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+};
+
+export type EntryListDeleteError = EntryListDeleteErrors[keyof EntryListDeleteErrors];
+
+export type EntryListDeleteResponses = {
+    /**
+     * OK
+     */
+    200: EntryDeleteResponseModel;
+};
+
+export type EntryListDeleteResponse = EntryListDeleteResponses[keyof EntryListDeleteResponses];
+
+export type EntryListRunActionsData = {
+    body?: EntryRerunRequestModel;
+    path: {
+        key: string;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/form/{key}/entries/run-actions';
+};
+
+export type EntryListRunActionsErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+};
+
+export type EntryListRunActionsError = EntryListRunActionsErrors[keyof EntryListRunActionsErrors];
+
+export type EntryListRunActionsResponses = {
+    /**
+     * OK
+     */
+    200: EntryRerunResponseModel;
+};
+
+export type EntryListRunActionsResponse = EntryListRunActionsResponses[keyof EntryListRunActionsResponses];
+
+export type EntryListViewData = {
+    body?: never;
+    path: {
+        key: string;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/form/{key}/entries/view';
+};
+
+export type EntryListViewErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type EntryListViewError = EntryListViewErrors[keyof EntryListViewErrors];
+
+export type EntryListViewResponses = {
+    /**
+     * OK
+     */
+    200: EntryListViewResponseModel;
+};
+
+export type EntryListViewResponse = EntryListViewResponses[keyof EntryListViewResponses];
 
 export type EntryActionRunListData = {
     body?: never;

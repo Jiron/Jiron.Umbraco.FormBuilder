@@ -1,6 +1,5 @@
 using Jiron.Umbraco.FormBuilder.Core.Access;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
-using Jiron.Umbraco.FormBuilder.Core.MergeTags;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Core.Submissions;
 using Microsoft.Extensions.Logging;
@@ -25,7 +24,7 @@ internal sealed record RecentEntry(Guid Key, Guid FormKey, string FormName, stri
 /// <param name="entries">The entries.</param>
 /// <param name="forms">The forms.</param>
 /// <param name="scopes">Reads an entry's scope.</param>
-/// <param name="tags">The merge tags.</param>
+/// <param name="titles">Writes an entry's title.</param>
 /// <param name="documents">Reads a stored version.</param>
 /// <param name="logger">The log.</param>
 internal sealed partial class RecentEntries(
@@ -33,7 +32,7 @@ internal sealed partial class RecentEntries(
     IEntryRepository entries,
     IFormRepository forms,
     SubmissionEntries scopes,
-    IFormBuilderMergeTagService tags,
+    EntryTitles titles,
     FormDocuments documents,
     ILogger<RecentEntries> logger)
 {
@@ -83,8 +82,7 @@ internal sealed partial class RecentEntries(
                 return null;
             }
 
-            var rendered = (await tags.RenderAsync(title, MergeTagPlace.EntryTitle, MergeTagContext.Text, scope, cancellationToken)).Text.Trim();
-            return rendered.Length == 0 ? null : rendered;
+            return await titles.RenderAsync(scope, entry.Key, cancellationToken);
         }
         catch (Exception exception) when (exception is not OutOfMemoryException && exception is not OperationCanceledException)
         {

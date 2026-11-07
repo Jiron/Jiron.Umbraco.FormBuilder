@@ -69,6 +69,48 @@ internal static class EntryReferences
         var dated = format.IncludeYear ? year.ToString("0000", CultureInfo.InvariantCulture) + "-" + digits : digits;
         return (format.Prefix ?? string.Empty) + dated;
     }
+
+    /// <summary>
+    /// The entry numbers a search term names (ADR-0207): a number (<c>1042</c>, <c>#1042</c>), or a reference in the
+    /// form's format, its prefix in any case, with or without the year (<c>REQ-2026-01042</c>, <c>2026-01042</c>); none
+    /// for any other term. The number of a reference is unique within its form, so its year is not compared.
+    /// </summary>
+    /// <param name="format">The form's format, or null for the default.</param>
+    /// <param name="term">What the user searches for.</param>
+    public static IReadOnlyList<int> Numbers(EntryReferenceFormat? format, string term)
+    {
+        ArgumentNullException.ThrowIfNull(term);
+        var text = term.Trim();
+        var found = new List<int>();
+        void Add(string digits)
+        {
+            if (digits.Length is > 0 and <= 10 && digits.All(char.IsAsciiDigit)
+                && int.TryParse(digits, NumberStyles.None, CultureInfo.InvariantCulture, out var number) && number > 0 && !found.Contains(number))
+            {
+                found.Add(number);
+            }
+        }
+
+        if (text.StartsWith('#'))
+        {
+            Add(text[1..]);
+            return found;
+        }
+
+        Add(text);
+        var prefix = (format ?? new EntryReferenceFormat()).Prefix ?? string.Empty;
+        var rest = prefix.Length > 0 && text.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) ? text[prefix.Length..] : text;
+        if (rest.Length > 5 && rest[4] == '-' && rest[..4].All(char.IsAsciiDigit))
+        {
+            Add(rest[5..]);
+        }
+        else if (rest.Length != text.Length)
+        {
+            Add(rest);
+        }
+
+        return found;
+    }
 }
 
 /// <summary><c>form.name</c> and <c>form.alias</c>.</summary>

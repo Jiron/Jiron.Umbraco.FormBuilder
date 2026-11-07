@@ -759,7 +759,7 @@ permission each needs:
 | Entries: delete, empty Spam | `deleteEntries` |
 | Exports | `export` |
 | Sensitive values unmasked, and publishing a sensitive field as no longer so | `viewSensitive` |
-| Deliveries: retry action runs and mail | `manageActions` |
+| Deliveries: retry action runs and mail; run entries' actions again | `manageActions` |
 | Library: option lists, themes, email layouts, templates | `manageLibrary` |
 | Settings, the audit log, the deliveries log | `manageSettings` |
 | Permissions | `managePermissions` |

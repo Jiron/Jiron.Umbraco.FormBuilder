@@ -150,6 +150,29 @@ internal sealed partial class EntryEvents(IEventAggregator events, IFormBuilderS
         return GuardedAsync(typeof(T).Name, on => events.PublishAsync(make(on), CancellationToken.None));
     }
 
+    /// <summary>
+    /// Publishes several, in their order, under one limit: a change of many entries holds up whoever made it for a
+    /// moment at most, however many it tells of.
+    /// </summary>
+    /// <typeparam name="T">The notification.</typeparam>
+    /// <param name="make">Makes each, told whether webhooks fire.</param>
+    public Task PublishEachAsync<T>(IReadOnlyList<Func<bool, T>> make)
+        where T : EntryNotification
+    {
+        ArgumentNullException.ThrowIfNull(make);
+        return make.Count == 0
+            ? Task.CompletedTask
+            : GuardedAsync(
+                typeof(T).Name,
+                async on =>
+                {
+                    foreach (var one in make)
+                    {
+                        await events.PublishAsync(one(on), CancellationToken.None);
+                    }
+                });
+    }
+
     /// <summary>Tells of an entry that arrived: that it is submitted, then that it is approved when it was approved as it came in.</summary>
     /// <param name="entry">The entry.</param>
     /// <param name="formAlias">Its form's alias.</param>

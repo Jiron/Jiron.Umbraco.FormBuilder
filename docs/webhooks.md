@@ -143,7 +143,7 @@ Jiron Form Builder registers these in Settings, Webhooks:
 | Forms: entry submitted | `jfbEntrySubmitted` | An entry arrives and is not in Spam or waiting for its confirmation, or comes out of Spam |
 | Forms: entry approved | `jfbEntryApproved` | An entry reaches approved; at once on a form without an approval step, and once its undo window is over for a user's change |
 | Forms: entry rejected | `jfbEntryRejected` | An entry is rejected, by a rule at once and by a user once the undo window is over |
-| Forms: entry deleted | `jfbEntryDeleted` | Registered; published once a user can delete an entry (ROADMAP 11.2) |
+| Forms: entry deleted | `jfbEntryDeleted` | A user deletes entries for good, as the entries list's Delete… does (ADR-0207); one event for each entry, in their order |
 | Forms: action failed | `jfbActionFailed` | An attempt of an action failed for good, or ended unsure whether it arrived |
 
 The payload never holds an answer, because Umbraco sends it as it is:

@@ -83,3 +83,37 @@ section's tokens, calm and dense, nothing animated that a key repeats. The owner
 - Positive: a draft, a test entry and a spam entry can reach no list by an empty filter.
 - Negative: a sensitive field cannot be a column or a filter; its value is read in the entry.
 - Negative: a search for a fixed word of the entry title finds nothing; the answers it is written from are found.
+
+## Amendment (2026-11-07, step 11.1, the server's part)
+
+Building the service settled what the decisions left open:
+
+- **The fields a list offers** are the form's catalogue rows that a published version had and that hold answers: the
+  live version's in their order, then those it removed, which older entries still answer. A grid's rows are parts of
+  its grid's answer, not fields of their own. A field of a group, a repeatable group or a grid among them, can be a
+  column; a repeatable group's child filters and sorts but is no column. A field inside a sensitive repeatable group is
+  sensitive too.
+- **The tests by kind:** text one of, none of, starts with, answered and not answered; a long answer starts with,
+  answered and not answered; a number or a date between (both ends included, either open), answered and not answered;
+  a checkbox checked and not checked; files and values of several parts answered and not answered. A date answer is
+  compared by the day it names, in no time zone, as it is stored as the visitor's wall clock. Text, numbers and dates
+  sort.
+- **Received** counts the days of the time zone every site shares (`general.timeZone` without a site); a week starts
+  on Monday. Ranges lie in the years 1753 to 9999, where the database stores times.
+- **A cell** holds the column's answer as the summary page lists it (ADR-0122), in the entry's culture as its title
+  is: a repeatable group's rows each as one text, and a sensitive answer of an older version masked, never revealed.
+  A page reads its entries' answers, `submitted` events, versions and pages at once, and counts their action runs in
+  one statement, so a page costs the same few reads whatever its columns.
+- **Every problem names its path** in the request (`filter.states[1]`, `filter.fields[0].test`, `columns[0]`,
+  `after`), and a list answers them all at once; a cursor of another sort, or one the list never gave, is
+  `invalid_cursor`.
+- **A filter set of every form** filters and sorts by no field. A set's name is trimmed and taken once per form, or
+  once among the sets of every form, whatever its case. Deleting a set that is gone already answers that it was not
+  there, not an error, as every endpoint of the whole section answers a user of the section.
+- **The audit log** takes at most 200 values in a list, so a delete or a re-run writes one entry for every 200
+  entries, each naming their numbers.
+- **Re-run actions** runs what the rules chose for the entry: the choice its `submitted` event keeps when a later
+  trigger needs it, or else the actions its runs show. An action disabled since, or not in the entry's version, does
+  not run. Without `confirm` the endpoint answers what would run, which the dialog shows before anything runs.
+- **The notifications** of a delete are published in their order under one limit of 5 seconds (`EntryEvents`), so a
+  delete of 500 entries never holds the user up for each.

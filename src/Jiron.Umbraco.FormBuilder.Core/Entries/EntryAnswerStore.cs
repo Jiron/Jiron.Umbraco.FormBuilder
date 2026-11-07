@@ -116,6 +116,44 @@ internal sealed class EntryAnswerStore(
         }
     }
 
+    /// <summary>
+    /// The answers of entries of one form, typed, by entry (ADR-0207): one read of their values, one of their files and
+    /// one of the form's catalogue, and each consent wording they name once, for a page of a list. An entry without
+    /// values has no answers; the entries are the form's.
+    /// </summary>
+    /// <param name="formId">The form.</param>
+    /// <param name="entryIds">Its entries.</param>
+    /// <param name="cancellationToken">Cancels the reads.</param>
+    public Task<IReadOnlyDictionary<long, EntryAnswers>> ReadManyAsync(int formId, IReadOnlyCollection<long> entryIds, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(entryIds);
+        var ids = entryIds.Distinct().ToArray();
+        if (ids.Length == 0)
+        {
+            return Task.FromResult<IReadOnlyDictionary<long, EntryAnswers>>(new Dictionary<long, EntryAnswers>());
+        }
+
+        return database.ReadAsync<IReadOnlyDictionary<long, EntryAnswers>>(
+            async _ =>
+            {
+                var catalogue = await forms.ListFieldsAsync(formId, cancellationToken);
+                var values = await entries.ListValuesAsync(ids, cancellationToken);
+                var files = (await entries.ListFilesAsync(ids, cancellationToken)).Where(file => file.EntryId is not null).ToLookup(file => file.EntryId!.Value);
+                var wordings = new Dictionary<string, StoredConsentText>(StringComparer.Ordinal);
+                foreach (var hash in EntryValueReader.ConsentHashes(catalogue, values, types))
+                {
+                    if (await consentTexts.GetAsync(hash, cancellationToken) is { } wording)
+                    {
+                        wordings[hash] = wording;
+                    }
+                }
+
+                var byEntry = values.ToLookup(value => value.EntryId);
+                return ids.ToDictionary(id => id, id => EntryValueReader.Read(catalogue, [.. byEntry[id]], [.. files[id]], wordings, types));
+            },
+            cancellationToken);
+    }
+
     /// <summary>An entry's answers, typed; null when the entry does not exist.</summary>
     /// <param name="entryId">The entry's id.</param>
     /// <param name="cancellationToken">Cancels the reads.</param>

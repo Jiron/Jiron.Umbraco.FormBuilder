@@ -182,6 +182,41 @@ internal sealed class ActionRunRepository(FormBuilderDatabase database) : IActio
     }
 
     /// <inheritdoc />
+    public async Task<IReadOnlyDictionary<long, ActionRunTally>> TallyOfEntriesAsync(IReadOnlyCollection<long> entryIds, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(entryIds);
+        var tallies = new Dictionary<long, ActionRunTally>();
+        foreach (var chunk in entryIds.Distinct().Chunk(SqlArgs.MaxListLength))
+        {
+            var rows = await database.ReadAsync(
+                db =>
+                {
+                    var n = new SqlNames(db);
+                    var a = new SqlArgs();
+                    return db.FetchListAsync<StateCount>(
+                        $"SELECT {n.C("entryId")} AS entryId, {n.C("state")} AS state, COUNT(*) AS total FROM {n.T(FormBuilderTables.ActionRun)} "
+                        + $"WHERE {n.C("entryId")} IN ({a.List(chunk.Cast<object?>())}) GROUP BY {n.C("entryId")}, {n.C("state")}",
+                        a.Values);
+                },
+                cancellationToken);
+            foreach (var row in rows)
+            {
+                var tally = tallies.GetValueOrDefault(row.EntryId);
+                tallies[row.EntryId] = StoredNames.Parse<ActionRunState>(row.State) switch
+                {
+                    ActionRunState.Succeeded => tally with { Delivered = tally.Delivered + row.Total },
+                    ActionRunState.Failed => tally with { Failed = tally.Failed + row.Total },
+                    ActionRunState.Uncertain => tally with { Uncertain = tally.Uncertain + row.Total },
+                    ActionRunState.Skipped => tally with { Skipped = tally.Skipped + row.Total },
+                    _ => tally with { Waiting = tally.Waiting + row.Total },
+                };
+            }
+        }
+
+        return tallies;
+    }
+
+    /// <inheritdoc />
     public Task<int> CountFailedSinceAsync(DateTimeOffset since, CancellationToken cancellationToken = default) =>
         database.ReadAsync(
             db =>
@@ -342,6 +377,18 @@ internal sealed class ActionRunRepository(FormBuilderDatabase database) : IActio
         var runs = n.T(FormBuilderTables.ActionRun);
         var entries = n.T(FormBuilderTables.Entry);
         return $"SELECT r.* FROM {runs} r WHERE r.{n.C("actionKey")} = @0 AND (r.{n.C("state")} <> '{Pending}' OR r.{n.C("attempts")} > 0) AND EXISTS (SELECT 1 FROM {entries} e WHERE e.{n.C("id")} = r.{n.C("entryId")} AND e.{n.C("formId")} = @1) ORDER BY r.{n.C("id")} DESC {n.Page(0, 1)}";
+    }
+
+    private sealed class StateCount
+    {
+        [NPoco.Column("entryId")]
+        public long EntryId { get; set; }
+
+        [NPoco.Column("state")]
+        public string State { get; set; } = string.Empty;
+
+        [NPoco.Column("total")]
+        public int Total { get; set; }
     }
 
     internal static StoredActionRun FromDto(ActionRunDto d) => new(

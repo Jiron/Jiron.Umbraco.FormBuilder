@@ -650,7 +650,12 @@ changed it last. The built-in templates ship inside the package.
 ### `jfbUserSetting`
 
 A backoffice user's own choices, the same on every device: column sets, saved filters, export choices. No indexes
-besides the primary key on the user and the setting's name.
+besides the primary key on the user and the setting's name. Each name holds one JSON document, which the service that
+owns the name checks; a value it cannot read counts as none (ADR-0207):
+
+- `entries.columns.<form key>`: the fields a user shows as a form's columns, at most 20, in their order;
+- `entries.filterSets`: the user's filter sets, at most 50, each with its key, a name of at most 60 characters, the
+  form it belongs to or none, and its filter in the shape the entries list's request sends.
 
 ### `jfbPermission`
 

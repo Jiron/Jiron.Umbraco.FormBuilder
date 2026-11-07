@@ -49,6 +49,9 @@ internal sealed class EntryQuerySql
     /// <summary>The most matches a search counts exactly; beyond, it says "more than 1,000" (ADR-0003).</summary>
     public const int SearchCountLimit = 1000;
 
+    /// <summary>The most entry numbers a search also finds (ADR-0207).</summary>
+    public const int MaxSearchNumbers = 10;
+
     /// <summary>The most entries one page holds.</summary>
     public const int MaxTake = PageRequest.MaxTake;
 
@@ -58,6 +61,7 @@ internal sealed class EntryQuerySql
     private readonly string _entry;
     private readonly string _values;
     private readonly string _term;
+    private readonly string _runs;
 
     /// <summary>The statements of <paramref name="query"/>, which <see cref="Check"/> accepted.</summary>
     /// <param name="n">The names of the database.</param>
@@ -74,11 +78,12 @@ internal sealed class EntryQuerySql
         _longTexts = longTexts ?? new Dictionary<(int Filter, int Value), IReadOnlyList<string>>();
         _entry = n.T(FormBuilderTables.Entry);
         _values = n.T(FormBuilderTables.EntryValue);
+        _runs = n.T(FormBuilderTables.ActionRun);
         _term = query.Search is null ? string.Empty : EntrySearchText.Normalize(query.Search);
     }
 
-    /// <summary>Whether the query looks for a term: then its count stops at <see cref="SearchCountLimit"/>.</summary>
-    public bool Searches => _term.Length > 0;
+    /// <summary>Whether the query looks for a term or a number: then its count stops at <see cref="SearchCountLimit"/>.</summary>
+    public bool Searches => _term.Length > 0 || _query.SearchNumbers.Count > 0;
 
     /// <summary>
     /// The values of text filters whose key may be cut (ADR-0038): their stored texts are read and compared whole
@@ -198,6 +203,8 @@ internal sealed class EntryQuerySql
         }
 
         Require(query.Search is null || EntrySearchText.Normalize(query.Search).Length <= EntrySearchText.MaxTermLength, $"A search term holds at most {EntrySearchText.MaxTermLength} characters.", nameof(query));
+        Require(query.SearchNumbers is not null && query.SearchNumbers.Count <= MaxSearchNumbers && query.SearchNumbers.All(number => number > 0), $"A search finds at most {MaxSearchNumbers} entry numbers, each above 0.", nameof(query));
+        Require(Enum.IsDefined(query.Actions), "The action filter is any, failed, uncertain or delivered.", nameof(query));
         CheckSort(query.Sort, nameof(query));
         if (after is not null)
         {
@@ -356,7 +363,24 @@ internal sealed class EntryQuerySql
 
         if (Searches)
         {
-            parts.Add($"e.{C("searchText")}{_n.BinaryCollation} LIKE {a.Add("%" + SqlNames.Escape(_term) + "%")} {SqlNames.EscapeClause}");
+            // A number the search names finds its entry as its search text would (ADR-0207).
+            var found = new List<string>();
+            if (_term.Length > 0)
+            {
+                found.Add($"e.{C("searchText")}{_n.BinaryCollation} LIKE {a.Add("%" + SqlNames.Escape(_term) + "%")} {SqlNames.EscapeClause}");
+            }
+
+            if (_query.SearchNumbers.Count > 0)
+            {
+                found.Add($"e.{C("number")} IN ({a.List(_query.SearchNumbers.Distinct().Select(number => (object?)number))})");
+            }
+
+            parts.Add(found.Count == 1 ? found[0] : $"({string.Join(" OR ", found)})");
+        }
+
+        if (_query.Actions != EntryActionFilter.Any)
+        {
+            parts.Add(Actions(a, _query.Actions));
         }
 
         for (var i = 0; i < _query.Filters.Count; i++)
@@ -365,6 +389,19 @@ internal sealed class EntryQuerySql
         }
 
         return string.Join(" AND ", parts);
+    }
+
+    // The entry's action runs, on the alias r: one that failed or is uncertain, or every one delivered or skipped.
+    private string Actions(SqlArgs a, EntryActionFilter filter)
+    {
+        string Runs(string? condition) =>
+            $"EXISTS (SELECT 1 FROM {_runs} r WHERE r.{C("entryId")} = e.{C("id")}{(condition is null ? string.Empty : " AND " + condition)})";
+        return filter switch
+        {
+            EntryActionFilter.Failed => Runs($"r.{C("state")} = {a.Add(StoredNames.Of(ActionRunState.Failed))}"),
+            EntryActionFilter.Uncertain => Runs($"r.{C("state")} = {a.Add(StoredNames.Of(ActionRunState.Uncertain))}"),
+            _ => $"{Runs(null)} AND NOT {Runs($"r.{C("state")} NOT IN ({a.List([StoredNames.Of(ActionRunState.Succeeded), StoredNames.Of(ActionRunState.Skipped)])})")}",
+        };
     }
 
     // One field filter, on the alias vf: the entry's id in (or, for the opposite, not in) the ids of the entries whose

@@ -15,6 +15,22 @@ internal enum EntryTestFilter
     Only,
 }
 
+/// <summary>Which entries a list holds by their action runs (ADR-0207).</summary>
+internal enum EntryActionFilter
+{
+    /// <summary>Every entry, whatever its runs.</summary>
+    Any,
+
+    /// <summary>An entry with a run that failed for good.</summary>
+    Failed,
+
+    /// <summary>An entry with a run whose outcome is uncertain.</summary>
+    Uncertain,
+
+    /// <summary>An entry with runs, every one of them delivered or skipped.</summary>
+    Delivered,
+}
+
 /// <summary>The column a list is sorted by (ADR-0039).</summary>
 internal enum EntrySortColumn
 {
@@ -124,6 +140,15 @@ internal sealed record EntryQuery(int FormId)
 
     /// <summary>Words to look for in the entry's search text, or none.</summary>
     public string? Search { get; init; }
+
+    /// <summary>
+    /// The entry numbers a search also finds: an entry whose number is one of them matches as its search text would
+    /// (ADR-0207). Only with a search; at most <see cref="EntryQuerySql.MaxSearchNumbers"/>.
+    /// </summary>
+    public IReadOnlyList<int> SearchNumbers { get; init; } = [];
+
+    /// <summary>Which entries by their action runs.</summary>
+    public EntryActionFilter Actions { get; init; } = EntryActionFilter.Any;
 
     /// <summary>The order.</summary>
     public EntrySort Sort { get; init; } = EntrySort.Newest;

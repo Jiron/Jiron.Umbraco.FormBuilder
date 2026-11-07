@@ -263,6 +263,8 @@ public sealed class TwoProcessorsTests : ActionTestBase
 
         public Task<int> CountOfChangeAsync(Guid changeKey, CancellationToken cancellationToken = default) => inner.CountOfChangeAsync(changeKey, cancellationToken);
 
+        public Task<IReadOnlyDictionary<long, ActionRunTally>> TallyOfEntriesAsync(IReadOnlyCollection<long> entryIds, CancellationToken cancellationToken = default) => inner.TallyOfEntriesAsync(entryIds, cancellationToken);
+
         public Task<IReadOnlyList<StoredActionRun>> LastOfActionsAsync(int formId, IReadOnlyCollection<Guid> actionKeys, CancellationToken cancellationToken = default) => inner.LastOfActionsAsync(formId, actionKeys, cancellationToken);
     }
 }

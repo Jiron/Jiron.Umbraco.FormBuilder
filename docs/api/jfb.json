@@ -531,6 +531,155 @@
         ]
       }
     },
+    "/umbraco/jfb/management/api/v1/entry/filter-set/{setKey}": {
+      "delete": {
+        "tags": [
+          "Entries"
+        ],
+        "operationId": "EntryFilterSetDelete",
+        "parameters": [
+          {
+            "name": "setKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/EntryFilterSetDeleteResponseModel"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The resource is protected and requires an authentication token"
+          },
+          "403": {
+            "description": "The authenticated user does not have access to this resource"
+          }
+        },
+        "security": [
+          {
+            "Backoffice-User": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "Entries"
+        ],
+        "operationId": "EntryFilterSetSave",
+        "parameters": [
+          {
+            "name": "setKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/EntryFilterSetRequestModel"
+                  }
+                ]
+              }
+            },
+            "text/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/EntryFilterSetRequestModel"
+                  }
+                ]
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/EntryFilterSetRequestModel"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/EntryFilterSetResponseModel"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The resource is protected and requires an authentication token"
+          },
+          "403": {
+            "description": "The authenticated user does not have access to this resource"
+          }
+        },
+        "security": [
+          {
+            "Backoffice-User": []
+          }
+        ]
+      }
+    },
     "/umbraco/jfb/management/api/v1/entry/recent": {
       "get": {
         "tags": [
@@ -546,6 +695,433 @@
                   "oneOf": [
                     {
                       "$ref": "#/components/schemas/RecentEntriesResponseModel"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The resource is protected and requires an authentication token"
+          },
+          "403": {
+            "description": "The authenticated user does not have access to this resource"
+          }
+        },
+        "security": [
+          {
+            "Backoffice-User": []
+          }
+        ]
+      }
+    },
+    "/umbraco/jfb/management/api/v1/form/{key}/entries": {
+      "post": {
+        "tags": [
+          "Entries"
+        ],
+        "operationId": "EntryListList",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/EntryListRequestModel"
+                  }
+                ]
+              }
+            },
+            "text/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/EntryListRequestModel"
+                  }
+                ]
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/EntryListRequestModel"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/EntryListPageResponseModel"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The resource is protected and requires an authentication token"
+          },
+          "403": {
+            "description": "The authenticated user does not have access to this resource"
+          }
+        },
+        "security": [
+          {
+            "Backoffice-User": []
+          }
+        ]
+      }
+    },
+    "/umbraco/jfb/management/api/v1/form/{key}/entries/columns": {
+      "put": {
+        "tags": [
+          "Entries"
+        ],
+        "operationId": "EntryListColumns",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/EntryColumnsRequestModel"
+                  }
+                ]
+              }
+            },
+            "text/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/EntryColumnsRequestModel"
+                  }
+                ]
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/EntryColumnsRequestModel"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The resource is protected and requires an authentication token"
+          },
+          "403": {
+            "description": "The authenticated user does not have access to this resource"
+          }
+        },
+        "security": [
+          {
+            "Backoffice-User": []
+          }
+        ]
+      }
+    },
+    "/umbraco/jfb/management/api/v1/form/{key}/entries/delete": {
+      "post": {
+        "tags": [
+          "Entries"
+        ],
+        "operationId": "EntryListDelete",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/EntryDeleteRequestModel"
+                  }
+                ]
+              }
+            },
+            "text/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/EntryDeleteRequestModel"
+                  }
+                ]
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/EntryDeleteRequestModel"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/EntryDeleteResponseModel"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The resource is protected and requires an authentication token"
+          },
+          "403": {
+            "description": "The authenticated user does not have access to this resource"
+          }
+        },
+        "security": [
+          {
+            "Backoffice-User": []
+          }
+        ]
+      }
+    },
+    "/umbraco/jfb/management/api/v1/form/{key}/entries/run-actions": {
+      "post": {
+        "tags": [
+          "Entries"
+        ],
+        "operationId": "EntryListRunActions",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/EntryRerunRequestModel"
+                  }
+                ]
+              }
+            },
+            "text/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/EntryRerunRequestModel"
+                  }
+                ]
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/EntryRerunRequestModel"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/EntryRerunResponseModel"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The resource is protected and requires an authentication token"
+          },
+          "403": {
+            "description": "The authenticated user does not have access to this resource"
+          }
+        },
+        "security": [
+          {
+            "Backoffice-User": []
+          }
+        ]
+      }
+    },
+    "/umbraco/jfb/management/api/v1/form/{key}/entries/view": {
+      "get": {
+        "tags": [
+          "Entries"
+        ],
+        "operationId": "EntryListView",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/EntryListViewResponseModel"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
                     }
                   ]
                 }
@@ -7819,6 +8395,610 @@
           },
           "direction": {
             "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "EntryColumnsRequestModel": {
+        "required": [
+          "columns"
+        ],
+        "type": "object",
+        "properties": {
+          "columns": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "EntryDeleteRequestModel": {
+        "required": [
+          "confirm",
+          "entries"
+        ],
+        "type": "object",
+        "properties": {
+          "entries": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "confirm": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "EntryDeleteResponseModel": {
+        "required": [
+          "deleted",
+          "entries",
+          "files"
+        ],
+        "type": "object",
+        "properties": {
+          "entries": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "files": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "deleted": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "EntryFieldFilterRequestModel": {
+        "required": [
+          "field",
+          "test",
+          "values"
+        ],
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "test": {
+            "type": "string"
+          },
+          "values": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "min": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "max": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "from": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
+          "to": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "EntryFilterSetDeleteResponseModel": {
+        "required": [
+          "deleted"
+        ],
+        "type": "object",
+        "properties": {
+          "deleted": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "EntryFilterSetRequestModel": {
+        "required": [
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "form": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "filter": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/EntryListFilterRequestModel"
+              }
+            ],
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "EntryFilterSetResponseModel": {
+        "required": [
+          "filter",
+          "key",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "form": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "filter": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/EntryListFilterRequestModel"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "EntryListActionsResponseModel": {
+        "required": [
+          "delivered",
+          "failed",
+          "skipped",
+          "uncertain",
+          "waiting"
+        ],
+        "type": "object",
+        "properties": {
+          "delivered": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "failed": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "uncertain": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "waiting": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "skipped": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "EntryListCellResponseModel": {
+        "required": [
+          "field",
+          "masked",
+          "texts"
+        ],
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "texts": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "masked": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "EntryListFieldResponseModel": {
+        "required": [
+          "alias",
+          "column",
+          "key",
+          "kind",
+          "label",
+          "removed",
+          "sensitive",
+          "sorts",
+          "tests",
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "label": {
+            "type": "string"
+          },
+          "alias": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "parent": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "sensitive": {
+            "type": "boolean"
+          },
+          "removed": {
+            "type": "boolean"
+          },
+          "column": {
+            "type": "boolean"
+          },
+          "sorts": {
+            "type": "boolean"
+          },
+          "tests": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "EntryListFilterRequestModel": {
+        "required": [
+          "fields",
+          "states"
+        ],
+        "type": "object",
+        "properties": {
+          "states": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "received": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/EntryReceivedRequestModel"
+              }
+            ],
+            "nullable": true
+          },
+          "actions": {
+            "type": "string",
+            "nullable": true
+          },
+          "fields": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/EntryFieldFilterRequestModel"
+                }
+              ]
+            }
+          },
+          "search": {
+            "type": "string",
+            "nullable": true
+          },
+          "sort": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/EntryListSortRequestModel"
+              }
+            ],
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "EntryListPageResponseModel": {
+        "required": [
+          "items",
+          "more"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/EntryListRowResponseModel"
+                }
+              ]
+            }
+          },
+          "next": {
+            "type": "string",
+            "nullable": true
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "more": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "EntryListRequestModel": {
+        "required": [
+          "columns",
+          "count"
+        ],
+        "type": "object",
+        "properties": {
+          "filter": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/EntryListFilterRequestModel"
+              }
+            ],
+            "nullable": true
+          },
+          "columns": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "after": {
+            "type": "string",
+            "nullable": true
+          },
+          "count": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "EntryListRowResponseModel": {
+        "required": [
+          "actions",
+          "cells",
+          "key",
+          "number",
+          "received",
+          "state",
+          "unseen"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "number": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "title": {
+            "type": "string",
+            "nullable": true
+          },
+          "state": {
+            "type": "string"
+          },
+          "received": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "unseen": {
+            "type": "boolean"
+          },
+          "actions": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/EntryListActionsResponseModel"
+              }
+            ]
+          },
+          "cells": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/EntryListCellResponseModel"
+                }
+              ]
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "EntryListSortRequestModel": {
+        "required": [
+          "descending"
+        ],
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "descending": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "EntryListViewResponseModel": {
+        "required": [
+          "columns",
+          "fields",
+          "filterSets"
+        ],
+        "type": "object",
+        "properties": {
+          "fields": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/EntryListFieldResponseModel"
+                }
+              ]
+            }
+          },
+          "columns": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "filterSets": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/EntryFilterSetResponseModel"
+                }
+              ]
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "EntryReceivedRequestModel": {
+        "type": "object",
+        "properties": {
+          "preset": {
+            "type": "string",
+            "nullable": true
+          },
+          "from": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
+          "to": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "EntryRerunActionResponseModel": {
+        "required": [
+          "key",
+          "trigger",
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "type": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "trigger": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "EntryRerunRequestModel": {
+        "required": [
+          "confirm",
+          "entries"
+        ],
+        "type": "object",
+        "properties": {
+          "entries": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "confirm": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "EntryRerunResponseModel": {
+        "required": [
+          "actions",
+          "entries",
+          "leftOut",
+          "queued"
+        ],
+        "type": "object",
+        "properties": {
+          "actions": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/EntryRerunActionResponseModel"
+                }
+              ]
+            }
+          },
+          "entries": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "leftOut": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "queued": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false
