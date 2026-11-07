@@ -78,6 +78,7 @@ export default {
     recentLoading: 'Loading recent entries',
     recentFailed: "Recent entries couldn't be loaded.",
     recentEmpty: 'No entries yet. They arrive here from every form you may view.',
+    glanceFailed: "The forms at a glance couldn't be loaded.",
     columnEntry: 'Entry',
     columnForm: 'Form',
     columnReceived: 'Received',

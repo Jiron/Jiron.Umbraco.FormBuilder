@@ -19,6 +19,7 @@ export default {
     group_submission: 'Senden',
     group_availability: 'Verfügbarkeit',
     group_protection: 'Spamschutz',
+    group_privacy: 'Datenschutz',
     group_appearance: 'Darstellung',
     group_developer: 'Entwicklung',
     group_after: 'Nach dem Senden',
@@ -191,6 +192,11 @@ export default {
 
     headless: 'Headless-Zugriff',
     headlessHelp: 'Eine Headless-Website kann die Definition des Formulars über die öffentliche API lesen.',
+    insights: 'Zählen, was Besucher mit diesem Formular tun',
+    insightsHelp:
+      'Aufrufe, Begonnene, die Seiten, die sie erreichen, und die Felder, an denen sie hängen bleiben, für seine Ansicht Einblicke. Keine Antwort und kein Besucher wird gezählt.',
+    insightsSiteOff:
+      'Die Einblicke sind für die ganze Website ausgeschaltet, daher zählt dieses Formular nichts. Ein Administrator kann sie unter Datenschutz › Datenerfassung einschalten.',
     queryValues: 'Abfragewerte',
     queryValuesHelp:
       'Die Werte aus der Adresse, die das Formular lesen darf, für Vorbelegung und Regeln. Ein Name pro Zeile.',
@@ -223,6 +229,9 @@ export default {
     summary_marker_none: 'Keine Markierung',
     summary_headlessOn: 'Headless-Zugriff an',
     summary_headlessOff: 'Headless-Zugriff aus',
+    summary_insightsOn: 'Einblicke an',
+    summary_insightsOff: 'Einblicke aus',
+    summary_insightsSiteOff: 'Einblicke für die ganze Website aus',
     summary_queryValues: (number: number) => count(number, 'Abfragewert', 'Abfragewerte'),
     summary_contextValues: (number: number) => count(number, 'Kontextwert', 'Kontextwerte'),
     summary_outcome_message: 'Eine Meldung',

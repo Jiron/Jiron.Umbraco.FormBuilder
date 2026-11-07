@@ -9,6 +9,7 @@ export default {
     view_actions: 'Aktionen',
     actionsLoading: 'Die Aktionen werden geladen…',
     historyFailed: 'Der Verlauf konnte nicht angezeigt werden. Versuchen Sie es gleich noch einmal.',
+    insightsFailed: 'Die Einblicke konnten nicht angezeigt werden. Versuchen Sie es gleich noch einmal.',
     entriesFailed: 'Die Einträge konnten nicht angezeigt werden. Versuchen Sie es gleich noch einmal.',
     // Das „…“ des Formulars: sein erster Eintrag, für alle, die das Formular gestalten dürfen (ADR-0198).
     restoreEarlier: 'Frühere Version wiederherstellen…',

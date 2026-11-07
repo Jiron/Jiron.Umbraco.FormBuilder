@@ -106,6 +106,9 @@ internal sealed class TestEndpointsStartupFilter(IOptions<FormBuilderTestingOpti
 /// 2,000. <c>"places"</c> gives the accountant's position that many places, <c>"unique"</c> makes the name unique per form,
 /// <c>"notice"</c> adds a mail of each entry with its <c>{{ entry.url }}</c> to this address, and <c>"forward"</c> makes this
 /// address one entries may be forwarded to (ADR-0208).</description></item>
+/// <item><description><c>POST /jfb-testing/insights-form {"name": "..."}</c>: publishes a headless form of two pages (Name and
+/// Email, then Your message) and counts 60 days of visits to it in <c>jfbDailyStat</c> as its beacons and entries would, the
+/// same numbers each time, so the Insights view and Forms at a glance show a month against the one before (ADR-0211).</description></item>
 /// <item><description><c>GET /jfb-testing/audit?entity=&lt;key&gt;</c>: the audit log's entries about one item, oldest first, each with
 /// its action, user and details (ADR-0041), which no screen lists yet.</description></item>
 /// </list>
@@ -361,6 +364,76 @@ internal sealed class TestEndpointsMiddleware(RequestDelegate next)
 
     private sealed record EntriesFormRequest(int? Count, string? Url, string? Name, int? Places = null, bool? Unique = null, string? Notice = null, string? Forward = null);
 
+    private static async Task InsightsFormAsync(HttpContext context)
+    {
+        var body = await JsonSerializer.DeserializeAsync<EntriesFormRequest>(context.Request.Body, Json, context.RequestAborted);
+        var forms = context.RequestServices.GetRequiredService<IFormBuilderFormService>();
+        var created = await forms.CreateAsync(new NewFormRequest(body?.Name ?? $"Insights {Guid.NewGuid():N}"), context.RequestAborted);
+        var draft = (await forms.GetDraftAsync(created.Key, cancellationToken: context.RequestAborted))!;
+        var definition = draft.Definition!;
+        var name = new FormField { Key = Guid.NewGuid(), Type = "text", Alias = "name", Label = new LocalizedText("Name"), Required = true };
+        var email = new FormField { Key = Guid.NewGuid(), Type = "email", Alias = "email", Label = new LocalizedText("Email address"), Required = true };
+        var phone = new FormField { Key = Guid.NewGuid(), Type = "text", Alias = "phone", Label = new LocalizedText("Phone") };
+        var message = new FormField { Key = Guid.NewGuid(), Type = "textarea", Alias = "message", Label = new LocalizedText("Your message"), Required = true };
+        var second = new FormPage { Key = Guid.NewGuid(), Title = new LocalizedText("Your message"), Groups = [new FormGroup { Key = Guid.NewGuid(), Fields = [message] }] };
+        var saved = (await forms.SaveDraftAsync(
+            created.Key,
+            draft.Form.ConcurrencyVersion,
+            definition with
+            {
+                Pages = [definition.Pages[0] with { Title = new LocalizedText("Your details"), Groups = [definition.Pages[0].Groups[0] with { Fields = [name, email, phone] }] }, second],
+                Settings = definition.Settings with { Developer = definition.Settings.Developer with { Headless = true } },
+            },
+            null,
+            null,
+            context.RequestAborted))!;
+        _ = await forms.PublishAsync(created.Key, saved.Form.ConcurrencyVersion, null, null, context.RequestAborted);
+
+        // 60 days, the same each time: a weekday sees more visits than a weekend, and the last 30 days a little more.
+        var row = (await context.RequestServices.GetRequiredService<IFormRepository>().GetAsync(created.Key, context.RequestAborted))!;
+        var stats = context.RequestServices.GetRequiredService<IDailyStatRepository>();
+        var today = DateOnly.FromDateTime(context.RequestServices.GetRequiredService<TimeProvider>().GetUtcNow().UtcDateTime);
+        var pages = context.RequestServices.GetRequiredService<global::Umbraco.Cms.Core.Services.Navigation.IDocumentNavigationQueryService>()
+            .TryGetRootKeys(out var roots) ? roots.Take(3).ToList() : [];
+        string Key(Guid key) => key.ToString("N");
+        for (var back = 59; back >= 0; back--)
+        {
+            var day = today.AddDays(-back);
+            var weekend = day.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday;
+            var wave = (int)(Math.Sin(back * 0.9) * 12);
+            var views = (weekend ? 70 : 150) + wave + (back < 30 ? 14 : 0);
+            var starts = views * 27 / 100;
+            var reached = starts * 46 / 100;
+            var sent = reached * 64 / 100;
+            List<DailyStatCount> counts =
+            [
+                new("views", By: views),
+                new("starts", By: starts),
+                new("page", Key(second.Key), reached),
+                new("submissions", By: sent),
+                new("spam", By: back % 4 == 0 ? 1 : 0),
+                new("invalid", $"{Key(email.Key)}:invalid", starts * 16 / 100),
+                new("invalid", $"{Key(email.Key)}:required", starts * 3 / 100),
+                new("invalid", $"{Key(phone.Key)}:minLength", starts * 5 / 100),
+                new("invalid", $"{Key(message.Key)}:required", starts * 2 / 100),
+                new("completion", "60", sent / 5),
+                new("completion", "120", sent / 4),
+                new("completion", "180", sent / 4),
+                new("completion", "300", sent / 6),
+                new("completion", "more", sent / 10),
+            ];
+            for (var hour = 7; hour <= 21; hour++)
+            {
+                counts.Add(new("hour", hour.ToString(System.Globalization.CultureInfo.InvariantCulture), Math.Max(0, (sent / 6) - Math.Abs(hour - 11) / 2)));
+            }
+
+            counts.AddRange(pages.Select((page, index) => new DailyStatCount("origin", Key(page), sent / (index + 2))));
+            await stats.IncrementOnAsync(row.Id, day, counts, context.RequestAborted);
+        }
+
+        await context.Response.WriteAsJsonAsync(new { key = created.Key }, Json, context.RequestAborted);
+    }
+
     // The site's own address, from this request, unless the settings name one, so links in mails lead back here.
     private static async Task KnowBaseUrlAsync(HttpContext context)
     {
@@ -459,6 +532,9 @@ internal sealed class TestEndpointsMiddleware(RequestDelegate next)
                 return;
             case "entries-form" when HttpMethods.IsPost(context.Request.Method):
                 await EntriesFormAsync(context);
+                return;
+            case "insights-form" when HttpMethods.IsPost(context.Request.Method):
+                await InsightsFormAsync(context);
                 return;
             case "audit" when HttpMethods.IsGet(context.Request.Method):
                 await AuditAsync(context);

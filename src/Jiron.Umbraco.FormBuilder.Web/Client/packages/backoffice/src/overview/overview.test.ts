@@ -26,6 +26,8 @@ vi.mock('../api', async (original) => ({
   setupHealth: () => api.health(),
   recentEntryList: () => api.recent(),
   mePermissions: () => api.me(),
+  // Forms at a glance has its own tests (insight-glance.test.ts); here it finds no form.
+  insightGlance: () => Promise.resolve({ data: { items: [] } }),
 }));
 
 vi.mock('@umbraco-cms/backoffice/resources', async (original) => ({

@@ -979,6 +979,7 @@ export type FormSettingsDefaultsResponseModel = {
     backLabel?: {
         [key: string]: string;
     } | null;
+    insights: boolean;
 };
 
 export type FormSettingsEmailLayoutResponseModel = {
@@ -1098,6 +1099,76 @@ export type ImportNoteResponseModel = {
     code: string;
     path: string;
     alias?: string | null;
+};
+
+export type InsightFieldResponseModel = {
+    key: string;
+    label?: string | null;
+    stops: number;
+    kind: string;
+};
+
+export type InsightGlanceItemResponseModel = {
+    key: string;
+    name: string;
+    totals: InsightTotalsResponseModel;
+    before: InsightTotalsResponseModel;
+};
+
+export type InsightGlanceResponseModel = {
+    items: Array<InsightGlanceItemResponseModel>;
+};
+
+export type InsightOriginResponseModel = {
+    key: string;
+    name?: string | null;
+    entries: number;
+};
+
+export type InsightPageResponseModel = {
+    key: string;
+    name?: string | null;
+    reached: number;
+};
+
+export type InsightPeriodResponseModel = {
+    start: string;
+    entries: number;
+    before?: number | null;
+};
+
+export type InsightReportResponseModel = {
+    siteOn: boolean;
+    formOn: boolean;
+    totals: InsightTotalsResponseModel;
+    before?: InsightTotalsResponseModel | null;
+    periods: Array<InsightPeriodResponseModel>;
+    pages: Array<InsightPageResponseModel>;
+    medianCompletion?: string | null;
+    fields: Array<InsightFieldResponseModel>;
+    origins: Array<InsightOriginResponseModel>;
+    hours: Array<number>;
+    members: number;
+    memberEntries: number;
+    membersBefore?: number | null;
+    timeZone: string;
+    tables: Array<string>;
+};
+
+export type InsightTablesRequestModel = {
+    tables?: Array<string> | null;
+};
+
+export type InsightTablesResponseModel = {
+    tables: Array<string>;
+};
+
+export type InsightTotalsResponseModel = {
+    views: number;
+    starts: number;
+    entries: number;
+    spam: number;
+    conversion?: number | null;
 };
 
 export type LibraryChangeResponseModel = {
@@ -1254,6 +1325,17 @@ export type PickerThemeResponseModel = {
 
 export type PinVersionRequestModel = {
     isPinned: boolean;
+};
+
+export type PrivacySettingsRequestModel = {
+    version: number;
+    insights?: boolean | null;
+};
+
+export type PrivacySettingsResponseModel = {
+    version: number;
+    insights: boolean;
+    locks: Array<SettingsLockResponseModel>;
 };
 
 export type ProblemDetails = {
@@ -4524,6 +4606,122 @@ export type FormSearchFieldsResponses = {
 
 export type FormSearchFieldsResponse = FormSearchFieldsResponses[keyof FormSearchFieldsResponses];
 
+export type InsightReportData = {
+    body?: never;
+    path: {
+        key: string;
+    };
+    query?: {
+        from?: string;
+        to?: string;
+        groupBy?: string;
+        compareFrom?: string;
+        compareTo?: string;
+    };
+    url: '/umbraco/jfb/management/api/v1/form/{key}/insights';
+};
+
+export type InsightReportErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type InsightReportError = InsightReportErrors[keyof InsightReportErrors];
+
+export type InsightReportResponses = {
+    /**
+     * OK
+     */
+    200: InsightReportResponseModel;
+};
+
+export type InsightReportResponse = InsightReportResponses[keyof InsightReportResponses];
+
+export type InsightGlanceData = {
+    body?: never;
+    path?: never;
+    query?: {
+        from?: string;
+        to?: string;
+        compareFrom?: string;
+        compareTo?: string;
+    };
+    url: '/umbraco/jfb/management/api/v1/insights/glance';
+};
+
+export type InsightGlanceErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+};
+
+export type InsightGlanceError = InsightGlanceErrors[keyof InsightGlanceErrors];
+
+export type InsightGlanceResponses = {
+    /**
+     * OK
+     */
+    200: InsightGlanceResponseModel;
+};
+
+export type InsightGlanceResponse = InsightGlanceResponses[keyof InsightGlanceResponses];
+
+export type InsightTablesData = {
+    body?: InsightTablesRequestModel;
+    path?: never;
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/insights/tables';
+};
+
+export type InsightTablesErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+};
+
+export type InsightTablesError = InsightTablesErrors[keyof InsightTablesErrors];
+
+export type InsightTablesResponses = {
+    /**
+     * OK
+     */
+    200: InsightTablesResponseModel;
+};
+
+export type InsightTablesResponse = InsightTablesResponses[keyof InsightTablesResponses];
+
 export type LibraryListItemsData = {
     body?: never;
     path?: never;
@@ -4982,6 +5180,70 @@ export type GeneralSettingsSaveResponses = {
 };
 
 export type GeneralSettingsSaveResponse = GeneralSettingsSaveResponses[keyof GeneralSettingsSaveResponses];
+
+export type PrivacySettingsGetData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/settings/privacy';
+};
+
+export type PrivacySettingsGetErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+};
+
+export type PrivacySettingsGetResponses = {
+    /**
+     * OK
+     */
+    200: PrivacySettingsResponseModel;
+};
+
+export type PrivacySettingsGetResponse = PrivacySettingsGetResponses[keyof PrivacySettingsGetResponses];
+
+export type PrivacySettingsSaveData = {
+    body?: PrivacySettingsRequestModel;
+    path?: never;
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/settings/privacy';
+};
+
+export type PrivacySettingsSaveErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+};
+
+export type PrivacySettingsSaveError = PrivacySettingsSaveErrors[keyof PrivacySettingsSaveErrors];
+
+export type PrivacySettingsSaveResponses = {
+    /**
+     * OK
+     */
+    200: PrivacySettingsResponseModel;
+};
+
+export type PrivacySettingsSaveResponse = PrivacySettingsSaveResponses[keyof PrivacySettingsSaveResponses];
 
 export type MePermissionsData = {
     body?: never;

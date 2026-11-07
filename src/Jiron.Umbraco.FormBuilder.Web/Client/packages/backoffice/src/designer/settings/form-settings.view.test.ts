@@ -85,6 +85,7 @@ const CHOICES: FormSettingsChoicesResponseModel = {
     requiredMarker: 'optional',
     theme: 'default',
     emailLayout: CARD,
+    insights: true,
   },
   themes: [
     { alias: 'default', label: 'Default' },
@@ -818,7 +819,7 @@ describe('a read that fails', () => {
     must(root.querySelector<HTMLElement>('[role="alert"] uui-button'), 'Try again').click();
     await settle(view);
     expect(server.asked).toBe(2);
-    expect(root.querySelectorAll('.group')).toHaveLength(6);
+    expect(root.querySelectorAll('.group')).toHaveLength(7);
   });
 });
 

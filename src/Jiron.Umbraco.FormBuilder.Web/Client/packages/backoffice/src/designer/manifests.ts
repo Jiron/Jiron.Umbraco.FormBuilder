@@ -47,7 +47,7 @@ const VIEWS: readonly { id: string; icon: string; anyOf: string[]; element?: Vie
     element: () => import('./actions/form-actions.view'),
   },
   { id: 'entries', icon: 'icon-inbox', anyOf: ['viewEntries'], element: () => import('./entries/entries.view') },
-  { id: 'insights', icon: 'icon-chart', anyOf: ['viewEntries'] },
+  { id: 'insights', icon: 'icon-chart', anyOf: ['viewEntries'], element: () => import('./insights/insights.view') },
   { id: 'history', icon: 'icon-history', anyOf: ['design'], element: () => import('./history/form-history.view') },
 ];
 

@@ -9,8 +9,16 @@ import { without } from '../inspector/setting-values';
 import { kindOf, outcomesOf, type DesignOutcome } from './outcome-model';
 import { isInstant } from './time-zone';
 
-/** The view's groups in their order (IA 5.2); Privacy comes with 11.5. After sending holds the outcomes (ADR-0185). */
-export const GROUPS = ['submission', 'after', 'availability', 'protection', 'appearance', 'developer'] as const;
+/** The view's groups in their order (IA 5.2). After sending holds the outcomes (ADR-0185); Privacy so far its insights (ADR-0211). */
+export const GROUPS = [
+  'submission',
+  'after',
+  'availability',
+  'protection',
+  'privacy',
+  'appearance',
+  'developer',
+] as const;
 export type GroupId = (typeof GROUPS)[number];
 
 type Json = Readonly<Record<string, unknown>>;
@@ -19,7 +27,7 @@ const isObject = (value: unknown): value is Json =>
   value !== null && typeof value === 'object' && !Array.isArray(value);
 
 /** A group of the definition's settings as stored; empty where the definition has none. */
-export function groupOf(definition: DesignDefinition, group: Exclude<GroupId, 'after'> | 'privacy'): Json {
+export function groupOf(definition: DesignDefinition, group: Exclude<GroupId, 'after'>): Json {
   const settings = definition['settings'];
   const value = isObject(settings) ? settings[group] : undefined;
   return isObject(value) ? value : {};
@@ -171,6 +179,8 @@ export function anchorOf(path: string): Anchor | null {
       const box = own(APPEARANCE, name);
       return box ? at('appearance', [box]) : null;
     }
+    case 'privacy':
+      return name === 'insights' ? at('privacy', ['insights']) : null;
     case 'developer': {
       const box = own(DEVELOPER, name);
       return box ? at('developer', [box]) : null;
@@ -358,6 +368,18 @@ export function summaryOf(
       if (rules !== 'inherit') parts.push(term(`summary_content_${rules}`));
       break;
     }
+    case 'privacy':
+      // A form counts only while the site does too; the line says what visitors' pages do (ADR-0211).
+      parts.push(
+        term(
+          flagIn(groupOf(definition, 'privacy'), 'insights', true)
+            ? choices.defaults.insights
+              ? 'summary_insightsOn'
+              : 'summary_insightsSiteOff'
+            : 'summary_insightsOff',
+        ),
+      );
+      break;
     case 'appearance': {
       const appearance = groupOf(definition, 'appearance');
       const theme = lineIn(appearance, 'theme');

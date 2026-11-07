@@ -33,6 +33,8 @@ public sealed class PermissionMatrixTests : ManagementApiTestBase
         ["GET setup/checklist"] = (FormBuilderPermissions.None, FormBuilderAccessResourceKind.Global, null),
         ["GET setup/health"] = (FormBuilderPermissions.None, FormBuilderAccessResourceKind.Global, null),
         ["GET entry/recent"] = (FormBuilderPermissions.None, FormBuilderAccessResourceKind.Global, null),
+        ["GET insights/glance"] = (FormBuilderPermissions.None, FormBuilderAccessResourceKind.Global, null),
+        ["PUT insights/tables"] = (FormBuilderPermissions.None, FormBuilderAccessResourceKind.Global, null),
         ["GET tree/root"] = (FormBuilderPermissions.None, FormBuilderAccessResourceKind.Global, null),
         ["GET tree/children"] = (FormBuilderPermissions.None, FormBuilderAccessResourceKind.Folder, "parentKey"),
         ["GET folder/{key}"] = (FormBuilderPermissions.None, FormBuilderAccessResourceKind.Folder, "key"),
@@ -72,6 +74,7 @@ public sealed class PermissionMatrixTests : ManagementApiTestBase
         ["GET form/{key}/files/{fileKey}"] = (FormBuilderPermissions.ViewEntries, FormBuilderAccessResourceKind.Form, "key"),
         ["GET form/{key}/files/archive"] = (FormBuilderPermissions.Export, FormBuilderAccessResourceKind.Form, "key"),
         ["GET form/{key}/entries/export"] = (FormBuilderPermissions.Export, FormBuilderAccessResourceKind.Form, "key"),
+        ["GET form/{key}/insights"] = (FormBuilderPermissions.ViewEntries, FormBuilderAccessResourceKind.Form, "key"),
         ["POST form/{key}/entries/export/plan"] = (FormBuilderPermissions.Export, FormBuilderAccessResourceKind.Form, "key"),
         ["POST form/{key}/entries/export/file"] = (FormBuilderPermissions.Export, FormBuilderAccessResourceKind.Form, "key"),
         ["POST form/{key}/entries/export/jobs"] = (FormBuilderPermissions.Export, FormBuilderAccessResourceKind.Form, "key"),
@@ -139,6 +142,8 @@ public sealed class PermissionMatrixTests : ManagementApiTestBase
         ["POST email/test"] = (FormBuilderPermissions.ManageSettings, FormBuilderAccessResourceKind.Global, null),
         ["GET settings/general"] = (FormBuilderPermissions.ManageSettings, FormBuilderAccessResourceKind.Global, null),
         ["PUT settings/general"] = (FormBuilderPermissions.ManageSettings, FormBuilderAccessResourceKind.Global, null),
+        ["GET settings/privacy"] = (FormBuilderPermissions.ManageSettings, FormBuilderAccessResourceKind.Global, null),
+        ["PUT settings/privacy"] = (FormBuilderPermissions.ManageSettings, FormBuilderAccessResourceKind.Global, null),
     };
 
     /// <summary>

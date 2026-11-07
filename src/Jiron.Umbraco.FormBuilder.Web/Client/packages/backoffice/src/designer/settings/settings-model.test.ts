@@ -61,6 +61,7 @@ const CHOICES: FormSettingsChoicesResponseModel = {
     requiredMarker: 'optional',
     theme: 'default',
     emailLayout: CARD,
+    insights: true,
   },
   themes: [
     { alias: 'default', label: 'Default' },
@@ -146,6 +147,7 @@ describe('where a path is in the view', () => {
         { group: 'protection', more: false, boxes: [captchaBox('threshold'), 'protection'] },
       ],
       ['$.settings.protection.contentRules', { group: 'protection', more: false, boxes: ['content-rules'] }],
+      ['$.settings.privacy.insights', { group: 'privacy', more: false, boxes: ['insights'] }],
       ['$.settings.appearance.theme', { group: 'appearance', more: false, boxes: ['theme'] }],
       ['$.settings.developer.contextValues[0]', { group: 'developer', more: false, boxes: ['context-values'] }],
     ];
@@ -286,6 +288,13 @@ describe("a closed group's line", () => {
     let own = withSettingAt(DEFINITION, ['appearance', 'theme'], 'brand');
     own = withSettingAt(own, ['appearance', 'requiredMarker'], 'none');
     expect(line(own, 'appearance')).toEqual(['summary_theme(Brand)', 'summary_marker_none']);
+  });
+
+  it("says whether the form counts what visitors do with it, and when the site's switch is off", () => {
+    expect(line(DEFINITION, 'privacy')).toEqual(['summary_insightsOn']);
+    expect(line(withSettingAt(DEFINITION, ['privacy', 'insights'], false), 'privacy')).toEqual(['summary_insightsOff']);
+    const siteOff = { ...CHOICES, defaults: { ...CHOICES.defaults, insights: false } };
+    expect(line(DEFINITION, 'privacy', siteOff)).toEqual(['summary_insightsSiteOff']);
   });
 
   it('says whether headless sites may read it, and the values it takes', () => {

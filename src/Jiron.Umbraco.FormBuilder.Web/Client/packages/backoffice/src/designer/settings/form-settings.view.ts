@@ -1431,6 +1431,17 @@ export class FormSettingsViewElement extends UmbLitElement {
     `;
   }
 
+  // Privacy (ADR-0211): so far the form's own insights, which count only while the site's are on too.
+  #privacy(definition: DesignDefinition, choices: FormSettingsChoicesResponseModel): TemplateResult {
+    return this.#switch(
+      'insights',
+      this.#term('insights'),
+      choices.defaults.insights ? this.#term('insightsHelp') : this.#term('insightsSiteOff'),
+      flagIn(groupOf(definition, 'privacy'), 'insights', true),
+      (on) => this.#set(['privacy', 'insights'], on, this.#term('insights')),
+    );
+  }
+
   #developer(definition: DesignDefinition, choices: FormSettingsChoicesResponseModel): TemplateResult {
     const developer = groupOf(definition, 'developer');
     return html`
@@ -1682,6 +1693,8 @@ export class FormSettingsViewElement extends UmbLitElement {
         return this.#availability(definition, choices, look);
       case 'protection':
         return this.#protection(definition, choices, providers);
+      case 'privacy':
+        return this.#privacy(definition, choices);
       case 'appearance':
         return this.#appearance(definition, choices);
       case 'developer':

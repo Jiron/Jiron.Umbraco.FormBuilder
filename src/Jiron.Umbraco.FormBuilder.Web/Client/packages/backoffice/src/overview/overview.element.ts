@@ -1,5 +1,5 @@
 // The Forms section's start page (docs/ux/information-architecture.md, section 2): the setup checklist until it is complete, the
-// site's health, and the newest entries for a user who may view them. It is for reading, so it has no primary action and no
+// site's health, and the newest entries and the forms at a glance for a user who may view them. It is for reading, so it has no primary action and no
 // title: the top bar and the sidebar header already name the section. Each block loads and fails on its own, and says so in
 // place. While the migrations are pending the API refuses everything, so the page says that and why, and nothing else.
 import { css, html, nothing, type PropertyValues } from '@umbraco-cms/backoffice/external/lit';
@@ -281,7 +281,11 @@ export class OverviewElement extends UmbLitElement {
     const permissions = await myPermissions(this);
     this._global = permissions?.global;
     this._viewsEntries = permissions?.anywhere.includes('viewEntries') ?? false;
-    if (this._viewsEntries) void this.#loadRecent();
+    if (this._viewsEntries) {
+      void this.#loadRecent();
+      // Forms at a glance loads with its own words, not with the backoffice's start (ADR-0211).
+      void import('../insights/insight-glance.element');
+    }
   }
 
   async #loadChecklist() {
@@ -548,7 +552,9 @@ export class OverviewElement extends UmbLitElement {
       return html`<uui-box><p role="alert">${this.localize.term('jfbOverview_paused')}</p></uui-box>`;
     }
 
-    return html`${this.#renderChecklist()}${this.#renderHealth()}${this.#renderRecent()}`;
+    return html`${this.#renderChecklist()}${this.#renderHealth()}${this.#renderRecent()}${
+      this._viewsEntries ? html`<jfb-insight-glance></jfb-insight-glance>` : nothing
+    }`;
   }
 }
 

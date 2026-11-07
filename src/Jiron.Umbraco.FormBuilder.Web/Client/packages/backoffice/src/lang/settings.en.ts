@@ -19,6 +19,7 @@ export default {
     group_submission: 'Submission',
     group_availability: 'Availability',
     group_protection: 'Spam protection',
+    group_privacy: 'Privacy',
     group_appearance: 'Appearance',
     group_developer: 'Developer',
     group_after: 'After sending',
@@ -187,6 +188,11 @@ export default {
 
     headless: 'Headless access',
     headlessHelp: "A headless site can read the form's definition from the public API.",
+    insights: 'Count what visitors do with this form',
+    insightsHelp:
+      'Views, starts, the pages they reach and the fields that stop them, for its Insights view. No answer and no visitor is counted.',
+    insightsSiteOff:
+      'Insights are off for the whole site, so this form counts nothing. An administrator can turn them on in Privacy › Data collection.',
     queryValues: 'Query values',
     queryValuesHelp: "The address's query values the form may read, for prefill and rules. One name per line.",
     contextValues: 'Context values',
@@ -217,6 +223,9 @@ export default {
     summary_marker_none: 'No marks',
     summary_headlessOn: 'Headless access on',
     summary_headlessOff: 'Headless access off',
+    summary_insightsOn: 'Insights on',
+    summary_insightsOff: 'Insights off',
+    summary_insightsSiteOff: 'Insights off for the whole site',
     summary_queryValues: (number: number) => count(number, 'query value', 'query values'),
     summary_contextValues: (number: number) => count(number, 'context value', 'context values'),
     summary_outcome_message: 'A message',

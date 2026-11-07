@@ -78,6 +78,7 @@ internal sealed class FormSettingsController(
         var general = (await settings.GetAsync<GeneralSettings>(cancellationToken: cancellationToken)).Value;
         var protection = (await settings.GetAsync<ProtectionSettings>(cancellationToken: cancellationToken)).Value;
         var email = (await settings.GetAsync<EmailSettings>(cancellationToken: cancellationToken)).Value;
+        var privacy = (await settings.GetAsync<PrivacySettings>(cancellationToken: cancellationToken)).Value;
         var stored = await AllAsync((page, token) => library.ListAsync(null, page, token), cancellationToken);
         var storedLayouts = await AllAsync((page, token) => layouts.ListAsync(null, page, token), cancellationToken);
 
@@ -98,6 +99,7 @@ internal sealed class FormSettingsController(
                 SubmitLabel = general.SubmitLabel,
                 NextLabel = general.NextLabel,
                 BackLabel = general.BackLabel,
+                Insights = privacy.Insights,
             },
             Themes =
             [
@@ -214,6 +216,9 @@ internal sealed record FormSettingsDefaultsResponseModel
 
     /// <summary>The site's label of the button to the page before, as <see cref="SubmitLabel"/>.</summary>
     public IReadOnlyDictionary<string, string>? BackLabel { get; init; }
+
+    /// <summary>Whether the site's insights are on (Privacy, Data collection, ADR-0211): a form counts only while they and its own are.</summary>
+    public required bool Insights { get; init; }
 }
 
 /// <summary>A theme a form may choose.</summary>

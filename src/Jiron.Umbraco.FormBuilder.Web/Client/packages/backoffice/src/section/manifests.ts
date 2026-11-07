@@ -27,6 +27,7 @@ const SCREENS: Readonly<Record<string, ScreenLoader>> = {
   inbox: () => import('../entries/inbox.screen'),
   spam: () => import('../entries/spam.screen'),
   general: () => import('../settings/general-settings.element'),
+  dataCollection: () => import('../settings/privacy-settings.element'),
   entry: () => import('../entries/entry.workspace'),
 };
 
