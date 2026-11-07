@@ -2805,7 +2805,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
 
 ### Phase 11: Entries, exports and insights
 
-- [ ] **11.1 Entries: the list, the entry panel, the inbox and Spam** (11.1, 11.2 and 11.3 in one, ADR-0197)
+- [x] **11.1 Entries: the list, the entry panel, the inbox and Spam** (11.1, 11.2 and 11.3 in one, ADR-0197) (2026-11-07, a387009)
   - **11.1 The entries list**:
     - **The table:** a collection table per form, a column chooser (saved per user in `jfbUserSetting`), server-side paging, "new" markers and mark-as-seen, and an action status ("3/3 delivered"). Each entry is named by its entry title (§4.3.4), or by its number when the form has none.
     - **Finding entries:** filters as chips (date presets and ranges, state, typed field filters), search and sort. A set of filters can be saved under a name (per user). A search shows its count exactly up to 1,000 and as "more than 1,000" beyond (ADR-0003).
