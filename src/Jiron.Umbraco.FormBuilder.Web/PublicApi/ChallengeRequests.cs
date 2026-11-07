@@ -18,7 +18,9 @@ namespace Jiron.Umbraco.FormBuilder.Web.PublicApi;
 /// <summary>
 /// What the challenge endpoint answers (ADR-0012, ADR-0138): a signed challenge and what cached markup cannot carry, the
 /// places left on the form's own options and the member values its rules use. A form for members gives one only to a
-/// member it admits, bound to that member, and never to a server key.
+/// member it admits, bound to that member, and never to a server key. The preview's challenge is for a test member, with
+/// no member, and asks no captcha and no puzzle: its ticket shows who asks, as a server key does, and a captcha's
+/// provider takes no opaque origin (ADR-0203).
 /// </summary>
 /// <param name="tokens">The challenges.</param>
 /// <param name="entries">The entries, whose counts say how many places are left.</param>
@@ -65,24 +67,25 @@ internal sealed class ChallengeRequests(ChallengeTokens tokens, IEntryRepository
             return FormBuilderPublicProblems.InvalidRequest([.. invalid]);
         }
 
+        var preview = PreviewRequest.Of(http) is not null;
         var members = http.RequestServices.GetRequiredService<FormMembers>();
-        var member = await members.KeyAsync();
+        var member = preview ? null : await members.KeyAsync();
         var definition = form.Definition;
         var forMembers = definition.Settings.Availability.Access != MemberAccess.Anyone;
-        if (forMembers && !await AdmitsAsync(http, definition.Settings.Availability))
+        if (forMembers && !preview && !await AdmitsAsync(http, definition.Settings.Availability))
         {
             return FormBuilderPublicProblems.MemberRequired();
         }
 
         // The level comes from the settings that protect the form, as a submission's does: only a server's own request skips the puzzle.
         var site = await protection.SettingsOfAsync(form.Form.Key, await pages.PageAsync(content), cancellationToken);
-        var proofBits = site.LevelOf(definition) == ProtectionLevel.ProofOfWork ? site.ProofBits : 0;
+        var proofBits = !preview && site.LevelOf(definition) == ProtectionLevel.ProofOfWork ? site.ProofBits : 0;
         var challenge = tokens.Issue(form.Form.Key, forMembers ? member : null, previous, proofBits);
         var model = new ChallengeResponseModel
         {
             Challenge = challenge,
             MinFillSeconds = FormChallenges.MinFillSeconds,
-            Captcha = Captcha(site.CaptchaOf(definition), site),
+            Captcha = preview ? null : Captcha(site.CaptchaOf(definition), site),
             ProofOfWork = proofBits == 0 ? null : new ChallengeProofResponseModel { Nonce = ProofOfWork.NonceOf(tokens.Read(challenge, form.Form.Key, TimeSpan.Zero)!), Bits = proofBits },
             Places = await PlacesAsync(form, cancellationToken),
             Member = member is null ? null : await MemberAsync(members, definition),

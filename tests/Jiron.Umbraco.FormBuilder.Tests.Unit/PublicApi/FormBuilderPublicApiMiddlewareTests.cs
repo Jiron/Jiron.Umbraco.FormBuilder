@@ -3,6 +3,7 @@ using Jiron.Umbraco.FormBuilder.Core.Configuration;
 using Jiron.Umbraco.FormBuilder.Testing.Time;
 using Jiron.Umbraco.FormBuilder.Tests.Unit.OptionLists;
 using Jiron.Umbraco.FormBuilder.Web.PublicApi;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.Extensions.Logging;
@@ -12,8 +13,8 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Unit.PublicApi;
 
 /// <summary>
 /// What every request to the public API meets (ADR-0012, ADR-0084), without a host: only below the base path, the
-/// headers every answer carries, the CORS answer for each kind of origin and method, and the answers to what ends a
-/// request early.
+/// headers every answer carries, the CORS answer for each kind of origin and method, the preview frame's ticket (ADR-0203),
+/// and the answers to what ends a request early.
 /// </summary>
 [TestFixture]
 public sealed class FormBuilderPublicApiMiddlewareTests
@@ -151,7 +152,6 @@ public sealed class FormBuilderPublicApiMiddlewareTests
     }
 
     [TestCase("https://evil.example", "403 origin_denied")]
-    [TestCase("null", "403 origin_denied")]
     [TestCase(Own, "passed")]
     [TestCase(null, "passed")]
     public async Task APreflight_FromAnyOtherOrigin_IsRefused_AndAnOptionsWithoutOne_IsNoPreflight(string? origin, string answer)
@@ -162,6 +162,83 @@ public sealed class FormBuilderPublicApiMiddlewareTests
         var (answered, passed) = await SendAsync(http);
 
         Assert.That(await AnswerAsync(answered, passed), Is.EqualTo(origin == Own ? "204" : answer));
+    }
+
+    [Test]
+    public async Task APreflight_FromThePreviewsOpaqueOrigin_MaySendItsTicket()
+    {
+        var http = Request("OPTIONS", "/jfb/api/v1/forms/contact/challenge", "null");
+        http.Request.Headers.AccessControlRequestMethod = "POST";
+
+        var (answered, passed) = await SendAsync(http);
+
+        var headers = answered.Response.Headers;
+        Assert.Multiple(() =>
+        {
+            Assert.That(passed, Is.False);
+            Assert.That(answered.Response.StatusCode, Is.EqualTo(StatusCodes.Status204NoContent));
+            Assert.That(headers.AccessControlAllowOrigin.ToString(), Is.EqualTo("null"));
+            Assert.That(headers.AccessControlAllowHeaders.ToString(), Is.EqualTo("Content-Type, Authorization"));
+            Assert.That(headers.AccessControlAllowMethods.ToString(), Is.EqualTo("GET, POST"));
+            Assert.That(headers.AccessControlAllowCredentials.ToString(), Is.Empty);
+        });
+    }
+
+    [Test]
+    public async Task ThePreviewsOpaqueOrigin_PassesWithATicketThatHolds_AndATicketThatDoesNot_IsRefusedWhateverTheOrigin()
+    {
+        var options = new FormBuilderOptions();
+        var clock = new TestTimeProvider();
+        var tickets = new PreviewTickets(new EphemeralDataProtectionProvider(), clock);
+        var middleware = new FormBuilderPublicApiMiddleware(new FormBuilderPublicApiPaths(Options.Create(options)), _logger, tickets: tickets, time: clock);
+        var form = Guid.NewGuid();
+        var ticket = tickets.Issue(form, 3).Value;
+
+        async Task<(DefaultHttpContext Http, string Answer, PreviewRequest? Preview)> SendAsync(string? origin, string? authorization, string method = "POST")
+        {
+            var http = Request(method, $"/jfb/api/v1/forms/{form}/challenge", origin);
+            if (authorization is not null)
+            {
+                http.Request.Headers.Authorization = authorization;
+            }
+
+            PreviewRequest? seen = null;
+            var passed = false;
+            await middleware.InvokeAsync(http, context =>
+            {
+                passed = true;
+                seen = PreviewRequest.Of(context);
+                return Task.CompletedTask;
+            });
+            return (http, await AnswerAsync(http, passed && http.Response.Body.Length == 0), seen);
+        }
+
+        var held = await SendAsync("null", "Jfb-Preview " + ticket);
+        var none = await SendAsync("null", null);
+        var noneRead = await SendAsync("null", null, "GET");
+        var forged = await SendAsync("null", "Jfb-Preview forged");
+        var ownForged = await SendAsync(Own, "Jfb-Preview forged");
+        var ownHeld = await SendAsync(Own, "Jfb-Preview " + ticket);
+        var elsewhere = await SendAsync("https://evil.example", "Jfb-Preview " + ticket);
+        clock.Advance(PreviewTickets.Lifetime);
+        var expired = await SendAsync("null", "Jfb-Preview " + ticket);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(held.Answer, Is.EqualTo("passed, allowed null"));
+            Assert.That(held.Preview, Is.EqualTo(new PreviewRequest(form, 3)), "the endpoints read the version it names");
+            Assert.That(held.Http.Response.Headers.AccessControlExposeHeaders.ToString(), Is.EqualTo("ETag, Retry-After"));
+            Assert.That(none.Answer, Is.EqualTo("403 origin_denied"), "the null origin without a ticket, as before");
+            Assert.That((noneRead.Answer, noneRead.Preview), Is.EqualTo(("passed", (PreviewRequest?)null)), "a read without a ticket runs without CORS headers, as before");
+            Assert.That(forged.Answer, Is.EqualTo("401 preview_ticket_invalid"));
+            Assert.That(forged.Http.Response.Headers.WWWAuthenticate.ToString(), Is.EqualTo(PreviewTickets.Scheme));
+            Assert.That(forged.Http.Response.Headers.AccessControlAllowOrigin.ToString(), Is.EqualTo("null"), "the frame may read why");
+            Assert.That(ownForged.Answer, Is.EqualTo("401 preview_ticket_invalid"), "whatever the origin");
+            Assert.That(ownForged.Http.Response.Headers.AccessControlAllowOrigin.ToString(), Is.Empty);
+            Assert.That((ownHeld.Answer, ownHeld.Preview), Is.EqualTo(("passed", (PreviewRequest?)new PreviewRequest(form, 3))));
+            Assert.That(expired.Answer, Is.EqualTo("401 preview_ticket_invalid"));
+            Assert.That(elsewhere.Answer, Is.EqualTo("403 origin_denied"), "a ticket that holds admits no other origin");
+        });
     }
 
     [Test]

@@ -18,6 +18,9 @@ internal sealed class WebsiteAssets
     /// <summary>The runtime's entry module.</summary>
     public const string Runtime = "runtime/jfb-runtime.js";
 
+    /// <summary>The preview script, which only the preview's document loads (ADR-0203).</summary>
+    public const string Preview = "preview/jfb-preview.js";
+
     /// <summary>The functional base rules every form loads, whatever its theme (ADR-0105).</summary>
     public const string BaseRules = "themes/base.css";
 

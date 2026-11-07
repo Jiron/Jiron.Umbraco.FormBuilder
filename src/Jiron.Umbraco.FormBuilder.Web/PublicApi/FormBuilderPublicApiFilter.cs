@@ -17,7 +17,9 @@ namespace Jiron.Umbraco.FormBuilder.Web.PublicApi;
 /// the server while it is read; and while Jiron Form Builder's migrations are pending, every action answers
 /// <c>503 migrations_pending</c> with <c>Retry-After</c> and touches no table (ADR-0033). An action without a
 /// declaration gets the strictest: no body and <see cref="DefaultTimeLimit"/>. An answer whose bytes the action built is
-/// written on the visitor's own token, past the time limit too (ADR-0193).
+/// written on the visitor's own token, past the time limit too (ADR-0193). A preview frame's request reaches only an
+/// action that takes it (<see cref="FormBuilderPreviewAttribute"/>), for the form its ticket names, and is otherwise
+/// answered <c>401 preview_ticket_invalid</c> (ADR-0203).
 /// </summary>
 /// <param name="migrations">Whether the migration plan has run.</param>
 /// <param name="time">The site's clock.</param>
@@ -36,6 +38,13 @@ internal sealed class FormBuilderPublicApiFilter(IFormBuilderMigrationState migr
         var metadata = context.ActionDescriptor.EndpointMetadata;
         var limit = metadata.OfType<FormBuilderTimeLimitAttribute>().FirstOrDefault()?.Limit ?? DefaultTimeLimit;
         var bodyLimit = metadata.OfType<FormBuilderBodyLimitAttribute>().FirstOrDefault()?.BytesFor(host) ?? 0;
+
+        if (PreviewRequest.Of(http) is { } preview && (!metadata.OfType<FormBuilderPreviewAttribute>().Any() || !NamesForm(context, preview.FormKey)))
+        {
+            http.Response.Headers.WWWAuthenticate = PreviewTickets.Scheme;
+            context.Result = FormBuilderPublicProblems.PreviewTicketInvalid();
+            return;
+        }
 
         if (TooLarge(http.Request, bodyLimit))
         {
@@ -98,6 +107,13 @@ internal sealed class FormBuilderPublicApiFilter(IFormBuilderMigrationState migr
 
         await next();
     }
+
+    // Whether the action's route names the form by its key, as the actions the preview uses do.
+    private static bool NamesForm(ResourceExecutingContext context, Guid form) =>
+        context.RouteData.Values.TryGetValue("key", out var value)
+        && value is string text
+        && Guid.TryParseExact(text, "D", out var key)
+        && key == form;
 
     // A declared length past the limit, or a body of any length for an action that takes none.
     private static bool TooLarge(HttpRequest request, long limit)

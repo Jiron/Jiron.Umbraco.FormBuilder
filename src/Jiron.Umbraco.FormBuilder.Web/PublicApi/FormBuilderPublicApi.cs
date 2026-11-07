@@ -37,6 +37,9 @@ internal static class FormBuilderPublicApi
 
     /// <summary>The extension of an operation in the document that gives its time limit in seconds.</summary>
     public const string TimeLimitExtension = "x-jfb-time-limit";
+
+    /// <summary>The extension of an operation in the document that takes the preview frame's requests (ADR-0203).</summary>
+    public const string PreviewExtension = "x-jfb-preview";
 }
 
 /// <summary>
@@ -146,6 +149,15 @@ internal sealed class FormBuilderBodyLimitAttribute : Attribute
 
 
 /// <summary>
+/// An action that takes the preview frame's requests (ADR-0203): with a ticket that holds for the form its route names
+/// by its key, it reads the version the ticket names, as though it were published, in place of the published one. Every
+/// other action answers a preview's request with <c>401 preview_ticket_invalid</c>. The document marks it with
+/// <see cref="FormBuilderPublicApi.PreviewExtension"/>.
+/// </summary>
+[AttributeUsage(AttributeTargets.Method, Inherited = false)]
+internal sealed class FormBuilderPreviewAttribute : Attribute;
+
+/// <summary>
 /// An action that reads its <c>multipart/form-data</c> body itself, as it streams (ADR-0087): a
 /// <c>challenge</c> part, then the <c>file</c> part. The document describes the body; the public API's form feature
 /// (<see cref="NoFormFeature"/>) keeps every other part of the site from reading or buffering it.
@@ -230,9 +242,9 @@ internal sealed class FormBuilderPublicDocument : IDocumentFilter
 
 /// <summary>
 /// Writes an operation's declarations into the document <c>jfb-public</c> as extensions, the body of an upload or of a
-/// JSON action, and the refusals the frame answers for every operation: <c>413 payload_too_large</c>,
-/// <c>429 rate_limited</c>, <c>500 server_error</c> and <c>504 timeout</c>, and <c>403 origin_denied</c> for one a browser on another origin
-/// may not send.
+/// JSON action, and the refusals the frame answers for every operation: <c>401 preview_ticket_invalid</c>,
+/// <c>413 payload_too_large</c>, <c>429 rate_limited</c>, <c>500 server_error</c> and <c>504 timeout</c>, and
+/// <c>403 origin_denied</c> for one a browser on another origin may not send.
 /// </summary>
 /// <param name="host">The host's limits for files, which give the largest upload.</param>
 internal sealed class FormBuilderPublicDeclarations(FieldHostLimits host) : IOperationFilter
@@ -281,6 +293,12 @@ internal sealed class FormBuilderPublicDeclarations(FieldHostLimits host) : IOpe
             operation.Extensions[FormBuilderPublicApi.TimeLimitExtension] = new JsonNodeExtension(JsonValue.Create((int)time.Limit.TotalSeconds));
         }
 
+        var preview = method.GetCustomAttributes(typeof(FormBuilderPreviewAttribute), false).Length > 0;
+        if (preview)
+        {
+            operation.Extensions[FormBuilderPublicApi.PreviewExtension] = new JsonNodeExtension(JsonValue.Create(true));
+        }
+
         var problem = context.SchemaGenerator.GenerateSchema(typeof(ProblemDetails), context.SchemaRepository);
         operation.Responses ??= [];
         if (!HttpMethods.IsGet(context.ApiDescription.HttpMethod ?? string.Empty) && !HttpMethods.IsHead(context.ApiDescription.HttpMethod ?? string.Empty))
@@ -288,6 +306,9 @@ internal sealed class FormBuilderPublicDeclarations(FieldHostLimits host) : IOpe
             Refusal(operation.Responses, problem, StatusCodes.Status403Forbidden, "Forbidden", "a browser on an origin the site does not allow sent it (origin_denied).");
         }
 
+        Refusal(operation.Responses, problem, StatusCodes.Status401Unauthorized, "Unauthorized", preview
+            ? "the preview frame's ticket (Authorization: Jfb-Preview) does not hold for this form (preview_ticket_invalid)."
+            : "a preview frame sent it, which this endpoint does not take (preview_ticket_invalid).");
         Refusal(operation.Responses, problem, StatusCodes.Status413PayloadTooLarge, "Payload Too Large", "the body is longer than the endpoint takes (payload_too_large).");
         Refusal(operation.Responses, problem, StatusCodes.Status429TooManyRequests, "Too Many Requests", "a rate limit is reached; Retry-After says when to send again (rate_limited).");
         Refusal(operation.Responses, problem, StatusCodes.Status500InternalServerError, "Internal Server Error", "something failed unexpectedly (server_error).");

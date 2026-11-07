@@ -44,6 +44,7 @@ namespace Jiron.Umbraco.FormBuilder.Web.Rendering;
 /// <param name="Member">The key of the member signed in, for a form that takes values from the member (ADR-0124); null otherwise.</param>
 /// <param name="Redirect">The placement's page after a send (ADR-0129), which the route token carries; null for the outcome.</param>
 /// <param name="Content">The page the form is on, whose site's settings apply to a send (ADR-0120); null outside a page.</param>
+/// <param name="Preview">Whether the preview renders it (ADR-0203): the form and its buttons have no address to post to.</param>
 internal sealed record FormRender(
     HttpContext HttpContext,
     CachedForm Form,
@@ -56,7 +57,8 @@ internal sealed record FormRender(
     string? Page = null,
     Guid? Member = null,
     Guid? Redirect = null,
-    Guid? Content = null)
+    Guid? Content = null,
+    bool Preview = false)
 {
     /// <summary>What the server prefills (ADR-0124), worked out as the form's page is built.</summary>
     public FormPrefill Prefill { get; init; } = FormPrefill.None;
@@ -156,7 +158,7 @@ internal sealed partial class FormModels(
             culture.TextInfo.IsRightToLeft ? "rtl" : "ltr",
             Classes("jfb-form", "jfb-theme-" + render.Theme.Name, render.Theme.Classes.GetValueOrDefault(FormBuilderThemeSlots.Form), render.Shown.Form.Settings.CssClass),
             display,
-            (path.Length == 0 ? "/" : path) + (HoldsFile(form.Definition) ? "?" + FormPostFields.PostMarker + "=" + form.Form.Key.ToString("D") + "." + render.Instance : string.Empty) + "#" + render.Instance,
+            render.Preview ? null : (path.Length == 0 ? "/" : path) + (HoldsFile(form.Definition) ? "?" + FormPostFields.PostMarker + "=" + form.Form.Key.ToString("D") + "." + render.Instance : string.Empty) + "#" + render.Instance,
             HoldsFile(form.Definition) ? Multipart : null,
             (request.PathBase + new PathString(paths.Root)).ToUriComponent(),
             // Only a form on show reads it, and a notice or an outcome must not give away what a visitor it does not admit may not see (ADR-0150).
@@ -1001,7 +1003,7 @@ internal sealed partial class FormModels(
         string Direction,
         string CssClass,
         FormDisplay Display,
-        string Action,
+        string? Action,
         string? EncodingType,
         string ApiBase,
         IHtmlContent ModelData,
@@ -1009,7 +1011,7 @@ internal sealed partial class FormModels(
         ThemeClassesModel Classes)
     {
         // The form's address opening at another element of the page than the form (ADR-0101).
-        public string At(string id) => Action[..(Action.LastIndexOf('#') + 1)] + id;
+        public string? At(string id) => Action is null ? null : Action[..(Action.LastIndexOf('#') + 1)] + id;
 
         public FormViewModel Model(
             IReadOnlyList<PageViewModel>? pages = null,

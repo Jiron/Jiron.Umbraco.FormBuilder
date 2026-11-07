@@ -19,6 +19,12 @@ internal sealed record SubmissionRequest
     /// <summary>The form's key.</summary>
     public required Guid Form { get; init; }
 
+    /// <summary>
+    /// The version of the form a preview ticket names (ADR-0203), which the request meets as though it were published,
+    /// a form for members as for a test member it admits, with no member; null for a visitor's request.
+    /// </summary>
+    public int? Preview { get; init; }
+
     /// <summary>The public revision the visitor's page showed (ADR-0002).</summary>
     public required int Revision { get; init; }
 

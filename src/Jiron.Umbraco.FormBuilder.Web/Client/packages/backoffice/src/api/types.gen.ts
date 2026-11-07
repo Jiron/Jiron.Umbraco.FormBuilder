@@ -469,6 +469,23 @@ export type FormImportedResponseModel = {
     notes: Array<ImportNoteResponseModel>;
 };
 
+export type FormPreviewResponseModel = {
+    document: string;
+    version: number;
+    culture: string;
+    darkScheme: boolean;
+    lifetimeSeconds: number;
+};
+
+export type FormPreviewTicketRequestModel = {
+    version: number;
+};
+
+export type FormPreviewTicketResponseModel = {
+    ticket: string;
+    lifetimeSeconds: number;
+};
+
 export type FormReferencesResponseModel = {
     total: number;
     items: Array<FormDocumentReferenceResponseModel>;
@@ -1802,6 +1819,83 @@ export type FormCheckCheckResponses = {
 };
 
 export type FormCheckCheckResponse = FormCheckCheckResponses[keyof FormCheckCheckResponses];
+
+export type FormPreviewRenderData = {
+    body?: never;
+    path: {
+        key: string;
+    };
+    query?: {
+        culture?: string;
+        dark?: boolean;
+    };
+    url: '/umbraco/jfb/management/api/v1/form/{key}/preview';
+};
+
+export type FormPreviewRenderErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+};
+
+export type FormPreviewRenderError = FormPreviewRenderErrors[keyof FormPreviewRenderErrors];
+
+export type FormPreviewRenderResponses = {
+    /**
+     * OK
+     */
+    200: FormPreviewResponseModel;
+};
+
+export type FormPreviewRenderResponse = FormPreviewRenderResponses[keyof FormPreviewRenderResponses];
+
+export type FormPreviewTicketData = {
+    body?: FormPreviewTicketRequestModel;
+    path: {
+        key: string;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/form/{key}/preview/ticket';
+};
+
+export type FormPreviewTicketErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type FormPreviewTicketError = FormPreviewTicketErrors[keyof FormPreviewTicketErrors];
+
+export type FormPreviewTicketResponses = {
+    /**
+     * OK
+     */
+    200: FormPreviewTicketResponseModel;
+};
+
+export type FormPreviewTicketResponse = FormPreviewTicketResponses[keyof FormPreviewTicketResponses];
 
 export type CaptchaProviderListData = {
     body?: never;

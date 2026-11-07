@@ -213,9 +213,9 @@ public sealed class GridControlModel
 /// <param name="Id">The field's id on the first button, which the error summary links to; otherwise null.</param>
 /// <param name="Action">
 /// The address it posts to (<c>formaction</c>): the form's, with the option's place after the move as the fragment, so
-/// the page opens where the visitor pressed (ADR-0101).
+/// the page opens where the visitor pressed (ADR-0101); null in the preview, which never posts (ADR-0203).
 /// </param>
-public sealed record RankingMoveModel(string Label, string Value, bool IsDisabled, string? Id, string Action);
+public sealed record RankingMoveModel(string Label, string Value, bool IsDisabled, string? Id, string? Action);
 
 /// <summary>One option of a ranking, in the order the visitor gave or the options' own.</summary>
 public sealed class RankingItemModel

@@ -35,6 +35,7 @@ export default {
     state_pending: 'Published (pending changes)',
     state_unpublished: 'Unpublished',
 
+    preview: 'Preview',
     saveDraft: 'Save draft',
     publish: 'Publish…',
     publishHeadline: (name: string) => `Publish ${name}?`,

@@ -52,8 +52,11 @@ public sealed class FormViewModel
     /// <summary>What the form shows.</summary>
     public required FormDisplay Display { get; init; }
 
-    /// <summary>The address the form posts to: the page's path below the path base, then the instance as the fragment.</summary>
-    public required string Action { get; init; }
+    /// <summary>
+    /// The address the form posts to: the page's path below the path base, then the instance as the fragment; null in the
+    /// preview, which never posts without JavaScript, so the runtime never falls back to a post (ADR-0203).
+    /// </summary>
+    public required string? Action { get; init; }
 
     /// <summary>The form's <c>enctype</c>: <c>multipart/form-data</c> for a form with a file field, otherwise null.</summary>
     public string? EncodingType { get; init; }

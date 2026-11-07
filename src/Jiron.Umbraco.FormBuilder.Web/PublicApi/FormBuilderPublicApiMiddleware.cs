@@ -18,6 +18,9 @@ namespace Jiron.Umbraco.FormBuilder.Web.PublicApi;
 /// and <c>Retry-After</c>; another origin's <c>GET</c> gets no CORS headers, so the browser hands it nothing, and its
 /// other requests <c>403 origin_denied</c> before anything runs, since a browser sends some posts without asking first.
 /// A request without an <c>Origin</c>, from a server or a page without JavaScript, passes;</item>
+/// <item>the preview frame's ticket (ADR-0203): the frame's opaque origin <c>null</c> gets <c>Content-Type</c> and
+/// <c>Authorization</c> in a preflight and passes with a ticket that holds, which makes the request the preview's; a
+/// ticket that does not hold answers <c>401 preview_ticket_invalid</c>, whatever the origin;</item>
 /// <item>the answers to what ends a request early: <c>504 timeout</c> when its time limit ran out, none when the visitor
 /// left, and <c>server_error</c>, logged without the request's values, for anything unexpected.</item>
 /// </list>
@@ -26,10 +29,14 @@ namespace Jiron.Umbraco.FormBuilder.Web.PublicApi;
 /// <param name="logger">Logs what went wrong unexpectedly.</param>
 /// <param name="serverKeys">The server keys a headless server signs with (ADR-0126); none in a test that leaves them out.</param>
 /// <param name="time">The clock that bounds the log of keys that match none; the system's in a test that leaves it out.</param>
-internal sealed partial class FormBuilderPublicApiMiddleware(FormBuilderPublicApiPaths paths, ILogger<FormBuilderPublicApiMiddleware> logger, ServerKeys? serverKeys = null, TimeProvider? time = null) : IMiddleware
+/// <param name="tickets">The preview's tickets; none in a test that leaves them out, where no ticket holds.</param>
+internal sealed partial class FormBuilderPublicApiMiddleware(FormBuilderPublicApiPaths paths, ILogger<FormBuilderPublicApiMiddleware> logger, ServerKeys? serverKeys = null, TimeProvider? time = null, PreviewTickets? tickets = null) : IMiddleware
 {
     /// <summary>How long a browser keeps a preflight's answer.</summary>
     public const int PreflightSeconds = 600;
+
+    /// <summary>The origin of a document without one, such as the preview's sandboxed frame.</summary>
+    public const string OpaqueOrigin = "null";
 
     // A key that matches none comes before any limit, so its warning is at most one a minute.
     private static readonly TimeSpan InvalidKeyLogEvery = TimeSpan.FromMinutes(1);
@@ -60,9 +67,30 @@ internal sealed partial class FormBuilderPublicApiMiddleware(FormBuilderPublicAp
             return;
         }
 
+        // The preview's ticket (ADR-0203): one that holds makes the request the preview's and admits the frame's origin;
+        // one that does not is refused, and the frame may read why.
+        PreviewTicket? preview = null;
+        if (PreviewTickets.Carries(request, out var sent))
+        {
+            preview = tickets?.Read(sent);
+            if (preview is null)
+            {
+                if (origin is { Opaque: true })
+                {
+                    response.Headers.AccessControlAllowOrigin = OpaqueOrigin;
+                }
+
+                response.Headers.WWWAuthenticate = PreviewTickets.Scheme;
+                await FormBuilderPublicProblems.PreviewTicketInvalid().WriteAsync(context);
+                return;
+            }
+
+            context.Features.Set(new PreviewRequest(preview.FormKey, preview.Version));
+        }
+
         if (origin is not null)
         {
-            if (origin.Allowed)
+            if (origin.Allowed || (origin.Opaque && preview is not null))
             {
                 if (!origin.Same)
                 {
@@ -113,11 +141,12 @@ internal sealed partial class FormBuilderPublicApiMiddleware(FormBuilderPublicAp
         }
     }
 
-    // A preflight answers itself: the allowed origins get what they may send, the others are refused.
+    // A preflight answers itself: the allowed origins get what they may send, the preview's frame its ticket's header too,
+    // as a preflight carries no ticket to read; the others are refused.
     private static async Task PreflightAsync(HttpContext context, RequestOrigin origin)
     {
         var response = context.Response;
-        if (!origin.Allowed)
+        if (!origin.Allowed && !origin.Opaque)
         {
             await FormBuilderPublicProblems.OriginDenied().WriteAsync(context);
             return;
@@ -126,7 +155,7 @@ internal sealed partial class FormBuilderPublicApiMiddleware(FormBuilderPublicAp
         response.StatusCode = StatusCodes.Status204NoContent;
         response.Headers.AccessControlAllowOrigin = origin.Value;
         response.Headers.AccessControlAllowMethods = "GET, POST";
-        response.Headers.AccessControlAllowHeaders = "Content-Type";
+        response.Headers.AccessControlAllowHeaders = origin.Opaque ? "Content-Type, Authorization" : "Content-Type";
         response.Headers.AccessControlMaxAge = PreflightSeconds.ToString(System.Globalization.CultureInfo.InvariantCulture);
     }
 
@@ -143,7 +172,7 @@ internal sealed partial class FormBuilderPublicApiMiddleware(FormBuilderPublicAp
         var sent = values.Count == 1 ? values[0] : null;
         if (PublicApiRules.Origin(sent) is not { } origin)
         {
-            return new RequestOrigin(sent ?? string.Empty, Same: false, Allowed: false);
+            return new RequestOrigin(sent ?? string.Empty, Same: false, Allowed: false, Opaque: string.Equals(sent, OpaqueOrigin, StringComparison.Ordinal));
         }
 
         // A proxy that ends TLS before the site hands it the site's own https pages' requests over http.
@@ -174,7 +203,7 @@ internal sealed partial class FormBuilderPublicApiMiddleware(FormBuilderPublicAp
     [LoggerMessage(Level = LogLevel.Warning, Message = "A request carried a server key that matches none; it got server_key_invalid. This is said at most once a minute.")]
     private static partial void LogServerKeyInvalid(ILogger logger);
 
-    private sealed record RequestOrigin(string Value, bool Same, bool Allowed);
+    private sealed record RequestOrigin(string Value, bool Same, bool Allowed, bool Opaque = false);
 }
 
 /// <summary>

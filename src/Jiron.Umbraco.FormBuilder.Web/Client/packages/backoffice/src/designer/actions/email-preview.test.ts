@@ -2,7 +2,7 @@
 // other scheme never applying, its links no stop of Tab and opening nothing; and the preview as the sidebar shows it:
 // who it comes from and goes to, its subject, the mail in a frame that runs nothing with its Light/Dark switch, a
 // plain-text mail's text, a view that is missing, settings that don't fit, and a preview that fails with Try again. The
-// preview's frame is the backoffice's only one, which axe leaves alone (ADR-0189).
+// preview's frame is one of the backoffice's two, which axe leaves alone, each with a check of its own (ADR-0189).
 import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, join, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -115,14 +115,18 @@ describe("an email action's preview", () => {
     expect(previewAnswer(undefined, 'not_found')).toBeUndefined();
   });
 
-  it("is the backoffice's one frame: axe leaves frames alone, so another needs a check of its own (ADR-0189)", () => {
+  it("is one of the backoffice's two frames: axe leaves frames alone, so each has a check of its own (ADR-0189)", () => {
     const src = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
     const framed = readdirSync(src, { recursive: true, encoding: 'utf8' })
       .filter((file) => !file.split(sep).some((part) => part.startsWith('.')))
       .filter((file) => file.endsWith('.ts') && !file.endsWith('.test.ts'))
       .filter((file) => readFileSync(join(src, file), 'utf8').includes('<iframe'))
       .map((file) => file.split(sep).join('/'));
-    expect(framed).toEqual(['designer/actions/email-preview.element.ts']);
+    // The mail's in a page of its own (form-email.spec.ts), and the visitor preview's in its frame (preview.spec.ts).
+    expect(framed).toEqual([
+      'designer/actions/email-preview.element.ts',
+      'designer/visitor-preview/preview.modal.element.ts',
+    ]);
   });
 
   it('shows the mail in the scheme its switch chooses, one pressed at a time', async () => {

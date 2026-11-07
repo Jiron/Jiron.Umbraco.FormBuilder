@@ -375,6 +375,18 @@ flowchart LR
   visitors get through `POST form/{key}/versions/{number}/compare`, or with the last published one for a form taken
   offline, and says it with `publishWords` (`change-words.ts`), History's parts in a few words; a form never published
   says what its first version holds, counted from the draft.
+  From 10.3e (ADR-0203): Preview in the footer (`visitor-preview/preview.action.ts`) saves what is not saved yet, as
+  Publish... does, and opens a full-screen sidebar (`preview.modal.element.ts`) that writes the document of
+  `GET form/{key}/preview?culture=&dark=` into a frame sandboxed without `allow-same-origin`. The server renders the
+  saved draft through the view component's service with a preview target (`FormPreviewDocuments`, `FormRendering`,
+  `PreviewForms`): the version as though it were published, for a test member, with no address to post to, titled
+  with the form's name, with the base rules, the theme's stylesheet, the preview script
+  (`/jfb/assets/preview/jfb-preview.js`) and the runtime. The preview script lends the frame's requests to the public
+  API the ticket of its meta element. `frame-host.ts` hands the frame's first loaded document a port of their own
+  (`@jfb/runtime/preview-protocol` holds what they say), over which the script asks for a new ticket and the host answers
+  from `POST form/{key}/preview/ticket`, only once the last one is about to run out, and turns the page light or dark;
+  the port closes as the frame goes on or the preview closes. The widths are the canvas's (`canvas/widths.ts`), and the
+  preview opens at the canvas's.
 
 ## 2. The definition model
 
@@ -701,7 +713,11 @@ codes, `no-store` except the form and the options, the OpenAPI document `jfb-pub
   site.
 - **Origins:** the same origin always, and an `https` origin on the host of a request that came over `http` (a proxy
   ended TLS); others only from `AllowedOrigins`. Another origin's requests other than `GET` and `HEAD`, and its
-  preflights, answer `403 origin_denied` before anything runs. The preview's opaque origin only with a preview ticket.
+  preflights, answer `403 origin_denied` before anything runs. The preview frame's opaque origin `null` gets
+  `Content-Type, Authorization` in a preflight and passes only with `Authorization: Jfb-Preview <ticket>` that holds
+  (`PreviewTickets`, `Jiron.FormBuilder.Preview.v1`, the form, the version, ten minutes); one that does not, or one sent
+  to an endpoint without `[FormBuilderPreview]` (the challenge, the options and the page check take it) or for another
+  form, answers `401 preview_ticket_invalid`. Those endpoints then read the version the ticket names (ADR-0203).
   A headless server signs with `Authorization: Jfb-Key <key>` against `PublicApi:ServerKeys` (names and SHA-256 hashes,
   compared in fixed time); a key that matches none answers `401 server_key_invalid`, a signed request counts in its
   key's partition, its entry records the key's name as `jfbServerKey`, and only that key gets its receipt; the keys

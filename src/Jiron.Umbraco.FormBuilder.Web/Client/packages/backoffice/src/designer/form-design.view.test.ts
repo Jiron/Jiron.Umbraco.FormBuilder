@@ -101,8 +101,9 @@ vi.mock('@umbraco-cms/backoffice/imaging', () => ({
   },
 }));
 
-const { badgeOf, FormDesignViewElement, isCrowded, isNarrow, mediaOf, OPTIONS_PAUSE, readWidth } =
+const { badgeOf, FormDesignViewElement, isCrowded, isNarrow, mediaOf, OPTIONS_PAUSE } =
   await import('./form-design.view');
+const { readWidth } = await import('./canvas/widths');
 const { INSPECTOR_REQUEST } = await import('./inspector/inspector.element');
 const { MOVE_TO_MODAL_ALIAS } = await import('./moves/move-to.modal.token');
 type ChangeTypeModalData = import('./change-type/change-type.modal.token').ChangeTypeModalData;

@@ -136,6 +136,20 @@
               }
             }
           },
+          "401": {
+            "description": "Unauthorized: a preview frame sent it, which this endpoint does not take (preview_ticket_invalid).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
           "429": {
             "description": "Too Many Requests: a rate limit is reached; Retry-After says when to send again (rate_limited).",
             "content": {
@@ -296,6 +310,20 @@
               }
             }
           },
+          "401": {
+            "description": "Unauthorized: the preview frame's ticket (Authorization: Jfb-Preview) does not hold for this form (preview_ticket_invalid).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
           "413": {
             "description": "Payload Too Large: the body is longer than the endpoint takes (payload_too_large).",
             "content": {
@@ -355,7 +383,8 @@
         },
         "x-jfb-rate-limit": "challenge",
         "x-jfb-body-limit": 16384,
-        "x-jfb-time-limit": 10
+        "x-jfb-time-limit": 10,
+        "x-jfb-preview": true
       }
     },
     "/jfb/api/v1/forms/{key}/drafts": {
@@ -415,7 +444,7 @@
             }
           },
           "401": {
-            "description": "Unauthorized",
+            "description": "Unauthorized; also when a preview frame sent it, which this endpoint does not take (preview_ticket_invalid).",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -673,6 +702,20 @@
               }
             }
           },
+          "401": {
+            "description": "Unauthorized: a preview frame sent it, which this endpoint does not take (preview_ticket_invalid).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
           "413": {
             "description": "Payload Too Large: the body is longer than the endpoint takes (payload_too_large).",
             "content": {
@@ -792,7 +835,7 @@
             }
           },
           "401": {
-            "description": "Unauthorized",
+            "description": "Unauthorized; also when a preview frame sent it, which this endpoint does not take (preview_ticket_invalid).",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1056,6 +1099,20 @@
               }
             }
           },
+          "401": {
+            "description": "Unauthorized: the preview frame's ticket (Authorization: Jfb-Preview) does not hold for this form (preview_ticket_invalid).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
           "413": {
             "description": "Payload Too Large: the body is longer than the endpoint takes (payload_too_large).",
             "content": {
@@ -1115,7 +1172,8 @@
         },
         "x-jfb-rate-limit": "read",
         "x-jfb-body-limit": 0,
-        "x-jfb-time-limit": 20
+        "x-jfb-time-limit": 20,
+        "x-jfb-preview": true
       }
     },
     "/jfb/api/v1/forms/{key}/receipt": {
@@ -1232,6 +1290,20 @@
           },
           "503": {
             "description": "Service Unavailable",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized: a preview frame sent it, which this endpoint does not take (preview_ticket_invalid).",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1402,6 +1474,20 @@
               }
             }
           },
+          "401": {
+            "description": "Unauthorized: a preview frame sent it, which this endpoint does not take (preview_ticket_invalid).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
           "413": {
             "description": "Payload Too Large: the body is longer than the endpoint takes (payload_too_large).",
             "content": {
@@ -1540,7 +1626,7 @@
             }
           },
           "401": {
-            "description": "Unauthorized",
+            "description": "Unauthorized; also when a preview frame sent it, which this endpoint does not take (preview_ticket_invalid).",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1717,7 +1803,7 @@
             }
           },
           "401": {
-            "description": "Unauthorized",
+            "description": "Unauthorized; also when the preview frame's ticket (Authorization: Jfb-Preview) does not hold for this form (preview_ticket_invalid).",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1873,7 +1959,8 @@
         },
         "x-jfb-rate-limit": "submit",
         "x-jfb-body-limit": 1048576,
-        "x-jfb-time-limit": 30
+        "x-jfb-time-limit": 30,
+        "x-jfb-preview": true
       }
     },
     "/jfb/api/v1/forms/{keyOrAlias}": {
@@ -1965,6 +2052,20 @@
           },
           "503": {
             "description": "Service Unavailable",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized: a preview frame sent it, which this endpoint does not take (preview_ticket_invalid).",
             "content": {
               "application/problem+json": {
                 "schema": {

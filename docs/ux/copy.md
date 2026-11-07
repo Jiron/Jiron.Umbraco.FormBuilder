@@ -150,7 +150,7 @@ One line that says where something stands, next to the thing it is about.
 | a content action's property, for who may only read it | Title: the answer to Headline · Title: a field that is gone | Title: die Antwort auf Headline · Title: ein Feld, das es nicht mehr gibt |
 | a picked field or layout the form or site no longer has | A field that is gone · A layout that is gone | Ein Feld, das es nicht mehr gibt · Ein Layout, das es nicht mehr gibt |
 | a picked field of another kind, which the picker shows while it is picked | Your name (no email field) · Topic (in a repeatable group) | Your name (kein E-Mail-Feld) · Topic (in einer wiederholbaren Gruppe) |
-| beside the canvas width switch, when the canvas has less room than the chosen width | Narrowed to fit | Schmaler als gewählt |
+| beside the canvas's and the preview's width switch, when there is less room than the chosen width | Narrowed to fit | Schmaler als gewählt |
 | above the permission matrix, for a user group without the section | Translators can't open Form Builder yet. Add the section to their user group | Übersetzer können Form Builder noch nicht öffnen. Bereich zu ihrer Benutzergruppe hinzufügen |
 | above the permission matrix, once, for the fixed Administrators column | Administrators hold every permission everywhere, because they could grant themselves any. | Die Gruppe Administratoren hat überall jede Berechtigung, weil ihre Mitglieder sich jede selbst geben könnten. |
 | a form's header, when no page picks it | Not used on any page | Auf keiner Seite verwendet |
@@ -197,6 +197,8 @@ Use Umbraco's own words where Umbraco has the same action, so the section feels 
 | keep the addresses typed in a box (Enter and leaving the box keep them too; its accessible name says what it adds to, apart from the sidebar's own Add: Add address · Adresse hinzufügen under Add recipient, Add to Copy to · Zu „Kopie an“ hinzufügen for another box) | Add | Hinzufügen |
 | take a recipient away (an icon button, named for it) | Remove sales@example.com · Remove the answer of Email address | sales@example.com entfernen · Die Antwort von „Email address“ entfernen |
 | show an email's preview in a colour scheme (two pressed buttons) | Light · Dark | Hell · Dunkel |
+| the preview's widths, named for screen readers, and its "…" | Width · More preview options | Breite · Weitere Vorschauoptionen |
+| in the preview's "…": the page's colour scheme, for a theme with the dark one, and the site's languages, each a group of pressed buttons | Colour scheme: Light · Dark · Language: English · German | Farbschema: Hell · Dunkel · Sprache: Englisch · Deutsch |
 | delete for good (asks first) | Delete… | Löschen… |
 | delete a designer element at once, with Undo in the toast | Delete rule · Delete outcome | Regel löschen · Abschluss löschen |
 | empty the Recycle Bin | Empty recycle bin… | Papierkorb leeren… |
@@ -331,6 +333,10 @@ useful action. One sentence, plus a button or link where there is one.
 | no insights yet | No data yet. Numbers appear after the first visit to a page with this form. | Noch keine Daten. Zahlen erscheinen nach dem ersten Besuch einer Seite mit diesem Formular. |
 | loading failed | Entries couldn't be loaded. [Try again] | Die Einträge konnten nicht geladen werden. [Erneut versuchen] |
 | an outcome's preview got no answer | The preview couldn't be shown. [Try again] | Die Vorschau konnte nicht angezeigt werden. [Erneut versuchen] |
+| the preview's headline, and its frame, named for screen readers | Preview of Contact us · The form as visitors see it | Vorschau von Contact us · Das Formular, wie Besucher es sehen |
+| the preview while the draft is rendered | Loading the preview… | Die Vorschau wird geladen… |
+| the preview got no answer | The preview couldn't be loaded. [Try again] | Die Vorschau konnte nicht geladen werden. [Erneut versuchen] |
+| the preview of a draft whose rules have errors, which it never runs | This draft's rules have errors, so it can't be shown as visitors would get it. The form check on the Design view lists them. | Die Regeln dieses Entwurfs haben Fehler, deshalb lässt er sich nicht so zeigen, wie Besucher ihn bekämen. Die Formularprüfung in der Ansicht „Gestaltung“ listet sie auf. |
 
 An empty value inside a table or panel reads "none" ("keine") or "no data" ("keine Daten"), never a dash (§4.13).
 

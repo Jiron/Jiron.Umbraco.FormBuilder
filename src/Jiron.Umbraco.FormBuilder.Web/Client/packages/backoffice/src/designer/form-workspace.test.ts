@@ -224,10 +224,10 @@ describe("the form workspace's manifests", () => {
       expect(view.conditions).toContainEqual({ alias: 'Umb.Condition.WorkspaceAlias', match: FORM_WORKSPACE_ALIAS });
   });
 
-  it('put Save draft and Publish... in the footer for who may design the form', () => {
+  it('put Preview, Save draft and Publish... in the footer for who may design the form', () => {
     const actions = all.filter((manifest) => manifest.type === 'workspaceAction');
-    expect(actions.map((action) => action.alias.split('.').at(-1))).toEqual(['SaveDraft', 'Publish']);
-    expect(actions.map(holding)).toEqual([['design'], ['design']]);
+    expect(actions.map((action) => action.alias.split('.').at(-1))).toEqual(['Preview', 'SaveDraft', 'Publish']);
+    expect(actions.map(holding)).toEqual([['design'], ['design'], ['design']]);
   });
 
   it('put Restore an earlier version... first in the form\'s "..." in the workspace, for who may design the form', () => {

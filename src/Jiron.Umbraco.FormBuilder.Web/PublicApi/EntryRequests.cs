@@ -70,9 +70,11 @@ internal sealed class EntryRequests(FormSubmissions submissions, UploadTokens to
             return refusal;
         }
 
+        // A preview's request meets the version its ticket names, with a test member who has no key (ADR-0203).
         var invalid = new List<string>();
+        var preview = PreviewRequest.Of(http);
         return EntryBodies.ReadPage(body.Bytes, formKey, invalid) is ({ } submission, var page)
-            ? Answer(await submissions.ValidateAsync(submission with { Tokens = tokens, Challenges = challenges, Address = http.Connection.RemoteIpAddress, Member = await MemberAsync(http), ServerKey = ServerKeyRequest.NameOf(http) }, page, cancellationToken))
+            ? Answer(await submissions.ValidateAsync(submission with { Preview = preview?.Version, Tokens = tokens, Challenges = challenges, Address = http.Connection.RemoteIpAddress, Member = preview is null ? await MemberAsync(http) : null, ServerKey = ServerKeyRequest.NameOf(http) }, page, cancellationToken))
             : FormBuilderPublicProblems.InvalidRequest([.. invalid]);
     }
 

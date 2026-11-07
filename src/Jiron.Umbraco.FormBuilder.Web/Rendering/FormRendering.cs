@@ -35,9 +35,11 @@ internal sealed record RenderedForm(string View, object Model, IFormBuilderTheme
 /// that is per visitor keeps its page out of every cache (ADR-0004, ADR-0104): one on a request other than <c>GET</c> or
 /// <c>HEAD</c> or that carries <c>jfb-sent</c>, a form for members for anyone, and while the migrations are pending any
 /// form for anyone. The form's theme is the placement's, else the form's own, else the site's default, else
-/// <c>default</c> (ADR-0105).
+/// <c>default</c> (ADR-0105). The preview renders the version its target names, as though it were published, for a test
+/// member it admits, with no member and no outcome of a send (ADR-0203).
 /// </summary>
 /// <param name="forms">The published forms.</param>
+/// <param name="previews">The versions the preview renders.</param>
 /// <param name="requests">What the form endpoint answers, which the model data is.</param>
 /// <param name="pages">The culture and the page.</param>
 /// <param name="migrations">Whether the migrations are pending.</param>
@@ -52,6 +54,7 @@ internal sealed record RenderedForm(string View, object Model, IFormBuilderTheme
 /// <param name="logger">Where a reference that names no form is logged.</param>
 internal sealed partial class FormRendering(
     PublishedFormCache forms,
+    PreviewForms previews,
     FormRequests requests,
     FormPages pages,
     IFormBuilderMigrationState migrations,
@@ -107,7 +110,9 @@ internal sealed partial class FormRendering(
             return await PendingAsync(httpContext, requested, cancellationToken);
         }
 
-        if (await requests.KeyOfAsync(reference, cancellationToken) is not { } formKey || await forms.GetAsync(formKey, cancellationToken) is not { } cached)
+        var preview = target?.Preview;
+        if (await requests.KeyOfAsync(reference, cancellationToken) is not { } formKey
+            || await (preview is { } version ? previews.GetAsync(formKey, version, cancellationToken) : forms.GetAsync(formKey, cancellationToken)) is not { } cached)
         {
             if (_missing.TryAdd(reference, true))
             {
@@ -121,7 +126,7 @@ internal sealed partial class FormRendering(
         var shown = await requests.ShowAsync(cached, culture, await pages.PageAsync(content), cancellationToken);
         var availability = cached.Published.Definition.Settings.Availability;
         MemberGate? gate = null;
-        if (availability.Access != MemberAccess.Anyone)
+        if (availability.Access != MemberAccess.Anyone && preview is null)
         {
             // Who is signed in decides what shows (ADR-0095).
             PageCaching.NoStore(httpContext);
@@ -129,11 +134,15 @@ internal sealed partial class FormRendering(
         }
 
         var instance = target?.Instance ?? FormInstances.Next(httpContext);
-        await SentAsync(httpContext, formKey, instance, culture, cancellationToken);
+        if (preview is null)
+        {
+            await SentAsync(httpContext, formKey, instance, culture, cancellationToken);
+        }
 
         // A form that takes values from the member renders them for the member signed in, so their page is theirs (ADR-0124).
         Guid? member = null;
-        if (FormModels.TakesFromMember(cached.Published.Definition)
+        if (preview is null
+            && FormModels.TakesFromMember(cached.Published.Definition)
             && await httpContext.RequestServices.GetRequiredService<FormMembers>().KeyAsync() is { } signedIn)
         {
             PageCaching.NoStore(httpContext);
@@ -142,7 +151,7 @@ internal sealed partial class FormRendering(
 
         // The picker's theme and page after a send are the placement's (ADR-0129); the render endpoint names its own theme.
         var formTheme = themes.Resolve(target is null ? theme ?? picked?.Theme : target.Theme, shown.Form.Settings.Theme);
-        var (view, model) = await models.BuildAsync(new FormRender(httpContext, cached, shown, culture, instance, context ?? new Dictionary<string, string?>(), formTheme, gate, target?.Page, member, target is null ? picked?.Redirect : target.Redirect, content), cancellationToken);
+        var (view, model) = await models.BuildAsync(new FormRender(httpContext, cached, shown, culture, instance, context ?? new Dictionary<string, string?>(), formTheme, gate, target?.Page, member, target is null ? picked?.Redirect : target.Redirect, content, Preview: preview is not null), cancellationToken);
         return new RenderedForm(view, model, formTheme);
     }
 

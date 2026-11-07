@@ -305,6 +305,18 @@ describe('the dictionaries', () => {
     expect(termsOf(en).filter((term) => term.startsWith('jfbCheck_'))).toEqual([...used].sort());
   });
 
+  it("hold the preview's keys that its code uses, and no other in that area (ADR-0203)", () => {
+    const folder = join(dirname(fileURLToPath(import.meta.url)), '..', 'designer', 'visitor-preview');
+    const used = new Set(
+      readdirSync(folder, { encoding: 'utf8' })
+        .filter((file) => file.endsWith('.ts') && !file.endsWith('.test.ts'))
+        .flatMap((file) => [...readFileSync(join(folder, file), 'utf8').matchAll(/#term\('([A-Za-z_]+)'/g)])
+        .map((match) => `jfbPreview_${match[1]}`),
+    );
+    expect(used.size).toBeGreaterThan(5);
+    expect(termsOf(en).filter((term) => term.startsWith('jfbPreview_'))).toEqual([...used].sort());
+  });
+
   it("hold the form picker screens' keys that their elements use, and no other in that area", () => {
     expect(screenKeys.size).toBeGreaterThanOrEqual(20);
     expect(termsOf(en).filter((term) => term.startsWith('jfbFormPicker_'))).toEqual([...screenKeys].sort());
@@ -323,7 +335,7 @@ describe('the dictionaries', () => {
 
   it("hold the form workspace's own areas apart from the start, asked for only inside the workspace (ADR-0201)", () => {
     const areas = Object.keys(workspaceEn).sort();
-    expect(areas).toEqual(['jfbCheck', 'jfbInspector', 'jfbRules', 'jfbSettings']);
+    expect(areas).toEqual(['jfbCheck', 'jfbInspector', 'jfbPreview', 'jfbRules', 'jfbSettings']);
     expect(Object.keys(workspaceDe).sort()).toEqual(areas);
     expect([...Object.keys(startEn), ...Object.keys(startDe)].filter((area) => areas.includes(area))).toEqual([]);
     const source = join(dirname(fileURLToPath(import.meta.url)), '..');

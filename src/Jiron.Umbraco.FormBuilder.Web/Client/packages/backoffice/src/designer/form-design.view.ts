@@ -33,7 +33,7 @@ import type { CheckState } from './check/form-checker';
 import { FORM_CHECK_MODAL } from './check/form-check.modal.token';
 import { followFix } from './form-views';
 import { outcomesOf } from './settings/outcome-model';
-import { CANVAS_WIDTHS, type CanvasWidth } from './canvas/widths';
+import { keepWidth, readWidth, type CanvasWidth } from './canvas/widths';
 import { isDragging } from './drag/pointer-drag';
 import type { FormCanvasElement } from './canvas/form-canvas.element';
 import './canvas/form-canvas.element';
@@ -109,8 +109,6 @@ export const CROWDED = 1024;
 /** Whether a view this wide, but not narrow, puts the palette on its rail beside the inspector. */
 export const isCrowded = (width: number) => width > NARROW && width <= CROWDED;
 
-const WIDTH_KEY = 'jfb.designer.width';
-
 /**
  * How long the canvas waits after a field's options change before it asks for them: typing in a source's settings
  * changes them with each key, and a half-typed address must not be fetched.
@@ -160,16 +158,6 @@ export function badgeOf(check: CheckState | undefined): CheckBadge {
   if (!check.definition) return { kind: 'checking' };
   const { error, warning } = bySeverity(check.issues);
   return { kind: 'checked', errors: error.length, warnings: warning.length };
-}
-
-/** The canvas width this browser chose last; Desktop at first. */
-export function readWidth(): CanvasWidth {
-  try {
-    const kept = localStorage.getItem(WIDTH_KEY);
-    return kept && Object.hasOwn(CANVAS_WIDTHS, kept) ? (kept as CanvasWidth) : 'desktop';
-  } catch {
-    return 'desktop';
-  }
 }
 
 /** The media items a definition's images and option cards show. */
@@ -812,11 +800,7 @@ export class FormDesignViewElement extends UmbLitElement {
       }
       case 'width':
         this._width = request.width;
-        try {
-          localStorage.setItem(WIDTH_KEY, request.width);
-        } catch {
-          // A browser that keeps nothing starts at Desktop next time.
-        }
+        keepWidth(request.width);
         return;
       case 'undo':
       case 'redo':

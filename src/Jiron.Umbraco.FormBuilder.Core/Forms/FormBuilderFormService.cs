@@ -37,6 +37,14 @@ internal interface IFormBuilderFormService
     /// <exception cref="FormBuilderValidationException">The published version cannot be read, with what is wrong with it.</exception>
     Task<PublishedForm?> GetPublishedAsync(Guid key, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// A version of a form as the website would run it if it were published, for the preview (ADR-0203): read and
+    /// upgraded, with the host's designer locks applied, a draft save or a publish, whether or not the form is published.
+    /// Null when the form does not exist, is in the trash or has no version of this number.
+    /// </summary>
+    /// <exception cref="FormBuilderValidationException">The version cannot be read, with what is wrong with it.</exception>
+    Task<PublishedForm?> GetPreviewAsync(Guid key, int number, CancellationToken cancellationToken = default);
+
     /// <summary>Creates a form from blank, with the new-form defaults of the general settings (section 4.8).</summary>
     /// <exception cref="FormBuilderValidationException">The name or the alias is not allowed.</exception>
     /// <exception cref="FormBuilderConflictException">The alias is taken, or the folder is missing or in the trash.</exception>
@@ -200,5 +208,17 @@ internal sealed partial class FormBuilderFormService(
         }
 
         return new PublishedForm(await infos.InfoAsync(form, cancellationToken), locks.Apply(documents.Readable(live)), live.Info.Number);
+    }
+
+    /// <inheritdoc />
+    public async Task<PublishedForm?> GetPreviewAsync(Guid key, int number, CancellationToken cancellationToken = default)
+    {
+        if (await forms.GetAsync(key, cancellationToken) is not { TrashedUtc: null } form
+            || await forms.GetVersionAsync(form.Id, number, cancellationToken) is not { } version)
+        {
+            return null;
+        }
+
+        return new PublishedForm(await infos.InfoAsync(form, cancellationToken), locks.Apply(documents.Readable(version)), version.Info.Number);
     }
 }

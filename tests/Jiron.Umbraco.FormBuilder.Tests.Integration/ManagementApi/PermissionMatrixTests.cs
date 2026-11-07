@@ -92,6 +92,8 @@ public sealed class PermissionMatrixTests : ManagementApiTestBase
         ["POST form/{key}/check"] = (FormBuilderPermissions.Design, FormBuilderAccessResourceKind.Form, "key"),
         ["POST form/{key}/outcome-preview"] = (FormBuilderPermissions.Design, FormBuilderAccessResourceKind.Form, "key"),
         ["POST form/{key}/email-preview"] = (FormBuilderPermissions.Design, FormBuilderAccessResourceKind.Form, "key"),
+        ["GET form/{key}/preview"] = (FormBuilderPermissions.Design, FormBuilderAccessResourceKind.Form, "key"),
+        ["POST form/{key}/preview/ticket"] = (FormBuilderPermissions.Design, FormBuilderAccessResourceKind.Form, "key"),
         ["POST form/{key}/action/{actionKey}/test"] = (FormBuilderPermissions.ManageActions, FormBuilderAccessResourceKind.Form, "key"),
         ["GET form/{key}/action/last-run"] = (FormBuilderPermissions.Design, FormBuilderAccessResourceKind.Form, "key"),
         ["POST form/{key}/entry-state"] = (FormBuilderPermissions.EditEntries, FormBuilderAccessResourceKind.Form, "key"),

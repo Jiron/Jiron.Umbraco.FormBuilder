@@ -132,7 +132,8 @@ internal sealed class ManagementApiCaller(HttpClient client, IServiceProvider se
             response.Headers.TryGetValues("Umb-Generated-Resource", out var created) ? created.Single() : null,
             response.Headers.RetryAfter?.Delta,
             response.Content.Headers.ContentType?.MediaType,
-            text);
+            text,
+            response.Headers.CacheControl?.NoStore == true);
     }
 
     /// <summary>Calls as <paramref name="role"/> (null: without a token) for an answer that may be no JSON, such as a file; the caller reads and disposes it.</summary>
@@ -165,7 +166,8 @@ internal sealed class ManagementApiCaller(HttpClient client, IServiceProvider se
 /// <param name="RetryAfter">The <c>Retry-After</c> delay, or null.</param>
 /// <param name="MediaType">The body's media type, or null.</param>
 /// <param name="Text">The body as it came.</param>
-internal sealed record ApiAnswer(HttpStatusCode Status, JsonNode? Body, string? Created, TimeSpan? RetryAfter, string? MediaType, string Text)
+/// <param name="NoStore">Whether the answer says <c>Cache-Control: no-store</c>.</param>
+internal sealed record ApiAnswer(HttpStatusCode Status, JsonNode? Body, string? Created, TimeSpan? RetryAfter, string? MediaType, string Text, bool NoStore = false)
 {
     /// <summary>The ProblemDetails code, or null.</summary>
     public string? Code => Body is JsonObject problem && problem["code"] is JsonValue code ? code.GetValue<string>() : null;

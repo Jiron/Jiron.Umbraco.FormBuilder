@@ -51,6 +51,7 @@ internal static class FormBuilderPublicApiServices
         builder.Services.TryAddSingleton<FormRequests>();
         builder.Services.TryAddSingleton<UploadTokens>();
         builder.Services.TryAddSingleton<ChallengeTokens>();
+        builder.Services.TryAddSingleton<PreviewTickets>();
         builder.Services.TryAddSingleton<PlacementTokens>();
         builder.Services.TryAddSingleton<IVerificationTokens, VerificationTokens>();
         builder.Services.TryAddSingleton<ChallengeRequests>();

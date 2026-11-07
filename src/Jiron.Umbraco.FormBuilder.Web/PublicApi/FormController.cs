@@ -26,6 +26,7 @@ namespace Jiron.Umbraco.FormBuilder.Web.PublicApi;
 /// <param name="entries">What the entries endpoint reads of a request and answers with.</param>
 /// <param name="availability">Whether a form takes entries now.</param>
 /// <param name="forms">The published forms.</param>
+/// <param name="previews">The versions the preview's tickets name (ADR-0203).</param>
 /// <param name="themes">The site's themes, which a page's markup is rendered in.</param>
 /// <param name="rendering">What a page renders for a form, which the element endpoint answers as JSON.</param>
 /// <param name="assets">The addresses of the stylesheets and the script a form's page loads.</param>
@@ -39,6 +40,7 @@ internal sealed class FormController(
     EntryRequests entries,
     FormAvailability availability,
     PublishedFormCache forms,
+    PreviewForms previews,
     FormBuilderThemes themes,
     FormRendering rendering,
     PageAssets assets,
@@ -119,6 +121,7 @@ internal sealed class FormController(
     /// too.
     /// </remarks>
     [HttpGet("{key}/options/{fieldKey}")]
+    [FormBuilderPreview]
     [FormBuilderRateLimit(FormBuilderRateLimitPolicies.Read)]
     [FormBuilderBodyLimit(0)]
     [FormBuilderTimeLimit(20)]
@@ -151,7 +154,7 @@ internal sealed class FormController(
             return FormBuilderPublicProblems.InvalidRequest("culture");
         }
 
-        if (!Guid.TryParseExact(key, "D", out var formKey) || await forms.GetAsync(formKey, cancellationToken) is not { } form)
+        if (!Guid.TryParseExact(key, "D", out var formKey) || await ServedAsync(formKey, cancellationToken) is not { } form)
         {
             return FormBuilderPublicProblems.FormNotFound();
         }
@@ -447,6 +450,7 @@ internal sealed class FormController(
     /// <param name="key">The form's key.</param>
     /// <param name="cancellationToken">The request's cancellation, with its time limit.</param>
     [HttpPost("{key}/challenge")]
+    [FormBuilderPreview]
     [FormBuilderRateLimit(FormBuilderRateLimitPolicies.Challenge)]
     [FormBuilderBodyLimit(ChallengeRequests.MaxBodyBytes)]
     [FormBuilderTimeLimit(10)]
@@ -460,7 +464,7 @@ internal sealed class FormController(
     public async Task<IActionResult> Challenge(string key, CancellationToken cancellationToken)
     {
         // A form the site does not serve answers before its body is read.
-        if (!Guid.TryParseExact(key, "D", out var formKey) || await forms.GetAsync(formKey, cancellationToken) is not { } form)
+        if (!Guid.TryParseExact(key, "D", out var formKey) || await ServedAsync(formKey, cancellationToken) is not { } form)
         {
             FormBuilderPublicProblems.CloseConnection(HttpContext);
             return FormBuilderPublicProblems.FormNotFound();
@@ -558,6 +562,7 @@ internal sealed class FormController(
     /// taken. <c>403 form_closed</c> and <c>403 entry_limit_reached</c> come as early as the page that meets them.
     /// </remarks>
     [HttpPost("{key}/validate")]
+    [FormBuilderPreview]
     [FormBuilderRateLimit(FormBuilderRateLimitPolicies.Submit)]
     [FormBuilderBodyLimit(EntryRequests.MaxBodyBytes)]
     [FormBuilderTimeLimit(30)]
@@ -575,7 +580,7 @@ internal sealed class FormController(
     public async Task<IActionResult> Validate(string key, CancellationToken cancellationToken)
     {
         // A form the site does not serve answers before its body is read.
-        if (!Guid.TryParseExact(key, "D", out var formKey) || await forms.GetAsync(formKey, cancellationToken) is null)
+        if (!Guid.TryParseExact(key, "D", out var formKey) || await ServedAsync(formKey, cancellationToken) is null)
         {
             FormBuilderPublicProblems.CloseConnection(HttpContext);
             return FormBuilderPublicProblems.FormNotFound();
@@ -615,6 +620,13 @@ internal sealed class FormController(
 
         return await entries.ReceiptAsync(HttpContext, formKey, cancellationToken);
     }
+
+    // The form an action that takes the preview's requests reads: the version a preview's ticket names, as though it were
+    // published, or the published one (ADR-0203); the filter let only a ticket for this form through.
+    private async Task<CachedForm?> ServedAsync(Guid key, CancellationToken cancellationToken) =>
+        PreviewRequest.Of(HttpContext) is { } preview
+            ? await previews.GetAsync(key, preview.Version, cancellationToken)
+            : await forms.GetAsync(key, cancellationToken);
 
     // The field with this key, a repeatable group's child among them, when it has options of its own or from a source.
     private static FormField? OptionField(FormDefinition definition, Guid key) =>

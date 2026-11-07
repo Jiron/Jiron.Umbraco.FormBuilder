@@ -50,7 +50,11 @@ internal static class FormInstances
 /// <param name="Culture">The page's culture as asked for, or null for the default language.</param>
 /// <param name="Theme">The theme the page's placement names, or null for the form's own (ADR-0105).</param>
 /// <param name="Redirect">The placement's page after a send, from the page's token (ADR-0129), or null.</param>
-internal sealed record FormRenderTarget(string Instance, string Page, Guid? Content, string? Culture, string? Theme = null, Guid? Redirect = null);
+/// <param name="Preview">
+/// The version of the form the preview renders, as though it were published (ADR-0203), for a test member; null for the
+/// published form.
+/// </param>
+internal sealed record FormRenderTarget(string Instance, string Page, Guid? Content, string? Culture, string? Theme = null, Guid? Redirect = null, int? Preview = null);
 
 /// <summary>The target of a request to the render endpoint, which the view component renders for.</summary>
 internal static class FormRenderTargets

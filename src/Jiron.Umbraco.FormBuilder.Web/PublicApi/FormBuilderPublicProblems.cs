@@ -46,6 +46,9 @@ internal static class FormBuilderPublicProblems
     /// <summary>A request with the <c>Jfb-Key</c> scheme whose key is malformed or matches none (ADR-0126).</summary>
     public const string ServerKeyInvalidCode = "server_key_invalid";
 
+    /// <summary>The code of a preview frame's request whose ticket does not hold (<c>401</c>, ADR-0203).</summary>
+    public const string PreviewTicketInvalidCode = "preview_ticket_invalid";
+
     /// <summary>The body is larger than the endpoint takes.</summary>
     public const string PayloadTooLargeCode = "payload_too_large";
 
@@ -120,6 +123,13 @@ internal static class FormBuilderPublicProblems
     /// <summary>A browser on a site that may not call the API.</summary>
     public static FormBuilderProblemResult ServerKeyInvalid() =>
         FormBuilderProblems.Problem(StatusCodes.Status401Unauthorized, ServerKeyInvalidCode, "The server key is not one this site knows.");
+
+    /// <summary>
+    /// A preview frame's request whose ticket does not hold (ADR-0203): malformed, expired, another form's, or sent to an
+    /// endpoint the preview does not use.
+    /// </summary>
+    public static FormBuilderProblemResult PreviewTicketInvalid() =>
+        FormBuilderProblems.Problem(StatusCodes.Status401Unauthorized, PreviewTicketInvalidCode, "The preview's ticket does not hold for this request. Open the preview again.");
 
     /// <summary>A request from a site that may not send requests here.</summary>
     public static FormBuilderProblemResult OriginDenied() =>

@@ -84,7 +84,7 @@ public sealed class SummaryAnswerModel
 /// </summary>
 /// <param name="Id">The button's id, which the error summary links to.</param>
 /// <param name="Value">The button's value, <c>goto:&lt;alias&gt;</c>.</param>
-/// <param name="Action">The button's <c>formaction</c>: the form's action, at the field.</param>
+/// <param name="Action">The button's <c>formaction</c>: the form's action, at the field; null in the preview, which never posts (ADR-0203).</param>
 /// <param name="Text">The button's visible text, "Change".</param>
 /// <param name="Label">The field's label, after the text for screen readers.</param>
-public sealed record SummaryChangeModel(string Id, string Value, string Action, string Text, string Label);
+public sealed record SummaryChangeModel(string Id, string Value, string? Action, string Text, string Label);

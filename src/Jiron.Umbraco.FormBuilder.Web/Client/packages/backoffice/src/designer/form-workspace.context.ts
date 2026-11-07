@@ -21,6 +21,8 @@ import {
   contentDocumentTypeGet,
   emailPreviewRender,
   outcomePreviewRender,
+  formPreviewRender,
+  formPreviewTicket,
   formPublish,
   type FieldGroupResponseModel,
   type FormDraftResponseModel,
@@ -55,6 +57,7 @@ import { followFix } from './form-views';
 import { EditorHistory } from './history';
 import { afterNameFocus } from './name-focus';
 import { loadWorkspaceWords } from './workspace-words';
+import { FAILED, previewRead, type PreviewRead, type PreviewTicket } from './visitor-preview/preview-read';
 
 /** What the views draw: the editor's state and whether undo and redo can do anything. */
 export interface EditorView {
@@ -486,6 +489,28 @@ export class FormWorkspaceContext
       { disableNotifications: true },
     );
     return testAnswer(data, codeOf(error));
+  }
+
+  /** The saved draft as visitors would get it, in a language of the site, light or dark (ADR-0203). */
+  async visitorPreviewOf(culture: string | null, dark: boolean): Promise<PreviewRead> {
+    const key = this.getUnique();
+    if (!key) return FAILED;
+    const { data, error } = await tryExecute(
+      this,
+      formPreviewRender({ path: { key }, query: { ...(culture ? { culture } : {}), dark } }),
+      { disableNotifications: true },
+    );
+    return previewRead(data, codeOf(error));
+  }
+
+  /** A new ticket for the version of the form the preview shows (ADR-0203); undefined without an answer. */
+  async previewTicketOf(version: number): Promise<PreviewTicket | undefined> {
+    const key = this.getUnique();
+    if (!key) return undefined;
+    const { data } = await tryExecute(this, formPreviewTicket({ path: { key }, body: { version } }), {
+      disableNotifications: true,
+    });
+    return data ? { ticket: data.ticket, lifetime: data.lifetimeSeconds } : undefined;
   }
 
   /** The last run of each action of the stored draft that has run (ADR-0195); undefined without an answer. */

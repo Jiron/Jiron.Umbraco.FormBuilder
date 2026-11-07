@@ -108,6 +108,9 @@ internal static class FormBuilderProblems
     /// <summary>The code of a field type the site does not have (ADR-0059).</summary>
     public const string FieldTypeNotFoundCode = "field_type_not_found";
 
+    /// <summary>The code of a draft whose rules the check both runtimes run refuses, which the preview does not show (ADR-0203).</summary>
+    public const string RulesInvalidCode = "rules_invalid";
+
     /// <summary>How long a client waits before asking again while the plan has not run.</summary>
     public static readonly TimeSpan RetryAfter = TimeSpan.FromSeconds(10);
 
@@ -221,6 +224,10 @@ internal static class FormBuilderProblems
     /// <summary>A field type the site does not have (ADR-0059).</summary>
     public static FormBuilderProblemResult FieldTypeNotFound() =>
         Problem(StatusCodes.Status404NotFound, FieldTypeNotFoundCode, "The site has no such field type.");
+
+    /// <summary>A draft whose rules the check both runtimes run refuses (ADR-0002, ADR-0203): the preview evaluates none of them.</summary>
+    public static FormBuilderProblemResult RulesInvalid() =>
+        Problem(StatusCodes.Status422UnprocessableEntity, RulesInvalidCode, "The draft's rules have errors, which the form check lists. The preview shows the form once they are fixed.");
 
     /// <summary>The user sees the item but lacks <paramref name="permission"/>, which the answer names.</summary>
     public static FormBuilderProblemResult Missing(FormBuilderPermissions permission, IDictionary<string, object?>? extensions = null)

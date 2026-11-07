@@ -8,6 +8,7 @@ import {
   ACTION_MODAL_ALIAS,
   ACTION_RUN_MODAL_ALIAS,
   VERSION_COMMENT_MODAL_ALIAS,
+  PREVIEW_MODAL_ALIAS,
   VERSION_PICKER_MODAL_ALIAS,
   REVIEW_MODAL_ALIAS,
   VERSION_COMPARISON_MODAL_ALIAS,
@@ -192,6 +193,23 @@ export const manifests: UmbExtensionManifest[] = [
     meta: { label: `#jfbDesigner_view_${view.id}`, pathname: view.id, icon: view.icon },
     conditions: [IN_FORM_WORKSPACE, holding(...view.anyOf)],
   })),
+  {
+    type: 'modal',
+    alias: PREVIEW_MODAL_ALIAS,
+    name: 'Jiron Form Builder preview',
+    element: (() => import('./visitor-preview/preview.modal.element')) as never,
+  },
+  {
+    // The footer reads Preview, Save draft, then the primary Publish... (IA 5.7).
+    type: 'workspaceAction',
+    kind: 'default',
+    alias: 'Jiron.FormBuilder.WorkspaceAction.Form.Preview',
+    name: 'Jiron Form Builder preview',
+    api: () => import('./visitor-preview/preview.action'),
+    weight: 110,
+    meta: { label: '#jfbDesigner_preview', look: 'secondary' },
+    conditions: [IN_FORM_WORKSPACE, holding('design')],
+  },
   {
     type: 'workspaceAction',
     kind: 'default',

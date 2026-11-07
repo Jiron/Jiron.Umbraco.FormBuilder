@@ -2,12 +2,13 @@
   "name": "@jfb/runtime",
   "private": true,
   "type": "module",
-  "description": "The website runtime that enhances Razor-rendered forms (ROADMAP section 4.2, ADR-0004): no runtime dependencies, one module entry and a chunk per feature, embedded in the Web assembly and served from /jfb/assets/runtime/.",
+  "description": "The website runtime that enhances Razor-rendered forms (ROADMAP section 4.2, ADR-0004): no runtime dependencies, one module entry and a chunk per feature, embedded in the Web assembly and served from /jfb/assets/runtime/; and the preview script, which only the preview's document loads (ADR-0203), from /jfb/assets/preview/.",
   "exports": {
-    "./countdown": "./src/countdown.ts"
+    "./countdown": "./src/countdown.ts",
+    "./preview-protocol": "./src/preview-protocol.ts"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
-    "build": "vite build"
+    "build": "vite build && vite build -c vite.preview.config.ts"
   }
 }

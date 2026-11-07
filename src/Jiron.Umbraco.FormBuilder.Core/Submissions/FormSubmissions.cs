@@ -26,6 +26,7 @@ namespace Jiron.Umbraco.FormBuilder.Core.Submissions;
 /// </summary>
 internal sealed class FormSubmissions(
     PublishedFormCache cache,
+    PreviewForms previews,
     IFormRepository forms,
     IEntryRepository entries,
     FormDocuments documents,
@@ -226,7 +227,7 @@ internal sealed class FormSubmissions(
     public async Task<SubmissionResult> ValidateAsync(SubmissionRequest request, Guid pageKey, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
-        if (await ServedAsync(request.Form, cancellationToken) is not { } served)
+        if (await ServedAsync(request.Form, request.Preview, cancellationToken) is not { } served)
         {
             return SubmissionResult.Refused(SubmissionRefusal.FormNotFound);
         }
@@ -316,7 +317,8 @@ internal sealed class FormSubmissions(
     private static SubmissionRefusal? Gate(SubmissionRequest request, PublishedForm form)
     {
         var ticket = TicketOf(request);
-        if (IsForMembers(form))
+        // A preview's ticket stands in for a test member, who has no key (ADR-0203).
+        if (IsForMembers(form) && request.Preview is null)
         {
             return request.Challenges is not null && request.ServerKey is null && request.Member is not null && (ticket is null || ticket.Member != request.Member)
                 ? SubmissionRefusal.ChallengeRequired
@@ -371,6 +373,16 @@ internal sealed class FormSubmissions(
             : null;
     }
 
+    // The version a preview ticket names, as though it were published, and the form's row read again (ADR-0203); the
+    // form as the site serves it without one.
+    private async Task<Served?> ServedAsync(Guid key, int? preview, CancellationToken cancellationToken) =>
+        preview is not { } number
+            ? await ServedAsync(key, cancellationToken)
+            : await previews.GetAsync(key, number, cancellationToken) is { } shown
+                && await forms.GetAsync(key, cancellationToken) is { TrashedUtc: null } row
+                ? new Served(shown.Published, row)
+                : null;
+
     // The form, as the site serves it, and its row read again, so a form trashed a moment ago takes nothing (step 1).
     private async Task<Served?> ServedAsync(Guid key, CancellationToken cancellationToken) =>
         await cache.GetAsync(key, cancellationToken) is { } cached
@@ -390,8 +402,12 @@ internal sealed class FormSubmissions(
         var form = served.Form;
         var definition = form.Definition;
 
-        // Compatibility: the aliases of the revision the page showed (ADR-0002).
-        if (await AliasesAsync(request.Revision, served.Row.Id, form, cancellationToken) is not { } aliases)
+        // Compatibility: the aliases of the revision the page showed (ADR-0002); the preview's are its ticket's version's,
+        // whatever was published meanwhile, as the ticket holds the frame to it (ADR-0203).
+        var aliases = request.Preview is null
+            ? await AliasesAsync(request.Revision, served.Row.Id, form, cancellationToken)
+            : new Aliases(form.Definition, isCurrent: true);
+        if (aliases is null)
         {
             return Reading.Refused(SubmissionResult.Refused(SubmissionRefusal.FormChanged));
         }

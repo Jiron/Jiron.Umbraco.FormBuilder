@@ -36,6 +36,9 @@ export const REVIEW_MODAL_ALIAS = 'Jiron.FormBuilder.Modal.ReviewBoth';
 /** The earlier versions to restore one from, in the form's "..." (ROADMAP 10.3b, ADR-0198). */
 export const VERSION_PICKER_MODAL_ALIAS = 'Jiron.FormBuilder.Modal.VersionPicker';
 
+/** The preview, from the form workspace's footer (ROADMAP 10.3e, ADR-0203). */
+export const PREVIEW_MODAL_ALIAS = 'Jiron.FormBuilder.Modal.Preview';
+
 export const FORM_DETAIL_STORE_CONTEXT = new UmbContextToken<FormDetailStore>(FORM_DETAIL_STORE_ALIAS);
 
 /** The open form's workspace context, which the views and actions inside the form workspace consume. */

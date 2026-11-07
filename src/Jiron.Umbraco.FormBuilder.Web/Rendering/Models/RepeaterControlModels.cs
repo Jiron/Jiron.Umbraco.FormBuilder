@@ -70,9 +70,9 @@ public sealed class RowButtonModel
 
     /// <summary>
     /// The address it posts to (<c>formaction</c>): the form's, with the row added or the group as the fragment, so the
-    /// page opens where the visitor pressed (ADR-0101).
+    /// page opens where the visitor pressed (ADR-0101); null in the preview, which never posts (ADR-0203).
     /// </summary>
-    public required string Action { get; init; }
+    public required string? Action { get; init; }
 
     /// <summary>Whether the group's limits hide it for now: at its most rows, or at its least (ADR-0154).</summary>
     public bool IsHidden { get; init; }
