@@ -100,7 +100,6 @@ export default {
     kind_rowCount: 'how many rows',
     kind_check: 'its own check',
     kind_rule: 'a validation rule',
-    kind_server: "the site's check",
     kind_other: 'another reason',
 
     origins: 'Top website pages',

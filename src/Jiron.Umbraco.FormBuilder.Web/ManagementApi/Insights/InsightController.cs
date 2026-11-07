@@ -33,7 +33,7 @@ namespace Jiron.Umbraco.FormBuilder.Web.ManagementApi.Insights;
 /// <param name="appCaches">What the user's access to a page is read through.</param>
 /// <param name="users">The user who asks, as Umbraco knows them.</param>
 /// <param name="time">The clock, whose UTC day ends the span a request leaves out.</param>
-/// <param name="timeZones">The site's time zone, in which an entry's hour is counted.</param>
+/// <param name="timeZones">The time zone every site shares, in which an entry's hour is counted.</param>
 [ApiVersion("1.0")]
 [BackOfficeRoute(FormBuilderManagementApi.Route)]
 [ApiExplorerSettings(GroupName = "Insights")]
@@ -138,6 +138,11 @@ internal sealed class InsightController(
         var problems = new List<DefinitionProblem>();
         var span = Span(from, to, "from", "to", problems) ?? Default();
         var compare = Span(compareFrom, compareTo, "compareFrom", "compareTo", problems) ?? Before(span);
+        if (compare.From.Year < 1753)
+        {
+            problems.Add(new DefinitionProblem("invalid_value", "from", "The span compared with, as many days just before, starts in 1753 or later."));
+        }
+
         if (problems.Count > 0)
         {
             throw new FormBuilderValidationException(problems);

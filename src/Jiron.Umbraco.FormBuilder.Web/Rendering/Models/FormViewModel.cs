@@ -87,7 +87,20 @@ public sealed class FormViewModel
     /// null unless <see cref="Insights"/>. The element's answer leaves it out: the element writes it from its own API's
     /// address.
     /// </summary>
-    public string? InsightsUrl => Insights ? $"{ApiBase}/forms/{Key:D}/events" : null;
+    public string? InsightsUrl => !Insights
+        ? null
+        : InsightsReached is { } reached
+            ? $"{ApiBase}/forms/{Key:D}/events?continued=true&reached={reached:D}"
+            : InsightsContinued ? $"{ApiBase}/forms/{Key:D}/events?continued=true" : $"{ApiBase}/forms/{Key:D}/events";
+
+    /// <summary>
+    /// Whether the server rendered this page for a post (ADR-0211): its visit's view and start were counted as it began,
+    /// which <see cref="InsightsUrl"/> tells the events endpoint. The element's answer leaves it out.
+    /// </summary>
+    public bool InsightsContinued { get; init; }
+
+    /// <summary>The page a Next by post reached, whose view counts as reaching it; null for any other render.</summary>
+    public Guid? InsightsReached { get; init; }
 
     /// <summary>The model data: the form endpoint's answer as JSON, written so no text in it can end its element.</summary>
     public required IHtmlContent ModelData { get; init; }

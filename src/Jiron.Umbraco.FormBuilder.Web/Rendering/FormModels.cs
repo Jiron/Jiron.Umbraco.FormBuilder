@@ -384,6 +384,8 @@ internal sealed partial class FormModels(
         var honeypot = FormHoneypot.NameOf(root.Key, root.Revision);
         return root.Model(
             insights: !render.Preview && await insights.IsOnAsync(definition, cancellationToken),
+            insightsContinued: post is not null,
+            insightsReached: post is { Move: FormPostMove.Next, ErrorPage: null } && current is { } reached && reached.Key != post.Page ? reached.Key : null,
             asksAtOnce: build.TellsPlaces || FormMemberConditions.Of(definition).Any || await submissionProtection.ShowsCaptchaAsync(render.Form.Published.Form.Key, definition, () => requestPages.PageAsync(render.Content), cancellationToken),
             pages: pages,
             defaultButton: summaryPage is not null || pages.SelectMany(page => page.Groups).SelectMany(group => group.Fields).Any(field => field.Control is RankingControlModel or RepeaterControlModel)
@@ -1035,7 +1037,9 @@ internal sealed partial class FormModels(
             string? placement = null,
             FormSendingModel? sending = null,
             bool asksAtOnce = false,
-            bool insights = false) => new()
+            bool insights = false,
+            bool insightsContinued = false,
+            Guid? insightsReached = null) => new()
             {
                 Key = Key,
                 Alias = Alias,
@@ -1072,6 +1076,8 @@ internal sealed partial class FormModels(
                 Sending = sending,
                 AsksAtOnce = asksAtOnce,
                 Insights = insights,
+                InsightsContinued = insightsContinued,
+                InsightsReached = insightsReached,
             };
     }
 

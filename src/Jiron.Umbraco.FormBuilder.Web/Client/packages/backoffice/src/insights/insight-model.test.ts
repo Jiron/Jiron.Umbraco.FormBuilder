@@ -15,6 +15,7 @@ import {
   pointsOf,
   sharesOf,
   spanOf,
+  utcToday,
 } from './insight-model';
 
 const today = new Date(2026, 10, 7, 9, 30);
@@ -29,6 +30,17 @@ describe('a date range', () => {
     expect(spanOf('lastMonth', new Date(2026, 0, 15)), 'across a year').toEqual({
       from: '2025-12-01',
       to: '2025-12-31',
+    });
+  });
+
+  it('ends on the UTC day the stats count, wherever the user is', () => {
+    expect(dayOf(utcToday(new Date(Date.UTC(2026, 10, 8, 1)))), 'one in the morning, UTC').toBe('2026-11-08');
+    expect(dayOf(utcToday(new Date(Date.UTC(2026, 10, 7, 23, 59)))), 'a minute before midnight, UTC').toBe(
+      '2026-11-07',
+    );
+    expect(spanOf('last7', utcToday(new Date(Date.UTC(2026, 10, 8, 1))))).toEqual({
+      from: '2026-11-02',
+      to: '2026-11-08',
     });
   });
 
@@ -96,7 +108,8 @@ describe('the time to complete', () => {
 describe('the words and the bars', () => {
   it('name each kind of error the server knows, and another reason for any other', () => {
     expect(kindKey('required')).toBe('kind_required');
-    expect(kindKey('server')).toBe('kind_server');
+    expect(kindKey('rule')).toBe('kind_rule');
+    expect(kindKey('server'), 'a kept error of the server counts nothing').toBe('kind_other');
     expect(kindKey('mood')).toBe('kind_other');
   });
 

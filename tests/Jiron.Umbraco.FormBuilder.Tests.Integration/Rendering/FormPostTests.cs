@@ -240,6 +240,10 @@ public sealed partial class FormPostTests : RenderingTestBase
         Assert.Multiple(async () =>
         {
             Assert.That(Shown(first), Is.EqualTo(K(0x40)), "the first page");
+            Assert.That(first.GetAttribute("data-jfb-insights"), Does.EndWith($"/forms/{key:D}/events"), "a first render counts its visit");
+            Assert.That(refused.GetAttribute("data-jfb-insights"), Does.EndWith($"/forms/{key:D}/events?continued=true"), "a render for a post counts no view or start again (ADR-0211)");
+            Assert.That(second.GetAttribute("data-jfb-insights"), Does.EndWith($"/forms/{key:D}/events?continued=true&reached={K(0x41):D}"), "and after a Next by post, names the page reached");
+            Assert.That(back.GetAttribute("data-jfb-insights"), Does.EndWith($"/forms/{key:D}/events?continued=true"), "Back reaches no page");
             Assert.That(Shown(refused), Is.EqualTo(K(0x40)), "Next with an error stays");
             Assert.That(refused.QuerySelectorAll(".jfb-error-summary a").Select(link => link.GetAttribute("href")), Is.EqualTo(new[] { "#jfb-2-email" }), "the page's own error alone");
             Assert.That(Shown(second), Is.EqualTo(K(0x41)), "the next page once it passes");

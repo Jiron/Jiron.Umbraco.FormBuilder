@@ -441,7 +441,7 @@ describe('counting what visitors do with a form', () => {
     expect(sent, 'the form without the attribute sends nothing').toEqual([[EVENTS, { type: 'view' }]]);
   });
 
-  it('sends each page reached and each field and kind that stopped the visitor once, never an answer', () => {
+  it('sends each page reached and each field that stopped the visitor once, with its first kind, never an answer', () => {
     const sent = beacons();
     const counted = form('jfb-1');
     counted.dataset['jfbInsights'] = EVENTS;
@@ -467,7 +467,6 @@ describe('counting what visitors do with a form', () => {
       { type: 'page', page: 'p2' },
       { type: 'invalid', field: 'email', kind: 'invalid' },
       { type: 'invalid', field: 'guests[0].name', kind: 'required' },
-      { type: 'invalid', field: 'email', kind: 'required' },
     ]);
   });
 
@@ -504,12 +503,24 @@ describe('counting what visitors do with a form', () => {
     document.body.append(counted);
     createFrame(chunk().load).init();
 
-    inputOf(counted).dispatchEvent(new Event('focusin', { bubbles: true }));
     inputOf(counted).dispatchEvent(new Event('input', { bubbles: true }));
+    inputOf(counted).focus();
 
     expect(
       sent.map(([, body]) => body),
-      'an event a script dispatches is not trusted',
+      'an event a script dispatches is not trusted, and a focus a script moves is no touch',
     ).toEqual([{ type: 'view' }]);
+  });
+
+  it('leaves a page whose browser sends no beacons working, every form on it enhanced', () => {
+    vi.stubGlobal('navigator', { ...navigator, sendBeacon: undefined });
+    const counted = form('jfb-1');
+    counted.dataset['jfbInsights'] = EVENTS;
+    const next = form('jfb-2');
+    document.body.append(counted, next);
+    const heard = readies();
+
+    expect(() => createFrame(chunk().load).init()).not.toThrow();
+    expect(heard.map((detail) => detail.alias)).toEqual(['jfb-1', 'jfb-2']);
   });
 });

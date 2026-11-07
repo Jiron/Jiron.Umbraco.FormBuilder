@@ -24,6 +24,12 @@ const pad = (number: number): string => String(number).padStart(2, '0');
 /** A day as `yyyy-MM-dd`, by the calendar of the date's own fields. */
 export const dayOf = (date: Date): string => `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 
+/**
+ * Today as the stats count days (ADR-0211): the UTC day, as a date at noon of that calendar day, so a user west of UTC
+ * sees this evening's entries in today and one east of it never asks for a day that has not begun.
+ */
+export const utcToday = (now: Date): Date => new Date(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 12);
+
 /** The date of a `yyyy-MM-dd` day, at noon, so no change of the clock moves it to another day. */
 export const dateOf = (day: string): Date => {
   const [year = 0, month = 1, date = 1] = day.split('-').map(Number);
@@ -155,7 +161,6 @@ export const KINDS = [
   'rowCount',
   'check',
   'rule',
-  'server',
 ] as const;
 
 /** The word key of a kind of error. */

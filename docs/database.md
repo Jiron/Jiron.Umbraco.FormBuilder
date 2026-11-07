@@ -729,7 +729,7 @@ are a seek on it; deletes and retention go a form and a day at a time, so no sta
 day (ADR-0041). Days are midnights in UTC.
 
 The metrics so far (ADR-0088, ADR-0211): `submissions` and `spam`, which a stored entry counts in its own unit, with
-its `origin` (the content key), its `hour` (0 to 23 in the site's time zone) and its `completion` (the bucket of
+its `origin` (the content key), its `hour` (0 to 23 in the time zone every site shares) and its `completion` (the bucket of
 its time to complete: `15`, `30`, `60`, `120`, `180`, `300`, `600`, `900`, `1800`, `3600` seconds or
 `more`); and from the pages' beacons, which each server adds up and writes every 10 seconds, `views`, `starts`,
 `page` (the page's key) and `invalid` (the field's key and the kind of error, `<key>:<kind>`), beside `refused`,

@@ -25,20 +25,26 @@ choice below is this record's.
 1. **Where to count is in the markup.** A form whose insights are on, for the site and for the form, carries
    `data-jfb-insights` with the address of `POST /jfb/api/v1/forms/{key}/events` (the Razor view and the headless
    element alike); a preview, a notice, an outcome and a form whose insights are off carry none, and the runtime then
-   sends nothing. No cookie, no storage and no identifier is involved.
+   sends nothing. No cookie, no storage and no identifier is involved. A page the server renders for a post (Next,
+   Back or a refusal, without JavaScript or with a form that posts between its pages) is the same visit going on: its
+   address says `continued=true`, so its view and start count nothing again, and after a Next by post it names the
+   page reached (`reached`), whose view counts as reaching that page, which no `jfb:page` told.
 2. **What the runtime sends.** One small function of the frame, with no chunk of its own, sends `view` as the form is
-   enhanced, `start` at the visitor's first real touch (a trusted event: the preview's and the page's own focus do not
-   count), `page` with the page's key for each page reached after the first, and `invalid` with the field's alias and
-   the kind of error for each error that stopped the visitor, as `navigator.sendBeacon` with a JSON text body. Each
-   beacon goes once in a page's life, so a visitor who tries five times is one stop of that field, and the share of
-   "attempts" a field stopped is a share of starts; one the browser could not queue goes again the next time it comes
-   up, and an empty address counts nothing. It costs 0.16 KB, which the runtime's budget holds; with the fix of
-   ADR-0113 that its test found, the runtime is at 59.97 of 60 KB.
+   enhanced, `start` at the visitor's first press, input or change (a trusted event; not a focus, which the page's own
+   script or the preview may move and the browser still calls trusted), `page` with the page's key for each page
+   reached after the first, and `invalid` with the field's alias and the kind of error for each field that stopped the
+   visitor, as `navigator.sendBeacon` with a JSON text body. Each beacon goes once in a page's life, and a field once
+   with the kind that stopped the visitor first, so a visitor who tries five times, or is stopped first by an empty
+   field and then by its format, is one stop of that field, and the share a field stopped is a share of starts; one
+   the browser could not queue goes again the next time it comes up, an empty address counts nothing, and a browser
+   that sends no beacons counts nothing and keeps every form working. It costs 0.17 KB, which the runtime's budget
+   holds; with the fix of ADR-0113 that its test found, the runtime is at 59.99 of 60 KB.
 3. **What the server takes.** The endpoint reads at most 1 KB as text whatever its content type (a beacon's is
    `text/plain`), takes `type`, `page`, `field` and `kind` and ignores every other member, so a value posted along is
    never read, let alone kept. It counts only for a published form whose insights are on, a page the published
    version has, a field it has (by alias; a part's or a row's alias counts under its field) and a kind of error the
-   server knows. It answers `204` whether it counted or not, `404` for a form that is not served; the `events` rate
+   server knows: a field's kinds, `check` and `rule`, not the runtime's `server` for an error kept from the server's
+   render of a refused post, which the server counted as it refused (decision 4). It answers `204` whether it counted or not, `404` for a form that is not served; the `events` rate
    limit applies (120 a minute per address, 500 a second for the site).
 4. **Roll-ups.** Beacons do not each write: each server adds them up in memory per form, day, metric and dimension and
    writes the sums to `jfbDailyStat` every 10 seconds and when it stops, so a busy form's beacons never queue behind the
@@ -47,15 +53,17 @@ choice below is this record's.
    key and kind, which the server counts itself when it refuses a post sent without JavaScript, whose page sends no
    beacons. A page with JavaScript shows the server's refusals as its own errors, so its beacons count them already.
 5. **What a stored entry adds to its unit** (ADR-0088): besides `submissions`, an entry that is neither spam nor a test
-   counts its origin page (`origin` by content key), its hour (`hour`, 0 to 23 in the site's time zone) and its time to
+   counts its origin page (`origin` by content key), its hour (`hour`, 0 to 23 in the time zone every site shares,
+   which the report names, so one form's hours take one clock even where a site has a zone of its own) and its time to
    complete (`completion`, in buckets: up to 15 s, 30 s, 1, 2, 3, 5, 10, 15, 30 and 60 minutes, and more), all in the
    same unit, so a rollback counts none of them. The roadmap's `completionSeconds` becomes these buckets: a daily sum of
    seconds gives an average, which one forgotten tab skews, while buckets give the median the report shows. The time to complete is from the challenge's first issue to the
    submission, which also fills the entry's `durationSeconds` for the entry panel. A form whose insights are off counts
    only its submissions, and so does an entry that leaves Spam later: its page and hour were those of an entry nobody
    counted then.
-6. **Days are UTC days,** as the table keeps them; hours are the site's. A report groups days by day, week (from
-   Monday) or month, and compares a calendar period with the same days of the one before, a rolling one with the span
+6. **Days are UTC days,** as the table keeps them, in the backoffice too: its date ranges end on today's UTC day, so a
+   user west of UTC sees this evening's entries and one east of it never asks for a day that has not begun; hours are
+   those of the zone every site shares. A report groups days by day, week (from Monday) or month, and compares a calendar period with the same days of the one before, a rolling one with the span
    just before it (IA 5.5).
 7. **Reports.** A form's report gives views, starts, entries (submissions) and conversion (entries per view), spam
    caught, entries per day (or week or month) with the comparison, the funnel (starts, then each page reached, then
@@ -85,4 +93,7 @@ choice below is this record's.
 - Positive: no personal data: a beacon holds a type, a page, an alias and a kind; the stats hold counts.
 - Positive: beacons never contend with submissions for the form's row.
 - Negative: up to 10 seconds of beacons are lost when a server crashes; the funnel's numbers are approximate there.
-- Negative: the runtime's budget has 26 bytes left; the next runtime feature pays for itself first.
+- Negative: the runtime's budget has 13 bytes left; the next runtime feature pays for itself first.
+- Negative: a form published again while its visitor fills it in comes in the old one's place with its logic
+  already (6.4j) and counts nothing more of that visit: its view and start were counted, its later pages and stops
+  are not. Republishing mid-visit is rare, and counting it would cost the runtime room it does not have.

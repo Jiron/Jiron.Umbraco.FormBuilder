@@ -1006,6 +1006,21 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "continued",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
+            "name": "reached",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "requestBody": {

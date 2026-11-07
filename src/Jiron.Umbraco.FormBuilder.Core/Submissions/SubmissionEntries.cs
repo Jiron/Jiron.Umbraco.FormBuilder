@@ -306,8 +306,8 @@ internal sealed class SubmissionEntries(
     }
 
     // What the entry adds to the form's counts in its unit: none for a test entry; spam for one in Spam; otherwise a
-    // submission and, while the form's insights are on, its page, its hour in the site's time zone and its time to
-    // complete (ADR-0211), so a rollback counts none of them.
+    // submission and, while the form's insights are on, its page, its hour in the time zone every site shares and its
+    // time to complete (ADR-0211), so a rollback counts none of them.
     private async Task<IReadOnlyList<DailyStatCount>> CountsAsync(NewSubmission submission, SpamVerdict verdict, DateTimeOffset now, TimeSpan? duration, CancellationToken cancellationToken)
     {
         if (submission.IsTest)
@@ -325,7 +325,8 @@ internal sealed class SubmissionEntries(
             return [new DailyStatCount(SubmissionsMetric)];
         }
 
-        var zone = await timeZones.GetAsync(submission.Page.Site, cancellationToken);
+        // The hour by the clock every site shares, which the report names: one form's hours take one clock (ADR-0211).
+        var zone = await timeZones.GetAsync(null, cancellationToken);
         return [new DailyStatCount(SubmissionsMetric), .. InsightMetrics.OfEntry(submission.Page.Content, TimeZoneInfo.ConvertTime(now, zone), duration)];
     }
 

@@ -3,6 +3,10 @@ using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Core.Settings;
+using Umbraco.Cms.Core;
+using Umbraco.Cms.Core.Models;
+using Umbraco.Cms.Core.Services;
+using Umbraco.Cms.Core.Strings;
 using Umbraco.Cms.Tests.Common.Testing;
 
 namespace Jiron.Umbraco.FormBuilder.Tests.Integration.ManagementApi;
@@ -79,6 +83,24 @@ public sealed class InsightApiTests : ManagementApiTestBase
     }
 
     [Test]
+    public async Task AReport_NamesAWebsitePage_OnlyToAUserWhoMayOpenItInContent()
+    {
+        var key = await PublishedAsync("Pages");
+        var page = await PageAsync("Contact");
+        await Stats.IncrementOnAsync((await GetRequiredService<IFormRepository>().GetAsync(key))!.Id, Today, [new("submissions", By: 3), new("origin", page.ToString("N"), 3)]);
+        var path = $"form/{key}/insights?from={Day(0)}&to={Day(0)}";
+
+        var admin = await Api.CallAsync(Admin, HttpMethod.Get, path);
+        var viewer = await Api.CallAsync("viewer", HttpMethod.Get, path);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(admin.Body!["origins"]!.ToJsonString(), Is.EqualTo($$"""[{"key":"{{page}}","name":"Contact","entries":3}]"""), admin.ToString());
+            Assert.That(viewer.Body!["origins"]!.ToJsonString(), Is.EqualTo($$"""[{"key":"{{page}}","name":null,"entries":3}]"""), "a viewer of entries who may not open Content");
+        });
+    }
+
+    [Test]
     public async Task AReport_NeedsTheRightToViewTheFormsEntries_AndASpanItCanRead()
     {
         var key = await PublishedAsync("Guarded");
@@ -121,6 +143,7 @@ public sealed class InsightApiTests : ManagementApiTestBase
         var viewer = await Api.CallAsync("viewer", HttpMethod.Get, path);
         var designer = await Api.CallAsync("designer", HttpMethod.Get, path);
         var noCompare = await Api.CallAsync("viewer", HttpMethod.Get, $"insights/glance?from={Day(-6)}&to={Day(0)}");
+        var before1753 = await Api.CallAsync("viewer", HttpMethod.Get, "insights/glance?from=1753-01-01&to=1753-01-31");
 
         Assert.Multiple(() =>
         {
@@ -131,6 +154,7 @@ public sealed class InsightApiTests : ManagementApiTestBase
             Assert.That(designer.Body!["items"]!.AsArray(), Is.Empty, "a user who may view no form's entries");
             Assert.That(noCompare.Outcome, Is.EqualTo("200"), noCompare.ToString());
             Assert.That(noCompare.Body!["items"]![0]!["before"]!["entries"]!.GetValue<long>(), Is.EqualTo(2), "without a span to compare with, as many days just before");
+            Assert.That(Paths(before1753), Is.EqualTo(new[] { "from" }), "the days just before would start before 1753");
         });
     }
 
@@ -163,6 +187,19 @@ public sealed class InsightApiTests : ManagementApiTestBase
     {
         Assert.That(answer.Status, Is.EqualTo(System.Net.HttpStatusCode.BadRequest), answer.ToString());
         return [.. answer.Body!["errors"]!.AsArray().Select(error => error!["path"]!.GetValue<string>())];
+    }
+
+    // A published page at the root of Content.
+    private async Task<Guid> PageAsync(string name)
+    {
+        var types = GetRequiredService<IContentTypeService>();
+        var type = new ContentType(GetRequiredService<IShortStringHelper>(), -1) { Alias = "jfbPage", Name = "Page", AllowedAsRoot = true };
+        Assert.That((await types.CreateAsync(type, Constants.Security.SuperUserKey)).Success, Is.True);
+        var contents = GetRequiredService<IContentService>();
+        var page = new Content(name, -1, type);
+        contents.Save(page);
+        contents.Publish(page, ["*"]);
+        return page.Key;
     }
 
     // A published form of two pages, the second titled "Details".

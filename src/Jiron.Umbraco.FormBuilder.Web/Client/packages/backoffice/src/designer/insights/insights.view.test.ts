@@ -204,6 +204,21 @@ describe('the Insights view', () => {
     await vi.waitFor(() => expect(api.kept).toEqual([['fields'], ['fields', 'hours']]));
   });
 
+  it('keeps a box switched while a report is on its way, whatever the report says of the tables', async () => {
+    const { root, box, view } = await viewOf(report(), report({ tables: [] }));
+    must(
+      box('Fields that stop visitors most').querySelector<HTMLElement>('uui-button[slot="header-actions"]'),
+      'the switch',
+    ).click();
+    must(
+      all<HTMLButtonElement>(root.host, '.menu button').find((each) => text(each) === 'Last 7 days'),
+      'last 7 days',
+    ).click();
+    await vi.waitFor(() => expect(api.asked).toHaveLength(2));
+    await settle(view);
+    expect(box('Fields that stop visitors most').querySelector('table'), 'still its table').not.toBeNull();
+  });
+
   it("turns the range button's chevron while its menu is open", async () => {
     const { root, view } = await viewOf(report());
     const chevron = () => root.querySelector('.toolbar uui-symbol-expand')?.hasAttribute('open');
@@ -244,6 +259,7 @@ describe('the Insights view', () => {
     expect(text(root.querySelector('.dates .why'))).toBe(
       'Choose a first day on or before the last, at most a year apart.',
     );
+    expect(root.querySelector('.dates .why')?.getAttribute('role'), 'said as it appears').toBe('alert');
     expect(api.asked).toHaveLength(3);
   });
 

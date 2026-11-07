@@ -71,6 +71,8 @@ internal static class ElementJson
         (typeof(FormViewModel), "encodingType"),
         (typeof(FormViewModel), "postValues"),
         (typeof(FormViewModel), "insightsUrl"),
+        (typeof(FormViewModel), "insightsContinued"),
+        (typeof(FormViewModel), "insightsReached"),
         (typeof(RankingMoveModel), "action"),
         (typeof(RowButtonModel), "action"),
         (typeof(SummaryChangeModel), "action"),

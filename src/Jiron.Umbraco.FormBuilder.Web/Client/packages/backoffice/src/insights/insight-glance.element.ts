@@ -8,7 +8,7 @@ import type { InsightGlanceItemResponseModel, InsightTotalsResponseModel } from 
 import { FORM_ENTITY_TYPE, screenPath } from '../section/entity-types';
 import { jfbBackofficeTokens, jfbVisuallyHidden } from '../styles/tokens';
 import { readGlance } from './insight-api';
-import { changeOf, compareOf, pointsOf, PRESETS, spanOf, type Preset } from './insight-model';
+import { changeOf, compareOf, pointsOf, PRESETS, spanOf, utcToday, type Preset } from './insight-model';
 import { loadInsightWords } from './insight-words';
 
 type Period = Exclude<Preset, 'custom'>;
@@ -154,7 +154,7 @@ export class InsightGlanceElement extends UmbLitElement {
   async #read() {
     const read = ++this.#reads;
     this._state = 'loading';
-    const span = spanOf(this._period, new Date());
+    const span = spanOf(this._period, utcToday(new Date()));
     const [words, items] = await Promise.all([
       loadInsightWords(this.localize.lang()).then(
         () => true,

@@ -29,7 +29,7 @@ internal static class InsightMetrics
     /// <summary>A stored entry's page, by the content's key.</summary>
     public const string Origin = "origin";
 
-    /// <summary>A stored entry's hour, 0 to 23 in the site's time zone.</summary>
+    /// <summary>A stored entry's hour, 0 to 23 in the time zone every site shares.</summary>
     public const string Hour = "hour";
 
     /// <summary>A stored entry's time to complete, by its bucket.</summary>

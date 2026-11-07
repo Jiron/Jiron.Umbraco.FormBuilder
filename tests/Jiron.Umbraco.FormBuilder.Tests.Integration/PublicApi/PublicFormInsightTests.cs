@@ -79,6 +79,40 @@ public sealed class PublicFormInsightTests : PublicApiTestBase
     }
 
     [Test]
+    public async Task APageRenderedForAPost_CountsNoViewOrStart_AndItsViewAfterANextAsThePageReached()
+    {
+        var key = await TwoPagesAsync();
+        var events = $"{Root}/forms/{key}/events";
+        HttpResponseMessage[] answers =
+        [
+            await BeaconAsync(events + "?continued=true", """{"type":"view"}"""),
+            await BeaconAsync(events + "?continued=true", """{"type":"start"}"""),
+            await BeaconAsync($"{events}?continued=true&reached={Second}", """{"type":"view"}"""),
+            await BeaconAsync($"{events}?continued=true&reached={Second}", """{"type":"start"}"""),
+            await BeaconAsync($"{events}?continued=true&reached={Guid.NewGuid()}", """{"type":"view"}"""),
+            await BeaconAsync($"{events}?continued=true&reached=page-two", """{"type":"view"}"""),
+            await BeaconAsync(events + "?continued=true", """{"type":"invalid","field":"email","kind":"invalid"}"""),
+            await BeaconAsync(events, """{"type":"invalid","field":"email","kind":"server"}"""),
+        ];
+        await GetRequiredService<InsightWriter>().FlushAsync();
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(answers.Select(answer => answer.StatusCode), Is.All.EqualTo(HttpStatusCode.NoContent));
+            Assert.That((await StatsAsync(key)).Select(stat => (stat.Metric, stat.Dimension, stat.Value)), Is.EqualTo(new[]
+            {
+                ("invalid", Email.Key.ToString("N") + ":invalid", 1L),
+                ("page", Second.ToString("N"), 1L),
+            }), "no view or start of the visit again, the page a Next by post reached, and no error kept from a refused post");
+        });
+
+        foreach (var answer in answers)
+        {
+            answer.Dispose();
+        }
+    }
+
+    [Test]
     public async Task ABeacon_KeepsNothingButItsType_ItsPage_AndItsFieldAndKind()
     {
         var key = await TwoPagesAsync();
@@ -149,6 +183,10 @@ public sealed class PublicFormInsightTests : PublicApiTestBase
     {
         var content = await PageAsync();
         var key = await PublishAsync(fields: [NameField]);
+        var settings = GetRequiredService<IFormBuilderSettingsService>();
+        await settings.SaveSiteAsync(content, new GeneralSettings { TimeZone = "Pacific/Pago_Pago" }, ["timeZone"], 0, Editor);
+        var shared = await settings.GetAsync<GeneralSettings>();
+        await settings.SaveAsync(shared.Value with { TimeZone = "Pacific/Kiritimati" }, shared.Version, Editor);
         using var sent = await SendAsync(HttpMethod.Post, $"{Root}/forms/{key}/entries", request => request.Content = new StringContent(
             $$$"""{"revision":1,"contentKey":"{{{content}}}","values":{"name":"Ada"}}""", Encoding.UTF8, "application/json"));
         var form = (await FormRows.GetAsync(key))!;
@@ -162,7 +200,10 @@ public sealed class PublicFormInsightTests : PublicApiTestBase
             Assert.That(stats.Select(stat => stat.Metric), Is.EquivalentTo(new[] { "completion", "hour", "origin", "submissions" }));
             Assert.That(stats.Single(stat => stat.Metric == "completion").Dimension, Is.EqualTo("15"));
             Assert.That(stats.Single(stat => stat.Metric == "origin").Dimension, Is.EqualTo(content.ToString("N")));
-            Assert.That(int.Parse(stats.Single(stat => stat.Metric == "hour").Dimension, System.Globalization.CultureInfo.InvariantCulture), Is.InRange(0, 23));
+            Assert.That(
+                stats.Single(stat => stat.Metric == "hour").Dimension,
+                Is.EqualTo(TimeZoneInfo.ConvertTime(entry.SubmittedUtc, TimeZoneInfo.FindSystemTimeZoneById("Pacific/Kiritimati")).Hour.ToString(System.Globalization.CultureInfo.InvariantCulture)),
+                "by the clock every site shares, which the report names, not the site's own (a day apart)");
         });
     }
 

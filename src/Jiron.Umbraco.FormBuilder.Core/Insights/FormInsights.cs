@@ -16,6 +16,14 @@ namespace Jiron.Umbraco.FormBuilder.Core.Insights;
 internal sealed record InsightBeacon(string Type, string? Page = null, string? Field = null, string? Kind = null);
 
 /// <summary>
+/// Where a beacon's page came from (ADR-0211): one the server rendered for a post of a visit whose view and start were
+/// counted as it began, and the page a Next by post reached, if it did.
+/// </summary>
+/// <param name="Continued">Whether the server rendered the page for a post.</param>
+/// <param name="Reached">The page a Next by post reached; null for any other post.</param>
+internal sealed record BeaconSource(bool Continued, Guid? Reached = null);
+
+/// <summary>
 /// What a form counts of its visitors (ADR-0211): whether its insights are on, for the site and for the form, the beacons
 /// its page sends, and the fields the server refuses in a post sent without JavaScript. A beacon is held to the published
 /// version: a page it has, a field it has and a kind of error the form knows; whatever else a beacon holds is never read.
@@ -27,15 +35,16 @@ internal sealed class FormInsights(IFormBuilderSettingsService settings, Insight
     /// <summary>The most bytes a beacon holds.</summary>
     public const int MaxBeaconBytes = 1024;
 
-    /// <summary>The kind of error the page gives one the server showed after a post without JavaScript.</summary>
-    public const string ServerKind = "server";
-
     // The longest path of a field a beacon may name.
     private const int MaxPathLength = 512;
 
-    /// <summary>The kinds of error a beacon or a refusal counts: a field's kinds, its own checks, the validation rules and the server's.</summary>
+    /// <summary>
+    /// The kinds of error a beacon or a refusal counts: a field's kinds, its own checks and the validation rules. An error
+    /// the page keeps from the server's render of a refused post (the runtime's <c>server</c>) counts nothing: the server
+    /// counted that refusal itself.
+    /// </summary>
     public static readonly FrozenSet<string> Kinds = FieldMessageProperties.All.Select(property => property.Name)
-        .Concat([SubmissionProblems.Check, SubmissionProblems.Rule, ServerKind])
+        .Concat([SubmissionProblems.Check, SubmissionProblems.Rule])
         .ToFrozenSet(StringComparer.Ordinal);
 
     private readonly ConditionalWeakTable<FormDefinition, FieldMap> _maps = [];
@@ -124,12 +133,30 @@ internal sealed class FormInsights(IFormBuilderSettingsService settings, Insight
     /// </summary>
     /// <param name="form">The form as the site serves it.</param>
     /// <param name="beacon">The beacon.</param>
+    /// <param name="source">Where its page came from; null for a first render.</param>
     /// <param name="cancellationToken">Cancels the read of the settings.</param>
-    public async Task<bool> CountAsync(PublishedForm form, InsightBeacon beacon, CancellationToken cancellationToken = default)
+    public async Task<bool> CountAsync(PublishedForm form, InsightBeacon beacon, BeaconSource? source = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(form);
         ArgumentNullException.ThrowIfNull(beacon);
-        if (!InsightMetrics.Beacons.TryGetValue(beacon.Type, out var metric) || DimensionOf(form.Definition, metric, beacon) is not { } dimension)
+        if (!InsightMetrics.Beacons.TryGetValue(beacon.Type, out var metric))
+        {
+            return false;
+        }
+
+        if (source is { Continued: true } && metric is InsightMetrics.Views or InsightMetrics.Starts)
+        {
+            // A page the server rendered for a post: its visit's view and start were counted as it began, and the view of a
+            // page a Next by post reached is that page reached, which no jfb:page told.
+            if (metric == InsightMetrics.Starts || source.Reached is not { } reached)
+            {
+                return false;
+            }
+
+            (metric, beacon) = (InsightMetrics.Page, beacon with { Page = reached.ToString("D") });
+        }
+
+        if (DimensionOf(form.Definition, metric, beacon) is not { } dimension)
         {
             return false;
         }

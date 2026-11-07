@@ -32,27 +32,28 @@ export interface Chunk {
 
 /**
  * Counts what visitors do with a form, where its markup names where to count (`data-jfb-insights`, ADR-0211): a view as
- * it is enhanced, a start at the visitor's first touch, each page reached, and each field and kind of error that stopped
- * them, each once in a page's life (a beacon the browser could not queue goes again the next time), as a beacon that
- * holds no answer and no person.
+ * it is enhanced, a start at the visitor's first press or answer, each page reached, and each field that stopped them
+ * with the kind of error that did first, each once in a page's life (a beacon the browser could not queue goes again the
+ * next time), as a beacon that holds no answer and no person. A browser that sends no beacons counts nothing.
  */
 function count(form: HTMLFormElement): void {
   const to = form.dataset['jfbInsights'];
   if (!to) return;
-  const sent: Record<string, boolean> = {};
-  const send = (event: Record<string, string>): void => {
-    const body = JSON.stringify(event);
-    sent[body] ||= navigator.sendBeacon(to, body);
+  const sent: Record<string, boolean | undefined> = {};
+  const send = (event: Record<string, string>, once = JSON.stringify(event)): void => {
+    sent[once] ||= navigator.sendBeacon?.(to, JSON.stringify(event));
   };
   send({ type: 'view' });
-  for (const type of TOUCHES) form.addEventListener(type, (event) => event.isTrusted && send({ type: 'start' }));
+  // Not a focus: the page's own script or the preview may move it, which the browser calls trusted too.
+  for (const type of TOUCHES.slice(1))
+    form.addEventListener(type, (event) => event.isTrusted && send({ type: 'start' }));
   form.addEventListener('jfb:page', (event) =>
     send({ type: 'page', page: (event as CustomEvent<{ page: string }>).detail.page }),
   );
   form.addEventListener('jfb:invalid', (event) => {
     for (const { field, kind } of (event as CustomEvent<{ errors: { field: string | null; kind: string }[] }>).detail
       .errors)
-      if (field) send({ type: 'invalid', field, kind });
+      if (field) send({ type: 'invalid', field, kind }, field);
   });
 }
 

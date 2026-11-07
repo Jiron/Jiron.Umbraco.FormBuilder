@@ -16,8 +16,9 @@ internal sealed class InsightRequests(FormInsights insights)
     /// <summary>Reads a beacon of a form's page and counts it where it counts.</summary>
     /// <param name="http">The request.</param>
     /// <param name="form">The form as the site serves it.</param>
+    /// <param name="source">Where the beacon's page came from, as the address the page was given says.</param>
     /// <param name="cancellationToken">The request's cancellation, with its time limit.</param>
-    public async Task<IActionResult> CountAsync(HttpContext http, PublishedForm form, CancellationToken cancellationToken)
+    public async Task<IActionResult> CountAsync(HttpContext http, PublishedForm form, BeaconSource? source, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(http);
         ArgumentNullException.ThrowIfNull(form);
@@ -47,7 +48,7 @@ internal sealed class InsightRequests(FormInsights insights)
 
         if (FormInsights.Read(buffer.AsSpan(0, length)) is { } beacon)
         {
-            await insights.CountAsync(form, beacon, cancellationToken);
+            await insights.CountAsync(form, beacon, source, cancellationToken);
         }
 
         return new NoContentResult();
@@ -66,6 +67,6 @@ internal sealed record InsightEventRequestModel
     /// <summary>For <c>invalid</c>: the field's path as the page names it (<c>data-jfb-alias</c>), such as <c>guests[0].name</c>.</summary>
     public string? Field { get; init; }
 
-    /// <summary>For <c>invalid</c>: the kind of error, such as <c>required</c>, <c>check</c>, <c>rule</c> or <c>server</c>.</summary>
+    /// <summary>For <c>invalid</c>: the kind of error, such as <c>required</c>, <c>check</c> or <c>rule</c>.</summary>
     public string? Kind { get; init; }
 }

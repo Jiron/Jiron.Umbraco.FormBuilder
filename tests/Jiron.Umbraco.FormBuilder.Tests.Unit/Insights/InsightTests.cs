@@ -2,10 +2,16 @@ using System.Text;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.Insights;
+using Jiron.Umbraco.FormBuilder.Core.Persistence.Migrations;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Core.Settings;
 using Jiron.Umbraco.FormBuilder.Core.Submissions;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
+using Umbraco.Cms.Core;
+using Umbraco.Cms.Core.Services;
 
 namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Insights;
 
@@ -165,6 +171,105 @@ public sealed class InsightTests
     }
 
     [Test]
+    public async Task ThePageOfAPost_CountsNeitherViewNorStart_AndItsViewAfterANextIsThePageItReached()
+    {
+        var counts = new InsightCounts(new StoppedClock(Now));
+        var insights = new FormInsights(Settings(on: true), counts);
+        var form = Published(Definition());
+        var post = new BeaconSource(Continued: true);
+        var next = new BeaconSource(Continued: true, Reached: Second);
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(await insights.CountAsync(form, new InsightBeacon("view"), post), Is.False, "the visit's view was counted as it began");
+            Assert.That(await insights.CountAsync(form, new InsightBeacon("start"), next), Is.False, "and its start");
+            Assert.That(await insights.CountAsync(form, new InsightBeacon("view"), next), Is.True, "a Next by post reached its page");
+            Assert.That(await insights.CountAsync(form, new InsightBeacon("view"), new BeaconSource(true, Guid.NewGuid())), Is.False, "a page the version lacks");
+            Assert.That(await insights.CountAsync(form, new InsightBeacon("invalid", Field: "name", Kind: "required"), post), Is.True, "a stop on it counts as on any page");
+            Assert.That(await insights.CountAsync(form, new InsightBeacon("invalid", Field: "name", Kind: "server")), Is.False, "an error the page kept from a refused post, which the server counted");
+        });
+
+        var day = DateOnly.FromDateTime(Now.UtcDateTime);
+        Assert.That(counts.Take(), Is.EquivalentTo(new Dictionary<InsightKey, long>
+        {
+            [new(form.Form.Key, day, "page", "22222222222222222222222222222222")] = 1,
+            [new(form.Form.Key, day, "invalid", "33333333333333333333333333333333:required")] = 1,
+        }));
+    }
+
+    [Test]
+    public async Task TheWriter_PutsBackAUnitThatFailed_WritesItNextTime_AndDropsTheSumsOfAFormThatIsGone()
+    {
+        var counts = new InsightCounts(new StoppedClock(Now));
+        var (kept, gone) = (Guid.NewGuid(), Guid.NewGuid());
+        counts.Add(kept, "views");
+        counts.Add(kept, "views");
+        counts.Add(gone, "views");
+        var forms = Substitute.For<IFormRepository>();
+        forms.GetAsync(kept, Arg.Any<CancellationToken>()).Returns(Row(7, kept));
+        forms.GetAsync(gone, Arg.Any<CancellationToken>()).Returns((StoredForm?)null);
+        var stats = Substitute.For<IDailyStatRepository>();
+        var fails = true;
+        var written = new List<(int Form, IReadOnlyList<DailyStatCount> Counts)>();
+        stats.IncrementOnAsync(default, default, default!, default).ReturnsForAnyArgs(true);
+        stats.WhenForAnyArgs(each => each.IncrementOnAsync(default, default, default!, default)).Do(call =>
+        {
+            if (fails)
+            {
+                throw new InvalidOperationException("The database is away.");
+            }
+
+            written.Add((call.ArgAt<int>(0), call.ArgAt<IReadOnlyList<DailyStatCount>>(2)));
+        });
+        var writer = new InsightWriter(counts, forms, stats, NullLogger<InsightWriter>.Instance);
+
+        Assert.That(await writer.FlushAsync(), Is.Zero);
+        Assert.That(counts.Pending, Is.EqualTo(1), "the unit that failed waits again, and the form that is gone took its sums with it");
+
+        fails = false;
+        Assert.That(await writer.FlushAsync(), Is.EqualTo(1));
+        Assert.Multiple(() =>
+        {
+            Assert.That(counts.Pending, Is.Zero);
+            Assert.That(written, Has.Count.EqualTo(1));
+            Assert.That(written[0].Form, Is.EqualTo(7));
+            Assert.That(written[0].Counts, Is.EqualTo(new[] { new DailyStatCount("views", string.Empty, 2) }));
+        });
+    }
+
+    [Test]
+    public async Task TheFlusher_WritesWhatWaitsAsTheHostStops_AndNothingBeforeUmbracoRuns()
+    {
+        var counts = new InsightCounts(new StoppedClock(Now));
+        var key = Guid.NewGuid();
+        counts.Add(key, "views");
+        var forms = Substitute.For<IFormRepository>();
+        forms.GetAsync(key, Arg.Any<CancellationToken>()).Returns(Row(7, key));
+        var stats = Substitute.For<IDailyStatRepository>();
+        stats.IncrementOnAsync(default, default, default!, default).ReturnsForAnyArgs(true);
+        var runtime = Substitute.For<IRuntimeState>();
+        runtime.Level.Returns(RuntimeLevel.Install);
+        await using var services = new ServiceCollection()
+            .AddSingleton(counts)
+            .AddSingleton(forms)
+            .AddSingleton(stats)
+            .AddSingleton(runtime)
+            .AddSingleton<IFormBuilderMigrationState>(new NoMigration())
+            .AddSingleton<ILogger<InsightWriter>>(NullLogger<InsightWriter>.Instance)
+            .AddSingleton<InsightWriter>()
+            .BuildServiceProvider();
+        var flusher = new InsightFlusher(services, new StoppedClock(Now), NullLogger<InsightFlusher>.Instance);
+
+        await flusher.StopAsync(CancellationToken.None);
+        Assert.That(counts.Pending, Is.EqualTo(1), "Umbraco does not run yet: the sums wait");
+
+        runtime.Level.Returns(RuntimeLevel.Run);
+        await flusher.StopAsync(CancellationToken.None);
+        Assert.That(counts.Pending, Is.Zero, "written as the host stops");
+        await stats.Received(1).IncrementOnAsync(7, DateOnly.FromDateTime(Now.UtcDateTime), Arg.Any<IReadOnlyList<DailyStatCount>>(), Arg.Any<CancellationToken>());
+    }
+
+    [Test]
     public void TheSumsThatWait_AddUp_StopAtTheirLimit_AndComeBackWhenAWriteFails()
     {
         var clock = new StoppedClock(Now);
@@ -315,8 +420,19 @@ public sealed class InsightTests
         ],
     };
 
+    private static StoredForm Row(int id, Guid key) => new(id, key, null, "contact", "Contact", 1, 1, 1, 1, 0, null, false, null, null, Now, Now, null, null);
+
     private static PublishedForm Published(FormDefinition definition) =>
         new(new FormInfo(Guid.NewGuid(), "contact", "Contact", null, 1, true, 1, false, null, Now, Now, null, null), definition, 1);
+
+    private sealed class NoMigration : IFormBuilderMigrationState
+    {
+        public ValueTask<bool> IsPendingAsync(CancellationToken cancellationToken = default) => ValueTask.FromResult(false);
+
+        public void Invalidate()
+        {
+        }
+    }
 
     private sealed class StoppedClock(DateTimeOffset now) : TimeProvider
     {

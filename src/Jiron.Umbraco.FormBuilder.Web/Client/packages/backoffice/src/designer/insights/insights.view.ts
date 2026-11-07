@@ -25,6 +25,7 @@ import {
   PRESETS,
   GROUPINGS,
   spanOf,
+  utcToday,
   type Grouping,
   type Preset,
   type Span,
@@ -325,6 +326,8 @@ export class FormInsightsViewElement extends UmbLitElement {
 
   #form: string | undefined;
   #reads = 0;
+  /** Whether the user's tables came with a report: from then on, this view's switches are the newer word. */
+  #tablesKnown = false;
   /** The saves of the user's tables, one after the other, so the last choice is the one kept. */
   #keeping: Promise<unknown> = Promise.resolve();
 
@@ -334,7 +337,7 @@ export class FormInsightsViewElement extends UmbLitElement {
     this._state = 'loading';
     this._report = undefined;
     this._preset = 'last30';
-    this._span = spanOf('last30', new Date());
+    this._span = spanOf('last30', utcToday(new Date()));
     this._grouping = 'day';
     this._compare = false;
     this._tables = new Set();
@@ -382,13 +385,15 @@ export class FormInsightsViewElement extends UmbLitElement {
       return;
     }
     this._report = report;
-    this._tables = new Set(report.tables);
+    // The user's tables come with the first report; after it, this view's switches are the newer word, saved or on their way.
+    if (!this.#tablesKnown) this._tables = new Set(report.tables);
+    this.#tablesKnown = true;
     this._state = 'ready';
   }
 
   #choose(preset: Exclude<Preset, 'custom'>) {
     this._preset = preset;
-    this._span = spanOf(preset, new Date());
+    this._span = spanOf(preset, utcToday(new Date()));
     this._choosing = false;
     this.#closeRange();
     void this.#read();
@@ -577,7 +582,7 @@ export class FormInsightsViewElement extends UmbLitElement {
           aria-describedby=${invalid ? 'dates-why' : nothing}
           @input=${(event: Event) => (this._draft = { ...this._draft, to: (event.target as HTMLInputElement).value })}
       /></label>
-      ${invalid ? html`<p class="why" id="dates-why">${this.#term('rangeInvalid')}</p>` : nothing}
+      ${invalid ? html`<p class="why" id="dates-why" role="alert">${this.#term('rangeInvalid')}</p>` : nothing}
       <uui-button look="primary" label=${this.#term('rangeApply')} @click=${() => this.#showDates()}></uui-button>
     </div>`;
   }

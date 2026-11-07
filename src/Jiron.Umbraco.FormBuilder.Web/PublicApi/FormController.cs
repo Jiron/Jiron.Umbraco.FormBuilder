@@ -634,9 +634,13 @@ internal sealed class FormController(
     /// sends it, whose <c>type</c> is <c>view</c>, <c>start</c>, <c>page</c> (with the <c>page</c> reached) or
     /// <c>invalid</c> (with the <c>field</c> and the <c>kind</c> of error that stopped the visitor). It holds no answer and
     /// no person: every other member is skipped unread. <c>204</c> whether it counted or not; it counts only while the
-    /// form's insights are on, and only what the published version has.
+    /// form's insights are on, and only what the published version has. A page the server rendered for a post carries
+    /// <c>continued=true</c> in its address: its visit's view and start were counted as it began, so they count nothing,
+    /// and after a Next by post <c>reached</c> names the page reached, whose view counts as reaching it.
     /// </summary>
     /// <param name="key">The form's key.</param>
+    /// <param name="continued">Whether the server rendered the beacon's page for a post.</param>
+    /// <param name="reached">With <paramref name="continued"/>: the key of the page a Next by post reached.</param>
     /// <param name="cancellationToken">The request's cancellation, with its time limit.</param>
     [HttpPost("{key}/events")]
     [FormBuilderRateLimit(FormBuilderRateLimitPolicies.Events)]
@@ -647,7 +651,7 @@ internal sealed class FormController(
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest, FormBuilderProblemResult.MediaType)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound, FormBuilderProblemResult.MediaType)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status503ServiceUnavailable, FormBuilderProblemResult.MediaType)]
-    public async Task<IActionResult> Events(string key, CancellationToken cancellationToken)
+    public async Task<IActionResult> Events(string key, [FromQuery] bool continued = false, [FromQuery] string? reached = null, CancellationToken cancellationToken = default)
     {
         // A form the site does not serve answers before its body is read.
         if (!Guid.TryParseExact(key, "D", out var formKey) || await forms.GetAsync(formKey, cancellationToken) is not { } form)
@@ -656,7 +660,8 @@ internal sealed class FormController(
             return FormBuilderPublicProblems.FormNotFound();
         }
 
-        return await insights.CountAsync(HttpContext, form.Published, cancellationToken);
+        var source = continued ? new BeaconSource(true, Guid.TryParseExact(reached, "D", out var page) ? page : null) : null;
+        return await insights.CountAsync(HttpContext, form.Published, source, cancellationToken);
     }
 
     // The form an action that takes the preview's requests reads: the version a preview's ticket names, as though it were

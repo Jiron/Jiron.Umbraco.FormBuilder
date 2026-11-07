@@ -102,7 +102,6 @@ export default {
     kind_rowCount: 'die Zahl der Zeilen',
     kind_check: 'seine eigene Prüfung',
     kind_rule: 'eine Prüfregel',
-    kind_server: 'die Prüfung der Website',
     kind_other: 'ein anderer Grund',
 
     origins: 'Die häufigsten Seiten der Website',
