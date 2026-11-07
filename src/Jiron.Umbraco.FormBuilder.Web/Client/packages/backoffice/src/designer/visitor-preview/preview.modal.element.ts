@@ -55,6 +55,19 @@ export class PreviewModalElement extends UmbModalBaseElement<PreviewModalData, n
   static override styles = [
     jfbBackofficeTokens,
     css`
+      /* Umbraco's headline in its own type (an h3 in its 70 px header), but whole: a long form name takes another line
+         and the header grows with it, where Umbraco's would cut it on a phone (ADR-0206). */
+      .headline {
+        display: flex;
+        align-items: center;
+        box-sizing: border-box;
+        min-block-size: var(--umb-header-layout-height, 70px);
+        margin: 0;
+        padding-block: var(--uui-size-space-3);
+        line-height: 1.3;
+        overflow-wrap: anywhere;
+      }
+
       .room {
         --bo-accent: var(--uui-color-selected, #3544b1);
         --bo-on-accent: var(--uui-color-selected-contrast, #fff);
@@ -627,7 +640,8 @@ export class PreviewModalElement extends UmbModalBaseElement<PreviewModalData, n
   }
 
   override render() {
-    return html`<umb-body-layout headline=${this.#term('headline', this.data?.name ?? '')}>
+    return html`<umb-body-layout header-fit-height>
+      <h3 slot="header" class="headline">${this.#term('headline', this.data?.name ?? '')}</h3>
       <div class="room">
         ${this.#bar()} ${this.#note()}
         <div class="stage">${this.#stage()}</div>

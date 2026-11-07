@@ -872,7 +872,8 @@ the generated client starts from the backoffice's own HTTP client, whose setting
 holds the English and German dictionaries to the same keys, each a text, to every `#` key of `docs/api/field-types.json`,
 and the field types' areas to no key nothing serves, a function's text given sample values; it holds the form picker's
 screens (`jfbFormPicker`) to exactly the keys their elements and manifests use (as a term, a `#` label or a `{#...}`
-description). `bundle.manifests.test.ts` shows a `localization` manifest for each of the two languages loading its
+description), and a button a screen reader names more fully than it shows, the preview's Run actions… and a last
+run's Details, to a name that starts with the words shown, in both languages (WCAG 2.5.3, ADR-0206). `bundle.manifests.test.ts` shows a `localization` manifest for each of the two languages loading its
 dictionary, and the form picker's schema named after the server's property editor (read from
 `FormPickerPropertyEditor.cs`) with its own UI as the default, its sidebar under the token's alias and the block label's
 `jfbFormName`, each loading its module; and its settings (ADR-0135): the server's `ConfigurationField` names (read from

@@ -25,7 +25,7 @@ export default {
     awaiting: 'Seine Aktionen laufen, sobald seine E-Mail-Adresse bestätigt ist.',
     sentOnly: 'Als Testeintrag gesendet.',
     runActions: 'Aktionen ausführen…',
-    runActionsFor: (number: number) => `Aktionen für Testeintrag #${number} ausführen…`,
+    runActionsFor: (number: number) => `Aktionen ausführen für Testeintrag #${number}…`,
     runHeadline: (number: number) => `Aktionen für Testeintrag #${number} ausführen?`,
     runText: (count: number) =>
       count === 1

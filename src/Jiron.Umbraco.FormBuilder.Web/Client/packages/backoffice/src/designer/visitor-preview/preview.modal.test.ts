@@ -177,9 +177,10 @@ describe('the preview', () => {
     expect(frame.getAttribute('title')).toBe('The form as visitors see it');
     expect(frame.srcdoc).toContain('<p>en-US</p>');
     expect(frame.getAttribute('style')).toBe('--frame-width: 960px');
-    expect(must(root.querySelector('umb-body-layout'), 'layout').getAttribute('headline')).toBe(
-      'Preview of Contact us',
-    );
+    // Its own heading in the header, which grows to hold a long name whole.
+    const layout = must(root.querySelector('umb-body-layout'), 'layout');
+    expect([layout.hasAttribute('header-fit-height'), layout.hasAttribute('headline')]).toEqual([true, false]);
+    expect(text(layout.querySelector('h3[slot="header"]'))).toBe('Preview of Contact us');
     expect(all(element, 'uui-button[slot="actions"]').map((button) => button.getAttribute('label'))).toEqual(['Close']);
   });
 

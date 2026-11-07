@@ -14,6 +14,8 @@ import { describe, expect, it } from 'vitest';
 import { CANVAS_WIDTHS } from '../designer/canvas/widths';
 import { OWN_WORDS, SERVER_WORDS } from '../designer/check/check-words';
 import { SIDEBAR } from '../section/sidebar';
+import actionsDe from './actions.de';
+import actionsEn from './actions.en';
 import startDe from './de';
 import startEn from './en';
 import workspaceDe from './workspace.de';
@@ -345,6 +347,18 @@ describe('the dictionaries', () => {
       .filter((file) => !/^(designer|lang)[\\/]/.test(file))
       .filter((file) => asking.test(readFileSync(join(source, file), 'utf8')));
     expect(outside).toEqual([]);
+  });
+
+  it('name a button with a name that starts with the words it shows, in both languages (WCAG 2.5.3)', () => {
+    // A voice user says what the button shows; its name for a screen reader says more, after those words.
+    const shownWords = (text: string) => text.replace(/\u2026$/, '');
+    for (const [preview, actions] of [
+      [workspaceEn.jfbPreview, actionsEn.jfbActions],
+      [workspaceDe.jfbPreview, actionsDe.jfbActions],
+    ] as const) {
+      expect(preview.runActionsFor(12)).toMatch(new RegExp(`^${shownWords(preview.runActions)}`));
+      expect(actions.runDetailsOf('Email the team')).toMatch(new RegExp(`^${actions.runDetails}`));
+    }
   });
 
   it('give each culture a different text where the words differ', () => {
