@@ -79,6 +79,16 @@ public sealed class FormViewModel
     /// </summary>
     public bool AsksAtOnce { get; init; }
 
+    /// <summary>Whether the form counts what visitors do with it (ADR-0211): its insights are on, and the preview does not render it.</summary>
+    public bool Insights { get; init; }
+
+    /// <summary>
+    /// Where the runtime counts (<c>data-jfb-insights</c>, ADR-0211): the events endpoint below <see cref="ApiBase"/>;
+    /// null unless <see cref="Insights"/>. The element's answer leaves it out: the element writes it from its own API's
+    /// address.
+    /// </summary>
+    public string? InsightsUrl => Insights ? $"{ApiBase}/forms/{Key:D}/events" : null;
+
     /// <summary>The model data: the form endpoint's answer as JSON, written so no text in it can end its element.</summary>
     public required IHtmlContent ModelData { get; init; }
 

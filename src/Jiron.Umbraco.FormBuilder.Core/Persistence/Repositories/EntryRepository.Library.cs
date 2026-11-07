@@ -40,6 +40,24 @@ internal sealed partial class EntryRepository
         return waiting;
     }
 
+    /// <inheritdoc />
+    public async Task<MemberEntryCount> CountMembersAsync(int formId, DateTimeOffset from, DateTimeOffset to, CancellationToken cancellationToken = default)
+    {
+        var row = await database.ReadAsync(
+            db =>
+            {
+                var n = new SqlNames(db);
+                var a = new SqlArgs();
+                return db.FirstOrNullAsync<MemberCount>(
+                    $"SELECT COUNT(DISTINCT {n.C("memberKey")}) AS members, COUNT({n.C("memberKey")}) AS entries FROM {n.T(FormBuilderTables.Entry)} "
+                    + $"WHERE {n.C("formId")} = {a.Add(formId)} AND {Arrived(n, a)} AND {n.C("memberKey")} IS NOT NULL "
+                    + $"AND {n.C("submittedUtc")} >= {a.Add(FormBuilderDbTime.Write(from))} AND {n.C("submittedUtc")} < {a.Add(FormBuilderDbTime.Write(to))}",
+                    a.Values);
+            },
+            cancellationToken);
+        return row is null ? default : new MemberEntryCount(row.Members, row.Entries);
+    }
+
     // The entries that arrived in each form from a moment on, up to another when one is given.
     private async Task<IReadOnlyDictionary<int, long>> CountArrivedAsync(IReadOnlyCollection<int> formIds, DateTimeOffset from, DateTimeOffset? to, CancellationToken cancellationToken)
     {
@@ -159,5 +177,14 @@ internal sealed partial class EntryRepository
 
         [Column("total")]
         public long Total { get; set; }
+    }
+
+    private sealed class MemberCount
+    {
+        [Column("members")]
+        public long Members { get; set; }
+
+        [Column("entries")]
+        public long Entries { get; set; }
     }
 }

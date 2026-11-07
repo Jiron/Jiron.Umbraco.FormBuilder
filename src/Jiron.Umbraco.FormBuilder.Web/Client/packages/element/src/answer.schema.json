@@ -746,6 +746,9 @@
         "asksAtOnce": {
           "type": "boolean"
         },
+        "insights": {
+          "type": "boolean"
+        },
         "modelData": {
           "type": "string"
         },
@@ -810,6 +813,7 @@
         "display",
         "apiBase",
         "asksAtOnce",
+        "insights",
         "modelData",
         "pages",
         "isRequiredNoteHidden",

@@ -1,6 +1,7 @@
 /**
  * When the page shows errors (ROADMAP 6.4e, ADR-0113): a field's as the visitor leaves it, once they changed it or
- * while it shows one; gone on the input that fixes it; and after a refused send or Next every error of its scope, with
+ * while it shows one, and when they leave it with a press in the form, after the press's click, so the error never moves
+ * what was pressed, such as Next, from under the pointer; gone on the input that fixes it; and after a refused send or Next every error of its scope, with
  * the error summary, which takes the focus, and `jfb:invalid`. A passing check lets the post go on as without
  * JavaScript, or the sender sends it (6.4i, ADR-0120), whose refusal the server's errors show as the page's own. The
  * server's errors after a post without JavaScript stay while their field is unchanged, the ones only the server can
@@ -92,7 +93,7 @@ export function pageErrorsOf(
   const fieldAt = (error: ShownError): HTMLElement | null => {
     if (error.code === 'empty') return null;
     const target = form.ownerDocument.getElementById(error.target);
-    if (target !== null && form.contains(target)) return target.closest<HTMLElement>(FIELD);
+    if (target !== null && form.contains(target)) return fieldOf(target);
     const group =
       error.row === null
         ? null
@@ -133,7 +134,7 @@ export function pageErrorsOf(
     if (errors === null) return;
     const now = byField(errors);
     for (const paragraph of [...form.querySelectorAll<HTMLElement>('[data-jfb-error]')]) {
-      const field = paragraph.closest<HTMLElement>(FIELD);
+      const field = fieldOf(paragraph);
       if (field === null) continue;
       if (ruledOut(field) || (!now.has(field) && !kept.has(field))) {
         clearFieldError(field);
@@ -239,7 +240,7 @@ export function pageErrorsOf(
     hush();
     const shown = byField(errors);
     for (const paragraph of [...form.querySelectorAll<HTMLElement>('[data-jfb-error]')]) {
-      const field = paragraph.closest<HTMLElement>(FIELD);
+      const field = fieldOf(paragraph);
       if (field !== null && !shown.has(field)) clearFieldError(field);
     }
     // The server's own stay as it marked them, as only it knows a grid's row.
@@ -333,7 +334,11 @@ export function pageErrorsOf(
     if (field === null) return;
     const next = event.relatedTarget;
     if (next instanceof Node && field.contains(next)) return;
-    if (changed.has(field) || errorIn(field) !== null) void leave(field);
+    if (!changed.has(field) && errorIn(field) === null) return;
+    // The browser marks what a press holds down before the focus moves; its click comes once the press ends, and a
+    // press on Next or Send checks the page itself.
+    if (form.querySelector(':active')) form.addEventListener('click', () => void leave(field), { once: true });
+    else void leave(field);
   });
 
   form.addEventListener('click', (event) => {

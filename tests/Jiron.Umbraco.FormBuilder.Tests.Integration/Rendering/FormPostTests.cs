@@ -6,6 +6,7 @@ using AngleSharp.Html.Dom;
 using AngleSharp.Html.Parser;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Files;
+using Jiron.Umbraco.FormBuilder.Core.Insights;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Core.Submissions;
 using Jiron.Umbraco.FormBuilder.Testing.Time;
@@ -148,6 +149,9 @@ public sealed partial class FormPostTests : RenderingTestBase
         var again = await ParseAsync(response);
         var shown = FormOf(again, "jfb-1");
         var buttonless = await MoveAsync(FormOf(await DocumentAsync("/post/"), "jfb-1"), null, "jfb-1");
+        await GetRequiredService<InsightWriter>().FlushAsync();
+        var today = DateOnly.FromDateTime(_clock.GetUtcNow().UtcDateTime);
+        var refused = (await GetRequiredService<IDailyStatRepository>().ListAsync((await FormRows.GetAsync(key))!.Id, today, today)).Where(stat => stat.Metric == "refused");
 
         Assert.Multiple(async () =>
         {
@@ -165,6 +169,7 @@ public sealed partial class FormPostTests : RenderingTestBase
             Assert.That(FormOf(again, "jfb-2").QuerySelector("[data-jfb-summary]"), Is.Null, "the other form as a first render");
             Assert.That(buttonless.QuerySelectorAll(".jfb-error-summary a").Select(link => link.GetAttribute("href")), Is.EqualTo(new[] { "#jfb-1-terms" }), "a post without a button is sent as Send is");
             Assert.That(await StoredAsync(key), Is.Empty);
+            Assert.That(refused.Select(stat => (stat.Dimension, stat.Value)), Is.EqualTo(new[] { (Terms.Key.ToString("N") + ":required", 2L) }), "a page without JavaScript sends no beacons, so the server counts what stopped it (ADR-0211)");
         });
     }
 
@@ -616,6 +621,7 @@ public sealed partial class FormPostTests : RenderingTestBase
         base.CustomTestSetup(builder);
         _clock = new TestClock();
         builder.PublishesRefusedTags();
+        builder.Services.RemoveAll(descriptor => descriptor.ServiceType == typeof(Microsoft.Extensions.Hosting.IHostedService) && descriptor.ImplementationType == typeof(InsightFlusher));
         builder.Services.AddSingleton(_clock);
         builder.Services.AddUnique<TimeProvider>(_clock);
         builder.Services.AddSingleton<MemoryFileStore>();

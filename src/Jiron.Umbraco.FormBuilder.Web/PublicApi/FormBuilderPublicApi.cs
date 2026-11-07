@@ -191,6 +191,21 @@ internal sealed class FormBuilderJsonBodyAttribute(Type model) : Attribute
 }
 
 /// <summary>
+/// An action that reads a beacon's body itself (ADR-0211): JSON in any content type, as <c>navigator.sendBeacon</c> sends
+/// it as <c>text/plain</c>. The document describes the body with this model under both media types.
+/// </summary>
+/// <param name="model">The model that describes the body.</param>
+[AttributeUsage(AttributeTargets.Method, Inherited = false)]
+internal sealed class FormBuilderBeaconBodyAttribute(Type model) : Attribute
+{
+    /// <summary>The media type a beacon of text sends.</summary>
+    public const string TextMediaType = "text/plain";
+
+    /// <summary>The model that describes the body.</summary>
+    public Type Model { get; } = model ?? throw new ArgumentNullException(nameof(model));
+}
+
+/// <summary>
 /// How long an endpoint may take (ADR-0012), on the site's <see cref="TimeProvider"/>: past it, the request is
 /// cancelled and answers <c>504 timeout</c>, unless the visitor left first.
 /// </summary>
@@ -284,6 +299,20 @@ internal sealed class FormBuilderPublicDeclarations(FieldHostLimits host) : IOpe
                 Content = new Dictionary<string, OpenApiMediaType>
                 {
                     [FormBuilderJsonBodyAttribute.MediaType] = new() { Schema = context.SchemaGenerator.GenerateSchema(json.Model, context.SchemaRepository) },
+                },
+            };
+        }
+
+        if (method.GetCustomAttributes(typeof(FormBuilderBeaconBodyAttribute), false).FirstOrDefault() is FormBuilderBeaconBodyAttribute beacon)
+        {
+            var schema = context.SchemaGenerator.GenerateSchema(beacon.Model, context.SchemaRepository);
+            operation.RequestBody = new OpenApiRequestBody
+            {
+                Required = true,
+                Content = new Dictionary<string, OpenApiMediaType>
+                {
+                    [FormBuilderBeaconBodyAttribute.TextMediaType] = new() { Schema = schema },
+                    [FormBuilderJsonBodyAttribute.MediaType] = new() { Schema = schema },
                 },
             };
         }

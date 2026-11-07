@@ -165,11 +165,14 @@ public sealed class PublicFormSiteTests : PublicApiTestBase
             }
         }
 
+        var privacy = new PrivacySettings { Insights = false };
+        var currentPrivacy = await Settings.GetAsync<PrivacySettings>();
+        await Settings.SaveAsync(privacy, currentPrivacy.Version, Editor);
         var sections = typeof(GeneralSettings).Assembly.GetTypes().Where(type => typeof(ISettingsSection).IsAssignableFrom(type) && !type.IsInterface).ToList();
-        var unchanged = Leaves(filled, new GeneralSettings(), nameof(GeneralSettings)).Concat(Leaves(protection, new ProtectionSettings(), nameof(ProtectionSettings))).Concat(Leaves(email, new EmailSettings(), nameof(EmailSettings))).Concat(Leaves(integrations, new IntegrationSettings(), nameof(IntegrationSettings))).Where(leaf => leaf.Filled == leaf.Default).Select(leaf => leaf.Path).ToList();
+        var unchanged = Leaves(filled, new GeneralSettings(), nameof(GeneralSettings)).Concat(Leaves(protection, new ProtectionSettings(), nameof(ProtectionSettings))).Concat(Leaves(email, new EmailSettings(), nameof(EmailSettings))).Concat(Leaves(integrations, new IntegrationSettings(), nameof(IntegrationSettings))).Concat(Leaves(privacy, new PrivacySettings(), nameof(PrivacySettings))).Where(leaf => leaf.Filled == leaf.Default).Select(leaf => leaf.Path).ToList();
         Assert.Multiple(() =>
         {
-            Assert.That(sections, Is.EquivalentTo(new[] { typeof(GeneralSettings), typeof(ProtectionSettings), typeof(EmailSettings), typeof(IntegrationSettings) }), "a new section is filled here too");
+            Assert.That(sections, Is.EquivalentTo(new[] { typeof(GeneralSettings), typeof(ProtectionSettings), typeof(EmailSettings), typeof(IntegrationSettings), typeof(PrivacySettings) }), "a new section is filled here too");
             Assert.That(unchanged, Is.Empty, "a new field is filled here too");
             Assert.That(set["timeZone"]!.GetValue<string>(), Is.EqualTo("Pacific/Chatham"), "visitors get the time zone");
             Assert.That(set["form"]!["settings"]!["requiredMarker"]!.GetValue<string>(), Is.EqualTo("none"), "the style of a form that inherits it");

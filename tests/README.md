@@ -882,6 +882,26 @@ gate and its toasts; in the browser, `specs/backoffice/entry-export.spec.ts` tic
 selected… and finds only those in the CSV file, exports a search as JSON, which the sidebar opens with next time, and
 prints one entry from its panel.
 
+Insights (ADR-0211): `Tests.Unit/Insights/InsightTests.cs` holds what needs no site: the buckets of the time to complete
+and what a stored entry adds to its unit, the beacon's reader, which reads four members and skips every other, what a
+beacon may count of the published version (a page it has, a field by its path, a row's child and a grid's row under
+their field, a kind of error the form knows) and only while both switches are on, the fields a post without JavaScript
+was refused at, the sums that wait (a day each, a limit, put back after a failed write), and a report built from daily
+values: totals, groups by day, week from Monday and month, each beside its counterpart, the pages, the median bucket,
+the fields with the kind that stops most, the website pages and the hours. `PublicApi/PublicFormInsightTests.cs` posts
+beacons as `text/plain` and JSON and finds only what the version has once written, nothing of a value posted along,
+`404` for a form not served and `413` past 1 KB; the markup's `data-jfb-insights` only while both switches are on and
+the element's flag instead of an address; an entry's page, hour and time to complete in its unit and its duration; none
+of them, nor the entry, when the unit fails right after the counts; and only `submissions` for a form whose insights
+are off. `Rendering/FormPostTests.cs` counts the field a post without JavaScript was refused at.
+`ManagementApi/InsightApiTests.cs` holds Privacy › Data collection's switch, a form's report with its comparison, its
+pages and fields by name, its refusals and its default span, the site's table of forms and the boxes kept as tables. In
+the client, `insights/insight-model.test.ts`, `designer/insights/insights.view.test.ts`, `insights/insight-glance.test.ts`,
+`settings/privacy-settings.test.ts` and `insights/insight-words.test.ts` hold the view, the Overview's box, the screen and
+the words, and `runtime/src/frame.test.ts` the beacons; in the browser, `specs/backoffice/insights.spec.ts` uses a form on a
+headless page, finds its beacons arrive and fill its Insights view, a box kept as its table, and no beacon once the form's
+switch in its Privacy group is off.
+
 ## The access tests
 
 `Tests.Unit/Access/` covers the permission model without a host (ADR-0013, ADR-0048): the flags' names in any letter

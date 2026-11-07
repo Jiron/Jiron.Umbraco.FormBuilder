@@ -153,3 +153,15 @@ Edge reports a required radio button, box or select that is empty as invalid fro
 validation; the markup writes no `aria-invalid` until a refusal, and the pass of 6.8e holds that. Writing
 `aria-invalid="false"` would hide it at the price of a mark on every required choice and a runtime that restores it
 instead of clearing it, so it stays with the browser (docs/ux/review-6.8e.md).
+
+## A press in the form waits for its click (11.5, 2026-11-07)
+
+11.5's Playwright run typed a malformed address and pressed Next, and the press did nothing: the mouse button going
+down moved the focus out of the field, the field showed its error at once, the error pushed Next down, and the button
+came up over the space where Next had been, so no click reached it. A visitor's slower press meets the same gap. Now
+a field left while the browser holds something of the form pressed (`:active`, which Blink, Gecko and WebKit set
+before they move the focus) shows its error after that press's click: on Next or Send the press checks the page
+itself, and anywhere else the error comes as the click lands. A field left by the keyboard, or by a press outside the
+form, shows its error at once as before. The runtime keeps no state of its own for it, so a press that ends without a
+click leaves nothing behind but a check on the next click in the form. The room came from the beacons' code (ADR-0211),
+whose record of what it sent is now a plain object.

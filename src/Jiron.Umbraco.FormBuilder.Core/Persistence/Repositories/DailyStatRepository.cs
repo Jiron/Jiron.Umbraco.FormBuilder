@@ -30,7 +30,27 @@ internal sealed class DailyStatRepository(FormBuilderDatabase database) : IDaily
     public static readonly TimeSpan MaxKeep = TimeSpan.FromDays(3653);
 
     /// <inheritdoc />
-    public Task<bool> IncrementAsync(int formId, IReadOnlyList<DailyStatCount> counts, CancellationToken cancellationToken = default)
+    public Task<bool> IncrementAsync(int formId, IReadOnlyList<DailyStatCount> counts, CancellationToken cancellationToken = default) =>
+        CountAsync(formId, null, counts, cancellationToken);
+
+    /// <inheritdoc />
+    public Task<bool> IncrementOnAsync(int formId, DateOnly day, IReadOnlyList<DailyStatCount> counts, CancellationToken cancellationToken = default)
+    {
+        if (Midnight(day) < FormBuilderDbTime.MinStorable)
+        {
+            throw new ArgumentOutOfRangeException(nameof(day), day, $"The day lies in {FormBuilderDbTime.MinStorable.Year} or later.");
+        }
+
+        if (Midnight(day) > database.UtcNow.Date)
+        {
+            throw new ArgumentOutOfRangeException(nameof(day), day, "The day is today or before.");
+        }
+
+        return CountAsync(formId, day, counts, cancellationToken);
+    }
+
+    // Adds the counts to the values of the day, today when it is null.
+    private Task<bool> CountAsync(int formId, DateOnly? on, IReadOnlyList<DailyStatCount> counts, CancellationToken cancellationToken)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(formId, 1);
         var merged = Merge(counts);
@@ -48,7 +68,7 @@ internal sealed class DailyStatRepository(FormBuilderDatabase database) : IDaily
                     return false;
                 }
 
-                var day = database.UtcNow.Date;
+                var day = on is { } given ? Midnight(given) : database.UtcNow.Date;
                 foreach (var (metric, dimension, by) in merged)
                 {
                     await AddAsync(db, n, day, formId, metric, dimension, by);
@@ -62,21 +82,7 @@ internal sealed class DailyStatRepository(FormBuilderDatabase database) : IDaily
     /// <inheritdoc />
     public Task<IReadOnlyList<DailyStat>> ListAsync(int formId, DateOnly from, DateOnly to, CancellationToken cancellationToken = default)
     {
-        if (from > to)
-        {
-            throw new ArgumentOutOfRangeException(nameof(to), to, "The last day comes on or after the first.");
-        }
-
-        if (to.DayNumber - from.DayNumber >= MaxListDays)
-        {
-            throw new ArgumentOutOfRangeException(nameof(to), to, $"A list covers at most {MaxListDays} days.");
-        }
-
-        if (Midnight(from) < FormBuilderDbTime.MinStorable)
-        {
-            throw new ArgumentOutOfRangeException(nameof(from), from, $"The first day lies in {FormBuilderDbTime.MinStorable.Year} or later.");
-        }
-
+        CheckDays(from, to);
         return database.ReadAsync<IReadOnlyList<DailyStat>>(
             async db =>
             {
@@ -89,6 +95,39 @@ internal sealed class DailyStatRepository(FormBuilderDatabase database) : IDaily
                 return rows.Select(r => new DailyStat(DateOnly.FromDateTime(r.Day), r.FormId, r.Metric, r.Dimension, r.Value)).ToList();
             },
             cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<DailyStatSum>> SumAsync(IReadOnlyCollection<int> formIds, IReadOnlyCollection<string> metrics, DateOnly from, DateOnly to, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(formIds);
+        ArgumentNullException.ThrowIfNull(metrics);
+        CheckDays(from, to);
+        if (metrics.Count is 0 or > SqlArgs.MaxListLength / 2 || metrics.Any(metric => !IsMetric(metric)))
+        {
+            throw new ArgumentException($"A sum names 1 to {SqlArgs.MaxListLength / 2} metrics, each one camelCase word.", nameof(metrics));
+        }
+
+        var sums = new List<DailyStatSum>();
+        foreach (var chunk in formIds.Distinct().Chunk(SqlArgs.MaxListLength / 2))
+        {
+            sums.AddRange(await database.ReadAsync(
+                async db =>
+                {
+                    var n = new SqlNames(db);
+                    var a = new SqlArgs();
+                    var rows = await db.FetchListAsync<SumRow>(
+                        $"SELECT {n.C("formId")} AS formId, {n.C("metric")} AS metric, SUM({n.C("value")}) AS total FROM {n.T(FormBuilderTables.DailyStat)} "
+                        + $"WHERE {n.C("formId")} IN ({a.List(chunk.Cast<object?>())}) AND {n.C("day")} >= {a.Add(Midnight(from))} AND {n.C("day")} <= {a.Add(Midnight(to))} "
+                        + $"AND {n.C("metric")} IN ({a.List(metrics.Distinct(StringComparer.Ordinal).Cast<object?>())}) AND {n.C("dimension")} = {a.Add(string.Empty)} "
+                        + $"GROUP BY {n.C("formId")}, {n.C("metric")}",
+                        a.Values);
+                    return rows.Select(row => new DailyStatSum(row.FormId, row.Metric, row.Total));
+                },
+                cancellationToken));
+        }
+
+        return sums;
     }
 
     /// <inheritdoc />
@@ -204,4 +243,36 @@ internal sealed class DailyStatRepository(FormBuilderDatabase database) : IDaily
     }
 
     private static DateTime Midnight(DateOnly day) => day.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
+
+    // Days a read covers: the last on or after the first, at most 366 of them, from 1753 on.
+    private static void CheckDays(DateOnly from, DateOnly to)
+    {
+        if (from > to)
+        {
+            throw new ArgumentOutOfRangeException(nameof(to), to, "The last day comes on or after the first.");
+        }
+
+        if (to.DayNumber - from.DayNumber >= MaxListDays)
+        {
+            throw new ArgumentOutOfRangeException(nameof(to), to, $"A list covers at most {MaxListDays} days.");
+        }
+
+        if (Midnight(from) < FormBuilderDbTime.MinStorable)
+        {
+            throw new ArgumentOutOfRangeException(nameof(from), from, $"The first day lies in {FormBuilderDbTime.MinStorable.Year} or later.");
+        }
+    }
+
+    [NPoco.ExplicitColumns]
+    private sealed class SumRow
+    {
+        [NPoco.Column("formId")]
+        public int FormId { get; set; }
+
+        [NPoco.Column("metric")]
+        public string Metric { get; set; } = string.Empty;
+
+        [NPoco.Column("total")]
+        public long Total { get; set; }
+    }
 }

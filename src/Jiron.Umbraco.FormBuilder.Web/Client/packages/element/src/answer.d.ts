@@ -199,6 +199,7 @@ export type FormViewModel = {
   contentKey?: string;
   placement?: string;
   asksAtOnce: boolean;
+  insights: boolean;
   modelData: string;
   pages: PageViewModel[];
   progress?: ProgressViewModel;

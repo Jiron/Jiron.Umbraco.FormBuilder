@@ -55,7 +55,7 @@ internal sealed record PublicApiEndpoint(ApiDescription Description)
 
     /// <summary>
     /// A body it takes, for an endpoint that takes one: a small text file for an upload, an answer for a submission and a
-    /// page, a submission id for a receipt.
+    /// page, a submission id for a receipt, a beacon for the events.
     /// An endpoint that takes a body this list does not know yet fails here, so its body joins the list when it is written.
     /// </summary>
     public HttpContent? Body()
@@ -95,6 +95,11 @@ internal sealed record PublicApiEndpoint(ApiDescription Description)
         if (Description.RelativePath.EndsWith("/drafts", StringComparison.Ordinal))
         {
             return new StringContent("""{"revision":1,"email":"ada@jfb.test","values":{"name":"Ada"}}""", Encoding.UTF8, "application/json");
+        }
+
+        if (Description.RelativePath.EndsWith("/events", StringComparison.Ordinal))
+        {
+            return new StringContent("""{"type":"view"}""", Encoding.UTF8, "text/plain");
         }
 
         if (Description.RelativePath.EndsWith("/resume", StringComparison.Ordinal))

@@ -151,6 +151,13 @@ public sealed class FormBuilderCoreComposer : IComposer
         builder.Services.TryAddSingleton<Exports.EntryExportJobs>();
         builder.Services.AddHostedService<Exports.EntryExportWorker>();
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IDistributedBackgroundJob, Exports.FormBuilderExportJob>());
+        // Insights (ADR-0211): what a form counts, this server's sums of beacons, and their writes every 10 seconds.
+        builder.Services.TryAddSingleton<Insights.FormInsights>();
+        builder.Services.TryAddSingleton<Insights.InsightCounts>();
+        builder.Services.TryAddSingleton<Insights.InsightWriter>();
+        builder.Services.TryAddSingleton<Insights.InsightReports>();
+        builder.Services.TryAddSingleton<Insights.InsightUserSettings>();
+        builder.Services.AddHostedService<Insights.InsightFlusher>();
         builder.Services.TryAddSingleton<FileScans>();
         builder.Services.TryAddSingleton<EntryFileDownloads>();
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IRecurringBackgroundJob, FileScanJob>());

@@ -92,6 +92,7 @@ export function writeForm(context: ViewContext, model: FormViewModel): HTMLEleme
       'data-jfb-content': model.contentKey,
       'data-jfb-placement': model.placement,
       'data-jfb-asks': flag(model.asksAtOnce),
+      'data-jfb-insights': model.insights ? `${context.api}/forms/${model.key}/events` : undefined,
       'data-jfb-contract': CONTRACT_VERSION,
       lang: model.culture,
       dir: model.direction,

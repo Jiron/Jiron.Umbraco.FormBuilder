@@ -6,6 +6,7 @@ using Jiron.Umbraco.FormBuilder.Core.Definitions.Serialization;
 using Jiron.Umbraco.FormBuilder.Core.Entries;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
+using Jiron.Umbraco.FormBuilder.Core.Insights;
 using Jiron.Umbraco.FormBuilder.Core.MergeTags;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
@@ -29,6 +30,7 @@ namespace Jiron.Umbraco.FormBuilder.Core.Submissions;
 /// <param name="ChallengeId">The id of the challenge that made it, which makes one entry (ADR-0012); null for a request without one.</param>
 /// <param name="Verdict">Its spam score and why (ADR-0012); null for none.</param>
 /// <param name="Draft">The draft it finishes, which goes in its unit (ADR-0163); null for none.</param>
+/// <param name="Started">When its challenge was first issued, from which its time to complete counts (ADR-0211); null for a request without one.</param>
 /// <remarks>
 /// A preview's submission is a test entry (<see cref="IsTest"/>), which sets off nothing unless <see cref="RunsActions"/>
 /// (ADR-0204).
@@ -47,7 +49,8 @@ internal sealed record NewSubmission(
     Guid? Redirect = null,
     string? ChallengeId = null,
     SpamVerdict? Verdict = null,
-    long? Draft = null)
+    long? Draft = null,
+    DateTimeOffset? Started = null)
 {
     /// <summary>Whether it is a test entry, sent from the preview (ADR-0204).</summary>
     public bool IsTest { get; init; }
@@ -82,7 +85,7 @@ internal sealed record EntryRead(MergeTagScope Scope, EntryAnswers? Answers, IRe
 
 /// <summary>
 /// The entries of submissions (ADR-0088): stores a submission's entry in one transaction with its <c>submitted</c>
-/// event, its action runs and its daily count, once its choices are held against the places left (ADR-0090) and its
+/// event, its action runs and its daily counts (ADR-0211), once its choices are held against the places left (ADR-0090) and its
 /// answers that must be unique against the other entries' (ADR-0091). A test entry (ADR-0204) holds no place or answer,
 /// counts nowhere, and sets off nothing unless its ticket runs actions; its event keeps the actions its rules chose, which
 /// Run actions... runs later. It gives
@@ -109,7 +112,9 @@ internal sealed class SubmissionEntries(
     OutboxWake wake,
     IEntryRepository entries,
     IEmailRepository emails,
-    FieldTypeRegistry types)
+    FieldTypeRegistry types,
+    FormInsights insights,
+    TimeProvider time)
 {
     /// <summary>The kind of the event that records a submission.</summary>
     public const string SubmittedEvent = "submitted";
@@ -155,6 +160,9 @@ internal sealed class SubmissionEntries(
             && Runs(definition, submission.Answers.State.Actions, ArrivalTriggers(definition, verified: definition.Settings.Submission.Verification is not null)).Count > 0;
         var kept = queued.Count > 0 || waits || ActionSettlement.TriggerCanFire(definition, state);
         var answers = kept ? submission.Answers.Answers : [.. submission.Answers.Answers.Where(answer => !ActionSettlement.KeptUntilActions(definition, answer.Field))];
+        var now = time.GetUtcNow();
+        var duration = submission.Started is { } started ? now - started : (TimeSpan?)null;
+        var counts = await CountsAsync(submission, verdict, now, duration, cancellationToken);
         var entry = new NewEntry
         {
             Key = Guid.NewGuid(),
@@ -172,6 +180,7 @@ internal sealed class SubmissionEntries(
             SpamReasons = SpamReasons.Stored(verdict.Reasons),
             EntryLimit = definition.Settings.Availability.MaxEntries,
             IsTest = submission.IsTest,
+            DurationSeconds = duration is { } took ? (int)Math.Clamp(Math.Floor(took.TotalSeconds), 0, int.MaxValue) : null,
         };
 
         // A field only the draft has gets its catalogue row before its first value; a second test entry, or one sent at
@@ -240,9 +249,9 @@ internal sealed class SubmissionEntries(
                 }
 
                 // A test entry adds nothing to the form's counts, which insights read (section 4.4).
-                if (!submission.IsTest)
+                if (counts.Count > 0)
                 {
-                    await stats.IncrementAsync(created.FormId, [new DailyStatCount(verdict.IsSpam ? SpamMetric : SubmissionsMetric)], cancellationToken);
+                    await stats.IncrementAsync(created.FormId, counts, cancellationToken);
                 }
 
                 if (submission.Draft is { } draft)
@@ -294,6 +303,30 @@ internal sealed class SubmissionEntries(
                 await settlement.SettleAsync(stored.Id, definition, CancellationToken.None);
             }
         }
+    }
+
+    // What the entry adds to the form's counts in its unit: none for a test entry; spam for one in Spam; otherwise a
+    // submission and, while the form's insights are on, its page, its hour in the site's time zone and its time to
+    // complete (ADR-0211), so a rollback counts none of them.
+    private async Task<IReadOnlyList<DailyStatCount>> CountsAsync(NewSubmission submission, SpamVerdict verdict, DateTimeOffset now, TimeSpan? duration, CancellationToken cancellationToken)
+    {
+        if (submission.IsTest)
+        {
+            return [];
+        }
+
+        if (verdict.IsSpam)
+        {
+            return [new DailyStatCount(SpamMetric)];
+        }
+
+        if (!await insights.IsOnAsync(submission.Form.Definition, cancellationToken))
+        {
+            return [new DailyStatCount(SubmissionsMetric)];
+        }
+
+        var zone = await timeZones.GetAsync(submission.Page.Site, cancellationToken);
+        return [new DailyStatCount(SubmissionsMetric), .. InsightMetrics.OfEntry(submission.Page.Content, TimeZoneInfo.ConvertTime(now, zone), duration)];
     }
 
     // Whether a later change of the entry's state still needs what the rules chose as it came in: its runs do not all queue now.

@@ -6,6 +6,7 @@ using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn;
 using Jiron.Umbraco.FormBuilder.Core.Files;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
+using Jiron.Umbraco.FormBuilder.Core.Insights;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Core.Signatures;
 using Jiron.Umbraco.FormBuilder.Core.Submissions;
@@ -77,6 +78,7 @@ internal sealed record FormPostAnswer(FormPostAnswerKind Kind, string? Url = nul
 /// <param name="availability">The form's times and entry limit, checked before the post stores anything.</param>
 /// <param name="limits">The rate limits, which every post meets before anything else that costs (ADR-0012).</param>
 /// <param name="limiter">Holds a client to its share of what may wait for an entry (ADR-0148).</param>
+/// <param name="insights">What the form counts, the fields that stopped a visitor among it (ADR-0211).</param>
 internal sealed class FormPostHandler(
     PublishedFormCache forms,
     FormRequests requests,
@@ -89,7 +91,8 @@ internal sealed class FormPostHandler(
     IEntryRepository entries,
     FormAvailability availability,
     FormRateLimits limits,
-    FormBuilderRateLimiter limiter)
+    FormBuilderRateLimiter limiter,
+    FormInsights insights)
 {
     /// <summary>The notice's code after a post that met a form published again meanwhile.</summary>
     public const string FormChangedCode = "form_changed";
@@ -498,6 +501,8 @@ internal sealed class FormPostHandler(
         switch (result.Refusal)
         {
             case SubmissionRefusal.ValidationFailed:
+                // A page without JavaScript sends no beacons, so the server counts what stopped its visitor (ADR-0211).
+                await insights.RefusedAsync(cached.Published, result.Problems, cancellationToken);
                 state.Problems(result.Problems);
                 return true;
             case SubmissionRefusal.FormChanged:

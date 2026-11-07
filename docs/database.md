@@ -670,6 +670,8 @@ owns the name checks; a value it cannot read counts as none (ADR-0207):
 - `entries.digest`: how often the user gets the summary email, `daily` or `weekly`; none means off (ADR-0209);
 - `entries.digest.sent`: the last day the summary job covered for the user, written with the mail it queued, so a
   period goes out once; turning the summary on writes the period due by then.
+- `insights.tables`: the boxes of insights the user shows as tables, in the order of their names: `entries`,
+  `funnel`, `fields`, `origins`, `hours` and `answers` (ADR-0211).
 
 ### `jfbPermission`
 
@@ -725,5 +727,12 @@ deleting a form deletes its values. Every unit that writes a form's values holds
 delete does, so they take turns and never deadlock. The key leads with the form, so one form's days and its delete
 are a seek on it; deletes and retention go a form and a day at a time, so no statement locks more than one form's
 day (ADR-0041). Days are midnights in UTC.
+
+The metrics so far (ADR-0088, ADR-0211): `submissions` and `spam`, which a stored entry counts in its own unit, with
+its `origin` (the content key), its `hour` (0 to 23 in the site's time zone) and its `completion` (the bucket of
+its time to complete: `15`, `30`, `60`, `120`, `180`, `300`, `600`, `900`, `1800`, `3600` seconds or
+`more`); and from the pages' beacons, which each server adds up and writes every 10 seconds, `views`, `starts`,
+`page` (the page's key) and `invalid` (the field's key and the kind of error, `<key>:<kind>`), beside `refused`,
+which the server counts when it refuses a post sent without JavaScript. Keys are written as 32 hex digits.
 
 - `IX_jfbDailyStat_day_formId`: retention, which deletes the earliest day first.

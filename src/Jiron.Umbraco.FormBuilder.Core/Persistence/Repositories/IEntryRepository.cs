@@ -362,6 +362,11 @@ internal readonly record struct AnswerValue(Guid FieldKey, string? Text, double?
 /// <param name="Files">Their uploaded files: those of entries, and those that wait for an entry.</param>
 internal readonly record struct EntryHoldings(long Entries, long Files);
 
+/// <summary>How many members sent a form's entries over some time, and how many entries they sent (ADR-0211).</summary>
+/// <param name="Members">The members.</param>
+/// <param name="Entries">Their entries.</param>
+internal readonly record struct MemberEntryCount(long Members, long Entries);
+
 /// <summary>
 /// The entries of <c>jfbEntry</c> with their values (<c>jfbEntryValue</c>) and files (<c>jfbEntryFile</c>), one aggregate
 /// (ADR-0003, ADR-0038). Lists, filters and search are the entries query builder's (4.3d); the consent wordings the
@@ -415,6 +420,17 @@ internal interface IEntryRepository
     /// <param name="to">Until when, exclusive.</param>
     /// <param name="cancellationToken">Cancels the read.</param>
     Task<IReadOnlyDictionary<int, long>> CountBetweenAsync(IReadOnlyCollection<int> formIds, DateTimeOffset from, DateTimeOffset to, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// How many members sent entries to a form from one moment up to another, and how many of the entries
+    /// <see cref="CountSinceAsync"/> counts they sent: the members of a form's insights (ADR-0211), counted at query time
+    /// so none is kept elsewhere.
+    /// </summary>
+    /// <param name="formId">The form.</param>
+    /// <param name="from">From when, inclusive.</param>
+    /// <param name="to">Until when, exclusive.</param>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    Task<MemberEntryCount> CountMembersAsync(int formId, DateTimeOffset from, DateTimeOffset to, CancellationToken cancellationToken = default);
 
     /// <summary>How many entries of these forms wait for approval now, test entries left out (ADR-0209).</summary>
     /// <param name="formIds">The forms, any number.</param>

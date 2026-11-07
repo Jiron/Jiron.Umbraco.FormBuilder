@@ -17,6 +17,12 @@ internal sealed record DailyStatCount(string Metric, string Dimension = "", long
 /// <param name="Value">The sum of the counts.</param>
 internal sealed record DailyStat(DateOnly Day, int FormId, string Metric, string Dimension, long Value);
 
+/// <summary>A form's sum of one metric without a dimension over some days.</summary>
+/// <param name="FormId">The form.</param>
+/// <param name="Metric">What was counted.</param>
+/// <param name="Value">The sum.</param>
+internal sealed record DailyStatSum(int FormId, string Metric, long Value);
+
 /// <summary>
 /// The daily counters of forms in <c>jfbDailyStat</c> (section 4.5, ADR-0041): per UTC day, form, metric and dimension,
 /// right however many servers count at once, and never personal. New metrics need no migration. Only this repository
@@ -34,10 +40,24 @@ internal interface IDailyStatRepository
     Task<bool> IncrementAsync(int formId, IReadOnlyList<DailyStatCount> counts, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Adds <paramref name="counts"/> to the form's values of <paramref name="day"/>, a UTC day from 1753 to today, as
+    /// <see cref="IncrementAsync"/> adds them to today's: for sums that waited, such as a server's beacons (ADR-0211), which
+    /// count on the day they came even when they are written after midnight.
+    /// </summary>
+    Task<bool> IncrementOnAsync(int formId, DateOnly day, IReadOnlyList<DailyStatCount> counts, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// A form's values from <paramref name="from"/> to <paramref name="to"/>, both included, by day, metric and dimension:
     /// at most 366 days, from 1753 on.
     /// </summary>
     Task<IReadOnlyList<DailyStat>> ListAsync(int formId, DateOnly from, DateOnly to, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// The sums of these forms' values of these metrics without a dimension from <paramref name="from"/> to
+    /// <paramref name="to"/>, both included, by form and metric, as the site's table of forms reads them (ADR-0211): at
+    /// most 366 days, from 1753 on. A form and metric without a value is left out.
+    /// </summary>
+    Task<IReadOnlyList<DailyStatSum>> SumAsync(IReadOnlyCollection<int> formIds, IReadOnlyCollection<string> metrics, DateOnly from, DateOnly to, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Deletes all of a form's values a day at a time, in the unit that deletes the form (4.5), after it deleted the form's

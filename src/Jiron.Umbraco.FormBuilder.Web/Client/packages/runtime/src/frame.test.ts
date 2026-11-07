@@ -2,7 +2,8 @@
 // init(root), others left to the post without JavaScript, `jfb:ready` once per form, and the chunk with the logic
 // loaded on a form's first interaction only, or at once for a form with a default the page fills in (6.4h, ADR-0118),
 // the print button of the copy of the answers below an outcome revealed and bound once (6.5b, ADR-0123), every form
-// root fitted to its page once, and a form to work with through `get` (6.4l, section 4.9).
+// root fitted to its page once, a form to work with through `get` (6.4l, section 4.9), and what visitors do with a form
+// counted where its markup names where to (ROADMAP 11.5, ADR-0211).
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createFrame, type Chunk, type ReadyDetail } from './frame';
 import type { FormModel } from './model';
@@ -407,5 +408,108 @@ describe('fitting a form to its page', () => {
 
     expect(listen, 'one form root, once').toHaveBeenCalledTimes(1);
     vi.unstubAllGlobals();
+  });
+});
+
+describe('counting what visitors do with a form', () => {
+  const EVENTS = '/jfb/api/v1/forms/key-jfb-1/events';
+
+  /** The beacons sent, as their bodies read, by the address they went to. */
+  function beacons(): [string, unknown][] {
+    const sent: [string, unknown][] = [];
+    vi.stubGlobal('navigator', {
+      ...navigator,
+      sendBeacon: (url: string, body: string) => sent.push([url, JSON.parse(body)]) > 0,
+    });
+    return sent;
+  }
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('sends a view as it enhances a form whose markup names where to count, once in its life', () => {
+    const sent = beacons();
+    const counted = form('jfb-1');
+    counted.dataset['jfbInsights'] = EVENTS;
+    document.body.append(counted, form('jfb-2'));
+    const frame = createFrame(chunk().load);
+
+    frame.init();
+    frame.init();
+
+    expect(sent, 'the form without the attribute sends nothing').toEqual([[EVENTS, { type: 'view' }]]);
+  });
+
+  it('sends each page reached and each field and kind that stopped the visitor once, never an answer', () => {
+    const sent = beacons();
+    const counted = form('jfb-1');
+    counted.dataset['jfbInsights'] = EVENTS;
+    document.body.append(counted);
+    createFrame(chunk().load).init();
+    const invalid = (errors: { field: string | null; kind: string }[]) =>
+      counted.dispatchEvent(
+        new CustomEvent('jfb:invalid', { detail: { key: 'key-jfb-1', alias: 'jfb-1', scope: 'send', errors } }),
+      );
+
+    counted.dispatchEvent(new CustomEvent('jfb:page', { detail: { page: 'p2' } }));
+    counted.dispatchEvent(new CustomEvent('jfb:page', { detail: { page: 'p2' } }));
+    invalid([
+      { field: 'email', kind: 'invalid' },
+      { field: null, kind: 'empty' },
+      { field: 'guests[0].name', kind: 'required' },
+    ]);
+    invalid([{ field: 'email', kind: 'invalid' }]);
+    invalid([{ field: 'email', kind: 'required' }]);
+
+    expect(sent.map(([, body]) => body)).toEqual([
+      { type: 'view' },
+      { type: 'page', page: 'p2' },
+      { type: 'invalid', field: 'email', kind: 'invalid' },
+      { type: 'invalid', field: 'guests[0].name', kind: 'required' },
+      { type: 'invalid', field: 'email', kind: 'required' },
+    ]);
+  });
+
+  it('sends a beacon the browser could not queue again the next time, and counts nothing at an empty address', () => {
+    const tried: unknown[] = [];
+    let queues = false;
+    vi.stubGlobal('navigator', {
+      ...navigator,
+      sendBeacon: (_url: string, body: string) => tried.push(JSON.parse(body)) > 0 && queues,
+    });
+    const counted = form('jfb-1');
+    counted.dataset['jfbInsights'] = EVENTS;
+    const nowhere = form('jfb-2');
+    nowhere.dataset['jfbInsights'] = '';
+    document.body.append(counted, nowhere);
+    createFrame(chunk().load).init();
+
+    counted.dispatchEvent(new CustomEvent('jfb:page', { detail: { page: 'p2' } }));
+    queues = true;
+    counted.dispatchEvent(new CustomEvent('jfb:page', { detail: { page: 'p2' } }));
+    counted.dispatchEvent(new CustomEvent('jfb:page', { detail: { page: 'p2' } }));
+
+    expect(tried, 'the form with an empty address sends nothing').toEqual([
+      { type: 'view' },
+      { type: 'page', page: 'p2' },
+      { type: 'page', page: 'p2' },
+    ]);
+  });
+
+  it('counts a start only at a real touch, never at a focus the page or the preview moves', () => {
+    const sent = beacons();
+    const counted = form('jfb-1');
+    counted.dataset['jfbInsights'] = EVENTS;
+    document.body.append(counted);
+    createFrame(chunk().load).init();
+
+    inputOf(counted).dispatchEvent(new Event('focusin', { bubbles: true }));
+    inputOf(counted).dispatchEvent(new Event('input', { bubbles: true }));
+
+    expect(
+      sent.map(([, body]) => body),
+      'an event a script dispatches is not trusted',
+    ).toEqual([{ type: 'view' }]);
   });
 });

@@ -101,7 +101,7 @@ internal sealed class FormSubmissions(
         // One transaction (section 4.4, step 8).
         var (scope, page, read, wordings) = reading.Read;
         var draft = await drafts.FindAsync(request.ResumeToken, served.Row.Id, cancellationToken);
-        var submission = new NewSubmission(served.Row.Id, version.Info.Id, served.Form, read, wordings, request.SubmissionId ?? Guid.NewGuid(), digest, scope.Culture, page, scope.Context, request.Redirect, request.Ticket is { } used ? FormChallenges.StoredId(used) : null, reading.Verdict, draft)
+        var submission = new NewSubmission(served.Row.Id, version.Info.Id, served.Form, read, wordings, request.SubmissionId ?? Guid.NewGuid(), digest, scope.Culture, page, scope.Context, request.Redirect, request.Ticket is { } used ? FormChallenges.StoredId(used) : null, reading.Verdict, draft, request.Ticket?.IssuedUtc)
         {
             // A preview's entry is a test entry, which sets off nothing unless its ticket runs actions (ADR-0204).
             IsTest = request.Preview is not null,

@@ -193,6 +193,27 @@ describe('leaving a field', () => {
     expect(shownOf(form).inline).toEqual([]);
   });
 
+  it('shows the error of a field left with a press in the form after its click, so a press on Next is not moved', async () => {
+    const { form } = contact(ONE_PAGE, FIELDS);
+    type('jfb-1-email', 'not an address');
+    // The browser holds the pressed button :active, which the test's document cannot do itself.
+    const pressed = form.querySelector('button');
+    if (pressed === null) throw new Error('no button');
+    const find = form.querySelector.bind(form);
+    const active = vi
+      .spyOn(form, 'querySelector')
+      .mockImplementation((selector: string) => (selector === ':active' ? pressed : find(selector)));
+    leave('jfb-1-email');
+    await settle();
+    expect(shownOf(form).inline, 'not while the press lasts').toEqual([]);
+    active.mockRestore();
+    form.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await settle();
+    expect(shownOf(form).inline, 'once the press ends with its click').toEqual([
+      'jfb-1-email-error: Enter a complete email address, for example name@example.com',
+    ]);
+  });
+
   it("keeps a field's error as the visitor corrects it and clears it on the input that fixes it", async () => {
     const { form } = contact(ONE_PAGE, FIELDS);
     type('jfb-1-email', 'x');

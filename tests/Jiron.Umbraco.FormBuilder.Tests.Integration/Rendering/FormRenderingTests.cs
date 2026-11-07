@@ -43,13 +43,14 @@ public sealed class FormRenderingTests : RenderingTestBase
                 ["data-jfb-revision"] = "1",
                 ["data-jfb-api"] = "/jfb/api/v1",
                 ["data-jfb-content"] = pages[page].ToString("D"),
+                ["data-jfb-insights"] = $"/jfb/api/v1/forms/{key:D}/events",
                 ["data-jfb-contract"] = "1",
                 ["lang"] = "en-US",
                 ["dir"] = "ltr",
                 ["method"] = "post",
                 ["action"] = $"/{page}/#jfb-1",
                 ["novalidate"] = string.Empty,
-            }), "the form element, without enctype for a form without files");
+            }), "the form element, without enctype for a form without files, where to count (ADR-0211)");
             Assert.That(model, Has.Length.EqualTo(1));
             Assert.That(model[0].GetAttribute("type"), Is.EqualTo("application/json"));
             Assert.That(JsonNode.DeepEquals(JsonNode.Parse(model[0].TextContent), expected), Is.True, $"the model data is the form endpoint's answer:\n{model[0].TextContent}\n{expected.ToJsonString()}");

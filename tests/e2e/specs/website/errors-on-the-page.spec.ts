@@ -117,7 +117,8 @@ for (const language of LANGUAGES) {
 
     const posts: string[] = [];
     page.on('request', (request) => {
-      if (request.method() === 'POST') posts.push(request.url());
+      // A beacon of insights (ADR-0211) holds no answer and sends nothing of the form.
+      if (request.method() === 'POST' && !request.url().endsWith('/events')) posts.push(request.url());
     });
     await pressOnThePage(form.locator('button[data-jfb-nav="submit"]'));
     const summary = form.locator(':scope > [data-jfb-summary]');

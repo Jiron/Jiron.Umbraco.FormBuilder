@@ -63,13 +63,14 @@ internal static class ElementJson
         typeof(RepeaterControlModel),
     }.ToFrozenDictionary(type => type, type => JsonNamingPolicy.CamelCase.ConvertName(type.Name[..^"ControlModel".Length]));
 
-    // The properties only a post without JavaScript uses, by the type that has them and their written name, and the
-    // view paths a field and a repeatable group name.
+    // The properties only a post without JavaScript uses, by the type that has them and their written name, the view
+    // paths a field and a repeatable group name, and the address the element writes from its own API's (ADR-0211).
     private static readonly FrozenSet<(Type Type, string Name)> Left = new[]
     {
         (typeof(FormViewModel), "action"),
         (typeof(FormViewModel), "encodingType"),
         (typeof(FormViewModel), "postValues"),
+        (typeof(FormViewModel), "insightsUrl"),
         (typeof(RankingMoveModel), "action"),
         (typeof(RowButtonModel), "action"),
         (typeof(SummaryChangeModel), "action"),

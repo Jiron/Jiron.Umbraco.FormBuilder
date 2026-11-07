@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Text.Json;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
+using Jiron.Umbraco.FormBuilder.Core.Insights;
 using Jiron.Umbraco.FormBuilder.Core.Themes;
 using Jiron.Umbraco.FormBuilder.Web.ManagementApi;
 using Jiron.Umbraco.FormBuilder.Web.Rendering;
@@ -17,8 +18,8 @@ namespace Jiron.Umbraco.FormBuilder.Web.PublicApi;
 
 /// <summary>
 /// Forms, as headless sites render them and as a page's markup, their fields' options, the files visitors upload to
-/// them, the pages they check and the entries they submit, and the receipts of those (section 4.6, ADR-0084, ADR-0086,
-/// ADR-0087, ADR-0088, ADR-0089, ADR-0104, ADR-0128).
+/// them, the pages they check and the entries they submit, the receipts of those, and what visitors do with them
+/// (section 4.6, ADR-0084, ADR-0086, ADR-0087, ADR-0088, ADR-0089, ADR-0104, ADR-0128, ADR-0211).
 /// </summary>
 /// <param name="requests">What the endpoints of forms read of a request and answer with.</param>
 /// <param name="pages">The culture and the page a request is for.</param>
@@ -32,6 +33,7 @@ namespace Jiron.Umbraco.FormBuilder.Web.PublicApi;
 /// <param name="assets">The addresses of the stylesheets and the script a form's page loads.</param>
 /// <param name="challenges">What the challenge endpoint answers.</param>
 /// <param name="placements">The placements' tokens, with which a page's form renders again (ADR-0129).</param>
+/// <param name="insights">What the events endpoint reads of a request and answers with (ADR-0211).</param>
 [Route("forms")]
 internal sealed class FormController(
     FormRequests requests,
@@ -45,7 +47,8 @@ internal sealed class FormController(
     FormRendering rendering,
     PageAssets assets,
     ChallengeRequests challenges,
-    PlacementTokens placements) : FormBuilderPublicApiController
+    PlacementTokens placements,
+    InsightRequests insights) : FormBuilderPublicApiController
 {
     /// <summary>The start of a query name that gives a context value to the element endpoint, as <c>&lt;jfb-render&gt;</c>'s attributes do.</summary>
     internal const string ContextQueryPrefix = "context-";
@@ -623,6 +626,37 @@ internal sealed class FormController(
         }
 
         return await entries.ReceiptAsync(HttpContext, formKey, cancellationToken);
+    }
+
+    /// <summary>
+    /// Counts what a visitor did with a published form (ADR-0211), as its page tells where the form's markup names this
+    /// address (<c>data-jfb-insights</c>): a JSON object of at most 1 KB in any content type, as <c>navigator.sendBeacon</c>
+    /// sends it, whose <c>type</c> is <c>view</c>, <c>start</c>, <c>page</c> (with the <c>page</c> reached) or
+    /// <c>invalid</c> (with the <c>field</c> and the <c>kind</c> of error that stopped the visitor). It holds no answer and
+    /// no person: every other member is skipped unread. <c>204</c> whether it counted or not; it counts only while the
+    /// form's insights are on, and only what the published version has.
+    /// </summary>
+    /// <param name="key">The form's key.</param>
+    /// <param name="cancellationToken">The request's cancellation, with its time limit.</param>
+    [HttpPost("{key}/events")]
+    [FormBuilderRateLimit(FormBuilderRateLimitPolicies.Events)]
+    [FormBuilderBodyLimit(FormInsights.MaxBeaconBytes)]
+    [FormBuilderTimeLimit(10)]
+    [FormBuilderBeaconBody(typeof(InsightEventRequestModel))]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest, FormBuilderProblemResult.MediaType)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound, FormBuilderProblemResult.MediaType)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status503ServiceUnavailable, FormBuilderProblemResult.MediaType)]
+    public async Task<IActionResult> Events(string key, CancellationToken cancellationToken)
+    {
+        // A form the site does not serve answers before its body is read.
+        if (!Guid.TryParseExact(key, "D", out var formKey) || await forms.GetAsync(formKey, cancellationToken) is not { } form)
+        {
+            FormBuilderPublicProblems.CloseConnection(HttpContext);
+            return FormBuilderPublicProblems.FormNotFound();
+        }
+
+        return await insights.CountAsync(HttpContext, form.Published, cancellationToken);
     }
 
     // The form an action that takes the preview's requests reads: the version a preview's ticket names, as though it were

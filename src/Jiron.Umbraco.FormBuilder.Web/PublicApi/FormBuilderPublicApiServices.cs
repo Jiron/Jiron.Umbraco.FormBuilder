@@ -57,6 +57,7 @@ internal static class FormBuilderPublicApiServices
         builder.Services.TryAddSingleton<ChallengeRequests>();
         builder.Services.TryAddSingleton<UploadRequests>();
         builder.Services.TryAddSingleton<EntryRequests>();
+        builder.Services.TryAddSingleton<InsightRequests>();
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IConfigureOptions<SwaggerGenOptions>, ConfigureFormBuilderPublicApiSwagger>());
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IOperationIdHandler, FormBuilderPublicOperationIdHandler>());
         builder.Services.Configure<UmbracoPipelineOptions>(options =>

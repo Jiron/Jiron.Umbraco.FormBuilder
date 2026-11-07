@@ -11,6 +11,7 @@ using Jiron.Umbraco.FormBuilder.Core.Entries;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
+using Jiron.Umbraco.FormBuilder.Core.Insights;
 using Jiron.Umbraco.FormBuilder.Core.MergeTags;
 using Jiron.Umbraco.FormBuilder.Core.OptionLists;
 using Jiron.Umbraco.FormBuilder.Core.Submissions;
@@ -89,6 +90,7 @@ internal sealed record FormRender(
 /// <param name="placements">The tokens that carry a placement's page after a send through a page's send (ADR-0120).</param>
 /// <param name="submissionProtection">The settings that protect a form, which say whether it has a captcha.</param>
 /// <param name="requestPages">The page a render is for, whose site's settings apply.</param>
+/// <param name="insights">Whether the form counts what visitors do with it, which its markup then says where to (ADR-0211).</param>
 /// <param name="logger">Where context values that are not taken are logged.</param>
 internal sealed partial class FormModels(
     FieldTypeRegistry types,
@@ -105,6 +107,7 @@ internal sealed partial class FormModels(
     PlacementTokens placements,
     SubmissionProtection submissionProtection,
     FormPages requestPages,
+    FormInsights insights,
     ILogger<FormModels> logger)
 {
     /// <summary>The longest context value a page may give (ADR-0088).</summary>
@@ -380,6 +383,7 @@ internal sealed partial class FormModels(
         var errors = Summary(build, settings.ValidationSummary, pages.FirstOrDefault(page => page.IsCurrent));
         var honeypot = FormHoneypot.NameOf(root.Key, root.Revision);
         return root.Model(
+            insights: !render.Preview && await insights.IsOnAsync(definition, cancellationToken),
             asksAtOnce: build.TellsPlaces || FormMemberConditions.Of(definition).Any || await submissionProtection.ShowsCaptchaAsync(render.Form.Published.Form.Key, definition, () => requestPages.PageAsync(render.Content), cancellationToken),
             pages: pages,
             defaultButton: summaryPage is not null || pages.SelectMany(page => page.Groups).SelectMany(group => group.Fields).Any(field => field.Control is RankingControlModel or RepeaterControlModel)
@@ -1030,7 +1034,8 @@ internal sealed partial class FormModels(
             Guid? contentKey = null,
             string? placement = null,
             FormSendingModel? sending = null,
-            bool asksAtOnce = false) => new()
+            bool asksAtOnce = false,
+            bool insights = false) => new()
             {
                 Key = Key,
                 Alias = Alias,
@@ -1066,6 +1071,7 @@ internal sealed partial class FormModels(
                 Placement = placement,
                 Sending = sending,
                 AsksAtOnce = asksAtOnce,
+                Insights = insights,
             };
     }
 

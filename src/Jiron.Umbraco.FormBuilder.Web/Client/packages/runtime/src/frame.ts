@@ -6,7 +6,9 @@
  * at once, for what only the challenge's answer can tell a cached page (ADR-0156). A form of another contract version,
  * with model data this runtime cannot read, or whose chunk cannot load, is left to the post without JavaScript. Below
  * an outcome, it reveals the print button of the copy of the answers and binds it to the browser's print (ADR-0123). It
- * fits every form root to its page (6.4l), and gives a site's code a form to work with (`get`, section 4.9).
+ * fits every form root to its page (6.4l), and gives a site's code a form to work with (`get`, section 4.9). Where the
+ * form's markup names where to count (`data-jfb-insights`), it counts what visitors do with the form (ROADMAP 11.5,
+ * ADR-0211).
  */
 import { checkGround, followSteps } from './fit';
 import type { JironFormBuilderForm } from './global';
@@ -26,6 +28,32 @@ export interface Chunk {
   attach(form: HTMLFormElement, model: FormModel): unknown;
   /** The logic of a form that came in another's place, which the chunk gave it itself (6.4j). */
   sessionOf?(form: HTMLFormElement): unknown;
+}
+
+/**
+ * Counts what visitors do with a form, where its markup names where to count (`data-jfb-insights`, ADR-0211): a view as
+ * it is enhanced, a start at the visitor's first touch, each page reached, and each field and kind of error that stopped
+ * them, each once in a page's life (a beacon the browser could not queue goes again the next time), as a beacon that
+ * holds no answer and no person.
+ */
+function count(form: HTMLFormElement): void {
+  const to = form.dataset['jfbInsights'];
+  if (!to) return;
+  const sent: Record<string, boolean> = {};
+  const send = (event: Record<string, string>): void => {
+    const body = JSON.stringify(event);
+    sent[body] ||= navigator.sendBeacon(to, body);
+  };
+  send({ type: 'view' });
+  for (const type of TOUCHES) form.addEventListener(type, (event) => event.isTrusted && send({ type: 'start' }));
+  form.addEventListener('jfb:page', (event) =>
+    send({ type: 'page', page: (event as CustomEvent<{ page: string }>).detail.page }),
+  );
+  form.addEventListener('jfb:invalid', (event) => {
+    for (const { field, kind } of (event as CustomEvent<{ errors: { field: string | null; kind: string }[] }>).detail
+      .errors)
+      if (field) send({ type: 'invalid', field, kind });
+  });
 }
 
 /** What a form's logic offers a site's code. */
@@ -87,6 +115,7 @@ export function createFrame(load: () => Promise<Chunk>): Frame {
       );
     };
     wakes.set(form, touched);
+    count(form);
     for (const type of TOUCHES) form.addEventListener(type, touched);
     if (form.querySelector('[data-jfb-default]') !== null || form.hasAttribute('data-jfb-asks')) touched();
     form.dispatchEvent(
