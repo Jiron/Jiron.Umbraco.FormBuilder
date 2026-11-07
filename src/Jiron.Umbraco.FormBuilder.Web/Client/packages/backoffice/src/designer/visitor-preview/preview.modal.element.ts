@@ -17,6 +17,7 @@ import {
 } from '@umbraco-cms/backoffice/external/lit';
 import { UmbModalBaseElement } from '@umbraco-cms/backoffice/modal';
 import { jfbBackofficeTokens } from '../../styles/tokens';
+import { pressOf } from '../../styles/press';
 import { confirmList } from '../../ui/confirm';
 import { CANVAS_WIDTHS, type CanvasWidth } from '../canvas/widths';
 import { FrameHost } from './frame-host';
@@ -54,6 +55,7 @@ export class PreviewModalElement extends UmbModalBaseElement<PreviewModalData, n
 
   static override styles = [
     jfbBackofficeTokens,
+    pressOf('.widths > button'),
     css`
       /* Umbraco's headline in its own type (an h3 in its 70 px header), but whole: a long form name takes another line
          and the header grows with it, where Umbraco's would cut it on a phone (ADR-0206). */

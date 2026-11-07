@@ -21,6 +21,7 @@ import {
 import { UmbModalBaseElement, umbOpenModal } from '@umbraco-cms/backoffice/modal';
 import type { ActionTypeResponseModel, FieldSettingResponseModel } from '../../api';
 import { jfbBackofficeTokens, jfbVisuallyHidden } from '../../styles/tokens';
+import { pressOf } from '../../styles/press';
 import { issueWords, type CheckWordsContext } from '../check/check-words';
 import { parsePath, type CheckSeverity } from '../check/form-check';
 import { FormChecker, UNCHECKED, type CheckState } from '../check/form-checker';
@@ -131,6 +132,7 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
 
   static override styles = [
     jfbBackofficeTokens,
+    pressOf('.remove'),
     jfbVisuallyHidden,
     controlStyles,
     choiceStyles,

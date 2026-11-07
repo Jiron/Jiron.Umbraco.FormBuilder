@@ -9,6 +9,7 @@ import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import { umbOpenModal } from '@umbraco-cms/backoffice/modal';
 import type { FormVersionEntryResponseModel } from '../../api';
 import { jfbBackofficeTokens, jfbVisuallyHidden } from '../../styles/tokens';
+import { pressOf } from '../../styles/press';
 import { jfbSkeleton, skeletonLines } from '../../ui/skeleton';
 import { FORM_WORKSPACE_CONTEXT } from '../constants';
 import type { FormWorkspaceContext } from '../form-workspace.context';
@@ -41,6 +42,7 @@ export class FormHistoryViewElement extends UmbLitElement {
 
   static override styles = [
     jfbBackofficeTokens,
+    pressOf('.more'),
     jfbVisuallyHidden,
     jfbSkeleton,
     css`

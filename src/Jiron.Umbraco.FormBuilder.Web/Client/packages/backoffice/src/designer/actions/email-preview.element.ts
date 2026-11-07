@@ -5,6 +5,7 @@
 import { css, html, nothing } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import { jfbBackofficeTokens } from '../../styles/tokens';
+import { pressOf } from '../../styles/press';
 import { NO_PREVIEW, type PreviewState } from '../preview/draft-previewer';
 import type { EmailPreviewResponseModel } from '../../api';
 import { mailDocument, type EmailPreview, type Scheme } from './email-preview';
@@ -26,6 +27,7 @@ export class EmailPreviewElement extends UmbLitElement {
 
   static override styles = [
     jfbBackofficeTokens,
+    pressOf('.schemes > button'),
     css`
       :host {
         display: block;

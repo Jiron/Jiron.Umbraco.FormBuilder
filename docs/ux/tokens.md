@@ -254,6 +254,8 @@ border in them: those take the three `-text` mixes above.
 
 **Motion.** `--jfb-bo-motion-fast` (`120ms`) and `--jfb-bo-motion-ease` (`cubic-bezier(0.23, 1, 0.32, 1)`) time every
 press, fade and reveal the package draws, the same values as the website's `--jfb-motion-fast` and `--jfb-motion-ease`.
+A small button of the package's own, a "…", a remove button or a choice of a few, shrinks to 0.97 as it is pressed
+(`pressOf` in `packages/backoffice/src/styles/press.ts`), as the designer's do.
 Hover and colour changes use `ease`. With `prefers-reduced-motion: reduce`, nothing moves or scales; fades keep their
 time. The canvas's move handle and insert points show and hide at once: every selection, focus and hover reveals one
 and hides another, and a fade would paint the whole sheet again for each of its frames, which a form of 300 fields

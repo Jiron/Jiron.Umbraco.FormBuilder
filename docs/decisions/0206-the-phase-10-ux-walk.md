@@ -28,7 +28,10 @@ editor's place in the list) with those of Phase 9, at 375, 768 and 1440 px, ligh
    axe's label in name).
 4. **A text named once per language** in the publish dialog's few words: "Email address: Label, Label (German),
    Required".
-5. **The walk itself:** a run's Details show only for a run that failed, and every action of the walk's form
+5. **Small buttons that do not answer a press.** Phase 9 gave the designer's own small buttons a press of 120 ms
+   (ADR-0182); Phase 10's own, the preview's widths, the email preview's light and dark, the "..." of an action's card
+   and of a version's row, and the remove button of a chip in an action's sidebar, had none.
+6. **The walk itself:** a run's Details show only for a run that failed, and every action of the walk's form
    delivered, so the walk found none to open; and its own save meanwhile ran ten minutes after it signed in, when that
    sign-in no longer held.
 
@@ -50,7 +53,10 @@ The owner answers no questions during the run (CLAUDE.md rule 8); each choice be
    preview's Run actions… and the last run's Details to it in both languages.
 4. **The publish dialog names a text once,** however many of its languages changed; History's comparison and Review
    both versions still say each language.
-5. **The walk** gives its form with actions a webhook that the test stub answers 503, so Run actions leaves a failed
+5. **Every small button answers a press the same way.** `pressOf` (`styles/press.ts`) gives a selector's buttons
+   the designer's press, shrinking to 0.97 on the motion tokens and moving nothing with reduced motion, and the Phase 10
+   screens give it to their small buttons; a test holds the rule and each screen's use of it.
+6. **The walk** gives its form with actions a webhook that the test stub answers 503, so Run actions leaves a failed
    run with Details, and signs in again for the save it makes meanwhile.
 
 ## Consequences

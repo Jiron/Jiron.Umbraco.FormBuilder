@@ -7,6 +7,7 @@
 import { css, html, nothing, repeat, type PropertyValues } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import { jfbBackofficeTokens, jfbVisuallyHidden } from '../../styles/tokens';
+import { pressOf } from '../../styles/press';
 import { dragFrom } from '../drag/pointer-drag';
 import { controlStyles } from '../inspector/control.styles';
 import { flagLine, type Flag } from '../settings/problem-lines';
@@ -53,6 +54,7 @@ export class ActionListElement extends UmbLitElement {
 
   static override styles = [
     jfbBackofficeTokens,
+    pressOf('.more'),
     jfbVisuallyHidden,
     controlStyles,
     css`
