@@ -203,10 +203,10 @@ public sealed class PublicFormTestEntryTests : PublicApiTestBase
         var sent = await SubmitAsync(key, ticket, $$"""{"name":"Ada","cv":["{{token}}"]}""", challenge);
         var receiptBody = $$"""{"submissionId":"{{sent}}","challenge":"{{challenge}}"}""";
         using var receipt = await FromFrameAsync(HttpMethod.Post, $"{Root}/forms/{key}/receipt", ticket, request => request.Content = Json(receiptBody));
-        // Published, the form serves visitors: a visitor's receipt for the test entry's submission finds no entry.
+        // Published, the form serves visitors: a visitor's receipt for the test entry's submission finds no entry, even
+        // with the challenge that made it.
         await SaveAndPublishAsync(key, definition => Headless(definition));
-        var visitorsBody = $$"""{"submissionId":"{{sent}}","challenge":"{{await ChallengeAsync(key)}}"}""";
-        using var visitors = await SendAsync(HttpMethod.Post, $"{Root}/forms/{key}/receipt", request => request.Content = Json(visitorsBody));
+        using var visitors = await SendAsync(HttpMethod.Post, $"{Root}/forms/{key}/receipt", request => request.Content = Json(receiptBody));
         var entry = (await Entries.GetBySubmissionAsync((await FormRows.GetAsync(key))!.Id, sent))!;
 
         Assert.Multiple(async () =>
