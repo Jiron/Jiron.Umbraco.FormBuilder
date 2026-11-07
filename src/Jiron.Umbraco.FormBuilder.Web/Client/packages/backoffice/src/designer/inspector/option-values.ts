@@ -132,13 +132,21 @@ export const isValue = (value: string): boolean =>
 export const repeats = (items: readonly DesignOption[], value: string, except = -1): boolean =>
   items.some((item, at) => at !== except && fold(item.value) === fold(value));
 
+/** The options' values with case folded as the server folds it, which `repeats` compares, to look up at once. */
+const foldedOf = (items: readonly DesignOption[]): Set<string> => new Set(items.map((item) => fold(item.value)));
+
 /**
  * The value a new option stores, from what it is called: the label cleaned and cut to 200 characters, or the next
- * free "option n" where the label leaves nothing or repeats another.
+ * free "option n" where the label leaves nothing or repeats another. `taken` holds the options' folded values, which a
+ * paste of many keeps as it goes.
  */
-export function valueFor(label: string, items: readonly DesignOption[]): string {
+export function valueFor(
+  label: string,
+  items: readonly DesignOption[],
+  taken: ReadonlySet<string> = foldedOf(items),
+): string {
   const cleaned = cut(clean(label), VALUE_LENGTH);
-  const ok = (value: string) => isValue(value) && !repeats(items, value);
+  const ok = (value: string) => isValue(value) && !taken.has(fold(value));
   if (ok(cleaned)) return cleaned;
   for (let n = items.length + 1; ; n++) if (ok(`option${n}`)) return `option${n}`;
 }
@@ -149,9 +157,10 @@ export function newOption(
   items: readonly DesignOption[],
   culture: string,
   isDefault: boolean,
+  taken?: ReadonlySet<string>,
 ): DesignOption {
   const text = withText(undefined, culture, label, isDefault);
-  return { value: valueFor(label, items), ...(text ? { label: text } : {}) };
+  return { value: valueFor(label, items, taken), ...(text ? { label: text } : {}) };
 }
 
 /** What pasting lines added, and how many repeated an option already there. */
@@ -163,7 +172,8 @@ export interface Pasted {
 
 /**
  * Options from pasted text, one a line: blank lines are skipped, and a line whose value repeats an option already
- * there, or one pasted before it, is counted and left out. At most 1,000 options in all.
+ * there, or one pasted before it, is counted and left out. At most 1,000 options in all; each line is looked up among
+ * the folded values once, so a thousand lines paste at once rather than in seconds.
  */
 export function pasteOptions(
   text: string,
@@ -171,16 +181,19 @@ export function pasteOptions(
   culture: string,
   isDefault: boolean,
 ): Pasted {
-  let next = [...items];
+  const next = [...items];
+  const taken = foldedOf(next);
   let added = 0;
   let repeated = 0;
   for (const label of linesOf(text)) {
-    if (repeats(next, cut(label, VALUE_LENGTH))) {
+    if (taken.has(fold(cut(label, VALUE_LENGTH)))) {
       repeated++;
       continue;
     }
     if (next.length >= MOST_OPTIONS) break;
-    next = [...next, newOption(label, next, culture, isDefault)];
+    const option = newOption(label, next, culture, isDefault, taken);
+    next.push(option);
+    taken.add(fold(option.value));
     added++;
   }
   return { items: next, added, repeated };
