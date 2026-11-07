@@ -9,6 +9,7 @@ const were = (number: number) => (number === 1 ? '1 was' : `${number.toLocaleStr
 
 export default {
   jfbEntries: {
+    heading: 'Entries',
     loading: 'Loading entries…',
     failed: "Entries couldn't be loaded.",
     retry: 'Try again',
@@ -413,5 +414,73 @@ export default {
     forward_nobody: "Nobody else may view this form's entries yet, and Settings › Email names no team address.",
     image_meta: (field: string, type: string, size: string) => `${field} · ${type}, ${size}`,
     image_failed: "The image couldn't be shown. Try again.",
+    export: 'Export selected…',
+    export_open: 'Export…',
+    export_headline: 'Export',
+    export_loading: 'Loading the export…',
+    export_readFailed: "The export couldn't be opened. Try again.",
+    export_format: 'Format',
+    export_entries: 'Entries',
+    export_entriesAll: (number: number) =>
+      number === 1 ? 'The 1 entry, no filters' : `All ${entries(number)}, no filters`,
+    export_entriesFiltered: (number: number) =>
+      number === 1 ? '1 entry that matches the filters' : `${entries(number)} that match the filters`,
+    export_entriesMore: 'More than 1,000 entries that match the search',
+    export_entriesTicked: (number: number) => `${entries(number)} selected`,
+    export_entriesFailed: "The entries couldn't be counted. Try again.",
+    export_background: 'This export continues in the background; a notification links to the file.',
+    export_fields: 'Fields',
+    export_allFields: (number: number) => `All fields (${number})`,
+    export_allFileFields: (number: number) => `All file fields (${number})`,
+    export_noFileFields: 'This form has no file fields, so the ZIP holds no files.',
+    export_sensitiveLeftOut: 'Sensitive fields are left out.',
+    export_sensitive: 'Include sensitive fields',
+    export_moreOptions: 'More options',
+    export_delimiter: 'Delimiter',
+    export_delimiter_comma: 'Comma',
+    export_delimiter_semicolon: 'Semicolon',
+    export_delimiter_tab: 'Tab',
+    export_headers: 'Column headers',
+    export_headers_labels: 'Labels',
+    export_headers_aliases: 'Aliases',
+    export_byteOrderMark: 'Start with a byte-order mark',
+    export_byteOrderMarkHelp: 'Spreadsheet programs then read letters such as ä and é correctly.',
+    export_yours: 'Your exports of this form',
+    export_ready: (number: number) => `Your export of ${entries(number)} is ready.`,
+    export_failedOne: (number: number) => `The export of ${entries(number)} couldn't be prepared.`,
+    export_preparing: (number: number, more: boolean) =>
+      more ? 'Preparing the export of more than 1,000 entries.' : `Preparing the export of ${entries(number)}.`,
+    export_progress: (done: number, total: number, more: boolean) =>
+      more
+        ? `Preparing the export: ${entries(done)} so far.`
+        : `Preparing the export: ${done.toLocaleString('en')} of ${entries(total)}.`,
+    export_preparingToast: (number: number, more: boolean) =>
+      `${more ? 'Preparing the export of more than 1,000 entries.' : `Preparing the export of ${entries(number)}.`} You can keep working; a notification links to the file.`,
+    export_progressToast: (done: number, total: number, more: boolean) =>
+      `${more ? `Preparing the export: ${entries(done)} so far.` : `Preparing the export: ${done.toLocaleString('en')} of ${entries(total)}.`} You can keep working; a notification links to the file.`,
+    export_readyToast: (number: number) => `Your export of ${entries(number)} is ready.`,
+    export_failedToast: (number: number, more: boolean) =>
+      `The export of ${more ? 'more than 1,000 entries' : entries(number)} couldn't be prepared. Try again; if it fails again, a developer finds why in the site's log.`,
+    export_download: 'Download',
+    export_downloadFailed: "The file couldn't be downloaded. It may have expired; export again.",
+    export_start: 'Export',
+    export_startCount: (number: number) => `Export ${entries(number)}`,
+    export_startMore: 'Export more than 1,000 entries',
+    export_printCount: (number: number) => `Print ${entries(number)}`,
+    export_printMore: 'Print more than 1,000 entries',
+    export_cancel: 'Cancel',
+    export_failed: "The export couldn't be made. Try again.",
+    export_busy: 'You have 3 exports under way. Wait for one to finish, then export again.',
+    export_printFailed: "The browser couldn't print this. Choose another format.",
+    export_started: 'The export continues in the background.',
+    action_print: 'Print',
+    print_failed: "The entry couldn't be printed. Try again.",
+  },
+  jfbExport: {
+    formatCsv: 'CSV',
+    formatExcel: 'Excel',
+    formatJson: 'JSON',
+    formatPrint: 'Printable view',
+    formatFiles: 'ZIP of the uploaded files',
   },
 } satisfies UmbLocalizationDictionary;

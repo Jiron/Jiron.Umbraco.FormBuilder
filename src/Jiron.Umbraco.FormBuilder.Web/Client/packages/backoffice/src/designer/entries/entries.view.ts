@@ -82,6 +82,7 @@ import {
 import {
   ENTRY_COLUMNS_MODAL,
   ENTRY_DIGEST_MODAL,
+  ENTRY_EXPORT_MODAL,
   ENTRY_FILTER_MODAL,
   ENTRY_FORMS_MODAL,
   ENTRY_KEYS_MODAL,
@@ -834,7 +835,12 @@ export class EntriesViewElement extends UmbLitElement {
 
   /** The ticked rows as the bulk bar weighs them: each with its state and what the user may do on its form. */
   #weighed(rows: readonly EntryListRowResponseModel[]) {
-    return rows.map((row) => ({ row, state: row.state, permissions: this.#permissionsOf(row) }));
+    return rows.map((row) => ({
+      row,
+      state: row.state,
+      permissions: this.#permissionsOf(row),
+      form: this.#formOf(row),
+    }));
   }
 
   /** The bulk actions offered for these rows. */
@@ -1005,6 +1011,38 @@ export class EntriesViewElement extends UmbLitElement {
     if (answer) this.#filterBy(answer.filter);
   }
 
+  /**
+   * The form Export... exports: the view's own, or in the Inbox the one form its Form filter chose; none where the user
+   * may not export it, or Spam, which offers no export (IA 6.2, ADR-0210).
+   */
+  #exportForm(): string | undefined {
+    if (this.place === 'form') return this._permissions.includes('export') ? this.#form : undefined;
+    if (this.place !== 'inbox') return undefined;
+    const one = oneForm(this._filter);
+    return one && this._forms.get(one)?.permissions.includes('export') ? one : undefined;
+  }
+
+  /** Export...: the sidebar exports the entries the list's filter holds. */
+  async #exportList() {
+    const form = this.#exportForm();
+    if (!form) return;
+    await this.#openExport({ form, filter: this._filter });
+  }
+
+  /** Export selected...: the sidebar exports the ticked entries, which are of one form. */
+  async #exportTicked(rows: readonly EntryListRowResponseModel[]) {
+    const first = rows[0];
+    const form = first && this.#formOf(first);
+    if (!form) return;
+    await this.#openExport({ form, entries: rows.map((row) => row.key) });
+  }
+
+  async #openExport(data: { form: string; filter?: EntryListFilterRequestModel; entries?: string[] }) {
+    const answer = await umbOpenModal(this, ENTRY_EXPORT_MODAL, { data }).catch(() => undefined);
+    // The file is saved or printed; a background export's toast follows it, and the live region says it went on.
+    if (answer?.done === 'background') this._said = this.#term('export_started');
+  }
+
   /** Email me a summary...: the sidebar saves the user's choice, and the toast says what it is now. */
   async #chooseDigest() {
     this.#closeMenus();
@@ -1142,6 +1180,7 @@ export class EntriesViewElement extends UmbLitElement {
     this._busy = true;
     try {
       if (action === 'delete') await this.#delete(rows);
+      else if (action === 'export') await this.#exportTicked(rows);
       else if (action === 'rerun') await this.#rerun(rows);
       else await this.#move(action, rows);
     } finally {
@@ -1649,6 +1688,15 @@ export class EntriesViewElement extends UmbLitElement {
       </uui-input>
       ${this.#filterMenu()}
       ${
+        this.#exportForm()
+          ? html`<uui-button
+              look="outline"
+              label=${this.#term('export_open')}
+              @click=${() => void this.#exportList()}
+            ></uui-button>`
+          : nothing
+      }
+      ${
         this.place === 'spam' && this._mayEmpty
           ? html`<uui-button
               look="outline"
@@ -2005,7 +2053,9 @@ export class EntriesViewElement extends UmbLitElement {
     const row = open === undefined ? undefined : this._rows.find((one) => one.key === open);
     // Covered by the panel, the list is out of reach of the keyboard and of screen readers until the panel closes.
     const covered = open !== undefined && this._covering;
+    // The list's heading, for screen readers: under the workspace's or screen's h1, before the sidebars' h3 (heading order).
     return html`<div class="list" ?inert=${covered}>
+        <h2 class="visually-hidden">${this.#term('heading')}</h2>
         ${firstUse ? nothing : this.#toolbar()} ${this.#chips()} ${this.#list()} ${this.#bulk()}
         <div class="visually-hidden" role="status">${this._said}</div>
       </div>

@@ -6,7 +6,7 @@ import { receivedText, stateText, type Term } from './entry-list-model';
 
 /** An action of the panel's bar. */
 export type PanelAction =
-  'approve' | 'reject' | 'markSpam' | 'notSpam' | 'forward' | 'delete' | 'rerun' | 'backToWaiting';
+  'approve' | 'reject' | 'markSpam' | 'notSpam' | 'forward' | 'delete' | 'print' | 'rerun' | 'backToWaiting';
 
 /** The permission each action needs on the form. */
 const PANEL_NEEDS: Record<PanelAction, string> = {
@@ -16,6 +16,7 @@ const PANEL_NEEDS: Record<PanelAction, string> = {
   notSpam: 'editEntries',
   forward: 'editEntries',
   delete: 'deleteEntries',
+  print: 'export',
   rerun: 'manageActions',
   backToWaiting: 'editEntries',
 };
@@ -40,7 +41,8 @@ export interface PanelBar {
  * The bar of IA 6.3's table, by the entry's state: waiting for approval on a form that approves by hand, Approve with
  * Reject, Mark as spam and Forward..., then Delete... and Re-run actions; in Spam, Not spam with Delete...; any other,
  * Mark as spam, Forward... and Delete..., then Back to waiting for approval (approved or rejected, approved by hand) and
- * Re-run actions. The user sees only what they may use, the first three of it beside the primary.
+ * Re-run actions. Print, for a user who may export, waits in the "..." in every state (IA 6.3, ADR-0210). The user sees
+ * only what they may use, the first three of it beside the primary.
  */
 export function panelBar(state: string, manualApproval: boolean, permissions: readonly string[]): PanelBar {
   const may = (action: PanelAction) => permissions.includes(PANEL_NEEDS[action]);
@@ -48,22 +50,23 @@ export function panelBar(state: string, manualApproval: boolean, permissions: re
   let order: PanelAction[];
   if (state === 'spam') {
     primary = 'notSpam';
-    order = ['delete'];
+    order = ['delete', 'print'];
   } else if (state === 'submitted' && manualApproval) {
     primary = 'approve';
-    order = ['reject', 'markSpam', 'forward', 'delete', 'rerun'];
+    order = ['reject', 'markSpam', 'forward', 'delete', 'print', 'rerun'];
   } else {
     const back: PanelAction[] =
       manualApproval && (state === 'approved' || state === 'rejected') ? ['backToWaiting'] : [];
     const rerun: PanelAction[] = state === 'unverified' ? [] : ['rerun'];
-    order = ['markSpam', 'forward', 'delete', ...back, ...rerun];
+    order = ['markSpam', 'forward', 'delete', ...back, 'print', ...rerun];
   }
 
   const allowed = order.filter(may);
+  const visible: PanelAction[] = allowed.filter((action) => action !== 'print').slice(0, 3);
   return {
     ...(primary && may(primary) ? { primary } : {}),
-    visible: allowed.slice(0, 3),
-    more: allowed.slice(3),
+    visible,
+    more: allowed.filter((action) => !visible.includes(action)),
   };
 }
 

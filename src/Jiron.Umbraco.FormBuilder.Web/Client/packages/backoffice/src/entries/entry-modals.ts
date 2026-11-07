@@ -1,5 +1,6 @@
-// The dialogs of a form's Entries view, the Inbox and Spam (ROADMAP 11.1, IA 6.1, ADR-0207, ADR-0209): one part of the
-// filter, the forms to filter by, the columns, the name of a filter set, the keyboard shortcuts and the summary email.
+// The dialogs of a form's Entries view, the Inbox and Spam (ROADMAP 11.1 and 11.4, IA 6.1 and 6.4, ADR-0207, ADR-0209,
+// ADR-0210): one part of the filter, the forms to filter by, the columns, the name of a filter set, the keyboard
+// shortcuts, the summary email and the export.
 // Each is Umbraco's dialog or sidebar; the view loads their words first.
 import { UmbModalToken } from '@umbraco-cms/backoffice/modal';
 import type { EntryListFieldResponseModel, EntryListFilterRequestModel } from '../api';
@@ -103,6 +104,28 @@ export interface EntryDigestModalValue {
 export const ENTRY_DIGEST_MODAL = new UmbModalToken<never, EntryDigestModalValue>(ENTRY_DIGEST_MODAL_ALIAS, {
   modal: { type: 'sidebar', size: 'small' },
 });
+
+export const ENTRY_EXPORT_MODAL_ALIAS = 'Jiron.FormBuilder.Modal.EntryExport';
+
+export interface EntryExportModalData {
+  /** The form whose entries go. */
+  readonly form: string;
+  /** The list's filter, for Export...; none for Export selected... */
+  readonly filter?: EntryListFilterRequestModel;
+  /** The ticked entries of Export selected..., of this form; none for Export... */
+  readonly entries?: readonly string[];
+}
+
+/** How the export went: a file saved, printed, or one that continues in the background. */
+export interface EntryExportModalValue {
+  readonly done: 'saved' | 'printed' | 'background';
+}
+
+/** Export... and Export selected... (IA 6.4): a sidebar, its primary the export with its number of entries. */
+export const ENTRY_EXPORT_MODAL = new UmbModalToken<EntryExportModalData, EntryExportModalValue>(
+  ENTRY_EXPORT_MODAL_ALIAS,
+  { modal: { type: 'sidebar', size: 'small' } },
+);
 
 export const ENTRY_FORWARD_MODAL_ALIAS = 'Jiron.FormBuilder.Modal.EntryForward';
 export const ENTRY_IMAGE_MODAL_ALIAS = 'Jiron.FormBuilder.Modal.EntryImage';

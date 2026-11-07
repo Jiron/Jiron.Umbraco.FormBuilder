@@ -48,6 +48,8 @@ import {
   type PanelAction,
 } from './entry-panel-model';
 import { loadEntryWords } from './entry-words';
+import { writeExportFile } from './export-api';
+import { printDocument } from './export-print';
 import { refreshUnseen } from './unseen-poll';
 
 /** Where the panel is: beside its list, covering it on a narrow screen, or alone from the entry's own link. */
@@ -629,10 +631,21 @@ export class EntryPanelElement extends UmbLitElement {
       if (state) await this.#move(panel, state);
       else if (action === 'forward') await this.#forward(panel);
       else if (action === 'delete') await this.#delete(panel);
+      else if (action === 'print') await this.#print(panel);
       else if (action === 'rerun') await this.#rerun(panel);
     } finally {
       this._busy = false;
     }
+  }
+
+  /**
+   * Print: the entry's printable view, its answers as the summary lists them and no sensitive field, in the browser's
+   * print dialog (IA 6.3, ADR-0210).
+   */
+  async #print(panel: EntryPanelResponseModel) {
+    const file = await writeExportFile(this, this.form, { format: 'print', entries: [panel.key], sensitive: false });
+    const printed = 'value' in file && (await printDocument(await file.value.text()));
+    if (!printed) await this.#notify('danger', this.#term('print_failed'));
   }
 
   /** Asks first what a move back or an edit would overbook or double; whether the user agreed. */
@@ -1364,6 +1377,8 @@ export class EntryPanelElement extends UmbLitElement {
         return this.#term('action_forward');
       case 'backToWaiting':
         return this.#term('action_backToWaiting');
+      case 'print':
+        return this.#term('action_print');
       default:
         return this.#term(action);
     }

@@ -208,6 +208,24 @@ describe('the bulk bar', () => {
     // Re-run applies to the waiting entry, but only the spam entry's form lets the user run actions: not offered.
     expect(bulkActionsOf([spam, handler])).toEqual(['approve', 'reject', 'markSpam', 'notSpam', 'delete']);
 
+    // Export selected... takes the entries of one form, and needs export on it (ADR-0210).
+    const exporter = { state: 'approved', permissions: ['viewEntries', 'export'], form: 'f1' };
+    expect(bulkActionsOf([exporter, { ...exporter, state: 'rejected' }])).toEqual(['export']);
+    expect(bulkActionsOf([exporter, { ...exporter, form: 'f2' }]), 'two forms').toEqual([]);
+    expect(bulkActionsOf([{ ...exporter, permissions: ['viewEntries'] }])).toEqual([]);
+    expect(bulkActionsOf([{ ...spam, form: 'f1', permissions: [...everything, 'export'] }], 'spam')).toEqual([
+      'notSpam',
+      'delete',
+    ]);
+    expect(bulkActions(['submitted'], [...everything, 'export'])).toEqual([
+      'approve',
+      'reject',
+      'markSpam',
+      'delete',
+      'export',
+      'rerun',
+    ]);
+
     const split = splitTicked('approve', [viewer, handler, { ...handler, state: 'approved' }]);
     expect(split.acting).toEqual([handler]);
     expect([split.leftOut, split.notAllowed]).toEqual([1, 1]);

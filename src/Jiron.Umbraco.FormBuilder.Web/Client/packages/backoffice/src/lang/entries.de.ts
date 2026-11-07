@@ -8,6 +8,7 @@ const entries = (number: number) => (number === 1 ? '1 Eintrag' : `${number.toLo
 
 export default {
   jfbEntries: {
+    heading: 'Einträge',
     loading: 'Die Einträge werden geladen…',
     failed: 'Die Einträge konnten nicht geladen werden.',
     retry: 'Erneut versuchen',
@@ -414,5 +415,76 @@ export default {
       'Noch darf niemand sonst die Einträge dieses Formulars sehen, und unter Einstellungen › E-Mail steht keine Team-Adresse.',
     image_meta: (field: string, type: string, size: string) => `${field} · ${type}, ${size}`,
     image_failed: 'Das Bild konnte nicht angezeigt werden. Versuchen Sie es erneut.',
+    export: 'Ausgewählte exportieren…',
+    export_open: 'Exportieren…',
+    export_headline: 'Exportieren',
+    export_loading: 'Der Export wird geladen…',
+    export_readFailed: 'Der Export konnte nicht geöffnet werden. Versuchen Sie es erneut.',
+    export_format: 'Format',
+    export_entries: 'Einträge',
+    export_entriesAll: (number: number) =>
+      number === 1 ? 'Der 1 Eintrag, keine Filter' : `Alle ${entries(number)}, keine Filter`,
+    export_entriesFiltered: (number: number) =>
+      number === 1 ? '1 Eintrag, der den Filtern entspricht' : `${entries(number)}, die den Filtern entsprechen`,
+    export_entriesMore: 'Mehr als 1.000 Einträge, die der Suche entsprechen',
+    export_entriesTicked: (number: number) => `${entries(number)} ausgewählt`,
+    export_entriesFailed: 'Die Einträge konnten nicht gezählt werden. Versuchen Sie es erneut.',
+    export_background: 'Dieser Export läuft im Hintergrund weiter; eine Benachrichtigung verlinkt die Datei.',
+    export_fields: 'Felder',
+    export_allFields: (number: number) => `Alle Felder (${number})`,
+    export_allFileFields: (number: number) => `Alle Dateifelder (${number})`,
+    export_noFileFields: 'Dieses Formular hat keine Dateifelder, daher enthält die ZIP-Datei keine Dateien.',
+    export_sensitiveLeftOut: 'Vertrauliche Felder werden weggelassen.',
+    export_sensitive: 'Vertrauliche Felder einschließen',
+    export_moreOptions: 'Weitere Optionen',
+    export_delimiter: 'Trennzeichen',
+    export_delimiter_comma: 'Komma',
+    export_delimiter_semicolon: 'Semikolon',
+    export_delimiter_tab: 'Tabulator',
+    export_headers: 'Spaltenüberschriften',
+    export_headers_labels: 'Beschriftungen',
+    export_headers_aliases: 'Aliasse',
+    export_byteOrderMark: 'Mit einer Bytereihenfolge-Markierung beginnen',
+    export_byteOrderMarkHelp: 'Tabellenprogramme lesen dann Buchstaben wie ä und é richtig.',
+    export_yours: 'Ihre Exporte dieses Formulars',
+    export_ready: (number: number) => `Ihr Export von ${entries(number)} ist fertig.`,
+    export_failedOne: (number: number) => `Der Export von ${entries(number)} konnte nicht vorbereitet werden.`,
+    export_preparing: (number: number, more: boolean) =>
+      more
+        ? 'Der Export von mehr als 1.000 Einträgen wird vorbereitet.'
+        : `Der Export von ${entries(number)} wird vorbereitet.`,
+    export_progress: (done: number, total: number, more: boolean) =>
+      more
+        ? `Der Export wird vorbereitet: bisher ${entries(done)}.`
+        : `Der Export wird vorbereitet: ${done.toLocaleString('de')} von ${entries(total)}.`,
+    export_preparingToast: (number: number, more: boolean) =>
+      `${more ? 'Der Export von mehr als 1.000 Einträgen wird vorbereitet.' : `Der Export von ${entries(number)} wird vorbereitet.`} Sie können weiterarbeiten; eine Benachrichtigung verlinkt die Datei.`,
+    export_progressToast: (done: number, total: number, more: boolean) =>
+      `${more ? `Der Export wird vorbereitet: bisher ${entries(done)}.` : `Der Export wird vorbereitet: ${done.toLocaleString('de')} von ${entries(total)}.`} Sie können weiterarbeiten; eine Benachrichtigung verlinkt die Datei.`,
+    export_readyToast: (number: number) => `Ihr Export von ${entries(number)} ist fertig.`,
+    export_failedToast: (number: number, more: boolean) =>
+      `Der Export von ${more ? 'mehr als 1.000 Einträgen' : entries(number)} konnte nicht vorbereitet werden. Versuchen Sie es erneut; scheitert er wieder, findet jemand aus der Entwicklung den Grund im Protokoll der Website.`,
+    export_download: 'Herunterladen',
+    export_downloadFailed:
+      'Die Datei konnte nicht heruntergeladen werden. Sie ist vielleicht abgelaufen; exportieren Sie erneut.',
+    export_start: 'Exportieren',
+    export_startCount: (number: number) => `${entries(number)} exportieren`,
+    export_startMore: 'Mehr als 1.000 Einträge exportieren',
+    export_printCount: (number: number) => `${entries(number)} drucken`,
+    export_printMore: 'Mehr als 1.000 Einträge drucken',
+    export_cancel: 'Abbrechen',
+    export_failed: 'Der Export konnte nicht erstellt werden. Versuchen Sie es erneut.',
+    export_busy: 'Sie haben 3 Exporte in Arbeit. Warten Sie, bis einer fertig ist, und exportieren Sie dann erneut.',
+    export_printFailed: 'Der Browser konnte dies nicht drucken. Wählen Sie ein anderes Format.',
+    export_started: 'Der Export läuft im Hintergrund weiter.',
+    action_print: 'Drucken',
+    print_failed: 'Der Eintrag konnte nicht gedruckt werden. Versuchen Sie es erneut.',
+  },
+  jfbExport: {
+    formatCsv: 'CSV',
+    formatExcel: 'Excel',
+    formatJson: 'JSON',
+    formatPrint: 'Druckansicht',
+    formatFiles: 'ZIP der hochgeladenen Dateien',
   },
 } satisfies UmbLocalizationDictionary;

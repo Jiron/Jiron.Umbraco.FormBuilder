@@ -245,10 +245,18 @@ export function chipsOf(
 }
 
 /** An action of the bulk bar, in the order IA 6.1 lists them. */
-export type BulkAction = 'approve' | 'reject' | 'markSpam' | 'notSpam' | 'delete' | 'rerun';
+export type BulkAction = 'approve' | 'reject' | 'markSpam' | 'notSpam' | 'delete' | 'export' | 'rerun';
 
 /** The bulk bar's order. */
-export const BULK_ORDER: readonly BulkAction[] = ['approve', 'reject', 'markSpam', 'notSpam', 'delete', 'rerun'];
+export const BULK_ORDER: readonly BulkAction[] = [
+  'approve',
+  'reject',
+  'markSpam',
+  'notSpam',
+  'delete',
+  'export',
+  'rerun',
+];
 
 /** The state a move reaches. */
 export const MOVE_STATE: Partial<Record<BulkAction, string>> = {
@@ -268,6 +276,7 @@ export const APPLIES: Record<BulkAction, (state: string) => boolean> = {
   markSpam: (state) => state !== 'spam',
   notSpam: (state) => state === 'spam',
   delete: () => true,
+  export: () => true,
   rerun: (state) => state === 'submitted' || state === 'approved' || state === 'rejected',
 };
 
@@ -278,6 +287,7 @@ export const NEEDS: Record<BulkAction, string> = {
   markSpam: 'editEntries',
   notSpam: 'editEntries',
   delete: 'deleteEntries',
+  export: 'export',
   rerun: 'manageActions',
 };
 
@@ -286,20 +296,25 @@ export function bulkActions(states: readonly string[], permissions: readonly str
   return bulkActionsOf(states.map((state) => ({ state, permissions })));
 }
 
-/** A ticked entry as the bulk bar weighs it: its state, and what the user may do on its form. */
+/** A ticked entry as the bulk bar weighs it: its state, what the user may do on its form, and the form. */
 export interface TickedEntry {
   state: string;
   permissions: readonly string[];
+  form?: string | undefined;
 }
+
+/** Whether the ticked entries all belong to one form, as an export takes them (ADR-0210). */
+const ofOneForm = (ticked: readonly TickedEntry[]): boolean => new Set(ticked.map((entry) => entry.form)).size === 1;
 
 /**
  * The bulk actions offered for ticked entries of one form or several: each one the user may use on the form of an entry
- * it applies to; Spam offers only its own two (IA 6.2).
+ * it applies to; Export selected... only for entries of one form; Spam offers only its own two (IA 6.2).
  */
 export function bulkActionsOf(ticked: readonly TickedEntry[], place: ListPlace = 'form'): BulkAction[] {
   return BULK_ORDER.filter(
     (action) =>
       (place !== 'spam' || SPAM_ACTIONS.includes(action)) &&
+      (action !== 'export' || ofOneForm(ticked)) &&
       ticked.some((entry) => entry.permissions.includes(NEEDS[action]) && APPLIES[action](entry.state)),
   );
 }

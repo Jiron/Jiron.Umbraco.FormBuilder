@@ -68,7 +68,16 @@ below is this record's.
    and opens the entries' files; the built-in formats are its implementations, and a site's formats follow them in the
    dialog.
 9. **Where it is offered.** Export… in a form's Entries view, and in the Inbox once the Form filter chose one form;
-   Export selected… in the bulk bar for ticked entries of one form. Both need `export` on the form.
+   Export selected… in the bulk bar's "…" for ticked entries of one form; Print in the entry panel's "…" in every
+   state, which prints that entry's printable view without its sensitive fields. All need `export` on the form.
+10. **The sidebar and its toasts.** The export sidebar is Umbraco's sidebar: the format, one line naming the entries
+    and their number from the plan, the fields ("All fields (12)", or each one), the sensitive fields' choice for a
+    user who may see them, and "More options" only for a format that takes a delimiter or headers. Its primary names
+    the action and the number ("Export 124 entries", "Print 1 entry"). A file that fits a download is saved at once; a
+    printable view goes to the browser's print dialog through a frame that runs nothing, so no pop-up blocker stands in
+    the way. A background export is followed outside the screen that started it, through Umbraco's toasts, which
+    outlive it: one says how far it is, then one with Download stays until it is closed; every read of its status
+    waits at the idle gate. The sidebar lists the user's exports of the form, so a page that loaded again finds them.
 
 ## Consequences
 

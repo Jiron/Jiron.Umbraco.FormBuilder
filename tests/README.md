@@ -867,6 +867,21 @@ choices, its sentence by the time zone's place or UTC, the preview it asks for (
 failed save, the test toast and a user without an address; and `specs/backoffice/inbox.spec.ts` the sidebar in the
 browser from the Inbox's "…", its preview, Send test email, Save and Off, with axe.
 
+The exports (ADR-0210): `Exports/EntryExportTests.cs` reads every format back from its file: a CSV round trip with
+`ExportFiles.Csv`, which knows quotes and line breaks, the Excel workbook with `ExportFiles.XlsxAsync`, a test-only
+reader that follows the workbook's own relationships, the JSON by alias, the printable view without scripts and the ZIP's
+listing; a grid by row, a ranking by position and a repeatable group as lines, as a sheet and as rows; the formula guard;
+sensitive fields only when asked for and allowed; the list's filter and the ticked entries; the audit and the
+announcement; a background export for its owner only until it expires, one restarted once its lease ran out, three
+attempts and three exports under way per user; and 10,000 entries as CSV within 5 s, with one more going to the
+background. `ManagementApi/EntryExportApiTests.cs` holds the endpoints: the view with the user's last choices, the
+streamed file and its headers, a background export that only its owner follows and downloads, and the refusals.
+`Exports/ExportFormatTests.cs` holds the pieces that need no site. In the client, `entries/export-model.test.ts`,
+`entries/export-follow.test.ts` and `entries/entry-export.modal.test.ts` hold the sidebar, the follower at the idle
+gate and its toasts; in the browser, `specs/backoffice/entry-export.spec.ts` ticks three entries, chooses Export
+selected… and finds only those in the CSV file, exports a search as JSON, which the sidebar opens with next time, and
+prints one entry from its panel.
+
 ## The access tests
 
 `Tests.Unit/Access/` covers the permission model without a host (ADR-0013, ADR-0048): the flags' names in any letter

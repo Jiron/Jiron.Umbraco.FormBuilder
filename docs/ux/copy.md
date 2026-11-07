@@ -233,6 +233,10 @@ Use Umbraco's own words where Umbraco has the same action, so the section feels 
 | send an email to yourself | Send test email | Test-E-Mail senden |
 | fetch a JSON address's options again | Fetch now | Jetzt abrufen |
 | download entries | Export… | Exportieren… |
+| download the ticked entries, in the bulk bar's "…" | Export selected… | Ausgewählte exportieren… |
+| the export sidebar's primary, with what goes ("Print 124 entries" for the printable view; "more than 1,000" after a search that counts no further) | Export 124 entries | 124 Einträge exportieren |
+| print one entry, in the entry panel's "…" | Print | Drucken |
+| save a background export's file, in its toast and in the sidebar's list | Download | Herunterladen |
 | keep a person's entries past their retention | Set legal hold… | Löschsperre setzen… |
 | erase one person's data (asks first) | Erase… | Daten löschen… |
 | open a problem from the form check | Fix it | Beheben |
@@ -462,7 +466,15 @@ toast adds only what the user cannot see.
   12.400 Einträgen wird vorbereitet. Sie können weiterarbeiten; eine Benachrichtigung verlinkt die Datei.“
 - **Progress** is determinate when it is known, and never invented: "Preparing the export: 2 of 6 entries. You can
   keep working; a notification links to the file." · „Der Export wird vorbereitet: 2 von 6 Einträgen. Sie können
-  weiterarbeiten; eine Benachrichtigung verlinkt die Datei.“
+  weiterarbeiten; eine Benachrichtigung verlinkt die Datei.“ After a search that counts no further than 1,000, the
+  number written so far stands alone: "Preparing the export: 2,500 entries so far." · „Der Export wird vorbereitet:
+  bisher 2.500 Einträge.“
+- **The export sidebar** names its entries in one line: "All 214 entries, no filters" · „Alle 214 Einträge, keine
+  Filter“, "124 entries that match the filters" · „124 Einträge, die den Filtern entsprechen“, "6 entries selected" ·
+  „6 Einträge ausgewählt“; an export that will run in the background says so under it: "This export continues in the
+  background; a notification links to the file." · „Dieser Export läuft im Hintergrund weiter; eine Benachrichtigung
+  verlinkt die Datei.“ Its fields say once what is left out: "Sensitive fields are left out." · „Vertrauliche Felder
+  werden weggelassen.“
 
 ### Help text
 

@@ -27,8 +27,17 @@ describe("the entry panel's bar", () => {
     expect(panelBar('submitted', true, HANDLER)).toEqual({
       primary: 'approve',
       visible: ['reject', 'markSpam', 'forward'],
-      more: [],
+      more: ['print'],
     });
+  });
+
+  it('keeps Print in the "..." in every state, for a user who may export (IA 6.3)', () => {
+    const all = [...ADMIN, 'export'];
+    expect(panelBar('submitted', true, all).more).toEqual(['delete', 'print', 'rerun']);
+    expect(panelBar('spam', true, all)).toEqual({ primary: 'notSpam', visible: ['delete'], more: ['print'] });
+    expect(panelBar('approved', true, all).more).toEqual(['backToWaiting', 'print', 'rerun']);
+    expect(panelBar('unverified', false, ['viewEntries', 'export'])).toEqual({ visible: [], more: ['print'] });
+    expect(panelBar('approved', false, ADMIN).more, 'none without export').toEqual(['rerun']);
   });
 
   it('gives a privacy officer Delete... alone, and Spam its Not spam', () => {
