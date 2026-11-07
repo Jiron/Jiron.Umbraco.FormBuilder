@@ -348,17 +348,23 @@ describe('the option editor', () => {
     expect(element.querySelector('.row-place')).toBeNull();
     await vi.waitFor(() => expect(document.activeElement?.getAttribute('aria-label')).toBe('Move Red'));
 
-    // Its own place, or Escape, closes it and moves nothing; a second press closes it too.
+    // Its own place, or Escape, closes it and moves nothing, the handle keeping the focus; a second press closes it too.
+    const closedOn = async (label: string) => {
+      expect(element.querySelector('.row-place')).toBeNull();
+      await vi.waitFor(() => expect(document.activeElement?.getAttribute('aria-label')).toBe(`Move ${label}`));
+    };
     press(handle('Blue'));
     await settle(element);
     choose(must(element.querySelector<HTMLSelectElement>('#option-1-place-select'), 'the place'), '1');
     await settle(element);
+    await closedOn('Blue');
     press(handle('Blue'));
     await settle(element);
     must(element.querySelector('#option-1-place-select'), 'the place').dispatchEvent(
       new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
     );
     await settle(element);
+    await closedOn('Blue');
     press(handle('Green'));
     await settle(element);
     press(handle('Green'));
