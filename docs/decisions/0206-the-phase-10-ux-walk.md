@@ -43,8 +43,9 @@ The owner answers no questions during the run (CLAUDE.md rule 8); each choice be
    not design the form, its heading): it takes what the chip leaves and never less than 6rem. The chip then wraps its
    words to a second line inside itself rather than cut them, which Umbraco's 70 px header has the height for; its
    title, which repeated its words for the cut case, goes. `narrowest.spec.ts` now opens a form live with a change
-   waiting, in German at 375 and 768 px: the name's box is 96 px at least, nothing of the section is cut, and axe
-   finds no target of the section too small to hit.
+   waiting, in German at 375 and 768 px: Umbraco's name input is 96 px wide at least, nothing of the section is cut,
+   and axe finds no target of the section too small to hit. With the chip wrapping, the name keeps that room at every
+   width the backoffice has even without its box, which guards a header narrower than any window gives today.
 2. **The preview's headline is whole.** It is a heading of the sidebar's own in the header's slot, in Umbraco's type,
    and the header grows to a second line where the name needs it (Umbraco's `header-fit-height`); at one line the
    header keeps Umbraco's 70 px.
