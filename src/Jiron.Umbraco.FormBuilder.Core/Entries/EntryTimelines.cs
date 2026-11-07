@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Core.Submissions;
 
@@ -42,22 +43,36 @@ internal sealed record EntryTimelineEvent(
 /// <param name="ActionRun">The action run that sent it, or none.</param>
 internal sealed record EntryTimelineMail(long Id, DateTimeOffset When, EmailKind Kind, string To, string Subject, EmailState State, long? ActionRun);
 
-/// <summary>An entry's events and mail, newest first.</summary>
+/// <summary>An action run of an entry.</summary>
+/// <param name="Id">The run, which its retry names.</param>
+/// <param name="When">When it last tried, finished or was queued.</param>
+/// <param name="Action">The action.</param>
+/// <param name="Name">The action's name in the entry's version, or none.</param>
+/// <param name="Type">The action type's alias.</param>
+/// <param name="State">Where it stands.</param>
+/// <param name="Attempts">How many times it tried.</param>
+/// <param name="Error">Why its last try failed, as stored, or none.</param>
+internal sealed record EntryTimelineRun(long Id, DateTimeOffset When, Guid Action, string? Name, string Type, ActionRunState State, int Attempts, string? Error);
+
+/// <summary>An entry's events, action runs and mail, newest first.</summary>
 /// <param name="Events">Its events.</param>
+/// <param name="Runs">Its action runs.</param>
 /// <param name="Mail">Its mail.</param>
-internal sealed record EntryTimeline(IReadOnlyList<EntryTimelineEvent> Events, IReadOnlyList<EntryTimelineMail> Mail);
+internal sealed record EntryTimeline(IReadOnlyList<EntryTimelineEvent> Events, IReadOnlyList<EntryTimelineRun> Runs, IReadOnlyList<EntryTimelineMail> Mail);
 
 /// <summary>
-/// An entry's timeline for the panel (ADR-0208): its events and its mail, newest first; its action runs come from their
-/// own list. What a reader may not see stays masked: an edit's sensitive values, and a recipient that is a sensitive
-/// answer of the entry.
+/// An entry's timeline for the panel (ADR-0208): its events, its action runs named as its version names their actions,
+/// and its mail, newest first. What a reader may not see stays masked: an edit's sensitive values, and a recipient that
+/// is a sensitive answer of the entry.
 /// </summary>
 /// <param name="forms">The forms.</param>
 /// <param name="entries">The entries.</param>
 /// <param name="events">The timelines.</param>
 /// <param name="emails">The mail.</param>
 /// <param name="store">The stored answers, for the sensitive addresses.</param>
-internal sealed class EntryTimelines(IFormRepository forms, IEntryRepository entries, IEntryEventRepository events, IEmailRepository emails, EntryAnswerStore store)
+/// <param name="runs">The action runs.</param>
+/// <param name="documents">Reads the entry's version, for its actions' names.</param>
+internal sealed class EntryTimelines(IFormRepository forms, IEntryRepository entries, IEntryEventRepository events, IEmailRepository emails, EntryAnswerStore store, IActionRunRepository runs, FormDocuments documents)
 {
     /// <summary>The timeline of an entry of a form; null when the form has no such entry.</summary>
     /// <param name="formKey">The form.</param>
@@ -85,7 +100,15 @@ internal sealed class EntryTimelines(IFormRepository forms, IEntryRepository ent
             .OrderByDescending(email => email.When)
             .ThenByDescending(email => email.Id)
             .ToList();
-        return new EntryTimeline(timeline, mail);
+        var names = await forms.GetVersionByIdAsync(entry.FormVersionId, cancellationToken) is { } version
+            ? documents.Readable(version).Actions.GroupBy(action => action.Key).ToDictionary(group => group.Key, group => group.First().Name)
+            : [];
+        var ran = (await runs.ListForEntryAsync(entry.Id, cancellationToken))
+            .Select(run => new EntryTimelineRun(run.Id, run.LastAttemptUtc ?? run.FinishedUtc ?? run.StartedUtc ?? run.CreatedUtc, run.ActionKey, names.GetValueOrDefault(run.ActionKey), run.ActionType, run.State, run.Attempts, run.LastError?.Message ?? run.LastError?.Code))
+            .OrderByDescending(run => run.When)
+            .ThenByDescending(run => run.Id)
+            .ToList();
+        return new EntryTimeline(timeline, ran, mail);
     }
 
     // An event with what its kind's details say.

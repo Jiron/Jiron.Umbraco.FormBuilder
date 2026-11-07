@@ -68,7 +68,7 @@ internal sealed class EntryPanelController(
             : FormBuilderProblems.EntryNotFound();
     }
 
-    /// <summary>The entry's events and mail, newest first; its action runs are listed on their own.</summary>
+    /// <summary>The entry's events, action runs and mail, newest first.</summary>
     /// <param name="key">The form.</param>
     /// <param name="entryKey">The entry.</param>
     /// <param name="cancellationToken">The request's cancellation.</param>
@@ -99,6 +99,17 @@ internal sealed class EntryPanelController(
                 Count = entryEvent.Count,
                 Recipient = entryEvent.Recipient,
                 Changes = [.. entryEvent.Changes.Select(change => new EntryTimelineChangeResponseModel { Label = change.Label, Before = change.Before, After = change.After, Masked = change.Masked })],
+            })],
+            Runs = [.. timeline.Runs.Select(run => new EntryTimelineRunResponseModel
+            {
+                Id = run.Id,
+                When = run.When,
+                Action = run.Action,
+                Name = run.Name,
+                Type = run.Type,
+                State = StoredNames.Of(run.State),
+                Attempts = run.Attempts,
+                Error = run.Error,
             })],
             Mail = [.. timeline.Mail.Select(mail => new EntryTimelineMailResponseModel
             {

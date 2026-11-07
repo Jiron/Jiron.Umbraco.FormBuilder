@@ -186,8 +186,39 @@ public sealed class EntryTimelineResponseModel
     /// <summary>Its events.</summary>
     public required IReadOnlyList<EntryTimelineEventResponseModel> Events { get; init; }
 
+    /// <summary>Its action runs.</summary>
+    public required IReadOnlyList<EntryTimelineRunResponseModel> Runs { get; init; }
+
     /// <summary>Its mail.</summary>
     public required IReadOnlyList<EntryTimelineMailResponseModel> Mail { get; init; }
+}
+
+/// <summary>An action run of an entry.</summary>
+public sealed class EntryTimelineRunResponseModel
+{
+    /// <summary>The run, which its retry names.</summary>
+    public required long Id { get; init; }
+
+    /// <summary>When it last tried, finished or was queued.</summary>
+    public required DateTimeOffset When { get; init; }
+
+    /// <summary>The action.</summary>
+    public required Guid Action { get; init; }
+
+    /// <summary>The action's name, or none.</summary>
+    public required string? Name { get; init; }
+
+    /// <summary>The action type's alias.</summary>
+    public required string Type { get; init; }
+
+    /// <summary>Where it stands: <c>pending</c>, <c>running</c>, <c>succeeded</c>, <c>failed</c>, <c>skipped</c> or <c>uncertain</c>.</summary>
+    public required string State { get; init; }
+
+    /// <summary>How many times it tried.</summary>
+    public required int Attempts { get; init; }
+
+    /// <summary>Why its last try failed, or none.</summary>
+    public required string? Error { get; init; }
 }
 
 /// <summary>An event of an entry's timeline.</summary>

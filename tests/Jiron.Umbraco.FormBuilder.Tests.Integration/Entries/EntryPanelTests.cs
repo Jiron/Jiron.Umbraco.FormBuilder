@@ -175,6 +175,22 @@ public sealed class EntryPanelTests : ActionTestBase
     }
 
     [Test]
+    public async Task TheTimeline_NamesEachRunByItsAction_NewestFirst()
+    {
+        var form = await ActionFormAsync(Action("Tell the team"));
+        var entry = await SubmitAsync(form);
+        await DrainAsync(entry.Id);
+
+        var timeline = (await Timelines.ReadAsync(form, entry.Key, maySeeSensitive: false))!;
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(timeline.Runs.Select(run => (run.Name, run.State, run.Attempts)), Is.EqualTo(new[] { ((string?)"Tell the team", ActionRunState.Succeeded, 1) }));
+            Assert.That(timeline.Events.Select(entryEvent => entryEvent.Kind), Does.Contain(SubmissionEntries.SubmittedEvent));
+        });
+    }
+
+    [Test]
     public async Task AMoveBack_AsksOfAnOptionListsPlacesToo()
     {
         var listKey = Guid.NewGuid();

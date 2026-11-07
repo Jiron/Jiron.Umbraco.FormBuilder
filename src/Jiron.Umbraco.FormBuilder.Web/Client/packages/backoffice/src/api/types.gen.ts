@@ -597,7 +597,19 @@ export type EntryTimelineMailResponseModel = {
 
 export type EntryTimelineResponseModel = {
     events: Array<EntryTimelineEventResponseModel>;
+    runs: Array<EntryTimelineRunResponseModel>;
     mail: Array<EntryTimelineMailResponseModel>;
+};
+
+export type EntryTimelineRunResponseModel = {
+    id: number;
+    when: string;
+    action: string;
+    name: string | null;
+    type: string;
+    state: string;
+    attempts: number;
+    error: string | null;
 };
 
 export type FieldGroupResponseModel = {
