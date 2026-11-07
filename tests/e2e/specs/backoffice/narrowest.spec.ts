@@ -1,8 +1,8 @@
 import AxeBuilder from '@axe-core/playwright';
-import type { Page } from '@playwright/test';
+import type { APIRequestContext, Page } from '@playwright/test';
 import { expect, test } from '../../fixtures.ts';
 import { inLanguage } from '../../support/backoffice-look.ts';
-import { API, contactForm, created, unique } from '../../support/forms-api.ts';
+import { API, contactForm, created, formOf, unique } from '../../support/forms-api.ts';
 import { splitAxe } from '../../support/ux-walk.ts';
 
 // The section at its narrowest (ROADMAP 9.6a, ADR-0182). Umbraco's backoffice keeps a width of its own below a window
@@ -10,7 +10,8 @@ import { splitAxe } from '../../support/ux-walk.ts';
 // one page. The section adds no width to Umbraco's, and inside the workspace Umbraco leaves it nothing of its own is
 // cut short or scrolls sideways: measured in German, whose words are the longest, on the Design view with a field
 // selected, whose inspector then lies over the canvas with the element's tools in its header, on a folder's list, and
-// in the template gallery, whose footer keeps its two buttons side by side inside the window.
+// in the template gallery, whose footer keeps its two buttons side by side inside the window. The form is live with a
+// change waiting, so its header carries the longest state beside the name, which keeps its room (ADR-0206).
 
 /** What the page measures: its width, and inside the section's own elements the cut texts and sideways scrolls. */
 const measure = (page: Page) =>
@@ -38,6 +39,26 @@ const measure = (page: Page) =>
     return { width: document.documentElement.scrollWidth, cut, scrolls };
   });
 
+/** Publishes the form, then saves a change to its draft, so it waits as "Published (pending changes)". */
+async function publishWithChange(api: APIRequestContext, key: string): Promise<void> {
+  const published = await api.post(`${API}/form/${key}/publish`, {
+    data: { concurrencyVersion: (await formOf(api, key)).concurrencyVersion },
+  });
+  expect(published.ok(), await published.text()).toBe(true);
+  const read = await api.get(`${API}/form/${key}/draft`);
+  expect(read.ok(), await read.text()).toBe(true);
+  const draft = (await read.json()) as {
+    form: { concurrencyVersion: number };
+    definition: { pages: { groups: { fields: { label?: Record<string, string> }[] }[] }[] };
+  };
+  const field = draft.definition.pages[0]?.groups[0]?.fields[0];
+  if (field) field.label = { '': 'Ihr Vor- und Nachname' };
+  const saved = await api.put(`${API}/form/${key}/draft`, {
+    data: { concurrencyVersion: draft.form.concurrencyVersion, definition: draft.definition },
+  });
+  expect(saved.ok(), await saved.text()).toBe(true);
+}
+
 for (const window of [
   { width: 375, height: 812 },
   { width: 768, height: 1024 },
@@ -51,6 +72,7 @@ for (const window of [
     const folderName = unique('Schmaler Ordner');
     const folder = await created(await api.post(`${API}/folder`, { data: { name: folderName } }), folderName);
     const key = await contactForm(api, unique('Schmal'), folder);
+    await publishWithChange(api, key);
     const emptyName = unique('Leerer Ordner');
     const empty = await created(await api.post(`${API}/folder`, { data: { name: emptyName } }), emptyName);
     await inLanguage(page, 'de-DE');
@@ -68,6 +90,12 @@ for (const window of [
     const inspector = design.locator('jfb-designer-inspector');
     await expect(inspector).toHaveAttribute('mode', 'overlay');
     await expect(inspector.locator('h2')).toBeVisible();
+
+    // The longest state wraps in its chip rather than squeeze the name, whose box keeps 6rem at least.
+    const header = page.locator('jfb-form-workspace-editor');
+    await expect(header.locator('uui-tag')).toHaveText('Ver\u00f6ffentlicht (\u00c4nderungen bereit)');
+    const name = await header.locator('.name').boundingBox();
+    expect(name?.width ?? 0, "the name's box").toBeGreaterThanOrEqual(96);
 
     const found = await measure(page);
     expect(found.width, "the page's width, as Umbraco's own section has it").toBe(umbraco);

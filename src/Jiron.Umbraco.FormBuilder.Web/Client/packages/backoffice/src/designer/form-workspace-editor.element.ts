@@ -1,6 +1,6 @@
 // The form workspace's frame (docs/ux/information-architecture.md, section 5): Umbraco's detail workspace editor, with the
 // back arrow to the form's folder, the name, which renames the form for who may design it (ADR-0166) and is a heading for
-// everyone else (ADR-0182), and the state chip in Umbraco's words. The views draw the rest, and the footer holds Save draft and Publish....
+// everyone else (ADR-0182), and the state chip in Umbraco's words, which wraps rather than cuts (ADR-0206). The views draw the rest, and the footer holds Save draft and Publish....
 import { css, html, nothing } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import { FOLDER_ENTITY_TYPE, LIBRARY_ROOT_ENTITY_TYPE, screenPath } from '../section/entity-types';
@@ -36,11 +36,16 @@ export class FormWorkspaceEditorElement extends UmbLitElement {
         min-width: 0;
       }
 
-      /* On a narrow window the name gives way first: a state cut in half says nothing. */
-      umb-workspace-header-name-editable,
+      /* On a narrow window the name gives way first, to 6rem. Umbraco's name box lays out as its input alone
+         (display: contents), so a box of ours holds the name's room. */
+      .name,
       h1 {
-        flex: 1 1 auto;
+        flex: 1 1 0;
         min-width: 6rem;
+      }
+
+      .name {
+        display: flex;
       }
 
       /* Read, not changed: the name as the screen's heading, in the size of the box it stands for. */
@@ -52,13 +57,14 @@ export class FormWorkspaceEditorElement extends UmbLitElement {
         line-height: 1.3;
       }
 
-      /* Only the longest state, "Published (pending changes)", is ever cut, its title keeping the whole of it. */
+      /* A state is never cut: once the name is at its least, the longest, "Published (pending changes)", takes a second
+         line inside its chip, which Umbraco's header has the height for. */
       uui-tag {
-        flex: 0 0 auto;
-        max-width: 14rem;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
+        flex: 0 1 auto;
+        min-width: min-content;
+        white-space: normal;
+        text-align: center;
+        line-height: 1.2;
       }
     `,
   ];
@@ -92,7 +98,7 @@ export class FormWorkspaceEditorElement extends UmbLitElement {
     const state = this._state;
     if (!state) return nothing;
     const label = this.localize.term(`jfbDesigner_state_${state}`);
-    return html`<uui-tag color=${CHIP[state].color} look=${CHIP[state].look} title=${label}>${label}</uui-tag>`;
+    return html`<uui-tag color=${CHIP[state].color} look=${CHIP[state].look}>${label}</uui-tag>`;
   }
 
   override render() {
@@ -101,9 +107,11 @@ export class FormWorkspaceEditorElement extends UmbLitElement {
         ${
           this._canDesign === false
             ? html`<h1>${this._name}</h1>`
-            : html`<umb-workspace-header-name-editable
-                label=${this.localize.term('jfbDesigner_formName')}
-              ></umb-workspace-header-name-editable>`
+            : html`<div class="name">
+                <umb-workspace-header-name-editable
+                  label=${this.localize.term('jfbDesigner_formName')}
+                ></umb-workspace-header-name-editable>
+              </div>`
         }
         ${this.#chip()}
       </div>

@@ -1,6 +1,7 @@
 # 0167. The form workspace and the editor model: Umbraco's detail workspace, pure edits, and the engine's own cycle check
 
-- Status: accepted
+- Status: accepted; the header's chip shortening before the name is superseded by
+  [ADR-0206](0206-the-phase-10-ux-walk.md), whose name keeps 6rem and whose chip wraps rather than cuts
 - Date: 2026-11-03
 - Roadmap step: 9.3a (decided and built); 9.3b draws the canvas and the palette on it, 9.3c the moves by drag and keyboard, 9.5b the
   form check in the publish dialog

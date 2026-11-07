@@ -202,7 +202,9 @@ progress, since the steps across its top stand in for it.
   scales the form down: text stays readable, and collapsing the inspector gives the canvas its width back.
 - **At 620 px** (and in any workspace up to 700 px), the canvas takes the width. The palette opens over it from an
   insert point or a page's "Add field", and the inspector opens over it when an element is selected; Esc closes either.
-- **The header** keeps its name, state chip and link on one line; when room runs out, the views fold, from the last
+- **The header** keeps its name, state chip and link on one line, the name never under 6rem and the chip's words
+  taking a second line inside it rather than being cut ([ADR-0206](../decisions/0206-the-phase-10-ux-walk.md)); when
+  room runs out, the views fold, from the last
   one and never the open view, into the form's own "…" ("Views and more actions for Contact us"), so the header always
   has one "…". If that isn't enough, the link ("Used on 3 pages") moves into the same "…".
 - **While the form loads,** the canvas is a skeleton, the toolbar and the steps are hidden, and the footer's buttons
