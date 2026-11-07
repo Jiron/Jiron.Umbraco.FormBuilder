@@ -1,5 +1,5 @@
-// Einblicke auf Deutsch (ROADMAP 11.5, IA 5.5, 2 und 9, ADR-0211, docs/ux/copy.md): die Ansicht Einblicke eines
-// Formulars, „Formulare im Überblick“ der Übersicht und Datenschutz › Datenerfassung. Sie werden mit jeder davon geladen,
+// Einblicke auf Deutsch (ROADMAP 11.5 und 11.5b, IA 5.5, 2 und 9, ADR-0211, ADR-0212, docs/ux/copy.md): die Ansicht
+// Einblicke eines Formulars mit ihren Antworten, „Formulare im Überblick“ der Übersicht und Datenschutz › Datenerfassung. Sie werden mit jeder davon geladen,
 // nicht beim Start des Backoffice (`insights/insight-words.ts`); insights.en.ts hat dieselben Schlüssel.
 import type { UmbLocalizationDictionary } from '@umbraco-cms/backoffice/localization-api';
 
@@ -124,6 +124,53 @@ export default {
       `${members} Mitglieder haben ${entries} Einträge gesendet, davor ${before} Mitglieder.`,
     membersOther: (entries: string) =>
       `Die anderen ${entries} Einträge kamen von Besuchern, die nicht angemeldet waren.`,
+
+    mode: 'Ansicht',
+    mode_overview: 'Übersicht',
+    mode_answers: 'Antworten',
+    showTables: 'Als Tabellen zeigen',
+
+    answersLoading: 'Die Antworten werden geladen',
+    answersFailed: 'Die Antworten konnten nicht geladen werden.',
+    answersFrom: (count: number, said: string) =>
+      count === 1 ? 'Antworten aus 1 Eintrag.' : `Antworten aus ${said} Einträgen.`,
+    answersNone: 'Keine Einträge in diesem Zeitraum.',
+    answersNoneFiltered: 'Kein Eintrag in diesem Zeitraum entspricht diesen Filtern.',
+    answersNoFields: 'Dieses Formular hat keine Felder, deren Antworten sich zusammenfassen lassen.',
+    answersEmpty: (fields: string) => `In diesem Zeitraum nicht beantwortet: ${fields}.`,
+    answerCount: (count: number, said: string) => (count === 1 ? '1 Antwort' : `${said} Antworten`),
+    answerRemoved: (label: string) => `${label} (nicht mehr im Formular)`,
+    answerRows: (group: string) => `Eine Antwort für jede Zeile von „${group}“.`,
+    optionLine: (share: string, count: string) => `${share} (${count})`,
+    optionOlder: (label: string) => `${label} (keine Option mehr)`,
+    optionOther: 'Sonstiges, in eigenen Worten',
+    optionSeveral: 'Mehrere konnten gewählt werden, daher ergeben die Anteile zusammen mehr als 100 %.',
+    positionLine: (position: string) => `durchschnittlich Platz ${position}`,
+    rankingNote: 'Je höher eine Option im Durchschnitt steht, desto länger ist ihr Balken.',
+    figure_average: 'Durchschnitt',
+    figure_median: 'Median',
+    figure_lowest: 'Niedrigster Wert',
+    figure_highest: 'Höchster Wert',
+    scaleGroups: (field: string) => `${field} in drei Gruppen`,
+    scale_low: '0 bis 6',
+    scale_middle: '7 und 8',
+    scale_high: '9 und 10',
+    score: (score: string) => `Weiterempfehlungswert: ${score}`,
+    scoreHelp:
+      'Der Anteil, der 9 oder 10 gewählt hat, abzüglich des Anteils, der 0 bis 6 gewählt hat, von -100 bis 100.',
+    ticked: 'Angehakt',
+    notTicked: 'Nicht angehakt',
+    tickedRows: (count: number, said: string) => (count === 1 ? 'In 1 Zeile angehakt.' : `In ${said} Zeilen angehakt.`),
+    answeredShare: (share: string) => `In ${share} der Einträge beantwortet.`,
+    textsLabel: (field: string) => `Die neuesten Antworten auf „${field}“`,
+    textsMore: 'Mehr anzeigen',
+    textsMoreFailed: 'Weitere Antworten konnten nicht geladen werden.',
+    col_option: 'Option',
+    col_group: 'Gruppe',
+    col_answers: 'Antworten',
+    col_answerShare: 'Anteil',
+    col_position: 'Durchschnittlicher Platz',
+    col_row: 'Zeile',
 
     glance: 'Formulare im Überblick',
     glanceLoading: 'Die Formulare im Überblick werden geladen',

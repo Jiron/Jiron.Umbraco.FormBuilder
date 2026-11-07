@@ -550,8 +550,14 @@ day (or per week or month, as grouped); who reaches each page, with the median t
 visitors most, with the kind of error; the top website pages; entries by hour of day, in the site's time zone; and,
 on sites with members, how many members sent entries.
 
-**Answers** (11.5b): a summary per field. Choice fields show their options as bars; free-text answers are listed,
-newest first, each linking to its entry, and never summarised; other fields say how often they were answered.
+**Answers** (11.5b, ADR-0212): a summary per field, of the entries the range and the entries list's filter hold (its
+Filter, dialog and chips, without Received, which the range says). Choice fields show their options as bars of their
+share of the answers, a ranking its options by their average position, a grid row by row, a number its average,
+median, lowest and highest, and a scale from 0 to 10 its three groups and recommendation score; free-text answers are
+listed, newest first, each linking to its entry, and never summarised; other fields say how often they were answered,
+and the fields nobody answered share one line. Compare and Group by are the Overview's; in their place, one switch
+"Show as tables" shows every answer's chart as its table, kept per user. The answers come from the entries, so they are
+there while insights are off.
 
 - **Every chart** has "Show as table", which swaps it for its table in place; each box remembers the choice per user.
 - **Empty:** "No data yet", with when numbers appear.

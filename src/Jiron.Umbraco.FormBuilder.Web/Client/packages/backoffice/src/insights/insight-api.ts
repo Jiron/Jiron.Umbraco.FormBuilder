@@ -1,14 +1,20 @@
-// What the insights read and keep through the management API (ROADMAP 11.5, ADR-0211): a form's report over a span and
-// the span it compares with, the site's table of forms, the boxes the user shows as tables, and the site's switch on
-// Privacy > Data collection, whose refusal comes back as what the screen says.
+// What the insights read and keep through the management API (ROADMAP 11.5 and 11.5b, ADR-0211, ADR-0212): a form's
+// report over a span and the span it compares with, its answers' summaries over a span and the entries list's filter
+// with the next free-text answers of a field, the site's table of forms, the boxes the user shows as tables, and the
+// site's switch on Privacy > Data collection, whose refusal comes back as what the screen says.
 import type { UmbClassInterface } from '@umbraco-cms/backoffice/class-api';
 import { tryExecute } from '@umbraco-cms/backoffice/resources';
 import {
+  insightAnswers,
+  insightAnswerTexts,
   insightGlance,
   insightReport,
   insightTables,
   privacySettingsGet,
   privacySettingsSave,
+  type EntryListFilterRequestModel,
+  type InsightAnswersResponseModel,
+  type InsightAnswerTextsResponseModel,
   type InsightGlanceItemResponseModel,
   type InsightReportResponseModel,
   type PrivacySettingsResponseModel,
@@ -35,6 +41,38 @@ export async function readReport(
         ...(compare ? { compareFrom: compare.from, compareTo: compare.to } : {}),
       },
     }),
+    { disableNotifications: true },
+  );
+  return data;
+}
+
+/** A form's answers summarised per field, of the entries a span and a filter hold; undefined without an answer. */
+export async function readAnswers(
+  host: UmbClassInterface,
+  form: string,
+  span: Span,
+  filter: EntryListFilterRequestModel,
+): Promise<InsightAnswersResponseModel | undefined> {
+  const { data } = await tryExecute(
+    host,
+    insightAnswers({ path: { key: form }, body: { from: span.from, to: span.to, filter } }),
+    { disableNotifications: true },
+  );
+  return data;
+}
+
+/** A field's next free-text answers after where the ones shown end; undefined without an answer. */
+export async function readAnswerTexts(
+  host: UmbClassInterface,
+  form: string,
+  field: string,
+  span: Span,
+  filter: EntryListFilterRequestModel,
+  after: string,
+): Promise<InsightAnswerTextsResponseModel | undefined> {
+  const { data } = await tryExecute(
+    host,
+    insightAnswerTexts({ path: { key: form, field }, body: { from: span.from, to: span.to, filter, after } }),
     { disableNotifications: true },
   );
   return data;

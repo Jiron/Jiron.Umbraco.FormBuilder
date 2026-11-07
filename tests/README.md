@@ -902,6 +902,27 @@ the words, and `runtime/src/frame.test.ts` the beacons; in the browser, `specs/b
 headless page, finds its beacons arrive and fill its Insights view, a box kept as its table, and no beacon once the form's
 switch in its Privacy group is off.
 
+Answer summaries (ADR-0212): `Tests.Integration/Insights/AnswerSummaryTests.cs` sends entries to a form with a field of
+every kind and finds each summary from the database, labelled as its type shows its values: options with the visitors'
+own texts as one line, several choices, a country by its name, a ranking by its average position, a grid row by row,
+a number's figures and a scale's groups and score, the free texts newest first, an email answered, a checkbox ticked and
+a repeatable group's child by its rows; never a test entry, an entry in Spam (also where the filter names it), a
+sensitive field, one kept only until the actions run, or a child of a group that is either; an older version's option
+under its field, marked and named as that version named it; the span and the list's filter choosing the entries; the
+free texts a page at a time, also across a group's rows at one instant; the visitors' own texts as one line where a list
+gives the options or only an older version offered Other; a grid counted once per entry, with an older version's rows
+and columns marked; and a scale's groups only where every version asked from 0 to 10. `AnswerSummaryBudgetTests.cs` summarises 100,000 entries within a second on
+SQLite. `ManagementApi/InsightApiTests.cs` refuses the answers without `viewEntries`, an unknown form or field, a bad
+state, a backwards span and a bad cursor, and the permission matrix holds both endpoints. In the client,
+`insights/answer-model.test.ts` and `insights/insight-answers.element.test.ts` hold the boxes of every kind, their tables,
+Show more and its focus, a page that comes too late or was asked for while another range loaded, a share far under 1%,
+a grid's removed row, the empty, failed and busy states, and `designer/insights/insights.view.test.ts`
+the switch, the filter's dialog and chips, the range read once the Overview shows and the tables kept; the testing host's
+`POST /jfb-testing/answers-form` seeds a form with an answer of every kind, and in the browser
+`specs/backoffice/insight-answers.spec.ts` opens its Answers as a user who may only view entries, finds each kind's numbers,
+filters by an answer through the list's dialog, reads the free texts on, keeps the tables and opens an entry from its
+text, with axe in both ways of showing.
+
 ## The access tests
 
 `Tests.Unit/Access/` covers the permission model without a host (ADR-0013, ADR-0048): the flags' names in any letter

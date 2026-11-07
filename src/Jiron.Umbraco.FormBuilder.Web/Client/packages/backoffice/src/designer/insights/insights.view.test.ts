@@ -4,9 +4,13 @@
 // and the choice is kept; a date range and Group by read the report again; insights off for the site or the form say
 // where to turn them on and nothing else; a form with no visit says when numbers appear; a failed read offers Try again;
 // while another range loads, the numbers stay dimmed and busy, and a read that fails then says so in their place.
+// The switch Overview and Answers (11.5b, ADR-0212) shows the Answers in the same range, without Compare or Group by,
+// with the entries list's filter, its dialog and its chips, and one switch for every answer's table, kept for the user;
+// a range chosen there reads the report once the Overview shows again, and the answers are there with insights off.
 import { UmbBasicState } from '@umbraco-cms/backoffice/observable-api';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
-import type { InsightReportResponseModel } from '../../api';
+import type { EntryListFieldResponseModel, InsightReportResponseModel } from '../../api';
+import type { InsightAnswersElement } from '../../insights/insight-answers.element';
 import { all, must, registerEnglish, settle, shadow, testHost, text } from '../../testing';
 import { FORM_WORKSPACE_CONTEXT } from '../constants';
 
@@ -17,6 +21,31 @@ const api = vi.hoisted(() => ({
   kept: [] as string[][],
   /** What a save waits for before it answers. */
   hold: Promise.resolve() as Promise<unknown>,
+  answersAsked: [] as { span: unknown; filter: unknown }[],
+  /** The form's fields for the Answers' filter, in turn; undefined where they can't be read. */
+  views: [] as ({ fields: EntryListFieldResponseModel[] } | undefined)[],
+  viewsAsked: [] as string[],
+  /** What the filter's dialog answers, and what it was opened with. */
+  dialog: undefined as unknown,
+  opened: [] as { token: string; data: unknown }[],
+}));
+
+vi.mock('@umbraco-cms/backoffice/modal', async (original) => ({
+  ...(await original<typeof import('@umbraco-cms/backoffice/modal')>()),
+  umbOpenModal: async (_host: unknown, token: { toString(): string }, args?: { data?: unknown }) => {
+    api.opened.push({ token: token.toString(), data: args?.data });
+    if (api.dialog === undefined) throw new Error('closed');
+    return api.dialog;
+  },
+}));
+
+vi.mock('../../entries/entries-api', async (original) => ({
+  ...(await original<typeof import('../../entries/entries-api')>()),
+  readView: async (_host: unknown, form: string) => {
+    api.viewsAsked.push(form);
+    const view = api.views.length > 1 ? api.views.shift() : api.views[0];
+    return view ? { columns: [], filterSets: [], ...view } : undefined;
+  },
 }));
 
 vi.mock('../../insights/insight-api', async (original) => ({
@@ -24,6 +53,10 @@ vi.mock('../../insights/insight-api', async (original) => ({
   readReport: async (_host: unknown, form: string, span: unknown, groupBy: string, compare: unknown) => {
     api.asked.push({ form, span, groupBy, compare });
     return api.reports.length > 1 ? api.reports.shift() : api.reports[0];
+  },
+  readAnswers: async (_host: unknown, _form: string, span: unknown, filter: unknown) => {
+    api.answersAsked.push({ span, filter });
+    return { entries: 3, fields: [] };
   },
   keepTables: async (_host: unknown, tables: readonly string[]) => {
     api.kept.push([...tables]);
@@ -72,6 +105,11 @@ async function viewOf(...reports: unknown[]) {
   api.asked = [];
   api.kept = [];
   api.hold = Promise.resolve();
+  api.answersAsked = [];
+  api.views = [{ fields: [TOPIC] }];
+  api.viewsAsked = [];
+  api.dialog = undefined;
+  api.opened = [];
   const host = testHost();
   host.provideContext(FORM_WORKSPACE_CONTEXT, {
     unique: new UmbBasicState<string | undefined>('form1').asObservable(),
@@ -90,6 +128,32 @@ async function viewOf(...reports: unknown[]) {
       heading,
     );
   return { view, root, box };
+}
+
+/** A field the Answers' filter offers, with its options. */
+const TOPIC: EntryListFieldResponseModel = {
+  key: 'topic',
+  label: 'Topic',
+  alias: 'topic',
+  type: 'radio',
+  kind: 'choice',
+  sensitive: false,
+  removed: false,
+  column: true,
+  sorts: true,
+  tests: ['oneOf', 'noneOf'],
+  options: [{ value: 'sales', label: 'Sales' }],
+};
+
+/** Shows the view's Answers, with what they need for their filter. */
+async function answersIn(view: HTMLElement): Promise<InsightAnswersElement> {
+  must(
+    all<HTMLButtonElement>(view, '.modes button').find((each) => text(each) === 'Answers'),
+    'Answers',
+  ).click();
+  await vi.waitFor(() => expect(shadow(view).querySelector('jfb-insight-answers')).not.toBeNull());
+  await settle(view as HTMLElement & { updateComplete: Promise<unknown> });
+  return must(shadow(view).querySelector('jfb-insight-answers'), 'the answers');
 }
 
 /** A table row's cells, each as its text, apart by one space. */
@@ -317,5 +381,138 @@ describe('the Insights view', () => {
     );
     const failed = await viewOf(undefined);
     expect(text(failed.root.querySelector('[role="alert"]'))).toBe("Insights couldn't be loaded.");
+  });
+});
+
+describe('the Answers of the Insights view', () => {
+  it('switch in the same range, read the fields the filter offers, and have no Compare or Group by', async () => {
+    const { root, view } = await viewOf(report());
+    const mode = (name: string) =>
+      must(
+        all<HTMLButtonElement>(root.host, '.modes button').find((each) => text(each) === name),
+        name,
+      );
+    expect(root.querySelector('.modes')?.getAttribute('aria-label')).toBe('View');
+    expect(mode('Overview').getAttribute('aria-pressed')).toBe('true');
+    const answers = await answersIn(view);
+    expect(mode('Answers').getAttribute('aria-pressed')).toBe('true');
+    expect(mode('Overview').getAttribute('aria-pressed')).toBe('false');
+    expect(api.viewsAsked).toEqual(['form1']);
+    expect(answers.form).toBe('form1');
+    expect(answers.span).toEqual(api.asked[0]?.span);
+    expect(answers.filter).toEqual({ states: [], fields: [], forms: [] });
+    expect(answers.tables).toBe(false);
+    expect(all(root.host, 'uui-toggle').map((each) => each.getAttribute('label'))).toEqual(['Show as tables']);
+    expect(root.querySelector('#range .group-by'), "Group by is the Overview's").toBeNull();
+    expect(root.querySelector('dl.stats')).toBeNull();
+    expect(all(root.host, '#filter-menu button, #filter-menu h3').map((each) => text(each))).toEqual([
+      'State',
+      'Actions',
+      'Fields',
+      'Topic',
+    ]);
+    mode('Overview').click();
+    await settle(view);
+    expect(root.querySelector('dl.stats')).not.toBeNull();
+    expect(root.querySelector('jfb-insight-answers')).toBeNull();
+    expect(all(root.host, 'uui-toggle').map((each) => each.getAttribute('label'))).toEqual([
+      'Compare with the previous period',
+    ]);
+    expect(api.asked, 'the same range needs no new report').toHaveLength(1);
+    await answersIn(view);
+    expect(api.viewsAsked, 'the fields are read once').toEqual(['form1']);
+  });
+
+  it("filter with the entries list's dialog, without Spam, and its chips change and take away each part", async () => {
+    const { root, view } = await viewOf(report());
+    const answers = await answersIn(view);
+    const item = (name: string) =>
+      must(
+        all<HTMLButtonElement>(root.host, '#filter-menu button').find((each) => text(each) === name),
+        name,
+      );
+    api.dialog = { filter: { states: ['approved'], fields: [], forms: [] } };
+    item('State').click();
+    await settle(view);
+    expect(api.opened[0]).toEqual({
+      token: 'Jiron.FormBuilder.Modal.EntryFilter',
+      data: {
+        part: 'state',
+        filter: { states: [], fields: [], forms: [] },
+        states: ['unverified', 'submitted', 'approved', 'rejected'],
+      },
+    });
+    expect(answers.filter.states).toEqual(['approved']);
+    const condition = { field: 'topic', test: 'oneOf', values: ['sales'] };
+    api.dialog = { filter: { states: ['approved'], fields: [condition], forms: [] } };
+    item('Topic').click();
+    await settle(view);
+    expect(api.opened[1]?.data).toMatchObject({ part: 'field', field: TOPIC });
+    expect(root.querySelector('.chips')?.getAttribute('aria-label')).toBe('Filters');
+    expect(all(root.host, '.chips .chip-text').map((each) => text(each))).toEqual(['State: Approved', 'Topic: Sales']);
+    expect(answers.filter.fields).toEqual([condition]);
+
+    api.dialog = undefined;
+    must(all<HTMLButtonElement>(root.host, '.chips .chip-text')[1], 'the field chip').click();
+    await settle(view);
+    expect(api.opened[2]?.data, 'the chip opens its own part').toMatchObject({ part: 'field', field: TOPIC, index: 0 });
+    must(all<HTMLButtonElement>(root.host, '.chips .chip-remove')[0], 'the state chip').click();
+    await settle(view);
+    expect(answers.filter).toEqual({ states: [], fields: [condition], forms: [] });
+    expect(api.answersAsked.at(-1)?.filter).toEqual(answers.filter);
+    must(root.querySelector<HTMLElement>('.chips uui-button'), 'Clear filters').click();
+    await settle(view);
+    expect(answers.filter).toEqual({ states: [], fields: [], forms: [] });
+    expect(root.querySelector('.chips')).toBeNull();
+  });
+
+  it('read the report for a range chosen in the Answers once the Overview shows again', async () => {
+    const { root, view } = await viewOf(report());
+    const answers = await answersIn(view);
+    must(
+      all<HTMLButtonElement>(root.host, '#range button').find((each) => text(each) === 'Last 7 days'),
+      'last 7 days',
+    ).click();
+    await settle(view);
+    expect(api.asked).toHaveLength(1);
+    expect(answers.span).not.toEqual(api.asked[0]?.span);
+    const span = answers.span;
+    must(
+      all<HTMLButtonElement>(root.host, '.modes button').find((each) => text(each) === 'Overview'),
+      'Overview',
+    ).click();
+    await vi.waitFor(() => expect(api.asked).toHaveLength(2));
+    expect(api.asked[1]?.span).toEqual(span);
+  });
+
+  it('show every answer as its table with one switch, kept for the user', async () => {
+    const { root, view } = await viewOf(report({ tables: ['hours'] }));
+    const answers = await answersIn(view);
+    const toggle = must(root.querySelector<HTMLInputElement>('uui-toggle'), 'Show as tables');
+    toggle.dispatchEvent(new Event('change'));
+    await settle(view);
+    expect(api.kept).toEqual([['hours', 'answers']]);
+    expect(answers.tables).toBe(true);
+  });
+
+  it('are there while insights are off, as they come from the entries', async () => {
+    const { view } = await viewOf(report({ siteOn: false, formOn: false }));
+    const answers = await answersIn(view);
+    expect(answers.form).toBe('form1');
+  });
+
+  it("offer Try again where the form's fields could not be read", async () => {
+    const { root } = await viewOf(report());
+    api.views = [undefined, { fields: [TOPIC] }];
+    must(
+      all<HTMLButtonElement>(root.host, '.modes button').find((each) => text(each) === 'Answers'),
+      'Answers',
+    ).click();
+    await vi.waitFor(() => expect(root.querySelector('[role="alert"]')).not.toBeNull());
+    expect(text(root.querySelector('[role="alert"] span'))).toBe("The answers couldn't be loaded.");
+    expect(root.querySelector('#filter-menu')).toBeNull();
+    must(root.querySelector<HTMLElement>('[role="alert"] uui-button'), 'Try again').click();
+    await vi.waitFor(() => expect(root.querySelector('jfb-insight-answers')).not.toBeNull());
+    expect(api.viewsAsked).toEqual(['form1', 'form1']);
   });
 });

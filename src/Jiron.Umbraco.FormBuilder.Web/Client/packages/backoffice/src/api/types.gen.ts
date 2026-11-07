@@ -1101,6 +1101,83 @@ export type ImportNoteResponseModel = {
     alias?: string | null;
 };
 
+export type InsightAnswerGridRowResponseModel = {
+    key: string;
+    label: string;
+    answered: number;
+    options: Array<InsightAnswerOptionResponseModel>;
+    removed: boolean;
+};
+
+export type InsightAnswerNumbersResponseModel = {
+    average: number;
+    median: number;
+    lowest: number;
+    highest: number;
+    groups?: InsightAnswerScaleResponseModel | null;
+};
+
+export type InsightAnswerOptionResponseModel = {
+    label: string;
+    count: number;
+    position?: number | null;
+    older: boolean;
+    other: boolean;
+};
+
+export type InsightAnswerResponseModel = {
+    key: string;
+    label: string;
+    kind: string;
+    answered: number;
+    parent?: string | null;
+    parentLabel?: string | null;
+    removed: boolean;
+    several: boolean;
+    options: Array<InsightAnswerOptionResponseModel>;
+    rows: Array<InsightAnswerGridRowResponseModel>;
+    numbers?: InsightAnswerNumbersResponseModel | null;
+    ticked: number;
+    texts: Array<InsightAnswerTextResponseModel>;
+    more?: string | null;
+};
+
+export type InsightAnswerScaleResponseModel = {
+    low: number;
+    middle: number;
+    high: number;
+    score: number;
+};
+
+export type InsightAnswerTextResponseModel = {
+    entry: string;
+    received: string;
+    text: string;
+};
+
+export type InsightAnswerTextsRequestModel = {
+    from?: string | null;
+    to?: string | null;
+    filter?: EntryListFilterRequestModel | null;
+    after: string;
+};
+
+export type InsightAnswerTextsResponseModel = {
+    texts: Array<InsightAnswerTextResponseModel>;
+    more?: string | null;
+};
+
+export type InsightAnswersRequestModel = {
+    from?: string | null;
+    to?: string | null;
+    filter?: EntryListFilterRequestModel | null;
+};
+
+export type InsightAnswersResponseModel = {
+    entries: number;
+    fields: Array<InsightAnswerResponseModel>;
+};
+
 export type InsightFieldResponseModel = {
     key: string;
     label?: string | null;
@@ -4650,6 +4727,85 @@ export type InsightReportResponses = {
 };
 
 export type InsightReportResponse = InsightReportResponses[keyof InsightReportResponses];
+
+export type InsightAnswersData = {
+    body?: InsightAnswersRequestModel;
+    path: {
+        key: string;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/form/{key}/insights/answers';
+};
+
+export type InsightAnswersErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type InsightAnswersError = InsightAnswersErrors[keyof InsightAnswersErrors];
+
+export type InsightAnswersResponses = {
+    /**
+     * OK
+     */
+    200: InsightAnswersResponseModel;
+};
+
+export type InsightAnswersResponse = InsightAnswersResponses[keyof InsightAnswersResponses];
+
+export type InsightAnswerTextsData = {
+    body?: InsightAnswerTextsRequestModel;
+    path: {
+        key: string;
+        field: string;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/form/{key}/insights/answers/{field}/texts';
+};
+
+export type InsightAnswerTextsErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type InsightAnswerTextsError = InsightAnswerTextsErrors[keyof InsightAnswerTextsErrors];
+
+export type InsightAnswerTextsResponses = {
+    /**
+     * OK
+     */
+    200: InsightAnswerTextsResponseModel;
+};
+
+export type InsightAnswerTextsResponse = InsightAnswerTextsResponses[keyof InsightAnswerTextsResponses];
 
 export type InsightGlanceData = {
     body?: never;

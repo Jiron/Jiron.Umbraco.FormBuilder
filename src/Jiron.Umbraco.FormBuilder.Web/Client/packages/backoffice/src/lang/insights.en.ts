@@ -1,4 +1,4 @@
-// Insights in English (ROADMAP 11.5, IA 5.5, 2 and 9, ADR-0211, docs/ux/copy.md): a form's Insights view, the
+// Insights in English (ROADMAP 11.5 and 11.5b, IA 5.5, 2 and 9, ADR-0211, ADR-0212, docs/ux/copy.md): a form's Insights view and its Answers, the
 // Overview's Forms at a glance and Privacy › Data collection. They load with each, not with the backoffice's start
 // (`insights/insight-words.ts`); insights.de.ts has the same keys.
 import type { UmbLocalizationDictionary } from '@umbraco-cms/backoffice/localization-api';
@@ -120,6 +120,52 @@ export default {
     membersLineDown: (members: string, entries: string, before: string) =>
       `${members} members sent ${entries} entries, down from ${before} members.`,
     membersOther: (entries: string) => `The other ${entries} entries came from visitors who weren't signed in.`,
+
+    mode: 'View',
+    mode_overview: 'Overview',
+    mode_answers: 'Answers',
+    showTables: 'Show as tables',
+
+    answersLoading: 'Loading the answers',
+    answersFailed: "The answers couldn't be loaded.",
+    answersFrom: (count: number, said: string) =>
+      count === 1 ? 'Answers from 1 entry.' : `Answers from ${said} entries.`,
+    answersNone: 'No entries in this period.',
+    answersNoneFiltered: 'No entries in this period match these filters.',
+    answersNoFields: 'This form has no fields whose answers can be summarised.',
+    answersEmpty: (fields: string) => `Not answered in this period: ${fields}.`,
+    answerCount: (count: number, said: string) => (count === 1 ? '1 answer' : `${said} answers`),
+    answerRemoved: (label: string) => `${label} (no longer on the form)`,
+    answerRows: (group: string) => `One answer for each row of ${group}.`,
+    optionLine: (share: string, count: string) => `${share} (${count})`,
+    optionOlder: (label: string) => `${label} (no longer an option)`,
+    optionOther: 'Other, in their own words',
+    optionSeveral: 'More than one could be chosen, so the shares add up to more than 100%.',
+    positionLine: (position: string) => `average position ${position}`,
+    rankingNote: 'The higher an option ranks on average, the longer its bar.',
+    figure_average: 'Average',
+    figure_median: 'Median',
+    figure_lowest: 'Lowest',
+    figure_highest: 'Highest',
+    scaleGroups: (field: string) => `${field} in three groups`,
+    scale_low: '0 to 6',
+    scale_middle: '7 and 8',
+    scale_high: '9 and 10',
+    score: (score: string) => `Recommendation score: ${score}`,
+    scoreHelp: 'The share who chose 9 or 10, less the share who chose 0 to 6, from -100 to 100.',
+    ticked: 'Ticked',
+    notTicked: 'Not ticked',
+    tickedRows: (count: number, said: string) => (count === 1 ? 'Ticked in 1 row.' : `Ticked in ${said} rows.`),
+    answeredShare: (share: string) => `Answered in ${share} of the entries.`,
+    textsLabel: (field: string) => `The newest answers to ${field}`,
+    textsMore: 'Show more',
+    textsMoreFailed: "More answers couldn't be loaded.",
+    col_option: 'Option',
+    col_group: 'Group',
+    col_answers: 'Answers',
+    col_answerShare: 'Share',
+    col_position: 'Average position',
+    col_row: 'Row',
 
     glance: 'Forms at a glance',
     glanceLoading: 'Loading the forms at a glance',

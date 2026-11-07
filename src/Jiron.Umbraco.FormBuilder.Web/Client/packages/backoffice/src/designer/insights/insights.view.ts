@@ -6,9 +6,23 @@
 // swaps it for its table in place and is kept for the user. While another range loads, the numbers shown stay, dimmed
 // and marked busy; a read that fails says so in their place, as numbers of another range would mislead. A form whose
 // insights are off says where to turn them on, and nothing else; one with no visit yet says when numbers appear.
+// The segmented switch Overview and Answers (11.5b, ADR-0212) shows instead what the entries of the range answered, with
+// the entries list's filter, its dialog and its chips, and one switch for every chart's table; the answers come from
+// the entries, so they are there while the counting of visits is off.
 import { css, html, nothing, type TemplateResult } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
-import type { InsightReportResponseModel, InsightTotalsResponseModel } from '../../api';
+import { umbOpenModal } from '@umbraco-cms/backoffice/modal';
+import type {
+  EntryListFieldResponseModel,
+  EntryListFilterRequestModel,
+  InsightReportResponseModel,
+  InsightTotalsResponseModel,
+} from '../../api';
+import { readView } from '../../entries/entries-api';
+import { chipsOf, emptyFilter, INBOX_STATES, isFiltered, type Chip } from '../../entries/entry-list-model';
+import { ENTRY_FILTER_MODAL, type FilterPart } from '../../entries/entry-modals';
+import { loadEntryWords } from '../../entries/entry-words';
+import '../../insights/insight-answers.element';
 import { keepTables, readReport } from '../../insights/insight-api';
 import '../../insights/insight-chart.element';
 import type { BarValue, ChartValue } from '../../insights/insight-chart.element';
@@ -30,14 +44,19 @@ import {
   type Preset,
   type Span,
 } from '../../insights/insight-model';
+import { insightTable, jfbInsightTable } from '../../insights/insight-table';
 import { loadInsightWords } from '../../insights/insight-words';
 import { pressOf } from '../../styles/press';
 import { jfbBackofficeTokens, jfbVisuallyHidden } from '../../styles/tokens';
 import { jfbSkeleton, skeletonLines } from '../../ui/skeleton';
 import { FORM_WORKSPACE_CONTEXT } from '../constants';
 
-/** The boxes with a chart, by the name the user's choice of tables keeps them under. */
-type Box = 'entries' | 'funnel' | 'fields' | 'origins' | 'hours';
+/** The boxes with a chart, by the name the user's choice of tables keeps them under; `answers` holds every answer's. */
+type Box = 'entries' | 'funnel' | 'fields' | 'origins' | 'hours' | 'answers';
+
+/** What the view shows: what visitors do, or what the entries answered. */
+const MODES = ['overview', 'answers'] as const;
+type Mode = (typeof MODES)[number];
 
 const HOUR_AXIS = ['00:00', '06:00', '12:00', '18:00', '23:00'];
 
@@ -55,13 +74,18 @@ export class FormInsightsViewElement extends UmbLitElement {
     _rangeOpen: { state: true },
     _draft: { state: true },
     _draftInvalid: { state: true },
+    _mode: { state: true },
+    _filter: { state: true },
+    _fields: { state: true },
+    _answersOpen: { state: true },
   };
 
   static override styles = [
     jfbBackofficeTokens,
     jfbVisuallyHidden,
     jfbSkeleton,
-    pressOf('.menu button'),
+    jfbInsightTable,
+    pressOf('.menu button, .modes button, .chip button'),
     css`
       :host {
         display: block;
@@ -78,8 +102,96 @@ export class FormInsightsViewElement extends UmbLitElement {
         margin-block-end: var(--uui-size-space-5);
       }
 
-      .toolbar uui-toggle {
+      .modes {
+        display: inline-flex;
         margin-inline-start: auto;
+        border: 1px solid var(--jfb-bo-color-control-border);
+        border-radius: var(--uui-border-radius);
+        overflow: hidden;
+      }
+
+      /* With its border, as tall as the toolbar's buttons beside it. */
+      .modes button {
+        min-block-size: 31px;
+        margin: 0;
+        padding: 0 var(--uui-size-space-5);
+        border: 0;
+        background: var(--uui-color-surface);
+        color: var(--uui-color-text);
+        font: inherit;
+        cursor: pointer;
+      }
+
+      .modes button + button {
+        border-inline-start: 1px solid var(--jfb-bo-color-control-border);
+      }
+
+      .modes button[aria-pressed='true'] {
+        background: var(--uui-color-selected);
+        color: var(--uui-color-selected-contrast);
+      }
+
+      .modes button:focus-visible {
+        outline: 2px solid var(--jfb-bo-color-focus);
+        outline-offset: -4px;
+      }
+
+      .menu h3 {
+        margin: var(--uui-size-space-3) var(--uui-size-space-5) var(--uui-size-space-1);
+        color: var(--jfb-bo-color-text-muted);
+        font-size: var(--uui-type-small-size);
+        font-weight: 700;
+      }
+
+      .chips {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--uui-size-space-3);
+        margin-block: calc(-1 * var(--uui-size-space-2)) var(--uui-size-space-5);
+      }
+
+      .chip {
+        display: inline-flex;
+        align-items: stretch;
+        max-inline-size: 100%;
+        border: 1px solid var(--uui-color-border);
+        border-radius: var(--uui-border-radius);
+        background: var(--uui-color-surface);
+      }
+
+      .chip button {
+        display: inline-flex;
+        align-items: center;
+        min-block-size: 32px;
+        margin: 0;
+        padding: 0 var(--uui-size-space-3);
+        border: 0;
+        background: none;
+        color: var(--uui-color-text);
+        font: inherit;
+        cursor: pointer;
+      }
+
+      .chip .chip-text {
+        overflow-wrap: anywhere;
+        text-align: start;
+      }
+
+      .chip .chip-remove {
+        border-inline-start: 1px solid var(--uui-color-border);
+      }
+
+      .chip button:focus-visible {
+        outline: 2px solid var(--jfb-bo-color-focus);
+        outline-offset: 2px;
+      }
+
+      @media (hover: hover) {
+        .modes button[aria-pressed='false']:hover,
+        .chip button:hover {
+          background: var(--uui-color-surface-emphasis);
+        }
       }
 
       .menu {
@@ -241,39 +353,6 @@ export class FormInsightsViewElement extends UmbLitElement {
         color: var(--jfb-bo-color-text-muted);
       }
 
-      table {
-        inline-size: 100%;
-        border-collapse: collapse;
-        font-variant-numeric: tabular-nums;
-      }
-
-      th,
-      td {
-        padding: var(--uui-size-space-2) var(--uui-size-space-3);
-        border-block-start: 1px solid var(--uui-color-divider);
-        text-align: start;
-        font-weight: 400;
-      }
-
-      thead th {
-        border-block-start: 0;
-        font-weight: 700;
-      }
-
-      th:first-child,
-      td:first-child {
-        padding-inline-start: 0;
-      }
-
-      .numeric {
-        text-align: end;
-      }
-
-      .scroll {
-        max-block-size: 22rem;
-        overflow-y: auto;
-      }
-
       .failed {
         display: flex;
         flex-wrap: wrap;
@@ -300,7 +379,7 @@ export class FormInsightsViewElement extends UmbLitElement {
           border-block-start: 1px solid var(--uui-color-divider-standalone);
         }
 
-        .toolbar uui-toggle {
+        .modes {
           margin-inline-start: 0;
         }
       }
@@ -323,9 +402,21 @@ export class FormInsightsViewElement extends UmbLitElement {
   /** The chosen dates as written, before they are shown. */
   declare private _draft: Span;
   declare private _draftInvalid: boolean;
+  declare private _mode: Mode;
+  /** The Answers' filter, the entries list's, for this visit. */
+  declare private _filter: EntryListFilterRequestModel;
+  /** The form's fields, which the Answers' Filter offers. */
+  declare private _fields: readonly EntryListFieldResponseModel[];
+  /** Whether the Answers have the entries' words and the form's fields, which their filter needs. */
+  declare private _answersOpen: 'loading' | 'ready' | 'failed';
 
   #form: string | undefined;
   #reads = 0;
+  /** The form the Answers opened for; none until they are first shown. */
+  #answersFor: string | undefined;
+  #byKey: ReadonlyMap<string, EntryListFieldResponseModel> = new Map();
+  /** Whether the range changed while the Answers showed, so the Overview reads its report again. */
+  #stale = false;
   /** Whether the user's tables came with a report: from then on, this view's switches are the newer word. */
   #tablesKnown = false;
   /** The saves of the user's tables, one after the other, so the last choice is the one kept. */
@@ -345,6 +436,10 @@ export class FormInsightsViewElement extends UmbLitElement {
     this._rangeOpen = false;
     this._draft = this._span;
     this._draftInvalid = false;
+    this._mode = 'overview';
+    this._filter = emptyFilter();
+    this._fields = [];
+    this._answersOpen = 'loading';
     this.consumeContext(FORM_WORKSPACE_CONTEXT, (context) => {
       if (!context) return;
       this.observe(
@@ -353,7 +448,10 @@ export class FormInsightsViewElement extends UmbLitElement {
           if (!unique || unique === this.#form) return;
           this.#form = unique;
           this._report = undefined;
+          this._filter = emptyFilter();
+          this.#answersFor = undefined;
           void this.#read();
+          if (this._mode === 'answers') void this.#openAnswers();
         },
         'unique',
       );
@@ -370,6 +468,7 @@ export class FormInsightsViewElement extends UmbLitElement {
     if (!form) return;
     const read = ++this.#reads;
     this._state = 'loading';
+    this.#stale = false;
     const compare = this._compare ? compareOf(this._preset, this._span) : null;
     const [words, report] = await Promise.all([
       loadInsightWords(this.localize.lang()).then(
@@ -396,7 +495,7 @@ export class FormInsightsViewElement extends UmbLitElement {
     this._span = spanOf(preset, utcToday(new Date()));
     this._choosing = false;
     this.#closeRange();
-    void this.#read();
+    this.#spanChanged();
   }
 
   #showDates() {
@@ -409,7 +508,82 @@ export class FormInsightsViewElement extends UmbLitElement {
     this._preset = 'custom';
     this._span = draft;
     this.#closeRange();
-    void this.#read();
+    this.#spanChanged();
+  }
+
+  /** A new range: the Overview reads its report at once, or once it shows again; the Answers read theirs themselves. */
+  #spanChanged() {
+    if (this._mode === 'overview') void this.#read();
+    else this.#stale = true;
+  }
+
+  #show(mode: Mode) {
+    if (mode === this._mode) return;
+    this._mode = mode;
+    if (mode === 'answers') void this.#openAnswers();
+    else if (this.#stale) void this.#read();
+  }
+
+  /** The Answers' filter needs the entries' words, which its dialog and chips say, and the form's fields. */
+  async #openAnswers() {
+    const form = this.#form;
+    if (!form || this.#answersFor === form) return;
+    this.#answersFor = form;
+    this._answersOpen = 'loading';
+    const [words, view] = await Promise.all([
+      loadEntryWords(this.localize.lang()).then(
+        () => true,
+        () => false,
+      ),
+      readView(this, form),
+    ]);
+    if (form !== this.#form) return;
+    if (!words || !view) {
+      this.#answersFor = undefined;
+      this._answersOpen = 'failed';
+      return;
+    }
+    this._fields = view.fields;
+    this.#byKey = new Map(view.fields.map((field) => [field.key, field]));
+    this._answersOpen = 'ready';
+  }
+
+  #filterBy(filter: EntryListFilterRequestModel) {
+    this._filter = filter;
+  }
+
+  /** One part of the filter in the entries list's own dialog; the Answers have no Spam to offer. */
+  async #edit(part: FilterPart, field?: EntryListFieldResponseModel, index?: number) {
+    this.shadowRoot?.querySelector<HTMLElement & { hidePopover?: () => void }>('#filter-menu')?.hidePopover?.();
+    const answer = await umbOpenModal(this, ENTRY_FILTER_MODAL, {
+      data: {
+        part,
+        filter: this._filter,
+        states: INBOX_STATES,
+        ...(field ? { field } : {}),
+        ...(index !== undefined ? { index } : {}),
+      },
+    }).catch(() => undefined);
+    if (answer) this.#filterBy(answer.filter);
+  }
+
+  #editChip(chip: Chip) {
+    if (chip.kind !== 'field') {
+      if (chip.kind === 'state' || chip.kind === 'actions') void this.#edit(chip.kind);
+      return;
+    }
+
+    const condition = this._filter.fields[chip.index ?? -1];
+    const field = condition ? this.#byKey.get(condition.field) : undefined;
+    if (field) void this.#edit('field', field, chip.index);
+  }
+
+  #removeChip(chip: Chip) {
+    const filter = { ...this._filter };
+    if (chip.kind === 'state') filter.states = [];
+    else if (chip.kind === 'actions') delete filter.actions;
+    else filter.fields = filter.fields.filter((_, index) => index !== chip.index);
+    this.#filterBy(filter);
   }
 
   #group(grouping: Grouping) {
@@ -541,24 +715,27 @@ export class FormInsightsViewElement extends UmbLitElement {
             <span class="mark" aria-hidden="true">${this._preset === 'custom' ? '\u2713' : ''}</span
             >${this.#term('range_custom')}
           </button>
-          ${this._choosing ? this.#dates() : nothing}
-          <div class="group-by">
-            <span id="group-by">${this.#term('groupBy')}</span>
-            <div class="segments" role="group" aria-labelledby="group-by">
-              ${GROUPINGS.map(
-                (grouping) =>
-                  html`<button
-                    type="button"
-                    aria-pressed=${this._grouping === grouping ? 'true' : 'false'}
-                    @click=${() => this.#group(grouping)}
-                  >
-                    ${this.#term(`group_${grouping}`)}
-                  </button>`,
-              )}
-            </div>
-          </div>
+          ${this._choosing ? this.#dates() : nothing} ${this._mode === 'overview' ? this.#groupBy() : nothing}
         </div>
       </uui-popover-container>`;
+  }
+
+  #groupBy(): TemplateResult {
+    return html`<div class="group-by">
+      <span id="group-by">${this.#term('groupBy')}</span>
+      <div class="segments" role="group" aria-labelledby="group-by">
+        ${GROUPINGS.map(
+          (grouping) =>
+            html`<button
+              type="button"
+              aria-pressed=${this._grouping === grouping ? 'true' : 'false'}
+              @click=${() => this.#group(grouping)}
+            >
+              ${this.#term(`group_${grouping}`)}
+            </button>`,
+        )}
+      </div>
+    </div>`;
   }
 
   #dates(): TemplateResult {
@@ -587,18 +764,138 @@ export class FormInsightsViewElement extends UmbLitElement {
     </div>`;
   }
 
+  /** The segmented switch, in the same place in both: the Overview, or the Answers. */
+  #modes(): TemplateResult {
+    return html`<div class="modes" role="group" aria-label=${this.#term('mode')}>
+      ${MODES.map(
+        (mode) =>
+          html`<button
+            type="button"
+            aria-pressed=${this._mode === mode ? 'true' : 'false'}
+            @click=${() => this.#show(mode)}
+          >
+            ${this.#term(`mode_${mode}`)}
+          </button>`,
+      )}
+    </div>`;
+  }
+
+  /** The Answers' Filter: the entries list's parts but its form, Received, which the range says, and its sets. */
+  #filterMenu(): TemplateResult {
+    const fields = this._fields.filter((field) => field.tests.length > 0);
+    const item = (label: string, act: () => void) => html`<button type="button" @click=${act}>${label}</button>`;
+    return html`<uui-button look="outline" label=${this.#full('jfbEntries_filter')} popovertarget="filter-menu">
+        <uui-icon name="icon-filter" aria-hidden="true"></uui-icon> ${this.#full('jfbEntries_filter')}
+      </uui-button>
+      <uui-popover-container
+        id="filter-menu"
+        placement="bottom-start"
+        @toggle=${(event: ToggleEvent) => {
+          if (event.newState === 'open') (event.target as HTMLElement).querySelector<HTMLElement>('button')?.focus();
+        }}
+      >
+        <div class="menu">
+          ${item(this.#full('jfbEntries_menu_state'), () => void this.#edit('state'))}
+          ${item(this.#full('jfbEntries_menu_actions'), () => void this.#edit('actions'))}
+          ${
+            fields.length > 0
+              ? html`<h3>${this.#full('jfbEntries_menu_fields')}</h3>
+                  ${fields.map((field) =>
+                    item(
+                      field.removed ? `${field.label} (${this.#full('jfbEntries_chooser_removed')})` : field.label,
+                      () => void this.#edit('field', field),
+                    ),
+                  )}`
+              : nothing
+          }
+        </div>
+      </uui-popover-container>`;
+  }
+
   #toolbar(): TemplateResult {
+    const answers = this._mode === 'answers';
     return html`<div class="toolbar">
       ${this.#rangeMenu()}
-      <uui-toggle
-        label=${this.#term('compare')}
-        .checked=${this._compare}
-        @change=${(event: Event) => {
-          this._compare = (event.target as HTMLInputElement).checked;
-          void this.#read();
-        }}
-      ></uui-toggle>
+      ${
+        answers
+          ? html`${this._answersOpen === 'ready' ? this.#filterMenu() : nothing}
+              <uui-toggle
+                label=${this.#term('showTables')}
+                .checked=${this._tables.has('answers')}
+                @change=${() => this.#toggleTable('answers')}
+              ></uui-toggle>`
+          : html`<uui-toggle
+              label=${this.#term('compare')}
+              .checked=${this._compare}
+              @change=${(event: Event) => {
+                this._compare = (event.target as HTMLInputElement).checked;
+                void this.#read();
+              }}
+            ></uui-toggle>`
+      }
+      ${this.#modes()}
     </div>`;
+  }
+
+  /** The Answers' chips, in the entries list's words: each opens its part of the filter, or takes it away. */
+  #chips(): TemplateResult | typeof nothing {
+    if (this._answersOpen !== 'ready' || !isFiltered(this._filter)) return nothing;
+    const chips = chipsOf(this._filter, this.#byKey, this.localize.lang(), this.#full);
+    return html`<div class="chips" role="group" aria-label=${this.#full('jfbEntries_filters')}>
+      ${chips.map(
+        (chip) =>
+          html`<span class="chip">
+            <button
+              type="button"
+              class="chip-text"
+              aria-label=${this.#full('jfbEntries_chip_edit', chip.text)}
+              @click=${() => this.#editChip(chip)}
+            >
+              ${chip.text}
+            </button>
+            <button
+              type="button"
+              class="chip-remove"
+              aria-label=${this.#full('jfbEntries_chip_remove', chip.text)}
+              title=${this.#full('jfbEntries_chip_remove', chip.text)}
+              @click=${() => this.#removeChip(chip)}
+            >
+              <uui-icon name="icon-wrong" aria-hidden="true"></uui-icon>
+            </button>
+          </span>`,
+      )}
+      <uui-button
+        look="default"
+        compact
+        label=${this.#full('jfbEntries_clearFilters')}
+        @click=${() => this.#filterBy(emptyFilter())}
+      ></uui-button>
+    </div>`;
+  }
+
+  #answers(): TemplateResult {
+    switch (this._answersOpen) {
+      case 'failed':
+        return html`<uui-box>
+          <div class="failed" role="alert">
+            <span>${this.#term('answersFailed')}</span>
+            <uui-button
+              look="outline"
+              label=${this.#term('tryAgain')}
+              @click=${() => void this.#openAnswers()}
+            ></uui-button>
+          </div>
+        </uui-box>`;
+      case 'loading':
+        return html`<uui-box>${skeletonLines(this.#term('answersLoading'), [72, 56, 64])}</uui-box>`;
+      default:
+        return html`<jfb-insight-answers
+          .form=${this.#form ?? ''}
+          .span=${this._span}
+          .filter=${this._filter}
+          ?tables=${this._tables.has('answers')}
+        ></jfb-insight-answers>`;
+    }
   }
 
   #stat(label: string, value: string, change: string | undefined, extra?: string): TemplateResult {
@@ -651,38 +948,8 @@ export class FormInsightsViewElement extends UmbLitElement {
     </uui-box>`;
   }
 
-  /** A box's table: the first column names each row, and the columns `numbers` says hold numbers are aligned to the end. */
-  #table(
-    caption: string,
-    columns: readonly string[],
-    rows: readonly (readonly string[])[],
-    numbers: (column: number) => boolean = (column) => column > 0,
-  ): TemplateResult {
-    return html`<div class="scroll">
-      <table>
-        <caption class="visually-hidden">
-          ${caption}
-        </caption>
-        <thead>
-          <tr>
-            ${columns.map((column, index) => html`<th scope="col" class=${numbers(index) ? 'numeric' : ''}>${column}</th>`)}
-          </tr>
-        </thead>
-        <tbody>
-          ${rows.map(
-            (row) =>
-              html`<tr>
-                ${row.map((cell, index) =>
-                  index === 0
-                    ? html`<th scope="row">${cell}</th>`
-                    : html`<td class=${numbers(index) ? 'numeric' : ''}>${cell}</td>`,
-                )}
-              </tr>`,
-          )}
-        </tbody>
-      </table>
-    </div>`;
-  }
+  /** A box's table, as every chart of the insights has. */
+  #table = insightTable;
 
   #entries(report: InsightReportResponseModel): TemplateResult {
     const heading = this.#term(`entries_${this._grouping}`);
@@ -921,9 +1188,10 @@ export class FormInsightsViewElement extends UmbLitElement {
             </div>
           </uui-box>`
         : html`<uui-box>${skeletonLines('', [72, 56, 64])}</uui-box>`;
-    return html`${this.#toolbar()} ${this.#body()}
+    return html`${this.#toolbar()}
+      ${this._mode === 'answers' ? html`${this.#chips()} ${this.#answers()}` : this.#body()}
       <div class="visually-hidden" role="status">
-        ${this._state === 'loading' && this._report ? this.#term('loading') : ''}
+        ${this._mode === 'overview' && this._state === 'loading' && this._report ? this.#term('loading') : ''}
       </div>`;
   }
 }

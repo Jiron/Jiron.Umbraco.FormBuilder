@@ -1,6 +1,6 @@
 // The insights' charts (ROADMAP 11.5, ADR-0211): small SVG drawings, no chart library. Columns stand for groups of days
 // or hours, each beside a quieter column for its counterpart in the period before; bars lie in a list for pages,
-// fields and website pages. A drawing is one image to assistive technology, named by what it shows, and each box's
+// fields, website pages and the options of an answer (11.5b, ADR-0212), whose bars are shares of the answers. A drawing is one image to assistive technology, named by what it shows, and each box's
 // "Show as table" reads every value; a column's own title says its numbers under the pointer. Nothing moves.
 import { css, html, nothing, svg } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
@@ -147,11 +147,12 @@ export class InsightColumnsElement extends UmbLitElement {
   }
 }
 
-/** Bars in a list, each its value's share of the most, with what is said of it. */
+/** Bars in a list, each its value's share of the most or of a whole, with what is said of it. */
 export class InsightBarsElement extends UmbLitElement {
   static override properties = {
     values: { attribute: false },
     ordered: { type: Boolean },
+    whole: { type: Number },
   };
 
   static override styles = [
@@ -208,15 +209,22 @@ export class InsightBarsElement extends UmbLitElement {
   declare values: readonly BarValue[];
   /** Whether the order of the bars says something, as a funnel's does. */
   declare ordered: boolean;
+  /** The number each bar is a share of, as an option's bar is of the answers; 0 for shares of the most. */
+  declare whole: number;
 
   constructor() {
     super();
     this.values = [];
     this.ordered = false;
+    this.whole = 0;
   }
 
   override render() {
-    const shares = sharesOf(this.values.map((value) => value.value));
+    const whole = this.whole;
+    const shares =
+      whole > 0
+        ? this.values.map((value) => Math.min(1, Math.max(0, value.value) / whole))
+        : sharesOf(this.values.map((value) => value.value));
     const items = this.values.map(
       (value, index) =>
         html`<li>
