@@ -76,7 +76,8 @@ internal sealed class TestEndpointsStartupFilter(IOptions<FormBuilderTestingOpti
 /// so a global set-up can tell that it reached a test host.</description></item>
 /// <item><description><c>/jfb-testing/clock</c>: reads (<c>GET</c>), moves (<c>POST {"utc": "..."}</c> or
 /// <c>{"advanceSeconds": 360}</c>) and resets (<c>DELETE</c>) the host's <see cref="TestClock"/>; <c>404</c> when the
-/// host has none.</description></item>
+/// host has none. The browser specs share their host, so none of them moves it: a moved clock shifts every other spec's
+/// times while it runs, an entry's undo window among them.</description></item>
 /// <item><description><c>GET /jfb-testing/access</c>: each backoffice user's effective Jiron Form Builder permissions,
 /// globally, at the root and on each root folder outside the trash in the library's order (ADR-0049), so the browser
 /// tests can see that the personas have their grants.</description></item>

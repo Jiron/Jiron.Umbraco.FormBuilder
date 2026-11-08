@@ -348,5 +348,6 @@ test('who may only read entries gets the entry views, no designer, and the name 
     await expect(page.getByRole('tab', { name: view })).toHaveCount(0);
   for (const action of ['Save draft', 'Publish\u2026'])
     await expect(page.getByRole('button', { name: action })).toHaveCount(0);
-  await expect(page.locator('jfb-coming-screen')).toBeVisible();
+  // The first view the user may see opens: the form's entries.
+  await expect(page.locator('jfb-entries-view')).toBeVisible();
 });

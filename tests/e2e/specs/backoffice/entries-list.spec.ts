@@ -37,7 +37,6 @@ test('the entries list pages 1,000 entries, searches, keeps a filter set across 
   browser,
   loginAs,
   apiAs,
-  request,
 }) => {
   test.setTimeout(900_000);
   const api = await apiAs('admin');
@@ -126,16 +125,6 @@ test('the entries list pages 1,000 entries, searches, keeps a filter set across 
   const waiting = (await inState(api, key, 'submitted')).items.map((item) => item.key);
   expect(ticked.every((one) => one !== undefined && waiting.includes(one))).toBe(true);
 
-  // Past the window on the server, the undone change sends no approval's webhook.
-  const moved = await request.post('/jfb-testing/clock', { data: { advanceSeconds: 30 } });
-  try {
-    expect(moved.ok(), await moved.text()).toBe(true);
-    await page.waitForTimeout(5_000);
-    expect(await approvalCalls(api, hook)).toBe(0);
-  } finally {
-    await request.delete('/jfb-testing/clock');
-  }
-
   // Another approval: once its window has passed, its toast offers no Undo and says it is too late.
   await rows.nth(3).locator('uui-checkbox').click();
   await view.locator('.bulk').getByRole('button', { name: 'Approve', exact: true }).click();
@@ -143,4 +132,10 @@ test('the entries list pages 1,000 entries, searches, keeps a filter set across 
   await page.clock.fastForward(11_000);
   await expect(toast.getByRole('button', { name: 'Undo', exact: true })).toHaveCount(0);
   await expect(toast).toContainText("It's too late to undo this.");
+
+  // Past the windows on the server, that approval's webhook goes and the undone ones' never do. The host's clock is every
+  // spec's, so the windows pass in real time: once the later approval's call has come, the earlier window is long over.
+  await expect.poll(() => approvalCalls(api, hook), { timeout: 60_000 }).toBe(1);
+  await page.waitForTimeout(2_000);
+  expect(await approvalCalls(api, hook)).toBe(1);
 });

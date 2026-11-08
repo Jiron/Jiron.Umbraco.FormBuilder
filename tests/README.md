@@ -795,7 +795,9 @@ the columns a filter fixes, the bulk actions that apply), `entries/entry-words.t
 `designer/entries/entries.view.test.ts` the view against a fake server, and `ui/undo-notification.element.test.ts` the
 Undo toast ending with its window. In the browser, `specs/backoffice/entries-list.spec.ts` seeds 1,000 entries through
 `/jfb-testing/entries-form`, pages, searches, reopens a filter set in a second browser, and undoes a bulk approval
-inside its window with no approval's webhook sent, then lets another's window pass (`page.clock`).
+inside its window, then lets another's window pass (`page.clock` in the browser, real time on the server, whose
+clock every spec shares): that approval's webhook goes and the undone ones' never do. `e2e/support/shared-host.test.ts`
+holds that no browser spec moves the host's clock.
 
 The entry panel (ROADMAP 11.2, ADR-0208): `EntryAnswerStoreTests` opens an entry of every type through `EntryPanels`
 and finds each value as its type reads it from what `EntryAnswerStore.ReadAsync` gives, a typed signature's name read

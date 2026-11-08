@@ -47,9 +47,12 @@ async function sidebarOf(page: Page): Promise<Record<string, string[]>> {
   const found: Record<string, string[]> = {};
   for (const group of await groups.all()) {
     const heading = await group.locator('h3').textContent();
-    found[(heading ?? '').trim()] = await group
-      .locator('uui-menu-item')
-      .evaluateAll((items) => items.map((item) => item.getAttribute('label') ?? ''));
+    found[(heading ?? '').trim()] = await group.locator('uui-menu-item').evaluateAll((items) =>
+      // What each item shows: the Inbox's name for screen readers adds its unseen count, its label slot shows the name.
+      items.map(
+        (item) => item.querySelector('[slot="label"]')?.textContent?.trim() || (item.getAttribute('label') ?? ''),
+      ),
+    );
   }
   return found;
 }
