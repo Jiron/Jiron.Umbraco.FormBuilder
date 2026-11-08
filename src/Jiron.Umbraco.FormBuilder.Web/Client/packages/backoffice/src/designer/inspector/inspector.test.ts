@@ -566,6 +566,16 @@ describe('the inspector', () => {
     ]);
     const page = await inspectorOf('p', { mode: 'overlay' });
     expect(all(page.element, '.tools button').map((button) => text(button))).toEqual(['Move to\u2026', 'Delete']);
+    // Over a narrow canvas a group's "..." offers Save group as template, to who may save groups only.
+    const group = await inspectorOf('g', { mode: 'overlay', saveGroups: true });
+    const menu = all<HTMLButtonElement>(group.element, '.tools .menu button');
+    expect(menu.map((button) => text(button))).toEqual(['Start a new page after this', 'Save group as template\u2026']);
+    menu[1]?.click();
+    expect(group.requests).toEqual([{ kind: 'element', action: 'saveGroup', key: 'g' }]);
+    const unsaving = await inspectorOf('g', { mode: 'overlay' });
+    expect(all(unsaving.element, '.tools .menu button').map((button) => text(button))).toEqual([
+      'Start a new page after this',
+    ]);
   });
 
   it('offers Change type by the type of a field that may change, in every way of showing, and once', async () => {

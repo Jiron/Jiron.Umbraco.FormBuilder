@@ -18,6 +18,7 @@ import {
   IMPORT_MODAL_ALIAS,
   RESTORE_MODAL_ALIAS,
   TEMPLATE_GALLERY_MODAL_ALIAS,
+  TEMPLATE_NAME_MODAL_ALIAS,
 } from './modals/tokens';
 
 // Umbraco's modal base types its optional members as "T | undefined", which exactOptionalPropertyTypes does not accept for a
@@ -27,6 +28,7 @@ const element = (loader: () => Promise<unknown>) => loader as unknown as Element
 
 const DESIGN = { alias: PERMISSION_CONDITION, needs: [{ anyOf: ['design'], anywhere: true }] };
 const MANAGE_ACTIONS = { alias: PERMISSION_CONDITION, needs: [{ anyOf: ['manageActions'], anywhere: true }] };
+const MANAGE_LIBRARY = { alias: PERMISSION_CONDITION, needs: [{ anyOf: ['manageLibrary'] }] };
 const PLACES = [LIBRARY_ROOT_ENTITY_TYPE, FOLDER_ENTITY_TYPE];
 const TRASHED = [TRASHED_FORM_ENTITY_TYPE, TRASHED_FOLDER_ENTITY_TYPE];
 
@@ -120,6 +122,14 @@ export const manifests: UmbExtensionManifest[] = [
   action('CopyActions', [FORM_ENTITY_TYPE], 800, 'icon-split', () => import('./actions/copy-actions.action'), [
     MANAGE_ACTIONS,
   ]),
+  action(
+    'SaveAsTemplate',
+    [FORM_ENTITY_TYPE],
+    750,
+    'icon-layers-alt',
+    () => import('./actions/save-as-template.action'),
+    [DESIGN, MANAGE_LIBRARY],
+  ),
   action('Export', [FORM_ENTITY_TYPE], 700, 'icon-download-alt', () => import('./actions/export-form.action')),
   action('Trash', [FORM_ENTITY_TYPE], 100, 'icon-trash', () => import('./actions/trash-form.action')),
 
@@ -146,4 +156,5 @@ export const manifests: UmbExtensionManifest[] = [
   modal(COPY_ACTIONS_MODAL_ALIAS, () => import('./modals/copy-actions.modal.element')),
   modal(TEMPLATE_GALLERY_MODAL_ALIAS, () => import('./modals/template-gallery.modal.element')),
   modal(IMPORT_MODAL_ALIAS, () => import('./modals/import.modal.element')),
+  modal(TEMPLATE_NAME_MODAL_ALIAS, () => import('./modals/template-name.modal.element')),
 ];

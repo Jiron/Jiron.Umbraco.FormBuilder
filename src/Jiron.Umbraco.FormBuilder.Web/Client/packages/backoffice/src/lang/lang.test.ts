@@ -181,9 +181,16 @@ describe('the dictionaries', () => {
   });
 
   it("hold the library's keys that its code uses, and no other in that area", () => {
-    const folders = ['library', 'library/actions', 'library/modals', 'tree', 'ui', 'overview', 'section'].map(
-      (folder) => join(dirname(fileURLToPath(import.meta.url)), '..', folder),
-    );
+    const folders = [
+      'library',
+      'library/actions',
+      'library/modals',
+      'tree',
+      'ui',
+      'overview',
+      'section',
+      'templates',
+    ].map((folder) => join(dirname(fileURLToPath(import.meta.url)), '..', folder));
     const sources = folders.flatMap((folder) =>
       readdirSync(folder)
         .filter((file) => file.endsWith('.ts') && !file.endsWith('.test.ts'))
@@ -193,10 +200,20 @@ describe('the dictionaries', () => {
       sources.flatMap((source) => [...source.matchAll(/(?:'|#)(jfbLibrary_[A-Za-z_]+)'/g)].map((match) => match[1])),
     );
     // The keys code builds: each "..." action's and create option's label, a refusal's permission, a built-in template's texts.
-    for (const id of ['Reload', 'RenameFolder', 'Move', 'DeleteFolder', 'Duplicate', 'CopyActions', 'Export']) {
+    for (const id of [
+      'Reload',
+      'RenameFolder',
+      'Move',
+      'DeleteFolder',
+      'Duplicate',
+      'CopyActions',
+      'SaveAsTemplate',
+      'Export',
+    ]) {
       used.add(`jfbLibrary_action${id}`);
     }
     for (const id of ['Trash', 'EmptyBin', 'Restore', 'DeleteForGood']) used.add(`jfbLibrary_action${id}`);
+    for (const part of ['builtIn', 'forms', 'groups']) used.add(`jfbLibrary_templatesPart_${part}`);
     for (const id of ['Form', 'FromTemplate', 'Import', 'Folder']) {
       used.add(`jfbLibrary_option${id}`);
       used.add(`jfbLibrary_option${id}Description`);

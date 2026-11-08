@@ -63,7 +63,8 @@ import {
 export const INSPECTOR_REQUEST = 'jfb-inspector-request';
 
 /** The selected element's own actions, from the inspector's bar over a narrow canvas or the element's "...". */
-export type ElementAction = 'moveTo' | 'duplicate' | 'delete' | 'changeType' | 'newPageAfter' | 'copyAlias';
+export type ElementAction =
+  'moveTo' | 'duplicate' | 'delete' | 'changeType' | 'newPageAfter' | 'copyAlias' | 'saveGroup';
 
 type Element = DesignPage | DesignGroup | DesignField;
 
@@ -151,6 +152,7 @@ export class InspectorElement extends UmbLitElement {
     form: { attribute: false },
     resolvedOptions: { attribute: false },
     mode: { reflect: true },
+    saveGroups: { attribute: false },
     _open: { state: true },
     _more: { state: true },
     _problems: { state: true },
@@ -170,6 +172,8 @@ export class InspectorElement extends UmbLitElement {
   /** The options of fields that take them from a source, as the server resolved the draft's, by field. */
   declare resolvedOptions: ReadonlyMap<string, readonly ResolvedOption[]>;
   declare mode: InspectorMode;
+  /** Whether the user may save a group as a template, which a group's "..." then offers (ADR-0217). */
+  declare saveGroups: boolean;
   declare private _open: ReadonlySet<SectionId>;
   declare private _more: ReadonlySet<SectionId>;
   /** Why a box's last value couldn't be kept, in words, by the box's id, until it can or another element is chosen. */
@@ -190,6 +194,7 @@ export class InspectorElement extends UmbLitElement {
     this.form = '';
     this.resolvedOptions = new Map();
     this.mode = 'docked';
+    this.saveGroups = false;
     this._open = readOpen();
     this._more = new Set();
     this._problems = new Map();
@@ -1327,6 +1332,13 @@ export class InspectorElement extends UmbLitElement {
                     subject.kind === 'field' && subject.field.alias
                       ? html`<button type="button" @click=${() => this.#menu('copyAlias', key)}>
                           ${this.localize.term('jfbDesigner_copyAlias')}
+                        </button>`
+                      : nothing
+                  }
+                  ${
+                    subject.kind === 'group' && this.saveGroups
+                      ? html`<button type="button" @click=${() => this.#menu('saveGroup', key)}>
+                          ${this.localize.term('jfbDesigner_saveGroupAsTemplate')}
                         </button>`
                       : nothing
                   }

@@ -427,6 +427,22 @@ describe('the canvas', () => {
     ]);
   });
 
+  it('offers Save group as template in a group\'s "..." only to who may save groups', async () => {
+    const { requests, root } = await canvasOf(DEFINITION, { selection: 'g1', saveGroups: true });
+    const groupMenu = [...root.querySelectorAll<HTMLButtonElement>('.bo-group > .bo-tools .bo-menu button')];
+    expect(groupMenu.map((item) => text(item))).toEqual([
+      'Start a new page after this',
+      'Save group as template\u2026',
+    ]);
+    groupMenu[1]?.click();
+    expect(requests).toEqual([{ kind: 'saveGroup', key: 'g1' }]);
+    document.body.replaceChildren();
+    const without = await canvasOf(DEFINITION, { selection: 'g1', saveGroups: false });
+    expect(
+      [...without.root.querySelectorAll('.bo-group > .bo-tools .bo-menu button')].map((item) => text(item)),
+    ).toEqual(['Start a new page after this']);
+  });
+
   it('shows the insert point right above the selected field as its "+" alone, out from under its bar', async () => {
     const short = (key: string, label: string): DesignField => ({
       key,

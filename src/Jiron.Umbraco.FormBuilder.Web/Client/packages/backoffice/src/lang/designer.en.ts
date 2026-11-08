@@ -83,6 +83,7 @@ export default {
     moveTo: 'Move to…',
     moreElement: 'More actions',
     newPageAfter: 'Start a new page after this',
+    saveGroupAsTemplate: 'Save group as template…',
     copyAlias: 'Copy alias',
     saidNewPage: (name: string) => `Started a new page after ${name}`,
     saidCopied: (alias: string) => `Copied ${alias}`,
@@ -175,6 +176,7 @@ export default {
     paletteLayout: 'Layout',
     paletteGroup: 'Group',
     paletteNewPage: 'New page',
+    paletteSavedGroups: 'Saved groups',
     paletteNone: (query: string) => `No field type matches "${query}".`,
     unavailable: "This field type can't be used on this site yet.",
     pasteQuestions: 'Paste questions…',
@@ -193,6 +195,22 @@ export default {
     saidAdded: (name: string) => `Added ${name}`,
     saidAddedMany: (count: number) => (count === 1 ? 'Added 1 field' : `Added ${count} fields`),
     saidGroupAdded: 'Added a group',
+    saidSavedGroupAdded: (name: string) => `Added ${name}`,
+    saveGroupHeadline: (name: string) => `Save ${name} as a template`,
+    saveGroupNote:
+      'The template holds the group as you see it, with the validation rules of its fields. Rules and validation rules that depend on fields outside the group are left out.',
+    savedGroup: (name: string) => `${name} was saved. Any form can insert it from the palette.`,
+    savedGroupLeftOut: (name: string, rules: number, checks: number) => {
+      const parts = [
+        rules === 0 ? '' : rules === 1 ? '1 rule' : `${rules} rules`,
+        checks === 0 ? '' : checks === 1 ? '1 validation rule' : `${checks} validation rules`,
+      ].filter(Boolean);
+      return rules + checks === 1
+        ? `${name} was saved without ${parts[0]} that depends on a field outside the group.`
+        : `${name} was saved without ${parts.join(' and ')} that depend on fields outside the group.`;
+    },
+    saveGroupRefused:
+      "The group couldn't be saved: the form check finds a problem in it. Fix it, then save the group again.",
     saidPageAdded: 'Added a page',
     saidDuplicated: (name: string) => `Duplicated ${name}`,
     saidDeleted: (name: string) => `Deleted ${name}`,

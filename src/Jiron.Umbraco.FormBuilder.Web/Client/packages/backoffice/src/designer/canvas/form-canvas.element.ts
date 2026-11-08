@@ -54,6 +54,8 @@ export type CanvasRequest =
   | { readonly kind: 'shortcuts' }
   | { readonly kind: 'rulesOverview' }
   | { readonly kind: 'formCheck' }
+  /** A group saved as a template, from its "..." (ADR-0217). */
+  | { readonly kind: 'saveGroup'; readonly key: string }
   | { readonly kind: 'culture'; readonly culture: string }
   | { readonly kind: 'drop'; readonly source: DragSource; readonly place: Place }
   | { readonly kind: 'refused'; readonly source: DragSource; readonly reason: string };
@@ -114,6 +116,7 @@ export class FormCanvasElement extends UmbLitElement {
     refusalOf: { attribute: false },
     refusal: { attribute: false },
     check: { attribute: false },
+    saveGroups: { attribute: false },
     _narrowed: { state: true },
   };
 
@@ -142,6 +145,8 @@ export class FormCanvasElement extends UmbLitElement {
   declare refusal: InPlaceRefusal | null;
   /** What the form check's badge says. */
   declare check: CheckBadge;
+  /** Whether a group's "..." offers Save group as template: the user may manage the library. */
+  declare saveGroups: boolean;
   declare private _narrowed: boolean;
 
   #resize = new ResizeObserver(() => this.#measure());
@@ -182,6 +187,7 @@ export class FormCanvasElement extends UmbLitElement {
     this.refusalOf = () => null;
     this.refusal = null;
     this.check = { kind: 'none' };
+    this.saveGroups = false;
     this._narrowed = false;
     this.addEventListener(FIELD_REQUEST, (event) => {
       event.stopPropagation();
@@ -655,6 +661,14 @@ export class FormCanvasElement extends UmbLitElement {
                 label: this.localize.term('jfbDesigner_newPageAfter'),
                 act: () => this.#ask({ kind: 'newPageAfter', key }),
               },
+              ...(this.saveGroups
+                ? [
+                    {
+                      label: this.localize.term('jfbDesigner_saveGroupAsTemplate'),
+                      act: () => this.#ask({ kind: 'saveGroup', key }),
+                    },
+                  ]
+                : []),
             ])
           : nothing
       }

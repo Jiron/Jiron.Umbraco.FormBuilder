@@ -34,6 +34,7 @@ const SCREENS: Readonly<Record<string, ScreenLoader>> = {
   optionLists: () => import('../option-lists/option-lists.screen'),
   themes: () => import('../themes/themes.screen'),
   emailLayouts: () => import('../email-layouts/email-layouts.screen'),
+  templates: () => import('../templates/templates.screen'),
   entry: () => import('../entries/entry.workspace'),
 };
 

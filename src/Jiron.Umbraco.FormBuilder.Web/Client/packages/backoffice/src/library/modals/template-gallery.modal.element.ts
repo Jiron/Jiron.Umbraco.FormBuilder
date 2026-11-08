@@ -50,6 +50,13 @@ export class TemplateGalleryModalElement extends UmbModalBaseElement<NewFormModa
         grid-template-columns: 1fr;
       }
 
+      /* Beside the cards, the preview stays in view while the cards scroll, so a template chosen low in the list shows its
+         preview from the top. */
+      .gallery:not(.gallery--single) .preview {
+        position: sticky;
+        top: 0;
+      }
+
       /* Alone, the preview is a step of its own: its button under the cards, the footer keeping two buttons. */
       .show-preview {
         justify-self: start;

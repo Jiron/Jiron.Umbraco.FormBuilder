@@ -192,6 +192,8 @@ Use Umbraco's own words where Umbraco has the same action, so the section feels 
 | more rows of a list that reads a page at a time | Show more | Mehr anzeigen |
 | create the block that puts forms on pages | Create a form block type… | Formular-Blocktyp erstellen… |
 | start from a ready-made form (the checklist, an empty folder) | Choose a template… | Vorlage wählen… |
+| keep a form as a template (its "…" in the tree, for who may manage the library and design the form) · keep the selected group as one (its "…" on the canvas) | Save as template… · Save group as template… | Als Vorlage speichern… · Gruppe als Vorlage speichern… |
+| a saved template's "…" (Library › Templates; a built-in one has none) · its dialog's primary | Rename… · Delete… · Save template · Rename | Umbenennen… · Löschen… · Vorlage speichern · Umbenennen |
 | turn a list of questions into fields | Paste questions… | Fragen einfügen… |
 | turn lines into a choice field's options, or a grid's rows (one a line) | Paste options… · Paste rows… | Optionen einfügen… · Zeilen einfügen… |
 | move an option or a grid's row with single presses: what its handle opens under it | Place in the list · 1 of 3 | Platz in der Liste · 1 von 3 |
@@ -421,6 +423,7 @@ An empty value inside a table or panel reads "none" ("keine") or "no data" ("kei
 | publish, a rule or a check that changed | Rule changed on Topic · Check of Email changed | Regel an Topic geändert · Prüfung von Email geändert |
 | run a test entry's actions, from the preview | **Run the actions for test entry #1044?** These 4 actions run as they would for a real entry, so their emails and messages really go out. [Cancel] [Run 4 actions] | **Aktionen für Testeintrag #1044 ausführen?** Diese 4 Aktionen laufen wie bei einem echten Eintrag; ihre E-Mails und Nachrichten gehen also wirklich hinaus. [Abbrechen] [4 Aktionen ausführen] |
 | restrict a folder without grants | **Restrict HR?** No user group has access of its own here yet, so only administrators will see its forms. [Cancel] [Restrict folder] | **HR einschränken?** Noch hat keine Benutzergruppe hier eigenen Zugriff, deshalb sehen nur Personen mit Administratorrechten die Formulare darin. [Abbrechen] [Ordner einschränken] |
+| delete a saved template (a group's says "Groups inserted from it stay in their forms." · „Daraus eingefügte Gruppen bleiben in ihren Formularen.“) | **Delete Enquiry?** Forms made from it stay as they are. The template can't be brought back. [Cancel] [Delete] | **Enquiry löschen?** Formulare, die daraus erstellt wurden, bleiben, wie sie sind. Die Vorlage lässt sich nicht wiederherstellen. [Abbrechen] [Löschen] |
 
 ### Success
 
@@ -451,6 +454,8 @@ toast adds only what the user cannot see.
 | an action duplicated (the live region) | Duplicated. Email the team (copy) is right after it. | Dupliziert. „Email the team (Kopie)“ steht direkt danach. |
 | an action deleted (the toast) | Mark as approved deleted. [Undo] | „Mark as approved“ gelöscht. [Zurücknehmen] |
 | an outcome added to a published form | Added. Visitors get it once you publish. | Hinzugefügt. Auf der Website gilt es ab der nächsten Veröffentlichung. |
+| a form saved as a template · a template renamed · deleted (Library › Templates) | Enquiry was saved as a template. · The template is now Enquiries. · Enquiry was deleted. | Enquiry wurde als Vorlage gespeichert. · Die Vorlage heißt jetzt Enquiries. · Enquiry wurde gelöscht. |
+| a group saved as a template · without the rules and validation rules that named a field outside it (each count in the words, joined by "and") · refused, as a group the server can't read | Delivery was saved. Any form can insert it from the palette. · Delivery was saved without 1 rule and 1 validation rule that depend on fields outside the group. · The group couldn't be saved: the form check finds a problem in it. Fix it, then save the group again. | Delivery wurde gespeichert. Jedes Formular kann die Gruppe aus der Palette einfügen. · Delivery wurde ohne 1 Regel und 1 Prüfregel gespeichert, die von Feldern außerhalb der Gruppe abhängen. · Die Gruppe konnte nicht gespeichert werden: Die Formularprüfung findet darin ein Problem. Beheben Sie es und speichern Sie die Gruppe dann erneut. |
 | test email sent (an action's test says all in its toast's message, which Umbraco reads aloud, led by the action's name; each sentence says on its own what happened) | Email the team: Test email sent to you (ana@example.com). | „Email the team“: Test-E-Mail an Sie gesendet (ana@example.com). |
 | an action's test reached what it is set up to reach (the type's own sentence after it) | Test sent. | Test gesendet. |
 | an action's test that reached nobody (what a run would do on the lines under it) | Nothing was sent or changed. | Nichts wurde gesendet oder geändert. |
@@ -539,6 +544,8 @@ Help text sits under its setting and answers the question the label leaves open;
 | Stop the rest if this fails · Die übrigen anhalten, wenn diese fehlschlägt | If it fails for good, the actions after it for the same entry don't run. Retrying it from Deliveries brings them back. | Schlägt sie endgültig fehl, laufen die Aktionen danach für denselben Eintrag nicht. Ein neuer Versuch unter Zustellungen bringt sie zurück. |
 | Rule, without one (an action) · Regel | Runs for every entry its trigger brings. | Läuft für jeden Eintrag, den ihr Auslöser bringt. |
 | Your questions (Paste questions) · Ihre Fragen | One question per line. Each becomes a field, with a type guessed from its words; you can change it afterwards. | Eine Frage pro Zeile. Jede wird ein Feld, mit einem aus ihren Wörtern erratenen Typ; Sie können ihn danach ändern. |
+| Save as template, under its name and description, in the form's workspace while it has changes not saved yet · Save group as template | The template holds the form as last saved: changes not saved yet stay out. · The template holds the group as you see it, with the validation rules of its fields. Rules and validation rules that depend on fields outside the group are left out. | Die Vorlage enthält das Formular, wie es zuletzt gespeichert wurde: Ungespeicherte Änderungen bleiben außen vor. · Die Vorlage enthält die Gruppe, wie Sie sie sehen, mit den Prüfregeln ihrer Felder. Regeln und Prüfregeln, die von Feldern außerhalb der Gruppe abhängen, bleiben außen vor. |
+| a saved group's preview (Library › Templates, in Use template's place) | A group: the designer's palette inserts it into any form, under Saved groups. | Eine Gruppe: Die Palette des Designers fügt sie unter „Gespeicherte Gruppen“ in jedes Formular ein. |
 
 A "Learn more" link goes to the docs page when a setting needs more than two sentences. Its text makes sense on its
 own ("Learn more about retention" · „Mehr zur Aufbewahrung“).

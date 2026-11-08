@@ -16,6 +16,7 @@ import { UmbImagingRepository } from '@umbraco-cms/backoffice/imaging';
 import { umbOpenModal } from '@umbraco-cms/backoffice/modal';
 import { confirmText } from '../ui/confirm';
 import { UMB_NOTIFICATION_CONTEXT } from '@umbraco-cms/backoffice/notification';
+import { UmbApiError } from '@umbraco-cms/backoffice/resources';
 import type { FieldGroupResponseModel, FieldTypeResponseModel } from '../api';
 import { jfbBackofficeTokens, jfbVisuallyHidden } from '../styles/tokens';
 import { UNDO_DURATION_MS, UNDO_NOTIFICATION, type UndoNotificationData } from '../ui/undo-notification.element';
@@ -45,6 +46,7 @@ import type { EditorState } from './editor-model';
 import {
   change,
   duplicate,
+  freshCopyWith,
   insert,
   move,
   removeElement,
@@ -72,6 +74,10 @@ import {
   type PalettePick,
 } from './palette/palette.element';
 import './palette/palette.element';
+import type { SavedGroup } from './palette/palette.element';
+import { maySaveGroups, readSavedGroups, saveGroup } from './saved-groups';
+import { sayRefusal } from '../library/library-changes';
+import { TEMPLATE_NAME_MODAL } from '../library/modals/tokens';
 import { PASTE_QUESTIONS_MODAL } from './palette/paste-questions.modal.token';
 import { RULE_BUILDER_MODAL } from './rules/rule-builder.modal.token';
 import { builderEffectsOf, clashOf, sameRule, type Effect } from './rules/rule-draft';
@@ -198,6 +204,8 @@ export class FormDesignViewElement extends UmbLitElement {
     _failed: { state: true },
     _refusal: { state: true },
     _badge: { state: true },
+    _saved: { state: true },
+    _saveGroups: { state: true },
   };
 
   static override styles = [
@@ -360,6 +368,10 @@ export class FormDesignViewElement extends UmbLitElement {
   declare private _refusal: InPlaceRefusal | null;
   /** What the form check's badge says, which changes only with the check's answers. */
   declare private _badge: CheckBadge;
+  /** The site's saved groups, which the palette offers (ADR-0217). */
+  declare private _saved: readonly SavedGroup[];
+  /** Whether a group's "..." saves it as a template: the user may manage the library. */
+  declare private _saveGroups: boolean;
 
   #context: FormWorkspaceContext | undefined;
   /** The page the palette adds to when it was opened from a page's Add field and the page has no group. */
@@ -420,6 +432,8 @@ export class FormDesignViewElement extends UmbLitElement {
     this._failed = false;
     this._refusal = null;
     this._badge = { kind: 'none' };
+    this._saved = [];
+    this._saveGroups = false;
     this.consumeContext(FORM_WORKSPACE_CONTEXT, (context) => {
       this.#context = context;
       // The language the Settings view's switch chose, which this view shows too.
@@ -462,6 +476,13 @@ export class FormDesignViewElement extends UmbLitElement {
   override connectedCallback() {
     super.connectedCallback();
     this.#resize.observe(this);
+    void this.#readSaved();
+  }
+
+  async #readSaved() {
+    const [saved, may] = await Promise.all([readSavedGroups(this), maySaveGroups(this)]);
+    this._saved = saved;
+    this._saveGroups = may;
   }
 
   override disconnectedCallback() {
@@ -836,6 +857,9 @@ export class FormDesignViewElement extends UmbLitElement {
       case 'newPageAfter':
         await this.#newPageAfter(request.key);
         return;
+      case 'saveGroup':
+        await this.#saveGroup(request.key);
+        return;
       case 'copyAlias':
         await this.#copyAlias(request.key);
         return;
@@ -972,6 +996,9 @@ export class FormDesignViewElement extends UmbLitElement {
       case 'copyAlias':
         await this.#copyAlias(key);
         return;
+      case 'saveGroup':
+        await this.#saveGroup(key);
+        return;
     }
   }
 
@@ -986,6 +1013,42 @@ export class FormDesignViewElement extends UmbLitElement {
       splitPage(state, { container: found.container.key, index: found.index + 1 }, model),
       this.localize.term('jfbDesigner_saidNewPage', name),
     );
+  }
+
+  // Save group as template: the group as the canvas shows it, unsaved changes included, with the validation rules of its
+  // fields, under a name and a description; the toast says how many rules and validation rules stayed out for naming a
+  // field outside it. A group the server can't read is something the form check shows, which the refusal points to.
+  async #saveGroup(key: string) {
+    const state = this.#state();
+    const found = state ? locate(state.definition, key) : undefined;
+    if (found?.kind !== 'group') return;
+    const name = textIn(found.element.title, this._look?.culture ?? '') || this.#label(key);
+    const value = await umbOpenModal(this, TEMPLATE_NAME_MODAL, {
+      data: {
+        headline: this.localize.term('jfbDesigner_saveGroupHeadline', name),
+        confirmLabel: this.localize.term('jfbLibrary_saveTemplate'),
+        name,
+        note: this.localize.term('jfbDesigner_saveGroupNote'),
+      },
+    }).catch(() => undefined);
+    if (!value || !state) return;
+    const { leftOut, error } = await saveGroup(this, state.definition, found.element, value.name, value.description);
+    if (!leftOut) {
+      if (UmbApiError.isUmbApiError(error) && error.status === 400)
+        (await this.#notifications())?.peek('danger', {
+          data: { message: this.localize.term('jfbDesigner_saveGroupRefused') },
+        });
+      else await sayRefusal(this, error);
+      return;
+    }
+
+    const message =
+      leftOut.rules + leftOut.checks > 0
+        ? this.localize.term('jfbDesigner_savedGroupLeftOut', value.name, leftOut.rules, leftOut.checks)
+        : this.localize.term('jfbDesigner_savedGroup', value.name);
+    this.#say(message);
+    (await this.#notifications())?.peek('positive', { data: { message } });
+    this._saved = await readSavedGroups(this);
   }
 
   // Copy alias: the field's alias to the clipboard, said when it is there.
@@ -1640,6 +1703,19 @@ export class FormDesignViewElement extends UmbLitElement {
         }
         return;
       }
+      case 'savedGroup': {
+        const target = this.#target();
+        if (!target) return;
+        const copy = freshCopyWith(state.definition, pick.saved.group, pick.saved.checks, model);
+        if (
+          await this.#apply(
+            addGroup(state, target.place, target.page, model, copy.element, copy.checks),
+            this.localize.term('jfbDesigner_saidSavedGroupAdded', pick.saved.name),
+          )
+        )
+          this.#closePalette();
+        return;
+      }
       case 'group': {
         const target = this.#target();
         if (!target) return;
@@ -1840,6 +1916,7 @@ export class FormDesignViewElement extends UmbLitElement {
               .types=${this.#paletteTypes()}
               .groups=${this._groups}
               .recent=${this._recent}
+              .saved=${this._saved}
               mode=${mode}
             ></jfb-designer-palette>`
           : nothing
@@ -1864,6 +1941,7 @@ export class FormDesignViewElement extends UmbLitElement {
         .refusalOf=${this.#refusalOf}
         .refusal=${this._refusal}
         .check=${this._badge}
+        .saveGroups=${this._saveGroups}
       ></jfb-form-canvas>
       ${
         inspects
@@ -1876,6 +1954,7 @@ export class FormDesignViewElement extends UmbLitElement {
               .languages=${this._look?.languages ?? []}
               .form=${this.#context?.getUnique() ?? ''}
               .resolvedOptions=${this._resolved}
+              .saveGroups=${this._saveGroups}
               mode=${inspector}
             ></jfb-designer-inspector>`
           : nothing

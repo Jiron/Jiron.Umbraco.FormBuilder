@@ -9,6 +9,27 @@ export const RESTORE_MODAL_ALIAS = 'Jiron.FormBuilder.Modal.Restore';
 export const COPY_ACTIONS_MODAL_ALIAS = 'Jiron.FormBuilder.Modal.CopyActions';
 export const TEMPLATE_GALLERY_MODAL_ALIAS = 'Jiron.FormBuilder.Modal.TemplateGallery';
 export const IMPORT_MODAL_ALIAS = 'Jiron.FormBuilder.Modal.Import';
+export const TEMPLATE_NAME_MODAL_ALIAS = 'Jiron.FormBuilder.Modal.TemplateName';
+
+/** A template's name and description (ADR-0217): a form or a group saved as one, or a saved one renamed. */
+export interface TemplateNameModalData {
+  headline: string;
+  confirmLabel: string;
+  name?: string;
+  description?: string | null;
+  /** One line on what the template leaves out, under the fields. */
+  note?: string;
+}
+
+export interface TemplateNameModalValue {
+  name: string;
+  description: string | null;
+}
+
+export const TEMPLATE_NAME_MODAL = new UmbModalToken<TemplateNameModalData, TemplateNameModalValue>(
+  TEMPLATE_NAME_MODAL_ALIAS,
+  { modal: { type: 'dialog', size: 'small' } },
+);
 
 /** A folder's name: a new folder's, or a folder's new one. */
 export interface FolderNameModalData {

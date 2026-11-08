@@ -1,8 +1,8 @@
 // What the designer adds (ROADMAP 9.3b, docs/ux/information-architecture.md section 5.1): a field of a type with what a
 // new one starts with, a group, a page, the fields of pasted questions with a type guessed from their words, and the
 // place a pick from the palette goes. Each goes through the editor model, which checks it as it checks every edit.
-import type { DesignDefinition, DesignField, DesignGroup, DesignPage } from './definition';
-import { locate } from './definition';
+import type { DesignDefinition, DesignField, DesignGroup, DesignPage, DesignValidationRule } from './definition';
+import { locate, validationRulesOf } from './definition';
 import { insert, type Edit, type EditorState, type ModelContext, type Place } from './editor-model';
 
 /** What a new field needs to know of its type. */
@@ -134,10 +134,37 @@ export function addFields(
 }
 
 /**
- * Adds a group: after the group of the place given, else at the end of the page shown, selected. A place in a
- * repeatable group puts it after the group that holds the repeatable group.
+ * Adds a group, a new empty one or one given, such as a saved group's fresh copy with the validation rules of its fields:
+ * after the group of the place given, else at the end of the page shown, selected; one step, so Undo takes both. A place
+ * in a repeatable group puts it after the group that holds the repeatable group.
  */
-export function addGroup(state: EditorState, place: Place | null, pageKey: string, context: ModelContext): Edit {
+export function addGroup(
+  state: EditorState,
+  place: Place | null,
+  pageKey: string,
+  context: ModelContext,
+  group: DesignGroup = newGroup(context.newKey),
+  checks: readonly DesignValidationRule[] = [],
+): Edit {
+  const added = placeGroup(state, place, pageKey, context, group);
+  if (!added.ok || checks.length === 0) return added;
+  const definition = added.state.definition;
+  return {
+    ...added,
+    state: {
+      ...added.state,
+      definition: { ...definition, validationRules: [...validationRulesOf(definition), ...checks] },
+    },
+  };
+}
+
+function placeGroup(
+  state: EditorState,
+  place: Place | null,
+  pageKey: string,
+  context: ModelContext,
+  group: DesignGroup,
+): Edit {
   const definition = state.definition;
   let found = place?.container ? locate(definition, place.container) : undefined;
   if (found?.kind === 'field') found = locate(definition, found.container.key);
@@ -150,7 +177,7 @@ export function addGroup(state: EditorState, place: Place | null, pageKey: strin
             container: pageKey,
             index: definition.pages.find((page) => page.key === pageKey)?.groups.length ?? 0,
           };
-  return insert(state, 'group', newGroup(context.newKey), target, context);
+  return insert(state, 'group', group, target, context);
 }
 
 /** A question pasted on a line, with the field type guessed for it. */

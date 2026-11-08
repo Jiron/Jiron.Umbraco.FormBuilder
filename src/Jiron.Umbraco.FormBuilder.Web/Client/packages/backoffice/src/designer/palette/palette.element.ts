@@ -7,6 +7,7 @@ import { css, html, nothing, type TemplateResult } from '@umbraco-cms/backoffice
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import type { FieldGroupResponseModel, FieldTypeResponseModel } from '../../api';
 import { jfbBackofficeTokens, jfbVisuallyHidden } from '../../styles/tokens';
+import type { DesignGroup, DesignValidationRule } from '../definition';
 
 /** What the palette asks for. */
 export type PalettePick =
@@ -19,12 +20,24 @@ export type PalettePick =
       readonly handle: Element;
     }
   | { readonly kind: 'group' }
+  | { readonly kind: 'savedGroup'; readonly saved: SavedGroup }
   | { readonly kind: 'page' }
   | { readonly kind: 'paste' }
   | { readonly kind: 'unavailable'; readonly reason: string }
   | { readonly kind: 'fold' }
   | { readonly kind: 'unfold' }
   | { readonly kind: 'close' };
+
+/**
+ * A group the site saved as a template (ADR-0217): its name, the group as a definition holds it, and the validation rules
+ * of its fields.
+ */
+export interface SavedGroup {
+  readonly key: string;
+  readonly name: string;
+  readonly group: DesignGroup;
+  readonly checks: readonly DesignValidationRule[];
+}
 
 /** The event a pick travels in. */
 export const PALETTE_PICK = 'jfb-palette-pick';
@@ -72,6 +85,7 @@ export class PaletteElement extends UmbLitElement {
     types: { attribute: false },
     groups: { attribute: false },
     recent: { attribute: false },
+    saved: { attribute: false },
     mode: { reflect: true },
     _query: { state: true },
   };
@@ -220,6 +234,8 @@ export class PaletteElement extends UmbLitElement {
   declare types: readonly FieldTypeResponseModel[];
   declare groups: readonly FieldGroupResponseModel[];
   declare recent: readonly string[];
+  /** The site's saved groups, which a click inserts as a copy. */
+  declare saved: readonly SavedGroup[];
   declare mode: PaletteMode;
   declare private _query: string;
 
@@ -228,6 +244,7 @@ export class PaletteElement extends UmbLitElement {
     this.types = [];
     this.groups = [];
     this.recent = [];
+    this.saved = [];
     this.mode = 'docked';
     this._query = '';
   }
@@ -324,7 +341,8 @@ export class PaletteElement extends UmbLitElement {
       name: this.localize.string(group.name),
       types: this.types.filter((type) => type.paletteGroup === group.alias && matches(this.#name(type), type.alias)),
     }));
-    const found = layout.length + groups.reduce((sum, group) => sum + group.types.length, 0);
+    const saved = this.saved.filter((one) => matches(one.name));
+    const found = layout.length + saved.length + groups.reduce((sum, group) => sum + group.types.length, 0);
     const heading = this.localize.term('jfbDesigner_paletteHeading');
 
     return html`<div class="head">
@@ -371,6 +389,10 @@ export class PaletteElement extends UmbLitElement {
             group.name,
             group.types.map((type) => this.#type(type)),
           ),
+        )}
+        ${this.#section(
+          this.localize.term('jfbDesigner_paletteSavedGroups'),
+          saved.map((one) => this.#item('icon-layers-alt', one.name, { kind: 'savedGroup', saved: one })),
         )}
         ${found === 0 ? html`<p class="none" role="status">${this.localize.term('jfbDesigner_paletteNone', this._query.trim())}</p>` : nothing}
         <uui-button

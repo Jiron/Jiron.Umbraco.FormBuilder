@@ -116,6 +116,30 @@ describe('the palette', () => {
     expect(folded('Gro\u00dfe \u00c4pfel!')).toBe('gro\u00dfe apfel');
   });
 
+  it("lists the site's saved groups after the types, finds them by name, and asks for one's copy", async () => {
+    const address = { key: 't1', name: 'Address block', group: { key: 'g1', fields: [] }, checks: [] };
+    const consent = { key: 't2', name: 'Standard consent', group: { key: 'g2', fields: [] }, checks: [] };
+    const { element, picks } = await paletteOf({ saved: [address, consent] });
+    expect(headings(element).at(-1)).toBe('Saved groups');
+    expect(items(element).slice(-2)).toEqual(['Address block', 'Standard consent']);
+    must(
+      all<HTMLButtonElement>(element, '.item').find((item) => text(item) === 'Address block'),
+      'Address block',
+    ).click();
+    expect(picks).toEqual([{ kind: 'savedGroup', saved: address }]);
+    const search = must(shadow(element).querySelector<HTMLInputElement>('uui-input'), 'the search');
+    search.value = 'standard';
+    search.dispatchEvent(new Event('input'));
+    await settle(element);
+    expect(headings(element)).toEqual(['Saved groups']);
+    expect(items(element)).toEqual(['Standard consent']);
+  });
+
+  it('shows no Saved groups while the site has none', async () => {
+    const { element } = await paletteOf();
+    expect(headings(element)).not.toContain('Saved groups');
+  });
+
   it('asks for a field of a type, a group, a page and a paste; an unavailable type says why', async () => {
     const captchaless = served.types.map((type) =>
       type.alias === 'captcha'

@@ -22,6 +22,7 @@ import {
   type DesignGroup,
   type DesignPage,
   type DesignRule,
+  type DesignValidationRule,
   type ElementKind,
 } from './definition';
 import { subjectKinds, type TypeFacts } from './rules/rule-draft';
@@ -255,22 +256,53 @@ export function duplicate(state: EditorState, key: string, context: ModelContext
   const once = fieldsIn(found.element).find((field) => context.traitsOf(field.type)?.onePerForm);
   if (once) return refused('onePerForm');
 
-  const keys = new Map<string, string>();
-  collectKeys(found.element, keys, context.newKey);
-  const renamed = new Map<string, string>();
-  const copy = repointFormulas(
-    freeAliases(state.definition, rekey(found.element, keys) as DesignPage | DesignGroup | DesignField, renamed),
-    renamed,
-    context.formulas ?? null,
-  );
   return placed(
     state.definition,
     state.definition,
     found.kind,
-    copy,
+    freshCopy(state.definition, found.element, context),
     { container: found.container?.key ?? null, index: found.index + 1 },
     context,
   );
+}
+
+/**
+ * A copy of an element for a definition, as Duplicate makes one and a saved group is inserted (ADR-0169, ADR-0217):
+ * every key inside it renewed, every reference inside it to something it holds pointing at the copy, each field taking
+ * a free alias in the definition, and each calculation and merge tag naming its fields' new aliases.
+ */
+export function freshCopy<T extends DesignPage | DesignGroup | DesignField>(
+  definition: DesignDefinition,
+  element: T,
+  context: ModelContext,
+): T {
+  return freshCopyWith(definition, element, [], context).element;
+}
+
+/**
+ * The same with the validation rules that go with the element, as a saved group brings those of its fields (ADR-0217):
+ * each with a new key, its field and its conditions pointing at the copy's fields, and its message's merge tags at their
+ * new aliases.
+ */
+export function freshCopyWith<T extends DesignPage | DesignGroup | DesignField>(
+  definition: DesignDefinition,
+  element: T,
+  checks: readonly DesignValidationRule[],
+  context: ModelContext,
+): { readonly element: T; readonly checks: DesignValidationRule[] } {
+  const keys = new Map<string, string>();
+  collectKeys(element, keys, context.newKey);
+  collectKeys(checks, keys, context.newKey);
+  const renamed = new Map<string, string>();
+  const copy = repointFormulas(
+    freeAliases(definition, rekey(element, keys) as T, renamed),
+    renamed,
+    context.formulas ?? null,
+  );
+  return {
+    element: repointMergeTags(copy, renamed),
+    checks: repointMergeTags(rekey(checks, keys) as DesignValidationRule[], renamed),
+  };
 }
 
 /**
@@ -701,6 +733,32 @@ function repointFormulas<T extends DesignPage | DesignGroup | DesignField>(
     return { ...element, groups: element.groups.map((group) => ({ ...group, fields: group.fields.map(field) })) };
   if (isField(element)) return field(element) as T;
   return { ...element, fields: (element as DesignGroup).fields.map(field) };
+}
+
+// A merge tag's path stands first in it, after "{{" and any spaces (`{{ field.email | upper }}`), and a segment of a path
+// is letters, digits, "_" and "-": a field's tag is "field." and its alias, up to a space, a dot, "|" or "}".
+const FIELD_TAG = /(\{\{\s*field\.)([A-Za-z0-9_-]+)(?=[\s.|}])/g;
+
+/**
+ * A copy of a value whose texts' merge tags name the new aliases of the fields that were renamed with it, as its
+ * calculations do; a tag naming any other field stays as it is.
+ */
+function repointMergeTags<T>(value: T, renamed: ReadonlyMap<string, string>): T {
+  const moved = new Map([...renamed].filter(([from, to]) => from !== to));
+  if (moved.size === 0) return value;
+  const walk = (item: unknown): unknown => {
+    if (typeof item === 'string')
+      return item.includes('{{')
+        ? item.replace(FIELD_TAG, (tag, start: string, alias: string) => {
+            const to = moved.get(alias);
+            return to === undefined ? tag : start + to;
+          })
+        : item;
+    if (Array.isArray(item)) return item.map(walk);
+    if (typeof item !== 'object' || item === null) return item;
+    return Object.fromEntries(Object.entries(item).map(([name, one]) => [name, walk(one)]));
+  };
+  return walk(value) as T;
 }
 
 /** A copy of an element whose fields take new aliases, and leave their former ones behind: those were the original's. */

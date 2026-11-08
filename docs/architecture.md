@@ -423,6 +423,16 @@ flowchart LR
   4.5:1), and the header, the footer and the logo's text in the language chosen, the site's default language's under
   the empty culture as mail reads them; beside it, the mail of a sample entry from `POST email-layout/preview`, light or
   dark, after a pause. Send test email saves the layout first and mails the saved layout to the user's own address.
+  From 12.1's part 12.3 (ADR-0217): Library › Templates (`templates/templates.screen.ts`) shows the built-in templates,
+  the saved forms and the saved groups as cards in one radio group beside the chosen one's preview, with Use template
+  for a form template, for who may design at the top of the forms (the form lands there, the tree lists it, and it
+  opens) and, for a saved one, Rename… and Delete… in its "…". Save as template… in a form's "…"
+  (`library/actions/save-as-template.action.ts`) and Save group as template… in a group's "…" on the canvas or in the
+  inspector over a narrow one share one dialog of a name and a description
+  (`library/modals/template-name.modal.element.ts`). A group goes with the validation rules on its fields. The palette
+  lists the saved groups (`designer/saved-groups.ts`), and one inserts as Duplicate copies (`freshCopyWith` in
+  `editor-model.ts`): new keys, references inside it pointing at the copy, free aliases, and calculations and merge
+  tags repointed, its validation rules on the copy's fields in the same step.
 
 ## 2. The definition model
 

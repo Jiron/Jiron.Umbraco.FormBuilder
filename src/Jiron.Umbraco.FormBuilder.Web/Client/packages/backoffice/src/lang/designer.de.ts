@@ -82,6 +82,7 @@ export default {
     moveTo: 'Verschieben nach…',
     moreElement: 'Weitere Aktionen',
     newPageAfter: 'Danach eine neue Seite beginnen',
+    saveGroupAsTemplate: 'Gruppe als Vorlage speichern…',
     copyAlias: 'Alias kopieren',
     saidNewPage: (name: string) => `Neue Seite nach ${name} begonnen`,
     saidCopied: (alias: string) => `${alias} kopiert`,
@@ -177,6 +178,7 @@ export default {
     paletteLayout: 'Layout',
     paletteGroup: 'Gruppe',
     paletteNewPage: 'Neue Seite',
+    paletteSavedGroups: 'Gespeicherte Gruppen',
     paletteNone: (query: string) => `Kein Feldtyp passt zu „${query}“.`,
     unavailable: 'Dieser Feldtyp kann auf dieser Website noch nicht verwendet werden.',
     pasteQuestions: 'Fragen einfügen…',
@@ -196,6 +198,22 @@ export default {
     saidAdded: (name: string) => `${name} hinzugefügt`,
     saidAddedMany: (count: number) => (count === 1 ? '1 Feld hinzugefügt' : `${count} Felder hinzugefügt`),
     saidGroupAdded: 'Gruppe hinzugefügt',
+    saidSavedGroupAdded: (name: string) => `${name} hinzugefügt`,
+    saveGroupHeadline: (name: string) => `${name} als Vorlage speichern`,
+    saveGroupNote:
+      'Die Vorlage enthält die Gruppe, wie Sie sie sehen, mit den Prüfregeln ihrer Felder. Regeln und Prüfregeln, die von Feldern außerhalb der Gruppe abhängen, bleiben außen vor.',
+    savedGroup: (name: string) => `${name} wurde gespeichert. Jedes Formular kann die Gruppe aus der Palette einfügen.`,
+    savedGroupLeftOut: (name: string, rules: number, checks: number) => {
+      const parts = [
+        rules === 0 ? '' : rules === 1 ? '1 Regel' : `${rules} Regeln`,
+        checks === 0 ? '' : checks === 1 ? '1 Prüfregel' : `${checks} Prüfregeln`,
+      ].filter(Boolean);
+      return rules + checks === 1
+        ? `${name} wurde ohne ${parts[0]} gespeichert, die von einem Feld außerhalb der Gruppe abhängt.`
+        : `${name} wurde ohne ${parts.join(' und ')} gespeichert, die von Feldern außerhalb der Gruppe abhängen.`;
+    },
+    saveGroupRefused:
+      'Die Gruppe konnte nicht gespeichert werden: Die Formularprüfung findet darin ein Problem. Beheben Sie es und speichern Sie die Gruppe dann erneut.',
     saidPageAdded: 'Seite hinzugefügt',
     saidDuplicated: (name: string) => `${name} dupliziert`,
     saidDeleted: (name: string) => `${name} gelöscht`,
