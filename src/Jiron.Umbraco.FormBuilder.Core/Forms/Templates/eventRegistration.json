@@ -1,0 +1,269 @@
+{
+  "format": "jfb-form-export/1",
+  "packageVersion": "17.0.0",
+  "exportedUtc": "2026-11-08T00:00:00.000Z",
+  "form": {
+    "key": "e397fcdd-5780-48ae-ae62-69dbc586c782",
+    "alias": "eventRegistration",
+    "name": "Event registration"
+  },
+  "definition": {
+    "schemaVersion": 1,
+    "key": "e397fcdd-5780-48ae-ae62-69dbc586c782",
+    "settings": {
+      "submission": {
+        "submitLabel": {
+          "": "Register",
+          "de": "Anmelden"
+        },
+        "summaryPage": true
+      },
+      "availability": {
+        "maxEntries": 120,
+        "closedMessage": {
+          "": "<p>Registration is closed: every place is taken. Thank you for your interest.</p>",
+          "de": "<p>Die Anmeldung ist geschlossen: Alle Pl\u00e4tze sind vergeben. Danke f\u00fcr Ihr Interesse.</p>"
+        }
+      }
+    },
+    "pages": [
+      {
+        "key": "315e99b5-4f0f-472f-a14f-48da985dd1cc",
+        "title": {
+          "": "Your session",
+          "de": "Ihre Sitzung"
+        },
+        "groups": [
+          {
+            "key": "7a89cf78-4120-4eeb-9e79-391222117930",
+            "fields": [
+              {
+                "key": "464926b7-1fcd-406c-a878-4a762be7be40",
+                "type": "radio",
+                "alias": "session",
+                "label": {
+                  "": "Which session would you like to join?",
+                  "de": "An welcher Sitzung m\u00f6chten Sie teilnehmen?"
+                },
+                "required": true,
+                "settings": {
+                  "layout": "cards"
+                },
+                "options": {
+                  "items": [
+                    {
+                      "value": "morning",
+                      "label": {
+                        "": "Morning session",
+                        "de": "Vormittagssitzung"
+                      },
+                      "description": {
+                        "": "9:30 to 12:30, in person",
+                        "de": "9:30 bis 12:30 Uhr, vor Ort"
+                      },
+                      "places": 40
+                    },
+                    {
+                      "value": "afternoon",
+                      "label": {
+                        "": "Afternoon session",
+                        "de": "Nachmittagssitzung"
+                      },
+                      "description": {
+                        "": "14:00 to 17:00, in person",
+                        "de": "14:00 bis 17:00 Uhr, vor Ort"
+                      },
+                      "places": 40
+                    },
+                    {
+                      "value": "online",
+                      "label": {
+                        "": "Online",
+                        "de": "Online"
+                      },
+                      "description": {
+                        "": "Both sessions as a live stream",
+                        "de": "Beide Sitzungen als Livestream"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "key": "7b4d6239-e473-4af3-8ee2-c1033a876ae0",
+                "type": "yesno",
+                "alias": "lunch",
+                "label": {
+                  "": "Will you join us for lunch?",
+                  "de": "Essen Sie mittags mit uns?"
+                },
+                "rules": [
+                  {
+                    "key": "d06e79a4-81d4-4a16-85d8-222a7c2ae335",
+                    "effect": "hide",
+                    "enabled": true,
+                    "match": "all",
+                    "conditions": [
+                      {
+                        "field": "464926b7-1fcd-406c-a878-4a762be7be40",
+                        "op": "equals",
+                        "value": "online"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "key": "284f6c52-2a12-4478-a987-43c0b0121f9e",
+                "type": "checkboxes",
+                "alias": "diet",
+                "label": {
+                  "": "Anything we should know about your food?",
+                  "de": "Sollen wir beim Essen etwas beachten?"
+                },
+                "settings": {
+                  "other": true
+                },
+                "options": {
+                  "items": [
+                    {
+                      "value": "vegetarian",
+                      "label": {
+                        "": "Vegetarian",
+                        "de": "Vegetarisch"
+                      }
+                    },
+                    {
+                      "value": "vegan",
+                      "label": {
+                        "": "Vegan",
+                        "de": "Vegan"
+                      }
+                    },
+                    {
+                      "value": "glutenFree",
+                      "label": {
+                        "": "Gluten free",
+                        "de": "Glutenfrei"
+                      }
+                    }
+                  ]
+                },
+                "rules": [
+                  {
+                    "key": "6ac33a1b-1909-456a-9e28-53e3978a8a10",
+                    "effect": "show",
+                    "enabled": true,
+                    "match": "all",
+                    "conditions": [
+                      {
+                        "field": "7b4d6239-e473-4af3-8ee2-c1033a876ae0",
+                        "op": "equals",
+                        "value": "yes"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "key": "04fd321a-b94e-4cfb-b985-5c769983b86b",
+        "title": {
+          "": "About you",
+          "de": "\u00dcber Sie"
+        },
+        "groups": [
+          {
+            "key": "8b4b5659-d689-4c52-89db-bfa04125566c",
+            "fields": [
+              {
+                "key": "f5b3a805-7b71-46d8-9276-0fc7b2f0ea5f",
+                "type": "name",
+                "alias": "fullName",
+                "label": {
+                  "": "Your name",
+                  "de": "Ihr Name"
+                },
+                "required": true
+              },
+              {
+                "key": "dde5b11c-2b71-4880-965b-c6c9aab9b52e",
+                "type": "email",
+                "alias": "email",
+                "label": {
+                  "": "Email address",
+                  "de": "E-Mail-Adresse"
+                },
+                "help": {
+                  "": "We send your confirmation there.",
+                  "de": "Dorthin schicken wir Ihre Best\u00e4tigung."
+                },
+                "required": true,
+                "autocomplete": "email"
+              },
+              {
+                "key": "7403d4d0-c10d-4b83-887b-bec4e8af17e2",
+                "type": "text",
+                "alias": "organisation",
+                "label": {
+                  "": "Organisation",
+                  "de": "Organisation"
+                },
+                "autocomplete": "organization"
+              },
+              {
+                "key": "9f700f77-28b4-449c-b30d-9be01739fae8",
+                "type": "textarea",
+                "alias": "needs",
+                "label": {
+                  "": "Anything that helps you take part?",
+                  "de": "Was hilft Ihnen bei der Teilnahme?"
+                },
+                "help": {
+                  "": "For example step-free access or a sign language interpreter.",
+                  "de": "Zum Beispiel ein stufenloser Zugang oder eine Geb\u00e4rdensprachdolmetschung."
+                },
+                "settings": {
+                  "rows": 3,
+                  "maxLength": 1000
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "actions": [
+      {
+        "key": "dd47b02e-8623-4a95-ab17-534770b8da2e",
+        "type": "email",
+        "name": "Confirm the registration",
+        "settings": {
+          "toField": "dde5b11c-2b71-4880-965b-c6c9aab9b52e",
+          "subject": {
+            "": "Your registration: {{ field.session }}",
+            "de": "Ihre Anmeldung: {{ field.session }}"
+          },
+          "body": {
+            "": "<p>Hello {{ field.fullName.first }},</p><p>thank you for registering. Here is what you sent us:</p>{{ entry.table }}",
+            "de": "<p>Hallo {{ field.fullName.first }},</p><p>danke f\u00fcr Ihre Anmeldung. Das haben Sie uns geschickt:</p>{{ entry.table }}"
+          }
+        }
+      }
+    ],
+    "outcomes": [
+      {
+        "key": "62b9e306-997b-4ba9-8b3c-2609299e0483",
+        "kind": "message",
+        "message": {
+          "": "<p>Thank you, {{ field.fullName.first }}. You are registered, and a confirmation is on its way to {{ field.email }}.</p>",
+          "de": "<p>Danke, {{ field.fullName.first }}. Sie sind angemeldet, und eine Best\u00e4tigung ist unterwegs an {{ field.email }}.</p>"
+        }
+      }
+    ]
+  },
+  "optionLists": []
+}

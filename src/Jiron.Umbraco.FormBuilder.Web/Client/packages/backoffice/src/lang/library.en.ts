@@ -215,6 +215,27 @@ export default {
     useTemplate: 'Use template',
     template_contact: 'Contact',
     template_contactDescription: 'Name, email address and a message, then a thank-you message.',
+    template_callback: 'Callback',
+    template_callbackDescription: 'A name, a phone number and the best time to call.',
+    template_newsletter: 'Newsletter',
+    template_newsletterDescription: 'An email address confirmed by a link, the topics and consent.',
+    template_eventRegistration: 'Event registration',
+    template_eventRegistrationDescription:
+      'Sessions with places, the person over two pages, a summary and a confirmation.',
+    template_jobApplication: 'Job application',
+    template_jobApplicationDescription:
+      'The person, a CV and a letter as files, consent, and approval before anything else.',
+    template_feedback: 'Feedback',
+    template_feedbackDescription: 'How likely someone recommends you from 0 to 10, a grid of ratings and a comment.',
+    template_quoteRequest: 'Quote request',
+    template_quoteRequestDescription:
+      'A service and the hours, an estimate worked out as they type, and contact details.',
+    template_supportRequest: 'Support request',
+    template_supportRequestDescription:
+      'The topic, the urgency, a description and files, and a request number to quote.',
+    template_privacyRequest: 'Privacy request',
+    template_privacyRequestDescription:
+      "A copy or the deletion of someone's data, sent to the privacy team once their address is confirmed.",
 
     importHeadline: 'Import a form',
     importIntro:

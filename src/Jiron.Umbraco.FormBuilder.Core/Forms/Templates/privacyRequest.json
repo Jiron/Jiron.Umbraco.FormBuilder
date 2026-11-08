@@ -1,0 +1,154 @@
+{
+  "format": "jfb-form-export/1",
+  "packageVersion": "17.0.0",
+  "exportedUtc": "2026-11-08T00:00:00.000Z",
+  "form": {
+    "key": "0e38dd75-91c5-4e60-a9d3-6443df50df7d",
+    "alias": "privacyRequest",
+    "name": "Privacy request"
+  },
+  "definition": {
+    "schemaVersion": 1,
+    "key": "0e38dd75-91c5-4e60-a9d3-6443df50df7d",
+    "settings": {
+      "submission": {
+        "submitLabel": {
+          "": "Send request",
+          "de": "Anfrage senden"
+        },
+        "verification": {
+          "emailField": "fd2f62fa-b9f7-4999-922a-2b8e8dae54d6",
+          "days": 7
+        },
+        "entryReference": {
+          "prefix": "PR-",
+          "year": true,
+          "digits": 5
+        }
+      }
+    },
+    "pages": [
+      {
+        "key": "fa50cb3f-ecae-443f-8cb2-835f6c6f34a6",
+        "groups": [
+          {
+            "key": "58f3029b-15f2-4b08-8046-5bbc595d37a7",
+            "fields": [
+              {
+                "key": "60057bd7-3144-4be1-956d-b2bf4ab40142",
+                "type": "paragraph",
+                "settings": {
+                  "html": {
+                    "": "<p>Ask us for a copy of the data we hold about you, or for its deletion. To protect your data, we first send a link to your email address to confirm that it is yours.</p>",
+                    "de": "<p>Bitten Sie uns um eine Kopie der Daten, die wir \u00fcber Sie gespeichert haben, oder um deren L\u00f6schung. Zum Schutz Ihrer Daten schicken wir zuerst einen Link an Ihre E-Mail-Adresse, um zu best\u00e4tigen, dass sie Ihnen geh\u00f6rt.</p>"
+                  }
+                }
+              },
+              {
+                "key": "11d6c5e4-e542-40a5-bcee-f9cdb1dd262d",
+                "type": "radio",
+                "alias": "request",
+                "label": {
+                  "": "What would you like us to do?",
+                  "de": "Was sollen wir tun?"
+                },
+                "required": true,
+                "options": {
+                  "items": [
+                    {
+                      "value": "copy",
+                      "label": {
+                        "": "Send me a copy of my data",
+                        "de": "Mir eine Kopie meiner Daten schicken"
+                      }
+                    },
+                    {
+                      "value": "delete",
+                      "label": {
+                        "": "Delete my data",
+                        "de": "Meine Daten l\u00f6schen"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "key": "5c75432d-570c-4ee5-9a88-fe7e6302b2e8",
+                "type": "name",
+                "alias": "fullName",
+                "label": {
+                  "": "Your name",
+                  "de": "Ihr Name"
+                },
+                "required": true
+              },
+              {
+                "key": "fd2f62fa-b9f7-4999-922a-2b8e8dae54d6",
+                "type": "email",
+                "alias": "email",
+                "label": {
+                  "": "Your email address",
+                  "de": "Ihre E-Mail-Adresse"
+                },
+                "help": {
+                  "": "The address you used with us. We look for your data by it.",
+                  "de": "Die Adresse, die Sie bei uns verwendet haben. Wir suchen Ihre Daten danach."
+                },
+                "required": true,
+                "autocomplete": "email"
+              },
+              {
+                "key": "eff864f7-0f73-44af-aaa5-832bc18a72ea",
+                "type": "textarea",
+                "alias": "details",
+                "label": {
+                  "": "Anything that helps us find your data",
+                  "de": "Was uns hilft, Ihre Daten zu finden"
+                },
+                "help": {
+                  "": "For example another address you used, or a customer number.",
+                  "de": "Zum Beispiel eine andere Adresse, die Sie verwendet haben, oder eine Kundennummer."
+                },
+                "settings": {
+                  "rows": 3,
+                  "maxLength": 1000
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "actions": [
+      {
+        "key": "3a197aeb-d82e-4339-a723-8fbde5cca9bd",
+        "type": "email",
+        "name": "Tell the privacy team",
+        "trigger": "verified",
+        "settings": {
+          "toPrivacyTeam": true,
+          "replyToField": "fd2f62fa-b9f7-4999-922a-2b8e8dae54d6",
+          "subject": {
+            "": "Privacy request {{ entry.reference }}",
+            "de": "Datenschutzanfrage {{ entry.reference }}"
+          },
+          "body": {
+            "": "<p>A person confirmed their address and asks: {{ field.request }}.</p>{{ entry.table }}",
+            "de": "<p>Eine Person hat ihre Adresse best\u00e4tigt und bittet: {{ field.request }}.</p>{{ entry.table }}"
+          }
+        }
+      }
+    ],
+    "outcomes": [
+      {
+        "key": "e942b15a-2acf-4465-a17e-a7c4fb40d290",
+        "kind": "message",
+        "message": {
+          "": "<p>Please check your inbox: we sent a link to {{ field.email }}. We start on your request once you open it.</p>",
+          "de": "<p>Bitte sehen Sie in Ihr Postfach: Wir haben einen Link an {{ field.email }} geschickt. Wir beginnen mit Ihrer Anfrage, sobald Sie ihn \u00f6ffnen.</p>"
+        }
+      }
+    ]
+  },
+  "optionLists": []
+}

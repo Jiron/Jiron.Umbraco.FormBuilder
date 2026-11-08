@@ -1,0 +1,122 @@
+{
+  "format": "jfb-form-export/1",
+  "packageVersion": "17.0.0",
+  "exportedUtc": "2026-11-08T00:00:00.000Z",
+  "form": {
+    "key": "7545d6ab-fc99-4e64-b294-7afc5c356f0c",
+    "alias": "callback",
+    "name": "Callback"
+  },
+  "definition": {
+    "schemaVersion": 1,
+    "key": "7545d6ab-fc99-4e64-b294-7afc5c356f0c",
+    "settings": {
+      "submission": {
+        "submitLabel": {
+          "": "Call me back",
+          "de": "R\u00fcckruf anfordern"
+        }
+      }
+    },
+    "pages": [
+      {
+        "key": "e74db69c-d9d9-46f8-879b-41e656341686",
+        "groups": [
+          {
+            "key": "2912ae4c-3574-486f-adff-ab652f500067",
+            "fields": [
+              {
+                "key": "9b8aaddf-4e2f-46e6-b02a-02b9c297f10a",
+                "type": "text",
+                "alias": "name",
+                "label": {
+                  "": "Your name",
+                  "de": "Ihr Name"
+                },
+                "required": true,
+                "autocomplete": "name"
+              },
+              {
+                "key": "f5c4d78f-9b18-45d4-9910-3a52ba752a71",
+                "type": "phone",
+                "alias": "phone",
+                "label": {
+                  "": "Phone number",
+                  "de": "Telefonnummer"
+                },
+                "required": true,
+                "autocomplete": "tel"
+              },
+              {
+                "key": "b4a88737-7287-47ff-87de-fba391260086",
+                "type": "radio",
+                "alias": "bestTime",
+                "label": {
+                  "": "When should we call?",
+                  "de": "Wann sollen wir anrufen?"
+                },
+                "required": true,
+                "settings": {
+                  "layout": "horizontal"
+                },
+                "options": {
+                  "items": [
+                    {
+                      "value": "morning",
+                      "label": {
+                        "": "Morning, 9 to 12",
+                        "de": "Vormittags, 9 bis 12 Uhr"
+                      }
+                    },
+                    {
+                      "value": "afternoon",
+                      "label": {
+                        "": "Afternoon, 12 to 17",
+                        "de": "Nachmittags, 12 bis 17 Uhr"
+                      }
+                    },
+                    {
+                      "value": "evening",
+                      "label": {
+                        "": "Evening, 17 to 19",
+                        "de": "Abends, 17 bis 19 Uhr"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "key": "254591f8-bb11-483f-a356-4aa8e9c33a8d",
+                "type": "textarea",
+                "alias": "topic",
+                "label": {
+                  "": "What is it about?",
+                  "de": "Worum geht es?"
+                },
+                "help": {
+                  "": "A few words help us call you with the right person.",
+                  "de": "Ein paar Worte helfen uns, Sie mit der richtigen Person anzurufen."
+                },
+                "settings": {
+                  "rows": 3,
+                  "maxLength": 1000
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "outcomes": [
+      {
+        "key": "f28a183b-2cb7-4f5f-a6aa-922eb514282a",
+        "kind": "message",
+        "message": {
+          "": "<p>Thank you, {{ field.name }}. We call you back on {{ field.phone }} at the time you chose.</p>",
+          "de": "<p>Danke, {{ field.name }}. Wir rufen Sie zur gew\u00e4hlten Zeit unter {{ field.phone }} zur\u00fcck.</p>"
+        }
+      }
+    ]
+  },
+  "optionLists": []
+}

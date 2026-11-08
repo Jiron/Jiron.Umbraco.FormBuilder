@@ -232,6 +232,27 @@ export default {
     useTemplate: 'Vorlage verwenden',
     template_contact: 'Kontakt',
     template_contactDescription: 'Name, E-Mail-Adresse und eine Nachricht, danach eine Dankesnachricht.',
+    template_callback: 'Rückruf',
+    template_callbackDescription: 'Name, Telefonnummer und die beste Zeit für einen Anruf.',
+    template_newsletter: 'Newsletter',
+    template_newsletterDescription: 'Eine per Link bestätigte E-Mail-Adresse, die Themen und die Einwilligung.',
+    template_eventRegistration: 'Veranstaltungsanmeldung',
+    template_eventRegistrationDescription:
+      'Sitzungen mit Plätzen, die Person auf zwei Seiten, eine Übersicht und eine Bestätigung.',
+    template_jobApplication: 'Bewerbung',
+    template_jobApplicationDescription:
+      'Die Person, Lebenslauf und Anschreiben als Dateien, Einwilligung und eine Freigabe vorab.',
+    template_feedback: 'Feedback',
+    template_feedbackDescription:
+      'Wie wahrscheinlich jemand Sie weiterempfiehlt, von 0 bis 10, eine Bewertungsmatrix und ein Kommentar.',
+    template_quoteRequest: 'Angebotsanfrage',
+    template_quoteRequestDescription:
+      'Eine Leistung und die Stunden, eine laufend berechnete Schätzung und die Kontaktdaten.',
+    template_supportRequest: 'Supportanfrage',
+    template_supportRequestDescription: 'Thema, Dringlichkeit, eine Beschreibung und Dateien, dazu eine Anfragenummer.',
+    template_privacyRequest: 'Datenschutzanfrage',
+    template_privacyRequestDescription:
+      'Eine Kopie oder die Löschung der eigenen Daten, an das Datenschutzteam, sobald die Adresse bestätigt ist.',
 
     importHeadline: 'Formular importieren',
     importIntro:

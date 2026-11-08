@@ -216,7 +216,12 @@ describe('the dictionaries', () => {
     ]) {
       used.add(`jfbLibrary_permission_${permission}`);
     }
-    for (const template of ['contact']) {
+    // Every built-in template, by the alias its file in Core has (ADR-0217).
+    const templates = readdirSync(join(repositoryRoot(), 'src', 'Jiron.Umbraco.FormBuilder.Core', 'Forms', 'Templates'))
+      .filter((file) => file.endsWith('.json'))
+      .map((file) => file.slice(0, -'.json'.length));
+    expect(templates).toContain('privacyRequest');
+    for (const template of templates) {
       used.add(`jfbLibrary_template_${template}`);
       used.add(`jfbLibrary_template_${template}Description`);
     }

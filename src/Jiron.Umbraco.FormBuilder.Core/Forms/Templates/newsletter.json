@@ -1,0 +1,125 @@
+{
+  "format": "jfb-form-export/1",
+  "packageVersion": "17.0.0",
+  "exportedUtc": "2026-11-08T00:00:00.000Z",
+  "form": {
+    "key": "cf4d05fe-3b37-40ff-9f4f-1ca1f599b652",
+    "alias": "newsletter",
+    "name": "Newsletter"
+  },
+  "definition": {
+    "schemaVersion": 1,
+    "key": "cf4d05fe-3b37-40ff-9f4f-1ca1f599b652",
+    "settings": {
+      "submission": {
+        "submitLabel": {
+          "": "Subscribe",
+          "de": "Abonnieren"
+        },
+        "verification": {
+          "emailField": "e1fff218-4c81-4dc1-8271-af4c179fa246",
+          "days": 7
+        }
+      }
+    },
+    "pages": [
+      {
+        "key": "a7e8a9a4-2078-482c-a521-8ec2562f5717",
+        "groups": [
+          {
+            "key": "3bab71ac-44e0-4681-b400-1edf1171bf3c",
+            "fields": [
+              {
+                "key": "e1fff218-4c81-4dc1-8271-af4c179fa246",
+                "type": "email",
+                "alias": "email",
+                "label": {
+                  "": "Email address",
+                  "de": "E-Mail-Adresse"
+                },
+                "required": true,
+                "autocomplete": "email"
+              },
+              {
+                "key": "62e0aa6e-c4f6-4367-8011-d474509bb9e6",
+                "type": "text",
+                "alias": "firstName",
+                "label": {
+                  "": "First name",
+                  "de": "Vorname"
+                },
+                "help": {
+                  "": "So that we can greet you by name.",
+                  "de": "Damit wir Sie mit Namen begr\u00fc\u00dfen k\u00f6nnen."
+                },
+                "autocomplete": "given-name"
+              },
+              {
+                "key": "42f530a9-87aa-4664-8446-4d511f8326e4",
+                "type": "checkboxes",
+                "alias": "topics",
+                "label": {
+                  "": "What would you like to hear about?",
+                  "de": "Wor\u00fcber m\u00f6chten Sie lesen?"
+                },
+                "options": {
+                  "items": [
+                    {
+                      "value": "news",
+                      "label": {
+                        "": "News",
+                        "de": "Neuigkeiten"
+                      }
+                    },
+                    {
+                      "value": "events",
+                      "label": {
+                        "": "Events",
+                        "de": "Veranstaltungen"
+                      }
+                    },
+                    {
+                      "value": "offers",
+                      "label": {
+                        "": "Offers",
+                        "de": "Angebote"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "key": "d5f236cf-8282-47c5-88bf-4000f8b91ae6",
+                "type": "consent",
+                "alias": "consent",
+                "label": {
+                  "": "Consent",
+                  "de": "Einwilligung"
+                },
+                "hideLabel": true,
+                "required": true,
+                "settings": {
+                  "text": {
+                    "": "I would like to receive the newsletter by email. I can unsubscribe at any time with the link in every newsletter.",
+                    "de": "Ich m\u00f6chte den Newsletter per E-Mail erhalten. Ich kann ihn jederzeit \u00fcber den Link in jedem Newsletter abbestellen."
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "outcomes": [
+      {
+        "key": "154549f5-a8c6-475a-8d1f-17dddd4c8ce0",
+        "kind": "message",
+        "message": {
+          "": "<p>Almost done: we sent a link to {{ field.email }}. Your subscription starts once you open it.</p>",
+          "de": "<p>Fast geschafft: Wir haben einen Link an {{ field.email }} geschickt. Ihr Abonnement beginnt, sobald Sie ihn \u00f6ffnen.</p>"
+        }
+      }
+    ]
+  },
+  "optionLists": []
+}

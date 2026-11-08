@@ -1,0 +1,209 @@
+{
+  "format": "jfb-form-export/1",
+  "packageVersion": "17.0.0",
+  "exportedUtc": "2026-11-08T00:00:00.000Z",
+  "form": {
+    "key": "f4d2586e-e54c-437c-8e93-19d4fa364d21",
+    "alias": "jobApplication",
+    "name": "Job application"
+  },
+  "definition": {
+    "schemaVersion": 1,
+    "key": "f4d2586e-e54c-437c-8e93-19d4fa364d21",
+    "settings": {
+      "submission": {
+        "submitLabel": {
+          "": "Send my application",
+          "de": "Bewerbung senden"
+        },
+        "approval": "manual"
+      }
+    },
+    "pages": [
+      {
+        "key": "8688a8d3-f5fb-4602-a6ee-7c0eed1ad8c4",
+        "title": {
+          "": "About you",
+          "de": "\u00dcber Sie"
+        },
+        "groups": [
+          {
+            "key": "6f61fd64-2c2c-4565-a1a9-d5e8f4dd4f4e",
+            "fields": [
+              {
+                "key": "0d190f38-14f8-4b31-a15c-29d423614556",
+                "type": "name",
+                "alias": "fullName",
+                "label": {
+                  "": "Your name",
+                  "de": "Ihr Name"
+                },
+                "required": true
+              },
+              {
+                "key": "3b0828be-e741-449e-a58c-542daef71b69",
+                "type": "email",
+                "alias": "email",
+                "label": {
+                  "": "Email address",
+                  "de": "E-Mail-Adresse"
+                },
+                "required": true,
+                "autocomplete": "email"
+              },
+              {
+                "key": "2bc9d294-52b1-47e3-aac7-2357ab0aad80",
+                "type": "phone",
+                "alias": "phone",
+                "label": {
+                  "": "Phone number",
+                  "de": "Telefonnummer"
+                },
+                "autocomplete": "tel"
+              },
+              {
+                "key": "0b0865e8-7d02-4ce8-8c5e-a07be59ce285",
+                "type": "text",
+                "alias": "post",
+                "label": {
+                  "": "Which post are you applying for?",
+                  "de": "Auf welche Stelle bewerben Sie sich?"
+                },
+                "required": true
+              },
+              {
+                "key": "69312c86-9bb7-41bc-8f68-03fd0f370dc6",
+                "type": "date",
+                "alias": "start",
+                "label": {
+                  "": "When could you start?",
+                  "de": "Wann k\u00f6nnten Sie beginnen?"
+                },
+                "settings": {
+                  "min": {
+                    "today": ""
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "key": "487c792c-cf49-4800-8f36-597e7cc1c0d8",
+        "title": {
+          "": "Your documents",
+          "de": "Ihre Unterlagen"
+        },
+        "groups": [
+          {
+            "key": "09e7540e-9c63-4125-a20e-00620b03b2db",
+            "fields": [
+              {
+                "key": "0a18d9d8-9b3e-4e09-9d7b-9dece21806d3",
+                "type": "file",
+                "alias": "cv",
+                "label": {
+                  "": "Your CV",
+                  "de": "Ihr Lebenslauf"
+                },
+                "help": {
+                  "": "A PDF or an office document, up to 5 MB.",
+                  "de": "Ein PDF oder ein Office-Dokument, bis 5 MB."
+                },
+                "required": true,
+                "settings": {
+                  "types": [
+                    "pdf",
+                    "office"
+                  ],
+                  "maxBytes": 5242880
+                }
+              },
+              {
+                "key": "a6381c63-6a1c-47e2-b82f-48438c400ec7",
+                "type": "file",
+                "alias": "letter",
+                "label": {
+                  "": "Your cover letter",
+                  "de": "Ihr Anschreiben"
+                },
+                "help": {
+                  "": "Or tell us below why the post suits you.",
+                  "de": "Oder schreiben Sie uns unten, warum die Stelle zu Ihnen passt."
+                },
+                "settings": {
+                  "types": [
+                    "pdf",
+                    "office"
+                  ],
+                  "maxBytes": 5242880
+                }
+              },
+              {
+                "key": "8823cdad-f0a3-43fa-a081-855d95430331",
+                "type": "textarea",
+                "alias": "motivation",
+                "label": {
+                  "": "Why does the post suit you?",
+                  "de": "Warum passt die Stelle zu Ihnen?"
+                },
+                "settings": {
+                  "rows": 6,
+                  "counter": true,
+                  "maxLength": 4000
+                }
+              },
+              {
+                "key": "f5613aeb-7e43-405f-b117-08655c03ae89",
+                "type": "consent",
+                "alias": "consent",
+                "label": {
+                  "": "Consent",
+                  "de": "Einwilligung"
+                },
+                "hideLabel": true,
+                "required": true,
+                "settings": {
+                  "text": {
+                    "": "I agree that you keep my application until six months after the post is filled.",
+                    "de": "Ich bin einverstanden, dass Sie meine Bewerbung bis sechs Monate nach der Besetzung der Stelle aufbewahren."
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "actions": [
+      {
+        "key": "1d406d70-22b6-44bf-9e88-783eca0bae00",
+        "type": "email",
+        "name": "Confirm the application",
+        "settings": {
+          "toField": "3b0828be-e741-449e-a58c-542daef71b69",
+          "subject": {
+            "": "We received your application",
+            "de": "Wir haben Ihre Bewerbung erhalten"
+          },
+          "body": {
+            "": "<p>Hello {{ field.fullName.first }},</p><p>thank you for your application for {{ field.post }}. We read every application and reply within two weeks.</p>",
+            "de": "<p>Hallo {{ field.fullName.first }},</p><p>danke f\u00fcr Ihre Bewerbung als {{ field.post }}. Wir lesen jede Bewerbung und antworten innerhalb von zwei Wochen.</p>"
+          }
+        }
+      }
+    ],
+    "outcomes": [
+      {
+        "key": "b1e0305f-5b54-4cef-ad99-4749b8d72992",
+        "kind": "message",
+        "message": {
+          "": "<p>Thank you, {{ field.fullName.first }}. Your application is with us, and we reply within two weeks.</p>",
+          "de": "<p>Danke, {{ field.fullName.first }}. Ihre Bewerbung ist bei uns, und wir antworten innerhalb von zwei Wochen.</p>"
+        }
+      }
+    ]
+  },
+  "optionLists": []
+}

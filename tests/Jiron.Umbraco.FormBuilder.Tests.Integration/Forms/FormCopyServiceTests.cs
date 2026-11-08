@@ -329,6 +329,25 @@ public sealed class FormCopyServiceTests : RepositoryTestBase
     }
 
     [Test]
+    public async Task AFormFromEveryBuiltInTemplate_HasNoErrorOrWarningOfTheFormCheck_AndPublishes()
+    {
+        var check = GetRequiredService<FormCheck>();
+        var found = new List<string>();
+        foreach (var template in BuiltInFormTemplates.All)
+        {
+            var created = (await Exchange.CreateFromTemplateAsync(new TemplateFormRequest(template.Key, UserKey: Editor)))!;
+            var draft = (await Service.GetDraftAsync(created.Key))!.Definition!;
+            var issues = await check.CheckAsync(draft, CancellationToken.None);
+            found.AddRange(issues.Where(issue => issue.Severity != FormCheckSeverity.Hint).Select(issue => $"{template.Alias}: {issue.Severity} {issue.Code} at {issue.Path}: {issue.Message}"));
+            var published = await Service.PublishAsync(created.Key, created.ConcurrencyVersion, null, Editor);
+            Assert.That(published, Has.Property(nameof(FormVersionResult.Version)).EqualTo(2), $"{template.Alias} publishes");
+        }
+
+        // A hint, such as a form that asks for an address without a consent field, is a choice the site makes.
+        Assert.That(found, Is.Empty);
+    }
+
+    [Test]
     public async Task AFormFromATemplate_GetsTheConsentDefault_AtTheEndOfItsLastGroup_UnlessItHasConsentAlready()
     {
         var consent = new NewFormConsent { Label = new Dictionary<string, string> { [string.Empty] = "Privacy" }, Text = new Dictionary<string, string> { [string.Empty] = "<p>I agree.</p>" } };

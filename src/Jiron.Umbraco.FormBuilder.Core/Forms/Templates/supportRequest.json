@@ -1,0 +1,215 @@
+{
+  "format": "jfb-form-export/1",
+  "packageVersion": "17.0.0",
+  "exportedUtc": "2026-11-08T00:00:00.000Z",
+  "form": {
+    "key": "cc3249bf-8c9b-4ed3-b4d4-3b9ca09f59f9",
+    "alias": "supportRequest",
+    "name": "Support request"
+  },
+  "definition": {
+    "schemaVersion": 1,
+    "key": "cc3249bf-8c9b-4ed3-b4d4-3b9ca09f59f9",
+    "settings": {
+      "submission": {
+        "submitLabel": {
+          "": "Send request",
+          "de": "Anfrage senden"
+        },
+        "entryTitle": "{{ field.subject }}",
+        "entryReference": {
+          "prefix": "SR-",
+          "year": false,
+          "digits": 5
+        }
+      }
+    },
+    "pages": [
+      {
+        "key": "f19d8b26-4558-4994-b235-53d60ea74e0a",
+        "groups": [
+          {
+            "key": "e4ae91b2-d091-46a2-9b3e-b69963b8d014",
+            "title": {
+              "": "Your request",
+              "de": "Ihre Anfrage"
+            },
+            "fields": [
+              {
+                "key": "7c010c51-f836-4511-9033-c7edfbfb90d2",
+                "type": "dropdown",
+                "alias": "topic",
+                "label": {
+                  "": "What is it about?",
+                  "de": "Worum geht es?"
+                },
+                "required": true,
+                "options": {
+                  "items": [
+                    {
+                      "value": "account",
+                      "label": {
+                        "": "My account",
+                        "de": "Mein Konto"
+                      }
+                    },
+                    {
+                      "value": "billing",
+                      "label": {
+                        "": "An invoice or a payment",
+                        "de": "Eine Rechnung oder Zahlung"
+                      }
+                    },
+                    {
+                      "value": "problem",
+                      "label": {
+                        "": "Something does not work",
+                        "de": "Etwas funktioniert nicht"
+                      }
+                    },
+                    {
+                      "value": "other",
+                      "label": {
+                        "": "Something else",
+                        "de": "Etwas anderes"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "key": "68bcb828-6e77-423b-b1ee-40047503277d",
+                "type": "radio",
+                "alias": "urgency",
+                "label": {
+                  "": "How urgent is it?",
+                  "de": "Wie dringend ist es?"
+                },
+                "required": true,
+                "defaultValue": "normal",
+                "settings": {
+                  "layout": "horizontal"
+                },
+                "options": {
+                  "items": [
+                    {
+                      "value": "low",
+                      "label": {
+                        "": "It can wait",
+                        "de": "Es kann warten"
+                      }
+                    },
+                    {
+                      "value": "normal",
+                      "label": {
+                        "": "Normal",
+                        "de": "Normal"
+                      }
+                    },
+                    {
+                      "value": "high",
+                      "label": {
+                        "": "Work has stopped",
+                        "de": "Die Arbeit steht still"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "key": "75f03f2c-0d62-43d8-8568-8d59f7b785d1",
+                "type": "text",
+                "alias": "subject",
+                "label": {
+                  "": "Subject",
+                  "de": "Betreff"
+                },
+                "required": true,
+                "settings": {
+                  "maxLength": 120
+                }
+              },
+              {
+                "key": "4993e081-6a97-4a7c-8a98-f6a6da6e5326",
+                "type": "textarea",
+                "alias": "description",
+                "label": {
+                  "": "What happened?",
+                  "de": "Was ist passiert?"
+                },
+                "help": {
+                  "": "What you did, what you expected, and what happened instead.",
+                  "de": "Was Sie getan haben, was Sie erwartet haben und was stattdessen passiert ist."
+                },
+                "required": true,
+                "settings": {
+                  "rows": 6,
+                  "maxLength": 4000
+                }
+              },
+              {
+                "key": "e8328981-cb07-416b-8cb7-7531f57763ae",
+                "type": "file",
+                "alias": "files",
+                "label": {
+                  "": "Screenshots or files",
+                  "de": "Screenshots oder Dateien"
+                },
+                "settings": {
+                  "types": [
+                    "images",
+                    "pdf",
+                    "text"
+                  ],
+                  "maxFiles": 3,
+                  "maxBytes": 5242880
+                }
+              }
+            ]
+          },
+          {
+            "key": "881bf629-bad0-4116-8818-07137c35aec8",
+            "title": {
+              "": "How to reach you",
+              "de": "So erreichen wir Sie"
+            },
+            "fields": [
+              {
+                "key": "74352ea9-9492-4425-973a-bba57b427e0f",
+                "type": "name",
+                "alias": "fullName",
+                "label": {
+                  "": "Your name",
+                  "de": "Ihr Name"
+                },
+                "required": true
+              },
+              {
+                "key": "c36e443f-5aef-4a1a-a7f5-7f556d5dafae",
+                "type": "email",
+                "alias": "email",
+                "label": {
+                  "": "Email address",
+                  "de": "E-Mail-Adresse"
+                },
+                "required": true,
+                "autocomplete": "email"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "outcomes": [
+      {
+        "key": "a24c87bc-0ee1-4ab4-b424-9d33219d89ba",
+        "kind": "message",
+        "message": {
+          "": "<p>Thank you. Your request number is <strong>{{ entry.reference }}</strong>. Please name it if you write to us about this request.</p>",
+          "de": "<p>Danke. Ihre Anfragenummer ist <strong>{{ entry.reference }}</strong>. Bitte nennen Sie sie, wenn Sie uns zu dieser Anfrage schreiben.</p>"
+        }
+      }
+    ]
+  },
+  "optionLists": []
+}

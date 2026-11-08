@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Text.Json;
 using System.Xml.Linq;
 using Jiron.Umbraco.FormBuilder.Core;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
@@ -76,6 +77,68 @@ public sealed class BuiltInFormTemplatesTests
     }
 
     [Test]
+    public void EveryTextOfATemplate_InItsSettingsAndActionsToo_IsInEnglishAndGerman()
+    {
+        Assert.Multiple(() =>
+        {
+            foreach (var template in BuiltInFormTemplates.All)
+            {
+                using var document = JsonDocument.Parse(template.Envelope);
+                foreach (var (path, cultures) in Localized(document.RootElement.GetProperty("definition"), "$"))
+                {
+                    Assert.That(cultures, Is.EqualTo(new[] { string.Empty, "de" }), $"{template.Alias}: {path}");
+                }
+            }
+        });
+    }
+
+    [Test]
+    public void EachNewTemplate_HoldsWhatItIsFor()
+    {
+        var callback = Definition(BuiltInFormTemplates.CallbackKey);
+        var newsletter = Definition(BuiltInFormTemplates.NewsletterKey);
+        var registration = Definition(BuiltInFormTemplates.EventRegistrationKey);
+        var job = Definition(BuiltInFormTemplates.JobApplicationKey);
+        var feedback = Definition(BuiltInFormTemplates.FeedbackKey);
+        var quote = Definition(BuiltInFormTemplates.QuoteRequestKey);
+        var support = Definition(BuiltInFormTemplates.SupportRequestKey);
+        var privacy = Definition(BuiltInFormTemplates.PrivacyRequestKey);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(DefinitionKeys.Fields(callback).Select(field => (field.Alias, field.Type)), Is.EqualTo(new[] { ("name", "text"), ("phone", "phone"), ("bestTime", "radio"), ("topic", "textarea") }), "callback");
+            Assert.That(callback.Actions, Is.Empty, "a callback mails no one it cannot know");
+
+            Assert.That(newsletter.Settings.Submission.Verification?.EmailField, Is.EqualTo(Field(newsletter, "email").Key), "the newsletter's address is verified");
+            Assert.That(Field(newsletter, "consent") is { Type: "consent", Required: true }, Is.True);
+
+            Assert.That((registration.Pages.Count, registration.Settings.Submission.SummaryPage, registration.Settings.Availability.MaxEntries), Is.EqualTo((2, true, (int?)120)), "two pages and a summary, an entry limit");
+            Assert.That(registration.Settings.Availability.ClosedMessage, Is.Not.Null);
+            Assert.That(Field(registration, "session").Options!.Items.Select(option => option.Places), Is.EqualTo(new int?[] { 40, 40, null }), "sessions with places, the stream without");
+            Assert.That(Setting(registration.Actions.Single().Settings, "toField"), Is.EqualTo(Field(registration, "email").Key.ToString()), "a confirmation to the person");
+
+            Assert.That(job.Settings.Submission.Approval, Is.EqualTo(ApprovalMode.Manual), "an application waits for approval");
+            Assert.That(DefinitionKeys.Fields(job).Where(field => field.Type == "file").Select(field => (field.Alias, field.Required)), Is.EqualTo(new[] { ("cv", true), ("letter", false) }));
+            Assert.That(Setting(job.Actions.Single().Settings, "toField"), Is.EqualTo(Field(job, "email").Key.ToString()));
+
+            var score = Field(feedback, "score");
+            Assert.That((score.Type, Setting(score.Settings, "from"), Setting(score.Settings, "to")), Is.EqualTo(("scale", "0", "10")), "a 0-to-10 scale");
+            Assert.That(Field(feedback, "ratings") is { Type: "grid", Rows.Count: 4 }, Is.True, "a grid of four statements");
+            var low = Field(feedback, "reason").Rules.Single();
+            Assert.That((low.Effect, low.Conditions.Single() is RuleCondition { Operator: "lessThan" } condition ? condition.Field : null), Is.EqualTo((RuleEffect.Require, (Guid?)score.Key)), "a low score requires the reason");
+
+            Assert.That(Setting(Field(quote, "estimate").Settings, "formula"), Is.EqualTo("service * hours"), "the estimate is calculated");
+
+            Assert.That(support.Settings.Submission.EntryReference is { Prefix: "SR-", IncludeYear: false, Digits: 5 }, Is.True, "the reference");
+            Assert.That(support.Outcomes.Single().Message!.Resolve(string.Empty), Does.Contain("{{ entry.reference }}"));
+
+            Assert.That(privacy.Settings.Submission.Verification?.EmailField, Is.EqualTo(Field(privacy, "email").Key), "the person proves the address");
+            var team = privacy.Actions.Single();
+            Assert.That((team.Trigger, Setting(team.Settings, "toPrivacyTeam"), Setting(team.Settings, "to")), Is.EqualTo((ActionTrigger.Verified, "True", (string?)null)), "the privacy team hears once the address is verified");
+        });
+    }
+
+    [Test]
     public void ThePackageVersion_IsTheBuildsVersion_WithoutBuildMetadata()
     {
         var props = XDocument.Load(RepositoryRoot.Path(typeof(BuiltInFormTemplatesTests).Assembly, "Directory.Build.props"));
@@ -91,6 +154,55 @@ public sealed class BuiltInFormTemplatesTests
             Assert.That(FormBuilderVersion.WithoutMetadata("17.0.0+a+b"), Is.EqualTo("17.0.0"), "from the first plus");
             Assert.That(FormBuilderVersion.WithoutMetadata("17.0.0"), Is.EqualTo("17.0.0"), "a version without metadata stays");
         });
+    }
+
+    private static FormDefinition Definition(Guid key) =>
+        FormExportFormat.Read(BuiltInFormTemplates.Find(key)!.Envelope, DefinitionFixtures.Serializer()).Envelope!.Definition;
+
+    private static FormField Field(FormDefinition definition, string alias) => DefinitionKeys.Fields(definition).Single(field => field.Alias == alias);
+
+    // A setting as text: a string as it is, anything else as JSON writes it, a switch as True or False; null when it is not set.
+    private static string? Setting(SettingsObject? settings, string name) =>
+        settings is not null && settings.Value.TryGetProperty(name, out var value)
+            ? value.ValueKind switch
+            {
+                JsonValueKind.String => value.GetString(),
+                JsonValueKind.True => "True",
+                JsonValueKind.False => "False",
+                _ => value.GetRawText(),
+            }
+            : null;
+
+    // Every object of a definition that holds texts per culture, which the empty culture's text marks, with its cultures.
+    private static IEnumerable<(string Path, string[] Cultures)> Localized(JsonElement element, string path)
+    {
+        if (element.ValueKind == JsonValueKind.Array)
+        {
+            var index = 0;
+            foreach (var item in element.EnumerateArray())
+            {
+                foreach (var found in Localized(item, $"{path}[{index++}]"))
+                {
+                    yield return found;
+                }
+            }
+        }
+        else if (element.ValueKind == JsonValueKind.Object)
+        {
+            if (element.TryGetProperty(string.Empty, out _))
+            {
+                yield return (path, [.. element.EnumerateObject().Select(property => property.Name)]);
+                yield break;
+            }
+
+            foreach (var property in element.EnumerateObject())
+            {
+                foreach (var found in Localized(property.Value, $"{path}.{property.Name}"))
+                {
+                    yield return found;
+                }
+            }
+        }
     }
 
     // Every text of a definition a visitor reads: titles, descriptions, labels, help, placeholders and messages.
