@@ -109,6 +109,24 @@ internal sealed class AccessSnapshot
             groups => groups.Aggregate(OwnGlobal(groups), (permissions, grants) => grants.Folders.Values.Aggregate(permissions, (held, own) => held | own)));
     }
 
+    /// <summary>A group's own grant on a target: its global grant (the host's while it sets them), or one on a folder or form.</summary>
+    /// <param name="groupKey">The Umbraco user group.</param>
+    /// <param name="target">Where the grant applies.</param>
+    /// <param name="key">The folder's or form's key; ignored for the global grant.</param>
+    public FormBuilderPermissions OwnOf(Guid groupKey, PermissionTarget target, Guid key) =>
+        !_groups.TryGetValue(groupKey, out var grants) ? FormBuilderPermissions.None
+        : target switch
+        {
+            PermissionTarget.Folder => grants.Folders.GetValueOrDefault(key),
+            PermissionTarget.Form => grants.Forms.GetValueOrDefault(key),
+            _ => grants.Global,
+        };
+
+    /// <summary>The folders and the forms some group has a grant of its own on, by their keys.</summary>
+    public (IReadOnlySet<Guid> Folders, IReadOnlySet<Guid> Forms) Granted() =>
+        (_groups.Values.SelectMany(grants => grants.Folders.Where(pair => pair.Value != FormBuilderPermissions.None).Select(pair => pair.Key)).ToHashSet(),
+         _groups.Values.SelectMany(grants => grants.Forms.Where(pair => pair.Value != FormBuilderPermissions.None).Select(pair => pair.Key)).ToHashSet());
+
     /// <summary>The user groups other than the administrators, who hold everything, that hold a permission anywhere.</summary>
     public IReadOnlyList<Guid> GroupsHolding(FormBuilderPermissions permission) =>
         [.. _groups

@@ -186,6 +186,11 @@ internal sealed partial class FormRepository(FormBuilderDatabase database) : IFo
                     where.Add($"{n.C("publishedVersionId")} IS NOT NULL");
                 }
 
+                if (filter.RestrictedOnly)
+                {
+                    where.Add($"{n.C("isRestricted")} = {args.Add(true)}");
+                }
+
                 if (filter.Keys is { } keys)
                 {
                     where.Add(keys.Count == 0 ? "1 = 0" : $"{n.C("key")} IN ({KeyList(keys, args)})");

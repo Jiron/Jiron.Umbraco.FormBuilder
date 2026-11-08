@@ -74,6 +74,26 @@ public sealed class HostGrantsBootTests : RepositoryTestBase
     }
 
     [Test]
+    public async Task TheHostsGrants_AreTheLockOfTheGlobalGrants_AndASaveOfThemIsRefused_WhileAFoldersStillSaves()
+    {
+        var viewers = await GroupAsync("jfbHostViewers");
+        var events = await GetRequiredService<IFormBuilderFolderService>().CreateAsync(new NewFolderRequest("Events", UserKey: Editor));
+
+        var folder = await Access.SaveAsync(new AccessSave(PermissionTarget.Folder, events.Key, [new AccessGrantEdit(viewers, FormBuilderPermissions.None, FormBuilderPermissions.Design)], true, null, Editor));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(Access.LockOf(PermissionTarget.Global), Is.EqualTo(new AccessHostLock("grants", "JironFormBuilder:Access:Grants")));
+            Assert.That(Access.LockOf(PermissionTarget.Folder), Is.Null);
+            Assert.That(
+                () => Access.SaveAsync(new AccessSave(PermissionTarget.Global, Guid.Empty, [new AccessGrantEdit(viewers, FormBuilderPermissions.None, FormBuilderPermissions.Design)], null, null, Editor)),
+                Throws.InstanceOf<FormBuilderSettingLockedException>().With.Property(nameof(FormBuilderSettingLockedException.ConfigurationKey)).EqualTo("JironFormBuilder:Access:Grants"));
+            Assert.That(folder!.Restriction, Is.EqualTo(new AccessRestriction(events.Key, true, null)));
+            Assert.That(folder.Grants.Single().Permissions, Is.EqualTo(FormBuilderPermissions.Design));
+        });
+    }
+
+    [Test]
     public async Task AGlobalChange_IsRefused_NamingTheHostsKey_WhileFolderGrantsStillWork()
     {
         var viewers = await GroupAsync("jfbHostViewers");

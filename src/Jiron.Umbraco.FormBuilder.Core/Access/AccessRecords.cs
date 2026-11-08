@@ -102,3 +102,32 @@ internal sealed record AccessGrant(Guid UserGroupKey, PermissionTarget TargetTyp
 /// <param name="IsRestricted">Whether it is restricted now.</param>
 /// <param name="ConcurrencyVersion">A form's concurrency version after the change; null for a folder.</param>
 internal sealed record AccessRestriction(Guid Key, bool IsRestricted, int? ConcurrencyVersion);
+
+/// <summary>One group's grant in a save of several (ADR-0218): the permissions the editor saw and the new ones.</summary>
+/// <param name="UserGroupKey">The Umbraco user group.</param>
+/// <param name="Expected">The permissions the grant holds now as the editor saw it, none for no grant.</param>
+/// <param name="Permissions">The permissions it should hold, none to remove it.</param>
+internal sealed record AccessGrantEdit(Guid UserGroupKey, FormBuilderPermissions Expected, FormBuilderPermissions Permissions);
+
+/// <summary>
+/// A save of a target's grants, and of a folder's or form's restriction, in one unit of work (ADR-0218): a grant
+/// changed meanwhile, or a form changed since it was read, refuses all of it, so nothing is left half saved.
+/// </summary>
+/// <param name="TargetType">Where the grants apply.</param>
+/// <param name="TargetKey">The folder's or form's key, or <see cref="Guid.Empty"/> for the global grants.</param>
+/// <param name="Grants">The groups' grants, each group once; one whose permissions stay as they were is left as it is.</param>
+/// <param name="IsRestricted">A folder's or form's restriction; null to leave it, and always null for the global grants.</param>
+/// <param name="ExpectedConcurrencyVersion">A form's concurrency version as the editor read it, which a change of its restriction needs.</param>
+/// <param name="UserKey">Who saves, or null when Jiron Form Builder does.</param>
+internal sealed record AccessSave(
+    PermissionTarget TargetType,
+    Guid TargetKey,
+    IReadOnlyList<AccessGrantEdit> Grants,
+    bool? IsRestricted,
+    int? ExpectedConcurrencyVersion,
+    Guid? UserKey);
+
+/// <summary>A host rule that keeps access from being changed here (ADR-0048): what it holds, and its key.</summary>
+/// <param name="Field">The access section's field it holds: <c>*</c> for the whole section, <c>grants</c> for the global grants.</param>
+/// <param name="ConfigurationKey">The configuration key behind it.</param>
+internal sealed record AccessHostLock(string Field, string ConfigurationKey);

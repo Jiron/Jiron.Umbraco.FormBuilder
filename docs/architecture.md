@@ -446,6 +446,16 @@ flowchart LR
   the screen, and it loads the workspace's words for the inspector's editors, as the option lists' workspace does.
   Every setting has a screen and a reader outside the settings module (`SettingsWiringTests`), and every key a section
   serves has its words (`SettingsWordsTests`).
+  Settings › Access (`access/access.screen.ts`) reads `GET access` (`managePermissions`, `AccessController`): every
+  Umbraco user group with its global grant, the administrators first and holding everything, the permissions in three
+  parts and what each needs, the host's lock, and the folders and forms with access of their own. Its matrix
+  (`access/access-matrix.ts`) ticks what a box needs with it and unticks what needs it (`access-model.ts`), and
+  `PUT access` saves the changed groups through `IFormBuilderAccessService.SaveAsync` in one unit of work, each grant
+  from what the editor saw, so a grant changed meanwhile refuses all of it. "Permissions…" in a folder's and a form's
+  "…" (`access/permissions.action.ts`) and the screen's list open one sidebar
+  (`access/permissions.modal.element.ts`) over `GET`/`PUT access/folder/{key}` and `access/form/{key}`, which saves
+  the grants and the restriction together, a form's at the version read. Its words are the area `jfbAccess`, loaded
+  with it; the permissions keep the library's names.
 
 ## 2. The definition model
 

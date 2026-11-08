@@ -1,0 +1,78 @@
+// Settings › Access and a folder's or form's Permissions sidebar in English (ROADMAP 12.4a, IA 8, ADR-0013,
+// ADR-0218, docs/ux/copy.md). The permissions keep their names from the library's words (`jfbLibrary_permission_*`).
+// They load with the screen and the sidebar, not with the backoffice's start (ADR-0183).
+import type { UmbLocalizationDictionary } from '@umbraco-cms/backoffice/localization-api';
+
+const list = (names: readonly string[]) =>
+  names.length <= 1 ? (names[0] ?? '') : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+
+export default {
+  jfbAccess: {
+    loading: 'Loading access…',
+    failed: "Access couldn't be read.",
+    retry: 'Try again',
+    save: 'Save',
+    cancel: 'Cancel',
+    saved: 'Access is saved.',
+    saveFailed: "Access couldn't be saved. Try again in a moment.",
+    invalid: "Access couldn't be saved as it is. Read it again and make your change once more.",
+    conflict:
+      'Someone else changed access meanwhile. Their grants are shown now; make your change again if it is still needed.',
+    lockedNow: "The site's configuration has locked access meanwhile. It is shown as the configuration sets it.",
+
+    everyForm: 'Every form',
+    everyFormLead: 'Forms and entries can differ per folder or form.',
+    administrators: 'Administrators hold every permission everywhere, because they could grant themselves any.',
+    noSection: (count: number) =>
+      count === 1
+        ? "A group can't open Form Builder yet. Add the section to its user group:"
+        : `${count} groups can't open Form Builder yet. Add the section to their user groups:`,
+    lockedGrants: (key: string) =>
+      `The site's configuration sets what each group may do with every form (${key}), so it can't be changed here. Folders and forms can still have their own.`,
+    lockedAll: (key: string) => `The site's configuration sets access (${key}), so it can't be changed here.`,
+    matrixCaption: 'What each user group may do with every form',
+    permission: 'Permission',
+    part_forms: 'Forms',
+    part_entries: 'Entries',
+    part_library: 'Library, settings and privacy',
+    cell: (permission: string, group: string) => `${permission}, ${group}`,
+    alsoOn: (permission: string, besides: readonly string[]) =>
+      `${list(besides)} ${besides.length === 1 ? 'is' : 'are'} on too: ${permission} needs ${besides.length === 1 ? 'it' : 'them'}.`,
+    alsoOff: (permission: string, besides: readonly string[]) =>
+      `${list(besides)} ${besides.length === 1 ? 'is' : 'are'} off too: ${besides.length === 1 ? 'it needs' : 'they need'} ${permission}.`,
+
+    items: 'Folders and forms with their own access',
+    addItem: 'Add folder or form…',
+    itemsNone: "No folder or form has access of its own, so each group's access above reaches every form.",
+    only: (names: readonly string[]) => `Only these groups: ${list(names)}`,
+    onlyAdministrators: 'Only administrators',
+    also: (names: readonly string[]) => `Also: ${list(names)}`,
+    alsoNone: 'No group has more here',
+    open: (name: string) => `Permissions for ${name}`,
+    folder: 'Folder',
+    form: 'Form',
+
+    headline: (name: string) => `Permissions for ${name}`,
+    restrict: 'Only these groups',
+    restrictHelpFolder:
+      "Only the groups below, and administrators, see this folder's forms. Access given to every form or to a parent folder stops here.",
+    restrictHelpForm:
+      'Only the groups below, and administrators, see this form. Access given to every form or to its folder stops here.',
+    groupsHere: 'Groups with access here',
+    addGroup: 'Add user group',
+    addGroupNone: 'Choose a group',
+    removeGroup: (group: string) => `Remove ${group}`,
+    noneHereFolder: 'None yet. Access given to every form reaches this folder.',
+    noneHereForm: 'None yet. Access given to every form reaches this form.',
+    noneHereRestricted: 'None yet, so only administrators see what is here.',
+    sidebarCaption: (name: string) => `What each user group may do in ${name}`,
+    trashedFolder: 'This folder is in the Recycle Bin. Restore it to change its access.',
+    trashedForm: 'This form is in the Recycle Bin. Restore it to change its access.',
+    gone: 'This folder or form is no longer there.',
+    restrictHeadline: (name: string) => `Restrict ${name}?`,
+    restrictText: 'No user group has access of its own here yet, so only administrators will see its forms.',
+    restrictFolder: 'Restrict folder',
+    restrictForm: 'Restrict form',
+    savedTarget: (name: string) => `The permissions of ${name} are saved.`,
+  },
+} satisfies UmbLocalizationDictionary;

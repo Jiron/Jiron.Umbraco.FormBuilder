@@ -182,6 +182,7 @@ describe('the dictionaries', () => {
 
   it("hold the library's keys that its code uses, and no other in that area", () => {
     const folders = [
+      'access',
       'library',
       'library/actions',
       'library/modals',

@@ -1,6 +1,7 @@
 // The Form Builder section (ADR-0021, ADR-0165, ADR-0171): the section with its one dashboard, the sidebar of docs/ux/information-architecture.md
 // and a workspace behind each item. The table in sidebar.ts holds the items; screens that later phases build replace
 // their workspace's element here, and show coming-screen.element until then.
+import { manifests as access } from '../access/manifests';
 import { manifests as designer } from '../designer/manifests';
 import { manifests as entries } from '../entries/manifests';
 import { manifests as library } from '../library/manifests';
@@ -33,6 +34,7 @@ const SCREENS: Readonly<Record<string, ScreenLoader>> = {
   email: () => import('../settings/email.screen'),
   spamProtection: () => import('../settings/protection.screen'),
   files: () => import('../settings/files.screen'),
+  access: () => import('../access/access.screen'),
   integrations: () => import('../settings/integrations.screen'),
   dataCollection: () => import('../settings/privacy.screen'),
   optionLists: () => import('../option-lists/option-lists.screen'),
@@ -135,4 +137,5 @@ export const manifests: UmbExtensionManifest[] = [
   ...themes,
   ...emailLayouts,
   ...overview,
+  ...access,
 ];

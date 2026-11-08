@@ -41,6 +41,7 @@ export default {
     actionDuplicate: 'Duplicate…',
     actionCopyActions: 'Copy actions to…',
     actionSaveAsTemplate: 'Save as template…',
+    actionPermissions: 'Permissions…',
     actionExport: 'Export as JSON',
     actionTrash: 'Trash',
     actionEmptyBin: 'Empty recycle bin…',

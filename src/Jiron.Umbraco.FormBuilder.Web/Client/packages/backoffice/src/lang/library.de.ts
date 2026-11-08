@@ -47,6 +47,7 @@ export default {
     actionDuplicate: 'Duplizieren…',
     actionCopyActions: 'Aktionen kopieren nach…',
     actionSaveAsTemplate: 'Als Vorlage speichern…',
+    actionPermissions: 'Berechtigungen…',
     actionExport: 'Als JSON exportieren',
     actionTrash: 'In den Papierkorb',
     actionEmptyBin: 'Papierkorb leeren…',

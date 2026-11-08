@@ -5,6 +5,79 @@ export type ClientOptions = {
     baseUrl: `${string}://${string}` | (string & {});
 };
 
+export type AccessGrantRequestModel = {
+    group: string;
+    expected: Array<string>;
+    permissions: Array<string>;
+};
+
+export type AccessGrantResponseModel = {
+    group: string;
+    permissions: Array<string>;
+};
+
+export type AccessGroupResponseModel = {
+    key: string;
+    name: string;
+    icon?: string | null;
+    isAdministrators: boolean;
+    hasSection: boolean;
+    permissions: Array<string>;
+};
+
+export type AccessItemResponseModel = {
+    type: string;
+    key: string;
+    name: string;
+    isRestricted: boolean;
+    grants: Array<AccessGrantResponseModel>;
+};
+
+export type AccessLockResponseModel = {
+    field: string;
+    configurationKey: string;
+};
+
+export type AccessNeedResponseModel = {
+    permission: string;
+    needs: string;
+};
+
+export type AccessPartResponseModel = {
+    alias: string;
+    permissions: Array<string>;
+};
+
+export type AccessRequestModel = {
+    grants: Array<AccessGrantRequestModel>;
+};
+
+export type AccessResponseModel = {
+    groups: Array<AccessGroupResponseModel>;
+    parts: Array<AccessPartResponseModel>;
+    needs: Array<AccessNeedResponseModel>;
+    lock?: AccessLockResponseModel | null;
+    items: Array<AccessItemResponseModel>;
+};
+
+export type AccessTargetRequestModel = {
+    grants: Array<AccessGrantRequestModel>;
+    isRestricted: boolean;
+    version?: number | null;
+};
+
+export type AccessTargetResponseModel = {
+    type: string;
+    key: string;
+    name: string;
+    isRestricted: boolean;
+    version?: number | null;
+    groups: Array<AccessGroupResponseModel>;
+    permissions: Array<string>;
+    needs: Array<AccessNeedResponseModel>;
+    lock?: AccessLockResponseModel | null;
+};
+
 export type ActionConfirmationRequestModel = {
     confirmed: boolean;
 };
@@ -1993,6 +2066,226 @@ export type FormReferencesResponseModelWritable = {
     items: Array<FormDocumentReferenceResponseModelWritable>;
     notShown: number;
 };
+
+export type AccessGetData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/access';
+};
+
+export type AccessGetErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+};
+
+export type AccessGetResponses = {
+    /**
+     * OK
+     */
+    200: AccessResponseModel;
+};
+
+export type AccessGetResponse = AccessGetResponses[keyof AccessGetResponses];
+
+export type AccessSaveData = {
+    body?: AccessRequestModel;
+    path?: never;
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/access';
+};
+
+export type AccessSaveErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+};
+
+export type AccessSaveError = AccessSaveErrors[keyof AccessSaveErrors];
+
+export type AccessSaveResponses = {
+    /**
+     * OK
+     */
+    200: AccessResponseModel;
+};
+
+export type AccessSaveResponse = AccessSaveResponses[keyof AccessSaveResponses];
+
+export type AccessGetFolderData = {
+    body?: never;
+    path: {
+        key: string;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/access/folder/{key}';
+};
+
+export type AccessGetFolderErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type AccessGetFolderError = AccessGetFolderErrors[keyof AccessGetFolderErrors];
+
+export type AccessGetFolderResponses = {
+    /**
+     * OK
+     */
+    200: AccessTargetResponseModel;
+};
+
+export type AccessGetFolderResponse = AccessGetFolderResponses[keyof AccessGetFolderResponses];
+
+export type AccessSaveFolderData = {
+    body?: AccessTargetRequestModel;
+    path: {
+        key: string;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/access/folder/{key}';
+};
+
+export type AccessSaveFolderErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+};
+
+export type AccessSaveFolderError = AccessSaveFolderErrors[keyof AccessSaveFolderErrors];
+
+export type AccessSaveFolderResponses = {
+    /**
+     * OK
+     */
+    200: AccessTargetResponseModel;
+};
+
+export type AccessSaveFolderResponse = AccessSaveFolderResponses[keyof AccessSaveFolderResponses];
+
+export type AccessGetFormData = {
+    body?: never;
+    path: {
+        key: string;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/access/form/{key}';
+};
+
+export type AccessGetFormErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type AccessGetFormError = AccessGetFormErrors[keyof AccessGetFormErrors];
+
+export type AccessGetFormResponses = {
+    /**
+     * OK
+     */
+    200: AccessTargetResponseModel;
+};
+
+export type AccessGetFormResponse = AccessGetFormResponses[keyof AccessGetFormResponses];
+
+export type AccessSaveFormData = {
+    body?: AccessTargetRequestModel;
+    path: {
+        key: string;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/access/form/{key}';
+};
+
+export type AccessSaveFormErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+};
+
+export type AccessSaveFormError = AccessSaveFormErrors[keyof AccessSaveFormErrors];
+
+export type AccessSaveFormResponses = {
+    /**
+     * OK
+     */
+    200: AccessTargetResponseModel;
+};
+
+export type AccessSaveFormResponse = AccessSaveFormResponses[keyof AccessSaveFormResponses];
 
 export type ActionTypeListData = {
     body?: never;

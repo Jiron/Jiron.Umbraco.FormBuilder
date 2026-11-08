@@ -182,6 +182,9 @@ internal sealed record FormFilter
 
     /// <summary>The forms a picker's settings allow only (ADR-0129); null for any form.</summary>
     public FormScope? Within { get; init; }
+
+    /// <summary>True for the restricted forms only (ADR-0048), which Settings, Access lists; false (the default) for every form.</summary>
+    public bool RestrictedOnly { get; init; }
 }
 
 /// <summary>

@@ -62,6 +62,23 @@ public sealed class AccessLockTests : RepositoryTestBase
     }
 
     [Test]
+    public async Task ASaveOfSeveralGrants_IsRefused_NamingTheLock_AndTheLockIsTheWholeSection()
+    {
+        var group = await GetRequiredService<TestPeople>().EnsureUserGroupAsync(new TestUserGroup { Alias = "jfbLocked", Name = "Locked" });
+        var hr = await GetRequiredService<IFormBuilderFolderService>().CreateAsync(new NewFolderRequest("HR", UserKey: Editor));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(Access.LockOf(PermissionTarget.Folder), Is.EqualTo(new AccessHostLock("*", LockKey)));
+            Assert.That(Access.LockOf(PermissionTarget.Global), Is.EqualTo(new AccessHostLock("*", LockKey)));
+            Assert.That(
+                () => Access.SaveAsync(new AccessSave(PermissionTarget.Folder, hr.Key, [new AccessGrantEdit(group.Key, FormBuilderPermissions.None, FormBuilderPermissions.ViewEntries)], true, null, Editor)),
+                Throws.InstanceOf<FormBuilderSettingLockedException>().With.Property(nameof(FormBuilderSettingLockedException.ConfigurationKey)).EqualTo(LockKey));
+            Assert.That(Count("jfbPermission"), Is.Zero);
+        });
+    }
+
+    [Test]
     public async Task TheStoredGrants_StillCount_AndADeletedGroup_StillTakesItsGrants()
     {
         var group = await GetRequiredService<TestPeople>().EnsureUserGroupAsync(new TestUserGroup { Alias = "jfbLocked", Name = "Locked" });

@@ -121,6 +121,11 @@ Open questions:
 13. **Permissions…** in a folder's and a form's "…" opens a sidebar of that folder's or form's grants per group, and its
     restriction, saved the same way (`GET`/`PUT access/folder/{key}`, `access/form/{key}`), each with its own
     sentence on what restricting does. The Access screen's list of special folders and forms opens the same sidebar.
+    The grants and the restriction save in one unit too, a form's restriction at the version the sidebar read;
+    restricting with no group asks first, as only administrators would see the forms then. **Add folder or form…** picks
+    one from the library and opens its sidebar. A box ticked brings the permission it needs, and one unticked takes
+    those that need it, said to screen readers once, so the server never refuses a missing dependency the screen
+    made. A group that can't open the section is named once above the matrix, with a link to its user group.
 
 ### The wiring test
 

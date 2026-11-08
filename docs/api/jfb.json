@@ -6,6 +6,487 @@
     "version": "1.0"
   },
   "paths": {
+    "/umbraco/jfb/management/api/v1/access": {
+      "get": {
+        "tags": [
+          "Access"
+        ],
+        "operationId": "AccessGet",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/AccessResponseModel"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The resource is protected and requires an authentication token"
+          },
+          "403": {
+            "description": "The authenticated user does not have access to this resource"
+          }
+        },
+        "security": [
+          {
+            "Backoffice-User": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "Access"
+        ],
+        "operationId": "AccessSave",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/AccessRequestModel"
+                  }
+                ]
+              }
+            },
+            "text/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/AccessRequestModel"
+                  }
+                ]
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/AccessRequestModel"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/AccessResponseModel"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The resource is protected and requires an authentication token"
+          },
+          "403": {
+            "description": "The authenticated user does not have access to this resource"
+          }
+        },
+        "security": [
+          {
+            "Backoffice-User": []
+          }
+        ]
+      }
+    },
+    "/umbraco/jfb/management/api/v1/access/folder/{key}": {
+      "get": {
+        "tags": [
+          "Access"
+        ],
+        "operationId": "AccessGetFolder",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/AccessTargetResponseModel"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The resource is protected and requires an authentication token"
+          },
+          "403": {
+            "description": "The authenticated user does not have access to this resource"
+          }
+        },
+        "security": [
+          {
+            "Backoffice-User": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "Access"
+        ],
+        "operationId": "AccessSaveFolder",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/AccessTargetRequestModel"
+                  }
+                ]
+              }
+            },
+            "text/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/AccessTargetRequestModel"
+                  }
+                ]
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/AccessTargetRequestModel"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/AccessTargetResponseModel"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The resource is protected and requires an authentication token"
+          },
+          "403": {
+            "description": "The authenticated user does not have access to this resource"
+          }
+        },
+        "security": [
+          {
+            "Backoffice-User": []
+          }
+        ]
+      }
+    },
+    "/umbraco/jfb/management/api/v1/access/form/{key}": {
+      "get": {
+        "tags": [
+          "Access"
+        ],
+        "operationId": "AccessGetForm",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/AccessTargetResponseModel"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The resource is protected and requires an authentication token"
+          },
+          "403": {
+            "description": "The authenticated user does not have access to this resource"
+          }
+        },
+        "security": [
+          {
+            "Backoffice-User": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "Access"
+        ],
+        "operationId": "AccessSaveForm",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/AccessTargetRequestModel"
+                  }
+                ]
+              }
+            },
+            "text/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/AccessTargetRequestModel"
+                  }
+                ]
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/AccessTargetRequestModel"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/AccessTargetResponseModel"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The resource is protected and requires an authentication token"
+          },
+          "403": {
+            "description": "The authenticated user does not have access to this resource"
+          }
+        },
+        "security": [
+          {
+            "Backoffice-User": []
+          }
+        ]
+      }
+    },
     "/umbraco/jfb/management/api/v1/action-type": {
       "get": {
         "tags": [
@@ -12920,6 +13401,350 @@
   },
   "components": {
     "schemas": {
+      "AccessGrantRequestModel": {
+        "required": [
+          "expected",
+          "group",
+          "permissions"
+        ],
+        "type": "object",
+        "properties": {
+          "group": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "expected": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "permissions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "AccessGrantResponseModel": {
+        "required": [
+          "group",
+          "permissions"
+        ],
+        "type": "object",
+        "properties": {
+          "group": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "permissions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "AccessGroupResponseModel": {
+        "required": [
+          "hasSection",
+          "isAdministrators",
+          "key",
+          "name",
+          "permissions"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "icon": {
+            "type": "string",
+            "nullable": true
+          },
+          "isAdministrators": {
+            "type": "boolean"
+          },
+          "hasSection": {
+            "type": "boolean"
+          },
+          "permissions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "AccessItemResponseModel": {
+        "required": [
+          "grants",
+          "isRestricted",
+          "key",
+          "name",
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "key": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "isRestricted": {
+            "type": "boolean"
+          },
+          "grants": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/AccessGrantResponseModel"
+                }
+              ]
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "AccessLockResponseModel": {
+        "required": [
+          "configurationKey",
+          "field"
+        ],
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "string"
+          },
+          "configurationKey": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "AccessNeedResponseModel": {
+        "required": [
+          "needs",
+          "permission"
+        ],
+        "type": "object",
+        "properties": {
+          "permission": {
+            "type": "string"
+          },
+          "needs": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "AccessPartResponseModel": {
+        "required": [
+          "alias",
+          "permissions"
+        ],
+        "type": "object",
+        "properties": {
+          "alias": {
+            "type": "string"
+          },
+          "permissions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "AccessRequestModel": {
+        "required": [
+          "grants"
+        ],
+        "type": "object",
+        "properties": {
+          "grants": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/AccessGrantRequestModel"
+                }
+              ]
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "AccessResponseModel": {
+        "required": [
+          "groups",
+          "items",
+          "needs",
+          "parts"
+        ],
+        "type": "object",
+        "properties": {
+          "groups": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/AccessGroupResponseModel"
+                }
+              ]
+            }
+          },
+          "parts": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/AccessPartResponseModel"
+                }
+              ]
+            }
+          },
+          "needs": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/AccessNeedResponseModel"
+                }
+              ]
+            }
+          },
+          "lock": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AccessLockResponseModel"
+              }
+            ],
+            "nullable": true
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/AccessItemResponseModel"
+                }
+              ]
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "AccessTargetRequestModel": {
+        "required": [
+          "grants",
+          "isRestricted"
+        ],
+        "type": "object",
+        "properties": {
+          "grants": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/AccessGrantRequestModel"
+                }
+              ]
+            }
+          },
+          "isRestricted": {
+            "type": "boolean"
+          },
+          "version": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "AccessTargetResponseModel": {
+        "required": [
+          "groups",
+          "isRestricted",
+          "key",
+          "name",
+          "needs",
+          "permissions",
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "key": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "isRestricted": {
+            "type": "boolean"
+          },
+          "version": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "groups": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/AccessGroupResponseModel"
+                }
+              ]
+            }
+          },
+          "permissions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "needs": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/AccessNeedResponseModel"
+                }
+              ]
+            }
+          },
+          "lock": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AccessLockResponseModel"
+              }
+            ],
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "ActionConfirmationRequestModel": {
         "required": [
           "confirmed"
@@ -21120,6 +21945,9 @@
     }
   },
   "tags": [
+    {
+      "name": "Access"
+    },
     {
       "name": "Action type"
     },

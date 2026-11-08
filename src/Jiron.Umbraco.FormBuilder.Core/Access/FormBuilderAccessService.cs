@@ -80,7 +80,31 @@ internal interface IFormBuilderAccessService
     /// own as every change of access is; returns how many.
     /// </summary>
     Task<int> RemoveGroupAsync(Guid userGroupKey, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Saves a target's grants and a folder's or form's restriction in one unit of work, each grant from what the editor
+    /// saw, with an audit entry for each change (ADR-0218). Null when the folder or form does not exist.
+    /// </summary>
+    /// <exception cref="FormBuilderSettingLockedException">The host locks the access section, or the global grants (<c>setting_locked</c>).</exception>
+    /// <exception cref="FormBuilderSettingsValidationException">
+    /// A permission without its dependency, a global-only one on a folder or form, an unknown group or a group named twice
+    /// (<c>validation_failed</c>).
+    /// </exception>
+    /// <exception cref="FormBuilderConflictException">The folder or form is in the trash (<c>trashed</c>).</exception>
+    /// <exception cref="FormBuilderConcurrencyException">A grant, or the form, changed since the editor read it; nothing is saved.</exception>
+    Task<AccessSaved?> SaveAsync(AccessSave save, CancellationToken cancellationToken = default);
+
+    /// <summary>The host's rule that keeps access on a target from being changed here, or null when none does.</summary>
+    AccessHostLock? LockOf(PermissionTarget target);
+
+    /// <summary>The snapshot every check reads (ADR-0048), for a screen that shows each group's grants.</summary>
+    Task<AccessSnapshot> ReadSnapshotAsync(CancellationToken cancellationToken = default);
 }
+
+/// <summary>What a save of a target's grants left: each grant it changed, and the folder's or form's restriction.</summary>
+/// <param name="Grants">The grants as they are now, of the groups the save changed.</param>
+/// <param name="Restriction">The folder's or form's restriction now; null for the global grants.</param>
+internal sealed record AccessSaved(IReadOnlyList<AccessGrant> Grants, AccessRestriction? Restriction);
 
 /// <inheritdoc />
 internal sealed partial class FormBuilderAccessService(
@@ -133,6 +157,9 @@ internal sealed partial class FormBuilderAccessService(
 
     /// <summary>The error of a group Umbraco does not have.</summary>
     public const string UnknownGroupCode = "unknownGroup";
+
+    /// <summary>The error of a save that names a group twice.</summary>
+    public const string DuplicateGroupCode = "duplicateGroup";
 
     /// <summary>The host configuration key of the global grants.</summary>
     public const string HostGrantsKey = FormBuilderOptions.SectionName + ":Access:Grants";
@@ -307,6 +334,132 @@ internal sealed partial class FormBuilderAccessService(
         return removed;
     }
 
+    /// <inheritdoc />
+    public async Task<AccessSaved?> SaveAsync(AccessSave save, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(save);
+        changes.EnsureOwnUnit(OwnUnit);
+        CheckLocks(save.TargetType);
+        if (save.TargetType == PermissionTarget.Global && save.IsRestricted is not null)
+        {
+            throw new ArgumentException("The global grants have no restriction.", nameof(save));
+        }
+
+        var errors = new List<SettingsError>();
+        if (save.Grants.GroupBy(grant => grant.UserGroupKey).Any(group => group.Count() > 1))
+        {
+            errors.Add(new SettingsError(GroupField, DuplicateGroupCode, "Names a user group more than once."));
+        }
+
+        var edits = save.Grants.Where(grant => grant.Expected != grant.Permissions).ToList();
+        foreach (var edit in edits)
+        {
+            errors.AddRange(await ErrorsAsync(Change(save, edit)));
+        }
+
+        if (errors.Count > 0)
+        {
+            throw new FormBuilderSettingsValidationException([.. errors.Distinct()]);
+        }
+
+        // The target as it is now: a folder or a form outside the trash, a form at the version the editor read.
+        StoredFolder? folder = null;
+        StoredForm? form = null;
+        if (save.TargetType == PermissionTarget.Folder)
+        {
+            if ((folder = await folders.GetAsync(save.TargetKey, cancellationToken)) is null)
+            {
+                return null;
+            }
+
+            LibraryTrash.CheckOutside(folder.TrashedUtc, "folder");
+        }
+        else if (save.TargetType == PermissionTarget.Form)
+        {
+            if ((form = await forms.GetAsync(save.TargetKey, cancellationToken)) is null)
+            {
+                return null;
+            }
+
+            LibraryTrash.CheckOutside(form.TrashedUtc, FormChecks.Item);
+        }
+
+        var restricted = folder?.IsRestricted ?? form?.IsRestricted;
+        var restrict = save.IsRestricted is { } wanted && restricted is { } now && wanted != now;
+        if (restrict && form is not null && form.ConcurrencyVersion != save.ExpectedConcurrencyVersion)
+        {
+            throw new FormBuilderConcurrencyException("The form changed since it was read.");
+        }
+
+        if (edits.Count == 0 && !restrict)
+        {
+            return new AccessSaved([], restricted is { } kept ? new AccessRestriction(save.TargetKey, kept, form?.ConcurrencyVersion) : null);
+        }
+
+        var saved = await changes.WriteAsync(
+            async () =>
+            {
+                var grants = new List<AccessGrant>();
+                foreach (var edit in edits)
+                {
+                    // A grant changed meanwhile throws, which takes back every change of this unit.
+                    var stored = await permissions.ChangeAsync(
+                        new GrantChange(edit.UserGroupKey, save.TargetType, save.TargetKey, (int)edit.Expected, (int)edit.Permissions),
+                        cancellationToken);
+                    if (stored is null && edit.Permissions != FormBuilderPermissions.None)
+                    {
+                        throw new FormBuilderConcurrencyException("The folder or form went while its access was saved.");
+                    }
+
+                    grants.Add(Grant(Change(save, edit), stored));
+                }
+
+                AccessRestriction? restriction = restricted is { } kept ? new AccessRestriction(save.TargetKey, kept, form?.ConcurrencyVersion) : null;
+                if (restrict && folder is not null)
+                {
+                    var changed = await folders.RestrictAsync(folder.Id, save.IsRestricted!.Value, save.UserKey, cancellationToken)
+                        ?? throw new FormBuilderConcurrencyException("The folder went while its access was saved.");
+                    restriction = new AccessRestriction(changed.Key, changed.IsRestricted, null);
+                }
+                else if (restrict && form is not null)
+                {
+                    var changed = await forms.UpdateAsync(new FormUpdate(form.Id, form.ConcurrencyVersion, form.Alias, form.Name, form.FolderId, save.IsRestricted!.Value, save.UserKey), cancellationToken)
+                        ?? throw new FormBuilderConcurrencyException("The form changed while its access was saved.");
+                    restriction = new AccessRestriction(changed.Key, changed.IsRestricted, changed.ConcurrencyVersion);
+                }
+
+                return new AccessSaved(grants, restriction);
+            },
+            written =>
+            [
+                .. edits.Select(edit => GrantEntry(Change(save, edit))),
+                .. restrict && written.Restriction is { } restriction
+                    ? [new NewAuditEntry(RestrictionAction(restriction.IsRestricted), EntityTypeOf(save.TargetType), save.TargetKey, save.UserKey)]
+                    : Array.Empty<NewAuditEntry>(),
+            ],
+            cancellationToken);
+        snapshots.Changed();
+        return saved;
+    }
+
+    /// <inheritdoc />
+    public AccessHostLock? LockOf(PermissionTarget target)
+    {
+        var host = options.Value;
+        for (var i = 0; i < host.LockedSections.Count; i++)
+        {
+            if (string.Equals(host.LockedSections[i], FormBuilderSettingsSections.Access, StringComparison.OrdinalIgnoreCase))
+            {
+                return new AccessHostLock(SettingsLocks.WholeSection, $"{SettingsHostRules.LockedSectionsKey}:{i}");
+            }
+        }
+
+        return target == PermissionTarget.Global && host.Access.Grants.Count > 0 ? new AccessHostLock("grants", HostGrantsKey) : null;
+    }
+
+    /// <inheritdoc />
+    public Task<AccessSnapshot> ReadSnapshotAsync(CancellationToken cancellationToken = default) => GetSnapshotAsync(cancellationToken);
+
     /// <summary>
     /// The snapshot, from this server's cache or read now, one read for every miss while it runs. A change clears the
     /// cached copy and the read under way; a read that began before the change answers its callers but is not kept
@@ -388,26 +541,34 @@ internal sealed partial class FormBuilderAccessService(
         return grants;
     }
 
+    // A group's change within a save of several.
+    private static AccessGrantChange Change(AccessSave save, AccessGrantEdit edit) =>
+        new(edit.UserGroupKey, save.TargetType, save.TargetKey, edit.Expected, edit.Permissions, save.UserKey);
+
     // The host's locks first: the access section, then the global grants it sets itself (ADR-0048).
     private void CheckLocks(PermissionTarget target)
     {
-        var host = options.Value;
-        for (var i = 0; i < host.LockedSections.Count; i++)
+        switch (LockOf(target))
         {
-            if (string.Equals(host.LockedSections[i], FormBuilderSettingsSections.Access, StringComparison.OrdinalIgnoreCase))
-            {
-                throw new FormBuilderSettingLockedException(FormBuilderSettingsSections.Access, $"{SettingsHostRules.LockedSectionsKey}:{i}");
-            }
-        }
-
-        if (target == PermissionTarget.Global && host.Access.Grants.Count > 0)
-        {
-            throw new FormBuilderSettingLockedException(GrantsField, HostGrantsKey);
+            case { Field: SettingsLocks.WholeSection } section:
+                throw new FormBuilderSettingLockedException(FormBuilderSettingsSections.Access, section.ConfigurationKey);
+            case { } grants:
+                throw new FormBuilderSettingLockedException(GrantsField, grants.ConfigurationKey);
         }
     }
 
     // What the model allows, all problems at once; a grant that gives something needs a group Umbraco has.
     private async Task CheckAsync(AccessGrantChange change)
+    {
+        var errors = await ErrorsAsync(change);
+        if (errors.Count > 0)
+        {
+            throw new FormBuilderSettingsValidationException(errors);
+        }
+    }
+
+    // What the model refuses of a change, each problem once.
+    private async Task<List<SettingsError>> ErrorsAsync(AccessGrantChange change)
     {
         var errors = new List<SettingsError>();
         if ((change.Permissions & ~PermissionRules.All) != 0 || (change.Expected & ~PermissionRules.All) != 0)
@@ -430,10 +591,7 @@ internal sealed partial class FormBuilderAccessService(
             errors.Add(new SettingsError(GroupField, UnknownGroupCode, "No user group has this key."));
         }
 
-        if (errors.Count > 0)
-        {
-            throw new FormBuilderSettingsValidationException(errors);
-        }
+        return errors;
     }
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Jiron Form Builder's host configuration grants permissions to the user group '{Group}', which the site does not have; it grants nothing")]
