@@ -1,4 +1,5 @@
 using Jiron.Umbraco.FormBuilder.Core.Audit;
+using Jiron.Umbraco.FormBuilder.Core.Entries;
 using Jiron.Umbraco.FormBuilder.Core.Files;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
@@ -10,7 +11,7 @@ namespace Jiron.Umbraco.FormBuilder.Core.Forms;
 /// Deletes a form in the trash for good (ADR-0047), for the form service and the folder service: its entries in
 /// batches, each a unit of work that holds the form's row while the form is in the trash at the version the editor
 /// confirmed; then the uploads that wait for an entry, in batches the same way; then one unit with the form's own rows,
-/// its grants, the references to it and its daily statistics, and the audit entry. The bytes of the deleted files go
+/// its grants, the references to it, its daily statistics and what users chose for it, and the audit entry. The bytes of the deleted files go
 /// after each unit committed, so a unit that rolls back never loses a file (ADR-0041). A delete that stops part way
 /// leaves the form in the trash with fewer entries, and deleting it again finishes the job; the first batch that
 /// deletes anything records <see cref="DeletingAction"/> in its unit, so a delete that stops is on record too. It
@@ -23,6 +24,7 @@ internal sealed partial class FormRemoval(
     IPermissionRepository permissions,
     IReferenceRepository references,
     IDailyStatRepository stats,
+    EntryUserSettings userSettings,
     IAuditRepository audit,
     FormBuilderDatabase database,
     IFormBuilderFileStore files,
@@ -172,6 +174,7 @@ internal sealed partial class FormRemoval(
                 await permissions.DeleteForTargetAsync(PermissionTarget.Form, form.Key, cancellationToken);
                 await references.DeleteFormAsync(form.Id, cancellationToken);
                 await stats.DeleteFormAsync(form.Id, cancellationToken);
+                await userSettings.ForgetFormAsync(form.Key, cancellationToken);
                 var details = new AuditDetails().Add("entries", entryCount).Add("files", fileCount);
                 await audit.AddAsync(new NewAuditEntry(DeletedAction, FormAudit.EntityType, form.Key, userKey, details), cancellationToken);
                 return true;

@@ -472,8 +472,9 @@ Text        LocalizedText: culture → text, "" is the default; "#key" reads the
   new key, so a folder's restore brings back exactly the folders and forms that went with it, and nothing lives
   below a folder in the trash. A permanent delete works only from the trash: the entries go in batches of 100, each
   a short unit that holds the form at the version the editor confirmed, then the waiting uploads, then the form's
-  own rows with its grants, references and daily statistics; the bytes of the files go after each commit, and its
-  background exports at the next clean-up.
+  own rows with its grants, references, daily statistics and what users chose for it (its columns, its last export,
+  the filter sets that name it); the bytes of the files go after each commit, and its background exports at the next
+  clean-up.
 - **Publishing** ([ADR-0035](decisions/0035-structural-validation-and-public-projection.md)) runs the save checks and
   then the structural validation: aliases, names and option values, references, what each field type supports (its
   traits, from the field-type registry), each field's settings against its type's schema and the type's own check

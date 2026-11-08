@@ -1,4 +1,6 @@
 using System.Text;
+using Jiron.Umbraco.FormBuilder.Core.Entries;
+using Jiron.Umbraco.FormBuilder.Core.Exports;
 using Jiron.Umbraco.FormBuilder.Core.Files;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
@@ -230,6 +232,40 @@ public sealed class FormTrashServiceTests : RepositoryTestBase
             Assert.That((await AuditAsync(created.Key)).Last(), Is.EqualTo((FormRemoval.DeletedAction, (Guid?)Editor, """{"entries":2,"files":2}""")), "the audit entry outlives the form");
             Assert.That(Deletes(await AuditAsync(created.Key)), Is.EqualTo(new[] { FormRemoval.DeletingAction, FormRemoval.DeletedAction }), "the first batch's unit records the delete");
             Assert.That(await Service.DeleteAsync(created.Key, trashed.ConcurrencyVersion, Editor), Is.Null, "gone");
+        });
+    }
+
+    [Test]
+    public async Task ADelete_ForgetsTheFormInEveryUsersChoices_AndKeepsTheRest()
+    {
+        var created = await CreateAsync("Contact");
+        var other = await CreateAsync("Other");
+        var choices = GetRequiredService<EntryUserSettings>();
+        var (ana, ben) = (Guid.NewGuid(), Guid.NewGuid());
+        await choices.SetColumnsAsync(ana, created.Key, [Guid.NewGuid()]);
+        await choices.SetColumnsAsync(ana, other.Key, [Guid.NewGuid()]);
+        await choices.SetExportChoicesAsync(ben, created.Key, new EntryExportChoices("csv", null, false, new FormBuilderExportOptions()));
+        await choices.SaveFilterSetAsync(ana, new EntryFilterSet(Guid.NewGuid(), "Waiting", created.Key, new EntryListFilter()));
+        await choices.SaveFilterSetAsync(ana, new EntryFilterSet(Guid.NewGuid(), "Both", null, new EntryListFilter { Forms = [created.Key, other.Key] }));
+        await choices.SaveFilterSetAsync(ana, new EntryFilterSet(Guid.NewGuid(), "Only it", null, new EntryListFilter { Forms = [created.Key] }));
+        await choices.SaveFilterSetAsync(ana, new EntryFilterSet(Guid.NewGuid(), "Elsewhere", other.Key, new EntryListFilter()));
+        await choices.SaveFilterSetAsync(ben, new EntryFilterSet(Guid.NewGuid(), "Mine", created.Key, new EntryListFilter()));
+        var trashed = await TrashAsync(created);
+
+        _ = await Service.DeleteAsync(created.Key, trashed.ConcurrencyVersion, Editor);
+        var sets = await choices.GetFilterSetsAsync(ana);
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(await choices.GetColumnsAsync(ana, created.Key), Is.Empty, "its columns go");
+            Assert.That(await choices.GetColumnsAsync(ana, other.Key), Has.Count.EqualTo(1), "another form's stay");
+            Assert.That(await choices.GetExportChoicesAsync(ben, created.Key), Is.Null, "its last export goes");
+            Assert.That(
+                sets.Select(set => $"{set.Name}: {set.Form?.ToString() ?? "Inbox"} [{string.Join(", ", set.Filter.Forms)}]"),
+                Is.EqualTo(new[] { $"Both: Inbox [{other.Key}]", $"Elsewhere: {other.Key} []" }),
+                "the sets of its own list go, an Inbox set no longer names it, and one that named only it goes rather than mean every form");
+            Assert.That(await choices.GetFilterSetsAsync(ben), Is.Empty, "a user whose sets all named it keeps none");
+            Assert.That(Count(FormBuilderTables.UserSetting, $"{Q("userKey")} = @0", ben), Is.Zero, "and no empty record");
         });
     }
 

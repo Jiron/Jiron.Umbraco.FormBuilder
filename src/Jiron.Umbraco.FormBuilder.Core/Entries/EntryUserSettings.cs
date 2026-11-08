@@ -50,7 +50,7 @@ internal sealed class EntryUserSettings(IUserSettingRepository settings)
     /// <param name="formKey">The form.</param>
     /// <param name="cancellationToken">Stops the read.</param>
     public async Task<EntryExportChoices?> GetExportChoicesAsync(Guid userKey, Guid formKey, CancellationToken cancellationToken = default) =>
-        Read<EntryExportChoices>(await settings.GetAsync(userKey, ExportPrefix + formKey.ToString("D"), cancellationToken)) is { Format: not null, Options: not null } choices
+        Read<EntryExportChoices>(await settings.GetAsync(userKey, ExportName(formKey), cancellationToken)) is { Format: not null, Options: not null } choices
             ? choices with { Fields = choices.Fields?.Distinct().ToList() }
             : null;
 
@@ -60,7 +60,7 @@ internal sealed class EntryUserSettings(IUserSettingRepository settings)
     /// <param name="choices">The choices, as the export checked them.</param>
     /// <param name="cancellationToken">Stops the write.</param>
     public Task SetExportChoicesAsync(Guid userKey, Guid formKey, EntryExportChoices choices, CancellationToken cancellationToken = default) =>
-        settings.SetAsync(userKey, ExportPrefix + formKey.ToString("D"), JsonSerializer.Serialize(choices, EntryListJson.Options), cancellationToken);
+        settings.SetAsync(userKey, ExportName(formKey), JsonSerializer.Serialize(choices, EntryListJson.Options), cancellationToken);
 
     /// <summary>The fields a user chose as a form's columns, in their order; none until they choose.</summary>
     /// <param name="userKey">The user.</param>
@@ -179,8 +179,63 @@ internal sealed class EntryUserSettings(IUserSettingRepository settings)
         return true;
     }
 
+    /// <summary>
+    /// Forgets a form deleted for good in every user's choices: its columns and its last export go, and so do the filter
+    /// sets of its own list; an Inbox set no longer names it, and one that named only forms that are gone goes too, rather
+    /// than come to mean every form.
+    /// </summary>
+    /// <param name="formKey">The form.</param>
+    /// <param name="cancellationToken">Stops the reads and writes.</param>
+    public async Task ForgetFormAsync(Guid formKey, CancellationToken cancellationToken = default)
+    {
+        foreach (var name in new[] { ColumnsName(formKey), ExportName(formKey) })
+        {
+            foreach (var stored in await settings.ListAsync(name, cancellationToken))
+            {
+                await settings.DeleteAsync(stored.UserKey, name, cancellationToken);
+            }
+        }
+
+        foreach (var stored in await settings.ListAsync(FilterSetsName, cancellationToken))
+        {
+            if (Read<List<EntryFilterSet>>(stored.Json) is not { } sets || !sets.Any(set => set?.Form == formKey || set?.Filter?.Forms.Contains(formKey) == true))
+            {
+                continue;
+            }
+
+            var kept = new List<EntryFilterSet>();
+            foreach (var set in sets.Where(set => set is not null && set.Form != formKey))
+            {
+                if (set.Filter is { } filter && filter.Forms.Contains(formKey))
+                {
+                    var forms = filter.Forms.Where(key => key != formKey).ToList();
+                    if (forms.Count > 0)
+                    {
+                        kept.Add(set with { Filter = filter with { Forms = forms } });
+                    }
+
+                    continue;
+                }
+
+                kept.Add(set);
+            }
+
+            if (kept.Count == 0)
+            {
+                await settings.DeleteAsync(stored.UserKey, FilterSetsName, cancellationToken);
+            }
+            else
+            {
+                await settings.SetAsync(stored.UserKey, FilterSetsName, JsonSerializer.Serialize(kept, EntryListJson.Options), cancellationToken);
+            }
+        }
+    }
+
     /// <summary>The name a form's columns are stored under.</summary>
     internal static string ColumnsName(Guid formKey) => ColumnsPrefix + formKey.ToString("D");
+
+    /// <summary>The name a form's last export is stored under.</summary>
+    internal static string ExportName(Guid formKey) => ExportPrefix + formKey.ToString("D");
 
     private static bool IsName(string? name) => name is { Length: > 0 and <= MaxSetNameLength } && name.Trim().Length == name.Length;
 

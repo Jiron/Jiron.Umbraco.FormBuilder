@@ -659,7 +659,8 @@ changed it last. The built-in templates ship inside the package.
 
 A backoffice user's own choices, the same on every device: column sets, saved filters, export choices. No indexes
 besides the primary key on the user and the setting's name. Each name holds one JSON document, which the service that
-owns the name checks; a value it cannot read counts as none (ADR-0207):
+owns the name checks; a value it cannot read counts as none (ADR-0207). A form deleted for good leaves none of its own
+behind: its columns and last export go, the sets of its list go, and an Inbox set no longer names it:
 
 - `entries.columns.<form key>`: the fields a user shows as a form's columns, at most 20, in their order;
 - `entries.filterSets`: the user's filter sets, at most 50, each with its key, a name of at most 60 characters, the
