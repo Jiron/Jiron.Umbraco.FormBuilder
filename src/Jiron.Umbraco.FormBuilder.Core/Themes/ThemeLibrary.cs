@@ -67,6 +67,7 @@ internal sealed class ThemeLibrary(
     LibraryUsers users,
     ILibraryUseRepository uses,
     IFormBuilderSettingsService settings,
+    AppCaches appCaches,
     DistributedCache distributedCache,
     IAuditRepository audit)
 {
@@ -390,7 +391,13 @@ internal sealed class ThemeLibrary(
         }
     }
 
-    private void Changed(string alias) => distributedCache.RefreshByPayload(FormBuilderThemeCacheRefresher.UniqueId, [new ThemeCacheChange(alias)]);
+    // Forgotten here at once, as the next read on this server may come in the same request, then on every other server.
+    private void Changed(string alias)
+    {
+        var change = new ThemeCacheChange(alias);
+        FormBuilderThemeCacheRefresher.Forget(appCaches.RuntimeCache, change);
+        distributedCache.RefreshByPayload(FormBuilderThemeCacheRefresher.UniqueId, [change]);
+    }
 
     private Task<StoredAuditEntry> AuditAsync(string action, StoredTheme theme, Guid? userKey, Guid? duplicateOf)
     {

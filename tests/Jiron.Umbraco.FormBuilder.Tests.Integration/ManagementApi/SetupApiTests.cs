@@ -161,7 +161,8 @@ public sealed class SetupApiTests : ManagementApiTestBase
             Assert.That(checks.Select(check => check.GetType().Name).Order(), Is.EqualTo(new[]
             {
                 nameof(BaseUrlHealthCheck), nameof(DeliveriesHealthCheck), nameof(EmailHealthCheck), nameof(JobsHealthCheck),
-                nameof(KeyRingHealthCheck), nameof(MigrationsHealthCheck), nameof(UploadsHealthCheck), nameof(UsedOnHealthCheck),
+                nameof(KeyRingHealthCheck), nameof(MigrationsHealthCheck), nameof(MirrorHealthCheck), nameof(UploadsHealthCheck),
+                nameof(UsedOnHealthCheck),
             }));
             Assert.That(checks.Select(check => check.Id).Distinct().Count(), Is.EqualTo(checks.Count));
         });

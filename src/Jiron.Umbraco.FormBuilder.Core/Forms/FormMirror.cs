@@ -206,7 +206,7 @@ internal sealed partial class FormMirror(
         foreach (var (key, value) in await values.ListAsync(ProblemPrefix, cancellationToken))
         {
             var kind = key[ProblemPrefix.Length..].Split('/')[0];
-            if (EnumNames<MirrorProblemKind>.ByName.TryGetValue(kind, out var parsed) && value is not null)
+            if (value is not null && Enum.GetValues<MirrorProblemKind>().FirstOrDefault(each => KindKey(each) == kind) is var parsed && KindKey(parsed) == kind)
             {
                 found.Add(new MirrorProblem(parsed, value));
             }
@@ -525,7 +525,10 @@ internal sealed partial class FormMirror(
         }
     }
 
-    private static string ProblemKey(MirrorProblemKind kind, string subject) => $"{ProblemPrefix}{StoredNames.Of(kind)}/{subject}";
+    private static string ProblemKey(MirrorProblemKind kind, string subject) => $"{ProblemPrefix}{KindKey(kind)}/{subject}";
+
+    // A kind as a part of a key, which holds no capital letter.
+    private static string KindKey(MirrorProblemKind kind) => StoredNames.Of(kind).ToLowerInvariant();
 
     // A file's name as a key's part: lowercase hex of its hash, as a key holds only lowercase letters, digits and a few marks.
     private static string NameKey(string file) => Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(file)))[..32];

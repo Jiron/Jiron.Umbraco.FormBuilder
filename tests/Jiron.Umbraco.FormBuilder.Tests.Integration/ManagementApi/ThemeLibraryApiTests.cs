@@ -155,6 +155,7 @@ public sealed class ThemeLibraryApiTests : ManagementApiTestBase
         _ = await settings.UpdateAsync<GeneralSettings>(current => current with { Theme = null }, general.Version, null);
         var deleted = await CallAsync("designer", HttpMethod.Delete, $"theme/{key}?concurrencyVersion=1");
         var gone = await CallAsync("designer", HttpMethod.Get, $"theme/{key}");
+        var audit = await GetRequiredService<IAuditRepository>().QueryAsync(new AuditQuery { EntityKey = key }, PageRequest.First(10));
 
         Assert.Multiple(() =>
         {
@@ -165,6 +166,7 @@ public sealed class ThemeLibraryApiTests : ManagementApiTestBase
             Assert.That(defaultRow.Body!["items"]![0]!["isDefault"]!.GetValue<bool>(), Is.True);
             Assert.That(deleted.Outcome, Is.EqualTo("204"), deleted.ToString());
             Assert.That(gone.Outcome, Is.EqualTo("404 theme_not_found"));
+            Assert.That(audit.Items[0].Action, Is.EqualTo(ThemeLibrary.DeletedAction), "the delete is audited");
         });
     }
 

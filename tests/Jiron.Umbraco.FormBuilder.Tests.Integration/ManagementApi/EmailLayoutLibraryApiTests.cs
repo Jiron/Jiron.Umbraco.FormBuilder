@@ -156,6 +156,7 @@ public sealed class EmailLayoutLibraryApiTests : ManagementApiTestBase
         _ = await settings.UpdateAsync<EmailSettings>(current => current with { DefaultLayout = null }, email.Version, null);
         var deleted = await CallAsync(Designer, HttpMethod.Delete, $"email-layout/{key}?concurrencyVersion=1");
         var gone = await CallAsync(Designer, HttpMethod.Get, $"email-layout/{key}");
+        var audit = await GetRequiredService<IAuditRepository>().QueryAsync(new AuditQuery { EntityKey = key }, PageRequest.First(10));
 
         Assert.Multiple(() =>
         {
@@ -168,6 +169,7 @@ public sealed class EmailLayoutLibraryApiTests : ManagementApiTestBase
             Assert.That(editor.Body!["defaultLayout"]!.GetValue<Guid>(), Is.EqualTo(key));
             Assert.That(deleted.Outcome, Is.EqualTo("204"), deleted.ToString());
             Assert.That(gone.Outcome, Is.EqualTo("404 email_layout_not_found"));
+            Assert.That(audit.Items[0].Action, Is.EqualTo(EmailLayoutLibrary.DeletedAction), "the delete is audited");
         });
     }
 

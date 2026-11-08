@@ -5,10 +5,15 @@ using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Definitions.Exchange;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
+using Jiron.Umbraco.FormBuilder.Core.Persistence.Migrations;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Tests.Integration.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Web.Setup;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using Umbraco.Cms.Core.HealthChecks;
+using Umbraco.Cms.Core.Sync;
+using Umbraco.Cms.Infrastructure.BackgroundJobs;
 using Umbraco.Cms.Tests.Common.Testing;
 using static Jiron.Umbraco.FormBuilder.Tests.Integration.Forms.FormServiceTesting;
 
@@ -20,7 +25,9 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Integration.Forms;
 /// developer wrote it, a reformatted file is no change, and the next publish writes the file again. A file and a form that
 /// both changed keep the form and the file, which the health check names until the file is taken in or written again; a
 /// file of a form the site never had creates it; a stale copy is written again; a file that is no form is named; with the
-/// mirror off nothing is written. Replacing a draft with a file keeps the file's keys and the form's own name.
+/// mirror off nothing is written. The health check names a file it could not write and a change publishing refused, and
+/// its action writes the files of the forms in conflict; the job runs the pass only with the mirror on and no migration
+/// pending, and a pass that fails is logged. Replacing a draft with a file keeps the file's keys and the form's own name.
 /// </summary>
 [TestFixture]
 [UmbracoTest(Database = UmbracoTestOptions.Database.NewSchemaPerTest)]
@@ -31,6 +38,8 @@ public sealed class FormMirrorTests : RepositoryTestBase
     private static readonly FormField Name = new() { Key = Key(2), Type = "text", Alias = "name", Label = new LocalizedText("Name") };
 
     private static readonly HealthWords English = HealthWords.Of("en-US");
+
+    private readonly PendingSwitch _pending = new();
 
     private string _folder = null!;
 
@@ -45,6 +54,8 @@ public sealed class FormMirrorTests : RepositoryTestBase
     private FormDefinitionSerializer Serializer => GetRequiredService<FormDefinitionSerializer>();
 
     private FormBuilderDefinitionsOptions Definitions => GetRequiredService<IOptionsMonitor<FormBuilderOptions>>().CurrentValue.Definitions;
+
+    private TestPublishCheck Check => GetRequiredService<TestPublishCheck>();
 
     [SetUp]
     public void TurnTheMirrorOn()
@@ -62,6 +73,11 @@ public sealed class FormMirrorTests : RepositoryTestBase
         if (Directory.Exists(_folder))
         {
             Directory.Delete(_folder, recursive: true);
+        }
+
+        if (File.Exists(_folder))
+        {
+            File.Delete(_folder);
         }
     }
 
@@ -275,6 +291,100 @@ public sealed class FormMirrorTests : RepositoryTestBase
     }
 
     [Test]
+    public async Task TheHealthCheck_NamesAConflict_AndItsActionWritesTheFile_SoTheSitesFormWins()
+    {
+        var check = GetRequiredService<HealthCheckCollection>().OfType<MirrorHealthCheck>().Single();
+        var form = await PublishedAsync();
+        await ChangeFileAsync(form, email: "Your email");
+        await PublishChangeAsync(form, name: "Full name");
+
+        var conflict = (await check.GetStatusAsync()).ToList();
+        var done = await check.ExecuteActionAsync(conflict.Single().Actions.Single());
+        var after = (await check.GetStatusAsync()).Single();
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(conflict.Select(status => (status.ResultType, status.Message)), Is.EqualTo(new[] { (StatusResultType.Warning, English.MirrorConflict("contact.json")) }));
+            Assert.That(conflict.Single().Actions.Single().Alias, Is.EqualTo(MirrorHealthCheck.KeepAction));
+            Assert.That((done.ResultType, done.Message), Is.EqualTo((StatusResultType.Success, English.MirrorKept(1))));
+            Assert.That(Labels((await ReadFileAsync(form)).Definition), Is.EqualTo(new[] { "Email address", "Full name" }), "the file holds the form");
+            Assert.That((after.ResultType, after.Message, after.Actions.Count()), Is.EqualTo((StatusResultType.Success, English.MirrorPassed, 0)));
+        });
+    }
+
+    [Test]
+    public async Task AFileThatCannotBeWritten_IsNamedByTheHealthCheck_UntilAPassWritesIt()
+    {
+        // A file where the folder should be: no file can go in it.
+        await File.WriteAllTextAsync(_folder, "not a folder");
+        var form = await PublishedAsync();
+        var found = await Health.FindAsync(English);
+        File.Delete(_folder);
+        await Mirror.SyncAsync();
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(found.Select(finding => (finding.Code, finding.Message)), Is.EqualTo(new[] { ("mirrorUnwritable", English.MirrorUnwritable("contact.json")) }), "the publish went through and said so");
+            Assert.That(await PublishedVersionAsync(form), Is.EqualTo(3));
+            Assert.That(File.Exists(FileOf(form)), Is.True, "the next pass wrote it");
+            Assert.That(await Health.FindAsync(English), Is.Empty);
+        });
+    }
+
+    [Test]
+    public async Task AChangedFileThatPublishingRefuses_StaysInTheDraft_AndIsNamedByTheHealthCheck_UntilItPublishes()
+    {
+        var form = await PublishedAsync();
+        await ChangeFileAsync(form, email: "Your email");
+        Check.Problems = [new DefinitionProblem("jfb_test", "$", "Not now.")];
+        await Mirror.SyncAsync();
+        var found = await Health.FindAsync(English);
+        var draft = (await Service.GetDraftAsync(form.Key))!;
+        Check.Problems = [];
+        await Mirror.SyncAsync();
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(found.Select(finding => (finding.Code, finding.Message)), Is.EqualTo(new[] { ("mirrorNotPublished", English.MirrorNotPublished("contact.json")) }));
+            Assert.That((draft.DraftVersion, draft.PublishedVersion), Is.EqualTo((4, (int?)3)), "the file is the draft, the live version stays");
+            Assert.That(await PublishedVersionAsync(form), Is.EqualTo(5), "the next pass published it");
+            Assert.That(Labels(await LiveAsync(form)), Is.EqualTo(new[] { "Your email", "Name" }));
+            Assert.That(await Health.FindAsync(English), Is.Empty);
+        });
+    }
+
+    [Test]
+    public async Task TheJob_RunsThePass_OnlyWithTheMirrorOn_AndNoMigrationPending_AndLogsAPassThatFails()
+    {
+        var job = GetRequiredService<IEnumerable<IRecurringBackgroundJob>>().OfType<FormMirrorJob>().Single();
+        var form = await PublishedAsync();
+        File.Delete(FileOf(form));
+
+        Definitions.Mirror = false;
+        await job.RunJobAsync();
+        var whileOff = File.Exists(FileOf(form));
+        Definitions.Mirror = true;
+        _pending.Pending = true;
+        await job.RunJobAsync();
+        var whilePending = File.Exists(FileOf(form));
+        var asked = _pending.Asked;
+        _pending.Pending = false;
+        await job.RunJobAsync();
+        var written = File.Exists(FileOf(form));
+        Directory.Delete(_folder, recursive: true);
+        await File.WriteAllTextAsync(_folder, "not a folder");
+
+        Assert.Multiple(() =>
+        {
+            Assert.That((whileOff, whilePending), Is.EqualTo((false, false)), "nothing while the mirror is off or a migration is pending");
+            Assert.That(asked, Is.GreaterThan(0), "the job asked");
+            Assert.That(written, Is.True, "the pass wrote the form's file");
+            Assert.That(job.ServerRoles, Is.EquivalentTo(new[] { ServerRole.Single, ServerRole.SchedulingPublisher }));
+            Assert.DoesNotThrowAsync(job.RunJobAsync, "a pass that fails is logged, and the timer goes on");
+        });
+    }
+
+    [Test]
     public async Task AReplace_MakesTheFileTheDraft_WithItsKeys_AndKeepsTheFormsNameAndItsLiveVersion()
     {
         Definitions.Mirror = false;
@@ -354,4 +464,33 @@ public sealed class FormMirrorTests : RepositoryTestBase
 
     private async Task<MirrorRecord?> RecordAsync(FormInfo form) =>
         await KeyValues.GetAsync(FormMirror.RecordPrefix + form.Key.ToString("N")) is { } text ? MirrorRecord.Read(text) : null;
+
+    /// <inheritdoc />
+    protected override void CustomTestSetup(IUmbracoBuilder builder)
+    {
+        base.CustomTestSetup(builder);
+        builder.Services.AddSingleton<TestPublishCheck>();
+        builder.Services.AddSingleton<IFormPublishCheck>(provider => provider.GetRequiredService<TestPublishCheck>());
+        builder.Services.AddUnique<IFormBuilderMigrationState>(_pending);
+    }
+
+    // Whether a migration is pending, as the test sets it, and how often a job asked.
+    private sealed class PendingSwitch : IFormBuilderMigrationState
+    {
+        private int _asked;
+
+        public bool Pending { get; set; }
+
+        public int Asked => Volatile.Read(ref _asked);
+
+        public ValueTask<bool> IsPendingAsync(CancellationToken cancellationToken = default)
+        {
+            Interlocked.Increment(ref _asked);
+            return ValueTask.FromResult(Pending);
+        }
+
+        public void Invalidate()
+        {
+        }
+    }
 }

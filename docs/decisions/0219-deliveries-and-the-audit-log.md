@@ -41,8 +41,8 @@ Open questions:
    are Failed, Trying again, Uncertain and Limited: they come first, each group newest first.
 3. **Filters:** the state (problems, waiting, delivered, skipped), what it is (emails, webhooks with Slack and
    Microsoft Teams, other actions), and when (the last 7, 30 or 90 days, or all), **the last 30 days** by default, which
-   is how long mail is kept. The API takes a form too, for a link from a form; the screen finds a form by its name in the
-   search. The search finds a mail's recipients and a form's name; a run's target is
+   is how long mail is kept. The API takes a form too, for an integration or a later link from a form; no screen sends
+   it yet (the phase review, 12.6), and the screen finds a form by its name in the search. The search finds a mail's recipients and a form's name; a run's target is
    not searched, as it lives in the form's version.
 4. **A row:** its state; **to**: a mail's recipients, a webhook's host (a reference shows the key that holds the
    address, never the address), Slack or Microsoft Teams; **what**: the action's name in the version that queued it,
@@ -77,7 +77,7 @@ Open questions:
     hours, the last 7, 30 or 90 days, or all), **the last 30 days** by default, and who: an action's details offer
     **Show only their actions**, and a chip above the list names the person until it is cleared, as Umbraco's user picker
     needs a collection of its own to open. The API takes a form too, which matches the actions on it and those that name
-    it in their details as their form, as an entry's actions do. The search
+    it in their details as their form, as an entry's actions do; as for Deliveries, no screen sends it yet. The search
     finds people by name or email (Umbraco's user filter) and items by name (forms, folders and the library's items):
     an entry matches any of them.
 11. **Words:** every action has a sentence in the backoffice's languages, filled from its details ("Published version

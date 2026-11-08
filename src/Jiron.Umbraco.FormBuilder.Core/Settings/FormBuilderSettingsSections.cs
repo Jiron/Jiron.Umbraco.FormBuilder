@@ -18,7 +18,7 @@ public static class FormBuilderSettingsSections
     /// <summary>Allowed file types and sizes.</summary>
     public const string Files = "files";
 
-    /// <summary>Retention, IP handling, sensitive fields, captcha consent and insights.</summary>
+    /// <summary>Data collection: whether forms count their visits for the insights. Retention and IP handling come with Phase 13.</summary>
     public const string Privacy = "privacy";
 
     /// <summary>Webhook signing, Slack and Teams defaults, and Umbraco webhook events.</summary>

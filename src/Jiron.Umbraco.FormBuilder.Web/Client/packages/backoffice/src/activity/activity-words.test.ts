@@ -1,6 +1,9 @@
 // The activity screens in words (ROADMAP 12.4b, ADR-0219): an action's sentence from its details' facts, where it happened
 // and who did it, with the English dictionary; a delivery's state, recipient, kind and story; and German holding the same
 // words as English.
+import { readdirSync, readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import type { AuditEntryResponseModel, DeliveryDetailResponseModel, DeliveryResponseModel } from '../api';
 import actionsEn from '../lang/actions.en';
@@ -278,5 +281,31 @@ describe('a delivery in words', () => {
 describe("the activity screens' words", () => {
   it('are the same keys in German as in English', () => {
     expect(Object.keys(de.jfbActivity).sort()).toEqual(Object.keys(en.jfbActivity).sort());
+  });
+
+  it('are each used by the screens, by name or under a prefix their code builds keys with', () => {
+    const folder = dirname(fileURLToPath(import.meta.url));
+    const sources = readdirSync(folder)
+      .filter((file) => file.endsWith('.ts') && !file.endsWith('.test.ts'))
+      .map((file) => readFileSync(join(folder, file), 'utf8'))
+      .join('\n');
+    const built = [
+      'when_',
+      'states_',
+      'kind_',
+      'state_',
+      'mail_',
+      'skipped_',
+      'what_',
+      'detail_',
+      'entryState_',
+      'gone_',
+      'audit_',
+    ];
+    for (const prefix of built) expect(sources, prefix).toContain(prefix);
+    const unused = Object.keys(en.jfbActivity).filter(
+      (key) => !sources.includes(`'${key}'`) && !built.some((prefix) => key.startsWith(prefix)),
+    );
+    expect(unused).toEqual([]);
   });
 });

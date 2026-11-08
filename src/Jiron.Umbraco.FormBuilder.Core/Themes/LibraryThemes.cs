@@ -207,17 +207,20 @@ internal sealed class FormBuilderThemeCacheRefresher(
         ArgumentNullException.ThrowIfNull(payloads);
         foreach (var change in payloads)
         {
-            if (change.Alias is { } alias)
-            {
-                AppCaches.RuntimeCache.ClearByKey(ThemeCacheKeys.Of(alias));
-            }
-            else
-            {
-                AppCaches.RuntimeCache.ClearByKey(ThemeCacheKeys.Prefix);
-            }
+            Forget(AppCaches.RuntimeCache, change);
         }
 
         base.Refresh(payloads);
+    }
+
+    /// <summary>Forgets a changed theme on this server, or every theme: what the library does at once, before it tells the others.</summary>
+    /// <param name="cache">This server's runtime cache.</param>
+    /// <param name="change">The change.</param>
+    internal static void Forget(IAppPolicyCache cache, ThemeCacheChange change)
+    {
+        ArgumentNullException.ThrowIfNull(cache);
+        ArgumentNullException.ThrowIfNull(change);
+        cache.ClearByKey(change.Alias is { } alias ? ThemeCacheKeys.Of(alias) : ThemeCacheKeys.Prefix);
     }
 
     /// <inheritdoc />

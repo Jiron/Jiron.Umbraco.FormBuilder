@@ -1,6 +1,7 @@
 using System.Text.Json.Nodes;
 using Jiron.Umbraco.FormBuilder.Core.Access;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
+using Jiron.Umbraco.FormBuilder.Web.ManagementApi.Access;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Tests.Common.Testing;
 
@@ -88,11 +89,14 @@ public sealed class AccessApiTests : ManagementApiTestBase
         var needs = await Api.CallAsync(Admin, HttpMethod.Put, "access", new { grants = new[] { new { group = hr, expected = Array.Empty<string>(), permissions = new[] { "editEntries" } } } });
         var admins = await Api.CallAsync(Admin, HttpMethod.Put, "access", new { grants = new[] { new { group = Constants.Security.AdminGroupKey, expected = Array.Empty<string>(), permissions = new[] { "design" } } } });
         var unknown = await Api.CallAsync(Admin, HttpMethod.Put, "access", new { grants = new[] { new { group = hr, expected = Array.Empty<string>(), permissions = new[] { "fly" } } } });
+        var twice = await Api.CallAsync(Admin, HttpMethod.Put, "access", new { grants = new[] { new { group = hr, expected = Array.Empty<string>(), permissions = new[] { "viewEntries" } }, new { group = hr, expected = Array.Empty<string>(), permissions = new[] { "export", "viewEntries" } } } });
 
         Assert.Multiple(async () =>
         {
             Assert.That(needs.Outcome, Is.EqualTo("400 validation_failed"), needs.ToString());
             Assert.That(admins.Outcome, Is.EqualTo("400 validation_failed"), admins.ToString());
+            Assert.That(Codes(admins), Is.EqualTo(new[] { AccessController.AdministratorsCode }));
+            Assert.That((twice.Outcome, Codes(twice)), Is.EqualTo(("400 validation_failed", new[] { FormBuilderAccessService.DuplicateGroupCode })), "a group named twice");
             Assert.That(unknown.Outcome, Is.EqualTo("400 validation_failed"), unknown.ToString());
             Assert.That((await GetRequiredService<IFormBuilderAccessService>().ReadSnapshotAsync()).OwnOf(hr, PermissionTarget.Global, Guid.Empty), Is.EqualTo(FormBuilderPermissions.None));
         });
@@ -183,4 +187,6 @@ public sealed class AccessApiTests : ManagementApiTestBase
 
         Assert.That(calls.Select(call => call.Outcome), Is.All.EqualTo("403 forbidden"));
     }
+
+    private static string[] Codes(ApiAnswer answer) => [.. answer.Body?["errors"]?.AsArray().Select(error => error!["code"]!.GetValue<string>()) ?? []];
 }
