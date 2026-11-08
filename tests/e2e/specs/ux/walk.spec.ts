@@ -18,8 +18,9 @@ import {
   type ShotReport,
 } from '../../support/ux-walk.ts';
 
-// The UX walk of Phase 9 (ROADMAP 9.6a), and of Phase 10 (10.4): every screen of the Form Builder section, its library,
-// its designer, a form's settings, actions, history, publishing, conflicts and preview, and the general settings, once in
+// The UX walk of Phase 9 (ROADMAP 9.6a), of Phase 10 (10.4), Phase 11 (11.6) and Phase 12 (12.6): every screen of the Form
+// Builder section, its library with its lists, themes, email layouts and templates, its designer, a form's settings,
+// actions, history, publishing, conflicts, preview, entries and insights, the settings with Access, and Activity, once in
 // each of the twelve ways of support/ux-walk.ts, as the admin, with the forms made for the walk through the API. Each
 // shot keeps what axe found inside our own elements, how far the page scrolls sideways, what scrolls inside it and what
 // an ellipsis cuts short; the ux-sheets project puts each screen's twelve shots on one sheet. The walk finds its way
@@ -352,7 +353,54 @@ async function seed(api: APIRequestContext, request: APIRequestContext, label: s
   const entries = await seeded('/jfb-testing/entries-form', { count: 27, spam: 3, name: name('applications') });
   const insights = await seeded('/jfb-testing/insights-form', { name: name('insights') });
   const answers = await seeded('/jfb-testing/answers-form', { count: 60, name: name('answers') });
+  // Phase 12's library: a list of fixed options and a theme of the look's own, two email layouts, a saved template, and
+  // mail and action runs in every state for Deliveries.
+  const alias = () => `ux${crypto.randomUUID().replaceAll('-', '').slice(0, 12)}`;
+  const libraryName = name('library');
+  await created(
+    await api.post(`${API}/option-list`, {
+      data: {
+        list: {
+          alias: alias(),
+          name: libraryName,
+          kind: 'manual',
+          items: [
+            { value: 's', label: { '': 'Small' } },
+            { value: 'm', label: { '': 'Medium' } },
+            { value: 'l', label: { '': 'Large' } },
+          ],
+          cacheSeconds: 0,
+        },
+      },
+    }),
+    libraryName,
+  );
+  await created(
+    await api.post(`${API}/theme`, {
+      data: {
+        theme: {
+          alias: alias(),
+          name: libraryName,
+          baseTheme: 'default',
+          tokens: { light: {}, dark: {} },
+        },
+      },
+    }),
+    libraryName,
+  );
+  const layouts = await api.post('/jfb-testing/mail-layouts', { data: { marker: libraryName, word: 'Thanks' } });
+  expect(layouts.ok(), await layouts.text()).toBe(true);
+  await created(
+    await api.post(`${API}/template/form/${feedback}`, {
+      data: { name: libraryName, description: 'A short survey after an event.' },
+    }),
+    libraryName,
+  );
+  const deliveries = await api.post('/jfb-testing/deliveries', { data: { name: name('deliveries') } });
+  expect(deliveries.ok(), await deliveries.text()).toBe(true);
   return {
+    folderName,
+    libraryName,
     entries,
     insights,
     answers,
@@ -442,16 +490,22 @@ const shownRow = (page: Page, name: string): Promise<Locator> =>
 /** Opens a tree row's "..." and chooses one of our actions by its alias. */
 async function rowAction(page: Page, name: string, id: string): Promise<void> {
   const row = await shownRow(page, name);
-  // The row comes into sight before the hover that shows its "...", so no scroll takes the hover away.
-  await row.scrollIntoViewIfNeeded();
-  await row.hover();
-  await row.locator('umb-entity-actions-dropdown uui-button').first().click();
   // The menu's item, not the quick button of the same action that a row may show beside it.
-  await page
+  const item = page
     .locator(`umb-entity-action-list ${entityAction(id)}`)
     .filter({ visible: true })
-    .first()
-    .click();
+    .first();
+  // The row goes to the sidebar's middle before the hover that shows its "...", so no scroll takes the hover away: at
+  // the sidebar's edge a row moves as the pointer reaches it, and the click lands on its neighbour (support/tree.ts).
+  // A tree that has just loaded more rows can still move, so the hover and the menu's opening are tried again together
+  // until the item shows.
+  await expect(async () => {
+    await row.evaluate((element) => element.scrollIntoView({ block: 'center' }));
+    await row.hover();
+    await row.locator('umb-entity-actions-dropdown uui-button').first().click({ timeout: 3_000 });
+    await expect(item).toBeVisible({ timeout: 2_000 });
+  }).toPass({ timeout: 30_000 });
+  await item.click();
 }
 
 /** Opens a tree row's create dialog and chooses an option by its icon. */
@@ -520,7 +574,7 @@ async function openInspectorSection(design: Locator, id: string): Promise<void> 
 
 for (const combo of COMBOS) {
   test(`the walk, ${comboName(combo)}`, async ({ page, browser, request, loginAs, apiAs }, testInfo) => {
-    test.setTimeout(20 * 60_000);
+    test.setTimeout(30 * 60_000);
     const api = await apiAs('admin');
     const label = comboName(combo);
     const made = await seed(api, request, label, testInfo.outputPath('import.json'));
@@ -1079,6 +1133,94 @@ for (const combo of COMBOS) {
       await expect(glance.locator('table')).toBeVisible({ timeout: 60_000 });
       await glance.scrollIntoViewIfNeeded();
     });
+    // Phase 12: the library's lists and editors, the templates and Save as template, the settings with a site chosen,
+    // Access and a folder's Permissions, Deliveries and the audit log with their details, and Replace from a file.
+    for (const [shot, workspace, kind, view] of [
+      ['option-lists', 'jfb-option-lists', 'option-lists', 'jfb-option-list-view'],
+      ['themes', 'jfb-themes', 'themes', 'jfb-theme-view'],
+      ['email-layouts', 'jfb-email-layouts', 'email-layouts', 'jfb-email-layout-view'],
+    ] as const) {
+      const screen = page.locator(`jfb-${kind}-screen`);
+      await walk.shot(shot, async () => {
+        await page.goto(`${SECTION}/workspace/${workspace}`);
+        await expect(screen.locator('table')).toBeVisible({ timeout: 60_000 });
+      });
+      await walk.shot(`${shot}-editor`, async () => {
+        await screen.locator('tbody a', { hasText: made.libraryName }).first().click();
+        await expect(page.locator(view)).toBeVisible({ timeout: 60_000 });
+        await expect(page.locator(`${view} [aria-busy="true"]`)).toHaveCount(0);
+      });
+    }
+    await walk.shot('templates', async () => {
+      await page.goto(`${SECTION}/workspace/jfb-templates`);
+      await expect(page.locator('jfb-templates-screen .name', { hasText: made.libraryName })).toBeVisible({
+        timeout: 60_000,
+      });
+    });
+    await walk.shot('template-name', async () => {
+      await openSection(page);
+      await rowAction(page, made.blankName, 'SaveAsTemplate');
+      await expect(page.locator('jfb-template-name-modal input').first()).toBeVisible();
+    });
+    for (const [shot, workspace, element] of [
+      ['settings-email', 'jfb-settings-email', 'jfb-settings-email'],
+      ['settings-spam', 'jfb-settings-spam', 'jfb-settings-protection'],
+      ['settings-files', 'jfb-settings-files', 'jfb-settings-files'],
+      ['settings-integrations', 'jfb-settings-integrations', 'jfb-settings-integrations'],
+    ] as const) {
+      await walk.shot(shot, async () => {
+        await page.goto(`${SECTION}/workspace/${workspace}`);
+        await expect(page.locator(`${element} uui-box[headline]`).first()).toBeVisible({ timeout: 60_000 });
+      });
+    }
+    // A per-site section with a site chosen: each field the site sets says so, and the others take the value for all sites.
+    await walk.shot('settings-site', async () => {
+      await page.goto(`${SECTION}/workspace/jfb-settings-general`);
+      const site = page.locator('jfb-settings-general select#site');
+      await expect(site).toBeVisible({ timeout: 60_000 });
+      await site.selectOption({ index: 1 });
+      await expect(page.locator('jfb-settings-general uui-box[headline]').first()).toBeVisible();
+    });
+    await walk.shot('access', async () => {
+      await page.goto(`${SECTION}/workspace/jfb-settings-access`);
+      await expect(page.locator('jfb-access-screen table')).toBeVisible({ timeout: 60_000 });
+    });
+    await walk.shot('permissions', async () => {
+      await openSection(page);
+      await rowAction(page, made.folderName, 'Permissions');
+      // A group added, so the sidebar shows its row of permissions.
+      const sidebar = page.locator('jfb-permissions-modal');
+      await sidebar.locator('select').first().selectOption({ index: 1 });
+      await expect(sidebar.locator('table')).toBeVisible({ timeout: 30_000 });
+    });
+    await walk.shot('deliveries', async () => {
+      await page.goto(`${SECTION}/workspace/jfb-deliveries`);
+      await expect(page.locator('jfb-deliveries-screen tbody tr').first()).toBeVisible({ timeout: 60_000 });
+    });
+    await walk.shot('delivery', async () => {
+      await page.locator('jfb-deliveries-screen tbody tr').first().getByRole('button').first().click();
+      await expect(page.locator('jfb-delivery-modal .body')).toBeVisible();
+    });
+    await walk.shot('audit-log', async () => {
+      await page.keyboard.press('Escape');
+      await expect(page.locator('jfb-delivery-modal')).toHaveCount(0);
+      await page.goto(`${SECTION}/workspace/jfb-audit-log`);
+      await expect(page.locator('jfb-audit-screen tbody tr').first()).toBeVisible({ timeout: 60_000 });
+    });
+    await walk.shot('audit-entry', async () => {
+      await page.locator('jfb-audit-screen tbody tr').first().getByRole('button').first().click();
+      await expect(page.locator('jfb-audit-entry-modal .body')).toBeVisible();
+    });
+    await walk.shot('replace', async () => {
+      await page.keyboard.press('Escape');
+      await expect(page.locator('jfb-audit-entry-modal')).toHaveCount(0);
+      await openSection(page);
+      await rowAction(page, made.targetName, 'Replace');
+      const modal = page.locator('jfb-import-modal');
+      await modal.locator('input[type="file"]').setInputFiles(testInfo.outputPath('import.json'));
+      await expect(modal.locator('uui-button[look="primary"]')).toBeEnabled();
+    });
+
     // A save another took over (10.3c): the dialog, then Review both versions. The walk leaves the changes unsaved, so
     // it comes last of the admin's shots.
     await walk.shot('conflict', async () => {
