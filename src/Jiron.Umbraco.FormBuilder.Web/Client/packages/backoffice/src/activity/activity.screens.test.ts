@@ -191,6 +191,31 @@ describe('Activity > Deliveries', () => {
     expect(root.querySelector('.paused')).toBeNull();
   });
 
+  it('puts what each delivery is under whom it went to on a narrow screen, so a long address leaves it its line', async () => {
+    const before = globalThis.ResizeObserver;
+    globalThis.ResizeObserver = class {
+      constructor(private readonly report: ResizeObserverCallback) {}
+      observe = (target: Element) => {
+        if (target.localName === 'jfb-deliveries-screen')
+          this.report([{ contentRect: { width: 620 } } as ResizeObserverEntry], this as never);
+      };
+      unobserve = () => undefined;
+      disconnect = () => undefined;
+    } as never;
+    try {
+      api.lists = [{ data: list([delivery({ id: 1, recipients: ['team@example.com'] })]) }];
+      const { root } = await mount(new DeliveriesScreenElement(), 'table');
+      // At 620 px, as Umbraco's workspace is on a phone and at 768 px, what it is has no column of its own.
+      expect([...root.querySelectorAll('thead th')].map((cell) => said(cell))).toEqual(['State', 'To', 'Form', 'When']);
+      const cells = [...must(root.querySelector<HTMLTableRowElement>('tbody tr'), 'the row').cells];
+      expect(cells.map((cell) => said(cell)).slice(0, 2)).toEqual(['Failed', 'team@example.com Email the team']);
+      expect(said(must(cells[1]?.querySelector('.what-below'), 'what it is'))).toBe('Email the team');
+      expect(root.querySelector('td.what')).toBeNull();
+    } finally {
+      globalThis.ResizeObserver = before;
+    }
+  });
+
   it('says once that sending is paused, with the key that pauses it', async () => {
     api.lists = [{ data: list([delivery({})], true) }];
     const { root } = await mount(new DeliveriesScreenElement(), 'table');

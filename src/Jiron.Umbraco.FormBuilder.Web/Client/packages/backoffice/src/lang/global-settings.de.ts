@@ -35,7 +35,7 @@ export default {
 
     // Allgemein
     generalBox_forms: 'Vorgaben für Formulare',
-    general_theme: 'Standarddesign',
+    general_theme: 'Standard-Theme',
     general_themeHelp: 'Formulare verwenden es, wenn ihre Gruppe Darstellung kein anderes wählt.',
     general_requiredMarker: 'Felder mit Kennzeichnung',
     general_requiredMarkerHelp:

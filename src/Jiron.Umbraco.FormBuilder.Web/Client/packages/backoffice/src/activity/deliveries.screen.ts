@@ -1,6 +1,7 @@
 // Activity > Deliveries (ROADMAP 12.4b, IA 9, ADR-0219): every email and webhook run, problems first (failed, trying
 // again, uncertain, limited), then the newest; its state, whom it went to, what it is, its form and when. The search finds
-// recipients and forms; the filters narrow by state, kind and time, the last 30 days at first. A row opens its details,
+// recipients and forms; the filters narrow by state, kind and time, the last 30 days at first. On a narrow workspace
+// what a delivery is goes under whom it went to, and its form gives way. A row opens its details,
 // where a failed or uncertain one offers Retry. While the host pauses sending, one line above the list says so. The
 // sidebar names the screen, so it has no title of its own (ADR-0021).
 import { css, html, nothing, type TemplateResult } from '@umbraco-cms/backoffice/external/lit';
@@ -20,6 +21,12 @@ const PAGE = 50;
 
 /** The host key that pauses sending (ADR-0219). */
 export const PAUSED_KEY = 'JironFormBuilder:Actions:Paused';
+
+/**
+ * As narrow as this or narrower, what a delivery is goes under whom it went to rather than in a column of its own, and
+ * its form gives way, so each fact keeps its line beside a long address (760 px; the Phase 12 review).
+ */
+const STACKS = 760;
 
 /** The spans the When filter offers, in days; 0 is all time. */
 const SPANS = [7, 30, 90, 0] as const;
@@ -42,6 +49,7 @@ export class DeliveriesScreenElement extends UmbLitElement {
     _worded: { state: true },
     _more: { state: true },
     _filters: { state: true },
+    _stacked: { state: true },
   };
 
   static override styles = [
@@ -62,13 +70,24 @@ export class DeliveriesScreenElement extends UmbLitElement {
         gap: var(--uui-size-space-5);
       }
 
+      /* A note as the publish dialog draws one: a quiet frame, its weight said by the icon beside its words. */
       .paused {
+        display: flex;
+        align-items: flex-start;
+        gap: var(--uui-size-space-3);
         margin: 0;
         padding: var(--uui-size-space-4) var(--uui-size-space-5);
-        border: 1px solid var(--uui-color-warning-standalone);
-        border-inline-start-width: 4px;
+        border: 1px solid var(--jfb-bo-color-control-border);
         border-radius: var(--uui-border-radius);
         background: var(--uui-color-surface);
+        overflow-wrap: anywhere;
+      }
+
+      .paused uui-icon {
+        flex: none;
+        margin-block-start: 2px;
+        font-size: 16px;
+        color: var(--jfb-bo-color-warning-text);
       }
 
       .paused code {
@@ -169,7 +188,14 @@ export class DeliveriesScreenElement extends UmbLitElement {
         border-top: 1px solid var(--uui-color-divider);
       }
 
-      /* What it is and its form give way first on a narrow workspace: the state, whom it went to and when say the most. */
+      /* Narrow (STACKS), what it is sits under whom it went to. */
+      .what-below {
+        display: block;
+        margin-block-start: var(--uui-size-space-1);
+        color: var(--jfb-bo-color-text-muted);
+      }
+
+      /* Its form gives way on a narrow workspace: the state, whom it went to, what it is and when say the most. */
       @container (max-width: 760px) {
         .tools {
           grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -188,10 +214,6 @@ export class DeliveriesScreenElement extends UmbLitElement {
         .tools {
           grid-template-columns: minmax(0, 1fr);
         }
-
-        .what {
-          display: none;
-        }
       }
     `,
   ];
@@ -200,9 +222,16 @@ export class DeliveriesScreenElement extends UmbLitElement {
   declare private _worded: boolean;
   declare private _more: boolean;
   declare private _filters: DeliveryFilters;
+  /** Whether the screen is too narrow for a column of what each delivery is, so it goes under whom it went to. */
+  declare private _stacked: boolean;
 
   #generation = 0;
   #typing: ReturnType<typeof setTimeout> | undefined;
+  #resize = new ResizeObserver(([entry]) => {
+    const width = entry?.contentRect.width;
+    const stacked = width !== undefined && width <= STACKS;
+    if (stacked !== this._stacked) this._stacked = stacked;
+  });
 
   constructor() {
     super();
@@ -210,6 +239,7 @@ export class DeliveriesScreenElement extends UmbLitElement {
     this._worded = false;
     this._more = false;
     this._filters = FIRST_FILTERS;
+    this._stacked = false;
   }
 
   override connectedCallback() {
@@ -218,11 +248,13 @@ export class DeliveriesScreenElement extends UmbLitElement {
       .catch(() => undefined)
       .then(() => (this._worded = true));
     void this.#read();
+    this.#resize.observe(this);
   }
 
   override disconnectedCallback() {
     super.disconnectedCallback();
     clearTimeout(this.#typing);
+    this.#resize.disconnect();
   }
 
   #term = (key: string, ...args: unknown[]) => this.localize.term(`jfbActivity_${key}`, ...args);
@@ -334,6 +366,7 @@ export class DeliveriesScreenElement extends UmbLitElement {
   #row(item: DeliveryResponseModel, now: Date): TemplateResult {
     const culture = this.localize.lang();
     const to = toOf(item, this.#term) || this.#term('gone_other');
+    const what = whatOf(item, this.#term, this.#typeName);
     return html`<tr>
       <td>
         <uui-tag look=${isProblem(item) ? 'primary' : 'secondary'} color=${toneOf(item.state)}
@@ -342,8 +375,9 @@ export class DeliveriesScreenElement extends UmbLitElement {
       </td>
       <td>
         <button type="button" class="open" aria-haspopup="dialog" @click=${() => void this.#open(item)}>${to}</button>
+        ${this._stacked ? html`<span class="what-below">${what}</span>` : nothing}
       </td>
-      <td class="what">${whatOf(item, this.#term, this.#typeName)}</td>
+      ${this._stacked ? nothing : html`<td class="what">${what}</td>`}
       <td class="form">${item.formName ?? html`<span class="muted">${this.#term('gone_other')}</span>`}</td>
       <td class="end muted">${whenOfDelivery(item, now, culture, this.#term)}</td>
     </tr>`;
@@ -383,7 +417,7 @@ export class DeliveriesScreenElement extends UmbLitElement {
               <tr>
                 <th scope="col">${this.#term('columnState')}</th>
                 <th scope="col">${this.#term('columnTo')}</th>
-                <th scope="col" class="what">${this.#term('columnWhat')}</th>
+                ${this._stacked ? nothing : html`<th scope="col" class="what">${this.#term('columnWhat')}</th>`}
                 <th scope="col" class="form">${this.#term('columnForm')}</th>
                 <th scope="col" class="end">${this.#term('columnWhen')}</th>
               </tr>
@@ -417,7 +451,13 @@ export class DeliveriesScreenElement extends UmbLitElement {
     const paused = list.state === 'ready' && list.paused;
     return html`<umb-body-layout>
       <div class="page">
-        ${paused ? html`<p class="paused" role="status">${this.#pausedLine()}</p>` : nothing}
+        ${
+          paused
+            ? html`<p class="paused" role="status">
+                <uui-icon name="icon-alert" aria-hidden="true"></uui-icon><span>${this.#pausedLine()}</span>
+              </p>`
+            : nothing
+        }
         ${list.state === 'forbidden' ? nothing : this.#tools()} ${this.#body()}
       </div>
     </umb-body-layout>`;

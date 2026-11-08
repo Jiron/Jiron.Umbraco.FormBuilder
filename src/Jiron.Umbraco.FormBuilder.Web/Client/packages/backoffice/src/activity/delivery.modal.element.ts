@@ -45,8 +45,10 @@ export class DeliveryModalElement extends UmbModalBaseElement<DeliveryModalData,
         margin: 0;
       }
 
+      /* The sentences name addresses, which have no break of their own. */
       .story p {
         margin: 0 0 var(--uui-size-space-3);
+        overflow-wrap: anywhere;
       }
 
       .story p:last-child {

@@ -802,7 +802,8 @@ with its own value for the chosen site says so, and offers to use the value for 
 - **Deliveries:**
   - an `Uncertain` run's **Retry** asks first, and says it may deliver twice;
   - a `Limited` mail offers no retry, and names the limit that held it back;
-  - while sending is paused, one line at the top says so (12.4b).
+  - while sending is paused, one line at the top says so (12.4b);
+  - at 760 px and narrower, what each delivery is goes under whom it went to, and its form gives way (ADR-0221).
 
 ## 10. Outside the section
 
