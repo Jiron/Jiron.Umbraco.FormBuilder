@@ -2886,7 +2886,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
 
 ### Phase 12: Library, global settings and deployment
 
-- [ ] **12.1 The library: option lists, themes, email layouts and templates** (12.1, 12.2 and 12.3 in one, ADR-0197)
+- [x] **12.1 The library: option lists, themes, email layouts and templates** (12.1, 12.2 and 12.3 in one, ADR-0197) (2026-11-08, 9e62b12)
   - **12.1 Option lists**:
     - A list, an editor per kind with a live preview of the options, CSV/TXT upload, the cache setting, and "used by".
     - **From 9.4b** (added in 5.5j): the editor per kind is the generic settings renderer over the option kinds' schemas that 9.4b's endpoint serves, with the same texts; a code list picks its source from the endpoint's names, and a manual list's items use 9.4's option editor.
