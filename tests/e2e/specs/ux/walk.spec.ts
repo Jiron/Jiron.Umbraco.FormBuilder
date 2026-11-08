@@ -533,8 +533,9 @@ for (const combo of COMBOS) {
       await openSection(page);
       await expect(page.locator('jfb-overview [aria-busy="true"]')).toHaveCount(0);
     });
+    // A screen still to come: Privacy's People, which Phase 13 builds (the Inbox was one until Phase 11).
     await walk.shot('coming', async () => {
-      await page.goto(`${SECTION}/workspace/jfb-inbox`);
+      await page.goto(`${SECTION}/workspace/jfb-privacy-people`);
       await expect(page.locator('jfb-coming-screen')).toBeVisible();
     });
     await walk.shot('search', async () => {
