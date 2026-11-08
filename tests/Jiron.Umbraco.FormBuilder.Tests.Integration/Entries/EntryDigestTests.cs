@@ -9,6 +9,7 @@ using Microsoft.Extensions.Options;
 using Umbraco.Cms.Core.Configuration.Models;
 using Umbraco.Cms.Core.Models.Membership;
 using Umbraco.Cms.Core.Services;
+using Umbraco.Cms.Infrastructure.BackgroundJobs;
 using Umbraco.Cms.Tests.Common.Testing;
 
 namespace Jiron.Umbraco.FormBuilder.Tests.Integration.Entries;
@@ -167,8 +168,13 @@ public sealed class EntryDigestTests : ActionTestBase
         var sent = await DigestsSentAsync();
 
         // A user writing in German gets the words of German, also in the preview, which sends nothing.
-        var german = new User(GetRequiredService<IOptions<GlobalSettings>>().Value) { Key = Guid.NewGuid(), Email = "de@jfb.test", Language = "de-DE" };
+        var globals = GetRequiredService<IOptions<GlobalSettings>>().Value;
+        var german = new User(globals) { Key = Guid.NewGuid(), Email = "de@jfb.test", Language = "de-DE" };
         var preview = await Digests.PreviewAsync(german, EntryDigestFrequency.Daily, test: true);
+
+        // No test goes to a user without an address, or to one who may not sign in.
+        var noAddress = await Digests.SendTestAsync(new User(globals) { Key = Guid.NewGuid(), Email = " " }, EntryDigestFrequency.Daily);
+        var disabled = await Digests.SendTestAsync(new User(globals) { Key = Guid.NewGuid(), Email = "off@jfb.test", IsApproved = false }, EntryDigestFrequency.Daily);
 
         Assert.Multiple(async () =>
         {
@@ -178,7 +184,31 @@ public sealed class EntryDigestTests : ActionTestBase
             Assert.That(sent.Single().HtmlBody, Does.Not.Contain("/umbraco/section/"), "no link without the site's address");
             Assert.That(preview.Subject, Does.StartWith("Test: Zusammenfassung der Eintr"));
             Assert.That(preview.Html, Does.Contain("keine Eintr"));
-            Assert.That(await DigestsSentAsync(), Has.Count.EqualTo(1), "a preview queues nothing");
+            Assert.That((noAddress, disabled), Is.EqualTo((EntryDigestOutcome.NoAddress, EntryDigestOutcome.NoAddress)));
+            Assert.That(await DigestsSentAsync(), Has.Count.EqualTo(1), "a preview queues nothing, nor a test that goes nowhere");
+        });
+    }
+
+    [Test]
+    public async Task TheJob_SendsWhatIsDue_AndARunStopsAtItsDeadline_TheNextGoingOn()
+    {
+        var form = await PublishAsync(name: "Contact us");
+        await Digests.SaveAsync(_people["viewer"].Key, EntryDigestFrequency.Daily);
+        await Digests.SaveAsync(_people["admin"].Key, EntryDigestFrequency.Daily);
+        await SubmitAsync(form, """{"name":"Ada Lovelace"}""");
+        MoveTo(new DateTimeOffset(2026, 11, 3, 8, 0, 0, TimeSpan.Zero));
+
+        // A run whose deadline has come sends nothing; the job's own run, within its budget, sends what waits.
+        await Digests.RunAsync(Clock.GetUtcNow());
+        var stopped = await DigestsSentAsync();
+        await Services.GetServices<IDistributedBackgroundJob>().OfType<FormBuilderDigestJob>().Single().ExecuteAsync(CancellationToken.None);
+        var sent = await DigestsSentAsync();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(stopped, Is.Empty, "a run stops at its deadline");
+            Assert.That(sent.Select(mail => mail.To), Is.EquivalentTo(new[] { "viewer@jfb.test", "admin@jfb.test" }), "the next goes on");
+            Assert.That(FormBuilderDigestJob.Budget, Is.EqualTo(TimeSpan.FromSeconds(8)));
         });
     }
 

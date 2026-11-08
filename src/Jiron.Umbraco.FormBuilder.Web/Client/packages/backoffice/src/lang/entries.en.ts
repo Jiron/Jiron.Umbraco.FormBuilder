@@ -280,6 +280,7 @@ export default {
     tab_timeline: 'Timeline',
     tab_notes: 'Notes',
     tab_notesCount: (number: number) => `Notes (${number})`,
+    details_test: 'Test entry, sent from the preview',
     details_sentFrom: (page: string) => `Sent from ${page}`,
     details_quick: 'Under a minute to complete',
     details_minutes: (minutes: number) => `${minutes} min to complete`,

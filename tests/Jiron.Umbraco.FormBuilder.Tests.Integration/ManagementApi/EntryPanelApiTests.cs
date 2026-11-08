@@ -3,6 +3,7 @@ using Jiron.Umbraco.FormBuilder.Core.Email;
 using Jiron.Umbraco.FormBuilder.Core.Entries;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
+using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Core.Settings;
 using Umbraco.Cms.Core.Services;
@@ -81,6 +82,9 @@ public sealed class EntryPanelApiTests : ManagementApiTestBase
         var changed = await CallAsync("viewer", HttpMethod.Put, $"{path}/{id}", new { body = "Call back on Tuesday." });
         var blank = await CallAsync("viewer", HttpMethod.Post, path, new { body = "   " });
         var listed = await CallAsync(Admin, HttpMethod.Get, path);
+        var none = await CallAsync("viewer", HttpMethod.Put, $"{path}/{id + 1000}", new { body = "Nobody wrote this." });
+        var (otherForm, otherEntry) = await EntryAsync();
+        var elsewhere = await CallAsync("viewer", HttpMethod.Put, $"form/{otherForm}/entry/{otherEntry.Key}/notes/{id}", new { body = "Not of this entry." });
 
         Assert.Multiple(() =>
         {
@@ -89,6 +93,8 @@ public sealed class EntryPanelApiTests : ManagementApiTestBase
             Assert.That(changed.Body!["body"]!.GetValue<string>(), Is.EqualTo("Call back on Tuesday."));
             Assert.That(blank.Outcome, Is.EqualTo("400 note_invalid"));
             Assert.That((listed.Body![0]!["body"]!.GetValue<string>(), listed.Body![0]!["mine"]!.GetValue<bool>()), Is.EqualTo(("Call back on Tuesday.", false)));
+            Assert.That(none.Outcome, Is.EqualTo("404 note_not_found"), none.ToString());
+            Assert.That(elsewhere.Outcome, Is.EqualTo("404 note_not_found"), "a note of another entry");
         });
     }
 
@@ -107,13 +113,13 @@ public sealed class EntryPanelApiTests : ManagementApiTestBase
         {
             Assert.That((invalid.Outcome, Path(invalid)), Is.EqualTo(("400 invalid", "answers[0].values")), invalid.ToString());
             Assert.That((saved.Outcome, saved.Body!["changed"]!.GetValue<int>()), Is.EqualTo(("200", 1)), saved.ToString());
-            Assert.That(twice.Outcome, Does.StartWith("400"), "each field once");
+            Assert.That((twice.Outcome, Path(twice)), Is.EqualTo(("400 invalid_answers", "answers")), "each field once");
             Assert.That(viewer.Outcome, Does.StartWith("403"));
         });
     }
 
     [Test]
-    public async Task AForward_GoesOnlyToThoseTheSiteTrusts()
+    public async Task AForward_GoesOnlyToThoseTheSiteTrusts_OnTheTimelineAndTheAuditLog()
     {
         var (form, entry) = await EntryAsync();
         var path = $"form/{form}/entry/{entry.Key}/forward";
@@ -135,6 +141,9 @@ public sealed class EntryPanelApiTests : ManagementApiTestBase
         var toNobody = await CallAsync(Admin, HttpMethod.Post, path, new { message = "Hello" });
         var mail = await GetRequiredService<IEmailRepository>().ListForEntryAsync(entry.Id);
         var formName = (await GetRequiredService<IFormRepository>().GetAsync(form))!.Name;
+        var adminKey = users.GetByEmail("api-admin@jfb.test")!.Key;
+        var forwarded = (await GetRequiredService<IEntryEventRepository>().ListForEntryAsync(entry.Id)).Where(entryEvent => entryEvent.Kind == EntryForwards.ForwardedEvent).ToList();
+        var audited = (await GetRequiredService<IAuditRepository>().QueryAsync(new AuditQuery { Action = EntryForwards.ForwardedAction }, PageRequest.First(10))).Items;
 
         Assert.Multiple(() =>
         {
@@ -151,6 +160,14 @@ public sealed class EntryPanelApiTests : ManagementApiTestBase
             Assert.That(plain, Does.Contain("Could you look at this one?").And.Contain("Ada").And.Not.Contain("90000"), "sensitive values stay out unless chosen");
             Assert.That(mail.Single(item => item.To == "hr@example.org").HtmlBody, Does.Contain("90000"), "chosen by a user who may see them");
             Assert.That(mail.Select(item => item.Subject).Distinct(), Is.EqualTo(new[] { $"Entry #{entry.Number} of {formName}" }), "the subject names the form");
+            Assert.That(forwarded.Select(entryEvent => (entryEvent.UserKey, entryEvent.Details)), Is.EquivalentTo(new[]
+            {
+                ((Guid?)adminKey, """{"to":"viewer","sensitive":false}"""),
+                ((Guid?)adminKey, """{"to":"hr@example.org","sensitive":true}"""),
+            }), "each forward on the timeline, with whom it went to, a user by name; the refused ones are not");
+            Assert.That(audited.Select(item => (item.EntityKey, item.UserKey)), Is.EqualTo(new[] { (entry.Key, (Guid?)adminKey), (entry.Key, (Guid?)adminKey) }), "each in the audit log");
+            Assert.That(audited.Select(item => item.Details), Has.One.Contains($"\"user\":\"{viewerKey}\"").And.Contains("\"sensitive\":false"), "a user by their key");
+            Assert.That(audited.Select(item => item.Details), Has.One.Contains("\"teamAddress\":true").And.Contains("\"sensitive\":true").And.Not.Contains("hr@example.org"), "a team address, which the log does not keep");
         });
     }
 

@@ -56,7 +56,7 @@ describe("the entry panel's bar", () => {
 });
 
 describe('what the panel says', () => {
-  it('says where, in which language and how long, each where it is known', () => {
+  it('says where, in which language and how long, each where it is known, and a test entry first', () => {
     const none = { member: null, memberName: null, ipAddress: null, spamReasons: [] };
     expect(
       detailsLine(
@@ -68,6 +68,10 @@ describe('what the panel says', () => {
     expect(detailsLine({ ...none, page: null, culture: 'en', duration: 20 }, 'en', term)).toEqual([
       'English',
       'Under a minute to complete',
+    ]);
+    expect(detailsLine({ ...none, page: null, culture: 'en', duration: null }, 'en', term, true)).toEqual([
+      'Test entry, sent from the preview',
+      'English',
     ]);
   });
 
@@ -137,6 +141,38 @@ describe('what the panel says', () => {
     expect(lines[2]?.retry).toEqual({ run: 7, uncertain: false, name: 'Email the team' });
     expect(lines[2]?.icon).toBe('icon-alert');
     expect(lines[2]?.changes).toEqual(['The server answered 503.']);
+  });
+
+  it('says to whom and by whom an entry was forwarded, and how many actions who queued again', () => {
+    const lines = timelineLines(
+      {
+        events: [
+          { id: 1, when: '2026-11-07T08:00:00Z', kind: 'submitted', changes: [] },
+          {
+            id: 2,
+            when: '2026-11-07T09:00:00Z',
+            kind: 'forwarded',
+            user: 'Ana',
+            recipient: 'hr@example.org',
+            changes: [],
+          },
+          { id: 3, when: '2026-11-07T10:00:00Z', kind: 'actionsRerun', user: 'Ben', count: 2, changes: [] },
+          { id: 4, when: '2026-11-07T11:00:00Z', kind: 'forwarded', recipient: 'Cy', changes: [] },
+        ],
+        runs: [],
+        mail: [],
+      } as never,
+      'en-GB',
+      new Date('2026-11-07T13:00:00Z'),
+      term,
+    );
+
+    expect(lines.map((line) => [line.text, line.icon])).toEqual([
+      ['Forwarded to Cy by someone', 'icon-share'],
+      ['2 actions queued again by Ben', expect.any(String)],
+      ['Forwarded to hr@example.org by Ana', 'icon-share'],
+      ['Received', expect.any(String)],
+    ]);
   });
 
   it("finds an edit problem's answer, and says what a move back asks", () => {

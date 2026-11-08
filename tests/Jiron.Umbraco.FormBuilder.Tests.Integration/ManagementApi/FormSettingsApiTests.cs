@@ -72,6 +72,9 @@ public sealed class FormSettingsApiTests : ManagementApiTestBase
         await settings.SaveAsync(protection.Value with { Level = ProtectionLevel.ProofOfWork, ContentRules = ContentRuleLevel.Strict }, protection.Version, null);
         var general = await settings.GetAsync<GeneralSettings>();
         await settings.SaveAsync(general.Value with { SubmitLabel = new Dictionary<string, string> { [""] = "Send", ["de-DE"] = "Senden" } }, general.Version, null);
+        var privacy = await settings.GetAsync<PrivacySettings>();
+        var collecting = privacy.Value.Insights;
+        await settings.SaveAsync(privacy.Value with { Insights = false }, privacy.Version, null);
         await GetRequiredService<IThemeRepository>().CreateAsync(new NewTheme(Guid.NewGuid(), "brand", "Brand", "default"));
         var groups = GetRequiredService<IMemberGroupService>();
         var volunteers = (await groups.CreateAsync(new MemberGroup { Name = "Volunteers" })).Result!;
@@ -92,6 +95,7 @@ public sealed class FormSettingsApiTests : ManagementApiTestBase
                 Is.EqualTo(("proofOfWork", "strict", "optional", "default")),
                 "what the site's settings say");
             Assert.That(defaults["submitLabel"]!.ToJsonString(), Is.EqualTo("""{"":"Send","de-DE":"Senden"}"""), "the site's own label");
+            Assert.That((collecting, defaults["insights"]!.GetValue<bool>()), Is.EqualTo((true, false)), "the site collects insights unless its Data collection says no, as here");
             Assert.That((defaults["nextLabel"], defaults["backLabel"]), Is.EqualTo(((JsonNode?)null, (JsonNode?)null)), "none for the package's words");
             Assert.That(
                 body["themes"]!.AsArray().Select(theme => theme!["alias"]!.GetValue<string>()),

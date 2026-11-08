@@ -1,4 +1,5 @@
 using Jiron.Umbraco.FormBuilder.Core.Access;
+using Jiron.Umbraco.FormBuilder.Core.Entries;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Umbraco.Cms.Tests.Common.Testing;
@@ -160,6 +161,7 @@ public sealed class EntryInboxApiTests : ManagementApiTestBase
         var fields = await CallAsync(Admin, HttpMethod.Post, "entries/inbox", new { filter = new { forms = new[] { one, two }, fields = new[] { new { field = NameField.Key, test = "answered" } } } });
         var outOfReach = await CallAsync("viewer", HttpMethod.Post, "entries/inbox", new { filter = new { forms = new[] { one, hidden } } });
         var cursor = await CallAsync(Admin, HttpMethod.Post, "entries/spam", new { after = "nothing" });
+        var manyForms = await CallAsync(Admin, HttpMethod.Post, "entries/inbox", new { filter = new { forms = Enumerable.Range(0, EntryLists.MaxForms + 1).Select(_ => Guid.NewGuid()).ToArray() } });
         var oneForm = await CallAsync(Admin, HttpMethod.Post, "entries/inbox", new { filter = new { forms = new[] { one }, fields = new[] { new { field = NameField.Key, test = "notAnswered" } } }, columns = new[] { NameField.Key } });
 
         Assert.Multiple(() =>
@@ -167,6 +169,7 @@ public sealed class EntryInboxApiTests : ManagementApiTestBase
             Assert.That((fields.Outcome, Path(fields)), Is.EqualTo(("400 field_not_filterable", "filter.fields[0].field")), "fields need exactly one form");
             Assert.That((outOfReach.Outcome, Path(outOfReach)), Is.EqualTo(("400 form_not_found", "filter.forms[1]")), outOfReach.ToString());
             Assert.That((cursor.Outcome, Path(cursor)), Is.EqualTo(("400 invalid_cursor", "after")), cursor.ToString());
+            Assert.That((manyForms.Outcome, Path(manyForms)), Is.EqualTo(("400 too_many_forms", "filter.forms")), manyForms.ToString());
             Assert.That(oneForm.Outcome, Is.EqualTo("200"), oneForm.ToString());
             Assert.That(oneForm.Body!["items"]![0]!["cells"]![0]!["field"]!.GetValue<Guid>(), Is.EqualTo(NameField.Key), "one form's columns");
         });

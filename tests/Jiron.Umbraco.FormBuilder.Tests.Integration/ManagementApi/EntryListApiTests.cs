@@ -1,5 +1,6 @@
 using Jiron.Umbraco.FormBuilder.Core.Entries;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
+using Jiron.Umbraco.FormBuilder.Core.Persistence.Queries;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Umbraco.Cms.Tests.Common.Testing;
 
@@ -57,10 +58,16 @@ public sealed class EntryListApiTests : ManagementApiTestBase
         var state = await CallAsync(Admin, HttpMethod.Post, $"form/{form}/entries", new { filter = new { states = new[] { "submitted", "draft" } } });
         var test = await CallAsync(Admin, HttpMethod.Post, $"form/{form}/entries", new { filter = new { fields = new[] { new { field = NameField.Key, test = "between", min = 1 } } } });
         var cursor = await CallAsync(Admin, HttpMethod.Post, $"form/{form}/entries", new { after = "nothing" });
+        var otherForm = await CallAsync(Admin, HttpMethod.Post, $"form/{form}/entries", new { filter = new { forms = new[] { Guid.NewGuid() } } });
+        var manyFilters = await CallAsync(Admin, HttpMethod.Post, $"form/{form}/entries", new { filter = new { fields = Enumerable.Range(0, EntryQuerySql.MaxFilters + 1).Select(_ => new { field = NameField.Key, test = "answered" }).ToArray() } });
+        var longSearch = await CallAsync(Admin, HttpMethod.Post, $"form/{form}/entries", new { filter = new { search = new string('a', EntrySearchText.MaxTermLength + 1) } });
 
         Assert.Multiple(() =>
         {
             Assert.That((column.Outcome, Path(column)), Is.EqualTo(("400 field_not_column", "columns[0]")), column.ToString());
+            Assert.That((otherForm.Outcome, Path(otherForm)), Is.EqualTo(("400 form_not_allowed", "filter.forms")), "a form's list holds its own entries only");
+            Assert.That((manyFilters.Outcome, Path(manyFilters)), Is.EqualTo(("400 too_many_filters", "filter.fields")), manyFilters.ToString());
+            Assert.That((longSearch.Outcome, Path(longSearch)), Is.EqualTo(("400 search_too_long", "filter.search")), longSearch.ToString());
             Assert.That((state.Outcome, Path(state)), Is.EqualTo(("400 invalid_state", "filter.states[1]")), state.ToString());
             Assert.That((test.Outcome, Path(test)), Is.EqualTo(("400 test_not_allowed", "filter.fields[0].test")), test.ToString());
             Assert.That((cursor.Outcome, Path(cursor)), Is.EqualTo(("400 invalid_cursor", "after")), cursor.ToString());

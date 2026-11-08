@@ -78,7 +78,7 @@ public sealed class EntryBulkTests : ActionTestBase
     }
 
     [Test]
-    public async Task ARerun_SaysWhatWouldRun_AndRunsTheActionsOfThePassedTriggers_InOneNewChange()
+    public async Task ARerun_SaysWhatWouldRun_AndRunsTheActionsOfThePassedTriggers_InOneNewChange_OnTheAuditLog()
     {
         var notify = Action("Notify");
         var approved = Action("On approval", ActionTrigger.Approved);
@@ -99,10 +99,13 @@ public sealed class EntryBulkTests : ActionTestBase
         var runs = await Runs.ListForEntryAsync(accepted.Id);
         var again = runs.Skip(before).ToList();
         var timeline = await Events.ListForEntryAsync(accepted.Id);
+        var audited = (await GetRequiredService<IAuditRepository>().QueryAsync(new AuditQuery { Action = EntryActionReruns.RerunAction }, PageRequest.First(10))).Items;
 
         Assert.Multiple(() =>
         {
             Assert.That(plan.Actions.Select(action => action.Name), Is.EqualTo(new[] { "Notify", "On approval" }), "the triggers they passed, in the form's order");
+            Assert.That(audited.Select(item => (item.EntityKey, item.UserKey)), Is.EqualTo(new[] { (form, (Guid?)User) }), "one entry on the form's audit log, by the user, for the plan none");
+            Assert.That(audited.Single().Details, Does.Contain("\"entries\":2").And.Contain($"\"numbers\":[{waiting.Number},{accepted.Number}]").Or.Contain($"\"numbers\":[{accepted.Number},{waiting.Number}]"), "the entries it ran for, never the one in Spam");
             Assert.That((plan.Entries, plan.LeftOut), Is.EqualTo((2, 1)), "an entry in Spam is left out");
             Assert.That(planned, Is.EqualTo(before), "a plan runs nothing");
             Assert.That((done.Entries, done.LeftOut), Is.EqualTo((2, 1)));

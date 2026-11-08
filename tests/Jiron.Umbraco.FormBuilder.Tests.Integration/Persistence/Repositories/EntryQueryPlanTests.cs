@@ -1,5 +1,6 @@
 using System.Data;
 using System.Text.RegularExpressions;
+using Jiron.Umbraco.FormBuilder.Core.Access;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Queries;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
@@ -134,6 +135,13 @@ public sealed partial class EntryQueryPlanTests : RepositoryTestBase
         {
             var sql = new EntryQuerySql(n, query, texts);
             yield return ($"count, {variation}", sql.Count(), false);
+
+            // Unseen first (ADR-0209): the unseen part, then the seen one, each from the start and after a cursor.
+            var unseen = new EntryQuerySql(n, query with { Sort = EntrySort.UnseenFirst }, texts);
+            yield return ($"unseen first, the unseen, {variation}", unseen.Unseen(null, 51, seen: false), false);
+            yield return ($"unseen first, the unseen, after, {variation}", unseen.Unseen(new EntryCursor(EntrySort.UnseenFirst, 100, At, null), 51, seen: false), false);
+            yield return ($"unseen first, the seen, {variation}", unseen.Unseen(null, 51, seen: true), false);
+            yield return ($"unseen first, the seen, after, {variation}", unseen.Unseen(new EntryCursor(EntrySort.UnseenFirst, 100, At, null, Seen: true), 51, seen: true), false);
             foreach (var sort in sorts)
             {
                 var sorted = new EntryQuerySql(n, query with { Sort = sort }, texts);
@@ -154,6 +162,8 @@ public sealed partial class EntryQueryPlanTests : RepositoryTestBase
         }
 
         yield return ("long texts", EntryQuerySql.LongTexts(n, name, new string('n', EntryTextKey.MaxLength)), false);
+        yield return ("the unseen count, every form", EntryQuerySql.CountUnseen(n, FormVisibility.Everything, 99), false);
+        yield return ("the unseen count, the forms of some folders and grants", EntryQuerySql.CountUnseen(n, new FormVisibility { Root = true, FolderIds = [1, 2], GroupKeys = [Guid.Empty] }, 99), false);
         yield return ("load", EntryQuerySql.Load(n, [.. Enumerable.Range(1, 50).Select(i => (long)i)]), false);
     }
 

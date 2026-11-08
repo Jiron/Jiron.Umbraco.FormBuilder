@@ -71,8 +71,10 @@ export function panelBar(state: string, manualApproval: boolean, permissions: re
 }
 
 /** The details line: the page it was sent from, the language and the time to complete, each where it is known. */
-export function detailsLine(details: EntryPanelDetailsResponseModel, ui: string, term: Term): string[] {
+export function detailsLine(details: EntryPanelDetailsResponseModel, ui: string, term: Term, isTest = false): string[] {
   const parts: string[] = [];
+  // A test entry, from the preview, is opened only through a link of its own mail: it says so first.
+  if (isTest) parts.push(term('jfbEntries_details_test'));
   if (details.page) parts.push(term('jfbEntries_details_sentFrom', pathOf(details.page)));
   parts.push(languageName(details.culture, ui));
   if (details.duration !== null && details.duration !== undefined) {

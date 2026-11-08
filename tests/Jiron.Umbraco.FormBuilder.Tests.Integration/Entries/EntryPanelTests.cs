@@ -281,6 +281,30 @@ public sealed class EntryPanelTests : ActionTestBase
     }
 
     [Test]
+    public async Task AnEdit_FailingOneOfTheFieldsChecks_SaysItsMessage_AndChangesNothing()
+    {
+        var postcode = new FormField
+        {
+            Key = Guid.Parse("c4000000-0000-4000-8000-000000000205"),
+            Type = "text",
+            Alias = "postcode",
+            Label = new LocalizedText("Postcode"),
+            Validation = [new PatternCheck { Pattern = "[0-9]{4}", Message = new LocalizedText("Four digits, please.") }],
+        };
+        var form = await PublishAsync(name: "Checked", fields: [NameField, postcode]);
+        var entry = await SubmitAsync(form, """{"name":"Ada","postcode":"1234"}""");
+
+        var failed = await Edits.EditAsync(form, entry.Key, Editor, [new EntryEditValue(postcode.Key, ["abcd"])], maySeeSensitive: true, overbook: false);
+        var passed = await Edits.EditAsync(form, entry.Key, Editor, [new EntryEditValue(postcode.Key, ["5678"])], maySeeSensitive: true, overbook: false);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(failed.Problems.Select(problem => (problem.Code, problem.Path, problem.Message)), Is.EqualTo(new[] { ("check_failed", "answers[0].values", "Four digits, please.") }));
+            Assert.That((passed.Status, passed.Changed), Is.EqualTo((EntryEditStatus.Saved, 1)), "an answer that passes it saves");
+        });
+    }
+
+    [Test]
     public async Task AnEditedChoice_MovesItsPlace_AndAsksBeforeOverbooking()
     {
         var form = await FormAsync();

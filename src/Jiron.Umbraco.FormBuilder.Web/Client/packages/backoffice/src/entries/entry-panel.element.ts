@@ -1015,7 +1015,7 @@ export class EntryPanelElement extends UmbLitElement {
           : nothing
       }
       <p class="details">
-        <span>${detailsLine(panel.details, this.localize.lang(), this.#full).join(JOIN)}</span>
+        <span>${detailsLine(panel.details, this.localize.lang(), this.#full, panel.isTest).join(JOIN)}</span>
         ${
           extra
             ? html`<button

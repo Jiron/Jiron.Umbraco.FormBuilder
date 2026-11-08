@@ -1,4 +1,5 @@
 using System.Globalization;
+using Jiron.Umbraco.FormBuilder.Core.Access;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 
 namespace Jiron.Umbraco.FormBuilder.Core.Persistence.Queries;
@@ -122,6 +123,33 @@ internal sealed partial class EntryQuerySql
         return Statement(
             a,
             $"SELECT DISTINCT v.{n.C("text")}{n.BinaryCollation} AS {n.C("Text")} FROM {n.T(FormBuilderTables.EntryValue)} v WHERE v.{n.C("fieldId")} = {a.Add(fieldId)} AND v.{textKey} = {a.Add(key)} AND v.{textKey}{n.BinaryCollation} = {a.Add(key)}");
+    }
+
+    /// <summary>
+    /// How many entries nobody opened yet of the forms <paramref name="visibility"/> holds outside the trash, each waiting
+    /// or decided and none a test (ADR-0209): newest first on the index of the unseen entries, so it reads at most
+    /// <paramref name="most"/> + 1 of them.
+    /// </summary>
+    public static SqlStatement CountUnseen(SqlNames n, FormVisibility visibility, int most)
+    {
+        ArgumentNullException.ThrowIfNull(visibility);
+        var a = new SqlArgs();
+        var where = new List<string>
+        {
+            $"f.{n.C("trashedUtc")} IS NULL",
+            $"e.{n.C("firstSeenUtc")} IS NULL",
+            $"e.{n.C("isTest")} = {a.Add(false)}",
+            $"e.{n.C("state")} IN ({a.Add(StoredNames.Of(EntryState.Submitted))}, {a.Add(StoredNames.Of(EntryState.Approved))}, {a.Add(StoredNames.Of(EntryState.Rejected))})",
+        };
+        if (AccessSql.FormClause(visibility, n, "f.", a.Add) is { } access)
+        {
+            where.Add(access);
+        }
+
+        return Statement(
+            a,
+            $"SELECT COUNT(*) FROM (SELECT e.{n.C("id")} AS {n.C("id")} FROM {n.T(FormBuilderTables.Entry)} e INNER JOIN {n.T(FormBuilderTables.Form)} f ON f.{n.C("id")} = e.{n.C("formId")} "
+            + $"WHERE {string.Join(" AND ", where)} ORDER BY e.{n.C("submittedUtc")} DESC, e.{n.C("id")} DESC {n.Page(0, most + 1)}) c");
     }
 
     /// <summary>The whole rows of the entries <paramref name="ids"/> names, in no order.</summary>

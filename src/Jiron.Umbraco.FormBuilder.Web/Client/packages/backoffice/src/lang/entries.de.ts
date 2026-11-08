@@ -282,6 +282,7 @@ export default {
     tab_timeline: 'Chronik',
     tab_notes: 'Notizen',
     tab_notesCount: (number: number) => `Notizen (${number})`,
+    details_test: 'Testeintrag, aus der Vorschau gesendet',
     details_sentFrom: (page: string) => `Gesendet von ${page}`,
     details_quick: 'In unter einer Minute ausgefüllt',
     details_minutes: (minutes: number) => `In ${minutes} Min. ausgefüllt`,
