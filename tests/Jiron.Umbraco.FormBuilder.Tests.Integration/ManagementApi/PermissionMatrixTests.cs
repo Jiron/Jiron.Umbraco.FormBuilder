@@ -190,6 +190,13 @@ public sealed class PermissionMatrixTests : ManagementApiTestBase
         ["PUT access/folder/{key}"] = (FormBuilderPermissions.ManagePermissions, FormBuilderAccessResourceKind.Global, null),
         ["GET access/form/{key}"] = (FormBuilderPermissions.ManagePermissions, FormBuilderAccessResourceKind.Global, null),
         ["PUT access/form/{key}"] = (FormBuilderPermissions.ManagePermissions, FormBuilderAccessResourceKind.Global, null),
+        ["GET delivery"] = (FormBuilderPermissions.ManageSettings, FormBuilderAccessResourceKind.Global, null),
+        ["GET delivery/email/{id}"] = (FormBuilderPermissions.ManageSettings, FormBuilderAccessResourceKind.Global, null),
+        ["GET delivery/run/{id}"] = (FormBuilderPermissions.ManageSettings, FormBuilderAccessResourceKind.Global, null),
+        ["POST delivery/email/{id}/retry"] = (FormBuilderPermissions.ManageSettings, FormBuilderAccessResourceKind.Global, null),
+        ["POST delivery/run/{id}/retry"] = (FormBuilderPermissions.ManageSettings, FormBuilderAccessResourceKind.Global, null),
+        ["GET audit"] = (FormBuilderPermissions.ManageSettings, FormBuilderAccessResourceKind.Global, null),
+        ["GET audit/export"] = (FormBuilderPermissions.ManageSettings, FormBuilderAccessResourceKind.Global, null),
     };
 
     /// <summary>

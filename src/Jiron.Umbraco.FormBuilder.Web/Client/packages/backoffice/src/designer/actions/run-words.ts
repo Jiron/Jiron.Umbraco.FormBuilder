@@ -146,7 +146,7 @@ export function runLine(run: LastRun, type: string, now: Date, culture: string, 
 }
 
 /** What happened to a run: its code in the backoffice's words, else the type's own message, else that it failed. */
-export function happenedOf(run: LastRun, term: Term): string {
+export function happenedOf(run: Pick<LastRun, 'errorCode' | 'errorMessage'>, term: Term): string {
   const code = run.errorCode ?? '';
   const status = /^http_(\d{3})$/.exec(code);
   if (status) return term('runError_http', status[1]);
@@ -158,7 +158,12 @@ export function happenedOf(run: LastRun, term: Term): string {
  * The tries of a run, under its line, which says the latest's time already: "Tried once." or "Tried 3 times, the first
  * at 13:40."
  */
-export function triesOf(run: LastRun, now: Date, culture: string, term: Term): string {
+export function triesOf(
+  run: Pick<LastRun, 'attempts' | 'firstAttemptUtc'>,
+  now: Date,
+  culture: string,
+  term: Term,
+): string {
   if (run.attempts <= 1) return term('runTriedOnce');
   const first = dateOf(run.firstAttemptUtc);
   return first

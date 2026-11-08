@@ -77,6 +77,10 @@ export const LB_PORTS = [5533, 5534] as const;
 export const LOCKS_PORT = 5535;
 export const LOCKS_BASE_URL = `http://127.0.0.1:${LOCKS_PORT}`;
 
+/** The host of Deliveries (ROADMAP 12.4b, ADR-0219), which pauses sending, so its seeded deliveries stay as they are. */
+export const PAUSED_PORT = 5536;
+export const PAUSED_BASE_URL = `http://127.0.0.1:${PAUSED_PORT}`;
+
 /**
  * The host of the refused uploads (ROADMAP 7.3d, ADR-0006): the plain port its start-up wait reads, and the port with HTTPS
  * and HTTP/2, under a certificate of the Testing project's that nothing trusts, so its browser ignores that.

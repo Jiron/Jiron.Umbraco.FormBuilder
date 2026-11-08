@@ -456,6 +456,18 @@ flowchart LR
   (`access/permissions.modal.element.ts`) over `GET`/`PUT access/folder/{key}` and `access/form/{key}`, which saves
   the grants and the restriction together, a form's at the version read. Its words are the area `jfbAccess`, loaded
   with it; the permissions keep the library's names.
+  Activity › Deliveries (`activity/deliveries.screen.ts`) reads `GET delivery` (`manageSettings`, `DeliveryController`):
+  every mail and every run that queued none (`IDeliveryRepository`, one `UNION ALL` of both tables' ids under the read
+  budget, then the page's rows), problems first, with each run's action name and a webhook's host from its version
+  (`DeliveryLog`, never a reference's address), and whether the host pauses sending. Its sidebar
+  (`activity/delivery.modal.element.ts`) says what happened in the Actions view's run words, names a limited mail's limit,
+  and retries a failed or uncertain delivery (`POST delivery/email|run/{id}/retry`), an uncertain one only confirmed; a
+  retry also needs `manageActions` on the delivery's form, a mail of no entry `manageSettings` alone (ADR-0219). Activity
+  › Audit log (`activity/audit.screen.ts`) reads `GET audit` (`AuditController`): the log newest first, filtered by
+  the action's first word (`AuditGroups`), its user, a form (on it, or naming it in its details) and time, and searched
+  through people (Umbraco's user filter) and items by name; `AuditNames` answers the names of every key a page names.
+  Each action has a sentence (`activity/audit-words.ts`, `lang/activity.*.ts`), which `AuditActionsTests` holds to every
+  action the product records. `GET audit/export` writes the filtered log as CSV and records the export first.
 
 ## 2. The definition model
 

@@ -201,6 +201,10 @@ internal sealed class AuditRepository : IAuditRepository
         Require(query.EntityType is null || IsEntityType(query.EntityType), "The entity type to list is one camelCase word.");
         Require(query.FromUtc is not { } from || FormBuilderDbTime.IsStorable(from), $"The moment to list from lies in the years {Years}.");
         Require(query.BeforeUtc is not { } before || FormBuilderDbTime.IsStorable(before), $"The moment to list up to lies in the years {Years}.");
+        Require(query.Entities is null || (query.Entities.Count is > 0 and <= SqlArgs.MaxListLength && query.Entities.All(IsEntityType)), "The kinds of item to list are camelCase words, at least one.");
+        Require(
+            query.Search is null || (query.Search.Users.Count <= AuditSearch.MaxMatches && query.Search.Items.Count <= AuditSearch.MaxMatches && query.Search.Forms.Count <= AuditSearch.MaxForms),
+            $"A search names at most {AuditSearch.MaxMatches} users, {AuditSearch.MaxMatches} items and {AuditSearch.MaxForms} forms.");
 
         static void Require(bool condition, string message)
         {
@@ -248,9 +252,40 @@ internal sealed class AuditRepository : IAuditRepository
             Add("occurredUtc", "<", FormBuilderDbTime.Write(before));
         }
 
+        // An action's first word is its kind of item; the words hold no wildcard, as IsEntityType checked.
+        if (query.Entities is { } entities)
+        {
+            parts.Add("(" + string.Join(" OR ", entities.Select(entity => $"{n.C("action")} LIKE {args.Add(entity + ".%")}")) + ")");
+        }
+
+        if (query.FormKey is { } form)
+        {
+            parts.Add($"({n.C("entityKey")} = {args.Add(form)} OR {Naming(form)})");
+        }
+
+        if (query.Search is { } search)
+        {
+            var matches = new List<string>();
+            if (search.Users.Count > 0)
+            {
+                matches.Add($"{n.C("userKey")} IN ({args.List(search.Users.Cast<object?>())})");
+            }
+
+            if (search.Items.Count > 0)
+            {
+                matches.Add($"{n.C("entityKey")} IN ({args.List(search.Items.Cast<object?>())})");
+            }
+
+            matches.AddRange(search.Forms.Select(Naming));
+            parts.Add(matches.Count == 0 ? "1 = 0" : "(" + string.Join(" OR ", matches) + ")");
+        }
+
         return (parts.Count == 0 ? string.Empty : " WHERE " + string.Join(" AND ", parts), args.Values);
 
         void Add(string column, string comparison, object value) => parts.Add($"{n.C(column)} {comparison} {args.Add(value)}");
+
+        // The details as AuditDetails writes them name a form as "form":"<key>", which holds no wildcard of LIKE.
+        string Naming(Guid form) => $"{n.C("details")} LIKE {args.Add("%\"form\":\"" + form.ToString("D") + "\"%")}";
     }
 
     private static string Json(NewAuditEntry entry) => entry.Details?.ToJson() ?? "{}";

@@ -632,6 +632,79 @@ internal sealed class TestEndpointsMiddleware(RequestDelegate next)
         await context.Response.WriteAsJsonAsync(new { entries }, Json, context.RequestAborted);
     }
 
+    // A form whose entry has one of each problem the deliveries log shows (ROADMAP 12.4b, ADR-0219): an email action's run
+    // whose mail failed and whose other mail is uncertain, a mail to a visitor that waits and one the limit held back, and an
+    // uncertain webhook run; the form has the name asked for, so a journey finds its own rows. Nothing is sent: the run and
+    // the mail are written as the outbox leaves them.
+    private static async Task DeliveriesAsync(HttpContext context)
+    {
+        var body = await JsonSerializer.DeserializeAsync<DeliveriesRequest>(context.Request.Body, Json, context.RequestAborted);
+        var services = context.RequestServices;
+        var forms = services.GetRequiredService<IFormBuilderFormService>();
+        var runs = services.GetRequiredService<IActionRunRepository>();
+        var mail = services.GetRequiredService<IEmailRepository>();
+        var created = await forms.CreateAsync(new NewFormRequest(body?.Name ?? $"Deliveries {Guid.NewGuid():N}"), context.RequestAborted);
+        var draft = (await forms.GetDraftAsync(created.Key, cancellationToken: context.RequestAborted))!;
+        var definition = draft.Definition!;
+        var field = new FormField { Key = Guid.NewGuid(), Type = "text", Alias = "name", Label = new LocalizedText("Name") };
+        var email = new FormAction { Key = Guid.NewGuid(), Type = EmailActionType.Alias, Name = "Email the team" };
+        var webhook = new FormAction
+        {
+            Key = Guid.NewGuid(),
+            Type = "webhook",
+            Name = "Send to the CRM",
+            Settings = SettingsObject.Parse("""{"target":"url","url":"https://crm.example.com/hook"}"""),
+        };
+        _ = (await forms.SaveDraftAsync(
+            created.Key,
+            draft.Form.ConcurrencyVersion,
+            definition with
+            {
+                Pages = [definition.Pages[0] with { Groups = [definition.Pages[0].Groups[0] with { Fields = [field] }] }],
+                Actions = [email, webhook],
+            },
+            null,
+            null,
+            context.RequestAborted))!;
+        var row = (await services.GetRequiredService<IFormRepository>().GetAsync(created.Key, context.RequestAborted))!;
+        var entry = (await services.GetRequiredService<IEntryRepository>().CreateAsync(
+            new NewEntry
+            {
+                Key = Guid.NewGuid(),
+                FormId = row.Id,
+                FormVersionId = row.DraftVersionId!.Value,
+                State = EntryState.Submitted,
+                SubmissionId = Guid.NewGuid(),
+                SubmissionHash = new string('a', 64),
+                Culture = "en-US",
+            },
+            context.RequestAborted))!;
+        var queued = (await runs.AddAsync(
+            entry.Id,
+            entry.FormVersionId,
+            Guid.NewGuid(),
+            [new NewActionRun(email.Key, email.Type, ActionTrigger.Submitted, 0, false), new NewActionRun(webhook.Key, webhook.Type, ActionTrigger.Submitted, 1, false)],
+            cancellationToken: context.RequestAborted))!;
+        var lease = TimeSpan.FromMinutes(5);
+        await runs.SucceedAsync(queued[0].Id, (await runs.ClaimAsync(queued[0].Id, "e2e", lease, context.RequestAborted))!.LockedBy!, context.RequestAborted);
+        await runs.CutOffAsync(queued[1].Id, (await runs.ClaimAsync(queued[1].Id, "e2e", lease, context.RequestAborted))!.LockedBy!, new DeliveryError("attempt_timed_out"), context.RequestAborted);
+
+        NewEmail Team(string to) => new(EmailKind.Action, to, string.Empty, "Subject", "Text", "en", EntryId: entry.Id, ActionRunId: queued[0].Id);
+        var keep = TimeSpan.FromDays(30);
+        var failed = (await mail.AddAsync(Team("team@example.com"), context.RequestAborted))!;
+        await mail.FailAsync(failed.Id, (await mail.ClaimAsync(failed.Id, "e2e", lease, context.RequestAborted))!.LockedBy!, new DeliveryError("exception", "System.Net.Mail.SmtpException"), keep, context.RequestAborted);
+        var visitor = $"visitor-{Guid.NewGuid():N}@example.com";
+        var limits = new EmailLimits(1, 1_000_000, keep);
+        _ = await mail.AddWithinLimitsAsync(Team(visitor) with { RecipientKey = visitor }, limits, context.RequestAborted);
+        var limited = (await mail.AddWithinLimitsAsync(Team(visitor) with { RecipientKey = visitor }, limits, context.RequestAborted))!;
+        await context.Response.WriteAsJsonAsync(
+            new { key = created.Key, entry = entry.Key, webhookRun = queued[1].Id, failedMail = failed.Id, limitedMail = limited.Id, visitor },
+            Json,
+            context.RequestAborted);
+    }
+
+    private sealed record DeliveriesRequest(string? Name);
+
     // The states of the mail one mailbox got, as the deliveries log has them, by any spelling of it.
     private static async Task MailLogAsync(HttpContext context)
     {
@@ -708,6 +781,9 @@ internal sealed class TestEndpointsMiddleware(RequestDelegate next)
                 return;
             case "answers-form" when HttpMethods.IsPost(context.Request.Method):
                 await AnswersFormAsync(context);
+                return;
+            case "deliveries" when HttpMethods.IsPost(context.Request.Method):
+                await DeliveriesAsync(context);
                 return;
             case "audit" when HttpMethods.IsGet(context.Request.Method):
                 await AuditAsync(context);

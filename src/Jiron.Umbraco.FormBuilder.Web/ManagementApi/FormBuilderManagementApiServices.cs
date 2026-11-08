@@ -38,6 +38,7 @@ internal static class FormBuilderManagementApiServices
         builder.Services.TryAddSingleton<Entries.ExportDownloadTickets>();
         builder.Services.TryAddSingleton<FormBuilderExceptionFilter>();
         builder.Services.TryAddSingleton<Settings.SettingsSites>();
+        builder.Services.TryAddSingleton<Activity.AuditNames>();
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<Settings.ISettingsScreen, Settings.SettingsScreen<Core.Settings.GeneralSettings>>());
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<Settings.ISettingsScreen, Settings.SettingsScreen<Core.Email.EmailSettings>>());
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<Settings.ISettingsScreen, Settings.SettingsScreen<Core.Settings.ProtectionSettings>>());

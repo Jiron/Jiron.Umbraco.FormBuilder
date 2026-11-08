@@ -156,6 +156,31 @@ export type ActionsCopiedResponseModel = {
     actions: Array<CopiedActionResponseModel>;
 };
 
+export type AuditEntryResponseModel = {
+    id: number;
+    occurredUtc: string;
+    userKey?: string | null;
+    userName?: string | null;
+    action: string;
+    entityType: string;
+    entityKey?: string | null;
+    details: unknown;
+};
+
+export type AuditListResponseModel = {
+    items: Array<AuditEntryResponseModel>;
+    total: number;
+    names: {
+        [key: string]: AuditNameResponseModel;
+    };
+};
+
+export type AuditNameResponseModel = {
+    kind: string;
+    name: string;
+    number?: number | null;
+};
+
 export type CanvasLanguageResponseModel = {
     culture: string;
     name: string;
@@ -312,6 +337,54 @@ export type DefinitionPropertyChangeResponseModel = {
     path: Array<string>;
     from?: unknown;
     to?: unknown;
+};
+
+export type DeliveryDetailResponseModel = {
+    delivery: DeliveryResponseModel;
+    mayRetry: boolean;
+    retryable: boolean;
+    limit?: DeliveryLimitResponseModel | null;
+};
+
+export type DeliveryLimitResponseModel = {
+    kind: string;
+    count: number;
+    key: string;
+};
+
+export type DeliveryListResponseModel = {
+    items: Array<DeliveryResponseModel>;
+    total: number;
+    paused: boolean;
+};
+
+export type DeliveryResponseModel = {
+    kind: string;
+    id: number;
+    state: string;
+    emailKind?: string | null;
+    recipients: Array<string>;
+    actionType?: string | null;
+    actionName?: string | null;
+    typeName?: string | null;
+    target?: DeliveryTargetResponseModel | null;
+    formKey?: string | null;
+    formName?: string | null;
+    entryKey?: string | null;
+    entryNumber?: number | null;
+    attempts: number;
+    nextAttemptUtc?: string | null;
+    errorCode?: string | null;
+    errorMessage?: string | null;
+    createdUtc: string;
+    firstAttemptUtc?: string | null;
+    lastAttemptUtc?: string | null;
+    finishedUtc?: string | null;
+};
+
+export type DeliveryTargetResponseModel = {
+    kind: string;
+    text?: string | null;
 };
 
 export type DraftComparisonResponseModel = {
@@ -2471,6 +2544,90 @@ export type EmailPreviewRenderResponses = {
 
 export type EmailPreviewRenderResponse = EmailPreviewRenderResponses[keyof EmailPreviewRenderResponses];
 
+export type AuditListData = {
+    body?: never;
+    path?: never;
+    query?: {
+        what?: string;
+        user?: string;
+        form?: string;
+        days?: number;
+        search?: string;
+        skip?: number;
+        take?: number;
+    };
+    url: '/umbraco/jfb/management/api/v1/audit';
+};
+
+export type AuditListErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AuditListError = AuditListErrors[keyof AuditListErrors];
+
+export type AuditListResponses = {
+    /**
+     * OK
+     */
+    200: AuditListResponseModel;
+};
+
+export type AuditListResponse = AuditListResponses[keyof AuditListResponses];
+
+export type AuditExportData = {
+    body?: never;
+    path?: never;
+    query?: {
+        what?: string;
+        user?: string;
+        form?: string;
+        days?: number;
+        search?: string;
+    };
+    url: '/umbraco/jfb/management/api/v1/audit/export';
+};
+
+export type AuditExportErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+};
+
+export type AuditExportError = AuditExportErrors[keyof AuditExportErrors];
+
+export type AuditExportResponses = {
+    /**
+     * OK
+     */
+    200: Blob | File;
+};
+
+export type AuditExportResponse = AuditExportResponses[keyof AuditExportResponses];
+
 export type CanvasGetData = {
     body?: never;
     path?: never;
@@ -2499,6 +2656,199 @@ export type CanvasGetResponses = {
 };
 
 export type CanvasGetResponse = CanvasGetResponses[keyof CanvasGetResponses];
+
+export type DeliveryListData = {
+    body?: never;
+    path?: never;
+    query?: {
+        states?: string;
+        kind?: string;
+        form?: string;
+        days?: number;
+        search?: string;
+        skip?: number;
+        take?: number;
+    };
+    url: '/umbraco/jfb/management/api/v1/delivery';
+};
+
+export type DeliveryListErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type DeliveryListError = DeliveryListErrors[keyof DeliveryListErrors];
+
+export type DeliveryListResponses = {
+    /**
+     * OK
+     */
+    200: DeliveryListResponseModel;
+};
+
+export type DeliveryListResponse = DeliveryListResponses[keyof DeliveryListResponses];
+
+export type DeliveryGetEmailData = {
+    body?: never;
+    path: {
+        id: number;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/delivery/email/{id}';
+};
+
+export type DeliveryGetEmailErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type DeliveryGetEmailError = DeliveryGetEmailErrors[keyof DeliveryGetEmailErrors];
+
+export type DeliveryGetEmailResponses = {
+    /**
+     * OK
+     */
+    200: DeliveryDetailResponseModel;
+};
+
+export type DeliveryGetEmailResponse = DeliveryGetEmailResponses[keyof DeliveryGetEmailResponses];
+
+export type DeliveryRetryEmailData = {
+    body?: ActionConfirmationRequestModel;
+    path: {
+        id: number;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/delivery/email/{id}/retry';
+};
+
+export type DeliveryRetryEmailErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+};
+
+export type DeliveryRetryEmailError = DeliveryRetryEmailErrors[keyof DeliveryRetryEmailErrors];
+
+export type DeliveryRetryEmailResponses = {
+    /**
+     * OK
+     */
+    200: DeliveryDetailResponseModel;
+};
+
+export type DeliveryRetryEmailResponse = DeliveryRetryEmailResponses[keyof DeliveryRetryEmailResponses];
+
+export type DeliveryGetRunData = {
+    body?: never;
+    path: {
+        id: number;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/delivery/run/{id}';
+};
+
+export type DeliveryGetRunErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type DeliveryGetRunError = DeliveryGetRunErrors[keyof DeliveryGetRunErrors];
+
+export type DeliveryGetRunResponses = {
+    /**
+     * OK
+     */
+    200: DeliveryDetailResponseModel;
+};
+
+export type DeliveryGetRunResponse = DeliveryGetRunResponses[keyof DeliveryGetRunResponses];
+
+export type DeliveryRetryRunData = {
+    body?: ActionConfirmationRequestModel;
+    path: {
+        id: number;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/delivery/run/{id}/retry';
+};
+
+export type DeliveryRetryRunErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+};
+
+export type DeliveryRetryRunError = DeliveryRetryRunErrors[keyof DeliveryRetryRunErrors];
+
+export type DeliveryRetryRunResponses = {
+    /**
+     * OK
+     */
+    200: DeliveryDetailResponseModel;
+};
+
+export type DeliveryRetryRunResponse = DeliveryRetryRunResponses[keyof DeliveryRetryRunResponses];
 
 export type EmailLayoutLibraryCreateData = {
     body?: CreateEmailLayoutRequestModel;

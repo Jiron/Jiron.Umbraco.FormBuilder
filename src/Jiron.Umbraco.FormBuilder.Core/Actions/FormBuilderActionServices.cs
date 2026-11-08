@@ -1,5 +1,6 @@
 using Jiron.Umbraco.FormBuilder.Core.Composing;
 using Jiron.Umbraco.FormBuilder.Core.Configuration;
+using Jiron.Umbraco.FormBuilder.Core.Deliveries;
 using Jiron.Umbraco.FormBuilder.Core.Email;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.Retention;
@@ -37,6 +38,7 @@ internal static class FormBuilderActionServices
         builder.Services.TryAddSingleton<ActionSettlement>();
         builder.Services.TryAddSingleton<ActionAttempts>();
         builder.Services.TryAddSingleton<ActionRunRetries>();
+        builder.Services.TryAddSingleton<DeliveryLog>();
         builder.Services.TryAddSingleton<ActionLastRuns>();
         builder.Services.TryAddSingleton<ActionTestRuns>();
         builder.Services.TryAddSingleton<OutboxWake>();

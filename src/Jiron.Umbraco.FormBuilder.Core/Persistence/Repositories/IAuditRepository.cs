@@ -51,6 +51,36 @@ internal sealed record AuditQuery
 
     /// <summary>Only actions recorded before this moment, which lies in the years 1753 to 9999.</summary>
     public DateTimeOffset? BeforeUtc { get; init; }
+
+    /// <summary>
+    /// Only actions of these kinds of item, each the first word of an action (<c>form</c> for <c>form.published</c>), one
+    /// camelCase word; null for every kind (ADR-0219).
+    /// </summary>
+    public IReadOnlyList<string>? Entities { get; init; }
+
+    /// <summary>
+    /// Only actions on this form, or that name it in their details as their <c>form</c>, as an entry's actions do (ADR-0219).
+    /// </summary>
+    public Guid? FormKey { get; init; }
+
+    /// <summary>Only actions of these users, on these items, or naming these forms: a search's matches (ADR-0219); null for no search.</summary>
+    public AuditSearch? Search { get; init; }
+}
+
+/// <summary>
+/// What a search of the audit log found: an action matches when its user or its item is among them, or it names one of the
+/// forms in its details.
+/// </summary>
+/// <param name="Users">The users whose name or email matched.</param>
+/// <param name="Items">The items whose name matched, forms among them.</param>
+/// <param name="Forms">The forms whose name matched.</param>
+internal sealed record AuditSearch(IReadOnlyCollection<Guid> Users, IReadOnlyCollection<Guid> Items, IReadOnlyCollection<Guid> Forms)
+{
+    /// <summary>The most users or items one search names.</summary>
+    public const int MaxMatches = 200;
+
+    /// <summary>The most forms one search looks for in the details, each a pattern every row is matched against.</summary>
+    public const int MaxForms = 40;
 }
 
 /// <summary>

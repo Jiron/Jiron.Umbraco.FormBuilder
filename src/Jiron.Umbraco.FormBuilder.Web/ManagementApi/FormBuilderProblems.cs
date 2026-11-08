@@ -51,6 +51,9 @@ internal static class FormBuilderProblems
     /// <summary>An action run, or the entry it is asked for, that the form does not hold (ADR-0158).</summary>
     public const string ActionRunNotFoundCode = "action_run_not_found";
 
+    /// <summary>The code of a mail or run the deliveries log does not hold.</summary>
+    public const string DeliveryNotFoundCode = "delivery_not_found";
+
     /// <summary>The code of a change of state that names no entries, too many, or no state a user can choose.</summary>
     public const string EntryStateInvalidCode = "entry_state_invalid";
 
@@ -210,6 +213,10 @@ internal static class FormBuilderProblems
     /// <summary>An action run, or the entry it is asked for, that the form does not hold (ADR-0158).</summary>
     public static FormBuilderProblemResult ActionRunNotFound() =>
         Problem(StatusCodes.Status404NotFound, ActionRunNotFoundCode, "The form has no such entry or action run.");
+
+    /// <summary>A mail or run the deliveries log does not hold (ADR-0219).</summary>
+    public static FormBuilderProblemResult DeliveryNotFound() =>
+        Problem(StatusCodes.Status404NotFound, DeliveryNotFoundCode, "There is no such delivery.");
 
     /// <summary>A change of state that names no entries, too many, or no state a user can choose (ADR-0162).</summary>
     public static FormBuilderProblemResult EntryStateInvalid() =>
