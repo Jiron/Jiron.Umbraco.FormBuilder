@@ -35,8 +35,8 @@ internal enum EntryExportState
 
 /// <summary>
 /// A background export's record in <c>jfbKeyValue</c> (ADR-0210): who asked for what, where it stands, and its file once it
-/// is ready. A worker that runs it holds a lease it renews after each page, so another server restarts it only once the
-/// lease ran out.
+/// is ready. A worker that runs it holds a lease it renews after each page and every minute meanwhile, so another server
+/// restarts it only once the lease ran out.
 /// </summary>
 internal sealed record EntryExportRecord
 {
@@ -115,19 +115,23 @@ internal sealed record EntryExportDownload(Stream Content, string FileName, stri
 /// its owner sees it and downloads its file, and only until it expires.
 /// </summary>
 /// <param name="values">The records.</param>
+/// <param name="forms">Whether an export's form is still there.</param>
 /// <param name="exports">Writes the exports.</param>
 /// <param name="store">The files.</param>
 /// <param name="wake">The worker's wake.</param>
 /// <param name="events">Where a finished export is announced.</param>
 /// <param name="time">The clock.</param>
+/// <param name="timing">How often a worker renews its lease.</param>
 /// <param name="logger">Where a failed export is told.</param>
 internal sealed partial class EntryExportJobs(
     IKeyValueRepository values,
+    IFormRepository forms,
     EntryExports exports,
     IFormBuilderFileStore store,
     EntryExportWake wake,
     IEventAggregator events,
     TimeProvider time,
+    EntryExportTiming timing,
     ILogger<EntryExportJobs> logger)
 {
     /// <summary>The start of a record's key; the export's key follows.</summary>
@@ -142,7 +146,7 @@ internal sealed partial class EntryExportJobs(
     /// <summary>How long a finished or failed export is kept.</summary>
     public static readonly TimeSpan KeptFor = TimeSpan.FromHours(24);
 
-    /// <summary>How long a worker holds an export without a word; it renews the lease after each page.</summary>
+    /// <summary>How long a worker holds an export without a word; it renews the lease after each page and every minute.</summary>
     public static readonly TimeSpan Lease = TimeSpan.FromMinutes(5);
 
     private static readonly JsonSerializerOptions Json = FrozenOptions.Of(new(JsonSerializerDefaults.Web)
@@ -243,7 +247,10 @@ internal sealed partial class EntryExportJobs(
         }
     }
 
-    /// <summary>Removes each export whose time is up: its file, then its record.</summary>
+    /// <summary>
+    /// Removes each export whose time is up, and each of a form deleted for good, whose entries are gone: its file, then
+    /// its record.
+    /// </summary>
     /// <param name="cancellationToken">Cancels the clean-up between exports.</param>
     /// <returns>The number of exports removed.</returns>
     public async Task<int> CleanUpAsync(CancellationToken cancellationToken = default)
@@ -253,7 +260,7 @@ internal sealed partial class EntryExportJobs(
         {
             cancellationToken.ThrowIfCancellationRequested();
             var record = json is null ? null : Read(json);
-            if (record is not null && !Expired(record))
+            if (record is not null && !Expired(record) && await forms.GetAsync(record.Form, cancellationToken) is not null)
             {
                 continue;
             }
@@ -312,9 +319,10 @@ internal sealed partial class EntryExportJobs(
         };
     }
 
-    // Claims an export and writes it: into a temporary file, renewing the lease after each page, then into the store. Losing
-    // the record on the way (another server took it over, or the clean-up removed it) stops the export, and what it stored
-    // goes again.
+    // Claims an export and writes it: into a temporary file, then into the store, renewing the lease after each page and
+    // every minute meanwhile. Losing the record on the way (another server took it over, or the clean-up removed it) stops
+    // the export, and so does the host's stop; what it stored goes again. Any other failure, a cancellation it did not ask
+    // for among them, counts as a failed attempt.
     private async Task RunAsync(string key, string json, EntryExportRecord record, string claimant, CancellationToken stopping)
     {
         var now = time.GetUtcNow();
@@ -333,41 +341,66 @@ internal sealed partial class EntryExportJobs(
         }
 
         using var lost = CancellationTokenSource.CreateLinkedTokenSource(stopping);
+        using var turn = new SemaphoreSlim(1, 1);
+
+        // Renews the lease, with the entries written so far when a page tells them, one renewal at a time; losing the
+        // record stops the export.
+        async Task RenewAsync(int? done)
+        {
+            await turn.WaitAsync(CancellationToken.None);
+            try
+            {
+                var next = current with { Done = done ?? current.Done, LeaseUtc = time.GetUtcNow() + Lease };
+                var nextJson = Write(next);
+                if (await values.TryReplaceAsync(key, held, nextJson, CancellationToken.None))
+                {
+                    (current, held) = (next, nextJson);
+                }
+                else
+                {
+                    await lost.CancelAsync();
+                }
+            }
+            finally
+            {
+                turn.Release();
+            }
+        }
+
         string? file = null;
         try
         {
-            Directory.CreateDirectory(TempFolder);
-            await using var temp = new FileStream(Path.Combine(TempFolder, Guid.NewGuid().ToString("N") + ".tmp"), FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None, 81920, FileOptions.DeleteOnClose | FileOptions.Asynchronous);
-            var exporter = new EntryExporter(record.Owner, record.MaySeeSensitive, record.Culture);
-            var written = await exports.WriteAsync(
-                record.Form,
-                record.Request,
-                exporter,
-                temp,
-                async done =>
+            EntryExportFile? written = null;
+            using (var keeping = new CancellationTokenSource())
+            {
+                var kept = KeepLeaseAsync(() => RenewAsync(null), keeping.Token);
+                try
                 {
-                    var next = current with { Done = done, LeaseUtc = time.GetUtcNow() + Lease };
-                    var nextJson = Write(next);
-                    if (await values.TryReplaceAsync(key, held, nextJson, CancellationToken.None))
+                    Directory.CreateDirectory(TempFolder);
+                    await using var temp = new FileStream(Path.Combine(TempFolder, Guid.NewGuid().ToString("N") + ".tmp"), FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None, 81920, FileOptions.DeleteOnClose | FileOptions.Asynchronous);
+                    var exporter = new EntryExporter(record.Owner, record.MaySeeSensitive, record.Culture);
+                    written = await exports.WriteAsync(record.Form, record.Request, exporter, temp, done => RenewAsync(done), announce: false, lost.Token);
+                    if (written is not null)
                     {
-                        (current, held) = (next, nextJson);
+                        temp.Position = 0;
+                        file = FormBuilderFileId.New();
+                        await store.SaveAsync(file, temp, lost.Token);
                     }
-                    else
-                    {
-                        await lost.CancelAsync();
-                    }
-                },
-                announce: false,
-                lost.Token);
+                }
+                finally
+                {
+                    // What follows replaces the record as the last renewal left it.
+                    await keeping.CancelAsync();
+                    await kept;
+                }
+            }
+
             if (written is null)
             {
                 await values.TryReplaceAsync(key, held, Write(Failed(current, "form_not_found")), CancellationToken.None);
                 return;
             }
 
-            temp.Position = 0;
-            file = FormBuilderFileId.New();
-            await store.SaveAsync(file, temp, lost.Token);
             var ready = time.GetUtcNow();
             var finished = current with
             {
@@ -383,7 +416,7 @@ internal sealed partial class EntryExportJobs(
             };
             if (!await values.TryReplaceAsync(key, held, Write(finished), CancellationToken.None))
             {
-                await store.DeleteAsync(file, CancellationToken.None);
+                await DeleteQuietlyAsync(file);
                 return;
             }
 
@@ -394,18 +427,51 @@ internal sealed partial class EntryExportJobs(
             // Another server holds it now, or it is gone; the one that holds it writes its own file.
             await DeleteQuietlyAsync(file);
         }
+        catch (OperationCanceledException) when (stopping.IsCancellationRequested)
+        {
+            // The host stops: what it stored goes, as no record names it, and another server starts the export again once
+            // the lease ran out.
+            await DeleteQuietlyAsync(file);
+            throw;
+        }
         catch (FormBuilderValidationException)
         {
             // The site no longer has the format, or a field went: the user asks again from the dialog.
             await DeleteQuietlyAsync(file);
             await values.TryReplaceAsync(key, held, Write(Failed(current, "export_invalid")), CancellationToken.None);
         }
-        catch (Exception exception) when (exception is not OperationCanceledException and not OutOfMemoryException)
+        catch (Exception exception) when (exception is not OutOfMemoryException)
         {
+            // A failure, or a cancellation that neither the host nor a lost record asked for, as a file store's timeout.
             LogFailed(logger, record.Key, attempt, exception);
             await DeleteQuietlyAsync(file);
             var again = attempt >= MaxAttempts ? Failed(current, "export_failed") : current with { State = EntryExportState.Queued, Claimant = null, LeaseUtc = null, Done = 0 };
             await values.TryReplaceAsync(key, held, Write(again), CancellationToken.None);
+        }
+    }
+
+    // Renews the lease every so often until it is stopped, as a page of many files or the storing of a large file can take
+    // longer than the lease; a renewal that fails is told, and the next one tries again.
+    private async Task KeepLeaseAsync(Func<Task> renew, CancellationToken stop)
+    {
+        using var timer = new PeriodicTimer(timing.RenewEvery, time);
+        try
+        {
+            while (await timer.WaitForNextTickAsync(stop))
+            {
+                try
+                {
+                    await renew();
+                }
+                catch (Exception exception) when (exception is not (OperationCanceledException or OutOfMemoryException))
+                {
+                    LogLeaseNotRenewed(logger, exception.GetType().Name);
+                }
+            }
+        }
+        catch (OperationCanceledException) when (stop.IsCancellationRequested)
+        {
+            // Written and stored, or stopped.
         }
     }
 
@@ -440,6 +506,20 @@ internal sealed partial class EntryExportJobs(
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Jiron Form Builder could not delete the file of an export it stopped ({ExceptionType}); the store keeps it")]
     private static partial void LogFileLeft(ILogger logger, string exceptionType);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Jiron Form Builder could not renew the lease of an export it writes ({ExceptionType}); it tries again")]
+    private static partial void LogLeaseNotRenewed(ILogger logger, string exceptionType);
+}
+
+/// <summary>
+/// How often a worker renews the lease of the export it writes, besides after each page: a fifth of the lease, so four
+/// renewals may fail before another server takes the export over.
+/// </summary>
+/// <param name="RenewEvery">The time between renewals.</param>
+internal sealed record EntryExportTiming(TimeSpan RenewEvery)
+{
+    /// <summary>A renewal every minute.</summary>
+    public static EntryExportTiming Default { get; } = new(EntryExportJobs.Lease / 5);
 }
 
 /// <summary>What wakes this server's export worker: a bounded channel of one that drops further writes, so wakes add up to one.</summary>
@@ -481,8 +561,9 @@ internal sealed partial class EntryExportWorker(EntryExportWake wake, IServicePr
                         await services.GetRequiredService<EntryExportJobs>().PassAsync(_claimant, stoppingToken);
                     }
                 }
-                catch (Exception exception) when (exception is not OperationCanceledException and not OutOfMemoryException)
+                catch (Exception exception) when (exception is not OutOfMemoryException && !stoppingToken.IsCancellationRequested)
                 {
+                    // A cancellation the host did not ask for, as a database's timeout, ends the pass, not the worker.
                     LogPassFailed(logger, exception);
                 }
             }

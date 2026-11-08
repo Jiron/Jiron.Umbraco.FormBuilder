@@ -5,6 +5,8 @@
 import type { UmbLocalizationDictionary } from '@umbraco-cms/backoffice/localization-api';
 
 const entries = (number: number) => (number === 1 ? '1 Eintrag' : `${number.toLocaleString('de')} Einträge`);
+// After "von", in the dative: "von 12.400 Einträgen".
+const ofEntries = (number: number) => (number === 1 ? '1 Eintrag' : `${number.toLocaleString('de')} Einträgen`);
 
 export default {
   jfbEntries: {
@@ -447,24 +449,29 @@ export default {
     export_byteOrderMark: 'Mit einer Bytereihenfolge-Markierung beginnen',
     export_byteOrderMarkHelp: 'Tabellenprogramme lesen dann Buchstaben wie ä und é richtig.',
     export_yours: 'Ihre Exporte dieses Formulars',
-    export_ready: (number: number) => `Ihr Export von ${entries(number)} ist fertig.`,
-    export_failedOne: (number: number) => `Der Export von ${entries(number)} konnte nicht vorbereitet werden.`,
+    export_ready: (number: number) => `Ihr Export von ${ofEntries(number)} ist fertig.`,
+    export_keptUntil: (when: string) => `Verfügbar bis ${when}.`,
+    export_failedOne: (number: number) => `Der Export von ${ofEntries(number)} konnte nicht vorbereitet werden.`,
     export_preparing: (number: number, more: boolean) =>
       more
         ? 'Der Export von mehr als 1.000 Einträgen wird vorbereitet.'
-        : `Der Export von ${entries(number)} wird vorbereitet.`,
+        : `Der Export von ${ofEntries(number)} wird vorbereitet.`,
     export_progress: (done: number, total: number, more: boolean) =>
       more
         ? `Der Export wird vorbereitet: bisher ${entries(done)}.`
-        : `Der Export wird vorbereitet: ${done.toLocaleString('de')} von ${entries(total)}.`,
+        : `Der Export wird vorbereitet: ${done.toLocaleString('de')} von ${ofEntries(total)}.`,
     export_preparingToast: (number: number, more: boolean) =>
-      `${more ? 'Der Export von mehr als 1.000 Einträgen wird vorbereitet.' : `Der Export von ${entries(number)} wird vorbereitet.`} Sie können weiterarbeiten; eine Benachrichtigung verlinkt die Datei.`,
+      `${more ? 'Der Export von mehr als 1.000 Einträgen wird vorbereitet.' : `Der Export von ${ofEntries(number)} wird vorbereitet.`} Sie können weiterarbeiten; eine Benachrichtigung verlinkt die Datei.`,
     export_progressToast: (done: number, total: number, more: boolean) =>
-      `${more ? `Der Export wird vorbereitet: bisher ${entries(done)}.` : `Der Export wird vorbereitet: ${done.toLocaleString('de')} von ${entries(total)}.`} Sie können weiterarbeiten; eine Benachrichtigung verlinkt die Datei.`,
-    export_readyToast: (number: number) => `Ihr Export von ${entries(number)} ist fertig.`,
+      `${more ? `Der Export wird vorbereitet: bisher ${entries(done)}.` : `Der Export wird vorbereitet: ${done.toLocaleString('de')} von ${ofEntries(total)}.`} Sie können weiterarbeiten; eine Benachrichtigung verlinkt die Datei.`,
+    export_readyToast: (number: number) => `Ihr Export von ${ofEntries(number)} ist fertig.`,
     export_failedToast: (number: number, more: boolean) =>
-      `Der Export von ${more ? 'mehr als 1.000 Einträgen' : entries(number)} konnte nicht vorbereitet werden. Versuchen Sie es erneut; scheitert er wieder, findet jemand aus der Entwicklung den Grund im Protokoll der Website.`,
+      `Der Export von ${more ? 'mehr als 1.000 Einträgen' : ofEntries(number)} konnte nicht vorbereitet werden. Versuchen Sie es erneut; scheitert er wieder, findet jemand aus der Entwicklung den Grund im Protokoll der Website.`,
     export_download: 'Herunterladen',
+    export_lostToast:
+      'Der Fortschritt des Exports lässt sich gerade nicht lesen. Er läuft weiter, und „Exportieren…“ in der Ansicht Einträge des Formulars führt ihn auf.',
+    export_goneToast:
+      'Den Export gibt es nicht mehr. Starten Sie ihn erneut über „Exportieren…“ in der Ansicht Einträge.',
     export_downloadFailed:
       'Die Datei konnte nicht heruntergeladen werden. Sie ist vielleicht abgelaufen; exportieren Sie erneut.',
     export_start: 'Exportieren',

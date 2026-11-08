@@ -10,7 +10,6 @@ import {
   type UmbNotificationOptions,
 } from '@umbraco-cms/backoffice/notification';
 import type { EntryExportStatusResponseModel } from '../api';
-import { saveBlob } from '../library/actions/export-form.action';
 import { ACTION_NOTIFICATION, type ActionNotificationData, type Said } from '../ui/action-notification.element';
 import { idleGate } from '../ui/idle-gate';
 import { downloadExport, readExportStatus } from './export-api';
@@ -30,8 +29,8 @@ export interface FollowListener {
   progress(status: EntryExportStatusResponseModel): void;
   /** The export is ready or failed. */
   finished(status: EntryExportStatusResponseModel): void;
-  /** The server no longer knows the export, or never answered again. */
-  lost(): void;
+  /** The following ended without the export's end: it is gone (`true`), or its status no longer answers. */
+  lost(gone: boolean): void;
 }
 
 type Read = (form: string, key: string) => Promise<EntryExportStatusResponseModel | 'gone' | undefined>;
@@ -98,14 +97,14 @@ export class ExportFollower {
       const status = await this.#read(form, key);
       if (signal.aborted) return;
       if (status === 'gone') {
-        listener.lost();
+        listener.lost(true);
         return;
       }
 
       if (status === undefined) {
         silent++;
         if (silent >= MOST_SILENT_READS) {
-          listener.lost();
+          listener.lost(false);
           return;
         }
 
@@ -193,7 +192,13 @@ export function showFollowed(
         data: readyToast(notices, form, done),
       });
     },
-    lost: () => progress?.close(),
+    // The progress toast never leaves without a word: an export gone, or one whose progress no longer answers, which
+    // goes on and is listed in its sidebar.
+    lost: (gone) => {
+      progress?.close();
+      const data: ActionNotificationData = { message: '', said: said(gone ? 'export_goneToast' : 'export_lostToast') };
+      notices.stay<ActionOptions>(gone ? 'danger' : 'warning', { elementName: ACTION_NOTIFICATION, data });
+    },
   });
 }
 
@@ -211,18 +216,17 @@ export function readyToast(
   };
 }
 
-/** Saves a ready export's file; a file that expired, or did not come, says so in a toast. */
+/**
+ * Saves a ready export's file through its link, which the browser saves as it comes; a file that expired, or whose link
+ * did not come, says so in a toast.
+ */
 export async function saveExport(
   notices: Notices,
   form: string,
   done: EntryExportStatusResponseModel,
   download: typeof downloadExport = downloadExport,
 ): Promise<boolean> {
-  const blob = await download(form, done.key);
-  if (blob) {
-    saveBlob(done.fileName ?? 'export', blob);
-    return true;
-  }
+  if (await download(form, done.key)) return true;
 
   const data: ActionNotificationData = { message: '', said: said('export_downloadFailed') };
   notices.peek<ActionOptions>('danger', { elementName: ACTION_NOTIFICATION, data });

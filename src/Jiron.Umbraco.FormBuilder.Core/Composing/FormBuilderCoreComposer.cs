@@ -148,6 +148,7 @@ public sealed class FormBuilderCoreComposer : IComposer
         _ = builder.JironFormBuilder().ExportFormats();
         builder.Services.TryAddSingleton<Exports.EntryExports>();
         builder.Services.TryAddSingleton<Exports.EntryExportWake>();
+        builder.Services.TryAddSingleton(Exports.EntryExportTiming.Default);
         builder.Services.TryAddSingleton<Exports.EntryExportJobs>();
         builder.Services.AddHostedService<Exports.EntryExportWorker>();
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IDistributedBackgroundJob, Exports.FormBuilderExportJob>());

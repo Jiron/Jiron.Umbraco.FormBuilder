@@ -77,7 +77,7 @@ database connection of its own. Its areas:
 | Actions and email | action types, action runs, the worker; the mail queue with its renderer, layouts, limits and test mail (`Email`, [ADR-0159](decisions/0159-mail-the-queue-the-layouts-and-the-limits.md)); the email action (`EmailActionType`, [ADR-0160](decisions/0160-the-email-action.md)) | ADR-0007 |
 | Protection | the spam score, content rules, captcha provider contract, mail caps | ADR-0012 |
 | Files | the file store contract and the physical store, whose root is checked against the web root at start-up; the host's limits for files (`Files:MaxFileBytes`, `Files:MaxWaitingBytes`, `Files:MaxWaitingBytesPerAddress`, `Files:BlockedExtensions`); the uploads before a submission: the name cleaned, the first bytes checked against the kinds of file (`FileKinds`), the bytes counted, hashed and stored, a row without an entry; the bytes that may wait for an entry (`WaitingUploads`, ADR-0148); scanning in the background, what an entry holds first, and the quarantine (`FileScans`, ADR-0144, ADR-0148); an entry's files for a user, one or a form's in a ZIP under names that stay in their folder (`EntryFileDownloads`, `FileArchiveNames`, ADR-0145); a typed signature drawn as its PNG in the package's own hand (`TypedSignature`, `SignatureHand`, `PenCanvas`, `Png`), the name kept in an `iTXt` chunk | ADR-0006, ADR-0041, ADR-0087, ADR-0103, ADR-0148 |
-| Exports | the export of a form's entries over the entries list's own query or the ticked entries (`EntryExports`: keyset pages of 250 entries, each its own gated read; the columns from the field catalogue, a grid by row, a ranking by position, a repeatable group as a table; sensitive fields only when asked for and allowed; audited as `entries.exported` and announced with `ExportCompletedNotification`), the built-in formats through `ExportFormats()` (CSV with the formula guard, Excel from a small own writer, JSON, a printable view, a ZIP of the files), and the exports too large to stream (`EntryExportJobs`: a record in `jfbKeyValue` per export, this server's worker, a lease renewed after each page, three attempts, three exports under way per user, the file kept 24 hours for its owner only) | ADR-0003, ADR-0210 |
+| Exports | the export of a form's entries over the entries list's own query or the ticked entries (`EntryExports`: keyset pages of 250 entries, each its own gated read; the columns from the field catalogue, a grid by row, a ranking by position, a repeatable group as a table; sensitive fields only when asked for and allowed; audited as `entries.exported` and announced with `ExportCompletedNotification`), the built-in formats through `ExportFormats()` (CSV with the formula guard, Excel from a small own writer, JSON, a printable view, a ZIP of the files), and the exports too large to stream, and every ZIP of files (`EntryExportJobs`: a record in `jfbKeyValue` per export, this server's worker, a lease renewed after each page and every minute, three attempts, three exports under way per user, the file kept 24 hours for its owner only and downloaded through a link with a one-minute ticket, `ExportDownloadTickets`) | ADR-0003, ADR-0210 |
 | Insights | what a form counts of its visitors (`FormInsights`: whether the site's switch and the form's are both on, a beacon read from its four members and held to the published version, the fields a post without JavaScript was refused at), this server's sums of beacons (`InsightCounts`, at most 100,000 waiting) written to `jfbDailyStat` every 10 seconds and when the host stops (`InsightWriter`, `InsightFlusher`), what a stored entry adds to its unit (`InsightMetrics`: its page, hour and time to complete), a form's report and the site's table of forms (`InsightReports`), the boxes a user shows as tables (`InsightUserSettings`), and what a form's entries answered (`AnswerSummaries`: each field the entries list offers but a sensitive one or one kept only until the actions run, summarised by what its type says its answers are, from grouped statements over the entries list's own query in one read within the query budget (`EntryQuerySql.Summaries`), labelled as the type shows its values with an older version's options marked, and the free texts a page at a time behind a cursor; the entries of a range and the list's filter, never a test entry or one in Spam) | ADR-0041, ADR-0088, ADR-0211, ADR-0212 |
 | Privacy | retention, holds, data subject tools, masking, IP handling; the site's privacy section (`PrivacySettings`), so far the insights switch | ADR-0009, ADR-0211 |
 | Retention | the hourly retention job and its parts, so far the draft-version cleanup; the cleanup of uploads no entry took, on a timer of its own (`OrphanFileCleanup`, `OrphanFileJob`) | ADR-0007, ADR-0045, ADR-0148 |
@@ -472,7 +472,8 @@ Text        LocalizedText: culture → text, "" is the default; "#key" reads the
   new key, so a folder's restore brings back exactly the folders and forms that went with it, and nothing lives
   below a folder in the trash. A permanent delete works only from the trash: the entries go in batches of 100, each
   a short unit that holds the form at the version the editor confirmed, then the waiting uploads, then the form's
-  own rows with its grants, references and daily statistics; the bytes of the files go after each commit.
+  own rows with its grants, references and daily statistics; the bytes of the files go after each commit, and its
+  background exports at the next clean-up.
 - **Publishing** ([ADR-0035](decisions/0035-structural-validation-and-public-projection.md)) runs the save checks and
   then the structural validation: aliases, names and option values, references, what each field type supports (its
   traits, from the field-type registry), each field's settings against its type's schema and the type's own check
@@ -773,9 +774,12 @@ permission each needs:
 
 What a user may not see answers `404`; what they may see but not do answers `403` with the permission's name. The
 permission matrix checks every endpoint: `403` for a missing permission, `404` on routes for a form, folder or entry
-the user holds nothing on, and `403` without the Form Builder section for what any user of the section may call; only the
-form picker is exempt, because content access authorises it (4.7, ADR-0011, ADR-0013). The management API is part of
-the backoffice, not of the public surface (ADR-0010).
+the user holds nothing on, and `403` without the Form Builder section for what any user of the section may call. Two
+endpoints are reviewed exceptions: the form picker's, because content access authorises them (4.7, ADR-0011, ADR-0013),
+and the download of a background export's file, which a plain link calls with a one-minute ticket in place of the
+backoffice's token, issued to the export's owner after the checks a download needs; it is anonymous, declares its
+ticket (`FormBuilderTicketAccessAttribute`), and finds nothing without one (ADR-0210). The management API is part of the
+backoffice, not of the public surface (ADR-0010).
 
 **The evaluation** ([ADR-0048](decisions/0048-permission-evaluation-and-visibility-filter.md)) works from one snapshot
 per server: every grant, the folder tree and the host's global grants by group, cached for an hour and dropped by every
@@ -928,7 +932,8 @@ when it was published again) and its `jfb:rendered` event.
   `Jiron.FormBuilder.Exports` (every minute: removes the exports whose day is up, file and record, and wakes its server's
   export worker, which restarts an export whose lease ran out, ADR-0210), statistics roll-ups and the file mirror (D25).
 - **The export worker** (`EntryExportWorker`), one per server, writes the background exports one after the other; queueing
-  one wakes it at once (ADR-0210).
+  one wakes it at once. It renews an export's lease after each page and every minute meanwhile, counts any failure as an
+  attempt, a cancellation it did not ask for among them, and deletes what it stored when the host stops (ADR-0210).
 - **The insights flusher** (`InsightFlusher`), one per server, writes the beacons this server added up every 10 seconds
   and once more when the host stops; a write that fails leaves its sums for the next (ADR-0211).
 - **Jobs on timers of their own,** on the server that schedules, because they can take longer than a distributed job may:

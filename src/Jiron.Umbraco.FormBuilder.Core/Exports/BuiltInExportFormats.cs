@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Globalization;
 using System.IO.Compression;
 using System.Net;
@@ -35,6 +36,9 @@ internal static class ExportTexts
 /// </summary>
 internal sealed class CsvExportFormat : IFormBuilderExportFormat
 {
+    // What a quoted cell may hold: each delimiter, a quote and a line break.
+    private static readonly SearchValues<char> Quoted = SearchValues.Create(",;\t\"\r\n");
+
     /// <inheritdoc />
     public string Name => "csv";
 
@@ -68,17 +72,21 @@ internal sealed class CsvExportFormat : IFormBuilderExportFormat
         await writer.FlushAsync(cancellationToken);
     }
 
-    /// <summary>A cell as CSV writes it: guarded against formulas, and quoted where it holds the delimiter, a quote or a line break.</summary>
+    /// <summary>
+    /// A cell as CSV writes it: guarded against formulas, and quoted where it holds any of the three delimiters, a quote
+    /// or a line break. A spreadsheet program may split a file on its own delimiter rather than the chosen one, and an
+    /// unquoted <c>x;=1+1</c> would then start a cell with a formula.
+    /// </summary>
     /// <param name="text">The cell's text.</param>
-    /// <param name="delimiter">The delimiter.</param>
-    public static string Cell(string text, char delimiter)
+    public static string Cell(string text)
     {
+        ArgumentNullException.ThrowIfNull(text);
         var guarded = text.Length > 0 && text[0] is '=' or '+' or '-' or '@' or '\t' or '\r' ? "'" + text : text;
-        return guarded.IndexOfAny([delimiter, '"', '\r', '\n']) < 0 ? guarded : "\"" + guarded.Replace("\"", "\"\"", StringComparison.Ordinal) + "\"";
+        return guarded.AsSpan().ContainsAny(Quoted) ? "\"" + guarded.Replace("\"", "\"\"", StringComparison.Ordinal) + "\"" : guarded;
     }
 
     private static Task WriteRowAsync(StreamWriter writer, IReadOnlyList<string> cells, char delimiter) =>
-        writer.WriteLineAsync(string.Join(delimiter, cells.Select(cell => Cell(cell, delimiter))));
+        writer.WriteLineAsync(string.Join(delimiter, cells.Select(Cell)));
 }
 
 /// <summary>

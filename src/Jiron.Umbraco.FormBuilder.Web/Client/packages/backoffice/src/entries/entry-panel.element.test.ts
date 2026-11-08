@@ -55,6 +55,8 @@ const server = vi.hoisted(() => ({
   retryAnswers: [] as ('queued' | 'confirm' | 'failed')[],
   files: [] as string[],
   saved: [] as string[],
+  prints: [] as { form: string; request: unknown }[],
+  printed: [] as string[],
 }));
 
 vi.mock('./entry-panel-api', () => ({
@@ -129,6 +131,20 @@ vi.mock('./entries-api', () => ({
 
 vi.mock('../library/actions/export-form.action', () => ({
   saveBlob: (name: string) => server.saved.push(name),
+}));
+
+vi.mock('./export-api', () => ({
+  writeExportFile: async (_host: unknown, form: string, request: unknown) => {
+    server.prints.push({ form, request });
+    return { value: new Blob(['<!DOCTYPE html><title>Entry 7</title>']) };
+  },
+}));
+
+vi.mock('./export-print', () => ({
+  printDocument: async (html: string) => {
+    server.printed.push(html);
+    return true;
+  },
 }));
 
 await import('./entry-panel.element');
@@ -271,6 +287,8 @@ beforeEach(() => {
     retryAnswers: [],
     files: [],
     saved: [],
+    prints: [],
+    printed: [],
   });
 });
 
@@ -450,6 +468,18 @@ describe("the entry panel's bar", () => {
     expect(server.deletes).toEqual([false, true]);
     expect(told.at(-1)).toEqual({ name: 'jfb-entry-gone', detail: { key: 'e7', state: 'submitted' } });
     expect(peek.mock.calls.at(-1)?.[1]).toEqual({ data: { message: 'Entry #7 deleted.' } });
+  });
+
+  it("prints the entry's printable view without its sensitive fields, leaving the export dialog's choices as they were", async () => {
+    server.panel = panelOf({ permissions: [...ADMIN, 'export'] });
+    const { panel } = await open();
+    panel.act('print');
+    await vi.waitFor(() => expect(server.printed).toHaveLength(1));
+
+    expect(server.prints).toEqual([
+      { form: 'form1', request: { format: 'print', entries: ['e7'], sensitive: false, remember: false } },
+    ]);
+    expect(server.printed).toEqual(['<!DOCTYPE html><title>Entry 7</title>']);
   });
 
   it('forwards through its sidebar, which may offer sensitive values to who may see them', async () => {

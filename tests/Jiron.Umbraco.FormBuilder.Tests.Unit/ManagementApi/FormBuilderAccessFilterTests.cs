@@ -113,6 +113,25 @@ public sealed class FormBuilderAccessFilterTests
     }
 
     [Test]
+    public async Task ATicketsAction_NeedsNoUser_ButWaitsForTheMigrations_AndLeavesTheTicketToTheAction()
+    {
+        _migrations.Pending = true;
+        var pending = await RunAsync([new FormBuilderTicketAccessAttribute()], [], known: false);
+        _migrations.Pending = false;
+        var anonymous = await RunAsync([new FormBuilderTicketAccessAttribute()], [], known: false);
+        var withATicketToo = await RunAsync([new FormBuilderTicketAccessAttribute(), new FormBuilderSectionAttribute()], [], known: false);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That((pending.Outcome, pending.NextRan), Is.EqualTo(("503 migrations_pending", false)));
+            Assert.That(anonymous.NextRan, Is.True, "a plain link's request reaches the action, which reads its ticket");
+            Assert.That(anonymous.Http.Features.Get<FormBuilderRequestAccess>(), Is.Null, "no user stands behind it");
+            Assert.That(withATicketToo.Outcome, Is.EqualTo("403 forbidden"), "still exactly one declaration");
+            Assert.That(_asked, Is.Empty, "no policy is evaluated");
+        });
+    }
+
+    [Test]
     public async Task AKeyThatNamesNothing_IsRefused_AndLogged()
     {
         var answer = await RunAsync([new FormBuilderPermissionAttribute(FormBuilderPermissions.Design) { On = FormBuilderAccessResourceKind.Folder, Key = "folderKey" }], ("key", Events));

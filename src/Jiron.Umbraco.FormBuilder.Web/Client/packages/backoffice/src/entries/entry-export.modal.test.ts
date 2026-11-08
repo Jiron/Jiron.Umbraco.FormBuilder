@@ -42,6 +42,8 @@ const server = vi.hoisted(() => ({
   started: [] as EntryExportRequestModel[],
   fileCode: undefined as string | undefined,
   startCode: undefined as string | undefined,
+  /** What a file waits for before it comes. */
+  holdFile: Promise.resolve() as Promise<unknown>,
 }));
 
 const done = vi.hoisted(() => ({
@@ -59,6 +61,7 @@ vi.mock('./export-api', () => ({
   },
   writeExportFile: async (_host: unknown, _form: string, request: EntryExportRequestModel) => {
     server.files.push(request);
+    await server.holdFile;
     return server.fileCode ? { code: server.fileCode } : { value: new Blob([`<p>${request.format}</p>`]) };
   },
   startExport: async (_host: unknown, _form: string, request: EntryExportRequestModel) => {
@@ -163,6 +166,7 @@ beforeEach(() => {
     started: [],
     fileCode: undefined,
     startCode: undefined,
+    holdFile: Promise.resolve(),
   });
   Object.assign(done, { saved: [], printed: [], followed: [], downloaded: [] });
 });
@@ -245,11 +249,28 @@ describe('the export sidebar', () => {
         fields: ['email'],
         sensitive: true,
         options: { delimiter: 'comma', headers: 'labels', byteOrderMark: true },
+        remember: true,
       },
     ]);
     expect(done.saved).toEqual(['contact-entries.csv']);
     expect(context.getValue()).toEqual({ done: 'saved' });
     expect(context.submit).toHaveBeenCalled();
+  });
+
+  it('neither saves nor prints a file that comes after Cancel', async () => {
+    let release: (value: unknown) => void = () => undefined;
+    server.holdFile = new Promise((resolve) => (release = resolve));
+    const { element, button } = await open();
+    must(button('Export 214 entries'), 'the export').click();
+    await settle(element);
+    expect(server.files).toHaveLength(1);
+    // Cancel takes the sidebar away while the file is on its way.
+    element.remove();
+    release(undefined);
+    await settle();
+    await settle();
+    expect(done.saved).toEqual([]);
+    expect(done.printed).toEqual([]);
   });
 
   it('prints a printable view in the browser, and names its button so', async () => {
@@ -312,8 +333,25 @@ describe('the export sidebar', () => {
     document.body.replaceChildren();
     const again = await open();
     await again.choose('files');
-    expect(text(again.root.querySelector('.field .help'))).toBe(
+    expect([...again.root.querySelectorAll('.field .help')].map((help) => text(help))).toContain(
       'This form has no file fields, so the ZIP holds no files.',
     );
+  });
+
+  it('sends every ZIP of the files to the background, however few entries it holds', async () => {
+    server.fields = [field('name', 'Name'), field('cv', 'CV', { kind: 'file', type: 'file' })];
+    const { root, choose, press, context } = await open();
+    expect(text(root.querySelector('.field .help')), 'a spreadsheet of 214 entries downloads at once').not.toBe(
+      'This export continues in the background; a notification links to the file.',
+    );
+
+    await choose('files');
+    expect(text(root.querySelector('.field .help'))).toBe(
+      'This export continues in the background; a notification links to the file.',
+    );
+    await press('Export 214 entries');
+    expect(server.files, 'never as a download').toEqual([]);
+    expect(done.followed).toEqual(['f1 k1']);
+    expect(context.getValue()).toEqual({ done: 'background' });
   });
 });

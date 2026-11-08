@@ -7,6 +7,7 @@ using Jiron.Umbraco.FormBuilder.Core.Exports;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Web.ManagementApi.Access;
 using Jiron.Umbraco.FormBuilder.Web.ManagementApi.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Umbraco.Cms.Core.Services;
@@ -17,7 +18,8 @@ namespace Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries;
 /// <summary>
 /// A form's exports (ADR-0210): what the dialog opens with, the plan, the file of an export that fits a download, and the
 /// background exports of larger ones with their files, which only their owner sees, until they expire. Everything needs
-/// <c>export</c> on the form, and sensitive fields also <c>viewSensitive</c>.
+/// <c>export</c> on the form, and sensitive fields also <c>viewSensitive</c>; a background export's file downloads through
+/// a link with a one-minute ticket that its owner is issued after those checks.
 /// </summary>
 [ApiVersion("1.0")]
 [BackOfficeRoute(FormBuilderManagementApi.Route + "/form/{key:guid}/entries/export")]
@@ -28,7 +30,8 @@ internal sealed class EntryExportController(
     FormBuilderExportFormatCollection formats,
     EntryUserSettings settings,
     IFormBuilderAccessService access,
-    IUserService users) : FormBuilderManagementApiController
+    IUserService users,
+    ExportDownloadTickets tickets) : FormBuilderManagementApiController
 {
     /// <summary>What the export dialog opens with: the formats, the user's last choices, and their background exports.</summary>
     /// <param name="key">The form.</param>
@@ -96,7 +99,7 @@ internal sealed class EntryExportController(
             return FormBuilderProblems.ExportInBackground();
         }
 
-        await RememberAsync(key, asked, cancellationToken);
+        await RememberAsync(key, request, asked, cancellationToken);
         var format = formats.Find(asked.Format)!;
         HoldToAttachment();
         Response.Headers.ContentDisposition = new ContentDisposition { FileName = EntryExports.FileName(RequestAccess.Form!.Alias, format), Inline = false }.ToString();
@@ -122,7 +125,7 @@ internal sealed class EntryExportController(
         }
 
         var record = await jobs.QueueAsync(key, asked, exporter, plan, cancellationToken);
-        await RememberAsync(key, asked, cancellationToken);
+        await RememberAsync(key, request, asked, cancellationToken);
         return Ok(EntryExportMapping.Model(record));
     }
 
@@ -140,16 +143,19 @@ internal sealed class EntryExportController(
             ? Ok(EntryExportMapping.Model(record))
             : FormBuilderProblems.ExportNotFound();
 
-    /// <summary>Downloads the file of a background export of the user's, until it expires.</summary>
+    /// <summary>
+    /// A link that downloads the file of a background export of the user's, for one minute: the browser saves the file as
+    /// it comes, whatever its size, as a plain link's request carries no backoffice token.
+    /// </summary>
     /// <param name="key">The form.</param>
     /// <param name="exportKey">The export.</param>
     /// <param name="cancellationToken">The request's cancellation.</param>
-    [HttpGet("jobs/{exportKey:guid}/file")]
+    [HttpPost("jobs/{exportKey:guid}/ticket")]
     [MapToApiVersion("1.0")]
     [FormBuilderPermission(FormBuilderPermissions.Export, On = FormBuilderAccessResourceKind.Form, Key = "key")]
-    [ProducesResponseType(typeof(FileResult), StatusCodes.Status200OK, MediaTypeNames.Application.Octet)]
+    [ProducesResponseType(typeof(EntryExportTicketResponseModel), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Download(Guid key, Guid exportKey, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> Ticket(Guid key, Guid exportKey, CancellationToken cancellationToken = default)
     {
         var user = RequestAccess.User.Key;
         if (await jobs.GetAsync(key, exportKey, user, cancellationToken) is not { State: EntryExportState.Ready } record)
@@ -163,7 +169,35 @@ internal sealed class EntryExportController(
             return FormBuilderProblems.Missing(FormBuilderPermissions.ViewSensitive);
         }
 
-        if (await jobs.OpenAsync(key, exportKey, user, cancellationToken) is not { } download)
+        // The file's address is this one's, its last part "file" for "ticket", wherever the site serves the API.
+        var ticket = tickets.Issue(user, key, exportKey);
+        var path = Request.Path.Value ?? string.Empty;
+        return Ok(new EntryExportTicketResponseModel
+        {
+            Url = $"{Request.PathBase}{path[..(path.LastIndexOf('/') + 1)]}file?ticket={ticket.Value}",
+            ExpiresUtc = ticket.ExpiresUtc,
+        });
+    }
+
+    /// <summary>
+    /// Downloads the file of a background export with a ticket of <c>ticket</c>'s, until the ticket or the export expires;
+    /// the ticket stands for the signed-in user, so the request needs none.
+    /// </summary>
+    /// <param name="key">The form.</param>
+    /// <param name="exportKey">The export.</param>
+    /// <param name="ticket">The ticket.</param>
+    /// <param name="cancellationToken">The request's cancellation.</param>
+    [HttpGet("jobs/{exportKey:guid}/file")]
+    [MapToApiVersion("1.0")]
+    [AllowAnonymous]
+    [FormBuilderTicketAccess]
+    [ProducesResponseType(typeof(FileResult), StatusCodes.Status200OK, MediaTypeNames.Application.Octet)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Download(Guid key, Guid exportKey, [FromQuery] string? ticket, CancellationToken cancellationToken = default)
+    {
+        // A ticket that does not hold, or holds for another export, finds nothing, as an export of someone else's does.
+        if (tickets.Read(ticket) is not { } read || read.FormKey != key || read.ExportKey != exportKey
+            || await jobs.OpenAsync(key, exportKey, read.UserKey, cancellationToken) is not { } download)
         {
             return FormBuilderProblems.ExportNotFound();
         }
@@ -187,9 +221,11 @@ internal sealed class EntryExportController(
         return (asked, new EntryExporter(RequestAccess.User.Key, await MaySeeSensitiveAsync(cancellationToken), user?.Language ?? "en-US"));
     }
 
-    // What the dialog opens with next time, once the export was checked.
-    private Task RememberAsync(Guid key, EntryExportRequest asked, CancellationToken cancellationToken) =>
-        settings.SetExportChoicesAsync(RequestAccess.User.Key, key, new EntryExportChoices(asked.Format, asked.Fields, asked.Sensitive, asked.Options), cancellationToken);
+    // What the dialog opens with next time, once the export was checked, when the dialog asked for it (ADR-0210).
+    private Task RememberAsync(Guid key, EntryExportRequestModel request, EntryExportRequest asked, CancellationToken cancellationToken) =>
+        request.Remember
+            ? settings.SetExportChoicesAsync(RequestAccess.User.Key, key, new EntryExportChoices(asked.Format, asked.Fields, asked.Sensitive, asked.Options), cancellationToken)
+            : Task.CompletedTask;
 
     private async Task<bool> MaySeeSensitiveAsync(CancellationToken cancellationToken)
     {

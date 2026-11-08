@@ -35,6 +35,7 @@ internal static class FormBuilderManagementApiServices
         builder.Services.TryAddScoped<FormBuilderAccessFilter>();
         builder.Services.TryAddSingleton<Library.FormSensitivityChecks>();
         builder.Services.TryAddSingleton<Picker.FormBlockTypes>();
+        builder.Services.TryAddSingleton<Entries.ExportDownloadTickets>();
         builder.Services.TryAddSingleton<FormBuilderExceptionFilter>();
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IConfigureOptions<SwaggerGenOptions>, ConfigureFormBuilderManagementApiSwagger>());
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IOperationIdHandler, FormBuilderOperationIdHandler>());

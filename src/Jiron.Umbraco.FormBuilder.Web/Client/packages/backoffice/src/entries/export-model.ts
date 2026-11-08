@@ -89,9 +89,12 @@ export function fieldsFor(
   );
 }
 
-/** Whether the form has a sensitive field that an export leaves out unless asked. */
+/**
+ * Whether the form has a sensitive field that an export leaves out unless asked: one of its own, or one inside a
+ * repeatable group, which goes with its group and is left out of it the same way.
+ */
 export const hasSensitive = (fields: readonly EntryListFieldResponseModel[]): boolean =>
-  fields.some((field) => topLevel(field) && field.sensitive);
+  fields.some((field) => field.sensitive);
 
 /** The fields chosen among those offered: all of them for "All fields", otherwise those still offered, in their order. */
 export function chosenFields(choices: ExportChoices, offered: readonly EntryListFieldResponseModel[]): string[] {
@@ -105,7 +108,10 @@ export function exportFilter(filter: EntryListFilterRequestModel, form: string):
   return { ...filter, forms: filter.forms.filter((one) => one === form) };
 }
 
-/** What the sidebar sends: the format, the list's filter or the ticked entries, the fields and the options. */
+/**
+ * What the sidebar sends: the format, the list's filter or the ticked entries, the fields and the options, which the
+ * sidebar opens with next time.
+ */
 export function requestOf(
   choices: ExportChoices,
   offered: readonly EntryListFieldResponseModel[],
@@ -123,8 +129,18 @@ export function requestOf(
     fields: choices.fields === null ? null : chosenFields(choices, offered),
     sensitive: choices.sensitive,
     options: { delimiter: choices.delimiter, headers: choices.headers, byteOrderMark: choices.byteOrderMark },
+    remember: true,
   };
 }
+
+/**
+ * Whether an export runs in the background, as the server decides it (ADR-0210): one too large to stream, and every ZIP
+ * of files, whose size has no bound, whatever the number.
+ */
+export const inBackground = (
+  plan: EntryExportPlanResponseModel,
+  format: EntryExportFormatResponseModel | undefined,
+): boolean => plan.background || !!format?.writesFiles;
 
 /** Whether a filter narrows the list: a state, a time, a run, a field or a search. */
 export function narrows(filter: EntryListFilterRequestModel | undefined): boolean {
@@ -167,8 +183,15 @@ export const isFinished = (status: EntryExportStatusResponseModel): boolean =>
   status.state === 'ready' || status.state === 'failed';
 
 /** The sentence of a background export: how far it is, that it is ready, or that it failed. */
-export function statusLine(term: Term, status: EntryExportStatusResponseModel): string {
-  if (status.state === 'ready') return term('export_ready', status.done);
+export function statusLine(term: Term, status: EntryExportStatusResponseModel, culture = 'en-US'): string {
+  if (status.state === 'ready') {
+    // Its file goes a day after it was ready (ADR-0210), which the list says, so its going surprises nobody.
+    const ready = term('export_ready', status.done);
+    if (!status.expiresUtc) return ready;
+    const until = new Intl.DateTimeFormat(culture, { weekday: 'short', hour: 'numeric', minute: '2-digit' });
+    return `${ready} ${term('export_keptUntil', until.format(new Date(status.expiresUtc)))}`;
+  }
+
   if (status.state === 'failed') return term('export_failedOne', status.total);
   return status.done > 0
     ? term('export_progress', status.done, status.total, status.more)

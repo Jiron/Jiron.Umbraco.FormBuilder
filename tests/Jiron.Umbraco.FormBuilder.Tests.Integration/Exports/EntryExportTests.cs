@@ -12,10 +12,17 @@ using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Dtos;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Queries;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
+using Jiron.Umbraco.FormBuilder.Core.Settings;
 using Jiron.Umbraco.FormBuilder.Tests.Integration.Actions;
+using Jiron.Umbraco.FormBuilder.Tests.Integration.Support;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Events;
+using Umbraco.Cms.Core.Models;
+using Umbraco.Cms.Core.Services;
+using Umbraco.Cms.Core.Services.Navigation;
+using Umbraco.Cms.Core.Strings;
 using Umbraco.Cms.Tests.Common.Testing;
 
 namespace Jiron.Umbraco.FormBuilder.Tests.Integration.Exports;
@@ -108,6 +115,50 @@ public sealed class EntryExportTests : ActionTestBase
 
     private static readonly FormField Passport = Upload with { Key = Guid.Parse("c4100000-0000-4000-8000-00000000000b"), Alias = "passport", Label = new LocalizedText("Passport"), Sensitive = true };
 
+    private static readonly FormField Visitor = new()
+    {
+        Key = Guid.Parse("c4100000-0000-4000-8000-00000000000c"),
+        Type = "text",
+        Alias = "visitor",
+        Label = new LocalizedText("Visitor"),
+    };
+
+    private static readonly FormField Pin = new()
+    {
+        Key = Guid.Parse("c4100000-0000-4000-8000-00000000000d"),
+        Type = "text",
+        Alias = "pin",
+        Label = new LocalizedText("PIN"),
+        Sensitive = true,
+    };
+
+    private static readonly FormField Badges = new()
+    {
+        Key = Guid.Parse("c4100000-0000-4000-8000-00000000000e"),
+        Type = "repeater",
+        Alias = "badges",
+        Label = new LocalizedText("Badges"),
+        Fields = [Visitor, Pin],
+    };
+
+    private static readonly FormField Phone = new()
+    {
+        Key = Guid.Parse("c4100000-0000-4000-8000-00000000000f"),
+        Type = "text",
+        Alias = "phone",
+        Label = new LocalizedText("Phone"),
+    };
+
+    private static readonly FormField Private = new()
+    {
+        Key = Guid.Parse("c4100000-0000-4000-8000-000000000010"),
+        Type = "repeater",
+        Alias = "private",
+        Label = new LocalizedText("Private"),
+        Sensitive = true,
+        Fields = [Phone],
+    };
+
     private static readonly EntryExporter Owner = new(Editor, MaySeeSensitive: true, "en-US");
 
     private static readonly string[] OwnHeaders = ["Entry", "Reference", "State", "Received"];
@@ -119,6 +170,8 @@ public sealed class EntryExportTests : ActionTestBase
     private EntryExportJobs Jobs => GetRequiredService<EntryExportJobs>();
 
     private Heard Announced => GetRequiredService<Heard>();
+
+    private MemoryFileStore Store => GetRequiredService<MemoryFileStore>();
 
     [Test]
     public async Task ACsvExport_ReadsBackAsItsEntry_WithGridsByRowRankingsByPositionAndGroupsAsLines()
@@ -286,6 +339,97 @@ public sealed class EntryExportTests : ActionTestBase
     }
 
     [Test]
+    public async Task TheTickedEntries_AreTheFormsOwnOnly_NeverATestEntryOrADraft()
+    {
+        var form = await FormAsync();
+        var other = await PublishAsync(name: "Another form");
+        var ada = await SubmitAsync(form, """{"name":"Ada"}""");
+        var theirs = await SubmitAsync(other, """{"name":"Eve"}""");
+        var test = await StoreTestEntryAsync(form);
+        var draft = await StoreEntryAsync(form, EntryState.Draft);
+
+        var names = await NamesAsync(form, new EntryExportRequest { Format = "csv", Options = NoMark, Entries = [ada.Key, theirs.Key, test, draft] });
+        var plan = await Exports.PlanAsync(form, new EntryExportRequest { Format = "csv", Entries = [theirs.Key, test, draft] }, Owner);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(names, Is.EqualTo(new[] { "Ada" }), "another form's entry, a test entry and a draft never go along, though ticked");
+            Assert.That(plan, Is.EqualTo(new EntryExportPlan(0, More: false, Background: false)));
+        });
+    }
+
+    [Test]
+    public async Task ASensitiveFieldOfARepeatableGroup_AndASensitiveGroup_GoAlong_OnlyWhenAskedForAndAllowed()
+    {
+        var form = await PublishAsync(name: "Badges", fields: [NameField, Badges, Private]);
+        await SubmitAsync(form, """{"name":"Ada","badges":[{"visitor":"Ben","pin":"1234"}],"private":[{"phone":"555"}]}""");
+
+        var left = ExportFiles.Csv(Encoding.UTF8.GetString(await WriteAsync(form, new EntryExportRequest { Format = "csv", Options = NoMark })));
+        var asked = ExportFiles.Csv(Encoding.UTF8.GetString(await WriteAsync(form, new EntryExportRequest { Format = "csv", Sensitive = true, Options = NoMark })));
+        var json = JsonNode.Parse(await WriteAsync(form, new EntryExportRequest { Format = "json" }))!.AsArray()[0]!["answers"]!;
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(left[0].Skip(4), Is.EqualTo(new[] { "Name", "Badges" }), "a sensitive group stays out");
+            Assert.That(left[1].Skip(4), Is.EqualTo(new[] { "Ada", "Visitor: Ben" }), "and so does a group's sensitive field");
+            Assert.That(json.ToJsonString(), Is.EqualTo("""{"name":"Ada","badges":[{"visitor":"Ben"}]}"""));
+            Assert.That(asked[0].Skip(4), Is.EqualTo(new[] { "Name", "Badges", "Private" }));
+            Assert.That(asked[1].Skip(4), Is.EqualTo(new[] { "Ada", "Visitor: Ben; PIN: 1234", "Phone: 555" }), "both, when asked for and allowed");
+        });
+    }
+
+    [Test]
+    public async Task AnUnpublishedForm_ExportsAsItWasLastPublished_NotAsItsDraft()
+    {
+        var form = await PublishAsync(name: "Offline", fields: [NameField, Note, Badges]);
+        await SubmitAsync(form, """{"name":"Ada","note":"kept","badges":[{"visitor":"Ben","pin":"1234"}]}""");
+        _ = (await Forms.UnpublishAsync(form, (await Forms.GetAsync(form))!.ConcurrencyVersion, Editor))!;
+        var draft = (await Forms.GetDraftAsync(form))!;
+        // The draft drops the note and no longer marks the PIN sensitive; neither was ever published so.
+        var page = draft.Definition!.Pages[0];
+        var changed = draft.Definition with { Pages = [page with { Groups = [page.Groups[0] with { Fields = [NameField, Badges with { Fields = [Visitor, Pin with { Sensitive = false }] }] }] }] };
+        _ = (await Forms.SaveDraftAsync(form, draft.Form.ConcurrencyVersion, changed, null, Editor))!;
+
+        var rows = ExportFiles.Csv(Encoding.UTF8.GetString(await WriteAsync(form, new EntryExportRequest { Format = "csv", Options = NoMark })));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(rows[0].Skip(4), Is.EqualTo(new[] { "Name", "Note", "Badges" }), "the note its entries answered stays");
+            Assert.That(rows[1].Skip(4), Is.EqualTo(new[] { "Ada", "kept", "Visitor: Ben" }), "the PIN is as sensitive as when it was answered");
+        });
+    }
+
+    [Test]
+    public async Task TheReference_AndTheTimeReceived_AreTheOnesTheEntrysVersionAndSiteGave()
+    {
+        var form = await PublishAsync(name: "References");
+        var settings = GetRequiredService<IFormBuilderSettingsService>();
+        var shared = await settings.GetAsync<GeneralSettings>();
+        await settings.SaveAsync(shared.Value with { TimeZone = "Europe/Berlin" }, shared.Version, Editor);
+        var (shop, contact) = await SiteAsync();
+        await settings.SaveSiteAsync(shop, new GeneralSettings { TimeZone = "Pacific/Auckland" }, ["timeZone"], 0, Editor);
+        Clock.SetUtcNow(new DateTimeOffset(2026, 12, 31, 11, 0, 0, TimeSpan.Zero));
+        var onTheSite = await StoreEntryAsync(form, contentKey: contact);
+        var elsewhere = await StoreEntryAsync(form);
+        await SaveAndPublishAsync(form, definition => definition with { Settings = definition.Settings with { Submission = definition.Settings.Submission with { EntryReference = new EntryReferenceFormat { Prefix = "REQ-", Digits = 3 } } } });
+        var later = await StoreEntryAsync(form);
+
+        var rows = ExportFiles.Csv(Encoding.UTF8.GetString(await WriteAsync(form, new EntryExportRequest { Format = "csv", Options = NoMark })));
+        var numbers = new Dictionary<Guid, long>();
+        foreach (var key in new[] { onTheSite, elsewhere, later })
+        {
+            numbers[key] = (await Entries.GetAsync(key))!.Number;
+        }
+
+        Assert.That(rows.Skip(1).Select(row => (row[1], row[3])), Is.EqualTo(new[]
+        {
+            ($"REQ-2026-{numbers[later]:000}", "2026-12-31 12:00"),
+            ($"2026-{numbers[elsewhere]:00000}", "2026-12-31 12:00"),
+            ($"2027-{numbers[onTheSite]:00000}", "2027-01-01 00:00"),
+        }), "each in its version's format, and its site's year and time, as its receipt gave them");
+    }
+
+    [Test]
     public async Task AnExport_IsAuditedAndAnnounced()
     {
         var form = await FormAsync();
@@ -365,6 +509,35 @@ public sealed class EntryExportTests : ActionTestBase
     }
 
     [Test]
+    public async Task TheExportsOfAFormDeletedForGood_GoAtTheNextCleanUp_WithTheirFiles()
+    {
+        var form = await FormAsync();
+        var kept = await PublishAsync(name: "Kept");
+        await SubmitAsync(form);
+        await SubmitAsync(kept);
+        var request = new EntryExportRequest { Format = "csv" };
+        var plan = new EntryExportPlan(1, More: false, Background: true);
+        var gone = await Jobs.QueueAsync(form, request, Owner, plan);
+        var stays = await Jobs.QueueAsync(kept, request, Owner, plan);
+        await Jobs.PassAsync("test", CancellationToken.None);
+        var file = (await Jobs.GetAsync(form, gone.Key, Editor))!.File!;
+        var trashed = (await Forms.TrashAsync(form, (await Forms.GetAsync(form))!.ConcurrencyVersion, Editor))!;
+        var inTrash = await Jobs.CleanUpAsync();
+        _ = await Forms.DeleteAsync(form, trashed.ConcurrencyVersion, Editor);
+
+        var removed = await Jobs.CleanUpAsync();
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(inTrash, Is.Zero, "a form in the trash keeps them, as it may come back");
+            Assert.That(removed, Is.EqualTo(1));
+            Assert.That(await GetRequiredService<IKeyValueRepository>().GetAsync(EntryExportJobs.KeyOf(gone.Key)), Is.Null);
+            Assert.That(await Store.OpenReadAsync(file), Is.Null, "its file, which holds the entries, goes with it");
+            Assert.That((await Jobs.GetAsync(kept, stays.Key, Editor))?.State, Is.EqualTo(EntryExportState.Ready), "another form's stays");
+        });
+    }
+
+    [Test]
     public async Task AnExportWhoseServerStopped_StartsAgain_OnceItsLeaseRanOut()
     {
         var form = await FormAsync();
@@ -427,6 +600,73 @@ public sealed class EntryExportTests : ActionTestBase
     }
 
     [Test]
+    public async Task AStoreThatTimesOut_CountsAsAFailedAttempt_AndWhatItStoredGoes()
+    {
+        var form = await FormAsync();
+        await SubmitAsync(form);
+        Store.AfterSave = () => new TaskCanceledException("The store timed out.");
+        var queued = await Jobs.QueueAsync(form, new EntryExportRequest { Format = "csv" }, Owner, new EntryExportPlan(1, More: false, Background: true));
+
+        await Jobs.PassAsync("test", CancellationToken.None);
+        var again = (await Jobs.GetAsync(form, queued.Key, Editor))!;
+
+        Assert.Multiple(() =>
+        {
+            Assert.That((again.State, again.Attempts, again.Claimant), Is.EqualTo((EntryExportState.Queued, 1, (string?)null)), "tried again, as any failure");
+            Assert.That(Store.Ids, Is.Empty, "the file the store half kept goes");
+        });
+    }
+
+    [Test]
+    public async Task AHostThatStopsWhileTheFileIsStored_LeavesNoFileBehind_AndTheExportToItsLease()
+    {
+        var form = await FormAsync();
+        await SubmitAsync(form);
+        using var stopping = new CancellationTokenSource();
+        Store.AfterSave = () =>
+        {
+            stopping.Cancel();
+            return new OperationCanceledException(stopping.Token);
+        };
+        var queued = await Jobs.QueueAsync(form, new EntryExportRequest { Format = "csv" }, Owner, new EntryExportPlan(1, More: false, Background: true));
+
+        var stopped = Assert.CatchAsync<OperationCanceledException>(() => Jobs.PassAsync("test", stopping.Token));
+        var held = (await Jobs.GetAsync(form, queued.Key, Editor))!;
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(stopped, Is.Not.Null, "the host's stop goes on");
+            Assert.That((held.State, held.Attempts, held.Claimant), Is.EqualTo((EntryExportState.Running, 1, "test")), "another server takes it over once the lease ran out");
+            Assert.That(Store.Ids, Is.Empty, "no record names the file, so it goes");
+        });
+    }
+
+    [Test]
+    public async Task AWorker_RenewsItsLeaseWhileAPageTakesLong_SoNoOtherServerTakesTheExportOver()
+    {
+        var form = await FormAsync();
+        await SubmitAsync(form);
+        var gate = GetRequiredService<SlowGate>();
+        var queued = await Jobs.QueueAsync(form, new EntryExportRequest { Format = SlowFormat.FormatName }, Owner, new EntryExportPlan(1, More: false, Background: true));
+
+        var running = Jobs.PassAsync("this", CancellationToken.None);
+        var claimed = await LeasedAsync(form, queued.Key, after: DateTimeOffset.MinValue);
+        Clock.Advance(EntryExportJobs.Lease + TimeSpan.FromMinutes(1));
+        var renewed = await LeasedAsync(form, queued.Key, after: Clock.GetUtcNow());
+        await Jobs.PassAsync("other", CancellationToken.None);
+        gate.Open.SetResult();
+        await running;
+        var ready = (await Jobs.GetAsync(form, queued.Key, Editor))!;
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(claimed.Claimant, Is.EqualTo("this"));
+            Assert.That(renewed.Claimant, Is.EqualTo("this"), "past the lease it was claimed with, it still holds");
+            Assert.That((ready.State, ready.Attempts), Is.EqualTo((EntryExportState.Ready, 1)), "no other server started it again");
+        });
+    }
+
+    [Test]
     public async Task AUser_HasAtMostThreeExportsUnderWay()
     {
         var form = await FormAsync();
@@ -447,28 +687,66 @@ public sealed class EntryExportTests : ActionTestBase
     }
 
     [Test]
-    public async Task TenThousandEntries_ExportAsCsvWithinFiveSeconds_AndOneMoreGoesToTheBackground()
+    public async Task TenThousandEntriesOfTwelveValues_ExportAsCsvWithinFiveSeconds_WhileSubmissionsArrive_AndOneMoreGoesToTheBackground()
     {
         const int Count = 10_000;
-        var form = await PublishAsync(name: "Budget", fields: [NameField, Note]);
+        const int Bursts = 10;
+        const int PerBurst = 5;
+        FormField[] fields = [NameField, Note, .. Enumerable.Range(1, 10).Select(index => new FormField
+        {
+            Key = Guid.Parse($"c4100000-0000-4000-8000-0000000001{index:00}"),
+            Type = "text",
+            Alias = $"extra{index}",
+            Label = new LocalizedText($"Extra {index}"),
+        })];
+        var form = await PublishAsync(name: "Budget", fields: fields);
         await SeedAsync(form, Count);
         var request = new EntryExportRequest { Format = "csv", Options = NoMark };
+        var row = (await FormRows.GetAsync(form))!;
+        var name = (await FormRows.ListFieldsAsync(row.Id)).Single(field => field.Values.FieldKey == NameField.Key).Id;
 
+        // As ADR-0003 measured: five submissions every 100 ms while the export runs, each timed.
         var plan = await Exports.PlanAsync(form, request, Owner);
+        var times = new ConcurrentBag<TimeSpan>();
+        var arriving = Task.Run(async () =>
+        {
+            for (var burst = 0; burst < Bursts; burst++)
+            {
+                await Task.WhenAll(Enumerable.Range(0, PerBurst).Select(async arrival =>
+                {
+                    var took = Stopwatch.StartNew();
+                    _ = await Entries.CreateAsync(new NewEntry
+                    {
+                        Key = Guid.NewGuid(),
+                        FormId = row.Id,
+                        FormVersionId = row.PublishedVersionId!.Value,
+                        SubmissionId = Guid.NewGuid(),
+                        SubmissionHash = new string('a', 64),
+                        Culture = "en-US",
+                        Values = [new NewEntryValue(name, "Arriving")],
+                    });
+                    times.Add(took.Elapsed);
+                }));
+                await Task.Delay(100);
+            }
+        });
         var watch = Stopwatch.StartNew();
         await using var output = new CountingStream();
         var file = await Exports.WriteAsync(form, request, Owner, output);
         var elapsed = watch.Elapsed;
-        await TestContext.Out.WriteLineAsync($"10,000 entries as CSV: {elapsed.TotalMilliseconds:0} ms, {output.Length:N0} bytes");
-        await SubmitAsync(form);
+        await arriving;
+        var p95 = times.Order().ElementAt((int)Math.Ceiling(times.Count * 0.95) - 1);
+        await TestContext.Out.WriteLineAsync($"10,000 entries of 12 values as CSV: {elapsed.TotalMilliseconds:0} ms, {output.Length:N0} bytes; {times.Count} submissions meanwhile, p95 {p95.TotalMilliseconds:0} ms");
         var larger = await Exports.PlanAsync(form, request, Owner);
 
         Assert.Multiple(() =>
         {
             Assert.That(plan, Is.EqualTo(new EntryExportPlan(Count, More: false, Background: false)));
-            Assert.That(file!.Entries, Is.EqualTo(Count));
-            Assert.That(output.Lines, Is.EqualTo(Count + 1), "a header and a line per entry");
+            Assert.That(file!.Entries, Is.InRange(Count, Count + (Bursts * PerBurst)), "what had arrived before its first page, and nothing twice");
+            Assert.That(output.Lines, Is.EqualTo(file.Entries + 1), "a header and a line per entry");
             Assert.That(elapsed, Is.LessThanOrEqualTo(TimeSpan.FromSeconds(5)));
+            Assert.That(times, Has.Count.EqualTo(Bursts * PerBurst));
+            Assert.That(p95, Is.LessThanOrEqualTo(TimeSpan.FromMilliseconds(150)), "a submission waits behind one page at most");
             Assert.That(larger!.Background, Is.True);
         });
     }
@@ -480,8 +758,12 @@ public sealed class EntryExportTests : ActionTestBase
         base.CustomTestSetup(builder);
         builder.Services.RemoveAll(descriptor => descriptor.ServiceType == typeof(IHostedService) && descriptor.ImplementationType == typeof(EntryExportWorker));
         builder.Services.AddSingleton<Heard>();
+        builder.Services.AddSingleton<SlowGate>();
+        builder.Services.AddSingleton<MemoryFileStore>();
+        builder.Services.AddUnique<IFormBuilderFileStore>(provider => provider.GetRequiredService<MemoryFileStore>());
+        builder.Services.AddUnique(new EntryExportTiming(TimeSpan.FromMilliseconds(50)));
         builder.AddNotificationAsyncHandler<ExportCompletedNotification, HeardHandler>();
-        builder.JironFormBuilder().ExportFormats().Append<BrokenFormat>();
+        builder.JironFormBuilder().ExportFormats().Append<BrokenFormat>().Append<SlowFormat>();
     }
 
     private static FormBuilderExportOptions NoMark { get; } = new() { ByteOrderMark = false };
@@ -499,20 +781,62 @@ public sealed class EntryExportTests : ActionTestBase
     private async Task<IReadOnlyList<string>> NamesAsync(Guid form, EntryExportRequest request) =>
         [.. ExportFiles.Csv(Encoding.UTF8.GetString(await WriteAsync(form, request))).Skip(1).Select(row => row[4])];
 
-    private async Task StoreTestEntryAsync(Guid form)
+    private Task<Guid> StoreTestEntryAsync(Guid form) => StoreEntryAsync(form, isTest: true);
+
+    // An entry of the form's live version, as stored; its key.
+    private async Task<Guid> StoreEntryAsync(Guid form, EntryState state = EntryState.Submitted, bool isTest = false, Guid? contentKey = null)
     {
         var row = (await FormRows.GetAsync(form))!;
+        var key = Guid.NewGuid();
         _ = await Entries.CreateAsync(new NewEntry
         {
-            Key = Guid.NewGuid(),
+            Key = key,
             FormId = row.Id,
             FormVersionId = row.PublishedVersionId!.Value,
-            State = EntryState.Submitted,
-            IsTest = true,
+            State = state,
+            IsTest = isTest,
             SubmissionId = Guid.NewGuid(),
             SubmissionHash = new string('a', 64),
             Culture = "en-US",
+            ContentKey = contentKey,
         });
+        return key;
+    }
+
+    // A site of its own, published: its root and a page on it.
+    private async Task<(Guid Root, Guid Page)> SiteAsync()
+    {
+        var types = GetRequiredService<IContentTypeService>();
+        var contents = GetRequiredService<IContentService>();
+        var type = new ContentType(GetRequiredService<IShortStringHelper>(), -1) { Alias = "jfbExportPage", Name = "Page", AllowedAsRoot = true };
+        Assert.That((await types.CreateAsync(type, Constants.Security.SuperUserKey)).Success, Is.True);
+        var root = new Content("Shop", -1, type);
+        contents.Save(root);
+        contents.Publish(root, ["*"]);
+        var page = new Content("Contact", root, type);
+        contents.Save(page);
+        contents.Publish(page, ["*"]);
+        await GetRequiredService<IDocumentNavigationManagementService>().RebuildAsync();
+        await GetRequiredService<IPublishStatusManagementService>().InitializeAsync(CancellationToken.None);
+        return (root.Key, page.Key);
+    }
+
+    // The export's record once it runs under a lease that ends after the moment, as the worker's renewal leaves it.
+    private async Task<EntryExportRecord> LeasedAsync(Guid form, Guid key, DateTimeOffset after)
+    {
+        var waited = Stopwatch.StartNew();
+        while (waited.Elapsed < TimeSpan.FromSeconds(20))
+        {
+            if (await Jobs.GetAsync(form, key, Editor) is { State: EntryExportState.Running, LeaseUtc: { } lease } record && lease > after)
+            {
+                return record;
+            }
+
+            await Task.Delay(20);
+        }
+
+        Assert.Fail($"The export's lease did not reach past {after:O}.");
+        return null!;
     }
 
     // An entry with these files, their bytes in the store; its number.
@@ -557,13 +881,13 @@ public sealed class EntryExportTests : ActionTestBase
         return entry!.Number;
     }
 
-    // The entries as a submission stores them, a second apart, each with its name and a note.
+    // The entries as a submission stores them, a second apart, each with its name and a value of every other field.
     private async Task SeedAsync(Guid form, int count)
     {
         var row = (await FormRows.GetAsync(form))!;
         var catalogue = await FormRows.ListFieldsAsync(row.Id);
         var name = catalogue.Single(field => field.Values.FieldKey == NameField.Key).Id;
-        var note = catalogue.Single(field => field.Values.FieldKey == Note.Key).Id;
+        var others = catalogue.Where(field => field.Values.FieldKey != NameField.Key).Select(field => field.Id).ToList();
         var start = Clock.GetUtcNow().UtcDateTime;
         await GetRequiredService<FormBuilderDatabase>().WriteAsync(
             async db =>
@@ -589,7 +913,10 @@ public sealed class EntryExportTests : ActionTestBase
                     };
                     await db.InsertAsync(entry);
                     await db.InsertAsync(new EntryValueDto { EntryId = entry.Id, FieldId = name, Text = text, TextKey = EntryTextKey.For(text) });
-                    await db.InsertAsync(new EntryValueDto { EntryId = entry.Id, FieldId = note, Text = "A note, \"quoted\"", TextKey = EntryTextKey.For("a note") });
+                    foreach (var other in others)
+                    {
+                        await db.InsertAsync(new EntryValueDto { EntryId = entry.Id, FieldId = other, Text = "A note, \"quoted\"", TextKey = EntryTextKey.For("a note") });
+                    }
                 }
 
                 var n = new SqlNames(db);
@@ -633,6 +960,35 @@ public sealed class EntryExportTests : ActionTestBase
             await foreach (var _ in content.Entries.WithCancellation(cancellationToken))
             {
                 throw new IOException("The disk is full.");
+            }
+        }
+    }
+
+    /// <summary>What a <see cref="SlowFormat"/> waits for.</summary>
+    internal sealed class SlowGate
+    {
+        public TaskCompletionSource Open { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    }
+
+    /// <summary>A format that waits for its gate before it writes, as a page of many files would take long.</summary>
+    internal sealed class SlowFormat(SlowGate gate) : IFormBuilderExportFormat
+    {
+        public const string FormatName = "testing-slow";
+
+        public string Name => FormatName;
+
+        public string DisplayName => "Slow";
+
+        public string FileExtension => ".txt";
+
+        public string ContentType => "text/plain";
+
+        public async Task WriteAsync(FormBuilderExport content, Stream output, CancellationToken cancellationToken)
+        {
+            await gate.Open.Task.WaitAsync(cancellationToken);
+            await foreach (var _ in content.Entries.WithCancellation(cancellationToken))
+            {
+                output.WriteByte((byte)'.');
             }
         }
     }

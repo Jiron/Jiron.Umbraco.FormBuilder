@@ -18,9 +18,11 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Integration.ManagementApi;
 /// The permission matrix (ADR-0013, ADR-0050): it finds every endpoint of the management API through the API explorer,
 /// checks its declaration against <see cref="Declared"/>, written out by hand from ADR-0050's table, and calls each as
 /// every persona that must be refused: without the Forms section, seeing the folder but lacking the permission, and
-/// holding nothing on the folder or form. A new endpoint is called by itself, and fails until the table names it. The
-/// form picker's endpoints are the one reviewed exception: authorised by content access (ADR-0013, ADR-0133), each
-/// carries that declaration and has its own access tests (<c>PickerApiTests</c>).
+/// holding nothing on the folder or form. A new endpoint is called by itself, and fails until the table names it. Two
+/// reviewed exceptions: the form picker's endpoints, authorised by content access (ADR-0013, ADR-0133), each carrying that
+/// declaration with its own access tests (<c>PickerApiTests</c>); and the download of a background export's file, which a
+/// plain link calls with a ticket instead of a token (ADR-0210), so it is anonymous, declares its ticket, and finds
+/// nothing for anyone without one; its ticket's own tests are <c>EntryExportApiTests</c>.
 /// </summary>
 [TestFixture]
 [UmbracoTest(Database = UmbracoTestOptions.Database.NewSchemaPerTest, Boot = true)]
@@ -81,7 +83,7 @@ public sealed class PermissionMatrixTests : ManagementApiTestBase
         ["POST form/{key}/entries/export/file"] = (FormBuilderPermissions.Export, FormBuilderAccessResourceKind.Form, "key"),
         ["POST form/{key}/entries/export/jobs"] = (FormBuilderPermissions.Export, FormBuilderAccessResourceKind.Form, "key"),
         ["GET form/{key}/entries/export/jobs/{exportKey}"] = (FormBuilderPermissions.Export, FormBuilderAccessResourceKind.Form, "key"),
-        ["GET form/{key}/entries/export/jobs/{exportKey}/file"] = (FormBuilderPermissions.Export, FormBuilderAccessResourceKind.Form, "key"),
+        ["POST form/{key}/entries/export/jobs/{exportKey}/ticket"] = (FormBuilderPermissions.Export, FormBuilderAccessResourceKind.Form, "key"),
         ["GET form/{key}/versions"] = (FormBuilderPermissions.Design, FormBuilderAccessResourceKind.Form, "key"),
         ["GET form/{key}/versions/{number}"] = (FormBuilderPermissions.Design, FormBuilderAccessResourceKind.Form, "key"),
         ["GET form/{key}/versions/compare"] = (FormBuilderPermissions.Design, FormBuilderAccessResourceKind.Form, "key"),
@@ -153,6 +155,9 @@ public sealed class PermissionMatrixTests : ManagementApiTestBase
     /// Only the form picker's may be on it (6.7e).
     /// </summary>
     private static readonly string[] Exceptions = ["GET picker/children", "GET picker/search", "GET picker/forms", "GET picker/folders", "GET picker/themes"];
+
+    /// <summary>The reviewed endpoints a ticket authorises instead of a signed-in user: only the download of an export's file (11.4).</summary>
+    private static readonly string[] Tickets = ["GET form/{key}/entries/export/jobs/{exportKey}/file"];
 
     // The personas who may stand for "sees it but lacks the permission", in the order the test tries them.
     private static readonly string[] Seers = ["viewer", "designer", "entryHandler", "privacyOfficer", "noAccess"];
@@ -238,14 +243,20 @@ public sealed class PermissionMatrixTests : ManagementApiTestBase
         Assert.Multiple(() =>
         {
             Assert.That(endpoints, Is.Not.Empty, "the API explorer lists the management API");
-            Assert.That(endpoints.Select(endpoint => endpoint.Name), Is.EquivalentTo(Declared.Keys.Concat(Exceptions)), "every endpoint is in the table, and the table names no endpoint that is gone");
+            Assert.That(endpoints.Select(endpoint => endpoint.Name), Is.EquivalentTo(Declared.Keys.Concat(Exceptions).Concat(Tickets)), "every endpoint is in the table, and the table names no endpoint that is gone");
             Assert.That(Exceptions, Has.All.StartsWith("GET picker/"), "the reviewed exception list holds the form picker's endpoints only");
             foreach (var endpoint in endpoints.Where(endpoint => Exceptions.Contains(endpoint.Name)))
             {
                 Assert.That(endpoint.Declarations.Select(declaration => declaration.GetType()), Is.EqualTo(new[] { typeof(FormBuilderContentAccessAttribute) }), $"{endpoint.Name} declares content access");
             }
 
-            foreach (var endpoint in endpoints.Where(endpoint => !Exceptions.Contains(endpoint.Name)))
+            foreach (var endpoint in endpoints)
+            {
+                var ticket = endpoint.Declarations.Any(declaration => declaration is FormBuilderTicketAccessAttribute);
+                Assert.That((ticket, endpoint.AllowsAnonymous), Is.EqualTo((Tickets.Contains(endpoint.Name), Tickets.Contains(endpoint.Name))), $"{endpoint.Name}: anonymous exactly when it declares a ticket, and only a reviewed one does");
+            }
+
+            foreach (var endpoint in endpoints.Where(endpoint => !Exceptions.Contains(endpoint.Name) && !Tickets.Contains(endpoint.Name)))
             {
                 Assert.That(endpoint.Declarations, Has.Count.EqualTo(1), $"{endpoint.Name} carries exactly one declaration");
                 if (endpoint.Declarations.Count == 1 && Declared.TryGetValue(endpoint.Name, out var expected))
@@ -266,13 +277,32 @@ public sealed class PermissionMatrixTests : ManagementApiTestBase
     public async Task EachEndpoint_RefusesAUserWithoutTheFormsSection()
     {
         var answers = new List<string>();
-        foreach (var endpoint in Endpoints().Where(endpoint => !Exceptions.Contains(endpoint.Name)))
+        foreach (var endpoint in Endpoints().Where(endpoint => !Exceptions.Contains(endpoint.Name) && !Tickets.Contains(endpoint.Name)))
         {
             answers.Add($"{endpoint.Name}: {(await CallAsync("outsider", endpoint, Visible(endpoint))).Outcome}");
         }
 
         await WriteAsync(answers);
         Assert.That(answers, Is.All.EndsWith(": 403 no_section"), string.Join("\n", answers));
+    }
+
+    [Test]
+    public async Task EachTicketsEndpoint_FindsNothing_ForAnyoneWithoutATicket()
+    {
+        var answers = new List<string>();
+        foreach (var endpoint in Endpoints().Where(endpoint => Tickets.Contains(endpoint.Name)))
+        {
+            foreach (var role in new[] { "admin", "outsider", "noAccess" })
+            {
+                answers.Add($"{endpoint.Name} as {role}: {(await CallAsync(role, endpoint, _spring)).Outcome}");
+            }
+
+            answers.Add($"{endpoint.Name} without a token: {(await Api.CallAsync(null, endpoint, _spring)).Outcome}");
+        }
+
+        await WriteAsync(answers);
+        Assert.That(answers, Has.Count.EqualTo(Tickets.Length * 4));
+        Assert.That(answers, Is.All.EndsWith(": 404 export_not_found"), string.Join("\n", answers));
     }
 
     [Test]

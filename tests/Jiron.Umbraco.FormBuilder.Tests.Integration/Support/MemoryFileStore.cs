@@ -20,6 +20,12 @@ internal sealed class MemoryFileStore : IFormBuilderFileStore
     /// <summary>Runs after each delete with the id it deleted, or null.</summary>
     public Func<string, Task>? AfterDelete { get; set; }
 
+    /// <summary>
+    /// Runs after each save has kept the bytes, and the save throws what it returns, as a store that times out or a host
+    /// that stops on the way would; null, or a callback that returns null, for a save that succeeds.
+    /// </summary>
+    public Func<Exception?>? AfterSave { get; set; }
+
     /// <summary>The ids stored now.</summary>
     public IReadOnlyCollection<string> Ids => [.. _files.Keys];
 
@@ -33,6 +39,11 @@ internal sealed class MemoryFileStore : IFormBuilderFileStore
         if (!_files.TryAdd(id, copy.ToArray()))
         {
             throw new IOException("A file is stored under the id already.");
+        }
+
+        if (AfterSave?.Invoke() is { } failure)
+        {
+            throw failure;
         }
     }
 

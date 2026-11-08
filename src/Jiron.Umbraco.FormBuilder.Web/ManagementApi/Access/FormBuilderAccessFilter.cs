@@ -21,7 +21,9 @@ namespace Jiron.Umbraco.FormBuilder.Web.ManagementApi.Access;
 /// (<c>403 forbidden</c> naming it), and last the request itself
 /// (<c>400 invalid_request</c>). A body that holds the key but cannot be read answers <c>400 invalid_request</c> before
 /// any check of the folder or form, which it would otherwise make in the wrong place. An action without exactly one
-/// declaration, or with a key that names nothing, is refused.
+/// declaration, or with a key that names nothing, is refused. An action that declares a ticket of its own
+/// (<see cref="FormBuilderTicketAccessAttribute"/>) needs no user; only the migration state and the request are checked
+/// before it reads its ticket.
 /// </summary>
 internal sealed partial class FormBuilderAccessFilter(
     IAuthorizationService authorization,
@@ -94,6 +96,11 @@ internal sealed partial class FormBuilderAccessFilter(
         }
 
         var declaration = declarations[0];
+        if (declaration is FormBuilderTicketAccessAttribute)
+        {
+            return await TicketRefusalAsync(context);
+        }
+
         if (!users.TryGetUmbracoUser(http.User, out var umbracoUser))
         {
             return new ChallengeResult();
@@ -202,6 +209,19 @@ internal sealed partial class FormBuilderAccessFilter(
 
         http.Features.Set(new FormBuilderRequestAccess(AccessUser.Of(umbracoUser)));
         return null;
+    }
+
+    // A ticket's action (ADR-0210): no user, as its request comes from a plain link; the tables ready and the request
+    // read, and the ticket the action's own to check.
+    private async Task<IActionResult?> TicketRefusalAsync(ActionExecutingContext context)
+    {
+        var http = context.HttpContext;
+        if (await migrations.IsPendingAsync(http.RequestAborted))
+        {
+            return FormBuilderProblems.MigrationsPending(http);
+        }
+
+        return context.ModelState.IsValid ? null : FormBuilderProblems.InvalidRequest(context.ModelState);
     }
 
     // A section declaration checks what the user sees, when it names a folder or form; a permission declaration each

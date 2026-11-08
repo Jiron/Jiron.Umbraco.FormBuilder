@@ -3212,6 +3212,13 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          {
+            "name": "ticket",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -3224,6 +3231,67 @@
                     {
                       "type": "string",
                       "format": "binary"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The authenticated user does not have access to this resource"
+          }
+        }
+      }
+    },
+    "/umbraco/jfb/management/api/v1/form/{key}/entries/export/jobs/{exportKey}/ticket": {
+      "post": {
+        "tags": [
+          "Entry export"
+        ],
+        "operationId": "EntryExportTicket",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "exportKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/EntryExportTicketResponseModel"
                     }
                   ]
                 }
@@ -11338,6 +11406,7 @@
       "EntryExportRequestModel": {
         "required": [
           "format",
+          "remember",
           "sensitive"
         ],
         "type": "object",
@@ -11379,6 +11448,9 @@
               }
             ],
             "nullable": true
+          },
+          "remember": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false
@@ -11423,6 +11495,23 @@
           "problem": {
             "type": "string",
             "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "EntryExportTicketResponseModel": {
+        "required": [
+          "expiresUtc",
+          "url"
+        ],
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string"
+          },
+          "expiresUtc": {
+            "type": "string",
+            "format": "date-time"
           }
         },
         "additionalProperties": false

@@ -343,6 +343,7 @@ export type EntryExportRequestModel = {
     fields?: Array<string> | null;
     sensitive: boolean;
     options?: EntryExportOptionsRequestModel | null;
+    remember: boolean;
 };
 
 export type EntryExportStatusResponseModel = {
@@ -354,6 +355,11 @@ export type EntryExportStatusResponseModel = {
     fileName?: string | null;
     expiresUtc?: string | null;
     problem?: string | null;
+};
+
+export type EntryExportTicketResponseModel = {
+    url: string;
+    expiresUtc: string;
 };
 
 export type EntryExportViewResponseModel = {
@@ -2987,15 +2993,13 @@ export type EntryExportDownloadData = {
         key: string;
         exportKey: string;
     };
-    query?: never;
+    query?: {
+        ticket?: string;
+    };
     url: '/umbraco/jfb/management/api/v1/form/{key}/entries/export/jobs/{exportKey}/file';
 };
 
 export type EntryExportDownloadErrors = {
-    /**
-     * The resource is protected and requires an authentication token
-     */
-    401: unknown;
     /**
      * The authenticated user does not have access to this resource
      */
@@ -3016,6 +3020,42 @@ export type EntryExportDownloadResponses = {
 };
 
 export type EntryExportDownloadResponse = EntryExportDownloadResponses[keyof EntryExportDownloadResponses];
+
+export type EntryExportTicketData = {
+    body?: never;
+    path: {
+        key: string;
+        exportKey: string;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/form/{key}/entries/export/jobs/{exportKey}/ticket';
+};
+
+export type EntryExportTicketErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type EntryExportTicketError = EntryExportTicketErrors[keyof EntryExportTicketErrors];
+
+export type EntryExportTicketResponses = {
+    /**
+     * OK
+     */
+    200: EntryExportTicketResponseModel;
+};
+
+export type EntryExportTicketResponse = EntryExportTicketResponses[keyof EntryExportTicketResponses];
 
 export type EntryExportPlanData = {
     body?: EntryExportRequestModel;

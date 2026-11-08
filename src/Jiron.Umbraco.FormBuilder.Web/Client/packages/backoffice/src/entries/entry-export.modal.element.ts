@@ -28,6 +28,7 @@ import {
   fieldsFor,
   hasSensitive,
   HEADERS,
+  inBackground,
   narrows,
   requestOf,
   statusLine,
@@ -192,7 +193,13 @@ export class EntryExportModalElement extends UmbModalBaseElement<EntryExportModa
 
   override connectedCallback() {
     super.connectedCallback();
+    this.#closed = false;
     void this.#read();
+  }
+
+  override disconnectedCallback() {
+    this.#closed = true;
+    super.disconnectedCallback();
   }
 
   #term = (key: string, ...args: unknown[]) => this.localize.term(`jfbEntries_${key}`, ...args);
@@ -230,7 +237,10 @@ export class EntryExportModalElement extends UmbModalBaseElement<EntryExportModa
     void this.#count();
   }
 
-  /** Counts the entries once: neither the format nor the fields change which entries go. */
+  /**
+   * Counts the entries once: neither the format nor the fields change which entries go. Whether they go to the
+   * background, which a format that writes files decides too, is `inBackground`'s.
+   */
   async #count() {
     const form = this.data?.form;
     const choices = this._choices;
@@ -262,6 +272,9 @@ export class EntryExportModalElement extends UmbModalBaseElement<EntryExportModa
     this.#change({ fields: all.filter((one) => now.has(one)) });
   }
 
+  /** Whether the sidebar went, by Cancel or otherwise: a file that comes after it is neither saved nor printed. */
+  #closed = false;
+
   async #export() {
     const form = this.data?.form;
     const choices = this._choices;
@@ -271,7 +284,7 @@ export class EntryExportModalElement extends UmbModalBaseElement<EntryExportModa
     this._busy = true;
     this._problem = '';
     const request = this.#request(choices);
-    if (plan.background) {
+    if (inBackground(plan, format)) {
       const started = await startExport(this, form, request);
       this._busy = false;
       if (!('value' in started)) {
@@ -286,6 +299,8 @@ export class EntryExportModalElement extends UmbModalBaseElement<EntryExportModa
     }
 
     const file = await writeExportFile(this, form, request);
+    // Cancelled meanwhile: the user no longer asks for the file.
+    if (this.#closed) return;
     if (!('value' in file)) {
       this._busy = false;
       // Entries came in since the count, and the export no longer fits a download: counted again, it says so and goes
@@ -296,7 +311,9 @@ export class EntryExportModalElement extends UmbModalBaseElement<EntryExportModa
     }
 
     if (format.name === 'print') {
-      const printed = await printDocument(await file.value.text());
+      const html = await file.value.text();
+      if (this.#closed) return;
+      const printed = await printDocument(html);
       this._busy = false;
       if (!printed) {
         this._problem = 'export_printFailed';
@@ -341,7 +358,7 @@ export class EntryExportModalElement extends UmbModalBaseElement<EntryExportModa
     let line: TemplateResult;
     if (plan) {
       line = html`<p>${entriesLine(this.#term, plan, !!this.#ticked, narrows(this.data?.filter))}</p>
-        ${plan.background ? html`<p class="help">${this.#term('export_background')}</p>` : nothing}`;
+        ${inBackground(plan, this.#format) ? html`<p class="help">${this.#term('export_background')}</p>` : nothing}`;
     } else if (this._planFailed) {
       line = html`<div class="failed" role="alert">
         <span>${this.#term('export_entriesFailed')}</span>
@@ -498,7 +515,7 @@ export class EntryExportModalElement extends UmbModalBaseElement<EntryExportModa
         ${view.exports.map(
           (status) =>
             html`<li>
-              <span>${statusLine(this.#term, status)}</span>
+              <span>${statusLine(this.#term, status, this.localize.lang())}</span>
               ${
                 status.state === 'ready'
                   ? html`<uui-button

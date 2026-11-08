@@ -1,13 +1,14 @@
 // What the Export sidebar and the background exports read and write (ROADMAP 11.4, ADR-0210): what the sidebar opens
-// with, the plan, the file of an export that fits a download, and a background export with its status and file. Each
-// answer is the server's, or undefined after a refusal; a refusal's code comes along where the sidebar says it.
+// with, the plan, the file of an export that fits a download, and a background export with its status and the link to
+// its file. Each answer is the server's, or undefined after a refusal; a refusal's code comes along where the sidebar
+// says it.
 import type { UmbClassInterface } from '@umbraco-cms/backoffice/class-api';
 import { tryExecute } from '@umbraco-cms/backoffice/resources';
 import {
-  entryExportDownload,
   entryExportPlan,
   entryExportStart,
   entryExportStatus,
+  entryExportTicket,
   entryExportView,
   entryExportWriteFile,
   type EntryExportPlanResponseModel,
@@ -15,6 +16,7 @@ import {
   type EntryExportStatusResponseModel,
   type EntryExportViewResponseModel,
 } from '../api';
+import { client } from '../api/client.gen';
 import { codeOf } from '../library/library-changes';
 
 const quiet = { disableNotifications: true } as const;
@@ -81,12 +83,35 @@ export async function readExportStatus(
   }
 }
 
-/** A background export's file; undefined when it is gone or the server didn't answer. */
-export async function downloadExport(form: string, key: string): Promise<Blob | undefined> {
+/**
+ * Downloads a background export's file through a link with a one-minute ticket, which the browser saves as it comes,
+ * whatever its size, rather than in the page's memory (ADR-0210): a link's request carries no backoffice token. False
+ * when the export is gone, its owner may no longer download it, or the server didn't answer.
+ */
+export async function downloadExport(
+  form: string,
+  key: string,
+  follow: (url: string) => void = followLink,
+): Promise<boolean> {
   try {
-    const { data } = await entryExportDownload({ path: { key: form, exportKey: key }, parseAs: 'blob' });
-    return data instanceof Blob ? data : undefined;
+    const { data } = await entryExportTicket({ path: { key: form, exportKey: key } });
+    if (!data) return false;
+    follow(new URL(data.url, client.getConfig().baseUrl || window.location.origin).href);
+    return true;
   } catch {
-    return undefined;
+    return false;
   }
+}
+
+/**
+ * Follows a link that saves a file, which the server names as an attachment. The link stays off the page: an `a` element
+ * follows its link without it, and its click then never reaches the backoffice's router, which would take the address
+ * for one of its own routes.
+ */
+export function followLink(url: string): void {
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = '';
+  link.rel = 'noopener';
+  link.click();
 }

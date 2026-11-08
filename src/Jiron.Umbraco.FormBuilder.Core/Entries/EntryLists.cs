@@ -879,9 +879,9 @@ internal sealed partial class EntryLists(
         return options;
     }
 
-    // The reference format of the version the site serves, or of the draft before a publish.
+    // The reference format of the version the entries are shown by (FormDocuments.ServedOfAsync).
     private async Task<EntryReferenceFormat?> ReferenceFormatAsync(StoredForm form, CancellationToken cancellationToken) =>
-        (form.PublishedVersionId ?? form.DraftVersionId) is { } versionId && await forms.GetVersionByIdAsync(versionId, cancellationToken) is { } version
+        await documents.ServedOfAsync(form, cancellationToken) is { } version
             ? documents.Readable(version).Settings.Submission.EntryReference
             : null;
 

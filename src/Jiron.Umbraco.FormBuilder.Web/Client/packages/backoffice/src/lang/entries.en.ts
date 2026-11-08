@@ -447,6 +447,7 @@ export default {
     export_byteOrderMarkHelp: 'Spreadsheet programs then read letters such as ä and é correctly.',
     export_yours: 'Your exports of this form',
     export_ready: (number: number) => `Your export of ${entries(number)} is ready.`,
+    export_keptUntil: (when: string) => `Kept until ${when}.`,
     export_failedOne: (number: number) => `The export of ${entries(number)} couldn't be prepared.`,
     export_preparing: (number: number, more: boolean) =>
       more ? 'Preparing the export of more than 1,000 entries.' : `Preparing the export of ${entries(number)}.`,
@@ -462,6 +463,9 @@ export default {
     export_failedToast: (number: number, more: boolean) =>
       `The export of ${more ? 'more than 1,000 entries' : entries(number)} couldn't be prepared. Try again; if it fails again, a developer finds why in the site's log.`,
     export_download: 'Download',
+    export_lostToast:
+      "The export's progress can't be read just now. It goes on, and Export… in the form's Entries view lists it.",
+    export_goneToast: 'The export is no longer there. Start it again from Export… in the Entries view.',
     export_downloadFailed: "The file couldn't be downloaded. It may have expired; export again.",
     export_start: 'Export',
     export_startCount: (number: number) => `Export ${entries(number)}`,

@@ -43,7 +43,10 @@ internal sealed record EntryExportRequest
 /// <summary>What an export holds before it starts: how many entries, and whether it goes to the background.</summary>
 /// <param name="Entries">The number of entries; a lower bound when <paramref name="More"/>.</param>
 /// <param name="More">Whether a search found more than it counts.</param>
-/// <param name="Background">Whether the export runs in the background rather than in the response.</param>
+/// <param name="Background">
+/// Whether the export runs in the background rather than in the response: one of more than
+/// <see cref="EntryExports.StreamedAtMost"/> entries, and one of a format that writes the entries' files.
+/// </param>
 internal sealed record EntryExportPlan(int Entries, bool More, bool Background);
 
 /// <summary>Who exports: the user, what they may see, and the language of the export's own words.</summary>
@@ -125,13 +128,16 @@ internal sealed partial class EntryExports(
             return null;
         }
 
+        // A format that writes the entries' files goes to the background whatever the number, as a file of files has no
+        // bound: it is stored, and its link saves it as it comes rather than in the browser's memory.
+        var files = export.Format.WritesFiles;
         if (export.Selected is { } selected)
         {
-            return new EntryExportPlan(selected.Count, More: false, Background: false);
+            return new EntryExportPlan(selected.Count, More: false, Background: files);
         }
 
         var count = (await queries.ListAsync(export.Query, null, 1, count: true, cancellationToken)).Count ?? new EntryCount(0, More: false);
-        return new EntryExportPlan(count.Value, count.More, Background: count.More || count.Value > StreamedAtMost);
+        return new EntryExportPlan(count.Value, count.More, Background: files || count.More || count.Value > StreamedAtMost);
     }
 
     /// <summary>
@@ -246,9 +252,8 @@ internal sealed partial class EntryExports(
 
         var query = request.Entries.Count == 0 ? await lists.ExportQueryAsync(form, request.Filter, problems, cancellationToken) : new EntryQuery(form.Id);
         var catalogue = await forms.ListFieldsAsync(form.Id, cancellationToken);
-        var definition = (form.PublishedVersionId ?? form.DraftVersionId) is { } versionId && await forms.GetVersionByIdAsync(versionId, cancellationToken) is { } version
-            ? documents.Readable(version)
-            : null;
+        // Laid out as the entries are shown: by the version the site serves or last served, never by a draft's changes.
+        var definition = await documents.ServedOfAsync(form, cancellationToken) is { } version ? documents.Readable(version) : null;
         var known = catalogue.Select(row => row.Values.FieldKey).ToHashSet();
         if (request.Fields is { } chosen)
         {
@@ -307,14 +312,16 @@ internal sealed partial class EntryExports(
         var placed = new HashSet<Guid>();
         var count = 0;
 
-        bool Takes(Guid key, bool parentSensitive) =>
-            (chosen is null || chosen.Contains(key)) && (sensitive || !(parentSensitive || (byKey.TryGetValue(key, out var row) && row.IsSensitive)));
+        // A field is sensitive when its version or the catalogue marks it, or the repeatable group it is in.
+        bool Marked(Guid key) => byKey.TryGetValue(key, out var row) && row.IsSensitive;
+        bool Shows(bool marked) => sensitive || !marked;
+        bool Chosen(Guid key) => chosen is null || chosen.Contains(key);
         string LabelOf(Guid key, string fallback) => byKey.TryGetValue(key, out var row) && row.Label.Length > 0 ? row.Label : fallback;
         string AliasOf(FormField field) => field.Alias ?? (byKey.TryGetValue(field.Key, out var row) ? row.Alias : field.Key.ToString("N"));
 
         foreach (var field in definition?.Pages.SelectMany(page => page.Groups).SelectMany(group => group.Fields) ?? [])
         {
-            if (types.Find(field.Type) is not { HoldsValue: true } || !Takes(field.Key, parentSensitive: false))
+            if (types.Find(field.Type) is not { HoldsValue: true } || !Chosen(field.Key) || !Shows(field.Sensitive || Marked(field.Key)))
             {
                 continue;
             }
@@ -325,7 +332,7 @@ internal sealed partial class EntryExports(
             count++;
             if (MergeTagAnswerTexts.IsRepeater(field))
             {
-                var children = field.Fields.Where(child => types.Find(child.Type) is { HoldsValue: true } && (sensitive || !(field.Sensitive || child.Sensitive))).ToList();
+                var children = field.Fields.Where(child => types.Find(child.Type) is { HoldsValue: true } && Shows(child.Sensitive || Marked(child.Key))).ToList();
                 tables.Add(new FormBuilderExportTable(label, alias, [.. children.Select(child => new FormBuilderExportColumn(FormBuilderExportColumnKind.Answer, LabelOf(child.Key, AliasOf(child)), AliasOf(child), AliasOf(child)))]));
                 tableSpecs.Add(new TableSpec(field.Key, [.. children.Select(child => child.Key)]));
                 foreach (var child in children.Where(child => types.Find(child.Type) is { Storage: FieldStorageKind.File }))
@@ -371,7 +378,7 @@ internal sealed partial class EntryExports(
         // A field only an older version had, of no repeatable group or grid, last, as the list shows it.
         foreach (var field in EntryLists.Fields(catalogue).Where(field => field.Removed && field.Parent is null && field.Kind != EntryListFieldKind.Group && !placed.Contains(field.Key)))
         {
-            if (!Takes(field.Key, parentSensitive: false))
+            if (!Chosen(field.Key) || !Shows(field.Sensitive || Marked(field.Key)))
             {
                 continue;
             }
@@ -445,16 +452,22 @@ internal sealed partial class EntryExports(
         }
 
         var read = await scopes.ScopesAsync(export.Form, page, cancellationToken);
+        var zones = new Dictionary<Guid, TimeZoneInfo>();
         var files = export.Format.WritesFiles && export.FileFields.Count > 0
             ? (await entries.ListFilesAsync([.. page.Select(entry => entry.Id)], cancellationToken)).ToLookup(file => file.EntryId)
             : null;
         var made = new List<FormBuilderExportEntry>(page.Count);
         foreach (var entry in page)
         {
-            var local = TimeZoneInfo.ConvertTime(entry.SubmittedUtc, export.TimeZone);
             IReadOnlyList<string>[] cells = new IReadOnlyList<string>[export.Specs.Count];
             IReadOnlyList<IReadOnlyList<IReadOnlyList<string>>>[] tables = new IReadOnlyList<IReadOnlyList<IReadOnlyList<string>>>[export.TableSpecs.Count];
             read.TryGetValue(entry.Id, out var scope);
+
+            // In its site's time zone and its version's format, as its receipt and emails gave them; an entry whose version
+            // is gone takes the form's.
+            var zone = scope is null ? export.TimeZone : await ZoneAsync(zones, scope.Site, cancellationToken);
+            var local = TimeZoneInfo.ConvertTime(entry.SubmittedUtc, zone);
+            var reference = scope is null ? export.Reference : scope.Form.Settings.Submission.EntryReference;
             var fields = scope is null ? null : FieldsOf(scope.Form);
             var texts = scope is null ? null : await answers.TextsAsync(scope, Showing(export, fields!), cancellationToken);
             var ranked = new Dictionary<Guid, IReadOnlyList<string>>();
@@ -465,7 +478,7 @@ internal sealed partial class EntryExports(
                 cells[index] = spec.Kind switch
                 {
                     FormBuilderExportColumnKind.Number => [entry.Number.ToString(CultureInfo.InvariantCulture)],
-                    FormBuilderExportColumnKind.Reference => [EntryReferences.Format(export.Reference, entry.Number, local.Year)],
+                    FormBuilderExportColumnKind.Reference => [EntryReferences.Format(reference, entry.Number, local.Year)],
                     FormBuilderExportColumnKind.State => [export.Words.StateOf(entry.State)],
                     FormBuilderExportColumnKind.Received => [local.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture)],
                     _ when scope is null || texts is null || field is null => [],
@@ -487,6 +500,18 @@ internal sealed partial class EntryExports(
         }
 
         return made;
+    }
+
+    // A site's time zone, read once a page.
+    private async Task<TimeZoneInfo> ZoneAsync(Dictionary<Guid, TimeZoneInfo> zones, Guid? site, CancellationToken cancellationToken)
+    {
+        var key = site ?? Guid.Empty;
+        if (!zones.TryGetValue(key, out var zone))
+        {
+            zones[key] = zone = await timeZones.GetAsync(site, cancellationToken);
+        }
+
+        return zone;
     }
 
     // A ranking's texts in rank order, read once per entry.

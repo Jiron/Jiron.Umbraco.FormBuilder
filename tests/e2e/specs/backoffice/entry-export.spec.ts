@@ -5,7 +5,9 @@ import { axeInside } from '../../support/axe.ts';
 // The exports of a form's entries (ROADMAP 11.4, IA 6.4, ADR-0210), as an entry handler, who may export but not see
 // sensitive fields: Export selected... on three ticked entries saves a CSV file that holds those three and no other, and
 // no sensitive field; Export... takes the list's search, saves JSON, and opens with that format the next time; the entry
-// panel's Print asks for the printable view of that one entry.
+// panel's Print asks for the printable view of that one entry and leaves that format as it was. A ZIP of the files goes
+// to the background, and its toast's Download saves the file through a link with its ticket, as the browser's own
+// download.
 
 const SECTION = '/umbraco/section/jfb-forms/workspace/jfb-form/edit';
 
@@ -144,4 +146,61 @@ test('Export selected... exports only the ticked entries, Export... the search, 
   await expect
     .poll(() => page.evaluate(() => (window as unknown as { jfbPrinted?: string }).jfbPrinted ?? ''))
     .toContain('Person 0005');
+
+  // One entry's print leaves the sidebar's choices as they were.
+  await panel.getByRole('button', { name: 'Close the entry', exact: true }).click();
+  await view.getByRole('button', { name: 'Export\u2026', exact: true }).click();
+  await expect(format.locator('select')).toHaveValue('json');
+  await sidebar.getByRole('button', { name: 'Cancel', exact: true }).click();
+});
+
+test("A ZIP of the files goes to the background, and its toast's Download saves it through a link", async ({
+  page,
+  loginAs,
+  apiAs,
+}) => {
+  test.setTimeout(300_000);
+  const api = await apiAs('admin');
+  const seeded = await api.post('/jfb-testing/entries-form', {
+    data: { count: 3, name: `Files ${String(Date.now())}` },
+    timeout: 120_000,
+  });
+  expect(seeded.ok(), await seeded.text()).toBe(true);
+  const { key } = (await seeded.json()) as { key: string };
+  await loginAs('entryHandler');
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto(`${SECTION}/${key}/view/entries`);
+  const view = page.locator('jfb-entries-view');
+  await expect(view.locator('tbody tr')).toHaveCount(3, { timeout: 60_000 });
+
+  await view.getByRole('button', { name: 'Export\u2026', exact: true }).click();
+  const sidebar = page.locator('jfb-entry-export-modal');
+  await sidebar.locator('uui-select select').selectOption('files');
+  await expect(
+    sidebar.getByText('This export continues in the background; a notification links to the file.'),
+  ).toBeVisible();
+  const started = page.waitForResponse(
+    (response) => response.request().method() === 'POST' && response.url().endsWith(`/form/${key}/entries/export/jobs`),
+  );
+  await sidebar.getByRole('button', { name: 'Export 3 entries', exact: true }).click();
+  expect((await started).status()).toBe(200);
+  await expect(sidebar).toHaveCount(0);
+
+  // The ready toast's Download asks for a ticket, then the browser saves the link with it as its own download, which
+  // carries no token, and the page stays where it was.
+  const ready = page.locator('jfb-action-notification').filter({ hasText: 'Your export of 3 entries is ready.' });
+  await expect(ready).toBeVisible({ timeout: 60_000 });
+  const downloading = page.waitForEvent('download');
+  await ready.getByRole('button', { name: 'Download', exact: true }).click();
+  const download = await downloading;
+  expect(download.url()).toMatch(/\/entries\/export\/jobs\/[0-9a-f-]{36}\/file\?ticket=[\w-]+$/);
+  expect(download.url()).toContain(`/form/${key}/`);
+  await expect(page).toHaveURL(new RegExp(`/${key}/view/entries$`));
+  expect(download.suggestedFilename()).toMatch(/-entries\.zip$/);
+  expect(
+    readFileSync(await download.path())
+      .subarray(0, 2)
+      .toString('latin1'),
+    'a ZIP file',
+  ).toBe('PK');
 });

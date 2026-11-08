@@ -68,4 +68,22 @@ internal sealed class FormDocuments(
         ArgumentNullException.ThrowIfNull(form);
         return form.DraftVersionId is { } draftId ? await forms.GetVersionByIdAsync(draftId, cancellationToken) : null;
     }
+
+    /// <summary>
+    /// The version a form's entries are shown and exported by: the one the site serves, the last one it served when the
+    /// form was taken offline, or the draft of a form never published; null without any. Entries come only from
+    /// published versions, as their field catalogue does, so a draft's changes never decide what entries show.
+    /// </summary>
+    public async Task<StoredFormVersion?> ServedOfAsync(StoredForm form, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(form);
+        if (form.PublishedVersionId is { } publishedId)
+        {
+            return await forms.GetVersionByIdAsync(publishedId, cancellationToken);
+        }
+
+        return await forms.GetLastPublishedNumberAsync(form.Id, int.MaxValue, cancellationToken) is { } number
+            ? await forms.GetVersionAsync(form.Id, number, cancellationToken)
+            : await DraftOfAsync(form, cancellationToken);
+    }
 }

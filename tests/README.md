@@ -871,16 +871,26 @@ The exports (ADR-0210): `Exports/EntryExportTests.cs` reads every format back fr
 `ExportFiles.Csv`, which knows quotes and line breaks, the Excel workbook with `ExportFiles.XlsxAsync`, a test-only
 reader that follows the workbook's own relationships, the JSON by alias, the printable view without scripts and the ZIP's
 listing; a grid by row, a ranking by position and a repeatable group as lines, as a sheet and as rows; the formula guard;
-sensitive fields only when asked for and allowed; the list's filter and the ticked entries; the audit and the
-announcement; a background export for its owner only until it expires, one restarted once its lease ran out, three
-attempts and three exports under way per user; and 10,000 entries as CSV within 5 s, with one more going to the
-background. `ManagementApi/EntryExportApiTests.cs` holds the endpoints: the view with the user's last choices, the
-streamed file and its headers, a background export that only its owner follows and downloads, and the refusals.
-`Exports/ExportFormatTests.cs` holds the pieces that need no site. In the client, `entries/export-model.test.ts`,
-`entries/export-follow.test.ts` and `entries/entry-export.modal.test.ts` hold the sidebar, the follower at the idle
-gate and its toasts; in the browser, `specs/backoffice/entry-export.spec.ts` ticks three entries, chooses Export
-selected… and finds only those in the CSV file, exports a search as JSON, which the sidebar opens with next time, and
-prints one entry from its panel.
+sensitive fields only when asked for and allowed, a repeatable group's own and a sensitive group's too; the list's
+filter and the ticked entries, never another form's, a test entry or a draft though ticked; an unpublished form laid
+out as it was last published, not as its draft; each reference and time received as the entry's own version and site
+gave them; the audit and the announcement; a background export for its owner only until it expires, one restarted
+once its lease ran out, the lease renewed on its timer while a page takes long, a store that times out counting as a
+failed attempt, a host's stop leaving no file behind, three attempts and three exports under way per user; and 10,000
+entries of 12 values as CSV within 5 s while 50 submissions arrive, each within 150 ms at p95, with one more going to
+the background. `Exports/EntryExportWorkerTests.cs` keeps this server's own worker: a queued export is written at once,
+and the job removes what expired and wakes the worker, which takes over an export whose lease ran out.
+`ManagementApi/EntryExportApiTests.cs` holds the endpoints: the view with the user's last choices, which the entry
+panel's Print leaves as they were, the streamed file and its headers, a background export that only its owner follows
+and downloads through a link with its ticket, which no token, no other export and no changed ticket opens, no ticket
+once its owner may no longer see the sensitive fields it holds, every ZIP of files in the background, and the refusals.
+`Exports/ExportFormatTests.cs` holds the pieces that need no site, `ManagementApi/ExportDownloadTicketsTests.cs` the
+ticket, and `ManagementApi/FormBuilderAccessFilterTests.cs` its declaration. In the client,
+`entries/export-model.test.ts`, `entries/export-follow.test.ts`, `entries/export-api.test.ts` and
+`entries/entry-export.modal.test.ts` hold the sidebar, the follower at the idle gate, its toasts and the link; in the
+browser, `specs/backoffice/entry-export.spec.ts` ticks three entries, chooses Export selected… and finds only those in
+the CSV file, exports a search as JSON, which the sidebar opens with next time, prints one entry from its panel, which
+leaves that choice, and saves a ZIP of the files from its toast through the link, which carries no token.
 
 Insights (ADR-0211): `Tests.Unit/Insights/InsightTests.cs` holds what needs no site: the buckets of the time to complete
 and what a stored entry adds to its unit, the beacon's reader, which reads four members and skips every other, what a

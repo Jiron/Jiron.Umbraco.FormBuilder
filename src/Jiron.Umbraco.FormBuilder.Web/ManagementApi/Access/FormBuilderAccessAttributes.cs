@@ -6,8 +6,9 @@ namespace Jiron.Umbraco.FormBuilder.Web.ManagementApi.Access;
 
 /// <summary>
 /// What an action of the management API needs (ADR-0050). Every action carries exactly one of
-/// <see cref="FormBuilderPermissionAttribute"/>, <see cref="FormBuilderSectionAttribute"/> and, for the form picker only,
-/// <see cref="FormBuilderContentAccessAttribute"/>; the access filter reads it, and so does the permission matrix.
+/// <see cref="FormBuilderPermissionAttribute"/>, <see cref="FormBuilderSectionAttribute"/>, for the form picker only
+/// <see cref="FormBuilderContentAccessAttribute"/> and, for the download of an export's file only,
+/// <see cref="FormBuilderTicketAccessAttribute"/>; the access filter reads it, and so does the permission matrix.
 /// </summary>
 [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = true)]
 internal abstract class FormBuilderAccessAttribute : Attribute
@@ -77,6 +78,21 @@ internal sealed class FormBuilderContentAccessAttribute : FormBuilderAccessAttri
 
     /// <summary>Creates the declaration.</summary>
     public FormBuilderContentAccessAttribute()
+        : base(FormBuilderPermissions.None)
+    {
+    }
+}
+
+/// <summary>
+/// A ticket of the action's own instead of a signed-in user (ADR-0210): the action reads a ticket that the management API
+/// issued after its own checks, and refuses a request without one that holds. Only the download of a background export's
+/// file carries it, with <c>[AllowAnonymous]</c>, as a plain link's request carries no backoffice token; the permission
+/// matrix names it as its reviewed exception.
+/// </summary>
+internal sealed class FormBuilderTicketAccessAttribute : FormBuilderAccessAttribute
+{
+    /// <summary>Creates the declaration.</summary>
+    public FormBuilderTicketAccessAttribute()
         : base(FormBuilderPermissions.None)
     {
     }

@@ -12,21 +12,23 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Exports;
 [TestFixture]
 public sealed class ExportFormatTests
 {
-    [TestCase("=SUM(A1)", ',', "'=SUM(A1)")]
-    [TestCase("+31 20 123", ',', "'+31 20 123")]
-    [TestCase("-5", ',', "'-5")]
-    [TestCase("@cmd", ',', "'@cmd")]
-    [TestCase("\tTab", ',', "'\tTab")]
-    [TestCase("\rReturn", ',', "\"'\rReturn\"")]
-    [TestCase("Ada", ',', "Ada")]
-    [TestCase("a,b", ',', "\"a,b\"")]
-    [TestCase("a,b", ';', "a,b")]
-    [TestCase("a;b", ';', "\"a;b\"")]
-    [TestCase("say \"hi\"", ',', "\"say \"\"hi\"\"\"")]
-    [TestCase("two\nlines", ',', "\"two\nlines\"")]
-    [TestCase("", ',', "")]
-    public void ACsvCell_IsGuardedAgainstFormulas_AndQuotedWhereItMustBe(string text, char delimiter, string written) =>
-        Assert.That(CsvExportFormat.Cell(text, delimiter), Is.EqualTo(written));
+    [TestCase("=SUM(A1)", "'=SUM(A1)")]
+    [TestCase("+31 20 123", "'+31 20 123")]
+    [TestCase("-5", "'-5")]
+    [TestCase("@cmd", "'@cmd")]
+    [TestCase("\tTab", "\"'\tTab\"")]
+    [TestCase("\rReturn", "\"'\rReturn\"")]
+    [TestCase("Ada", "Ada")]
+    [TestCase("a,b", "\"a,b\"")]
+    [TestCase("a;b", "\"a;b\"")]
+    [TestCase("a\tb", "\"a\tb\"")]
+    [TestCase("x;=1+1", "\"x;=1+1\"")]
+    [TestCase("x,=1+1", "\"x,=1+1\"")]
+    [TestCase("say \"hi\"", "\"say \"\"hi\"\"\"")]
+    [TestCase("two\nlines", "\"two\nlines\"")]
+    [TestCase("", "")]
+    public void ACsvCell_IsGuardedAgainstFormulas_AndQuotedWhereAnyDelimiterWouldSplitIt(string text, string written) =>
+        Assert.That(CsvExportFormat.Cell(text), Is.EqualTo(written));
 
     [TestCase(0, "A")]
     [TestCase(25, "Z")]

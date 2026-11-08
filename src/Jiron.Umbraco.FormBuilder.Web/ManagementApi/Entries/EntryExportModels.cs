@@ -24,6 +24,12 @@ public sealed class EntryExportRequestModel
 
     /// <summary>The delimiter, the headers and the byte-order mark; none for the defaults.</summary>
     public EntryExportOptionsRequestModel? Options { get; init; }
+
+    /// <summary>
+    /// Whether the export dialog opens with these choices next time: the dialog's own exports say so, and the entry
+    /// panel's Print does not.
+    /// </summary>
+    public bool Remember { get; init; }
 }
 
 /// <summary>What an export writes beside the format and the fields.</summary>
@@ -117,6 +123,16 @@ public sealed class EntryExportPlanResponseModel
 
     /// <summary>Whether the export runs in the background: more than 10,000 entries, or a search that found more than it counts.</summary>
     public bool Background { get; init; }
+}
+
+/// <summary>A link that downloads a background export's file.</summary>
+public sealed class EntryExportTicketResponseModel
+{
+    /// <summary>The file's address on the site, with its ticket; a link to it downloads the file.</summary>
+    public required string Url { get; init; }
+
+    /// <summary>When the link stops working: a minute after it was asked for.</summary>
+    public required DateTimeOffset ExpiresUtc { get; init; }
 }
 
 /// <summary>A background export, as its owner sees it.</summary>

@@ -1,11 +1,13 @@
 using System.Net;
 using System.Text;
+using Jiron.Umbraco.FormBuilder.Core.Access;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Exports;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Queries;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Tests.Integration.Exports;
+using Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries;
 using Microsoft.Extensions.Hosting;
 using Umbraco.Cms.Tests.Common.Testing;
 
@@ -40,8 +42,10 @@ public sealed class EntryExportApiTests : ManagementApiTestBase
         await EntryAsync(form, "Ada");
 
         var first = await CallAsync(Admin, HttpMethod.Get, $"form/{form}/entries/export");
-        using var file = await Api.SendAsync(Admin, HttpMethod.Post, $"form/{form}/entries/export/file", new { format = "csv", fields = new[] { NameField.Key }, sensitive = true, options = new { delimiter = "semicolon", headers = "aliases", byteOrderMark = false } });
+        using var file = await Api.SendAsync(Admin, HttpMethod.Post, $"form/{form}/entries/export/file", new { format = "csv", fields = new[] { NameField.Key }, sensitive = true, options = new { delimiter = "semicolon", headers = "aliases", byteOrderMark = false }, remember = true });
         var again = await CallAsync(Admin, HttpMethod.Get, $"form/{form}/entries/export");
+        using var printed = await Api.SendAsync(Admin, HttpMethod.Post, $"form/{form}/entries/export/file", new { format = "print", entries = new[] { await KeyOfAsync(form) } });
+        var afterPrint = await CallAsync(Admin, HttpMethod.Get, $"form/{form}/entries/export");
         var handler = await CallAsync("entryHandler", HttpMethod.Get, $"form/{form}/entries/export");
 
         Assert.Multiple(() =>
@@ -55,6 +59,8 @@ public sealed class EntryExportApiTests : ManagementApiTestBase
             Assert.That(first.Body!["maySeeSensitive"]!.GetValue<bool>(), Is.True);
             Assert.That(file.StatusCode, Is.EqualTo(HttpStatusCode.OK));
             Assert.That(again.Body!["choices"]!.ToJsonString(), Is.EqualTo($$$"""{"format":"csv","fields":["{{{NameField.Key}}}"],"sensitive":true,"options":{"delimiter":"semicolon","headers":"aliases","byteOrderMark":false}}"""));
+            Assert.That(printed.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+            Assert.That(afterPrint.Body!["choices"]!.ToJsonString(), Is.EqualTo(again.Body!["choices"]!.ToJsonString()), "the entry panel's Print asks for nothing to be remembered");
             Assert.That(handler.Body!["choices"], Is.Null, "each user's own");
             Assert.That(handler.Body!["maySeeSensitive"]!.GetValue<bool>(), Is.False);
         });
@@ -108,21 +114,32 @@ public sealed class EntryExportApiTests : ManagementApiTestBase
     }
 
     [Test]
-    public async Task ABackgroundExport_IsFollowedAndDownloaded_ByItsOwnerOnly()
+    public async Task ABackgroundExport_IsFollowedByItsOwnerOnly_AndDownloadsThroughALinkWithItsTicket()
     {
         var form = await PublishedAsync();
+        var another = await PublishedAsync();
         await EntryAsync(form, "Ada");
 
         var started = await CallAsync("entryHandler", HttpMethod.Post, $"form/{form}/entries/export/jobs", new { format = "json" });
         var key = started.Body!["key"]!.GetValue<Guid>();
+        var second = (await CallAsync("entryHandler", HttpMethod.Post, $"form/{form}/entries/export/jobs", new { format = "csv" })).Body!["key"]!.GetValue<Guid>();
         await GetRequiredService<EntryExportJobs>().PassAsync("test", CancellationToken.None);
         var status = await CallAsync("entryHandler", HttpMethod.Get, $"form/{form}/entries/export/jobs/{key}");
         var view = await CallAsync("entryHandler", HttpMethod.Get, $"form/{form}/entries/export");
-        using var download = await Api.SendAsync("entryHandler", $"form/{form}/entries/export/jobs/{key}/file");
+        var ticket = await CallAsync("entryHandler", HttpMethod.Post, $"form/{form}/entries/export/jobs/{key}/ticket");
+        var url = ticket.Body!["url"]!.GetValue<string>();
+        var link = url[ManagementApiCaller.BasePath.Length..];
+        using var download = await Api.SendAsync(null, link);
         var json = await download.Content.ReadAsStringAsync();
+        using var again = await Api.SendAsync(null, link);
         var someoneElse = await CallAsync(Admin, HttpMethod.Get, $"form/{form}/entries/export/jobs/{key}");
-        using var theirs = await Api.SendAsync(Admin, $"form/{form}/entries/export/jobs/{key}/file");
-        var otherForm = await CallAsync("entryHandler", HttpMethod.Get, $"form/{await PublishedAsync()}/entries/export/jobs/{key}");
+        var theirTicket = await CallAsync(Admin, HttpMethod.Post, $"form/{form}/entries/export/jobs/{key}/ticket");
+        var withoutTicket = await CallAsync(null, HttpMethod.Get, $"form/{form}/entries/export/jobs/{key}/file");
+        var aTokenIsNoTicket = await CallAsync("entryHandler", HttpMethod.Get, $"form/{form}/entries/export/jobs/{key}/file");
+        var changed = await CallAsync(null, HttpMethod.Get, link[..^2] + (link.EndsWith("AA", StringComparison.Ordinal) ? "BB" : "AA"));
+        var elsewhere = await CallAsync(null, HttpMethod.Get, link.Replace(form.ToString(), another.ToString(), StringComparison.Ordinal));
+        var anotherExport = await CallAsync(null, HttpMethod.Get, link.Replace(key.ToString(), second.ToString(), StringComparison.Ordinal));
+        var otherForm = await CallAsync("entryHandler", HttpMethod.Get, $"form/{another}/entries/export/jobs/{key}");
 
         Assert.Multiple(() =>
         {
@@ -132,14 +149,69 @@ public sealed class EntryExportApiTests : ManagementApiTestBase
             Assert.That(status.Body!["state"]!.GetValue<string>(), Is.EqualTo("ready"), status.ToString());
             Assert.That(status.Body!["done"]!.GetValue<int>(), Is.EqualTo(1));
             Assert.That(status.Body!["expiresUtc"], Is.Not.Null);
-            Assert.That(view.Body!["exports"]!.AsArray().Select(export => export!["key"]!.GetValue<Guid>()), Is.EqualTo(new[] { key }), "the page that comes back finds it");
-            Assert.That(download.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+            Assert.That(view.Body!["exports"]!.AsArray().Select(export => export!["key"]!.GetValue<Guid>()), Is.EquivalentTo(new[] { key, second }), "the page that comes back finds them");
+            Assert.That(ticket.Outcome, Is.EqualTo("200"), ticket.ToString());
+            Assert.That(ticket.NoStore, Is.True, "never kept in a cache");
+            Assert.That(url, Does.StartWith($"{ManagementApiCaller.BasePath}form/{form}/entries/export/jobs/{key}/file?ticket="));
+            Assert.That(ticket.Body!["expiresUtc"]!.GetValue<DateTimeOffset>(), Is.GreaterThan(DateTimeOffset.UtcNow).And.LessThanOrEqualTo(DateTimeOffset.UtcNow + ExportDownloadTickets.Lifetime));
+            Assert.That(download.StatusCode, Is.EqualTo(HttpStatusCode.OK), "a link's request, without a token");
             Assert.That(download.Content.Headers.ContentType?.MediaType, Is.EqualTo("application/json"));
             Assert.That(download.Content.Headers.ContentDisposition?.DispositionType, Is.EqualTo("attachment"));
+            Assert.That(download.Headers.GetValues("X-Content-Type-Options"), Is.EqualTo(new[] { "nosniff" }));
+            Assert.That(download.Headers.CacheControl?.NoStore, Is.True);
             Assert.That(json, Does.Contain("\"name\": \"Ada\""));
+            Assert.That(again.StatusCode, Is.EqualTo(HttpStatusCode.OK), "until the ticket expires");
             Assert.That(someoneElse.Outcome, Is.EqualTo("404 export_not_found"), "an administrator does not see another user's export");
-            Assert.That(theirs.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
+            Assert.That(theirTicket.Outcome, Is.EqualTo("404 export_not_found"), "nor gets its ticket");
+            Assert.That(withoutTicket.Outcome, Is.EqualTo("404 export_not_found"));
+            Assert.That(aTokenIsNoTicket.Outcome, Is.EqualTo("404 export_not_found"), "only a ticket downloads it");
+            Assert.That(changed.Outcome, Is.EqualTo("404 export_not_found"), "a changed ticket");
+            Assert.That(elsewhere.Outcome, Is.EqualTo("404 export_not_found"), "the ticket names its form");
+            Assert.That(anotherExport.Outcome, Is.EqualTo("404 export_not_found"), "and its export, not another of the same user's");
             Assert.That(otherForm.Outcome, Is.EqualTo("404 export_not_found"));
+        });
+    }
+
+    [Test]
+    public async Task ABackgroundExportWithSensitiveFields_GetsNoTicket_OnceItsOwnerMayNoLongerSeeThem()
+    {
+        var form = await PublishedAsync();
+        await EntryAsync(form, "Ada", salary: "90000");
+        var access = GetRequiredService<IFormBuilderAccessService>();
+        var group = People.GroupKeys["entryHandler"];
+        // viewSensitive goes with viewEntries in a grant.
+        await GrantAsync(group, PermissionTarget.Form, form, FormBuilderPermissions.ViewEntries | FormBuilderPermissions.ViewSensitive);
+
+        var started = await CallAsync("entryHandler", HttpMethod.Post, $"form/{form}/entries/export/jobs", new { format = "csv", sensitive = true });
+        var key = started.Body!["key"]!.GetValue<Guid>();
+        await GetRequiredService<EntryExportJobs>().PassAsync("test", CancellationToken.None);
+        var allowed = await CallAsync("entryHandler", HttpMethod.Post, $"form/{form}/entries/export/jobs/{key}/ticket");
+        await access.ChangeGrantAsync(new AccessGrantChange(group, PermissionTarget.Form, form, FormBuilderPermissions.ViewEntries | FormBuilderPermissions.ViewSensitive, FormBuilderPermissions.ViewEntries, null));
+        var refused = await CallAsync("entryHandler", HttpMethod.Post, $"form/{form}/entries/export/jobs/{key}/ticket");
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(started.Outcome, Is.EqualTo("200"), started.ToString());
+            Assert.That(allowed.Outcome, Is.EqualTo("200"), allowed.ToString());
+            Assert.That((refused.Outcome, refused.Body?["permission"]?.GetValue<string>()), Is.EqualTo(("403 forbidden", "viewSensitive")), refused.ToString());
+        });
+    }
+
+    [Test]
+    public async Task AZipOfFiles_AlwaysGoesToTheBackground()
+    {
+        var form = await PublishedAsync();
+        await EntryAsync(form, "Ada");
+
+        var plan = await CallAsync("entryHandler", HttpMethod.Post, $"form/{form}/entries/export/plan", new { format = "files" });
+        var ticked = await CallAsync("entryHandler", HttpMethod.Post, $"form/{form}/entries/export/plan", new { format = "files", entries = new[] { await KeyOfAsync(form) } });
+        var file = await CallAsync("entryHandler", HttpMethod.Post, $"form/{form}/entries/export/file", new { format = "files" });
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(plan.Body!.ToJsonString(), Is.EqualTo("""{"entries":1,"more":false,"background":true}"""), "a file of files has no bound");
+            Assert.That(ticked.Body!.ToJsonString(), Is.EqualTo("""{"entries":1,"more":false,"background":true}"""));
+            Assert.That(file.Outcome, Is.EqualTo("409 export_in_background"), file.ToString());
         });
     }
 
@@ -203,6 +275,14 @@ public sealed class EntryExportApiTests : ManagementApiTestBase
             Values = values,
             SearchText = EntrySearchText.For([name]),
         });
+    }
+
+    // The key of the form's newest entry.
+    private async Task<Guid> KeyOfAsync(Guid form)
+    {
+        var row = (await GetRequiredService<IFormRepository>().GetAsync(form))!;
+        var ids = await Entries.ListIdsAsync(row.Id, 1000);
+        return (await Entries.GetByIdAsync(ids[^1]))!.Key;
     }
 
     private async Task ManyAsync(Guid form, int count)

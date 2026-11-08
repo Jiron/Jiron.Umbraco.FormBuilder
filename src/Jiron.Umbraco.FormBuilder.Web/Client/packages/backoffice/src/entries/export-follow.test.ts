@@ -4,10 +4,15 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { EntryExportStatusResponseModel } from '../api';
 import type { ActionNotificationData } from '../ui/action-notification.element';
-import { ExportFollower, MOST_SILENT_READS, saveExport, showFollowed, type FollowListener } from './export-follow';
-
-vi.mock('../library/actions/export-form.action', () => ({ saveBlob: vi.fn() }));
-const { saveBlob } = await import('../library/actions/export-form.action');
+import {
+  ExportFollower,
+  FOLLOW_HIDDEN_MS,
+  FOLLOW_MS,
+  MOST_SILENT_READS,
+  saveExport,
+  showFollowed,
+  type FollowListener,
+} from './export-follow';
 
 const status = (
   state: string,
@@ -48,8 +53,8 @@ function listener() {
       heard.push(`finished ${now.state}`);
       end();
     },
-    lost: () => {
-      heard.push('lost');
+    lost: (gone) => {
+      heard.push(gone ? 'gone' : 'lost');
       end();
     },
   };
@@ -80,7 +85,7 @@ describe('the follower', () => {
     const first = listener();
     gone.follower.follow('f1', status('running', 10), first.listen);
     await first.done;
-    expect(first.heard).toEqual(['lost']);
+    expect(first.heard).toEqual(['gone']);
 
     const silent = follower(Array.from({ length: MOST_SILENT_READS + 5 }, () => undefined));
     const second = listener();
@@ -88,6 +93,28 @@ describe('the follower', () => {
     await second.done;
     expect(second.heard).toEqual(['lost']);
     expect(silent.read).toHaveBeenCalledTimes(MOST_SILENT_READS);
+  });
+
+  it('reads less often while the tab is out of sight', async () => {
+    const page = { hidden: true };
+    const waits: number[] = [];
+    const answers = [status('running', 10), status('ready', 12400)];
+    const one = new ExportFollower(
+      async () => {
+        page.hidden = false;
+        return answers.shift();
+      },
+      { untilActive: async () => undefined },
+      async (ms) => void waits.push(ms),
+      page as Document,
+    );
+    const { done, listen } = listener();
+
+    one.follow('f1', status('queued'), listen);
+    await done;
+
+    expect(waits, 'hidden, then on screen again').toEqual([FOLLOW_HIDDEN_MS, FOLLOW_MS]);
+    expect(FOLLOW_HIDDEN_MS).toBeGreaterThan(FOLLOW_MS);
   });
 
   it('follows each export once, and tells a finished one at once', async () => {
@@ -142,6 +169,27 @@ describe("a background export's toasts", () => {
     expect(at(shown, 1).data.action?.label.key).toBe('jfbEntries_export_download');
   });
 
+  it('say when the export is gone, or its progress no longer answers, and never close without a word', async () => {
+    const gone = follower(['gone']);
+    const first = notices();
+    showFollowed(first.notices, 'f1', status('running', 1), gone.follower);
+    await vi.waitFor(() => expect(first.shown).toHaveLength(2));
+    expect(first.closed).toHaveBeenCalledTimes(1);
+    expect([at(first.shown, 1).color, at(first.shown, 1).data.said.key]).toEqual([
+      'danger',
+      'jfbEntries_export_goneToast',
+    ]);
+
+    const silent = follower(Array.from({ length: MOST_SILENT_READS }, () => undefined));
+    const second = notices();
+    showFollowed(second.notices, 'f1', status('running', 1), silent.follower);
+    await vi.waitFor(() => expect(second.shown).toHaveLength(2));
+    expect([at(second.shown, 1).color, at(second.shown, 1).data.said.key]).toEqual([
+      'warning',
+      'jfbEntries_export_lostToast',
+    ]);
+  });
+
   it('say that it failed', async () => {
     const { follower: one } = follower([status('failed', 0)]);
     const { shown, notices: toasts } = notices();
@@ -152,13 +200,14 @@ describe("a background export's toasts", () => {
     expect([at(shown, 1).color, at(shown, 1).data.said.key]).toEqual(['danger', 'jfbEntries_export_failedToast']);
   });
 
-  it('save the file under its name, or say it could not come', async () => {
+  it('save the file through its link, or say it could not come', async () => {
     const { shown, notices: toasts } = notices();
-    const blob = new Blob(['a,b']);
+    const download = vi.fn(async () => true);
 
-    expect(await saveExport(toasts, 'f1', status('ready', 2), async () => blob)).toBe(true);
-    expect(saveBlob).toHaveBeenCalledWith('contact-entries.csv', blob);
-    expect(await saveExport(toasts, 'f1', status('ready', 2), async () => undefined)).toBe(false);
+    expect(await saveExport(toasts, 'f1', status('ready', 2), download)).toBe(true);
+    expect(download).toHaveBeenCalledWith('f1', 'k1');
+    expect(shown, 'a link that came says nothing').toEqual([]);
+    expect(await saveExport(toasts, 'f1', status('ready', 2), async () => false)).toBe(false);
     expect([at(shown, 0).kind, at(shown, 0).color, at(shown, 0).data.said.key]).toEqual([
       'peek',
       'danger',

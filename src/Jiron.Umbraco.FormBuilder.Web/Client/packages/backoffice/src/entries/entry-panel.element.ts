@@ -643,7 +643,13 @@ export class EntryPanelElement extends UmbLitElement {
    * print dialog (IA 6.3, ADR-0210).
    */
   async #print(panel: EntryPanelResponseModel) {
-    const file = await writeExportFile(this, this.form, { format: 'print', entries: [panel.key], sensitive: false });
+    const file = await writeExportFile(this, this.form, {
+      format: 'print',
+      entries: [panel.key],
+      sensitive: false,
+      // One entry's print leaves the export dialog's choices as they were.
+      remember: false,
+    });
     const printed = 'value' in file && (await printDocument(await file.value.text()));
     if (!printed) await this.#notify('danger', this.#term('print_failed'));
   }

@@ -18,6 +18,7 @@ import {
   fieldsFor,
   hasSensitive,
   narrows,
+  inBackground,
   requestOf,
   statusLine,
 } from './export-model';
@@ -124,7 +125,9 @@ describe('the fields a format offers', () => {
     expect(fieldsFor(FIELDS, csv, false).map((one) => one.key)).toEqual(['name', 'cv', 'guests', 'note']);
     expect(fieldsFor(FIELDS, csv, true).map((one) => one.key)).toEqual(['name', 'salary', 'cv', 'guests', 'note']);
     expect(hasSensitive(FIELDS)).toBe(true);
-    expect(hasSensitive([field('name'), field('inner', { sensitive: true, parent: 'guests' })])).toBe(false);
+    // A group's sensitive child is left out of its group the same way, so it offers the choice too.
+    expect(hasSensitive([field('name'), field('inner', { sensitive: true, parent: 'guests' })])).toBe(true);
+    expect(hasSensitive([field('name'), field('inner', { parent: 'guests' })])).toBe(false);
   });
 
   it('are the fields that hold files for the ZIP of the files, a group holding one among them', () => {
@@ -142,7 +145,7 @@ describe('the fields a format offers', () => {
 });
 
 describe('the request', () => {
-  it("takes the list's filter, with the Inbox's Form filter naming only this form, or the ticked entries", () => {
+  it("takes the list's filter, with the Inbox's Form filter naming only this form, or the ticked entries, one too", () => {
     const filter: EntryListFilterRequestModel = { ...EMPTY, search: 'ada', forms: ['f1'] };
     const choices = { ...defaultChoices(FORMATS), fields: ['name', 'salary'], sensitive: false };
     const offered = fieldsFor(FIELDS, FORMATS[0], false);
@@ -153,6 +156,7 @@ describe('the request', () => {
       fields: ['name'],
       sensitive: false,
       options: { delimiter: 'comma', headers: 'labels', byteOrderMark: true },
+      remember: true,
     });
     expect(requestOf(defaultChoices(FORMATS), offered, 'f1', filter, ['e1', 'e2'])).toEqual({
       format: 'csv',
@@ -160,8 +164,28 @@ describe('the request', () => {
       fields: null,
       sensitive: false,
       options: { delimiter: 'comma', headers: 'labels', byteOrderMark: true },
+      remember: true,
+    });
+    const one = requestOf(defaultChoices(FORMATS), offered, 'f1', filter, ['e1']);
+    expect([one.entries, one.filter], 'one ticked entry is an export of it alone').toEqual([['e1'], undefined]);
+    expect(
+      requestOf(defaultChoices(FORMATS), offered, 'f1', filter, []).filter,
+      'none ticked takes the filter',
+    ).toEqual({
+      ...filter,
+      forms: ['f1'],
     });
     expect(exportFilter({ ...EMPTY, forms: ['f1', 'f2'] }, 'f2').forms).toEqual(['f2']);
+  });
+
+  it('goes to the background when the server counts too many, and for every ZIP of the files', () => {
+    const small = { entries: 3, more: false, background: false };
+    expect(inBackground(small, FORMATS[0])).toBe(false);
+    expect(inBackground({ ...small, background: true }, FORMATS[0])).toBe(true);
+    expect(inBackground(small, { ...FORMATS[0], writesFiles: true } as never), 'a file of files has no bound').toBe(
+      true,
+    );
+    expect(inBackground(small, undefined)).toBe(false);
   });
 
   it('knows a filter that narrows the list from one that does not', () => {
@@ -206,5 +230,14 @@ describe('what the sidebar says', () => {
       'Your export of 12,400 entries is ready.',
     );
     expect(statusLine(term, { ...status, state: 'failed' })).toBe("The export of 12,400 entries couldn't be prepared.");
+    const ready = { ...status, state: 'ready', done: 12400, expiresUtc: '2026-11-08T09:41:00Z' };
+    const when = (culture: string) =>
+      new Intl.DateTimeFormat(culture, { weekday: 'short', hour: 'numeric', minute: '2-digit' }).format(
+        new Date(ready.expiresUtc),
+      );
+    expect(statusLine(term, ready, 'en-GB'), 'how long its file is kept').toBe(
+      `Your export of 12,400 entries is ready. Kept until ${when('en-GB')}.`,
+    );
+    expect(when('en-GB')).toMatch(/^Sun \d{2}:41$/);
   });
 });

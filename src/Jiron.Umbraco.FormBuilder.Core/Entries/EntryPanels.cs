@@ -313,11 +313,11 @@ internal sealed partial class EntryPanels(
     private bool HoldsValue(FormField field) =>
         MergeTagAnswerTexts.IsRepeater(field) || (types.Find(field.Type) is { } traits ? traits.HoldsValue : field.Alias is not null);
 
-    // The keys of the fields the form's live version has, or its draft's before it is published.
+    // The keys of the fields of the version the entries are shown by (FormDocuments.ServedOfAsync).
     private async Task<HashSet<Guid>> LiveFieldsAsync(StoredForm form, CancellationToken cancellationToken)
     {
         var keys = new HashSet<Guid>();
-        if ((form.PublishedVersionId ?? form.DraftVersionId) is { } versionId && await forms.GetVersionByIdAsync(versionId, cancellationToken) is { } version)
+        if (await documents.ServedOfAsync(form, cancellationToken) is { } version)
         {
             foreach (var field in documents.Readable(version).Pages.SelectMany(page => page.Groups).SelectMany(group => group.Fields))
             {

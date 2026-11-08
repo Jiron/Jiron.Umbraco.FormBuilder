@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using Jiron.Umbraco.FormBuilder.Web.ManagementApi;
 using Jiron.Umbraco.FormBuilder.Web.ManagementApi.Access;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
@@ -57,6 +58,9 @@ internal sealed record ManagementApiEndpoint(ApiDescription Description, IReadOn
 
     /// <summary>Its method and route below the base path, such as <c>GET folder/{key}</c>.</summary>
     public string Name => $"{Method} {Template[Prefix.Length..]}";
+
+    /// <summary>Whether a request without the backoffice's token reaches it (<c>[AllowAnonymous]</c>).</summary>
+    public bool AllowsAnonymous => Description.ActionDescriptor.EndpointMetadata.OfType<IAllowAnonymous>().Any();
 
     private string Template => Description.RelativePath!.Replace("v{version}", "v1", StringComparison.Ordinal);
 
