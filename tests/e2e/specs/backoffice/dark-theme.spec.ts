@@ -3,6 +3,7 @@ import type { APIRequestContext, Page } from '@playwright/test';
 import { expect, test } from '../../fixtures.ts';
 import { inTheme } from '../../support/backoffice-look.ts';
 import { API, blankForm, contactForm, created, formOf, publishWithLabel, unique } from '../../support/forms-api.ts';
+import { openRowActions } from '../../support/tree.ts';
 import { splitAxe } from '../../support/ux-walk.ts';
 
 // The section in Umbraco's dark theme (ROADMAP 9.6a, ADR-0182). The theme's filled buttons put their label in a grey
@@ -93,6 +94,8 @@ test("in the dark theme, axe finds nothing in the section's own elements, its fi
   await design.locator('jfb-canvas-field .bo-tools button').filter({ visible: true }).nth(2).click();
   await expect(page.locator('jfb-undo-notification')).toBeVisible();
   expect(await ours(page), 'the undo toast').toEqual([]);
+  // Each surface on its own: the toast closes before a dialog could open over it.
+  await expect(page.locator('jfb-undo-notification')).toHaveCount(0, { timeout: 20_000 });
 
   // The publish dialog.
   await page.getByRole('button', { name: 'Publish\u2026' }).click();
@@ -102,18 +105,14 @@ test("in the dark theme, axe finds nothing in the section's own elements, its fi
   await publish.getByRole('button', { name: 'Cancel' }).click();
 
   // The duplicate dialog, from the form's "..." in the tree.
-  const row = page.locator(`umb-section-sidebar uui-menu-item[label="${name}"]`).filter({ visible: true }).first();
-  await row.hover();
-  await page.getByRole('button', { name: `View actions for '${name}'`, exact: true }).click();
+  await openRowActions(page, name);
   await page.locator('umb-entity-action-list uui-menu-item[label="Duplicate\u2026"]').filter({ visible: true }).click();
   await expect(page.locator('jfb-duplicate-modal input').first()).toBeVisible();
   expect(await ours(page), 'the duplicate dialog').toEqual([]);
   await page.keyboard.press('Escape');
 
   // The copied actions' result, with a link to fix each.
-  const from = page.locator(`umb-section-sidebar uui-menu-item[label="${source}"]`).filter({ visible: true }).first();
-  await from.hover();
-  await page.getByRole('button', { name: `View actions for '${source}'`, exact: true }).click();
+  await openRowActions(page, source);
   await page
     .locator('umb-entity-action-list uui-menu-item[label="Copy actions to\u2026"]')
     .filter({ visible: true })

@@ -12,6 +12,7 @@ import {
   publishWithLabel,
   unique,
 } from '../../support/forms-api.ts';
+import { openRowActions, treeRow } from '../../support/tree.ts';
 
 // The form library (ROADMAP 9.2, ADR-0166): new forms blank, from the gallery (also from the Overview's checklist) and by import
 // with its notes shown; export; folders made, renamed and deleted; a form moved; a restricted form's duplicate; actions copied
@@ -82,18 +83,13 @@ async function pageThatPicks(api: APIRequestContext, formKey: string, name: stri
     .toBe(1);
 }
 
-/** A row of the forms tree, as shown: the Recycle Bin's item holds its rows while it is closed too. */
-const treeRow = (page: Page, name: string): Locator =>
-  page.locator(`umb-section-sidebar uui-menu-item[label="${name.replace(/"/g, '\\"')}"]`).filter({ visible: true });
-
 /** Chooses an action in the menu a "..." opened; a menu opened before may linger hidden. */
 const chooseAction = (page: Page, action: string) =>
   page.locator(`umb-entity-action-list uui-menu-item[label="${action}"]`).filter({ visible: true }).click();
 
 /** Opens a tree item's "..." and chooses an action. */
 async function treeAction(page: Page, name: string, action: string): Promise<void> {
-  await treeRow(page, name).first().hover();
-  await page.getByRole('button', { name: `View actions for '${name}'`, exact: true }).click();
+  await openRowActions(page, name);
   await chooseAction(page, action);
 }
 
