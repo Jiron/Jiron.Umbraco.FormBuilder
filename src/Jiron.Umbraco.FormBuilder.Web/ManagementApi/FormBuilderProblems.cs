@@ -108,6 +108,9 @@ internal static class FormBuilderProblems
     /// <summary>The code of a template that is neither built in nor saved on this site (ADR-0166).</summary>
     public const string TemplateNotFoundCode = "template_not_found";
 
+    /// <summary>The code of an option list the library does not hold (ADR-0214).</summary>
+    public const string OptionListNotFoundCode = "option_list_not_found";
+
     /// <summary>The code of a field type the site does not have (ADR-0059).</summary>
     public const string FieldTypeNotFoundCode = "field_type_not_found";
 
@@ -260,6 +263,10 @@ internal static class FormBuilderProblems
     /// <summary>A template that is neither built in nor saved on this site (ADR-0166).</summary>
     public static FormBuilderProblemResult TemplateNotFound() =>
         Problem(StatusCodes.Status404NotFound, TemplateNotFoundCode, "The template does not exist.");
+
+    /// <summary>An option list the library does not hold, or one of a kind this version lacks, where its kind matters (ADR-0214).</summary>
+    public static FormBuilderProblemResult OptionListNotFound() =>
+        Problem(StatusCodes.Status404NotFound, OptionListNotFoundCode, "The option list does not exist.");
 
     /// <summary>A field type the site does not have (ADR-0059).</summary>
     public static FormBuilderProblemResult FieldTypeNotFound() =>

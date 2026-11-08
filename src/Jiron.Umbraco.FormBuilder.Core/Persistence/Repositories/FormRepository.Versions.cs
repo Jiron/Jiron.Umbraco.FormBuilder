@@ -39,6 +39,7 @@ internal sealed partial class FormRepository
 
                 var version = await AppendAsync(db, n, formId, FormVersionKind.Draft, draft, comment, userKey);
                 await db.ExecAsync($"UPDATE {n.T(FormBuilderTables.Form)} SET {n.C("draftVersionId")} = @0 WHERE {n.C("id")} = @1", version.Info.Id, formId);
+                await WriteUsesAsync(db, n, formId, FormVersionKind.Draft, draft.Uses);
                 return new SavedVersion((await FindAsync(db, "id", formId))!, version);
             },
             cancellationToken);
@@ -70,6 +71,7 @@ internal sealed partial class FormRepository
                     version.Info.PublicRevision,
                     themeAlias,
                     formId);
+                await WriteUsesAsync(db, n, formId, FormVersionKind.Published, document.Uses);
                 return new SavedVersion((await FindAsync(db, "id", formId))!, version);
             },
             cancellationToken);

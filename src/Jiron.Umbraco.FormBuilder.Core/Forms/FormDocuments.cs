@@ -28,7 +28,10 @@ internal sealed class FormDocuments(
             FormDefinition.CurrentSchemaVersion,
             Encoding.UTF8.GetString(canonical),
             CanonicalJson.Hash(canonical),
-            PublicProjection.Hash(definition, types));
+            PublicProjection.Hash(definition, types))
+        {
+            Uses = FormLibraryUses.Of(definition),
+        };
     }
 
     /// <summary>The hash of a definition's canonical form in the current schema.</summary>

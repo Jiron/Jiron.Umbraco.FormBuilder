@@ -44,10 +44,10 @@ public sealed partial class MigrationPlanTests : FormBuilderMigrationTestBase
                 Is.EqualTo(typeof(FormBuilderMigrationPlan)),
                 "the plan states IgnoreCurrentState itself (ADR-0003)");
             Assert.That(walked, Is.EqualTo(Steps), "the plan's transitions are its steps, in order");
-            Assert.That(Steps.Select(s => s.Step), Is.EqualTo(new[] { typeof(CreateSchemaV1), typeof(CreateDefaultSettingsV1), typeof(GrantFormsSectionV1), typeof(RequestReferenceRebuildV1), typeof(AddFileScanIndexV1), typeof(ChangeFileScanIndexV1), typeof(AddEmailTimeIndexV1), typeof(AddEntryEventDueV1), typeof(AddEntryTimeIndexV1), typeof(AddActionRunLastAttemptV1), typeof(AddEntryUnseenIndexV1) }));
+            Assert.That(Steps.Select(s => s.Step), Is.EqualTo(new[] { typeof(CreateSchemaV1), typeof(CreateDefaultSettingsV1), typeof(GrantFormsSectionV1), typeof(RequestReferenceRebuildV1), typeof(AddFileScanIndexV1), typeof(ChangeFileScanIndexV1), typeof(AddEmailTimeIndexV1), typeof(AddEntryEventDueV1), typeof(AddEntryTimeIndexV1), typeof(AddActionRunLastAttemptV1), typeof(AddEntryUnseenIndexV1), typeof(AddFormLibraryUsesV1) }));
             Assert.That(plan.FinalState, Is.EqualTo(FinalState));
             Assert.That(new TestPlan().FinalState, Is.EqualTo(plan.FinalState), "the tests' copy follows the plan");
-            Assert.That(CreateSchemaV1.Tables.Select(t => t.Name), Is.EqualTo(FormBuilderTables.All), "the step creates every table in order");
+            Assert.That(CreateSchemaV1.Tables.Select(t => t.Name), Is.EqualTo(FormBuilderTables.SchemaV1), "the step creates every table of schema v1 in order");
         });
     }
 
@@ -62,15 +62,18 @@ public sealed partial class MigrationPlanTests : FormBuilderMigrationTestBase
         {
             Assert.That(result.CompletedTransitions.Select(t => t.MigrationType), Is.EqualTo(Steps.Select(s => s.Step)));
             Assert.That(StoredState(), Is.EqualTo(FinalState));
-            Assert.That(schema.Columns.Keys, Is.EquivalentTo(ExpectedSchemaV1.Columns.Keys), "tables");
+            Assert.That(schema.Columns.Keys, Is.EquivalentTo(ExpectedSchemaV1.Columns.Keys.Append(FormBuilderTables.FormLibraryUse)), "tables");
             foreach (var (table, columns) in ExpectedSchemaV1.Columns)
             {
                 Assert.That(schema.Columns.GetValueOrDefault(table), Is.EqualTo(table switch { "jfbEntryEvent" => columns + ", dueUtc?", "jfbActionRun" => columns + ", lastAttemptUtc?", _ => columns }), $"columns of {table}");
                 Assert.That(schema.PrimaryKeys.GetValueOrDefault(table), Is.EqualTo(ExpectedSchemaV1.PrimaryKey(table)), $"primary key of {table}");
             }
 
-            Assert.That(schema.Indexes, Is.EqualTo(ExpectedSchemaV1.Indexes.Append("jfbEntry.IX_jfbEntry_submittedUtc(submittedUtc)").Append("jfbEntry.IX_jfbEntry_firstSeenUtc_submittedUtc(firstSeenUtc,submittedUtc)").Append("jfbEntryEvent.IX_jfbEntryEvent_dueUtc(dueUtc)").Append("jfbEntryFile.IX_jfbEntryFile_scanState_entryId_id(scanState,entryId,id)").Append("jfbEmail.IX_jfbEmail_createdUtc_recipientKey(createdUtc,recipientKey)").Append("jfbActionRun.IX_jfbActionRun_actionKey_id_state_attempts_entryId(actionKey,id,state,attempts,entryId)").Order(StringComparer.Ordinal)), "indexes, the filtered ones included");
-            Assert.That(schema.ForeignKeys, Is.EqualTo(ExpectedSchemaV1.ForeignKeys), "foreign keys");
+            // The table of a later step (ADR-0214).
+            Assert.That(schema.Columns.GetValueOrDefault(FormBuilderTables.FormLibraryUse), Is.EqualTo("formId, versionKind, itemKind, itemKey, uses"));
+            Assert.That(schema.PrimaryKeys.GetValueOrDefault(FormBuilderTables.FormLibraryUse), Is.EqualTo("formId,versionKind,itemKind,itemKey"));
+            Assert.That(schema.Indexes, Is.EqualTo(ExpectedSchemaV1.Indexes.Append("jfbEntry.IX_jfbEntry_submittedUtc(submittedUtc)").Append("jfbEntry.IX_jfbEntry_firstSeenUtc_submittedUtc(firstSeenUtc,submittedUtc)").Append("jfbEntryEvent.IX_jfbEntryEvent_dueUtc(dueUtc)").Append("jfbEntryFile.IX_jfbEntryFile_scanState_entryId_id(scanState,entryId,id)").Append("jfbEmail.IX_jfbEmail_createdUtc_recipientKey(createdUtc,recipientKey)").Append("jfbActionRun.IX_jfbActionRun_actionKey_id_state_attempts_entryId(actionKey,id,state,attempts,entryId)").Append("jfbFormLibraryUse.IX_jfbFormLibraryUse_itemKind_itemKey(itemKind,itemKey)").Order(StringComparer.Ordinal)), "indexes, the filtered ones included");
+            Assert.That(schema.ForeignKeys, Is.EqualTo(ExpectedSchemaV1.ForeignKeys.Append("jfbFormLibraryUse.formId -> jfbForm on delete cascade").Order(StringComparer.Ordinal)), "foreign keys");
         });
     }
 
@@ -111,7 +114,7 @@ public sealed partial class MigrationPlanTests : FormBuilderMigrationTestBase
         Assert.Multiple(() =>
         {
             Assert.That(offenders, Is.Empty);
-            Assert.That(schema.PrimaryKeys.Keys, Is.EquivalentTo(ExpectedSchemaV1.Columns.Keys), "every table has a primary key");
+            Assert.That(schema.PrimaryKeys.Keys, Is.EquivalentTo(ExpectedSchemaV1.Columns.Keys.Append(FormBuilderTables.FormLibraryUse)), "every table has a primary key");
 
             // The check sees nullable columns: the filtered unique indexes are exactly the ones it would refuse.
             Assert.That(
@@ -214,8 +217,57 @@ public sealed partial class MigrationPlanTests : FormBuilderMigrationTestBase
             Assert.That(Inspect().Indexes, Has.One.Contains(AddEntryTimeIndexV1.IndexName));
             Assert.That(Inspect().Indexes, Has.One.Contains(AddActionRunLastAttemptV1.IndexName));
             Assert.That(Inspect().Indexes, Has.One.Contains(AddEntryUnseenIndexV1.IndexName));
+            Assert.That(Inspect().Indexes, Has.One.Contains(AddFormLibraryUsesV1.IndexName));
             Assert.That(Inspect().Columns[FormBuilderTables.ActionRun], Does.EndWith("lastAttemptUtc?"));
         });
+    }
+
+    [Test]
+    public async Task Upgrade_ToTheLibraryUses_WritesTheRowsOfTheFormsThereAre_FromTheirDraftAndLiveVersions()
+    {
+        await RunAsync(new TestPlan(Steps.Count - 1));
+        var list = Guid.Parse("72000000-0000-4000-8000-000000000001");
+        var other = Guid.Parse("72000000-0000-4000-8000-000000000002");
+        const string Draft = """{"pages":[{"groups":[{"fields":[{"type":"dropdown","options":{"source":"list","list":"72000000-0000-4000-8000-000000000001"}},{"type":"repeater","fields":[{"type":"radio","options":{"source":"list","list":"72000000-0000-4000-8000-000000000001"}},{"type":"radio","options":{"source":"items","list":"72000000-0000-4000-8000-000000000002"}}]}]}]}]}""";
+        const string Live = """{"pages":[{"groups":[{"fields":[{"type":"dropdown","options":{"source":"list","list":"72000000-0000-4000-8000-000000000002"}}]}]}]}""";
+        var formId = InsertForm("used", Draft, Live);
+        _ = InsertForm("unreadable", "{not json", null);
+
+        var upgrade = await RunAsync(new FormBuilderMigrationPlan());
+
+        var rows = Query(db => db.Fetch<AddFormLibraryUsesV1.FormLibraryUseDto>($"SELECT * FROM {T(FormBuilderTables.FormLibraryUse)}"));
+        Assert.Multiple(() =>
+        {
+            Assert.That(upgrade.Successful, Is.True, upgrade.Exception?.ToString());
+            Assert.That(
+                rows.Select(row => (row.FormId, row.VersionKind, row.ItemKind, row.ItemKey, row.Uses)).OrderBy(row => row.VersionKind, StringComparer.Ordinal),
+                Is.EqualTo(new[] { (formId, "draft", "optionList", list, 2), (formId, "published", "optionList", other, 1) }),
+                "a list's fields counted, a child's included; a field of its own items names none; a version that does not read names nothing");
+        });
+    }
+
+    // A form with a draft and, when given, a live version, as the earlier steps' snapshots write them.
+    private int InsertForm(string alias, string draft, string? live)
+    {
+        var now = DateTime.UtcNow;
+        var id = 0;
+        Write(db =>
+        {
+            var form = new CreateSchemaV1.FormDto { Key = Guid.NewGuid(), Alias = alias, Name = alias, ConcurrencyVersion = 1, CreatedUtc = now, UpdatedUtc = now };
+            db.Insert(form);
+            int Version(int number, string kind, string definition)
+            {
+                var version = new CreateSchemaV1.FormVersionDto { FormId = form.Id, Number = number, Kind = kind, SchemaVersion = 1, Definition = definition, DefinitionHash = new string('a', 64), PublicHash = new string('b', 64), CreatedUtc = now };
+                db.Insert(version);
+                return version.Id;
+            }
+
+            form.DraftVersionId = Version(1, "draft", draft);
+            form.PublishedVersionId = live is null ? null : Version(2, "published", live);
+            db.Update(form);
+            id = form.Id;
+        });
+        return id;
     }
 
     [Test]

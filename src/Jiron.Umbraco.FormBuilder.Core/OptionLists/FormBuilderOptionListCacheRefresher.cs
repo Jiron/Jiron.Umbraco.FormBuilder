@@ -11,7 +11,14 @@ namespace Jiron.Umbraco.FormBuilder.Core.OptionLists;
 
 /// <summary>A changed option list, as the cache refresher carries it to every server.</summary>
 /// <param name="Key">The list's key.</param>
-internal sealed record OptionListCacheChange(Guid Key);
+internal sealed record OptionListCacheChange(Guid Key)
+{
+    /// <summary>
+    /// The key of the copy a URL list's configuration keeps, which every server drops too, for Fetch now (ADR-0214); null
+    /// for a change that keeps the copies, which the configuration names.
+    /// </summary>
+    public string? UrlCopy { get; init; }
+}
 
 /// <summary>
 /// The keys of what is kept of option lists (ADR-0073): <c>Jiron.FormBuilder.OptionList.&lt;key&gt;</c> for a list's
@@ -95,5 +102,11 @@ internal sealed class FormBuilderOptionListCacheRefresher(
     {
         ArgumentNullException.ThrowIfNull(cache);
         cache.ClearByKey(change is null || change.Key == Guid.Empty ? OptionListCacheKeys.Prefix : OptionListCacheKeys.Row(change.Key));
+
+        // Only a URL copy's key: a payload that names any other key drops nothing more.
+        if (change?.UrlCopy is { } copy && copy.StartsWith(OptionSiteCacheKeys.UrlPrefix, StringComparison.Ordinal))
+        {
+            cache.Clear(copy);
+        }
     }
 }

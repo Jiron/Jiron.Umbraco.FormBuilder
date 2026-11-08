@@ -28,7 +28,7 @@ namespace Jiron.Umbraco.FormBuilder.Core.Persistence.Migrations;
 /// </remarks>
 internal sealed partial class CreateSchemaV1(IMigrationContext context) : AsyncMigrationBase(context)
 {
-    /// <summary>Every table with its snapshot, in creation order (<see cref="FormBuilderTables.All"/>).</summary>
+    /// <summary>Every table with its snapshot, in creation order (<see cref="FormBuilderTables.SchemaV1"/>).</summary>
     internal static readonly IReadOnlyList<(string Name, Type Dto)> Tables =
     [
         (FormBuilderTables.KeyValue, typeof(KeyValueDto)),

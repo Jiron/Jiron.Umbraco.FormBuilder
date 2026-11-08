@@ -30,15 +30,19 @@ internal static class FormBuilderTables
     public const string Reference = "jfbReference";
     public const string AuditEntry = "jfbAuditEntry";
     public const string DailyStat = "jfbDailyStat";
+    public const string FormLibraryUse = "jfbFormLibraryUse";
 
     /// <summary>
-    /// Every table, in the order schema v1 creates them: a table comes after the tables it refers to, except
+    /// The tables of schema v1, in the order it creates them: a table comes after the tables it refers to, except
     /// <see cref="Form"/>, whose draft and published versions live in <see cref="FormVersion"/>, which refers back to it.
     /// </summary>
-    public static readonly IReadOnlyList<string> All =
+    public static readonly IReadOnlyList<string> SchemaV1 =
     [
         KeyValue, Folder, Form, FormVersion, FormField, Entry, EntryFile, EntryValue, ConsentText, EntryEvent, EntryNote,
         ActionRun, Email, OptionCapacity, OptionList, Theme, EmailLayout, FormTemplate, UserSetting, Permission, Setting,
         Reference, AuditEntry, DailyStat,
     ];
+
+    /// <summary>Every table: those of schema v1, then those of later steps in their order (ADR-0214).</summary>
+    public static readonly IReadOnlyList<string> All = [.. SchemaV1, FormLibraryUse];
 }

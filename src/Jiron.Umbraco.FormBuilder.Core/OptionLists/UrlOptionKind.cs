@@ -133,6 +133,13 @@ internal sealed partial class UrlOptionFetcher(OutboundHttp outbound, AppCaches 
         return copy.Failed ? throw new OptionsUnavailableException() : copy.Options;
     }
 
+    /// <summary>The copy of the configuration this server keeps, fresh or not, or null when it has none (ADR-0214).</summary>
+    public UrlOptionCopy? Kept(UrlOptionListSettings settings)
+    {
+        ArgumentNullException.ThrowIfNull(settings);
+        return appCaches.RuntimeCache.GetCacheItem<UrlOptionCopy>(OptionSiteCacheKeys.Url(settings));
+    }
+
     // A fetch shared by every caller, so it runs on the thread pool in no caller's context or cancellation.
     private static Task<T> Detached<T>(Func<Task<T>> run)
     {

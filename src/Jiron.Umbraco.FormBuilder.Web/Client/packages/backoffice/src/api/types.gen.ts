@@ -173,6 +173,11 @@ export type CreateFormRequestModel = {
     folderKey?: string | null;
 };
 
+export type CreateOptionListRequestModel = {
+    key?: string | null;
+    list: OptionListRequestModel;
+};
+
 export type DefinitionChangeResponseModel = {
     kind: string;
     key?: string | null;
@@ -236,6 +241,10 @@ export type DraftOptionsRequestModel = {
 export type DuplicateFormRequestModel = {
     name: string;
     includeActions: boolean;
+};
+
+export type DuplicateOptionListRequestModel = {
+    name: string;
 };
 
 export type EmailPreviewRequestModel = {
@@ -1323,9 +1332,28 @@ export type MyPermissionsResponseModel = {
     anywhere: Array<string>;
 };
 
+export type OptionFileResponseModel = {
+    items: unknown;
+    count: number;
+};
+
 export type OptionKindResponseModel = {
     kind: string;
     settings: Array<FieldSettingResponseModel>;
+};
+
+export type OptionListEditorResponseModel = {
+    languages: Array<OptionListLanguageResponseModel>;
+    kinds: Array<OptionListKindResponseModel>;
+    maxCacheSeconds: number;
+    maxOptions: number;
+    maxFileBytes: number;
+};
+
+export type OptionListFetchResponseModel = {
+    fetchedUtc?: string | null;
+    count: number;
+    failing: boolean;
 };
 
 export type OptionListItemResponseModel = {
@@ -1334,6 +1362,87 @@ export type OptionListItemResponseModel = {
     name: string;
     kind?: string | null;
     count?: number | null;
+};
+
+export type OptionListKindResponseModel = {
+    kind: string;
+    hasItems: boolean;
+    keepsOptions: boolean;
+    minCacheSeconds: number;
+};
+
+export type OptionListLanguageResponseModel = {
+    culture: string;
+    name: string;
+    isDefault: boolean;
+};
+
+export type OptionListOptionResponseModel = {
+    value: string;
+    label?: string | null;
+    description?: string | null;
+};
+
+export type OptionListPreviewResponseModel = {
+    options: Array<OptionListOptionResponseModel>;
+    isAvailable: boolean;
+    problems: Array<OptionListProblemResponseModel>;
+};
+
+export type OptionListProblemResponseModel = {
+    code: string;
+    path: string;
+    message: string;
+};
+
+export type OptionListRequestModel = {
+    alias: string;
+    name: string;
+    kind: string;
+    config?: unknown;
+    items?: unknown;
+    cacheSeconds: number;
+};
+
+export type OptionListResponseModel = {
+    key: string;
+    alias: string;
+    name: string;
+    kind?: string | null;
+    config: unknown;
+    items: unknown;
+    cacheSeconds: number;
+    concurrencyVersion: number;
+    updatedUtc: string;
+};
+
+export type OptionListRowResponseModel = {
+    key: string;
+    alias: string;
+    name: string;
+    kind?: string | null;
+    count?: number | null;
+    usedBy: number;
+    updatedUtc: string;
+};
+
+export type OptionListRowsResponseModel = {
+    total: number;
+    items: Array<OptionListRowResponseModel>;
+};
+
+export type OptionListUserResponseModel = {
+    key: string;
+    name: string;
+    inDraft: boolean;
+    inLive: boolean;
+    isTrashed: boolean;
+    uses: number;
+};
+
+export type OptionListUsersResponseModel = {
+    forms: Array<OptionListUserResponseModel>;
+    others: number;
 };
 
 export type OptionListsResponseModel = {
@@ -1410,6 +1519,15 @@ export type PinVersionRequestModel = {
     isPinned: boolean;
 };
 
+export type PreviewOptionListRequestModel = {
+    key?: string | null;
+    kind: string;
+    config?: unknown;
+    items?: unknown;
+    cacheSeconds: number;
+    culture: string;
+};
+
 export type PrivacySettingsRequestModel = {
     version: number;
     insights?: boolean | null;
@@ -1433,6 +1551,11 @@ export type ProblemDetails = {
 export type PublishFormRequestModel = {
     concurrencyVersion: number;
     comment?: string | null;
+};
+
+export type ReadOptionFileRequestModel = {
+    fileName: string;
+    content: string;
 };
 
 export type RecentEntriesResponseModel = {
@@ -1539,6 +1662,11 @@ export type UnmappedReferenceResponseModel = {
     path: string;
     sourceKey: string;
     alias?: string | null;
+};
+
+export type UpdateOptionListRequestModel = {
+    concurrencyVersion: number;
+    list: OptionListRequestModel;
 };
 
 export type FormDocumentReferenceResponseModelWritable = {
@@ -5034,6 +5162,458 @@ export type MergeTagPathListResponses = {
 
 export type MergeTagPathListResponse = MergeTagPathListResponses[keyof MergeTagPathListResponses];
 
+export type OptionListListData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/option-list';
+};
+
+export type OptionListListErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+};
+
+export type OptionListListResponses = {
+    /**
+     * OK
+     */
+    200: OptionListsResponseModel;
+};
+
+export type OptionListListResponse = OptionListListResponses[keyof OptionListListResponses];
+
+export type OptionListLibraryCreateData = {
+    body?: CreateOptionListRequestModel;
+    path?: never;
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/option-list';
+};
+
+export type OptionListLibraryCreateErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+};
+
+export type OptionListLibraryCreateError = OptionListLibraryCreateErrors[keyof OptionListLibraryCreateErrors];
+
+export type OptionListLibraryCreateResponses = {
+    /**
+     * Created
+     */
+    201: OptionListResponseModel;
+};
+
+export type OptionListLibraryCreateResponse = OptionListLibraryCreateResponses[keyof OptionListLibraryCreateResponses];
+
+export type OptionListLibraryDeleteData = {
+    body?: never;
+    path: {
+        key: string;
+    };
+    query?: {
+        concurrencyVersion?: number;
+    };
+    url: '/umbraco/jfb/management/api/v1/option-list/{key}';
+};
+
+export type OptionListLibraryDeleteErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+};
+
+export type OptionListLibraryDeleteError = OptionListLibraryDeleteErrors[keyof OptionListLibraryDeleteErrors];
+
+export type OptionListLibraryDeleteResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type OptionListLibraryDeleteResponse = OptionListLibraryDeleteResponses[keyof OptionListLibraryDeleteResponses];
+
+export type OptionListLibraryGetData = {
+    body?: never;
+    path: {
+        key: string;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/option-list/{key}';
+};
+
+export type OptionListLibraryGetErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type OptionListLibraryGetError = OptionListLibraryGetErrors[keyof OptionListLibraryGetErrors];
+
+export type OptionListLibraryGetResponses = {
+    /**
+     * OK
+     */
+    200: OptionListResponseModel;
+};
+
+export type OptionListLibraryGetResponse = OptionListLibraryGetResponses[keyof OptionListLibraryGetResponses];
+
+export type OptionListLibraryUpdateData = {
+    body?: UpdateOptionListRequestModel;
+    path: {
+        key: string;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/option-list/{key}';
+};
+
+export type OptionListLibraryUpdateErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+};
+
+export type OptionListLibraryUpdateError = OptionListLibraryUpdateErrors[keyof OptionListLibraryUpdateErrors];
+
+export type OptionListLibraryUpdateResponses = {
+    /**
+     * OK
+     */
+    200: OptionListResponseModel;
+};
+
+export type OptionListLibraryUpdateResponse = OptionListLibraryUpdateResponses[keyof OptionListLibraryUpdateResponses];
+
+export type OptionListLibraryDuplicateData = {
+    body?: DuplicateOptionListRequestModel;
+    path: {
+        key: string;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/option-list/{key}/duplicate';
+};
+
+export type OptionListLibraryDuplicateErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type OptionListLibraryDuplicateError = OptionListLibraryDuplicateErrors[keyof OptionListLibraryDuplicateErrors];
+
+export type OptionListLibraryDuplicateResponses = {
+    /**
+     * Created
+     */
+    201: OptionListResponseModel;
+};
+
+export type OptionListLibraryDuplicateResponse = OptionListLibraryDuplicateResponses[keyof OptionListLibraryDuplicateResponses];
+
+export type OptionListLibraryFetchData = {
+    body?: never;
+    path: {
+        key: string;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/option-list/{key}/fetch';
+};
+
+export type OptionListLibraryFetchErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type OptionListLibraryFetchError = OptionListLibraryFetchErrors[keyof OptionListLibraryFetchErrors];
+
+export type OptionListLibraryFetchResponses = {
+    /**
+     * OK
+     */
+    200: OptionListFetchResponseModel;
+};
+
+export type OptionListLibraryFetchResponse = OptionListLibraryFetchResponses[keyof OptionListLibraryFetchResponses];
+
+export type OptionListLibraryFetchedData = {
+    body?: never;
+    path: {
+        key: string;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/option-list/{key}/fetched';
+};
+
+export type OptionListLibraryFetchedErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type OptionListLibraryFetchedError = OptionListLibraryFetchedErrors[keyof OptionListLibraryFetchedErrors];
+
+export type OptionListLibraryFetchedResponses = {
+    /**
+     * OK
+     */
+    200: OptionListFetchResponseModel;
+};
+
+export type OptionListLibraryFetchedResponse = OptionListLibraryFetchedResponses[keyof OptionListLibraryFetchedResponses];
+
+export type OptionListLibraryUsedByData = {
+    body?: never;
+    path: {
+        key: string;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/option-list/{key}/used-by';
+};
+
+export type OptionListLibraryUsedByErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type OptionListLibraryUsedByError = OptionListLibraryUsedByErrors[keyof OptionListLibraryUsedByErrors];
+
+export type OptionListLibraryUsedByResponses = {
+    /**
+     * OK
+     */
+    200: OptionListUsersResponseModel;
+};
+
+export type OptionListLibraryUsedByResponse = OptionListLibraryUsedByResponses[keyof OptionListLibraryUsedByResponses];
+
+export type OptionListLibraryEditorData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/option-list/editor';
+};
+
+export type OptionListLibraryEditorErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+};
+
+export type OptionListLibraryEditorResponses = {
+    /**
+     * OK
+     */
+    200: OptionListEditorResponseModel;
+};
+
+export type OptionListLibraryEditorResponse = OptionListLibraryEditorResponses[keyof OptionListLibraryEditorResponses];
+
+export type OptionListLibraryRowsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        skip?: number;
+        take?: number;
+    };
+    url: '/umbraco/jfb/management/api/v1/option-list/library';
+};
+
+export type OptionListLibraryRowsErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+};
+
+export type OptionListLibraryRowsError = OptionListLibraryRowsErrors[keyof OptionListLibraryRowsErrors];
+
+export type OptionListLibraryRowsResponses = {
+    /**
+     * OK
+     */
+    200: OptionListRowsResponseModel;
+};
+
+export type OptionListLibraryRowsResponse = OptionListLibraryRowsResponses[keyof OptionListLibraryRowsResponses];
+
+export type OptionListLibraryPreviewData = {
+    body?: PreviewOptionListRequestModel;
+    path?: never;
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/option-list/preview';
+};
+
+export type OptionListLibraryPreviewErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+};
+
+export type OptionListLibraryPreviewError = OptionListLibraryPreviewErrors[keyof OptionListLibraryPreviewErrors];
+
+export type OptionListLibraryPreviewResponses = {
+    /**
+     * OK
+     */
+    200: OptionListPreviewResponseModel;
+};
+
+export type OptionListLibraryPreviewResponse = OptionListLibraryPreviewResponses[keyof OptionListLibraryPreviewResponses];
+
+export type OptionListLibraryReadFileData = {
+    body?: ReadOptionFileRequestModel;
+    path?: never;
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/option-list/read-file';
+};
+
+export type OptionListLibraryReadFileErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+};
+
+export type OptionListLibraryReadFileError = OptionListLibraryReadFileErrors[keyof OptionListLibraryReadFileErrors];
+
+export type OptionListLibraryReadFileResponses = {
+    /**
+     * OK
+     */
+    200: OptionFileResponseModel;
+};
+
+export type OptionListLibraryReadFileResponse = OptionListLibraryReadFileResponses[keyof OptionListLibraryReadFileResponses];
+
 export type DraftOptionsResolveData = {
     body?: DraftOptionsRequestModel;
     path: {
@@ -5072,33 +5652,6 @@ export type DraftOptionsResolveResponses = {
 };
 
 export type DraftOptionsResolveResponse = DraftOptionsResolveResponses[keyof DraftOptionsResolveResponses];
-
-export type OptionListListData = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/umbraco/jfb/management/api/v1/option-list';
-};
-
-export type OptionListListErrors = {
-    /**
-     * The resource is protected and requires an authentication token
-     */
-    401: unknown;
-    /**
-     * The authenticated user does not have access to this resource
-     */
-    403: unknown;
-};
-
-export type OptionListListResponses = {
-    /**
-     * OK
-     */
-    200: OptionListsResponseModel;
-};
-
-export type OptionListListResponse = OptionListListResponses[keyof OptionListListResponses];
 
 export type OptionSourceListData = {
     body?: never;

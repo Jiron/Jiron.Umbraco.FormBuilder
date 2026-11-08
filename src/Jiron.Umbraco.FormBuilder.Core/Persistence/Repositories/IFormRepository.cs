@@ -1,5 +1,6 @@
 using Jiron.Umbraco.FormBuilder.Core.Access;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
+using Jiron.Umbraco.FormBuilder.Core.Forms;
 
 namespace Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 
@@ -18,7 +19,11 @@ internal enum FormVersionKind
 /// <param name="Definition">The definition's JSON.</param>
 /// <param name="DefinitionHash">The SHA-256 of the definition's UTF-8 bytes, in lowercase hex.</param>
 /// <param name="PublicHash">The SHA-256 of its canonical public projection, in lowercase hex (ADR-0035).</param>
-internal sealed record VersionDocument(int SchemaVersion, string Definition, string DefinitionHash, string PublicHash);
+internal sealed record VersionDocument(int SchemaVersion, string Definition, string DefinitionHash, string PublicHash)
+{
+    /// <summary>What of the library the definition uses, which the version's write records for its form (ADR-0214).</summary>
+    public IReadOnlyList<LibraryUse> Uses { get; init; } = [];
+}
 
 /// <summary>A form's row: its name, alias and folder, and its draft and published versions (ADR-0002).</summary>
 /// <param name="Id">The row's id.</param>

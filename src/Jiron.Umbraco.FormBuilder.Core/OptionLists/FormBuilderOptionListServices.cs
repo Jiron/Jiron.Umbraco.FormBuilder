@@ -39,7 +39,10 @@ internal static class FormBuilderOptionListServices
         builder.AddNotificationHandler<PublicAccessCacheRefresherNotification, OptionSiteCacheHandler>();
         builder.AddNotificationHandler<LanguageCacheRefresherNotification, OptionSiteCacheHandler>();
         builder.Services.TryAddSingleton<OptionListService>();
-        builder.Services.TryAddSingleton<IFormBuilderOptionService, FormBuilderOptionService>();
+        // The library preview resolves through the built-in service, whichever one a site registers (ADR-0214).
+        builder.Services.TryAddSingleton<FormBuilderOptionService>();
+        builder.Services.TryAddSingleton<IFormBuilderOptionService>(services => services.GetRequiredService<FormBuilderOptionService>());
+        builder.Services.TryAddSingleton<OptionListLibrary>();
         builder.Services.TryAddSingleton<CascadingOptions>();
         builder.Services.TryAddSingleton<DraftOptions>();
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IFormPublishCheck, OptionSourcePublishCheck>());

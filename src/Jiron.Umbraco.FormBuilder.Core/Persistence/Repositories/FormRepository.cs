@@ -83,6 +83,7 @@ internal sealed partial class FormRepository(FormBuilderDatabase database) : IFo
                 };
                 await db.InsertRowAsync(version);
                 await db.ExecAsync($"UPDATE {table} SET {n.C("draftVersionId")} = @0 WHERE {n.C("id")} = @1", version.Id, formId);
+                await WriteUsesAsync(db, n, formId, FormVersionKind.Draft, form.Draft.Uses);
                 return new SavedVersion((await FindAsync(db, "id", formId))!, VersionFromDto(version));
             },
             cancellationToken);
@@ -340,10 +341,10 @@ internal sealed partial class FormRepository(FormBuilderDatabase database) : IFo
     /// <inheritdoc />
     public Task<StoredForm?> UnpublishAsync(int formId, int expectedConcurrencyVersion, Guid? userKey, CancellationToken cancellationToken = default) =>
         database.WriteAsync(
-            db =>
+            async db =>
             {
                 var n = new SqlNames(db);
-                return ChangeAsync(
+                var form = await ChangeAsync(
                     db,
                     n,
                     formId,
@@ -351,6 +352,14 @@ internal sealed partial class FormRepository(FormBuilderDatabase database) : IFo
                     $"{n.C("publishedVersionId")} = NULL, {n.C("themeAlias")} = NULL",
                     $"{n.C("publishedVersionId")} IS NOT NULL",
                     userKey);
+
+                // Without a live version the form uses nothing live, whichever change took it offline.
+                if (form is { PublishedVersionId: null })
+                {
+                    await ForgetUsesAsync(db, n, formId, FormVersionKind.Published);
+                }
+
+                return form;
             },
             cancellationToken);
 

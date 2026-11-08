@@ -44,6 +44,9 @@ internal sealed class FormBuilderMigrationPlan : PackageMigrationPlan
     /// <summary>The state after the index that finds the entries nobody opened yet across forms (ADR-0209).</summary>
     public const string StateEntryUnseenIndex = "jfb-011-entry-unseen-index";
 
+    /// <summary>The state after the table of what of the library each form uses (ADR-0214).</summary>
+    public const string StateFormLibraryUses = "jfb-012-form-library-uses";
+
     /// <summary>The steps in order, with the state each one leaves. The tests build their copies of the plan from it.</summary>
     internal static readonly IReadOnlyList<(string State, Type Step)> Steps =
     [
@@ -58,6 +61,7 @@ internal sealed class FormBuilderMigrationPlan : PackageMigrationPlan
         (StateEntryTimeIndex, typeof(AddEntryTimeIndexV1)),
         (StateActionRunLastAttempt, typeof(AddActionRunLastAttemptV1)),
         (StateEntryUnseenIndex, typeof(AddEntryUnseenIndexV1)),
+        (StateFormLibraryUses, typeof(AddFormLibraryUsesV1)),
     ];
 
     /// <summary>Creates the plan with Jiron Form Builder's package id, name and plan name.</summary>

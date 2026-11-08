@@ -72,7 +72,7 @@ public sealed partial class SchemaV1DdlTests
 
         Assert.Multiple(() =>
         {
-            Assert.That(created, Is.EqualTo(FormBuilderTables.All));
+            Assert.That(created, Is.EqualTo(FormBuilderTables.SchemaV1));
             Assert.That(problems, Is.Empty);
             Assert.That(CreateSchemaV1.PutsForeignKeysInCreateTable(SqlServer()), Is.False, "SQL Server adds keys after the table");
             Assert.That(CreateSchemaV1.PutsForeignKeysInCreateTable(Sqlite()), Is.True, "SQLite writes them into CREATE TABLE");
@@ -93,7 +93,7 @@ public sealed partial class SchemaV1DdlTests
             .Select(key => (From: key.PrimaryTable!, To: key.ForeignTable!))
             .ToList();
         var problems = new List<string>();
-        foreach (var start in FormBuilderTables.All)
+        foreach (var start in FormBuilderTables.SchemaV1)
         {
             var paths = new Dictionary<string, int>(StringComparer.Ordinal);
             Walk(start, [start]);

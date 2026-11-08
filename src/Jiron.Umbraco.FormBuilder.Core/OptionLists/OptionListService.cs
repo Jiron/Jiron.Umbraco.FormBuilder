@@ -39,6 +39,13 @@ internal sealed record OptionListResult(StoredOptionList? List, IReadOnlyList<De
 /// <param name="IsReadable">Whether the kind, the configuration and the items all read and keep the kind's checks.</param>
 internal sealed record OptionListEntry(StoredOptionList Row, OptionKind? Kind, SettingsObject? Config, IReadOnlyList<FieldOption> Items, bool IsReadable);
 
+/// <summary>A list's contents as an editor holds them, read for the library's preview (ADR-0214).</summary>
+/// <param name="Kind">The kind, or null when the site has no lists of it.</param>
+/// <param name="Config">The configuration; null for none, or when the contents do not read.</param>
+/// <param name="Items">The items of a kind that holds them; empty for any other, or when the contents do not read.</param>
+/// <param name="Problems">Why a save would refuse the contents, each at its path; empty when they read.</param>
+internal sealed record OptionListContents(OptionKind? Kind, SettingsObject? Config, IReadOnlyList<FieldOption> Items, IReadOnlyList<DefinitionProblem> Problems);
+
 /// <summary>A library list as the inspector's source picker offers it (ADR-0172).</summary>
 /// <param name="Key">The key a field's <c>options.list</c> names it by.</param>
 /// <param name="Alias">Its alias.</param>
@@ -104,8 +111,8 @@ internal sealed partial class OptionListService(
         }
     }
 
-    // A list's summary: the items counted as the array's elements, without reading them, for a kind that holds them.
-    private OptionListSummary Summary(StoredOptionList row)
+    /// <summary>A list's summary: the items counted as the array's elements, without reading them, for a kind that holds them.</summary>
+    public OptionListSummary Summary(StoredOptionList row)
     {
         var kind = row.Kind is { } stored ? kinds.Find(stored) : null;
         return new OptionListSummary(row.Key, row.Alias, row.Name, kind, kind is { HasItems: true } ? Count(row.Items) : null);
@@ -163,6 +170,25 @@ internal sealed partial class OptionListService(
         }
 
         return problems.ToReadOnlyList();
+    }
+
+    /// <summary>
+    /// A list's contents as they are being edited, read as a save reads them, what the configuration names on the site
+    /// included, for the library's preview (ADR-0214): the kind, the configuration and the items, and the problems that
+    /// would refuse them, each at its path. Its alias, name and <c>cacheSeconds</c> are a save's to check.
+    /// </summary>
+    public async Task<OptionListContents> ReadContentsAsync(OptionListKind kind, string config, string items, CancellationToken cancellationToken = default)
+    {
+        var problems = new DefinitionProblems();
+        var found = await ContentsAsync(kind, config, items, onSite: true, problems, cancellationToken);
+        if (found is null || problems.Found > 0)
+        {
+            return new OptionListContents(found, null, [], problems.ToReadOnlyList());
+        }
+
+        // Read again only once they passed, so a problem is never said twice.
+        _ = TryReadConfig(config, problems, out var read);
+        return new OptionListContents(found, read, ReadItems(items, problems) ?? [], []);
     }
 
     /// <summary>Creates a list, unless its contents or its alias refuse it.</summary>
@@ -395,9 +421,20 @@ internal sealed partial class OptionListService(
     /// delivers locally, and the others when the cache instruction reaches them. Each change of this service calls it,
     /// and so does an import once the lists it created with its form have committed (ADR-0078).
     /// </summary>
-    public void Changed(Guid key)
+    public void Changed(Guid key) => Forget(new OptionListCacheChange(key));
+
+    /// <summary>
+    /// <see cref="Changed"/>, and every server drops the copy a URL list's configuration keeps too, so the next request
+    /// fetches the address again: Fetch now (ADR-0214).
+    /// </summary>
+    public void FetchAgain(Guid key, UrlOptionListSettings settings)
     {
-        var change = new OptionListCacheChange(key);
+        ArgumentNullException.ThrowIfNull(settings);
+        Forget(new OptionListCacheChange(key) { UrlCopy = OptionSiteCacheKeys.Url(settings) });
+    }
+
+    private void Forget(OptionListCacheChange change)
+    {
         FormBuilderOptionListCacheRefresher.Forget(appCaches.RuntimeCache, change);
         distributedCache.RefreshByPayload(FormBuilderOptionListCacheRefresher.UniqueId, [change]);
     }

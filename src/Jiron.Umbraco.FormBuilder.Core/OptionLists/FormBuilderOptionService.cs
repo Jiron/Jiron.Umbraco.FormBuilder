@@ -55,6 +55,28 @@ internal sealed partial class FormBuilderOptionService(
         return ListAsync(list, new FormBuilderOptionRequest(context.Culture, Possible(context.ParentValues), context.Page), cancellationToken);
     }
 
+    /// <summary>
+    /// The options of a library list's contents as they are being edited, for the library's preview (ADR-0214): a list
+    /// that holds them gives its items in the culture, any other asks its source as a stored list would, a URL list's copy
+    /// kept for its <c>cacheSeconds</c>; nothing else is kept. Every option, as no parent answer filters them.
+    /// </summary>
+    /// <param name="kind">The list's kind.</param>
+    /// <param name="config">Its configuration, which the kind's check accepted.</param>
+    /// <param name="items">Its items, for a kind that holds them.</param>
+    /// <param name="cacheSeconds">Its <c>cacheSeconds</c>.</param>
+    /// <param name="owner">The list's key, or a new key for one not saved yet, which a source's log lines name.</param>
+    /// <param name="culture">The culture of the labels, as <see cref="AskedCulture"/> reads it.</param>
+    /// <param name="cancellationToken">Cancelled when the request is.</param>
+    internal async Task<FormBuilderResolvedOptions> PreviewAsync(OptionKind kind, SettingsObject? config, IReadOnlyList<FieldOption> items, int cacheSeconds, Guid owner, string culture, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(kind);
+        ArgumentNullException.ThrowIfNull(items);
+        var request = new FormBuilderOptionRequest(AskedCulture.Of(culture), [], null);
+        return kind.HasItems
+            ? new FormBuilderResolvedOptions(Clean(await ItemsAsync(items, request.Culture), "list", owner), IsAvailable: true)
+            : await SourceAsync(kind, config, request, "list", owner, cancellationToken, cacheSeconds);
+    }
+
     // The parent answers an option could name, each once and in their order: more than spaces, at most an option value's
     // length and as cleaning leaves them (ADR-0005), at most as many as a field offers; the rest names no option, so no
     // source sees it (ADR-0081).

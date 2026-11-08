@@ -71,9 +71,9 @@ public sealed partial class DatabaseDocsTests
     /// <summary>The ER diagram of the snapshots: every table with every column, and every foreign key.</summary>
     internal static string Diagram()
     {
-        var tables = CreateSchemaV1.Plan(SqlServer(), foreignKeysInCreateTable: true);
+        var tables = Definitions();
         var text = new StringBuilder("erDiagram\n");
-        foreach (var table in tables.Select(t => t.Definition))
+        foreach (var table in tables)
         {
             var primaryKey = PrimaryKey(table);
             var foreign = table.ForeignKeys.SelectMany(key => key.ForeignColumns).ToHashSet(StringComparer.Ordinal);
@@ -117,7 +117,7 @@ public sealed partial class DatabaseDocsTests
             text.Append("    }\n");
         }
 
-        foreach (var table in tables.Select(t => t.Definition))
+        foreach (var table in tables)
         {
             foreach (var key in table.ForeignKeys)
             {
@@ -131,10 +131,16 @@ public sealed partial class DatabaseDocsTests
         return text.ToString();
     }
 
+    // The tables of schema v1, then those of later steps, from their snapshots (ADR-0214).
+    private static List<TableDefinition> Definitions() =>
+    [
+        .. CreateSchemaV1.Plan(SqlServer(), foreignKeysInCreateTable: true).Select(t => t.Definition),
+        DefinitionFactory.GetTableDefinition(typeof(AddFormLibraryUsesV1.FormLibraryUseDto), SqlServer()),
+    ];
+
     private static Dictionary<string, List<string>> TableIndexes()
     {
-        var indexes = CreateSchemaV1.Plan(SqlServer(), foreignKeysInCreateTable: true)
-            .ToDictionary(t => t.Name, t => t.Definition.Indexes.Select(index => index.Name!).ToList(), StringComparer.Ordinal);
+        var indexes = Definitions().ToDictionary(t => t.Name, t => t.Indexes.Select(index => index.Name!).ToList(), StringComparer.Ordinal);
         foreach (var filtered in CreateSchemaV1.FilteredIndexes)
         {
             indexes[filtered.Table].Add(filtered.Name);

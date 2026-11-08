@@ -58,6 +58,7 @@ idempotent, so a rerun changes nothing.
 | `jfb-009-entry-time-index` | `AddEntryTimeIndexV1` | Adds `IX_jfbEntry_submittedUtc`, so the Overview's newest entries across forms don't sort all of a site's entries ([ADR-0165](decisions/0165-the-section-shell.md)), where it is missing. |
 | `jfb-010-action-run-last-attempt` | `AddActionRunLastAttemptV1` | Adds `jfbActionRun.lastAttemptUtc`, which a claim writes, and `IX_jfbActionRun_actionKey_id_state_attempts_entryId`, so an action's card finds its last run without its entries ([ADR-0195](decisions/0195-an-actions-last-run-and-its-details.md)). |
 | `jfb-011-entry-unseen-index` | `AddEntryUnseenIndexV1` | Adds `IX_jfbEntry_firstSeenUtc_submittedUtc`, so the Inbox finds the entries nobody opened yet, newest first, across forms, and its badge counts them ([ADR-0209](decisions/0209-the-inbox-spam-badges-and-the-summary-email.md)). |
+| `jfb-012-form-library-uses` | `AddFormLibraryUsesV1` | Adds `jfbFormLibraryUse`, what of the library each form's draft and live version use, with `IX_jfbFormLibraryUse_itemKind_itemKey`, and writes the rows of the forms there are from their versions: the option lists their fields take options from ([ADR-0214](decisions/0214-the-option-list-library.md)), where the table is missing. |
 
 A step that has shipped is never edited; a change to the schema is a new step with snapshot classes of its own. Step 1
 is frozen since the end of Phase 4, the tag `baseline/schema-v1`: `SchemaV1FreezeTests` pins the SHA-256 of a
@@ -434,6 +435,13 @@ erDiagram
         string(128) dimension PK
         bigint value
     }
+    jfbFormLibraryUse {
+        int formId PK, FK
+        string(16) versionKind PK
+        string(16) itemKind PK
+        guid itemKey PK
+        int uses
+    }
     jfbFolder |o--o{ jfbFolder : "parentId, no action"
     jfbFolder |o--o{ jfbForm : "folderId, no action"
     jfbFormVersion |o--o{ jfbForm : "draftVersionId, no action"
@@ -451,6 +459,7 @@ erDiagram
     jfbEntry ||--o{ jfbActionRun : "entryId, cascade"
     jfbEntry |o--o{ jfbEmail : "entryId, set null"
     jfbForm ||--o{ jfbOptionCapacity : "formId, cascade"
+    jfbForm ||--o{ jfbFormLibraryUse : "formId, cascade"
 ```
 
 ## Tables
@@ -633,7 +642,8 @@ SHA-256 of the option's value; the value itself is kept beside it for reading. N
 
 Shared option lists: typed in by editors, or read from content, a data type, a URL, a file or code.
 
-- `IX_jfbOptionList_key`, `IX_jfbOptionList_alias`: unique; the alias without regard to case.
+- `IX_jfbOptionList_key`, `IX_jfbOptionList_alias`: unique; the alias without regard to case. A list cannot be
+  deleted while a form uses it (`jfbFormLibraryUse`).
 
 ### `jfbTheme`
 
@@ -737,3 +747,14 @@ its time to complete: `15`, `30`, `60`, `120`, `180`, `300`, `600`, `900`, `1800
 which the server counts when it refuses a post sent without JavaScript. Keys are written as 32 hex digits.
 
 - `IX_jfbDailyStat_day_formId`: retention, which deletes the earliest day first.
+
+### `jfbFormLibraryUse`
+
+What of the library each form's draft and live version use, by key: so far the option lists its fields take their
+options from (ADR-0214). The form repository writes a version's rows in the unit that writes the version, a draft's
+save and a publish replacing their version's rows, and taking a form offline removes its live rows; deleting a form for
+good takes its rows. The library's "used by" counts the forms, and an option list's delete is refused while any row names
+it, a form in the recycle bin's included, as it can come back. `uses` is how many of the version's fields use the item.
+The primary key is the form, the version (`draft` or `published`), the kind of item (`optionList`) and its key.
+
+- `IX_jfbFormLibraryUse_itemKind_itemKey`: an item's forms, for "used by" and the delete guard.

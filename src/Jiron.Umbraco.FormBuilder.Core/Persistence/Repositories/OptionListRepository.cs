@@ -84,7 +84,8 @@ internal interface IOptionListRepository
 
     /// <summary>
     /// Deletes a list; false when it does not exist. Refused with <see cref="FormBuilderConcurrencyException"/> when it
-    /// changed meanwhile. Definitions name lists inside their JSON, so the library service checks them (12.1).
+    /// changed meanwhile, and with <see cref="FormBuilderConflict.InUse"/> while a form's draft or live version uses it
+    /// (<c>jfbFormLibraryUse</c>, forms in the recycle bin included, ADR-0214).
     /// </summary>
     Task<bool> DeleteAsync(int id, int expectedConcurrencyVersion, CancellationToken cancellationToken = default);
 }
@@ -92,6 +93,12 @@ internal interface IOptionListRepository
 /// <inheritdoc />
 internal sealed class OptionListRepository(FormBuilderDatabase database) : IOptionListRepository
 {
+    // A list stays while a form's draft or live version takes its options from it, a form in the recycle bin's too, as it
+    // can come back (ADR-0214).
+    private static readonly InUseGuard UsedByForms = new(
+        n => $"NOT EXISTS (SELECT 1 FROM {n.T(FormBuilderTables.FormLibraryUse)} u{n.LockingRead} WHERE u.{n.C("itemKind")} = 'optionList' AND u.{n.C("itemKey")} = {n.T(FormBuilderTables.OptionList)}.{n.C("key")})",
+        "A form uses the option list.");
+
     private readonly AliasedLibraryTable<OptionListDto> _table = new(database, FormBuilderTables.OptionList, "option list");
 
     /// <inheritdoc />
@@ -139,7 +146,7 @@ internal sealed class OptionListRepository(FormBuilderDatabase database) : IOpti
 
     /// <inheritdoc />
     public Task<bool> DeleteAsync(int id, int expectedConcurrencyVersion, CancellationToken cancellationToken = default) =>
-        _table.DeleteAsync(id, expectedConcurrencyVersion, null, cancellationToken);
+        _table.DeleteAsync(id, expectedConcurrencyVersion, UsedByForms, cancellationToken);
 
     private static LibraryColumn[] Content(OptionListKind kind, string config, string items, int cacheSeconds)
     {
