@@ -202,7 +202,9 @@ flowchart LR
   stylesheets and the runtime once per document, shows the form once its stylesheets loaded, and never posts it as a
   page would (ADR-0128);
 - `backoffice`: the Form Builder section in Lit and TypeScript with UUI, through the generated client. Its build takes the
-  comments and line breaks out of its Lit templates first (`scripts/templates.mjs`, [ADR-0216](decisions/0216-smaller-template-text-in-the-backoffice.md)). From 6.7f it holds the
+  comments and line breaks out of its Lit templates first (`scripts/templates.mjs`), and puts the start's modules in
+  one chunk and each folder's on-demand modules in chunks of the folder, every module run in its source order
+  ([ADR-0216](decisions/0216-smaller-template-text-in-the-backoffice.md)). From 6.7f it holds the
   content editor's form picker (`src/picker`, ADR-0134): the property editor UI `jfb-form-picker` (the picked forms as
   Umbraco's reference rows with Remove, and Choose), its sidebar `jfb-form-picker-modal` (the library's levels, opened
   in place, and the search, within the data type's limits) and the block label's UFM component `jfbFormName`, each

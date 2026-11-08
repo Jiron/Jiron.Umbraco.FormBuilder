@@ -9,7 +9,7 @@
 - Amended in 6.4k by [ADR-0121](0121-a-strict-site-in-the-browser-tests.md): the size check holds every file of the
   runtime's build but its entry to a name with the bundler's content hash
 - Amended in 12.1 by [ADR-0216](0216-smaller-template-text-in-the-backoffice.md): the backoffice's Lit templates lose
-  their comments and line breaks before the bundler compiles them
+  their comments and line breaks before the bundler compiles them, and its modules go into fewer, larger chunks
 - Roadmap step: 3.2 (decided and built); 6.2 serves the embedded assets, 6.3 adds the themes, 9.6 sets the
   backoffice budget, 18.1 and 18.2 pack and install
 
