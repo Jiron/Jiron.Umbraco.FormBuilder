@@ -62,8 +62,12 @@ per language, a preview in light and dark, and a test send.
    - **Other tokens:** every other token the base theme declares, by name with its default as the placeholder — a site's
      own base theme's tokens show here, nothing of them hidden.
    - **More options:** the custom CSS, with what the sanitiser removed said under it.
-   The preview is the website's own rendering of a sample form with every kind of field, an error and both buttons, the
-   tokens applied as the layer applies them, in light or dark.
+   The preview is the website's own rendering of a sample form with every common kind of field, help, a placeholder, an
+   error with its summary and both buttons (`GET theme/sample`: the second page of two in the base theme's views and
+   class map, under the preview's alias, in the user's language), the tokens applied as the layer applies them, in
+   light or dark. The page links the base rules and the base theme's stylesheet, holds an empty style element for the
+   layer and no script, and its form has nowhere to post to; the editor shows it in a frame with scripts off and, as
+   the theme changes, writes only the layer `POST theme/preview` gives into that element, so the page never reloads.
 5. **Custom CSS** goes through AngleSharp's CSS parser (the HTML sanitiser's own, ROADMAP §4.10): style rules have every
    selector put under `.jfb-form.jfb-theme-<alias>` (`:root`, `html` and `body` become the scope itself);
    `@media`, `@supports`, `@container` and `@keyframes` stay with their rules; `@import` and every other at-rule

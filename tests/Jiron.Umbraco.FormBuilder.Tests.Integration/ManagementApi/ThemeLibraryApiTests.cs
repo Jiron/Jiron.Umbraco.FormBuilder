@@ -1,10 +1,14 @@
 using System.Text.Json.Nodes;
+using AngleSharp.Html.Parser;
 using Jiron.Umbraco.FormBuilder.Core.Composing;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Core.Settings;
 using Jiron.Umbraco.FormBuilder.Core.Themes;
+using Umbraco.Cms.Core;
+using Umbraco.Cms.Core.Models;
+using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Tests.Common.Testing;
 
 namespace Jiron.Umbraco.FormBuilder.Tests.Integration.ManagementApi;
@@ -212,6 +216,35 @@ public sealed class ThemeLibraryApiTests : ManagementApiTestBase
             Assert.That(css, Does.Contain(".jfb-form.jfb-theme-jfb-preview .jfb-label { color: red; }"));
             Assert.That(preview.Body!["removed"]!.AsArray().Select(each => each!["code"]!.GetValue<string>()), Is.EqualTo(new[] { "import", "address" }));
             Assert.That(preview.Body!["problems"]!.AsArray().Select(each => each!["path"]!.GetValue<string>()), Is.EqualTo(new[] { "$.tokens.light['--jfb-made-up']" }));
+        });
+    }
+
+    [Test]
+    public async Task TheSample_IsTheWebsitesRenderingOfASampleForm_InTheBaseTheme_UnderThePreviewsAlias_WithoutAScript()
+    {
+        await GetRequiredService<ILanguageService>().CreateAsync(new Language("de-DE", "German"), Constants.Security.SuperUserKey);
+        var german = await CallAsync("designer", HttpMethod.Get, "theme/sample?baseTheme=bootstrap5&culture=de-DE");
+        var english = await CallAsync("designer", HttpMethod.Get, "theme/sample?baseTheme=default&culture=fr-FR");
+        var missing = await CallAsync("designer", HttpMethod.Get, "theme/sample?baseTheme=nowhere");
+
+        Assert.That(german.Outcome, Is.EqualTo("200"), german.ToString());
+        var page = await new HtmlParser().ParseDocumentAsync(german.Body!["html"]!.GetValue<string>());
+        var form = page.QuerySelector("form.jfb-form")!;
+        Assert.Multiple(() =>
+        {
+            Assert.That(form.ClassList, Does.Contain("jfb-theme-jfb-preview").And.Contain("jfb-theme-bootstrap5"), "the base theme's form under the preview's alias");
+            Assert.That(page.QuerySelector("input[type=email]")!.ClassList, Does.Contain("form-control"), "the base theme's classes");
+            Assert.That(page.QuerySelectorAll("link[rel=stylesheet]").Select(link => link.GetAttribute("href")!.Split('?')[0]), Is.EqualTo(new[] { "/jfb/assets/themes/base.css", "/jfb/assets/themes/bootstrap5.css" }));
+            Assert.That(page.GetElementById(german.Body!["layerId"]!.GetValue<string>())!.TextContent, Is.Empty, "the layer's place, after the stylesheets");
+            Assert.That(page.QuerySelectorAll("script").Select(script => script.GetAttribute("type")), Is.All.EqualTo("application/json"), "no script, only the form's data, which no browser runs");
+            Assert.That(form.HasAttribute("action"), Is.False, "nowhere to post to");
+            Assert.That(page.QuerySelector("label[for$=-email]")!.TextContent, Does.Contain("E-Mail-Adresse"), "the sample in German");
+            Assert.That(page.QuerySelector("[data-jfb-summary]"), Is.Not.Null, "an answer its check refuses");
+            Assert.That(page.QuerySelectorAll("button").Length, Is.GreaterThanOrEqualTo(2), "both buttons of a second page");
+            Assert.That(german.Body!["culture"]!.GetValue<string>(), Is.EqualTo("de-DE"));
+            Assert.That(english.Body!["culture"]!.GetValue<string>(), Is.EqualTo("en-US"), "a culture the site lacks is its default language");
+            Assert.That(english.Body!["html"]!.GetValue<string>(), Does.Contain("Email address").And.Contain("jfb-theme-default"));
+            Assert.That(missing.Outcome, Is.EqualTo("404 theme_not_found"));
         });
     }
 

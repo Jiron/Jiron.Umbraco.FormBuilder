@@ -285,3 +285,19 @@ internal sealed record ThemeCssRemovalResponseModel
     /// <summary>What went, shortened.</summary>
     public required string Text { get; init; }
 }
+
+/// <summary>The theme editor's sample page.</summary>
+internal sealed record ThemeSampleResponseModel
+{
+    /// <summary>The whole page, which the editor writes into a frame without scripts.</summary>
+    public required string Html { get; init; }
+
+    /// <summary>The culture its texts are in.</summary>
+    public required string Culture { get; init; }
+
+    /// <summary>The id of the style element the editor writes the layer into.</summary>
+    public required string LayerId { get; init; }
+
+    /// <summary>The class on the page's root that shows the dark scheme.</summary>
+    public required string DarkClass { get; init; }
+}

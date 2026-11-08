@@ -6,9 +6,11 @@ using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Core.Themes;
 using Jiron.Umbraco.FormBuilder.Web.ManagementApi.Access;
+using Jiron.Umbraco.FormBuilder.Web.Rendering;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Umbraco.Cms.Core;
+using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Web.Common.Routing;
 
 namespace Jiron.Umbraco.FormBuilder.Web.ManagementApi.Library;
@@ -21,7 +23,7 @@ namespace Jiron.Umbraco.FormBuilder.Web.ManagementApi.Library;
 [ApiVersion("1.0")]
 [BackOfficeRoute(FormBuilderManagementApi.Route + "/theme")]
 [ApiExplorerSettings(GroupName = "Theme")]
-internal sealed class ThemeLibraryController(ThemeLibrary library, FormBuilderThemes registry) : FormBuilderManagementApiController
+internal sealed class ThemeLibraryController(ThemeLibrary library, FormBuilderThemes registry, ThemePreviewDocuments samples, ILanguageService languages) : FormBuilderManagementApiController
 {
     /// <summary>A page of the themes by name, each with how many forms use it, whether it is the default and its swatch.</summary>
     /// <param name="skip">How many themes to skip.</param>
@@ -211,6 +213,26 @@ internal sealed class ThemeLibraryController(ThemeLibrary library, FormBuilderTh
             Removed = [.. preview.Removed.Select(removal => new ThemeCssRemovalResponseModel { Code = removal.Code, Text = removal.Text })],
             Problems = [.. preview.Problems.Select(LibraryProblemResponseModel.Of)],
         });
+    }
+
+    /// <summary>
+    /// The editor's sample page in a theme in code: the sample form as the website renders it in the base theme, under the
+    /// preview's alias, with an empty style element the editor writes the preview's layer into (ADR-0215).
+    /// </summary>
+    /// <param name="baseTheme">The alias of the theme in code.</param>
+    /// <param name="culture">A language of the site, such as <c>de-DE</c>; the site's default language when it is none of them.</param>
+    /// <param name="cancellationToken">Cancels the reads.</param>
+    [HttpGet("sample")]
+    [MapToApiVersion("1.0")]
+    [FormBuilderPermission(FormBuilderPermissions.ManageLibrary)]
+    [ProducesResponseType(typeof(ThemeSampleResponseModel), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Sample([FromQuery, Required] string baseTheme, [FromQuery] string? culture, CancellationToken cancellationToken = default)
+    {
+        var shown = (culture is { Length: > 0 } asked ? await languages.GetAsync(asked) : null)?.IsoCode ?? await languages.GetDefaultIsoCodeAsync();
+        return await samples.RenderAsync(ControllerContext, baseTheme, shown, cancellationToken) is { } html
+            ? Ok(new ThemeSampleResponseModel { Html = html, Culture = shown, LayerId = ThemePreviewDocuments.LayerId, DarkClass = ThemePreviewDocuments.DarkClass })
+            : FormBuilderProblems.ThemeNotFound();
     }
 
     private ObjectResult Created(StoredTheme theme)

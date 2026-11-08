@@ -121,6 +121,7 @@ public sealed class PermissionMatrixTests : ManagementApiTestBase
         ["GET theme/{key}/export"] = (FormBuilderPermissions.ManageLibrary, FormBuilderAccessResourceKind.Global, null),
         ["POST theme/import"] = (FormBuilderPermissions.ManageLibrary, FormBuilderAccessResourceKind.Global, null),
         ["POST theme/preview"] = (FormBuilderPermissions.ManageLibrary, FormBuilderAccessResourceKind.Global, null),
+        ["GET theme/sample"] = (FormBuilderPermissions.ManageLibrary, FormBuilderAccessResourceKind.Global, null),
         ["GET email-layout/library"] = (FormBuilderPermissions.ManageLibrary, FormBuilderAccessResourceKind.Global, null),
         ["GET email-layout/editor"] = (FormBuilderPermissions.ManageLibrary, FormBuilderAccessResourceKind.Global, null),
         ["GET email-layout/{key}"] = (FormBuilderPermissions.ManageLibrary, FormBuilderAccessResourceKind.Global, null),

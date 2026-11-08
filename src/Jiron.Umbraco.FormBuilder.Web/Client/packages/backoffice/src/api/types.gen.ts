@@ -1846,6 +1846,13 @@ export type ThemeRowsResponseModel = {
     items: Array<ThemeRowResponseModel>;
 };
 
+export type ThemeSampleResponseModel = {
+    html: string;
+    culture: string;
+    layerId: string;
+    darkClass: string;
+};
+
 export type ThemeTokenResponseModel = {
     name: string;
     default: string;
@@ -7115,6 +7122,42 @@ export type ThemeLibraryPreviewResponses = {
 };
 
 export type ThemeLibraryPreviewResponse = ThemeLibraryPreviewResponses[keyof ThemeLibraryPreviewResponses];
+
+export type ThemeLibrarySampleData = {
+    body?: never;
+    path?: never;
+    query: {
+        baseTheme: string;
+        culture?: string;
+    };
+    url: '/umbraco/jfb/management/api/v1/theme/sample';
+};
+
+export type ThemeLibrarySampleErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type ThemeLibrarySampleError = ThemeLibrarySampleErrors[keyof ThemeLibrarySampleErrors];
+
+export type ThemeLibrarySampleResponses = {
+    /**
+     * OK
+     */
+    200: ThemeSampleResponseModel;
+};
+
+export type ThemeLibrarySampleResponse = ThemeLibrarySampleResponses[keyof ThemeLibrarySampleResponses];
 
 export type TrashEmptyData = {
     body?: never;
