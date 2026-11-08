@@ -110,7 +110,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         },
         {
           "name": "maxLength",
@@ -139,7 +140,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         },
         {
           "name": "prefix",
@@ -168,7 +170,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         },
         {
           "name": "suffix",
@@ -197,7 +200,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         },
         {
           "name": "counter",
@@ -226,7 +230,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         }
       ],
       "availability": {
@@ -295,7 +300,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         },
         {
           "name": "maxLength",
@@ -324,7 +330,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         },
         {
           "name": "minWords",
@@ -353,7 +360,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         },
         {
           "name": "maxWords",
@@ -382,7 +390,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         },
         {
           "name": "rows",
@@ -411,7 +420,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         },
         {
           "name": "autoGrow",
@@ -440,7 +450,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         },
         {
           "name": "counter",
@@ -469,7 +480,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         }
       ],
       "availability": {
@@ -536,7 +548,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         },
         {
           "name": "confirmLabel",
@@ -565,7 +578,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         },
         {
           "name": "domains",
@@ -613,7 +627,8 @@
                 "maximumCount": null,
                 "allowedValues": []
               },
-              "lock": null
+              "lock": null,
+              "unit": null
             },
             {
               "name": "list",
@@ -642,7 +657,8 @@
                 "maximumCount": 1000,
                 "allowedValues": []
               },
-              "lock": null
+              "lock": null,
+              "unit": null
             }
           ],
           "default": null,
@@ -666,7 +682,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         }
       ],
       "availability": {
@@ -732,7 +749,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         }
       ],
       "availability": {
@@ -809,7 +827,8 @@
             "maximumCount": 1000,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         }
       ],
       "availability": {
@@ -878,7 +897,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         },
         {
           "name": "max",
@@ -907,7 +927,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         },
         {
           "name": "step",
@@ -936,7 +957,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         },
         {
           "name": "decimals",
@@ -965,7 +987,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         },
         {
           "name": "prefix",
@@ -994,7 +1017,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         },
         {
           "name": "suffix",
@@ -1023,7 +1047,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         }
       ],
       "availability": {
@@ -1088,7 +1113,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         },
         {
           "name": "min",
@@ -1117,7 +1143,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         },
         {
           "name": "max",
@@ -1146,7 +1173,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         },
         {
           "name": "weekdaysOnly",
@@ -1175,7 +1203,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         },
         {
           "name": "excluded",
@@ -1204,7 +1233,8 @@
             "maximumCount": 1000,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         }
       ],
       "availability": {
@@ -1270,7 +1300,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         },
         {
           "name": "max",
@@ -1299,7 +1330,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         },
         {
           "name": "stepMinutes",
@@ -1328,7 +1360,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         }
       ],
       "availability": {
@@ -1393,7 +1426,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         },
         {
           "name": "min",
@@ -1422,7 +1456,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         },
         {
           "name": "max",
@@ -1451,7 +1486,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         },
         {
           "name": "weekdaysOnly",
@@ -1480,7 +1516,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         },
         {
           "name": "excluded",
@@ -1509,7 +1546,8 @@
             "maximumCount": 1000,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         },
         {
           "name": "stepMinutes",
@@ -1538,7 +1576,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         }
       ],
       "availability": {
@@ -1599,7 +1638,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         },
         {
           "name": "symbol",
@@ -1641,7 +1681,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         },
         {
           "name": "lowLabel",
@@ -1670,7 +1711,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         },
         {
           "name": "highLabel",
@@ -1699,7 +1741,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         }
       ],
       "availability": {
@@ -1760,7 +1803,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         },
         {
           "name": "to",
@@ -1789,7 +1833,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         },
         {
           "name": "lowLabel",
@@ -1818,7 +1863,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         },
         {
           "name": "highLabel",
@@ -1847,7 +1893,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         }
       ],
       "availability": {
@@ -1911,7 +1958,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         },
         {
           "name": "max",
@@ -1940,7 +1988,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         },
         {
           "name": "step",
@@ -1969,7 +2018,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         },
         {
           "name": "unit",
@@ -1998,7 +2048,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         },
         {
           "name": "showValue",
@@ -2027,7 +2078,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         }
       ],
       "availability": {
@@ -2082,7 +2134,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         },
         {
           "name": "visible",
@@ -2111,7 +2164,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         },
         {
           "name": "format",
@@ -2146,7 +2200,8 @@
                 "maximumCount": null,
                 "allowedValues": []
               },
-              "lock": null
+              "lock": null,
+              "unit": null
             },
             {
               "name": "prefix",
@@ -2175,7 +2230,8 @@
                 "maximumCount": null,
                 "allowedValues": []
               },
-              "lock": null
+              "lock": null,
+              "unit": null
             },
             {
               "name": "suffix",
@@ -2204,7 +2260,8 @@
                 "maximumCount": null,
                 "allowedValues": []
               },
-              "lock": null
+              "lock": null,
+              "unit": null
             }
           ],
           "default": null,
@@ -2228,7 +2285,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         }
       ],
       "availability": {
@@ -2295,7 +2353,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         },
         {
           "name": "minSelections",
@@ -2324,7 +2383,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         },
         {
           "name": "maxSelections",
@@ -2353,7 +2413,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         },
         {
           "name": "prompt",
@@ -2382,7 +2443,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         }
       ],
       "availability": {
@@ -2447,7 +2509,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         },
         {
           "name": "otherLabel",
@@ -2476,7 +2539,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         },
         {
           "name": "layout",
@@ -2522,7 +2586,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         }
       ],
       "availability": {
@@ -2588,7 +2653,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         },
         {
           "name": "otherLabel",
@@ -2617,7 +2683,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         },
         {
           "name": "minSelections",
@@ -2646,7 +2713,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         },
         {
           "name": "maxSelections",
@@ -2675,7 +2743,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         },
         {
           "name": "layout",
@@ -2721,7 +2790,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         }
       ],
       "availability": {
@@ -2782,7 +2852,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         },
         {
           "name": "scale",
@@ -2817,7 +2888,8 @@
                 "maximumCount": null,
                 "allowedValues": []
               },
-              "lock": null
+              "lock": null,
+              "unit": null
             },
             {
               "name": "to",
@@ -2846,7 +2918,8 @@
                 "maximumCount": null,
                 "allowedValues": []
               },
-              "lock": null
+              "lock": null,
+              "unit": null
             }
           ],
           "default": null,
@@ -2870,7 +2943,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         }
       ],
       "availability": {
@@ -2931,7 +3005,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         }
       ],
       "availability": {
@@ -2991,7 +3066,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         }
       ],
       "availability": {
@@ -3051,7 +3127,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         },
         {
           "name": "noLabel",
@@ -3080,7 +3157,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         },
         {
           "name": "style",
@@ -3118,7 +3196,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         }
       ],
       "availability": {
@@ -3176,7 +3255,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         },
         {
           "name": "loadsCaptcha",
@@ -3205,7 +3285,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         }
       ],
       "availability": {
@@ -3267,7 +3348,8 @@
             "maximumCount": 1000,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         },
         {
           "name": "top",
@@ -3296,7 +3378,8 @@
             "maximumCount": 1000,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         },
         {
           "name": "default",
@@ -3325,7 +3408,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         }
       ],
       "availability": {
@@ -3405,7 +3489,8 @@
             "maximumCount": 1000,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         },
         {
           "name": "requiredParts",
@@ -3451,7 +3536,8 @@
             "maximumCount": 1000,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         }
       ],
       "availability": {
@@ -3536,7 +3622,8 @@
             "maximumCount": 1000,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         },
         {
           "name": "requiredParts",
@@ -3590,7 +3677,8 @@
             "maximumCount": 1000,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         }
       ],
       "availability": {
@@ -3672,7 +3760,8 @@
             "maximumCount": 1000,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         },
         {
           "name": "extensions",
@@ -3701,7 +3790,8 @@
             "maximumCount": 1000,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         },
         {
           "name": "maxBytes",
@@ -3730,7 +3820,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         },
         {
           "name": "maxFiles",
@@ -3759,7 +3850,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         },
         {
           "name": "dropZone",
@@ -3788,7 +3880,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         },
         {
           "name": "thumbnails",
@@ -3817,7 +3910,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         },
         {
           "name": "camera",
@@ -3846,7 +3940,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         }
       ],
       "availability": {
@@ -3905,7 +4000,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         },
         {
           "name": "height",
@@ -3934,7 +4030,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         }
       ],
       "availability": {
@@ -3992,7 +4089,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         },
         {
           "name": "maxRows",
@@ -4021,7 +4119,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         },
         {
           "name": "rowLabel",
@@ -4050,7 +4149,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         },
         {
           "name": "addLabel",
@@ -4079,7 +4179,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         },
         {
           "name": "removeLabel",
@@ -4108,7 +4209,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         }
       ],
       "availability": {
@@ -4185,7 +4287,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         },
         {
           "name": "level",
@@ -4214,7 +4317,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         }
       ],
       "availability": {
@@ -4266,7 +4370,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         }
       ],
       "availability": {
@@ -4340,7 +4445,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         },
         {
           "name": "alt",
@@ -4369,7 +4475,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         },
         {
           "name": "size",
@@ -4415,7 +4522,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         }
       ],
       "availability": {

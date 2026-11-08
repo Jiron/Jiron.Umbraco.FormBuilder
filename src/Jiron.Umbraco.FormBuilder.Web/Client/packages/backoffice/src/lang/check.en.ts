@@ -109,6 +109,10 @@ export default {
       "This field asks for a password, which would end up in the form's entries, mail and exports. Let members sign in instead.",
     code_file_size_unset:
       "This field takes files up to the site's limit for each file: give it the largest size its answers need.",
+    code_file_size_above_site:
+      'The site takes smaller files than this field allows (Settings › Files), so a larger file is refused.',
+    code_file_type_not_taken:
+      'The site no longer takes some of the types this field allows (Settings › Files), so such files are refused.',
     code_options_can_fill:
       'Every option of this required field has a number of places, so once all are taken nobody can send the form: add an option without a limit, or let the field be left empty.',
     code_limit_without_entries: (form: boolean) =>

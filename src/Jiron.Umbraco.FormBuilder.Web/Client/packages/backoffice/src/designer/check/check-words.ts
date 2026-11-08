@@ -69,6 +69,8 @@ export const OWN_WORDS: ReadonlySet<string> = new Set([
   'card_number_asked',
   'password_asked',
   'file_size_unset',
+  'file_size_above_site',
+  'file_type_not_taken',
   'options_can_fill',
   'limit_without_entries',
   'last_outcome_has_rule',

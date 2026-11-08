@@ -37,7 +37,8 @@
           "maximumCount": null,
           "allowedValues": []
         },
-        "lock": null
+        "lock": null,
+        "unit": null
       }
     ]
   },

@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Core.Settings;
 
@@ -19,18 +20,26 @@ internal sealed record EmailSettings : ISettingsSection
     public static bool PerSite => true;
 
     /// <summary>The name mail comes from, or null for the address alone.</summary>
+    [SettingsField("sender")]
+    [MaxLength(EmailSettingsValidator.MaxNameLength)]
     public string? SenderName { get; init; }
 
     /// <summary>The address mail comes from, or null for Umbraco's own; it is never a visitor's (section 4.10).</summary>
+    [SettingsField("sender", Order = 1)]
     public string? SenderAddress { get; init; }
 
     /// <summary>The key of the layout a mail uses unless it names one; null for the built-in card.</summary>
+    [SettingsField("sender", Order = 2, Editor = "emailLayout")]
     public Guid? DefaultLayout { get; init; }
 
     /// <summary>Who hears of failed deliveries.</summary>
+    [SettingsField("team", Editor = "addresses")]
+    [MaxLength(EmailSettingsValidator.MaxAddresses)]
     public IReadOnlyList<string> TeamRecipients { get; init; } = [];
 
     /// <summary>The addresses entries may be forwarded to, besides backoffice users.</summary>
+    [SettingsField("team", Order = 1, Editor = "addresses")]
+    [MaxLength(EmailSettingsValidator.MaxAddresses)]
     public IReadOnlyList<string> ForwardAddresses { get; init; } = [];
 }
 

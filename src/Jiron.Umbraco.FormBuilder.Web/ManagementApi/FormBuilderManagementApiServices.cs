@@ -37,6 +37,18 @@ internal static class FormBuilderManagementApiServices
         builder.Services.TryAddSingleton<Picker.FormBlockTypes>();
         builder.Services.TryAddSingleton<Entries.ExportDownloadTickets>();
         builder.Services.TryAddSingleton<FormBuilderExceptionFilter>();
+        builder.Services.TryAddSingleton<Settings.SettingsSites>();
+        builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<Settings.ISettingsScreen, Settings.SettingsScreen<Core.Settings.GeneralSettings>>());
+        builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<Settings.ISettingsScreen, Settings.SettingsScreen<Core.Email.EmailSettings>>());
+        builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<Settings.ISettingsScreen, Settings.SettingsScreen<Core.Settings.ProtectionSettings>>());
+        builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<Settings.ISettingsScreen, Settings.SettingsScreen<Core.Files.FilesSettings>>());
+        builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<Settings.ISettingsScreen, Settings.SettingsScreen<Core.Settings.PrivacySettings>>());
+        builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<Settings.ISettingsScreen, Settings.SettingsScreen<Core.Settings.IntegrationSettings>>());
+        builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<Settings.ISettingsFacts<Core.Settings.GeneralSettings>, Settings.GeneralFacts>());
+        builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<Settings.ISettingsFacts<Core.Email.EmailSettings>, Settings.EmailFacts>());
+        builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<Settings.ISettingsFacts<Core.Settings.ProtectionSettings>, Settings.ProtectionFacts>());
+        builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<Settings.ISettingsFacts<Core.Files.FilesSettings>, Settings.FilesFacts>());
+        builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<Settings.ISettingsFacts<Core.Settings.IntegrationSettings>, Settings.IntegrationFacts>());
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IConfigureOptions<SwaggerGenOptions>, ConfigureFormBuilderManagementApiSwagger>());
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IOperationIdHandler, FormBuilderOperationIdHandler>());
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<ISchemaIdHandler, FormBuilderSchemaIdHandler>());

@@ -1,4 +1,5 @@
 using Jiron.Umbraco.FormBuilder.Core.Email;
+using Jiron.Umbraco.FormBuilder.Core.Files;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Umbraco.Cms.Core.DependencyInjection;
@@ -24,6 +25,8 @@ internal static class FormBuilderSettingsServices
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<ISettingsValidator<EmailSettings>, EmailSettingsValidator>());
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<ISettingsHostRule<ProtectionSettings>, ImplicitCaptchaConsentRule>());
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<ISettingsValidator<ProtectionSettings>, ProtectionSettingsValidator>());
+        builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<ISettingsHostRule<FilesSettings>, FilesHostLimitRule>());
+        builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<ISettingsValidator<FilesSettings>, FilesSettingsValidator>());
         return builder;
     }
 }

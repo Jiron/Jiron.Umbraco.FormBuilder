@@ -159,6 +159,12 @@ internal static class FormBuilderProblems
     /// <summary>The code of an export too large to stream, which runs in the background instead (ADR-0210).</summary>
     public const string ExportInBackgroundCode = "export_in_background";
 
+    /// <summary>The code of a site key that names no content root (ADR-0043, ADR-0218).</summary>
+    public const string SiteUnknownCode = "site_unknown";
+
+    /// <summary>The code of a settings section that does not exist.</summary>
+    public const string SettingsSectionNotFoundCode = "settings_section_not_found";
+
     /// <summary>How long a client waits before asking again while the plan has not run.</summary>
     public static readonly TimeSpan RetryAfter = TimeSpan.FromSeconds(10);
 
@@ -176,6 +182,14 @@ internal static class FormBuilderProblems
         http.Response.Headers.RetryAfter = ((int)RetryAfter.TotalSeconds).ToString(System.Globalization.CultureInfo.InvariantCulture);
         return Problem(StatusCodes.Status503ServiceUnavailable, MigrationsPendingCode, "Jiron Form Builder is being set up on this site. Try again in a moment.");
     }
+
+    /// <summary>A site key that names no content root: nothing was read or written (ADR-0043, ADR-0218).</summary>
+    public static FormBuilderProblemResult SiteUnknown() =>
+        Problem(StatusCodes.Status400BadRequest, SiteUnknownCode, "The site is none of the content roots.");
+
+    /// <summary>A settings section that does not exist.</summary>
+    public static FormBuilderProblemResult SettingsSectionNotFound() =>
+        Problem(StatusCodes.Status404NotFound, SettingsSectionNotFoundCode, "There is no such settings section.");
 
     /// <summary>A folder or form that does not exist, or that the user does not see: the same answer for both.</summary>
     public static FormBuilderProblemResult NotFound(FormBuilderAccessResourceKind kind) =>

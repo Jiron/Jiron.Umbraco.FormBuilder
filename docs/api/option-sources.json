@@ -30,7 +30,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         },
         {
           "name": "descendants",
@@ -59,7 +60,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         },
         {
           "name": "documentTypes",
@@ -88,7 +90,8 @@
             "maximumCount": 1000,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         },
         {
           "name": "valueFrom",
@@ -117,7 +120,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         },
         {
           "name": "labelFrom",
@@ -146,7 +150,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         },
         {
           "name": "order",
@@ -184,7 +189,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         }
       ]
     },
@@ -235,7 +241,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         }
       ]
     },
@@ -269,7 +276,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         },
         {
           "name": "listPath",
@@ -298,7 +306,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         },
         {
           "name": "valueFrom",
@@ -327,7 +336,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         },
         {
           "name": "labelFrom",
@@ -356,7 +366,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         }
       ]
     },
@@ -390,7 +401,8 @@
             "maximumCount": 1000,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         }
       ]
     },
@@ -424,7 +436,8 @@
             "maximumCount": null,
             "allowedValues": []
           },
-          "lock": null
+          "lock": null,
+          "unit": null
         }
       ]
     }

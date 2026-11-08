@@ -281,6 +281,9 @@ internal sealed record FieldSettingResponseModel
     /// <summary>The host's lock of it, for the settings at the top only; null when it is not locked.</summary>
     public FieldSettingLockResponseModel? Lock { get; init; }
 
+    /// <summary>The key of the word after a number, such as days; null for none (a settings screen's, ADR-0218).</summary>
+    public string? Unit { get; init; }
+
     /// <summary>The models of settings, in their order, with the host's locks of those at the top.</summary>
     public static IReadOnlyList<FieldSettingResponseModel> Of(ImmutableArray<FieldSettingDescriptor> settings, IReadOnlyList<FieldSettingLock> locks) =>
         [.. settings.Select(setting => Of(setting, locks.FirstOrDefault(each => string.Equals(each.Setting.Name, setting.Name, StringComparison.Ordinal))))];

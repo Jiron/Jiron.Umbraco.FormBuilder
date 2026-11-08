@@ -182,11 +182,5 @@ export default {
     short_new: 'up from none',
     short_pointsUp: (points: string) => `up ${points} points`,
     short_pointsDown: (points: string) => `down ${points} points`,
-
-    dataCollection: 'Insights',
-    dataCollectionLead:
-      "Forms count what visitors do with them, for each form's Insights view and the Overview: views, starts, the pages they reach and the fields that stop them. No answer and no visitor is counted, and nothing is stored in the visitor's browser.",
-    dataCollectionSwitch: 'Count what visitors do with the forms',
-    dataCollectionHelp: 'Each form can turn it off in its Settings view, under Privacy.',
   },
 } satisfies UmbLocalizationDictionary;

@@ -187,11 +187,5 @@ export default {
     short_new: 'davor keine',
     short_pointsUp: (points: string) => `${points} Punkte mehr`,
     short_pointsDown: (points: string) => `${points} Punkte weniger`,
-
-    dataCollection: 'Einblicke',
-    dataCollectionLead:
-      'Formulare zählen, was Besucher mit ihnen tun, für die Ansicht Einblicke jedes Formulars und die Übersicht: Aufrufe, Begonnene, die Seiten, die sie erreichen, und die Felder, an denen sie hängen bleiben. Keine Antwort und kein Besucher wird gezählt, und im Browser des Besuchers wird nichts gespeichert.',
-    dataCollectionSwitch: 'Zählen, was Besucher mit den Formularen tun',
-    dataCollectionHelp: 'Jedes Formular kann es in seiner Ansicht Einstellungen unter Datenschutz ausschalten.',
   },
 } satisfies UmbLocalizationDictionary;

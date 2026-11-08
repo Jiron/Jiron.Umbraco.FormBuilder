@@ -10214,76 +10214,30 @@
         ]
       }
     },
-    "/umbraco/jfb/management/api/v1/settings/general": {
+    "/umbraco/jfb/management/api/v1/settings/{section}": {
       "get": {
         "tags": [
           "Settings"
         ],
-        "operationId": "GeneralSettingsGet",
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/GeneralSettingsResponseModel"
-                    }
-                  ]
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "The resource is protected and requires an authentication token"
-          },
-          "403": {
-            "description": "The authenticated user does not have access to this resource"
-          }
-        },
-        "security": [
+        "operationId": "SettingsGet",
+        "parameters": [
           {
-            "Backoffice-User": []
-          }
-        ]
-      },
-      "put": {
-        "tags": [
-          "Settings"
-        ],
-        "operationId": "GeneralSettingsSave",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/GeneralSettingsRequestModel"
-                  }
-                ]
-              }
-            },
-            "text/json": {
-              "schema": {
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/GeneralSettingsRequestModel"
-                  }
-                ]
-              }
-            },
-            "application/*+json": {
-              "schema": {
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/GeneralSettingsRequestModel"
-                  }
-                ]
-              }
+            "name": "section",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "site",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
             }
           }
-        },
+        ],
         "responses": {
           "200": {
             "description": "OK",
@@ -10292,7 +10246,7 @@
                 "schema": {
                   "oneOf": [
                     {
-                      "$ref": "#/components/schemas/GeneralSettingsResponseModel"
+                      "$ref": "#/components/schemas/SettingsSectionResponseModel"
                     }
                   ]
                 }
@@ -10313,8 +10267,8 @@
               }
             }
           },
-          "409": {
-            "description": "Conflict",
+          "404": {
+            "description": "Not Found",
             "content": {
               "application/json": {
                 "schema": {
@@ -10339,54 +10293,29 @@
             "Backoffice-User": []
           }
         ]
-      }
-    },
-    "/umbraco/jfb/management/api/v1/settings/privacy": {
-      "get": {
-        "tags": [
-          "Settings"
-        ],
-        "operationId": "PrivacySettingsGet",
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/PrivacySettingsResponseModel"
-                    }
-                  ]
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "The resource is protected and requires an authentication token"
-          },
-          "403": {
-            "description": "The authenticated user does not have access to this resource"
-          }
-        },
-        "security": [
-          {
-            "Backoffice-User": []
-          }
-        ]
       },
       "put": {
         "tags": [
           "Settings"
         ],
-        "operationId": "PrivacySettingsSave",
+        "operationId": "SettingsSave",
+        "parameters": [
+          {
+            "name": "section",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
                 "oneOf": [
                   {
-                    "$ref": "#/components/schemas/PrivacySettingsRequestModel"
+                    "$ref": "#/components/schemas/SettingsSectionRequestModel"
                   }
                 ]
               }
@@ -10395,7 +10324,7 @@
               "schema": {
                 "oneOf": [
                   {
-                    "$ref": "#/components/schemas/PrivacySettingsRequestModel"
+                    "$ref": "#/components/schemas/SettingsSectionRequestModel"
                   }
                 ]
               }
@@ -10404,7 +10333,7 @@
               "schema": {
                 "oneOf": [
                   {
-                    "$ref": "#/components/schemas/PrivacySettingsRequestModel"
+                    "$ref": "#/components/schemas/SettingsSectionRequestModel"
                   }
                 ]
               }
@@ -10419,7 +10348,7 @@
                 "schema": {
                   "oneOf": [
                     {
-                      "$ref": "#/components/schemas/PrivacySettingsResponseModel"
+                      "$ref": "#/components/schemas/SettingsSectionResponseModel"
                     }
                   ]
                 }
@@ -10428,6 +10357,20 @@
           },
           "400": {
             "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
             "content": {
               "application/json": {
                 "schema": {
@@ -13377,6 +13320,30 @@
         },
         "additionalProperties": false
       },
+      "CaptchaKeysResponseModel": {
+        "required": [
+          "alias",
+          "hasKeys",
+          "keysAt",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "alias": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "hasKeys": {
+            "type": "boolean"
+          },
+          "keysAt": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
       "CaptchaProviderResponseModel": {
         "required": [
           "isConfigured",
@@ -14059,6 +14026,38 @@
           "rule": {
             "type": "string",
             "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "EmailFactsResponseModel": {
+        "required": [
+          "canSend",
+          "defaultLayout",
+          "layouts",
+          "sendingKey"
+        ],
+        "type": "object",
+        "properties": {
+          "canSend": {
+            "type": "boolean"
+          },
+          "sendingKey": {
+            "type": "string"
+          },
+          "defaultLayout": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "layouts": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/FieldSettingChoiceResponseModel"
+                }
+              ]
+            }
           }
         },
         "additionalProperties": false
@@ -16653,6 +16652,10 @@
               }
             ],
             "nullable": true
+          },
+          "unit": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -16957,6 +16960,77 @@
         },
         "additionalProperties": false
       },
+      "FileTypeGroupResponseModel": {
+        "required": [
+          "extensions",
+          "value"
+        ],
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string"
+          },
+          "extensions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "FilesFactsResponseModel": {
+        "required": [
+          "blockedExtensions",
+          "blockedExtensionsKey",
+          "folder",
+          "groups",
+          "hostMaxFileBytes",
+          "maxFileBytesKey",
+          "rootKey",
+          "scanners"
+        ],
+        "type": "object",
+        "properties": {
+          "hostMaxFileBytes": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "maxFileBytesKey": {
+            "type": "string"
+          },
+          "blockedExtensions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "blockedExtensionsKey": {
+            "type": "string"
+          },
+          "groups": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/FileTypeGroupResponseModel"
+                }
+              ]
+            }
+          },
+          "scanners": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "folder": {
+            "type": "boolean"
+          },
+          "rootKey": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
       "FolderResponseModel": {
         "required": [
           "createdUtc",
@@ -17001,6 +17075,27 @@
             "items": {
               "type": "string"
             }
+          }
+        },
+        "additionalProperties": false
+      },
+      "FormBlockFactsResponseModel": {
+        "required": [
+          "canCreate",
+          "exists"
+        ],
+        "type": "object",
+        "properties": {
+          "exists": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "canCreate": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false
@@ -17821,65 +17916,37 @@
         },
         "additionalProperties": false
       },
-      "GeneralSettingsRequestModel": {
+      "GeneralFactsResponseModel": {
         "required": [
-          "version"
+          "defaultTheme",
+          "formBlock",
+          "themes"
         ],
         "type": "object",
         "properties": {
-          "version": {
-            "maximum": 2147483647,
-            "minimum": 0,
-            "type": "integer",
-            "format": "int32"
-          },
-          "history": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/HistorySettingsRequestModel"
-              }
-            ],
+          "defaultBaseUrl": {
+            "type": "string",
             "nullable": true
-          }
-        },
-        "additionalProperties": false
-      },
-      "GeneralSettingsResponseModel": {
-        "required": [
-          "history",
-          "historyLimits",
-          "locks",
-          "version"
-        ],
-        "type": "object",
-        "properties": {
-          "version": {
-            "type": "integer",
-            "format": "int32"
           },
-          "history": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/HistorySettingsResponseModel"
-              }
-            ]
+          "defaultTheme": {
+            "type": "string"
           },
-          "historyLimits": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/HistoryLimitsResponseModel"
-              }
-            ]
-          },
-          "locks": {
+          "themes": {
             "type": "array",
             "items": {
               "oneOf": [
                 {
-                  "$ref": "#/components/schemas/SettingsLockResponseModel"
+                  "$ref": "#/components/schemas/FieldSettingChoiceResponseModel"
                 }
               ]
             }
+          },
+          "formBlock": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/FormBlockFactsResponseModel"
+              }
+            ]
           }
         },
         "additionalProperties": false
@@ -17949,65 +18016,6 @@
                 }
               ]
             }
-          }
-        },
-        "additionalProperties": false
-      },
-      "HistoryLimitsResponseModel": {
-        "required": [
-          "maxDraftCount",
-          "maxDraftDays",
-          "minDraftDays"
-        ],
-        "type": "object",
-        "properties": {
-          "minDraftDays": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "maxDraftDays": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "maxDraftCount": {
-            "type": "integer",
-            "format": "int32"
-          }
-        },
-        "additionalProperties": false
-      },
-      "HistorySettingsRequestModel": {
-        "required": [
-          "draftCount",
-          "draftDays"
-        ],
-        "type": "object",
-        "properties": {
-          "draftDays": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "draftCount": {
-            "type": "integer",
-            "format": "int32"
-          }
-        },
-        "additionalProperties": false
-      },
-      "HistorySettingsResponseModel": {
-        "required": [
-          "draftCount",
-          "draftDays"
-        ],
-        "type": "object",
-        "properties": {
-          "draftDays": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "draftCount": {
-            "type": "integer",
-            "format": "int32"
           }
         },
         "additionalProperties": false
@@ -18803,6 +18811,32 @@
             "type": "number",
             "format": "double",
             "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "IntegrationsFactsResponseModel": {
+        "required": [
+          "allowedHosts",
+          "allowHttp",
+          "found"
+        ],
+        "type": "object",
+        "properties": {
+          "allowedHosts": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "allowHttp": {
+            "type": "boolean"
+          },
+          "found": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         },
         "additionalProperties": false
@@ -19928,53 +19962,6 @@
         },
         "additionalProperties": false
       },
-      "PrivacySettingsRequestModel": {
-        "required": [
-          "version"
-        ],
-        "type": "object",
-        "properties": {
-          "version": {
-            "maximum": 2147483647,
-            "minimum": 0,
-            "type": "integer",
-            "format": "int32"
-          },
-          "insights": {
-            "type": "boolean",
-            "nullable": true
-          }
-        },
-        "additionalProperties": false
-      },
-      "PrivacySettingsResponseModel": {
-        "required": [
-          "insights",
-          "locks",
-          "version"
-        ],
-        "type": "object",
-        "properties": {
-          "version": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "insights": {
-            "type": "boolean"
-          },
-          "locks": {
-            "type": "array",
-            "items": {
-              "oneOf": [
-                {
-                  "$ref": "#/components/schemas/SettingsLockResponseModel"
-                }
-              ]
-            }
-          }
-        },
-        "additionalProperties": false
-      },
       "ProblemDetails": {
         "type": "object",
         "properties": {
@@ -20001,6 +19988,29 @@
           }
         },
         "additionalProperties": {}
+      },
+      "ProtectionFactsResponseModel": {
+        "required": [
+          "captchas",
+          "implicitConsent"
+        ],
+        "type": "object",
+        "properties": {
+          "captchas": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/CaptchaKeysResponseModel"
+                }
+              ]
+            }
+          },
+          "implicitConsent": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
       },
       "PublishFormRequestModel": {
         "required": [
@@ -20270,6 +20280,52 @@
         },
         "additionalProperties": false
       },
+      "SettingsFactsResponseModel": {
+        "type": "object",
+        "properties": {
+          "general": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/GeneralFactsResponseModel"
+              }
+            ],
+            "nullable": true
+          },
+          "email": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/EmailFactsResponseModel"
+              }
+            ],
+            "nullable": true
+          },
+          "protection": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ProtectionFactsResponseModel"
+              }
+            ],
+            "nullable": true
+          },
+          "files": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/FilesFactsResponseModel"
+              }
+            ],
+            "nullable": true
+          },
+          "integrations": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/IntegrationsFactsResponseModel"
+              }
+            ],
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "SettingsLockResponseModel": {
         "required": [
           "configurationKey",
@@ -20286,6 +20342,138 @@
           },
           "configurationKey": {
             "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "SettingsSectionRequestModel": {
+        "required": [
+          "values",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "version": {
+            "maximum": 2147483647,
+            "minimum": 0,
+            "type": "integer",
+            "format": "int32"
+          },
+          "site": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "values": {},
+          "overrides": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "SettingsSectionResponseModel": {
+        "required": [
+          "facts",
+          "fields",
+          "locks",
+          "overrides",
+          "section",
+          "siteFields",
+          "sites",
+          "values",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "section": {
+            "type": "string"
+          },
+          "site": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "version": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "values": {},
+          "globalValues": {
+            "nullable": true
+          },
+          "overrides": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "siteFields": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "sites": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/SettingsSiteResponseModel"
+                }
+              ]
+            }
+          },
+          "fields": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/FieldSettingResponseModel"
+                }
+              ]
+            }
+          },
+          "locks": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/SettingsLockResponseModel"
+                }
+              ]
+            }
+          },
+          "facts": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/SettingsFactsResponseModel"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "SettingsSiteResponseModel": {
+        "required": [
+          "hasOwnValues",
+          "key",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "hasOwnValues": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false

@@ -97,6 +97,18 @@ export const controlStyles = css`
     overflow-wrap: anywhere;
   }
 
+  /* A number with its unit after it: 90 days. */
+  .with-unit {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--uui-size-space-3);
+  }
+
+  .with-unit input {
+    inline-size: 9rem;
+  }
+
   .item-switch {
     display: flex;
     align-items: center;

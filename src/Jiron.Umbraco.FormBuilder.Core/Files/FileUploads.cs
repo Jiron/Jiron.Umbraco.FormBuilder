@@ -4,6 +4,7 @@ using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
+using Jiron.Umbraco.FormBuilder.Core.Settings;
 using Jiron.Umbraco.FormBuilder.Logic;
 using Microsoft.Extensions.Logging;
 
@@ -12,7 +13,8 @@ namespace Jiron.Umbraco.FormBuilder.Core.Files;
 /// <summary>
 /// One file uploaded to a field before its submission (ADR-0006, ADR-0087), for the upload endpoint (6.1) and the posts
 /// without JavaScript (6.2): its name cleaned, its first bytes checked, then its bytes stored and a row recorded that
-/// waits for the entry. Whatever it does not keep leaves nothing behind, and a file's name is never logged.
+/// waits for the entry. Whatever it does not keep leaves nothing behind, and a file's name is never logged. The site's
+/// files settings hold each file to the types it takes and its largest file (ADR-0218), whatever the field allows.
 /// </summary>
 internal sealed partial class FileUploads(
     FieldTypeRegistry types,
@@ -22,6 +24,7 @@ internal sealed partial class FileUploads(
     IEntryRepository entries,
     FormBuilderFileScannerCollection scanners,
     WaitingUploads waiting,
+    IFormBuilderSettingsService settings,
     ILogger<FileUploads> logger)
 {
     /// <summary>What a request may carry besides its file: the multipart boundaries, the part headers and the challenge.</summary>
@@ -145,11 +148,14 @@ internal sealed partial class FileUploads(
     {
         ArgumentNullException.ThrowIfNull(content);
         ArgumentNullException.ThrowIfNull(endsAfter);
-        var limit = LimitOf(type, field);
         if (CleanName(name) is not { } cleaned)
         {
             return new(FileUploadStatus.InvalidName);
         }
+
+        // The field's limit, within the site's; a request is read up to the field's, the file stored up to this one.
+        var site = (await settings.GetAsync<FilesSettings>(cancellationToken: cancellationToken)).Value;
+        var limit = Math.Min(LimitOf(type, field), site.LimitWithin(host));
 
         var head = new byte[FieldUploadCheck.HeadLength];
         var headLength = await ReadHeadAsync(content, head, cancellationToken);
@@ -161,6 +167,11 @@ internal sealed partial class FileUploads(
         if (Check(type, field, cleaned, head.AsMemory(0, headLength)) is { } error)
         {
             return new(FileUploadStatus.Refused, Error: error);
+        }
+
+        if (!site.Takes(FileFieldType.ExtensionOf(cleaned)))
+        {
+            return new(FileUploadStatus.Refused, Error: FieldUploads.Declared(type, FieldMessageKinds.FileType));
         }
 
         // A preview's file needs the form only, not a publish (ADR-0204).

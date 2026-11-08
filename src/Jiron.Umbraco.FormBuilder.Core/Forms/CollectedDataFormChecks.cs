@@ -7,7 +7,9 @@ using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Definitions.Serialization;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn;
+using Jiron.Umbraco.FormBuilder.Core.Files;
 using Jiron.Umbraco.FormBuilder.Core.OptionLists;
+using Jiron.Umbraco.FormBuilder.Core.Settings;
 using Jiron.Umbraco.FormBuilder.Logic;
 
 namespace Jiron.Umbraco.FormBuilder.Core.Forms;
@@ -230,39 +232,70 @@ internal sealed class CardAndPasswordFormCheck(FieldTypeRegistry types) : IFormC
 }
 
 /// <summary>
-/// A file field without a size of its own (ROADMAP 9.5e, ADR-0180): a hint, since such a field takes every file up to
-/// the site's limit (<c>Files:MaxFileBytes</c>), which is set for the largest file any form takes, and each entry may
-/// hold as many such files as the field allows. The types and the number of files always have limits of their own. A
-/// size the host locks is none an editor can give, so it gets no hint.
+/// A file field's limits against the site's (ROADMAP 9.5e, 12.4a, ADR-0180, ADR-0218). A field without a size of its own
+/// gets a hint, since it takes every file up to the site's limit (Settings > Files, capped by <c>Files:MaxFileBytes</c>),
+/// which is set for the largest file any form takes, and each entry may hold as many such files as the field allows; a
+/// size the host locks is none an editor can give, so it gets no hint. A field whose size is above the site's limit, or
+/// that picks a type the site no longer takes, gets a warning: the site's settings win, so such a file is refused.
 /// </summary>
 /// <param name="types">The field types.</param>
 /// <param name="host">The host's limits.</param>
 /// <param name="locks">The host's locks of field settings.</param>
-internal sealed class FileLimitFormCheck(FieldTypeRegistry types, FieldHostLimits host, FieldSettingLocks locks) : IFormCheck
+/// <param name="settings">The site's settings, whose files section sets its limits.</param>
+internal sealed class FileLimitFormCheck(FieldTypeRegistry types, FieldHostLimits host, FieldSettingLocks locks, IFormBuilderSettingsService settings) : IFormCheck
 {
     /// <summary>A file field without a size of its own (a hint).</summary>
     public const string FileSizeUnset = "file_size_unset";
 
+    /// <summary>A file field whose size is above the site's limit (a warning).</summary>
+    public const string FileSizeAboveSite = "file_size_above_site";
+
+    /// <summary>A file field that allows a type the site no longer takes (a warning).</summary>
+    public const string FileTypeNotTaken = "file_type_not_taken";
+
     private const string MaxBytes = "maxBytes";
 
     /// <inheritdoc />
-    public ValueTask<IReadOnlyList<FormCheckIssue>> CheckAsync(FormDefinition definition, CancellationToken cancellationToken)
+    public async ValueTask<IReadOnlyList<FormCheckIssue>> CheckAsync(FormDefinition definition, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(definition);
-        var limit = string.Create(CultureInfo.InvariantCulture, $"{host.MaxFileBytes:N0}");
-        IReadOnlyList<FormCheckIssue> issues =
-        [
-            .. DefinitionFields.Of(definition)
-                .Where(found => types.FindType(found.Field.Type) is FileFieldType
-                    && !locks.Of(found.Field.Type).Any(settingLock => settingLock.Setting.Name == MaxBytes)
-                    && !(found.Field.Settings is { } settings && settings.TryGetProperty(MaxBytes, out var size) && size.ValueKind == JsonValueKind.Number))
-                .Select(found => new FormCheckIssue(
+        var site = (await settings.GetAsync<FilesSettings>(cancellationToken: cancellationToken)).Value;
+        var most = site.LimitWithin(host);
+        var limit = string.Create(CultureInfo.InvariantCulture, $"{most:N0}");
+        var issues = new List<FormCheckIssue>();
+        foreach (var found in DefinitionFields.Of(definition).Where(found => types.FindType(found.Field.Type) is FileFieldType))
+        {
+            var path = JsonPaths.Property(found.Path, "settings");
+            var own = found.Field.Settings is { } fieldSettings && fieldSettings.TryGetProperty(MaxBytes, out var size) && size.ValueKind == JsonValueKind.Number && size.TryGetInt64(out var bytes) ? bytes : (long?)null;
+            if (own is null && !locks.Of(found.Field.Type).Any(settingLock => settingLock.Setting.Name == MaxBytes))
+            {
+                issues.Add(new FormCheckIssue(
                     FormCheckSeverity.Hint,
                     FileSizeUnset,
-                    JsonPaths.Property(JsonPaths.Property(found.Path, "settings"), MaxBytes),
-                    $"This field takes files up to the site's limit of {limit} bytes each (Files:MaxFileBytes): give it the largest size its answers need.")),
-        ];
-        return ValueTask.FromResult(issues);
+                    JsonPaths.Property(path, MaxBytes),
+                    $"This field takes files up to the site's limit of {limit} bytes each (Settings, Files): give it the largest size its answers need."));
+            }
+            else if (own > most)
+            {
+                issues.Add(new FormCheckIssue(
+                    FormCheckSeverity.Warning,
+                    FileSizeAboveSite,
+                    JsonPaths.Property(path, MaxBytes),
+                    $"The site takes files up to {limit} bytes each (Settings, Files), so a larger file is refused although this field allows it."));
+            }
+
+            if (found.Field.Settings is { } picked && picked.TryGetProperty("types", out var listed) && listed.ValueKind == JsonValueKind.Array
+                && listed.EnumerateArray().Any(type => type.ValueKind == JsonValueKind.String && Enum.TryParse<FileTypeGroup>(type.GetString(), ignoreCase: true, out var group) && !site.AllowedTypes.Contains(group)))
+            {
+                issues.Add(new FormCheckIssue(
+                    FormCheckSeverity.Warning,
+                    FileTypeNotTaken,
+                    JsonPaths.Property(path, "types"),
+                    "The site no longer takes some of the types this field allows (Settings, Files), so such files are refused."));
+            }
+        }
+
+        return issues;
     }
 }
 

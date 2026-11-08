@@ -57,6 +57,16 @@ export interface EditorContext {
   >;
 }
 
+/**
+ * The inspector's words, for a screen outside the form's workspace that draws settings with its editors, such as the
+ * global settings (ADR-0218): the screen loads the workspace's words first, as the option lists' workspace does
+ * (ADR-0214).
+ */
+export const inspectorWords =
+  (localize: { term(key: string, ...args: unknown[]): string }): EditorContext['term'] =>
+  (key, ...args) =>
+    localize.term(`jfbInspector_${key}`, ...args);
+
 /** What the form check found at a box, as an editor says it. */
 export interface Found {
   readonly ids: readonly string[];
@@ -291,13 +301,15 @@ export function settingEditor(
     case 'number':
     case 'text':
     case 'time':
-    case 'formula':
+    case 'formula': {
+      // A number with a unit, such as days, has the unit beside it, which a screen reader says with the box.
+      const unit = setting.unit ? `${id}-unit` : undefined;
       return settingFrame(
         context,
         setting,
         path,
-        (described, invalid, held) =>
-          html`<input
+        (described, invalid, held) => {
+          const box = html`<input
             type=${setting.editor === 'time' ? 'time' : 'text'}
             id=${id}
             class=${setting.editor === 'formula' ? 'code' : nothing}
@@ -309,8 +321,14 @@ export function settingEditor(
             .value=${boxValue(asText(value), held)}
             @input=${(event: Event) => typed((event.target as HTMLInputElement).value, false)}
             @change=${(event: Event) => typed((event.target as HTMLInputElement).value, true)}
-          />`,
+          />`;
+          return unit
+            ? html`<div class="with-unit">${box}<span id=${unit}>${context.say(setting.unit)}</span></div>`
+            : box;
+        },
+        unit,
       );
+    }
     case 'mediaPicker':
     case 'contentPicker':
     case 'documentPicker':

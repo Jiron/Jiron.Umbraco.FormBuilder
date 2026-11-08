@@ -41,6 +41,9 @@ internal abstract class SiteVerifyCaptchaProvider(IFormBuilderHttpTransport tran
     /// <summary>The provider's keys.</summary>
     protected abstract FormBuilderCaptchaKeys Keys { get; }
 
+    /// <summary>The configuration key its keys go under, which Settings > Spam protection names while they are missing (ADR-0218).</summary>
+    public abstract string KeysAt { get; }
+
     /// <summary>The address of the provider's script.</summary>
     protected abstract string ScriptAddress { get; }
 
@@ -177,6 +180,9 @@ internal sealed class RecaptchaV2Provider(IOptions<FormBuilderOptions> options, 
     protected override FormBuilderCaptchaKeys Keys => options.Value.Captcha.RecaptchaV2;
 
     /// <inheritdoc />
+    public override string KeysAt => "JironFormBuilder:Captcha:RecaptchaV2";
+
+    /// <inheritdoc />
     protected override string ScriptAddress => RecaptchaHosts.Host(options.Value.Captcha) + "/recaptcha/api.js";
 
     /// <inheritdoc />
@@ -209,6 +215,9 @@ internal sealed class RecaptchaV3Provider(IOptions<FormBuilderOptions> options, 
 
     /// <inheritdoc />
     protected override FormBuilderCaptchaKeys Keys => options.Value.Captcha.RecaptchaV3;
+
+    /// <inheritdoc />
+    public override string KeysAt => "JironFormBuilder:Captcha:RecaptchaV3";
 
     /// <inheritdoc />
     protected override string ScriptAddress => $"{RecaptchaHosts.Host(options.Value.Captcha)}/recaptcha/api.js?render={Uri.EscapeDataString(Keys.SiteKey ?? string.Empty)}";
@@ -263,6 +272,9 @@ internal sealed class HcaptchaProvider(IOptions<FormBuilderOptions> options, IFo
 
     /// <inheritdoc />
     protected override FormBuilderCaptchaKeys Keys => options.Value.Captcha.Hcaptcha;
+
+    /// <inheritdoc />
+    public override string KeysAt => "JironFormBuilder:Captcha:Hcaptcha";
 
     /// <inheritdoc />
     protected override string ScriptAddress => "https://js.hcaptcha.com/1/api.js";

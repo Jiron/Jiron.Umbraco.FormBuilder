@@ -46,7 +46,7 @@ public sealed class UploadRequestsTests
         var entries = Substitute.For<IEntryRepository>();
         entries.AddFileAsync(Arg.Any<NewEntryFile>(), Arg.Any<CancellationToken>()).Returns(call => Recorded(call.Arg<NewEntryFile>()));
         _store = new Store();
-        _uploads = new FileUploads(TestFieldTypes.Registry, FieldHostLimits.Default, _store, _forms, entries, new FormBuilderFileScannerCollection(() => []), new WaitingUploads(entries, Microsoft.Extensions.Options.Options.Create(new Core.Configuration.FormBuilderOptions()), new TestTimeProvider(), NullLogger<WaitingUploads>.Instance), NullLogger<FileUploads>.Instance);
+        _uploads = new FileUploads(TestFieldTypes.Registry, FieldHostLimits.Default, _store, _forms, entries, new FormBuilderFileScannerCollection(() => []), new WaitingUploads(entries, Microsoft.Extensions.Options.Options.Create(new Core.Configuration.FormBuilderOptions()), new TestTimeProvider(), NullLogger<WaitingUploads>.Instance), Jiron.Umbraco.FormBuilder.Tests.Unit.Settings.TestSettings.With(), NullLogger<FileUploads>.Instance);
         var protection = new EphemeralDataProtectionProvider();
         _requests = new UploadRequests(_uploads, new UploadTokens(protection, new TestTimeProvider()), new ChallengeTokens(protection, new TestTimeProvider()), new Web.PublicApi.RateLimiting.FormBuilderRateLimiter(Microsoft.Extensions.Options.Options.Create(new Core.Configuration.FormBuilderOptions()), new TestTimeProvider()), NullLogger<UploadRequests>.Instance);
         var field = new FormField { Key = Guid.Parse("30000000-0000-4000-8000-000000000087"), Type = "file", Alias = "upload", Label = new LocalizedText("Upload") };

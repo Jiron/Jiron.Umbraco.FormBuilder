@@ -1,10 +1,12 @@
 using System.Security.Cryptography;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
+using Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn;
 using Jiron.Umbraco.FormBuilder.Core.Files;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Testing;
 using Jiron.Umbraco.FormBuilder.Testing.Time;
+using Jiron.Umbraco.FormBuilder.Tests.Unit.Settings;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
 
@@ -168,6 +170,26 @@ public sealed class FileUploadsTests
             Assert.That(Check(field, "photo.jpg", polyglot), Is.EqualTo("fileType"));
             Assert.That(Check(field, "photo.jpg", Jpeg), Is.Null);
             Assert.That(Check(Signature(), "signature.png", [.. OnePixel, .. "<script>"u8]), Is.EqualTo("invalid"), "a signature has no message of its own for file types");
+        });
+    }
+
+    [Test]
+    public async Task TheSitesFilesSettings_RefuseATypeItNoLongerTakes_AndAFileAboveItsLimit_WhateverTheFieldAllows()
+    {
+        var field = File("""{"types":["images","pdf"]}""");
+        var imagesOnly = new FilesSettings { AllowedTypes = [FileTypeGroup.Images] };
+        var small = new FilesSettings { MaxFileBytes = Pdf.Length - 1 };
+
+        var type = await StoreAsync(field, "a.pdf", Pdf, files: imagesOnly);
+        var size = await StoreAsync(field, "a.pdf", Pdf, files: small);
+        var taken = await StoreAsync(field, "photo.jpg", Jpeg, files: imagesOnly);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(Answer(type), Is.EqualTo("Refused fileType"), "a type the site no longer takes");
+            Assert.That(Answer(size), Is.EqualTo("TooLarge fileSize"), "a file above the site's limit");
+            Assert.That(Answer(taken), Is.EqualTo("Stored"), "a type it takes");
+            Assert.That(_store.Files, Has.Count.EqualTo(1));
         });
     }
 
@@ -528,7 +550,7 @@ public sealed class FileUploadsTests
     private static StoredEntryFile Recorded(NewEntryFile file) => new(
         1, file.Key, null, file.FormId, file.FieldKey, file.OriginalName, file.StoredName, file.ContentType, file.SizeBytes, file.FileHash, file.ScanState, DateTimeOffset.UnixEpoch);
 
-    private FileUploads Uploads(FieldHostLimits? host = null, IEntryRepository? entries = null, params IFormBuilderFileScanner[] scanners) =>
+    private FileUploads Uploads(FieldHostLimits? host = null, IEntryRepository? entries = null, FilesSettings? files = null, params IFormBuilderFileScanner[] scanners) =>
         new(
             TestFieldTypes.Registry,
             host ?? FieldHostLimits.Default,
@@ -537,11 +559,12 @@ public sealed class FileUploadsTests
             entries ?? _entries,
             new FormBuilderFileScannerCollection(() => scanners),
             new WaitingUploads(entries ?? _entries, Microsoft.Extensions.Options.Options.Create(new Core.Configuration.FormBuilderOptions()), new TestTimeProvider(), Microsoft.Extensions.Logging.Abstractions.NullLogger<WaitingUploads>.Instance),
+            TestSettings.With(files),
             _logger);
 
-    private async Task<FileUploadResult> StoreAsync(FormField field, string? name, byte[] bytes, Func<CancellationToken, Task<bool>>? endsAfter = null, IEntryRepository? entries = null, bool preview = false)
+    private async Task<FileUploadResult> StoreAsync(FormField field, string? name, byte[] bytes, Func<CancellationToken, Task<bool>>? endsAfter = null, IEntryRepository? entries = null, bool preview = false, FilesSettings? files = null)
     {
-        var uploads = Uploads(entries: entries);
+        var uploads = Uploads(entries: entries, files: files);
         using var content = new MemoryStream(bytes);
         return await uploads.StoreAsync(FormKey, uploads.TypeOf(field)!, field, name, content, endsAfter ?? (_ => Task.FromResult(true)), preview, CancellationToken.None);
     }

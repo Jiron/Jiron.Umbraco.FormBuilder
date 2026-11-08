@@ -102,6 +102,13 @@ export type CanvasResponseModel = {
     requiredMarker: string;
 };
 
+export type CaptchaKeysResponseModel = {
+    alias: string;
+    name: string;
+    hasKeys: boolean;
+    keysAt: string;
+};
+
 export type CaptchaProviderResponseModel = {
     name: string;
     label: string;
@@ -280,6 +287,13 @@ export type EmailColoursResponseModel = {
     text?: string | null;
     muted?: string | null;
     rule?: string | null;
+};
+
+export type EmailFactsResponseModel = {
+    canSend: boolean;
+    sendingKey: string;
+    defaultLayout: string;
+    layouts: Array<FieldSettingChoiceResponseModel>;
 };
 
 export type EmailLayoutDesignRequestModel = {
@@ -889,6 +903,7 @@ export type FieldSettingResponseModel = {
     picks?: string | null;
     rules: FieldSettingRulesResponseModel;
     lock?: FieldSettingLockResponseModel | null;
+    unit?: string | null;
 };
 
 export type FieldSettingRulesResponseModel = {
@@ -953,6 +968,22 @@ export type FieldTypesResponseModel = {
     types: Array<FieldTypeResponseModel>;
 };
 
+export type FileTypeGroupResponseModel = {
+    value: string;
+    extensions: Array<string>;
+};
+
+export type FilesFactsResponseModel = {
+    hostMaxFileBytes: number;
+    maxFileBytesKey: string;
+    blockedExtensions: Array<string>;
+    blockedExtensionsKey: string;
+    groups: Array<FileTypeGroupResponseModel>;
+    scanners: number;
+    folder: boolean;
+    rootKey: string;
+};
+
 export type FolderResponseModel = {
     key: string;
     name: string;
@@ -962,6 +993,12 @@ export type FolderResponseModel = {
     createdUtc: string;
     updatedUtc: string;
     permissions: Array<string>;
+};
+
+export type FormBlockFactsResponseModel = {
+    exists: boolean;
+    createdAt?: string | null;
+    canCreate: boolean;
 };
 
 export type FormBlockPartResponseModel = {
@@ -1160,16 +1197,11 @@ export type FormVersionResponseModel = {
     isLive: boolean;
 };
 
-export type GeneralSettingsRequestModel = {
-    version: number;
-    history?: HistorySettingsRequestModel | null;
-};
-
-export type GeneralSettingsResponseModel = {
-    version: number;
-    history: HistorySettingsResponseModel;
-    historyLimits: HistoryLimitsResponseModel;
-    locks: Array<SettingsLockResponseModel>;
+export type GeneralFactsResponseModel = {
+    defaultBaseUrl?: string | null;
+    defaultTheme: string;
+    themes: Array<FieldSettingChoiceResponseModel>;
+    formBlock: FormBlockFactsResponseModel;
 };
 
 export type GroupTemplateSavedResponseModel = {
@@ -1187,22 +1219,6 @@ export type HealthFindingResponseModel = {
 
 export type HealthResponseModel = {
     findings: Array<HealthFindingResponseModel>;
-};
-
-export type HistoryLimitsResponseModel = {
-    minDraftDays: number;
-    maxDraftDays: number;
-    maxDraftCount: number;
-};
-
-export type HistorySettingsRequestModel = {
-    draftDays: number;
-    draftCount: number;
-};
-
-export type HistorySettingsResponseModel = {
-    draftDays: number;
-    draftCount: number;
 };
 
 export type HoldingsResponseModel = {
@@ -1383,6 +1399,12 @@ export type InsightTotalsResponseModel = {
     entries: number;
     spam: number;
     conversion?: number | null;
+};
+
+export type IntegrationsFactsResponseModel = {
+    allowedHosts: Array<string>;
+    allowHttp: boolean;
+    found: Array<string>;
 };
 
 export type LibraryChangeResponseModel = {
@@ -1663,17 +1685,6 @@ export type PreviewThemeRequestModel = {
     customCss?: string | null;
 };
 
-export type PrivacySettingsRequestModel = {
-    version: number;
-    insights?: boolean | null;
-};
-
-export type PrivacySettingsResponseModel = {
-    version: number;
-    insights: boolean;
-    locks: Array<SettingsLockResponseModel>;
-};
-
 export type ProblemDetails = {
     type?: string | null;
     title?: string | null;
@@ -1681,6 +1692,11 @@ export type ProblemDetails = {
     detail?: string | null;
     instance?: string | null;
     [key: string]: unknown;
+};
+
+export type ProtectionFactsResponseModel = {
+    captchas: Array<CaptchaKeysResponseModel>;
+    implicitConsent: boolean;
 };
 
 export type PublishFormRequestModel = {
@@ -1757,10 +1773,45 @@ export type SaveGroupTemplateRequestModel = {
     validationRules?: unknown;
 };
 
+export type SettingsFactsResponseModel = {
+    general?: GeneralFactsResponseModel | null;
+    email?: EmailFactsResponseModel | null;
+    protection?: ProtectionFactsResponseModel | null;
+    files?: FilesFactsResponseModel | null;
+    integrations?: IntegrationsFactsResponseModel | null;
+};
+
 export type SettingsLockResponseModel = {
     field: string;
     kind: string;
     configurationKey: string;
+};
+
+export type SettingsSectionRequestModel = {
+    version: number;
+    site?: string | null;
+    values: unknown;
+    overrides?: Array<string> | null;
+};
+
+export type SettingsSectionResponseModel = {
+    section: string;
+    site?: string | null;
+    version: number;
+    values: unknown;
+    globalValues?: unknown;
+    overrides: Array<string>;
+    siteFields: Array<string>;
+    sites: Array<SettingsSiteResponseModel>;
+    fields: Array<FieldSettingResponseModel>;
+    locks: Array<SettingsLockResponseModel>;
+    facts: SettingsFactsResponseModel;
+};
+
+export type SettingsSiteResponseModel = {
+    key: string;
+    name: string;
+    hasOwnValues: boolean;
 };
 
 export type TemplateNameRequestModel = {
@@ -6487,41 +6538,18 @@ export type PickerThemesResponses = {
 
 export type PickerThemesResponse = PickerThemesResponses[keyof PickerThemesResponses];
 
-export type GeneralSettingsGetData = {
+export type SettingsGetData = {
     body?: never;
-    path?: never;
-    query?: never;
-    url: '/umbraco/jfb/management/api/v1/settings/general';
+    path: {
+        section: string;
+    };
+    query?: {
+        site?: string;
+    };
+    url: '/umbraco/jfb/management/api/v1/settings/{section}';
 };
 
-export type GeneralSettingsGetErrors = {
-    /**
-     * The resource is protected and requires an authentication token
-     */
-    401: unknown;
-    /**
-     * The authenticated user does not have access to this resource
-     */
-    403: unknown;
-};
-
-export type GeneralSettingsGetResponses = {
-    /**
-     * OK
-     */
-    200: GeneralSettingsResponseModel;
-};
-
-export type GeneralSettingsGetResponse = GeneralSettingsGetResponses[keyof GeneralSettingsGetResponses];
-
-export type GeneralSettingsSaveData = {
-    body?: GeneralSettingsRequestModel;
-    path?: never;
-    query?: never;
-    url: '/umbraco/jfb/management/api/v1/settings/general';
-};
-
-export type GeneralSettingsSaveErrors = {
+export type SettingsGetErrors = {
     /**
      * Bad Request
      */
@@ -6535,57 +6563,32 @@ export type GeneralSettingsSaveErrors = {
      */
     403: unknown;
     /**
-     * Conflict
+     * Not Found
      */
-    409: ProblemDetails;
+    404: ProblemDetails;
 };
 
-export type GeneralSettingsSaveError = GeneralSettingsSaveErrors[keyof GeneralSettingsSaveErrors];
+export type SettingsGetError = SettingsGetErrors[keyof SettingsGetErrors];
 
-export type GeneralSettingsSaveResponses = {
+export type SettingsGetResponses = {
     /**
      * OK
      */
-    200: GeneralSettingsResponseModel;
+    200: SettingsSectionResponseModel;
 };
 
-export type GeneralSettingsSaveResponse = GeneralSettingsSaveResponses[keyof GeneralSettingsSaveResponses];
+export type SettingsGetResponse = SettingsGetResponses[keyof SettingsGetResponses];
 
-export type PrivacySettingsGetData = {
-    body?: never;
-    path?: never;
+export type SettingsSaveData = {
+    body?: SettingsSectionRequestModel;
+    path: {
+        section: string;
+    };
     query?: never;
-    url: '/umbraco/jfb/management/api/v1/settings/privacy';
+    url: '/umbraco/jfb/management/api/v1/settings/{section}';
 };
 
-export type PrivacySettingsGetErrors = {
-    /**
-     * The resource is protected and requires an authentication token
-     */
-    401: unknown;
-    /**
-     * The authenticated user does not have access to this resource
-     */
-    403: unknown;
-};
-
-export type PrivacySettingsGetResponses = {
-    /**
-     * OK
-     */
-    200: PrivacySettingsResponseModel;
-};
-
-export type PrivacySettingsGetResponse = PrivacySettingsGetResponses[keyof PrivacySettingsGetResponses];
-
-export type PrivacySettingsSaveData = {
-    body?: PrivacySettingsRequestModel;
-    path?: never;
-    query?: never;
-    url: '/umbraco/jfb/management/api/v1/settings/privacy';
-};
-
-export type PrivacySettingsSaveErrors = {
+export type SettingsSaveErrors = {
     /**
      * Bad Request
      */
@@ -6599,21 +6602,25 @@ export type PrivacySettingsSaveErrors = {
      */
     403: unknown;
     /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
      * Conflict
      */
     409: ProblemDetails;
 };
 
-export type PrivacySettingsSaveError = PrivacySettingsSaveErrors[keyof PrivacySettingsSaveErrors];
+export type SettingsSaveError = SettingsSaveErrors[keyof SettingsSaveErrors];
 
-export type PrivacySettingsSaveResponses = {
+export type SettingsSaveResponses = {
     /**
      * OK
      */
-    200: PrivacySettingsResponseModel;
+    200: SettingsSectionResponseModel;
 };
 
-export type PrivacySettingsSaveResponse = PrivacySettingsSaveResponses[keyof PrivacySettingsSaveResponses];
+export type SettingsSaveResponse = SettingsSaveResponses[keyof SettingsSaveResponses];
 
 export type MePermissionsData = {
     body?: never;

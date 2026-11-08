@@ -11,7 +11,6 @@ import mergeTags from './merge-tags.en';
 import options from './options.en';
 import picker from './picker.en';
 import section from './section.en';
-import general from './general.en';
 
 export default {
   ...fieldTypes,
@@ -22,5 +21,4 @@ export default {
   ...library,
   ...designer,
   ...mergeTags,
-  ...general,
 } satisfies UmbLocalizationDictionary;

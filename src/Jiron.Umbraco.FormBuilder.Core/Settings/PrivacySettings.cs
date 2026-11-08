@@ -13,5 +13,6 @@ internal sealed record PrivacySettings : ISettingsSection
     public static int SchemaVersion => 1;
 
     /// <summary>Whether the forms count views, starts, pages and the fields that stop visitors; on by default, each form may turn it off.</summary>
+    [SettingsField("insights")]
     public bool Insights { get; init; } = true;
 }

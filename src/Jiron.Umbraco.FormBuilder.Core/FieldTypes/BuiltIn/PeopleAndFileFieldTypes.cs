@@ -265,9 +265,18 @@ public sealed class FileFieldType() : FormBuilderFieldTypeBase<FileFieldSettings
         [FileTypeGroup.Archives] = ["zip", "7z", "rar", "tar", "gz"],
     }.ToFrozenDictionary();
 
+    // The group of each extension a group holds.
+    private static readonly FrozenDictionary<string, FileTypeGroup> ExtensionGroups = GroupExtensions
+        .SelectMany(pair => pair.Value.Select(extension => KeyValuePair.Create(extension, pair.Key)))
+        .ToFrozenDictionary(StringComparer.Ordinal);
+
     /// <summary>The extensions of a group of file types, in lowercase and without the point.</summary>
     /// <param name="group">The group.</param>
     public static ImmutableArray<string> ExtensionsOf(FileTypeGroup group) => GroupExtensions[group];
+
+    /// <summary>The group of file types an extension belongs to; null for an extension of no group, such as <c>dwg</c>.</summary>
+    /// <param name="extension">The extension, in lowercase without the point.</param>
+    public static FileTypeGroup? GroupOf(string extension) => ExtensionGroups.TryGetValue(extension, out var group) ? group : null;
 
     /// <summary>A file name's extension: the text after its last point, in ASCII lowercase; empty without a point.</summary>
     /// <param name="name">The file's name.</param>

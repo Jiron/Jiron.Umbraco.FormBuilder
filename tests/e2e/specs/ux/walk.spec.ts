@@ -928,7 +928,7 @@ for (const combo of COMBOS) {
     // The general settings (10.3b): how long draft saves are kept.
     await walk.shot('general-settings', async () => {
       await page.goto(`${SECTION}/workspace/jfb-settings-general`);
-      await expect(page.locator('jfb-general-settings input').first()).toBeVisible();
+      await expect(page.locator('jfb-settings-general input').first()).toBeVisible();
     });
     // Phase 11: a form's entries, their menus, dialogs and sidebars, the entry panel and its own screen.
     const entriesView = page.locator('jfb-entries-view');
@@ -1071,7 +1071,7 @@ for (const combo of COMBOS) {
     });
     await walk.shot('data-collection', async () => {
       await page.goto(`${SECTION}/workspace/jfb-privacy-collection`);
-      await expect(page.locator('jfb-privacy-settings #insights')).toBeVisible({ timeout: 60_000 });
+      await expect(page.locator('jfb-settings-privacy #setting-insights')).toBeVisible({ timeout: 60_000 });
     });
     await walk.shot('glance', async () => {
       await page.goto(SECTION);

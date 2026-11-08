@@ -182,10 +182,8 @@ public sealed class PermissionMatrixTests : ManagementApiTestBase
         ["GET entry/{entryKey}/form"] = (FormBuilderPermissions.None, FormBuilderAccessResourceKind.Global, null),
         ["POST setup/form-block"] = (FormBuilderPermissions.ManageSettings, FormBuilderAccessResourceKind.Global, null),
         ["POST email/test"] = (FormBuilderPermissions.ManageSettings, FormBuilderAccessResourceKind.Global, null),
-        ["GET settings/general"] = (FormBuilderPermissions.ManageSettings, FormBuilderAccessResourceKind.Global, null),
-        ["PUT settings/general"] = (FormBuilderPermissions.ManageSettings, FormBuilderAccessResourceKind.Global, null),
-        ["GET settings/privacy"] = (FormBuilderPermissions.ManageSettings, FormBuilderAccessResourceKind.Global, null),
-        ["PUT settings/privacy"] = (FormBuilderPermissions.ManageSettings, FormBuilderAccessResourceKind.Global, null),
+        ["GET settings/{section}"] = (FormBuilderPermissions.ManageSettings, FormBuilderAccessResourceKind.Global, null),
+        ["PUT settings/{section}"] = (FormBuilderPermissions.ManageSettings, FormBuilderAccessResourceKind.Global, null),
     };
 
     /// <summary>

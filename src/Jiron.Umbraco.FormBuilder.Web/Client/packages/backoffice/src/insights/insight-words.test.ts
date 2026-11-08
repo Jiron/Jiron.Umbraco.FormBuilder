@@ -28,7 +28,6 @@ describe('the insights words', () => {
     const sources = [
       ...readdirSync(here).map((file) => join(here, file)),
       join(here, '..', 'designer', 'insights', 'insights.view.ts'),
-      join(here, '..', 'settings', 'privacy-settings.element.ts'),
     ]
       .filter((file) => file.endsWith('.ts') && !file.endsWith('.test.ts'))
       .map((file) => readFileSync(file, 'utf8'));

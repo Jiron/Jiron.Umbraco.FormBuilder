@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using System.Net;
 using System.Text.Json.Serialization;
 using Jiron.Umbraco.FormBuilder.Core.Configuration;
@@ -45,40 +46,55 @@ internal sealed record ProtectionSettings : ISettingsSection
     public static bool PerSite => true;
 
     /// <summary>The level of the site's forms that inherit it: <c>standard</c>, <c>proofOfWork</c> or <c>captcha</c>, never <c>inherit</c>, which is how a form takes this one.</summary>
+    [SettingsField("level", Except = ["inherit"], Editor = "protectionLevel")]
     public ProtectionLevel Level { get; init; } = ProtectionLevel.Standard;
 
     /// <summary>At the <c>captcha</c> level, the provider of the site's forms that inherit it (ADR-0142).</summary>
+    [SettingsField("level", Order = 1, Editor = "captchaProvider")]
     public string? CaptchaProvider { get; init; }
 
     /// <summary>When a page may load a captcha's script (section 4.10, ADR-0157): <c>explicit</c> by default.</summary>
+    [SettingsField("consent", Editor = "captchaConsent")]
     public CaptchaConsentMode CaptchaConsent { get; init; } = CaptchaConsentMode.Explicit;
 
     /// <summary>
     /// In the <c>cookiebot</c> mode, the category whose consent loads the script: <c>necessary</c> by default, as Cookiebot
     /// files a captcha's cookie, or <c>marketing</c> (the owner, ADR-0199).
     /// </summary>
+    [SettingsField("consent", Order = 1, Choices = ["necessary", "marketing"])]
     public string CookiebotCategory { get; init; } = "necessary";
 
     /// <summary>How many zero bits a puzzle of the site's forms asks for; each more doubles the work (ADR-0141).</summary>
+    [SettingsField("level", Order = 2, Unit = true)]
+    [Range(FewestProofBits, MostProofBits)]
     public int ProofBits { get; init; } = 16;
+
+    /// <summary>How strictly the site's forms that inherit it judge their entries; never <c>inherit</c>, which is how a form takes this one.</summary>
+    [SettingsField("content", Except = ["inherit"])]
+    public ContentRuleLevel ContentRules { get; init; } = ContentRuleLevel.Normal;
+
+    /// <summary>The words and phrases that count against a submission, compared as rules compare texts (ADR-0005), each as words of their own.</summary>
+    [SettingsField("content", Order = 1)]
+    [MaxLength(MaxBlockedItems)]
+    public IReadOnlyList<string> BlockedWords { get; init; } = [];
+
+    /// <summary>The domains whose addresses in an email field put a submission into Spam, with what lies under them, such as <c>example.com</c>.</summary>
+    [SettingsField("content", Order = 2)]
+    [MaxLength(MaxBlockedItems)]
+    public IReadOnlyList<string> BlockedDomains { get; init; } = [];
+
+    /// <summary>The most links a submission's texts may hold before they count against it.</summary>
+    [SettingsField("content", Order = 3)]
+    [Range(0, MostMaxLinks)]
+    public int MaxLinks { get; init; } = 3;
 
     /// <summary>
     /// The address ranges whose submissions go to Spam, in CIDR notation such as <c>203.0.113.0/24</c> or
     /// <c>2001:db8::/32</c>; matched against the request and never stored.
     /// </summary>
+    [SettingsField("ranges")]
+    [MaxLength(MaxBlockedRanges)]
     public IReadOnlyList<string> BlockedRanges { get; init; } = [];
-
-    /// <summary>How strictly the site's forms that inherit it judge their entries; never <c>inherit</c>, which is how a form takes this one.</summary>
-    public ContentRuleLevel ContentRules { get; init; } = ContentRuleLevel.Normal;
-
-    /// <summary>The words and phrases that count against a submission, compared as rules compare texts (ADR-0005), each as words of their own.</summary>
-    public IReadOnlyList<string> BlockedWords { get; init; } = [];
-
-    /// <summary>The domains whose addresses in an email field put a submission into Spam, with what lies under them, such as <c>example.com</c>.</summary>
-    public IReadOnlyList<string> BlockedDomains { get; init; } = [];
-
-    /// <summary>The most links a submission's texts may hold before they count against it.</summary>
-    public int MaxLinks { get; init; } = 3;
 
     /// <summary>
     /// The strictest of these sections (ADR-0147), for a request that names no page of its form: the highest level and the hardest

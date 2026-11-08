@@ -3,6 +3,8 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Email;
+using Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn;
+using Jiron.Umbraco.FormBuilder.Core.Files;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Core.Settings;
 using Jiron.Umbraco.FormBuilder.Core.Submissions;
@@ -150,6 +152,9 @@ public sealed class PublicFormSiteTests : PublicApiTestBase
         };
         var currentIntegrations = await Settings.GetAsync<IntegrationSettings>();
         await Settings.SaveAsync(integrations, currentIntegrations.Version, Editor);
+        var files = new FilesSettings { AllowedTypes = [FileTypeGroup.Pdf, FileTypeGroup.Text], MaxFileBytes = 1_234_567 };
+        var currentFiles = await Settings.GetAsync<FilesSettings>();
+        await Settings.SaveAsync(files, currentFiles.Version, Editor);
         using var after = await GetAsync($"{Root}/forms/{key}");
         var set = await JsonAsync(after);
         var allowed = set.DeepClone();
@@ -169,10 +174,10 @@ public sealed class PublicFormSiteTests : PublicApiTestBase
         var currentPrivacy = await Settings.GetAsync<PrivacySettings>();
         await Settings.SaveAsync(privacy, currentPrivacy.Version, Editor);
         var sections = typeof(GeneralSettings).Assembly.GetTypes().Where(type => typeof(ISettingsSection).IsAssignableFrom(type) && !type.IsInterface).ToList();
-        var unchanged = Leaves(filled, new GeneralSettings(), nameof(GeneralSettings)).Concat(Leaves(protection, new ProtectionSettings(), nameof(ProtectionSettings))).Concat(Leaves(email, new EmailSettings(), nameof(EmailSettings))).Concat(Leaves(integrations, new IntegrationSettings(), nameof(IntegrationSettings))).Concat(Leaves(privacy, new PrivacySettings(), nameof(PrivacySettings))).Where(leaf => leaf.Filled == leaf.Default).Select(leaf => leaf.Path).ToList();
+        var unchanged = Leaves(filled, new GeneralSettings(), nameof(GeneralSettings)).Concat(Leaves(protection, new ProtectionSettings(), nameof(ProtectionSettings))).Concat(Leaves(email, new EmailSettings(), nameof(EmailSettings))).Concat(Leaves(integrations, new IntegrationSettings(), nameof(IntegrationSettings))).Concat(Leaves(privacy, new PrivacySettings(), nameof(PrivacySettings))).Concat(Leaves(files, new FilesSettings(), nameof(FilesSettings))).Where(leaf => leaf.Filled == leaf.Default).Select(leaf => leaf.Path).ToList();
         Assert.Multiple(() =>
         {
-            Assert.That(sections, Is.EquivalentTo(new[] { typeof(GeneralSettings), typeof(ProtectionSettings), typeof(EmailSettings), typeof(IntegrationSettings), typeof(PrivacySettings) }), "a new section is filled here too");
+            Assert.That(sections, Is.EquivalentTo(new[] { typeof(GeneralSettings), typeof(ProtectionSettings), typeof(EmailSettings), typeof(IntegrationSettings), typeof(PrivacySettings), typeof(FilesSettings) }), "a new section is filled here too");
             Assert.That(unchanged, Is.Empty, "a new field is filled here too");
             Assert.That(set["timeZone"]!.GetValue<string>(), Is.EqualTo("Pacific/Chatham"), "visitors get the time zone");
             Assert.That(set["form"]!["settings"]!["requiredMarker"]!.GetValue<string>(), Is.EqualTo("none"), "the style of a form that inherits it");

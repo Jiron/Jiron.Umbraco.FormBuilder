@@ -8,7 +8,6 @@ import mergeTags from './merge-tags.de';
 import options from './options.de';
 import picker from './picker.de';
 import section from './section.de';
-import general from './general.de';
 
 export default {
   ...fieldTypes,
@@ -19,5 +18,4 @@ export default {
   ...library,
   ...designer,
   ...mergeTags,
-  ...general,
 } satisfies UmbLocalizationDictionary;

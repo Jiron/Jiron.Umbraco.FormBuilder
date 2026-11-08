@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 
 namespace Jiron.Umbraco.FormBuilder.Core.Settings;
@@ -22,23 +23,19 @@ internal sealed record GeneralSettings : ISettingsSection
     public static bool PerSite => true;
 
     /// <summary>
-    /// The site's time zone, an IANA id as the server spells it: "today", opening dates and relative dates are in it
-    /// (ADR-0005, ADR-0030).
+    /// The alias of the theme the site's forms take when neither the form nor its placement names one (ADR-0015,
+    /// ADR-0105); null for <c>default</c>. It is not held to the registered themes: one the site no longer has renders as
+    /// <c>default</c>.
     /// </summary>
-    public string TimeZone { get; init; } = DefaultTimeZone;
-
-    /// <summary>
-    /// The address every link the server builds starts with (ADR-0008, ADR-0067): an <c>https</c> or <c>http</c> origin
-    /// such as <c>https://www.example.com</c>, with a port when it is not the scheme's and nothing after it. Null for the
-    /// default: the site's first <c>https</c> domain in Umbraco, otherwise Umbraco's application URL.
-    /// </summary>
-    public string? BaseUrl { get; init; }
+    [SettingsField("forms", Editor = "theme")]
+    public string? Theme { get; init; }
 
     /// <summary>
     /// How the site's forms whose marker is <c>inherit</c> mark their fields (ADR-0093, ADR-0095): <c>optional</c> (the
     /// default) adds "(optional)" to each field that needs no answer, <c>required</c> an asterisk to each that needs one,
     /// <c>none</c> nothing. A site's style is never <c>inherit</c>, which is how a form takes this one.
     /// </summary>
+    [SettingsField("forms", Order = 1, Except = ["inherit"])]
     public RequiredMarker RequiredMarker { get; init; } = RequiredMarker.Optional;
 
     /// <summary>
@@ -46,23 +43,35 @@ internal sealed record GeneralSettings : ISettingsSection
     /// holding the default (ADR-0002), each on one line and a text may name a dictionary item (<c>#key</c>); null for the
     /// package's word in the page's language (ADR-0095).
     /// </summary>
+    [SettingsField("forms", Order = 2)]
     public IReadOnlyDictionary<string, string>? SubmitLabel { get; init; }
 
     /// <summary>The label of the button to the next page of a form without one of its own, as <see cref="SubmitLabel"/>.</summary>
+    [SettingsField("forms", Order = 3)]
     public IReadOnlyDictionary<string, string>? NextLabel { get; init; }
 
     /// <summary>The label of the button to the page before of a form without one of its own, as <see cref="SubmitLabel"/>.</summary>
+    [SettingsField("forms", Order = 4)]
     public IReadOnlyDictionary<string, string>? BackLabel { get; init; }
 
     /// <summary>
-    /// The alias of the theme the site's forms take when neither the form nor its placement names one (ADR-0015,
-    /// ADR-0105); null for <c>default</c>. It is not held to the registered themes: one the site no longer has renders as
-    /// <c>default</c>.
+    /// The address every link the server builds starts with (ADR-0008, ADR-0067): an <c>https</c> or <c>http</c> origin
+    /// such as <c>https://www.example.com</c>, with a port when it is not the scheme's and nothing after it. Null for the
+    /// default: the site's first <c>https</c> domain in Umbraco, otherwise Umbraco's application URL.
     /// </summary>
-    public string? Theme { get; init; }
+    [SettingsField("site", Editor = "baseUrl")]
+    public string? BaseUrl { get; init; }
+
+    /// <summary>
+    /// The site's time zone, an IANA id as the server spells it: "today", opening dates and relative dates are in it
+    /// (ADR-0005, ADR-0030). The screen offers the zones as a list, so nobody types one (ADR-0043, ADR-0218).
+    /// </summary>
+    [SettingsField("site", Order = 1, Editor = "timeZone")]
+    public string TimeZone { get; init; } = DefaultTimeZone;
 
     /// <summary>What a form created from blank starts with; every site shares it, since a new form belongs to no site (ADR-0044).</summary>
     [GlobalOnly]
+    [SettingsField("newForms")]
     public NewFormDefaults NewForms { get; init; } = new();
 
     /// <summary>
@@ -70,6 +79,7 @@ internal sealed record GeneralSettings : ISettingsSection
     /// (ADR-0045).
     /// </summary>
     [GlobalOnly]
+    [SettingsField("history")]
     public HistorySettings History { get; init; } = new();
 }
 
@@ -90,19 +100,28 @@ internal sealed record HistorySettings
     public const int MaxDraftCount = 1000;
 
     /// <summary>The days a draft save stays at least: 90 by default.</summary>
+    [SettingsField("", Unit = true)]
+    [Range(MinDraftDays, MaxDraftDays)]
     public int DraftDays { get; init; } = 90;
 
     /// <summary>How many of a form's newest draft saves stay however old they are: 50 by default.</summary>
+    [SettingsField("", Order = 1, Unit = true)]
+    [Range(0, MaxDraftCount)]
     public int DraftCount { get; init; } = 50;
 }
 
 /// <summary>What a form created from blank starts with (section 4.8, ADR-0044).</summary>
 internal sealed record NewFormDefaults
 {
-    /// <summary>A required consent field at the end of the last group of the last page, or null for none (the default).</summary>
+    /// <summary>
+    /// A required consent field at the end of the last group of the last page, or null for none (the default); its editor
+    /// is a switch with the field's label and wording under it (ADR-0218).
+    /// </summary>
+    [SettingsField("", Editor = "newFormConsent")]
     public NewFormConsent? Consent { get; init; }
 
     /// <summary>Whether a new form starts with an email action to its creator, unless a template brings one; off by default (ADR-0160).</summary>
+    [SettingsField("", Order = 1)]
     public bool NotifyCreator { get; init; }
 }
 

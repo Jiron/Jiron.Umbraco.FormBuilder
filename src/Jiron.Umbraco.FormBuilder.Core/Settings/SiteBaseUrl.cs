@@ -44,6 +44,15 @@ internal sealed class SiteBaseUrl(
         return BaseUrls.Origin(routing.CurrentValue.UmbracoApplicationUrl);
     }
 
+    /// <summary>
+    /// The base URL a site gets when its settings name none, or the global one for no site: the site's first <c>https</c>
+    /// domain, otherwise Umbraco's application URL; null when there is none. Settings > General shows it in the empty box
+    /// (ADR-0218).
+    /// </summary>
+    /// <param name="site">The site's root content, or null.</param>
+    public async Task<string?> GetDefaultAsync(Guid? site) =>
+        site is { } root && await DomainAsync(root) is { } domain ? domain : BaseUrls.Origin(routing.CurrentValue.UmbracoApplicationUrl);
+
     /// <summary>The origin of the site's first domain reached over <c>https</c>: the root's own first, then by depth, each in its sort order.</summary>
     private async Task<string?> DomainAsync(Guid site)
     {

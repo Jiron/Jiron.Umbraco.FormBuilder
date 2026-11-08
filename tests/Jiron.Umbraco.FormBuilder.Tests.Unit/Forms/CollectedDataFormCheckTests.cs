@@ -1,12 +1,15 @@
 using Jiron.Umbraco.FormBuilder.Core.Configuration;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
+using Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn;
+using Jiron.Umbraco.FormBuilder.Core.Files;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.OptionLists;
 using Jiron.Umbraco.FormBuilder.Logic;
 using Jiron.Umbraco.FormBuilder.Testing;
 using Jiron.Umbraco.FormBuilder.Tests.Unit.Definitions;
 using Jiron.Umbraco.FormBuilder.Tests.Unit.OptionLists;
+using Jiron.Umbraco.FormBuilder.Tests.Unit.Settings;
 using Microsoft.Extensions.Options;
 
 namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Forms;
@@ -184,13 +187,32 @@ public sealed class CollectedDataFormCheckTests
             """{"key":"F2","type":"file","alias":"photo","label":{"":"Photo"},"settings":{"maxBytes":1000000}}""",
             """{"key":"F3","type":"signature","alias":"sign","label":{"":"Sign"}}""");
 
-        var issues = await new FileLimitFormCheck(Types, new FieldHostLimits(10_485_760, []), NoLocks).CheckAsync(definition, CancellationToken.None);
+        var issues = await new FileLimitFormCheck(Types, new FieldHostLimits(10_485_760, []), NoLocks, TestSettings.With()).CheckAsync(definition, CancellationToken.None);
+        var lowered = await new FileLimitFormCheck(Types, new FieldHostLimits(10_485_760, []), NoLocks, TestSettings.With(new FilesSettings { MaxFileBytes = 2_000_000 })).CheckAsync(definition, CancellationToken.None);
 
         Assert.Multiple(() =>
         {
             Assert.That(issues.Select(issue => (issue.Severity, issue.Code, issue.Path)), Is.EqualTo(new[] { (FormCheckSeverity.Hint, FileLimitFormCheck.FileSizeUnset, Fields + "[0].settings.maxBytes") }));
-            Assert.That(issues[0].Message, Does.Contain("10,485,760 bytes each (Files:MaxFileBytes)"));
+            Assert.That(issues[0].Message, Does.Contain("10,485,760 bytes each (Settings, Files)"));
+            Assert.That(lowered[0].Message, Does.Contain("2,000,000 bytes each"), "the site's own limit, below the host's");
         });
+    }
+
+    [Test]
+    public async Task AFileField_ThatAllowsMoreThanTheSiteTakes_IsAWarning_AtItsSizeAndItsTypes()
+    {
+        var definition = Form(
+            """{"key":"F1","type":"file","alias":"cv","label":{"":"CV"},"settings":{"maxBytes":5000000,"types":["pdf"]}}""",
+            """{"key":"F2","type":"file","alias":"photo","label":{"":"Photo"},"settings":{"maxBytes":1000000,"types":["images","archives"]}}""");
+        var site = new FilesSettings { MaxFileBytes = 2_000_000, AllowedTypes = [FileTypeGroup.Images, FileTypeGroup.Pdf] };
+
+        var issues = await new FileLimitFormCheck(Types, FieldHostLimits.Default, NoLocks, TestSettings.With(site)).CheckAsync(definition, CancellationToken.None);
+
+        Assert.That(issues.Select(issue => (issue.Severity, issue.Code, issue.Path)), Is.EqualTo(new[]
+        {
+            (FormCheckSeverity.Warning, FileLimitFormCheck.FileSizeAboveSite, Fields + "[0].settings.maxBytes"),
+            (FormCheckSeverity.Warning, FileLimitFormCheck.FileTypeNotTaken, Fields + "[1].settings.types"),
+        }));
     }
 
     [Test]
@@ -199,7 +221,7 @@ public sealed class CollectedDataFormCheckTests
         var options = new FormBuilderOptions();
         options.Designer.SettingLocks.Add(new DesignerSettingLock { Kind = DesignerSettingLock.FieldKind, Type = "file", Setting = "maxBytes" });
 
-        var issues = await new FileLimitFormCheck(Types, FieldHostLimits.Default, new FieldSettingLocks(Options.Create(options), Types))
+        var issues = await new FileLimitFormCheck(Types, FieldHostLimits.Default, new FieldSettingLocks(Options.Create(options), Types), TestSettings.With())
             .CheckAsync(Form("""{"key":"F1","type":"file","alias":"cv","label":{"":"CV"}}"""), CancellationToken.None);
 
         Assert.That(issues, Is.Empty);

@@ -34,19 +34,19 @@ public sealed class InsightApiTests : ManagementApiTestBase
     public async Task ThePrivacySettings_SayWhetherTheFormsCount_AndASaveChangesIt()
     {
         var read = await Api.CallAsync(Admin, HttpMethod.Get, "settings/privacy");
-        var saved = await Api.CallAsync(Admin, HttpMethod.Put, "settings/privacy", new { version = read.Body!["version"]!.GetValue<int>(), insights = false });
-        var kept = await Api.CallAsync(Admin, HttpMethod.Put, "settings/privacy", new { version = saved.Body!["version"]!.GetValue<int>() });
+        var saved = await Api.CallAsync(Admin, HttpMethod.Put, "settings/privacy", new { version = read.Body!["version"]!.GetValue<int>(), values = new { insights = false } });
+        var kept = await Api.CallAsync(Admin, HttpMethod.Put, "settings/privacy", new { version = saved.Body!["version"]!.GetValue<int>(), values = new { } });
         var designer = await Api.CallAsync("designer", HttpMethod.Get, "settings/privacy");
-        var designerSave = await Api.CallAsync("designer", HttpMethod.Put, "settings/privacy", new { version = kept.Body!["version"]!.GetValue<int>(), insights = true });
+        var designerSave = await Api.CallAsync("designer", HttpMethod.Put, "settings/privacy", new { version = kept.Body!["version"]!.GetValue<int>(), values = new { insights = true } });
 
         Assert.Multiple(async () =>
         {
             Assert.That(read.Outcome, Is.EqualTo("200"), read.ToString());
-            Assert.That(read.Body["insights"]!.GetValue<bool>(), Is.True, "on by default");
+            Assert.That(read.Body["values"]!["insights"]!.GetValue<bool>(), Is.True, "on by default");
             Assert.That(read.Body["locks"]!.AsArray(), Is.Empty);
             Assert.That(saved.Outcome, Is.EqualTo("200"), saved.ToString());
-            Assert.That(saved.Body["insights"]!.GetValue<bool>(), Is.False);
-            Assert.That(kept.Body["insights"]!.GetValue<bool>(), Is.False, "a save without it leaves it as it was");
+            Assert.That(saved.Body["values"]!["insights"]!.GetValue<bool>(), Is.False);
+            Assert.That(kept.Body["values"]!["insights"]!.GetValue<bool>(), Is.False, "a save without it leaves it as it was");
             Assert.That((designer.Outcome, designerSave.Outcome), Is.EqualTo(("403 forbidden", "403 forbidden")));
             Assert.That((await GetRequiredService<IFormBuilderSettingsService>().GetAsync<PrivacySettings>()).Value.Insights, Is.False);
         });

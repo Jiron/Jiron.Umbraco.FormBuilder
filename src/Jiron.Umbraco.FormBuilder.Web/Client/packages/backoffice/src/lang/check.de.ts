@@ -114,6 +114,10 @@ export default {
       'Dieses Feld fragt nach einem Passwort, das in den Einträgen, E-Mails und Exporten des Formulars landen würde. Lassen Sie Mitglieder sich stattdessen anmelden.',
     code_file_size_unset:
       'Dieses Feld nimmt Dateien bis zur Grenze der Website je Datei an: Geben Sie ihm die größte Größe, die seine Antworten brauchen.',
+    code_file_size_above_site:
+      'Die Website nimmt kleinere Dateien an, als dieses Feld erlaubt (Einstellungen › Dateien); eine größere Datei wird also abgewiesen.',
+    code_file_type_not_taken:
+      'Die Website nimmt einige der Typen, die dieses Feld erlaubt, nicht mehr an (Einstellungen › Dateien); solche Dateien werden also abgewiesen.',
     code_options_can_fill:
       'Jede Option dieses Pflichtfelds hat eine begrenzte Zahl von Plätzen; sind alle vergeben, kann niemand das Formular senden: Fügen Sie eine Option ohne Grenze hinzu, oder erlauben Sie, das Feld leer zu lassen.',
     code_limit_without_entries: (form: boolean) =>
