@@ -6,7 +6,8 @@
 // moves by its handle with the pointer, or with Alt+Up and Alt+Down, which says where it went; a press on the handle
 // that never became a drag opens its "Place in the list", as an outcome's and an action's, so a pointer moves it without
 // dragging (WCAG 2.5.7). "Paste options..." adds one option a line. Every change goes to the inspector, which makes it
-// one step to undo.
+// one step to undo. A library list's editor shows it with its source fixed (ADR-0214): its kind's own editor, without
+// "Options from" or what the options depend on, which are a field's.
 import {
   html,
   live,
@@ -78,6 +79,7 @@ export class OptionEditorElement extends UmbLitElement {
     lists: { attribute: false },
     edits: {},
     cards: { attribute: false },
+    fixed: { type: Boolean },
     change: { attribute: false },
     _open: { state: true },
     _pasting: { state: true },
@@ -88,7 +90,8 @@ export class OptionEditorElement extends UmbLitElement {
   };
 
   declare field: DesignField;
-  declare type: FieldTypeResponseModel;
+  /** What the options are for: the field's type, of which only its features count. */
+  declare type: Pick<FieldTypeResponseModel, 'features'>;
   declare culture: string;
   declare defaultCulture: string;
   /** The choice fields before this one, which its options may depend on. */
@@ -101,6 +104,8 @@ export class OptionEditorElement extends UmbLitElement {
   declare edits: 'options' | 'rows';
   /** Whether the field's options show as cards, its own layout or the form's: they then take a description and an image. */
   declare cards: boolean;
+  /** Whether the source is fixed, as a library list's is: its kind's editor alone (ADR-0214). */
+  declare fixed: boolean;
   declare change: OptionChange;
   /** The rows whose details are open, by an option's value or a row's key. */
   declare private _open: ReadonlySet<string>;
@@ -118,6 +123,7 @@ export class OptionEditorElement extends UmbLitElement {
     this.lists = null;
     this.edits = 'options';
     this.cards = false;
+    this.fixed = false;
     this.culture = '';
     this.defaultCulture = '';
     this.change = () => undefined;
@@ -227,8 +233,9 @@ export class OptionEditorElement extends UmbLitElement {
     );
   }
 
-  #options(): TemplateResult {
+  #options(): TemplateResult | typeof nothing {
     const source = sourceOf(this.field);
+    if (this.fixed) return this.#from(source);
     const offered = this.#offered();
     if (!offered.includes(source)) offered.push(source);
     // A grid's options are its columns, and its words say so: "Columns from", "Add column".

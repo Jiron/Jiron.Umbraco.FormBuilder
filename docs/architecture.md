@@ -69,7 +69,7 @@ database connection of its own. Its areas:
 | Definitions | the model, its JSON, upgraders, structural validation, the public projection and the visitor's form made from it (one string per text) with its visitor texts and their owners, the one HTML sanitiser (`EditorHtml`), versions and their comparison, and the exchange of forms (`Exchange`: element keys and their remap, copied actions, the export envelope) | ADR-0002, ADR-0045, ADR-0046, ADR-0084, ADR-0085 |
 | Forms | the form service in three parts (below): the lifecycle with the trash (create from blank, save, publish, unpublish, rename, move, trash, restore, delete for good, and the published form as the site runs it), the versions (the History with what changed, one version, two compared, restore, pins and comments) and the exchange (create from a template, import and export, duplicate, copy actions to another form); the folder service (create, rename, move, trash, restore, delete, delete an empty folder outside the trash at once, empty the trash and what emptying would take); the library's lists beyond the tree (`LibraryLists`: a folder's rows with their entries of the last 30 days, the fields the header search finds in the catalogue, what a form holds that its delete takes) and the template gallery (`FormTemplateGallery`: built-in, then saved); the import's check, which writes nothing; each change a unit of work of its own; the built-in templates, aliases from names, the publish checks, the field catalogue, the form and folder notifications, the one trash check and the one mapping from a refusal to its code; the published forms each server keeps with their cache refresher, and a published form in a visitor's culture (the dictionary's items read once, rich text sanitised, each consent's wording with its hash, and what the browser renders the visitor texts that render with) | ADR-0002, ADR-0044, ADR-0045, ADR-0046, ADR-0047, ADR-0053, ADR-0060, ADR-0078, ADR-0084, ADR-0085, ADR-0166 |
 | Fields and options | the field type registry, the built-in types, places on options: read while the answers are, and counted again inside the submission's transaction, each entry write keeping the counts under the form's row; unique answers, held against the entries that hold theirs in the same two places | ADR-0002, ADR-0090, ADR-0091, §4.3.2 |
-| Option lists | the kinds with their configuration and its checks, content and data type lists with what they read from Umbraco and the handler that drops what they keep when the site changes, URL lists with what they fetch and keep, the reader of uploaded CSV and TXT files, the standard lists and a site's own sources with their start-up check, the library's lists with their cache refresher, the option service with what holds a request's answers up a chain of parents, and the publish check of a field's source | ADR-0002, ADR-0073, ADR-0075, ADR-0076, ADR-0081, ADR-0086 |
+| Option lists | the kinds with their configuration and its checks, content and data type lists with what they read from Umbraco and the handler that drops what they keep when the site changes, URL lists with what they fetch and keep, the reader of uploaded CSV and TXT files, the standard lists and a site's own sources with their start-up check, the library's lists with their cache refresher, the library's screens' service (`OptionListLibrary`: the rows with the forms that use each list, a duplicate under a free alias, the preview of contents not saved yet, a file read into options, and Fetch now, which every server forgets its copy for), the option service with what holds a request's answers up a chain of parents, and the publish check of a field's source | ADR-0002, ADR-0073, ADR-0075, ADR-0076, ADR-0081, ADR-0086, ADR-0214 |
 | Outbound | calls to other hosts (`OutboundHttp`): the host configuration's hosts and schemes, redirects to the same host only, one time limit and a cap; the transport that resolves names itself and connects only to globally reachable addresses, which only the Testing assembly replaces | ADR-0076, §4.10 |
 | Logic | rules, validation, the pattern matcher, merge tags, calculations, text cleaning and folding | ADR-0005, ADR-0014, ADR-0030, ADR-0064, ADR-0068 |
 | Merge tags | the merge-tag service over the engine: the places and what each takes, the built-in sources (`field`, `entry` with `entry.answers`, `entry.table` and `entry.url`, `form`, `query`, `context`, `date`, and `page`, `site`, `member` and `dictionary` over Umbraco's content, members, domains, languages and dictionary), the answers as each field type shows them with what each place masks or leaves out and the dictionary's texts for labels that name an item and the labels lists and other sources resolve for options, answer recall in visitor texts (only the fields before the text's page, group or field, by their current aliases, a site's type by its rule kind), a site's sources and filters with their start-up check, the culture formats written from .NET's data, and for a browser a template's values but recall's, the recall form cut down to what its texts need and the culture's formats as JSON | ADR-0014, ADR-0064, ADR-0065, ADR-0066, ADR-0067, ADR-0068, ADR-0077, ADR-0083, ADR-0085 |
@@ -389,6 +389,17 @@ flowchart LR
   from `POST form/{key}/preview/ticket`, only once the last one is about to run out, and turns the page light or dark;
   the port closes as the frame goes on or the preview closes. The widths are the canvas's (`canvas/widths.ts`), and the
   preview opens at the canvas's.
+  From 12.1 (ADR-0214): Library › Option lists (`option-lists/option-lists.screen.ts`) lists `GET option-list/library`,
+  and Create option list asks the kind in its dialog, then opens the list's routable workspace (`jfb-option-list`) on
+  `create/{kind}`, whose scaffold has its key from the start, so the preview and the save name the same list; saved, it
+  moves to `edit/{key}`. The workspace is Umbraco's named detail workspace over the list endpoints, as the form's is: the
+  header's name-and-alias box and "Used by N forms" (`GET option-list/{key}/used-by`), Save in the footer, and Duplicate
+  and Delete… as entity actions; a delete goes through the workspace's repository, so its store lets the open list go,
+  and a list that forms use is not deleted (`409 in_use`) but names them in Umbraco's information dialog. The one view
+  (`option-list.view.ts`) holds the inspector's option editor with its source fixed (`fixed`), uploads through `POST
+  option-list/read-file`, the keep time, and for a saved JSON address `GET option-list/{key}/fetched` with Fetch now;
+  its preview asks `POST option-list/preview` 400 ms after the last change, cancelling the one before. The screens'
+  words load with them (`option-list-words.ts`), with the form workspace's, as the option editor is the inspector's.
 
 ## 2. The definition model
 
@@ -613,6 +624,7 @@ erDiagram
   jfbForm ||--o{ jfbOptionCapacity : "counts places"
   jfbForm ||--o{ jfbReference : "is used on"
   jfbForm ||--o{ jfbDailyStat : "is counted in"
+  jfbForm ||--o{ jfbFormLibraryUse : "uses library items"
   jfbFormVersion ||--o{ jfbEntry : "was submitted with"
   jfbFormVersion ||--o{ jfbActionRun : "defines"
   jfbEntry ||--o{ jfbEntryValue : "holds"
@@ -627,6 +639,7 @@ erDiagram
   jfbConsentText ||--o{ jfbEntryValue : "proves the wording of"
   jfbTheme |o--o{ jfbForm : "styles"
   jfbOptionList }o--o{ jfbForm : "feeds options of"
+  jfbOptionList ||--o{ jfbFormLibraryUse : "is used by"
   jfbEmailLayout }o--o{ jfbEmail : "lays out"
   jfbFormTemplate }o--o{ jfbForm : "starts"
   umbraco ||--o{ jfbPermission : "user groups hold"
@@ -637,7 +650,8 @@ erDiagram
 ```
 
 Links to option lists, layouts and templates are by key, and to themes by alias, inside definitions and settings, not
-foreign keys. The rules every table follows (no NULL in keys, times on each database, atomic counters, the entry query
+foreign keys; `jfbFormLibraryUse` keeps which library items each form's draft and live version name (ADR-0214), written
+with the version. The rules every table follows (no NULL in keys, times on each database, atomic counters, the entry query
 shapes) are in §4.5, [ADR-0003](decisions/0003-entry-storage.md) and [ADR-0033](decisions/0033-schema-v1.md), and
 [database.md](database.md) explains each table.
 

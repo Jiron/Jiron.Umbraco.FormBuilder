@@ -4,6 +4,7 @@
 import { manifests as designer } from '../designer/manifests';
 import { manifests as entries } from '../entries/manifests';
 import { manifests as library } from '../library/manifests';
+import { manifests as optionLists } from '../option-lists/manifests';
 import { manifests as overview } from '../overview/manifests';
 import { manifests as tree } from '../tree/manifests';
 import { ENTRY_ENTITY_TYPE, LIBRARY_ROOT_ENTITY_TYPE, SECTION_ALIAS, SECTION_PATHNAME } from './entity-types';
@@ -28,6 +29,7 @@ const SCREENS: Readonly<Record<string, ScreenLoader>> = {
   spam: () => import('../entries/spam.screen'),
   general: () => import('../settings/general-settings.element'),
   dataCollection: () => import('../settings/privacy-settings.element'),
+  optionLists: () => import('../option-lists/option-lists.screen'),
   entry: () => import('../entries/entry.workspace'),
 };
 
@@ -120,5 +122,6 @@ export const manifests: UmbExtensionManifest[] = [
   ...library,
   ...designer,
   ...entries,
+  ...optionLists,
   ...overview,
 ];

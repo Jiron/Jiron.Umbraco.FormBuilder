@@ -100,13 +100,16 @@ describe('the section', () => {
     }
   });
 
-  it("gives the form its routable workspace, whose context the workspace's api is", async () => {
+  it("gives a form and an option list each its routable workspace, whose context the workspace's api is", async () => {
     const routable = byType('workspace').filter((workspace) => workspace.kind === 'routable');
     expect(routable.map((workspace) => [workspace.alias, workspace.meta?.['entityType']])).toEqual([
       ['Jiron.FormBuilder.Workspace.Form', FORM_ENTITY_TYPE],
+      ['Jiron.FormBuilder.Workspace.OptionList', 'jfb-option-list'],
     ]);
-    const context = await routable[0]?.api?.();
-    expect(typeof context?.['api']).toBe('function');
+    for (const workspace of routable) {
+      const context = await workspace.api?.();
+      expect(typeof context?.['api'], workspace.alias).toBe('function');
+    }
   });
 });
 

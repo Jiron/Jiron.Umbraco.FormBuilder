@@ -84,17 +84,21 @@ The owner answers no questions during the run (CLAUDE.md rule 8), so each choice
    by N forms**, a button that opens the forms as links (a form only in its draft says so, one in the recycle bin too,
    and the forms the user may not open are one line), and the "…" of Umbraco's entity actions: Duplicate, then
    Delete…. **Save** is the footer's primary. A new list has neither the button nor the "…" until it is saved.
+   Delete… asks first, as a list goes for good; a list a form uses is not deleted, and Umbraco's information dialog
+   names the forms instead, those the user may not open counted.
 6. **The editor per kind,** the workspace's one view: a box headed by the kind's name, holding the inspector's option
    editor with its source fixed to the list's kind, so every kind reads and behaves as it does in the inspector:
    - **Fixed options:** the option rows, Add option and Paste options…, each option's details (what entries store, a
      place limit, a description and an image); a list serves fields of every choice type, so all of them are offered.
      Parent values an imported list holds are kept as they are; cascading is the field's (ADR-0073).
-   - **An upload:** the options read from the last file and **Upload a CSV or TXT file…**, which a new list needs before
-     it is saved; Fixed options has the same button beside Paste options…, whose file replaces the options with an Undo.
+   - **An upload:** how many options the last file gave and **Upload a CSV or TXT file…** (Upload another file… once it
+     has some), which a new list needs before it is saved; Fixed options has the same button under its rows, whose file
+     replaces the options with an Undo. A file over the site's limit is refused before it is sent, and a line the server
+     cannot read is said under the button.
    - **Pages, a data type, a JSON address, countries, a standard list:** the kind's settings by the generic renderer, with
      the site's document and data types as choices, and the standard lists by their names.
    - **The keep time** of a JSON address and a standard list, under its settings: Keep fetched options for (1 minute to
-     30 days, an hour for a new JSON address) or Keep options for (Don't keep, the default, to 30 days), with what it
+     30 days, an hour for a new JSON address) or Keep the options for (Don't keep, the default, to 30 days), with what it
      means in one line. A saved JSON address says once when this server last fetched it and how many options it gave,
      with **Fetch now**, which every server forgets its copy for and this one fetches again at once.
 7. **The preview** beside the editor (under it below a 900 px workspace): the options of the contents as they are, saved
