@@ -128,6 +128,7 @@ const template = (key: string, name: string, builtIn = false): TemplateResponseM
   description: null,
   holds: { pages: 1, fields: 3, rules: 0, outcomes: 1, actions: 1 },
   definition: { schemaVersion: 1, key, pages: [] } as unknown as TemplateResponseModel['definition'],
+  kind: 'form',
 });
 
 const gallery = (templates: TemplateResponseModel[]) =>

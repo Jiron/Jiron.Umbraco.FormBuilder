@@ -1172,6 +1172,11 @@ export type GeneralSettingsResponseModel = {
     locks: Array<SettingsLockResponseModel>;
 };
 
+export type GroupTemplateSavedResponseModel = {
+    template: TemplateResponseModel;
+    rulesChanged: number;
+};
+
 export type HealthFindingResponseModel = {
     code: string;
     message: string;
@@ -1744,10 +1749,21 @@ export type SaveFormDraftRequestModel = {
     comment?: string | null;
 };
 
+export type SaveGroupTemplateRequestModel = {
+    name: string;
+    description?: string | null;
+    group: unknown;
+};
+
 export type SettingsLockResponseModel = {
     field: string;
     kind: string;
     configurationKey: string;
+};
+
+export type TemplateNameRequestModel = {
+    name: string;
+    description?: string | null;
 };
 
 export type TemplateResponseModel = {
@@ -1758,6 +1774,7 @@ export type TemplateResponseModel = {
     description?: string | null;
     holds: DefinitionCountsResponseModel;
     definition: unknown;
+    kind: string;
 };
 
 export type TestEmailLayoutRequestModel = {
@@ -6710,6 +6727,7 @@ export type TemplateListData = {
     query?: {
         skip?: number;
         take?: number;
+        kind?: string;
     };
     url: '/umbraco/jfb/management/api/v1/template';
 };
@@ -6739,6 +6757,152 @@ export type TemplateListResponses = {
 };
 
 export type TemplateListResponse = TemplateListResponses[keyof TemplateListResponses];
+
+export type TemplateDeleteData = {
+    body?: never;
+    path: {
+        key: string;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/template/{key}';
+};
+
+export type TemplateDeleteErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type TemplateDeleteError = TemplateDeleteErrors[keyof TemplateDeleteErrors];
+
+export type TemplateDeleteResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type TemplateDeleteResponse = TemplateDeleteResponses[keyof TemplateDeleteResponses];
+
+export type TemplateRenameData = {
+    body?: TemplateNameRequestModel;
+    path: {
+        key: string;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/template/{key}';
+};
+
+export type TemplateRenameErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type TemplateRenameError = TemplateRenameErrors[keyof TemplateRenameErrors];
+
+export type TemplateRenameResponses = {
+    /**
+     * OK
+     */
+    200: TemplateResponseModel;
+};
+
+export type TemplateRenameResponse = TemplateRenameResponses[keyof TemplateRenameResponses];
+
+export type TemplateSaveFormData = {
+    body?: TemplateNameRequestModel;
+    path: {
+        formKey: string;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/template/form/{formKey}';
+};
+
+export type TemplateSaveFormErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type TemplateSaveFormError = TemplateSaveFormErrors[keyof TemplateSaveFormErrors];
+
+export type TemplateSaveFormResponses = {
+    /**
+     * Created
+     */
+    201: TemplateResponseModel;
+};
+
+export type TemplateSaveFormResponse = TemplateSaveFormResponses[keyof TemplateSaveFormResponses];
+
+export type TemplateSaveGroupData = {
+    body?: SaveGroupTemplateRequestModel;
+    path?: never;
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/template/group';
+};
+
+export type TemplateSaveGroupErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+};
+
+export type TemplateSaveGroupError = TemplateSaveGroupErrors[keyof TemplateSaveGroupErrors];
+
+export type TemplateSaveGroupResponses = {
+    /**
+     * Created
+     */
+    201: GroupTemplateSavedResponseModel;
+};
+
+export type TemplateSaveGroupResponse = TemplateSaveGroupResponses[keyof TemplateSaveGroupResponses];
 
 export type ThemeLibraryCreateData = {
     body?: CreateThemeRequestModel;

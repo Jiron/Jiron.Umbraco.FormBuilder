@@ -207,8 +207,11 @@ internal sealed record TemplateResponseModel
     /// <summary>What it holds.</summary>
     public required DefinitionCountsResponseModel Holds { get; init; }
 
-    /// <summary>Its definition document, for the preview.</summary>
+    /// <summary>Its definition document, for the preview: a group's is one page holding the group.</summary>
     public required JsonElement Definition { get; init; }
+
+    /// <summary>What it is a template of: <c>form</c> or <c>group</c> (ADR-0217).</summary>
+    public required string Kind { get; init; }
 
     /// <summary>The model of a template.</summary>
     public static TemplateResponseModel Of(GalleryTemplate template)
@@ -223,8 +226,49 @@ internal sealed record TemplateResponseModel
             Description = template.Description,
             Holds = DefinitionCountsResponseModel.Of(DefinitionCounts.Of(template.Definition)),
             Definition = DefinitionJson.Of(template.Definition),
+            Kind = template.Kind == Core.Persistence.Repositories.FormTemplateKind.Group ? "group" : "form",
         };
     }
+
+    /// <summary>The model of a template just saved, read as the gallery reads it.</summary>
+    public static TemplateResponseModel Of(Core.Persistence.Repositories.StoredFormTemplate template, FormTemplateGallery gallery)
+    {
+        ArgumentNullException.ThrowIfNull(gallery);
+        return Of(gallery.Read(template) ?? throw new InvalidOperationException($"The template {template?.Key} does not read as it was saved."));
+    }
+}
+
+/// <summary>A template's name and description, as a save or a rename gives them (ADR-0217).</summary>
+internal sealed record TemplateNameRequestModel
+{
+    /// <summary>Its name, 1 to 255 characters.</summary>
+    public required string Name { get; init; }
+
+    /// <summary>A description, at most 2000 characters, or null.</summary>
+    public string? Description { get; init; }
+}
+
+/// <summary>A group to save as a template, as the canvas shows it, with a name and a description (ADR-0217).</summary>
+internal sealed record SaveGroupTemplateRequestModel
+{
+    /// <summary>Its name, 1 to 255 characters.</summary>
+    public required string Name { get; init; }
+
+    /// <summary>A description, at most 2000 characters, or null.</summary>
+    public string? Description { get; init; }
+
+    /// <summary>The group as a definition holds it, its fields and rules included.</summary>
+    public required JsonElement Group { get; init; }
+}
+
+/// <summary>A group saved as a template (ADR-0217).</summary>
+internal sealed record GroupTemplateSavedResponseModel
+{
+    /// <summary>The template.</summary>
+    public required TemplateResponseModel Template { get; init; }
+
+    /// <summary>How many of its rules lost a condition naming an element outside the group, or went for it.</summary>
+    public required int RulesChanged { get; init; }
 }
 
 /// <summary>What a permanent delete takes (ADR-0166).</summary>

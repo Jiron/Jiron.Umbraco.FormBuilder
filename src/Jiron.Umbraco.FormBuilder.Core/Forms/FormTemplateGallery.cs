@@ -6,25 +6,32 @@ using Microsoft.Extensions.Logging;
 
 namespace Jiron.Umbraco.FormBuilder.Core.Forms;
 
-/// <summary>A template of the gallery (ADR-0166): a built-in one or one saved on this site, of kind Form.</summary>
+/// <summary>A template of the gallery (ADR-0166, ADR-0217): a built-in one or one saved on this site, of a form or a group.</summary>
 /// <param name="Key">Its key, which a form from it names.</param>
 /// <param name="BuiltIn">Whether it ships with Jiron Form Builder.</param>
 /// <param name="Alias">A built-in template's alias, by which the backoffice names and describes it in its languages; null for a saved one.</param>
 /// <param name="Name">Its name: a built-in template's in English, the default text.</param>
 /// <param name="Description">A saved template's description, or null.</param>
-/// <param name="Definition">Its definition, for the preview.</param>
-internal sealed record GalleryTemplate(Guid Key, bool BuiltIn, string? Alias, string Name, string? Description, FormDefinition Definition);
+/// <param name="Definition">Its definition, for the preview: a group's is one page holding the group.</param>
+/// <param name="Kind">A form or a group.</param>
+internal sealed record GalleryTemplate(Guid Key, bool BuiltIn, string? Alias, string Name, string? Description, FormDefinition Definition, FormTemplateKind Kind = FormTemplateKind.Form);
 
 /// <summary>
 /// The template gallery (ADR-0046, ADR-0166): the built-in templates in their order, then the site's saved form templates by
-/// name. A saved template whose stored definition cannot be read is left out, with a warning in the log, so one damaged
-/// row never empties the gallery.
+/// name; or the site's saved groups by name (ADR-0217). A saved template whose stored definition cannot be read is left
+/// out, with a warning in the log, so one damaged row never empties the gallery.
 /// </summary>
 internal sealed partial class FormTemplateGallery(IFormTemplateRepository templates, FormDefinitionSerializer serializer, ILogger<FormTemplateGallery> logger)
 {
-    /// <summary>A page of the gallery, with the number of templates in it.</summary>
-    public async Task<Page<GalleryTemplate>> ListAsync(PageRequest page, CancellationToken cancellationToken = default)
+    /// <summary>A page of the gallery, with the number of templates in it: its form templates, or its saved groups.</summary>
+    public async Task<Page<GalleryTemplate>> ListAsync(PageRequest page, FormTemplateKind kind = FormTemplateKind.Form, CancellationToken cancellationToken = default)
     {
+        if (kind == FormTemplateKind.Group)
+        {
+            var groups = await templates.ListAsync(new FormTemplateFilter(FormTemplateKind.Group), page, cancellationToken);
+            return new Page<GalleryTemplate>([.. groups.Items.Select(Saved).OfType<GalleryTemplate>()], groups.Total);
+        }
+
         var builtIn = BuiltInFormTemplates.All.Select(BuiltIn).ToList();
         var items = builtIn.Skip((int)Math.Min(page.Skip, builtIn.Count)).Take(page.Take).ToList();
         var savedSkip = Math.Max(0, page.Skip - builtIn.Count);
@@ -50,11 +57,14 @@ internal sealed partial class FormTemplateGallery(IFormTemplateRepository templa
         return new GalleryTemplate(template.Key, true, template.Alias, envelope.Name, null, envelope.Definition);
     }
 
+    /// <summary>A saved template as the gallery shows it; null when its stored definition does not read.</summary>
+    public GalleryTemplate? Read(StoredFormTemplate template) => Saved(template);
+
     private GalleryTemplate? Saved(StoredFormTemplate template)
     {
         if (serializer.ReadStored(template.Definition).Definition is { } definition)
         {
-            return new GalleryTemplate(template.Key, false, null, template.Name, template.Description, definition);
+            return new GalleryTemplate(template.Key, false, null, template.Name, template.Description, definition, template.Kind);
         }
 
         LogUnreadable(logger, template.Key);
