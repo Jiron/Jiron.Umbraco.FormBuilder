@@ -259,6 +259,12 @@ internal sealed record SaveGroupTemplateRequestModel
 
     /// <summary>The group as a definition holds it, its fields and rules included.</summary>
     public required JsonElement Group { get; init; }
+
+    /// <summary>
+    /// The form's validation rules that show their message on a field of the group, as a definition holds them, or null;
+    /// one that names a field outside the group is left out.
+    /// </summary>
+    public JsonElement? ValidationRules { get; init; }
 }
 
 /// <summary>A group saved as a template (ADR-0217).</summary>
@@ -267,8 +273,11 @@ internal sealed record GroupTemplateSavedResponseModel
     /// <summary>The template.</summary>
     public required TemplateResponseModel Template { get; init; }
 
-    /// <summary>How many of its rules lost a condition naming an element outside the group, or went for it.</summary>
-    public required int RulesChanged { get; init; }
+    /// <summary>How many of its rules were left out because they name an element outside the group.</summary>
+    public required int RulesLeftOut { get; init; }
+
+    /// <summary>How many of the validation rules on its fields were left out because they name a field outside the group.</summary>
+    public required int ChecksLeftOut { get; init; }
 }
 
 /// <summary>What a permanent delete takes (ADR-0166).</summary>

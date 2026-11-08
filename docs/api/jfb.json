@@ -17886,7 +17886,8 @@
       },
       "GroupTemplateSavedResponseModel": {
         "required": [
-          "rulesChanged",
+          "checksLeftOut",
+          "rulesLeftOut",
           "template"
         ],
         "type": "object",
@@ -17898,7 +17899,11 @@
               }
             ]
           },
-          "rulesChanged": {
+          "rulesLeftOut": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "checksLeftOut": {
             "type": "integer",
             "format": "int32"
           }
@@ -20258,7 +20263,10 @@
             "type": "string",
             "nullable": true
           },
-          "group": {}
+          "group": {},
+          "validationRules": {
+            "nullable": true
+          }
         },
         "additionalProperties": false
       },

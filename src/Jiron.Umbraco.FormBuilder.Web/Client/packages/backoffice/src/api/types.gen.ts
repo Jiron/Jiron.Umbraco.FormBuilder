@@ -1174,7 +1174,8 @@ export type GeneralSettingsResponseModel = {
 
 export type GroupTemplateSavedResponseModel = {
     template: TemplateResponseModel;
-    rulesChanged: number;
+    rulesLeftOut: number;
+    checksLeftOut: number;
 };
 
 export type HealthFindingResponseModel = {
@@ -1753,6 +1754,7 @@ export type SaveGroupTemplateRequestModel = {
     name: string;
     description?: string | null;
     group: unknown;
+    validationRules?: unknown;
 };
 
 export type SettingsLockResponseModel = {

@@ -7,16 +7,18 @@ using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 
 namespace Jiron.Umbraco.FormBuilder.Core.Forms;
 
-/// <summary>A template saved, or the problems that refused it, with how many rules of a group pointed outside it.</summary>
+/// <summary>A template saved, or the problems that refused it, with what of a group pointed outside it and was left out.</summary>
 /// <param name="Template">The template, or null when problems refused it.</param>
 /// <param name="Problems">What refused it.</param>
-/// <param name="RulesChanged">The rules of a group that lost a condition naming an element outside it, or went.</param>
-internal sealed record FormTemplateResult(StoredFormTemplate? Template, IReadOnlyList<DefinitionProblem> Problems, int RulesChanged = 0);
+/// <param name="RulesLeftOut">The rules of a group left out because they name an element outside it.</param>
+/// <param name="ChecksLeftOut">The validation rules on a group's fields left out because they name a field outside it.</param>
+internal sealed record FormTemplateResult(StoredFormTemplate? Template, IReadOnlyList<DefinitionProblem> Problems, int RulesLeftOut = 0, int ChecksLeftOut = 0);
 
 /// <summary>
 /// The templates users save (ADR-0217): a form's stored draft as a form template, and a group as the canvas shows it as a
-/// group template, kept as a definition of one page holding it, with every condition that names an element outside the
-/// group left out; a template renamed or deleted. Each change is audited.
+/// group template, kept as a definition of one page holding it with the validation rules on its fields, every rule and
+/// validation rule that names an element outside the group left out; a template renamed or deleted. Each change is
+/// audited.
 /// </summary>
 internal sealed class FormTemplateLibrary(
     IFormTemplateRepository templates,
@@ -56,28 +58,30 @@ internal sealed class FormTemplateLibrary(
     }
 
     /// <summary>
-    /// Saves a group, its JSON as a definition holds it, as a group template; its problems at <c>$.group</c> refuse it. A
-    /// condition that names an element outside the group is left out, a rule without conditions goes, and a list whose
-    /// parent is outside keeps its options without the parent.
+    /// Saves a group as the canvas shows it, with the validation rules that show their message on its fields, as a group
+    /// template: a definition of one page holding the group, without the rules and validation rules that name an element
+    /// outside it, which it counts; or the problems, the group's at <c>$.group</c>.
     /// </summary>
-    public async Task<FormTemplateResult> SaveGroupAsync(JsonElement group, string name, string? description, Guid? userKey, CancellationToken cancellationToken = default)
+    public async Task<FormTemplateResult> SaveGroupAsync(JsonElement group, JsonElement? validationRules, string name, string? description, Guid? userKey, CancellationToken cancellationToken = default)
     {
         if (Check(name, description) is { Count: > 0 } problems)
         {
             return new FormTemplateResult(null, problems);
         }
 
-        var json = $$"""{"schemaVersion":1,"key":"{{Guid.NewGuid()}}","pages":[{"key":"{{Guid.NewGuid()}}","groups":[{{group.GetRawText()}}]}]}""";
+        var checks = validationRules is { ValueKind: not (JsonValueKind.Null or JsonValueKind.Undefined) } given ? $$""","validationRules":{{given.GetRawText()}}""" : string.Empty;
+        var json = $$"""{"schemaVersion":1,"key":"{{Guid.NewGuid()}}","pages":[{"key":"{{Guid.NewGuid()}}","groups":[{{group.GetRawText()}}]}]{{checks}}}""";
         var read = serializer.Read(json);
         if (read.Definition is not { Pages: [{ Groups.Count: 1 }] } definition)
         {
             var groupAt = JsonPaths.Index(JsonPaths.Property(JsonPaths.Index(JsonPaths.Property(JsonPaths.Root, "pages"), 0), "groups"), 0);
-            return new FormTemplateResult(null, [.. read.Problems.Select(problem => problem with { Path = GroupPath + problem.Path[Math.Min(problem.Path.Length, groupAt.Length)..] })]);
+            var checksAt = JsonPaths.Property(JsonPaths.Root, "validationRules");
+            return new FormTemplateResult(null, [.. read.Problems.Select(problem => problem.Path.StartsWith(checksAt, StringComparison.Ordinal) ? problem : problem with { Path = GroupPath + problem.Path[Math.Min(problem.Path.Length, groupAt.Length)..] })]);
         }
 
-        var (within, changed) = GroupTemplates.WithinItself(definition);
+        var (within, rulesLeftOut, checksLeftOut) = GroupTemplates.WithinItself(definition);
         var saved = await CreateAsync(FormTemplateKind.Group, within, name, description, userKey, null, cancellationToken);
-        return new FormTemplateResult(saved, [], changed);
+        return new FormTemplateResult(saved, [], rulesLeftOut, checksLeftOut);
     }
 
     /// <summary>Renames a saved template; null when it does not exist.</summary>
@@ -159,23 +163,28 @@ internal sealed class FormTemplateLibrary(
     }
 }
 
-/// <summary>A group as a template holds it (ADR-0217): only what points inside it.</summary>
+/// <summary>
+/// What of a group a template keeps (ADR-0217): a rule or a validation rule that names an element outside the group, as a
+/// condition's field or as the field a condition compares with, in nested groups of conditions too, is left out whole, as
+/// the dialog says, since without that part it would mean something else; everything else stays as it was.
+/// </summary>
 internal static class GroupTemplates
 {
     /// <summary>
-    /// The definition of one page holding the group, with every condition naming an element outside the group left out, a
-    /// rule left without conditions taken out, and a list whose parent is outside without its parent; and how many rules
-    /// changed or went.
+    /// The definition of one page holding the group with the validation rules on its fields, every rule and validation rule
+    /// naming an element outside the group left out, and a list whose parent is outside without its parent; and how many
+    /// rules and validation rules were left out.
     /// </summary>
-    public static (FormDefinition Definition, int RulesChanged) WithinItself(FormDefinition definition)
+    public static (FormDefinition Definition, int RulesLeftOut, int ChecksLeftOut) WithinItself(FormDefinition definition)
     {
         ArgumentNullException.ThrowIfNull(definition);
         var own = DefinitionKeys.Of(definition).ToHashSet();
-        var changed = 0;
+        var rulesLeftOut = 0;
         var page = definition.Pages[0];
         var group = page.Groups[0];
         var within = group with { Rules = Rules(group.Rules), Fields = Fields(group.Fields) };
-        return (definition with { Pages = [page with { Groups = [within] }] }, changed);
+        var checks = definition.ValidationRules.Where(rule => own.Contains(rule.Field) && rule.Conditions.All(Inside)).ToList();
+        return (definition with { Pages = [page with { Groups = [within] }], ValidationRules = checks }, rulesLeftOut, definition.ValidationRules.Count - checks.Count);
 
         IReadOnlyList<FormField> Fields(IReadOnlyList<FormField> fields) =>
             [.. fields.Select(field => field with { Rules = Rules(field.Rules), Options = Options(field.Options), Fields = Fields(field.Fields) })];
@@ -187,30 +196,17 @@ internal static class GroupTemplates
 
         IReadOnlyList<FormRule> Rules(IReadOnlyList<FormRule> rules)
         {
-            var kept = new List<FormRule>();
-            foreach (var rule in rules)
-            {
-                var conditions = rule.Conditions.Select(Inside).OfType<RuleItem>().ToList();
-                if (conditions.Count != rule.Conditions.Count || !conditions.SequenceEqual(rule.Conditions))
-                {
-                    changed++;
-                }
-
-                if (conditions.Count > 0)
-                {
-                    kept.Add(rule with { Conditions = conditions });
-                }
-            }
-
+            var kept = rules.Where(rule => rule.Conditions.All(Inside)).ToList();
+            rulesLeftOut += rules.Count - kept.Count;
             return kept;
         }
 
-        RuleItem? Inside(RuleItem item) => item switch
+        bool Inside(RuleItem item) => item switch
         {
-            RuleCondition { Field: { } field } when !own.Contains(field) => null,
-            RuleCondition { Value: ConditionOperand.Field { Key: var other } } when !own.Contains(other) => null,
-            RuleGroup nested => nested.Conditions.Select(Inside).OfType<RuleItem>().ToList() is { Count: > 0 } inner ? nested with { Conditions = inner } : null,
-            _ => item,
+            RuleCondition { Field: { } field } when !own.Contains(field) => false,
+            RuleCondition { Value: ConditionOperand.Field { Key: var other } } when !own.Contains(other) => false,
+            RuleGroup nested => nested.Conditions.All(Inside),
+            _ => true,
         };
     }
 }

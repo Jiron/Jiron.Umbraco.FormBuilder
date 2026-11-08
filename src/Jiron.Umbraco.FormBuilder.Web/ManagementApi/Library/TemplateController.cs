@@ -67,10 +67,11 @@ internal sealed class TemplateController(FormTemplateGallery gallery, FormTempla
     }
 
     /// <summary>
-    /// Saves a group as the canvas shows it as a group template: <c>201</c> with the template and how many of its rules lost
-    /// a condition that named an element outside it, or <c>400</c> with the problems, the group's at <c>$.group</c>.
+    /// Saves a group as the canvas shows it, with the validation rules on its fields, as a group template: <c>201</c> with the
+    /// template and how many of its rules and validation rules were left out for naming an element outside it, or
+    /// <c>400</c> with the problems, the group's at <c>$.group</c>.
     /// </summary>
-    /// <param name="request">The group, its name and description.</param>
+    /// <param name="request">The group, the validation rules on its fields, its name and description.</param>
     /// <param name="cancellationToken">The request's cancellation.</param>
     [HttpPost("group")]
     [MapToApiVersion("1.0")]
@@ -80,9 +81,9 @@ internal sealed class TemplateController(FormTemplateGallery gallery, FormTempla
     public async Task<IActionResult> SaveGroup(SaveGroupTemplateRequestModel request, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
-        var saved = await library.SaveGroupAsync(request.Group, request.Name, request.Description, RequestAccess.User.Key, cancellationToken);
+        var saved = await library.SaveGroupAsync(request.Group, request.ValidationRules, request.Name, request.Description, RequestAccess.User.Key, cancellationToken);
         var template = saved.Template ?? throw new FormBuilderValidationException(saved.Problems);
-        return Created(template.Key, new GroupTemplateSavedResponseModel { Template = TemplateResponseModel.Of(template, gallery), RulesChanged = saved.RulesChanged });
+        return Created(template.Key, new GroupTemplateSavedResponseModel { Template = TemplateResponseModel.Of(template, gallery), RulesLeftOut = saved.RulesLeftOut, ChecksLeftOut = saved.ChecksLeftOut });
     }
 
     /// <summary>Renames a saved template: <c>200</c> with it, <c>400</c> with the problems, <c>404</c> for none.</summary>

@@ -10,7 +10,8 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Integration.ManagementApi;
 /// <summary>
 /// The templates users save, through the management API (ROADMAP 12.1, ADR-0217): a form's draft saved as a template that
 /// the gallery lists after the built-in ones, renamed and deleted, each change audited; a group saved as the canvas holds
-/// it, every condition that names an element outside it left out and counted; and who may do which.
+/// it with the validation rules on its fields, every rule and validation rule that names an element outside it left out
+/// and counted; and who may do which.
 /// </summary>
 [TestFixture]
 [UmbracoTest(Database = UmbracoTestOptions.Database.NewSchemaPerTest, Boot = true)]
@@ -52,10 +53,12 @@ public sealed class TemplateApiTests : ManagementApiTestBase
     }
 
     [Test]
-    public async Task AGroup_IsSavedAsTheCanvasHoldsIt_WhatPointsOutsideItLeftOut()
+    public async Task AGroup_IsSavedAsTheCanvasHoldsIt_WithItsChecks_WhatPointsOutsideItLeftOut()
     {
         var outside = Guid.NewGuid();
         var wants = Guid.NewGuid();
+        var street = Guid.NewGuid();
+        var kept = Guid.NewGuid();
         var group = new
         {
             key = Guid.NewGuid(),
@@ -64,7 +67,7 @@ public sealed class TemplateApiTests : ManagementApiTestBase
             fields = new object[]
             {
                 new { key = wants, type = "yesno", alias = "byPost", label = Text("By post?") },
-                new { key = Guid.NewGuid(), type = "text", alias = "street", label = Text("Street"), rules = new[] { Rule(wants) } },
+                new { key = street, type = "text", alias = "street", label = Text("Street"), rules = new[] { Rule(wants) } },
                 new { key = Guid.NewGuid(), type = "text", alias = "note", label = Text("Note"), rules = new[] { Rule(outside) } },
                 new
                 {
@@ -77,7 +80,9 @@ public sealed class TemplateApiTests : ManagementApiTestBase
             },
         };
 
-        var saved = await CallAsync(Designer, HttpMethod.Post, "template/group", new { name = "Address block", group });
+        var validationRules = new[] { Check(kept, street, wants), Check(Guid.NewGuid(), street, outside) };
+
+        var saved = await CallAsync(Designer, HttpMethod.Post, "template/group", new { name = "Address block", group, validationRules });
         var listed = await CallAsync("viewer", HttpMethod.Get, "template?kind=group");
         var forms = await CallAsync(Designer, HttpMethod.Get, "template");
 
@@ -86,7 +91,9 @@ public sealed class TemplateApiTests : ManagementApiTestBase
         var fields = held["fields"]!.AsArray();
         Assert.Multiple(() =>
         {
-            Assert.That((saved.Body!["rulesChanged"]!.GetValue<int>(), saved.Body!["template"]!["kind"]!.GetValue<string>()), Is.EqualTo((2, "group")), "the group's rule and the note's");
+            Assert.That((saved.Body!["rulesLeftOut"]!.GetValue<int>(), saved.Body!["checksLeftOut"]!.GetValue<int>(), saved.Body!["template"]!["kind"]!.GetValue<string>()), Is.EqualTo((2, 1, "group")), "the group's rule and the note's; the check naming a field outside");
+            var checks = saved.Body!["template"]!["definition"]!["validationRules"]!.AsArray();
+            Assert.That(checks.Select(check => check!["key"]!.GetValue<Guid>()), Is.EqualTo(new[] { kept }), "the check naming only the group's fields stays");
             Assert.That(held["rules"], Is.Null, "the group's rule named only a field outside it");
             Assert.That(fields[1]!["rules"]![0]!["conditions"]![0]!["field"]!.GetValue<Guid>(), Is.EqualTo(wants), "a rule inside stays");
             Assert.That(fields[2]!["rules"], Is.Null);
@@ -133,6 +140,14 @@ public sealed class TemplateApiTests : ManagementApiTestBase
     }
 
     private static Dictionary<string, string> Text(string text) => new() { [""] = text };
+
+    private static object Check(Guid key, Guid field, Guid when) => new
+    {
+        key,
+        field,
+        message = Text("Fill this in"),
+        conditions = new object[] { new { field = when, op = "equals", value = "yes" }, new { field, op = "isEmpty" } },
+    };
 
     private static object Rule(Guid field) => new
     {

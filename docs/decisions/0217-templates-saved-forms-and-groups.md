@@ -4,7 +4,7 @@
   from a template), [ADR-0166](0166-the-form-library.md) (the template gallery),
   [ADR-0169](0169-the-designers-moves.md) (the canvas's moves and Duplicate), [ADR-0013](0013-permissions.md) (the
   permissions) and [ADR-0159](0159-mail-the-queue-the-layouts-and-the-limits.md) (the email action); IA 4, 5 and 7
-- Date: 2026-11-08
+- Date: 2026-11-08; amended the same day after the review of 12.3 (decisions 6 to 9 and 11)
 - Roadmap step: 12.1, its part 12.3 (ADR-0197)
 
 ## Context
@@ -76,29 +76,42 @@ Open questions:
 
 ### Saving a group, and inserting it
 
-6. **Save group as template…** in a selected group's "…" on the canvas asks a name and a description and saves the
-   group **as the canvas shows it**, unsaved changes included, since that is what the editor sees. The server keeps it
-   as a definition of one page holding the group, so the reader and the save checks of definitions hold it.
-7. **What points outside the group:** a rule's condition that names an element outside it is left out, and a rule left
-   without conditions goes; the save says how many rules it changed. A cascading list whose parent is outside keeps its
-   options without the parent; a calculation or a merge tag that names a field outside stays as it is, and the form
-   check of the form it lands in reports it, as it reports any.
+6. **Save group as template…** in a selected group's "…" on the canvas, and in the inspector's "…" over a narrow
+   canvas, where the inspector takes the element's actions, asks a name and a description and saves the group **as the
+   canvas shows it**, unsaved changes included, since that is what the editor sees, **with the form's validation rules
+   that show their message on one of its fields**: an address block's checks belong to it. The server keeps it as a
+   definition of one page holding the group and those validation rules, so the reader and the save checks of
+   definitions hold it. A group the server can't read is refused with one line that points to the form check, which
+   shows why.
+7. **What points outside the group:** a rule or a validation rule that names an element outside it, as a condition's
+   field or as the field a condition compares with, nested groups of conditions included, is **left out whole**. Keeping
+   it without that part would make it mean something else, more often or less often, while it looked intact; left out,
+   it is plainly gone, which the dialog says before the save and the toast counts after it ("…saved without 1 rule and
+   1 validation rule that depend on fields outside the group."). What names only the group stays as it was, a rule
+   without conditions included. A cascading list whose parent is outside keeps its options without the parent. A
+   calculation or a merge tag that names a field outside stays as it is: in the form it lands in, a field of that alias
+   answers, as it would for a tag typed there, and the form check reports a name no field has, as it reports any.
 8. **The palette lists the site's saved groups** under "Saved groups", by name; one inserts like a field type, at the
    insert point, after the selection or at the end of the page. The copy is made as Duplicate makes one (ADR-0169):
    every key inside it renewed, every reference inside it to something it holds pointing at the copy, each field taking
-   a free alias (`email2`), and each calculation naming its fields' new aliases. It is one step for Undo.
+   a free alias (`email2`), and each calculation **and merge tag** naming its fields' new aliases (Duplicate repoints
+   merge tags now too). Its validation rules join the form's with new keys, on the copy's fields. It is one step for
+   Undo. The saved template is read as the designer reads a definition, the empty lists the server's canonical form
+   leaves out restored.
 
 ### The Templates screen and permissions
 
 9. **Library › Templates** shows the built-in and saved templates as the gallery does, saved groups among them marked
-   as groups, with the chosen one's preview. A form template's preview has **Use template**, which creates the form at
-   the root of the forms and opens it; a group's says that the palette inserts it. A saved template's "…" has
-   **Rename…** (name and description) and **Delete…**; built-in templates have neither.
+   as groups, with the chosen one's preview. A form template's preview has **Use template**, for who may design at the
+   root of the forms, which creates the form there, lists it in the tree and opens it; a group's says that the palette
+   inserts it. A saved template's "…" has **Rename…** (name and description), after which the focus is back on the "…",
+   and **Delete…**, after which the next template of its part is chosen and focused; built-in templates have neither.
 10. **Permissions:** saving, renaming and deleting a template takes `manageLibrary`; saving a form as a template also
     takes `design` on the form, whose draft it reads. Every user of the section may list the templates, and a user with
     `design` on a form sees the saved groups in its palette.
 11. **The API** (`/umbraco/jfb/management/api/v1/template`): the gallery's list takes `kind` (`form`, the default, or
-    `group`); `POST template/form` saves a form, `POST template/group` a group; `PUT template/{key}` renames;
+    `group`); `POST template/form` saves a form, `POST template/group` a group with `validationRules`, and answers
+    `rulesLeftOut` and `checksLeftOut`; `PUT template/{key}` renames;
     `DELETE template/{key}` deletes. Each is audited (`template.saved`, `template.renamed`, `template.deleted`, with the
     key, the kind and the form a template came from).
 
@@ -106,8 +119,9 @@ Open questions:
 
 - A site gets nine forms that publish as they are, in two languages, and none mails an address it does not have.
 - The privacy team is a recipient any form can use, not only the template's.
-- A saved group never makes the form it lands in point at another form's fields through a rule; what else names a field
-  outside is shown by the form check where it lands.
+- A saved group never makes the form it lands in point at another form's fields through a rule or a validation rule,
+  and never brings a rule cut down to a different meaning; a calculation or a merge tag naming a field outside answers
+  to a field of that alias where it lands, and the form check shows one no field has.
 - Templates carry no concurrency version (ADR-0037): the last rename wins.
 - **Revisit** if sites want categories in the gallery (the column exists), templates shared between sites (an export of
   templates), or a saved group that stays linked to its template.
