@@ -2833,7 +2833,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
     - **The digest** (added in 1.1): each user can ask for a daily or weekly email ("12 new entries in 3 forms") instead of watching the inbox. It holds counts and links only, never entry values, covers only the forms the user may view, and goes out in the site's time zone through the outbox.
     - Done when: Playwright passes, including an idle user whose session still ends on time (`page.clock`), an inbox as the viewer that holds no entry of the restricted folder's forms, and "not spam" on an entry whose unique answer another entry holds by then, which asks first. Tests with fake time show one digest per user and period, nothing for a user who has not asked for one, no form the user may not view, and no entry value in the mail.
   - Done when: every part's "Done when" above passes, as each part says.
-- [ ] **11.4 Exports, insights and answer summaries, and phase review** (11.4, 11.5, 11.5b and 11.6 in one, ADR-0197)
+- [x] **11.4 Exports, insights and answer summaries, and phase review** (11.4, 11.5, 11.5b and 11.6 in one, ADR-0197) (2026-11-08, 914b66a)
   - **11.4 Exports**:
     - **Formats:**
       - **CSV:** delimiter, BOM, formula guard, headers as labels or aliases;
