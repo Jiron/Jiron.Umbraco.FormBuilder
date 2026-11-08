@@ -42,14 +42,17 @@ export const jfbBackofficeTokens = css`
   }
 `;
 
-/** Hides an element's text from sight and keeps it for assistive technology. */
+/**
+ * Hides an element's text from sight and keeps it for assistive technology. It wins over any sizing rule, as a hidden
+ * control is still a control the form styles size (a file input drawn at full width stuck out of its screen, 12.6).
+ */
 export const jfbVisuallyHidden = css`
   .visually-hidden {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
+    position: absolute !important;
+    inline-size: 1px !important;
+    block-size: 1px !important;
+    overflow: hidden !important;
+    clip-path: inset(50%) !important;
+    white-space: nowrap !important;
   }
 `;

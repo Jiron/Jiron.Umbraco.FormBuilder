@@ -87,7 +87,8 @@ export class EmailLayoutViewElement extends UmbLitElement {
         }
       }
 
-      .settings {
+      /* The box lays its content out itself, so the groups' rhythm lives in a block of their own inside it. */
+      .fields {
         display: grid;
         gap: var(--uui-size-space-6);
       }
@@ -440,100 +441,102 @@ export class EmailLayoutViewElement extends UmbLitElement {
       return [this.#term(problem.code === 'alias_duplicate' ? 'problem_aliasTaken' : 'problem_alias')];
     });
     const logoProblem = this.#problemAt('$.design.logoMedia') ?? this.#problemAt('$.design.logoUrl');
-    return html`<uui-box class="settings">
-      ${
-        general.length > 0
-          ? html`<ul class="alert" role="alert">
-              ${general.map((said) => html`<li>${said}</li>`)}
-            </ul>`
-          : nothing
-      }
-      <div class="group">
-        <div class="item">
-          <label class="label" for="look">${this.#term('look')}</label>
-          <select
-            id="look"
-            @change=${(event: Event) =>
-              this.#change((one) => ({
-                ...one,
-                look: (event.target as HTMLSelectElement).value === 'letter' ? 'letter' : 'card',
-              }))}
-          >
-            ${(['card', 'letter'] as const).map(
-              (look) =>
-                html`<option value=${look} ?selected=${design.look === look}>${this.#term(`look_${look}`)}</option>`,
-            )}
-          </select>
-          <p class="help">${this.#term(`lookHelp_${design.look}`)}</p>
-        </div>
-      </div>
-      <div class="group" role="group" aria-labelledby="logo-heading">
-        <h3 id="logo-heading">${this.#term('logo')}</h3>
-        <umb-input-media
-          .selection=${design.logoMedia ? [design.logoMedia] : []}
-          .max=${1}
-          @change=${(event: Event) => {
-            const picked = (event.target as HTMLElement & { selection: string[] }).selection[0] ?? null;
-            this.#change((one) => ({ ...one, logoMedia: picked }));
-          }}
-        ></umb-input-media>
+    return html`<uui-box class="settings"
+      ><div class="fields">
         ${
-          design.logoMedia
-            ? nothing
-            : html`<div class="item">
-                <label class="label" for="logo-url">${this.#term('logoUrl')}</label>
-                <input
-                  id="logo-url"
-                  class="code"
-                  inputmode="url"
-                  placeholder="https://"
-                  .value=${design.logoUrl ?? ''}
-                  aria-invalid=${logoProblem ? 'true' : 'false'}
-                  @change=${(event: Event) =>
-                    this.#change((one) => ({
-                      ...one,
-                      logoUrl: (event.target as HTMLInputElement).value.trim() || null,
-                    }))}
-                />
-              </div>`
-        }
-        ${logoProblem ? html`<p class="why">${logoProblem}</p>` : nothing}
-      </div>
-      <div class="group" role="group" aria-labelledby="colours-heading">
-        <h3 id="colours-heading">${this.#term('colours')}</h3>
-        ${this.#schemes(this._scheme, (scheme) => (this._scheme = scheme), this.#term('coloursScheme'))}
-        <p class="help">${this.#term(this._scheme === 'dark' ? 'coloursDarkHelp' : 'coloursHelp')}</p>
-        ${COLOURS.map((name) => this.#colour(this._scheme, name))}
-      </div>
-      <div class="group" role="group" aria-labelledby="texts-heading">
-        <h3 id="texts-heading">${this.#term('texts')}</h3>
-        ${
-          editor.languages.length > 1
-            ? html`<div class="item">
-                <label class="label" for="language">${this.#term('language')}</label>
-                <select
-                  id="language"
-                  aria-describedby="language-help"
-                  @change=${(event: Event) => {
-                    this._culture = (event.target as HTMLSelectElement).value;
-                    this.#schedule();
-                  }}
-                >
-                  ${editor.languages.map(
-                    (language) =>
-                      html`<option value=${language.culture} ?selected=${language.culture === this._culture}>
-                        ${language.name}
-                      </option>`,
-                  )}
-                </select>
-                <p class="help" id="language-help">${this.#term('languageHelp')}</p>
-              </div>`
+          general.length > 0
+            ? html`<ul class="alert" role="alert">
+                ${general.map((said) => html`<li>${said}</li>`)}
+              </ul>`
             : nothing
         }
-        ${this.#text('header', 'header', 3)} ${this.#text('footer', 'footer', 4)}
-        ${this.#text('logo-alt', 'logoAlt', 1)}
-      </div>
-    </uui-box>`;
+        <div class="group">
+          <div class="item">
+            <label class="label" for="look">${this.#term('look')}</label>
+            <select
+              id="look"
+              @change=${(event: Event) =>
+                this.#change((one) => ({
+                  ...one,
+                  look: (event.target as HTMLSelectElement).value === 'letter' ? 'letter' : 'card',
+                }))}
+            >
+              ${(['card', 'letter'] as const).map(
+                (look) =>
+                  html`<option value=${look} ?selected=${design.look === look}>${this.#term(`look_${look}`)}</option>`,
+              )}
+            </select>
+            <p class="help">${this.#term(`lookHelp_${design.look}`)}</p>
+          </div>
+        </div>
+        <div class="group" role="group" aria-labelledby="logo-heading">
+          <h3 id="logo-heading">${this.#term('logo')}</h3>
+          <umb-input-media
+            .selection=${design.logoMedia ? [design.logoMedia] : []}
+            .max=${1}
+            @change=${(event: Event) => {
+              const picked = (event.target as HTMLElement & { selection: string[] }).selection[0] ?? null;
+              this.#change((one) => ({ ...one, logoMedia: picked }));
+            }}
+          ></umb-input-media>
+          ${
+            design.logoMedia
+              ? nothing
+              : html`<div class="item">
+                  <label class="label" for="logo-url">${this.#term('logoUrl')}</label>
+                  <input
+                    id="logo-url"
+                    class="code"
+                    inputmode="url"
+                    placeholder="https://"
+                    .value=${design.logoUrl ?? ''}
+                    aria-invalid=${logoProblem ? 'true' : 'false'}
+                    @change=${(event: Event) =>
+                      this.#change((one) => ({
+                        ...one,
+                        logoUrl: (event.target as HTMLInputElement).value.trim() || null,
+                      }))}
+                  />
+                </div>`
+          }
+          ${logoProblem ? html`<p class="why">${logoProblem}</p>` : nothing}
+        </div>
+        <div class="group" role="group" aria-labelledby="colours-heading">
+          <h3 id="colours-heading">${this.#term('colours')}</h3>
+          ${this.#schemes(this._scheme, (scheme) => (this._scheme = scheme), this.#term('coloursScheme'))}
+          <p class="help">${this.#term(this._scheme === 'dark' ? 'coloursDarkHelp' : 'coloursHelp')}</p>
+          ${COLOURS.map((name) => this.#colour(this._scheme, name))}
+        </div>
+        <div class="group" role="group" aria-labelledby="texts-heading">
+          <h3 id="texts-heading">${this.#term('texts')}</h3>
+          ${
+            editor.languages.length > 1
+              ? html`<div class="item">
+                  <label class="label" for="language">${this.#term('language')}</label>
+                  <select
+                    id="language"
+                    aria-describedby="language-help"
+                    @change=${(event: Event) => {
+                      this._culture = (event.target as HTMLSelectElement).value;
+                      this.#schedule();
+                    }}
+                  >
+                    ${editor.languages.map(
+                      (language) =>
+                        html`<option value=${language.culture} ?selected=${language.culture === this._culture}>
+                          ${language.name}
+                        </option>`,
+                    )}
+                  </select>
+                  <p class="help" id="language-help">${this.#term('languageHelp')}</p>
+                </div>`
+              : nothing
+          }
+          ${this.#text('header', 'header', 3)} ${this.#text('footer', 'footer', 4)}
+          ${this.#text('logo-alt', 'logoAlt', 1)}
+        </div>
+      </div></uui-box
+    >`;
   }
 
   #preview(): TemplateResult {
