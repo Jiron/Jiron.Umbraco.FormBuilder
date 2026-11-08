@@ -218,7 +218,7 @@ export default {
     property_retention_rejected: 'Abgelehnte Einträge (Tage)',
     property_retention_spam: 'Spam (Tage)',
     property_ip: 'IP-Adressen',
-    property_insights: 'Auswertungen',
+    property_insights: 'Einblicke',
     property_onePerMember: 'Ein Eintrag pro Mitglied',
     property_redirect: 'Weiterleitung',
 

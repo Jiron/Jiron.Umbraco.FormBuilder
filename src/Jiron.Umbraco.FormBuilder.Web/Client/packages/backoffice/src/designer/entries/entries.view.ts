@@ -97,6 +97,12 @@ import { loadEntryWords } from '../../entries/entry-words';
 /** The widest the view is where the panel covers the list rather than sitting beside it (IA, "Rules": up to 700 px). */
 const COVERS = 700;
 
+/**
+ * Narrower than this, as beside the panel, a row's state goes under its name rather than in a column of its own: the
+ * name and the state each keep one line, in German's longer states too (44rem; the Phase 11 review).
+ */
+const STACKS = 704;
+
 /** Whether a step of an event's path is an open popover, such as a menu; false where the browser can't tell. */
 function isOpenPopover(step: EventTarget): boolean {
   try {
@@ -167,6 +173,7 @@ export class EntriesViewElement extends UmbLitElement {
     _open: { state: true },
     _openForm: { state: true },
     _covering: { state: true },
+    _stacked: { state: true },
     _forms: { state: true },
     _mayEmpty: { state: true },
   };
@@ -233,8 +240,15 @@ export class EntriesViewElement extends UmbLitElement {
         color: var(--jfb-bo-color-text-muted);
       }
 
-      .count {
+      /* The count and the "..." keep together at the toolbar's end, also once the toolbar wraps. */
+      .toolbar-end {
+        display: flex;
+        align-items: center;
+        gap: var(--uui-size-space-4);
         margin-inline-start: auto;
+      }
+
+      .count {
         color: var(--jfb-bo-color-text-muted);
         white-space: nowrap;
       }
@@ -328,10 +342,20 @@ export class EntriesViewElement extends UmbLitElement {
         text-align: end;
       }
 
-      /* The open entry's row: Umbraco's colour for what is open, as the tree marks its item, under the cursor's ring. */
+      /* The open entry's row: Umbraco's colour for what is open, as the tree marks its item, under the cursor's ring; mixed
+         with the surface, so its text keeps AA in the dark theme too, and a failure's words take the row's colour. */
       tbody tr.open {
-        background: var(--uui-color-current);
+        background: var(--jfb-bo-color-current);
         color: var(--uui-color-current-contrast);
+      }
+
+      tbody tr.open :is(.tone-danger, .tone-warning, .tone-muted) {
+        color: inherit;
+      }
+
+      /* While the bulk bar is up, a row the cursor or Tab reaches stops above it rather than under it (WCAG 2.4.11). */
+      table.selecting tbody tr {
+        scroll-margin-block-end: 8rem;
       }
 
       .name {
@@ -461,6 +485,12 @@ export class EntriesViewElement extends UmbLitElement {
 
       .narrowed:not(.no-state) th .below {
         display: none;
+      }
+
+      /* Narrow, a row's state sits under its name (STACKS). */
+      .state-below {
+        display: block;
+        margin-block-start: var(--uui-size-space-1);
       }
 
       .sort,
@@ -643,6 +673,8 @@ export class EntriesViewElement extends UmbLitElement {
   declare private _openForm: string | undefined;
   /** Whether the view is too narrow for the panel beside the list, so it covers the list. */
   declare private _covering: boolean;
+  /** Whether the view is too narrow for a column of the rows' states, so each state goes under its name. */
+  declare private _stacked: boolean;
   /** In the Inbox and Spam, the forms named so far, with what the user may do on each. */
   declare private _forms: ReadonlyMap<string, EntryListFormResponseModel>;
   /** Whether the user may delete entries of any form, so Spam offers Empty spam.... */
@@ -659,6 +691,8 @@ export class EntriesViewElement extends UmbLitElement {
     const width = entry?.contentRect.width;
     const covering = width !== undefined && width <= COVERS;
     if (covering !== this._covering) this._covering = covering;
+    const stacked = width !== undefined && width < STACKS;
+    if (stacked !== this._stacked) this._stacked = stacked;
   });
 
   constructor() {
@@ -682,6 +716,7 @@ export class EntriesViewElement extends UmbLitElement {
     this._said = '';
     this._permissions = [];
     this._covering = false;
+    this._stacked = false;
     this._forms = new Map();
     this._mayEmpty = false;
     this.place = 'form';
@@ -1706,10 +1741,12 @@ export class EntriesViewElement extends UmbLitElement {
             ></uui-button>`
           : nothing
       }
-      <span class="count">${this.#countText()}</span>
-      <uui-button compact look="secondary" label=${this.#term('more')} popovertarget="more-menu">
-        <uui-symbol-more></uui-symbol-more>
-      </uui-button>
+      <div class="toolbar-end">
+        <span class="count">${this.#countText()}</span>
+        <uui-button compact look="secondary" label=${this.#term('more')} popovertarget="more-menu">
+          <uui-symbol-more></uui-symbol-more>
+        </uui-button>
+      </div>
       <uui-popover-container id="more-menu" placement="bottom-end">
         <div class="menu">
           ${
@@ -1793,7 +1830,7 @@ export class EntriesViewElement extends UmbLitElement {
   #row(
     row: EntryListRowResponseModel,
     index: number,
-    showState: boolean,
+    state: 'column' | 'below' | 'none',
     columns: readonly EntryListFieldResponseModel[],
     narrowed: boolean,
   ): TemplateResult {
@@ -1832,11 +1869,20 @@ export class EntriesViewElement extends UmbLitElement {
           }
         </button>
         ${form === undefined ? nothing : html`<span class="form-below">${form}</span>`} ${moved}
-        ${showState ? nothing : below}
+        ${
+          state === 'below'
+            ? html`<span class="state-below"
+                ><uui-tag look="secondary" color=${STATE_COLOR[row.state] ?? 'default'}
+                  >${stateText(row.state, this.#full)}</uui-tag
+                ></span
+              >`
+            : nothing
+        }
+        ${state === 'column' ? nothing : below}
       </th>
       ${form === undefined || narrowed ? nothing : html`<td class="form-column">${form}</td>`}
       ${
-        showState
+        state === 'column'
           ? html`<td>
               <uui-tag look="secondary" color=${STATE_COLOR[row.state] ?? 'default'}
                 >${stateText(row.state, this.#full)}</uui-tag
@@ -1864,6 +1910,7 @@ export class EntriesViewElement extends UmbLitElement {
     const showState = !fixed.state && this.place !== 'spam';
     const byKey = this.#byKey;
     const narrowed = this._open !== undefined && !this._covering;
+    const state = !showState ? 'none' : narrowed || this._stacked ? 'below' : 'column';
     const columns = narrowed
       ? []
       : this.#shownColumns()
@@ -1873,7 +1920,15 @@ export class EntriesViewElement extends UmbLitElement {
       this._rows.length > 0 && this._rows.slice(0, MOST_TICKED).every((row) => this._ticked.includes(row.key));
     return html`<uui-box class="box--flush">
       <div class="scroller">
-        <table class=${[showState ? '' : 'no-state', narrowed ? 'narrowed' : ''].filter(Boolean).join(' ')}>
+        <table
+          class=${[
+            state === 'column' ? '' : 'no-state',
+            narrowed ? 'narrowed' : '',
+            this.#tickedRows().length > 0 ? 'selecting' : '',
+          ]
+            .filter(Boolean)
+            .join(' ')}
+        >
           <thead>
             <tr>
               <th scope="col" class="tick">
@@ -1890,7 +1945,7 @@ export class EntriesViewElement extends UmbLitElement {
                   ? html`<th scope="col" class="form-column">${this.#term('column_form')}</th>`
                   : nothing
               }
-              ${showState ? html`<th scope="col">${this.#term('column_state')}</th>` : nothing}
+              ${state === 'column' ? html`<th scope="col">${this.#term('column_state')}</th>` : nothing}
               ${this.#sortHeader(this.#term('column_received'), null)}
               <th scope="col" class="runs-column">${this.#term('column_actions')}</th>
               ${columns.map((field) =>
@@ -1918,7 +1973,7 @@ export class EntriesViewElement extends UmbLitElement {
             ${repeat(
               this._rows,
               (row) => row.key,
-              (row, index) => this.#row(row, index, showState, columns, narrowed),
+              (row, index) => this.#row(row, index, state, columns, narrowed),
             )}
           </tbody>
         </table>

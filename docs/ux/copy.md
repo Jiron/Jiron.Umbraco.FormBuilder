@@ -78,6 +78,7 @@ The CLAUDE.md vocabulary, and the words around it. Use these and only these; nev
 | site | one root of the content tree | Website | root, tenant |
 | place | one seat or slot of an option with a limit | Platz | capacity, quota, stock |
 | test entry | an entry sent from the preview | Testeintrag | dummy |
+| insights | what is counted of a form's visits and entries, its view of them and their switch | Einblicke | analytics, statistics, Auswertung |
 | entry number | `#1042`, unique per form | Nummer | ID |
 | entry reference | `REQ-2026-00042`, the format shown to visitors | Referenz | ticket |
 

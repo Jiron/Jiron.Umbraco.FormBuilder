@@ -104,8 +104,9 @@ internal sealed class TestEndpointsStartupFilter(IOptions<FormBuilderTestingOpti
 /// for approval, named by their name, with a position to choose, an amount, a sensitive salary and a webhook on approval to
 /// this address, and sends it that many entries through the submission pipeline, as a server key would (ADR-0207); at most
 /// 2,000. <c>"places"</c> gives the accountant's position that many places, <c>"unique"</c> makes the name unique per form,
-/// <c>"notice"</c> adds a mail of each entry with its <c>{{ entry.url }}</c> to this address, and <c>"forward"</c> makes this
-/// address one entries may be forwarded to (ADR-0208).</description></item>
+/// <c>"notice"</c> adds a mail of each entry with its <c>{{ entry.url }}</c> to this address, <c>"forward"</c> makes this
+/// address one entries may be forwarded to (ADR-0208), and <c>"spam"</c> moves that many of the first entries to Spam,
+/// as a reviewer would.</description></item>
 /// <item><description><c>POST /jfb-testing/insights-form {"name": "..."}</c>: publishes a headless form of two pages (Name and
 /// Email, then Your message) and counts 60 days of visits to it in <c>jfbDailyStat</c> as its beacons and entries would, the
 /// same numbers each time, so the Insights view and Forms at a glance show a month against the one before (ADR-0211).</description></item>
@@ -363,10 +364,23 @@ internal sealed class TestEndpointsMiddleware(RequestDelegate next)
             }
         }
 
+        if (Math.Clamp(body?.Spam ?? 0, 0, count) is > 0 and var spam)
+        {
+            var entries = context.RequestServices.GetRequiredService<IEntryRepository>();
+            var row = (await context.RequestServices.GetRequiredService<IFormRepository>().GetAsync(created.Key, context.RequestAborted))!;
+            var keys = new List<Guid>();
+            foreach (var id in (await entries.ListIdsAsync(row.Id, count, context.RequestAborted)).Take(spam))
+            {
+                keys.Add((await entries.GetByIdAsync(id, context.RequestAborted))!.Key);
+            }
+
+            _ = await context.RequestServices.GetRequiredService<EntryStateChanges>().ChangeAsync(created.Key, keys, EntryState.Spam, userKey: null, cancellationToken: context.RequestAborted);
+        }
+
         await context.Response.WriteAsJsonAsync(new { key = created.Key, alias = published.Alias, positions }, Json, context.RequestAborted);
     }
 
-    private sealed record EntriesFormRequest(int? Count, string? Url, string? Name, int? Places = null, bool? Unique = null, string? Notice = null, string? Forward = null);
+    private sealed record EntriesFormRequest(int? Count, string? Url, string? Name, int? Places = null, bool? Unique = null, string? Notice = null, string? Forward = null, int? Spam = null);
 
     private static async Task InsightsFormAsync(HttpContext context)
     {

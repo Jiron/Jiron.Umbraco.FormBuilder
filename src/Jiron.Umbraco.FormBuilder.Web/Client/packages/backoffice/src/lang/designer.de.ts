@@ -27,7 +27,7 @@ export default {
     saidReviewed: 'Beide Versionen zusammengeführt',
     actionsFailed: 'Die Aktionen konnten nicht gelesen werden. Versuchen Sie es gleich noch einmal.',
     view_entries: 'Einträge',
-    view_insights: 'Auswertung',
+    view_insights: 'Einblicke',
     view_history: 'Verlauf',
 
     formName: 'Name des Formulars',

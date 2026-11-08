@@ -541,10 +541,13 @@ describe("a form's Entries view", () => {
 
   it('approves the ticked entries that wait, says those left out, and Undo puts them back', async () => {
     const { rows, root, tick, button, view, peek } = await viewOf();
+    expect(root.querySelector('table')?.classList.contains('selecting')).toBe(false);
     await tick(0);
     await tick(1);
     const bar = must(root.querySelector('.bulk'), 'the bulk bar');
     expect(text(bar.querySelector('.selected'))).toBe('2 selected');
+    // While the bar is up, a row the cursor reaches stops above it.
+    expect(root.querySelector('table')?.classList.contains('selecting')).toBe(true);
     // The first three actions show, the rest are in the "...".
     expect([...bar.querySelectorAll('.actions > uui-button')].map((one) => one.getAttribute('label'))).toEqual([
       'Approve',
@@ -558,6 +561,7 @@ describe("a form's Entries view", () => {
     expect(server.moves).toEqual([{ entries: ['e1'], state: 'approved' }]);
     expect(text(rows()[0]?.querySelector('uui-tag'))).toBe('Approved');
     expect(root.querySelector('.bulk')).toBeNull();
+    expect(root.querySelector('table')?.classList.contains('selecting')).toBe(false);
     const toast = peek.mock.calls.at(-1)?.[1] as {
       duration: number;
       data: { message: string; until: number; tooLate: string; undo: () => Promise<void> };
@@ -756,6 +760,8 @@ describe('the entry panel beside the list', () => {
 
   it('opens an entry beside the list, narrows the rows to name, state and time, and Esc closes it where it was', async () => {
     const { rows, root, view, press } = await viewOf();
+    // Wide, the states have a column of their own.
+    expect(rows()[0]?.querySelector('td uui-tag')).not.toBeNull();
     must(rows()[0]?.querySelector<HTMLElement>('.name'), 'the first name').click();
     await settle(view);
     const panel = must(panelIn(view), 'the panel');
@@ -763,6 +769,11 @@ describe('the entry panel beside the list', () => {
     expect(view.hasAttribute('split')).toBe(true);
     expect(rows()[0]?.getAttribute('aria-current')).toBe('true');
     expect(root.querySelector('table')?.classList.contains('narrowed')).toBe(true);
+    // Beside the panel a row's state goes under its name, so neither takes two lines.
+    expect([...root.querySelectorAll('thead th')].map((one) => text(one))).not.toContain('State');
+    expect(
+      rows().every((row) => !row.querySelector('td uui-tag') && !!row.querySelector('th .state-below uui-tag')),
+    ).toBe(true);
     // Beside the panel no chosen column shows, so there is nothing to choose, and no empty column for it.
     expect(root.querySelector('.choose, th.end, td.end')).toBeNull();
     // Opening marks the entry seen.
@@ -828,6 +839,9 @@ describe('the entry panel beside the list', () => {
     } as never;
     try {
       const { rows, root, view } = await viewOf();
+      // At 620 px, as on a phone or in German at 768 px, a row's state goes under its name.
+      expect([...root.querySelectorAll('thead th')].map((one) => text(one))).not.toContain('State');
+      expect(rows().every((row) => !!row.querySelector('th .state-below uui-tag'))).toBe(true);
       must(rows()[0]?.querySelector<HTMLElement>('.name'), 'the first name').click();
       await settle(view);
       expect(panelIn(view)?.place).toBe('covering');

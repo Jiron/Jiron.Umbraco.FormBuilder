@@ -1,7 +1,9 @@
 // The form workspace's frame (docs/ux/information-architecture.md, section 5): Umbraco's detail workspace editor, with the
 // back arrow to the form's folder, the name, which renames the form for who may design it (ADR-0166) and is a heading for
-// everyone else (ADR-0182), and the state chip in Umbraco's words, which wraps rather than cuts (ADR-0206). The views draw the rest, and the footer holds Save draft and Publish....
-import { css, html, nothing } from '@umbraco-cms/backoffice/external/lit';
+// everyone else (ADR-0182), and the state chip in Umbraco's words, which goes under the name where the two do not fit
+// side by side and wraps rather than cuts (ADR-0206, ADR-0213). The views draw the rest, and the footer holds Save
+// draft and Publish....
+import { css, html, nothing, type PropertyValues } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import { FOLDER_ENTITY_TYPE, LIBRARY_ROOT_ENTITY_TYPE, screenPath } from '../section/entity-types';
 import { jfbBackofficeTokens } from '../styles/tokens';
@@ -22,16 +24,20 @@ export class FormWorkspaceEditorElement extends UmbLitElement {
     _backPath: { state: true },
     _name: { state: true },
     _canDesign: { state: true },
+    _stacked: { state: true },
   };
 
   // The tokens give the footer's filled buttons, Umbraco's own, the section's white labels (ADR-0182).
   static override styles = [
     jfbBackofficeTokens,
     css`
+      /* Umbraco's header shares its row with the views' tabs, and with six views it leaves the name and the chip about
+         166 px at its narrowest: where the two do not fit on one line, the chip goes under the name (ADR-0213). */
       .header {
         display: flex;
+        flex-wrap: wrap;
         align-items: center;
-        gap: var(--uui-size-space-4);
+        gap: var(--uui-size-space-1) var(--uui-size-space-4);
         flex: 1 1 auto;
         min-width: 0;
       }
@@ -42,6 +48,17 @@ export class FormWorkspaceEditorElement extends UmbLitElement {
       h1 {
         flex: 1 1 0;
         min-width: 6rem;
+      }
+
+      /* One under the other, the name's box and the chip keep inside Umbraco's 70 px header, the longest state's two
+         lines too: the box at UUI's smaller height, the chip with less air above and below its words. */
+      .stacked .name {
+        --uui-input-height: var(--uui-size-9);
+      }
+
+      .stacked uui-tag {
+        --uui-tag-padding: 1px calc(var(--uui-size-space-1) + 0.5em);
+        line-height: 1.1;
       }
 
       .name {
@@ -57,8 +74,8 @@ export class FormWorkspaceEditorElement extends UmbLitElement {
         line-height: 1.3;
       }
 
-      /* A state is never cut: once the name is at its least, the longest, "Published (pending changes)", takes a second
-         line inside its chip, which Umbraco's header has the height for. */
+      /* A state is never cut: under the name, the longest, "Published (pending changes)", takes a second line inside its
+         chip where even the header's whole width is too short for it. */
       uui-tag {
         flex: 0 1 auto;
         min-width: min-content;
@@ -74,10 +91,16 @@ export class FormWorkspaceEditorElement extends UmbLitElement {
   declare private _name: string;
   /** Whether the user may design the form, and so rename it; until it is read, the editable name is not shown. */
   declare private _canDesign: boolean | undefined;
+  /** Whether the chip went under the name, which then both take their smaller height. */
+  declare private _stacked: boolean;
+
+  /** The header's own size follows the window and the chip's words; each change reads again where the chip lies. */
+  #resize = new ResizeObserver(() => this.#measure());
 
   constructor() {
     super();
     this._name = '';
+    this._stacked = false;
     this.consumeContext(FORM_WORKSPACE_CONTEXT, (context) => {
       this.observe(context?.state, (state) => (this._state = state), 'state');
       this.observe(
@@ -94,6 +117,29 @@ export class FormWorkspaceEditorElement extends UmbLitElement {
     });
   }
 
+  override disconnectedCallback() {
+    super.disconnectedCallback();
+    this.#resize.disconnect();
+  }
+
+  protected override firstUpdated(changed: PropertyValues<this>) {
+    super.firstUpdated(changed);
+    // The header stays the same element; a chip that moves to or from a line of its own changes its height.
+    const header = this.shadowRoot?.querySelector('.header');
+    if (header) this.#resize.observe(header);
+  }
+
+  /**
+   * Whether the chip lies on a line of its own. The flex line decides it by the widths alone, which the smaller height
+   * leaves as they are, so the two never take turns.
+   */
+  #measure() {
+    const name = this.shadowRoot?.querySelector<HTMLElement>('.name, h1');
+    const chip = this.shadowRoot?.querySelector<HTMLElement>('uui-tag');
+    const stacked = !!name && !!chip && chip.offsetTop >= name.offsetTop + name.offsetHeight;
+    if (stacked !== this._stacked) this._stacked = stacked;
+  }
+
   #chip() {
     const state = this._state;
     if (!state) return nothing;
@@ -103,7 +149,7 @@ export class FormWorkspaceEditorElement extends UmbLitElement {
 
   override render() {
     return html`<umb-entity-detail-workspace-editor .backPath=${this._backPath}>
-      <div class="header" slot="header">
+      <div class=${this._stacked ? 'header stacked' : 'header'} slot="header">
         ${
           this._canDesign === false
             ? html`<h1>${this._name}</h1>`

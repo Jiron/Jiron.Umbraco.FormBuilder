@@ -11,7 +11,7 @@ import { splitAxe } from '../../support/ux-walk.ts';
 // cut short or scrolls sideways: measured in German, whose words are the longest, on the Design view with a field
 // selected, whose inspector then lies over the canvas with the element's tools in its header, on a folder's list, and
 // in the template gallery, whose footer keeps its two buttons side by side inside the window. The form is live with a
-// change waiting, so its header carries the longest state beside the name, which keeps its room (ADR-0206).
+// change waiting, so its header carries the longest state with the name, which keeps its room (ADR-0206, ADR-0213).
 
 /** What the page measures: its width, and inside the section's own elements the cut texts and sideways scrolls. */
 const measure = (page: Page) =>
@@ -39,12 +39,17 @@ const measure = (page: Page) =>
     return { width: document.documentElement.scrollWidth, cut, scrolls };
   });
 
-/** Publishes the form, then saves a change to its draft, so it waits as "Published (pending changes)". */
-async function publishWithChange(api: APIRequestContext, key: string): Promise<void> {
+/** Publishes the form as it is. */
+async function publish(api: APIRequestContext, key: string): Promise<void> {
   const published = await api.post(`${API}/form/${key}/publish`, {
     data: { concurrencyVersion: (await formOf(api, key)).concurrencyVersion },
   });
   expect(published.ok(), await published.text()).toBe(true);
+}
+
+/** Publishes the form, then saves a change to its draft, so it waits as "Published (pending changes)". */
+async function publishWithChange(api: APIRequestContext, key: string): Promise<void> {
+  await publish(api, key);
   const read = await api.get(`${API}/form/${key}/draft`);
   expect(read.ok(), await read.text()).toBe(true);
   const draft = (await read.json()) as {
@@ -91,7 +96,7 @@ for (const window of [
     await expect(inspector).toHaveAttribute('mode', 'overlay');
     await expect(inspector.locator('h2')).toBeVisible();
 
-    // The longest state wraps in its chip rather than squeeze the name, whose box keeps 6rem at least.
+    // The longest state goes under the name rather than squeeze it, and the name's box keeps 6rem at least.
     const header = page.locator('jfb-form-workspace-editor');
     await expect(header.locator('uui-tag')).toHaveText('Ver\u00f6ffentlicht (\u00c4nderungen bereit)');
     const name = await header.locator('umb-workspace-header-name-editable uui-input').boundingBox();
@@ -163,5 +168,64 @@ for (const window of [
     expect(footer[0]?.top, 'one row').toBe(footer[1]?.top);
     const shown = await measure(page);
     expect([shown.cut, shown.scrolls], 'the gallery').toEqual([[], []]);
+  });
+}
+
+// The form's header beside all six of its views, as the admin has them: Umbraco's bar shares its row with the views'
+// tabs, which leave the name and the chip about 166 px at the narrowest. The chip goes under the name rather than under
+// Umbraco's "..." beside it, and both stay inside the bar (ADR-0213).
+for (const width of [375, 768, 1024]) {
+  test(`at ${width} px the header keeps the name and the whole state inside Umbraco's bar beside six views, in German`, async ({
+    page,
+    loginAs,
+    apiAs,
+  }) => {
+    const api = await apiAs('admin');
+    const published = await contactForm(api, unique('Kopf'));
+    await publish(api, published);
+    const pending = await contactForm(api, unique('Kopf'));
+    await publishWithChange(api, pending);
+    await inLanguage(page, 'de-DE');
+    await page.setViewportSize({ width, height: 900 });
+    await loginAs('admin');
+
+    const editor = page.locator('jfb-form-workspace-editor');
+    // Phase 11's two views, which only a user with all six has.
+    for (const [key, state, view] of [
+      [published, 'Ver\u00f6ffentlicht', 'entries'],
+      [pending, 'Ver\u00f6ffentlicht (\u00c4nderungen bereit)', 'insights'],
+    ] as const) {
+      await page.goto(`/umbraco/section/jfb-forms/workspace/jfb-form/edit/${key}/view/${view}`);
+      await expect(editor.locator(view === 'entries' ? 'jfb-entries-view' : 'jfb-form-insights-view')).toBeVisible();
+      await expect(editor.locator('.header[slot="header"] > uui-tag')).toHaveText(state);
+      // The chip settles where its line puts it once the header has its width.
+      await page.waitForTimeout(300);
+      const [bar, own, name, chip] = await Promise.all([
+        editor.locator('umb-body-layout #header').first().boundingBox(),
+        editor.locator('.header[slot="header"]').boundingBox(),
+        editor.locator('umb-workspace-header-name-editable uui-input').boundingBox(),
+        editor.locator('.header[slot="header"] > uui-tag').boundingBox(),
+      ]);
+      if (!bar || !own || !name || !chip) throw new Error(`${state}: the header's parts`);
+      expect(name.width, `${state}: the name's box`).toBeGreaterThanOrEqual(96);
+      expect(chip.x, `${state}: the chip's left edge`).toBeGreaterThanOrEqual(own.x - 0.5);
+      expect(chip.x + chip.width, `${state}: the chip's right edge, short of Umbraco's "..."`).toBeLessThanOrEqual(
+        own.x + own.width + 0.5,
+      );
+      for (const [part, box] of [
+        ['the name', name],
+        ['the chip', chip],
+      ] as const) {
+        expect(box.y, `${state}: ${part}'s top, inside the bar`).toBeGreaterThanOrEqual(bar.y);
+        expect(box.y + box.height, `${state}: ${part}'s bottom, inside the bar`).toBeLessThanOrEqual(
+          bar.y + bar.height,
+        );
+      }
+      // At the narrowest neither state fits beside the name's 6rem, so the chip is under it.
+      if (width < 1024)
+        expect(chip.y, `${state}: the chip under the name`).toBeGreaterThanOrEqual(name.y + name.height);
+      const found = await measure(page);
+      expect(found.cut, `${state}: texts cut short inside the section`).toEqual([]);
+    }
   });
 }

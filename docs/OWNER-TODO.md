@@ -145,6 +145,9 @@ what to do and why. Items for blocked roadmap steps name the step as "step X.Y",
   - the open row of every tree (`--uui-color-current`, `#316dca` under `#eeeeef`, 4.34:1 in the dark theme);
   - `uui-menu-item`'s inner `#menu-item` carries `aria-label="menuitem"`, so its accessible name never matches its
     label (axe's `label-content-name-mismatch` on every tree row);
+  - a `uui-checkbox` that is `indeterminate` writes `aria-checked="false"` on its native input, which the browser
+    reports as mixed, so axe finds `aria-conditional-attr` on the "select all" of every table that ticks rows, Umbraco's
+    own collections and the entries list alike (11.6);
   - Umbraco's own page is at least 920 px wide in every section, so a phone scrolls sideways in all of them.
 - [ ] **Screen readers:** test a few forms and the designer with NVDA and VoiceOver. The build checks
   accessibility names and keyboard paths automatically, but no real screen reader runs here.

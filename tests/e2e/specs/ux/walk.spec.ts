@@ -343,7 +343,19 @@ async function seed(api: APIRequestContext, request: APIRequestContext, label: s
   };
   file.definition.settings.appearance = { ...file.definition.settings.appearance, theme: 'midnight' };
   writeFileSync(importPath, JSON.stringify(file));
+  // Phase 11's screens: entries waiting for approval, a month of visits, and an answer of every kind.
+  const seeded = async (path: string, data: Record<string, unknown>) => {
+    const answer = await api.post(path, { data, timeout: 300_000 });
+    expect(answer.ok(), await answer.text()).toBe(true);
+    return ((await answer.json()) as { key: string }).key;
+  };
+  const entries = await seeded('/jfb-testing/entries-form', { count: 27, spam: 3, name: name('applications') });
+  const insights = await seeded('/jfb-testing/insights-form', { name: name('insights') });
+  const answers = await seeded('/jfb-testing/answers-form', { count: 60, name: name('answers') });
   return {
+    entries,
+    insights,
+    answers,
     folder,
     emptyName,
     usedName,
@@ -917,9 +929,154 @@ for (const combo of COMBOS) {
       await page.goto(`${SECTION}/workspace/jfb-settings-general`);
       await expect(page.locator('jfb-general-settings input').first()).toBeVisible();
     });
-    await walk.shot('view-coming', async () => {
-      await page.goto(`${workspaceOf(made.feedback)}/view/entries`);
-      await expect(page.locator('jfb-coming-screen')).toBeVisible();
+    // Phase 11: a form's entries, their menus, dialogs and sidebars, the entry panel and its own screen.
+    const entriesView = page.locator('jfb-entries-view');
+    const rows = entriesView.locator('tbody tr');
+    await walk.shot('entries', async () => {
+      await page.goto(`${workspaceOf(made.entries)}/view/entries`);
+      await expect(rows.first()).toBeVisible({ timeout: 60_000 });
+    });
+    await walk.shot('entries-filter-menu', async () => {
+      await entriesView.locator('uui-button[popovertarget="filter-menu"]').click();
+      await expect(entriesView.locator('#filter-menu button').first()).toBeVisible();
+    });
+    await walk.shot('entries-filter-dialog', async () => {
+      await entriesView.locator('#filter-menu button').first().click();
+      await expect(page.locator('jfb-entry-filter-modal uui-checkbox').first()).toBeVisible();
+    });
+    await walk.shot('entries-chips', async () => {
+      await page.locator('jfb-entry-filter-modal uui-checkbox').first().click();
+      await page.locator('jfb-entry-filter-modal uui-button[look="primary"]').click();
+      await expect(entriesView.locator('.chips')).toBeVisible();
+    });
+    await walk.shot('entries-export', async () => {
+      await entriesView.locator('.chips uui-button').last().click();
+      await expect(entriesView.locator('.chips')).toHaveCount(0);
+      await entriesView.locator('.toolbar > uui-button:not([popovertarget])').first().click();
+      await expect(page.locator('jfb-entry-export-modal uui-button[look="primary"]')).toBeVisible();
+    });
+    await walk.shot('entries-more', async () => {
+      await page.keyboard.press('Escape');
+      await expect(page.locator('jfb-entry-export-modal')).toHaveCount(0);
+      await entriesView.locator('uui-button[popovertarget="more-menu"]').click();
+      await expect(entriesView.locator('#more-menu button').first()).toBeVisible();
+    });
+    await walk.shot('entries-digest', async () => {
+      await entriesView.locator('#more-menu button').first().click();
+      await expect(page.locator('jfb-entry-digest-modal')).toBeVisible();
+    });
+    await walk.shot('entries-keys', async () => {
+      await page.keyboard.press('Escape');
+      await expect(page.locator('jfb-entry-digest-modal')).toHaveCount(0);
+      await entriesView.locator('uui-button[popovertarget="more-menu"]').click();
+      await entriesView.locator('#more-menu button').last().click();
+      await expect(page.locator('jfb-entry-keys-modal')).toBeVisible();
+    });
+    await walk.shot('entries-bulk', async () => {
+      await page.keyboard.press('Escape');
+      await expect(page.locator('jfb-entry-keys-modal')).toHaveCount(0);
+      await rows.nth(0).locator('uui-checkbox').click();
+      await rows.nth(1).locator('uui-checkbox').click();
+      await expect(entriesView.locator('.bulk')).toBeVisible();
+    });
+    const panel = entriesView.locator('jfb-entry-panel');
+    await walk.shot('entry-panel', async () => {
+      await rows.nth(0).locator('uui-checkbox').click();
+      await rows.nth(1).locator('uui-checkbox').click();
+      await expect(entriesView.locator('.bulk')).toHaveCount(0);
+      await rows.first().locator('.name').click();
+      await expect(panel.locator('h2')).toBeVisible();
+    });
+    await walk.shot('entry-edit', async () => {
+      await panel.locator('.details-top uui-button').click();
+      await expect(panel.locator('.edit-note')).toBeVisible();
+    });
+    await walk.shot('entry-timeline', async () => {
+      await panel.locator('footer.bar uui-button').first().click();
+      await expect(panel.locator('.edit-note')).toHaveCount(0);
+      await panel.getByRole('tab').nth(1).click();
+      await expect(panel.locator('.events')).toBeVisible();
+    });
+    await walk.shot('entry-notes', async () => {
+      await panel.getByRole('tab').nth(2).click();
+      await expect(panel.locator('uui-textarea, textarea').first()).toBeVisible();
+    });
+    await walk.shot('entry-more', async () => {
+      await panel.locator('uui-button[popovertarget="panel-more"]').click();
+      await expect(panel.locator('#panel-more button').first()).toBeVisible();
+    });
+    await walk.shot('entry-screen', async () => {
+      await page.keyboard.press('Escape');
+      const key = await rows.first().getAttribute('data-key');
+      await page.goto(`${SECTION}/workspace/jfb-entry/edit/${key ?? ''}`);
+      await expect(page.locator('jfb-entry-screen jfb-entry-panel h2')).toBeVisible({ timeout: 60_000 });
+    });
+    // The Inbox, its Form filter and Spam.
+    await walk.shot('inbox', async () => {
+      await page.goto(`${SECTION}/workspace/jfb-inbox`);
+      await expect(rows.first()).toBeVisible({ timeout: 60_000 });
+    });
+    await walk.shot('inbox-forms', async () => {
+      await entriesView.locator('uui-button[popovertarget="filter-menu"]').click();
+      await entriesView.locator('#filter-menu button').first().click();
+      await expect(page.locator('jfb-entry-forms-modal')).toBeVisible();
+    });
+    await walk.shot('spam', async () => {
+      await page.keyboard.press('Escape');
+      await expect(page.locator('jfb-entry-forms-modal')).toHaveCount(0);
+      await page.goto(`${SECTION}/workspace/jfb-spam`);
+      await expect(rows.first()).toBeVisible({ timeout: 60_000 });
+    });
+    // Insights: the Overview, its range, the Answers and their tables, Data collection and Forms at a glance.
+    const insightsView = page.locator('jfb-form-insights-view');
+    await walk.shot('insights', async () => {
+      await page.goto(`${workspaceOf(made.insights)}/view/insights`);
+      await expect(insightsView.locator('dl.stats')).toBeVisible({ timeout: 60_000 });
+    });
+    await walk.shot('insights-range', async () => {
+      await insightsView.locator('.toolbar uui-button').first().click();
+      await expect(insightsView.locator('#range button').first()).toBeVisible();
+    });
+    // "Show as tables" is the user's own and the looks share one admin, so each shot sets it rather than flips it.
+    const tablesSwitch = insightsView.locator('.toolbar uui-toggle');
+    const showTables = async (tables: boolean) => {
+      if ((await tablesSwitch.evaluate((toggle) => (toggle as HTMLInputElement).checked)) !== tables)
+        await tablesSwitch.click();
+      const table = insightsView.locator('jfb-insight-answers table');
+      if (tables) await expect(table.first()).toBeVisible();
+      else await expect(table).toHaveCount(0);
+    };
+    await walk.shot('answers', async () => {
+      await page.keyboard.press('Escape');
+      await page.goto(`${workspaceOf(made.answers)}/view/insights`);
+      await insightsView.locator('.modes button').nth(1).click();
+      await expect(insightsView.locator('jfb-insight-answers .lead')).toBeVisible({ timeout: 60_000 });
+      await showTables(false);
+    });
+    await walk.shot('answers-tables', async () => {
+      await showTables(true);
+    });
+    await walk.shot('answers-filtered', async () => {
+      await showTables(false);
+      await insightsView.locator('uui-button[popovertarget="filter-menu"]').click();
+      await insightsView.locator('#filter-menu button').first().click();
+      await page.locator('jfb-entry-filter-modal uui-checkbox').first().click();
+      await page.locator('jfb-entry-filter-modal uui-button[look="primary"]').click();
+      await expect(insightsView.locator('.chips')).toBeVisible();
+    });
+    await walk.shot('settings-privacy', async () => {
+      await openSettings(made.answers);
+      await openSettingsGroup('privacy');
+    });
+    await walk.shot('data-collection', async () => {
+      await page.goto(`${SECTION}/workspace/jfb-privacy-collection`);
+      await expect(page.locator('jfb-privacy-settings #insights')).toBeVisible({ timeout: 60_000 });
+    });
+    await walk.shot('glance', async () => {
+      await page.goto(SECTION);
+      const glance = page.locator('jfb-insight-glance');
+      await expect(glance.locator('table')).toBeVisible({ timeout: 60_000 });
+      await glance.scrollIntoViewIfNeeded();
     });
     // A save another took over (10.3c): the dialog, then Review both versions. The walk leaves the changes unsaved, so
     // it comes last of the admin's shots.

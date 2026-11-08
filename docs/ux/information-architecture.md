@@ -202,8 +202,10 @@ progress, since the steps across its top stand in for it.
   scales the form down: text stays readable, and collapsing the inspector gives the canvas its width back.
 - **At 620 px** (and in any workspace up to 700 px), the canvas takes the width. The palette opens over it from an
   insert point or a page's "Add field", and the inspector opens over it when an element is selected; Esc closes either.
-- **The header** keeps its name, state chip and link on one line, the name never under 6rem and the chip's words
-  taking a second line inside it rather than being cut ([ADR-0206](../decisions/0206-the-phase-10-ux-walk.md)); when
+- **The header** keeps its name, state chip and link on one line where they fit, the name never under 6rem; where the
+  name's 6rem and the chip do not fit side by side, the chip goes under the name, both inside Umbraco's header, and
+  its words take a second line inside it only where even the header's width is too short, never cut
+  ([ADR-0206](../decisions/0206-the-phase-10-ux-walk.md), [ADR-0213](../decisions/0213-the-phase-11-ux-walk.md)); when
   room runs out, the views fold, from the last
   one and never the open view, into the form's own "…" ("Views and more actions for Contact us"), so the header always
   has one "…". If that isn't enough, the link ("Used on 3 pages") moves into the same "…".
@@ -629,7 +631,9 @@ then the newest. A form's Entries view shows that form only.
   has, and the form's fields on a form's Entries view or while the Inbox is filtered to one form. Otherwise one line
   says that filtering by a form offers its fields.
 - **At 620 px** the form's name moves under the entry's title, and a failed delivery shows in the state column, under
-  the chip, so the names keep their width.
+  the chip, so the names keep their width. Below 44rem, and beside the panel, the state column gives way too: each
+  row's state chip sits under its name, so the name, the state and the time each keep one line
+  ([ADR-0213](../decisions/0213-the-phase-11-ux-walk.md)).
 - **Unseen entries** are bold with a dot. Opening one marks it seen.
 - **Toolbar:** the search field · Filter · Export…; "…": Email me a summary… · Keyboard shortcuts.
 - **Search** matches the entry title, number and reference, and the answers of fields that are not sensitive. When it

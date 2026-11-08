@@ -11,6 +11,7 @@ export const jfbBackofficeTokens = css`
     --jfb-bo-color-warning-text: color-mix(in srgb, var(--uui-color-warning-standalone) 50%, var(--uui-color-text));
     --jfb-bo-color-positive-text: color-mix(in srgb, var(--uui-color-positive) 50%, var(--uui-color-text));
     --jfb-bo-color-selected: color-mix(in srgb, var(--uui-color-selected) 85%, var(--uui-color-surface));
+    --jfb-bo-color-current: color-mix(in srgb, var(--uui-color-current) 85%, var(--uui-color-surface));
     --jfb-bo-color-focus: color-mix(in srgb, var(--uui-color-focus) 70%, var(--uui-color-text));
     --jfb-bo-radius-round: 999px;
     --jfb-bo-type-title: 16px;

@@ -88,10 +88,12 @@ export class InsightGlanceElement extends UmbLitElement {
         text-decoration: underline;
       }
 
+      /* A change is read as one phrase, "no change", "6% more": the form's name gives way instead (the Phase 11 review). */
       .change {
         display: block;
         color: var(--jfb-bo-color-text-muted);
         font-size: var(--uui-type-small-size);
+        white-space: nowrap;
       }
 
       .muted,
