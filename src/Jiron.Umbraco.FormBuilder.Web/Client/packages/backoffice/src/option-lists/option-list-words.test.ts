@@ -1,6 +1,6 @@
 // The option list screens' words (ROADMAP 12.1, ADR-0214): English and German hold the same keys, each a text that is
-// not blank; they hold exactly the keys the screens' code names, with each kind's and each keep time's; and they load
-// with the screens, not with the backoffice's start.
+// not blank; they hold exactly the keys the screens' code names and the library's shared screens say for every kind,
+// with each kind's and each keep time's; and they load with the screens, not with the backoffice's start.
 import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -26,14 +26,19 @@ describe('the option list words', () => {
   });
 
   it("hold exactly the keys the screens' code names, and each kind's and keep time's", () => {
-    const sources = readdirSync(here)
+    const items = join(here, '..', 'library', 'items');
+    const sources = [
+      ...readdirSync(here).map((file) => join(here, file)),
+      ...readdirSync(items).map((file) => join(items, file)),
+    ]
       .filter((file) => file.endsWith('.ts') && !file.endsWith('.test.ts'))
-      .map((file) => readFileSync(join(here, file), 'utf8'));
+      .map((file) => readFileSync(file, 'utf8'));
     const named = new Set(
       sources.flatMap((source) =>
         [
           ...source.matchAll(/#term\('([A-Za-z_]+)'/g),
-          ...source.matchAll(/\bterm\(localize, '([A-Za-z_]+)'/g),
+          ...source.matchAll(/\bterm\(localize, (?:kind, )?'([A-Za-z_]+)'/g),
+          ...source.matchAll(/\bthis\.term\('([A-Za-z_]+)'/g),
           ...source.matchAll(/'#jfbOptionLists_([A-Za-z_]+)'/g),
         ].map((match) => match[1] ?? ''),
       ),
@@ -41,6 +46,9 @@ describe('the option list words', () => {
     for (const kind of [...KINDS, 'unknown']) named.add(`kind_${kind}`);
     for (const kind of KINDS) named.add(`kindHelp_${kind}`);
     for (const unit of ['none', 'seconds', 'minutes', 'hours', 'days']) named.add(`keep_${unit}`);
+    // Only a kind that counts the uses in its forms, or that can be the site's default, says these.
+    named.delete('userUses');
+    named.delete('isDefault');
     expect(Object.keys(area(en)).sort()).toEqual([...named].sort());
   });
 

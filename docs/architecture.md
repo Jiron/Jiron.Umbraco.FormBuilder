@@ -401,6 +401,10 @@ flowchart LR
   option-list/read-file`, the keep time, and for a saved JSON address `GET option-list/{key}/fetched` with Fetch now;
   its preview asks `POST option-list/preview` 400 ms after the last change, cancelling the one before. The screens'
   words load with them (`option-list-words.ts`), with the form workspace's, as the option editor is the inspector's.
+  The list screen, the workspace's context, header and data source, and Duplicate and Delete... are the library's
+  own (`library/items/`), over a kind that names its words, addresses and endpoints (`option-list-kind.ts`), so the
+  themes and email layouts take the same ones (ADR-0215); a kind that counts uses, as layouts count actions, has the
+  header add up its forms' uses and those of the forms the user may not open (`otherUses`).
 
 ## 2. The definition model
 

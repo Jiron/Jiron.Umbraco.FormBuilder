@@ -123,7 +123,7 @@ test('a designer makes an option list of every kind through the screens, each pr
   await expect(radios(view)).toHaveCount(3);
   await expect(view.locator('#as-dropdown option')).toHaveText(['Choose one', 'Small', 'Medium', 'Large']);
   made.set('manual', await save(page));
-  await expect(page.locator('jfb-option-list-workspace-editor').getByText('Not used by any form')).toBeVisible();
+  await expect(page.locator('jfb-library-item-editor').getByText('Not used by any form')).toBeVisible();
   await axeInside(page, 'jfb-option-list-view');
   await look(page, info, 'a saved list of fixed options');
 

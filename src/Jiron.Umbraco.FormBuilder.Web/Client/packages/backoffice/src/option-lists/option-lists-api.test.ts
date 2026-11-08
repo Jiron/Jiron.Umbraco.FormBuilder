@@ -83,7 +83,7 @@ describe('the option list API', () => {
     api.answers = [{ data: response() }, { data: response({ concurrencyVersion: 3 }) }];
     expect((await createList(host, model)).kind).toBe('saved');
     const updated = await updateList(host, model);
-    expect(updated.kind === 'saved' && updated.list.concurrencyVersion).toBe(3);
+    expect(updated.kind === 'saved' && updated.item.concurrencyVersion).toBe(3);
     const values = {
       alias: 'sizes',
       name: 'Sizes',

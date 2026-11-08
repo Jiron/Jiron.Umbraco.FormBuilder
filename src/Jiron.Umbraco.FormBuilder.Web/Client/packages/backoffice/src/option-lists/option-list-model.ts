@@ -4,6 +4,7 @@
 import type { DesignField } from '../designer/definition';
 import type { DesignOption, OptionSourceKind } from '../designer/inspector/option-values';
 import { aliasOf } from '../designer/new-elements';
+import type { LibraryProblem } from '../library/items/library-items';
 
 /** A list's kind, as the management API names it. */
 export type ListKind = 'manual' | 'content' | 'dataType' | 'url' | 'file' | 'countries' | 'code';
@@ -97,11 +98,7 @@ export function firstOf<T>(
 }
 
 /** A problem a save or the preview answered with. */
-export interface ListProblem {
-  readonly code: string;
-  readonly path: string;
-  readonly message: string;
-}
+export type ListProblem = LibraryProblem;
 
 /** Where a problem shows in the editor. */
 export type ProblemPlace = 'name' | 'alias' | 'contents' | 'keep' | 'file' | 'other';

@@ -1,19 +1,27 @@
-// An option list's workspace frame (ROADMAP 12.1, IA 7, ADR-0214): Umbraco's detail workspace editor with the back arrow
-// to the list, the name with its alias beside it in Umbraco's name-and-alias box, then the forms that use the list, a
-// button that opens them as links. The "..." holds the list's entity actions, the footer Save, and the view the rest.
+// A library item's workspace frame (ROADMAP 12.1, IA 7, ADR-0214, ADR-0215): Umbraco's detail workspace editor with the
+// back arrow to the list, the name with its alias beside it in Umbraco's name-and-alias box, then the forms that use the
+// item, a button that opens them as links. The "..." holds the item's entity actions, the footer Save, and the view the
+// rest. The kind's words say what the item is.
 import { css, html, nothing, type TemplateResult } from '@umbraco-cms/backoffice/external/lit';
+import { UmbContextToken } from '@umbraco-cms/backoffice/context-api';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
-import type { LibraryUsersResponseModel } from '../api';
-import { FORM_ENTITY_TYPE, screenPath } from '../section/entity-types';
-import { jfbBackofficeTokens } from '../styles/tokens';
-import { OPTION_LIST_WORKSPACE_CONTEXT, OPTION_LISTS_ENTITY_TYPE } from './constants';
-import { aliasOfName, isAlias } from './option-list-model';
-import type { OptionListWorkspaceContext } from './option-list-workspace.context';
+import type { UmbWorkspaceContext } from '@umbraco-cms/backoffice/workspace';
+import type { LibraryUsersResponseModel } from '../../api';
+import { FORM_ENTITY_TYPE, screenPath } from '../../section/entity-types';
+import { jfbBackofficeTokens } from '../../styles/tokens';
+import type { LibraryItemWorkspaceContext } from './library-item-workspace';
+import { countOf, type LibraryItemModel } from './library-items';
 
-/** The rule a list's alias is held to, as Umbraco's alias box checks it. */
-const ALIAS_PATTERN = '^[a-z][A-Za-z0-9]{0,63}$';
+type Workspace = LibraryItemWorkspaceContext<LibraryItemModel>;
 
-export class OptionListWorkspaceEditorElement extends UmbLitElement {
+/** The open item's workspace, whichever kind it is. */
+export const LIBRARY_ITEM_WORKSPACE_CONTEXT = new UmbContextToken<UmbWorkspaceContext, Workspace>(
+  'UmbWorkspaceContext',
+  undefined,
+  (context): context is Workspace => 'refreshUsers' in context && 'libraryKind' in context,
+);
+
+export class LibraryItemEditorElement extends UmbLitElement {
   static override properties = {
     _name: { state: true },
     _alias: { state: true },
@@ -96,7 +104,7 @@ export class OptionListWorkspaceEditorElement extends UmbLitElement {
   declare private _isNew: boolean | undefined;
   declare private _users: LibraryUsersResponseModel | undefined;
 
-  #context: OptionListWorkspaceContext | undefined;
+  #context: Workspace | undefined;
 
   constructor() {
     super();
@@ -104,7 +112,7 @@ export class OptionListWorkspaceEditorElement extends UmbLitElement {
     this._alias = '';
     this._isNew = undefined;
     this._users = undefined;
-    this.consumeContext(OPTION_LIST_WORKSPACE_CONTEXT, (context) => {
+    this.consumeContext(LIBRARY_ITEM_WORKSPACE_CONTEXT, (context) => {
       this.#context = context;
       this.observe(context?.name, (name) => (this._name = name ?? ''), 'name');
       this.observe(context?.alias, (alias) => (this._alias = alias ?? ''), 'alias');
@@ -113,14 +121,17 @@ export class OptionListWorkspaceEditorElement extends UmbLitElement {
     });
   }
 
-  #term = (key: string, ...args: unknown[]) => this.localize.term(`jfbOptionLists_${key}`, ...args);
+  #term = (key: string, ...args: unknown[]) =>
+    this.#context ? this.localize.term(`${this.#context.libraryKind.words}_${key}`, ...args) : '';
 
   // A name and an alias as Umbraco's box hands them on: an alias that breaks the rule is made from what was typed.
   #onChange(event: Event) {
+    const kind = this.#context?.libraryKind;
+    if (!kind) return;
     const box = event.target as HTMLElement & { value?: string; alias?: string };
     const name = box.value ?? '';
     const typed = box.alias ?? '';
-    const alias = isAlias(typed) ? typed : aliasOfName(typed || name);
+    const alias = kind.isAlias(typed) ? typed : kind.aliasOf(typed || name);
     if (alias !== typed) box.alias = alias;
     this.#context?.setName(name);
     this.#context?.setAlias(alias);
@@ -128,25 +139,26 @@ export class OptionListWorkspaceEditorElement extends UmbLitElement {
 
   #users(): TemplateResult | typeof nothing {
     const users = this._users;
-    if (this._isNew !== false || !users) return nothing;
-    const count = users.forms.length + users.others;
-    if (count === 0) return html`<span class="used">${this.#term('notUsed')}</span>`;
+    const kind = this.#context?.libraryKind;
+    if (this._isNew !== false || !users || !kind) return nothing;
+    if (users.forms.length + users.others === 0) return html`<span class="used">${this.#term('notUsed')}</span>`;
     return html`<uui-button
         class="used"
         look="outline"
         compact
-        popovertarget="option-list-users"
-        label=${this.#term('usedByButton', count)}
+        popovertarget="library-item-users"
+        label=${this.#term('usedByButton', countOf(kind, users))}
         @click=${() => void this.#context?.refreshUsers()}
       ></uui-button>
-      <uui-popover-container id="option-list-users" placement="bottom-end">
-        <section class="users" aria-labelledby="option-list-users-heading">
-          <h2 id="option-list-users-heading">${this.#term('usersHeading')}</h2>
+      <uui-popover-container id="library-item-users" placement="bottom-end">
+        <section class="users" aria-labelledby="library-item-users-heading">
+          <h2 id="library-item-users-heading">${this.#term('usersHeading')}</h2>
           ${
             users.forms.length > 0
               ? html`<ul>
                   ${users.forms.map((form) => {
                     const notes = [
+                      kind.counts === 'uses' ? this.#term('userUses', form.uses) : '',
                       form.inDraft && !form.inLive ? this.#term('userDraftOnly') : '',
                       form.isTrashed ? this.#term('userTrashed') : '',
                     ].filter(Boolean);
@@ -165,7 +177,9 @@ export class OptionListWorkspaceEditorElement extends UmbLitElement {
   }
 
   override render() {
-    return html`<umb-entity-detail-workspace-editor .backPath=${screenPath(OPTION_LISTS_ENTITY_TYPE)}>
+    const kind = this.#context?.libraryKind;
+    if (!kind) return nothing;
+    return html`<umb-entity-detail-workspace-editor .backPath=${screenPath(kind.listEntityType)}>
       <div class="header" slot="header">
         <div class="name">
           <umb-input-with-alias
@@ -173,7 +187,8 @@ export class OptionListWorkspaceEditorElement extends UmbLitElement {
             placeholder=${this.#term('namePlaceholder')}
             .value=${this._name}
             .alias=${this._alias}
-            alias-pattern=${ALIAS_PATTERN}
+            alias-pattern=${kind.aliasPattern}
+            .aliasReadonly=${kind.aliasFixed === true && this._isNew === false}
             ?auto-generate-alias=${this._isNew === true}
             required
             @change=${this.#onChange}
@@ -185,13 +200,13 @@ export class OptionListWorkspaceEditorElement extends UmbLitElement {
   }
 }
 
-if (!customElements.get('jfb-option-list-workspace-editor'))
-  customElements.define('jfb-option-list-workspace-editor', OptionListWorkspaceEditorElement);
+if (!customElements.get('jfb-library-item-editor'))
+  customElements.define('jfb-library-item-editor', LibraryItemEditorElement);
 
-export { OptionListWorkspaceEditorElement as element };
+export { LibraryItemEditorElement as element };
 
 declare global {
   interface HTMLElementTagNameMap {
-    'jfb-option-list-workspace-editor': OptionListWorkspaceEditorElement;
+    'jfb-library-item-editor': LibraryItemEditorElement;
   }
 }

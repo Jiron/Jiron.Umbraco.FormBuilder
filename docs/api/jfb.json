@@ -18640,7 +18640,8 @@
       "LibraryUsersResponseModel": {
         "required": [
           "forms",
-          "others"
+          "others",
+          "otherUses"
         ],
         "type": "object",
         "properties": {
@@ -18655,6 +18656,10 @@
             }
           },
           "others": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "otherUses": {
             "type": "integer",
             "format": "int32"
           }

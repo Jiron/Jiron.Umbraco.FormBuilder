@@ -12,6 +12,9 @@ internal sealed record LibraryUsersResponseModel
     /// <summary>How many more forms use it that the user may not open.</summary>
     public required int Others { get; init; }
 
+    /// <summary>How many elements of those forms use it: fields for a list, actions for a layout.</summary>
+    public required int OtherUses { get; init; }
+
     /// <summary>The forms as the service gives them.</summary>
     public static LibraryUsersResponseModel Of(LibraryItemUsers users)
     {
@@ -20,6 +23,7 @@ internal sealed record LibraryUsersResponseModel
         {
             Forms = [.. users.Forms.Select(form => new LibraryUserResponseModel { Key = form.FormKey, Name = form.FormName, InDraft = form.InDraft, InLive = form.InLive, IsTrashed = form.IsTrashed, Uses = form.Uses })],
             Others = users.Others,
+            OtherUses = users.OtherUses,
         };
     }
 }

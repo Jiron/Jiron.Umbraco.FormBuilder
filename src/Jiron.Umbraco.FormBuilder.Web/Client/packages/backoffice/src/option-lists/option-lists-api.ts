@@ -2,7 +2,7 @@
 // forms that use it, the preview of contents not saved yet, a file read into options and a URL list's copy. Each answer
 // comes back as what the screens say: a refusal by its code, the problems a save answered with by their paths.
 import type { UmbClassInterface } from '@umbraco-cms/backoffice/class-api';
-import { tryExecute, UmbApiError } from '@umbraco-cms/backoffice/resources';
+import { tryExecute } from '@umbraco-cms/backoffice/resources';
 import {
   optionListLibraryCreate,
   optionListLibraryDelete,
@@ -25,8 +25,17 @@ import {
 } from '../api';
 import type { DesignOption } from '../designer/inspector/option-values';
 import { codeOf } from '../library/library-changes';
+import {
+  deleteAnswerOf,
+  problemsOf,
+  saveAnswerOf,
+  type DeleteAnswer,
+  type SaveAnswer as LibrarySaveAnswer,
+} from '../library/items/library-items';
 import { isKind, type ListProblem, type OptionListDetailModel } from './option-list-model';
 import { OPTION_LIST_ENTITY_TYPE } from './constants';
+
+export { problemsOf };
 
 /** The workspace's model of a list as the API answers with it; JSON that is not of its shape reads as none. */
 export function detailOf(list: OptionListResponseModel): OptionListDetailModel {
@@ -54,16 +63,6 @@ const valuesOf = (model: OptionListDetailModel) => ({
   items: model.items,
   cacheSeconds: model.cacheSeconds,
 });
-
-/** The problems a refusal holds, each at its path. */
-export function problemsOf(error: unknown): ListProblem[] {
-  const problem = UmbApiError.isUmbApiError(error)
-    ? (error.problemDetails as unknown as { errors?: readonly Partial<ListProblem>[] } | null | undefined)
-    : undefined;
-  return (problem?.errors ?? []).flatMap((one) =>
-    one.path ? [{ code: one.code ?? '', path: one.path, message: one.message ?? '' }] : [],
-  );
-}
 
 /** A page of the lists; 'forbidden' for a user without the library, undefined without an answer. */
 export async function readRows(
@@ -100,19 +99,11 @@ export async function readList(
   return data ? { data: detailOf(data) } : { error };
 }
 
-/** How a save ended: saved, refused with problems at their paths, saved by someone else meanwhile, or refused otherwise. */
-export type SaveAnswer =
-  | { readonly kind: 'saved'; readonly list: OptionListDetailModel }
-  | { readonly kind: 'invalid'; readonly problems: readonly ListProblem[] }
-  | { readonly kind: 'conflict' | 'failed'; readonly error: unknown };
+/** How a save ended. */
+export type SaveAnswer = LibrarySaveAnswer<OptionListDetailModel>;
 
-function answerOf(data: OptionListResponseModel | undefined, error: unknown): SaveAnswer {
-  if (data) return { kind: 'saved', list: detailOf(data) };
-  const problems = problemsOf(error);
-  if (problems.length > 0) return { kind: 'invalid', problems };
-  if (codeOf(error) === 'concurrency_conflict') return { kind: 'conflict', error };
-  return { kind: 'failed', error };
-}
+const answerOf = (data: OptionListResponseModel | undefined, error: unknown): SaveAnswer =>
+  saveAnswerOf(data ? detailOf(data) : undefined, error);
 
 /** Creates a list under its key. */
 export async function createList(host: UmbClassInterface, model: OptionListDetailModel): Promise<SaveAnswer> {
@@ -137,8 +128,7 @@ export async function updateList(host: UmbClassInterface, model: OptionListDetai
   return answerOf(data, error);
 }
 
-/** How a delete ended. */
-export type DeleteAnswer = 'deleted' | 'inUse' | 'conflict' | 'gone' | 'failed';
+export type { DeleteAnswer };
 
 /** Deletes a list, based on the version read. */
 export async function deleteList(
@@ -149,17 +139,7 @@ export async function deleteList(
   const { error } = await tryExecute(host, optionListLibraryDelete({ path: { key }, query: { concurrencyVersion } }), {
     disableNotifications: true,
   });
-  if (!error) return 'deleted';
-  switch (codeOf(error)) {
-    case 'in_use':
-      return 'inUse';
-    case 'concurrency_conflict':
-      return 'conflict';
-    case 'option_list_not_found':
-      return 'gone';
-    default:
-      return 'failed';
-  }
+  return deleteAnswerOf(error, 'option_list_not_found');
 }
 
 /** A copy of a list with the name given; undefined when it was refused. */

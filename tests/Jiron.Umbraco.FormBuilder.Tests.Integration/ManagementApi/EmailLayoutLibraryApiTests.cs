@@ -161,6 +161,7 @@ public sealed class EmailLayoutLibraryApiTests : ManagementApiTestBase
         {
             Assert.That(rows.Body!["items"]![0]!["usedBy"]!.GetValue<int>(), Is.EqualTo(2), "each email action that names it");
             Assert.That(users.Body!["forms"]!.AsArray().Select(each => each!["name"]!.GetValue<string>()), Is.EqualTo(new[] { "Contact us" }));
+            Assert.That(users.Body!["forms"]![0]!["uses"]!.GetValue<int>(), Is.EqualTo(2), "its email actions in the layout");
             Assert.That(inUse.Outcome, Is.EqualTo("409 in_use"));
             Assert.That(isDefault.Outcome, Is.EqualTo("409 is_default"));
             Assert.That(defaultRow.Body!["items"]![0]!["isDefault"]!.GetValue<bool>(), Is.True);

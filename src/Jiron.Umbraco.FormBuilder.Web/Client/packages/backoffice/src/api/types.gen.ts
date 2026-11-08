@@ -1432,6 +1432,7 @@ export type LibraryUserResponseModel = {
 export type LibraryUsersResponseModel = {
     forms: Array<LibraryUserResponseModel>;
     others: number;
+    otherUses: number;
 };
 
 export type MergeTagPathResponseModel = {

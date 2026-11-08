@@ -78,6 +78,7 @@ public sealed class OptionListLibraryApiTests : ManagementApiTestBase
             Assert.That(designer.Outcome, Is.EqualTo("200"), designer.ToString());
             Assert.That(designer.Body!["forms"]!.AsArray().Select(form => form!["name"]!.GetValue<string>()), Is.EqualTo(new[] { "Contact us" }), "the restricted folder's form is not named");
             Assert.That(designer.Body!["others"]!.GetValue<int>(), Is.EqualTo(1), "but counted");
+            Assert.That(designer.Body!["otherUses"]!.GetValue<int>(), Is.EqualTo(1), "and its fields that use the list");
             var contact = designer.Body!["forms"]![0]!;
             Assert.That(contact["key"]!.GetValue<Guid>(), Is.EqualTo(live));
             Assert.That(contact["inDraft"]!.GetValue<bool>(), Is.False);
@@ -86,6 +87,7 @@ public sealed class OptionListLibraryApiTests : ManagementApiTestBase
             Assert.That(contact["uses"]!.GetValue<int>(), Is.EqualTo(1));
             Assert.That(admin.Body!["forms"]!.AsArray().Select(form => form!["name"]!.GetValue<string>()), Is.EqualTo(new[] { "Board enquiry", "Contact us" }));
             Assert.That(admin.Body!["others"]!.GetValue<int>(), Is.Zero);
+            Assert.That(admin.Body!["otherUses"]!.GetValue<int>(), Is.Zero);
             Assert.That(missing.Outcome, Is.EqualTo("404 option_list_not_found"));
         });
     }
