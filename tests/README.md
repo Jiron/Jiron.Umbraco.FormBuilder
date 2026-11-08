@@ -1669,4 +1669,8 @@ said once per document, the form shown when the runtime cannot load, and no post
 - A test server fixture that calls the Management API derives from `Support/FormBuilderTestServerTestBase` and boots
   the runtime (`[UmbracoTest(Boot = true)]`): it runs Jiron Form Builder's migration plan after the host starts, and
   its `ConfigureHost` sets the configuration before the host is built.
+- Every test's host goes once the test ends: Umbraco's runtime listens to the process's unhandled exceptions and stays
+  listening after its host is disposed, which kept each test's host in memory (about 25 GB by the two-thousandth test,
+  where late tests' requests timed out as the machine paged). `Support/UmbracoRuntimes.cs` releases the listeners after
+  every test, assembly-wide, and `Composition/TestHostReleaseTests` holds that a test's runtime listens alone.
 - Read files of the repository in place through `RepositoryRoot.Path(...)`.
