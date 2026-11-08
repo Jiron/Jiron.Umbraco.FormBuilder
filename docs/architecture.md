@@ -407,6 +407,22 @@ flowchart LR
   own (`library/items/`), over a kind that names its words, addresses and endpoints (`option-list-kind.ts`), so the
   themes and email layouts take the same ones (ADR-0215); a kind that counts uses, as layouts count actions, has the
   header add up its forms' uses and those of the forms the user may not open (`otherUses`).
+  From 12.1's part 12.2 (ADR-0215): Library › Themes (`themes/themes.screen.ts`) lists each theme with its swatch and
+  "Default" on the site's default; Create theme asks the theme in code it builds on (`create/{base}`), and Import a
+  theme... reads an exported file into a new theme. The theme's one view (`theme.view.ts`) holds sections that open and
+  close (colours per scheme, type, spacing and corners, buttons and focus, other tokens, custom CSS), each closed one
+  saying what it holds, beside the sample form of `GET theme/sample` in a frame without scripts, one per scheme, into
+  which each change writes only the layer `POST theme/preview` gives, after a pause. `theme-model.ts` holds what the
+  view decides without the DOM: a colour's WCAG check against what it is read on and the nearest colour of its hue
+  that passes, the sections' choices as tokens, and a change that drops a value equal to the base theme's default.
+  Export in a theme's "..." downloads its document.
+  Library › Email layouts (`email-layouts/email-layouts.screen.ts`) lists each layout with its swatch, its look and
+  "Default" on the site's default, and the email actions that use it; Create email layout opens a new card layout. The
+  layout's one view (`email-layout.view.ts`) sets the look, the logo from Umbraco's media picker or by address, the
+  colours of each scheme with the checks of the colours mail reads as text on its surface (`theme-model.ts`'s, at
+  4.5:1), and the header, the footer and the logo's text in the language chosen, the site's default language's under
+  the empty culture as mail reads them; beside it, the mail of a sample entry from `POST email-layout/preview`, light or
+  dark, after a pause. Send test email saves the layout first and mails the saved layout to the user's own address.
 
 ## 2. The definition model
 

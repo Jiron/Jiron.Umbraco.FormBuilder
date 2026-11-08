@@ -115,17 +115,21 @@ describe("an email action's preview", () => {
     expect(previewAnswer(undefined, 'not_found')).toBeUndefined();
   });
 
-  it("is one of the backoffice's two frames: axe leaves frames alone, so each has a check of its own (ADR-0189)", () => {
+  it("is one of the backoffice's four frames: axe leaves frames alone, so each has a check of its own (ADR-0189)", () => {
     const src = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
     const framed = readdirSync(src, { recursive: true, encoding: 'utf8' })
       .filter((file) => !file.split(sep).some((part) => part.startsWith('.')))
       .filter((file) => file.endsWith('.ts') && !file.endsWith('.test.ts'))
       .filter((file) => readFileSync(join(src, file), 'utf8').includes('<iframe'))
-      .map((file) => file.split(sep).join('/'));
-    // The mail's in a page of its own (form-email.spec.ts), and the visitor preview's in its frame (preview.spec.ts).
+      .map((file) => file.split(sep).join('/'))
+      .sort();
+    // The mail's in a page of its own (form-email.spec.ts), the visitor preview's in its frame (preview.spec.ts), the
+    // theme's sample form in a page of its own (themes.spec.ts), and so is a layout's sample mail (email-layouts.spec.ts).
     expect(framed).toEqual([
       'designer/actions/email-preview.element.ts',
       'designer/visitor-preview/preview.modal.element.ts',
+      'email-layouts/email-layout.view.ts',
+      'themes/theme.view.ts',
     ]);
   });
 

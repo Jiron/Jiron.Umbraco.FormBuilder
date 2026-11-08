@@ -100,7 +100,9 @@ export class LibraryItemWorkspaceContext<T extends LibraryItemModel>
 
   protected override async _create(currentData: T, parent: UmbEntityModel): Promise<void> {
     await super._create(currentData, parent);
-    void this.#readUsers(currentData.unique);
+    // The saved item's key, which a theme takes from its alias.
+    const key = this.getUnique();
+    if (key) void this.#readUsers(key);
   }
 
   protected override async _update(currentData: T): Promise<void> {
@@ -109,7 +111,8 @@ export class LibraryItemWorkspaceContext<T extends LibraryItemModel>
   }
 
   async #readUsers(key: string) {
-    if (this.getIsNew()) return;
+    // Only a saved item has users: a new one's scaffold comes in before the workspace marks it new.
+    if (this.getIsNew() !== false) return;
     const users = await this.libraryKind.users(this, key);
     if (key === this.getUnique()) this.#users.setValue(users);
   }
