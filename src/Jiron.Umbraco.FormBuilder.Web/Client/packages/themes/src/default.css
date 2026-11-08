@@ -52,6 +52,11 @@
   --_wash: color-mix(in srgb, var(--_ink) 5%, var(--_surface));
   --_error-wash: color-mix(in srgb, var(--_error) 7%, var(--_surface));
 
+  /* The primary button: the accent, filled, unless a theme draws it outlined (ADR-0215) */
+  --_button: var(--jfb-color-button, var(--_accent));
+  --_on-button: var(--jfb-color-on-button, var(--_on-accent));
+  --_button-hover: var(--jfb-color-button-hover, var(--_accent-strong));
+
   /* Corners: one radius, four steps */
   --_r: var(--jfb-radius, 12px);
   --_r-panel: var(--jfb-radius-panel, var(--_r));
@@ -1316,8 +1321,8 @@
   }
 
   & .jfb-button-primary {
-    color: var(--_on-accent);
-    background: var(--_accent);
+    color: var(--_on-button);
+    background: var(--_button);
     border-color: var(--_accent);
   }
 
@@ -1373,7 +1378,7 @@
     inline-size: 1.25em;
     block-size: 1.25em;
     margin: auto;
-    border: 2px solid var(--_on-accent);
+    border: 2px solid var(--_on-button);
     border-block-start-color: transparent;
     border-radius: 50%;
     animation: jfb-turn 0.7s linear infinite;
@@ -1394,7 +1399,7 @@
     }
 
     & .jfb-button-primary:hover:not(:disabled, [aria-disabled='true']) {
-      background: var(--_accent-strong);
+      background: var(--_button-hover);
       border-color: var(--_accent-strong);
     }
 

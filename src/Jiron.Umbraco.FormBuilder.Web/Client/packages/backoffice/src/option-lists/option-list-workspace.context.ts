@@ -13,7 +13,7 @@ import {
   UmbWorkspaceIsNewRedirectController,
   type UmbRoutableWorkspaceContext,
 } from '@umbraco-cms/backoffice/workspace';
-import type { OptionListUsersResponseModel } from '../api';
+import type { LibraryUsersResponseModel } from '../api';
 import { loadWorkspaceWords } from '../designer/workspace-words';
 import {
   OPTION_LIST_DETAIL_REPOSITORY_ALIAS,
@@ -31,7 +31,7 @@ export class OptionListWorkspaceContext
   implements UmbRoutableWorkspaceContext
 {
   readonly #problems = new UmbObjectState<readonly ListProblem[]>([]);
-  readonly #users = new UmbObjectState<OptionListUsersResponseModel | undefined>(undefined);
+  readonly #users = new UmbObjectState<LibraryUsersResponseModel | undefined>(undefined);
 
   /** What the last refused save said, each at its path; empty after a save that went through. */
   readonly problems = this.#problems.asObservable();

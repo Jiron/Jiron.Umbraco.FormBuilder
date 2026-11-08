@@ -49,6 +49,9 @@ public sealed class DefaultTheme : IFormBuilderTheme
         ["--jfb-color-on-accent"] = "#fff",
         ["--jfb-color-focus"] = "#1a5fd1",
         ["--jfb-color-error"] = "#b3261e",
+        ["--jfb-color-button"] = "#0f6e5c",
+        ["--jfb-color-on-button"] = "#fff",
+        ["--jfb-color-button-hover"] = "#125f54",
         ["--jfb-shade"] = "0 1px 2px rgb(29 36 51 / .08), 0 4px 16px -2px rgb(29 36 51 / .12)",
         ["--jfb-radius"] = "12px",
         ["--jfb-radius-panel"] = "var(--jfb-radius, 12px)",
@@ -62,6 +65,8 @@ public sealed class DefaultTheme : IFormBuilderTheme
         ["--jfb-space-5"] = "24px",
         ["--jfb-space-6"] = "32px",
         ["--jfb-space-7"] = "48px",
+        ["--jfb-font-family"] = "inherit",
+        ["--jfb-font-size"] = "inherit",
         ["--jfb-line-height"] = "1.5",
         ["--jfb-font-size-small"] = ".875em",
         ["--jfb-font-size-large"] = "1.25em",
@@ -77,6 +82,23 @@ public sealed class DefaultTheme : IFormBuilderTheme
 
     /// <inheritdoc />
     public bool DarkScheme => true;
+
+    /// <inheritdoc />
+    public IReadOnlyDictionary<string, string> DarkTokens { get; } = new Dictionary<string, string>(StringComparer.Ordinal)
+    {
+        ["--jfb-color-text"] = "#e8eaee",
+        ["--jfb-color-text-muted"] = "#aab2bf",
+        ["--jfb-color-surface"] = "#1d232d",
+        ["--jfb-color-border"] = "#8b95a5",
+        ["--jfb-color-rule"] = "#343c49",
+        ["--jfb-color-accent"] = "#5fd0b8",
+        ["--jfb-color-on-accent"] = "#0b1a17",
+        ["--jfb-color-focus"] = "#8ab4f8",
+        ["--jfb-color-error"] = "#f2a59e",
+        ["--jfb-color-button"] = "#5fd0b8",
+        ["--jfb-color-on-button"] = "#0b1a17",
+        ["--jfb-color-button-hover"] = "#7ad5c3",
+    }.ToFrozenDictionary(StringComparer.Ordinal);
 
     /// <inheritdoc />
     public string ViewFolder => BuiltInThemes.DefaultAlias;

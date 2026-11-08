@@ -99,6 +99,11 @@ internal sealed class PageAssets(WebsiteAssets assets)
             styles.Add(StylesheetUrl(pathBase, stylesheet));
         }
 
+        if (theme is LibraryTheme library)
+        {
+            styles.Add(LibraryThemeLayers.Url(pathBase, library));
+        }
+
         return new ElementAssets(styles, assets.Url(pathBase, WebsiteAssets.Runtime));
     }
 
@@ -132,6 +137,12 @@ internal sealed class PageAssets(WebsiteAssets assets)
             {
                 Stylesheet(writer, encoder, pathBase, state, nonce, stylesheet);
             }
+
+            // A library theme's layer goes after its base theme's stylesheet, whose tokens it sets (ADR-0215).
+            if (used is LibraryTheme library)
+            {
+                Link(writer, encoder, state, nonce, LibraryThemeLayers.Url(pathBase, library));
+            }
         }
 
         if (script)
@@ -151,9 +162,23 @@ internal sealed class PageAssets(WebsiteAssets assets)
             return;
         }
 
+        WriteLink(writer, encoder, nonce, StylesheetUrl(pathBase, stylesheet));
+    }
+
+    // A stylesheet's tag by its address, once per page.
+    private static void Link(TextWriter writer, HtmlEncoder encoder, PageState state, string? nonce, string address)
+    {
+        if (state.Stylesheets.Add(address))
+        {
+            WriteLink(writer, encoder, nonce, address);
+        }
+    }
+
+    private static void WriteLink(TextWriter writer, HtmlEncoder encoder, string? nonce, string address)
+    {
         var tag = new TagBuilder("link") { TagRenderMode = TagRenderMode.StartTag };
         tag.Attributes["rel"] = "stylesheet";
-        tag.Attributes["href"] = StylesheetUrl(pathBase, stylesheet);
+        tag.Attributes["href"] = address;
         Nonced(tag, nonce).WriteTo(writer, encoder);
     }
 
@@ -202,7 +227,7 @@ internal sealed class PageAssets(WebsiteAssets assets)
         {
             var script = !state.Script;
             state.Script = true;
-            string[] stylesheets = theme.Stylesheet is { } own ? [BaseStylesheet, own] : [BaseStylesheet];
+            string[] stylesheets = [BaseStylesheet, .. theme.Stylesheet is { } own ? [own] : Array.Empty<string>(), .. theme is LibraryTheme library ? [LibraryThemeLayers.Url(httpContext.Request.PathBase, library)] : Array.Empty<string>()];
             if (!script && stylesheets.All(state.Stylesheets.Contains))
             {
                 return;

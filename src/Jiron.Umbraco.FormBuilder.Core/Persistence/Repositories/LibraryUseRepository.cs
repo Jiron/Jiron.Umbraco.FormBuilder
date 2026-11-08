@@ -25,6 +25,12 @@ internal interface ILibraryUseRepository
 
     /// <summary>How many forms use each item of a kind that any form uses, by the item's key.</summary>
     Task<IReadOnlyDictionary<Guid, int>> FormCountsAsync(LibraryUseKind kind, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// How many elements use each item of a kind: per form the more of its draft's and its live version's, summed over the
+    /// forms, so an email layout says how many actions name it (ADR-0215).
+    /// </summary>
+    Task<IReadOnlyDictionary<Guid, int>> UseCountsAsync(LibraryUseKind kind, CancellationToken cancellationToken = default);
 }
 
 /// <inheritdoc />
@@ -77,6 +83,23 @@ internal sealed class LibraryUseRepository(FormBuilderDatabase database) : ILibr
                 var n = new SqlNames(db);
                 var rows = await db.FetchListAsync<CountRow>(
                     $"SELECT {n.C("itemKey")} AS {n.C("itemKey")}, COUNT(DISTINCT {n.C("formId")}) AS {n.C("forms")} FROM {n.T(FormBuilderTables.FormLibraryUse)} WHERE {n.C("itemKind")} = @0 GROUP BY {n.C("itemKey")}",
+                    StoredNames.Of(kind));
+                return rows.ToDictionary(row => row.ItemKey, row => row.Forms);
+            },
+            cancellationToken);
+
+    /// <inheritdoc />
+    public Task<IReadOnlyDictionary<Guid, int>> UseCountsAsync(LibraryUseKind kind, CancellationToken cancellationToken = default) =>
+        database.ReadAsync<IReadOnlyDictionary<Guid, int>>(
+            async db =>
+            {
+                var n = new SqlNames(db);
+                var rows = await db.FetchListAsync<CountRow>(
+                    $"""
+                    SELECT m.{n.C("itemKey")} AS {n.C("itemKey")}, SUM(m.{n.C("uses")}) AS {n.C("forms")}
+                    FROM (SELECT {n.C("formId")}, {n.C("itemKey")}, MAX({n.C("uses")}) AS {n.C("uses")} FROM {n.T(FormBuilderTables.FormLibraryUse)} WHERE {n.C("itemKind")} = @0 GROUP BY {n.C("formId")}, {n.C("itemKey")}) m
+                    GROUP BY m.{n.C("itemKey")}
+                    """,
                     StoredNames.Of(kind));
                 return rows.ToDictionary(row => row.ItemKey, row => row.Forms);
             },

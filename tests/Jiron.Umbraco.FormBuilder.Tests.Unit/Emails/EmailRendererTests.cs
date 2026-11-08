@@ -204,10 +204,22 @@ public sealed class EmailRendererTests
     }
 
     [TestCase("javascript:alert(1)")]
-    [TestCase("/logo.png")]
+    [TestCase("//cdn.jfb.test/logo.png")]
     [TestCase("ftp://jfb.test/logo.png")]
     public void ALogoThatIsNoWebAddress_IsLeftOut(string address) =>
         Assert.That(RenderHtml(Dressed with { LogoUrl = address }), Does.Not.Contain("<img"));
+
+    [Test]
+    public void ALogoOnTheSite_GoesUnderTheSitesAddress_AndWithoutOneIsLeftOut()
+    {
+        Assert.Multiple(() =>
+        {
+            Assert.That(RenderHtml(Dressed with { LogoUrl = "/media/abc/logo.png" }), Does.Contain("<img src=\"https://www.jfb.test/media/abc/logo.png\""));
+            Assert.That(RenderHtml(Dressed with { LogoUrl = "/media/abc/logo.png" }, baseUrl: "https://www.jfb.test/de/"), Does.Contain("<img src=\"https://www.jfb.test/media/abc/logo.png\""), "a path is the site's root's");
+            Assert.That(RenderHtml(Dressed with { LogoUrl = "/media/abc/logo.png" }, baseUrl: null), Does.Not.Contain("<img"));
+            Assert.That(RenderHtml(Dressed with { LogoUrl = "/media/abc/logo.png" }, baseUrl: "ftp://jfb.test"), Does.Not.Contain("<img"));
+        });
+    }
 
     [Test]
     public void ALayoutWhoseTextsCannotBeRead_StillGivesTheMail()

@@ -65,7 +65,7 @@ internal sealed partial class FormRendering(
     FormSubmissions submissions,
     SentTokens sent,
     SentCopies copies,
-    FormBuilderThemes themes,
+    FormThemes themes,
     ILogger<FormRendering> logger)
 {
     // The references that named no form in this process, so each is logged once.
@@ -150,7 +150,7 @@ internal sealed partial class FormRendering(
         }
 
         // The picker's theme and page after a send are the placement's (ADR-0129); the render endpoint names its own theme.
-        var formTheme = themes.Resolve(target is null ? theme ?? picked?.Theme : target.Theme, shown.Form.Settings.Theme);
+        var formTheme = await themes.ResolveAsync(target is null ? theme ?? picked?.Theme : target.Theme, shown.Form.Settings.Theme, cancellationToken);
         var (view, model) = await models.BuildAsync(new FormRender(httpContext, cached, shown, culture, instance, context ?? new Dictionary<string, string?>(), formTheme, gate, target?.Page, member, target is null ? picked?.Redirect : target.Redirect, content, Preview: preview is not null), cancellationToken);
         return new RenderedForm(view, model, formTheme);
     }

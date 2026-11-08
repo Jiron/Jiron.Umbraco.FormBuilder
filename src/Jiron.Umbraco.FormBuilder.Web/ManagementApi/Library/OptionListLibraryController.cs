@@ -87,7 +87,7 @@ internal sealed class OptionListLibraryController(
     [HttpGet("{key:guid}/used-by")]
     [MapToApiVersion("1.0")]
     [FormBuilderPermission(FormBuilderPermissions.ManageLibrary)]
-    [ProducesResponseType(typeof(OptionListUsersResponseModel), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(LibraryUsersResponseModel), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UsedBy(Guid key, CancellationToken cancellationToken = default)
     {
@@ -96,12 +96,7 @@ internal sealed class OptionListLibraryController(
             return FormBuilderProblems.OptionListNotFound();
         }
 
-        var users = await library.UsersAsync(RequestAccess.User, key, cancellationToken);
-        return Ok(new OptionListUsersResponseModel
-        {
-            Forms = [.. users.Forms.Select(form => new OptionListUserResponseModel { Key = form.FormKey, Name = form.FormName, InDraft = form.InDraft, InLive = form.InLive, IsTrashed = form.IsTrashed, Uses = form.Uses })],
-            Others = users.Others,
-        });
+        return Ok(LibraryUsersResponseModel.Of(await library.UsersAsync(RequestAccess.User, key, cancellationToken)));
     }
 
     /// <summary>Creates a list; answers <c>400</c> with every problem, each at its path, when its contents or alias refuse it.</summary>
@@ -200,7 +195,7 @@ internal sealed class OptionListLibraryController(
         {
             Options = preview.Options is { } options ? [.. options.Options.Select(option => new OptionListOptionResponseModel { Value = option.Value, Label = option.Label, Description = option.Description })] : [],
             IsAvailable = preview.Options?.IsAvailable ?? false,
-            Problems = [.. preview.Problems.Select(problem => new OptionListProblemResponseModel { Code = problem.Code, Path = problem.Path, Message = problem.Message })],
+            Problems = [.. preview.Problems.Select(LibraryProblemResponseModel.Of)],
         });
     }
 

@@ -47,6 +47,9 @@ internal sealed class FormBuilderMigrationPlan : PackageMigrationPlan
     /// <summary>The state after the table of what of the library each form uses (ADR-0214).</summary>
     public const string StateFormLibraryUses = "jfb-012-form-library-uses";
 
+    /// <summary>The state after the themes and email layouts forms use join that table (ADR-0215).</summary>
+    public const string StateThemeAndLayoutUses = "jfb-013-theme-and-layout-uses";
+
     /// <summary>The steps in order, with the state each one leaves. The tests build their copies of the plan from it.</summary>
     internal static readonly IReadOnlyList<(string State, Type Step)> Steps =
     [
@@ -62,6 +65,7 @@ internal sealed class FormBuilderMigrationPlan : PackageMigrationPlan
         (StateActionRunLastAttempt, typeof(AddActionRunLastAttemptV1)),
         (StateEntryUnseenIndex, typeof(AddEntryUnseenIndexV1)),
         (StateFormLibraryUses, typeof(AddFormLibraryUsesV1)),
+        (StateThemeAndLayoutUses, typeof(AddThemeAndLayoutUsesV1)),
     ];
 
     /// <summary>Creates the plan with Jiron Form Builder's package id, name and plan name.</summary>

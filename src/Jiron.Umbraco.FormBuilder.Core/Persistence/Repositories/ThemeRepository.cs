@@ -72,10 +72,10 @@ internal interface IThemeRepository
 
     /// <summary>
     /// Deletes a theme; false when it does not exist. Refused with <see cref="FormBuilderConcurrencyException"/> when it
-    /// changed meanwhile, and with <see cref="FormBuilderConflict.InUse"/> while a form's published version names it
-    /// (<c>jfbForm.themeAlias</c>, trashed forms included). The defaults of the General settings that name it are the
-    /// library service's to check (ADR-0015). A publish does not check its theme, so one at the same moment may still
-    /// name a theme that is gone; that form renders with <c>default</c>.
+    /// changed meanwhile, and with <see cref="FormBuilderConflict.InUse"/> while a form's draft or live version names it
+    /// (<c>jfbFormLibraryUse</c> by the theme's key, and <c>jfbForm.themeAlias</c>, trashed forms included; ADR-0215). The
+    /// defaults of the General settings that name it are the library service's to check (ADR-0015). A save at the same
+    /// moment may still name a theme that is gone; that form renders with <c>default</c>.
     /// </summary>
     Task<bool> DeleteAsync(int id, int expectedConcurrencyVersion, CancellationToken cancellationToken = default);
 }
@@ -86,11 +86,13 @@ internal sealed class ThemeRepository(FormBuilderDatabase database) : IThemeRepo
     /// <summary>The longest base theme name the column holds.</summary>
     public const int MaxBaseThemeLength = 64;
 
-    // A theme stays while a form's published version names it. The column comparison follows the alias collation, so
-    // any letter case counts (ADR-0033).
+    // A theme stays while a form's draft or live version names it (ADR-0215): its uses go by the theme's key, which the
+    // library gives as the name-based key of its alias, and a form's published alias counts too, for a theme made before
+    // that. The alias comparison follows the alias collation, so any letter case counts (ADR-0033).
     private static readonly InUseGuard UsedByForms = new(
-        n => $"NOT EXISTS (SELECT 1 FROM {n.T(FormBuilderTables.Form)} f WHERE f.{n.C("themeAlias")} = {n.T(FormBuilderTables.Theme)}.{n.C("alias")})",
-        "A form's published version uses the theme.");
+        n => $"NOT EXISTS (SELECT 1 FROM {n.T(FormBuilderTables.FormLibraryUse)} u{n.LockingRead} WHERE u.{n.C("itemKind")} = 'theme' AND u.{n.C("itemKey")} = {n.T(FormBuilderTables.Theme)}.{n.C("key")})"
+            + $" AND NOT EXISTS (SELECT 1 FROM {n.T(FormBuilderTables.Form)} f WHERE f.{n.C("themeAlias")} = {n.T(FormBuilderTables.Theme)}.{n.C("alias")})",
+        "A form uses the theme.");
 
     private readonly AliasedLibraryTable<ThemeDto> _table = new(database, FormBuilderTables.Theme, "theme");
 

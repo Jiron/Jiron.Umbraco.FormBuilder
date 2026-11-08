@@ -19,11 +19,13 @@ public sealed partial class FormBuilderThemesTests
 {
     private static readonly IFormBuilderTheme[] BuiltIn = [new DefaultTheme(), new UnstyledTheme(), new Bootstrap5Theme()];
 
-    // The public tokens of docs/ux/tokens.md that a theme built on default may set: all but the site's font and size.
+    // The public tokens of docs/ux/tokens.md, which a theme built on default may set: every one, the site's font and size as
+    // "inherit", and the primary button's colours (ADR-0215).
     private static readonly string[] DefaultTokens =
     [
         "--jfb-color-text", "--jfb-color-text-muted", "--jfb-color-surface", "--jfb-color-border", "--jfb-color-rule", "--jfb-color-accent",
-        "--jfb-color-on-accent", "--jfb-color-focus", "--jfb-color-error", "--jfb-shade", "--jfb-radius", "--jfb-radius-panel", "--jfb-radius-card",
+        "--jfb-color-on-accent", "--jfb-color-focus", "--jfb-color-error", "--jfb-color-button", "--jfb-color-on-button", "--jfb-color-button-hover",
+        "--jfb-font-family", "--jfb-font-size", "--jfb-shade", "--jfb-radius", "--jfb-radius-panel", "--jfb-radius-card",
         "--jfb-radius-control", "--jfb-radius-tag", "--jfb-space-1", "--jfb-space-2", "--jfb-space-3", "--jfb-space-4", "--jfb-space-5", "--jfb-space-6",
         "--jfb-space-7", "--jfb-line-height", "--jfb-font-size-small", "--jfb-font-size-large", "--jfb-font-size-title", "--jfb-font-weight-strong",
         "--jfb-size-control", "--jfb-size-form", "--jfb-focus-ring", "--jfb-motion-fast", "--jfb-motion-base", "--jfb-motion-ease",
@@ -55,7 +57,9 @@ public sealed partial class FormBuilderThemesTests
             Assert.That(registry.All.Select(theme => theme.ViewFolder), Is.EqualTo(new[] { "default", "unstyled", "bootstrap5" }), "each theme's folder is its alias");
             Assert.That(registry.All.Select(theme => theme.DarkScheme), Is.EqualTo(new[] { true, false, false }), "only default offers the dark scheme");
             Assert.That(registry.All.Select(theme => theme.Stylesheet), Is.EqualTo(new[] { "/jfb/assets/themes/default.css", null, "/jfb/assets/themes/bootstrap5.css" }), "default's and bootstrap5's are the package's; unstyled has none");
-            Assert.That(registry.Find("default")!.Tokens.Keys, Is.EquivalentTo(DefaultTokens), "default declares every public token but the site's font and size");
+            Assert.That(registry.Find("default")!.Tokens.Keys, Is.EquivalentTo(DefaultTokens), "default declares every public token");
+            Assert.That(registry.Find("default")!.DarkTokens.Keys, Is.EquivalentTo(DefaultTokens.Where(token => token.StartsWith("--jfb-color-", StringComparison.Ordinal))), "and a dark value of every colour");
+            Assert.That(registry.All.Skip(1).Select(theme => theme.DarkTokens.Count), Is.All.Zero);
             Assert.That(registry.All.Skip(1).Select(theme => theme.Tokens.Count), Is.All.Zero);
             Assert.That(registry.Default, Is.InstanceOf<DefaultTheme>());
             Assert.That(registry.Find("unstyled")!.Classes, Is.Empty, "unstyled adds no class to ours");
@@ -76,13 +80,82 @@ public sealed partial class FormBuilderThemesTests
         {
             Assert.That(tokens.Keys, Is.SubsetOf(read.Keys), "every default names a token the stylesheet reads");
             Assert.That(read.Where(each => each.Value.Length == 0).Select(each => each.Key), Is.EquivalentTo(new[] { "--jfb-font-family", "--jfb-font-size" }), "only the site's font and size have none");
+            Assert.That(new[] { tokens["--jfb-font-family"], tokens["--jfb-font-size"] }, Is.All.EqualTo("inherit"), "whose default is the site's");
             foreach (var (token, fallback) in read.Where(each => each.Value.Length > 0 && !each.Value.Contains("var(--_", StringComparison.Ordinal)))
             {
                 Assert.That(Plain(tokens.GetValueOrDefault(token) ?? "none"), Is.EqualTo(Plain(fallback)), token);
             }
 
-            Assert.That(read.Count(each => each.Value.Contains("var(--_", StringComparison.Ordinal)), Is.EqualTo(5), "the radius steps and the focus ring derive from other tokens");
+            Assert.That(read.Count(each => each.Value.Contains("var(--_", StringComparison.Ordinal)), Is.EqualTo(8), "the radius steps, the focus ring and the button's colours derive from other tokens");
+            Assert.That(
+                new[] { tokens["--jfb-color-button"], tokens["--jfb-color-on-button"], tokens["--jfb-color-button-hover"] },
+                Is.EqualTo(new[] { tokens["--jfb-color-accent"], tokens["--jfb-color-on-accent"], Mix(tokens["--jfb-color-accent"], tokens["--jfb-color-text"], 0.8) }),
+                "the button is the accent, its text the text on it, and its hover four fifths accent and one fifth text, as the stylesheet mixes them");
         });
+    }
+
+    [Test]
+    public void DefaultsDarkTokens_AreTheFallbacksItsDarkSchemeReadsThemWith()
+    {
+        var css = File.ReadAllText(RepositoryRoot.Path(typeof(FormBuilderThemesTests).Assembly, "src", "Jiron.Umbraco.FormBuilder.Web", "Client", "packages", "themes", "src", "default.css"));
+        var start = css.IndexOf("&.jfb-scheme-dark,", StringComparison.Ordinal);
+        var block = css[start..css.IndexOf("color-scheme: dark;", start, StringComparison.Ordinal)];
+        var read = TokenRead().Matches(block).ToDictionary(match => match.Groups["token"].Value, match => match.Groups["fallback"].Value.Trim());
+        var dark = new DefaultTheme().DarkTokens;
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(read.Keys.Where(token => token.StartsWith("--jfb-color-", StringComparison.Ordinal)), Is.SubsetOf(dark.Keys));
+            foreach (var (token, fallback) in read.Where(each => each.Key.StartsWith("--jfb-color-", StringComparison.Ordinal)))
+            {
+                Assert.That(dark[token], Is.EqualTo(fallback), token);
+            }
+
+            Assert.That(
+                new[] { dark["--jfb-color-button"], dark["--jfb-color-on-button"], dark["--jfb-color-button-hover"] },
+                Is.EqualTo(new[] { dark["--jfb-color-accent"], dark["--jfb-color-on-accent"], Mix(dark["--jfb-color-accent"], dark["--jfb-color-text"], 0.8) }));
+        });
+    }
+
+    [Test]
+    public void DarkColours_OfAThemeWithADarkScheme_ThatItsTokensDeclare_Pass()
+    {
+        var theme = new Custom("acme")
+        {
+            DarkScheme = true,
+            Tokens = new Dictionary<string, string> { ["--jfb-color-text"] = "#111", ["--jfb-radius"] = "4px" },
+            DarkTokens = new Dictionary<string, string> { ["--jfb-color-text"] = "#eee" },
+        };
+
+        Assert.That(FormBuilderThemes.Problems([.. BuiltIn, theme]), Is.Empty);
+    }
+
+    [Test]
+    public void DarkColours_AreRefused_WithoutADarkScheme_ForATokenItDoesNotDeclare_OrOneThatIsNoColour()
+    {
+        var tokens = new Dictionary<string, string> { ["--jfb-color-text"] = "#111", ["--jfb-radius"] = "4px" };
+        var withoutScheme = new Custom("plain") { Tokens = tokens, DarkTokens = new Dictionary<string, string> { ["--jfb-color-text"] = "#eee" } };
+        var undeclared = new Custom("loose") { DarkScheme = true, Tokens = tokens, DarkTokens = new Dictionary<string, string> { ["--jfb-color-accent"] = "#eee" } };
+        var noColour = new Custom("round") { DarkScheme = true, Tokens = tokens, DarkTokens = new Dictionary<string, string> { ["--jfb-radius"] = "2px" } };
+        var addressed = new Custom("far") { DarkScheme = true, Tokens = tokens, DarkTokens = new Dictionary<string, string> { ["--jfb-color-text"] = "url(x)" } };
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(FormBuilderThemes.Problems([.. BuiltIn, withoutScheme]), Has.One.Contains("dark colours but no dark scheme"));
+            Assert.That(FormBuilderThemes.Problems([.. BuiltIn, undeclared]), Has.One.Contains("'--jfb-color-accent'"));
+            Assert.That(FormBuilderThemes.Problems([.. BuiltIn, noColour]), Has.One.Contains("'--jfb-radius'"));
+            Assert.That(FormBuilderThemes.Problems([.. BuiltIn, addressed]), Has.One.Contains("dark colour '--jfb-color-text'"));
+        });
+    }
+
+    // Two colours mixed as the stylesheet's color-mix() in sRGB does: this share of the first, the rest of the second.
+    private static string Mix(string first, string second, double share)
+    {
+        static int[] Rgb(string hex) => hex.Length == 4
+            ? [.. hex[1..].Select(digit => Convert.ToInt32(new string(digit, 2), 16))]
+            : [Convert.ToInt32(hex[1..3], 16), Convert.ToInt32(hex[3..5], 16), Convert.ToInt32(hex[5..7], 16)];
+        var (a, b) = (Rgb(first), Rgb(second));
+        return "#" + string.Concat(a.Zip(b, (x, y) => ((int)Math.Round((x * share) + (y * (1 - share)), MidpointRounding.AwayFromZero)).ToString("x2", System.Globalization.CultureInfo.InvariantCulture)));
     }
 
     [Test]
@@ -399,7 +472,9 @@ public sealed partial class FormBuilderThemesTests
 
         public IReadOnlyDictionary<string, string> Tokens { get; init; } = new Dictionary<string, string>();
 
-        public bool DarkScheme => false;
+        public bool DarkScheme { get; init; }
+
+        public IReadOnlyDictionary<string, string> DarkTokens { get; init; } = new Dictionary<string, string>();
 
         public string ViewFolder { get; init; } = "custom";
     }

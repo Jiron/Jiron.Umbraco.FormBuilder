@@ -43,7 +43,7 @@ internal sealed class FormController(
     FormAvailability availability,
     PublishedFormCache forms,
     PreviewForms previews,
-    FormBuilderThemes themes,
+    FormThemes themes,
     FormRendering rendering,
     PageAssets assets,
     ChallengeRequests challenges,
@@ -249,7 +249,7 @@ internal sealed class FormController(
 
         // A theme the site lacks renders as default, as the page renders it, without a line in the log or a name kept
         // for it: the name is the request's, and a page whose placement names it is logged as it renders (ADR-0105).
-        var placed = theme is null ? null : themes.Find(theme)?.Name ?? BuiltInThemes.DefaultAlias;
+        var placed = theme is null ? null : await themes.KnownAliasAsync(theme, cancellationToken);
         Guid? redirect = null;
         if (placement is not null)
         {
@@ -360,7 +360,7 @@ internal sealed class FormController(
         var shownCulture = CultureInfo.GetCultureInfo(await pages.CultureAsync(culture));
         CultureInfo.CurrentCulture = shownCulture;
         CultureInfo.CurrentUICulture = shownCulture;
-        var placed = theme is null ? null : themes.Find(theme)?.Name ?? BuiltInThemes.DefaultAlias;
+        var placed = theme is null ? null : await themes.KnownAliasAsync(theme, cancellationToken);
         FormRenderTargets.Set(HttpContext, new FormRenderTarget(instance, "/", content, culture, placed));
         if (await rendering.RenderAsync(HttpContext, formKey, context, null, cancellationToken) is not { Model: FormViewModel model, Theme: { } formTheme })
         {

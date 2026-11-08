@@ -44,8 +44,11 @@ internal sealed record EmailLayoutDesign
     /// <summary>The shape.</summary>
     public EmailLook Look { get; init; }
 
-    /// <summary>An absolute web address of the logo, or null for none.</summary>
+    /// <summary>The logo's address: an absolute web address, or a path on the site, which mail puts under the site's base address; null for none.</summary>
     public string? LogoUrl { get; init; }
+
+    /// <summary>The media item the logo is, whose address the editor's save keeps in <see cref="LogoUrl"/> (ADR-0215); null for a logo by address.</summary>
+    public Guid? LogoMedia { get; init; }
 
     /// <summary>What the logo says, per culture; without it, the sender's name.</summary>
     public IReadOnlyDictionary<string, string>? LogoAlt { get; init; }
@@ -82,7 +85,8 @@ internal sealed partial class EmailLayouts(IEmailLayoutRepository layouts, ILogg
         [LetterKey] = new EmailLayoutDesign { Look = EmailLook.Letter },
     }.ToFrozenDictionary();
 
-    private static readonly JsonSerializerOptions Json = Options();
+    /// <summary>How a layout's design is read and written: camel case, the look by its name.</summary>
+    internal static readonly JsonSerializerOptions Json = Options();
 
     /// <summary>The key of the layout a mail naming this one gets: itself when built in or in the library, else the card.</summary>
     /// <param name="key">The layout named, or null for none.</param>

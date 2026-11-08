@@ -165,6 +165,20 @@ internal sealed partial class FormBuilderThemes
                 }
             }
 
+            var dark = theme.DarkTokens ?? FrozenDictionary<string, string>.Empty;
+            if (dark.Count > 0 && !theme.DarkScheme)
+            {
+                problems.Add($"The theme '{theme.Name}' has dark colours but no dark scheme: DarkTokens is for a theme whose DarkScheme is true.");
+            }
+
+            foreach (var (token, value) in dark)
+            {
+                if (!token.StartsWith("--jfb-color-", StringComparison.Ordinal) || theme.Tokens?.ContainsKey(token) != true || !IsTokenValue(value))
+                {
+                    problems.Add($"The theme '{theme.Name}' has the dark colour '{token}': a dark colour is one of its Tokens whose name starts with --jfb-color-, with a value of one declaration and no address.");
+                }
+            }
+
             if (theme.ViewFolder is not { } folder || !Folder().IsMatch(folder))
             {
                 problems.Add($"The theme '{theme.Name}' has the view folder '{theme.ViewFolder}': a folder name of lower-case letters, digits and hyphens below Views/JironFormBuilder/.");
@@ -193,8 +207,9 @@ internal sealed partial class FormBuilderThemes
         !string.IsNullOrEmpty(classes)
         && classes.Split(' ').All(name => name.Length > 0 && name.All(character => character is > ' ' and < (char)127 and not ('"' or '\'' or '<' or '>' or '&')));
 
-    // One declaration's value: no end of a declaration or a block, no markup, no control characters, no address.
-    private static bool IsTokenValue(string? value) =>
+    /// <summary>Whether a text is one declaration's value: no end of a declaration or a block, no markup, no control characters, no address.</summary>
+    /// <param name="value">The value.</param>
+    internal static bool IsTokenValue(string? value) =>
         !string.IsNullOrWhiteSpace(value)
         && !value.Any(character => character is ';' or '{' or '}' or '<' or '>' || char.IsControl(character))
         && !value.Contains("url(", StringComparison.OrdinalIgnoreCase);

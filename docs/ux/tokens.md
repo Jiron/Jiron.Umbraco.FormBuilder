@@ -19,8 +19,8 @@ There are two surfaces with two token sets:
   `body { --jfb-color-accent: #8a1c3c; }`. Every token has a default, so a site sets only what it changes.
 - The theme reads each public token through a private shorthand (`--_ink: var(--jfb-color-text, #1d2433)`). The
   `--_*` names are not public surface and may change; only `--jfb-*` is the contract (ADR-0015).
-- **The site's type wins.** `--jfb-font-family` and `--jfb-font-size` have no default: unset, the form inherits the
-  page's font and size, so it reads as part of the site.
+- **The site's type wins.** `--jfb-font-family` and `--jfb-font-size` default to `inherit`: unset, the form inherits
+  the page's font and size, so it reads as part of the site.
 - **Dark scheme** values apply with the class `jfb-scheme-dark`, or `jfb-scheme-auto` when the visitor's system asks
   for dark (ADR-0015), on the form or on any ancestor, such as `<html class="jfb-scheme-auto">` (ADR-0106). A site
   that sets a colour token sets it for both schemes, or sets it again inside its own dark rule.
@@ -42,6 +42,9 @@ light, `#14181f` dark). Text needs 4.5:1, control boundaries, focus rings and ic
 | `--jfb-color-rule` | `#d9dde3` | `#343c49` | hairlines between groups and rows, steps not reached, the progress track | decoration only |
 | `--jfb-color-accent` | `#0f6e5c` | `#5fd0b8` | the primary button, chosen choices, links, done steps, the outcome mark | 6.16 / 8.41 on surface |
 | `--jfb-color-on-accent` | `#ffffff` | `#0b1a17` | text and ticks on the accent | 6.16 / 9.53 on the accent |
+| `--jfb-color-button` | the accent | the accent | the primary button's fill | 6.16 / 8.41 on surface |
+| `--jfb-color-on-button` | the text on the accent | the text on the accent | the primary button's text and its busy ring | 6.16 / 9.53 on the button |
+| `--jfb-color-button-hover` | accent strong (`#125f54`) | accent strong (`#7ad5c3`) | the primary button on hover | 7.52 / 10.33 with the text on it |
 | `--jfb-color-focus` | `#1a5fd1` | `#8ab4f8` | the focus ring, never anything else | 5.83 / 7.48 on surface |
 | `--jfb-color-error` | `#b3261e` | `#f2a59e` | error text, invalid borders, the error summary | 6.53 / 8.00 on surface; 5.83 / 7.00 on error wash |
 
@@ -50,7 +53,7 @@ ink gets matching hover and fill colours without setting them:
 
 | Name in the theme | Mix | Used for |
 | --- | --- | --- |
-| accent strong | 80 % accent, 20 % text | the primary button on hover |
+| accent strong | 80 % accent, 20 % text | the primary button on hover, unless `--jfb-color-button-hover` is set |
 | border strong | 50 % border, 50 % text | a control's boundary on hover |
 | tint | 8 % accent on surface | a chosen card, the outcome mark's disc, a file being dragged in |
 | wash | 5 % text on surface | disabled and read-only fills, prefix and suffix boxes, hover on plain buttons |
@@ -105,8 +108,8 @@ the 44 px icon button are sizes, not spacing.
 
 | Token | Default | Used for |
 | --- | --- | --- |
-| `--jfb-font-family` | none: the site's font | everything |
-| `--jfb-font-size` | none: the site's size | the body step, `1em` |
+| `--jfb-font-family` | `inherit`: the site's font | everything |
+| `--jfb-font-size` | `inherit`: the site's size | the body step, `1em` |
 | `--jfb-line-height` | `1.5` | everything except headings (1.25) |
 | `--jfb-font-size-small` | `.875em` | help, counters, places left, the progress text, captions, the grid's column heads |
 | `--jfb-font-size-large` | `1.25em` | group headings, the summary's section headings, the error summary heading, notices, calculated values |

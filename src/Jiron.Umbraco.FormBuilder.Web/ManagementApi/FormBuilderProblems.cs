@@ -111,6 +111,15 @@ internal static class FormBuilderProblems
     /// <summary>The code of an option list the library does not hold (ADR-0214).</summary>
     public const string OptionListNotFoundCode = "option_list_not_found";
 
+    /// <summary>The code of a theme the library does not hold (ADR-0215).</summary>
+    public const string ThemeNotFoundCode = "theme_not_found";
+
+    /// <summary>The code of an email layout the library does not hold (ADR-0215).</summary>
+    public const string EmailLayoutNotFoundCode = "email_layout_not_found";
+
+    /// <summary>The code of a delete of the site's default theme or layout, which the settings name (ADR-0215).</summary>
+    public const string IsDefaultCode = "is_default";
+
     /// <summary>The code of a field type the site does not have (ADR-0059).</summary>
     public const string FieldTypeNotFoundCode = "field_type_not_found";
 
@@ -267,6 +276,18 @@ internal static class FormBuilderProblems
     /// <summary>An option list the library does not hold, or one of a kind this version lacks, where its kind matters (ADR-0214).</summary>
     public static FormBuilderProblemResult OptionListNotFound() =>
         Problem(StatusCodes.Status404NotFound, OptionListNotFoundCode, "The option list does not exist.");
+
+    /// <summary>A theme the library does not hold (ADR-0215).</summary>
+    public static FormBuilderProblemResult ThemeNotFound() =>
+        Problem(StatusCodes.Status404NotFound, ThemeNotFoundCode, "The theme does not exist.");
+
+    /// <summary>An email layout the library does not hold (ADR-0215).</summary>
+    public static FormBuilderProblemResult EmailLayoutNotFound() =>
+        Problem(StatusCodes.Status404NotFound, EmailLayoutNotFoundCode, "The email layout does not exist.");
+
+    /// <summary>A delete of the site's default theme or layout, which Settings names: choose another default first (ADR-0215).</summary>
+    public static FormBuilderProblemResult IsDefault() =>
+        Problem(StatusCodes.Status409Conflict, IsDefaultCode, "It is the site's default. Choose another default in Settings first.");
 
     /// <summary>A field type the site does not have (ADR-0059).</summary>
     public static FormBuilderProblemResult FieldTypeNotFound() =>

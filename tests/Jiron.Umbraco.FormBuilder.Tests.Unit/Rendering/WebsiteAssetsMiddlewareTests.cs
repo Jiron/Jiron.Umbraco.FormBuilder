@@ -1,5 +1,10 @@
+using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
+using Jiron.Umbraco.FormBuilder.Core.Themes;
 using Jiron.Umbraco.FormBuilder.Web.Rendering;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging.Abstractions;
+using NSubstitute;
+using Umbraco.Cms.Core.Cache;
 
 namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Rendering;
 
@@ -7,7 +12,8 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Rendering;
 /// The middleware that serves the website assets (ADR-0092), without a host, over the test's own files
 /// (<see cref="WebsiteAssetsTests"/>): it owns <c>/jfb/assets/</c> and nothing else, answers only the names the
 /// catalogue holds, sends the copy the request accepts with its headers, caches a year only under the current
-/// fingerprint or a name of content, and answers a matching <c>If-None-Match</c> with <c>304</c>.
+/// fingerprint or a name of content, and answers a matching <c>If-None-Match</c> with <c>304</c>. A library theme's
+/// layer (ADR-0215) is served below <c>themes/library/</c> as CSS, cached a year under the theme's version only.
 /// </summary>
 [TestFixture]
 public sealed class WebsiteAssetsMiddlewareTests
@@ -21,7 +27,11 @@ public sealed class WebsiteAssetsMiddlewareTests
     public void CreateTheMiddleware()
     {
         _assets = WebsiteAssetsTests.Assets();
-        _middleware = new WebsiteAssetsMiddleware(_assets);
+        var library = Substitute.For<IThemeRepository>();
+        library.GetByAliasAsync("autumn", Arg.Any<CancellationToken>()).Returns(Task.FromResult<StoredTheme?>(
+            new StoredTheme(1, Guid.NewGuid(), "autumn", "Autumn", "default", "{\"light\":{\"--jfb-radius\":\"6px\"}}", null, 3, DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch)));
+        var registry = new FormBuilderThemes([new DefaultTheme(), new UnstyledTheme(), new Bootstrap5Theme()], NullLogger<FormBuilderThemes>.Instance);
+        _middleware = new WebsiteAssetsMiddleware(_assets, new LibraryThemes(library, registry, AppCaches.NoCache));
     }
 
     private string Fingerprint => _assets.Find("runtime/jfb-runtime.js")!.Fingerprint;
@@ -217,6 +227,34 @@ public sealed class WebsiteAssetsMiddlewareTests
             Assert.That(http.Response.Headers.ContentEncoding.ToString(), Is.Empty);
             Assert.That(http.Response.ContentType, Is.EqualTo("text/css; charset=utf-8"));
             Assert.That(http.Response.Headers.Vary.ToString(), Is.EqualTo("Accept-Encoding"));
+        });
+    }
+
+    [Test]
+    public async Task ALibraryThemesLayer_IsServedAsCss_CachedAYearUnderItsVersionOnly()
+    {
+        var (current, passed) = await SendAsync("GET", "/jfb/assets/themes/library/autumn.css", query: "?v=3");
+        var (older, _) = await SendAsync("GET", "/jfb/assets/themes/library/autumn.css", query: "?v=2");
+        var tag = current.Response.Headers.ETag.ToString();
+        var (again, _) = await SendAsync("GET", "/jfb/assets/themes/library/autumn.css", query: "?v=3", ifNoneMatch: tag);
+        var (unknown, _) = await SendAsync("GET", "/jfb/assets/themes/library/winter.css", query: "?v=1");
+        var (posted, _) = await SendAsync("POST", "/jfb/assets/themes/library/autumn.css");
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(passed, Is.False);
+            Assert.That(current.Response.StatusCode, Is.EqualTo(200));
+            Assert.That(current.Response.ContentType, Is.EqualTo("text/css; charset=utf-8"));
+            Assert.That(System.Text.Encoding.UTF8.GetString(Body(current)), Does.Contain(".jfb-form.jfb-theme-autumn {\n  --jfb-radius: 6px;\n}"));
+            Assert.That(current.Response.Headers.CacheControl.ToString(), Is.EqualTo("public, max-age=31536000, immutable"));
+            Assert.That(current.Response.Headers.AccessControlAllowOrigin.ToString(), Is.EqualTo("*"));
+            Assert.That(current.Response.Headers.XContentTypeOptions.ToString(), Is.EqualTo("nosniff"));
+            Assert.That(tag, Does.Match("^\"[0-9a-f]{32}\"$"));
+            Assert.That(older.Response.StatusCode, Is.EqualTo(200), "an older version is answered with what the theme holds now");
+            Assert.That(older.Response.Headers.CacheControl.ToString(), Is.EqualTo("no-cache"));
+            Assert.That(again.Response.StatusCode, Is.EqualTo(304));
+            Assert.That(unknown.Response.StatusCode, Is.EqualTo(404));
+            Assert.That(posted.Response.StatusCode, Is.EqualTo(405));
         });
     }
 

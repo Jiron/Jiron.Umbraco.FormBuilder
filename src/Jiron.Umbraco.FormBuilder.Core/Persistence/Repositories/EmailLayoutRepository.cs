@@ -65,7 +65,8 @@ internal interface IEmailLayoutRepository
 
     /// <summary>
     /// Deletes a layout; false when it does not exist. Refused with <see cref="FormBuilderConcurrencyException"/> when it
-    /// changed meanwhile. Actions and settings name layouts inside their JSON, so the library service checks them (12.2).
+    /// changed meanwhile, and with <see cref="FormBuilderConflict.InUse"/> while an email action of a form's draft or live
+    /// version names it (<c>jfbFormLibraryUse</c>, ADR-0215). The Email settings' default is the library service's to check.
     /// </summary>
     Task<bool> DeleteAsync(int id, int expectedConcurrencyVersion, CancellationToken cancellationToken = default);
 }
@@ -73,6 +74,11 @@ internal interface IEmailLayoutRepository
 /// <inheritdoc />
 internal sealed class EmailLayoutRepository(FormBuilderDatabase database) : IEmailLayoutRepository
 {
+    // A layout stays while an email action of a form's draft or live version names it (ADR-0215).
+    private static readonly InUseGuard UsedByActions = new(
+        n => $"NOT EXISTS (SELECT 1 FROM {n.T(FormBuilderTables.FormLibraryUse)} u{n.LockingRead} WHERE u.{n.C("itemKind")} = 'emailLayout' AND u.{n.C("itemKey")} = {n.T(FormBuilderTables.EmailLayout)}.{n.C("key")})",
+        "An email action uses the layout.");
+
     private readonly AliasedLibraryTable<EmailLayoutDto> _table = new(database, FormBuilderTables.EmailLayout, "email layout");
 
     /// <inheritdoc />
@@ -116,7 +122,7 @@ internal sealed class EmailLayoutRepository(FormBuilderDatabase database) : IEma
 
     /// <inheritdoc />
     public Task<bool> DeleteAsync(int id, int expectedConcurrencyVersion, CancellationToken cancellationToken = default) =>
-        _table.DeleteAsync(id, expectedConcurrencyVersion, null, cancellationToken);
+        _table.DeleteAsync(id, expectedConcurrencyVersion, UsedByActions, cancellationToken);
 
     private static LibraryColumn[] Content(string layout)
     {

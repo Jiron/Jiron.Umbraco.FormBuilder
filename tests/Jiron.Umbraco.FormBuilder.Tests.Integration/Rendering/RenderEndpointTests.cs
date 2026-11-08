@@ -225,6 +225,8 @@ public sealed class RenderEndpointTests : OutputCacheTestBase
         var own = await RenderAsync(key, "jfb-1", "/cache/", content, null);
         var lacking = await RenderAsync(key, "jfb-1", "/cache/", content, null, "&theme=a-theme-the-site-lacks");
         var blank = await RenderAsync(key, "jfb-1", "/cache/", content, null, "&theme=%20");
+        _ = await GetRequiredService<ThemeLibrary>().CreateAsync(new ThemeInput("autumn", "Autumn", "bootstrap5", ThemeTokens.None, null), null);
+        var library = await RenderAsync(key, "jfb-1", "/cache/", content, null, "&theme=autumn");
 
         Assert.Multiple(() =>
         {
@@ -233,6 +235,8 @@ public sealed class RenderEndpointTests : OutputCacheTestBase
             Assert.That(own.Served.Document.QuerySelector("form#jfb-1")!.ClassList, Does.Contain("jfb-theme-unstyled"), "the form's own theme");
             Assert.That(lacking.Served.Document.QuerySelector("form#jfb-1")!.ClassList, Does.Contain("jfb-theme-default"));
             Assert.That(blank.Served.Document.QuerySelector("form#jfb-1")!.ClassList, Does.Contain("jfb-theme-unstyled"), "a blank theme is none");
+            Assert.That(library.Served.Document.QuerySelector("form#jfb-1")!.ClassList, Does.Contain("jfb-theme-autumn").And.Contain("jfb-theme-bootstrap5"), "a library theme, as its base theme with its own class");
+            Assert.That(library.Served.Document.QuerySelector("input#jfb-1-name")!.GetAttribute("class"), Is.EqualTo("jfb-control form-control"), "its base theme's classes");
             Assert.That(named.Served.Document.QuerySelectorAll("link, script[src]"), Is.Empty, "still without the asset tags");
             Assert.That(GetRequiredService<LogCapture>().Entries.Where(entry => entry.Category == typeof(FormBuilderThemes).FullName), Is.Empty, "a name from a request is neither logged nor kept");
         });

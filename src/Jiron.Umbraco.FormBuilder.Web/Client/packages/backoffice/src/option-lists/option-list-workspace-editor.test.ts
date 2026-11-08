@@ -4,13 +4,13 @@
 // nothing for a new list. The back arrow goes to the list screen.
 import { UmbObjectState } from '@umbraco-cms/backoffice/observable-api';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
-import type { OptionListUsersResponseModel } from '../api';
+import type { LibraryUsersResponseModel } from '../api';
 import { must, registerEnglish, settle, shadow, testHost, text } from '../testing';
 import { OPTION_LIST_WORKSPACE_CONTEXT } from './constants';
 import { OptionListWorkspaceEditorElement } from './option-list-workspace-editor.element';
 import { loadOptionListWords } from './option-list-words';
 
-function contextOf(isNew: boolean, users: OptionListUsersResponseModel | undefined) {
+function contextOf(isNew: boolean, users: LibraryUsersResponseModel | undefined) {
   const name = new UmbObjectState('Sizes');
   const alias = new UmbObjectState('sizes');
   return {
@@ -26,7 +26,7 @@ function contextOf(isNew: boolean, users: OptionListUsersResponseModel | undefin
   };
 }
 
-async function headerOf(isNew: boolean, users?: OptionListUsersResponseModel) {
+async function headerOf(isNew: boolean, users?: LibraryUsersResponseModel) {
   const context = contextOf(isNew, users);
   const host = testHost();
   host.provideContext(OPTION_LIST_WORKSPACE_CONTEXT, context as never);

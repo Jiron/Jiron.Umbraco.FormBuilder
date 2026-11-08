@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using Jiron.Umbraco.FormBuilder.Core;
+using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Migrations;
 using Umbraco.Cms.Core;
@@ -44,7 +45,7 @@ public sealed partial class MigrationPlanTests : FormBuilderMigrationTestBase
                 Is.EqualTo(typeof(FormBuilderMigrationPlan)),
                 "the plan states IgnoreCurrentState itself (ADR-0003)");
             Assert.That(walked, Is.EqualTo(Steps), "the plan's transitions are its steps, in order");
-            Assert.That(Steps.Select(s => s.Step), Is.EqualTo(new[] { typeof(CreateSchemaV1), typeof(CreateDefaultSettingsV1), typeof(GrantFormsSectionV1), typeof(RequestReferenceRebuildV1), typeof(AddFileScanIndexV1), typeof(ChangeFileScanIndexV1), typeof(AddEmailTimeIndexV1), typeof(AddEntryEventDueV1), typeof(AddEntryTimeIndexV1), typeof(AddActionRunLastAttemptV1), typeof(AddEntryUnseenIndexV1), typeof(AddFormLibraryUsesV1) }));
+            Assert.That(Steps.Select(s => s.Step), Is.EqualTo(new[] { typeof(CreateSchemaV1), typeof(CreateDefaultSettingsV1), typeof(GrantFormsSectionV1), typeof(RequestReferenceRebuildV1), typeof(AddFileScanIndexV1), typeof(ChangeFileScanIndexV1), typeof(AddEmailTimeIndexV1), typeof(AddEntryEventDueV1), typeof(AddEntryTimeIndexV1), typeof(AddActionRunLastAttemptV1), typeof(AddEntryUnseenIndexV1), typeof(AddFormLibraryUsesV1), typeof(AddThemeAndLayoutUsesV1) }));
             Assert.That(plan.FinalState, Is.EqualTo(FinalState));
             Assert.That(new TestPlan().FinalState, Is.EqualTo(plan.FinalState), "the tests' copy follows the plan");
             Assert.That(CreateSchemaV1.Tables.Select(t => t.Name), Is.EqualTo(FormBuilderTables.SchemaV1), "the step creates every table of schema v1 in order");
@@ -225,7 +226,7 @@ public sealed partial class MigrationPlanTests : FormBuilderMigrationTestBase
     [Test]
     public async Task Upgrade_ToTheLibraryUses_WritesTheRowsOfTheFormsThereAre_FromTheirDraftAndLiveVersions()
     {
-        await RunAsync(new TestPlan(Steps.Count - 1));
+        await RunAsync(new TestPlan(Before<AddFormLibraryUsesV1>()));
         var list = Guid.Parse("72000000-0000-4000-8000-000000000001");
         var other = Guid.Parse("72000000-0000-4000-8000-000000000002");
         const string Draft = """{"pages":[{"groups":[{"fields":[{"type":"dropdown","options":{"source":"list","list":"72000000-0000-4000-8000-000000000001"}},{"type":"repeater","fields":[{"type":"radio","options":{"source":"list","list":"72000000-0000-4000-8000-000000000001"}},{"type":"radio","options":{"source":"items","list":"72000000-0000-4000-8000-000000000002"}}]}]}]}]}""";
@@ -245,6 +246,43 @@ public sealed partial class MigrationPlanTests : FormBuilderMigrationTestBase
                 "a list's fields counted, a child's included; a field of its own items names none; a version that does not read names nothing");
         });
     }
+
+    [Test]
+    public async Task Upgrade_ToTheThemeAndLayoutUses_WritesTheThemesAndLayoutsTheFormsName_AndKeepsTheListsRows()
+    {
+        await RunAsync(new TestPlan(Before<AddThemeAndLayoutUsesV1>()));
+        var list = Guid.Parse("72000000-0000-4000-8000-000000000001");
+        var layout = Guid.Parse("73000000-0000-4000-8000-000000000001");
+        var other = Guid.Parse("73000000-0000-4000-8000-000000000002");
+        const string Draft = """{"settings":{"appearance":{"theme":" Autumn "}},"pages":[{"groups":[{"fields":[{"type":"dropdown","options":{"source":"list","list":"72000000-0000-4000-8000-000000000001"}}]}]}],"actions":[{"type":"email","settings":{"layout":"73000000-0000-4000-8000-000000000001"}},{"type":"email","settings":{"layout":"73000000-0000-4000-8000-000000000001"}},{"type":"webhook","settings":{"layout":"73000000-0000-4000-8000-000000000002"}},{"type":"email","settings":{"layout":"none"}}]}""";
+        const string Live = """{"settings":{"appearance":{"theme":"default"}},"actions":[{"type":"email","settings":{"layout":"73000000-0000-4000-8000-000000000002"}}]}""";
+        var formId = InsertForm("themed", Draft, Live);
+        _ = InsertForm("plain", """{"settings":{"appearance":{"theme":""}}}""", null);
+        _ = InsertForm("unreadable", "{not json", null);
+        Write(db => db.Insert(new AddFormLibraryUsesV1.FormLibraryUseDto { FormId = formId, VersionKind = "draft", ItemKind = "optionList", ItemKey = list, Uses = 1 }));
+
+        var upgrade = await RunAsync(new FormBuilderMigrationPlan());
+
+        var rows = Query(db => db.Fetch<AddFormLibraryUsesV1.FormLibraryUseDto>($"SELECT * FROM {T(FormBuilderTables.FormLibraryUse)}"));
+        Assert.Multiple(() =>
+        {
+            Assert.That(upgrade.Successful, Is.True, upgrade.Exception?.ToString());
+            Assert.That(
+                rows.Select(row => (row.FormId, row.VersionKind, row.ItemKind, row.ItemKey, row.Uses)),
+                Is.EquivalentTo(new[]
+                {
+                    (formId, "draft", "optionList", list, 1),
+                    (formId, "draft", "theme", FormLibraryUses.ThemeKey("autumn"), 1),
+                    (formId, "draft", "emailLayout", layout, 2),
+                    (formId, "published", "theme", FormLibraryUses.ThemeKey("default"), 1),
+                    (formId, "published", "emailLayout", other, 1),
+                }),
+                "a theme by its alias in any case, a layout of email actions only and counted, the lists' rows kept; no theme, an action of another type and a text that is no definition name nothing");
+        });
+    }
+
+    // How many of the plan's steps come before the given one.
+    private static int Before<TStep>() => Steps.Select(s => s.Step).ToList().IndexOf(typeof(TStep));
 
     // A form with a draft and, when given, a live version, as the earlier steps' snapshots write them.
     private int InsertForm(string alias, string draft, string? live)

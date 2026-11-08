@@ -10,6 +10,7 @@ using Jiron.Umbraco.FormBuilder.Tests.Unit.Definitions;
 using Jiron.Umbraco.FormBuilder.Tests.Unit.MergeTags;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
+using Umbraco.Cms.Core.Cache;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Models.PublishedContent;
 using Umbraco.Cms.Core.PublishedCache;
@@ -43,7 +44,8 @@ public sealed class SiteFormCheckTests
     {
         var library = Substitute.For<IThemeRepository>();
         library.GetByAliasAsync("brand", Arg.Any<CancellationToken>()).Returns(Task.FromResult<StoredTheme?>(new StoredTheme(1, Guid.NewGuid(), "brand", "Brand", "default", "{}", null, 1, DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch)));
-        var check = new ThemeFormCheck(new FormThemes(new FormBuilderThemes([new DefaultTheme(), new UnstyledTheme(), new Bootstrap5Theme()], NullLogger<FormBuilderThemes>.Instance), library));
+        var registry = new FormBuilderThemes([new DefaultTheme(), new UnstyledTheme(), new Bootstrap5Theme()], NullLogger<FormBuilderThemes>.Instance);
+        var check = new ThemeFormCheck(new FormThemes(registry, library, new LibraryThemes(library, registry, AppCaches.NoCache)));
         async Task<IReadOnlyList<FormCheckIssue>> CheckAsync(string? theme) =>
             await check.CheckAsync(Form([], theme is null ? "" : $$$""","settings":{"appearance":{"theme":"{{{theme}}}"}}"""), CancellationToken.None);
 

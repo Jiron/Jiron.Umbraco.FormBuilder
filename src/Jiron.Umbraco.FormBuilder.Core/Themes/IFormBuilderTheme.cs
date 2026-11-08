@@ -1,3 +1,5 @@
+using System.Collections.Frozen;
+
 namespace Jiron.Umbraco.FormBuilder.Core.Themes;
 
 /// <summary>
@@ -35,6 +37,14 @@ public interface IFormBuilderTheme
 
     /// <summary>Whether the theme offers the dark scheme, which a site opts into with <c>jfb-scheme-dark</c> or <c>jfb-scheme-auto</c>.</summary>
     bool DarkScheme { get; }
+
+    /// <summary>
+    /// The colours the theme takes in the dark scheme, by token, each one of <see cref="Tokens"/> whose name starts with
+    /// <c>--jfb-color-</c>: what the library's theme editor offers as a dark colour's default, and what a library theme
+    /// based on this one keeps in the dark scheme when it changes only the light colour (ADR-0215). None by default; a
+    /// theme without <see cref="DarkScheme"/> declares none.
+    /// </summary>
+    IReadOnlyDictionary<string, string> DarkTokens => FrozenDictionary<string, string>.Empty;
 
     /// <summary>
     /// The folder below <c>Views/JironFormBuilder/</c> where a site's own views for the theme are found before the

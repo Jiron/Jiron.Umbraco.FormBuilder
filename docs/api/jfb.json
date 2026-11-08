@@ -451,6 +451,790 @@
         ]
       }
     },
+    "/umbraco/jfb/management/api/v1/email-layout": {
+      "post": {
+        "tags": [
+          "Email layout"
+        ],
+        "operationId": "EmailLayoutLibraryCreate",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/CreateEmailLayoutRequestModel"
+                  }
+                ]
+              }
+            },
+            "text/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/CreateEmailLayoutRequestModel"
+                  }
+                ]
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/CreateEmailLayoutRequestModel"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/EmailLayoutResponseModel"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The resource is protected and requires an authentication token"
+          },
+          "403": {
+            "description": "The authenticated user does not have access to this resource"
+          }
+        },
+        "security": [
+          {
+            "Backoffice-User": []
+          }
+        ]
+      }
+    },
+    "/umbraco/jfb/management/api/v1/email-layout/{key}": {
+      "delete": {
+        "tags": [
+          "Email layout"
+        ],
+        "operationId": "EmailLayoutLibraryDelete",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "concurrencyVersion",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The resource is protected and requires an authentication token"
+          },
+          "403": {
+            "description": "The authenticated user does not have access to this resource"
+          }
+        },
+        "security": [
+          {
+            "Backoffice-User": []
+          }
+        ]
+      },
+      "get": {
+        "tags": [
+          "Email layout"
+        ],
+        "operationId": "EmailLayoutLibraryGet",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/EmailLayoutResponseModel"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The resource is protected and requires an authentication token"
+          },
+          "403": {
+            "description": "The authenticated user does not have access to this resource"
+          }
+        },
+        "security": [
+          {
+            "Backoffice-User": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "Email layout"
+        ],
+        "operationId": "EmailLayoutLibraryUpdate",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/UpdateEmailLayoutRequestModel"
+                  }
+                ]
+              }
+            },
+            "text/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/UpdateEmailLayoutRequestModel"
+                  }
+                ]
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/UpdateEmailLayoutRequestModel"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/EmailLayoutResponseModel"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The resource is protected and requires an authentication token"
+          },
+          "403": {
+            "description": "The authenticated user does not have access to this resource"
+          }
+        },
+        "security": [
+          {
+            "Backoffice-User": []
+          }
+        ]
+      }
+    },
+    "/umbraco/jfb/management/api/v1/email-layout/{key}/duplicate": {
+      "post": {
+        "tags": [
+          "Email layout"
+        ],
+        "operationId": "EmailLayoutLibraryDuplicate",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/DuplicateEmailLayoutRequestModel"
+                  }
+                ]
+              }
+            },
+            "text/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/DuplicateEmailLayoutRequestModel"
+                  }
+                ]
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/DuplicateEmailLayoutRequestModel"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/EmailLayoutResponseModel"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The resource is protected and requires an authentication token"
+          },
+          "403": {
+            "description": "The authenticated user does not have access to this resource"
+          }
+        },
+        "security": [
+          {
+            "Backoffice-User": []
+          }
+        ]
+      }
+    },
+    "/umbraco/jfb/management/api/v1/email-layout/{key}/test": {
+      "post": {
+        "tags": [
+          "Email layout"
+        ],
+        "operationId": "EmailLayoutLibraryTest",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/TestEmailLayoutRequestModel"
+                  }
+                ]
+              }
+            },
+            "text/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/TestEmailLayoutRequestModel"
+                  }
+                ]
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/TestEmailLayoutRequestModel"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/TestEmailResponseModel"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The resource is protected and requires an authentication token"
+          },
+          "403": {
+            "description": "The authenticated user does not have access to this resource"
+          }
+        },
+        "security": [
+          {
+            "Backoffice-User": []
+          }
+        ]
+      }
+    },
+    "/umbraco/jfb/management/api/v1/email-layout/{key}/used-by": {
+      "get": {
+        "tags": [
+          "Email layout"
+        ],
+        "operationId": "EmailLayoutLibraryUsedBy",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/LibraryUsersResponseModel"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The resource is protected and requires an authentication token"
+          },
+          "403": {
+            "description": "The authenticated user does not have access to this resource"
+          }
+        },
+        "security": [
+          {
+            "Backoffice-User": []
+          }
+        ]
+      }
+    },
+    "/umbraco/jfb/management/api/v1/email-layout/editor": {
+      "get": {
+        "tags": [
+          "Email layout"
+        ],
+        "operationId": "EmailLayoutLibraryEditor",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/EmailLayoutEditorResponseModel"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The resource is protected and requires an authentication token"
+          },
+          "403": {
+            "description": "The authenticated user does not have access to this resource"
+          }
+        },
+        "security": [
+          {
+            "Backoffice-User": []
+          }
+        ]
+      }
+    },
+    "/umbraco/jfb/management/api/v1/email-layout/library": {
+      "get": {
+        "tags": [
+          "Email layout"
+        ],
+        "operationId": "EmailLayoutLibraryRows",
+        "parameters": [
+          {
+            "name": "skip",
+            "in": "query",
+            "schema": {
+              "maximum": 2147483647,
+              "minimum": 0,
+              "type": "integer",
+              "format": "int32",
+              "default": 0
+            }
+          },
+          {
+            "name": "take",
+            "in": "query",
+            "schema": {
+              "maximum": 500,
+              "minimum": 1,
+              "type": "integer",
+              "format": "int32",
+              "default": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/EmailLayoutRowsResponseModel"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The resource is protected and requires an authentication token"
+          },
+          "403": {
+            "description": "The authenticated user does not have access to this resource"
+          }
+        },
+        "security": [
+          {
+            "Backoffice-User": []
+          }
+        ]
+      }
+    },
+    "/umbraco/jfb/management/api/v1/email-layout/preview": {
+      "post": {
+        "tags": [
+          "Email layout"
+        ],
+        "operationId": "EmailLayoutLibraryPreview",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/PreviewEmailLayoutRequestModel"
+                  }
+                ]
+              }
+            },
+            "text/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/PreviewEmailLayoutRequestModel"
+                  }
+                ]
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/PreviewEmailLayoutRequestModel"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/EmailLayoutPreviewResponseModel"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The resource is protected and requires an authentication token"
+          },
+          "403": {
+            "description": "The authenticated user does not have access to this resource"
+          }
+        },
+        "security": [
+          {
+            "Backoffice-User": []
+          }
+        ]
+      }
+    },
     "/umbraco/jfb/management/api/v1/email/test": {
       "post": {
         "tags": [
@@ -8587,7 +9371,7 @@
                 "schema": {
                   "oneOf": [
                     {
-                      "$ref": "#/components/schemas/OptionListUsersResponseModel"
+                      "$ref": "#/components/schemas/LibraryUsersResponseModel"
                     }
                   ]
                 }
@@ -9877,6 +10661,811 @@
                   "oneOf": [
                     {
                       "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The resource is protected and requires an authentication token"
+          },
+          "403": {
+            "description": "The authenticated user does not have access to this resource"
+          }
+        },
+        "security": [
+          {
+            "Backoffice-User": []
+          }
+        ]
+      }
+    },
+    "/umbraco/jfb/management/api/v1/theme": {
+      "post": {
+        "tags": [
+          "Theme"
+        ],
+        "operationId": "ThemeLibraryCreate",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/CreateThemeRequestModel"
+                  }
+                ]
+              }
+            },
+            "text/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/CreateThemeRequestModel"
+                  }
+                ]
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/CreateThemeRequestModel"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ThemeResponseModel"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The resource is protected and requires an authentication token"
+          },
+          "403": {
+            "description": "The authenticated user does not have access to this resource"
+          }
+        },
+        "security": [
+          {
+            "Backoffice-User": []
+          }
+        ]
+      }
+    },
+    "/umbraco/jfb/management/api/v1/theme/{key}": {
+      "delete": {
+        "tags": [
+          "Theme"
+        ],
+        "operationId": "ThemeLibraryDelete",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "concurrencyVersion",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The resource is protected and requires an authentication token"
+          },
+          "403": {
+            "description": "The authenticated user does not have access to this resource"
+          }
+        },
+        "security": [
+          {
+            "Backoffice-User": []
+          }
+        ]
+      },
+      "get": {
+        "tags": [
+          "Theme"
+        ],
+        "operationId": "ThemeLibraryGet",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ThemeResponseModel"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The resource is protected and requires an authentication token"
+          },
+          "403": {
+            "description": "The authenticated user does not have access to this resource"
+          }
+        },
+        "security": [
+          {
+            "Backoffice-User": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "Theme"
+        ],
+        "operationId": "ThemeLibraryUpdate",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/UpdateThemeRequestModel"
+                  }
+                ]
+              }
+            },
+            "text/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/UpdateThemeRequestModel"
+                  }
+                ]
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/UpdateThemeRequestModel"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ThemeResponseModel"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The resource is protected and requires an authentication token"
+          },
+          "403": {
+            "description": "The authenticated user does not have access to this resource"
+          }
+        },
+        "security": [
+          {
+            "Backoffice-User": []
+          }
+        ]
+      }
+    },
+    "/umbraco/jfb/management/api/v1/theme/{key}/duplicate": {
+      "post": {
+        "tags": [
+          "Theme"
+        ],
+        "operationId": "ThemeLibraryDuplicate",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/DuplicateThemeRequestModel"
+                  }
+                ]
+              }
+            },
+            "text/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/DuplicateThemeRequestModel"
+                  }
+                ]
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/DuplicateThemeRequestModel"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ThemeResponseModel"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The resource is protected and requires an authentication token"
+          },
+          "403": {
+            "description": "The authenticated user does not have access to this resource"
+          }
+        },
+        "security": [
+          {
+            "Backoffice-User": []
+          }
+        ]
+      }
+    },
+    "/umbraco/jfb/management/api/v1/theme/{key}/export": {
+      "get": {
+        "tags": [
+          "Theme"
+        ],
+        "operationId": "ThemeLibraryExport",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ThemeExportResponseModel"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The resource is protected and requires an authentication token"
+          },
+          "403": {
+            "description": "The authenticated user does not have access to this resource"
+          }
+        },
+        "security": [
+          {
+            "Backoffice-User": []
+          }
+        ]
+      }
+    },
+    "/umbraco/jfb/management/api/v1/theme/{key}/used-by": {
+      "get": {
+        "tags": [
+          "Theme"
+        ],
+        "operationId": "ThemeLibraryUsedBy",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/LibraryUsersResponseModel"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The resource is protected and requires an authentication token"
+          },
+          "403": {
+            "description": "The authenticated user does not have access to this resource"
+          }
+        },
+        "security": [
+          {
+            "Backoffice-User": []
+          }
+        ]
+      }
+    },
+    "/umbraco/jfb/management/api/v1/theme/editor": {
+      "get": {
+        "tags": [
+          "Theme"
+        ],
+        "operationId": "ThemeLibraryEditor",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ThemeEditorResponseModel"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The resource is protected and requires an authentication token"
+          },
+          "403": {
+            "description": "The authenticated user does not have access to this resource"
+          }
+        },
+        "security": [
+          {
+            "Backoffice-User": []
+          }
+        ]
+      }
+    },
+    "/umbraco/jfb/management/api/v1/theme/import": {
+      "post": {
+        "tags": [
+          "Theme"
+        ],
+        "operationId": "ThemeLibraryImport",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/ImportThemeRequestModel"
+                  }
+                ]
+              }
+            },
+            "text/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/ImportThemeRequestModel"
+                  }
+                ]
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/ImportThemeRequestModel"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ThemeResponseModel"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The resource is protected and requires an authentication token"
+          },
+          "403": {
+            "description": "The authenticated user does not have access to this resource"
+          }
+        },
+        "security": [
+          {
+            "Backoffice-User": []
+          }
+        ]
+      }
+    },
+    "/umbraco/jfb/management/api/v1/theme/library": {
+      "get": {
+        "tags": [
+          "Theme"
+        ],
+        "operationId": "ThemeLibraryRows",
+        "parameters": [
+          {
+            "name": "skip",
+            "in": "query",
+            "schema": {
+              "maximum": 2147483647,
+              "minimum": 0,
+              "type": "integer",
+              "format": "int32",
+              "default": 0
+            }
+          },
+          {
+            "name": "take",
+            "in": "query",
+            "schema": {
+              "maximum": 500,
+              "minimum": 1,
+              "type": "integer",
+              "format": "int32",
+              "default": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ThemeRowsResponseModel"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The resource is protected and requires an authentication token"
+          },
+          "403": {
+            "description": "The authenticated user does not have access to this resource"
+          }
+        },
+        "security": [
+          {
+            "Backoffice-User": []
+          }
+        ]
+      }
+    },
+    "/umbraco/jfb/management/api/v1/theme/preview": {
+      "post": {
+        "tags": [
+          "Theme"
+        ],
+        "operationId": "ThemeLibraryPreview",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/PreviewThemeRequestModel"
+                  }
+                ]
+              }
+            },
+            "text/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/PreviewThemeRequestModel"
+                  }
+                ]
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/PreviewThemeRequestModel"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ThemePreviewResponseModel"
                     }
                   ]
                 }
@@ -11599,6 +13188,27 @@
         },
         "additionalProperties": false
       },
+      "CreateEmailLayoutRequestModel": {
+        "required": [
+          "layout"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "layout": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/EmailLayoutRequestModel"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
       "CreateFolderRequestModel": {
         "required": [
           "name"
@@ -11674,6 +13284,22 @@
             "oneOf": [
               {
                 "$ref": "#/components/schemas/OptionListRequestModel"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreateThemeRequestModel": {
+        "required": [
+          "theme"
+        ],
+        "type": "object",
+        "properties": {
+          "theme": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ThemeRequestModel"
               }
             ]
           }
@@ -11913,6 +13539,18 @@
         },
         "additionalProperties": false
       },
+      "DuplicateEmailLayoutRequestModel": {
+        "required": [
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
       "DuplicateFormRequestModel": {
         "required": [
           "includeActions",
@@ -11937,6 +13575,390 @@
         "properties": {
           "name": {
             "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "DuplicateThemeRequestModel": {
+        "required": [
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "EmailColoursRequestModel": {
+        "type": "object",
+        "properties": {
+          "accent": {
+            "type": "string",
+            "nullable": true
+          },
+          "page": {
+            "type": "string",
+            "nullable": true
+          },
+          "surface": {
+            "type": "string",
+            "nullable": true
+          },
+          "text": {
+            "type": "string",
+            "nullable": true
+          },
+          "muted": {
+            "type": "string",
+            "nullable": true
+          },
+          "rule": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "EmailColoursResponseModel": {
+        "type": "object",
+        "properties": {
+          "accent": {
+            "type": "string",
+            "nullable": true
+          },
+          "page": {
+            "type": "string",
+            "nullable": true
+          },
+          "surface": {
+            "type": "string",
+            "nullable": true
+          },
+          "text": {
+            "type": "string",
+            "nullable": true
+          },
+          "muted": {
+            "type": "string",
+            "nullable": true
+          },
+          "rule": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "EmailLayoutDesignRequestModel": {
+        "required": [
+          "look"
+        ],
+        "type": "object",
+        "properties": {
+          "look": {
+            "type": "string"
+          },
+          "logoMedia": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "logoUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "logoAlt": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "light": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/EmailColoursRequestModel"
+              }
+            ],
+            "nullable": true
+          },
+          "dark": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/EmailColoursRequestModel"
+              }
+            ],
+            "nullable": true
+          },
+          "header": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "footer": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "EmailLayoutDesignResponseModel": {
+        "required": [
+          "look"
+        ],
+        "type": "object",
+        "properties": {
+          "look": {
+            "type": "string"
+          },
+          "logoMedia": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "logoUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "logoAlt": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "light": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/EmailColoursResponseModel"
+              }
+            ],
+            "nullable": true
+          },
+          "dark": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/EmailColoursResponseModel"
+              }
+            ],
+            "nullable": true
+          },
+          "header": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "footer": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "EmailLayoutEditorResponseModel": {
+        "required": [
+          "dark",
+          "languages",
+          "light"
+        ],
+        "type": "object",
+        "properties": {
+          "languages": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/OptionListLanguageResponseModel"
+                }
+              ]
+            }
+          },
+          "light": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/EmailColoursResponseModel"
+              }
+            ]
+          },
+          "dark": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/EmailColoursResponseModel"
+              }
+            ]
+          },
+          "defaultLayout": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "EmailLayoutPreviewResponseModel": {
+        "required": [
+          "html",
+          "problems"
+        ],
+        "type": "object",
+        "properties": {
+          "html": {
+            "type": "string"
+          },
+          "problems": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/LibraryProblemResponseModel"
+                }
+              ]
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "EmailLayoutRequestModel": {
+        "required": [
+          "alias",
+          "design",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "alias": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "design": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/EmailLayoutDesignRequestModel"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "EmailLayoutResponseModel": {
+        "required": [
+          "alias",
+          "concurrencyVersion",
+          "design",
+          "key",
+          "name",
+          "updatedUtc"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "alias": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "design": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/EmailLayoutDesignResponseModel"
+              }
+            ]
+          },
+          "concurrencyVersion": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "updatedUtc": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "EmailLayoutRowResponseModel": {
+        "required": [
+          "alias",
+          "isDefault",
+          "key",
+          "look",
+          "name",
+          "swatch",
+          "updatedUtc",
+          "usedBy"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "alias": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "look": {
+            "type": "string"
+          },
+          "swatch": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "usedBy": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "isDefault": {
+            "type": "boolean"
+          },
+          "updatedUtc": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "EmailLayoutRowsResponseModel": {
+        "required": [
+          "items",
+          "total"
+        ],
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/EmailLayoutRowResponseModel"
+                }
+              ]
+            }
           }
         },
         "additionalProperties": false
@@ -15672,6 +17694,18 @@
         },
         "additionalProperties": false
       },
+      "ImportThemeRequestModel": {
+        "required": [
+          "document"
+        ],
+        "type": "object",
+        "properties": {
+          "document": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
       "InsightAnswerGridRowResponseModel": {
         "required": [
           "answered",
@@ -16448,6 +18482,26 @@
         },
         "additionalProperties": false
       },
+      "LibraryProblemResponseModel": {
+        "required": [
+          "code",
+          "message",
+          "path"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
       "LibraryRowResponseModel": {
         "required": [
           "item",
@@ -16479,6 +18533,64 @@
             "type": "integer",
             "format": "int64",
             "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "LibraryUserResponseModel": {
+        "required": [
+          "inDraft",
+          "inLive",
+          "isTrashed",
+          "key",
+          "name",
+          "uses"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "inDraft": {
+            "type": "boolean"
+          },
+          "inLive": {
+            "type": "boolean"
+          },
+          "isTrashed": {
+            "type": "boolean"
+          },
+          "uses": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "LibraryUsersResponseModel": {
+        "required": [
+          "forms",
+          "others"
+        ],
+        "type": "object",
+        "properties": {
+          "forms": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/LibraryUserResponseModel"
+                }
+              ]
+            }
+          },
+          "others": {
+            "type": "integer",
+            "format": "int32"
           }
         },
         "additionalProperties": false
@@ -16836,30 +18948,10 @@
             "items": {
               "oneOf": [
                 {
-                  "$ref": "#/components/schemas/OptionListProblemResponseModel"
+                  "$ref": "#/components/schemas/LibraryProblemResponseModel"
                 }
               ]
             }
-          }
-        },
-        "additionalProperties": false
-      },
-      "OptionListProblemResponseModel": {
-        "required": [
-          "code",
-          "message",
-          "path"
-        ],
-        "type": "object",
-        "properties": {
-          "code": {
-            "type": "string"
-          },
-          "path": {
-            "type": "string"
-          },
-          "message": {
-            "type": "string"
           }
         },
         "additionalProperties": false
@@ -16999,64 +19091,6 @@
                 }
               ]
             }
-          }
-        },
-        "additionalProperties": false
-      },
-      "OptionListUserResponseModel": {
-        "required": [
-          "inDraft",
-          "inLive",
-          "isTrashed",
-          "key",
-          "name",
-          "uses"
-        ],
-        "type": "object",
-        "properties": {
-          "key": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "name": {
-            "type": "string"
-          },
-          "inDraft": {
-            "type": "boolean"
-          },
-          "inLive": {
-            "type": "boolean"
-          },
-          "isTrashed": {
-            "type": "boolean"
-          },
-          "uses": {
-            "type": "integer",
-            "format": "int32"
-          }
-        },
-        "additionalProperties": false
-      },
-      "OptionListUsersResponseModel": {
-        "required": [
-          "forms",
-          "others"
-        ],
-        "type": "object",
-        "properties": {
-          "forms": {
-            "type": "array",
-            "items": {
-              "oneOf": [
-                {
-                  "$ref": "#/components/schemas/OptionListUserResponseModel"
-                }
-              ]
-            }
-          },
-          "others": {
-            "type": "integer",
-            "format": "int32"
           }
         },
         "additionalProperties": false
@@ -17371,6 +19405,26 @@
         },
         "additionalProperties": false
       },
+      "PreviewEmailLayoutRequestModel": {
+        "required": [
+          "culture",
+          "design"
+        ],
+        "type": "object",
+        "properties": {
+          "design": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/EmailLayoutDesignRequestModel"
+              }
+            ]
+          },
+          "culture": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
       "PreviewOptionListRequestModel": {
         "required": [
           "cacheSeconds",
@@ -17399,6 +19453,34 @@
           },
           "culture": {
             "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "PreviewThemeRequestModel": {
+        "required": [
+          "baseTheme",
+          "tokens"
+        ],
+        "type": "object",
+        "properties": {
+          "alias": {
+            "type": "string",
+            "nullable": true
+          },
+          "baseTheme": {
+            "type": "string"
+          },
+          "tokens": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ThemeTokensRequestModel"
+              }
+            ]
+          },
+          "customCss": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -17783,6 +19865,16 @@
         },
         "additionalProperties": false
       },
+      "TestEmailLayoutRequestModel": {
+        "type": "object",
+        "properties": {
+          "culture": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "TestEmailRequestModel": {
         "type": "object",
         "properties": {
@@ -17835,6 +19927,356 @@
             "items": {
               "type": "string",
               "format": "uuid"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "ThemeBaseResponseModel": {
+        "required": [
+          "alias",
+          "darkScheme",
+          "label",
+          "tokens"
+        ],
+        "type": "object",
+        "properties": {
+          "alias": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "darkScheme": {
+            "type": "boolean"
+          },
+          "stylesheet": {
+            "type": "string",
+            "nullable": true
+          },
+          "tokens": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/ThemeTokenResponseModel"
+                }
+              ]
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "ThemeCssRemovalResponseModel": {
+        "required": [
+          "code",
+          "text"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ThemeEditorResponseModel": {
+        "required": [
+          "bases",
+          "defaultTheme",
+          "maxCustomCssLength",
+          "previewAlias"
+        ],
+        "type": "object",
+        "properties": {
+          "bases": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/ThemeBaseResponseModel"
+                }
+              ]
+            }
+          },
+          "defaultTheme": {
+            "type": "string"
+          },
+          "maxCustomCssLength": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "previewAlias": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ThemeExportResponseModel": {
+        "required": [
+          "document",
+          "fileName"
+        ],
+        "type": "object",
+        "properties": {
+          "fileName": {
+            "type": "string"
+          },
+          "document": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ThemePreviewResponseModel": {
+        "required": [
+          "alias",
+          "css",
+          "problems",
+          "removed"
+        ],
+        "type": "object",
+        "properties": {
+          "alias": {
+            "type": "string"
+          },
+          "css": {
+            "type": "string"
+          },
+          "removed": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/ThemeCssRemovalResponseModel"
+                }
+              ]
+            }
+          },
+          "problems": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/LibraryProblemResponseModel"
+                }
+              ]
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "ThemeRequestModel": {
+        "required": [
+          "alias",
+          "baseTheme",
+          "name",
+          "tokens"
+        ],
+        "type": "object",
+        "properties": {
+          "alias": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "baseTheme": {
+            "type": "string"
+          },
+          "tokens": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ThemeTokensRequestModel"
+              }
+            ]
+          },
+          "customCss": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ThemeResponseModel": {
+        "required": [
+          "alias",
+          "baseTheme",
+          "concurrencyVersion",
+          "key",
+          "name",
+          "tokens",
+          "updatedUtc"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "alias": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "baseTheme": {
+            "type": "string"
+          },
+          "tokens": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ThemeTokensResponseModel"
+              }
+            ]
+          },
+          "customCss": {
+            "type": "string",
+            "nullable": true
+          },
+          "concurrencyVersion": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "updatedUtc": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ThemeRowResponseModel": {
+        "required": [
+          "alias",
+          "baseLabel",
+          "isDefault",
+          "key",
+          "name",
+          "swatch",
+          "updatedUtc",
+          "usedBy"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "alias": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "baseLabel": {
+            "type": "string"
+          },
+          "usedBy": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "isDefault": {
+            "type": "boolean"
+          },
+          "swatch": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "updatedUtc": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ThemeRowsResponseModel": {
+        "required": [
+          "items",
+          "total"
+        ],
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/ThemeRowResponseModel"
+                }
+              ]
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "ThemeTokenResponseModel": {
+        "required": [
+          "default",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "default": {
+            "type": "string"
+          },
+          "darkDefault": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ThemeTokensRequestModel": {
+        "required": [
+          "dark",
+          "light"
+        ],
+        "type": "object",
+        "properties": {
+          "light": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "dark": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "ThemeTokensResponseModel": {
+        "required": [
+          "dark",
+          "light"
+        ],
+        "type": "object",
+        "properties": {
+          "light": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "dark": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
             }
           }
         },
@@ -17903,6 +20345,27 @@
         },
         "additionalProperties": false
       },
+      "UpdateEmailLayoutRequestModel": {
+        "required": [
+          "concurrencyVersion",
+          "layout"
+        ],
+        "type": "object",
+        "properties": {
+          "concurrencyVersion": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "layout": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/EmailLayoutRequestModel"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
       "UpdateOptionListRequestModel": {
         "required": [
           "concurrencyVersion",
@@ -17918,6 +20381,27 @@
             "oneOf": [
               {
                 "$ref": "#/components/schemas/OptionListRequestModel"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "UpdateThemeRequestModel": {
+        "required": [
+          "concurrencyVersion",
+          "theme"
+        ],
+        "type": "object",
+        "properties": {
+          "concurrencyVersion": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "theme": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ThemeRequestModel"
               }
             ]
           }
@@ -17945,6 +20429,9 @@
     },
     {
       "name": "Canvas"
+    },
+    {
+      "name": "Email layout"
     },
     {
       "name": "Email"
@@ -18008,6 +20495,9 @@
     },
     {
       "name": "Template"
+    },
+    {
+      "name": "Theme"
     },
     {
       "name": "Trash"

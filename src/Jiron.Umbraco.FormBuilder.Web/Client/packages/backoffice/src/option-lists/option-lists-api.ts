@@ -21,7 +21,7 @@ import {
   type OptionListOptionResponseModel,
   type OptionListResponseModel,
   type OptionListRowsResponseModel,
-  type OptionListUsersResponseModel,
+  type LibraryUsersResponseModel,
 } from '../api';
 import type { DesignOption } from '../designer/inspector/option-values';
 import { codeOf } from '../library/library-changes';
@@ -175,10 +175,7 @@ export async function duplicateList(
 }
 
 /** The forms that use a list, as the user may see them; undefined without an answer. */
-export async function readUsers(
-  host: UmbClassInterface,
-  key: string,
-): Promise<OptionListUsersResponseModel | undefined> {
+export async function readUsers(host: UmbClassInterface, key: string): Promise<LibraryUsersResponseModel | undefined> {
   const { data } = await tryExecute(host, optionListLibraryUsedBy({ path: { key } }), { disableNotifications: true });
   return data;
 }

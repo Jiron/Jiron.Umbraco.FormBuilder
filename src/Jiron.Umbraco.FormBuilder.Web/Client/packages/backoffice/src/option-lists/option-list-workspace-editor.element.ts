@@ -3,7 +3,7 @@
 // button that opens them as links. The "..." holds the list's entity actions, the footer Save, and the view the rest.
 import { css, html, nothing, type TemplateResult } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
-import type { OptionListUsersResponseModel } from '../api';
+import type { LibraryUsersResponseModel } from '../api';
 import { FORM_ENTITY_TYPE, screenPath } from '../section/entity-types';
 import { jfbBackofficeTokens } from '../styles/tokens';
 import { OPTION_LIST_WORKSPACE_CONTEXT, OPTION_LISTS_ENTITY_TYPE } from './constants';
@@ -94,7 +94,7 @@ export class OptionListWorkspaceEditorElement extends UmbLitElement {
   declare private _name: string;
   declare private _alias: string;
   declare private _isNew: boolean | undefined;
-  declare private _users: OptionListUsersResponseModel | undefined;
+  declare private _users: LibraryUsersResponseModel | undefined;
 
   #context: OptionListWorkspaceContext | undefined;
 

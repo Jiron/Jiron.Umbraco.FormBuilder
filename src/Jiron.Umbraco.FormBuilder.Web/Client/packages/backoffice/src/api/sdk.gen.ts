@@ -3,7 +3,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { ActionLastRunListData, ActionLastRunListErrors, ActionLastRunListResponses, ActionTestTestData, ActionTestTestErrors, ActionTestTestResponses, ActionTypeListData, ActionTypeListErrors, ActionTypeListResponses, CanvasGetData, CanvasGetErrors, CanvasGetResponses, CaptchaProviderListData, CaptchaProviderListErrors, CaptchaProviderListResponses, ContentDocumentTypeGetData, ContentDocumentTypeGetErrors, ContentDocumentTypeGetResponses, DraftOptionsResolveData, DraftOptionsResolveErrors, DraftOptionsResolveResponses, EmailPreviewRenderData, EmailPreviewRenderErrors, EmailPreviewRenderResponses, EntryActionRunListData, EntryActionRunListErrors, EntryActionRunListResponses, EntryActionRunRetryData, EntryActionRunRetryErrors, EntryActionRunRetryResponses, EntryDigestGetData, EntryDigestGetErrors, EntryDigestGetResponses, EntryDigestPreviewData, EntryDigestPreviewErrors, EntryDigestPreviewResponses, EntryDigestSaveData, EntryDigestSaveErrors, EntryDigestSaveResponses, EntryDigestTestData, EntryDigestTestErrors, EntryDigestTestResponses, EntryExportDownloadData, EntryExportDownloadErrors, EntryExportDownloadResponses, EntryExportPlanData, EntryExportPlanErrors, EntryExportPlanResponses, EntryExportStartData, EntryExportStartErrors, EntryExportStartResponses, EntryExportStatusData, EntryExportStatusErrors, EntryExportStatusResponses, EntryExportTicketData, EntryExportTicketErrors, EntryExportTicketResponses, EntryExportViewData, EntryExportViewErrors, EntryExportViewResponses, EntryExportWriteFileData, EntryExportWriteFileErrors, EntryExportWriteFileResponses, EntryFileArchiveData, EntryFileArchiveErrors, EntryFileArchiveResponses, EntryFileDownloadData, EntryFileDownloadErrors, EntryFileDownloadResponses, EntryFilterSetDeleteData, EntryFilterSetDeleteErrors, EntryFilterSetDeleteResponses, EntryFilterSetSaveData, EntryFilterSetSaveErrors, EntryFilterSetSaveResponses, EntryInboxEmptySpamData, EntryInboxEmptySpamErrors, EntryInboxEmptySpamResponses, EntryInboxFormsData, EntryInboxFormsErrors, EntryInboxFormsResponses, EntryInboxInboxData, EntryInboxInboxErrors, EntryInboxInboxResponses, EntryInboxSpamData, EntryInboxSpamErrors, EntryInboxSpamResponses, EntryInboxUnseenData, EntryInboxUnseenErrors, EntryInboxUnseenResponses, EntryInboxViewData, EntryInboxViewErrors, EntryInboxViewResponses, EntryListColumnsData, EntryListColumnsErrors, EntryListColumnsResponses, EntryListDeleteData, EntryListDeleteErrors, EntryListDeleteResponses, EntryListListData, EntryListListErrors, EntryListListResponses, EntryListRunActionsData, EntryListRunActionsErrors, EntryListRunActionsResponses, EntryListViewData, EntryListViewErrors, EntryListViewResponses, EntryLocationFormData, EntryLocationFormErrors, EntryLocationFormResponses, EntryPanelAddNoteData, EntryPanelAddNoteErrors, EntryPanelAddNoteResponses, EntryPanelChangeNoteData, EntryPanelChangeNoteErrors, EntryPanelChangeNoteResponses, EntryPanelEditData, EntryPanelEditErrors, EntryPanelEditResponses, EntryPanelForwardData, EntryPanelForwardErrors, EntryPanelForwardResponses, EntryPanelNotesData, EntryPanelNotesErrors, EntryPanelNotesResponses, EntryPanelOpenData, EntryPanelOpenErrors, EntryPanelOpenResponses, EntryPanelRecipientsData, EntryPanelRecipientsErrors, EntryPanelRecipientsResponses, EntryPanelRevealData, EntryPanelRevealErrors, EntryPanelRevealResponses, EntryPanelTimelineData, EntryPanelTimelineErrors, EntryPanelTimelineResponses, EntryStateChangeData, EntryStateChangeErrors, EntryStateChangeResponses, EntryStateUndoData, EntryStateUndoErrors, EntryStateUndoResponses, FieldTypeChangesData, FieldTypeChangesErrors, FieldTypeChangesResponses, FieldTypeListData, FieldTypeListErrors, FieldTypeListResponses, FolderCreateData, FolderCreateErrors, FolderCreateResponses, FolderDeleteData, FolderDeleteErrors, FolderDeleteResponses, FolderGetData, FolderGetErrors, FolderGetResponses, FolderMoveData, FolderMoveErrors, FolderMoveResponses, FolderRenameData, FolderRenameErrors, FolderRenameResponses, FolderRestoreData, FolderRestoreErrors, FolderRestoreResponses, FolderTrashData, FolderTrashErrors, FolderTrashResponses, FormCheckCheckData, FormCheckCheckErrors, FormCheckCheckResponses, FormCreateData, FormCreateErrors, FormCreateResponses, FormDeleteData, FormDeleteErrors, FormDeleteResponses, FormDraftData, FormDraftErrors, FormDraftResponses, FormExchangeCheckImportData, FormExchangeCheckImportErrors, FormExchangeCheckImportResponses, FormExchangeCopyActionsData, FormExchangeCopyActionsErrors, FormExchangeCopyActionsResponses, FormExchangeDuplicateData, FormExchangeDuplicateErrors, FormExchangeDuplicateResponses, FormExchangeExportData, FormExchangeExportErrors, FormExchangeExportResponses, FormExchangeFromTemplateData, FormExchangeFromTemplateErrors, FormExchangeFromTemplateResponses, FormExchangeImportData, FormExchangeImportErrors, FormExchangeImportResponses, FormGetData, FormGetErrors, FormGetResponses, FormHoldingsData, FormHoldingsErrors, FormHoldingsResponses, FormMoveData, FormMoveErrors, FormMoveResponses, FormPreviewRenderData, FormPreviewRenderErrors, FormPreviewRenderResponses, FormPreviewRunActionsData, FormPreviewRunActionsErrors, FormPreviewRunActionsResponses, FormPreviewTestEntryData, FormPreviewTestEntryErrors, FormPreviewTestEntryResponses, FormPreviewTicketData, FormPreviewTicketErrors, FormPreviewTicketResponses, FormPublishData, FormPublishErrors, FormPublishResponses, FormReferenceListData, FormReferenceListErrors, FormReferenceListResponses, FormRenameData, FormRenameErrors, FormRenameResponses, FormRestoreData, FormRestoreErrors, FormRestoreResponses, FormSaveDraftData, FormSaveDraftErrors, FormSaveDraftResponses, FormSearchData, FormSearchErrors, FormSearchFieldsData, FormSearchFieldsErrors, FormSearchFieldsResponses, FormSearchResponses, FormSettingsChoicesData, FormSettingsChoicesErrors, FormSettingsChoicesResponses, FormTrashData, FormTrashErrors, FormTrashResponses, FormUnpublishData, FormUnpublishErrors, FormUnpublishResponses, GeneralSettingsGetData, GeneralSettingsGetErrors, GeneralSettingsGetResponses, GeneralSettingsSaveData, GeneralSettingsSaveErrors, GeneralSettingsSaveResponses, InsightAnswersData, InsightAnswersErrors, InsightAnswersResponses, InsightAnswerTextsData, InsightAnswerTextsErrors, InsightAnswerTextsResponses, InsightGlanceData, InsightGlanceErrors, InsightGlanceResponses, InsightReportData, InsightReportErrors, InsightReportResponses, InsightTablesData, InsightTablesErrors, InsightTablesResponses, LibraryListItemsData, LibraryListItemsErrors, LibraryListItemsResponses, LibraryListTrashData, LibraryListTrashErrors, LibraryListTrashResponses, MePermissionsData, MePermissionsErrors, MePermissionsResponses, MergeTagPathListData, MergeTagPathListErrors, MergeTagPathListResponses, OptionListLibraryCreateData, OptionListLibraryCreateErrors, OptionListLibraryCreateResponses, OptionListLibraryDeleteData, OptionListLibraryDeleteErrors, OptionListLibraryDeleteResponses, OptionListLibraryDuplicateData, OptionListLibraryDuplicateErrors, OptionListLibraryDuplicateResponses, OptionListLibraryEditorData, OptionListLibraryEditorErrors, OptionListLibraryEditorResponses, OptionListLibraryFetchData, OptionListLibraryFetchedData, OptionListLibraryFetchedErrors, OptionListLibraryFetchedResponses, OptionListLibraryFetchErrors, OptionListLibraryFetchResponses, OptionListLibraryGetData, OptionListLibraryGetErrors, OptionListLibraryGetResponses, OptionListLibraryPreviewData, OptionListLibraryPreviewErrors, OptionListLibraryPreviewResponses, OptionListLibraryReadFileData, OptionListLibraryReadFileErrors, OptionListLibraryReadFileResponses, OptionListLibraryRowsData, OptionListLibraryRowsErrors, OptionListLibraryRowsResponses, OptionListLibraryUpdateData, OptionListLibraryUpdateErrors, OptionListLibraryUpdateResponses, OptionListLibraryUsedByData, OptionListLibraryUsedByErrors, OptionListLibraryUsedByResponses, OptionListListData, OptionListListErrors, OptionListListResponses, OptionSourceListData, OptionSourceListErrors, OptionSourceListResponses, OutcomePreviewRenderData, OutcomePreviewRenderErrors, OutcomePreviewRenderResponses, PickerChildrenData, PickerChildrenErrors, PickerChildrenResponses, PickerFoldersData, PickerFoldersErrors, PickerFoldersResponses, PickerFormsData, PickerFormsErrors, PickerFormsResponses, PickerSearchData, PickerSearchErrors, PickerSearchResponses, PickerThemesData, PickerThemesErrors, PickerThemesResponses, PrivacySettingsGetData, PrivacySettingsGetErrors, PrivacySettingsGetResponses, PrivacySettingsSaveData, PrivacySettingsSaveErrors, PrivacySettingsSaveResponses, RecentEntryListData, RecentEntryListErrors, RecentEntryListResponses, SetupChecklistData, SetupChecklistErrors, SetupChecklistResponses, SetupCreateFormBlockData, SetupCreateFormBlockErrors, SetupCreateFormBlockResponses, SetupHealthData, SetupHealthErrors, SetupHealthResponses, TemplateListData, TemplateListErrors, TemplateListResponses, TestEmailSendData, TestEmailSendErrors, TestEmailSendResponses, TrashEmptyData, TrashEmptyErrors, TrashEmptyResponses, TrashHoldingsData, TrashHoldingsErrors, TrashHoldingsResponses, TrashListData, TrashListErrors, TrashListResponses, TreeChildrenData, TreeChildrenErrors, TreeChildrenResponses, TreeRootData, TreeRootErrors, TreeRootResponses, VersionCommentData, VersionCommentErrors, VersionCommentResponses, VersionCompareData, VersionCompareErrors, VersionCompareResponses, VersionCompareWithData, VersionCompareWithErrors, VersionCompareWithResponses, VersionGetData, VersionGetErrors, VersionGetResponses, VersionListData, VersionListErrors, VersionListResponses, VersionPinData, VersionPinErrors, VersionPinResponses, VersionRestoreData, VersionRestoreErrors, VersionRestoreResponses } from './types.gen';
+import type { ActionLastRunListData, ActionLastRunListErrors, ActionLastRunListResponses, ActionTestTestData, ActionTestTestErrors, ActionTestTestResponses, ActionTypeListData, ActionTypeListErrors, ActionTypeListResponses, CanvasGetData, CanvasGetErrors, CanvasGetResponses, CaptchaProviderListData, CaptchaProviderListErrors, CaptchaProviderListResponses, ContentDocumentTypeGetData, ContentDocumentTypeGetErrors, ContentDocumentTypeGetResponses, DraftOptionsResolveData, DraftOptionsResolveErrors, DraftOptionsResolveResponses, EmailLayoutLibraryCreateData, EmailLayoutLibraryCreateErrors, EmailLayoutLibraryCreateResponses, EmailLayoutLibraryDeleteData, EmailLayoutLibraryDeleteErrors, EmailLayoutLibraryDeleteResponses, EmailLayoutLibraryDuplicateData, EmailLayoutLibraryDuplicateErrors, EmailLayoutLibraryDuplicateResponses, EmailLayoutLibraryEditorData, EmailLayoutLibraryEditorErrors, EmailLayoutLibraryEditorResponses, EmailLayoutLibraryGetData, EmailLayoutLibraryGetErrors, EmailLayoutLibraryGetResponses, EmailLayoutLibraryPreviewData, EmailLayoutLibraryPreviewErrors, EmailLayoutLibraryPreviewResponses, EmailLayoutLibraryRowsData, EmailLayoutLibraryRowsErrors, EmailLayoutLibraryRowsResponses, EmailLayoutLibraryTestData, EmailLayoutLibraryTestErrors, EmailLayoutLibraryTestResponses, EmailLayoutLibraryUpdateData, EmailLayoutLibraryUpdateErrors, EmailLayoutLibraryUpdateResponses, EmailLayoutLibraryUsedByData, EmailLayoutLibraryUsedByErrors, EmailLayoutLibraryUsedByResponses, EmailPreviewRenderData, EmailPreviewRenderErrors, EmailPreviewRenderResponses, EntryActionRunListData, EntryActionRunListErrors, EntryActionRunListResponses, EntryActionRunRetryData, EntryActionRunRetryErrors, EntryActionRunRetryResponses, EntryDigestGetData, EntryDigestGetErrors, EntryDigestGetResponses, EntryDigestPreviewData, EntryDigestPreviewErrors, EntryDigestPreviewResponses, EntryDigestSaveData, EntryDigestSaveErrors, EntryDigestSaveResponses, EntryDigestTestData, EntryDigestTestErrors, EntryDigestTestResponses, EntryExportDownloadData, EntryExportDownloadErrors, EntryExportDownloadResponses, EntryExportPlanData, EntryExportPlanErrors, EntryExportPlanResponses, EntryExportStartData, EntryExportStartErrors, EntryExportStartResponses, EntryExportStatusData, EntryExportStatusErrors, EntryExportStatusResponses, EntryExportTicketData, EntryExportTicketErrors, EntryExportTicketResponses, EntryExportViewData, EntryExportViewErrors, EntryExportViewResponses, EntryExportWriteFileData, EntryExportWriteFileErrors, EntryExportWriteFileResponses, EntryFileArchiveData, EntryFileArchiveErrors, EntryFileArchiveResponses, EntryFileDownloadData, EntryFileDownloadErrors, EntryFileDownloadResponses, EntryFilterSetDeleteData, EntryFilterSetDeleteErrors, EntryFilterSetDeleteResponses, EntryFilterSetSaveData, EntryFilterSetSaveErrors, EntryFilterSetSaveResponses, EntryInboxEmptySpamData, EntryInboxEmptySpamErrors, EntryInboxEmptySpamResponses, EntryInboxFormsData, EntryInboxFormsErrors, EntryInboxFormsResponses, EntryInboxInboxData, EntryInboxInboxErrors, EntryInboxInboxResponses, EntryInboxSpamData, EntryInboxSpamErrors, EntryInboxSpamResponses, EntryInboxUnseenData, EntryInboxUnseenErrors, EntryInboxUnseenResponses, EntryInboxViewData, EntryInboxViewErrors, EntryInboxViewResponses, EntryListColumnsData, EntryListColumnsErrors, EntryListColumnsResponses, EntryListDeleteData, EntryListDeleteErrors, EntryListDeleteResponses, EntryListListData, EntryListListErrors, EntryListListResponses, EntryListRunActionsData, EntryListRunActionsErrors, EntryListRunActionsResponses, EntryListViewData, EntryListViewErrors, EntryListViewResponses, EntryLocationFormData, EntryLocationFormErrors, EntryLocationFormResponses, EntryPanelAddNoteData, EntryPanelAddNoteErrors, EntryPanelAddNoteResponses, EntryPanelChangeNoteData, EntryPanelChangeNoteErrors, EntryPanelChangeNoteResponses, EntryPanelEditData, EntryPanelEditErrors, EntryPanelEditResponses, EntryPanelForwardData, EntryPanelForwardErrors, EntryPanelForwardResponses, EntryPanelNotesData, EntryPanelNotesErrors, EntryPanelNotesResponses, EntryPanelOpenData, EntryPanelOpenErrors, EntryPanelOpenResponses, EntryPanelRecipientsData, EntryPanelRecipientsErrors, EntryPanelRecipientsResponses, EntryPanelRevealData, EntryPanelRevealErrors, EntryPanelRevealResponses, EntryPanelTimelineData, EntryPanelTimelineErrors, EntryPanelTimelineResponses, EntryStateChangeData, EntryStateChangeErrors, EntryStateChangeResponses, EntryStateUndoData, EntryStateUndoErrors, EntryStateUndoResponses, FieldTypeChangesData, FieldTypeChangesErrors, FieldTypeChangesResponses, FieldTypeListData, FieldTypeListErrors, FieldTypeListResponses, FolderCreateData, FolderCreateErrors, FolderCreateResponses, FolderDeleteData, FolderDeleteErrors, FolderDeleteResponses, FolderGetData, FolderGetErrors, FolderGetResponses, FolderMoveData, FolderMoveErrors, FolderMoveResponses, FolderRenameData, FolderRenameErrors, FolderRenameResponses, FolderRestoreData, FolderRestoreErrors, FolderRestoreResponses, FolderTrashData, FolderTrashErrors, FolderTrashResponses, FormCheckCheckData, FormCheckCheckErrors, FormCheckCheckResponses, FormCreateData, FormCreateErrors, FormCreateResponses, FormDeleteData, FormDeleteErrors, FormDeleteResponses, FormDraftData, FormDraftErrors, FormDraftResponses, FormExchangeCheckImportData, FormExchangeCheckImportErrors, FormExchangeCheckImportResponses, FormExchangeCopyActionsData, FormExchangeCopyActionsErrors, FormExchangeCopyActionsResponses, FormExchangeDuplicateData, FormExchangeDuplicateErrors, FormExchangeDuplicateResponses, FormExchangeExportData, FormExchangeExportErrors, FormExchangeExportResponses, FormExchangeFromTemplateData, FormExchangeFromTemplateErrors, FormExchangeFromTemplateResponses, FormExchangeImportData, FormExchangeImportErrors, FormExchangeImportResponses, FormGetData, FormGetErrors, FormGetResponses, FormHoldingsData, FormHoldingsErrors, FormHoldingsResponses, FormMoveData, FormMoveErrors, FormMoveResponses, FormPreviewRenderData, FormPreviewRenderErrors, FormPreviewRenderResponses, FormPreviewRunActionsData, FormPreviewRunActionsErrors, FormPreviewRunActionsResponses, FormPreviewTestEntryData, FormPreviewTestEntryErrors, FormPreviewTestEntryResponses, FormPreviewTicketData, FormPreviewTicketErrors, FormPreviewTicketResponses, FormPublishData, FormPublishErrors, FormPublishResponses, FormReferenceListData, FormReferenceListErrors, FormReferenceListResponses, FormRenameData, FormRenameErrors, FormRenameResponses, FormRestoreData, FormRestoreErrors, FormRestoreResponses, FormSaveDraftData, FormSaveDraftErrors, FormSaveDraftResponses, FormSearchData, FormSearchErrors, FormSearchFieldsData, FormSearchFieldsErrors, FormSearchFieldsResponses, FormSearchResponses, FormSettingsChoicesData, FormSettingsChoicesErrors, FormSettingsChoicesResponses, FormTrashData, FormTrashErrors, FormTrashResponses, FormUnpublishData, FormUnpublishErrors, FormUnpublishResponses, GeneralSettingsGetData, GeneralSettingsGetErrors, GeneralSettingsGetResponses, GeneralSettingsSaveData, GeneralSettingsSaveErrors, GeneralSettingsSaveResponses, InsightAnswersData, InsightAnswersErrors, InsightAnswersResponses, InsightAnswerTextsData, InsightAnswerTextsErrors, InsightAnswerTextsResponses, InsightGlanceData, InsightGlanceErrors, InsightGlanceResponses, InsightReportData, InsightReportErrors, InsightReportResponses, InsightTablesData, InsightTablesErrors, InsightTablesResponses, LibraryListItemsData, LibraryListItemsErrors, LibraryListItemsResponses, LibraryListTrashData, LibraryListTrashErrors, LibraryListTrashResponses, MePermissionsData, MePermissionsErrors, MePermissionsResponses, MergeTagPathListData, MergeTagPathListErrors, MergeTagPathListResponses, OptionListLibraryCreateData, OptionListLibraryCreateErrors, OptionListLibraryCreateResponses, OptionListLibraryDeleteData, OptionListLibraryDeleteErrors, OptionListLibraryDeleteResponses, OptionListLibraryDuplicateData, OptionListLibraryDuplicateErrors, OptionListLibraryDuplicateResponses, OptionListLibraryEditorData, OptionListLibraryEditorErrors, OptionListLibraryEditorResponses, OptionListLibraryFetchData, OptionListLibraryFetchedData, OptionListLibraryFetchedErrors, OptionListLibraryFetchedResponses, OptionListLibraryFetchErrors, OptionListLibraryFetchResponses, OptionListLibraryGetData, OptionListLibraryGetErrors, OptionListLibraryGetResponses, OptionListLibraryPreviewData, OptionListLibraryPreviewErrors, OptionListLibraryPreviewResponses, OptionListLibraryReadFileData, OptionListLibraryReadFileErrors, OptionListLibraryReadFileResponses, OptionListLibraryRowsData, OptionListLibraryRowsErrors, OptionListLibraryRowsResponses, OptionListLibraryUpdateData, OptionListLibraryUpdateErrors, OptionListLibraryUpdateResponses, OptionListLibraryUsedByData, OptionListLibraryUsedByErrors, OptionListLibraryUsedByResponses, OptionListListData, OptionListListErrors, OptionListListResponses, OptionSourceListData, OptionSourceListErrors, OptionSourceListResponses, OutcomePreviewRenderData, OutcomePreviewRenderErrors, OutcomePreviewRenderResponses, PickerChildrenData, PickerChildrenErrors, PickerChildrenResponses, PickerFoldersData, PickerFoldersErrors, PickerFoldersResponses, PickerFormsData, PickerFormsErrors, PickerFormsResponses, PickerSearchData, PickerSearchErrors, PickerSearchResponses, PickerThemesData, PickerThemesErrors, PickerThemesResponses, PrivacySettingsGetData, PrivacySettingsGetErrors, PrivacySettingsGetResponses, PrivacySettingsSaveData, PrivacySettingsSaveErrors, PrivacySettingsSaveResponses, RecentEntryListData, RecentEntryListErrors, RecentEntryListResponses, SetupChecklistData, SetupChecklistErrors, SetupChecklistResponses, SetupCreateFormBlockData, SetupCreateFormBlockErrors, SetupCreateFormBlockResponses, SetupHealthData, SetupHealthErrors, SetupHealthResponses, TemplateListData, TemplateListErrors, TemplateListResponses, TestEmailSendData, TestEmailSendErrors, TestEmailSendResponses, ThemeLibraryCreateData, ThemeLibraryCreateErrors, ThemeLibraryCreateResponses, ThemeLibraryDeleteData, ThemeLibraryDeleteErrors, ThemeLibraryDeleteResponses, ThemeLibraryDuplicateData, ThemeLibraryDuplicateErrors, ThemeLibraryDuplicateResponses, ThemeLibraryEditorData, ThemeLibraryEditorErrors, ThemeLibraryEditorResponses, ThemeLibraryExportData, ThemeLibraryExportErrors, ThemeLibraryExportResponses, ThemeLibraryGetData, ThemeLibraryGetErrors, ThemeLibraryGetResponses, ThemeLibraryImportData, ThemeLibraryImportErrors, ThemeLibraryImportResponses, ThemeLibraryPreviewData, ThemeLibraryPreviewErrors, ThemeLibraryPreviewResponses, ThemeLibraryRowsData, ThemeLibraryRowsErrors, ThemeLibraryRowsResponses, ThemeLibraryUpdateData, ThemeLibraryUpdateErrors, ThemeLibraryUpdateResponses, ThemeLibraryUsedByData, ThemeLibraryUsedByErrors, ThemeLibraryUsedByResponses, TrashEmptyData, TrashEmptyErrors, TrashEmptyResponses, TrashHoldingsData, TrashHoldingsErrors, TrashHoldingsResponses, TrashListData, TrashListErrors, TrashListResponses, TreeChildrenData, TreeChildrenErrors, TreeChildrenResponses, TreeRootData, TreeRootErrors, TreeRootResponses, VersionCommentData, VersionCommentErrors, VersionCommentResponses, VersionCompareData, VersionCompareErrors, VersionCompareResponses, VersionCompareWithData, VersionCompareWithErrors, VersionCompareWithResponses, VersionGetData, VersionGetErrors, VersionGetResponses, VersionListData, VersionListErrors, VersionListResponses, VersionPinData, VersionPinErrors, VersionPinResponses, VersionRestoreData, VersionRestoreErrors, VersionRestoreResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -61,6 +61,86 @@ export const canvasGet = <ThrowOnError extends boolean = false>(options?: Option
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/umbraco/jfb/management/api/v1/canvas',
     ...options
+});
+
+export const emailLayoutLibraryCreate = <ThrowOnError extends boolean = false>(options?: Options<EmailLayoutLibraryCreateData, ThrowOnError>): RequestResult<EmailLayoutLibraryCreateResponses, EmailLayoutLibraryCreateErrors, ThrowOnError> => (options?.client ?? client).post<EmailLayoutLibraryCreateResponses, EmailLayoutLibraryCreateErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/jfb/management/api/v1/email-layout',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options?.headers
+    }
+});
+
+export const emailLayoutLibraryDelete = <ThrowOnError extends boolean = false>(options: Options<EmailLayoutLibraryDeleteData, ThrowOnError>): RequestResult<EmailLayoutLibraryDeleteResponses, EmailLayoutLibraryDeleteErrors, ThrowOnError> => (options.client ?? client).delete<EmailLayoutLibraryDeleteResponses, EmailLayoutLibraryDeleteErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/jfb/management/api/v1/email-layout/{key}',
+    ...options
+});
+
+export const emailLayoutLibraryGet = <ThrowOnError extends boolean = false>(options: Options<EmailLayoutLibraryGetData, ThrowOnError>): RequestResult<EmailLayoutLibraryGetResponses, EmailLayoutLibraryGetErrors, ThrowOnError> => (options.client ?? client).get<EmailLayoutLibraryGetResponses, EmailLayoutLibraryGetErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/jfb/management/api/v1/email-layout/{key}',
+    ...options
+});
+
+export const emailLayoutLibraryUpdate = <ThrowOnError extends boolean = false>(options: Options<EmailLayoutLibraryUpdateData, ThrowOnError>): RequestResult<EmailLayoutLibraryUpdateResponses, EmailLayoutLibraryUpdateErrors, ThrowOnError> => (options.client ?? client).put<EmailLayoutLibraryUpdateResponses, EmailLayoutLibraryUpdateErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/jfb/management/api/v1/email-layout/{key}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const emailLayoutLibraryDuplicate = <ThrowOnError extends boolean = false>(options: Options<EmailLayoutLibraryDuplicateData, ThrowOnError>): RequestResult<EmailLayoutLibraryDuplicateResponses, EmailLayoutLibraryDuplicateErrors, ThrowOnError> => (options.client ?? client).post<EmailLayoutLibraryDuplicateResponses, EmailLayoutLibraryDuplicateErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/jfb/management/api/v1/email-layout/{key}/duplicate',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const emailLayoutLibraryTest = <ThrowOnError extends boolean = false>(options: Options<EmailLayoutLibraryTestData, ThrowOnError>): RequestResult<EmailLayoutLibraryTestResponses, EmailLayoutLibraryTestErrors, ThrowOnError> => (options.client ?? client).post<EmailLayoutLibraryTestResponses, EmailLayoutLibraryTestErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/jfb/management/api/v1/email-layout/{key}/test',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const emailLayoutLibraryUsedBy = <ThrowOnError extends boolean = false>(options: Options<EmailLayoutLibraryUsedByData, ThrowOnError>): RequestResult<EmailLayoutLibraryUsedByResponses, EmailLayoutLibraryUsedByErrors, ThrowOnError> => (options.client ?? client).get<EmailLayoutLibraryUsedByResponses, EmailLayoutLibraryUsedByErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/jfb/management/api/v1/email-layout/{key}/used-by',
+    ...options
+});
+
+export const emailLayoutLibraryEditor = <ThrowOnError extends boolean = false>(options?: Options<EmailLayoutLibraryEditorData, ThrowOnError>): RequestResult<EmailLayoutLibraryEditorResponses, EmailLayoutLibraryEditorErrors, ThrowOnError> => (options?.client ?? client).get<EmailLayoutLibraryEditorResponses, EmailLayoutLibraryEditorErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/jfb/management/api/v1/email-layout/editor',
+    ...options
+});
+
+export const emailLayoutLibraryRows = <ThrowOnError extends boolean = false>(options?: Options<EmailLayoutLibraryRowsData, ThrowOnError>): RequestResult<EmailLayoutLibraryRowsResponses, EmailLayoutLibraryRowsErrors, ThrowOnError> => (options?.client ?? client).get<EmailLayoutLibraryRowsResponses, EmailLayoutLibraryRowsErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/jfb/management/api/v1/email-layout/library',
+    ...options
+});
+
+export const emailLayoutLibraryPreview = <ThrowOnError extends boolean = false>(options?: Options<EmailLayoutLibraryPreviewData, ThrowOnError>): RequestResult<EmailLayoutLibraryPreviewResponses, EmailLayoutLibraryPreviewErrors, ThrowOnError> => (options?.client ?? client).post<EmailLayoutLibraryPreviewResponses, EmailLayoutLibraryPreviewErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/jfb/management/api/v1/email-layout/preview',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options?.headers
+    }
 });
 
 export const testEmailSend = <ThrowOnError extends boolean = false>(options?: Options<TestEmailSendData, ThrowOnError>): RequestResult<TestEmailSendResponses, TestEmailSendErrors, ThrowOnError> => (options?.client ?? client).post<TestEmailSendResponses, TestEmailSendErrors, ThrowOnError>({
@@ -975,6 +1055,92 @@ export const templateList = <ThrowOnError extends boolean = false>(options?: Opt
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/umbraco/jfb/management/api/v1/template',
     ...options
+});
+
+export const themeLibraryCreate = <ThrowOnError extends boolean = false>(options?: Options<ThemeLibraryCreateData, ThrowOnError>): RequestResult<ThemeLibraryCreateResponses, ThemeLibraryCreateErrors, ThrowOnError> => (options?.client ?? client).post<ThemeLibraryCreateResponses, ThemeLibraryCreateErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/jfb/management/api/v1/theme',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options?.headers
+    }
+});
+
+export const themeLibraryDelete = <ThrowOnError extends boolean = false>(options: Options<ThemeLibraryDeleteData, ThrowOnError>): RequestResult<ThemeLibraryDeleteResponses, ThemeLibraryDeleteErrors, ThrowOnError> => (options.client ?? client).delete<ThemeLibraryDeleteResponses, ThemeLibraryDeleteErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/jfb/management/api/v1/theme/{key}',
+    ...options
+});
+
+export const themeLibraryGet = <ThrowOnError extends boolean = false>(options: Options<ThemeLibraryGetData, ThrowOnError>): RequestResult<ThemeLibraryGetResponses, ThemeLibraryGetErrors, ThrowOnError> => (options.client ?? client).get<ThemeLibraryGetResponses, ThemeLibraryGetErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/jfb/management/api/v1/theme/{key}',
+    ...options
+});
+
+export const themeLibraryUpdate = <ThrowOnError extends boolean = false>(options: Options<ThemeLibraryUpdateData, ThrowOnError>): RequestResult<ThemeLibraryUpdateResponses, ThemeLibraryUpdateErrors, ThrowOnError> => (options.client ?? client).put<ThemeLibraryUpdateResponses, ThemeLibraryUpdateErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/jfb/management/api/v1/theme/{key}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const themeLibraryDuplicate = <ThrowOnError extends boolean = false>(options: Options<ThemeLibraryDuplicateData, ThrowOnError>): RequestResult<ThemeLibraryDuplicateResponses, ThemeLibraryDuplicateErrors, ThrowOnError> => (options.client ?? client).post<ThemeLibraryDuplicateResponses, ThemeLibraryDuplicateErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/jfb/management/api/v1/theme/{key}/duplicate',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const themeLibraryExport = <ThrowOnError extends boolean = false>(options: Options<ThemeLibraryExportData, ThrowOnError>): RequestResult<ThemeLibraryExportResponses, ThemeLibraryExportErrors, ThrowOnError> => (options.client ?? client).get<ThemeLibraryExportResponses, ThemeLibraryExportErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/jfb/management/api/v1/theme/{key}/export',
+    ...options
+});
+
+export const themeLibraryUsedBy = <ThrowOnError extends boolean = false>(options: Options<ThemeLibraryUsedByData, ThrowOnError>): RequestResult<ThemeLibraryUsedByResponses, ThemeLibraryUsedByErrors, ThrowOnError> => (options.client ?? client).get<ThemeLibraryUsedByResponses, ThemeLibraryUsedByErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/jfb/management/api/v1/theme/{key}/used-by',
+    ...options
+});
+
+export const themeLibraryEditor = <ThrowOnError extends boolean = false>(options?: Options<ThemeLibraryEditorData, ThrowOnError>): RequestResult<ThemeLibraryEditorResponses, ThemeLibraryEditorErrors, ThrowOnError> => (options?.client ?? client).get<ThemeLibraryEditorResponses, ThemeLibraryEditorErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/jfb/management/api/v1/theme/editor',
+    ...options
+});
+
+export const themeLibraryImport = <ThrowOnError extends boolean = false>(options?: Options<ThemeLibraryImportData, ThrowOnError>): RequestResult<ThemeLibraryImportResponses, ThemeLibraryImportErrors, ThrowOnError> => (options?.client ?? client).post<ThemeLibraryImportResponses, ThemeLibraryImportErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/jfb/management/api/v1/theme/import',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options?.headers
+    }
+});
+
+export const themeLibraryRows = <ThrowOnError extends boolean = false>(options?: Options<ThemeLibraryRowsData, ThrowOnError>): RequestResult<ThemeLibraryRowsResponses, ThemeLibraryRowsErrors, ThrowOnError> => (options?.client ?? client).get<ThemeLibraryRowsResponses, ThemeLibraryRowsErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/jfb/management/api/v1/theme/library',
+    ...options
+});
+
+export const themeLibraryPreview = <ThrowOnError extends boolean = false>(options?: Options<ThemeLibraryPreviewData, ThrowOnError>): RequestResult<ThemeLibraryPreviewResponses, ThemeLibraryPreviewErrors, ThrowOnError> => (options?.client ?? client).post<ThemeLibraryPreviewResponses, ThemeLibraryPreviewErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/jfb/management/api/v1/theme/preview',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options?.headers
+    }
 });
 
 export const trashEmpty = <ThrowOnError extends boolean = false>(options?: Options<TrashEmptyData, ThrowOnError>): RequestResult<TrashEmptyResponses, TrashEmptyErrors, ThrowOnError> => (options?.client ?? client).delete<TrashEmptyResponses, TrashEmptyErrors, ThrowOnError>({

@@ -43,7 +43,7 @@ internal sealed partial class EmailRenderer
     private const string Presentation = "role=\"presentation\" cellspacing=\"0\" cellpadding=\"0\" border=\"0\"";
     private const int Width = 600;
 
-    private static readonly EmailColours LightColours = new()
+    internal static readonly EmailColours LightColours = new()
     {
         Accent = "#1f4fbf",
         Page = "#f2f3f5",
@@ -53,7 +53,7 @@ internal sealed partial class EmailRenderer
         Rule = "#dfe2e6",
     };
 
-    private static readonly EmailColours DarkColours = new()
+    internal static readonly EmailColours DarkColours = new()
     {
         Accent = "#9dbcff",
         Page = "#121417",
@@ -172,15 +172,27 @@ internal sealed partial class EmailRenderer
 
     private static string? LogoOf(EmailPage page)
     {
-        if (page.Layout.LogoUrl is not { } address
-            || !Uri.TryCreate(address, UriKind.Absolute, out var uri)
-            || uri.Scheme is not ("https" or "http"))
+        if (page.Layout.LogoUrl is not { } address || AbsoluteLogo(address, page.BaseUrl) is not { } uri)
         {
             return null;
         }
 
         var alt = TextOf(page.Layout.LogoAlt, page.Culture) is { Length: > 0 } said ? said : page.SenderName ?? string.Empty;
         return $"<img src=\"{Encode(uri.AbsoluteUri)}\" alt=\"{Encode(alt)}\" style=\"display:block;max-width:200px;max-height:48px;height:auto;border:0;margin:0 0 16px\" />";
+    }
+
+    // The logo's address as a mail needs it: an absolute http or https address as it is, or a path on the site (a media
+    // item's, ADR-0215) below the site's base address; none without a base address to put it under.
+    private static Uri? AbsoluteLogo(string address, string? baseUrl)
+    {
+        if (address.StartsWith('/') && !address.StartsWith("//", StringComparison.Ordinal))
+        {
+            return Uri.TryCreate(baseUrl, UriKind.Absolute, out var site) && site.Scheme is "https" or "http" && Uri.TryCreate(site, address, out var onSite)
+                ? onSite
+                : null;
+        }
+
+        return Uri.TryCreate(address, UriKind.Absolute, out var uri) && uri.Scheme is "https" or "http" ? uri : null;
     }
 
     // A text of the layout in this culture: a layout can hold anything, so one that is not a localised text is left out.

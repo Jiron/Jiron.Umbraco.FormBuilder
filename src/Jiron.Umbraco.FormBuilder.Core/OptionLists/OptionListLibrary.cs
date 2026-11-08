@@ -13,15 +13,6 @@ namespace Jiron.Umbraco.FormBuilder.Core.OptionLists;
 /// <param name="UsedBy">How many forms' drafts or live versions use it, forms in the recycle bin included.</param>
 internal sealed record OptionListRow(OptionListSummary List, StoredOptionList Row, int UsedBy);
 
-/// <summary>The forms that use a list, as one user may see them (ADR-0214).</summary>
-/// <param name="Forms">The forms the user may open, by name.</param>
-/// <param name="Others">How many more forms use it that the user may not open, named nowhere.</param>
-internal sealed record OptionListUsers(IReadOnlyList<LibraryUser> Forms, int Others)
-{
-    /// <summary>How many forms use the list in all.</summary>
-    public int Count => Forms.Count + Others;
-}
-
 /// <summary>A list's contents as an editor holds them, resolved for the preview, or why they give no options.</summary>
 /// <param name="Options">The options; null when the contents do not read.</param>
 /// <param name="Problems">Why the contents do not read, each at its path, as a save would say it.</param>
@@ -43,8 +34,7 @@ internal sealed class OptionListLibrary(
     OptionListService lists,
     IOptionListRepository repository,
     ILibraryUseRepository uses,
-    IFormRepository forms,
-    IFormBuilderAccessService access,
+    LibraryUsers users,
     FormBuilderOptionService options,
     UrlOptionFetcher urls,
     IAuditRepository audit)
@@ -75,36 +65,8 @@ internal sealed class OptionListLibrary(
     /// The forms whose draft or live version uses the list, those the user may open by name and the rest counted, so a
     /// restricted form's name never shows to someone who may not see it.
     /// </summary>
-    public async Task<OptionListUsers> UsersAsync(AccessUser user, Guid key, CancellationToken cancellationToken = default)
-    {
-        ArgumentNullException.ThrowIfNull(user);
-        var all = await uses.UsersAsync(LibraryUseKind.OptionList, key, cancellationToken);
-        if (all.Count == 0)
-        {
-            return new OptionListUsers([], 0);
-        }
-
-        var visibility = await access.GetFormVisibilityAsync(user, cancellationToken: cancellationToken);
-        var seen = new HashSet<Guid>();
-        if (visibility.IsEverything)
-        {
-            seen.UnionWith(all.Select(form => form.FormKey));
-        }
-        else if (!visibility.IsNothing)
-        {
-            foreach (var chunk in all.Select(form => form.FormKey).Chunk(Math.Min(SqlArgs.MaxListLength, PageRequest.MaxTake)))
-            {
-                var found = await forms.ListAsync(
-                    new FormFilter { AllFolders = true, Trashed = null, Visibility = visibility, Keys = chunk },
-                    new PageRequest(0, chunk.Length),
-                    cancellationToken);
-                seen.UnionWith(found.Items.Select(form => form.Key));
-            }
-        }
-
-        var shown = all.Where(form => seen.Contains(form.FormKey)).ToList();
-        return new OptionListUsers(shown, all.Count - shown.Count);
-    }
+    public Task<LibraryItemUsers> UsersAsync(AccessUser user, Guid key, CancellationToken cancellationToken = default) =>
+        users.ForAsync(user, LibraryUseKind.OptionList, key, cancellationToken);
 
     /// <summary>Creates a list for a user, audited; the problems that refuse it otherwise.</summary>
     public async Task<OptionListResult> CreateAsync(Guid key, OptionListInput input, Guid? userKey, CancellationToken cancellationToken = default)

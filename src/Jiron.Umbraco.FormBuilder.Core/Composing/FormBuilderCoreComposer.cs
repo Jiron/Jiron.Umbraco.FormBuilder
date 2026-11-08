@@ -68,6 +68,7 @@ public sealed class FormBuilderCoreComposer : IComposer
         builder.Services.TryAddSingleton<ISettingsRepository, SettingsRepository>();
         builder.Services.TryAddSingleton<IOptionListRepository, OptionListRepository>();
         builder.Services.TryAddSingleton<ILibraryUseRepository, LibraryUseRepository>();
+        builder.Services.TryAddSingleton<LibraryUsers>();
         builder.Services.TryAddSingleton<IThemeRepository, ThemeRepository>();
         builder.Services.TryAddSingleton<IEmailLayoutRepository, EmailLayoutRepository>();
         builder.Services.TryAddSingleton<IFormTemplateRepository, FormTemplateRepository>();

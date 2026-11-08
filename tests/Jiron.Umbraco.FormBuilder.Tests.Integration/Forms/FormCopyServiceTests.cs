@@ -426,8 +426,9 @@ public sealed class FormCopyServiceTests : RepositoryTestBase
             Assert.That(await Exchange.ExportAsync(source.Key, 99), Is.Null);
         });
 
-        await OptionLists.DeleteAsync(list.Id, list.ConcurrencyVersion);
-        var row = await RowAsync(source);
+        var lacking = Session with { Options = Session.Options! with { OptionList = Key(99) } };
+        var saved = await SaveAsync(source, designed with { Pages = [designed.Pages[0] with { Groups = [designed.Pages[0].Groups[0] with { Fields = [Email, Topic, Confirm, lacking] }] }] });
+        var row = await RowAsync(saved.Form);
         await Forms.TrashAsync(row.Id, row.ConcurrencyVersion, Editor);
         var withoutList = (await Exchange.ExportAsync(source.Key))!;
         Assert.That(JsonDocument.Parse(withoutList.Json).RootElement.GetProperty("optionLists").GetArrayLength(), Is.Zero, "a list the site lacks is left out, and a form in the trash exports");

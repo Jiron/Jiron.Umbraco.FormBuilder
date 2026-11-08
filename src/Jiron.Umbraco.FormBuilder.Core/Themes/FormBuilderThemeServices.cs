@@ -24,6 +24,9 @@ internal static class FormBuilderThemeServices
         builder.JironFormBuilder().Themes();
         builder.Services.TryAddSingleton(provider => new FormBuilderThemes(provider.GetRequiredService<FormBuilderThemeCollection>(), provider.GetRequiredService<ILogger<FormBuilderThemes>>()));
         builder.Services.TryAddSingleton<FormThemes>();
+        builder.Services.TryAddSingleton<LibraryThemes>();
+        builder.Services.TryAddSingleton<ThemeLibrary>();
+        builder.CacheRefreshers().Add<FormBuilderThemeCacheRefresher>();
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IValidateOptions<FormBuilderStartupChecks>, ThemeStartupCheck>());
         return builder;
     }

@@ -220,38 +220,6 @@ internal sealed record DuplicateOptionListRequestModel
     public required string Name { get; init; }
 }
 
-/// <summary>The forms that use a list.</summary>
-internal sealed record OptionListUsersResponseModel
-{
-    /// <summary>The forms the user may open, by name.</summary>
-    public required IReadOnlyList<OptionListUserResponseModel> Forms { get; init; }
-
-    /// <summary>How many more forms use it that the user may not open.</summary>
-    public required int Others { get; init; }
-}
-
-/// <summary>A form that uses a list.</summary>
-internal sealed record OptionListUserResponseModel
-{
-    /// <summary>The form's key.</summary>
-    public required Guid Key { get; init; }
-
-    /// <summary>Its name.</summary>
-    public required string Name { get; init; }
-
-    /// <summary>Whether its draft uses the list.</summary>
-    public required bool InDraft { get; init; }
-
-    /// <summary>Whether the version the site serves uses it.</summary>
-    public required bool InLive { get; init; }
-
-    /// <summary>Whether the form is in the recycle bin.</summary>
-    public required bool IsTrashed { get; init; }
-
-    /// <summary>How many of its fields use the list, in the version that uses it most.</summary>
-    public required int Uses { get; init; }
-}
-
 /// <summary>Contents not saved yet, to preview.</summary>
 internal sealed record PreviewOptionListRequestModel
 {
@@ -284,20 +252,7 @@ internal sealed record OptionListPreviewResponseModel
     public required bool IsAvailable { get; init; }
 
     /// <summary>Why the contents do not read, each at its path, as a save would refuse them; empty when they read.</summary>
-    public required IReadOnlyList<OptionListProblemResponseModel> Problems { get; init; }
-}
-
-/// <summary>Why contents do not read, at its path, as a save would refuse them.</summary>
-internal sealed record OptionListProblemResponseModel
-{
-    /// <summary>The problem's code, such as <c>setting_invalid</c>.</summary>
-    public required string Code { get; init; }
-
-    /// <summary>Where it is, such as <c>$.config.url</c>.</summary>
-    public required string Path { get; init; }
-
-    /// <summary>What is wrong, in English.</summary>
-    public required string Message { get; init; }
+    public required IReadOnlyList<LibraryProblemResponseModel> Problems { get; init; }
 }
 
 /// <summary>One option of a preview.</summary>

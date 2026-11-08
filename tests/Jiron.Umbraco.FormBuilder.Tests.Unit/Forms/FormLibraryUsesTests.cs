@@ -1,5 +1,6 @@
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
+using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Migrations;
 using Jiron.Umbraco.FormBuilder.Tests.Unit.Definitions;
 
@@ -66,9 +67,56 @@ public sealed class FormLibraryUsesTests
                 var stored = FormDefinitionSerializer.WriteString(definitions[i]);
                 Assert.That(
                     AddFormLibraryUsesV1.ListsOf(stored).OrderBy(pair => pair.Key),
-                    Is.EqualTo(FormLibraryUses.Of(definitions[i]).Select(use => KeyValuePair.Create(use.Key, use.Count))),
+                    Is.EqualTo(FormLibraryUses.Of(definitions[i]).Where(use => use.Kind == LibraryUseKind.OptionList).Select(use => KeyValuePair.Create(use.Key, use.Count))),
                     $"definition {i}");
+                Assert.That(
+                    AddThemeAndLayoutUsesV1.UsesOf(stored),
+                    Is.EqualTo(FormLibraryUses.Of(definitions[i]).Where(use => use.Kind != LibraryUseKind.OptionList).Select(use => (StoredNames.Of(use.Kind), use.Key, use.Count))),
+                    $"definition {i}'s theme and layouts");
             }
+        });
+    }
+
+    [Test]
+    public void TheTheme_AndTheLayoutsOfEmailActions_AreFound_EachLayoutWithItsActions()
+    {
+        var brand = Guid.Parse("72000000-0000-4000-8000-000000000031");
+        var plain = Guid.Parse("72000000-0000-4000-8000-000000000032");
+        var definition = new FormDefinition
+        {
+            Key = Guid.NewGuid(),
+            Settings = new FormSettings { Appearance = new FormAppearanceSettings { Theme = "Autumn" } },
+            Actions =
+            [
+                Action("email", $$"""{"layout":"{{plain}}"}"""),
+                Action("email", $$"""{"layout":"{{brand}}","to":["a@example.com"]}"""),
+                Action("email", $$"""{"layout":"{{brand}}"}"""),
+                Action("email", """{"layout":"not a key"}"""),
+                Action("email", null),
+                Action("webhook", $$"""{"layout":"{{brand}}"}"""),
+            ],
+        };
+
+        Assert.That(FormLibraryUses.Of(definition), Is.EqualTo(new[]
+        {
+            new LibraryUse(LibraryUseKind.Theme, FormLibraryUses.ThemeKey("autumn"), 1),
+            new LibraryUse(LibraryUseKind.EmailLayout, brand, 2),
+            new LibraryUse(LibraryUseKind.EmailLayout, plain, 1),
+        }));
+    }
+
+    [Test]
+    public void AThemesKey_IsItsAliasWithoutRegardToCase_ANameBasedUuid()
+    {
+        var key = FormLibraryUses.ThemeKey("Autumn");
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(FormLibraryUses.ThemeKey(" autumn "), Is.EqualTo(key));
+            Assert.That(FormLibraryUses.ThemeKey("winter"), Is.Not.EqualTo(key));
+            Assert.That(key.Version, Is.EqualTo(8));
+            Assert.That(key.Variant, Is.EqualTo(0b1000).Or.EqualTo(0b1001).Or.EqualTo(0b1010).Or.EqualTo(0b1011), "RFC 9562's variant");
+            Assert.That(AddThemeAndLayoutUsesV1.UsesOf("""{"settings":{"appearance":{"theme":"AUTUMN"}}}"""), Is.EqualTo(new[] { ("theme", key, 1) }), "the migration's frozen key is the model's");
         });
     }
 
@@ -80,8 +128,17 @@ public sealed class FormLibraryUsesTests
             Assert.That(AddFormLibraryUsesV1.ListsOf("{not json"), Is.Empty);
             Assert.That(AddFormLibraryUsesV1.ListsOf("""{"pages":{"groups":[]}}"""), Is.Empty);
             Assert.That(AddFormLibraryUsesV1.ListsOf("""{"pages":[{"groups":[{"fields":[{"options":{"source":"list","list":"not a key"}}]}]}]}"""), Is.Empty);
+            Assert.That(AddThemeAndLayoutUsesV1.UsesOf("{not json"), Is.Empty);
+            Assert.That(AddThemeAndLayoutUsesV1.UsesOf("""{"settings":{"appearance":{"theme":"  "}},"actions":{"type":"email"}}"""), Is.Empty);
         });
     }
+
+    private static FormAction Action(string type, string? settings) => new()
+    {
+        Key = Guid.NewGuid(),
+        Type = type,
+        Settings = settings is null ? null : SettingsObject.Parse(settings),
+    };
 
     private static FormField Field(Guid list) => new()
     {

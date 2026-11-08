@@ -156,6 +156,11 @@ export type CopyActionsRequestModel = {
     actionKeys?: Array<string> | null;
 };
 
+export type CreateEmailLayoutRequestModel = {
+    key?: string | null;
+    layout: EmailLayoutRequestModel;
+};
+
 export type CreateFolderRequestModel = {
     name: string;
     parentKey?: string | null;
@@ -176,6 +181,10 @@ export type CreateFormRequestModel = {
 export type CreateOptionListRequestModel = {
     key?: string | null;
     list: OptionListRequestModel;
+};
+
+export type CreateThemeRequestModel = {
+    theme: ThemeRequestModel;
 };
 
 export type DefinitionChangeResponseModel = {
@@ -238,6 +247,10 @@ export type DraftOptionsRequestModel = {
     culture: string;
 };
 
+export type DuplicateEmailLayoutRequestModel = {
+    name: string;
+};
+
 export type DuplicateFormRequestModel = {
     name: string;
     includeActions: boolean;
@@ -245,6 +258,105 @@ export type DuplicateFormRequestModel = {
 
 export type DuplicateOptionListRequestModel = {
     name: string;
+};
+
+export type DuplicateThemeRequestModel = {
+    name: string;
+};
+
+export type EmailColoursRequestModel = {
+    accent?: string | null;
+    page?: string | null;
+    surface?: string | null;
+    text?: string | null;
+    muted?: string | null;
+    rule?: string | null;
+};
+
+export type EmailColoursResponseModel = {
+    accent?: string | null;
+    page?: string | null;
+    surface?: string | null;
+    text?: string | null;
+    muted?: string | null;
+    rule?: string | null;
+};
+
+export type EmailLayoutDesignRequestModel = {
+    look: string;
+    logoMedia?: string | null;
+    logoUrl?: string | null;
+    logoAlt?: {
+        [key: string]: string;
+    } | null;
+    light?: EmailColoursRequestModel | null;
+    dark?: EmailColoursRequestModel | null;
+    header?: {
+        [key: string]: string;
+    } | null;
+    footer?: {
+        [key: string]: string;
+    } | null;
+};
+
+export type EmailLayoutDesignResponseModel = {
+    look: string;
+    logoMedia?: string | null;
+    logoUrl?: string | null;
+    logoAlt?: {
+        [key: string]: string;
+    } | null;
+    light?: EmailColoursResponseModel | null;
+    dark?: EmailColoursResponseModel | null;
+    header?: {
+        [key: string]: string;
+    } | null;
+    footer?: {
+        [key: string]: string;
+    } | null;
+};
+
+export type EmailLayoutEditorResponseModel = {
+    languages: Array<OptionListLanguageResponseModel>;
+    light: EmailColoursResponseModel;
+    dark: EmailColoursResponseModel;
+    defaultLayout?: string | null;
+};
+
+export type EmailLayoutPreviewResponseModel = {
+    html: string;
+    problems: Array<LibraryProblemResponseModel>;
+};
+
+export type EmailLayoutRequestModel = {
+    alias: string;
+    name: string;
+    design: EmailLayoutDesignRequestModel;
+};
+
+export type EmailLayoutResponseModel = {
+    key: string;
+    alias: string;
+    name: string;
+    design: EmailLayoutDesignResponseModel;
+    concurrencyVersion: number;
+    updatedUtc: string;
+};
+
+export type EmailLayoutRowResponseModel = {
+    key: string;
+    alias: string;
+    name: string;
+    look: string;
+    swatch: Array<string>;
+    usedBy: number;
+    isDefault: boolean;
+    updatedUtc: string;
+};
+
+export type EmailLayoutRowsResponseModel = {
+    total: number;
+    items: Array<EmailLayoutRowResponseModel>;
 };
 
 export type EmailPreviewRequestModel = {
@@ -1116,6 +1228,10 @@ export type ImportNoteResponseModel = {
     alias?: string | null;
 };
 
+export type ImportThemeRequestModel = {
+    document: string;
+};
+
 export type InsightAnswerGridRowResponseModel = {
     key: string;
     label: string;
@@ -1290,12 +1406,32 @@ export type LibraryItemResponseModel = {
     folderName?: string | null;
 };
 
+export type LibraryProblemResponseModel = {
+    code: string;
+    path: string;
+    message: string;
+};
+
 export type LibraryRowResponseModel = {
     item: LibraryItemResponseModel;
     updatedUtc: string;
     updatedBy?: string | null;
     trashedUtc?: string | null;
     recentEntries?: number | null;
+};
+
+export type LibraryUserResponseModel = {
+    key: string;
+    name: string;
+    inDraft: boolean;
+    inLive: boolean;
+    isTrashed: boolean;
+    uses: number;
+};
+
+export type LibraryUsersResponseModel = {
+    forms: Array<LibraryUserResponseModel>;
+    others: number;
 };
 
 export type MergeTagPathResponseModel = {
@@ -1386,13 +1522,7 @@ export type OptionListOptionResponseModel = {
 export type OptionListPreviewResponseModel = {
     options: Array<OptionListOptionResponseModel>;
     isAvailable: boolean;
-    problems: Array<OptionListProblemResponseModel>;
-};
-
-export type OptionListProblemResponseModel = {
-    code: string;
-    path: string;
-    message: string;
+    problems: Array<LibraryProblemResponseModel>;
 };
 
 export type OptionListRequestModel = {
@@ -1429,20 +1559,6 @@ export type OptionListRowResponseModel = {
 export type OptionListRowsResponseModel = {
     total: number;
     items: Array<OptionListRowResponseModel>;
-};
-
-export type OptionListUserResponseModel = {
-    key: string;
-    name: string;
-    inDraft: boolean;
-    inLive: boolean;
-    isTrashed: boolean;
-    uses: number;
-};
-
-export type OptionListUsersResponseModel = {
-    forms: Array<OptionListUserResponseModel>;
-    others: number;
 };
 
 export type OptionListsResponseModel = {
@@ -1519,6 +1635,11 @@ export type PinVersionRequestModel = {
     isPinned: boolean;
 };
 
+export type PreviewEmailLayoutRequestModel = {
+    design: EmailLayoutDesignRequestModel;
+    culture: string;
+};
+
 export type PreviewOptionListRequestModel = {
     key?: string | null;
     kind: string;
@@ -1526,6 +1647,13 @@ export type PreviewOptionListRequestModel = {
     items?: unknown;
     cacheSeconds: number;
     culture: string;
+};
+
+export type PreviewThemeRequestModel = {
+    alias?: string | null;
+    baseTheme: string;
+    tokens: ThemeTokensRequestModel;
+    customCss?: string | null;
 };
 
 export type PrivacySettingsRequestModel = {
@@ -1631,6 +1759,10 @@ export type TemplateResponseModel = {
     definition: unknown;
 };
 
+export type TestEmailLayoutRequestModel = {
+    culture?: string | null;
+};
+
 export type TestEmailRequestModel = {
     site?: string | null;
     layout?: string | null;
@@ -1645,6 +1777,97 @@ export type TestEntryResponseModel = {
     actionsRan: boolean;
     awaitsConfirmation: boolean;
     actions: Array<string>;
+};
+
+export type ThemeBaseResponseModel = {
+    alias: string;
+    label: string;
+    darkScheme: boolean;
+    stylesheet?: string | null;
+    tokens: Array<ThemeTokenResponseModel>;
+};
+
+export type ThemeCssRemovalResponseModel = {
+    code: string;
+    text: string;
+};
+
+export type ThemeEditorResponseModel = {
+    bases: Array<ThemeBaseResponseModel>;
+    defaultTheme: string;
+    maxCustomCssLength: number;
+    previewAlias: string;
+};
+
+export type ThemeExportResponseModel = {
+    fileName: string;
+    document: string;
+};
+
+export type ThemePreviewResponseModel = {
+    alias: string;
+    css: string;
+    removed: Array<ThemeCssRemovalResponseModel>;
+    problems: Array<LibraryProblemResponseModel>;
+};
+
+export type ThemeRequestModel = {
+    alias: string;
+    name: string;
+    baseTheme: string;
+    tokens: ThemeTokensRequestModel;
+    customCss?: string | null;
+};
+
+export type ThemeResponseModel = {
+    key: string;
+    alias: string;
+    name: string;
+    baseTheme: string;
+    tokens: ThemeTokensResponseModel;
+    customCss?: string | null;
+    concurrencyVersion: number;
+    updatedUtc: string;
+};
+
+export type ThemeRowResponseModel = {
+    key: string;
+    alias: string;
+    name: string;
+    baseLabel: string;
+    usedBy: number;
+    isDefault: boolean;
+    swatch: Array<string>;
+    updatedUtc: string;
+};
+
+export type ThemeRowsResponseModel = {
+    total: number;
+    items: Array<ThemeRowResponseModel>;
+};
+
+export type ThemeTokenResponseModel = {
+    name: string;
+    default: string;
+    darkDefault?: string | null;
+};
+
+export type ThemeTokensRequestModel = {
+    light: {
+        [key: string]: string;
+    };
+    dark: {
+        [key: string]: string;
+    };
+};
+
+export type ThemeTokensResponseModel = {
+    light: {
+        [key: string]: string;
+    };
+    dark: {
+        [key: string]: string;
+    };
 };
 
 export type TrashEmptiedResponseModel = {
@@ -1664,9 +1887,19 @@ export type UnmappedReferenceResponseModel = {
     alias?: string | null;
 };
 
+export type UpdateEmailLayoutRequestModel = {
+    concurrencyVersion: number;
+    layout: EmailLayoutRequestModel;
+};
+
 export type UpdateOptionListRequestModel = {
     concurrencyVersion: number;
     list: OptionListRequestModel;
+};
+
+export type UpdateThemeRequestModel = {
+    concurrencyVersion: number;
+    theme: ThemeRequestModel;
 };
 
 export type FormDocumentReferenceResponseModelWritable = {
@@ -1895,6 +2128,367 @@ export type CanvasGetResponses = {
 };
 
 export type CanvasGetResponse = CanvasGetResponses[keyof CanvasGetResponses];
+
+export type EmailLayoutLibraryCreateData = {
+    body?: CreateEmailLayoutRequestModel;
+    path?: never;
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/email-layout';
+};
+
+export type EmailLayoutLibraryCreateErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+};
+
+export type EmailLayoutLibraryCreateError = EmailLayoutLibraryCreateErrors[keyof EmailLayoutLibraryCreateErrors];
+
+export type EmailLayoutLibraryCreateResponses = {
+    /**
+     * Created
+     */
+    201: EmailLayoutResponseModel;
+};
+
+export type EmailLayoutLibraryCreateResponse = EmailLayoutLibraryCreateResponses[keyof EmailLayoutLibraryCreateResponses];
+
+export type EmailLayoutLibraryDeleteData = {
+    body?: never;
+    path: {
+        key: string;
+    };
+    query?: {
+        concurrencyVersion?: number;
+    };
+    url: '/umbraco/jfb/management/api/v1/email-layout/{key}';
+};
+
+export type EmailLayoutLibraryDeleteErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+};
+
+export type EmailLayoutLibraryDeleteError = EmailLayoutLibraryDeleteErrors[keyof EmailLayoutLibraryDeleteErrors];
+
+export type EmailLayoutLibraryDeleteResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type EmailLayoutLibraryDeleteResponse = EmailLayoutLibraryDeleteResponses[keyof EmailLayoutLibraryDeleteResponses];
+
+export type EmailLayoutLibraryGetData = {
+    body?: never;
+    path: {
+        key: string;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/email-layout/{key}';
+};
+
+export type EmailLayoutLibraryGetErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type EmailLayoutLibraryGetError = EmailLayoutLibraryGetErrors[keyof EmailLayoutLibraryGetErrors];
+
+export type EmailLayoutLibraryGetResponses = {
+    /**
+     * OK
+     */
+    200: EmailLayoutResponseModel;
+};
+
+export type EmailLayoutLibraryGetResponse = EmailLayoutLibraryGetResponses[keyof EmailLayoutLibraryGetResponses];
+
+export type EmailLayoutLibraryUpdateData = {
+    body?: UpdateEmailLayoutRequestModel;
+    path: {
+        key: string;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/email-layout/{key}';
+};
+
+export type EmailLayoutLibraryUpdateErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+};
+
+export type EmailLayoutLibraryUpdateError = EmailLayoutLibraryUpdateErrors[keyof EmailLayoutLibraryUpdateErrors];
+
+export type EmailLayoutLibraryUpdateResponses = {
+    /**
+     * OK
+     */
+    200: EmailLayoutResponseModel;
+};
+
+export type EmailLayoutLibraryUpdateResponse = EmailLayoutLibraryUpdateResponses[keyof EmailLayoutLibraryUpdateResponses];
+
+export type EmailLayoutLibraryDuplicateData = {
+    body?: DuplicateEmailLayoutRequestModel;
+    path: {
+        key: string;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/email-layout/{key}/duplicate';
+};
+
+export type EmailLayoutLibraryDuplicateErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type EmailLayoutLibraryDuplicateError = EmailLayoutLibraryDuplicateErrors[keyof EmailLayoutLibraryDuplicateErrors];
+
+export type EmailLayoutLibraryDuplicateResponses = {
+    /**
+     * Created
+     */
+    201: EmailLayoutResponseModel;
+};
+
+export type EmailLayoutLibraryDuplicateResponse = EmailLayoutLibraryDuplicateResponses[keyof EmailLayoutLibraryDuplicateResponses];
+
+export type EmailLayoutLibraryTestData = {
+    body?: TestEmailLayoutRequestModel;
+    path: {
+        key: string;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/email-layout/{key}/test';
+};
+
+export type EmailLayoutLibraryTestErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+};
+
+export type EmailLayoutLibraryTestError = EmailLayoutLibraryTestErrors[keyof EmailLayoutLibraryTestErrors];
+
+export type EmailLayoutLibraryTestResponses = {
+    /**
+     * Accepted
+     */
+    202: TestEmailResponseModel;
+};
+
+export type EmailLayoutLibraryTestResponse = EmailLayoutLibraryTestResponses[keyof EmailLayoutLibraryTestResponses];
+
+export type EmailLayoutLibraryUsedByData = {
+    body?: never;
+    path: {
+        key: string;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/email-layout/{key}/used-by';
+};
+
+export type EmailLayoutLibraryUsedByErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type EmailLayoutLibraryUsedByError = EmailLayoutLibraryUsedByErrors[keyof EmailLayoutLibraryUsedByErrors];
+
+export type EmailLayoutLibraryUsedByResponses = {
+    /**
+     * OK
+     */
+    200: LibraryUsersResponseModel;
+};
+
+export type EmailLayoutLibraryUsedByResponse = EmailLayoutLibraryUsedByResponses[keyof EmailLayoutLibraryUsedByResponses];
+
+export type EmailLayoutLibraryEditorData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/email-layout/editor';
+};
+
+export type EmailLayoutLibraryEditorErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+};
+
+export type EmailLayoutLibraryEditorResponses = {
+    /**
+     * OK
+     */
+    200: EmailLayoutEditorResponseModel;
+};
+
+export type EmailLayoutLibraryEditorResponse = EmailLayoutLibraryEditorResponses[keyof EmailLayoutLibraryEditorResponses];
+
+export type EmailLayoutLibraryRowsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        skip?: number;
+        take?: number;
+    };
+    url: '/umbraco/jfb/management/api/v1/email-layout/library';
+};
+
+export type EmailLayoutLibraryRowsErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+};
+
+export type EmailLayoutLibraryRowsError = EmailLayoutLibraryRowsErrors[keyof EmailLayoutLibraryRowsErrors];
+
+export type EmailLayoutLibraryRowsResponses = {
+    /**
+     * OK
+     */
+    200: EmailLayoutRowsResponseModel;
+};
+
+export type EmailLayoutLibraryRowsResponse = EmailLayoutLibraryRowsResponses[keyof EmailLayoutLibraryRowsResponses];
+
+export type EmailLayoutLibraryPreviewData = {
+    body?: PreviewEmailLayoutRequestModel;
+    path?: never;
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/email-layout/preview';
+};
+
+export type EmailLayoutLibraryPreviewErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+};
+
+export type EmailLayoutLibraryPreviewError = EmailLayoutLibraryPreviewErrors[keyof EmailLayoutLibraryPreviewErrors];
+
+export type EmailLayoutLibraryPreviewResponses = {
+    /**
+     * OK
+     */
+    200: EmailLayoutPreviewResponseModel;
+};
+
+export type EmailLayoutLibraryPreviewResponse = EmailLayoutLibraryPreviewResponses[keyof EmailLayoutLibraryPreviewResponses];
 
 export type TestEmailSendData = {
     body?: TestEmailRequestModel;
@@ -5480,7 +6074,7 @@ export type OptionListLibraryUsedByResponses = {
     /**
      * OK
      */
-    200: OptionListUsersResponseModel;
+    200: LibraryUsersResponseModel;
 };
 
 export type OptionListLibraryUsedByResponse = OptionListLibraryUsedByResponses[keyof OptionListLibraryUsedByResponses];
@@ -6137,6 +6731,390 @@ export type TemplateListResponses = {
 };
 
 export type TemplateListResponse = TemplateListResponses[keyof TemplateListResponses];
+
+export type ThemeLibraryCreateData = {
+    body?: CreateThemeRequestModel;
+    path?: never;
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/theme';
+};
+
+export type ThemeLibraryCreateErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+};
+
+export type ThemeLibraryCreateError = ThemeLibraryCreateErrors[keyof ThemeLibraryCreateErrors];
+
+export type ThemeLibraryCreateResponses = {
+    /**
+     * Created
+     */
+    201: ThemeResponseModel;
+};
+
+export type ThemeLibraryCreateResponse = ThemeLibraryCreateResponses[keyof ThemeLibraryCreateResponses];
+
+export type ThemeLibraryDeleteData = {
+    body?: never;
+    path: {
+        key: string;
+    };
+    query?: {
+        concurrencyVersion?: number;
+    };
+    url: '/umbraco/jfb/management/api/v1/theme/{key}';
+};
+
+export type ThemeLibraryDeleteErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+};
+
+export type ThemeLibraryDeleteError = ThemeLibraryDeleteErrors[keyof ThemeLibraryDeleteErrors];
+
+export type ThemeLibraryDeleteResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type ThemeLibraryDeleteResponse = ThemeLibraryDeleteResponses[keyof ThemeLibraryDeleteResponses];
+
+export type ThemeLibraryGetData = {
+    body?: never;
+    path: {
+        key: string;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/theme/{key}';
+};
+
+export type ThemeLibraryGetErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type ThemeLibraryGetError = ThemeLibraryGetErrors[keyof ThemeLibraryGetErrors];
+
+export type ThemeLibraryGetResponses = {
+    /**
+     * OK
+     */
+    200: ThemeResponseModel;
+};
+
+export type ThemeLibraryGetResponse = ThemeLibraryGetResponses[keyof ThemeLibraryGetResponses];
+
+export type ThemeLibraryUpdateData = {
+    body?: UpdateThemeRequestModel;
+    path: {
+        key: string;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/theme/{key}';
+};
+
+export type ThemeLibraryUpdateErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+};
+
+export type ThemeLibraryUpdateError = ThemeLibraryUpdateErrors[keyof ThemeLibraryUpdateErrors];
+
+export type ThemeLibraryUpdateResponses = {
+    /**
+     * OK
+     */
+    200: ThemeResponseModel;
+};
+
+export type ThemeLibraryUpdateResponse = ThemeLibraryUpdateResponses[keyof ThemeLibraryUpdateResponses];
+
+export type ThemeLibraryDuplicateData = {
+    body?: DuplicateThemeRequestModel;
+    path: {
+        key: string;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/theme/{key}/duplicate';
+};
+
+export type ThemeLibraryDuplicateErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type ThemeLibraryDuplicateError = ThemeLibraryDuplicateErrors[keyof ThemeLibraryDuplicateErrors];
+
+export type ThemeLibraryDuplicateResponses = {
+    /**
+     * Created
+     */
+    201: ThemeResponseModel;
+};
+
+export type ThemeLibraryDuplicateResponse = ThemeLibraryDuplicateResponses[keyof ThemeLibraryDuplicateResponses];
+
+export type ThemeLibraryExportData = {
+    body?: never;
+    path: {
+        key: string;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/theme/{key}/export';
+};
+
+export type ThemeLibraryExportErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type ThemeLibraryExportError = ThemeLibraryExportErrors[keyof ThemeLibraryExportErrors];
+
+export type ThemeLibraryExportResponses = {
+    /**
+     * OK
+     */
+    200: ThemeExportResponseModel;
+};
+
+export type ThemeLibraryExportResponse = ThemeLibraryExportResponses[keyof ThemeLibraryExportResponses];
+
+export type ThemeLibraryUsedByData = {
+    body?: never;
+    path: {
+        key: string;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/theme/{key}/used-by';
+};
+
+export type ThemeLibraryUsedByErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type ThemeLibraryUsedByError = ThemeLibraryUsedByErrors[keyof ThemeLibraryUsedByErrors];
+
+export type ThemeLibraryUsedByResponses = {
+    /**
+     * OK
+     */
+    200: LibraryUsersResponseModel;
+};
+
+export type ThemeLibraryUsedByResponse = ThemeLibraryUsedByResponses[keyof ThemeLibraryUsedByResponses];
+
+export type ThemeLibraryEditorData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/theme/editor';
+};
+
+export type ThemeLibraryEditorErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+};
+
+export type ThemeLibraryEditorResponses = {
+    /**
+     * OK
+     */
+    200: ThemeEditorResponseModel;
+};
+
+export type ThemeLibraryEditorResponse = ThemeLibraryEditorResponses[keyof ThemeLibraryEditorResponses];
+
+export type ThemeLibraryImportData = {
+    body?: ImportThemeRequestModel;
+    path?: never;
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/theme/import';
+};
+
+export type ThemeLibraryImportErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+};
+
+export type ThemeLibraryImportError = ThemeLibraryImportErrors[keyof ThemeLibraryImportErrors];
+
+export type ThemeLibraryImportResponses = {
+    /**
+     * Created
+     */
+    201: ThemeResponseModel;
+};
+
+export type ThemeLibraryImportResponse = ThemeLibraryImportResponses[keyof ThemeLibraryImportResponses];
+
+export type ThemeLibraryRowsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        skip?: number;
+        take?: number;
+    };
+    url: '/umbraco/jfb/management/api/v1/theme/library';
+};
+
+export type ThemeLibraryRowsErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+};
+
+export type ThemeLibraryRowsError = ThemeLibraryRowsErrors[keyof ThemeLibraryRowsErrors];
+
+export type ThemeLibraryRowsResponses = {
+    /**
+     * OK
+     */
+    200: ThemeRowsResponseModel;
+};
+
+export type ThemeLibraryRowsResponse = ThemeLibraryRowsResponses[keyof ThemeLibraryRowsResponses];
+
+export type ThemeLibraryPreviewData = {
+    body?: PreviewThemeRequestModel;
+    path?: never;
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/theme/preview';
+};
+
+export type ThemeLibraryPreviewErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+};
+
+export type ThemeLibraryPreviewResponses = {
+    /**
+     * OK
+     */
+    200: ThemePreviewResponseModel;
+};
+
+export type ThemeLibraryPreviewResponse = ThemeLibraryPreviewResponses[keyof ThemeLibraryPreviewResponses];
 
 export type TrashEmptyData = {
     body?: never;

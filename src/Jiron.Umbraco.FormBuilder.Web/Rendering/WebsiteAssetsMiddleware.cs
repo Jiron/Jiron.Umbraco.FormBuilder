@@ -1,3 +1,6 @@
+using System.Globalization;
+using System.Text;
+using Jiron.Umbraco.FormBuilder.Core.Themes;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Net.Http.Headers;
 
@@ -9,7 +12,7 @@ namespace Jiron.Umbraco.FormBuilder.Web.Rendering;
 /// request accepts; a year's caching under the file's fingerprint, and <c>no-cache</c> otherwise; <c>nosniff</c> on every
 /// answer; and CORS for any origin, as the files are public and fetched without credentials.
 /// </summary>
-internal sealed class WebsiteAssetsMiddleware(WebsiteAssets assets) : IMiddleware
+internal sealed class WebsiteAssetsMiddleware(WebsiteAssets assets, LibraryThemes libraryThemes) : IMiddleware
 {
     private const string Immutable = "public, max-age=31536000, immutable";
     private const string Revalidate = "no-cache";
@@ -29,6 +32,12 @@ internal sealed class WebsiteAssetsMiddleware(WebsiteAssets assets) : IMiddlewar
 
         var response = context.Response;
         response.Headers.XContentTypeOptions = "nosniff";
+        if (LibraryThemeLayers.AliasOf(rest.Value) is { } alias)
+        {
+            await LayerAsync(context, alias);
+            return;
+        }
+
         if (rest.Value is not { Length: > 1 } path || assets.Find(path[1..]) is not { } asset)
         {
             response.StatusCode = StatusCodes.Status404NotFound;
@@ -67,6 +76,47 @@ internal sealed class WebsiteAssetsMiddleware(WebsiteAssets assets) : IMiddlewar
         if (HttpMethods.IsGet(request.Method))
         {
             await response.Body.WriteAsync(copy.Bytes, context.RequestAborted);
+        }
+    }
+
+    // A library theme's layer (ADR-0215), as the package's stylesheets are served: for good under the version the theme
+    // has now, else revalidated, as an address with an older version is answered with what the theme holds now.
+    private async Task LayerAsync(HttpContext context, string alias)
+    {
+        var request = context.Request;
+        var response = context.Response;
+        if (!HttpMethods.IsGet(request.Method) && !HttpMethods.IsHead(request.Method))
+        {
+            response.StatusCode = StatusCodes.Status405MethodNotAllowed;
+            response.Headers.Allow = Methods;
+            return;
+        }
+
+        if (await libraryThemes.FindAsync(alias, context.RequestAborted) is not { } theme)
+        {
+            response.StatusCode = StatusCodes.Status404NotFound;
+            return;
+        }
+
+        var current = request.Query.TryGetValue("v", out var version) && version.Count == 1
+            && string.Equals(version[0], theme.Version.ToString(CultureInfo.InvariantCulture), StringComparison.Ordinal);
+        var tag = $"\"{theme.LayerTag}\"";
+        response.Headers.AccessControlAllowOrigin = "*";
+        response.Headers["Cross-Origin-Resource-Policy"] = "cross-origin";
+        response.Headers.CacheControl = current ? Immutable : Revalidate;
+        response.Headers.ETag = tag;
+        if (request.GetTypedHeaders().IfNoneMatch.Any(match => match.Equals(EntityTagHeaderValue.Any) || string.Equals(match.Tag.Value, tag, StringComparison.Ordinal)))
+        {
+            response.StatusCode = StatusCodes.Status304NotModified;
+            return;
+        }
+
+        var bytes = Encoding.UTF8.GetBytes(theme.Layer);
+        response.ContentType = "text/css; charset=utf-8";
+        response.ContentLength = bytes.Length;
+        if (HttpMethods.IsGet(request.Method))
+        {
+            await response.Body.WriteAsync(bytes, context.RequestAborted);
         }
     }
 }

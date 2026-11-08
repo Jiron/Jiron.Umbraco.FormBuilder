@@ -2,6 +2,7 @@ using System.Net;
 using System.Text.Json.Nodes;
 using Jiron.Umbraco.FormBuilder.Core.Composing;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
+using Jiron.Umbraco.FormBuilder.Core.Themes;
 using Jiron.Umbraco.FormBuilder.Testing;
 using Jiron.Umbraco.FormBuilder.Tests.Integration.Support;
 using Jiron.Umbraco.FormBuilder.Web.Rendering;
@@ -173,6 +174,34 @@ public sealed class FormElementEndpointTests : RenderingTestBase
             Assert.That(Styles(english), Is.EqualTo(new[] { "themes/base.css", "themes/default.css" }));
             Assert.That(unknown!["form"]!["cssClass"]!.GetValue<string>(), Does.Contain("jfb-theme-default"), "a theme the site lacks renders as default");
             Assert.That(given!["form"]!["contextValues"]!.ToJsonString(), Is.EqualTo("""[{"name":"jfb-context-campaign","value":"spring"}]"""), "a name the form lists, in any letter case; another left out");
+        });
+    }
+
+    [Test]
+    public async Task ALibraryTheme_RendersAsItsBaseTheme_WithItsLayerAfterTheBaseStylesheet_ServedUnderItsVersion()
+    {
+        var key = await PublishFormAsync("elementLibraryTheme", definition => Headless(definition));
+        var library = GetRequiredService<ThemeLibrary>();
+        var created = await library.CreateAsync(
+            new ThemeInput("autumn", "Autumn", "default", new ThemeTokens { Light = new Dictionary<string, string> { ["--jfb-color-accent"] = "#8a1538" } }, ".jfb-label { letter-spacing: .02em; }"),
+            null);
+
+        var (_, _, autumn) = await ElementAsync(key, "instance=jfb-1&theme=autumn");
+        using var layer = await GetAsync($"/jfb/assets/themes/library/autumn.css?v={created.Theme!.ConcurrencyVersion}");
+        var css = await layer.Content.ReadAsStringAsync();
+        using var missing = await GetAsync("/jfb/assets/themes/library/winter.css?v=1");
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(autumn!["form"]!["cssClass"]!.GetValue<string>().Split(' '), Is.SupersetOf(new[] { "jfb-theme-autumn", "jfb-theme-default" }), "the theme's class and its base theme's");
+            Assert.That(Styles(autumn), Is.EqualTo(new[] { "themes/base.css", "themes/default.css", "themes/library/autumn.css" }), "the layer after its base theme's stylesheet");
+            Assert.That(autumn["assets"]!["styles"]!.AsArray().Last()!.GetValue<string>(), Does.EndWith($"?v={created.Theme.ConcurrencyVersion}"));
+            Assert.That(layer.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+            Assert.That(layer.Content.Headers.ContentType?.MediaType, Is.EqualTo("text/css"));
+            Assert.That(layer.Headers.CacheControl?.ToString(), Is.EqualTo("public, max-age=31536000, immutable"));
+            Assert.That(css, Does.Contain(".jfb-form.jfb-theme-autumn {\n  --jfb-color-accent: #8a1538;\n}"));
+            Assert.That(css, Does.Contain(".jfb-form.jfb-theme-autumn .jfb-label { letter-spacing: .02em; }"));
+            Assert.That(missing.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
         });
     }
 
