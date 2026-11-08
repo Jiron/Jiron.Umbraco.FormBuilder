@@ -21,6 +21,7 @@ import {
   write,
 } from './stamp.mjs';
 import { buildVersion, versionFromProps } from './version.mjs';
+import { lessTemplates, lessTemplateText } from './templates.mjs';
 import { sharedBuild, sharedPlugins, terserPass } from './vite-shared.mjs';
 
 const licenseText = readFileSync(licensePath, 'utf8');
@@ -216,6 +217,75 @@ describe('the shared build', () => {
     expect(terserPass({}).apply()).toBe(true);
     expect(terserPass({ JFB_SOURCEMAP: '1' }).apply()).toBe(false);
   }, 60_000);
+});
+
+describe('the templates made smaller', () => {
+  const less = (code) => lessTemplates(code, 'element.ts');
+
+  it("takes a css template's comments and indentation out, and the spaces around braces and semicolons", () => {
+    const code = [
+      'const styles = css`',
+      '  /* The box. */',
+      '  :host {',
+      '    display: block;',
+      '    inline-size: calc(100% - var(--gap) * 2);',
+      '  }',
+      '',
+      '  :host ::slotted(*) > p,',
+      '  .a  .b {',
+      "    content: '\\201C';",
+      '  }',
+      '`;',
+    ].join('\n');
+
+    expect(less(code)).toBe(
+      "const styles = css`:host{display: block;inline-size: calc(100% - var(--gap) * 2);}:host ::slotted(*) > p, .a .b{content: '\\201C';}`;",
+    );
+  });
+
+  it("keeps a css template's interpolations and the space beside them", () => {
+    const code = 'const styles = css`\n  ${unsafeCSS(scope)} .x {\n    color: ${colour};\n  }\n`;';
+
+    expect(less(code)).toBe('const styles = css`${unsafeCSS(scope)} .x{color: ${colour};}`;');
+  });
+
+  it("makes each run of an html template's whitespace that breaks the line one space, and leaves the rest", () => {
+    const code = [
+      'const view = html`<p class="a">',
+      '    ${name}',
+      '  </p>',
+      '  <uui-button',
+      '    look="primary"',
+      '    label=${label}',
+      '  ></uui-button> <b>two  spaces</b>`;',
+    ].join('\n');
+
+    expect(less(code)).toBe(
+      'const view = html`<p class="a"> ${name} </p> <uui-button look="primary" label=${label} ></uui-button> <b>two  spaces</b>`;',
+    );
+  });
+
+  it('leaves preformatted html, a line continuation, other tags and strings as written', () => {
+    const pre = 'const a = html`<pre>\n  one\n  two\n</pre>`;';
+    const area = 'const b = html`<textarea>\n  one\n</textarea>`;';
+    const styled = 'const c = html`<p style="white-space: pre-line">\n  one\n</p>`;';
+    const other = 'const d = svg`<g>\n  <path></path>\n</g>`;\nconst e = "css`\\n  x`";\nconst f = `\n  plain\n`;';
+    const continued = 'const g = html`one \\\n  two`;';
+
+    for (const code of [pre, area, styled, other, continued]) expect(less(code)).toBe(code);
+  });
+
+  it('reads TypeScript, and applies to a build without source maps only', () => {
+    const code = 'const x: TemplateResult = html`<p>\n  ${(y as string)}\n</p>`;';
+
+    expect(lessTemplates(code, 'element.ts')).toBe('const x: TemplateResult = html`<p> ${(y as string)} </p>`;');
+    const plugin = lessTemplateText({});
+    expect(plugin.apply({}, { command: 'build' })).toBe(true);
+    expect(plugin.apply({}, { command: 'serve' })).toBe(false);
+    expect(lessTemplateText({ JFB_SOURCEMAP: '1' }).apply({}, { command: 'build' })).toBe(false);
+    expect(plugin.transform(code, 'C:/x/node_modules/lit/a.ts')).toBeNull();
+    expect(plugin.transform('const z = 1;', 'C:/x/src/a.ts')).toBeNull();
+  });
 });
 
 describe('the stamp', () => {

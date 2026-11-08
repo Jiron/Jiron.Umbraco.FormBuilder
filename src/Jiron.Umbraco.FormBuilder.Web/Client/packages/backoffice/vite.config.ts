@@ -1,4 +1,5 @@
 import { defineConfig } from 'vitest/config';
+import { lessTemplateText } from '../../scripts/templates.mjs';
 import { buildVersion } from '../../scripts/version.mjs';
 import { backofficeFolder, sharedBuild, sharedPlugins, stampPackageVersion } from '../../scripts/vite-shared.mjs';
 
@@ -12,7 +13,12 @@ export default defineConfig({
     ...sharedBuild({ version, outDir, external: [/^@umbraco-cms[/]/] }),
     lib: { entry: 'src/bundle.manifests.ts', formats: ['es'], fileName: () => 'jfb-backoffice.js' },
   },
-  plugins: [...sharedPlugins({ version, name: 'backoffice' }), stampPackageVersion(outDir, version)],
+  // The templates' comments and line breaks go before the bundler compiles them (ADR-0216).
+  plugins: [
+    lessTemplateText(),
+    ...sharedPlugins({ version, name: 'backoffice' }),
+    stampPackageVersion(outDir, version),
+  ],
   test: {
     name: 'backoffice',
     environment: 'jsdom',
