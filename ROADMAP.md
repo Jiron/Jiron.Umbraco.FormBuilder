@@ -2558,6 +2558,8 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     against 60 KB, and still waits.
   - **Retried at 11.6 (2026-11-08):** the branch merges into Phase 11's main with one conflict (the parameters of
     `FormModels`, both sides kept), measures 62.15 KB against 60 KB, and still waits.
+  - **Retried at 12.6 (2026-11-09):** the branch merges into Phase 12's main with the same conflict, both sides kept,
+    measures 62.15 KB against 60 KB (the runtime did not change in Phase 12), and still waits.
   - **Blocked on the owner (2026-11-02):** the control and the restoring of answers are built and wait on the branch `wip/8.6b-resume-control`. As the chunk of their own they come to 1.94 KB gzip, which puts the runtime with every feature at 61.95 KB against the 60 KB of ADR-0146, and that ADR leaves anything past 60 KB to the owner. `docs/OWNER-TODO.md` asks.
   - **The control:** the runtime's "Save and continue later" (the only use of browser storage, §4.10), and a link's answers and page restored on arrival, its token taken out of the address at once.
   - **Its switch** in the Settings view's Submission group, under More options, with the link's days (moved from 10.1a: settings come with their feature).
