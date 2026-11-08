@@ -116,9 +116,10 @@ public sealed class FormBuilderAccessFilterTests
     public async Task ATicketsAction_NeedsNoUser_ButWaitsForTheMigrations_AndLeavesTheTicketToTheAction()
     {
         _migrations.Pending = true;
-        var pending = await RunAsync([new FormBuilderTicketAccessAttribute()], [], known: false);
+        var pending = await RunAsync([new FormBuilderTicketAccessAttribute()], [], known: false, signedIn: false);
         _migrations.Pending = false;
-        var anonymous = await RunAsync([new FormBuilderTicketAccessAttribute()], [], known: false);
+        // A plain link carries no sign-in at all: the request is anonymous, not a sign-in without a user.
+        var anonymous = await RunAsync([new FormBuilderTicketAccessAttribute()], [], known: false, signedIn: false);
         var withATicketToo = await RunAsync([new FormBuilderTicketAccessAttribute(), new FormBuilderSectionAttribute()], [], known: false);
 
         Assert.Multiple(() =>
@@ -353,10 +354,10 @@ public sealed class FormBuilderAccessFilterTests
         RunAsync(declarations, arguments, user: User(Section));
 
 
-    private async Task<Run> RunAsync(FormBuilderAccessAttribute[] declarations, (string Name, Guid? Value)[] arguments, bool invalid = false, bool body = false, IUser? user = null, bool known = true)
+    private async Task<Run> RunAsync(FormBuilderAccessAttribute[] declarations, (string Name, Guid? Value)[] arguments, bool invalid = false, bool body = false, IUser? user = null, bool known = true, bool signedIn = true)
     {
         user ??= User(Section);
-        var http = new DefaultHttpContext { User = new ClaimsPrincipal(new ClaimsIdentity("test")) };
+        var http = new DefaultHttpContext { User = new ClaimsPrincipal(signedIn ? new ClaimsIdentity("test") : new ClaimsIdentity()) };
         var action = new ActionDescriptor
         {
             DisplayName = "Test.Action",

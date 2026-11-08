@@ -871,7 +871,8 @@ The exports (ADR-0210): `Exports/EntryExportTests.cs` reads every format back fr
 `ExportFiles.Csv`, which knows quotes and line breaks, the Excel workbook with `ExportFiles.XlsxAsync`, a test-only
 reader that follows the workbook's own relationships, the JSON by alias, the printable view without scripts and the ZIP's
 listing; a grid by row, a ranking by position and a repeatable group as lines, as a sheet and as rows; the formula guard;
-sensitive fields only when asked for and allowed, a repeatable group's own and a sensitive group's too; the list's
+sensitive fields only when asked for and allowed, a repeatable group's own and a sensitive group's too, and a field
+only the catalogue marks, at the top or in a group; the list's
 filter and the ticked entries, never another form's, a test entry or a draft though ticked; an unpublished form laid
 out as it was last published, not as its draft; each reference and time received as the entry's own version and site
 gave them; the audit and the announcement; a background export for its owner only until it expires, one restarted

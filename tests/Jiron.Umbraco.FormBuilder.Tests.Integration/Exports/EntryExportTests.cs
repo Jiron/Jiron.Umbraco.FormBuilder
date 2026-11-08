@@ -379,6 +379,34 @@ public sealed class EntryExportTests : ActionTestBase
     }
 
     [Test]
+    public async Task AFieldTheCatalogueMarksSensitive_StaysOut_AsOneItsVersionMarks_InAGroupToo()
+    {
+        var plusOne = GuestName with { Key = Guid.Parse("c4100000-0000-4000-8000-000000000011"), Alias = "plusOne", Label = new LocalizedText("Plus one") };
+        var form = await PublishAsync(name: "Marked", fields: [NameField, Note, Guests with { Fields = [GuestName, plusOne] }]);
+        await SubmitAsync(form, """{"name":"Ada","note":"kept","guests":[{"guestName":"Ben","plusOne":"Cy"}]}""");
+        // The catalogue marks the note and a group's field sensitive, though the version they were answered in does not.
+        var row = (await FormRows.GetAsync(form))!;
+        _ = await GetRequiredService<FormBuilderDatabase>().WriteAsync(
+            async db =>
+            {
+                var n = new SqlNames(db);
+                await db.ExecAsync($"UPDATE {n.T(FormBuilderTables.FormField)} SET {n.C("isSensitive")} = @0 WHERE {n.C("formId")} = @1 AND {n.C("fieldKey")} IN (@2, @3)", true, row.Id, Note.Key, plusOne.Key);
+                return true;
+            });
+
+        var left = ExportFiles.Csv(Encoding.UTF8.GetString(await WriteAsync(form, new EntryExportRequest { Format = "csv", Options = NoMark })));
+        var asked = ExportFiles.Csv(Encoding.UTF8.GetString(await WriteAsync(form, new EntryExportRequest { Format = "csv", Sensitive = true, Options = NoMark })));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(left[0].Skip(4), Is.EqualTo(new[] { "Name", "Guests" }), "the note stays out");
+            Assert.That(left[1].Skip(4), Is.EqualTo(new[] { "Ada", "Guest: Ben" }), "and so does the group's plus one");
+            Assert.That(asked[0].Skip(4), Is.EqualTo(new[] { "Name", "Note", "Guests" }));
+            Assert.That(asked[1].Skip(4), Is.EqualTo(new[] { "Ada", "kept", "Guest: Ben; Plus one: Cy" }));
+        });
+    }
+
+    [Test]
     public async Task AnUnpublishedForm_ExportsAsItWasLastPublished_NotAsItsDraft()
     {
         var form = await PublishAsync(name: "Offline", fields: [NameField, Note, Badges]);
