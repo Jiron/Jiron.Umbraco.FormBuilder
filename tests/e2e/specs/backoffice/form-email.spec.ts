@@ -171,9 +171,12 @@ test("the recipient builder adds an address, an email field's answer and the add
   await expect(to.getByRole('combobox', { name: 'Addresses chosen by' })).toHaveValue(form.topic);
   await to.getByRole('textbox', { name: 'Sales' }).fill('sales-team@example.com');
   await to.getByRole('textbox', { name: 'Sales' }).press('Tab');
-  // Each kind is there once now: Add recipient offers addresses, and the person who created the form.
+  // Each kind is there once now: Add recipient offers addresses, the person who created the form and the privacy team.
   await add.click();
-  await expect(to.locator('.add-kind')).toHaveText(['The person who created the form']);
+  await expect(to.locator('.add-kind')).toHaveText([
+    'The person who created the form',
+    'Everyone who may use the privacy tools',
+  ]);
   await add.click();
   await axeInside(page, 'jfb-action-modal');
 
