@@ -1,23 +1,11 @@
 // "Create a form block type..." (docs/ux/information-architecture.md, section 10, ADR-0130): the dialog says what it creates and that it
 // never changes existing types. Once it has, the same dialog says the one step left.
 import { css, html, nothing } from '@umbraco-cms/backoffice/external/lit';
-import { UmbModalBaseElement, UmbModalToken } from '@umbraco-cms/backoffice/modal';
+import { UmbModalBaseElement } from '@umbraco-cms/backoffice/modal';
 import { tryExecute } from '@umbraco-cms/backoffice/resources';
 import { setupCreateFormBlock } from '../api';
 import { jfbBackofficeTokens } from '../styles/tokens';
-
-const ALIAS = 'Jiron.FormBuilder.Modal.FormBlock';
-
-/** The value says whether the types now exist, so the Overview reads the checklist again. */
-export interface FormBlockModalValue {
-  created: boolean;
-}
-
-export const FORM_BLOCK_MODAL = new UmbModalToken<never, FormBlockModalValue>(ALIAS, {
-  modal: { type: 'dialog', size: 'small' },
-});
-
-export const FORM_BLOCK_MODAL_ALIAS = ALIAS;
+import type { FormBlockModalValue } from './form-block-modal.token';
 
 export class FormBlockModalElement extends UmbModalBaseElement<never, FormBlockModalValue> {
   static override properties = {

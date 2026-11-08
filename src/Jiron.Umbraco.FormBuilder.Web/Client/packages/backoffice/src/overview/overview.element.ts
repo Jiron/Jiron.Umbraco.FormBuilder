@@ -18,7 +18,7 @@ import { ENTRY_ENTITY_TYPE, FORM_ENTITY_TYPE, screenPath } from '../section/enti
 import { myPermissions } from '../section/my-permissions';
 import { jfbBackofficeTokens, jfbVisuallyHidden } from '../styles/tokens';
 import { doneCount, findingsToShow, receivedText, stepViews, type StepView } from './checklist';
-import { FORM_BLOCK_MODAL } from './form-block-modal.element';
+import { FORM_BLOCK_MODAL } from './form-block-modal.token';
 import { createFromTemplate } from '../library/actions/new-form';
 
 /** A block that loads by itself: on its way, there, or failed. */
