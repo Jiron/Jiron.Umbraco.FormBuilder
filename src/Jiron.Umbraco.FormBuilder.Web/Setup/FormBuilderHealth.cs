@@ -4,6 +4,7 @@ using Jiron.Umbraco.FormBuilder.Core.Actions;
 using Jiron.Umbraco.FormBuilder.Core.Configuration;
 using Jiron.Umbraco.FormBuilder.Core.Email;
 using Jiron.Umbraco.FormBuilder.Core.Files;
+using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Migrations;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Core.Settings;
@@ -347,6 +348,43 @@ internal sealed class UsedOnHealth(FormReferenceRebuild rebuild) : HealthProbe
 
     /// <inheritdoc />
     public override string Passed(HealthWords words) => words.UsedOnPassed;
+}
+
+/// <summary>
+/// Forms as files (D25, ADR-0220): one finding for each file the mirror could not keep in step with its form, a conflict
+/// first. Nothing while the mirror is off.
+/// </summary>
+/// <param name="mirror">The mirror.</param>
+internal sealed class MirrorHealth(FormMirror mirror) : HealthProbe
+{
+    /// <summary>Whether a conflict waits.</summary>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    public async Task<bool> HasConflictAsync(CancellationToken cancellationToken = default) =>
+        mirror.On && (await mirror.ProblemsAsync(cancellationToken)).Any(problem => problem.Kind == MirrorProblemKind.Conflict);
+
+    /// <summary>Writes the file of each form in conflict from its published version; how many it wrote.</summary>
+    /// <param name="cancellationToken">Cancels the writes.</param>
+    public Task<int> KeepTheFormsAsync(CancellationToken cancellationToken = default) => mirror.KeepTheFormsAsync(cancellationToken);
+
+    /// <inheritdoc />
+    public override async Task<IReadOnlyList<HealthFinding>> FindAsync(HealthWords words, CancellationToken cancellationToken = default)
+    {
+        if (!mirror.On)
+        {
+            return [];
+        }
+
+        return [.. (await mirror.ProblemsAsync(cancellationToken)).Select(problem => problem.Kind switch
+        {
+            MirrorProblemKind.Conflict => new HealthFinding("mirrorConflict", words.MirrorConflict(problem.File)),
+            MirrorProblemKind.Unwritable => new HealthFinding("mirrorUnwritable", words.MirrorUnwritable(problem.File)),
+            MirrorProblemKind.NotPublished => new HealthFinding("mirrorNotPublished", words.MirrorNotPublished(problem.File)),
+            _ => new HealthFinding("mirrorUnreadable", words.MirrorUnreadable(problem.File)),
+        })];
+    }
+
+    /// <inheritdoc />
+    public override string Passed(HealthWords words) => mirror.On ? words.MirrorPassed : words.MirrorOff;
 }
 
 /// <summary>

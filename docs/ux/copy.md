@@ -194,6 +194,7 @@ Use Umbraco's own words where Umbraco has the same action, so the section feels 
 | more rows of a list that reads a page at a time | Show more | Mehr anzeigen |
 | create the block that puts forms on pages | Create a form block type… | Formular-Blocktyp erstellen… |
 | start from a ready-made form (the checklist, an empty folder) | Choose a template… | Vorlage wählen… |
+| make a JSON file a form's draft (a form's "…", for who may design it; the import sidebar for that form) · its primary | Replace from a file… · Replace the draft | Aus einer Datei ersetzen… · Entwurf ersetzen |
 | keep a form as a template (its "…" in the tree, for who may manage the library and design the form) · keep the selected group as one (its "…" on the canvas) | Save as template… · Save group as template… | Als Vorlage speichern… · Gruppe als Vorlage speichern… |
 | a saved template's "…" (Library › Templates; a built-in one has none) · its dialog's primary | Rename… · Delete… · Save template · Rename | Umbenennen… · Löschen… · Vorlage speichern · Umbenennen |
 | turn a list of questions into fields | Paste questions… | Fragen einfügen… |
@@ -455,6 +456,7 @@ toast adds only what the user cannot see.
 | a restore undone (the draft before comes back as a new draft) | The draft before is back. | Der vorherige Entwurf ist wiederhergestellt. |
 | a settings screen saved | The settings are saved. | Die Einstellungen sind gespeichert. |
 | a delivery retried from its details | The delivery is queued again. | Die Zustellung ist wieder eingereiht. |
+| a form's draft replaced with a file | The draft of Contact is replaced. Visitors see it once you publish. | Der Entwurf von Contact ist ersetzt. Besucher sehen ihn, sobald Sie veröffentlichen. |
 | Settings › Access saved · a folder's or form's Permissions saved | Access is saved. · The permissions of HR are saved. | Der Zugriff ist gespeichert. · Die Berechtigungen von HR sind gespeichert. |
 | Settings › Email's test mail sent (saved first when the screen has changes) | Test email sent to you (ana@example.com). | Test-E-Mail an Sie gesendet (ana@example.com). |
 | one entry approved, in the entry panel | Entry #214 approved. [Undo] | Eintrag #214 genehmigt. [Zurücknehmen] |

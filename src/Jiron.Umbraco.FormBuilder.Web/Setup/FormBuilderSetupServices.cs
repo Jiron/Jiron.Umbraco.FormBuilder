@@ -24,6 +24,7 @@ internal static class FormBuilderSetupServices
         Probe<MigrationsHealth>(builder);
         Probe<BaseUrlHealth>(builder);
         Probe<UsedOnHealth>(builder);
+        Probe<MirrorHealth>(builder);
         return builder;
     }
 

@@ -228,6 +228,10 @@ export default {
     audit_form_published: (f: AuditFacts) =>
       f.version ? `Version ${f.version} veröffentlicht` : 'Das Formular veröffentlicht',
     audit_form_renamed: 'Das Formular umbenannt',
+    audit_form_replaced: (f: AuditFacts) =>
+      f.version
+        ? `Den Entwurf als Version ${f.version} durch eine Datei ersetzt`
+        : 'Den Entwurf durch eine Datei ersetzt',
     audit_form_restored: 'Das Formular aus dem Papierkorb wiederhergestellt',
     audit_form_saved: (f: AuditFacts) => (f.version ? `Version ${f.version} gespeichert` : 'Das Formular gespeichert'),
     audit_form_trashed: 'Das Formular in den Papierkorb verschoben',

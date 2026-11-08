@@ -28,6 +28,9 @@ public sealed class FormBuilderOptions
     /// <summary>Whether actions and email go out (section 4.4).</summary>
     public FormBuilderActionsOptions Actions { get; } = new();
 
+    /// <summary>Whether published forms are also kept as JSON files for source control, and where (ADR-0220).</summary>
+    public FormBuilderDefinitionsOptions Definitions { get; } = new();
+
     /// <summary>Hard limits that editors cannot exceed.</summary>
     public FormBuilderLimitsOptions Limits { get; } = new();
 
@@ -238,6 +241,34 @@ public sealed class FormBuilderActionsOptions
     /// options, a change takes effect at once.
     /// </summary>
     public bool Paused { get; set; }
+}
+
+/// <summary>
+/// Forms as files (ADR-0220): with <see cref="Mirror"/> on, each published form is also written to a JSON file in
+/// <see cref="Folder"/>, and a file changed in source control is imported as a new version.
+/// </summary>
+public sealed class FormBuilderDefinitionsOptions
+{
+    /// <summary>The configuration key of <see cref="Folder"/>.</summary>
+    public const string FolderKey = FormBuilderOptions.SectionName + ":Definitions:" + nameof(Folder);
+
+    /// <summary>The configuration key of <see cref="Mirror"/>.</summary>
+    public const string MirrorKey = FormBuilderOptions.SectionName + ":Definitions:" + nameof(Mirror);
+
+    /// <summary>The folder by default, under the content root and outside the web root.</summary>
+    public const string DefaultFolder = "~/umbraco/JironFormBuilder/forms";
+
+    /// <summary>
+    /// Writes each published form to <c>&lt;alias&gt;.json</c> and reads the folder back on a background pass, so teams that deploy
+    /// through source control review form changes as files; off by default.
+    /// </summary>
+    public bool Mirror { get; set; }
+
+    /// <summary>
+    /// Where the files are: <c>~/</c> and a path relative to the content root, or an absolute path, never inside the web root or
+    /// around it; read only while <see cref="Mirror"/> is on.
+    /// </summary>
+    public string Folder { get; set; } = DefaultFolder;
 }
 
 /// <summary>Locks on the settings that editors give fields and actions in the designer (section 4.8).</summary>

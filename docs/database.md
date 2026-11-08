@@ -467,8 +467,10 @@ erDiagram
 
 ### `jfbKeyValue`
 
-One-time flags and small markers, such as the record that the Form Builder section was granted, or the hashes of mirrored
-definition files. No indexes besides the primary key on `key`. A background export keeps its record under
+One-time flags and small markers, such as the record that the Form Builder section was granted, or what the mirror of
+forms as files last saw (ADR-0220): under `mirror/<form key>` the hash of the file's definition, the published version
+it matched and the file's name, and under `mirror-problem/<kind>/<form key or the hash of a file's name>` the file of
+a conflict, a file that could not be written or taken in, or a draft that publishing refused. No indexes besides the primary key on `key`. A background export keeps its record under
 `jfb.export.<export key>` (ADR-0210): its owner, form and request, where it stands, its worker's lease and, once ready,
 the file store's id of its file; the exports' job removes both a day after it was ready or failed.
 

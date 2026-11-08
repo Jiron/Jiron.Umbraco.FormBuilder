@@ -210,6 +210,7 @@ describe('the dictionaries', () => {
       'CopyActions',
       'SaveAsTemplate',
       'Export',
+      'Replace',
     ]) {
       used.add(`jfbLibrary_action${id}`);
     }

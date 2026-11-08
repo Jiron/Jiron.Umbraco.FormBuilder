@@ -43,6 +43,7 @@ export default {
     actionSaveAsTemplate: 'Save as template…',
     actionPermissions: 'Permissions…',
     actionExport: 'Export as JSON',
+    actionReplace: 'Replace from a file…',
     actionTrash: 'Trash',
     actionEmptyBin: 'Empty recycle bin…',
     actionRestore: 'Restore…',
@@ -300,5 +301,13 @@ export default {
     arrivesAsDraft: (where: string) =>
       `It arrives as a draft in ${where}, so visitors see nothing until you publish it.`,
     importAsNewCopy: 'Import as a new copy',
+    replaceHeadline: (name: string) => `Replace ${name} from a file`,
+    replaceIntro:
+      'Choose a JSON file that a site running Jiron Form Builder exported. Its form becomes the draft of this form; the name, entries and access stay as they are.',
+    replacesDraft: (name: string) =>
+      `It becomes the draft of ${name}. Visitors keep seeing the published version until you publish.`,
+    replaceDiscardsUnsaved: "Changes you haven't saved yet are discarded.",
+    replaceTheDraft: 'Replace the draft',
+    replaced: (name: string) => `The draft of ${name} is replaced. Visitors see it once you publish.`,
   },
 };

@@ -41,6 +41,12 @@ internal sealed class FormBuilderOptionsValidator(IHostFolders folders, IConfigu
             failures.Add(problem);
         }
 
+        if (options.Definitions.Mirror
+            && !FileStoreRoot.TryResolve(options.Definitions.Folder, folders, FormBuilderDefinitionsOptions.FolderKey, FormBuilderDefinitionsOptions.DefaultFolder, out _, out var mirrorProblem))
+        {
+            failures.Add(mirrorProblem);
+        }
+
         CheckFileLimits(options.Files, failures);
         CheckDefinitionLimits(options.Limits.Definitions, failures);
         CheckRateLimits(options.Limits, failures);

@@ -3,8 +3,10 @@ using System.Text;
 using Asp.Versioning;
 using Jiron.Umbraco.FormBuilder.Core.Access;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
+using Jiron.Umbraco.FormBuilder.Core.Definitions.Comparison;
 using Jiron.Umbraco.FormBuilder.Core.Definitions.Exchange;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
+using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Web.ManagementApi.Access;
 using Jiron.Umbraco.FormBuilder.Web.ManagementApi.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -15,11 +17,12 @@ using Umbraco.Cms.Web.Common.Routing;
 namespace Jiron.Umbraco.FormBuilder.Web.ManagementApi.Library;
 
 /// <summary>
-/// Forms that come from other forms, templates and files, and the files forms go out as (ADR-0046, ADR-0166): duplicate,
-/// copy actions, create from a template, import and its check, export. A new form needs <c>design</c> where it lands, and
-/// <c>manageActions</c> there too when it comes with actions, as a draft save that adds actions does; copying actions
-/// needs <c>design</c> on the source and <c>design</c> and <c>manageActions</c> on the target; an export needs
-/// <c>design</c> on the form, whose actions it carries.
+/// Forms that come from other forms, templates and files, and the files forms go out as (ADR-0046, ADR-0166, ADR-0220):
+/// duplicate, copy actions, create from a template, import and its check, replace and its check, export. A new form needs
+/// <c>design</c> where it lands, and <c>manageActions</c> there too when it comes with actions, as a draft save that adds
+/// actions does; copying actions needs <c>design</c> on the source and <c>design</c> and <c>manageActions</c> on the target;
+/// a replace needs <c>design</c> on the form, and <c>manageActions</c> too when it changes the draft's actions, as a draft
+/// save does; an export needs <c>design</c> on the form, whose actions it carries.
 /// </summary>
 [ApiVersion("1.0")]
 [BackOfficeRoute(FormBuilderManagementApi.Route + "/form")]
@@ -193,6 +196,65 @@ internal sealed class FormExchangeController(
         });
     }
 
+    /// <summary>
+    /// What replacing a form's draft with an export file would save, saving nothing (ADR-0220): what the file holds, and the
+    /// notes the replace would give. A file the replace refuses answers <c>400</c> with its problems.
+    /// </summary>
+    /// <param name="key">The form.</param>
+    /// <param name="request">The file.</param>
+    /// <param name="cancellationToken">The request's cancellation.</param>
+    [HttpPost("{key:guid}/replace/check")]
+    [MapToApiVersion("1.0")]
+    [FormBuilderPermission(FormBuilderPermissions.Design, On = FormBuilderAccessResourceKind.Form, Key = "key")]
+    [ProducesResponseType(typeof(ImportCheckResponseModel), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> CheckReplace(Guid key, ReplaceCheckRequestModel request, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        if (await ReplaceRefusalAsync(key, request.Json, null, cancellationToken) is { } refusal)
+        {
+            return refusal;
+        }
+
+        var check = await exchange.CheckReplaceAsync(new ImportFormRequest(request.Json, UserKey: RequestAccess.User.Key), cancellationToken);
+        return Ok(ImportCheckResponseModel.Of(check));
+    }
+
+    /// <summary>
+    /// Replaces a form's draft with an export file's definition, keeping the file's keys (ADR-0220): the form keeps its name,
+    /// alias, folder, access, entries and History, and the published version stays until someone publishes. Answers with the
+    /// form, the draft version it wrote and what the replace changed or could not resolve.
+    /// </summary>
+    /// <param name="key">The form.</param>
+    /// <param name="request">The file and the form's concurrency version.</param>
+    /// <param name="cancellationToken">The request's cancellation.</param>
+    [HttpPost("{key:guid}/replace")]
+    [MapToApiVersion("1.0")]
+    [FormBuilderPermission(FormBuilderPermissions.Design, On = FormBuilderAccessResourceKind.Form, Key = "key")]
+    [ProducesResponseType(typeof(FormReplacedResponseModel), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> Replace(Guid key, ReplaceFormRequestModel request, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        if (await ReplaceRefusalAsync(key, request.Json, request.ConcurrencyVersion, cancellationToken) is { } refusal)
+        {
+            return refusal;
+        }
+
+        var replaced = await exchange.ReplaceAsync(new ReplaceFormRequest(key, request.Json, request.ConcurrencyVersion, RequestAccess.User.Key), cancellationToken);
+        return replaced is null
+            ? FormBuilderProblems.NotFound(FormBuilderAccessResourceKind.Form)
+            : Ok(new FormReplacedResponseModel
+            {
+                Form = await ModelAsync(replaced.Result.Form, cancellationToken),
+                Version = replaced.Result.Version,
+                Notes = [.. replaced.Notes.Select(ImportNoteResponseModel.Of)],
+            });
+    }
+
     /// <summary>The export file of a form's draft, or of one of its versions, with the option lists it names (ADR-0046).</summary>
     /// <param name="key">The form.</param>
     /// <param name="version">A version's number, or none for the draft.</param>
@@ -227,6 +289,32 @@ internal sealed class FormExchangeController(
     // its problems.
     private Task<IActionResult?> ImportRefusalAsync(ImportFormRequestModel request, CancellationToken cancellationToken) =>
         NewFormRefusalAsync(request.FolderKey, FormExportFormat.Read(request.Json, serializer).Envelope?.Definition.Actions.Count > 0, cancellationToken);
+
+    // A replace that changes the draft's actions needs manageActions on the form, as a draft save does; compared with the
+    // draft it is based on, so a stale replace names no permission for someone else's change. A file that does not read is
+    // the replace's to refuse, with its problems.
+    private async Task<IActionResult?> ReplaceRefusalAsync(Guid key, string json, int? concurrencyVersion, CancellationToken cancellationToken)
+    {
+        if (await forms.GetDraftAsync(key, cancellationToken) is not { } draft)
+        {
+            return FormBuilderProblems.NotFound(FormBuilderAccessResourceKind.Form);
+        }
+
+        if (concurrencyVersion is { } expected && draft.Form.ConcurrencyVersion != expected)
+        {
+            throw new FormBuilderConcurrencyException();
+        }
+
+        if (FormExportFormat.Read(json, serializer).Envelope is not { } envelope)
+        {
+            return null;
+        }
+
+        var held = await access.GetForFormAsync(RequestAccess.User, FormAccessTarget.Of(draft.Form), cancellationToken);
+        return (held & FormBuilderPermissions.ManageActions) == FormBuilderPermissions.None && DefinitionDiff.ChangesActions(draft.Definition, envelope.Definition)
+            ? FormBuilderProblems.Missing(FormBuilderPermissions.ManageActions)
+            : null;
+    }
 
     private async Task<IActionResult> CreatedAsync(FormInfo form, CancellationToken cancellationToken)
     {

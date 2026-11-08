@@ -2,6 +2,7 @@ using System.Net;
 using System.Text.Json.Nodes;
 using Jiron.Umbraco.FormBuilder.Core.Access;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
+using Jiron.Umbraco.FormBuilder.Core.Definitions.Exchange;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
@@ -195,6 +196,47 @@ public sealed class LibraryApiTests : ManagementApiTestBase
             Assert.That(imported.Body["form"]!["isPublished"]!.GetValue<bool>(), Is.False, "a draft");
             Assert.That(unreadable.Status, Is.EqualTo(HttpStatusCode.BadRequest), unreadable.ToString());
             Assert.That((refusedCheck.Outcome, refused.Outcome), Is.EqualTo(("403 forbidden", "403 forbidden")), "a file with actions needs manageActions where it lands");
+        });
+    }
+
+    [Test]
+    public async Task AReplace_MakesTheFileTheFormsDraft_AndNeedsManageActions_OnlyWhenItChangesTheActions()
+    {
+        var spring = await FormAsync("Spring", _events);
+        await DesignAsync(spring, [Text("name", "Name")]);
+        var file = await ExportAsync(spring);
+        file["definition"]!["pages"]![0]!["groups"]![0]!["fields"]![0]!["alias"] = "fullName";
+        var json = file.ToJsonString();
+        var payroll = await FormAsync("Payroll", _hr);
+        await DesignAsync(payroll, [Text("name", "Name")]);
+        var payrollFile = JsonNode.Parse((await GetRequiredService<IFormBuilderFormExchangeService>().ExportAsync(payroll))!.Json)!.AsObject();
+        var withActions = (JsonObject)payrollFile.DeepClone();
+        withActions["definition"]!["actions"] = new JsonArray(new JsonObject { ["key"] = Guid.NewGuid().ToString(), ["type"] = "email", ["name"] = "Notify" });
+
+        var check = await CallAsync(Designer, HttpMethod.Post, $"form/{spring}/replace/check", new { json });
+        var replaced = await CallAsync(Designer, HttpMethod.Post, $"form/{spring}/replace", new { json, concurrencyVersion = await VersionAsync(spring) });
+        var stale = await CallAsync(Designer, HttpMethod.Post, $"form/{spring}/replace", new { json, concurrencyVersion = 1 });
+        var unreadable = await CallAsync(Designer, HttpMethod.Post, $"form/{spring}/replace/check", new { json = "{ \"form\": " });
+        var refusedCheck = await CallAsync("hr", HttpMethod.Post, $"form/{payroll}/replace/check", new { json = withActions.ToJsonString() });
+        var refused = await CallAsync("hr", HttpMethod.Post, $"form/{payroll}/replace", new { json = withActions.ToJsonString(), concurrencyVersion = await VersionAsync(payroll) });
+        var sameActions = await CallAsync("hr", HttpMethod.Post, $"form/{payroll}/replace", new { json = payrollFile.ToJsonString(), concurrencyVersion = await VersionAsync(payroll) });
+        var hidden = await CallAsync(Designer, HttpMethod.Post, $"form/{payroll}/replace/check", new { json });
+        var draft = (await Forms.GetDraftAsync(spring))!;
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(check.Status, Is.EqualTo(HttpStatusCode.OK), check.ToString());
+            Assert.That(check.Body!["holds"]!["fields"]!.GetValue<int>(), Is.EqualTo(1));
+            Assert.That(replaced.Status, Is.EqualTo(HttpStatusCode.OK), replaced.ToString());
+            Assert.That((replaced.Body!["form"]!["name"]!.GetValue<string>(), replaced.Body["version"]!.GetValue<int>()), Is.EqualTo(("Spring", draft.DraftVersion)), "the form's own name, and a new draft");
+            Assert.That(replaced.Body["notes"]!.AsArray(), Is.Empty);
+            Assert.That(DefinitionKeys.Fields(draft.Definition!).Select(field => field.Alias), Is.EqualTo(new[] { "fullName" }), "the file's form is the draft");
+            Assert.That(stale.Outcome, Is.EqualTo("409 concurrency_conflict"));
+            Assert.That(unreadable.Status, Is.EqualTo(HttpStatusCode.BadRequest), unreadable.ToString());
+            Assert.That((refusedCheck.Outcome, refused.Outcome), Is.EqualTo(("403 forbidden", "403 forbidden")), "a file that changes the actions needs manageActions");
+            Assert.That(refused.Body?["permission"]?.GetValue<string>(), Is.EqualTo("manageActions"));
+            Assert.That(sameActions.Status, Is.EqualTo(HttpStatusCode.OK), "one that leaves them needs design only: " + sameActions);
+            Assert.That(hidden.Outcome, Is.EqualTo("404 form_not_found"), "a form the user does not see does not exist for them");
         });
     }
 

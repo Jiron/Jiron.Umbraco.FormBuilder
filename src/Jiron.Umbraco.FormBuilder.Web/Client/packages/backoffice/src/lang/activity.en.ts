@@ -222,6 +222,8 @@ export default {
     audit_form_moved: 'Moved the form',
     audit_form_published: (f: AuditFacts) => (f.version ? `Published version ${f.version}` : 'Published the form'),
     audit_form_renamed: 'Renamed the form',
+    audit_form_replaced: (f: AuditFacts) =>
+      f.version ? `Replaced the draft with a file as version ${f.version}` : 'Replaced the draft with a file',
     audit_form_restored: 'Restored the form from the Recycle Bin',
     audit_form_saved: (f: AuditFacts) => (f.version ? `Saved version ${f.version}` : 'Saved the form'),
     audit_form_trashed: 'Moved the form to the Recycle Bin',

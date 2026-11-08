@@ -157,7 +157,26 @@ internal sealed record TemplateFormRequest(Guid TemplateKey, string? Name = null
 /// Who imports it, or null when Jiron Form Builder does; the import creates the option lists the file carries only for
 /// a user who may manage the library (ADR-0078).
 /// </param>
-internal sealed record ImportFormRequest(string Json, string? Name = null, string? Alias = null, Guid? FolderKey = null, Guid? UserKey = null);
+internal sealed record ImportFormRequest(string Json, string? Name = null, string? Alias = null, Guid? FolderKey = null, Guid? UserKey = null)
+{
+    /// <summary>
+    /// Whether the new form keeps the file's keys, its own key among them, instead of new ones: for the mirror, whose file
+    /// is the form on another site (ADR-0220). A copy never does, so two forms never share a key (ADR-0046).
+    /// </summary>
+    public bool KeepKeys { get; init; }
+}
+
+/// <summary>An export file to replace a form's draft with, keeping the file's keys (ADR-0220).</summary>
+/// <param name="Key">The form whose draft it replaces.</param>
+/// <param name="Json">The file.</param>
+/// <param name="ExpectedConcurrencyVersion">The form's concurrency version as the editor read it.</param>
+/// <param name="UserKey">Who replaces it; null for Jiron Form Builder's own work, as the mirror's.</param>
+internal sealed record ReplaceFormRequest(Guid Key, string Json, int ExpectedConcurrencyVersion, Guid? UserKey = null);
+
+/// <summary>What a replace saved, and what it changed or could not resolve (ADR-0220).</summary>
+/// <param name="Result">The form and the draft version saved; no version when the file held the draft as it was.</param>
+/// <param name="Notes">What the backoffice tells the editor, in file order; empty when everything came along.</param>
+internal sealed record FormReplace(FormVersionResult Result, IReadOnlyList<FormImportNote> Notes);
 
 /// <summary>What an import made, and what it changed or could not resolve (ADR-0046).</summary>
 /// <param name="Form">The new form.</param>

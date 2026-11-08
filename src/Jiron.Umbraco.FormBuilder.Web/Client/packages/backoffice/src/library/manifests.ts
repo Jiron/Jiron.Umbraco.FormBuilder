@@ -131,6 +131,7 @@ export const manifests: UmbExtensionManifest[] = [
     [DESIGN, MANAGE_LIBRARY],
   ),
   action('Export', [FORM_ENTITY_TYPE], 700, 'icon-download-alt', () => import('./actions/export-form.action')),
+  action('Replace', [FORM_ENTITY_TYPE], 650, 'icon-cloud-upload', () => import('./actions/replace-form.action')),
   action('Trash', [FORM_ENTITY_TYPE], 100, 'icon-trash', () => import('./actions/trash-form.action')),
 
   action('EmptyBin', [RECYCLE_BIN_ENTITY_TYPE], 1000, 'icon-trash', () => import('./actions/empty-bin.action'), []),

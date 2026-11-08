@@ -1,14 +1,22 @@
 // "Import a form..." (docs/ux/information-architecture.md, section 4; ADR-0046, ADR-0166): choose a JSON file, see what it holds and
-// what it can't import, as the server's check says without writing anything, then import it as a new draft copy.
+// what it can't import, as the server's check says without writing anything, then import it as a new draft copy. For "Replace from
+// a file..." on a form (ADR-0220) the same steps make the file the form's draft instead.
 import { css, html, nothing } from '@umbraco-cms/backoffice/external/lit';
 import { UmbModalBaseElement } from '@umbraco-cms/backoffice/modal';
 import { tryExecute, UmbApiError } from '@umbraco-cms/backoffice/resources';
-import { folderGet, formExchangeCheckImport, formExchangeImport, type ImportCheckResponseModel } from '../../api';
+import {
+  folderGet,
+  formExchangeCheckImport,
+  formExchangeCheckReplace,
+  formExchangeImport,
+  formExchangeReplace,
+  type ImportCheckResponseModel,
+} from '../../api';
 import { jfbBackofficeTokens, jfbVisuallyHidden } from '../../styles/tokens';
 import { codeOf, permissionOf } from '../library-changes';
 import { dayText, isGoodNews, noteTexts, type NoteWords } from '../rows';
 import { ImportStore, type ChosenFile, type ImportRefusal, type ImportState } from '../stores';
-import type { NewFormModalData, NewFormModalValue } from './tokens';
+import type { ImportModalData, NewFormModalValue } from './tokens';
 
 /** The first problem a refused file names, or the refusal's own words. */
 function problemOf(error: unknown): string | undefined {
@@ -20,12 +28,13 @@ function problemOf(error: unknown): string | undefined {
 /** How a refused check or import reads. */
 export function refusalOf(error: unknown): ImportRefusal {
   if (codeOf(error) === 'forbidden') return { kind: 'forbidden', permission: permissionOf(error) };
+  if (codeOf(error) === 'concurrency_conflict') return { kind: 'changed' };
   if (UmbApiError.isUmbApiError(error) && error.status === 400)
     return { kind: 'unreadable', message: problemOf(error) };
   return { kind: 'failed' };
 }
 
-export class ImportModalElement extends UmbModalBaseElement<NewFormModalData, NewFormModalValue> {
+export class ImportModalElement extends UmbModalBaseElement<ImportModalData, NewFormModalValue> {
   static override properties = {
     ...UmbModalBaseElement.properties,
     _folderName: { state: true },
@@ -120,14 +129,29 @@ export class ImportModalElement extends UmbModalBaseElement<NewFormModalData, Ne
 
   readonly #store = new ImportStore(
     {
-      check: (json) =>
-        tryExecute(this, formExchangeCheckImport({ body: { json, folderKey: this.#folderKey() } }), {
-          disableNotifications: true,
-        }),
-      import: (json) =>
-        tryExecute(this, formExchangeImport({ body: { json, folderKey: this.#folderKey() } }), {
-          disableNotifications: true,
-        }),
+      check: (json) => {
+        const target = this.data?.replace;
+        return tryExecute(
+          this,
+          target
+            ? formExchangeCheckReplace({ path: { key: target.formKey }, body: { json } })
+            : formExchangeCheckImport({ body: { json, folderKey: this.#folderKey() } }),
+          { disableNotifications: true },
+        );
+      },
+      import: (json) => {
+        const target = this.data?.replace;
+        return tryExecute(
+          this,
+          target
+            ? formExchangeReplace({
+                path: { key: target.formKey },
+                body: { json, concurrencyVersion: target.concurrencyVersion },
+              })
+            : formExchangeImport({ body: { json, folderKey: this.#folderKey() } }),
+          { disableNotifications: true },
+        );
+      },
       refusal: refusalOf,
     },
     () => this.#changed(),
@@ -137,7 +161,7 @@ export class ImportModalElement extends UmbModalBaseElement<NewFormModalData, Ne
     super.connectedCallback();
     this._folderName = null;
     const key = this.#folderKey();
-    if (key)
+    if (key && !this.data?.replace)
       void tryExecute(this, folderGet({ path: { key } }), { disableNotifications: true }).then(
         ({ data }) => (this._folderName = data?.name ?? null),
       );
@@ -291,7 +315,9 @@ export class ImportModalElement extends UmbModalBaseElement<NewFormModalData, Ne
                 'jfbLibrary_missingPermission',
                 this.localize.term(`jfbLibrary_permission_${reason.permission ?? 'design'}`),
               )
-            : this.localize.term('jfbLibrary_failed');
+            : reason.kind === 'changed'
+              ? this.localize.term('jfbLibrary_changedMeanwhile')
+              : this.localize.term('jfbLibrary_failed');
     return html`<uui-box><p class="alert" role="alert">${text}</p></uui-box>`;
   }
 
@@ -300,7 +326,7 @@ export class ImportModalElement extends UmbModalBaseElement<NewFormModalData, Ne
     switch (state.step) {
       case 'choose':
         return html`<uui-box>
-          <p>${this.localize.term('jfbLibrary_importIntro')}</p>
+          <p>${this.localize.term(this.data?.replace ? 'jfbLibrary_replaceIntro' : 'jfbLibrary_importIntro')}</p>
           <p class="choose">
             <uui-button
               look="outline"
@@ -317,18 +343,31 @@ export class ImportModalElement extends UmbModalBaseElement<NewFormModalData, Ne
       case 'checked':
       case 'importing':
         return html`${this.#file(state.file, state.check, state.step === 'importing')}${this.#holds(state.check)}${this.#notes(state.check)}
-          <p class="muted">
-            ${this.localize.term('jfbLibrary_arrivesAsDraft', this._folderName ?? this.localize.term('jfbLibrary_topOfForms'))}
-          </p>`;
+          <p class="muted">${this.#arrives()}</p>`;
       default:
         return nothing;
     }
   }
 
+  // Where the file's form goes: a new draft in the folder, or the draft of the form it replaces, discarding changes not saved yet.
+  #arrives(): string {
+    const target = this.data?.replace;
+    if (!target)
+      return this.localize.term(
+        'jfbLibrary_arrivesAsDraft',
+        this._folderName ?? this.localize.term('jfbLibrary_topOfForms'),
+      );
+    const becomes = this.localize.term('jfbLibrary_replacesDraft', target.name);
+    return target.unsaved ? `${becomes} ${this.localize.term('jfbLibrary_replaceDiscardsUnsaved')}` : becomes;
+  }
+
   override render() {
     const state = this.#store.state;
     const canImport = state.step === 'checked' || state.step === 'importing';
-    return html`<umb-body-layout headline=${this.localize.term('jfbLibrary_importHeadline')}>
+    const target = this.data?.replace;
+    return html`<umb-body-layout
+      headline=${target ? this.localize.term('jfbLibrary_replaceHeadline', target.name) : this.localize.term('jfbLibrary_importHeadline')}
+    >
       <input
         class="visually-hidden"
         type="file"
@@ -343,7 +382,7 @@ export class ImportModalElement extends UmbModalBaseElement<NewFormModalData, Ne
         <uui-button
           look="primary"
           color="positive"
-          label=${this.localize.term('jfbLibrary_importAsNewCopy')}
+          label=${this.localize.term(target ? 'jfbLibrary_replaceTheDraft' : 'jfbLibrary_importAsNewCopy')}
           ?disabled=${!canImport}
           .state=${state.step === 'importing' ? 'waiting' : undefined}
           @click=${() => void this.#store.import()}

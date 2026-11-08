@@ -156,11 +156,15 @@ export interface ChosenFile {
   text: string;
 }
 
-/** Why a file can't be imported: too large, not a file this reads (with the server's problem), no permission, or a failure. */
+/**
+ * Why a file can't be imported: too large, not a file this reads (with the server's problem), no permission, a form that
+ * someone changed since the replace read it, or a failure.
+ */
 export type ImportRefusal =
   | { kind: 'tooLarge' }
   | { kind: 'unreadable'; message: string | undefined }
   | { kind: 'forbidden'; permission: string | undefined }
+  | { kind: 'changed' }
   | { kind: 'failed' };
 
 /** What the import sidebar calls, and how it reads a refusal. */
@@ -170,7 +174,10 @@ export interface ImportCalls {
   refusal: (error: unknown) => ImportRefusal;
 }
 
-/** The import: choose a file, see what it holds and what it can't bring, then import it as a new copy. */
+/**
+ * The import: choose a file, see what it holds and what it can't bring, then import it as a new copy, or make it a form's
+ * draft (ADR-0220), as the calls do.
+ */
 export class ImportStore {
   state: ImportState = { step: 'choose' };
   /** Counts the files chosen, so that the answer for one that another followed is dropped. */

@@ -82,7 +82,9 @@ public sealed class AppSettingsSchemaTests
         Assert.Multiple(() =>
         {
             Assert.That(schema["$schema"]!.GetValue<string>(), Is.EqualTo("http://json-schema.org/draft-04/schema#"), "as Umbraco's own schemas");
-            Assert.That(Keys(section), Is.EqualTo(new[] { "PublicApi", "Rendering", "Files", "Actions", "Limits", "Designer", "Access", "Captcha", "Privacy", "Secrets", "Webhooks", "LockedSections" }));
+            Assert.That(Keys(section), Is.EqualTo(new[] { "PublicApi", "Rendering", "Files", "Actions", "Definitions", "Limits", "Designer", "Access", "Captcha", "Privacy", "Secrets", "Webhooks", "LockedSections" }));
+            Assert.That(Keys(section["properties"]!["Definitions"]!), Is.EqualTo(new[] { "Mirror", "Folder" }));
+            Assert.That(section["properties"]!["Definitions"]!["properties"]!["Folder"]!["default"]!.GetValue<string>(), Is.EqualTo("~/umbraco/JironFormBuilder/forms"));
             Assert.That(section["properties"]!["Rendering"]!["properties"]!["IncludeAssetsAutomatically"]!["default"]!.GetValue<bool>(), Is.True);
             Assert.That(section["properties"]!["PublicApi"]!["properties"]!["BasePath"]!["default"]!.GetValue<string>(), Is.EqualTo("/jfb/api"));
             Assert.That(section["description"]!.GetValue<string>(), Does.StartWith("Jiron Form Builder's host configuration: the JironFormBuilder section of appsettings. It is for developers"));

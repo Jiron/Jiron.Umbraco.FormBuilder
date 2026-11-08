@@ -64,6 +64,8 @@ public sealed class PermissionMatrixTests : ManagementApiTestBase
         ["POST form/from-template"] = (FormBuilderPermissions.Design, FormBuilderAccessResourceKind.Folder, "folderKey"),
         ["POST form/import/check"] = (FormBuilderPermissions.Design, FormBuilderAccessResourceKind.Folder, "folderKey"),
         ["POST form/import"] = (FormBuilderPermissions.Design, FormBuilderAccessResourceKind.Folder, "folderKey"),
+        ["POST form/{key}/replace/check"] = (FormBuilderPermissions.Design, FormBuilderAccessResourceKind.Form, "key"),
+        ["POST form/{key}/replace"] = (FormBuilderPermissions.Design, FormBuilderAccessResourceKind.Form, "key"),
         ["GET form/{key}/export"] = (FormBuilderPermissions.Design, FormBuilderAccessResourceKind.Form, "key"),
         ["GET form/{key}"] = (FormBuilderPermissions.None, FormBuilderAccessResourceKind.Form, "key"),
         ["GET form/{key}/draft"] = (FormBuilderPermissions.Design, FormBuilderAccessResourceKind.Form, "key"),

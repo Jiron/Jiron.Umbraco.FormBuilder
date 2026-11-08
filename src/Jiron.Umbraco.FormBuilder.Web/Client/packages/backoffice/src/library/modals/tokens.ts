@@ -115,6 +115,20 @@ export const TEMPLATE_GALLERY_MODAL = new UmbModalToken<NewFormModalData, NewFor
   },
 );
 
-export const IMPORT_MODAL = new UmbModalToken<NewFormModalData, NewFormModalValue>(IMPORT_MODAL_ALIAS, {
+/** The form whose draft the import sidebar replaces (ADR-0220), as the action read it. */
+export interface ReplaceTarget {
+  formKey: string;
+  name: string;
+  concurrencyVersion: number;
+  /** Whether the form's own workspace holds changes not saved yet, which the replace discards. */
+  unsaved: boolean;
+}
+
+/** Where a new form lands; or, to replace a form's draft with the file, which form. */
+export interface ImportModalData extends NewFormModalData {
+  replace?: ReplaceTarget;
+}
+
+export const IMPORT_MODAL = new UmbModalToken<ImportModalData, NewFormModalValue>(IMPORT_MODAL_ALIAS, {
   modal: { type: 'sidebar', size: 'medium' },
 });

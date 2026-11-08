@@ -28,16 +28,29 @@ internal static class FileStoreRoot
     }
 
     /// <summary>
+    /// The full path of another folder Jiron Form Builder keeps files in, held to the same rules, or why it may not be one: the
+    /// messages name <paramref name="setting"/> and suggest <paramref name="fallback"/>, as for the mirror's folder (ADR-0220).
+    /// </summary>
+    public static bool TryResolve(string? root, IHostFolders folders, string setting, string fallback, [NotNullWhen(true)] out string? path, [NotNullWhen(false)] out string? problem)
+    {
+        ArgumentNullException.ThrowIfNull(folders);
+        return TryResolve(root, folders.ContentRoot, folders.WebRoot, setting, fallback, out path, out problem);
+    }
+
+    /// <summary>
     /// The full path of the folder <paramref name="root"/> names, given the site's content root and web root, or why it may
     /// not hold the files. Paths are compared ignoring case, which refuses rather than allows on a file system that
     /// tells case apart.
     /// </summary>
-    public static bool TryResolve(string? root, string contentRoot, string webRoot, [NotNullWhen(true)] out string? path, [NotNullWhen(false)] out string? problem)
+    public static bool TryResolve(string? root, string contentRoot, string webRoot, [NotNullWhen(true)] out string? path, [NotNullWhen(false)] out string? problem) =>
+        TryResolve(root, contentRoot, webRoot, Setting, FormBuilderFilesOptions.DefaultRoot, out path, out problem);
+
+    private static bool TryResolve(string? root, string contentRoot, string webRoot, string setting, string fallback, [NotNullWhen(true)] out string? path, [NotNullWhen(false)] out string? problem)
     {
         path = Full(root, contentRoot);
         if (path is null)
         {
-            problem = $"{Setting} must be {ContentRootPrefix} followed by a path relative to the site's content root, or an absolute path of a folder; it is '{root}'.";
+            problem = $"{setting} must be {ContentRootPrefix} followed by a path relative to the site's content root, or an absolute path of a folder; it is '{root}'.";
             return false;
         }
 
@@ -46,21 +59,21 @@ internal static class FileStoreRoot
         var realWeb = Real(web, 0);
         if (realPath is null || realWeb is null)
         {
-            problem = $"{Setting} or the web root ({web}) passes through a link that cannot be followed, so the two cannot be compared: choose a folder without one.";
+            problem = $"{setting} or the web root ({web}) passes through a link that cannot be followed, so the two cannot be compared: choose a folder without one.";
             path = null;
             return false;
         }
 
         if (Within(path, web) || Within(realPath, realWeb))
         {
-            problem = $"{Setting} lies inside the web root ({web}), where anyone could download the files: choose a folder outside it, such as the default {FormBuilderFilesOptions.DefaultRoot}.";
+            problem = $"{setting} lies inside the web root ({web}), where anyone could download the files: choose a folder outside it, such as the default {fallback}.";
             path = null;
             return false;
         }
 
         if (Within(web, path) || Within(realWeb, realPath))
         {
-            problem = $"{Setting} contains the web root ({web}): choose a folder of its own outside it, such as the default {FormBuilderFilesOptions.DefaultRoot}.";
+            problem = $"{setting} contains the web root ({web}): choose a folder of its own outside it, such as the default {fallback}.";
             path = null;
             return false;
         }

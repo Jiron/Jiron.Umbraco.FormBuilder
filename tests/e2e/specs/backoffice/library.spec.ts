@@ -406,6 +406,55 @@ test('Export as JSON downloads the form as an export file', async ({ page, login
   expect(file.form.name).toBe(name);
 });
 
+test("Replace from a file\u2026 in an open form says unsaved changes go, then the file is the form's draft", async ({
+  page,
+  loginAs,
+  apiAs,
+}, testInfo) => {
+  test.setTimeout(180_000);
+  const api = await apiAs('designer');
+  const name = unique('Replaced form');
+  const key = await contactForm(api, name);
+  const exported = await api.get(`${API}/form/${key}/export`);
+  expect(exported.ok()).toBe(true);
+  const file = (await exported.json()) as {
+    definition: { pages: { groups: { fields: { label: Record<string, string> }[] }[] }[] };
+  };
+  const first = file.definition.pages[0]?.groups[0]?.fields[0];
+  if (!first) throw new Error('The Contact template has a field.');
+  first.label = { '': 'Your full name' };
+  const replacement = testInfo.outputPath('replacement.json');
+  writeFileSync(replacement, JSON.stringify(file, null, 2));
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await loginAs('designer');
+  await page.goto(`${SECTION}/workspace/jfb-form/edit/${key}/view/design`);
+  const design = page.locator('jfb-form-design-view');
+  await design.getByRole('button', { name: /^Email address, / }).click();
+  await design.locator('jfb-designer-inspector').getByLabel('Label', { exact: true }).fill('Work email');
+
+  await page.locator('umb-workspace-entity-action-menu').getByRole('button', { name: 'Actions' }).click();
+  await chooseAction(page, 'Replace from a file\u2026');
+  const sidebar = page.locator('jfb-import-modal');
+  await expect(sidebar.locator('umb-body-layout')).toHaveAttribute('headline', `Replace ${name} from a file`);
+  const chooser = page.waitForEvent('filechooser');
+  await sidebar.getByRole('button', { name: 'Choose a file\u2026' }).click();
+  await (await chooser).setFiles(replacement);
+  await expect(sidebar).toContainText(
+    `It becomes the draft of ${name}. Visitors keep seeing the published version until you publish. Changes you haven't saved yet are discarded.`,
+  );
+  await axeInside(page, 'jfb-import-modal');
+  await sidebar.getByRole('button', { name: 'Replace the draft' }).click();
+
+  await expect(sidebar).toHaveCount(0);
+  await expect(design.getByRole('button', { name: /^Your full name, / })).toBeVisible();
+  await expect(design.getByRole('button', { name: /^Email address, / })).toBeVisible();
+  await expect(
+    page.locator('uui-toast-notification').filter({ hasText: `The draft of ${name} is replaced.` }),
+  ).toBeVisible();
+  const draft = (await (await api.get(`${API}/form/${key}/draft`)).json()) as { form: { name: string } };
+  expect(draft.form.name).toBe(name);
+});
+
 test('the header search finds a form by one of its field labels and opens it with that field', async ({
   page,
   loginAs,

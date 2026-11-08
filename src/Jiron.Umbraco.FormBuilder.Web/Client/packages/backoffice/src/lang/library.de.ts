@@ -49,6 +49,7 @@ export default {
     actionSaveAsTemplate: 'Als Vorlage speichern…',
     actionPermissions: 'Berechtigungen…',
     actionExport: 'Als JSON exportieren',
+    actionReplace: 'Aus einer Datei ersetzen…',
     actionTrash: 'In den Papierkorb',
     actionEmptyBin: 'Papierkorb leeren…',
     actionRestore: 'Wiederherstellen…',
@@ -327,5 +328,13 @@ export default {
     arrivesAsDraft: (where: string) =>
       `Es kommt als Entwurf in ${where} an. Besucher sehen nichts davon, bis Sie es veröffentlichen.`,
     importAsNewCopy: 'Als neue Kopie importieren',
+    replaceHeadline: (name: string) => `${name} aus einer Datei ersetzen`,
+    replaceIntro:
+      'Wählen Sie eine JSON-Datei, die eine Website mit Jiron Form Builder exportiert hat. Ihr Formular wird zum Entwurf dieses Formulars; Name, Einträge und Zugriffsrechte bleiben, wie sie sind.',
+    replacesDraft: (name: string) =>
+      `Sie wird zum Entwurf von ${name}. Besucher sehen weiter die veröffentlichte Version, bis Sie veröffentlichen.`,
+    replaceDiscardsUnsaved: 'Änderungen, die Sie noch nicht gespeichert haben, werden verworfen.',
+    replaceTheDraft: 'Entwurf ersetzen',
+    replaced: (name: string) => `Der Entwurf von ${name} ist ersetzt. Besucher sehen ihn, sobald Sie veröffentlichen.`,
   },
 };

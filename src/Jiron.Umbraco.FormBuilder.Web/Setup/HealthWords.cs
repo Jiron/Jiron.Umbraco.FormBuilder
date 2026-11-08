@@ -134,6 +134,50 @@ internal sealed class HealthWords
         ? "Geht alle Seiten im Hintergrund durch und schreibt, wo jedes Formular verwendet wird. Die Website bleibt dabei erreichbar."
         : "Goes through every page in the background and writes where each form is used. The site stays up meanwhile.";
 
+    /// <summary>A form's file and the form both changed: the site kept the form.</summary>
+    /// <param name="file">The file's name.</param>
+    public string MirrorConflict(string file) => _german
+        ? Format("{0}: Die Datei und das Formular wurden beide ge\u00e4ndert, also hat die Website das Formular behalten und die Datei gelassen, wie sie ist. \u00dcbernehmen Sie die Datei mit \u201eAus einer Datei ersetzen\u2026\u201c und ver\u00f6ffentlichen Sie, oder schreiben Sie die Datei mit der Aktion der Pr\u00fcfung \u201eForms as files\u201c neu.", file)
+        : Format("{0}: the file and the form both changed, so the site kept the form and left the file as it is. Take the file in with Replace from a file\u2026 and publish, or write the file again with the action of the Forms as files check.", file);
+
+    /// <summary>A form's file could not be written.</summary>
+    /// <param name="file">The file's name.</param>
+    public string MirrorUnwritable(string file) => _german
+        ? Format("{0} konnte nicht in den Ordner der Formulardateien geschrieben werden. Das Protokoll der Website nennt den Grund.", file)
+        : Format("{0} couldn't be written to the forms folder. The site's log says why.", file);
+
+    /// <summary>A file of the folder is no form file the site can take in.</summary>
+    /// <param name="file">The file's name.</param>
+    public string MirrorUnreadable(string file) => _german
+        ? Format("{0} im Ordner der Formulardateien ist keine Formulardatei, die die Website \u00fcbernehmen kann. Das Protokoll der Website nennt den Grund.", file)
+        : Format("{0} in the forms folder isn't a form file the site can take in. The site's log says why.", file);
+
+    /// <summary>A changed file went into its form's draft, but publishing refused it.</summary>
+    /// <param name="file">The file's name.</param>
+    public string MirrorNotPublished(string file) => _german
+        ? Format("{0} ist im Entwurf seines Formulars, aber das Formular lie\u00df sich nicht ver\u00f6ffentlichen. \u00d6ffnen Sie es, beheben Sie, was die Ver\u00f6ffentlichung nennt, und ver\u00f6ffentlichen Sie es.", file)
+        : Format("{0} is in its form's draft, but the form couldn't be published. Open it, fix what publishing names, and publish it.", file);
+
+    /// <summary>Every published form is in step with its file.</summary>
+    public string MirrorPassed => _german ? "Jedes ver\u00f6ffentlichte Formular stimmt mit seiner Datei \u00fcberein." : "Every published form is in step with its file.";
+
+    /// <summary>The name of the action that writes the files of the forms in conflict.</summary>
+    public string MirrorKeep => _german ? "Dateien neu schreiben" : "Write the files again";
+
+    /// <summary>What the action does.</summary>
+    public string MirrorKeepHelp => _german
+        ? "Schreibt die ver\u00f6ffentlichte Version jedes Formulars im Konflikt in seine Datei, \u00fcber die \u00c4nderung der Datei hinweg."
+        : "Writes the published version of each form in conflict to its file, over the file's own change.";
+
+    /// <summary>What the action did.</summary>
+    /// <param name="count">How many files it wrote.</param>
+    public string MirrorKept(int count) => _german
+        ? (count == 1 ? "Die Datei eines Formulars wurde neu geschrieben." : Format("Die Dateien von {0} Formularen wurden neu geschrieben.", count))
+        : count == 1 ? "The file of one form was written again." : Format("The files of {0} forms were written again.", count);
+
+    /// <summary>The mirror is off.</summary>
+    public string MirrorOff => _german ? "Ver\u00f6ffentlichte Formulare werden nicht als Dateien geschrieben." : "Published forms aren't written to files.";
+
     /// <summary>A check itself failed.</summary>
     public string CheckFailed => _german ? "Eine Pr\u00fcfung konnte nicht abgeschlossen werden. Das Protokoll der Website nennt den Grund." : "A check couldn't finish. The site's log says why.";
 

@@ -4,6 +4,7 @@ using Jiron.Umbraco.FormBuilder.Core.Audit;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Definitions.Exchange;
 using Jiron.Umbraco.FormBuilder.Core.Definitions.Serialization;
+using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Core.MergeTags;
 using Jiron.Umbraco.FormBuilder.Core.OptionLists;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
@@ -58,7 +59,7 @@ internal interface IFormBuilderFormExchangeService
     Task<FormInfo?> CreateFromTemplateAsync(TemplateFormRequest request, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Creates a form from an export file, always with new keys, and says what it changed or could not resolve
+    /// Creates a form from an export file, with new keys unless the mirror asks to keep them, and says what it changed or could not resolve
     /// (ADR-0046); for a user who may manage the library, with the option lists the file carries and the site lacks,
     /// when their kinds' checks on this site take them (ADR-0078).
     /// </summary>
@@ -80,6 +81,27 @@ internal interface IFormBuilderFormExchangeService
     Task<FormImportCheck> CheckImportAsync(ImportFormRequest request, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Replaces a form's draft with an export file's definition, as a draft save (ADR-0220): the form keeps its key, name,
+    /// alias, folder, access, entries and History, and the file's other keys are kept, so answers stay with their fields.
+    /// Themes, option lists and actions the site lacks are handled as for an import (ADR-0046, ADR-0078). A file that holds
+    /// the draft as it is writes nothing. Null when the form does not exist.
+    /// </summary>
+    /// <exception cref="FormBuilderConcurrencyException">Someone changed the form meanwhile.</exception>
+    /// <exception cref="FormBuilderValidationException">The file is refused, or a save refuses the form with its definition.</exception>
+    /// <exception cref="FormBuilderConflictException">
+    /// The form is in the trash, or other changes took the key or alias of a list to create, three times in a row.
+    /// </exception>
+    /// <exception cref="FormBuilderCancelledException">A handler cancelled the save.</exception>
+    Task<FormReplace?> ReplaceAsync(ReplaceFormRequest request, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// What a replace of a form's draft with the file would save, without saving it: what the file holds and the notes it
+    /// would give. Nothing is written.
+    /// </summary>
+    /// <exception cref="FormBuilderValidationException">The file is refused, with every problem and its path in the file.</exception>
+    Task<FormImportCheck> CheckReplaceAsync(ImportFormRequest request, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// The export file of a form's draft, or of the version with this number (ADR-0046), with the library option lists
     /// it names. Null when the form or the version does not exist.
     /// </summary>
@@ -99,6 +121,8 @@ internal sealed partial class FormBuilderFormExchangeService(
     FormCreation creation,
     FormImportLists importLists,
     FormDefinitionSerializer serializer,
+    FieldSettingLocks locks,
+    ActionSettingLocks actionLocks,
     ActionTypeRegistry actionTypes,
     IFormBuilderMergeTagService mergeTags,
     IDocumentNavigationQueryService navigation,
@@ -118,6 +142,9 @@ internal sealed partial class FormBuilderFormExchangeService(
 
     /// <summary>The audit action of actions copied into a form, on the form they went to.</summary>
     public const string ActionsCopiedAction = "form.actionsCopied";
+
+    /// <summary>The audit action of a draft replaced with a file (ADR-0220).</summary>
+    public const string ReplacedAction = "form.replaced";
 
     private static readonly string FilePath = JsonPaths.Property(JsonPaths.Root, "definition");
 
@@ -241,7 +268,7 @@ internal sealed partial class FormBuilderFormExchangeService(
         changes.EnsureOwnUnit(FormChecks.OwnUnit);
         var requestedName = request.Name is null ? null : FormChecks.Name(request.Name);
         FormChecks.Alias(request.Alias);
-        var (envelope, renewed, siteNotes) = await ReadImportAsync(request.Json, cancellationToken);
+        var (envelope, renewed, siteNotes) = await ReadImportAsync(request.Json, !request.KeepKeys, cancellationToken);
         var name = requestedName ?? FormChecks.Name(envelope.Name, FileNamePath);
         var wanted = FormAliases.IsValid(envelope.Alias) ? envelope.Alias : FormAliases.FromName(name);
         var folder = await LibraryFolders.OutsideTrashAsync(folders, request.FolderKey, cancellationToken);
@@ -286,9 +313,100 @@ internal sealed partial class FormBuilderFormExchangeService(
     public async Task<FormImportCheck> CheckImportAsync(ImportFormRequest request, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
-        var (envelope, renewed, notes) = await ReadImportAsync(request.Json, cancellationToken);
+        var (envelope, renewed, notes) = await ReadImportAsync(request.Json, true, cancellationToken);
         FormChecks.Name(envelope.Name, FileNamePath);
         var lists = await importLists.PlanAsync(renewed, envelope.OptionLists, request.UserKey, notes, cancellationToken);
+        documents.CheckSaveable(lists.Definition);
+        return new FormImportCheck(envelope.Name, envelope.Alias, envelope.PackageVersion, envelope.ExportedUtc, DefinitionCounts.Of(lists.Definition), notes);
+    }
+
+    /// <inheritdoc />
+    public async Task<FormReplace?> ReplaceAsync(ReplaceFormRequest request, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        changes.EnsureOwnUnit(FormChecks.OwnUnit);
+        if (await forms.GetAsync(request.Key, cancellationToken) is not { } target)
+        {
+            return null;
+        }
+
+        FormChecks.OutsideTrash(target);
+        FormChecks.Current(target, request.ExpectedConcurrencyVersion);
+        var (envelope, read, siteNotes) = await ReadImportAsync(request.Json, false, cancellationToken);
+        var keyed = read with { Key = target.Key };
+        var draft = await documents.DraftOfAsync(target, cancellationToken);
+        for (var attempt = 1; ; attempt++)
+        {
+            var notes = new List<FormImportNote>(siteNotes);
+            var lists = await importLists.PlanAsync(keyed, envelope.OptionLists, request.UserKey, notes, cancellationToken);
+            var definition = lists.Definition;
+            documents.CheckSaveable(definition);
+            var document = documents.Document(definition);
+            if (draft is { Info.SchemaVersion: FormDefinition.CurrentSchemaVersion } && draft.Info.DefinitionHash == document.DefinitionHash)
+            {
+                return new FormReplace(new FormVersionResult(await infos.InfoAsync(target, cancellationToken), null), notes);
+            }
+
+            // A locked setting keeps the lock's value, as in every save (ADR-0060).
+            var held = draft is null ? null : serializer.ReadStored(draft.Definition).Definition;
+            locks.CheckSave(definition, held);
+            actionLocks.CheckSave(definition, held);
+            await changes.CancelableAsync(new FormSavingNotification(definition, target.Alias, target.Name, isNew: false, request.UserKey, new EventMessages()));
+            var codes = NoteCodes(notes);
+            try
+            {
+                var saved = await changes.WriteAsync(
+                    async () =>
+                    {
+                        var version = await forms.SaveDraftAsync(target.Id, request.ExpectedConcurrencyVersion, document, null, request.UserKey, cancellationToken);
+                        if (version is not null && lists.Created.Count > 0)
+                        {
+                            await importLists.CreateAsync(lists.Created, cancellationToken);
+                        }
+
+                        return version;
+                    },
+                    stored => stored is null
+                        ? []
+                        : [FormAudit.Entry(
+                            ReplacedAction,
+                            stored.Form,
+                            request.UserKey,
+                            new AuditDetails()
+                                .Add("version", stored.Version.Info.Number)
+                                .Add("source", envelope.FormKey)
+                                .AddIdentifier("sourceAlias", AuditDetails.IsIdentifier(envelope.Alias) ? envelope.Alias : null)
+                                .AddIdentifier("packageVersion", AuditDetails.IsIdentifier(envelope.PackageVersion) ? envelope.PackageVersion : null)
+                                .AddIdentifiers("notes", codes.Select(code => code.Code))
+                                .AddNumbers("noteCounts", codes.Select(code => (long)code.Count)))],
+                    cancellationToken);
+                if (saved is null)
+                {
+                    return null;
+                }
+
+                importLists.Committed(lists.Created);
+                var info = await infos.InfoAsync(saved.Form, cancellationToken);
+                await changes.PublishedAsync(new FormSavedNotification(info.Key, info.Alias, info.Name, saved.Version.Info.Number, isNew: false, request.UserKey), FormAudit.Subject(info.Key));
+                return new FormReplace(new FormVersionResult(info, saved.Version.Info.Number), notes);
+            }
+            catch (FormImportListTakenException) when (attempt < FormCreation.AliasAttempts)
+            {
+                // Another change took a list's key or alias at the same moment, and the save rolled back: the lists again.
+            }
+            catch (FormImportListTakenException taken)
+            {
+                throw new FormBuilderConflictException(taken.Conflict.Conflict, taken.Conflict.Message, taken);
+            }
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<FormImportCheck> CheckReplaceAsync(ImportFormRequest request, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        var (envelope, read, notes) = await ReadImportAsync(request.Json, false, cancellationToken);
+        var lists = await importLists.PlanAsync(read, envelope.OptionLists, request.UserKey, notes, cancellationToken);
         documents.CheckSaveable(lists.Definition);
         return new FormImportCheck(envelope.Name, envelope.Alias, envelope.PackageVersion, envelope.ExportedUtc, DefinitionCounts.Of(lists.Definition), notes);
     }
@@ -369,12 +487,14 @@ internal sealed partial class FormBuilderFormExchangeService(
     // The file read, always with new keys (12.5 adds the import into an existing form), and what this site lacks of it: the
     // theme, what its actions need and the pages its outcomes send visitors to; the option lists come with the plan,
     // which an import makes again when it retries.
-    private async Task<(FormExportEnvelope Envelope, FormDefinition Definition, List<FormImportNote> Notes)> ReadImportAsync(string json, CancellationToken cancellationToken)
+    // The file's definition as this site can take it, with new keys for a copy, or the file's own for a replace or the mirror.
+    private async Task<(FormExportEnvelope Envelope, FormDefinition Definition, List<FormImportNote> Notes)> ReadImportAsync(string json, bool renew, CancellationToken cancellationToken)
     {
         var read = FormExportFormat.Read(json, serializer);
         var envelope = read.Envelope ?? throw new FormBuilderValidationException(read.Problems);
         var notes = new List<FormImportNote>();
-        var renewed = WithActionsThisSiteCanRun(await WithThemeAsync(DefinitionKeys.Renew(envelope.Definition, serializer), notes, cancellationToken), notes);
+        var keyed = renew ? DefinitionKeys.Renew(envelope.Definition, serializer) : envelope.Definition;
+        var renewed = WithActionsThisSiteCanRun(await WithThemeAsync(keyed, notes, cancellationToken), notes);
         PagesThisSiteLacks(renewed, notes);
         return (envelope, renewed, notes);
     }

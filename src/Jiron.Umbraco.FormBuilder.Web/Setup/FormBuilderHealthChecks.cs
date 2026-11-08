@@ -58,6 +58,38 @@ internal sealed class MigrationsHealthCheck(MigrationsHealth probe, IBackOfficeS
 [HealthCheck("6f0d6c1e-3b52-4c0a-9d44-1f7a2b8e5c07", "Base URLs", Description = "Checks that each site has an address for the links in its emails.", Group = GroupName)]
 internal sealed class BaseUrlHealthCheck(BaseUrlHealth probe, IBackOfficeSecurityAccessor security) : FormBuilderHealthCheck(probe, security);
 
+/// <summary>Forms as files (ADR-0220): whether each published form and its file are in step.</summary>
+[HealthCheck("6f0d6c1e-3b52-4c0a-9d44-1f7a2b8e5c09", "Forms as files", Description = "When forms are written to files for source control, checks that each published form and its file are in step.", Group = GroupName)]
+internal sealed class MirrorHealthCheck(MirrorHealth probe, IBackOfficeSecurityAccessor security) : FormBuilderHealthCheck(probe, security)
+{
+    /// <summary>The alias of the action that writes the files of the forms in conflict, so the site's forms win.</summary>
+    public const string KeepAction = "writeFiles";
+
+    /// <inheritdoc />
+    public override async Task<IEnumerable<HealthCheckStatus>> GetStatusAsync()
+    {
+        var statuses = (await base.GetStatusAsync()).ToList();
+        if (await probe.HasConflictAsync())
+        {
+            statuses[^1].Actions = [new HealthCheckAction(KeepAction, Id) { Name = Words.MirrorKeep, Description = Words.MirrorKeepHelp }];
+        }
+
+        return statuses;
+    }
+
+    /// <inheritdoc />
+    public override async Task<HealthCheckStatus> ExecuteActionAsync(HealthCheckAction action)
+    {
+        ArgumentNullException.ThrowIfNull(action);
+        if (action.Alias != KeepAction)
+        {
+            return base.ExecuteAction(action);
+        }
+
+        return new HealthCheckStatus(Words.MirrorKept(await probe.KeepTheFormsAsync())) { ResultType = StatusResultType.Success };
+    }
+}
+
 /// <summary>The "used on" index, whose action asks for a rebuild (ADR-0131). An action runs without a confirmation, so it is safe to repeat.</summary>
 [HealthCheck("6f0d6c1e-3b52-4c0a-9d44-1f7a2b8e5c08", "\"Used on\" index", Description = "Says whether the index of the pages that use each form is being rebuilt, and asks for a rebuild.", Group = GroupName)]
 internal sealed class UsedOnHealthCheck(UsedOnHealth probe, IBackOfficeSecurityAccessor security) : FormBuilderHealthCheck(probe, security)

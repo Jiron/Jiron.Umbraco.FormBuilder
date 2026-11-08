@@ -1244,6 +1244,12 @@ export type FormReferencesResponseModel = {
     notShown: number;
 };
 
+export type FormReplacedResponseModel = {
+    form: FormResponseModel;
+    version?: number | null;
+    notes: Array<ImportNoteResponseModel>;
+};
+
 export type FormResponseModel = {
     key: string;
     alias: string;
@@ -1877,6 +1883,15 @@ export type RenameFormRequestModel = {
     concurrencyVersion: number;
     name: string;
     alias?: string | null;
+};
+
+export type ReplaceCheckRequestModel = {
+    json: string;
+};
+
+export type ReplaceFormRequestModel = {
+    json: string;
+    concurrencyVersion: number;
 };
 
 export type ResolvedOptionResponseModel = {
@@ -5855,6 +5870,88 @@ export type FormReferenceListResponses = {
 };
 
 export type FormReferenceListResponse = FormReferenceListResponses[keyof FormReferenceListResponses];
+
+export type FormExchangeReplaceData = {
+    body?: ReplaceFormRequestModel;
+    path: {
+        key: string;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/form/{key}/replace';
+};
+
+export type FormExchangeReplaceErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+};
+
+export type FormExchangeReplaceError = FormExchangeReplaceErrors[keyof FormExchangeReplaceErrors];
+
+export type FormExchangeReplaceResponses = {
+    /**
+     * OK
+     */
+    200: FormReplacedResponseModel;
+};
+
+export type FormExchangeReplaceResponse = FormExchangeReplaceResponses[keyof FormExchangeReplaceResponses];
+
+export type FormExchangeCheckReplaceData = {
+    body?: ReplaceCheckRequestModel;
+    path: {
+        key: string;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/form/{key}/replace/check';
+};
+
+export type FormExchangeCheckReplaceErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type FormExchangeCheckReplaceError = FormExchangeCheckReplaceErrors[keyof FormExchangeCheckReplaceErrors];
+
+export type FormExchangeCheckReplaceResponses = {
+    /**
+     * OK
+     */
+    200: ImportCheckResponseModel;
+};
+
+export type FormExchangeCheckReplaceResponse = FormExchangeCheckReplaceResponses[keyof FormExchangeCheckReplaceResponses];
 
 export type FormRestoreData = {
     body?: RestoreFormRequestModel;

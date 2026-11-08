@@ -106,6 +106,36 @@ internal sealed record ImportFormRequestModel
     public Guid? FolderKey { get; init; }
 }
 
+/// <summary>An export file to replace a form's draft with (ADR-0220).</summary>
+internal sealed record ReplaceFormRequestModel
+{
+    /// <summary>The file's text.</summary>
+    public required string Json { get; init; }
+
+    /// <summary>The form's concurrency version as the editor read it.</summary>
+    public required int ConcurrencyVersion { get; init; }
+}
+
+/// <summary>An export file to check before it replaces a form's draft (ADR-0220).</summary>
+internal sealed record ReplaceCheckRequestModel
+{
+    /// <summary>The file's text.</summary>
+    public required string Json { get; init; }
+}
+
+/// <summary>What a replace saved (ADR-0220).</summary>
+internal sealed record FormReplacedResponseModel
+{
+    /// <summary>The form after it.</summary>
+    public required FormResponseModel Form { get; init; }
+
+    /// <summary>The number of the draft version it wrote, or null when the file held the draft as it was.</summary>
+    public int? Version { get; init; }
+
+    /// <summary>What the replace changed or could not resolve, in file order; empty when everything came along.</summary>
+    public required IReadOnlyList<ImportNoteResponseModel> Notes { get; init; }
+}
+
 /// <summary>What an import made (ADR-0046).</summary>
 internal sealed record FormImportedResponseModel
 {
