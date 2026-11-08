@@ -81,6 +81,10 @@ export const LOCKS_BASE_URL = `http://127.0.0.1:${LOCKS_PORT}`;
 export const PAUSED_PORT = 5536;
 export const PAUSED_BASE_URL = `http://127.0.0.1:${PAUSED_PORT}`;
 
+/** The host of the setup checklist's run (ROADMAP 12.6): the demo reset, without its content, its team or a From address. */
+export const FRESH_PORT = 5537;
+export const FRESH_BASE_URL = `http://127.0.0.1:${FRESH_PORT}`;
+
 /**
  * The host of the refused uploads (ROADMAP 7.3d, ADR-0006): the plain port its start-up wait reads, and the port with HTTPS
  * and HTTP/2, under a certificate of the Testing project's that nothing trusts, so its browser ignores that.

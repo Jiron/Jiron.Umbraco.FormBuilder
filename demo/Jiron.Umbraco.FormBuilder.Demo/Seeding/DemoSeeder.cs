@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Jiron.Umbraco.FormBuilder.Web.Picker;
+using Microsoft.Extensions.Options;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.Models;
@@ -39,6 +40,7 @@ internal sealed partial class DemoSeeder(
     DemoMediaSeeder media,
     DemoFormSeeder demoForms,
     FormBlockTypes formBlocks,
+    IOptions<DemoOptions> options,
     ILogger<DemoSeeder> logger) : INotificationAsyncHandler<UmbracoApplicationStartedNotification>
 {
     public const string English = "en-US";
@@ -54,6 +56,12 @@ internal sealed partial class DemoSeeder(
     /// <inheritdoc />
     public async Task HandleAsync(UmbracoApplicationStartedNotification notification, CancellationToken cancellationToken)
     {
+        if (!options.Value.Seed)
+        {
+            LogSeeded(logger, false);
+            return;
+        }
+
         try
         {
             var content = DemoContent.Load();

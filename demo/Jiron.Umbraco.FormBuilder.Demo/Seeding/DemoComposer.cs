@@ -28,6 +28,12 @@ public sealed class DemoOptions
 
     /// <summary>The library members to create when they are missing.</summary>
     public IList<DemoMemberOptions> Members { get; } = [];
+
+    /// <summary>
+    /// Whether the demo seeds its content (on by default): off, a fresh demo starts as a new site does, without pages, forms
+    /// or the form block, as the setup checklist's run needs (ROADMAP 12.6).
+    /// </summary>
+    public bool Seed { get; set; } = true;
 }
 
 /// <summary>A generated library member.</summary>

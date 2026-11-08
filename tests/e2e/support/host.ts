@@ -39,6 +39,10 @@ export interface HostOptions {
   port: number;
   /** The host's settings and the people it creates, as environment variables. Never printed or written to a file. */
   env: Record<string, string>;
+  /** The page that answers once the host is ready: the English home page, or the backoffice's for a demo without content. */
+  readyPage?: string;
+  /** The log lines that say it is ready; by default the demo's seeding and the test people's, which a host without people never logs. */
+  readyLines?: readonly string[];
 }
 
 /** What a host that had to refuse to start left behind. */
@@ -263,7 +267,11 @@ export async function startHost(options: HostOptions): Promise<Host> {
       const log = existsSync(logFile) ? readFileSync(logFile, 'utf8') : '';
       const failed = FAILED_LINES.find((line) => log.includes(line));
       if (failed) throw new Error(`The host ${name} logged "${failed}".`);
-      if (READY_LINES.every((line) => log.includes(line)) && (await pageAnswers(`${baseUrl}/en/`))) break;
+      if (
+        (options.readyLines ?? READY_LINES).every((line) => log.includes(line)) &&
+        (await pageAnswers(`${baseUrl}${options.readyPage ?? '/en/'}`))
+      )
+        break;
     }
   } catch (error) {
     await stop();

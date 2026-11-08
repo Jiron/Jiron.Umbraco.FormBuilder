@@ -100,6 +100,10 @@ A host whose designer locks fix or hide a field type's setting (`JironFormBuilde
 [ADR-0060](../docs/decisions/0060-designer-locks-of-field-settings.md)), as the browser tests' locks host does, gets the demo forms
 without that setting: the site uses the lock's value, and a form that leaves a locked setting out is never refused.
 
+`Demo:Seed` (true by default) set to false leaves all of this out: a fresh demo is then Umbraco and Jiron Form Builder
+as a new site has them, with no pages, forms or form block. The setup checklist's browser test starts it that way, so
+each of the checklist's five steps begins open (ROADMAP 12.6); `scripts/demo.ps1` never sets it.
+
 ## Looking at the themes
 
 `?theme=<alias>` on any page shows its forms in that theme, for example
