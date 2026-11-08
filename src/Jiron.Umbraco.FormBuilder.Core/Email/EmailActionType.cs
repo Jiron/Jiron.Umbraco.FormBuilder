@@ -34,58 +34,65 @@ public sealed class EmailActionSettings
     public bool ToCreator { get; init; }
 
     /// <summary>
+    /// Whether it goes to everyone who may use the privacy tools (ADR-0217): the administrators and the groups granted them, as
+    /// they are when it runs.
+    /// </summary>
+    [FormBuilderSetting("#jfbActionSettings_emailToPrivacyTeam", Order = 4, Within = "to")]
+    public bool ToPrivacyTeam { get; init; }
+
+    /// <summary>
     /// Addresses chosen by a choice field's answer, as <c>{"field": key, "routes": [{"value": "sales", "to": ["a@example.com"]}]}</c>.
     /// They stay on the server, as actions do (section 4.3.1).
     /// </summary>
-    [FormBuilderSetting("#jfbActionSettings_emailRecipientMap", Order = 4, Editor = "recipientMap", Within = "to")]
+    [FormBuilderSetting("#jfbActionSettings_emailRecipientMap", Order = 5, Editor = "recipientMap", Within = "to")]
     public JsonElement? RecipientMap { get; init; }
 
     /// <summary>Fixed addresses that get a copy.</summary>
-    [FormBuilderSetting("#jfbActionSettings_emailCc", Order = 9, Editor = "addresses")]
+    [FormBuilderSetting("#jfbActionSettings_emailCc", Order = 10, Editor = "addresses")]
     public IReadOnlyList<string> Cc { get; init; } = [];
 
     /// <summary>Fixed addresses that get a blind copy.</summary>
-    [FormBuilderSetting("#jfbActionSettings_emailBcc", Order = 10, Editor = "addresses", Group = FieldSettingGroup.Advanced)]
+    [FormBuilderSetting("#jfbActionSettings_emailBcc", Order = 11, Editor = "addresses", Group = FieldSettingGroup.Advanced)]
     public IReadOnlyList<string> Bcc { get; init; } = [];
 
     /// <summary>An email field whose answer replies go to, when that answer is an address.</summary>
-    [FormBuilderSetting("#jfbActionSettings_emailReplyTo", Order = 8, Kind = FieldSettingKind.Key, Editor = "fieldPicker", Picks = FieldPick.Email)]
+    [FormBuilderSetting("#jfbActionSettings_emailReplyTo", Order = 9, Kind = FieldSettingKind.Key, Editor = "fieldPicker", Picks = FieldPick.Email)]
     public Guid? ReplyToField { get; init; }
 
     /// <summary>The address it comes from instead of the site's; a host usually locks it. Never a visitor's.</summary>
-    [FormBuilderSetting("#jfbActionSettings_emailFrom", Order = 11, Group = FieldSettingGroup.Advanced)]
+    [FormBuilderSetting("#jfbActionSettings_emailFrom", Order = 12, Group = FieldSettingGroup.Advanced)]
     public string? From { get; init; }
 
     /// <summary>The subject per culture, with merge tags.</summary>
-    [FormBuilderSetting("#jfbActionSettings_emailSubject", Order = 5, SupportsMergeTags = true)]
+    [FormBuilderSetting("#jfbActionSettings_emailSubject", Order = 6, SupportsMergeTags = true)]
     public LocalizedText? Subject { get; init; }
 
     /// <summary>The body per culture, with merge tags; <c>{{ entry.table }}</c> gives every answer as a table.</summary>
-    [FormBuilderSetting("#jfbActionSettings_emailBody", Order = 6, SupportsMergeTags = true)]
+    [FormBuilderSetting("#jfbActionSettings_emailBody", Order = 7, SupportsMergeTags = true)]
     public LocalizedHtml? Body { get; init; }
 
     /// <summary>Whether <c>{{ entry.table }}</c> leaves out the fields without an answer.</summary>
-    [FormBuilderSetting("#jfbActionSettings_emailWithoutUnanswered", Order = 7)]
+    [FormBuilderSetting("#jfbActionSettings_emailWithoutUnanswered", Order = 8)]
     public bool WithoutUnanswered { get; init; }
 
     /// <summary>Whether it is one plain-text body instead of HTML (ADR-0007).</summary>
-    [FormBuilderSetting("#jfbActionSettings_emailPlainText", Order = 12, Group = FieldSettingGroup.Appearance)]
+    [FormBuilderSetting("#jfbActionSettings_emailPlainText", Order = 13, Group = FieldSettingGroup.Appearance)]
     public bool PlainText { get; init; }
 
     /// <summary>The key of the layout, or null for the site's.</summary>
-    [FormBuilderSetting("#jfbActionSettings_emailLayout", Order = 13, Kind = FieldSettingKind.Key, Editor = "emailLayoutPicker", Group = FieldSettingGroup.Appearance)]
+    [FormBuilderSetting("#jfbActionSettings_emailLayout", Order = 14, Kind = FieldSettingKind.Key, Editor = "emailLayoutPicker", Group = FieldSettingGroup.Appearance)]
     public Guid? Layout { get; init; }
 
     /// <summary>A Razor view in <c>Views/JironFormBuilder/Emails</c>, by its name without <c>.cshtml</c>, that writes the body instead.</summary>
-    [FormBuilderSetting("#jfbActionSettings_emailView", Order = 14, Group = FieldSettingGroup.Advanced)]
+    [FormBuilderSetting("#jfbActionSettings_emailView", Order = 15, Group = FieldSettingGroup.Advanced)]
     public string? View { get; init; }
 
     /// <summary>The sensitive fields it may show (ADR-0014); none by default.</summary>
-    [FormBuilderSetting("#jfbActionSettings_emailIncludeSensitive", Order = 15, Kind = FieldSettingKind.Key, Editor = "fieldPicker", Picks = FieldPick.Sensitive, Group = FieldSettingGroup.Advanced)]
+    [FormBuilderSetting("#jfbActionSettings_emailIncludeSensitive", Order = 16, Kind = FieldSettingKind.Key, Editor = "fieldPicker", Picks = FieldPick.Sensitive, Group = FieldSettingGroup.Advanced)]
     public IReadOnlyList<Guid> IncludeSensitive { get; init; } = [];
 
     /// <summary>The upload fields whose files go along; none by default.</summary>
-    [FormBuilderSetting("#jfbActionSettings_emailAttachments", Order = 16, Kind = FieldSettingKind.Key, Editor = "fieldPicker", Picks = FieldPick.File, Group = FieldSettingGroup.Advanced)]
+    [FormBuilderSetting("#jfbActionSettings_emailAttachments", Order = 17, Kind = FieldSettingKind.Key, Editor = "fieldPicker", Picks = FieldPick.File, Group = FieldSettingGroup.Advanced)]
     public IReadOnlyList<Guid> Attachments { get; init; } = [];
 }
 
@@ -200,6 +207,7 @@ internal sealed partial class EmailActionType(
     IEntryRepository entries,
     IFormRepository forms,
     IUserService users,
+    PrivacyTeam privacyTeam,
     FormBuilderDatabase database,
     IEnumerable<IFormBuilderEmailView> views,
     IEmailSender sender,
@@ -273,7 +281,7 @@ internal sealed partial class EmailActionType(
         CheckTemplate("subject", settings.Subject, MergeTagContext.Header, check);
         CheckTemplate("body", settings.Body, settings.PlainText ? MergeTagContext.Text : MergeTagContext.Html, check);
 
-        if (settings.To.Count == 0 && settings.ToField is null && !settings.ToCreator && map is null)
+        if (settings.To.Count == 0 && settings.ToField is null && !settings.ToCreator && !settings.ToPrivacyTeam && map is null)
         {
             check.Invalid("to", "A mail needs someone to go to.");
         }
@@ -559,6 +567,16 @@ internal sealed partial class EmailActionType(
             }
         }
 
+        if (settings.ToPrivacyTeam)
+        {
+            var people = await privacyTeam.AddressesAsync(cancellationToken);
+            team.AddRange(people.Where(address => !team.Contains(address, StringComparer.OrdinalIgnoreCase)));
+            if (people.Count == 0 && !quiet)
+            {
+                LogNoPrivacyTeam(logger, context.Scope.FormAlias);
+            }
+        }
+
         var visitors = new List<string>();
         if (settings.ToField is { } field && AnswerOf(context.Scope, field)?.Trim() is { } typed)
         {
@@ -688,6 +706,9 @@ internal sealed partial class EmailActionType(
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Form {Form} has no creator with an address, so the mail to its creator was not queued")]
     private static partial void LogNoCreator(ILogger logger, string form);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "No one with an address may use the privacy tools, so form {Form}'s mail to them was not queued")]
+    private static partial void LogNoPrivacyTeam(ILogger logger, string form);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "The answer of field {Field} is not one address, so the mail to it was not queued")]
     private static partial void LogNotAnAddress(ILogger logger, Guid field);

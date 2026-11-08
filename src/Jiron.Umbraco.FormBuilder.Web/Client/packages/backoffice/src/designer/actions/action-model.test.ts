@@ -173,6 +173,7 @@ describe('what an action does, in one line', () => {
     });
     expect(of('email', { toField: 'f-email' })).toEqual({ term: 'summary_emailToField', args: ['Email address'] });
     expect(of('email', { toField: 'f-gone', toCreator: true })).toEqual({ term: 'summary_emailToCreator', args: [] });
+    expect(of('email', { toPrivacyTeam: true })).toEqual({ term: 'summary_emailToPrivacyTeam', args: [] });
     expect(of('email', { recipientMap: { field: 'f-topic', recipients: {} } })).toEqual({
       term: 'summary_emailRouted',
       args: [],

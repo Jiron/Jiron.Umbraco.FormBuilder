@@ -217,6 +217,7 @@ export function summaryOf(
       const field = isText(settings['toField']) ? fieldName(settings['toField']) : undefined;
       if (field !== undefined) return line('summary_emailToField', field);
       if (settings['toCreator'] === true) return line('summary_emailToCreator');
+      if (settings['toPrivacyTeam'] === true) return line('summary_emailToPrivacyTeam');
       if (isObject(settings['recipientMap'])) return line('summary_emailRouted');
       return line('summary_emailNoOne');
     }

@@ -262,6 +262,7 @@ export default {
     emailTo: 'An',
     emailToField: 'An die Adresse aus einem Feld',
     emailToCreator: 'An die Person, die das Formular erstellt hat',
+    emailToPrivacyTeam: 'An alle, die die Datenschutzwerkzeuge verwenden dürfen',
     emailRecipientMap: 'An Adressen nach einer Auswahl',
     emailCc: 'Kopie an',
     emailBcc: 'Blindkopie an',

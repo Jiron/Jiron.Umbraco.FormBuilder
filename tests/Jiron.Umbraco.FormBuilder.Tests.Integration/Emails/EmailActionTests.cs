@@ -1,3 +1,5 @@
+using Jiron.Umbraco.FormBuilder.Core;
+using Jiron.Umbraco.FormBuilder.Core.Access;
 using Jiron.Umbraco.FormBuilder.Core.Actions;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Email;
@@ -6,6 +8,7 @@ using Jiron.Umbraco.FormBuilder.Core.Files;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Core.Submissions;
+using Jiron.Umbraco.FormBuilder.Testing.People;
 using Jiron.Umbraco.FormBuilder.Tests.Integration.Support;
 using Microsoft.Extensions.DependencyInjection;
 using MimeKit;
@@ -308,6 +311,39 @@ public sealed class EmailActionTests : EmailTestBase
         var mail = await OneAsync(created.Key, """{"name":"Ada"}""");
 
         Assert.That(mail.To.Mailboxes.Single().Address, Is.EqualTo("creator@jfb.test"));
+    }
+
+    [Test]
+    public async Task ThePrivacyTeam_GetsTheMail_TheAdministratorsAndTheGroupsGrantedTheTools_WithTheSection()
+    {
+        var users = GetRequiredService<IUserService>();
+        await using var scope = Services.CreateAsyncScope();
+        var people = scope.ServiceProvider.GetRequiredService<TestPeople>();
+        var access = GetRequiredService<IFormBuilderAccessService>();
+        var admin = (await users.GetAsync(Constants.Security.SuperUserKey))!;
+        admin.Email = "admin@jfb.test";
+        users.Save(admin);
+        var team = await people.EnsureUserGroupAsync(new TestUserGroup { Alias = "jfbPrivacyTeam", Name = "Privacy team", Sections = { FormBuilderConstants.SectionAlias } });
+        var elsewhere = await people.EnsureUserGroupAsync(new TestUserGroup { Alias = "jfbPrivacyElsewhere", Name = "Privacy elsewhere" });
+        foreach (var group in new[] { team, elsewhere })
+        {
+            await access.ChangeGrantAsync(new AccessGrantChange(group.Key, PermissionTarget.Global, Guid.Empty, FormBuilderPermissions.None, FormBuilderPermissions.PrivacyTools, null));
+        }
+
+        // The administrator is in the team too, and gets one mail.
+        admin.AddGroup(team.ToReadOnlyGroup());
+        users.Save(admin);
+        await people.EnsureUserAsync(new TestUser { Email = "privacy@jfb.test", Password = TestPeople.NewPassword(), Groups = { "jfbPrivacyTeam" } });
+        var locked = await people.EnsureUserAsync(new TestUser { Email = "locked@jfb.test", Password = TestPeople.NewPassword(), Groups = { "jfbPrivacyTeam" } });
+        locked.IsLockedOut = true;
+        users.Save(locked);
+        await people.EnsureUserAsync(new TestUser { Email = "nosection@jfb.test", Password = TestPeople.NewPassword(), Groups = { "jfbPrivacyElsewhere" } });
+        var form = await FormAsync(Email(Texts(to: "[]", more: ""","toPrivacyTeam":true""")));
+
+        var mail = await OneAsync(form, """{"name":"Ada"}""");
+
+        // Each once; a locked user and a group without the section get nothing.
+        Assert.That(mail.To.Mailboxes.Select(box => box.Address), Is.EqualTo(new[] { "admin@jfb.test", "privacy@jfb.test" }));
     }
 
     [Test]

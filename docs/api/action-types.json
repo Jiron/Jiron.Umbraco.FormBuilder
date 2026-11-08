@@ -93,6 +93,35 @@
         "lock": null
       },
       {
+        "name": "toPrivacyTeam",
+        "kind": "boolean",
+        "itemKind": null,
+        "choices": [],
+        "settings": [],
+        "default": false,
+        "label": "#jfbActionSettings_emailToPrivacyTeam",
+        "description": null,
+        "editor": "boolean",
+        "group": "essentials",
+        "supportsMergeTags": false,
+        "isPublic": false,
+        "within": "to",
+        "picks": null,
+        "rules": {
+          "required": false,
+          "minimum": null,
+          "minimumIsExclusive": false,
+          "maximum": null,
+          "maximumIsExclusive": false,
+          "minimumLength": null,
+          "maximumLength": null,
+          "minimumCount": null,
+          "maximumCount": null,
+          "allowedValues": []
+        },
+        "lock": null
+      },
+      {
         "name": "recipientMap",
         "kind": "json",
         "itemKind": null,

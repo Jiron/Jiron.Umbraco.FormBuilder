@@ -262,6 +262,7 @@ export default {
     emailTo: 'To',
     emailToField: 'To the address in a field',
     emailToCreator: 'To the person who created the form',
+    emailToPrivacyTeam: 'To everyone who may use the privacy tools',
     emailRecipientMap: 'To addresses by a choice',
     emailCc: 'Copy to',
     emailBcc: 'Blind copy to',

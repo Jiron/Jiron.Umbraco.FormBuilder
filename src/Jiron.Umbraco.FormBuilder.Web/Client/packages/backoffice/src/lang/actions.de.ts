@@ -42,6 +42,7 @@ export default {
     summary_emailTo: (recipients: string) => `An ${recipients}`,
     summary_emailToField: (field: string) => `An die Antwort von ${field}`,
     summary_emailToCreator: 'An die Person, die das Formular erstellt hat',
+    summary_emailToPrivacyTeam: 'An alle, die die Datenschutzwerkzeuge verwenden dürfen',
     summary_emailRouted: 'An die Adressen, die eine Antwort wählt',
     summary_emailNoOne: 'Noch kein Empfänger',
     summary_slack: 'Slack-Nachricht',
@@ -127,6 +128,7 @@ export default {
     recipientAddress: 'Eine Adresse',
     recipientField: 'Die Antwort eines Feldes',
     recipientCreator: 'Die Person, die das Formular erstellt hat',
+    recipientPrivacyTeam: 'Alle, die die Datenschutzwerkzeuge verwenden dürfen',
     recipientMap: 'Adressen je nach Antwort',
     recipientFieldRow: 'Die Antwort von',
     recipientMapRow: 'Adressen je nach',
@@ -135,6 +137,7 @@ export default {
     recipientOf_map: (field: string) => `Adressen je nach „${field}“`,
     removeFieldRecipient: (field: string) => `Die Antwort von „${field}“ entfernen`,
     removeCreator: 'Die Person, die das Formular erstellt hat, entfernen',
+    removePrivacyTeam: 'Alle, die die Datenschutzwerkzeuge verwenden dürfen, entfernen',
     removeMap: (field: string) => `Die Adressen je nach „${field}“ entfernen`,
     routesHelp:
       'Die Adressen, an die jede Antwort geht, durch Kommas getrennt. Eine Antwort ohne Adressen fügt niemanden hinzu.',

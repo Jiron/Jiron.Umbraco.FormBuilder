@@ -440,6 +440,22 @@ export function actionSettingText(
   }
 }
 
+/** The words of a recipient that is a switch within the To box: who it is, and its remove button. */
+interface FlagWords {
+  readonly who: string;
+  readonly remove: string;
+}
+
+const CREATOR: FlagWords = { who: 'recipientCreator', remove: 'removeCreator' };
+
+/** The switches the email action puts within its To box, by their names (ADR-0189, ADR-0217). */
+const FLAGS: Readonly<Record<string, FlagWords>> = {
+  toCreator: CREATOR,
+  toPrivacyTeam: { who: 'recipientPrivacyTeam', remove: 'removePrivacyTeam' },
+};
+
+const flagWords = (name: string): FlagWords => FLAGS[name] ?? CREATOR;
+
 /** A kind of recipient within the To box in words, as who may not change it reads it; none while it has none. */
 function recipientWords(context: ActionEditorContext, part: Within): string[] {
   switch (part.setting.editor) {
@@ -448,7 +464,7 @@ function recipientWords(context: ActionEditorContext, part: Within): string[] {
         context.words('recipientOf_field', labelOf(context, key)),
       );
     case 'boolean':
-      return part.value === true ? [context.words('recipientCreator')] : [];
+      return part.value === true ? [context.words(flagWords(part.setting.name).who)] : [];
     default: {
       const text = actionSettingText(context, part.setting, part.value);
       return text ? [text] : [];
@@ -655,7 +671,8 @@ function recipients(context: ActionEditorContext, setting: FieldSettingResponseM
   const parts = context.within(setting.name);
   const part = (editor: string) => parts.find((each) => each.setting.editor === editor);
   const field = part('fieldPicker');
-  const creator = part('boolean');
+  // The switches, such as the person who created the form and the privacy team, each a kind of its own.
+  const flags = parts.filter((each) => each.setting.editor === 'boolean');
   const map = part('recipientMap');
   const put = (next: readonly string[]) =>
     context.editor.set(path, setting, { ok: true, value: next.length > 0 ? [...next] : undefined }, true);
@@ -687,20 +704,21 @@ function recipients(context: ActionEditorContext, setting: FieldSettingResponseM
           <uui-icon name="icon-add" aria-hidden="true"></uui-icon>${words('recipientField')}
         </button>`
       : nothing,
-    free(creator) && creator?.value !== true
-      ? html`<button
-          type="button"
-          class="add-kind"
-          @click=${(event: Event) =>
-            closeAnd(event, () => {
-              if (!creator) return;
-              set(creator, true);
-              context.focus(boxId(creator.setting.name));
-            })}
-        >
-          <uui-icon name="icon-add" aria-hidden="true"></uui-icon>${words('recipientCreator')}
-        </button>`
-      : nothing,
+    ...flags.map((flag) =>
+      free(flag) && flag.value !== true
+        ? html`<button
+            type="button"
+            class="add-kind"
+            @click=${(event: Event) =>
+              closeAnd(event, () => {
+                set(flag, true);
+                context.focus(boxId(flag.setting.name));
+              })}
+          >
+            <uui-icon name="icon-add" aria-hidden="true"></uui-icon>${words(flagWords(flag.setting.name).who)}
+          </button>`
+        : nothing,
+    ),
     free(map) && map?.value == null && choices.length > 0
       ? html`<button
           type="button"
@@ -728,7 +746,7 @@ function recipients(context: ActionEditorContext, setting: FieldSettingResponseM
       focusAfterRemove(context, id, id, index, list.length - 1);
     })}
     ${field ? fieldRow(context, field, emails, () => context.focus(id)) : nothing}
-    ${creator ? creatorRow(context, creator, () => context.focus(id)) : nothing}
+    ${flags.map((flag) => flagRow(context, flag, () => context.focus(id)))}
     ${map ? mapRow(context, map, choices, false, () => context.focus(id)) : nothing}
     <details class="add">
       <summary id=${id} aria-describedby=${own.ids.join(' ') || nothing}>
@@ -786,22 +804,24 @@ function fieldRow(context: ActionEditorContext, field: Within, offered: readonly
   </div>`;
 }
 
-// The person who created the form, and its remove button; nothing while the mail does not go to them.
-function creatorRow(context: ActionEditorContext, creator: Within, removed: () => void) {
-  if (creator.setting.lock) return settingEditor(context.editor, creator.setting, creator.value, creator.setting.name);
-  if (creator.value !== true) return nothing;
-  const id = boxId(creator.setting.name);
+// A switch's recipient, such as the person who created the form, and its remove button; nothing while the mail does
+// not go to them.
+function flagRow(context: ActionEditorContext, flag: Within, removed: () => void) {
+  if (flag.setting.lock) return settingEditor(context.editor, flag.setting, flag.value, flag.setting.name);
+  if (flag.value !== true) return nothing;
+  const id = boxId(flag.setting.name);
+  const said = flagWords(flag.setting.name);
   const shown = foundAt(context.editor, id);
   return html`<div class="recipient">
-    <span class="grow">${context.words('recipientCreator')}</span>
+    <span class="grow">${context.words(said.who)}</span>
     <button
       type="button"
       class="remove"
       id=${id}
-      aria-label=${context.words('removeCreator')}
+      aria-label=${context.words(said.remove)}
       aria-describedby=${shown.ids.join(' ') || nothing}
       @click=${() => {
-        context.editor.set(creator.setting.name, creator.setting, { ok: true, value: false }, true);
+        context.editor.set(flag.setting.name, flag.setting, { ok: true, value: false }, true);
         removed();
       }}
     >

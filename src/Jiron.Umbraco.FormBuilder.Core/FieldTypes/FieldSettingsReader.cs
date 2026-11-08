@@ -125,11 +125,12 @@ internal static class FieldSettingsReader
             setting => setting switch
             {
                 { Editor: "fieldPicker", Picks: FieldPick.Email } => "an email field's answer",
+                { Editor: "boolean", Name: "toPrivacyTeam" } => "everyone who may use the privacy tools",
                 { Editor: "boolean" } => "the person who created the form",
                 { Editor: "recipientMap" } => "the addresses an answer chooses",
                 _ => null,
             },
-            "an email field's answer (a fieldPicker of email fields), the person who created the form (a boolean) and the addresses an answer chooses (a recipientMap)"),
+            "an email field's answer (a fieldPicker of email fields), the person who created the form (a boolean), everyone who may use the privacy tools (the boolean toPrivacyTeam) and the addresses an answer chooses (a recipientMap)"),
         ["webhookAddress"] = new(
             setting => setting is { Name: "url", Kind: FieldSettingKind.Text, Editor: "webhookUrl" } ? "the address" : null,
             "the address (url, a text of the editor webhookUrl)"),

@@ -25,6 +25,7 @@ internal static class FormBuilderEmailServices
         builder.Services.TryAddSingleton<TestEmails>();
         builder.Services.TryAddSingleton<EmailLayoutLibrary>();
         builder.Services.TryAddSingleton<EmailPreviews>();
+        builder.Services.TryAddSingleton<PrivacyTeam>();
         builder.JironFormBuilder().ActionTypes().Append<EmailActionType>();
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IOutboxQueue, EmailQueue>());
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IFormBuilderRetentionPart, EmailPurge>());

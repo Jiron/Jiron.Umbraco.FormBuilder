@@ -757,6 +757,7 @@ describe("an email's sidebar", () => {
     expect(kinds(root)).toEqual([
       'The answer of a field',
       'The person who created the form',
+      'Everyone who may use the privacy tools',
       'Addresses chosen by an answer',
     ]);
     // Several at once, apart by commas; one already there is kept once.
@@ -775,6 +776,14 @@ describe("an email's sidebar", () => {
     await settle(element);
     expect(root.activeElement?.getAttribute('aria-label')).toBe('Remove the person who created the form');
     openAdd(root);
+    press(root, 'Everyone who may use the privacy tools');
+    await settle(element);
+    expect(root.activeElement?.getAttribute('aria-label')).toBe('Remove everyone who may use the privacy tools');
+    expect([...root.querySelectorAll('.recipient .grow')].map((one) => text(one))).toEqual([
+      'The person who created the form',
+      'Everyone who may use the privacy tools',
+    ]);
+    openAdd(root);
     press(root, 'Addresses chosen by an answer');
     await settle(element);
     const map = box<HTMLSelectElement>('setting-recipientMap');
@@ -790,6 +799,7 @@ describe("an email's sidebar", () => {
       to: ['sales@example.com', 'lead@example.com', 'ops@example.com'],
       toField: 'mail',
       toCreator: true,
+      toPrivacyTeam: true,
       recipientMap: { field: 'topic', routes: [{ value: 'press', to: ['press@example.com', 'pr@example.com'] }] },
     });
   });
