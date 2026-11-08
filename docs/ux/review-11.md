@@ -14,7 +14,7 @@ exports and the phase's wiring sweep. What changed is decided in
 `tests/e2e/specs/ux/walk.spec.ts` (`JFB_E2E_UX=1`, project `ux`, then `ux-sheets`) now visits Phase 11's 26 screens
 beside those of Phases 9 and 10, in twelve combinations, 375 × 812, 768 × 1024 and 1440 × 900, light and dark, English
 and German. It finds its way by tags, `data-mark` and icons, never by words. Its Phase 11 forms come from the API: 27
-entries waiting for approval with a position, an amount and a sensitive salary, three of them in Spam
+entries with a position, an amount and a sensitive salary, 24 waiting for approval and three in Spam
 (`/jfb-testing/entries-form`), two months of a form's visits counted as its beacons would
 (`/jfb-testing/insights-form`), and 60 entries of a form with an answer of every kind (`/jfb-testing/answers-form`).
 Each shot keeps axe's WCAG 2.2 A and AA findings inside the section's own elements, the page's sideways overflow, boxes
@@ -57,7 +57,7 @@ section's own elements:
   "Waiting for approval" each took two lines.
 - **The toolbar's "…"** on a line of its own where the toolbar wrapped, away from the count.
 - **The open row in the dark theme:** Umbraco's colour for what is open carries the row's text at 4.34:1 (axe's
-  colour contrast, on the entry panel's five shots at 1440 px, dark).
+  colour contrast, on the entry panel's five screens at 1440 px, dark, in both languages).
 - **A row under the bulk bar** at 768 px (axe's target size, two shots).
 - **The "select all" box** while some rows are ticked (axe's `aria-conditional-attr`, twelve shots): UUI's checkbox,
   below.
@@ -128,7 +128,7 @@ hold both languages to the same keys.
   Umbraco's own collections (OWNER-TODO).
 - The bulk bar over the list's last rows while it scrolls: it sticks to the view's foot, apart from the workspace's
   footer (IA 6.1), and a row the keyboard reaches stops above it.
-- The name's box 6 px lower than Umbraco's other headers while the chip is under it, so both keep inside the bar.
+- The name's box 6 px shorter than in Umbraco's other headers while the chip is under it, so both keep inside the bar.
 - Forms' own words in the charts, such as a page named "Your message" in a German backoffice: a form's texts are its
   editors', in the languages they wrote.
 

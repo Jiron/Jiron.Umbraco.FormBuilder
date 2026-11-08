@@ -71,7 +71,7 @@ The owner answers no questions during the run (CLAUDE.md rule 8); each choice be
 
 - Positive: the form's header says the whole state at every width without covering Umbraco's "..."; the list reads
   one line per fact beside the panel; the open row and the bulk bar pass AA and WCAG 2.4.11 for the keyboard.
-- Negative: on a narrow window the name's box is 6 px lower than Umbraco's other headers have it, while the chip is
+- Negative: on a narrow window the name's box is 6 px shorter than Umbraco's other headers have it, while the chip is
   under it; a list scrolled by the keyboard while rows are ticked stops 8rem short of the bottom edge.
 - Kept as Umbraco's, for the report in OWNER-TODO: a `uui-checkbox` that is indeterminate writes `aria-checked="false"`
   on its native input, which axe reports on the "select all" of every table that ticks rows, Umbraco's own included;
