@@ -37,6 +37,7 @@ const SCREENS: Readonly<Record<string, ScreenLoader>> = {
   files: () => import('../settings/files.screen'),
   access: () => import('../access/access.screen'),
   integrations: () => import('../settings/integrations.screen'),
+  retention: () => import('../privacy/retention.screen'),
   dataCollection: () => import('../settings/privacy.screen'),
   deliveries: () => import('../activity/deliveries.screen'),
   auditLog: () => import('../activity/audit.screen'),

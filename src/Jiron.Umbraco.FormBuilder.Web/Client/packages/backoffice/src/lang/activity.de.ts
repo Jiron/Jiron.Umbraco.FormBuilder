@@ -191,6 +191,11 @@ export default {
     audit_entry_answersEdited: (f: AuditFacts) => `Antworten ${ofEntry(f)} bearbeitet`,
     audit_entry_deleted: (f: AuditFacts) => `${count(f.count, 'Eintrag', 'Einträge')} gelöscht`,
     audit_entry_forwarded: (f: AuditFacts) => `${entry(f)} weitergeleitet`,
+    audit_entry_held: (f: AuditFacts) => `Löschsperre für ${f.entry ? `Eintrag ${f.entry}` : 'einen Eintrag'} gesetzt`,
+    audit_entry_purged: (f: AuditFacts) =>
+      `${count(f.count, 'Eintrag', 'Einträge')} nach Ablauf der Aufbewahrung gelöscht`,
+    audit_entry_released: (f: AuditFacts) =>
+      `Löschsperre für ${f.entry ? `Eintrag ${f.entry}` : 'einen Eintrag'} aufgehoben`,
     audit_entry_sensitiveRevealed: (f: AuditFacts) => `${f.field || 'eine sensible Antwort'} ${ofEntry(f)} aufgedeckt`,
     audit_entry_stateChangeUndone: (f: AuditFacts) => `Eine Verschiebung ${ofEntry(f)} rückgängig gemacht`,
     audit_entry_stateChanged: (f: AuditFacts) =>

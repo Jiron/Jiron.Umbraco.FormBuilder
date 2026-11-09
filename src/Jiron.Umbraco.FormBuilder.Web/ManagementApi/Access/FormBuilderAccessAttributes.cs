@@ -35,7 +35,10 @@ internal abstract class FormBuilderAccessAttribute : Attribute
     public string? UmbracoSection { get; set; }
 }
 
-/// <summary>The action needs every permission given, globally or on the folder or form that <see cref="FormBuilderAccessAttribute.Key"/> names.</summary>
+/// <summary>
+/// The action needs every permission given, or with <see cref="AnyOf"/> one of them, globally or on the folder or form that
+/// <see cref="FormBuilderAccessAttribute.Key"/> names.
+/// </summary>
 internal sealed class FormBuilderPermissionAttribute : FormBuilderAccessAttribute
 {
     /// <summary>Creates the declaration.</summary>
@@ -48,6 +51,12 @@ internal sealed class FormBuilderPermissionAttribute : FormBuilderAccessAttribut
             throw new ArgumentOutOfRangeException(nameof(permissions), permissions, "A declaration names at least one permission and nothing else.");
         }
     }
+
+    /// <summary>
+    /// Whether one of the permissions is enough, as for Privacy > Retention, which <c>privacyTools</c> and
+    /// <c>manageSettings</c> both read (IA 9, ADR-0222); a user who holds none is refused with the first, in the table's order.
+    /// </summary>
+    public bool AnyOf { get; init; }
 }
 
 /// <summary>Any user of the Forms section may call the action; one who sees the folder or form, when it names one.</summary>

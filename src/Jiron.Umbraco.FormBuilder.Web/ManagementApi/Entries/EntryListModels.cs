@@ -317,7 +317,7 @@ public sealed class EntryDeleteRequestModel
 /// <summary>What a delete did, or would do.</summary>
 public sealed class EntryDeleteResponseModel
 {
-    /// <summary>How many entries it deletes: those of the form that exist.</summary>
+    /// <summary>How many entries it deletes: those of the form that exist and no legal hold keeps.</summary>
     public required int Entries { get; init; }
 
     /// <summary>How many uploaded files go with them.</summary>
@@ -325,6 +325,9 @@ public sealed class EntryDeleteResponseModel
 
     /// <summary>Whether it deleted them, as the request confirmed.</summary>
     public required bool Deleted { get; init; }
+
+    /// <summary>How many of the entries a legal hold keeps, which stay until it ends (ADR-0222).</summary>
+    public required int Held { get; init; }
 }
 
 /// <summary>Entries whose actions to run again.</summary>

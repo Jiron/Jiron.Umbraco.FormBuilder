@@ -109,7 +109,7 @@ internal sealed class EntryListController(EntryLists lists, EntryUserSettings se
         var deletion = request.Confirm
             ? await deletions.DeleteAsync(key, request.Entries, RequestAccess.User.Key, cancellationToken)
             : await deletions.PlanAsync(key, request.Entries, cancellationToken);
-        return Ok(new EntryDeleteResponseModel { Entries = deletion.Entries, Files = deletion.Files, Deleted = request.Confirm && deletion.Entries > 0 });
+        return Ok(new EntryDeleteResponseModel { Entries = deletion.Entries, Files = deletion.Files, Deleted = request.Confirm && deletion.Entries > 0, Held = deletion.Held });
     }
 
     /// <summary>

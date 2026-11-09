@@ -99,7 +99,11 @@ export default {
     storeHelp: '„Nie“ führt die Aktionen aus und behält keinen Eintrag.',
     store_always: 'Immer',
     store_never: 'Nie',
-    store_days: (days: number) => (days === 1 ? 'Für 1 Tag' : `Für ${days} Tage`),
+    store_daysChoice: 'Für eine Anzahl Tage',
+    storeDays: 'Tage, die Einträge aufbewahrt werden',
+    storeDaysHelp:
+      'Gezählt ab dem Senden jedes Eintrags. Wie lange sein Status ihn auch aufbewahren würde, ein Eintrag geht nach so vielen Tagen.',
+    daysUnit: 'Tage',
     approval: 'Manuelle Genehmigung',
     approvalHelp:
       'Einträge warten, bis jemand sie genehmigt oder ablehnt. Ohne sie wird jeder Eintrag beim Eingang genehmigt.',
@@ -192,6 +196,14 @@ export default {
 
     headless: 'Headless-Zugriff',
     headlessHelp: 'Eine Headless-Website kann die Definition des Formulars über die öffentliche API lesen.',
+    retentionDays: 'Tage, die jeder Status aufbewahrt',
+    retentionDaysHelp:
+      'Gezählt ab der letzten Statusänderung eines Eintrags. Ein leerer Status übernimmt die Tage der Website, die sein Feld zeigt.',
+    retention_submitted: 'Eingereicht',
+    retention_approved: 'Genehmigt',
+    retention_rejected: 'Abgelehnt',
+    retention_spam: 'Spam',
+    retentionForGood: 'Dauerhaft',
     insights: 'Zählen, was Besucher mit diesem Formular tun',
     insightsHelp:
       'Aufrufe, Begonnene, die Seiten, die sie erreichen, und die Felder, an denen sie hängen bleiben, für seine Ansicht Einblicke. Keine Antwort und kein Besucher wird gezählt.',
@@ -208,6 +220,7 @@ export default {
     name_twice: (name: string) => `„${name}“ steht zweimal in der Liste.`,
 
     summary_stored: 'Einträge gespeichert',
+    summary_storedDays: (days: string) => `Einträge ${days} Tage aufbewahrt`,
     summary_notStored: 'Einträge nicht gespeichert',
     summary_approval: 'Manuelle Genehmigung',
     summary_verification: 'E-Mail-Bestätigung',
@@ -229,6 +242,7 @@ export default {
     summary_marker_none: 'Keine Markierung',
     summary_headlessOn: 'Headless-Zugriff an',
     summary_headlessOff: 'Headless-Zugriff aus',
+    summary_retentionOwn: 'Eigene Aufbewahrungstage',
     summary_insightsOn: 'Einblicke an',
     summary_insightsOff: 'Einblicke aus',
     summary_insightsSiteOff: 'Einblicke für die ganze Website aus',

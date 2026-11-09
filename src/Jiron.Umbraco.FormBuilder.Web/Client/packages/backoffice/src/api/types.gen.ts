@@ -551,6 +551,7 @@ export type EntryDeleteResponseModel = {
     entries: number;
     files: number;
     deleted: boolean;
+    held: number;
 };
 
 export type EntryDigestRequestModel = {
@@ -929,6 +930,7 @@ export type EntrySpamEmptyResponseModel = {
     files: number;
     deleted: boolean;
     more: boolean;
+    held: number;
 };
 
 export type EntryStateMovedResponseModel = {
@@ -1296,6 +1298,7 @@ export type FormSettingsDefaultsResponseModel = {
         [key: string]: string;
     } | null;
     insights: boolean;
+    retention: RetentionDaysResponseModel;
 };
 
 export type FormSettingsEmailLayoutResponseModel = {
@@ -1308,6 +1311,7 @@ export type FormSettingsLimitsResponseModel = {
     htmlLength: number;
     nameLength: number;
     verificationDays: number;
+    retentionDays: number;
     referenceDigits: number;
     outcomes: number;
     actions: number;
@@ -1919,6 +1923,62 @@ export type RestoreFormRequestModel = {
 
 export type RestoreVersionRequestModel = {
     concurrencyVersion: number;
+};
+
+export type RetentionDaysRequestModel = {
+    submitted: number;
+    approved: number;
+    rejected: number;
+    spam: number;
+};
+
+export type RetentionDaysResponseModel = {
+    submitted: number;
+    approved: number;
+    rejected: number;
+    spam: number;
+};
+
+export type RetentionDryRunFormResponseModel = {
+    key: string;
+    name: string;
+    trashed: boolean;
+    entries: number;
+    held: number;
+    files: number;
+};
+
+export type RetentionDryRunRequestModel = {
+    days?: RetentionDaysRequestModel | null;
+    span: number;
+};
+
+export type RetentionDryRunResponseModel = {
+    span: number;
+    entries: number;
+    held: number;
+    files: number;
+    forms: Array<RetentionDryRunFormResponseModel>;
+};
+
+export type RetentionFormResponseModel = {
+    key: string;
+    name: string;
+    trashed: boolean;
+    submitted?: number | null;
+    approved?: number | null;
+    rejected?: number | null;
+    spam?: number | null;
+    storeDays?: number | null;
+};
+
+export type RetentionResponseModel = {
+    days: RetentionDaysResponseModel;
+    version: number;
+    keepForGood: boolean;
+    keepForGoodKey: string;
+    lockedBy?: string | null;
+    forms: Array<RetentionFormResponseModel>;
 };
 
 export type SaveFormDraftRequestModel = {
@@ -7277,6 +7337,66 @@ export type PickerThemesResponses = {
 };
 
 export type PickerThemesResponse = PickerThemesResponses[keyof PickerThemesResponses];
+
+export type RetentionGetData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/retention';
+};
+
+export type RetentionGetErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+};
+
+export type RetentionGetResponses = {
+    /**
+     * OK
+     */
+    200: RetentionResponseModel;
+};
+
+export type RetentionGetResponse = RetentionGetResponses[keyof RetentionGetResponses];
+
+export type RetentionDryRunData = {
+    body?: RetentionDryRunRequestModel;
+    path?: never;
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/retention/dry-run';
+};
+
+export type RetentionDryRunErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+};
+
+export type RetentionDryRunError = RetentionDryRunErrors[keyof RetentionDryRunErrors];
+
+export type RetentionDryRunResponses = {
+    /**
+     * OK
+     */
+    200: RetentionDryRunResponseModel;
+};
+
+export type RetentionDryRunResponse = RetentionDryRunResponses[keyof RetentionDryRunResponses];
 
 export type SettingsGetData = {
     body?: never;

@@ -120,6 +120,14 @@ const NOT_TEXT: ReadonlySet<string> = new Set([
 
 /** The defaults a definition's settings take where it holds none (FormSettings in Core). */
 const VERIFICATION_DAYS = 7;
+/** The days Store entries "For a number of days" starts with. */
+const STORE_DAYS = 30;
+/** The most days entries are kept, as the save checks hold them, until the site's answer says. */
+const MOST_DAYS = 36_500;
+/** The days of a state the site keeps for good (ADR-0222). */
+const FOR_GOOD = 0;
+/** The states whose days a form may set, in the order the view shows them. */
+const RETENTION_STATES = ['submitted', 'approved', 'rejected', 'spam'] as const;
 const REFERENCE_DIGITS = 5;
 /** The most entries a form can be limited to, as the definition stores a number. */
 const MOST_ENTRIES = 2_147_483_647;
@@ -471,7 +479,8 @@ export class FormSettingsViewElement extends UmbLitElement {
 
   /**
    * The box a setting shows under, of those the view draws now: a box drawn only with another setting's choice (the
-   * member groups, verification's field and days, a provider's own setting) falls back to that setting's.
+   * member groups, verification's field and days, a provider's own setting, the days of storage) falls back to that
+   * setting's.
    */
   #boxOf(anchor: Anchor, definition: DesignDefinition): string {
     const box = anchor.boxes[0] ?? '';
@@ -482,6 +491,7 @@ export class FormSettingsViewElement extends UmbLitElement {
       !objectIn(groupOf(definition, 'submission'), 'verification')
     )
       return 'verification';
+    if (box === 'store-days' && wordIn(groupOf(definition, 'submission'), 'store', 'always') !== 'days') return 'store';
     if (box.startsWith('setting-captcha-')) {
       const choice = protectionOf(definition);
       const provider =
@@ -631,7 +641,10 @@ export class FormSettingsViewElement extends UmbLitElement {
     );
   }
 
-  /** A box for a whole number: an empty one leaves the setting to `empty`, one out of bounds says why once it is left. */
+  /**
+   * A box for a whole number: an empty one leaves the setting to `empty`, one out of bounds says why once it is left. A
+   * unit, such as days, stands after the box, and a placeholder says what an empty box stands for.
+   */
   #whole(
     id: string,
     label: string,
@@ -641,6 +654,7 @@ export class FormSettingsViewElement extends UmbLitElement {
     most: number,
     write: (value: number | undefined, typed: boolean) => void,
     empty: 'none' | 'refused' = 'none',
+    options: { readonly unit?: string; readonly placeholder?: string } = {},
   ): TemplateResult {
     const typed = (raw: string, done: boolean) => {
       const parsed = parseWhole(raw, least, most);
@@ -651,24 +665,23 @@ export class FormSettingsViewElement extends UmbLitElement {
       this.#problem(id, null);
       write(parsed, !done);
     };
-    return this.#frame(
-      id,
-      label,
-      help,
-      (described, invalid) =>
-        html`<input
-          type="text"
-          id=${id}
-          class="number"
-          inputmode="numeric"
-          autocomplete="off"
-          aria-describedby=${described ?? nothing}
-          aria-invalid=${invalid ? 'true' : 'false'}
-          .value=${boxValue(value === undefined ? '' : String(value), this._problems.has(id))}
-          @input=${(event: Event) => typed((event.target as HTMLInputElement).value, false)}
-          @change=${(event: Event) => typed((event.target as HTMLInputElement).value, true)}
-        />`,
-    );
+    return this.#frame(id, label, help, (described, invalid) => {
+      const unit = options.unit ? `${id}-unit` : undefined;
+      const box = html`<input
+        type="text"
+        id=${id}
+        class="number"
+        inputmode="numeric"
+        autocomplete="off"
+        placeholder=${options.placeholder ?? nothing}
+        aria-describedby=${[described, unit].filter(Boolean).join(' ') || nothing}
+        aria-invalid=${invalid ? 'true' : 'false'}
+        .value=${boxValue(value === undefined ? '' : String(value), this._problems.has(id))}
+        @input=${(event: Event) => typed((event.target as HTMLInputElement).value, false)}
+        @change=${(event: Event) => typed((event.target as HTMLInputElement).value, true)}
+      />`;
+      return unit ? html`<div class="with-unit">${box}<span id=${unit}>${options.unit}</span></div>` : box;
+    });
   }
 
   /** A box for a line of text, at most `limit` characters; `write` gets it without its spaces at the ends. */
@@ -769,27 +782,7 @@ export class FormSettingsViewElement extends UmbLitElement {
         this.#term('submitLabelHelp'),
         word(look, 'send'),
       )}
-      ${this.#select(
-        'store',
-        this.#term('store'),
-        this.#term('storeHelp'),
-        store,
-        [
-          { value: 'always', label: this.#term('store_always') },
-          { value: 'never', label: this.#term('store_never') },
-          // A number of days comes with retention (13.1); a form that has one keeps it until another choice.
-          ...(store === 'days' ? [{ value: 'days', label: this.#term('store_days', days ?? 0) }] : []),
-        ],
-        (value) =>
-          this.#change(
-            withSettingAt(
-              withSettingAt(definition, ['submission', 'store'], value),
-              ['submission', 'storeDays'],
-              value === 'days' ? days : undefined,
-            ),
-            this.#term('store'),
-          ),
-      )}
+      ${this.#store(definition, store, days)}
       ${this.#switch(
         'approval',
         this.#term('approval'),
@@ -831,6 +824,54 @@ export class FormSettingsViewElement extends UmbLitElement {
           : nothing
       }
     `;
+  }
+
+  // Store entries, and for a number of days the days under it (ADR-0222): one template whatever the choice, so the list
+  // keeps the focus as it changes. Choosing it starts at STORE_DAYS.
+  #store(definition: DesignDefinition, store: string, days: number | undefined): TemplateResult {
+    const label = this.#term('store');
+    const daysLabel = this.#term('storeDays');
+    const chosen = this.#select(
+      'store',
+      label,
+      this.#term('storeHelp'),
+      store,
+      [
+        { value: 'always', label: this.#term('store_always') },
+        { value: 'days', label: this.#term('store_daysChoice') },
+        { value: 'never', label: this.#term('store_never') },
+      ],
+      (value) =>
+        this.#change(
+          withSettingAt(
+            withSettingAt(definition, ['submission', 'store'], value),
+            ['submission', 'storeDays'],
+            value === 'days' ? (days ?? STORE_DAYS) : undefined,
+          ),
+          label,
+        ),
+    );
+    return html`<div class="item with-detail">
+      ${chosen}
+      ${
+        store === 'days'
+          ? html`<div class="detail">
+              ${this.#whole(
+                'store-days',
+                daysLabel,
+                this.#term('storeDaysHelp'),
+                days,
+                1,
+                this._choices?.limits.retentionDays ?? MOST_DAYS,
+                (value, typed) =>
+                  this.#set(['submission', 'storeDays'], value, daysLabel, typed ? 'store-days' : undefined),
+                'refused',
+                { unit: this.#term('daysUnit') },
+              )}
+            </div>`
+          : nothing
+      }
+    </div>`;
   }
 
   // Email verification, and once it is on the field it confirms and the link's days, under it: one template whether
@@ -1431,15 +1472,45 @@ export class FormSettingsViewElement extends UmbLitElement {
     `;
   }
 
-  // Privacy (ADR-0211): so far the form's own insights, which count only while the site's are on too.
+  // Privacy (ADR-0211, ADR-0222): the form's own days per state, each empty for the site's, which its box shows, and the
+  // form's insights, which count only while the site's are on too.
   #privacy(definition: DesignDefinition, choices: FormSettingsChoicesResponseModel): TemplateResult {
-    return this.#switch(
-      'insights',
-      this.#term('insights'),
-      choices.defaults.insights ? this.#term('insightsHelp') : this.#term('insightsSiteOff'),
-      flagIn(groupOf(definition, 'privacy'), 'insights', true),
-      (on) => this.#set(['privacy', 'insights'], on, this.#term('insights')),
-    );
+    const own = objectIn(groupOf(definition, 'privacy'), 'retentionDays') ?? {};
+    const site = choices.defaults.retention;
+    return html`
+      <fieldset class="item" id="retention">
+        <legend class="label">${this.#term('retentionDays')}</legend>
+        <p class="help">${this.#term('retentionDaysHelp')}</p>
+        <div class="pair">
+          ${RETENTION_STATES.map((state) => {
+            const id = `retention-${state}`;
+            const label = this.#term(`retention_${state}`);
+            const byDefault = site[state];
+            return this.#whole(
+              id,
+              label,
+              null,
+              numberIn(own[state]),
+              1,
+              choices.limits.retentionDays,
+              (value, typed) => this.#set(['privacy', 'retentionDays', state], value, label, typed ? id : undefined),
+              'none',
+              {
+                unit: this.#term('daysUnit'),
+                placeholder: byDefault === FOR_GOOD ? this.#term('retentionForGood') : this.#number(byDefault),
+              },
+            );
+          })}
+        </div>
+      </fieldset>
+      ${this.#switch(
+        'insights',
+        this.#term('insights'),
+        choices.defaults.insights ? this.#term('insightsHelp') : this.#term('insightsSiteOff'),
+        flagIn(groupOf(definition, 'privacy'), 'insights', true),
+        (on) => this.#set(['privacy', 'insights'], on, this.#term('insights')),
+      )}
+    `;
   }
 
   #developer(definition: DesignDefinition, choices: FormSettingsChoicesResponseModel): TemplateResult {

@@ -190,6 +190,9 @@ export default {
     audit_entry_answersEdited: (f: AuditFacts) => `Edited answers of ${entry(f)}`,
     audit_entry_deleted: (f: AuditFacts) => `Deleted ${count(f.count, 'entry', 'entries')}`,
     audit_entry_forwarded: (f: AuditFacts) => `Forwarded ${entry(f)}`,
+    audit_entry_held: (f: AuditFacts) => `Put ${entry(f)} on legal hold`,
+    audit_entry_purged: (f: AuditFacts) => `Retention deleted ${count(f.count, 'entry', 'entries')}`,
+    audit_entry_released: (f: AuditFacts) => `Released the legal hold on ${entry(f)}`,
     audit_entry_sensitiveRevealed: (f: AuditFacts) => `Revealed ${f.field || 'a sensitive answer'} in ${entry(f)}`,
     audit_entry_stateChangeUndone: (f: AuditFacts) => `Undid a move of ${entry(f)}`,
     audit_entry_stateChanged: (f: AuditFacts) =>

@@ -237,6 +237,57 @@ export default {
       `Noch nicht in der Host-Konfiguration: Eine Entwicklerin oder ein Entwickler fügt ${key} hinzu.`,
     referenceInvalid: 'Geben Sie einen Verweis wie $JironFormBuilder:Secrets:Crm ein, nie das Geheimnis selbst.',
 
+    // Datenschutz › Aufbewahrung
+    privacyBox_retention: 'Wie lange Einträge aufbewahrt werden',
+    privacy_retention: 'Tage, die Einträge aufbewahrt werden',
+    privacy_retentionHelp:
+      'Gezählt ab der letzten Statusänderung eines Eintrags. Testeinträge aus der Vorschau gehen nach 7 Tagen.',
+    privacy_retention_submitted: 'Eingereicht',
+    privacy_retention_submittedHelp: 'Einträge, die auf Genehmigung warten, zählen hier mit.',
+    privacy_retention_submittedUnit: 'Tage',
+    privacy_retention_approved: 'Genehmigt',
+    privacy_retention_approvedHelp: 'Einträge, die jemand genehmigt hat oder die sofort genehmigt wurden.',
+    privacy_retention_approvedUnit: 'Tage',
+    privacy_retention_rejected: 'Abgelehnt',
+    privacy_retention_rejectedHelp: 'Einträge, die jemand abgelehnt hat.',
+    privacy_retention_rejectedUnit: 'Tage',
+    privacy_retention_spam: 'Spam',
+    privacy_retention_spamHelp: 'Einträge, die die Prüfungen oder jemand in den Spam verschoben haben.',
+    privacy_retention_spamUnit: 'Tage',
+    retentionForGood: 'Dauerhaft aufbewahren',
+    retentionForGoodShown: 'Dauerhaft aufbewahrt',
+    retentionDaysShown: (days: string) => `${days} Tage`,
+    retentionReadOnly:
+      'Um die Aufbewahrung zu ändern, brauchen Sie die Berechtigung „Einstellungen verwalten“. Wer Administratorrechte hat, kann sie unter Einstellungen › Zugriff vergeben.',
+    retentionForGoodLocked: 'Dauerhaftes Aufbewahren ist durch die Konfiguration gesperrt:',
+    retentionOwnBox: 'Formulare mit eigener Aufbewahrung',
+    retentionOwnNone:
+      'Kein Formular legt eigene Tage fest. Ein Formular kann es in seiner Ansicht Einstellungen unter Datenschutz.',
+    retentionOwnState: (state: string, days: string) => `${state}: ${days} Tage`,
+    retentionOwnStore: (days: string) => `Jeder Eintrag: ${days} Tage nach dem Senden`,
+    retentionTrashed: 'Im Papierkorb',
+    retentionWhatBox: 'Was gelöscht wird',
+    retentionSpan: 'Gelöscht innerhalb von',
+    retentionSpan_7: '7 Tagen',
+    retentionSpan_30: '30 Tagen',
+    retentionSpan_90: '90 Tagen',
+    retentionNothing: 'In dieser Zeit wird nichts gelöscht.',
+    retentionTotal: (entries: string, forms: string, oneEntry: boolean, oneForm: boolean) =>
+      `${entries} ${oneEntry ? 'Eintrag' : 'Einträge'} in ${forms} ${oneForm ? 'Formular' : 'Formularen'}`,
+    retentionHeld: (count: string, one: boolean) =>
+      one
+        ? `${count} weiterer hat eine Löschsperre und bleibt, bis sie endet.`
+        : `${count} weitere haben eine Löschsperre und bleiben, bis sie endet.`,
+    retentionHeldStay: 'Einträge mit Löschsperre bleiben.',
+    retentionUnsaved: 'Gezählt mit den Tagen oben, bevor Sie speichern.',
+    retentionByItself: 'Sie müssen nichts drücken: Die Aufbewahrung löscht jede Stunde von selbst.',
+    retentionColumnForm: 'Formular',
+    retentionColumnEntries: 'Einträge',
+    retentionColumnFiles: 'Dateien',
+    retentionNoFiles: 'keine',
+    retentionCounting: 'Wird gezählt…',
+    retentionCountFailed: 'Die Einträge konnten nicht gezählt werden.',
+
     // Datenschutz › Datenerfassung
     privacyBox_insights: 'Einblicke',
     privacyBox_insightsLead:

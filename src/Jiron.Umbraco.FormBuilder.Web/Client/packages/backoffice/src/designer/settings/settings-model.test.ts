@@ -62,6 +62,7 @@ const CHOICES: FormSettingsChoicesResponseModel = {
     theme: 'default',
     emailLayout: CARD,
     insights: true,
+    retention: { submitted: 365, approved: 365, rejected: 90, spam: 30 },
   },
   themes: [
     { alias: 'default', label: 'Default' },
@@ -74,6 +75,7 @@ const CHOICES: FormSettingsChoicesResponseModel = {
     htmlLength: 50000,
     nameLength: 64,
     verificationDays: 90,
+    retentionDays: 36500,
     referenceDigits: 10,
     outcomes: 50,
     actions: 50,
@@ -125,7 +127,12 @@ describe('where a path is in the view', () => {
   it('names the group, whether under More options, and the boxes the focus tries', () => {
     const cases: [string, ReturnType<typeof anchorOf>][] = [
       ["$.settings.submission.submitLabel['de-DE']", { group: 'submission', more: false, boxes: ['submit-label'] }],
-      ['$.settings.submission.storeDays', { group: 'submission', more: false, boxes: ['store'] }],
+      ['$.settings.submission.storeDays', { group: 'submission', more: false, boxes: ['store-days', 'store'] }],
+      [
+        '$.settings.privacy.retentionDays.spam',
+        { group: 'privacy', more: false, boxes: ['retention-spam', 'retention'] },
+      ],
+      ['$.settings.privacy.retentionDays', { group: 'privacy', more: false, boxes: ['retention'] }],
       [
         '$.settings.submission.verification.emailField',
         { group: 'submission', more: false, boxes: ['verification-field', 'verification'] },
@@ -163,7 +170,6 @@ describe('where a path is in the view', () => {
     for (const path of [
       '$.settings.submission.resume.days',
       '$.settings.availability.onePerMember',
-      '$.settings.privacy.retentionDays.spam',
       '$.settings',
       '$.pages[0].label',
       'nonsense',

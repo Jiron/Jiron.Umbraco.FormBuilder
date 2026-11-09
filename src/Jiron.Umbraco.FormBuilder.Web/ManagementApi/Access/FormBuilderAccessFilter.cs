@@ -164,13 +164,30 @@ internal sealed partial class FormBuilderAccessFilter(
             resource = FormBuilderAccessResource.ForFolder(key);
         }
 
+        AuthorizationResult? refused = null;
+        var anyOf = declaration is FormBuilderPermissionAttribute { AnyOf: true };
         foreach (var policy in Policies(declaration))
         {
             var result = await authorization.AuthorizeAsync(http.User, resource, policy);
+            if (result.Succeeded && anyOf)
+            {
+                refused = null;
+                break;
+            }
+
             if (!result.Succeeded)
             {
-                return FormBuilderProblems.Refused(result, resource.Kind);
+                refused ??= result;
+                if (!anyOf)
+                {
+                    break;
+                }
             }
+        }
+
+        if (refused is not null)
+        {
+            return FormBuilderProblems.Refused(refused, resource.Kind);
         }
 
         if (declaration.UmbracoSection is { } section && !umbracoUser.AllowedSections.Contains(section, StringComparer.OrdinalIgnoreCase))

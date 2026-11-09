@@ -10,6 +10,7 @@ using Jiron.Umbraco.FormBuilder.Core.Submissions;
 using Jiron.Umbraco.FormBuilder.Core.Themes;
 using Jiron.Umbraco.FormBuilder.Web.ManagementApi.Access;
 using Jiron.Umbraco.FormBuilder.Web.ManagementApi.Authorization;
+using Jiron.Umbraco.FormBuilder.Web.ManagementApi.Privacy;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Umbraco.Cms.Core.Services;
@@ -100,6 +101,7 @@ internal sealed class FormSettingsController(
                 NextLabel = general.NextLabel,
                 BackLabel = general.BackLabel,
                 Insights = privacy.Insights,
+                Retention = RetentionDaysResponseModel.Of(privacy.Retention ?? new SiteRetention()),
             },
             Themes =
             [
@@ -124,6 +126,7 @@ internal sealed class FormSettingsController(
                 HtmlLength = DefinitionSaveChecks.HtmlLength,
                 NameLength = DefinitionStructureChecks.MaxNameLength,
                 VerificationDays = DefinitionSaveChecks.MaxVerificationDays,
+                RetentionDays = DefinitionSaveChecks.MaxDays,
                 ReferenceDigits = DefinitionSaveChecks.MaxReferenceDigits,
                 Outcomes = limits.MaxOutcomes,
                 Actions = limits.MaxActions,
@@ -219,6 +222,9 @@ internal sealed record FormSettingsDefaultsResponseModel
 
     /// <summary>Whether the site's insights are on (Privacy, Data collection, ADR-0211): a form counts only while they and its own are.</summary>
     public required bool Insights { get; init; }
+
+    /// <summary>The site's days per state (Privacy, Retention, ADR-0222), which a form's empty day stands for; none for kept for good.</summary>
+    public required RetentionDaysResponseModel Retention { get; init; }
 }
 
 /// <summary>A theme a form may choose.</summary>
@@ -265,6 +271,9 @@ internal sealed record FormSettingsLimitsResponseModel
 
     /// <summary>The most days a verification link stays valid; the least is 1.</summary>
     public required int VerificationDays { get; init; }
+
+    /// <summary>The most days a form keeps entries, in a state or for a number of days (ADR-0222); the least is 1.</summary>
+    public required int RetentionDays { get; init; }
 
     /// <summary>The most digits an entry reference pads its number to; the least is 1.</summary>
     public required int ReferenceDigits { get; init; }

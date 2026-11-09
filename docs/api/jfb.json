@@ -11580,6 +11580,121 @@
         ]
       }
     },
+    "/umbraco/jfb/management/api/v1/retention": {
+      "get": {
+        "tags": [
+          "Privacy"
+        ],
+        "operationId": "RetentionGet",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/RetentionResponseModel"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The resource is protected and requires an authentication token"
+          },
+          "403": {
+            "description": "The authenticated user does not have access to this resource"
+          }
+        },
+        "security": [
+          {
+            "Backoffice-User": []
+          }
+        ]
+      }
+    },
+    "/umbraco/jfb/management/api/v1/retention/dry-run": {
+      "post": {
+        "tags": [
+          "Privacy"
+        ],
+        "operationId": "RetentionDryRun",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/RetentionDryRunRequestModel"
+                  }
+                ]
+              }
+            },
+            "text/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/RetentionDryRunRequestModel"
+                  }
+                ]
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/RetentionDryRunRequestModel"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/RetentionDryRunResponseModel"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The resource is protected and requires an authentication token"
+          },
+          "403": {
+            "description": "The authenticated user does not have access to this resource"
+          }
+        },
+        "security": [
+          {
+            "Backoffice-User": []
+          }
+        ]
+      }
+    },
     "/umbraco/jfb/management/api/v1/settings/{section}": {
       "get": {
         "tags": [
@@ -16504,7 +16619,8 @@
         "required": [
           "deleted",
           "entries",
-          "files"
+          "files",
+          "held"
         ],
         "type": "object",
         "properties": {
@@ -16518,6 +16634,10 @@
           },
           "deleted": {
             "type": "boolean"
+          },
+          "held": {
+            "type": "integer",
+            "format": "int32"
           }
         },
         "additionalProperties": false
@@ -18130,6 +18250,7 @@
           "deleted",
           "entries",
           "files",
+          "held",
           "more"
         ],
         "type": "object",
@@ -18147,6 +18268,10 @@
           },
           "more": {
             "type": "boolean"
+          },
+          "held": {
+            "type": "integer",
+            "format": "int32"
           }
         },
         "additionalProperties": false
@@ -19699,6 +19824,7 @@
           "insights",
           "protection",
           "requiredMarker",
+          "retention",
           "theme"
         ],
         "type": "object",
@@ -19746,6 +19872,13 @@
           },
           "insights": {
             "type": "boolean"
+          },
+          "retention": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/RetentionDaysResponseModel"
+              }
+            ]
           }
         },
         "additionalProperties": false
@@ -19775,6 +19908,7 @@
           "nameLength",
           "outcomes",
           "referenceDigits",
+          "retentionDays",
           "verificationDays"
         ],
         "type": "object",
@@ -19792,6 +19926,10 @@
             "format": "int32"
           },
           "verificationDays": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "retentionDays": {
             "type": "integer",
             "format": "int32"
           },
@@ -22315,6 +22453,256 @@
         },
         "additionalProperties": false
       },
+      "RetentionDaysRequestModel": {
+        "required": [
+          "approved",
+          "rejected",
+          "spam",
+          "submitted"
+        ],
+        "type": "object",
+        "properties": {
+          "submitted": {
+            "maximum": 36500,
+            "minimum": 0,
+            "type": "integer",
+            "format": "int32"
+          },
+          "approved": {
+            "maximum": 36500,
+            "minimum": 0,
+            "type": "integer",
+            "format": "int32"
+          },
+          "rejected": {
+            "maximum": 36500,
+            "minimum": 0,
+            "type": "integer",
+            "format": "int32"
+          },
+          "spam": {
+            "maximum": 36500,
+            "minimum": 0,
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "RetentionDaysResponseModel": {
+        "required": [
+          "approved",
+          "rejected",
+          "spam",
+          "submitted"
+        ],
+        "type": "object",
+        "properties": {
+          "submitted": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "approved": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "rejected": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "spam": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "RetentionDryRunFormResponseModel": {
+        "required": [
+          "entries",
+          "files",
+          "held",
+          "key",
+          "name",
+          "trashed"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "trashed": {
+            "type": "boolean"
+          },
+          "entries": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "held": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "files": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "additionalProperties": false
+      },
+      "RetentionDryRunRequestModel": {
+        "required": [
+          "span"
+        ],
+        "type": "object",
+        "properties": {
+          "days": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/RetentionDaysRequestModel"
+              }
+            ],
+            "nullable": true
+          },
+          "span": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "RetentionDryRunResponseModel": {
+        "required": [
+          "entries",
+          "files",
+          "forms",
+          "held",
+          "span"
+        ],
+        "type": "object",
+        "properties": {
+          "span": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "entries": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "held": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "files": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "forms": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/RetentionDryRunFormResponseModel"
+                }
+              ]
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "RetentionFormResponseModel": {
+        "required": [
+          "key",
+          "name",
+          "trashed"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "trashed": {
+            "type": "boolean"
+          },
+          "submitted": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "approved": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "rejected": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "spam": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "storeDays": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "RetentionResponseModel": {
+        "required": [
+          "days",
+          "forms",
+          "keepForGood",
+          "keepForGoodKey",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "days": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/RetentionDaysResponseModel"
+              }
+            ]
+          },
+          "version": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "keepForGood": {
+            "type": "boolean"
+          },
+          "keepForGoodKey": {
+            "type": "string"
+          },
+          "lockedBy": {
+            "type": "string",
+            "nullable": true
+          },
+          "forms": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/RetentionFormResponseModel"
+                }
+              ]
+            }
+          }
+        },
+        "additionalProperties": false
+      },
       "SaveFormDraftRequestModel": {
         "required": [
           "concurrencyVersion",
@@ -23266,6 +23654,9 @@
     },
     {
       "name": "Picker"
+    },
+    {
+      "name": "Privacy"
     },
     {
       "name": "Settings"

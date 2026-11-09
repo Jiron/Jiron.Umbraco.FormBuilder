@@ -104,7 +104,6 @@ export interface Anchor {
 const SUBMISSION: Readonly<Record<string, readonly [box: string, more: boolean]>> = {
   submitLabel: ['submit-label', false],
   store: ['store', false],
-  storeDays: ['store', false],
   approval: ['approval', false],
   entryTitle: ['entry-title', false],
   nextLabel: ['next-label', true],
@@ -163,6 +162,8 @@ export function anchorOf(path: string): Anchor | null {
         const box = inner === 'year' ? 'reference-year' : inner === 'digits' ? 'reference-digits' : 'reference-prefix';
         return at('submission', [box], true);
       }
+      // The days of storage show under Store entries once it keeps entries for a number of days.
+      if (name === 'storeDays') return at('submission', ['store-days', 'store']);
       const found = typeof name === 'string' && Object.hasOwn(SUBMISSION, name) ? SUBMISSION[name] : undefined;
       return found ? at('submission', [found[0]], found[1]) : null;
     }
@@ -180,6 +181,8 @@ export function anchorOf(path: string): Anchor | null {
       return box ? at('appearance', [box]) : null;
     }
     case 'privacy':
+      if (name === 'retentionDays')
+        return at('privacy', typeof inner === 'string' ? [`retention-${inner}`, 'retention'] : ['retention']);
       return name === 'insights' ? at('privacy', ['insights']) : null;
     case 'developer': {
       const box = own(DEVELOPER, name);
@@ -333,7 +336,15 @@ export function summaryOf(
     }
     case 'submission': {
       const submission = groupOf(definition, 'submission');
-      parts.push(term(wordIn(submission, 'store', 'always') === 'never' ? 'summary_notStored' : 'summary_stored'));
+      const store = wordIn(submission, 'store', 'always');
+      const days = numberIn(submission['storeDays']);
+      parts.push(
+        store === 'never'
+          ? term('summary_notStored')
+          : store === 'days' && days !== undefined
+            ? term('summary_storedDays', words.number(days))
+            : term('summary_stored'),
+      );
       if (wordIn(submission, 'approval', 'automatic') === 'manual') parts.push(term('summary_approval'));
       if (objectIn(submission, 'verification')) parts.push(term('summary_verification'));
       break;
@@ -368,8 +379,11 @@ export function summaryOf(
       if (rules !== 'inherit') parts.push(term(`summary_content_${rules}`));
       break;
     }
-    case 'privacy':
-      // A form counts only while the site does too; the line says what visitors' pages do (ADR-0211).
+    case 'privacy': {
+      // Days of its own first, then insights: a form counts only while the site does too (ADR-0211, ADR-0222).
+      const own = objectIn(groupOf(definition, 'privacy'), 'retentionDays');
+      if (own && Object.values(own).some((days) => numberIn(days) !== undefined))
+        parts.push(term('summary_retentionOwn'));
       parts.push(
         term(
           flagIn(groupOf(definition, 'privacy'), 'insights', true)
@@ -380,6 +394,7 @@ export function summaryOf(
         ),
       );
       break;
+    }
     case 'appearance': {
       const appearance = groupOf(definition, 'appearance');
       const theme = lineIn(appearance, 'theme');

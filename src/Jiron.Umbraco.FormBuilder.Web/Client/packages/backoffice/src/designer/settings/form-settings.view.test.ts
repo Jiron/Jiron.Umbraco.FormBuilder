@@ -86,6 +86,7 @@ const CHOICES: FormSettingsChoicesResponseModel = {
     theme: 'default',
     emailLayout: CARD,
     insights: true,
+    retention: { submitted: 365, approved: 365, rejected: 90, spam: 30 },
   },
   themes: [
     { alias: 'default', label: 'Default' },
@@ -101,6 +102,7 @@ const CHOICES: FormSettingsChoicesResponseModel = {
     htmlLength: 50000,
     nameLength: 64,
     verificationDays: 90,
+    retentionDays: 36500,
     referenceDigits: 10,
     outcomes: 50,
     actions: 50,
@@ -456,11 +458,29 @@ describe('the submission', () => {
       ...DEFINITION,
       settings: { ...(DEFINITION['settings'] as object), submission: { store: 'days', storeDays: 30 } },
     };
-    const { box, choose, settings } = await viewOf(days);
+    const { root, box, choose, settings } = await viewOf(days);
     expect(box<HTMLSelectElement>('store').value).toBe('days');
-    expect(text(box<HTMLSelectElement>('store').selectedOptions[0])).toBe('For 30 days');
+    expect(text(box<HTMLSelectElement>('store').selectedOptions[0])).toBe('For a number of days');
+    expect(box('store-days').value).toBe('30');
     await choose('store', 'always');
     expect(settings('submission')).toEqual({ store: 'always' });
+    expect(root.getElementById('store-days')).toBeNull();
+  });
+
+  it('stores entries for a number of days, from 30, each one in range, and says why another number is refused', async () => {
+    const { root, box, choose, type, settings, why } = await viewOf();
+    await choose('store', 'days');
+    expect(settings('submission')).toMatchObject({ store: 'days', storeDays: 30 });
+    expect(text(root.getElementById('store-days-unit'))).toBe('days');
+    expect(box('store-days').getAttribute('aria-describedby')).toContain('store-days-unit');
+    await type('store-days', '36501');
+    expect(why('store-days')).toEqual(['Enter a whole number from 1 to 36,500.']);
+    expect(settings('submission')).toMatchObject({ storeDays: 30 });
+    await type('store-days', '');
+    expect(why('store-days')).toEqual(['Enter a whole number from 1 to 36,500.']);
+    await type('store-days', '400');
+    expect(why('store-days')).toEqual([]);
+    expect(settings('submission')).toMatchObject({ store: 'days', storeDays: 400 });
   });
 
   it('holds the page buttons, the summary page, the progress and the reference under More options', async () => {
@@ -616,6 +636,35 @@ describe('the appearance and the developer', () => {
     ]);
     await type('query-values', 'ref\nutm_source');
     expect(settings('developer')['queryValues']).toEqual(['ref', 'utm_source']);
+  });
+});
+
+describe('privacy', () => {
+  it("sets the form's own days per state, each empty for the site's, which its box shows, and refuses one out of range", async () => {
+    const { root, box, open, type, settings, why } = await viewOf();
+    await open('privacy');
+    expect(['submitted', 'approved', 'rejected', 'spam'].map((state) => box(`retention-${state}`).placeholder)).toEqual(
+      ['365', '365', '90', '30'],
+    );
+    expect(text(root.querySelector('#retention legend'))).toBe('Days kept in each state');
+    await type('retention-spam', '7');
+    expect(settings('privacy')).toMatchObject({ retentionDays: { spam: 7 } });
+    await type('retention-rejected', '0');
+    expect(why('retention-rejected')).toEqual(['Enter a whole number from 1 to 36,500.']);
+    await type('retention-rejected', '40000');
+    expect(why('retention-rejected')).toEqual(['Enter a whole number from 1 to 36,500.']);
+    expect(settings('privacy')).not.toHaveProperty('retentionDays.rejected');
+    await type('retention-spam', '');
+    expect(settings('privacy')).not.toHaveProperty('retentionDays.spam');
+  });
+
+  it('says a closed group has days of its own', async () => {
+    const own = {
+      ...DEFINITION,
+      settings: { ...(DEFINITION['settings'] as object), privacy: { retentionDays: { spam: 7 }, insights: true } },
+    };
+    const { head } = await viewOf(own);
+    expect(text(head('privacy'))).toContain('Own retention days');
   });
 });
 

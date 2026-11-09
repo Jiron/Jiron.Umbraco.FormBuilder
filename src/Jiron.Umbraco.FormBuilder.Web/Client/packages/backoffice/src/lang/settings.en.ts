@@ -97,7 +97,11 @@ export default {
     storeHelp: '"Never" runs the actions and keeps no entry.',
     store_always: 'Always',
     store_never: 'Never',
-    store_days: (days: number) => (days === 1 ? 'For 1 day' : `For ${days} days`),
+    store_daysChoice: 'For a number of days',
+    storeDays: 'Days entries are kept',
+    storeDaysHelp:
+      'Counted from when each entry was sent. However long its state would keep it, an entry goes after this many days.',
+    daysUnit: 'days',
     approval: 'Manual approval',
     approvalHelp:
       'Entries wait until someone approves or rejects them. Without it, every entry is approved as it arrives.',
@@ -188,6 +192,14 @@ export default {
 
     headless: 'Headless access',
     headlessHelp: "A headless site can read the form's definition from the public API.",
+    retentionDays: 'Days kept in each state',
+    retentionDaysHelp:
+      "Counted from an entry's last change of state. A state left empty takes the site's days, which its box shows.",
+    retention_submitted: 'Submitted',
+    retention_approved: 'Approved',
+    retention_rejected: 'Rejected',
+    retention_spam: 'Spam',
+    retentionForGood: 'Kept for good',
     insights: 'Count what visitors do with this form',
     insightsHelp:
       'Views, starts, the pages they reach and the fields that stop them, for its Insights view. No answer and no visitor is counted.',
@@ -203,6 +215,7 @@ export default {
     name_twice: (name: string) => `"${name}" is in the list twice.`,
 
     summary_stored: 'Entries stored',
+    summary_storedDays: (days: string) => `Entries kept ${days} days`,
     summary_notStored: 'Entries not stored',
     summary_approval: 'Manual approval',
     summary_verification: 'Email verification',
@@ -223,6 +236,7 @@ export default {
     summary_marker_none: 'No marks',
     summary_headlessOn: 'Headless access on',
     summary_headlessOff: 'Headless access off',
+    summary_retentionOwn: 'Own retention days',
     summary_insightsOn: 'Insights on',
     summary_insightsOff: 'Insights off',
     summary_insightsSiteOff: 'Insights off for the whole site',

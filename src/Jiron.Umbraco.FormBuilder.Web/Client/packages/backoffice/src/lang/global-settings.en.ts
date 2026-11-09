@@ -226,6 +226,56 @@ export default {
     referenceMissing: (key: string) => `Not in host configuration yet: a developer adds ${key}.`,
     referenceInvalid: 'Enter a reference such as $JironFormBuilder:Secrets:Crm, never the secret itself.',
 
+    // Privacy › Retention
+    privacyBox_retention: 'How long entries are kept',
+    privacy_retention: 'Days entries are kept',
+    privacy_retentionHelp:
+      "Counted from an entry's last change of state. Test entries from the preview go after 7 days.",
+    privacy_retention_submitted: 'Submitted',
+    privacy_retention_submittedHelp: 'Entries waiting for approval count here too.',
+    privacy_retention_submittedUnit: 'days',
+    privacy_retention_approved: 'Approved',
+    privacy_retention_approvedHelp: 'Entries a reviewer approved, or that were approved at once.',
+    privacy_retention_approvedUnit: 'days',
+    privacy_retention_rejected: 'Rejected',
+    privacy_retention_rejectedHelp: 'Entries a reviewer rejected.',
+    privacy_retention_rejectedUnit: 'days',
+    privacy_retention_spam: 'Spam',
+    privacy_retention_spamHelp: 'Entries the checks or a reviewer moved to Spam.',
+    privacy_retention_spamUnit: 'days',
+    retentionForGood: 'Keep for good',
+    retentionForGoodShown: 'Kept for good',
+    retentionDaysShown: (days: string) => `${days} days`,
+    retentionReadOnly:
+      'Changing retention needs the "Manage settings" permission. An administrator can grant it in Settings › Access.',
+    retentionForGoodLocked: 'Keeping entries for good is locked by configuration:',
+    retentionOwnBox: 'Forms with their own retention',
+    retentionOwnNone: 'No form sets days of its own. A form can, in its Settings view under Privacy.',
+    retentionOwnState: (state: string, days: string) => `${state}: ${days} days`,
+    retentionOwnStore: (days: string) => `Every entry: ${days} days after it was sent`,
+    retentionTrashed: 'In the Recycle Bin',
+    retentionWhatBox: 'What will be deleted',
+    retentionSpan: 'Deleted within',
+    retentionSpan_7: '7 days',
+    retentionSpan_30: '30 days',
+    retentionSpan_90: '90 days',
+    retentionNothing: 'Nothing is deleted in that time.',
+    retentionTotal: (entries: string, forms: string, oneEntry: boolean, oneForm: boolean) =>
+      `${entries} ${oneEntry ? 'entry' : 'entries'} in ${forms} ${oneForm ? 'form' : 'forms'}`,
+    retentionHeld: (count: string, one: boolean) =>
+      one
+        ? `${count} more is on legal hold and stays until the hold ends.`
+        : `${count} more are on legal hold and stay until their holds end.`,
+    retentionHeldStay: 'Entries on legal hold stay.',
+    retentionUnsaved: 'Counted with the days above, before you save.',
+    retentionByItself: 'Nothing needs to be pressed: retention deletes by itself every hour.',
+    retentionColumnForm: 'Form',
+    retentionColumnEntries: 'Entries',
+    retentionColumnFiles: 'Files',
+    retentionNoFiles: 'none',
+    retentionCounting: 'Counting…',
+    retentionCountFailed: "The entries couldn't be counted.",
+
     // Privacy › Data collection
     privacyBox_insights: 'Insights',
     privacyBox_insightsLead:

@@ -251,6 +251,9 @@ export class SettingsScreenElement extends UmbLitElement {
   /** The section the screen shows, as the management API names it. */
   section = '';
 
+  /** The boxes of the section another screen shows, as Privacy's retention days have Privacy > Retention (ADR-0222). */
+  omit: readonly string[] = [];
+
   declare private _model: SettingsSectionResponseModel | undefined;
   /** Why the section couldn't be read: no answer, which Try again may fix, or a missing permission, which it won't. */
   declare private _failed: false | 'failed' | 'forbidden';
@@ -810,7 +813,7 @@ export class SettingsScreenElement extends UmbLitElement {
     const model = this._model;
     if (!model) return html`<uui-box>${skeletonLines(this.#words('loading'), [64, 48, 56])}</uui-box>`;
     const context = this.#context();
-    const boxes = [...new Set(model.fields.map((field) => field.group))];
+    const boxes = [...new Set(model.fields.map((field) => field.group))].filter((box) => !this.omit.includes(box));
     return html`${this.#scope(model)} ${this.#notes(model)}
     ${boxes.map((box) =>
       this.#box(
@@ -856,14 +859,19 @@ export class SettingsScreenElement extends UmbLitElement {
   }
 }
 
-/** A section's screen: the settings screen for that section, defined once under its own tag. */
-export function settingsScreen(tag: string, section: string): typeof SettingsScreenElement {
+/** A section's screen: the settings screen for that section without the boxes it omits, defined once under its own tag. */
+export function settingsScreen(
+  tag: string,
+  section: string,
+  omit: readonly string[] = [],
+): typeof SettingsScreenElement {
   const known = customElements.get(tag);
   if (known) return known as typeof SettingsScreenElement;
   class SectionScreen extends SettingsScreenElement {
     constructor() {
       super();
       this.section = section;
+      this.omit = omit;
     }
   }
   customElements.define(tag, SectionScreen);

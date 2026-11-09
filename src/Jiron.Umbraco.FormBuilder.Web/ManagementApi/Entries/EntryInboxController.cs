@@ -51,6 +51,9 @@ public sealed class EntrySpamEmptyResponseModel
 
     /// <summary>Whether Spam holds more than one call takes; a second Empty spam deletes them.</summary>
     public required bool More { get; init; }
+
+    /// <summary>The entries in Spam a legal hold keeps, which stay until it ends (ADR-0222).</summary>
+    public required int Held { get; init; }
 }
 
 /// <summary>
@@ -195,7 +198,7 @@ internal sealed class EntryInboxController(
         var emptying = request.Confirm
             ? await spam.EmptyAsync(visibility, RequestAccess.User.Key, cancellationToken)
             : await spam.PlanAsync(visibility, cancellationToken);
-        return Ok(new EntrySpamEmptyResponseModel { Entries = emptying.Entries, Files = emptying.Files, Deleted = request.Confirm && emptying.Entries > 0, More = emptying.More });
+        return Ok(new EntrySpamEmptyResponseModel { Entries = emptying.Entries, Files = emptying.Files, Deleted = request.Confirm && emptying.Entries > 0, More = emptying.More, Held = emptying.Held });
     }
 
     // A form the user may view entries of, named with what the user may do on it; null for one gone, trashed or out of reach.

@@ -189,6 +189,54 @@ test('the submission group and its More options set what they say, refuse what t
   );
 });
 
+test('retention: a number of days to store entries for and the days per state each say their range, and Save draft keeps them', async ({
+  page,
+  loginAs,
+  apiAs,
+}) => {
+  test.setTimeout(240_000);
+  const api = await apiAs('designer');
+  const { key } = await newForm(api, 'Retention days');
+  await loginAs('designer');
+  const view = await openSettings(page, key);
+
+  // Store entries for a number of days: 30 at first, and a number out of range says why.
+  await view.getByLabel('Store entries').selectOption('days');
+  const storeDays = view.getByLabel('Days entries are kept');
+  await expect(storeDays).toHaveValue('30');
+  await enter(storeDays, '36501');
+  await expect(view.locator('#store-days-why-0')).toHaveText('Enter a whole number from 1 to 36,500.');
+  await expect(storeDays).toHaveAttribute('aria-invalid', 'true');
+  await enter(storeDays, '400');
+  await expect(view.locator('#store-days-why-0')).toHaveCount(0);
+
+  // Privacy's days per state: each empty box shows the site's days, and a number out of range says why.
+  await openGroup(view, 'privacy');
+  const spam = view.locator('#retention-spam');
+  await expect(spam).toHaveAttribute('placeholder', '30');
+  await expect(view.locator('#retention-submitted')).toHaveAttribute('placeholder', '365');
+  await enter(spam, '0');
+  await expect(view.locator('#retention-spam-why-0')).toHaveText('Enter a whole number from 1 to 36,500.');
+  await enter(spam, '7');
+  await expect(view.locator('#retention-spam-why-0')).toHaveCount(0);
+  const rejected = view.locator('#retention-rejected');
+  await enter(rejected, '40000');
+  await expect(view.locator('#retention-rejected-why-0')).toHaveText('Enter a whole number from 1 to 36,500.');
+  await enter(rejected, '14');
+  await axeInside(page, 'jfb-form-settings-view');
+
+  await saveDraft(page, key);
+  const settings = (await draftOf(api, key)).definition.settings;
+  expect(settings['submission']).toMatchObject({ store: 'days', storeDays: 400 });
+  expect(settings['privacy']).toMatchObject({ retentionDays: { spam: 7, rejected: 14 } });
+
+  // A closed group says what is set.
+  await headOf(view, 'privacy').click();
+  await expect(headOf(view, 'privacy').locator('.summary')).toHaveText(`Own retention days ${DOT} Insights on`);
+  await headOf(view, 'submission').click();
+  await expect(headOf(view, 'submission').locator('.summary')).toHaveText('Entries kept 400 days');
+});
+
 test('availability, spam protection, appearance and developer set what they say, refuse what they cannot keep, and Save draft keeps them', async ({
   page,
   loginAs,

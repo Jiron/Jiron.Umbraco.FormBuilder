@@ -199,7 +199,12 @@ public sealed class PermissionMatrixTests : ManagementApiTestBase
         ["POST delivery/run/{id}/retry"] = (FormBuilderPermissions.ManageSettings, FormBuilderAccessResourceKind.Global, null),
         ["GET audit"] = (FormBuilderPermissions.ManageSettings, FormBuilderAccessResourceKind.Global, null),
         ["GET audit/export"] = (FormBuilderPermissions.ManageSettings, FormBuilderAccessResourceKind.Global, null),
+        ["GET retention"] = (FormBuilderPermissions.ManageSettings | FormBuilderPermissions.PrivacyTools, FormBuilderAccessResourceKind.Global, null),
+        ["POST retention/dry-run"] = (FormBuilderPermissions.ManageSettings | FormBuilderPermissions.PrivacyTools, FormBuilderAccessResourceKind.Global, null),
     };
+
+    /// <summary>The endpoints one of whose permissions is enough (ADR-0222): Privacy > Retention, which both its permissions read.</summary>
+    private static readonly string[] AnyOf = ["GET retention", "POST retention/dry-run"];
 
     /// <summary>
     /// The reviewed exception list: the endpoints authorised by content access instead of Jiron Form Builder's permissions.
@@ -287,6 +292,21 @@ public sealed class PermissionMatrixTests : ManagementApiTestBase
     }
 
     [Test]
+    public async Task AnEndpointThatTakesAnyOfItsPermissions_AnswersAUserWithOne()
+    {
+        var answers = new List<string>();
+        foreach (var endpoint in Endpoints().Where(endpoint => AnyOf.Contains(endpoint.Name)))
+        {
+            answers.Add($"{endpoint.Name} as privacyOfficer: {(await CallAsync("privacyOfficer", endpoint, _events)).Outcome}");
+            answers.Add($"{endpoint.Name} as admin: {(await CallAsync("admin", endpoint, _events)).Outcome}");
+        }
+
+        await WriteAsync(answers);
+        Assert.That(answers, Has.Count.EqualTo(AnyOf.Length * 2));
+        Assert.That(answers, Is.All.EndsWith(": 200"), string.Join(Environment.NewLine, answers));
+    }
+
+    [Test]
     public void EveryEndpoint_DeclaresItsAccess_AsTheTableSays()
     {
         var endpoints = Endpoints();
@@ -314,6 +334,7 @@ public sealed class PermissionMatrixTests : ManagementApiTestBase
                 {
                     var declaration = endpoint.Declarations[0];
                     Assert.That((declaration.Permissions, declaration.On, declaration.Key), Is.EqualTo(expected), endpoint.Name);
+                    Assert.That(declaration is FormBuilderPermissionAttribute { AnyOf: true }, Is.EqualTo(AnyOf.Contains(endpoint.Name)), $"{endpoint.Name}: one of its permissions is enough exactly when the table says so");
                     Assert.That(declaration is FormBuilderSectionAttribute, Is.EqualTo(expected.Needs == FormBuilderPermissions.None), $"{endpoint.Name}: a section declaration exactly when it needs no permission");
                     if (declaration.Key is { } key)
                     {
@@ -365,7 +386,8 @@ public sealed class PermissionMatrixTests : ManagementApiTestBase
         {
             var needs = Declared[endpoint.Name].Needs;
             var on = Declared[endpoint.Name].On;
-            var role = Seers.First(seer => Sees(seer, on) && (Held(seer, on) & needs) != needs);
+            var anyOf = AnyOf.Contains(endpoint.Name);
+            var role = Seers.First(seer => Sees(seer, on) && (anyOf ? (Held(seer, on) & needs) == FormBuilderPermissions.None : (Held(seer, on) & needs) != needs));
             var missing = PermissionRules.Each.First(permission => (needs & permission) != FormBuilderPermissions.None && (Held(role, on) & permission) == FormBuilderPermissions.None);
             var answer = await CallAsync(role, endpoint, Visible(endpoint));
             answers.Add($"{endpoint.Name} as {role}: {answer.Outcome} {answer.Body?["permission"]?.GetValue<string>()}");
