@@ -8,7 +8,8 @@ namespace Jiron.Umbraco.FormBuilder.Core.Entries;
 /// <param name="Entries">The entries.</param>
 /// <param name="Files">Their uploaded files.</param>
 /// <param name="More">Whether Spam holds more than one call takes, which a second Empty spam deletes.</param>
-internal sealed record EntrySpamEmptying(int Entries, int Files, bool More);
+/// <param name="Held">The entries in Spam a legal hold keeps, which stay (ADR-0222).</param>
+internal sealed record EntrySpamEmptying(int Entries, int Files, bool More, int Held = 0);
 
 /// <summary>
 /// Empty spam (IA 6.2, ADR-0209): the entries in Spam of the forms a user may delete entries of, as the Spam list shows
@@ -36,17 +37,18 @@ internal sealed class EntrySpamBin(IEntryQueryRepository queries, IFormRepositor
     public Task<EntrySpamEmptying> EmptyAsync(FormVisibility visibility, Guid userKey, CancellationToken cancellationToken = default) =>
         WalkAsync(visibility, userKey, cancellationToken);
 
-    // A plan pages on through Spam; a delete starts at the top again each time, as the page before is gone.
+    // A plan pages on through Spam; a delete starts at the top again each time, as the page before is gone, unless a legal
+    // hold kept some of it, which the next page goes on after.
     private async Task<EntrySpamEmptying> WalkAsync(FormVisibility visibility, Guid? userKey, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(visibility);
         var query = EntryQuery.Across(new EntryFormScope(visibility, [])) with { States = [EntryState.Spam] };
-        var (entries, files) = (0, 0);
+        var (entries, files, held) = (0, 0, 0);
         EntryCursor? after = null;
         while (entries < MostPerCall)
         {
             var page = await queries.ListAsync(query, after, EntryDeletions.MaxEntries, count: false, cancellationToken);
-            var taken = 0;
+            var (taken, kept) = (0, 0);
             foreach (var group in page.Entries.GroupBy(entry => entry.FormId))
             {
                 if (await forms.GetByIdAsync(group.Key, cancellationToken) is not { } form)
@@ -58,18 +60,18 @@ internal sealed class EntrySpamBin(IEntryQueryRepository queries, IFormRepositor
                 var done = userKey is { } user
                     ? await deletions.DeleteAsync(form.Key, keys, user, cancellationToken)
                     : await deletions.PlanAsync(form.Key, keys, cancellationToken);
-                (entries, files, taken) = (entries + done.Entries, files + done.Files, taken + done.Entries);
+                (entries, files, held, taken, kept) = (entries + done.Entries, files + done.Files, held + done.Held, taken + done.Entries, kept + done.Held);
             }
 
-            // The end of Spam, or a page none of whose entries could go (held back meanwhile): nothing more to take.
-            if (page.Next is null || taken == 0)
+            // The end of Spam, or a page none of whose entries could go nor are held (changed meanwhile): nothing more to take.
+            if (page.Next is null || taken + kept == 0)
             {
-                return new EntrySpamEmptying(entries, files, More: false);
+                return new EntrySpamEmptying(entries, files, More: false, held);
             }
 
-            after = userKey is null ? page.Next : null;
+            after = userKey is null || kept > 0 ? page.Next : null;
         }
 
-        return new EntrySpamEmptying(entries, files, More: true);
+        return new EntrySpamEmptying(entries, files, More: true, held);
     }
 }

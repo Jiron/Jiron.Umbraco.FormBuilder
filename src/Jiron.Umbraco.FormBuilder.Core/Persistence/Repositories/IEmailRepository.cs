@@ -232,4 +232,11 @@ internal interface IEmailRepository
     /// how many. It holds the entries' rows first, so no mail is queued for them until that unit ends.
     /// </summary>
     Task<int> DeleteUnsentAsync(IReadOnlyCollection<long> entryIds, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Deletes all the mail of these entries, sent mail too, as the first part of the unit that deletes them for retention
+    /// (ADR-0222): a sent mail's copy of the answers goes with them. How many; it holds the entries' rows first, as
+    /// <see cref="DeleteUnsentAsync(IReadOnlyCollection{long}, CancellationToken)"/> does.
+    /// </summary>
+    Task<int> DeleteAllAsync(IReadOnlyCollection<long> entryIds, CancellationToken cancellationToken = default);
 }

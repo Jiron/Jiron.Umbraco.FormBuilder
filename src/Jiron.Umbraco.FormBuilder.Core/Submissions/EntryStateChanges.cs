@@ -5,6 +5,7 @@ using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
+using Jiron.Umbraco.FormBuilder.Core.Retention;
 using Jiron.Umbraco.FormBuilder.Core.Webhooks;
 using Microsoft.Extensions.Logging;
 
@@ -49,6 +50,7 @@ internal sealed class EntryStateChanges(
     EntrySpamFolder spam,
     EntryMoveChecks checks,
     EntryEvents entryEvents,
+    EntryRetention retention,
     OutboxWake wake,
     TimeProvider time,
     ILogger<EntryStateChanges> logger)
@@ -140,12 +142,13 @@ internal sealed class EntryStateChanges(
             return new EntryChange(change, null, [], [], asks);
         }
 
+        var terms = form is null ? null : await retention.TermsAsync(form, cancellationToken);
         foreach (var key in entryKeys.Distinct())
         {
             var entry = form is null ? null : await entries.GetAsync(key, cancellationToken);
             var result = entry is null || entry.FormId != form!.Id
                 ? null
-                : await MoveAsync(entry, form, to, userKey, change, cancellationToken);
+                : await MoveAsync(entry, form, terms!, to, userKey, change, cancellationToken);
             if (result is null)
             {
                 unmoved.Add(key);
@@ -243,6 +246,7 @@ internal sealed class EntryStateChanges(
             return EntryUndoStatus.TooLate;
         }
 
+        var terms = await retention.TermsAsync(form, cancellationToken);
         try
         {
             await database.WriteAsync(
@@ -261,7 +265,11 @@ internal sealed class EntryStateChanges(
                     foreach (var (move, entry) in found)
                     {
                         var before = StoredNames.Parse<EntryState>(DetailOf(move, "from"));
-                        await entries.ChangeStateAsync(entry.Id, entry.State, before, userKey, cancellationToken);
+                        if (await entries.ChangeStateAsync(entry.Id, entry.State, before, userKey, cancellationToken) is { } back)
+                        {
+                            await retention.StampAsync(back, terms, cancellationToken);
+                        }
+
                         await events.AddAsync(new NewEntryEvent(entry.Id, UndoneEvent, userKey, changeKey, Details(entry.State, before)), cancellationToken);
                         await audit.AddAsync(new NewAuditEntry(UndoneAction, FormAudit.EntityType, form.Key, userKey, Audited(entry.Key, entry.State, before)), cancellationToken);
                     }
@@ -289,7 +297,7 @@ internal sealed class EntryStateChanges(
         _ => to is EntryState.Submitted or EntryState.Approved or EntryState.Rejected or EntryState.Spam,
     };
 
-    private async Task<StoredEntry?> MoveAsync(StoredEntry entry, StoredForm form, EntryState to, Guid? userKey, Guid change, CancellationToken cancellationToken)
+    private async Task<StoredEntry?> MoveAsync(StoredEntry entry, StoredForm form, RetentionTerms terms, EntryState to, Guid? userKey, Guid change, CancellationToken cancellationToken)
     {
         if (entry.State == EntryState.Spam && to == EntryState.Submitted)
         {
@@ -331,6 +339,8 @@ internal sealed class EntryStateChanges(
                     {
                         return null;
                     }
+
+                    row = await retention.StampAsync(row, terms, cancellationToken);
 
                     var replaced = await ReplaceWaitingAsync(row, to, cancellationToken);
                     await events.AddAsync(new NewEntryEvent(row.Id, ChangedEvent, userKey, change, Details(entry.State, to, replaced), userKey is null ? null : EntrySpamFolder.UndoWindow), cancellationToken);

@@ -8,6 +8,7 @@ using Jiron.Umbraco.FormBuilder.Core.Email;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
+using Jiron.Umbraco.FormBuilder.Core.Retention;
 using Jiron.Umbraco.FormBuilder.Core.Settings;
 using Jiron.Umbraco.FormBuilder.Core.Webhooks;
 using Microsoft.Extensions.Logging;
@@ -72,6 +73,7 @@ internal sealed partial class EntryVerification(
     EmailOutbox outbox,
     SiteBaseUrl baseUrls,
     EntryEvents entryEvents,
+    EntryRetention retention,
     IVerificationTokens tokens,
     OutboxWake wake,
     IOptions<FormBuilderOptions> options,
@@ -179,6 +181,7 @@ internal sealed partial class EntryVerification(
 
         var queued = SubmissionEntries.Runs(definition, SubmissionEntries.ChosenActions(await events.ListForEntryAsync(entry.Id, cancellationToken)), SubmissionEntries.ArrivalTriggers(definition, verified: true));
         var arrives = SubmissionEntries.ArrivalState(definition);
+        var terms = await retention.TermsAsync(form, cancellationToken);
         IReadOnlyList<StoredEntryFile> gone = [];
         StoredEntry? moved;
         try
@@ -194,6 +197,8 @@ internal sealed partial class EntryVerification(
                     {
                         return null;
                     }
+
+                    row = await retention.StampAsync(row, terms, cancellationToken);
 
                     await entries.MarkVerifiedAsync(entry.Id, cancellationToken);
                     await events.AddAsync(new NewEntryEvent(entry.Id, VerifiedEvent, null, null, EntryStateChanges.Details(EntryState.Unverified, arrives)), cancellationToken);

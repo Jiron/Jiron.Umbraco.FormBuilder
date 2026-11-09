@@ -66,6 +66,12 @@ public sealed class FormBuilderOptions
 public sealed class FormBuilderPrivacyOptions
 {
     /// <summary>
+    /// Whether the site may keep entries of a state for good, without retention (ADR-0009, ADR-0222). Off by default, and a
+    /// stored "for good" then reads as the default days of its state.
+    /// </summary>
+    public bool AllowRetentionOff { get; set; }
+
+    /// <summary>
     /// Whether a site may load a captcha's script without asking its visitors, the <c>implicit</c> consent mode (section 4.10,
     /// ADR-0157). Off by default, and a stored <c>implicit</c> then reads as <c>explicit</c>.
     /// </summary>

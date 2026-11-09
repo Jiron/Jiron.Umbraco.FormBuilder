@@ -170,7 +170,7 @@ public sealed class PublicFormSiteTests : PublicApiTestBase
             }
         }
 
-        var privacy = new PrivacySettings { Insights = false };
+        var privacy = new PrivacySettings { Insights = false, Retention = new SiteRetention { Submitted = 100, Approved = 200, Rejected = 30, Spam = 14 } };
         var currentPrivacy = await Settings.GetAsync<PrivacySettings>();
         await Settings.SaveAsync(privacy, currentPrivacy.Version, Editor);
         var sections = typeof(GeneralSettings).Assembly.GetTypes().Where(type => typeof(ISettingsSection).IsAssignableFrom(type) && !type.IsInterface).ToList();

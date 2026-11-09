@@ -190,6 +190,73 @@ internal static class EntryLimits
     public static bool Counts(EntryState state, bool isTest) => !isTest && CountingStates.Contains(state);
 }
 
+/// <summary>
+/// The states whose entries retention deletes (ADR-0222). A draft goes when its resume link runs out, and an entry that
+/// waits for its address when its confirmation link does (ADR-0162): each has a time of its own.
+/// </summary>
+internal static class RetentionStates
+{
+    /// <summary>The states, in the order the screens name them.</summary>
+    public static readonly IReadOnlyList<EntryState> Kept = [EntryState.Submitted, EntryState.Approved, EntryState.Rejected, EntryState.Spam];
+}
+
+/// <summary>When retention deletes an entry (ADR-0222).</summary>
+/// <param name="EntryId">The entry.</param>
+/// <param name="PurgeAfterUtc">From when it goes; null while the rules keep it for good.</param>
+internal readonly record struct EntryPurgeTime(long EntryId, DateTimeOffset? PurgeAfterUtc);
+
+/// <summary>What retention reads of an entry (ADR-0222): what gives it its time, its hold, and what its delete names.</summary>
+/// <param name="Id">The row's id.</param>
+/// <param name="Key">Its key.</param>
+/// <param name="FormId">Its form.</param>
+/// <param name="Number">Its number within the form.</param>
+/// <param name="State">Its state.</param>
+/// <param name="IsTest">Whether it came from the preview.</param>
+/// <param name="SubmittedUtc">When it was submitted.</param>
+/// <param name="StateChangedUtc">When its state last changed.</param>
+/// <param name="HoldUntilUtc">Until when a legal hold keeps it, or null.</param>
+/// <param name="HoldReason">Why it is held, or null.</param>
+/// <param name="PurgeAfterUtc">The time it was given last, or null.</param>
+internal sealed record EntryRetentionRow(
+    long Id,
+    Guid Key,
+    int FormId,
+    int Number,
+    EntryState State,
+    bool IsTest,
+    DateTimeOffset SubmittedUtc,
+    DateTimeOffset StateChangedUtc,
+    DateTimeOffset? HoldUntilUtc,
+    string? HoldReason,
+    DateTimeOffset? PurgeAfterUtc);
+
+/// <summary>What a dry run counts of a form (ADR-0222).</summary>
+/// <param name="Entries">The entries whose time comes by the horizon and that no hold keeps past it.</param>
+/// <param name="Held">The entries whose time comes by then that a hold keeps past it.</param>
+/// <param name="Files">The uploaded files of the entries that go.</param>
+internal readonly record struct RetentionCount(long Entries, long Held, long Files = 0);
+
+/// <summary>
+/// The moments a dry run counts with (ADR-0222): an entry whose state changed by its state's cut-off, a test entry whose
+/// state changed by <see cref="Test"/>, or one submitted by <see cref="Submission"/>, has its time by
+/// <see cref="Horizon"/>. A state without a cut-off keeps its entries for good.
+/// </summary>
+/// <param name="Submitted">The cut-off of submitted entries, or null.</param>
+/// <param name="Approved">The cut-off of approved entries, or null.</param>
+/// <param name="Rejected">The cut-off of rejected entries, or null.</param>
+/// <param name="Spam">The cut-off of entries in Spam, or null.</param>
+/// <param name="Test">The cut-off of test entries.</param>
+/// <param name="Submission">The cut-off of a form that keeps entries for a number of days, by their submission, or null.</param>
+/// <param name="Horizon">The moment counted up to; a hold that lasts past it keeps its entry.</param>
+internal sealed record RetentionCutoffs(
+    DateTimeOffset? Submitted,
+    DateTimeOffset? Approved,
+    DateTimeOffset? Rejected,
+    DateTimeOffset? Spam,
+    DateTimeOffset Test,
+    DateTimeOffset? Submission,
+    DateTimeOffset Horizon);
+
 /// <summary>A stored entry, without its values.</summary>
 internal sealed record StoredEntry
 {
@@ -648,4 +715,64 @@ internal interface IEntryRepository
     /// to another entry by now, and with <see cref="FormBuilderConflict.InUse"/> while a value names it.
     /// </summary>
     Task<bool> DeleteFileAsync(int fileId, long? entryId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Stores when retention deletes these entries (ADR-0222), at most <see cref="SqlArgs.MaxListLength"/> of them, in the
+    /// caller's unit when there is one; how many were there.
+    /// </summary>
+    /// <param name="times">The entries and their times.</param>
+    /// <param name="cancellationToken">Cancels the unit of work.</param>
+    Task<int> SetPurgeAfterAsync(IReadOnlyCollection<EntryPurgeTime> times, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Up to <paramref name="take"/> (at most <see cref="SqlArgs.MaxListLength"/>) entries whose time has come by
+    /// <paramref name="now"/> and that no hold keeps, soonest first: what retention deletes next (ADR-0222).
+    /// </summary>
+    /// <param name="now">The moment.</param>
+    /// <param name="take">How many.</param>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    Task<IReadOnlyList<EntryRetentionRow>> ListDueAsync(DateTimeOffset now, int take, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Up to <paramref name="take"/> (at most <see cref="SqlArgs.MaxListLength"/>) entries of a form after the entry
+    /// <paramref name="afterId"/>, by id, in any state: a batch of the form's entries given their times again (ADR-0222).
+    /// </summary>
+    /// <param name="formId">The form.</param>
+    /// <param name="afterId">The id to go on after; 0 from the first.</param>
+    /// <param name="take">How many.</param>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    Task<IReadOnlyList<EntryRetentionRow>> ListForRetentionAsync(int formId, long afterId, int take, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// These entries, at most <see cref="SqlArgs.MaxListLength"/>, by id, as retention reads them; one that is gone is left
+    /// out. Inside a unit that holds their rows, what a delete checks again before it deletes (ADR-0222).
+    /// </summary>
+    /// <param name="entryIds">The entries.</param>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    Task<IReadOnlyList<EntryRetentionRow>> ListForRetentionAsync(IReadOnlyCollection<long> entryIds, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// How many entries of each of these forms the rules that <paramref name="cutoffs"/> stand for delete by its horizon,
+    /// and how many of those a hold keeps past it (the dry run, ADR-0222). A form without any is left out.
+    /// </summary>
+    /// <param name="formIds">The forms, any number, which share the rules.</param>
+    /// <param name="cutoffs">The rules' moments.</param>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    Task<IReadOnlyDictionary<int, RetentionCount>> CountDueAsync(IReadOnlyCollection<int> formIds, RetentionCutoffs cutoffs, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Sets an entry's legal hold, with its end and its reason of 1 to <see cref="EntryRepository.MaxHoldReasonLength"/>
+    /// characters, or releases it with neither (ADR-0222); false when the entry does not exist.
+    /// </summary>
+    /// <param name="entryId">The entry.</param>
+    /// <param name="until">Until when the hold keeps it; null to release it.</param>
+    /// <param name="reason">Why; null to release it.</param>
+    /// <param name="cancellationToken">Cancels the unit of work.</param>
+    /// <exception cref="ArgumentException">An end without a reason or a reason without an end, or a reason too long.</exception>
+    Task<bool> SetHoldAsync(long entryId, DateTimeOffset? until, string? reason, CancellationToken cancellationToken = default);
+
+    /// <summary>Which of these file-store names a file's row names (the file store's sweep, ADR-0222).</summary>
+    /// <param name="storedNames">The names, any number.</param>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    Task<IReadOnlySet<string>> ListStoredNamesAsync(IReadOnlyCollection<string> storedNames, CancellationToken cancellationToken = default);
 }

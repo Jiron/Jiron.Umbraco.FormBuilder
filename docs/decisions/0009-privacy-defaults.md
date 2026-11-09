@@ -1,7 +1,7 @@
 # 0009. Privacy defaults
 
 - Status: accepted; consent texts, sensitive fields in mail, the global privacy section and context values
-  amended in 1.8
+  amended in 1.8; how long consent texts stay amended by [ADR-0222](0222-retention.md)
 - Date: 2026-10-23
 - Roadmap step: 1.7b (decided); built in 4.1 (the columns), 6.1 (what a submission stores), 8.x (mail), 13.1 to 13.4
   (retention, data subject tools, sensitive data and IP addresses, the documentation) and 14.3 (members)
@@ -66,7 +66,7 @@ search text, events) shorter or out altogether.
 | Action-run error messages | with their entry; sanitised and at most 1,000 characters (§4.5) |
 | The audit log (user and entity keys, never values) | 365 days |
 | Daily statistics (no personal data) | 3 years |
-| Consent texts (no personal data: they recall no answers, ADR-0014) | while an entry points at them |
+| Consent texts (no personal data: they recall no answers, ADR-0014) | kept: no personal data (ADR-0222) |
 | A legal hold | keeps an entry past its retention until the hold's end date, at most 365 days at a time, with a reason and the user who set it |
 
 Deleting an entry deletes its values, files, events, notes, action runs and queued mail with it (§4.4).

@@ -43,7 +43,7 @@ public sealed class InsightApiTests : ManagementApiTestBase
         {
             Assert.That(read.Outcome, Is.EqualTo("200"), read.ToString());
             Assert.That(read.Body["values"]!["insights"]!.GetValue<bool>(), Is.True, "on by default");
-            Assert.That(read.Body["locks"]!.AsArray(), Is.Empty);
+            Assert.That(read.Body["locks"]!.AsArray().Select(one => one!["field"]!.GetValue<string>()), Has.None.EqualTo("insights"), "only retention's days have a host's rule");
             Assert.That(saved.Outcome, Is.EqualTo("200"), saved.ToString());
             Assert.That(saved.Body["values"]!["insights"]!.GetValue<bool>(), Is.False);
             Assert.That(kept.Body["values"]!["insights"]!.GetValue<bool>(), Is.False, "a save without it leaves it as it was");

@@ -4,6 +4,7 @@ using Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Queries;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
+using Jiron.Umbraco.FormBuilder.Core.Retention;
 
 namespace Jiron.Umbraco.FormBuilder.Core.Entries;
 
@@ -16,7 +17,8 @@ internal sealed class EntryAnswerStore(
     IEntryRepository entries,
     IConsentTextRepository consentTexts,
     IFormRepository forms,
-    FieldTypeRegistry types)
+    FieldTypeRegistry types,
+    EntryRetention retention)
 {
     /// <summary>
     /// Stores an entry with its answers, its uploads and the consent wordings they name, in one unit of work whose
@@ -61,10 +63,14 @@ internal sealed class EntryAnswerStore(
 
         var rows = EntryValueWriter.Of(entry.FormId, definition, catalogue, types, answers, wordings);
         var searchText = EntrySearchText.For(Searchable(definition, catalogue, rows.Values));
+
+        // Retention's time comes with the entry (ADR-0222), from the rules the form has now.
+        var now = new DateTimeOffset(database.UtcNow, TimeSpan.Zero);
+        var purgeAfter = (await retention.TermsAsync(entry.FormId, cancellationToken)).PurgeAfter(entry.State, entry.IsTest, now, now);
         return await database.WriteAsync(
             async _ =>
             {
-                var stored = await entries.CreateAsync(entry with { Values = rows.Values, FileIds = rows.FileIds, SearchText = searchText }, cancellationToken);
+                var stored = await entries.CreateAsync(entry with { Values = rows.Values, FileIds = rows.FileIds, SearchText = searchText, PurgeAfterUtc = purgeAfter }, cancellationToken);
                 if (stored is not null)
                 {
                     foreach (var wording in rows.Wordings)

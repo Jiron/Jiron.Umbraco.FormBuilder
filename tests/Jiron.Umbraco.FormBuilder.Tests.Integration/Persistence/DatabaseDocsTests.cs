@@ -152,6 +152,7 @@ public sealed partial class DatabaseDocsTests
         indexes[FormBuilderTables.Entry].Add(AddEntryUnseenIndexV1.IndexName);
         indexes[FormBuilderTables.EntryEvent].Add(AddEntryEventDueV1.IndexName);
         indexes[FormBuilderTables.ActionRun].Add(AddActionRunLastAttemptV1.IndexName);
+        indexes[FormBuilderTables.EntryFile].Add(AddEntryFileNameIndexV1.IndexName);
 
         return indexes;
     }

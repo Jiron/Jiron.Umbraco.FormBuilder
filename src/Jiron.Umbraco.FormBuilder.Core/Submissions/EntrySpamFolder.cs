@@ -2,6 +2,7 @@ using Jiron.Umbraco.FormBuilder.Core.Actions;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
+using Jiron.Umbraco.FormBuilder.Core.Retention;
 using Jiron.Umbraco.FormBuilder.Core.Webhooks;
 
 namespace Jiron.Umbraco.FormBuilder.Core.Submissions;
@@ -22,6 +23,7 @@ namespace Jiron.Umbraco.FormBuilder.Core.Submissions;
 /// <param name="documents">Reads a version's definition.</param>
 /// <param name="settlement">Lets go of what no action can use any more (ADR-0158).</param>
 /// <param name="entryEvents">Tells of an entry that is submitted now.</param>
+/// <param name="retention">Gives an entry that leaves Spam its retention time (ADR-0222).</param>
 /// <param name="wake">Asks for a pass of the worker, for a confirmation mail.</param>
 internal sealed class EntrySpamFolder(
     FormBuilderDatabase database,
@@ -34,6 +36,7 @@ internal sealed class EntrySpamFolder(
     FormDocuments documents,
     ActionSettlement settlement,
     EntryEvents entryEvents,
+    EntryRetention retention,
     OutboxWake wake)
 {
     /// <summary>The kind of the event that records the move.</summary>
@@ -79,6 +82,7 @@ internal sealed class EntrySpamFolder(
                 .ToList();
         var arrives = unverified ? EntryState.Unverified : definition is null ? EntryState.Submitted : SubmissionEntries.ArrivalState(definition);
         var changeKey = change ?? Guid.NewGuid();
+        var terms = await retention.TermsAsync(entry.FormId, cancellationToken);
         IReadOnlyList<StoredEntryFile> gone = [];
         var taken = await database.WriteAsync(
             async _ =>
@@ -89,6 +93,8 @@ internal sealed class EntrySpamFolder(
                 {
                     return null;
                 }
+
+                moved = await retention.StampAsync(moved, terms, cancellationToken);
 
                 await events.AddAsync(new NewEntryEvent(moved.Id, NotSpamEvent, userKey, changeKey, EntryStateChanges.Details(EntryState.Spam, arrives), userKey is null ? null : UndoWindow), cancellationToken);
                 if (queued.Count > 0)

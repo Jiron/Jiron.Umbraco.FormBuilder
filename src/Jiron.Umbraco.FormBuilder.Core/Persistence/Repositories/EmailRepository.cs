@@ -381,7 +381,15 @@ internal sealed class EmailRepository(FormBuilderDatabase database) : IEmailRepo
             cancellationToken);
 
     /// <inheritdoc />
-    public Task<int> DeleteUnsentAsync(IReadOnlyCollection<long> entryIds, CancellationToken cancellationToken = default)
+    public Task<int> DeleteUnsentAsync(IReadOnlyCollection<long> entryIds, CancellationToken cancellationToken = default) =>
+        DeleteOfAsync(entryIds, sent: false, cancellationToken);
+
+    /// <inheritdoc />
+    public Task<int> DeleteAllAsync(IReadOnlyCollection<long> entryIds, CancellationToken cancellationToken = default) =>
+        DeleteOfAsync(entryIds, sent: true, cancellationToken);
+
+    // The mail of entries, with the sent mail or without it.
+    private Task<int> DeleteOfAsync(IReadOnlyCollection<long> entryIds, bool sent, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(entryIds);
         var ids = entryIds.Distinct().Order().ToArray();
@@ -401,7 +409,8 @@ internal sealed class EmailRepository(FormBuilderDatabase database) : IEmailRepo
                     object?[] args = [.. chunk.Cast<object?>()];
                     var list = SqlArgs.Placeholders(0, chunk.Length);
                     await RowHolds.HoldAsync(db, n, FormBuilderTables.Entry, $"{n.C("id")} IN ({list})", args);
-                    deleted += await db.ExecAsync($"DELETE FROM {n.T(FormBuilderTables.Email)} WHERE {n.C("entryId")} IN ({list}) AND {n.C("state")} <> '{Sent}'", args);
+                    var unsent = sent ? string.Empty : $" AND {n.C("state")} <> '{Sent}'";
+                    deleted += await db.ExecAsync($"DELETE FROM {n.T(FormBuilderTables.Email)} WHERE {n.C("entryId")} IN ({list}){unsent}", args);
                 }
 
                 return deleted;
