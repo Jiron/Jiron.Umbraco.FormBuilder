@@ -323,14 +323,15 @@ export const canvasChrome = css`
     }
   }
 
-  /* The host's own colour, solid, so the browser gives the scroller a layer of its own and scrolls it without painting
-     the sheet again; a scroller it sees through is painted with the page at every scroll (ADR-0169). */
+  /* A layer of its own, so the browser scrolls it without painting the sheet again (ADR-0169). The host's colour shows
+     through it: a scroller's own background is painted with its contents, so every move, duplicate or delete painted
+     the whole view again, where only what changed needs it (ADR-0221). */
   .bo-viewport {
     flex: 1 1 auto;
     min-height: 0;
     overflow: auto;
     padding: 0 var(--uui-size-layout-1) var(--uui-size-layout-1);
-    background: var(--uui-color-background);
+    will-change: scroll-position;
   }
 
   .bo-viewport:focus-visible {

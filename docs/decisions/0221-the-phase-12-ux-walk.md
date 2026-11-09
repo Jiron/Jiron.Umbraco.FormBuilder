@@ -4,7 +4,8 @@
   [ADR-0213](0213-the-phase-11-ux-walk.md) (a fact under the name rather than a squeezed column),
   [ADR-0218](0218-the-settings-screens-and-access.md) (the settings screens and access),
   [ADR-0219](0219-deliveries-and-the-audit-log.md) (deliveries and the audit log) and
-  [ADR-0020](0020-three-design-skills.md) (the design reviews)
+  [ADR-0020](0020-three-design-skills.md) (the design reviews); amends the scroller's solid colour of
+  [ADR-0186](0186-the-designer-budget-measures-the-main-thread.md) (its point 2)
 - Date: 2026-11-09
 - Roadmap step: 12.4, its part 12.6 (ADR-0197)
 
@@ -43,6 +44,13 @@ walk and the reviews found:
    and puts the old value back after its checks; in those seconds the Teams editor's test, in another worker, sent its
    test message, which the site could not sign (`secret_missing`). Settings › Access's test likewise gives the HR team
    more for a while.
+10. **The designer's budget at the edge again.** The gate's next run failed the 300-field budget alone: the keyboard
+    move at 104 ms against 100. Phase 11's own gated commit, `914b66a`, built in a clone the same day, failed it once in
+    three at the same 104 ms, so the machine's drawing had drifted again as ADR-0186 found, and Phase 12 changed
+    nothing on that path. Measured apart, an interaction's handlers took 9 to 17 ms and the rest was presentation,
+    mostly the graphics chip's raster. The browser's paint flashing showed why: a move, a duplicate or a delete
+    painted the canvas's whole view again, as the scroller's own background, solid for ADR-0186, is painted with
+    its contents and so with every change to them; a plain focus move painted only the fields it touched.
 
 ## Decisions
 
@@ -71,6 +79,10 @@ walk and the reviews found:
    `website`, `backoffice` and `limits`, and before `budgets`, as `limits` runs after what could meet its limits
    (ADR-0137): Settings and Access move there. Each still puts back what it changed, and the specs inside it touch
    different sections. A spec that saves a site-wide setting or grant belongs there.
+10. **The canvas's scroller has no background of its own:** the host's colour, which is the same, shows through it,
+    and `will-change: scroll-position` keeps it a layer of its own, so it still scrolls without painting the sheet
+    again. A move, duplicate or delete now paints only what changed. The 300-field budget then passed 4 of 4 runs
+    alone, where it had passed 1 of 3, its slowest interaction 64 to 80 ms back to back, against 72 to 112.
 
 ## Consequences
 
@@ -79,7 +91,8 @@ walk and the reviews found:
   checklist's five items are proven to turn green from a new site's start.
 - Negative: on a narrow screen, what a delivery is has no column header of its own: it reads as the address's second
   line, as a row's state does in the entries list. The browser projects take a little longer, as the settings and
-  access specs no longer run beside the backoffice's.
+  access specs no longer run beside the backoffice's. The canvas's scroller is a layer without an opaque
+  background, so the browser draws its text with greyscale rather than subpixel smoothing.
 - Kept, with their reasons in `docs/ux/review-12.md`: a delivery's sidebar names the address in its headline and its
   first sentence, as the headline cuts a long one; a long name in a sidebar's headline cut with an ellipsis; Settings ›
   Access scrolling sideways past the workspace with its first column fixed (ADR-0218); the Permissions sidebar's Add
