@@ -591,10 +591,10 @@ for (const combo of COMBOS) {
       await openSection(page);
       await expect(page.locator('jfb-overview [aria-busy="true"]')).toHaveCount(0);
     });
-    // A screen still to come: Privacy's People, which Phase 13 builds (the Inbox was one until Phase 11).
-    await walk.shot('coming', async () => {
+    // Privacy's People, the last screen that showed the stand-in until Phase 13 built it (ADR-0165).
+    await walk.shot('people', async () => {
       await page.goto(`${SECTION}/workspace/jfb-privacy-people`);
-      await expect(page.locator('jfb-coming-screen')).toBeVisible();
+      await expect(page.locator('jfb-people-screen input[type="email"]')).toBeVisible();
     });
     await walk.shot('search', async () => {
       await openSection(page);

@@ -1,7 +1,6 @@
 // The form workspace (ROADMAP 9.3a, docs/ux/information-architecture.md sections 5 and 11): Umbraco's routable workspace
 // over the draft endpoint, its six views in Umbraco's tabs, each for who may use it on the open form, and Save draft and
-// Publish... in its footer for who may design it. The views whose steps are still to come show the coming screen,
-// which step 13.4 checks is gone.
+// Publish... in its footer for who may design it. Each view has its own element; the stand-in of 9.1 is gone (ADR-0165).
 import { UmbSubmitWorkspaceAction } from '@umbraco-cms/backoffice/workspace';
 import { FORM_ENTITY_TYPE } from '../section/entity-types';
 import {
@@ -34,10 +33,9 @@ const holding = (...anyOf: string[]) => ({ alias: FORM_PERMISSION_CONDITION, any
 type ViewElement = NonNullable<Extract<UmbExtensionManifest, { type: 'workspaceView' }>['element']>;
 
 /**
- * The views in their order, with who sees each and the element of each view built: the first one a user sees is where
- * the form opens.
+ * The views in their order, with who sees each and its element: the first one a user sees is where the form opens.
  */
-const VIEWS: readonly { id: string; icon: string; anyOf: string[]; element?: ViewElement }[] = [
+const VIEWS: readonly { id: string; icon: string; anyOf: string[]; element: ViewElement }[] = [
   { id: FIRST_VIEW, icon: 'icon-layout', anyOf: ['design'], element: () => import('./form-design.view') },
   { id: 'settings', icon: 'icon-settings', anyOf: ['design'], element: () => import('./settings/form-settings.view') },
   {
@@ -187,7 +185,7 @@ export const manifests: UmbExtensionManifest[] = [
     type: 'workspaceView',
     alias: `Jiron.FormBuilder.WorkspaceView.Form.${pascal(view.id)}`,
     name: `Jiron Form Builder form ${view.id} view`,
-    element: view.element ?? (() => import('../section/coming-screen.element')),
+    element: view.element,
     // Umbraco puts the higher weight first.
     weight: (VIEWS.length - index) * 100,
     meta: { label: `#jfbDesigner_view_${view.id}`, pathname: view.id, icon: view.icon },

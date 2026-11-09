@@ -8,7 +8,6 @@ export default {
     overview: 'Übersicht',
     noForms:
       'Sie sehen noch keine Formulare. Wer Administratorrechte hat, kann Ihrer Benutzergruppe unter Einstellungen › Zugriff Zugang geben.',
-    comingScreen: 'Diese Seite wird noch gebaut.',
     entries: 'Einträge',
     inbox: 'Posteingang',
     inboxUnseen: (label: string, count: string) => `${label}, ${count} ungelesen`,

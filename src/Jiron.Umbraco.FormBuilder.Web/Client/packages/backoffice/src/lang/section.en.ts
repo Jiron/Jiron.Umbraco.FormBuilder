@@ -7,7 +7,6 @@ export default {
     forms: 'Forms',
     overview: 'Overview',
     noForms: "You can't see any forms yet. An administrator can give your user group access in Settings › Access.",
-    comingScreen: 'This screen is still being built.',
     entries: 'Entries',
     inbox: 'Inbox',
     // The Inbox's item for screen readers, while its badge shows the unseen count ("12", "99+").

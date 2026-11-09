@@ -1,6 +1,6 @@
 // The Form Builder section (ADR-0021, ADR-0165, ADR-0171): the section with its one dashboard, the sidebar of docs/ux/information-architecture.md
-// and a workspace behind each item. The table in sidebar.ts holds the items; screens that later phases build replace
-// their workspace's element here, and show coming-screen.element until then.
+// and a workspace behind each item. The table in sidebar.ts holds the items, and each has its screen here: the stand-in
+// of 9.1 is gone, so an item without one fails at once (ADR-0165).
 import { manifests as access } from '../access/manifests';
 import { manifests as activity } from '../activity/manifests';
 import { manifests as designer } from '../designer/manifests';
@@ -26,7 +26,7 @@ const pascal = (id: string): string => id.charAt(0).toUpperCase() + id.slice(1);
 /** The weight that keeps things in the table's order: Umbraco puts the higher first. */
 const weightOf = (index: number, count: number): number => (count - index) * 100;
 
-/** The screens built so far, by their item; every other item shows the coming screen until its step builds it. */
+/** The screen of each item, and of an entry opened on its own. */
 type ScreenLoader = NonNullable<Extract<UmbExtensionManifest, { type: 'workspace' }>['element']>;
 
 const SCREENS: Readonly<Record<string, ScreenLoader>> = {
@@ -57,11 +57,18 @@ const ITEM_ELEMENTS: Readonly<Record<string, ItemLoader>> = {
   inbox: () => import('./inbox-menu-item.element'),
 };
 
-const comingScreen = (id: string, entityType: string): UmbExtensionManifest => ({
+/** The screen of an item; one without is a mistake of this table, found as the section loads. */
+function screenOf(id: string): ScreenLoader {
+  const screen = SCREENS[id];
+  if (!screen) throw new Error(`The item ${id} has no screen.`);
+  return screen;
+}
+
+const workspaceOf = (id: string, entityType: string): UmbExtensionManifest => ({
   type: 'workspace',
   alias: `Jiron.FormBuilder.Workspace.${pascal(id)}`,
   name: `Jiron Form Builder ${id} screen`,
-  element: SCREENS[id] ?? (() => import('./coming-screen.element')),
+  element: screenOf(id),
   meta: { entityType },
 });
 
@@ -80,7 +87,7 @@ const itemManifests = (group: SidebarGroup, item: SidebarItem, index: number): U
     },
     conditions: [{ alias: PERMISSION_CONDITION, needs: [item] }],
   },
-  comingScreen(item.id, item.entityType),
+  workspaceOf(item.id, item.entityType),
 ];
 
 const groupManifests = (group: SidebarGroup, index: number): UmbExtensionManifest[] => [
@@ -134,7 +141,7 @@ export const manifests: UmbExtensionManifest[] = [
   },
   { type: 'menu', alias: FORMS_MENU_ALIAS, name: 'Jiron Form Builder forms menu' },
   ...SIDEBAR.flatMap(groupManifests),
-  comingScreen('entry', ENTRY_ENTITY_TYPE),
+  workspaceOf('entry', ENTRY_ENTITY_TYPE),
   ...tree(FORMS_MENU_ALIAS, SECTION_ALIAS),
   ...library,
   ...designer,

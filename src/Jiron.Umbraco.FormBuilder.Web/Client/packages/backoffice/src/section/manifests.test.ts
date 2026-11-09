@@ -100,6 +100,27 @@ describe('the section', () => {
     }
   });
 
+  it('shows no workspace or view the stand-in of 9.1: each has its own element (ADR-0165)', async () => {
+    const views = byType('workspaceView').filter((view) =>
+      view.alias.startsWith('Jiron.FormBuilder.WorkspaceView.Form.'),
+    );
+    const loaded = await Promise.all([...byType('workspace'), ...views].map((manifest) => manifest.element?.()));
+    expect(views.map((view) => view.alias.split('.').at(-1))).toEqual([
+      'Design',
+      'Settings',
+      'Actions',
+      'Entries',
+      'Insights',
+      'History',
+    ]);
+    const tags = loaded
+      .map((module) => module?.['element'] as CustomElementConstructor | undefined)
+      .filter((element) => element !== undefined)
+      .map((element) => customElements.getName(element));
+    expect(tags.filter((tag) => tag === null || tag === 'jfb-coming-screen')).toEqual([]);
+    expect(customElements.get('jfb-coming-screen')).toBeUndefined();
+  });
+
   it("gives a form and each kind of the library its routable workspace, whose context the workspace's api is", async () => {
     const routable = byType('workspace').filter((workspace) => workspace.kind === 'routable');
     expect(routable.map((workspace) => [workspace.alias, workspace.meta?.['entityType']])).toEqual([
