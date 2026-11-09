@@ -95,7 +95,8 @@ public abstract class ManagementApiTestBase : FormBuilderTestServerTestBase
 
 /// <summary>
 /// Calls the management API as named users, each an API user in its groups who signs in through Umbraco's token endpoint
-/// on the first call (<see cref="BackOfficeApiUsers"/>), and reads the answer as JSON.
+/// on the first call (<see cref="BackOfficeApiUsers"/>), and reads a JSON answer as JSON; a file's answer, such as the
+/// audit log's CSV, stays text.
 /// </summary>
 /// <param name="client">The test server's client.</param>
 /// <param name="services">The site's services.</param>
@@ -126,12 +127,14 @@ internal sealed class ManagementApiCaller(HttpClient client, IServiceProvider se
 
         using var response = await client.SendAsync(request);
         var text = await response.Content.ReadAsStringAsync();
+        var mediaType = response.Content.Headers.ContentType?.MediaType;
+        var json = mediaType is null || mediaType.EndsWith("json", StringComparison.OrdinalIgnoreCase);
         return new ApiAnswer(
             response.StatusCode,
-            text.Length == 0 ? null : JsonNode.Parse(text),
+            text.Length == 0 || !json ? null : JsonNode.Parse(text),
             response.Headers.TryGetValues("Umb-Generated-Resource", out var created) ? created.Single() : null,
             response.Headers.RetryAfter?.Delta,
-            response.Content.Headers.ContentType?.MediaType,
+            mediaType,
             text,
             response.Headers.CacheControl?.NoStore == true);
     }
