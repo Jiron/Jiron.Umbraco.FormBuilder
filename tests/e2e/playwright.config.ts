@@ -52,13 +52,21 @@ export default defineConfig({
       use: browser,
     },
     {
+      // What every page and screen of the one host reads: settings and access saved from their screens, each put back
+      // after its test. After every spec that reads them, so none meets a value while it is changed (ADR-0221).
+      name: 'site-wide',
+      testDir: './specs/site-wide',
+      dependencies: ['smoke', 'website', 'backoffice', 'limits'],
+      use: browser,
+    },
+    {
       // Interactions measured against section 4.12's budgets: alone, after every other project, so nothing else shares
       // the machine while they are measured (ADR-0169). Without a trace: its recorder walks the page's whole DOM on the
       // page's own thread at every action, which the measure would count as the designer's (160 to 210 ms on a form of
       // 300 fields, 10.1b); a failure says every slow interaction in its message instead.
       name: 'budgets',
       testDir: './specs/budgets',
-      dependencies: ['smoke', 'website', 'backoffice', 'limits', 'startup'],
+      dependencies: ['smoke', 'website', 'backoffice', 'limits', 'site-wide', 'startup'],
       workers: 1,
       use: { ...browser, trace: 'off' },
     },

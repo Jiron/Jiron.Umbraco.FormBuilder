@@ -38,6 +38,11 @@ walk and the reviews found:
    Umbraco 17's SQLite hung under four workers.
 8. **The checklist needs a site with nothing on it.** The demo seeds forms, content and the test team, so every item of
    the checklist starts green there.
+9. **The phase gate met a settings test mid-change.** The browser projects share one host and run their specs side by
+   side. Settings › Integrations' test saves a signing secret by a reference no host holds, to see the screen say so,
+   and puts the old value back after its checks; in those seconds the Teams editor's test, in another worker, sent its
+   test message, which the site could not sign (`secret_missing`). Settings › Access's test likewise gives the HR team
+   more for a while.
 
 ## Decisions
 
@@ -62,6 +67,10 @@ walk and the reviews found:
    the demo's seeding, which `scripts/demo.ps1` never sets, the test team and the stub's port are left out, and
    Umbraco's sender carries a display name, which Umbraco accepts and forms' mail cannot use as its own sender. A host
    may name its own ready page and ready lines, as one without content or people has neither.
+9. **Specs that change what the whole site reads run in a project of their own,** `site-wide`, after `smoke`,
+   `website`, `backoffice` and `limits`, and before `budgets`, as `limits` runs after what could meet its limits
+   (ADR-0137): Settings and Access move there. Each still puts back what it changed, and the specs inside it touch
+   different sections. A spec that saves a site-wide setting or grant belongs there.
 
 ## Consequences
 
@@ -69,7 +78,8 @@ walk and the reviews found:
   Phase 12 screen scrolls sideways inside the section's own elements; the notices look alike across the section; the
   checklist's five items are proven to turn green from a new site's start.
 - Negative: on a narrow screen, what a delivery is has no column header of its own: it reads as the address's second
-  line, as a row's state does in the entries list.
+  line, as a row's state does in the entries list. The browser projects take a little longer, as the settings and
+  access specs no longer run beside the backoffice's.
 - Kept, with their reasons in `docs/ux/review-12.md`: a delivery's sidebar names the address in its headline and its
   first sentence, as the headline cuts a long one; a long name in a sidebar's headline cut with an ellipsis; Settings ›
   Access scrolling sideways past the workspace with its first column fixed (ADR-0218); the Permissions sidebar's Add
