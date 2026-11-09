@@ -91,6 +91,7 @@ carried the critique and the audit.
 | The email layout editor's groups touched each other: the grid's gap sat on the box, which lays out its own content | the groups sit in a block of their own inside the box, 24 px apart (decision 5) |
 | "Standarddesign" for the default theme in Settings › General, where every other German screen says "Standard-Theme" and the glossary keeps "design" off the word | "Standard-Theme" (decision 6) |
 | The paused notice's side-tab border | a quiet frame with the icon (decision 2) |
+| A long name in the forms tree ran on past its box, under the row's "…" and past the sidebar's edge, so a click on the "…" opened the form | the tree's label is Umbraco's own `#label`, which ends a name with an ellipsis; a browser test holds that the name ends before the "…" (decision 11) |
 | The walk's Permissions shot found no table: a folder without groups shows only Add | the walk adds a group first, so the shot shows the table it is for (decision 7) |
 | The walk's tree-row "…" timed out now and then: it brought a row only just into sight, at the sidebar's edge, where a row moves as the pointer reaches it | the walk brings the row to the sidebar's middle as the browser specs do, and tries the hover and the menu's opening again together until the item shows (decision 7) |
 

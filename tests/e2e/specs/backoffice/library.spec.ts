@@ -211,6 +211,35 @@ test("a blank form from a folder's + opens, and waits in the tree unpublished", 
   await expect(row.locator('.unpublished')).toHaveText('Untitled form, not published');
 });
 
+test('a long name ends with an ellipsis before the "..." of its row, which a click then reaches', async ({
+  page,
+  loginAs,
+  apiAs,
+}) => {
+  const name = unique('A form whose name runs far past the width of the sidebar, as some editors write them');
+  await blankForm(await apiAs('designer'), name);
+  await loginAs('designer');
+  await openSection(page);
+  const row = treeRow(page, name).first();
+  await row.evaluate((element) => element.scrollIntoView({ block: 'center' }));
+  await row.hover();
+  const more = page.getByRole('button', { name: `View actions for '${name}'`, exact: true });
+  await expect(more).toBeVisible();
+  // A name drawn past its box would lie over the "...", and a click there would open the form instead.
+  const label = row.locator('span[slot="label"]');
+  const named = (await label.boundingBox())!;
+  const button = (await more.boundingBox())!;
+  expect(named.x + named.width, 'the name ends before the "..."').toBeLessThanOrEqual(button.x);
+  expect(
+    await label.evaluate((element) => [
+      element.scrollWidth > element.clientWidth,
+      getComputedStyle(element).textOverflow,
+    ]),
+  ).toEqual([true, 'ellipsis']);
+  await more.click();
+  await expect(page.locator('umb-entity-action-list').filter({ visible: true })).toBeVisible();
+});
+
 test('a folder is made, renamed in its own name, and deleted once empty', async ({ page, loginAs }) => {
   const name = unique('Campaigns');
   const renamed = `${name} 2027`;

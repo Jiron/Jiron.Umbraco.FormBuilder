@@ -1,4 +1,5 @@
 // How the forms tree, the Recycle Bin's tree and the header's search read the server's items (ADR-0165, ADR-0166).
+import { render } from '@umbraco-cms/backoffice/external/lit';
 import { describe, expect, it } from 'vitest';
 import type { FieldMatchResponseModel, LibraryItemResponseModel } from '../api';
 import {
@@ -12,7 +13,7 @@ import {
 } from '../section/entity-types';
 import { RESTRICTED_FLAG, UNSEEN_FLAG } from './aliases';
 import { fieldResultOf, resultOf, type InWords } from './form-search.provider';
-import { nameOf } from './library-tree-item.element';
+import { LibraryTreeItemElement, nameOf } from './library-tree-item.element';
 import { pageOf, treeItemOf } from './library-tree.repository';
 
 const item = (change: Partial<LibraryItemResponseModel>): LibraryItemResponseModel => ({
@@ -174,5 +175,19 @@ describe("a form's path", () => {
     expect(formPath('f')).toBe('section/jfb-forms/workspace/jfb-form/edit/f');
     expect(formPath('f', { field: 'e' })).toBe('section/jfb-forms/workspace/jfb-form/edit/f?field=e');
     expect(formPath('f', { action: 'a' })).toBe('section/jfb-forms/workspace/jfb-form/edit/f?action=a');
+  });
+});
+
+describe("a tree item's label", () => {
+  it('is Umbraco\'s own label, which ends a long name with an ellipsis, so the row\'s "..." stays in the sidebar', () => {
+    const element = new LibraryTreeItemElement();
+    (element as unknown as { _item: unknown })._item = treeItemOf(
+      item({ name: 'A form whose name runs far past the width of the sidebar', isPublished: false }),
+    );
+    const where = document.createElement('div');
+    render(element.renderLabel(), where);
+    const label = where.querySelector('span');
+    expect([label?.id, label?.slot, label?.className]).toEqual(['label', 'label', 'unpublished']);
+    expect(label?.textContent).toContain('A form whose name runs far past the width of the sidebar');
   });
 });

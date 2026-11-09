@@ -43,7 +43,9 @@ export class LibraryTreeItemElement extends UmbTreeItemElementBase<LibraryTreeIt
     const item = this._item;
     // Only a live form has a published version or not; the Recycle Bin and what it holds are never muted.
     const unpublished = item?.entityType === FORM_ENTITY_TYPE && item.isPublished === false;
-    return html`<span slot="label" class=${unpublished ? 'unpublished' : ''}
+    // The id is the one Umbraco's own items give their label, which its styles end with an ellipsis: a long name then
+    // keeps the row as wide as the sidebar, and the row's "..." in reach (the Phase 12 review).
+    return html`<span id="label" slot="label" class=${unpublished ? 'unpublished' : ''}
       >${nameOf(item, (text) => this.localize.string(text))}${
         unpublished
           ? html`<span class="visually-hidden">, ${this.localize.term('jfbLibrary_notPublished')}</span>`

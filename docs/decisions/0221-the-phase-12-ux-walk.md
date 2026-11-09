@@ -51,6 +51,11 @@ walk and the reviews found:
     mostly the graphics chip's raster. The browser's paint flashing showed why: a move, a duplicate or a delete
     painted the canvas's whole view again, as the scroller's own background, solid for ADR-0186, is painted with
     its contents and so with every change to them; a plain focus move painted only the fields it touched.
+11. **A long name ran under its row's "...".** The gate's next run failed the templates journey: the tree row's
+    "..." took no click for four minutes, the row's own name lying over it. The forms tree draws its own label,
+    without the id Umbraco's items give theirs, which Umbraco's styles end with an ellipsis; so a name ran on past its
+    box, 582 px of it in a 300 px sidebar, under the "..." and past the sidebar's edge. A click on the "..." opened
+    the form instead, for an editor as for the tests, and the walk's lost shots had met the same.
 
 ## Decisions
 
@@ -83,6 +88,11 @@ walk and the reviews found:
     and `will-change: scroll-position` keeps it a layer of its own, so it still scrolls without painting the sheet
     again. A move, duplicate or delete now paints only what changed. The 300-field budget then passed 4 of 4 runs
     alone, where it had passed 1 of 3, its slowest interaction 64 to 80 ms back to back, against 72 to 112.
+11. **The forms tree's label is Umbraco's `#label`,** so a long name ends with an ellipsis before the row's "...",
+    as in Umbraco's own trees. A unit test holds the label's id, and a browser test that the name ends before the
+    "..." and a click there opens the row's menu; it fails without the id (the name ending at 633 px, the "..." at
+    236 px). The tests' `openRowActions`, like the walk's own, tries the hover and the click again together until the
+    menu shows, as a tree still reading rows can move one away from the pointer.
 
 ## Consequences
 
