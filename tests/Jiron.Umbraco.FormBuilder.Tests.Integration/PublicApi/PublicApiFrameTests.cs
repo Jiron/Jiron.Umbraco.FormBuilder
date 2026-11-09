@@ -150,7 +150,7 @@ public sealed class PublicApiFrameTests : PublicApiTestBase
             Assert.That(Header(response, "Cache-Control"), Is.EqualTo("no-store"));
             Assert.That(response.Headers.ETag, Is.Null);
             Assert.That(logged.Select(entry => entry.Level), Is.EqualTo(new[] { LogLevel.Error }));
-            Assert.That(logged[0].Exception, Is.InstanceOf<InvalidOperationException>());
+            Assert.That(logged[0].Exception?.Message, Is.EqualTo("System.InvalidOperationException; its message is not logged"), "its type, never its message (ADR-0226)");
             Assert.That(logged[0].Message, Does.Contain("FormController.Definition").And.Not.Contain("de-CH").And.Not.Contain(key.ToString()));
         });
     }

@@ -2,6 +2,7 @@ using Jiron.Umbraco.FormBuilder.Core.Actions;
 using Jiron.Umbraco.FormBuilder.Core.Configuration;
 using Jiron.Umbraco.FormBuilder.Core.Files;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
+using Jiron.Umbraco.FormBuilder.Core.Privacy;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Umbraco.Cms.Core.Mail;
@@ -58,7 +59,7 @@ internal sealed partial class EmailQueue(IEmailRepository emails, IEmailSender s
                 catch (Exception exception) when (exception is not OperationCanceledException and not OutOfMemoryException)
                 {
                     // Its lease runs out if it was claimed; the other mail goes on.
-                    LogAttemptFailed(logger, id, exception);
+                    LogAttemptFailed(logger, id, LoggedException.Of(exception));
                 }
                 catch (OperationCanceledException) when (stopping.IsCancellationRequested)
                 {
@@ -206,7 +207,7 @@ internal sealed partial class EmailAttempts(
             }
             catch (Exception exception) when (exception is not OutOfMemoryException)
             {
-                LogCloseFailed(logger, exception);
+                LogCloseFailed(logger, LoggedException.Of(exception));
             }
         }
     }
@@ -240,7 +241,12 @@ internal sealed partial class EmailAttempts(
         {
             if (outcome.Kind == OutcomeKind.Sent)
             {
-                await emails.SentAsync(mail.Id, token, EmailOutbox.Keep, CancellationToken.None);
+                if (await emails.SentAsync(mail.Id, token, EmailOutbox.Keep, CancellationToken.None) && LinkSecrets.Holds(mail.Kind))
+                {
+                    // Its copy keeps no code that would confirm an address or open a draft (ADR-0226).
+                    await emails.ReplaceSentBodiesAsync(mail.Id, mail.HtmlBody is { } html ? LinkSecrets.Mask(html) : null, LinkSecrets.Mask(mail.TextBody), CancellationToken.None);
+                }
+
                 settle = true;
             }
             else if (outcome.Kind == OutcomeKind.CutOff)
@@ -262,7 +268,7 @@ internal sealed partial class EmailAttempts(
         catch (Exception exception) when (exception is not OutOfMemoryException)
         {
             // The lease runs out, and the mail becomes uncertain: nothing sends it twice.
-            LogRecordFailed(logger, mail.Id, exception);
+            LogRecordFailed(logger, mail.Id, LoggedException.Of(exception));
         }
 
         if (settle && mail.EntryId is { } entry)

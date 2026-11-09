@@ -1,4 +1,5 @@
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Migrations;
+using Jiron.Umbraco.FormBuilder.Core.Privacy;
 using Microsoft.Extensions.Logging;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Services;
@@ -48,7 +49,7 @@ internal sealed partial class FormBuilderDigestJob(
         }
         catch (Exception exception) when (exception is not (OperationCanceledException or OutOfMemoryException))
         {
-            LogFailed(logger, Period, exception);
+            LogFailed(logger, Period, LoggedException.Of(exception));
         }
     }
 

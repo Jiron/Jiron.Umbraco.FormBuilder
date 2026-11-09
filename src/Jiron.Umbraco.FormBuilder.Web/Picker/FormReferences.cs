@@ -1,4 +1,5 @@
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
+using Jiron.Umbraco.FormBuilder.Core.Privacy;
 using Microsoft.Extensions.Logging;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Events;
@@ -153,7 +154,7 @@ internal sealed partial class FormReferenceHandler(FormReferenceIndex index, ILo
         }
         catch (Exception exception) when (exception is not OutOfMemoryException)
         {
-            LogIndexFailed(logger, contentKey, exception);
+            LogIndexFailed(logger, contentKey, LoggedException.Of(exception));
         }
     }
 

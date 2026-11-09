@@ -160,7 +160,7 @@ beforeEach(() => {
   Object.assign(server, {
     view: { formats: FORMATS, maySeeSensitive: true, exports: [] },
     fields: [field('name', 'Name'), field('email', 'Email'), field('salary', 'Salary', { sensitive: true })],
-    plan: { entries: 214, more: false, background: false },
+    plan: { entries: 214, more: false, background: false, unconfirmed: 0 },
     planned: [],
     files: [],
     started: [],
@@ -198,6 +198,24 @@ describe('the export sidebar', () => {
     expect(server.planned).toHaveLength(1);
   });
 
+  it('says under the number how many entries waiting for email confirmation stay out', async () => {
+    server.plan = { entries: 212, more: false, background: false, unconfirmed: 2 };
+    const { root } = await open();
+
+    expect([...root.querySelectorAll('.field p')].slice(0, 2).map((one) => text(one))).toEqual([
+      'All 212 entries, no filters',
+      '2 entries waiting for email confirmation stay out. To export them, filter by their state.',
+    ]);
+  });
+
+  it('offers no export of nothing: with every entry still waiting for its confirmation the button waits', async () => {
+    server.plan = { entries: 0, more: false, background: false, unconfirmed: 1 };
+    const { root, button } = await open();
+
+    expect(text(root.querySelector('.field p'))).toBe('No entries to export');
+    expect(button('Export')?.hasAttribute('disabled')).toBe(true);
+  });
+
   it('opens with the last choices, names the ticked entries, and offers More options only where they apply', async () => {
     server.view = {
       ...server.view,
@@ -208,7 +226,7 @@ describe('the export sidebar', () => {
         options: { delimiter: 'semicolon', headers: 'aliases', byteOrderMark: false },
       },
     };
-    server.plan = { entries: 6, more: false, background: false };
+    server.plan = { entries: 6, more: false, background: false, unconfirmed: 0 };
     const { root, button, checkbox, choose, press } = await open({
       form: 'f1',
       entries: ['a', 'b', 'c', 'd', 'e', 'f'],
@@ -285,7 +303,7 @@ describe('the export sidebar', () => {
   });
 
   it('sends a larger export to the background, which a toast follows, and says when too many are under way', async () => {
-    server.plan = { entries: 12400, more: false, background: true };
+    server.plan = { entries: 12400, more: false, background: true, unconfirmed: 0 };
     const { root, press, context } = await open();
 
     expect(text(root.querySelector('.field .help'))).toBe(

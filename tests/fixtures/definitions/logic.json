@@ -1231,14 +1231,14 @@
                   "span": 1,
                   "label": "Consent",
                   "hideLabel": true,
-                  "required": true,
+                  "required": false,
                   "messages": {},
                   "validation": [],
                   "rules": [],
                   "rows": [],
                   "fields": [],
                   "settings": {
-                    "text": "I agree that the library keeps my application until six months after the post is filled."
+                    "text": "Optional: keep my application for a year after this post is filled, so the library can offer me another post."
                   }
                 }
               ]
@@ -1454,7 +1454,7 @@
                   "canBeRequired": true,
                   "alias": "privacy",
                   "calculation": null,
-                  "required": true,
+                  "required": false,
                   "rules": [],
                   "fields": [],
                   "rows": []

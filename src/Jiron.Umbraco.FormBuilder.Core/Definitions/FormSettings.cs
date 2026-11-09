@@ -45,7 +45,7 @@ public sealed record FormSubmissionSettings
     /// <summary>Whether entries are stored.</summary>
     public EntryStorage Store { get; init; } = EntryStorage.Always;
 
-    /// <summary>For <see cref="EntryStorage.Days"/> only: how many days entries are kept, 1 to 36,500.</summary>
+    /// <summary>For <see cref="EntryStorage.Days"/> only: how many days entries are kept, 1 to 3,650.</summary>
     public int? StoreDays { get; init; }
 
     /// <summary>Whether entries wait for approval.</summary>
@@ -157,7 +157,7 @@ public sealed record FormPrivacySettings
     public bool Insights { get; init; } = true;
 }
 
-/// <summary>Retention in days per entry state, 1 to 36,500; absent means the site's default for that state.</summary>
+/// <summary>Retention in days per entry state, 1 to 3,650; absent means the site's default for that state.</summary>
 public sealed record RetentionDaysByState
 {
     /// <summary>Submitted entries.</summary>

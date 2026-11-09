@@ -48,7 +48,7 @@ public sealed class RetentionApiTests : ManagementApiTestBase
         var saved = await CallAsync("admin", HttpMethod.Put, "settings/privacy", new { version, values = new { retention = new { submitted = 200, approved = 365, rejected = 60, spam = 14 } } });
         var after = await CallAsync("privacyOfficer", HttpMethod.Get, "retention");
         var forGood = await CallAsync("admin", HttpMethod.Put, "settings/privacy", new { version = after.Body!["version"]!.GetValue<int>(), values = new { retention = new { submitted = 0, approved = 365, rejected = 60, spam = 14 } } });
-        var outOfRange = await CallAsync("admin", HttpMethod.Put, "settings/privacy", new { version = after.Body!["version"]!.GetValue<int>(), values = new { retention = new { submitted = 36_501, approved = 365, rejected = 60, spam = 14 } } });
+        var outOfRange = await CallAsync("admin", HttpMethod.Put, "settings/privacy", new { version = after.Body!["version"]!.GetValue<int>(), values = new { retention = new { submitted = 3_651, approved = 365, rejected = 60, spam = 14 } } });
         var byOfficer = await CallAsync("privacyOfficer", HttpMethod.Put, "settings/privacy", new { version = after.Body!["version"]!.GetValue<int>(), values = new { retention = new { submitted = 100, approved = 365, rejected = 60, spam = 14 } } });
 
         Assert.Multiple(() =>

@@ -1,5 +1,6 @@
 using System.Text.Json.Nodes;
 using Jiron.Umbraco.FormBuilder.Core.Configuration;
+using Jiron.Umbraco.FormBuilder.Core.Privacy;
 using Jiron.Umbraco.FormBuilder.Testing.Time;
 using Jiron.Umbraco.FormBuilder.Tests.Unit.OptionLists;
 using Jiron.Umbraco.FormBuilder.Web.PublicApi;
@@ -318,7 +319,7 @@ public sealed class FormBuilderPublicApiMiddlewareTests
         {
             Assert.That(await AnswerAsync(answered, passed), Is.EqualTo("500 server_error"));
             Assert.That(answered.Response.Headers.ETag.ToString(), Is.Empty);
-            Assert.That(_logger.Entries.Select(entry => (entry.Level, entry.Exception)), Is.EqualTo(new[] { (LogLevel.Error, (Exception?)failure) }));
+            Assert.That(_logger.Entries.Select(entry => (entry.Level, entry.Exception?.Message)), Is.EqualTo(new[] { (LogLevel.Error, LoggedException.Of(failure).Message) }));
             Assert.That(_logger.Entries[0].Message, Does.Contain("FormController.Definition").And.Not.Contain("de-CH"));
         });
     }

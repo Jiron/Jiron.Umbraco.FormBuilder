@@ -123,7 +123,29 @@ what to do and why. Items for blocked roadmap steps name the step as "step X.Y",
   the insights beacons of step 11.5, a small addition. Keeping 60 KB means forms have no "Save and continue later" button
   of their own. Once you set a number, the step resumes from the branch `wip/8.6b-resume-control`. Retried at the Phase 9
   review (2026-11-05): with Phase 9 merged in, 61.96 KB; at the Phase 10 review (2026-11-07): with Phase 10 merged in,
-  61.95 KB; at the Phase 11 review (2026-11-08) and the Phase 12 review (2026-11-09): with each merged in, 62.15 KB.
+  61.95 KB; at the Phase 11 review (2026-11-08), the Phase 12 review and the Phase 13 review (both 2026-11-09): with each
+  merged in, 62.15 KB.
+
+## Legal judgements (privacy)
+
+The privacy review of Phase 13 (2026-11-09, ADR-0226) left these questions, which only a lawyer can settle. The build
+keeps its defaults meanwhile, and `docs/privacy/` describes them; a site can change most of them in its settings.
+
+- [ ] **Default retention.** Is 365 days, counted from an entry's last change of state, a defensible default for contact
+  and booking entries whatever their purpose (rejected 90, Spam 30 days)?
+- [ ] **Proof of double opt-in.** How long must the proof of a confirmed subscription be kept, and must it include the
+  confirmation mail's content? The entry's timeline keeps when it was confirmed for as long as the entry is kept; the
+  mail itself goes 30 days after it was sent.
+- [ ] **Shortened IP addresses.** Is an IPv4 address shortened to /24, or an IPv6 address to /48, still personal data
+  under the GDPR and the revDSG? Is "anonymised" a fair name for it in the settings?
+- [ ] **The confirmation mail as advertising.** Is a neutral confirmation mail (fixed text, no advertising) safe from
+  being treated as advertising itself under UWG § 7? At least one appellate court has held that it can be.
+- [ ] **The insights beacon.** Does the cookieless "view" counter need more than a legitimate interest? It fires as the
+  page loads, reads and writes nothing on the device, and carries no identifier.
+- [ ] **One consent for two things.** Can one consent field validly agree both to a form's purpose and to loading a
+  captcha (TDDDG § 25)? The checklist advises a field of its own for the captcha.
+- [ ] **Spam sorting.** Does sorting an entry into Spam automatically (it then runs no actions and goes after 30 days)
+  count as an automated individual decision that must be disclosed (GDPR Art. 22, revDSG Art. 21)?
 
 ## Real-world checks (no real keys are used during the build)
 

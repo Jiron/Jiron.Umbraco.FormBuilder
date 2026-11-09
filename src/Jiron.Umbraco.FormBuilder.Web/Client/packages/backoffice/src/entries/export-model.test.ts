@@ -21,6 +21,7 @@ import {
   inBackground,
   requestOf,
   statusLine,
+  unconfirmedLine,
 } from './export-model';
 
 const words = entriesEn.jfbEntries as Record<string, unknown>;
@@ -179,7 +180,7 @@ describe('the request', () => {
   });
 
   it('goes to the background when the server counts too many, and for every ZIP of the files', () => {
-    const small = { entries: 3, more: false, background: false };
+    const small = { entries: 3, more: false, background: false, unconfirmed: 0 };
     expect(inBackground(small, FORMATS[0])).toBe(false);
     expect(inBackground({ ...small, background: true }, FORMATS[0])).toBe(true);
     expect(inBackground(small, { ...FORMATS[0], writesFiles: true } as never), 'a file of files has no bound').toBe(
@@ -197,7 +198,12 @@ describe('the request', () => {
 });
 
 describe('what the sidebar says', () => {
-  const plan = (entries: number, more = false, background = false) => ({ entries, more, background });
+  const plan = (entries: number, more = false, background = false, unconfirmed = 0) => ({
+    entries,
+    more,
+    background,
+    unconfirmed,
+  });
 
   it('names the entries: all of them, those the filters match, more than a search counts, or the ticked ones', () => {
     expect(entriesLine(term, plan(214), false, false)).toBe('All 214 entries, no filters');
@@ -207,6 +213,19 @@ describe('what the sidebar says', () => {
       'More than 1,000 entries that match the search',
     );
     expect(entriesLine(term, plan(6), true, true)).toBe('6 entries selected');
+    expect(entriesLine(term, plan(0), false, false)).toBe('No entries to export');
+    expect(entriesLine(term, plan(0), false, true)).toBe('No entries match the filters');
+  });
+
+  it('says how many entries waiting for their email confirmation stay out, unless entries are ticked', () => {
+    expect(unconfirmedLine(term, plan(12, false, false, 3), false)).toBe(
+      '3 entries waiting for email confirmation stay out. To export them, filter by their state.',
+    );
+    expect(unconfirmedLine(term, plan(12, false, false, 1), false)).toBe(
+      '1 entry waiting for email confirmation stays out. To export it, filter by its state.',
+    );
+    expect(unconfirmedLine(term, plan(12), false), 'none waiting').toBeUndefined();
+    expect(unconfirmedLine(term, plan(2, false, false, 3), true), 'the ticked ones are what goes').toBeUndefined();
   });
 
   it('names its button by what happens and how many go', () => {
@@ -214,6 +233,7 @@ describe('what the sidebar says', () => {
     expect(exportLabel(term, 'csv', plan(124))).toBe('Export 124 entries');
     expect(exportLabel(term, 'xlsx', plan(12400, false, true))).toBe('Export 12,400 entries');
     expect(exportLabel(term, 'print', plan(1))).toBe('Print 1 entry');
+    expect(exportLabel(term, 'csv', plan(0)), 'nothing to count').toBe('Export');
     expect(exportLabel(term, 'json', plan(1000, true, true))).toBe('Export more than 1,000 entries');
   });
 

@@ -99,7 +99,7 @@ internal sealed class RetentionController(
     }
 }
 
-/// <summary>The days entries are kept in each state, 1 to 36,500, or 0 for kept for good, which the host allows or not.</summary>
+/// <summary>The days entries are kept in each state, 1 to 3,650, or 0 for kept for good, which the host allows or not.</summary>
 public sealed class RetentionDaysResponseModel
 {
     /// <summary>Submitted entries, those waiting for approval among them.</summary>
@@ -124,7 +124,7 @@ public sealed class RetentionDaysResponseModel
 
 }
 
-/// <summary>The days to count a dry run with, each 1 to 36,500, or 0 for kept for good.</summary>
+/// <summary>The days to count a dry run with, each 1 to 3,650, or 0 for kept for good.</summary>
 public sealed class RetentionDaysRequestModel
 {
     /// <summary>Submitted entries, those waiting for approval among them.</summary>

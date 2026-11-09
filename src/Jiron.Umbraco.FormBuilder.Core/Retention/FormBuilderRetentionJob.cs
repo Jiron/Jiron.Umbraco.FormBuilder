@@ -1,4 +1,5 @@
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Migrations;
+using Jiron.Umbraco.FormBuilder.Core.Privacy;
 using Microsoft.Extensions.Logging;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Services;
@@ -76,7 +77,7 @@ internal sealed partial class FormBuilderRetentionJob(
             }
             catch (Exception exception) when (exception is not OutOfMemoryException)
             {
-                LogPartFailed(logger, part.Name, Period, exception);
+                LogPartFailed(logger, part.Name, Period, LoggedException.Of(exception));
             }
         }
     }

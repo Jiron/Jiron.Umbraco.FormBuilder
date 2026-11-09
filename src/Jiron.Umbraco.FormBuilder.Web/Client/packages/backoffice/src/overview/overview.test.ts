@@ -165,6 +165,47 @@ describe('the Overview', () => {
     expect(findings[0]?.querySelector('a')).toBeNull();
   });
 
+  it('links the privacy findings to their screens, Retention for the privacy tools too, as the sidebar opens it', async () => {
+    api.health.mockImplementation(() =>
+      answer<HealthResponseModel>({
+        findings: [
+          { code: 'fullIp', message: 'Full IP addresses are kept.', link: 'privacyDataCollection', coversEmail: false },
+          {
+            code: 'retentionOff',
+            message: 'Some entries are kept for good.',
+            link: 'privacyRetention',
+            coversEmail: false,
+          },
+          {
+            code: 'captchaUnasked',
+            message: 'A captcha loads unasked.',
+            link: 'settingsProtection',
+            coversEmail: false,
+          },
+        ],
+      }),
+    );
+    let root = shadow(await open());
+    const hrefs = () =>
+      [...root.querySelectorAll('.finding')].map((one) => one.querySelector('a')?.getAttribute('href'));
+    expect(hrefs()).toEqual([
+      'section/jfb-forms/workspace/jfb-privacy-collection',
+      'section/jfb-forms/workspace/jfb-privacy-retention',
+      'section/jfb-forms/workspace/jfb-settings-spam',
+    ]);
+    expect([...root.querySelectorAll('.finding a')].map(text)).toEqual([
+      'Open Data collection',
+      'Open Retention',
+      'Open spam protection settings',
+    ]);
+
+    document.body.replaceChildren();
+    api.me.mockImplementation(() => answer<MyPermissionsResponseModel>({ global: ['privacyTools'], anywhere: [] }));
+    root = shadow(await open());
+    expect(hrefs()).toEqual([undefined, 'section/jfb-forms/workspace/jfb-privacy-retention', undefined]);
+    expect([...root.querySelectorAll('.finding .who')]).toHaveLength(2);
+  });
+
   it('asks for recent entries only for someone who may view them', async () => {
     api.me.mockImplementation(() => answer<MyPermissionsResponseModel>({ global: [], anywhere: ['design'] }));
     const root = shadow(await open());

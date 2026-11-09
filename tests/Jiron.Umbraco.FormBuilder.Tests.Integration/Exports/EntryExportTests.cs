@@ -356,6 +356,30 @@ public sealed class EntryExportTests : ActionTestBase
     }
 
     [Test]
+    public async Task AnExportThatChoosesNoState_LeavesOutTheEntriesWaitingForTheirEmailConfirmation_AndItsPlanCountsThem()
+    {
+        var form = await FormAsync();
+        await SubmitAsync(form, """{"name":"Ada"}""");
+        var waiting = await StoreEntryAsync(form, EntryState.Unverified);
+        var chosen = new EntryExportRequest { Format = "csv", Options = NoMark, Filter = new EntryListFilter { States = [EntryState.Unverified] } };
+
+        var all = await NamesAsync(form, new EntryExportRequest { Format = "csv", Options = NoMark });
+        var plan = await Exports.PlanAsync(form, new EntryExportRequest { Format = "csv" }, Owner);
+        var unconfirmed = await NamesAsync(form, chosen);
+        var chosenPlan = await Exports.PlanAsync(form, chosen, Owner);
+        var ticked = await Exports.PlanAsync(form, new EntryExportRequest { Format = "csv", Entries = [waiting] }, Owner);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(all, Is.EqualTo(new[] { "Ada" }), "no address nobody has confirmed goes into a file taken for a mailing (ADR-0226)");
+            Assert.That(plan, Is.EqualTo(new EntryExportPlan(1, More: false, Background: false, Unconfirmed: 1)), "and the dialog says how many stay out");
+            Assert.That(unconfirmed, Is.EqualTo(new[] { "" }), "choosing their state exports them");
+            Assert.That(chosenPlan, Is.EqualTo(new EntryExportPlan(1, More: false, Background: false)));
+            Assert.That(ticked, Is.EqualTo(new EntryExportPlan(1, More: false, Background: false)), "as does ticking one");
+        });
+    }
+
+    [Test]
     public async Task TheTickedEntries_AreTheFormsOwnOnly_NeverATestEntryOrADraft()
     {
         var form = await FormAsync();

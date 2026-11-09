@@ -222,7 +222,9 @@ test('the newsletter beside the contact form: refused with its errors and answer
   await fillForm({ email: 'ada@visitor.jfb.test', agree: true }, newsletterOn(page));
   const sent = await submitForm(newsletterOn(page));
 
-  expect(outcomeOf(sent).message).toBe('Thank you. The next newsletter comes on the first of the month.');
+  expect(outcomeOf(sent).message).toBe(
+    'Almost done: we sent a link to ada@visitor.jfb.test. Your subscription starts once you confirm it there.',
+  );
   const address = new URL(page.url());
   expect(address.pathname).toBe('/en/contact/');
   expect(address.searchParams.get('jfb-sent')).toMatch(/^jfb-2[.][A-Za-z0-9_-]+$/);
@@ -461,15 +463,16 @@ test('the job application takes a CV without JavaScript: one too large and a pro
   await expect(pageFormOn(page).locator('#jfb-1-cv-error')).toBeVisible();
 
   await cv().setInputFiles({ name: 'cv.pdf', mimeType: 'application/pdf', buffer: bytesOf(pdf, 100_000) });
-  const consent = await submitForm(pageFormOn(page));
-  expect(consent.state).toBe('errors');
+  await fillForm({ letter: '' }, pageFormOn(page));
+  const noLetter = await submitForm(pageFormOn(page));
+  expect(noLetter.state).toBe('errors');
   await expect(pageFormOn(page).locator('#jfb-1-cv-error')).toHaveCount(0);
   await expect(
     pageFormOn(page).getByRole('checkbox', { name: 'Keep cv.pdf (97.7 KB)' }),
-    'kept while the consent fails',
+    'kept while the letter is missing',
   ).toBeChecked();
 
-  await fillForm({ privacy: true }, pageFormOn(page));
+  await fillForm({ letter: 'I would love to work in a library.' }, pageFormOn(page));
   expect(outcomeOf(await submitForm(pageFormOn(page))).message).toBe('Thank you, Ada. We reply within two weeks.');
   const entries = (await filesOf(request, 'application')).slice(before);
   expect(entries).toEqual([[{ field: keys.cv, name: 'cv.pdf', size: 100_000, typed: null }]]);
@@ -546,7 +549,7 @@ test('a consent whose wording changed after the page was rendered comes back unt
 
     await consent.check();
     expect(outcomeOf(await submitForm(newsletterOn(page))).message).toBe(
-      'Thank you. The next newsletter comes on the first of the month.',
+      'Almost done: we sent a link to lin@visitor.jfb.test. Your subscription starts once you confirm it there.',
     );
   } finally {
     await publishConsentWording(api, formKey, original);

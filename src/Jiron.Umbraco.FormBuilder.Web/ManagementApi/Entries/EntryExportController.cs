@@ -68,7 +68,7 @@ internal sealed class EntryExportController(
     {
         var (asked, exporter) = await PrepareAsync(request, cancellationToken);
         return await exports.PlanAsync(key, asked, exporter, cancellationToken) is { } plan
-            ? Ok(new EntryExportPlanResponseModel { Entries = plan.Entries, More = plan.More, Background = plan.Background })
+            ? Ok(new EntryExportPlanResponseModel { Entries = plan.Entries, More = plan.More, Background = plan.Background, Unconfirmed = plan.Unconfirmed })
             : FormBuilderProblems.NotFound(FormBuilderAccessResourceKind.Form);
     }
 

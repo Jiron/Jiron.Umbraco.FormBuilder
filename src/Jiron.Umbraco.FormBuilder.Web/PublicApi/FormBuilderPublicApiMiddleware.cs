@@ -1,4 +1,5 @@
 using Jiron.Umbraco.FormBuilder.Core.Configuration;
+using Jiron.Umbraco.FormBuilder.Core.Privacy;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.Extensions.Logging;
@@ -135,7 +136,7 @@ internal sealed partial class FormBuilderPublicApiMiddleware(FormBuilderPublicAp
         }
         catch (Exception exception) when (exception is not OutOfMemoryException && !response.HasStarted)
         {
-            LogUnexpected(logger, context.GetEndpoint()?.DisplayName ?? "no endpoint", exception);
+            LogUnexpected(logger, context.GetEndpoint()?.DisplayName ?? "no endpoint", LoggedException.Of(exception));
             Reset(response);
             await FormBuilderPublicProblems.ServerError().WriteAsync(context);
         }

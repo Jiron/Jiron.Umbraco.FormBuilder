@@ -247,6 +247,23 @@ internal sealed class EmailRepository(FormBuilderDatabase database) : IEmailRepo
     }
 
     /// <inheritdoc />
+    public Task<bool> ReplaceSentBodiesAsync(long emailId, string? htmlBody, string textBody, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(textBody);
+        return database.WriteAsync(
+            async db =>
+            {
+                var n = new SqlNames(db);
+                return await db.ExecAsync(
+                    $"UPDATE {n.T(FormBuilderTables.Email)} SET {n.C("htmlBody")} = @1, {n.C("textBody")} = @2 WHERE {n.C("id")} = @0 AND {n.C("state")} = '{Sent}'",
+                    emailId,
+                    htmlBody,
+                    textBody) == 1;
+            },
+            cancellationToken);
+    }
+
+    /// <inheritdoc />
     public Task<bool> RetryAsync(long emailId, string token, TimeSpan delay, DeliveryError error, CancellationToken cancellationToken = default)
     {
         Outbox.CheckToken(token);

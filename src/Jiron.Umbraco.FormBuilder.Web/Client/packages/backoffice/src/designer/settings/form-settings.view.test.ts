@@ -104,7 +104,7 @@ const CHOICES: FormSettingsChoicesResponseModel = {
     htmlLength: 50000,
     nameLength: 64,
     verificationDays: 90,
-    retentionDays: 36500,
+    retentionDays: 3650,
     referenceDigits: 10,
     outcomes: 50,
     actions: 50,
@@ -475,11 +475,11 @@ describe('the submission', () => {
     expect(settings('submission')).toMatchObject({ store: 'days', storeDays: 30 });
     expect(text(root.getElementById('store-days-unit'))).toBe('days');
     expect(box('store-days').getAttribute('aria-describedby')).toContain('store-days-unit');
-    await type('store-days', '36501');
-    expect(why('store-days')).toEqual(['Enter a whole number from 1 to 36,500.']);
+    await type('store-days', '3651');
+    expect(why('store-days')).toEqual(['Enter a whole number from 1 to 3,650.']);
     expect(settings('submission')).toMatchObject({ storeDays: 30 });
     await type('store-days', '');
-    expect(why('store-days')).toEqual(['Enter a whole number from 1 to 36,500.']);
+    expect(why('store-days')).toEqual(['Enter a whole number from 1 to 3,650.']);
     await type('store-days', '400');
     expect(why('store-days')).toEqual([]);
     expect(settings('submission')).toMatchObject({ store: 'days', storeDays: 400 });
@@ -652,9 +652,9 @@ describe('privacy', () => {
     await type('retention-spam', '7');
     expect(settings('privacy')).toMatchObject({ retentionDays: { spam: 7 } });
     await type('retention-rejected', '0');
-    expect(why('retention-rejected')).toEqual(['Enter a whole number from 1 to 36,500.']);
+    expect(why('retention-rejected')).toEqual(['Enter a whole number from 1 to 3,650.']);
     await type('retention-rejected', '40000');
-    expect(why('retention-rejected')).toEqual(['Enter a whole number from 1 to 36,500.']);
+    expect(why('retention-rejected')).toEqual(['Enter a whole number from 1 to 3,650.']);
     expect(settings('privacy')).not.toHaveProperty('retentionDays.rejected');
     await type('retention-spam', '');
     expect(settings('privacy')).not.toHaveProperty('retentionDays.spam');

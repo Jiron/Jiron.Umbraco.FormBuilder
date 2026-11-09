@@ -3,6 +3,7 @@ using System.Threading.Channels;
 using Jiron.Umbraco.FormBuilder.Core.Configuration;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Migrations;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
+using Jiron.Umbraco.FormBuilder.Core.Privacy;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -152,7 +153,7 @@ internal sealed partial class OutboxPass(
             }
             catch (Exception exception) when (exception is not OutOfMemoryException)
             {
-                LogQueueFailed(logger, queue.Name, exception);
+                LogQueueFailed(logger, queue.Name, LoggedException.Of(exception));
             }
         }
 
@@ -191,7 +192,7 @@ internal sealed partial class OutboxWorker(OutboxWake wake, IServiceProvider ser
                 }
                 catch (Exception exception) when (exception is not OperationCanceledException and not OutOfMemoryException)
                 {
-                    LogPassFailed(logger, exception);
+                    LogPassFailed(logger, LoggedException.Of(exception));
                 }
             }
         }

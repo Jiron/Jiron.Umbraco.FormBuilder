@@ -1,6 +1,7 @@
 using System.Globalization;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Migrations;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
+using Jiron.Umbraco.FormBuilder.Core.Privacy;
 using Microsoft.Extensions.Logging;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Events;
@@ -134,7 +135,7 @@ internal sealed partial class FormReferenceRebuild(
         }
         catch (Exception exception) when (exception is not OutOfMemoryException)
         {
-            LogDocumentFailed(logger, content.Key, exception);
+            LogDocumentFailed(logger, content.Key, LoggedException.Of(exception));
             return null;
         }
     }
@@ -187,7 +188,7 @@ internal sealed partial class FormReferenceTypeHandler(FormReferenceRebuild rebu
         }
         catch (Exception exception) when (exception is not OutOfMemoryException)
         {
-            LogRequestFailed(logger, exception);
+            LogRequestFailed(logger, LoggedException.Of(exception));
         }
     }
 
@@ -244,7 +245,7 @@ internal sealed partial class FormReferenceRebuildJob(
         }
         catch (Exception exception) when (exception is not OutOfMemoryException)
         {
-            LogFailed(logger, Period, exception);
+            LogFailed(logger, Period, LoggedException.Of(exception));
         }
     }
 

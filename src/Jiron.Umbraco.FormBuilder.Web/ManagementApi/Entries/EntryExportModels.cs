@@ -123,6 +123,9 @@ public sealed class EntryExportPlanResponseModel
 
     /// <summary>Whether the export runs in the background: more than 10,000 entries, or a search that found more than it counts.</summary>
     public bool Background { get; init; }
+
+    /// <summary>The entries waiting for their email confirmation that the export leaves out, as its filter names no state.</summary>
+    public int Unconfirmed { get; init; }
 }
 
 /// <summary>A link that downloads a background export's file.</summary>

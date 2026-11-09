@@ -2,6 +2,7 @@ using System.Collections.Immutable;
 using System.Text;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
+using Jiron.Umbraco.FormBuilder.Core.Privacy;
 using Jiron.Umbraco.FormBuilder.Core.Submissions;
 using Microsoft.Extensions.Logging;
 using Umbraco.Cms.Core.Events;
@@ -53,7 +54,7 @@ internal sealed partial class ActionRunQueue(IActionRunRepository runs, ActionAt
                 catch (Exception exception) when (exception is not OperationCanceledException and not OutOfMemoryException)
                 {
                     // Its lease runs out if it was claimed; the other runs go on.
-                    LogAttemptFailed(logger, id, exception);
+                    LogAttemptFailed(logger, id, LoggedException.Of(exception));
                 }
                 catch (OperationCanceledException) when (stopping.IsCancellationRequested)
                 {
@@ -221,7 +222,7 @@ internal sealed partial class ActionAttempts(
         }
         catch (Exception exception) when (exception is not OperationCanceledException and not OutOfMemoryException)
         {
-            LogPrepareFailed(logger, run.Id, exception);
+            LogPrepareFailed(logger, run.Id, LoggedException.Of(exception));
             return (null, null, ActionResult.TryAgain(Threw, exception.GetType().FullName));
         }
         catch (OperationCanceledException) when (stopping.IsCancellationRequested)
@@ -264,7 +265,7 @@ internal sealed partial class ActionAttempts(
         }
         catch (Exception exception) when (exception is not OutOfMemoryException)
         {
-            LogLateFailed(logger, run.Id, exception);
+            LogLateFailed(logger, run.Id, LoggedException.Of(exception));
         }
     }
 
@@ -289,7 +290,7 @@ internal sealed partial class ActionAttempts(
         catch (Exception exception) when (exception is not OutOfMemoryException)
         {
             // The lease runs out, and the run becomes uncertain: nothing delivers it twice.
-            LogRecordFailed(logger, run.Id, exception);
+            LogRecordFailed(logger, run.Id, LoggedException.Of(exception));
             return;
         }
 
@@ -310,7 +311,7 @@ internal sealed partial class ActionAttempts(
         }
         catch (Exception exception) when (exception is not OutOfMemoryException)
         {
-            LogHandlerFailed(logger, notification.GetType().Name, exception);
+            LogHandlerFailed(logger, notification.GetType().Name, LoggedException.Of(exception));
         }
     }
 

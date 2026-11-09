@@ -187,6 +187,13 @@ internal sealed partial class EntryLists(
     /// <summary>The states a list holds when it names none: every state but drafts and Spam.</summary>
     public static readonly IReadOnlyList<EntryState> ListedStates = [EntryState.Unverified, EntryState.Submitted, EntryState.Approved, EntryState.Rejected];
 
+    /// <summary>
+    /// The states an export holds when it names none: a list's, but for the entries still waiting for their email
+    /// confirmation, whose addresses nobody has confirmed, so that a file taken for a mailing holds only confirmed ones
+    /// (ADR-0226). Choosing the state exports them.
+    /// </summary>
+    public static readonly IReadOnlyList<EntryState> ExportedStates = [EntryState.Submitted, EntryState.Approved, EntryState.Rejected];
+
     // The earliest and latest day a range may name: the database stores times in the years 1753 to 9999.
     private static readonly DateOnly FirstDay = new(1753, 1, 2);
     private static readonly DateOnly LastDay = new(9999, 12, 30);
@@ -255,7 +262,8 @@ internal sealed partial class EntryLists(
         var catalogue = await forms.ListFieldsAsync(form.Id, cancellationToken);
         var fields = Fields(catalogue).ToDictionary(field => field.Key);
         var ids = catalogue.ToDictionary(row => row.Values.FieldKey, row => row.Id);
-        return await QueryAsync(form, fields, ids, filter, problems, cancellationToken);
+        var query = await QueryAsync(form, fields, ids, filter, problems, cancellationToken);
+        return filter.States.Count == 0 ? query with { States = ExportedStates } : query;
     }
 
     /// <summary>

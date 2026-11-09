@@ -78,14 +78,18 @@ internal interface IPersonDataRepository
     Task<int> ReplaceEventDetailsAsync(IReadOnlyCollection<long> eventIds, string details, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Takes what is left of a person from entries whose answers and files are gone (ADR-0223): their search text, IP
-    /// address, context, page, member key and resume token; their notes; the details of their events of these kinds, which
-    /// become an empty object; and their action runs' error messages.
+    /// Takes what is left of a person from entries whose answers and files are gone (ADR-0223, ADR-0226): their search
+    /// text, IP address, context, page, member key, resume token, the reason of a hold that has ended, and the digest of
+    /// their answers, which a guess could be checked against and which becomes <see cref="NoDigest"/>; their notes; the
+    /// details of their events of these kinds, which become an empty object; and their action runs' error messages.
     /// </summary>
     /// <param name="entryIds">The entries, at most <see cref="SqlArgs.MaxListLength"/>.</param>
     /// <param name="eventKinds">The kinds of event whose details may name the person.</param>
     /// <param name="cancellationToken">Cancels the write.</param>
     Task<int> ScrubAsync(IReadOnlyCollection<long> entryIds, IReadOnlyCollection<string> eventKinds, CancellationToken cancellationToken = default);
+
+    /// <summary>The digest an anonymised entry keeps: no submission's, so a retry of its answers is refused.</summary>
+    const string NoDigest = "0000000000000000000000000000000000000000000000000000000000000000";
 }
 
 /// <inheritdoc />
@@ -270,7 +274,8 @@ internal sealed class PersonDataRepository(FormBuilderDatabase database) : IPers
                 var list = a.List(entryIds.Distinct().Cast<object?>());
                 var scrubbed = await db.ExecAsync(
                     $"UPDATE {n.T(FormBuilderTables.Entry)} SET {n.C("searchText")} = '', {n.C("ipAddress")} = NULL, {n.C("context")} = '{{}}', {n.C("pageUrl")} = NULL, "
-                    + $"{n.C("memberKey")} = NULL, {n.C("resumeTokenHash")} = NULL, {n.C("resumeExpiresUtc")} = NULL WHERE {n.C("id")} IN ({list})",
+                    + $"{n.C("memberKey")} = NULL, {n.C("resumeTokenHash")} = NULL, {n.C("resumeExpiresUtc")} = NULL, {n.C("holdUntilUtc")} = NULL, {n.C("holdReason")} = NULL, "
+                    + $"{n.C("submissionHash")} = '{IPersonDataRepository.NoDigest}' WHERE {n.C("id")} IN ({list})",
                     a.Values);
                 await db.ExecAsync($"DELETE FROM {n.T(FormBuilderTables.EntryNote)} WHERE {n.C("entryId")} IN ({list})", a.Values);
                 await db.ExecAsync($"UPDATE {n.T(FormBuilderTables.ActionRun)} SET {n.C("lastErrorMessage")} = NULL WHERE {n.C("entryId")} IN ({list})", a.Values);

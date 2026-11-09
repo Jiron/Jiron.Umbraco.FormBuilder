@@ -123,7 +123,7 @@ const VERIFICATION_DAYS = 7;
 /** The days Store entries "For a number of days" starts with. */
 const STORE_DAYS = 30;
 /** The most days entries are kept, as the save checks hold them, until the site's answer says. */
-const MOST_DAYS = 36_500;
+const MOST_DAYS = 3_650;
 /** The days of a state the site keeps for good (ADR-0222). */
 const FOR_GOOD = 0;
 /** The states whose days a form may set, in the order the view shows them. */

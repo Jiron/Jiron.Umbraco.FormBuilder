@@ -119,6 +119,7 @@ public sealed class PersonDataTests : ActionTestBase
             Assert.That((await Events.ListForEntryAsync(other.Id)).Single(happened => happened.Kind == EntryForwards.ForwardedEvent).Details, Is.EqualTo("{}"), "the forward to the person stays, to nobody named");
             Assert.That((await Entries.GetPlacesTakenAsync(row.Id, [new OptionPlace(Seat.Key, "front")])).GetValueOrDefault(new OptionPlace(Seat.Key, "front")), Is.Zero, "the seat is free again");
             Assert.That(await AuditOfAsync(PersonData.ErasedAction), Has.Count.EqualTo(1));
+            Assert.That(await EntryAuditAsync(EntryDeletions.ErasedAction), Is.EquivalentTo(new[] { (User, $"\"numbers\":[{mine.Number}]"), (User, $"\"numbers\":[{draft.Number}]") }), "each delete names its entry by number, and the user");
         });
     }
 
@@ -130,6 +131,7 @@ public sealed class PersonDataTests : ActionTestBase
         var other = await SubmitAsync(form, $$"""{"name":"Grace","email":"{{Grace}}"}""");
         await LeaveCopiesAsync(mine, other, draft: null);
         await ExecAsync("UPDATE {0} SET lastErrorMessage = @0 WHERE entryId = @1", FormBuilderTables.ActionRun, $"Could not reach {Ada}", mine.Id);
+        await ExecAsync("UPDATE {0} SET holdReason = @0, holdUntilUtc = @1 WHERE id = @2", FormBuilderTables.Entry, $"Complaint by {Ada}", Clock.GetUtcNow().AddDays(-1).UtcDateTime, mine.Id);
         var row = (await FormRows.GetAsync(form))!;
         var seat = new OptionPlace(Seat.Key, "front");
         var before = (await Entries.GetPlacesTakenAsync(row.Id, [seat]))[seat];
@@ -148,9 +150,11 @@ public sealed class PersonDataTests : ActionTestBase
             Assert.That(await Notes.ListAsync(mine.Id), Is.Empty);
             Assert.That(timeline.Select(happened => happened.Kind), Does.Contain(EntryAnonymiser.AnonymisedEvent));
             Assert.That(timeline.Single(happened => happened.Kind == EntryEdits.EditedEvent).Details, Is.EqualTo("{}"), "an edit's values before and after go");
-            Assert.That(copies, Is.SupersetOf(new[] { "jfbEntryValue.text", "jfbEntry.searchText", "jfbEntryNote.body", "jfbEntryEvent.details", "jfbEmail.toAddresses", "jfbActionRun.lastErrorMessage" }), "where the address was");
+            Assert.That(copies, Is.SupersetOf(new[] { "jfbEntryValue.text", "jfbEntry.searchText", "jfbEntry.holdReason", "jfbEntryNote.body", "jfbEntryEvent.details", "jfbEmail.toAddresses", "jfbActionRun.lastErrorMessage" }), "where the address was, the reason of a hold that ended too");
+            Assert.That((kept.SubmissionHash, kept.HoldUntilUtc), Is.EqualTo((IPersonDataRepository.NoDigest, (DateTimeOffset?)null)), "no digest a guess of the answers could be checked against");
             Assert.That(await TablesHoldingAsync(Ada), Is.Empty, "no Jiron Form Builder table holds the address");
             Assert.That((await Entries.ListValuesAsync([other.Id])).Select(value => value.Text), Does.Contain(Grace), "another's answers stay");
+            Assert.That(await EntryAuditAsync(EntryAnonymiser.AnonymisedAction), Is.EqualTo(new[] { (User, $"\"numbers\":[{mine.Number}]") }), "audited by number, with the user");
         });
     }
 
@@ -208,13 +212,16 @@ public sealed class PersonDataTests : ActionTestBase
     }
 
     [Test]
-    public async Task TheExport_HoldsAFolderPerEntry_WithItsAnswersTimelineAndNotes_AndItsFiles()
+    public async Task TheExport_HoldsAFolderPerEntry_WithItsAnswersFactsTimelineNotesAndMail_AndItsFiles()
     {
         var note = new FormField { Key = Guid.Parse("e2230000-0000-4000-8000-000000000009"), Type = "text", Alias = "note", Label = new LocalizedText("Note"), Keep = FieldKeep.UntilActionsRun };
         var form = await PublishAsync("Contact", fields: [NameField, EmailField, Upload, note]);
         var mine = await SubmitAsync(form, $$"""{"name":"Ada","email":"{{Ada}}","note":"Only for the actions"}""");
         var withFile = await EntryWithFileAsync(form, Ada);
         await Notes.AddAsync(mine.Id, User, "Called back on Monday.");
+        await MailAsync(Ada, mine.Id, EmailKind.Action, visitor: true);
+        await MailAsync("team@jfb.test", mine.Id, EmailKind.Action, visitor: false);
+        await ExecAsync("UPDATE {0} SET context = @0, spamScore = 2, spamReasons = @1, durationSeconds = 41 WHERE id = @2", FormBuilderTables.Entry, """{"campaign":"spring"}""", "too_fast,blocked_word", mine.Id);
         var exports = GetRequiredService<PersonExports>();
         var keys = (await People.FindAsync(PersonQuery.Of(Ada, null), User)).Entries.Select(entry => entry.Key).ToList();
         using var zip = new MemoryStream();
@@ -246,6 +253,10 @@ public sealed class PersonDataTests : ActionTestBase
             Assert.That(json["notes"]![0]!["text"]!.GetValue<string>(), Is.EqualTo("Called back on Monday."));
             Assert.That(answers.First(answer => answer!["label"]!.GetValue<string>() == "Note")!["notKept"]?.GetValue<bool>(), Is.True, "kept only until the actions ran, and no action could use it");
             Assert.That(json["timeline"]!.AsArray().Select(item => item!["kind"]!.GetValue<string>()), Does.Contain(SubmissionEntries.SubmittedEvent));
+            Assert.That(json["entry"]!["context"]!.ToJsonString(), Is.EqualTo("""{"campaign":"spring"}"""), "the context values the form kept");
+            Assert.That(json["entry"]!["spamCheck"]!.ToJsonString(), Is.EqualTo("""{"score":2,"reasons":["too_fast","blocked_word"]}"""));
+            Assert.That(json["entry"]!["secondsToComplete"]!.GetValue<int>(), Is.EqualTo(41));
+            Assert.That(json["emails"]!.AsArray().Select(mail => (mail!["to"]!.GetValue<string>(), mail["subject"]!.GetValue<string>(), mail["text"]!.GetValue<string>())), Is.EqualTo(new[] { (Ada, $"Hello {Ada}", $"Dear {Ada}") }), "the mail to the person's own address; the team's stays out");
             Assert.That(await AuditOfAsync(PersonExports.ExportedAction), Has.Count.EqualTo(1));
         });
     }
@@ -311,6 +322,16 @@ public sealed class PersonDataTests : ActionTestBase
 
     private Task<int> ExecAsync(string statement, string table, params object?[] args) =>
         GetRequiredService<FormBuilderDatabase>().WriteAsync(db => db.ExecAsync(string.Format(System.Globalization.CultureInfo.InvariantCulture, statement, new SqlNames(db).T(table)), args));
+
+    // Each audit entry of the action: its user and the numbers its details name.
+    private async Task<IReadOnlyList<(Guid User, string Numbers)>> EntryAuditAsync(string action) =>
+        [.. (await GetRequiredService<IAuditRepository>().QueryAsync(new AuditQuery { Action = action }, PageRequest.First(10))).Items.Select(entry => (entry.UserKey ?? Guid.Empty, NumbersOf(entry.Details)))];
+
+    private static string NumbersOf(string details)
+    {
+        var at = details.IndexOf("\"numbers\":[", StringComparison.Ordinal);
+        return at < 0 ? "" : details[at..(details.IndexOf(']', at) + 1)];
+    }
 
     private async Task<IReadOnlyList<string>> AuditOfAsync(string action) =>
         await GetRequiredService<FormBuilderDatabase>().ReadAsync(async db =>

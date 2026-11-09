@@ -6,6 +6,7 @@ using Jiron.Umbraco.FormBuilder.Core.Files;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
+using Jiron.Umbraco.FormBuilder.Core.Privacy;
 using Jiron.Umbraco.FormBuilder.Core.Retention;
 using Jiron.Umbraco.FormBuilder.Core.Submissions;
 using Microsoft.Extensions.Logging;
@@ -165,7 +166,7 @@ internal sealed partial class ActionSettlement(
         }
         catch (Exception exception) when (exception is not OutOfMemoryException)
         {
-            LogSettleAfterMailFailed(logger, entryId, exception);
+            LogSettleAfterMailFailed(logger, entryId, LoggedException.Of(exception));
         }
     }
 
@@ -212,7 +213,7 @@ internal sealed partial class ActionSettlement(
             }
             catch (Exception exception) when (exception is not OutOfMemoryException)
             {
-                LogBytesFailed(logger, file.Key, exception);
+                LogBytesFailed(logger, file.Key, LoggedException.Of(exception));
             }
         }
     }

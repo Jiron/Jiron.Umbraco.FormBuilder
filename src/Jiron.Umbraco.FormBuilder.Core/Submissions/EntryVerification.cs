@@ -101,7 +101,10 @@ internal sealed partial class EntryVerification(
     /// <summary>The least time between two new links, as one visitor's button must not fill a mailbox's daily limit.</summary>
     public static readonly TimeSpan ResendPause = TimeSpan.FromHours(1);
 
-    private readonly string _root = options.Value.PublicApi.BasePath + "/v1/verify";
+    /// <summary>The confirmation page's path under the public API's base path; its link carries the code as <c>?t=</c>.</summary>
+    internal const string LinkPath = "/v1/verify";
+
+    private readonly string _root = options.Value.PublicApi.BasePath + LinkPath;
 
     /// <summary>How long an entry of this form may wait before it is deleted.</summary>
     /// <param name="definition">The form's version.</param>

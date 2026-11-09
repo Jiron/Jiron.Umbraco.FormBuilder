@@ -475,6 +475,10 @@ a conflict, a file that could not be written or taken in, or a draft that publis
 `jfb.export.<export key>` (ADR-0210): its owner, form and request, where it stands, its worker's lease and, once ready,
 the file store's id of its file; the exports' job removes both a day after it was ready or failed. A person's export
 (ADR-0223) stands for no form, its form being the empty key, and its request names the entries' keys, never the person.
+Retention (ADR-0222) keeps the terms each form's entries were last given their times by under
+`jfb.retention.terms.<form key>`, so a change of the rules gives the form's entries new times once, and the file
+store's sweep keeps how far its pass got under `jfb.retention.filesweep`: the last folder done, or that the pass ended
+and when.
 
 ### `jfbFolder`
 
@@ -525,7 +529,8 @@ of its own under the grid's alias, with the grid as its parent. `fieldType` is t
 
 One row per entry, numbered per form from `jfbForm.lastEntryNumber` (drafts and test entries too, ADR-0038).
 `submissionId` and `submissionHash` make retries safe: the same submission returns the first receipt, a different one
-with the same id is refused (§4.4). `state` is the entry's place in the review workflow; `isTest` marks
+with the same id is refused (§4.4); anonymising an entry sets its hash to zeros, so nothing a guess of its answers
+could be checked against stays (ADR-0226). `state` is the entry's place in the review workflow; `isTest` marks
 entries from the preview. The search text holds the answers cleaned and folded the way rules compare text, one per
 line, and leaves out sensitive fields (ADR-0039). `spamScore` and `spamReasons` are what the protection found (ADR-0139), kept
 for the folder's review; an entry in `Spam` runs no actions until someone says it is not spam. `firstSeenUtc` is set
@@ -546,7 +551,8 @@ Resume tokens and challenges are stored only as hashes and ids.
   draft keep none (ADR-0224).
 - `IX_jfbEntry_purgeAfterUtc`: retention, which finds the entries whose time has come, soonest first. `purgeAfterUtc` is
   stored with every new entry and every change of state, and given again when the rules change; `holdUntilUtc` and
-  `holdReason` are a legal hold, which keeps an entry from every delete until it ends (ADR-0222).
+  `holdReason` are a legal hold, which keeps an entry from every delete until it ends (ADR-0222); anonymising an entry
+  clears a hold that has ended, its reason with it (ADR-0226).
 
 ### `jfbEntryFile`
 
@@ -631,7 +637,8 @@ the attempts over, their times with them (ADR-0195).
 The outgoing mail queue: the message as it will be sent, its state and attempts. Mail outlives the entry that caused
 it until its purge (`entryId` is then empty). `recipientKey` is the visitor's address folded, so the per-address limits
 count every spelling of one mailbox (ADR-0012). `lastErrorCode` and `lastErrorMessage` hold the last error as an
-action run's do, and `purgeAfterUtc` is set once the mail is final or uncertain (ADR-0040).
+action run's do, and `purgeAfterUtc` is set once the mail is final or uncertain (ADR-0040). Once a confirmation or resume
+mail has been sent, its `htmlBody` and `textBody` keep its link without the code (ADR-0226).
 
 - `IX_jfbEmail_state_nextAttemptUtc`: what is due.
 - `IX_jfbEmail_entryId`: the mail of an entry.

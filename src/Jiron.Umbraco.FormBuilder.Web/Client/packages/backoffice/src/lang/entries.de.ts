@@ -448,9 +448,15 @@ export default {
     export_entriesFiltered: (number: number) =>
       number === 1 ? '1 Eintrag, der den Filtern entspricht' : `${entries(number)}, die den Filtern entsprechen`,
     export_entriesMore: 'Mehr als 1.000 Einträge, die der Suche entsprechen',
+    export_entriesNone: 'Keine Einträge zum Exportieren',
+    export_entriesNoneFiltered: 'Keine Einträge entsprechen den Filtern',
     export_entriesTicked: (number: number) => `${entries(number)} ausgewählt`,
     export_entriesFailed: 'Die Einträge konnten nicht gezählt werden. Versuchen Sie es erneut.',
     export_background: 'Dieser Export läuft im Hintergrund weiter; eine Benachrichtigung verlinkt die Datei.',
+    export_unconfirmed: (number: number) =>
+      number === 1
+        ? '1 Eintrag, der auf die Bestätigung per E-Mail wartet, bleibt draußen. Um ihn zu exportieren, filtern Sie nach seinem Status.'
+        : `${entries(number)}, die auf die Bestätigung per E-Mail warten, bleiben draußen. Um sie zu exportieren, filtern Sie nach ihrem Status.`,
     export_fields: 'Felder',
     export_allFields: (number: number) => `Alle Felder (${number})`,
     export_allFileFields: (number: number) => `Alle Dateifelder (${number})`,

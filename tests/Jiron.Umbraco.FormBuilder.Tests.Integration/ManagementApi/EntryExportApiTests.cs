@@ -80,7 +80,7 @@ public sealed class EntryExportApiTests : ManagementApiTestBase
 
         Assert.Multiple(() =>
         {
-            Assert.That(plan.Body!.ToJsonString(), Is.EqualTo("""{"entries":2,"more":false,"background":false}"""));
+            Assert.That(plan.Body!.ToJsonString(), Is.EqualTo("""{"entries":2,"more":false,"background":false,"unconfirmed":0}"""));
             Assert.That(answer.StatusCode, Is.EqualTo(HttpStatusCode.OK), text);
             Assert.That(answer.Content.Headers.ContentType?.MediaType, Is.EqualTo("text/csv"));
             Assert.That(answer.Content.Headers.ContentDisposition?.DispositionType, Is.EqualTo("attachment"));
@@ -209,8 +209,8 @@ public sealed class EntryExportApiTests : ManagementApiTestBase
 
         Assert.Multiple(() =>
         {
-            Assert.That(plan.Body!.ToJsonString(), Is.EqualTo("""{"entries":1,"more":false,"background":true}"""), "a file of files has no bound");
-            Assert.That(ticked.Body!.ToJsonString(), Is.EqualTo("""{"entries":1,"more":false,"background":true}"""));
+            Assert.That(plan.Body!.ToJsonString(), Is.EqualTo("""{"entries":1,"more":false,"background":true,"unconfirmed":0}"""), "a file of files has no bound");
+            Assert.That(ticked.Body!.ToJsonString(), Is.EqualTo("""{"entries":1,"more":false,"background":true,"unconfirmed":0}"""));
             Assert.That(file.Outcome, Is.EqualTo("409 export_in_background"), file.ToString());
         });
     }
@@ -227,7 +227,7 @@ public sealed class EntryExportApiTests : ManagementApiTestBase
 
         Assert.Multiple(() =>
         {
-            Assert.That(plan.Body!.ToJsonString(), Is.EqualTo("""{"entries":1000,"more":true,"background":true}"""), "a search counts up to 1,000");
+            Assert.That(plan.Body!.ToJsonString(), Is.EqualTo("""{"entries":1000,"more":true,"background":true,"unconfirmed":0}"""), "a search counts up to 1,000");
             Assert.That(file.Outcome, Is.EqualTo("409 export_in_background"), file.ToString());
         });
     }

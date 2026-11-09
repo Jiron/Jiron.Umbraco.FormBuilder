@@ -31,8 +31,8 @@ internal sealed class DefinitionSaveChecks
     /// <summary>A theme's alias.</summary>
     public const int ThemeLength = 64;
 
-    /// <summary>The most days entries are kept or stored for.</summary>
-    public const int MaxDays = 36500;
+    /// <summary>The most days entries are kept or stored for: ten years; longer is kept for good, which needs the host (ADR-0226).</summary>
+    public const int MaxDays = 3650;
 
     /// <summary>The most days a verification link stays valid.</summary>
     public const int MaxVerificationDays = 90;

@@ -63,7 +63,7 @@ test('changing the days of a state, "What will be deleted" follows before the sa
     const spam = screen.getByLabel('Spam', { exact: true });
     await spam.fill('0');
     await spam.press('Tab');
-    await expect(screen.locator('#days-spam-why')).toHaveText('Use a whole number from 1 to 36,500.');
+    await expect(screen.locator('#days-spam-why')).toHaveText('Use a whole number from 1 to 3,650.');
     await expect(spam).toHaveAttribute('aria-invalid', 'true');
     await spam.fill(String(before.days['spam']));
     await spam.press('Tab');

@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Migrations;
+using Jiron.Umbraco.FormBuilder.Core.Privacy;
 using Jiron.Umbraco.FormBuilder.Core.Retention;
 using Jiron.Umbraco.FormBuilder.Testing.Time;
 using Microsoft.Extensions.Logging;
@@ -100,9 +101,9 @@ public sealed class FormBuilderRetentionJobTests
         Assert.Multiple(() =>
         {
             Assert.That(_ran, Is.EqualTo(new[] { "first", "second" }));
-            Assert.That(_logger.Entries.Select(entry => (entry.Level, entry.Message, entry.Exception)), Is.EqualTo(new[]
+            Assert.That(_logger.Entries.Select(entry => (entry.Level, entry.Message, entry.Exception?.Message)), Is.EqualTo(new[]
             {
-                (LogLevel.Error, "Jiron Form Builder's retention of first failed; it runs again in 01:00:00", (Exception?)failure),
+                (LogLevel.Error, "Jiron Form Builder's retention of first failed; it runs again in 01:00:00", LoggedException.Of(failure).Message),
             }));
         });
     }

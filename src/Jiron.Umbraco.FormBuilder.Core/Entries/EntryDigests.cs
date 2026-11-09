@@ -8,6 +8,7 @@ using Jiron.Umbraco.FormBuilder.Core.Email;
 using Jiron.Umbraco.FormBuilder.Core.MergeTags;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
+using Jiron.Umbraco.FormBuilder.Core.Privacy;
 using Jiron.Umbraco.FormBuilder.Core.Settings;
 using Microsoft.Extensions.Logging;
 using Umbraco.Cms.Core.Models.Membership;
@@ -322,7 +323,7 @@ internal sealed partial class EntryDigests(
             }
             catch (Exception exception) when (exception is not (OperationCanceledException or OutOfMemoryException))
             {
-                LogFailed(logger, chosen.UserKey, exception);
+                LogFailed(logger, chosen.UserKey, LoggedException.Of(exception));
             }
         }
     }

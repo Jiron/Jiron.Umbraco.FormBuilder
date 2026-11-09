@@ -129,11 +129,10 @@
               "alias": "privacy",
               "label": { "": "Consent", "de": "Einwilligung" },
               "hideLabel": true,
-              "required": true,
               "settings": {
                 "text": {
-                  "": "I agree that the library keeps my application until six months after the post is filled.",
-                  "de": "Ich bin einverstanden, dass die Bibliothek meine Bewerbung bis sechs Monate nach der Besetzung aufbewahrt."
+                  "": "Optional: keep my application for a year after this post is filled, so the library can offer me another post.",
+                  "de": "Freiwillig: Bewahren Sie meine Bewerbung ein Jahr nach der Besetzung auf, damit die Bibliothek mir eine andere Stelle anbieten kann."
                 }
               }
             }

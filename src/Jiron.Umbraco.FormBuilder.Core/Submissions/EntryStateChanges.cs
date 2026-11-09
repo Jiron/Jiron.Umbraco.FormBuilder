@@ -5,6 +5,7 @@ using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
+using Jiron.Umbraco.FormBuilder.Core.Privacy;
 using Jiron.Umbraco.FormBuilder.Core.Retention;
 using Jiron.Umbraco.FormBuilder.Core.Webhooks;
 using Microsoft.Extensions.Logging;
@@ -464,7 +465,7 @@ internal sealed partial class EntryChangeQueue(
             }
             catch (Exception exception) when (exception is not OperationCanceledException and not OutOfMemoryException)
             {
-                LogFinishFailed(logger, due.Id, exception);
+                LogFinishFailed(logger, due.Id, LoggedException.Of(exception));
                 await events.DelayDueAsync(due.Id, RetryAfter, CancellationToken.None);
             }
         }

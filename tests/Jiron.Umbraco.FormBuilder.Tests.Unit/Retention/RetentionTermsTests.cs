@@ -28,7 +28,8 @@ public sealed class RetentionTermsTests
         {
             Assert.That((site.Submitted, site.Approved, site.Rejected, site.Spam), Is.EqualTo((365, 365, 90, 30)));
             Assert.That(RetentionTerms.TestDays, Is.EqualTo(7));
-            Assert.That(SiteRetention.MaxDays, Is.EqualTo(36_500));
+            Assert.That(SiteRetention.MaxDays, Is.EqualTo(3_650), "ten years; longer is kept for good, which needs the host (ADR-0226)");
+            Assert.That(DefinitionSaveChecks.MaxDays, Is.EqualTo(SiteRetention.MaxDays), "as many as a form may set");
             Assert.That(EntryHolds.MaxDays, Is.EqualTo(365));
             Assert.That(AuditLogPurge.KeptFor, Is.EqualTo(TimeSpan.FromDays(365)));
             Assert.That(DailyStatPurge.KeptFor, Is.EqualTo(TimeSpan.FromDays(3 * 365)));
@@ -181,7 +182,7 @@ public sealed class RetentionTermsTests
         var validator = new PrivacySettingsValidator();
         var errors = new SettingsErrors("privacy");
 
-        validator.Validate(new PrivacySettings { Retention = new SiteRetention { Submitted = -1, Approved = SiteRetention.ForGood, Rejected = 36_501, Spam = 36_500 } }, errors);
+        validator.Validate(new PrivacySettings { Retention = new SiteRetention { Submitted = -1, Approved = SiteRetention.ForGood, Rejected = 3_651, Spam = 3_650 } }, errors);
 
         Assert.That(errors.Errors.Select(error => error.Field), Is.EquivalentTo(new[] { "privacy.retention.submitted", "privacy.retention.rejected" }));
     }

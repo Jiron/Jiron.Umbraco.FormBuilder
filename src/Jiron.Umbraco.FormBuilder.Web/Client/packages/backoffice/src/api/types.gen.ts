@@ -616,6 +616,7 @@ export type EntryExportPlanResponseModel = {
     entries: number;
     more: boolean;
     background: boolean;
+    unconfirmed: number;
 };
 
 export type EntryExportRequestModel = {

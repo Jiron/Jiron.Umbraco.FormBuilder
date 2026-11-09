@@ -4,6 +4,7 @@ using Jiron.Umbraco.FormBuilder.Core.Configuration;
 using Jiron.Umbraco.FormBuilder.Core.Email;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
+using Jiron.Umbraco.FormBuilder.Core.Privacy;
 using Jiron.Umbraco.FormBuilder.Core.Settings;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -216,7 +217,7 @@ internal sealed partial class EntryEvents(IEventAggregator events, IFormBuilderS
         }
         catch (Exception exception) when (exception is not OutOfMemoryException)
         {
-            LogPublishFailed(logger, what, exception);
+            LogPublishFailed(logger, what, LoggedException.Of(exception));
         }
     }
 

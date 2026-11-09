@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
+using Jiron.Umbraco.FormBuilder.Core.Privacy;
 using Jiron.Umbraco.FormBuilder.Web.Picker;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
@@ -49,7 +50,7 @@ public sealed class FormCacheTagsTests
         Assert.Multiple(() =>
         {
             Assert.That(tags, Is.EqualTo(new[] { FormCacheTags.AnyForm }));
-            Assert.That(logger.Entries.Select(entry => (entry.Level, entry.Exception)), Is.EqualTo(new[] { (LogLevel.Warning, (Exception?)broken) }));
+            Assert.That(logger.Entries.Select(entry => (entry.Level, entry.Exception?.Message)), Is.EqualTo(new[] { (LogLevel.Warning, LoggedException.Of(broken).Message) }));
         });
     }
 

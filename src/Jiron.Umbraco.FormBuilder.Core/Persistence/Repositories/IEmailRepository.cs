@@ -185,6 +185,12 @@ internal interface IEmailRepository
     /// <summary>Records a mail handed to the mail server, kept for <paramref name="keep"/>. False when the token no longer holds it.</summary>
     Task<bool> SentAsync(long emailId, string token, TimeSpan keep, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Replaces the bodies of a mail that has been sent, so its stored copy keeps no link code (ADR-0226). False when no sent
+    /// mail has the id.
+    /// </summary>
+    Task<bool> ReplaceSentBodiesAsync(long emailId, string? htmlBody, string textBody, CancellationToken cancellationToken = default);
+
     /// <summary>Records a failed attempt to be tried again after <paramref name="delay"/>. False when the token no longer holds the mail.</summary>
     Task<bool> RetryAsync(long emailId, string token, TimeSpan delay, DeliveryError error, CancellationToken cancellationToken = default);
 

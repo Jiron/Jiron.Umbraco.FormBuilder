@@ -24,6 +24,7 @@ import {
   choicesOf,
   DELIMITERS,
   entriesLine,
+  unconfirmedLine,
   exportLabel,
   fieldsFor,
   hasSensitive,
@@ -357,7 +358,9 @@ export class EntryExportModalElement extends UmbModalBaseElement<EntryExportModa
     const plan = this._plan;
     let line: TemplateResult;
     if (plan) {
+      const unconfirmed = unconfirmedLine(this.#term, plan, !!this.#ticked);
       line = html`<p>${entriesLine(this.#term, plan, !!this.#ticked, narrows(this.data?.filter))}</p>
+        ${unconfirmed ? html`<p class="help">${unconfirmed}</p>` : nothing}
         ${inBackground(plan, this.#format) ? html`<p class="help">${this.#term('export_background')}</p>` : nothing}`;
     } else if (this._planFailed) {
       line = html`<div class="failed" role="alert">
@@ -558,7 +561,8 @@ export class EntryExportModalElement extends UmbModalBaseElement<EntryExportModa
   }
 
   override render() {
-    const ready = !!this._plan && !!this._choices;
+    // An export of nothing is no file anyone needs: the button waits for an entry to export.
+    const ready = !!this._plan && !!this._choices && (this._plan.entries > 0 || this._plan.more);
     return html`<umb-body-layout headline=${this.#term('export_headline')}>
       ${this.#body()}
       <div slot="actions" class="actions">

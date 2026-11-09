@@ -5,6 +5,7 @@ using Jiron.Umbraco.FormBuilder.Core.Actions;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
+using Jiron.Umbraco.FormBuilder.Core.Privacy;
 using Jiron.Umbraco.FormBuilder.Core.Settings;
 using Microsoft.Extensions.Logging;
 
@@ -65,7 +66,7 @@ internal sealed partial class DeliveryNotices(
         }
         catch (Exception exception) when (exception is not OutOfMemoryException)
         {
-            LogFailed(logger, exception);
+            LogFailed(logger, LoggedException.Of(exception));
         }
     }
 
@@ -104,7 +105,7 @@ internal sealed partial class DeliveryNotices(
         }
         catch (Exception exception) when (exception is not OutOfMemoryException)
         {
-            LogFailed(logger, exception);
+            LogFailed(logger, LoggedException.Of(exception));
         }
     }
 

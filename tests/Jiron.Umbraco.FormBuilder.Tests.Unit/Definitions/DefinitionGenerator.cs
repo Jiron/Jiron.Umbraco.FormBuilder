@@ -166,7 +166,7 @@ internal sealed class DefinitionGenerator
                 SummaryPage = Chance(),
                 Progress = Word<ProgressIndicator>(),
                 Store = store,
-                StoreDays = store == EntryStorage.Days ? _random.Next(1, 36501) : null,
+                StoreDays = store == EntryStorage.Days ? _random.Next(1, DefinitionSaveChecks.MaxDays + 1) : null,
                 Approval = Word<ApprovalMode>(),
                 Verification = Chance() ? new EmailVerification { EmailField = Reference(), Days = _random.Next(1, 91) } : null,
                 Resume = Chance() ? new SaveAndResume { Days = _random.Next(1, 366) } : null,
@@ -191,7 +191,7 @@ internal sealed class DefinitionGenerator
             },
             Privacy = new FormPrivacySettings
             {
-                RetentionDays = new RetentionDaysByState { Submitted = Maybe(1, 36500), Approved = Maybe(1, 36500), Rejected = Maybe(1, 36500), Spam = Maybe(1, 36500) },
+                RetentionDays = new RetentionDaysByState { Submitted = Maybe(1, DefinitionSaveChecks.MaxDays), Approved = Maybe(1, DefinitionSaveChecks.MaxDays), Rejected = Maybe(1, DefinitionSaveChecks.MaxDays), Spam = Maybe(1, DefinitionSaveChecks.MaxDays) },
                 IP = Word<IPHandling>(),
                 Insights = Chance(),
             },

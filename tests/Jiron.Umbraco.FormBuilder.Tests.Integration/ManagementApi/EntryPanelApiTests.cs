@@ -5,6 +5,7 @@ using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
+using Jiron.Umbraco.FormBuilder.Core.Retention;
 using Jiron.Umbraco.FormBuilder.Core.Settings;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Tests.Common.Testing;
@@ -168,6 +169,32 @@ public sealed class EntryPanelApiTests : ManagementApiTestBase
             Assert.That(audited.Select(item => (item.EntityKey, item.UserKey)), Is.EqualTo(new[] { (entry.Key, (Guid?)adminKey), (entry.Key, (Guid?)adminKey) }), "each in the audit log");
             Assert.That(audited.Select(item => item.Details), Has.One.Contains($"\"user\":\"{viewerKey}\"").And.Contains("\"sensitive\":false"), "a user by their key");
             Assert.That(audited.Select(item => item.Details), Has.One.Contains("\"teamAddress\":true").And.Contains("\"sensitive\":true").And.Not.Contains("hr@example.org"), "a team address, which the log does not keep");
+        });
+    }
+
+    [Test]
+    public async Task AHeldEntry_SaysTheEndOfItsHold_OnThePanelAndItsTimeline_UntilItIsReleased()
+    {
+        var (form, entry) = await EntryAsync();
+        var path = $"form/{form}/entry/{entry.Key}";
+        await CallAsync(Admin, HttpMethod.Get, "me");
+        var adminKey = GetRequiredService<IUserService>().GetByEmail("api-admin@jfb.test")!.Key;
+        var holds = GetRequiredService<EntryHolds>();
+        var until = new DateTimeOffset(DateTime.UtcNow.Date.AddDays(30), TimeSpan.Zero);
+
+        var refusal = await holds.HoldAsync(entry.Key, until, "Court case", adminKey);
+        var held = await CallAsync("viewer", HttpMethod.Get, path);
+        var timeline = await CallAsync("viewer", HttpMethod.Get, $"{path}/timeline");
+        await holds.ReleaseAsync(entry.Key, adminKey);
+        var released = await CallAsync("viewer", HttpMethod.Get, path);
+
+        var events = timeline.Body!["events"]!.AsArray();
+        Assert.Multiple(() =>
+        {
+            Assert.That(refusal, Is.EqualTo(EntryHoldRefusal.None));
+            Assert.That(held.Body!["heldUntil"]!.GetValue<DateTimeOffset>(), Is.EqualTo(until), held.ToString());
+            Assert.That(events.Single(item => item!["kind"]!.GetValue<string>() == EntryHolds.HeldEvent)!["until"]!.GetValue<DateTimeOffset>(), Is.EqualTo(until), timeline.ToString());
+            Assert.That(released.Body!["heldUntil"], Is.Null, "no hold keeps it any more");
         });
     }
 

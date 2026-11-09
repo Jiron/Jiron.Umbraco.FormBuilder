@@ -165,12 +165,18 @@ export function entriesLine(
 ): string {
   if (ticked) return term('export_entriesTicked', plan.entries);
   if (plan.more) return term('export_entriesMore');
+  if (plan.entries === 0) return term(filtered ? 'export_entriesNoneFiltered' : 'export_entriesNone');
   return filtered ? term('export_entriesFiltered', plan.entries) : term('export_entriesAll', plan.entries);
+}
+
+/** The sentence under it that says how many entries waiting for their email confirmation stay out, if any. */
+export function unconfirmedLine(term: Term, plan: EntryExportPlanResponseModel, ticked: boolean): string | undefined {
+  return !ticked && (plan.unconfirmed ?? 0) > 0 ? term('export_unconfirmed', plan.unconfirmed) : undefined;
 }
 
 /** The primary button: what happens, with the number of entries (copy.md: "Export 124 entries"). */
 export function exportLabel(term: Term, format: string, plan: EntryExportPlanResponseModel | undefined): string {
-  if (!plan) return term('export_start');
+  if (!plan || (plan.entries === 0 && !plan.more)) return term('export_start');
   if (plan.more) return term(format === 'print' ? 'export_printMore' : 'export_startMore');
   return term(format === 'print' ? 'export_printCount' : 'export_startCount', plan.entries);
 }

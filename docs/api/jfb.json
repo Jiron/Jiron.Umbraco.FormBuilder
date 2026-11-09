@@ -17523,7 +17523,8 @@
         "required": [
           "background",
           "entries",
-          "more"
+          "more",
+          "unconfirmed"
         ],
         "type": "object",
         "properties": {
@@ -17536,6 +17537,10 @@
           },
           "background": {
             "type": "boolean"
+          },
+          "unconfirmed": {
+            "type": "integer",
+            "format": "int32"
           }
         },
         "additionalProperties": false
@@ -23528,25 +23533,25 @@
         "type": "object",
         "properties": {
           "submitted": {
-            "maximum": 36500,
+            "maximum": 3650,
             "minimum": 0,
             "type": "integer",
             "format": "int32"
           },
           "approved": {
-            "maximum": 36500,
+            "maximum": 3650,
             "minimum": 0,
             "type": "integer",
             "format": "int32"
           },
           "rejected": {
-            "maximum": 36500,
+            "maximum": 3650,
             "minimum": 0,
             "type": "integer",
             "format": "int32"
           },
           "spam": {
-            "maximum": 36500,
+            "maximum": 3650,
             "minimum": 0,
             "type": "integer",
             "format": "int32"

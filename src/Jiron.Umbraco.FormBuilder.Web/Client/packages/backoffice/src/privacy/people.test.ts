@@ -5,6 +5,7 @@
 // problem under its box and sends the day the hold ends.
 import { UMB_NOTIFICATION_CONTEXT } from '@umbraco-cms/backoffice/notification';
 import { UmbObjectState } from '@umbraco-cms/backoffice/observable-api';
+import { UmbApiError } from '@umbraco-cms/backoffice/resources';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import type { EntryExportStatusResponseModel, PersonEntryResponseModel, PersonFoundResponseModel } from '../api';
 import { must, registerEnglish, settle, shadow, testHost, text } from '../testing';
@@ -17,6 +18,7 @@ const api = vi.hoisted(() => ({
   erased: [] as unknown[],
   erase: undefined as unknown,
   held: [] as unknown[],
+  holdError: undefined as unknown,
   released: [] as unknown[],
   exported: [] as unknown[],
   export: undefined as unknown,
@@ -62,6 +64,7 @@ vi.mock('../api', async (original) => ({
   },
   peopleHold: async (options: { body: unknown }) => {
     api.held.push(options.body);
+    if (api.holdError) return { error: api.holdError };
     return { data: { entries: (options.body as { entries: unknown[] }).entries.length } };
   },
   peopleRelease: async (options: { body: unknown }) => {
@@ -170,6 +173,7 @@ afterEach(() => {
     erased: [],
     erase: undefined,
     held: [],
+    holdError: undefined,
     released: [],
     exported: [],
     export: undefined,
@@ -472,5 +476,34 @@ describe('the legal hold sidebar', () => {
       keys: ['11111111-1111-4111-8111-111111111111'],
       until: `${first}T00:00:00Z`,
     });
+  });
+
+  it.each([
+    ['hold_reason', 'reason', 'Give the reason on one line, in at most 500 characters.'],
+    ['hold_end', 'until', 'Choose a day after today and at most a year ahead.'],
+  ])("says the server's %s under its box and stays open", async (code, box, words) => {
+    const { element, root, context, set } = await sidebarOf();
+    const { first } = holdDays(new Date());
+    const pick = must(root.querySelector<HTMLInputElement>('input[type="checkbox"]'), 'entry');
+    pick.checked = true;
+    pick.dispatchEvent(new Event('change'));
+    for (const [id, value] of [
+      ['reason', 'Pending court case'],
+      ['until', first],
+    ] as const) {
+      const input = must(root.querySelector<HTMLInputElement>(`#${id}`), id);
+      input.value = value;
+      input.dispatchEvent(new Event('input'));
+    }
+    api.holdError = new UmbApiError('refused', 400, null, { code } as never);
+    await settle(element);
+
+    set();
+    await vi.waitFor(() => expect(api.held).toHaveLength(1));
+    await settle(element);
+
+    expect([...root.querySelectorAll('.why')].map((one) => text(one))).toEqual([words]);
+    expect(must(root.querySelector(`#${box}`), box).getAttribute('aria-invalid')).toBe('true');
+    expect(context.submit).not.toHaveBeenCalled();
   });
 });

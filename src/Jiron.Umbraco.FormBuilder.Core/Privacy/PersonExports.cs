@@ -12,9 +12,9 @@ namespace Jiron.Umbraco.FormBuilder.Core.Privacy;
 
 /// <summary>
 /// The export of everything about a person (ADR-0223): a ZIP with a folder per entry, named by its form's alias and its
-/// number (a draft by its form's alias and a count), holding <c>entry.json</c> (the form, the entry's own facts, every
-/// answer by its label with each consent's exact wording, the timeline's kinds and times, and the notes) and the entry's
-/// files. Sensitive answers go along, as the copy is the person's own. A file the scanner holds back stays out, and the
+/// number (a draft by its form's alias and a count), holding <c>entry.json</c> (the form, the entry's own facts with its
+/// context values, its spam check and how long it took, every answer by its label with each consent's exact wording, the
+/// timeline's kinds and times, the notes, and the mail sent to the address the visitor typed) and the entry's files. Sensitive answers go along, as the copy is the person's own. A file the scanner holds back stays out, and the
 /// JSON says so. The export is audited once, by its counts.
 /// </summary>
 /// <param name="entries">The entries and their files.</param>
@@ -22,6 +22,7 @@ namespace Jiron.Umbraco.FormBuilder.Core.Privacy;
 /// <param name="panels">Reads each entry as the panel does.</param>
 /// <param name="events">The timelines.</param>
 /// <param name="notes">The notes.</param>
+/// <param name="emails">The entries' mail.</param>
 /// <param name="store">The files' bytes.</param>
 /// <param name="audit">The audit log.</param>
 /// <param name="time">The clock.</param>
@@ -31,6 +32,7 @@ internal sealed class PersonExports(
     EntryPanels panels,
     IEntryEventRepository events,
     IEntryNoteRepository notes,
+    IEmailRepository emails,
     IFormBuilderFileStore store,
     IAuditRepository audit,
     TimeProvider time)
@@ -111,7 +113,8 @@ internal sealed class PersonExports(
 
                 await using (var into = await archive.CreateEntry(jsonPath, CompressionLevel.Fastest).OpenAsync(cancellationToken))
                 {
-                    await WriteEntryAsync(into, form, entry, panel, paths, await events.ListForEntryAsync(entry.Id, cancellationToken), await notes.ListAsync(entry.Id, cancellationToken), cancellationToken);
+                    var theirs = (await emails.ListForEntryAsync(entry.Id, cancellationToken)).Where(mail => mail.RecipientKey is not null).ToList();
+                    await WriteEntryAsync(into, form, entry, panel, paths, await events.ListForEntryAsync(entry.Id, cancellationToken), await notes.ListAsync(entry.Id, cancellationToken), theirs, cancellationToken);
                 }
 
                 written++;
@@ -135,6 +138,7 @@ internal sealed class PersonExports(
         Dictionary<Guid, string> paths,
         IReadOnlyList<StoredEntryEvent> timeline,
         IReadOnlyList<StoredEntryNote> written,
+        IReadOnlyList<StoredEmail> mail,
         CancellationToken cancellationToken)
     {
         await using var json = new Utf8JsonWriter(into, Indented);
@@ -161,6 +165,35 @@ internal sealed class PersonExports(
         if (entry.MemberKey is { } member)
         {
             json.WriteString("member", member);
+        }
+
+        if (entry.VerifiedUtc is { } verified)
+        {
+            json.WriteString("confirmed", verified);
+        }
+
+        if (entry.DurationSeconds is { } seconds)
+        {
+            json.WriteNumber("secondsToComplete", seconds);
+        }
+
+        json.WriteStartObject("spamCheck");
+        json.WriteNumber("score", entry.SpamScore);
+        json.WriteStartArray("reasons");
+        foreach (var reason in entry.SpamReasons.Split(',', StringSplitOptions.RemoveEmptyEntries))
+        {
+            json.WriteStringValue(reason);
+        }
+
+        json.WriteEndArray();
+        json.WriteEndObject();
+        using (var context = JsonDocument.Parse(entry.Context))
+        {
+            if (context.RootElement.ValueKind == JsonValueKind.Object && context.RootElement.EnumerateObject().Any())
+            {
+                json.WritePropertyName("context");
+                context.RootElement.WriteTo(json);
+            }
         }
 
         json.WriteEndObject();
@@ -237,6 +270,26 @@ internal sealed class PersonExports(
             json.WriteStartObject();
             json.WriteString("at", note.CreatedUtc);
             json.WriteString("text", note.Body);
+            json.WriteEndObject();
+        }
+
+        json.WriteEndArray();
+
+        // The mail to the address the visitor typed, the person's own: whom, what and when, and its text. Mail to the team
+        // repeats the answers above and names others, so it stays out.
+        json.WriteStartArray("emails");
+        foreach (var one in mail)
+        {
+            json.WriteStartObject();
+            json.WriteString("to", one.To);
+            json.WriteString("subject", one.Subject);
+            json.WriteString("queued", one.CreatedUtc);
+            if (one.SentUtc is { } sent)
+            {
+                json.WriteString("sent", sent);
+            }
+
+            json.WriteString("text", one.TextBody);
             json.WriteEndObject();
         }
 

@@ -48,7 +48,10 @@ internal sealed record EntryExportRequest
 /// Whether the export runs in the background rather than in the response: one of more than
 /// <see cref="EntryExports.StreamedAtMost"/> entries, and one of a format that writes the entries' files.
 /// </param>
-internal sealed record EntryExportPlan(int Entries, bool More, bool Background);
+/// <param name="Unconfirmed">
+/// The entries waiting for their email confirmation that the export leaves out, as its filter names no state (ADR-0226).
+/// </param>
+internal sealed record EntryExportPlan(int Entries, bool More, bool Background, int Unconfirmed = 0);
 
 /// <summary>Who exports: the user, what they may see, and the language of the export's own words.</summary>
 /// <param name="UserKey">The user.</param>
@@ -140,7 +143,10 @@ internal sealed partial class EntryExports(
         }
 
         var count = (await queries.ListAsync(export.Query, null, 1, count: true, cancellationToken)).Count ?? new EntryCount(0, More: false);
-        return new EntryExportPlan(count.Value, count.More, Background: files || count.More || count.Value > StreamedAtMost);
+        var unconfirmed = request.Filter.States.Count == 0
+            ? (await queries.ListAsync(export.Query with { States = [EntryState.Unverified] }, null, 1, count: true, cancellationToken)).Count?.Value ?? 0
+            : 0;
+        return new EntryExportPlan(count.Value, count.More, Background: files || count.More || count.Value > StreamedAtMost, unconfirmed);
     }
 
     /// <summary>

@@ -2,6 +2,8 @@ using Jiron.Umbraco.FormBuilder.Core.Access;
 using Jiron.Umbraco.FormBuilder.Core.Entries;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
+using Jiron.Umbraco.FormBuilder.Core.Retention;
+using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Tests.Common.Testing;
 
 namespace Jiron.Umbraco.FormBuilder.Tests.Integration.ManagementApi;
@@ -145,6 +147,39 @@ public sealed class EntryInboxApiTests : ManagementApiTestBase
             Assert.That(await Entries.GetByIdAsync(spam.Id), Is.Null);
             Assert.That(await Entries.GetByIdAsync(restrictedSpam.Id), Is.Not.Null, "the restricted folder's spam is not the privacy officer's to delete");
             Assert.That(await Entries.GetByIdAsync(kept.Id), Is.Not.Null);
+        });
+    }
+
+    [Test]
+    public async Task EmptySpam_LeavesTheEntriesALegalHoldKeeps_AndPagesOnPastThem_SayingHowManyStay()
+    {
+        var form = await PublishedAsync("Contact");
+        var spam = new List<StoredEntry>();
+        for (var i = 0; i < EntryDeletions.MaxEntries + 2; i++)
+        {
+            spam.Add(await EntryAsync(form, EntryState.Spam));
+        }
+
+        // The first and the last, so one of them lies on each page of a delete, whichever way the list is ordered.
+        await CallAsync(Admin, HttpMethod.Get, "me");
+        var adminKey = GetRequiredService<IUserService>().GetByEmail("api-admin@jfb.test")!.Key;
+        var holds = GetRequiredService<EntryHolds>();
+        foreach (var held in new[] { spam[0], spam[^1] })
+        {
+            Assert.That(await holds.HoldAsync(held.Key, DateTimeOffset.UtcNow.AddDays(30), "Court case", adminKey), Is.EqualTo(EntryHoldRefusal.None));
+        }
+
+        var asked = await CallAsync(Admin, HttpMethod.Post, "entries/spam/empty", new { });
+        var emptied = await CallAsync(Admin, HttpMethod.Post, "entries/spam/empty", new { confirm = true });
+        var again = await CallAsync(Admin, HttpMethod.Post, "entries/spam/empty", new { confirm = true });
+        var left = await CallAsync(Admin, HttpMethod.Post, "entries/spam", new { count = true });
+
+        Assert.Multiple(() =>
+        {
+            Assert.That((asked.Body!["entries"]!.GetValue<int>(), asked.Body!["held"]!.GetValue<int>(), asked.Body!["more"]!.GetValue<bool>()), Is.EqualTo((EntryDeletions.MaxEntries, 2, false)), asked.ToString());
+            Assert.That((emptied.Body!["entries"]!.GetValue<int>(), emptied.Body!["held"]!.GetValue<int>(), emptied.Body!["deleted"]!.GetValue<bool>(), emptied.Body!["more"]!.GetValue<bool>()), Is.EqualTo((EntryDeletions.MaxEntries, 2, true, false)), "past the held entry on the first page to the page after it");
+            Assert.That((again.Body!["entries"]!.GetValue<int>(), again.Body!["held"]!.GetValue<int>(), again.Body!["deleted"]!.GetValue<bool>()), Is.EqualTo((0, 2, false)), "the held ones stay");
+            Assert.That(Keys(left, "items"), Is.EquivalentTo(new[] { spam[0].Key, spam[^1].Key }));
         });
     }
 

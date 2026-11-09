@@ -24,14 +24,14 @@ import { createFromTemplate } from '../library/actions/new-form';
 /** A block that loads by itself: on its way, there, or failed. */
 type Loaded<T> = { state: 'loading' } | { state: 'failed' } | { state: 'ready'; value: T };
 
-/** The screen each finding's link opens, and the permission that opens it. */
-const FINDING_LINKS: Record<string, { entityType: string; needs: string }> = {
-  settingsEmail: { entityType: 'jfb-settings-email', needs: 'manageSettings' },
-  settingsGeneral: { entityType: 'jfb-settings-general', needs: 'manageSettings' },
-  deliveries: { entityType: 'jfb-deliveries', needs: 'manageSettings' },
-  privacyDataCollection: { entityType: 'jfb-privacy-collection', needs: 'manageSettings' },
-  privacyRetention: { entityType: 'jfb-privacy-retention', needs: 'manageSettings' },
-  settingsProtection: { entityType: 'jfb-settings-spam', needs: 'manageSettings' },
+/** The screen each finding's link opens, and the permissions that open it, as the section's sidebar has them. */
+const FINDING_LINKS: Record<string, { entityType: string; anyOf: string[] }> = {
+  settingsEmail: { entityType: 'jfb-settings-email', anyOf: ['manageSettings'] },
+  settingsGeneral: { entityType: 'jfb-settings-general', anyOf: ['manageSettings'] },
+  deliveries: { entityType: 'jfb-deliveries', anyOf: ['manageSettings'] },
+  privacyDataCollection: { entityType: 'jfb-privacy-collection', anyOf: ['manageSettings'] },
+  privacyRetention: { entityType: 'jfb-privacy-retention', anyOf: ['privacyTools', 'manageSettings'] },
+  settingsProtection: { entityType: 'jfb-settings-spam', anyOf: ['manageSettings'] },
 };
 
 /** The API's answer while the migrations are pending; any other 503 (a gateway's) is a failure like the rest. */
@@ -435,13 +435,14 @@ export class OverviewElement extends UmbLitElement {
 
   #renderFinding(finding: HealthFindingResponseModel) {
     const link = finding.link ? FINDING_LINKS[finding.link] : undefined;
-    const needs = link?.needs ?? 'manageSettings';
+    const anyOf = link?.anyOf ?? ['manageSettings'];
+    const may = this._global ? anyOf.some((permission) => this._global?.includes(permission)) : undefined;
     return html`<li class="finding">
       <uui-icon name="icon-alert"></uui-icon>
       <span>
         ${finding.message}
-        ${link && this._global?.includes(needs) ? html`<a href=${screenPath(link.entityType)}>${this.localize.term(`jfbOverview_open_${finding.link}`)}</a>` : nothing}
-        ${this._global && !this._global.includes(needs) ? html`<span class="who">${this.localize.term('jfbOverview_needsAdministrator')}</span>` : nothing}
+        ${link && may ? html`<a href=${screenPath(link.entityType)}>${this.localize.term(`jfbOverview_open_${finding.link}`)}</a>` : nothing}
+        ${may === false ? html`<span class="who">${this.localize.term('jfbOverview_needsAdministrator')}</span>` : nothing}
       </span>
     </li>`;
   }

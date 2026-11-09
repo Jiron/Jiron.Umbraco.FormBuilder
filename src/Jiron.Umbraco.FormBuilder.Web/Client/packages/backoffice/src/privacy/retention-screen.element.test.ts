@@ -191,7 +191,7 @@ describe('the retention screen', () => {
     ];
 
     await type('days-rejected', '0');
-    expect(text(root.getElementById('days-rejected-why'))).toBe('Use a whole number from 1 to 36,500.');
+    expect(text(root.getElementById('days-rejected-why'))).toBe('Use a whole number from 1 to 3,650.');
     must(save(), 'Save').click();
     await settle(screen);
     expect(api.sent).toEqual([]);

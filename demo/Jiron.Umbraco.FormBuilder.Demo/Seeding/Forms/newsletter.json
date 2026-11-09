@@ -3,7 +3,8 @@
   "key": "d0000000-0000-4000-8000-000000000005",
   "settings": {
     "submission": {
-      "submitLabel": { "": "Subscribe", "de": "Abonnieren" }
+      "submitLabel": { "": "Subscribe", "de": "Abonnieren" },
+      "verification": { "emailField": "d0000000-0000-4000-8000-000000000501", "days": 7 }
     }
   },
   "pages": [
@@ -51,8 +52,8 @@
     {
       "key": "d0000000-0000-4000-8000-000000000509",
       "message": {
-        "": "<p>Thank you. The next newsletter comes on the first of the month.</p>",
-        "de": "<p>Danke. Der nächste Newsletter kommt am Monatsersten.</p>"
+        "": "<p>Almost done: we sent a link to {{ field.email }}. Your subscription starts once you confirm it there.</p>",
+        "de": "<p>Fast geschafft: Wir haben einen Link an {{ field.email }} geschickt. Ihr Abonnement beginnt, sobald Sie es dort bestätigen.</p>"
       }
     }
   ]

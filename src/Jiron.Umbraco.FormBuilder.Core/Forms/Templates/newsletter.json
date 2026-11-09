@@ -115,8 +115,8 @@
         "key": "154549f5-a8c6-475a-8d1f-17dddd4c8ce0",
         "kind": "message",
         "message": {
-          "": "<p>Almost done: we sent a link to {{ field.email }}. Your subscription starts once you open it.</p>",
-          "de": "<p>Fast geschafft: Wir haben einen Link an {{ field.email }} geschickt. Ihr Abonnement beginnt, sobald Sie ihn \u00f6ffnen.</p>"
+          "": "<p>Almost done: we sent a link to {{ field.email }}. Your subscription starts once you confirm it there.</p>",
+          "de": "<p>Fast geschafft: Wir haben einen Link an {{ field.email }} geschickt. Ihr Abonnement beginnt, sobald Sie es dort best\u00e4tigen.</p>"
         }
       }
     ]

@@ -204,8 +204,8 @@ test('retention: a number of days to store entries for and the days per state ea
   await view.getByLabel('Store entries').selectOption('days');
   const storeDays = view.getByLabel('Days entries are kept');
   await expect(storeDays).toHaveValue('30');
-  await enter(storeDays, '36501');
-  await expect(view.locator('#store-days-why-0')).toHaveText('Enter a whole number from 1 to 36,500.');
+  await enter(storeDays, '3651');
+  await expect(view.locator('#store-days-why-0')).toHaveText('Enter a whole number from 1 to 3,650.');
   await expect(storeDays).toHaveAttribute('aria-invalid', 'true');
   await enter(storeDays, '400');
   await expect(view.locator('#store-days-why-0')).toHaveCount(0);
@@ -216,12 +216,12 @@ test('retention: a number of days to store entries for and the days per state ea
   await expect(spam).toHaveAttribute('placeholder', '30');
   await expect(view.locator('#retention-submitted')).toHaveAttribute('placeholder', '365');
   await enter(spam, '0');
-  await expect(view.locator('#retention-spam-why-0')).toHaveText('Enter a whole number from 1 to 36,500.');
+  await expect(view.locator('#retention-spam-why-0')).toHaveText('Enter a whole number from 1 to 3,650.');
   await enter(spam, '7');
   await expect(view.locator('#retention-spam-why-0')).toHaveCount(0);
   const rejected = view.locator('#retention-rejected');
   await enter(rejected, '40000');
-  await expect(view.locator('#retention-rejected-why-0')).toHaveText('Enter a whole number from 1 to 36,500.');
+  await expect(view.locator('#retention-rejected-why-0')).toHaveText('Enter a whole number from 1 to 3,650.');
   await enter(rejected, '14');
   await axeInside(page, 'jfb-form-settings-view');
 

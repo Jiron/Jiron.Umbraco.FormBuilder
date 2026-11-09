@@ -41,8 +41,8 @@ type Span = (typeof SPANS)[number];
 /** The days of a state kept for good (ADR-0222). */
 export const FOR_GOOD = 0;
 
-/** The most days a state keeps its entries. */
-export const MOST_DAYS = 36_500;
+/** The most days a state keeps its entries: ten years; longer is kept for good (ADR-0226). */
+export const MOST_DAYS = 3_650;
 
 /** How long typing rests before the dry run counts again. */
 export const COUNT_DELAY_MS = 300;

@@ -4,6 +4,7 @@ using Jiron.Umbraco.FormBuilder.Core.Audit;
 using Jiron.Umbraco.FormBuilder.Core.Configuration;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
+using Jiron.Umbraco.FormBuilder.Core.Privacy;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -311,7 +312,7 @@ internal sealed partial class FormBuilderSettingsService(
         }
         catch (JsonException exception)
         {
-            LogUnreadable(logger, T.Alias, row.Scope, exception);
+            LogUnreadable(logger, T.Alias, row.Scope, LoggedException.Of(exception));
             return [];
         }
     }

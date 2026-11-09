@@ -8,6 +8,7 @@ using Jiron.Umbraco.FormBuilder.Core.Files;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Migrations;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
+using Jiron.Umbraco.FormBuilder.Core.Privacy;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -660,7 +661,7 @@ internal sealed partial class FormMirrorJob(
         }
         catch (Exception exception) when (exception is not OperationCanceledException and not OutOfMemoryException)
         {
-            LogPassFailed(logger, exception);
+            LogPassFailed(logger, LoggedException.Of(exception));
         }
     }
 

@@ -77,7 +77,7 @@ const CHOICES: FormSettingsChoicesResponseModel = {
     htmlLength: 50000,
     nameLength: 64,
     verificationDays: 90,
-    retentionDays: 36500,
+    retentionDays: 3650,
     referenceDigits: 10,
     outcomes: 50,
     actions: 50,

@@ -1,4 +1,5 @@
 using System.Data.Common;
+using Jiron.Umbraco.FormBuilder.Core.Privacy;
 using Microsoft.Extensions.Logging;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Services;
@@ -76,7 +77,7 @@ internal sealed partial class FormBuilderMigrationState(
         {
             // An unreadable state counts as pending, after the reruns: Jiron Form Builder must not run on a schema it
             // cannot vouch for.
-            LogStateUnreadable(logger, exception);
+            LogStateUnreadable(logger, LoggedException.Of(exception));
             return null;
         }
     }

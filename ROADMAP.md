@@ -3006,11 +3006,13 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
   - **14.3 Members**:
     - **Access:** members-only forms and member groups, one entry per member, whose switch sits in the Settings view's Availability group (moved from 10.1a: the form check reads it, nothing at submission does yet); the `options` endpoint answers a members-only form's options only to a member the form admits (added in 6.1c, ADR-0086).
     - **Prefill** (show and tamper-proof hide), and the member link on entries.
+    - **An anonymous form** (added in 13.4 by the privacy review, ADR-0226): a switch in the Settings view's Privacy group that keeps no member on the form's entries, refused by the form check together with members only or one entry per member, which need the link; the facts sheet and the checklist then say so.
     - **Member deletion:** a handler deletes or anonymises the deleted member's entries, per a setting.
     - **Entries on the member:**
       - A workspace view on the member editor lists that member's entries, with permissions applied.
     - Done when:
       - tests and Playwright pass with the seeded members, including the entries view on the member, and Playwright turns on "One entry per member" in a form's Availability group and a member's second entry is refused;
+      - a member signed in sends an anonymous form and its entry keeps no member, and the form check refuses an anonymous form with one entry per member (added in 13.4, ADR-0226);
       - the `options` endpoint gives a members-only form's options to a member the form admits and none to an anonymous request or a member it does not admit (added in 6.1c, ADR-0086);
       - a members-only post with another member's challenge, without a challenge, with a challenge fetched without the member's cookie, or from a page on another origin is refused on both paths; a members-only page refuses to be framed by another origin; a repeated no-JS post leads to the first entry's outcome without a second entry, and an expired challenge renders the form again with its answers; a cross-origin or `Origin: null` post with a bad challenge, over the per-address limit, or with validation errors is refused without its answers; a server-key submission to a members-only form answers `member_required`; a no-JS post faster than the minimum fill time is accepted; no Jiron Form Builder response sets a cookie.
   - **14.4 Multi-site and phase review**:

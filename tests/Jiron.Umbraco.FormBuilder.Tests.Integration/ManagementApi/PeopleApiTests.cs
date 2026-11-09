@@ -62,6 +62,8 @@ public sealed class PeopleApiTests : ManagementApiTestBase
 
         var hold = await CallAsync("privacyOfficer", HttpMethod.Post, "people/hold", new { email = Ada, entries = new[] { held }, until = DateTimeOffset.UtcNow.AddDays(10), reason = "Court case" });
         var tooLate = await CallAsync("privacyOfficer", HttpMethod.Post, "people/hold", new { email = Ada, entries = new[] { held }, until = DateTimeOffset.UtcNow.AddDays(400), reason = "Court case" });
+        var noReason = await CallAsync("privacyOfficer", HttpMethod.Post, "people/hold", new { email = Ada, entries = new[] { held }, until = DateTimeOffset.UtcNow.AddDays(10), reason = " " });
+        var twoLines = await CallAsync("privacyOfficer", HttpMethod.Post, "people/hold", new { email = Ada, entries = new[] { held }, until = DateTimeOffset.UtcNow.AddDays(10), reason = "Court case\nand more" });
         var preview = await CallAsync("privacyOfficer", HttpMethod.Post, "people/erase/preview", new { email = Ada });
         var unknown = await CallAsync("privacyOfficer", HttpMethod.Post, "people/erase", new { email = Ada, mode = "shred" });
         var erased = await CallAsync("privacyOfficer", HttpMethod.Post, "people/erase", new { email = Ada, mode = "delete" });
@@ -72,6 +74,7 @@ public sealed class PeopleApiTests : ManagementApiTestBase
         {
             Assert.That((hold.Outcome, hold.Body?["entries"]?.GetValue<int>()), Is.EqualTo(("200", (int?)1)), hold.Text);
             Assert.That(tooLate.Outcome, Is.EqualTo("400 hold_end"), tooLate.Text);
+            Assert.That((noReason.Outcome, twoLines.Outcome), Is.EqualTo(("400 hold_reason", "400 hold_reason")), noReason.Text);
             Assert.That(preview.Body!.ToJsonString(), Does.StartWith("""{"entries":1,"drafts":0,"held":1,"files":0,"emails":0,"more":false,"forms":[{"""));
             Assert.That(unknown.Outcome, Is.EqualTo("400 mode_invalid"));
             Assert.That((erased.Outcome, erased.Body?["entries"]?.GetValue<int>(), erased.Body?["held"]?.GetValue<int>()), Is.EqualTo(("200", (int?)1, (int?)1)), erased.Text);

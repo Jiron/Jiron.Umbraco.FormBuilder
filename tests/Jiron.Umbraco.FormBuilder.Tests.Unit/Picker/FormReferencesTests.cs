@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Migrations;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
+using Jiron.Umbraco.FormBuilder.Core.Privacy;
 using Jiron.Umbraco.FormBuilder.Testing.Time;
 using Jiron.Umbraco.FormBuilder.Web.Picker;
 using Microsoft.Extensions.Logging;
@@ -99,7 +100,7 @@ public sealed class FormReferencesTests
         Assert.Multiple(async () =>
         {
             await _references.Received(1).ReplaceContentAsync(next.Key, Arg.Any<IReadOnlyCollection<ContentFormReference>>(), Arg.Any<CancellationToken>());
-            Assert.That(logger.Entries.Select(entry => (entry.Level, entry.Exception)), Is.EqualTo(new[] { (LogLevel.Warning, (Exception?)broken), (LogLevel.Warning, (Exception?)broken) }));
+            Assert.That(logger.Entries.Select(entry => (entry.Level, entry.Exception?.Message)), Is.EqualTo(new[] { (LogLevel.Warning, LoggedException.Of(broken).Message), (LogLevel.Warning, LoggedException.Of(broken).Message) }));
             Assert.That(logger.Entries.First().Message, Does.Contain(failing.Key.ToString()).And.Contain("rebuild"));
         });
     }
@@ -219,7 +220,7 @@ public sealed class FormReferencesTests
         var handler = new FormReferenceTypeHandler(new FormReferenceRebuild(_references, values, _contents, Index(), _clock, NullLogger<FormReferenceRebuild>.Instance), logger);
 
         Assert.DoesNotThrowAsync(() => handler.HandleAsync(new DataTypeDeletedNotification(Substitute.For<IDataType>(), new EventMessages()), CancellationToken.None));
-        Assert.That(logger.Entries.Select(entry => (entry.Level, entry.Exception)), Is.EqualTo(new[] { (LogLevel.Warning, (Exception?)broken) }));
+        Assert.That(logger.Entries.Select(entry => (entry.Level, entry.Exception?.Message)), Is.EqualTo(new[] { (LogLevel.Warning, LoggedException.Of(broken).Message) }));
     }
 
     [Test]
@@ -238,7 +239,7 @@ public sealed class FormReferencesTests
 
         Assert.That(done, Is.True);
         await _references.Received(1).ReplaceUnchangedContentAsync(7, Version(7), next.Key, Arg.Any<IReadOnlyCollection<ContentFormReference>>(), Arg.Any<CancellationToken>());
-        Assert.That(logger.Entries.Where(entry => entry.Level >= LogLevel.Warning).Select(entry => (entry.Level, entry.Exception)), Is.EqualTo(new[] { (LogLevel.Warning, (Exception?)broken) }));
+        Assert.That(logger.Entries.Where(entry => entry.Level >= LogLevel.Warning).Select(entry => (entry.Level, entry.Exception?.Message)), Is.EqualTo(new[] { (LogLevel.Warning, LoggedException.Of(broken).Message) }));
     }
 
     [Test]
@@ -370,7 +371,7 @@ public sealed class FormReferencesTests
         Assert.Multiple(() =>
         {
             Assert.That((job.Name, job.Period, FormReferenceRebuildJob.Budget), Is.EqualTo(("Jiron.FormBuilder.References", TimeSpan.FromMinutes(1), TimeSpan.FromSeconds(8))));
-            Assert.That(logger.Entries.Select(entry => (entry.Level, entry.Exception)), Is.EqualTo(new[] { (LogLevel.Error, (Exception?)broken) }));
+            Assert.That(logger.Entries.Select(entry => (entry.Level, entry.Exception?.Message)), Is.EqualTo(new[] { (LogLevel.Error, LoggedException.Of(broken).Message) }));
         });
     }
 

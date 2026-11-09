@@ -1,5 +1,6 @@
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Migrations;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
+using Jiron.Umbraco.FormBuilder.Core.Privacy;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -139,7 +140,7 @@ internal sealed partial class InsightWriter(InsightCounts counts, IFormRepositor
                             counts.Restore(unit);
                             if (exception is not OperationCanceledException)
                             {
-                                LogWriteFailed(logger, exception);
+                                LogWriteFailed(logger, LoggedException.Of(exception));
                             }
                         }
                     }
@@ -151,7 +152,7 @@ internal sealed partial class InsightWriter(InsightCounts counts, IFormRepositor
                 counts.Restore(form);
                 if (exception is not OperationCanceledException)
                 {
-                    LogWriteFailed(logger, exception);
+                    LogWriteFailed(logger, LoggedException.Of(exception));
                 }
             }
         }
@@ -215,7 +216,7 @@ internal sealed partial class InsightFlusher(IServiceProvider services, TimeProv
         }
         catch (Exception exception) when (exception is not OperationCanceledException and not OutOfMemoryException)
         {
-            LogFlushFailed(logger, exception);
+            LogFlushFailed(logger, LoggedException.Of(exception));
         }
     }
 

@@ -467,7 +467,7 @@ internal sealed partial class EntryExportJobs(
         catch (Exception exception) when (exception is not OutOfMemoryException)
         {
             // A failure, or a cancellation that neither the host nor a lost record asked for, as a file store's timeout.
-            LogFailed(logger, record.Key, attempt, exception);
+            LogFailed(logger, record.Key, attempt, LoggedException.Of(exception));
             await DeleteQuietlyAsync(file);
             var again = attempt >= MaxAttempts ? Failed(current, "export_failed") : current with { State = EntryExportState.Queued, Claimant = null, LeaseUtc = null, Done = 0 };
             await values.TryReplaceAsync(key, held, Write(again), CancellationToken.None);
@@ -588,7 +588,7 @@ internal sealed partial class EntryExportWorker(EntryExportWake wake, IServicePr
                 catch (Exception exception) when (exception is not OutOfMemoryException && !stoppingToken.IsCancellationRequested)
                 {
                     // A cancellation the host did not ask for, as a database's timeout, ends the pass, not the worker.
-                    LogPassFailed(logger, exception);
+                    LogPassFailed(logger, LoggedException.Of(exception));
                 }
             }
         }
@@ -646,7 +646,7 @@ internal sealed partial class FormBuilderExportJob(
         }
         catch (Exception exception) when (exception is not (OperationCanceledException or OutOfMemoryException))
         {
-            LogFailed(logger, Period.TotalSeconds.ToString(CultureInfo.InvariantCulture), exception);
+            LogFailed(logger, Period.TotalSeconds.ToString(CultureInfo.InvariantCulture), LoggedException.Of(exception));
         }
 
         wake.Wake();

@@ -45,8 +45,11 @@ internal sealed record PrivacySettings : ISettingsSection
 /// </summary>
 internal sealed record SiteRetention
 {
-    /// <summary>The most days a state keeps its entries, as many as a form may set (section 4.3.4).</summary>
-    public const int MaxDays = 36_500;
+    /// <summary>
+    /// The most days a state keeps its entries, as many as a form may set (section 4.3.4): ten years, the longest that
+    /// laws on keeping records commonly ask for. Longer is kept for good, which needs the host (ADR-0226).
+    /// </summary>
+    public const int MaxDays = DefinitionSaveChecks.MaxDays;
 
     /// <summary>The days of a state kept for good.</summary>
     public const int ForGood = 0;

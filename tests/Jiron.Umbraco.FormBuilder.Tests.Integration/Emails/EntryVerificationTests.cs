@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Jiron.Umbraco.FormBuilder.Core.Actions;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
+using Jiron.Umbraco.FormBuilder.Core.Email;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
@@ -121,6 +122,27 @@ public sealed partial class EntryVerificationTests : EmailTestBase
         var refused = Assert.ThrowsAsync<FormBuilderValidationException>(async () => await PublishAsync(name: "Keeps no address", change: Verifying(ApprovalMode.Automatic), fields: [NameField, address]));
 
         Assert.That(refused!.Problems.Select(problem => problem.Path), Does.Contain("$.settings.submission.verification.emailField"), string.Join(", ", refused.Problems));
+    }
+
+    [Test]
+    public async Task ASentLinksCode_StaysInNoStoredCopyOfTheMail_AndTheMailedLinkStillConfirms()
+    {
+        var form = await FormAsync();
+        var entry = await SubmitAsync(form, Ada);
+        var link = await SentLinkAsync();
+        var code = link[(link.IndexOf("?t=", StringComparison.Ordinal) + 3)..];
+        var stored = (await GetRequiredService<IEmailRepository>().ListForEntryAsync(entry.Id)).Single();
+
+        await PostAsync(link);
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(stored.State, Is.EqualTo(EmailState.Sent));
+            Assert.That(stored.HtmlBody + stored.TextBody, Does.Not.Contain(code).And.Not.Contain(TokenOf(link)), "nobody who reads the database or a backup can confirm the address (ADR-0226)");
+            Assert.That(stored.HtmlBody, Does.Contain($"verify?t={LinkSecrets.Removed}"), "the link still names its page");
+            Assert.That(stored.TextBody, Does.Contain($"verify?t={LinkSecrets.Removed}"));
+            Assert.That((await Entries.GetByIdAsync(entry.Id))!.State, Is.Not.EqualTo(EntryState.Unverified), "the code the visitor got still works");
+        });
     }
 
     [Test]

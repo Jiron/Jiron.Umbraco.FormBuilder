@@ -1,4 +1,5 @@
 using Jiron.Umbraco.FormBuilder.Core.Forms;
+using Jiron.Umbraco.FormBuilder.Core.Privacy;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Umbraco.Cms.Core.Cache;
@@ -36,7 +37,7 @@ internal sealed partial class FormCacheTags(PageForms forms, ILogger<FormCacheTa
         }
         catch (Exception exception) when (exception is not OutOfMemoryException)
         {
-            LogReadFailed(logger, content.Key, exception);
+            LogReadFailed(logger, content.Key, LoggedException.Of(exception));
             return [AnyForm];
         }
 
