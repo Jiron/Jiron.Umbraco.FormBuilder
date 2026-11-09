@@ -378,6 +378,7 @@ internal sealed class FormBuilderFolderService(
             throw new FormBuilderConflictException(FormBuilderConflict.FolderNotEmpty, "Something below the folder is outside the trash; move it out or put it in the trash first.");
         }
 
+        await removal.CheckNoHoldsAsync(inside, cancellationToken);
         await changes.CancelableAsync(new FolderDeletingNotification(folder.Key, folder.Name, Summaries(below), Summaries(inside), userKey, new EventMessages()));
         var deleted = await DeletingAsync(() => DeleteTreeAsync(folder, below, inside, userKey, cancellationToken));
         await PublishedAsync(new FolderDeletedNotification(folder.Key, folder.Name, [.. deleted.Folders.Where(summary => summary.Key != folder.Key)], deleted.Forms, userKey));
@@ -502,9 +503,33 @@ internal sealed class FormBuilderFolderService(
         var loose = trashedForms.Where(form => form.FolderId is not { } folderId || !trashedIds.Contains(folderId)).ToList();
         var keys = all.ToDictionary(folder => folder.Id, folder => folder.Key);
         var everything = trees.Count + loose.Count;
+
+        // What a legal hold keeps entries of stays in the trash, counted with what the user may not delete (ADR-0222).
+        trees = await KeptAsync(trees, tree => tree.Forms);
+        loose = await KeptAsync(loose, form => [form]);
         trees = await WhereAsync(trees, tree => new DeletionCandidate([tree.Top.Key, .. tree.Below.Select(folder => folder.Key)], [.. tree.Forms.Select(form => Target(form, keys))]));
         loose = await WhereAsync(loose, form => new DeletionCandidate([], [Target(form, keys)]));
         return (trees, loose, everything);
+
+        async Task<List<T>> KeptAsync<T>(List<T> items, Func<T, IEnumerable<StoredForm>> formsOf)
+        {
+            var free = new List<T>();
+            foreach (var item in items)
+            {
+                var held = false;
+                foreach (var form in formsOf(item))
+                {
+                    held = held || await removal.HoldsAsync(form, cancellationToken);
+                }
+
+                if (!held)
+                {
+                    free.Add(item);
+                }
+            }
+
+            return free;
+        }
 
         async Task<List<T>> WhereAsync<T>(List<T> items, Func<T, DeletionCandidate> candidate)
         {

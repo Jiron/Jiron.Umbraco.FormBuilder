@@ -10,6 +10,7 @@ import { manifests as optionLists } from '../option-lists/manifests';
 import { manifests as themes } from '../themes/manifests';
 import { manifests as emailLayouts } from '../email-layouts/manifests';
 import { manifests as overview } from '../overview/manifests';
+import { manifests as privacy } from '../privacy/manifests';
 import { manifests as tree } from '../tree/manifests';
 import { ENTRY_ENTITY_TYPE, LIBRARY_ROOT_ENTITY_TYPE, SECTION_ALIAS, SECTION_PATHNAME } from './entity-types';
 import { PERMISSION_CONDITION } from './my-permissions';
@@ -37,6 +38,7 @@ const SCREENS: Readonly<Record<string, ScreenLoader>> = {
   files: () => import('../settings/files.screen'),
   access: () => import('../access/access.screen'),
   integrations: () => import('../settings/integrations.screen'),
+  people: () => import('../privacy/people.screen'),
   retention: () => import('../privacy/retention.screen'),
   dataCollection: () => import('../settings/privacy.screen'),
   deliveries: () => import('../activity/deliveries.screen'),
@@ -143,4 +145,5 @@ export const manifests: UmbExtensionManifest[] = [
   ...overview,
   ...access,
   ...activity,
+  ...privacy,
 ];

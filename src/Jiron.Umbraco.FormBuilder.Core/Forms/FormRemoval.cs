@@ -15,7 +15,8 @@ namespace Jiron.Umbraco.FormBuilder.Core.Forms;
 /// after each unit committed, so a unit that rolls back never loses a file (ADR-0041). A delete that stops part way
 /// leaves the form in the trash with fewer entries, and deleting it again finishes the job; the first batch that
 /// deletes anything records <see cref="DeletingAction"/> in its unit, so a delete that stops is on record too. It
-/// publishes nothing; the services announce what they delete.
+/// publishes nothing; the services announce what they delete. A form a legal hold keeps entries of is not deleted until
+/// the holds end (ADR-0222).
 /// </summary>
 internal sealed partial class FormRemoval(
     IFormRepository forms,
@@ -28,6 +29,7 @@ internal sealed partial class FormRemoval(
     IAuditRepository audit,
     FormBuilderDatabase database,
     IFormBuilderFileStore files,
+    TimeProvider time,
     ILogger<FormRemoval> logger)
 {
     /// <summary>The audit action of a form's permanent delete.</summary>
@@ -58,11 +60,13 @@ internal sealed partial class FormRemoval(
     /// </summary>
     /// <exception cref="FormBuilderConcurrencyException">The form changed meanwhile; what is deleted stays deleted.</exception>
     /// <exception cref="FormBuilderConflictException">
-    /// The form is outside the trash (<c>not_trashed</c>), or entries kept arriving (<c>in_use</c>).
+    /// The form is outside the trash (<c>not_trashed</c>), entries kept arriving (<c>in_use</c>), or a legal hold keeps
+    /// some of them (<c>entries_held</c>).
     /// </exception>
     public async Task<FormDeletion?> DeleteAsync(StoredForm form, Guid? userKey, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(form);
+        await CheckNoHoldsAsync([form], cancellationToken);
         long entryCount = 0;
         long fileCount = 0;
         var deleting = new NewAuditEntry(DeletingAction, FormAudit.EntityType, form.Key, userKey);
@@ -102,6 +106,31 @@ internal sealed partial class FormRemoval(
             }
 
             return false;
+        }
+    }
+
+    /// <summary>Whether a legal hold keeps entries of the form now (ADR-0222).</summary>
+    /// <param name="form">The form.</param>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    public async Task<bool> HoldsAsync(StoredForm form, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(form);
+        return await entries.CountOnHoldAsync(form.Id, time.GetUtcNow(), cancellationToken) > 0;
+    }
+
+    /// <summary>Refuses a delete of forms a legal hold keeps entries of, before any of them goes (ADR-0222).</summary>
+    /// <param name="list">The forms.</param>
+    /// <param name="cancellationToken">Cancels the reads.</param>
+    /// <exception cref="FormBuilderConflictException">A hold keeps entries of one of them (<c>entries_held</c>).</exception>
+    public async Task CheckNoHoldsAsync(IEnumerable<StoredForm> list, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(list);
+        foreach (var form in list)
+        {
+            if (await HoldsAsync(form, cancellationToken))
+            {
+                throw new FormBuilderConflictException(FormBuilderConflict.EntriesHeld, $"A legal hold keeps entries of {form.Name}; it can be deleted for good once the holds end.");
+            }
         }
     }
 

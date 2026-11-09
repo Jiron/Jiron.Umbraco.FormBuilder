@@ -5,6 +5,8 @@
 // backoffice's start, whose budget counts every word it loads (ADR-0183).
 import type { UmbLocalizationDictionary } from '@umbraco-cms/backoffice/localization-api';
 
+const and = (parts: readonly string[]) => new Intl.ListFormat('en-GB', { type: 'conjunction' }).format(parts);
+
 export default {
   jfbGlobalSettings: {
     loading: 'Loading the settings…',
@@ -275,6 +277,92 @@ export default {
     retentionNoFiles: 'none',
     retentionCounting: 'Counting…',
     retentionCountFailed: "The entries couldn't be counted.",
+
+    // Privacy › People
+    people_findBox: "Find a person's data",
+    people_email: 'Email address',
+    people_emailPlaceholder: 'For example: name@example.com',
+    people_find: 'Find',
+    people_findHelp: 'Every form is searched, restricted ones included, and the search is recorded in the audit log.',
+    people_byMember: 'Find a member instead',
+    people_byEmail: 'Use an email address instead',
+    people_member: 'Member',
+    people_chooseMember: 'Choose a member',
+    people_someMember: 'the member',
+    people_emailInvalid: 'Enter one email address, such as name@example.com.',
+    people_entries: (count: string, one: boolean) => `${count} ${one ? 'entry' : 'entries'}`,
+    people_forms: (count: string, one: boolean) => `${count} ${one ? 'form' : 'forms'}`,
+    people_files: (count: string, one: boolean) => `${count} ${one ? 'file' : 'files'}`,
+    people_emails: (count: string, one: boolean) => `${count} ${one ? 'email' : 'emails'}`,
+    people_drafts: (count: string, one: boolean) => `${count} saved ${one ? 'draft' : 'drafts'}`,
+    people_found: (entries: string, forms: string) => `${entries} in ${forms}`,
+    people_more: 'These are the newest 500. Erase them, then find again for the rest.',
+    people_none: (who: string) =>
+      `No entries found for ${who}. Entries sent while signed in are found through the member.`,
+    people_noneMember: (who: string) => `No entries found for ${who}.`,
+    people_failed: "The entries couldn't be found.",
+    people_export: 'Export everything',
+    people_hold: 'Set legal hold…',
+    people_erase: 'Erase…',
+    people_columnEntry: 'Entry',
+    people_columnForm: 'Form',
+    people_columnReceived: 'Received',
+    people_columnFiles: 'Files',
+    people_columnEmails: 'Emails',
+    people_entry: (number: string) => `Entry #${number}`,
+    people_draft: 'Saved draft',
+    people_test: 'Test entry',
+    people_trashed: 'In the Recycle Bin',
+    people_noneCount: 'none',
+    people_heldUntil: (until: string) => `Legal hold until ${until}`,
+    people_release: 'Release',
+    people_releaseLabel: (entry: string) => `Release the legal hold on ${entry}`,
+    people_released: 'The legal hold is released.',
+    people_exporting: (done: string, total: string) =>
+      `Preparing the export: ${done} of ${total} entries. You can keep working; a notification links to the file.`,
+    people_exportLabel: 'Export',
+    people_exportFailed: "The export couldn't be prepared. Try again.",
+    people_erased: (who: string, parts: readonly string[]) =>
+      `Everything about ${who} is erased: ${and(parts)}. Statistics stay.`,
+    people_erasedAnonymised: (who: string, entries: string, one: boolean, deleted: readonly string[]) =>
+      `Everything about ${who} is erased: ${entries} anonymised, which ${one ? 'stays' : 'stay'} in the counts${deleted.length > 0 ? `, and ${and(deleted)} deleted` : ''}. Statistics stay.`,
+    people_erasedHeld: (entries: string, one: boolean) =>
+      one
+        ? `${entries} on legal hold stays until its hold ends.`
+        : `${entries} on legal hold stay until their holds end.`,
+    people_auditOpen: 'Open the audit log',
+    people_auditRecorded: "It's recorded in the audit log.",
+    people_eraseHeadline: (who: string) => `Erase everything about ${who}?`,
+    people_eraseText: (parts: readonly string[], one: boolean) =>
+      `${and(parts)} ${one ? 'is' : 'are'} erased. Statistics stay. You can't undo this.`,
+    people_eraseHeld: (entries: string, one: boolean) =>
+      one
+        ? `${entries} on legal hold stays until its hold ends.`
+        : `${entries} on legal hold stay until their holds end.`,
+    people_eraseMore: 'Only the newest 500 entries are erased this time; find again for the rest.',
+    people_eraseFormHeld: (count: string) => `${count} on legal hold`,
+    people_eraseHow: 'What happens to the entries',
+    people_eraseDelete: 'Delete them',
+    people_eraseDeleteHelp: 'The entries go, with their files and emails.',
+    people_eraseAnonymise: 'Anonymise them',
+    people_eraseAnonymiseHelp: 'The entries stay in the counts without any answer, file or email of the person.',
+    people_eraseConfirm: (entries: string) => `Erase ${entries}`,
+    people_eraseNothing: 'Every entry is on legal hold, so there is nothing to erase until the holds end.',
+    people_eraseFailed: "The erase couldn't be done. Nothing changed; try again.",
+    people_holdHeadline: 'Set legal hold',
+    people_holdEntries: 'Entries',
+    people_holdOf: (form: string, received: string) => `${form}, ${received}`,
+    people_holdReason: 'Reason',
+    people_holdReasonHelp: 'Kept with the hold. The audit log records who set it and until when.',
+    people_holdUntil: 'Keep until',
+    people_holdUntilHelp: 'At most a year from today. You can extend it before it ends.',
+    people_holdNote: 'Held entries are kept past their retention, and Erase… leaves them out until the hold ends.',
+    people_holdConfirm: (entries: string) => `Set legal hold on ${entries}`,
+    people_holdChoose: 'Choose at least one entry.',
+    people_holdReasonNeeded: 'Give the reason on one line, in at most 500 characters.',
+    people_holdEndInvalid: 'Choose a day after today and at most a year ahead.',
+    people_holdFailed: "The legal hold couldn't be set. Try again.",
+    people_holdDone: (entries: string) => `${entries} on legal hold.`,
 
     // Privacy › Data collection
     privacyBox_insights: 'Insights',

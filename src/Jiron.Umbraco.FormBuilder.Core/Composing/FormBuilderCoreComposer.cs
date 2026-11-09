@@ -14,6 +14,7 @@ using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Migrations;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Queries;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
+using Jiron.Umbraco.FormBuilder.Core.Privacy;
 using Jiron.Umbraco.FormBuilder.Core.Retention;
 using Jiron.Umbraco.FormBuilder.Core.Settings;
 using Jiron.Umbraco.FormBuilder.Core.Submissions;
@@ -77,6 +78,7 @@ public sealed class FormBuilderCoreComposer : IComposer
         builder.Services.TryAddSingleton<IConsentTextRepository, ConsentTextRepository>();
         builder.Services.TryAddSingleton<IEntryEventRepository, EntryEventRepository>();
         builder.Services.TryAddSingleton<IEntryNoteRepository, EntryNoteRepository>();
+        builder.Services.TryAddSingleton<IPersonDataRepository, PersonDataRepository>();
         builder.Services.TryAddSingleton<IEntryQueryRepository, EntryQueryRepository>();
         builder.Services.TryAddSingleton<IActionRunRepository, ActionRunRepository>();
         builder.Services.TryAddSingleton<IEmailRepository, EmailRepository>();
@@ -174,6 +176,7 @@ public sealed class FormBuilderCoreComposer : IComposer
 
         // The retention job (ADR-0045): the draft-version cleanup first.
         builder.AddFormBuilderRetention();
+        builder.AddFormBuilderPrivacy();
 
         // The action framework (ADR-0007, ADR-0158): the action types, the worker with its job, and what settles an entry.
         builder.AddFormBuilderActions();

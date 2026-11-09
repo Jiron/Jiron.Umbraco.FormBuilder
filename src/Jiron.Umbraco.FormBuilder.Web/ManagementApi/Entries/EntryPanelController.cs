@@ -98,6 +98,7 @@ internal sealed class EntryPanelController(
                 To = entryEvent.To,
                 Count = entryEvent.Count,
                 Recipient = entryEvent.Recipient,
+                Until = entryEvent.Until,
                 Changes = [.. entryEvent.Changes.Select(change => new EntryTimelineChangeResponseModel { Label = change.Label, Before = change.Before, After = change.After, Masked = change.Masked })],
             })],
             Runs = [.. timeline.Runs.Select(run => new EntryTimelineRunResponseModel

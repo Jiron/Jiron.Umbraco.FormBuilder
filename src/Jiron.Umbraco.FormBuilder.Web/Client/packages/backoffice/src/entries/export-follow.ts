@@ -202,17 +202,18 @@ export function showFollowed(
   });
 }
 
-/** The toast of a ready export: what it holds, and Download. */
+/** The toast of a ready export: what it holds, and Download, by the export's own link (a form's, or a person's). */
 export function readyToast(
   notices: Notices,
   form: string,
   done: EntryExportStatusResponseModel,
+  download: typeof downloadExport = downloadExport,
 ): ActionNotificationData {
   return {
     message: '',
     said: said('export_readyToast', done.done),
     positive: true,
-    action: { label: said('export_download'), run: async () => void (await saveExport(notices, form, done)) },
+    action: { label: said('export_download'), run: async () => void (await saveExport(notices, form, done, download)) },
   };
 }
 

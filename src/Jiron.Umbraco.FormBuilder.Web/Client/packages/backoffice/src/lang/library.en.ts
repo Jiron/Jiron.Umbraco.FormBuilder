@@ -158,6 +158,7 @@ export default {
     emptyNothingYours: "There's nothing in the Recycle Bin that you may delete for good.",
 
     folderNotEmpty: 'This folder still holds forms or folders. Move or delete them first.',
+    entriesHeld: 'A legal hold keeps some of its entries, so it can be deleted for good only once the holds end.',
     formGone: "This form doesn't exist any more, or you don't have access to it.",
     folderGone: "This folder doesn't exist any more, or you don't have access to it.",
     templateGone: "This template doesn't exist any more. Choose another one.",

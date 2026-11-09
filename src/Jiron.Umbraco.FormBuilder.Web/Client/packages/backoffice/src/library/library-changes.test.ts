@@ -74,6 +74,7 @@ describe('a refusal', () => {
     expect(
       [
         'folder_not_empty',
+        'entries_held',
         'form_not_found',
         'folder_not_found',
         'template_not_found',
@@ -82,6 +83,7 @@ describe('a refusal', () => {
       ].map((code) => refusalText(localize, problem({ code }))),
     ).toEqual([
       'jfbLibrary_folderNotEmpty',
+      'jfbLibrary_entriesHeld',
       'jfbLibrary_formGone',
       'jfbLibrary_folderGone',
       'jfbLibrary_templateGone',

@@ -90,6 +90,7 @@ export function refusalText(localize: UmbLocalizationController, error: unknown)
   const permission = permissionOf(error);
   const known: Record<string, string> = {
     folder_not_empty: localize.term('jfbLibrary_folderNotEmpty'),
+    entries_held: localize.term('jfbLibrary_entriesHeld'),
     form_not_found: localize.term('jfbLibrary_formGone'),
     folder_not_found: localize.term('jfbLibrary_folderGone'),
     template_not_found: localize.term('jfbLibrary_templateGone'),

@@ -71,6 +71,8 @@ const server = vi.hoisted(() => ({
   undos: [] as string[],
   undoAnswer: 'done' as 'done' | 'tooLate' | 'failed',
   deletes: [] as { entries: readonly string[]; confirm: boolean }[],
+  /** How many of the entries a delete asks for a legal hold keeps. */
+  held: 0,
   reruns: [] as { entries: readonly string[]; confirm: boolean }[],
   rerunActions: [{ key: 'a1', type: 'webhook', name: 'Tell the team', trigger: 'approved' }],
   savedSets: [] as { name: string; filter: EntryListFilterRequestModel }[],
@@ -87,7 +89,7 @@ const server = vi.hoisted(() => ({
   viewsRead: [] as string[],
   moveForms: [] as string[],
   empties: [] as boolean[],
-  emptyPlan: { entries: 0, files: 0, more: false },
+  emptyPlan: { entries: 0, files: 0, more: false, held: 0 },
   anywhere: [] as string[],
 }));
 
@@ -177,7 +179,7 @@ vi.mock('../../entries/entries-api', () => ({
   },
   deleteEntries: async (_host: unknown, _form: string, entries: readonly string[], confirm: boolean) => {
     server.deletes.push({ entries, confirm });
-    return { entries: entries.length, files: 4, deleted: confirm };
+    return { entries: entries.length - server.held, files: 4, deleted: confirm, held: server.held };
   },
   rerunActions: async (_host: unknown, _form: string, entries: readonly string[], confirm: boolean) => {
     server.reruns.push({ entries, confirm });
@@ -372,6 +374,7 @@ beforeEach(() => {
     undos: [],
     undoAnswer: 'done',
     deletes: [],
+    held: 0,
     reruns: [],
     rerunActions: [{ key: 'a1', type: 'webhook', name: 'Tell the team', trigger: 'approved' }],
     savedSets: [],
@@ -385,7 +388,7 @@ beforeEach(() => {
     viewsRead: [],
     moveForms: [],
     empties: [],
-    emptyPlan: { entries: 0, files: 0, more: false },
+    emptyPlan: { entries: 0, files: 0, more: false, held: 0 },
     anywhere: [],
   });
 });
@@ -611,6 +614,37 @@ describe("a form's Entries view", () => {
     expect(rows().map((one) => one.dataset['key'])).toEqual(['e2']);
     expect(text(root.querySelector('.count'))).toBe('1 entry');
     expect(peek).toHaveBeenLastCalledWith('positive', { data: { message: '2 entries deleted.' } });
+  });
+
+  it('says the entries a legal hold keeps, before and after, and reads the list again', async () => {
+    server.held = 1;
+    const { root, tick, view, peek } = await viewOf();
+    await tick(0);
+    await tick(2);
+    const reads = server.requests.length;
+    must(root.querySelector<HTMLElement>('#bulk-more button'), 'Delete...').click();
+    await settle(view);
+    expect(opened.confirmations.at(-1)).toMatchObject({ headline: 'Delete 1 entry?', confirmLabel: 'Delete 1 entry' });
+    expect((opened.confirmations.at(-1) as { content?: { values: unknown[] } }).content?.values).toEqual([
+      "This also deletes its 4 uploaded files and its timeline. You can't undo this. " +
+        'A legal hold keeps 1 more entry, which stays.',
+    ]);
+    // The answer doesn't say which entry stayed, so the list reads again.
+    expect(server.requests.length).toBeGreaterThan(reads);
+    expect(peek).toHaveBeenLastCalledWith('positive', {
+      data: { message: '1 entry deleted. 1 was left out: a legal hold keeps it.' },
+    });
+
+    server.held = 2;
+    opened.confirmations = [];
+    await tick(0);
+    await tick(2);
+    must(root.querySelector<HTMLElement>('#bulk-more button'), 'Delete...').click();
+    await settle(view);
+    expect(opened.confirmations, 'nothing to ask when every entry is held').toEqual([]);
+    expect(peek).toHaveBeenLastCalledWith('warning', {
+      data: { message: '2 were left out: a legal hold keeps them.' },
+    });
   });
 
   it('keeps the entries when the user does not confirm the delete', async () => {
@@ -1010,7 +1044,7 @@ describe('the Inbox and Spam', () => {
       row(2, { state: 'spam', form: 'form2' }),
       row(3, { state: 'spam', form: 'form3' }),
     ];
-    server.emptyPlan = { entries: 2, files: 1, more: false };
+    server.emptyPlan = { entries: 2, files: 1, more: false, held: 0 };
     const { button, view, peek } = await placeOf('spam');
     button('Empty spam\u2026').click();
     await settle(view);
@@ -1031,10 +1065,32 @@ describe('the Inbox and Spam', () => {
     expect(viewer.root.querySelector('uui-button[label="Empty spam\u2026"]')).toBeNull();
   });
 
+  it('says the entries in Spam a legal hold keeps, and counts them once', async () => {
+    server.anywhere = ['deleteEntries'];
+    server.rows = [row(1, { state: 'spam' }), row(2, { state: 'spam' }), row(3, { state: 'spam' })];
+    server.emptyPlan = { entries: 2, files: 0, more: false, held: 1 };
+    const { button, view, peek } = await placeOf('spam');
+    button('Empty spam\u2026').click();
+    await settle(view);
+    expect((opened.confirmations.at(-1) as { content?: { values: unknown[] } }).content?.values).toEqual([
+      '2 entries in Spam go for good. A legal hold keeps 1 entry in Spam, which stays. ' +
+        "This also deletes their timelines. You can't undo this.",
+    ]);
+
+    server.emptyPlan = { entries: 0, files: 0, more: false, held: 3 };
+    opened.confirmations = [];
+    button('Empty spam\u2026').click();
+    await settle(view);
+    expect(opened.confirmations).toEqual([]);
+    expect(peek).toHaveBeenLastCalledWith('warning', {
+      data: { message: 'Spam holds no entry you may delete. A legal hold keeps 3 entries in Spam, which stay.' },
+    });
+  });
+
   it('counts no entry as staying that Not spam already took out of Spam', async () => {
     server.anywhere = ['deleteEntries'];
     server.rows = [row(1, { state: 'spam' }), row(2, { state: 'spam' }), row(3, { state: 'spam' })];
-    server.emptyPlan = { entries: 2, files: 0, more: false };
+    server.emptyPlan = { entries: 2, files: 0, more: false, held: 0 };
     const { tick, button, view } = await placeOf('spam');
     await tick(0);
     button('Not spam').click();

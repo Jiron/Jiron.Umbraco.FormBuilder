@@ -1,6 +1,8 @@
+using System.Globalization;
 using System.Text.Json;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
+using Jiron.Umbraco.FormBuilder.Core.Retention;
 using Jiron.Umbraco.FormBuilder.Core.Submissions;
 
 namespace Jiron.Umbraco.FormBuilder.Core.Entries;
@@ -22,6 +24,7 @@ internal sealed record EntryTimelineChange(string Label, IReadOnlyList<string> B
 /// <param name="Count">How many actions a re-run queued.</param>
 /// <param name="Recipient">Whom a forward went to: a user's name or an address.</param>
 /// <param name="Changes">What an edit changed.</param>
+/// <param name="Until">When a legal hold it set ends (ADR-0222).</param>
 internal sealed record EntryTimelineEvent(
     long Id,
     DateTimeOffset When,
@@ -31,7 +34,8 @@ internal sealed record EntryTimelineEvent(
     string? To,
     int? Count,
     string? Recipient,
-    IReadOnlyList<EntryTimelineChange> Changes);
+    IReadOnlyList<EntryTimelineChange> Changes,
+    DateTimeOffset? Until = null);
 
 /// <summary>A mail of an entry.</summary>
 /// <param name="Id">The mail.</param>
@@ -116,6 +120,7 @@ internal sealed class EntryTimelines(IFormRepository forms, IEntryRepository ent
     {
         string? from = null, to = null, recipient = null;
         int? count = null;
+        DateTimeOffset? until = null;
         List<EntryTimelineChange> changes = [];
         try
         {
@@ -133,6 +138,9 @@ internal sealed class EntryTimelines(IFormRepository forms, IEntryRepository ent
                 case EntryForwards.ForwardedEvent:
                     recipient = Text(root, "to");
                     break;
+                case EntryHolds.HeldEvent when DateTimeOffset.TryParse(Text(root, "until"), CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var end):
+                    until = end;
+                    break;
                 case EntryEdits.EditedEvent when root.TryGetProperty("changes", out var edited) && edited.ValueKind == JsonValueKind.Array:
                     foreach (var change in edited.EnumerateArray())
                     {
@@ -148,7 +156,7 @@ internal sealed class EntryTimelines(IFormRepository forms, IEntryRepository ent
             // An event whose details cannot be read still says what happened.
         }
 
-        return new EntryTimelineEvent(entryEvent.Id, entryEvent.OccurredUtc, entryEvent.Kind, entryEvent.UserKey, from, to, count, recipient, changes);
+        return new EntryTimelineEvent(entryEvent.Id, entryEvent.OccurredUtc, entryEvent.Kind, entryEvent.UserKey, from, to, count, recipient, changes, until);
     }
 
     private static string? Text(JsonElement element, string name) =>

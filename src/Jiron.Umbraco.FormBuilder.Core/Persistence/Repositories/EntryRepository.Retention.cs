@@ -104,6 +104,19 @@ internal sealed partial class EntryRepository
     }
 
     /// <inheritdoc />
+    public Task<long> CountOnHoldAsync(int formId, DateTimeOffset now, CancellationToken cancellationToken = default) =>
+        database.ReadAsync(
+            db =>
+            {
+                var n = new SqlNames(db);
+                return db.ExecuteScalarAsync<long>(
+                    $"SELECT COUNT(*) FROM {n.T(FormBuilderTables.Entry)} WHERE {n.C("formId")} = @0 AND {n.C("holdUntilUtc")} > @1",
+                    formId,
+                    FormBuilderDbTime.Write(now));
+            },
+            cancellationToken);
+
+    /// <inheritdoc />
     public async Task<IReadOnlyDictionary<int, RetentionCount>> CountDueAsync(IReadOnlyCollection<int> formIds, RetentionCutoffs cutoffs, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(formIds);

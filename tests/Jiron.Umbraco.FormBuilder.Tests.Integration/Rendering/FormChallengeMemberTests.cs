@@ -2,6 +2,7 @@ using System.Net;
 using System.Text;
 using System.Text.Json.Nodes;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
+using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Web.PublicApi;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Services;
@@ -43,6 +44,31 @@ public sealed class FormChallengeMemberTests : RenderingTestBase
         var token = await ChallengeAsync(key);
 
         Assert.That(Tokens.Read(token, key, TimeSpan.Zero)!.Member, Is.EqualTo(member));
+    }
+
+    [Test]
+    public async Task AnEntry_ToAFormForAnyone_FromASignedInMember_KeepsTheMember_AndAVisitorsKeepsNone()
+    {
+        var key = await PublishFormAsync("forAnyone", null, NameField);
+        _ = await PagesAsync("open");
+        using var visitor = await PostAsync(key, "entries", Entry, await ChallengeAsync(key));
+        await SignInMemberAsync("member@example.com");
+        var member = GetRequiredService<IMemberService>().GetByUsername(MemberName)!.Key;
+        using var signedIn = await PostAsync(key, "entries", Entry, await ChallengeAsync(key));
+
+        var entries = GetRequiredService<IEntryRepository>();
+        var row = (await GetRequiredService<IFormRepository>().GetAsync(key))!;
+        var stored = new List<StoredEntry>();
+        foreach (var id in (await entries.ListIdsAsync(row.Id, 10)).Order())
+        {
+            stored.Add((await entries.GetByIdAsync(id))!);
+        }
+
+        Assert.Multiple(() =>
+        {
+            Assert.That((visitor.StatusCode, signedIn.StatusCode), Is.EqualTo((HttpStatusCode.OK, HttpStatusCode.OK)));
+            Assert.That(stored.Select(entry => entry.MemberKey), Is.EqualTo(new Guid?[] { null, member }), "the member signed in when it was sent (ADR-0009, ADR-0223)");
+        });
     }
 
     [TestCase("entries", Entry)]

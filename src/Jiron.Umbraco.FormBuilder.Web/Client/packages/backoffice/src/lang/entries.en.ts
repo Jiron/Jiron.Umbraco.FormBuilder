@@ -178,6 +178,7 @@ export default {
     left_notAllowed: (number: number) => `${were(number)} left out: their form doesn't let you do this.`,
     left_rerun: (number: number) =>
       `${were(number)} left out: in Spam, waiting for confirmation, or without actions to run.`,
+    left_held: (number: number) => `${were(number)} left out: a legal hold keeps ${number === 1 ? 'it' : 'them'}.`,
     moveFailed: "The entries couldn't be changed. Try again.",
     undo: 'Undo',
     undone: 'The change is undone.',
@@ -195,6 +196,10 @@ export default {
           ? `This also deletes its ${files === 1 ? 'uploaded file' : `${files} uploaded files`} and its timeline.`
           : `This also deletes their ${files === 1 ? 'uploaded file' : `${files.toLocaleString('en')} uploaded files`} and their timelines.`) +
       " You can't undo this.",
+    delete_held: (number: number) =>
+      number === 1
+        ? 'A legal hold keeps 1 more entry, which stays.'
+        : `A legal hold keeps ${number.toLocaleString('en')} more entries, which stay.`,
     delete_confirm: (number: number) =>
       number === 1 ? 'Delete 1 entry' : `Delete ${number.toLocaleString('en')} entries`,
     deleted: (number: number) => `${entries(number)} deleted.`,
@@ -226,6 +231,10 @@ export default {
         : `${number.toLocaleString('en')} entries stay: their forms don't let you delete entries.`,
     empty_more: 'Spam holds more than one go deletes: Empty spam… again deletes the rest.',
     empty_none: 'Spam holds no entry you may delete.',
+    empty_held: (number: number) =>
+      number === 1
+        ? 'A legal hold keeps 1 entry in Spam, which stays.'
+        : `A legal hold keeps ${number.toLocaleString('en')} entries in Spam, which stay.`,
     emptied: (number: number) => `${entries(number)} deleted from Spam.`,
     emptiedMore: 'Spam holds more. Empty spam… again deletes the rest.',
     emptyFailed: "Spam couldn't be emptied. Try again.",
@@ -272,6 +281,7 @@ export default {
     // The entry panel (ROADMAP 11.2, IA 6.3, ADR-0208): its header, tabs, answers, timeline, notes and actions.
     panel_title: (number: number) => `Entry #${number}`,
     panel_close: 'Close the entry',
+    panel_held: (until: string) => `On legal hold until ${until}: no delete takes it, retention included.`,
     panel_loading: 'Loading the entry…',
     panel_failed: "The entry couldn't be shown.",
     // What Umbraco's "not found" names for an entry's link that leads nowhere: "entry not found" (ADR-0208).
@@ -344,6 +354,7 @@ export default {
     movedOne_submitted: (number: number) => `Entry #${number} is waiting for approval again.`,
     deleteOne_headline: (number: number) => `Delete entry #${number}?`,
     deleteOne_confirm: 'Delete entry',
+    deleteOne_held: "A legal hold keeps this entry, so it can't be deleted until the hold ends.",
     deletedOne: (number: number) => `Entry #${number} deleted.`,
     tl_submitted: 'Received',
     tl_submittedFrom: (page: string) => `Received from ${page}`,
@@ -355,6 +366,11 @@ export default {
     tl_actionsRerun: (count: number, user: string) =>
       `${count === 1 ? '1 action' : `${count} actions`} queued again by ${user}`,
     tl_forwarded: (to: string, user: string) => `Forwarded to ${to} by ${user}`,
+    tl_forwardedNobody: (user: string) => `Forwarded by ${user}`,
+    tl_held: (until: string, user: string) => `Put on legal hold until ${until} by ${user}`,
+    tl_heldNoEnd: (user: string) => `Put on legal hold by ${user}`,
+    tl_released: (user: string) => `Legal hold released by ${user}`,
+    tl_anonymised: (user: string) => `Anonymised at a person's request by ${user}`,
     tl_answersEdited: (user: string) => `Answers edited by ${user}`,
     tl_change: (label: string, before: string, after: string) => `${label}: ${before} → ${after}`,
     tl_changeMasked: (label: string) => `${label}: changed`,

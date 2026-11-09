@@ -113,6 +113,7 @@ internal sealed partial class FormBuilderFormService
 
         FormChecks.Current(form, expectedConcurrencyVersion, inTrash: true);
         LibraryTrash.CheckInside(form.TrashedUtc, FormChecks.Item);
+        await removal.CheckNoHoldsAsync([form], cancellationToken);
         await changes.CancelableAsync(new FormDeletingNotification(form.Key, form.Alias, form.Name, userKey, new EventMessages()));
         FormDeletion? removed;
         try

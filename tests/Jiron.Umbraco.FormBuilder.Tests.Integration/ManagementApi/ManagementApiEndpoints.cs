@@ -93,7 +93,7 @@ internal sealed record ManagementApiEndpoint(ApiDescription Description, IReadOn
     /// <summary>
     /// A body that reads, when it takes one: each property filled by its type, the declared key with the key, and a
     /// property that holds one of a few words with one of them (a summary email's <c>frequency</c> is <c>daily</c>, a dry
-    /// run's <c>span</c> 30 days).
+    /// run's <c>span</c> 30 days, a person's <c>email</c> an address and an erase's <c>mode</c> <c>delete</c>).
     /// </summary>
     public Dictionary<string, object?>? BodyFor(Guid key) =>
         Description.ParameterDescriptions.FirstOrDefault(parameter => parameter.Source == BindingSource.Body)?.Type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
@@ -101,7 +101,7 @@ internal sealed record ManagementApiEndpoint(ApiDescription Description, IReadOn
                 property => JsonNamingPolicy.CamelCase.ConvertName(property.Name),
                 property => string.Equals(property.Name, Key, StringComparison.OrdinalIgnoreCase) ? key : Words.GetValueOrDefault(property.Name) ?? ValueOf(property.PropertyType));
 
-    private static readonly Dictionary<string, object> Words = new(StringComparer.Ordinal) { ["Frequency"] = "daily", ["Span"] = 30 };
+    private static readonly Dictionary<string, object> Words = new(StringComparer.Ordinal) { ["Frequency"] = "daily", ["Span"] = 30, ["Email"] = "person@jfb.test", ["Mode"] = "delete" };
 
     private static object? ValueOf(Type type) => type == typeof(string) ? "Calls" : type == typeof(bool) ? false : type == typeof(int) ? 1 : null;
 

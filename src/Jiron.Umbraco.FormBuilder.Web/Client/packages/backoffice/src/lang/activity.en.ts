@@ -187,8 +187,10 @@ export default {
     audit_entries_exported: (f: AuditFacts) => `Exported ${count(f.count, 'entry', 'entries')}`,
     audit_entry_actionRetried: (f: AuditFacts) => `Retried an action of ${entry(f)}`,
     audit_entry_actionsRerun: (f: AuditFacts) => `Ran the actions again for ${count(f.count, 'entry', 'entries')}`,
+    audit_entry_anonymised: (f: AuditFacts) => `Anonymised ${count(f.count, 'entry', 'entries')} at a person's request`,
     audit_entry_answersEdited: (f: AuditFacts) => `Edited answers of ${entry(f)}`,
     audit_entry_deleted: (f: AuditFacts) => `Deleted ${count(f.count, 'entry', 'entries')}`,
+    audit_entry_erased: (f: AuditFacts) => `Erased ${count(f.count, 'entry', 'entries')} at a person's request`,
     audit_entry_forwarded: (f: AuditFacts) => `Forwarded ${entry(f)}`,
     audit_entry_held: (f: AuditFacts) => `Put ${entry(f)} on legal hold`,
     audit_entry_purged: (f: AuditFacts) => `Retention deleted ${count(f.count, 'entry', 'entries')}`,
@@ -235,6 +237,9 @@ export default {
     audit_optionList_deleted: 'Deleted the option list',
     audit_optionList_fetched: "Fetched the option list's options again",
     audit_optionList_saved: 'Saved the option list',
+    audit_people_erased: (f: AuditFacts) => `Erased a person's data from ${count(f.count, 'entry', 'entries')}`,
+    audit_people_exported: (f: AuditFacts) => `Exported a person's data from ${count(f.count, 'entry', 'entries')}`,
+    audit_people_found: (f: AuditFacts) => `Looked for a person's data and found ${count(f.count, 'entry', 'entries')}`,
     audit_settings_saved: (f: AuditFacts) =>
       f.changed
         ? `Changed ${f.changed}`

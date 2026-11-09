@@ -751,6 +751,12 @@ internal interface IEntryRepository
     /// <param name="cancellationToken">Cancels the read.</param>
     Task<IReadOnlyList<EntryRetentionRow>> ListForRetentionAsync(IReadOnlyCollection<long> entryIds, CancellationToken cancellationToken = default);
 
+    /// <summary>How many entries of the form a legal hold keeps at <paramref name="now"/> (ADR-0222).</summary>
+    /// <param name="formId">The form.</param>
+    /// <param name="now">The moment.</param>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    Task<long> CountOnHoldAsync(int formId, DateTimeOffset now, CancellationToken cancellationToken = default);
+
     /// <summary>
     /// How many entries of each of these forms the rules that <paramref name="cutoffs"/> stand for delete by its horizon,
     /// and how many of those a hold keeps past it (the dry run, ADR-0222). A form without any is left out.

@@ -43,6 +43,9 @@ public sealed class EntryPanelResponseModel
     /// <summary>How many notes it has.</summary>
     public required int Notes { get; init; }
 
+    /// <summary>The end of its legal hold, while one keeps it (ADR-0222).</summary>
+    public DateTimeOffset? HeldUntil { get; init; }
+
     /// <summary>What the user may do on its form, by name.</summary>
     public required IReadOnlyList<string> Permissions { get; init; }
 }
@@ -247,6 +250,9 @@ public sealed class EntryTimelineEventResponseModel
 
     /// <summary>Whom a forward went to.</summary>
     public required string? Recipient { get; init; }
+
+    /// <summary>When a legal hold it set ends.</summary>
+    public DateTimeOffset? Until { get; init; }
 
     /// <summary>What an edit changed.</summary>
     public required IReadOnlyList<EntryTimelineChangeResponseModel> Changes { get; init; }
@@ -493,6 +499,7 @@ internal static class EntryPanelMapping
             Groups = [.. page.Groups.Select(group => new EntryPanelGroupResponseModel { Key = group.Key, Title = group.Title, Answers = [.. group.Answers.Select(Answer)] })],
         })],
         Notes = panel.Notes,
+        HeldUntil = panel.HeldUntil,
         Permissions = permissions,
     };
 

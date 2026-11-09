@@ -20,9 +20,10 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Integration.ManagementApi;
 /// every persona that must be refused: without the Forms section, seeing the folder but lacking the permission, and
 /// holding nothing on the folder or form. A new endpoint is called by itself, and fails until the table names it. Two
 /// reviewed exceptions: the form picker's endpoints, authorised by content access (ADR-0013, ADR-0133), each carrying that
-/// declaration with its own access tests (<c>PickerApiTests</c>); and the download of a background export's file, which a
-/// plain link calls with a ticket instead of a token (ADR-0210), so it is anonymous, declares its ticket, and finds
-/// nothing for anyone without one; its ticket's own tests are <c>EntryExportApiTests</c>.
+/// declaration with its own access tests (<c>PickerApiTests</c>); and the download of a background export's file, a
+/// form's or a person's, which a plain link calls with a ticket instead of a token (ADR-0210, ADR-0223), so it is
+/// anonymous, declares its ticket, and finds nothing for anyone without one; its ticket's own tests are
+/// <c>EntryExportApiTests</c> and <c>PeopleApiTests</c>.
 /// </summary>
 [TestFixture]
 [UmbracoTest(Database = UmbracoTestOptions.Database.NewSchemaPerTest, Boot = true)]
@@ -201,6 +202,14 @@ public sealed class PermissionMatrixTests : ManagementApiTestBase
         ["GET audit/export"] = (FormBuilderPermissions.ManageSettings, FormBuilderAccessResourceKind.Global, null),
         ["GET retention"] = (FormBuilderPermissions.ManageSettings | FormBuilderPermissions.PrivacyTools, FormBuilderAccessResourceKind.Global, null),
         ["POST retention/dry-run"] = (FormBuilderPermissions.ManageSettings | FormBuilderPermissions.PrivacyTools, FormBuilderAccessResourceKind.Global, null),
+        ["POST people/find"] = (FormBuilderPermissions.PrivacyTools, FormBuilderAccessResourceKind.Global, null),
+        ["POST people/erase/preview"] = (FormBuilderPermissions.PrivacyTools, FormBuilderAccessResourceKind.Global, null),
+        ["POST people/erase"] = (FormBuilderPermissions.PrivacyTools, FormBuilderAccessResourceKind.Global, null),
+        ["POST people/hold"] = (FormBuilderPermissions.PrivacyTools, FormBuilderAccessResourceKind.Global, null),
+        ["POST people/release"] = (FormBuilderPermissions.PrivacyTools, FormBuilderAccessResourceKind.Global, null),
+        ["POST people/export"] = (FormBuilderPermissions.PrivacyTools, FormBuilderAccessResourceKind.Global, null),
+        ["GET people/export/{exportKey}"] = (FormBuilderPermissions.PrivacyTools, FormBuilderAccessResourceKind.Global, null),
+        ["POST people/export/{exportKey}/ticket"] = (FormBuilderPermissions.PrivacyTools, FormBuilderAccessResourceKind.Global, null),
     };
 
     /// <summary>The endpoints one of whose permissions is enough (ADR-0222): Privacy > Retention, which both its permissions read.</summary>
@@ -212,8 +221,8 @@ public sealed class PermissionMatrixTests : ManagementApiTestBase
     /// </summary>
     private static readonly string[] Exceptions = ["GET picker/children", "GET picker/search", "GET picker/forms", "GET picker/folders", "GET picker/themes"];
 
-    /// <summary>The reviewed endpoints a ticket authorises instead of a signed-in user: only the download of an export's file (11.4).</summary>
-    private static readonly string[] Tickets = ["GET form/{key}/entries/export/jobs/{exportKey}/file"];
+    /// <summary>The reviewed endpoints a ticket authorises instead of a signed-in user: only the download of an export's file (11.4, ADR-0223).</summary>
+    private static readonly string[] Tickets = ["GET form/{key}/entries/export/jobs/{exportKey}/file", "GET people/export/{exportKey}/file"];
 
     // The personas who may stand for "sees it but lacks the permission", in the order the test tries them.
     private static readonly string[] Seers = ["viewer", "designer", "entryHandler", "privacyOfficer", "noAccess"];

@@ -7,6 +7,7 @@ using Jiron.Umbraco.FormBuilder.Core.Files;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Migrations;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
+using Jiron.Umbraco.FormBuilder.Core.Privacy;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -117,6 +118,7 @@ internal sealed record EntryExportDownload(Stream Content, string FileName, stri
 /// <param name="values">The records.</param>
 /// <param name="forms">Whether an export's form is still there.</param>
 /// <param name="exports">Writes the exports.</param>
+/// <param name="people">Writes the exports of a person's data (ADR-0223).</param>
 /// <param name="store">The files.</param>
 /// <param name="wake">The worker's wake.</param>
 /// <param name="events">Where a finished export is announced.</param>
@@ -127,6 +129,7 @@ internal sealed partial class EntryExportJobs(
     IKeyValueRepository values,
     IFormRepository forms,
     EntryExports exports,
+    PersonExports people,
     IFormBuilderFileStore store,
     EntryExportWake wake,
     IEventAggregator events,
@@ -190,6 +193,21 @@ internal sealed partial class EntryExportJobs(
         await values.SetAsync(KeyOf(record.Key), Write(record), cancellationToken);
         wake.Wake();
         return record;
+    }
+
+    /// <summary>
+    /// Queues the export of everything about a person (ADR-0223), by the keys of their entries, and wakes this server's
+    /// worker. Its record stands for no form (<see cref="PersonExports.Scope"/>) and keeps no address.
+    /// </summary>
+    /// <param name="entryKeys">The person's entries.</param>
+    /// <param name="exporter">Who asks.</param>
+    /// <param name="cancellationToken">Cancels the queueing.</param>
+    /// <exception cref="FormBuilderValidationException">The user has <see cref="MaxUnderWay"/> exports under way.</exception>
+    public Task<EntryExportRecord> QueuePersonAsync(IReadOnlyList<Guid> entryKeys, EntryExporter exporter, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(entryKeys);
+        var request = new EntryExportRequest { Format = PersonExports.FormatName, Entries = entryKeys, Sensitive = true };
+        return QueueAsync(PersonExports.Scope, request, exporter with { MaySeeSensitive = true }, new EntryExportPlan(entryKeys.Count, More: false, Background: true), cancellationToken);
     }
 
     /// <summary>An export of the form that the user asked for; null for any other.</summary>
@@ -260,7 +278,7 @@ internal sealed partial class EntryExportJobs(
         {
             cancellationToken.ThrowIfCancellationRequested();
             var record = json is null ? null : Read(json);
-            if (record is not null && !Expired(record) && await forms.GetAsync(record.Form, cancellationToken) is not null)
+            if (record is not null && !Expired(record) && (record.Form == PersonExports.Scope || await forms.GetAsync(record.Form, cancellationToken) is not null))
             {
                 continue;
             }
@@ -379,7 +397,9 @@ internal sealed partial class EntryExportJobs(
                     Directory.CreateDirectory(TempFolder);
                     await using var temp = new FileStream(Path.Combine(TempFolder, Guid.NewGuid().ToString("N") + ".tmp"), FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None, 81920, FileOptions.DeleteOnClose | FileOptions.Asynchronous);
                     var exporter = new EntryExporter(record.Owner, record.MaySeeSensitive, record.Culture);
-                    written = await exports.WriteAsync(record.Form, record.Request, exporter, temp, done => RenewAsync(done), announce: false, lost.Token);
+                    written = record.Form == PersonExports.Scope
+                        ? await people.WriteAsync(record.Request.Entries, exporter, temp, done => RenewAsync(done), lost.Token)
+                        : await exports.WriteAsync(record.Form, record.Request, exporter, temp, done => RenewAsync(done), announce: false, lost.Token);
                     if (written is not null)
                     {
                         temp.Position = 0;
@@ -420,7 +440,11 @@ internal sealed partial class EntryExportJobs(
                 return;
             }
 
-            await events.PublishAsync(new ExportCompletedNotification(record.Form, record.Request.Format, written.Entries, record.Owner), CancellationToken.None);
+            // A person's export is no form's, and the site hears nothing of it.
+            if (record.Form != PersonExports.Scope)
+            {
+                await events.PublishAsync(new ExportCompletedNotification(record.Form, record.Request.Format, written.Entries, record.Owner), CancellationToken.None);
+            }
         }
         catch (OperationCanceledException) when (lost.IsCancellationRequested && !stopping.IsCancellationRequested)
         {

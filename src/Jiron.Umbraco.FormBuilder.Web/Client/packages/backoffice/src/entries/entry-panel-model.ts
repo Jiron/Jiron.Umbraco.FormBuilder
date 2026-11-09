@@ -42,10 +42,16 @@ export interface PanelBar {
  * Reject, Mark as spam and Forward..., then Delete... and Re-run actions; in Spam, Not spam with Delete...; any other,
  * Mark as spam, Forward... and Delete..., then Back to waiting for approval (approved or rejected, approved by hand) and
  * Re-run actions. Print, for a user who may export, waits in the "..." in every state (IA 6.3, ADR-0210). The user sees
- * only what they may use, the first three of it beside the primary.
+ * only what they may use, the first three of it beside the primary. While a legal hold keeps the entry, Delete... is not
+ * there: the panel says the hold instead (ADR-0222).
  */
-export function panelBar(state: string, manualApproval: boolean, permissions: readonly string[]): PanelBar {
-  const may = (action: PanelAction) => permissions.includes(PANEL_NEEDS[action]);
+export function panelBar(
+  state: string,
+  manualApproval: boolean,
+  permissions: readonly string[],
+  held = false,
+): PanelBar {
+  const may = (action: PanelAction) => permissions.includes(PANEL_NEEDS[action]) && !(held && action === 'delete');
   let primary: PanelAction | undefined;
   let order: PanelAction[];
   if (state === 'spam') {
@@ -146,7 +152,19 @@ const EVENT_ICONS: Record<string, string> = {
   forwarded: 'icon-share',
   answersEdited: 'icon-edit',
   actionsRerun: 'icon-refresh',
+  held: 'icon-lock',
+  released: 'icon-unlocked',
+  anonymised: 'icon-user',
 };
+
+/**
+ * The day a legal hold ends, as the panel and its timeline name it (ADR-0222): its end is the start of a day in UTC, so the
+ * day is read in UTC, the day it was set for wherever the reader is.
+ */
+export const holdEnd = (iso: string, culture: string): string =>
+  new Intl.DateTimeFormat(culture, { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }).format(
+    new Date(iso),
+  );
 
 const QUIET_EVENTS = new Set(['verificationExpires', 'draftExpires']);
 
@@ -187,7 +205,21 @@ export function timelineLines(
         text = term('jfbEntries_tl_actionsRerun', event.count ?? 0, who(event.user));
         break;
       case 'forwarded':
-        text = term('jfbEntries_tl_forwarded', event.recipient ?? '', who(event.user));
+        // An erase blanks the recipient of a forward to the person it erased (ADR-0223).
+        text = event.recipient
+          ? term('jfbEntries_tl_forwarded', event.recipient, who(event.user))
+          : term('jfbEntries_tl_forwardedNobody', who(event.user));
+        break;
+      case 'held':
+        text = event.until
+          ? term('jfbEntries_tl_held', holdEnd(event.until, culture), who(event.user))
+          : term('jfbEntries_tl_heldNoEnd', who(event.user));
+        break;
+      case 'released':
+        text = term('jfbEntries_tl_released', who(event.user));
+        break;
+      case 'anonymised':
+        text = term('jfbEntries_tl_anonymised', who(event.user));
         break;
       case 'answersEdited':
         text = term('jfbEntries_tl_answersEdited', who(event.user));

@@ -177,6 +177,8 @@ export default {
     emptyNothingYours: 'Im Papierkorb ist nichts, das Sie endgültig löschen dürfen.',
 
     folderNotEmpty: 'Dieser Ordner enthält noch Formulare oder Ordner. Verschieben oder löschen Sie sie zuerst.',
+    entriesHeld:
+      'Eine Löschsperre hält einige seiner Einträge, daher lässt es sich erst endgültig löschen, wenn die Sperren enden.',
     formGone: 'Dieses Formular gibt es nicht mehr, oder Sie haben keinen Zugriff darauf.',
     folderGone: 'Diesen Ordner gibt es nicht mehr, oder Sie haben keinen Zugriff darauf.',
     templateGone: 'Diese Vorlage gibt es nicht mehr. Wählen Sie eine andere.',

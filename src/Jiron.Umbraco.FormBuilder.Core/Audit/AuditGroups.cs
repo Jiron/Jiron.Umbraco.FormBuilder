@@ -32,7 +32,7 @@ internal static class AuditGroups
     public static IReadOnlyList<string> KindsOf(AuditGroup group) => group switch
     {
         AuditGroup.Forms => ["form", "folder"],
-        AuditGroup.Entries => ["entry", "entries", "entryFile", "email"],
+        AuditGroup.Entries => ["entry", "entries", "entryFile", "email", "people"],
         AuditGroup.Library => ["optionList", "theme", "emailLayout", "template"],
         AuditGroup.Settings => ["settings", "access", EntityType],
         _ => throw new ArgumentOutOfRangeException(nameof(group), group, "No such group."),

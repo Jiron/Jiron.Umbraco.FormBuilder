@@ -43,6 +43,12 @@ describe("the entry panel's bar", () => {
   it('gives a privacy officer Delete... alone, and Spam its Not spam', () => {
     expect(panelBar('submitted', true, PRIVACY)).toEqual({ visible: ['delete'], more: [] });
     expect(panelBar('spam', true, ADMIN)).toEqual({ primary: 'notSpam', visible: ['delete'], more: [] });
+    expect(panelBar('spam', true, ADMIN, true), 'a legal hold keeps it').toEqual({
+      primary: 'notSpam',
+      visible: [],
+      more: [],
+    });
+    expect(panelBar('submitted', true, PRIVACY, true)).toEqual({ visible: [], more: [] });
   });
 
   it('offers the way back to waiting only where a person approves', () => {
@@ -172,6 +178,38 @@ describe('what the panel says', () => {
       ['2 actions queued again by Ben', expect.any(String)],
       ['Forwarded to hr@example.org by Ana', 'icon-share'],
       ['Received', expect.any(String)],
+    ]);
+  });
+
+  it('says a legal hold with its end, its release, an anonymise, and a forward whose recipient an erase blanked', () => {
+    const lines = timelineLines(
+      {
+        events: [
+          {
+            id: 1,
+            when: '2026-11-07T08:00:00Z',
+            kind: 'held',
+            user: 'Mira',
+            until: '2026-12-24T00:00:00Z',
+            changes: [],
+          },
+          { id: 2, when: '2026-11-07T09:00:00Z', kind: 'released', user: 'Mira', changes: [] },
+          { id: 3, when: '2026-11-07T10:00:00Z', kind: 'forwarded', user: 'Ana', changes: [] },
+          { id: 4, when: '2026-11-07T11:00:00Z', kind: 'anonymised', user: 'Mira', changes: [] },
+        ],
+        runs: [],
+        mail: [],
+      } as never,
+      'en-GB',
+      new Date('2026-11-07T13:00:00Z'),
+      term,
+    );
+
+    expect(lines.map((line) => [line.text, line.icon])).toEqual([
+      ['Anonymised at a person\x27s request by Mira', 'icon-user'],
+      ['Forwarded by Ana', 'icon-share'],
+      ['Legal hold released by Mira', 'icon-unlocked'],
+      ['Put on legal hold until 24 December 2026 by Mira', 'icon-lock'],
     ]);
   });
 

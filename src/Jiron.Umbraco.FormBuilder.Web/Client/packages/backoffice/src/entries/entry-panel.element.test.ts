@@ -50,6 +50,8 @@ const server = vi.hoisted(() => ({
   moveAnswers: [] as (Partial<EntryStateResponseModel> | undefined)[],
   undos: [] as string[],
   deletes: [] as boolean[],
+  /** Whether a legal hold keeps the entry a delete asks for. */
+  held: false,
   reruns: [] as boolean[],
   retries: [] as { run: number; confirmed: boolean }[],
   retryAnswers: [] as ('queued' | 'confirm' | 'failed')[],
@@ -116,7 +118,7 @@ vi.mock('./entries-api', () => ({
   },
   deleteEntries: async (_host: unknown, _form: string, entries: readonly string[], confirm: boolean) => {
     server.deletes.push(confirm);
-    return { entries: entries.length, files: 1, deleted: confirm };
+    return { entries: server.held ? 0 : entries.length, files: 1, deleted: confirm, held: server.held ? 1 : 0 };
   },
   rerunActions: async (_host: unknown, _form: string, entries: readonly string[], confirm: boolean) => {
     server.reruns.push(confirm);
@@ -282,6 +284,7 @@ beforeEach(() => {
     moveAnswers: [],
     undos: [],
     deletes: [],
+    held: false,
     reruns: [],
     retries: [],
     retryAnswers: [],
@@ -356,6 +359,14 @@ describe("the entry panel's answers", () => {
     expect(text(answerOf('Reference'))).toBe('not kept');
     expect(text(root.querySelectorAll('dt')[6] ?? null)).toBe('Old question No longer on the form');
     expect(text(answerOf('CV'))).toContain('late.doc \u00b7 Held back while it is checked');
+  });
+
+  it('says a legal hold and the day it ends, above the details', async () => {
+    server.panel = panelOf({ heldUntil: '2027-04-30T00:00:00Z' });
+    const { root } = await open();
+    expect(text(root.querySelector('.held span'))).toBe(
+      'On legal hold until April 30, 2027: no delete takes it, retention included.',
+    );
   });
 
   it('reveals one sensitive value at once, with Hide and the line on the audit log', async () => {
@@ -468,6 +479,29 @@ describe("the entry panel's bar", () => {
     expect(server.deletes).toEqual([false, true]);
     expect(told.at(-1)).toEqual({ name: 'jfb-entry-gone', detail: { key: 'e7', state: 'submitted' } });
     expect(peek.mock.calls.at(-1)?.[1]).toEqual({ data: { message: 'Entry #7 deleted.' } });
+  });
+
+  it('offers no Delete... while a legal hold keeps the entry, and says a hold set since it was read', async () => {
+    const actions = (root: ParentNode) =>
+      [...root.querySelectorAll<HTMLElement>('footer.bar uui-button, footer.bar .menu button')].map(
+        (one) => one.getAttribute('label') ?? text(one),
+      );
+    expect(actions((await open()).root)).toContain('Delete\u2026');
+    document.body.replaceChildren();
+    server.panel = panelOf({ heldUntil: '2027-04-30T00:00:00Z' });
+    expect(actions((await open()).root)).not.toContain('Delete\u2026');
+    document.body.replaceChildren();
+
+    server.held = true;
+    server.panel = panelOf();
+    const { panel, peek } = await open();
+    panel.act('delete');
+    await settle(panel);
+    expect(opened.confirmations).toEqual([]);
+    expect(server.deletes).toEqual([false]);
+    expect(peek).toHaveBeenLastCalledWith('warning', {
+      data: { message: "A legal hold keeps this entry, so it can't be deleted until the hold ends." },
+    });
   });
 
   it("prints the entry's printable view without its sensitive fields, leaving the export dialog's choices as they were", async () => {

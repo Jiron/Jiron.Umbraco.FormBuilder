@@ -40,6 +40,7 @@ import {
   PANEL_MOVE,
   asksLines,
   detailsLine,
+  holdEnd,
   panelBar,
   problemAnswer,
   problemText,
@@ -232,6 +233,18 @@ export class EntryPanelElement extends UmbLitElement {
 
       .spam {
         margin: 0 0 var(--uui-size-space-5);
+      }
+
+      .held {
+        display: flex;
+        align-items: flex-start;
+        gap: var(--uui-size-space-3);
+        margin: 0 0 var(--uui-size-space-4);
+      }
+
+      .held uui-icon {
+        flex: none;
+        margin-block-start: 0.2em;
       }
 
       .spam ul {
@@ -552,7 +565,7 @@ export class EntryPanelElement extends UmbLitElement {
   act(action: PanelAction) {
     // While the next entry loads, a key acts on nothing: never on the entry shown before.
     if (!this._panel || this._state !== 'ready' || this._panel.key !== this.entry || this._editing) return;
-    const bar = panelBar(this._panel.state, this._panel.manualApproval, this.#permissions);
+    const bar = panelBar(this._panel.state, this._panel.manualApproval, this.#permissions, !!this._panel.heldUntil);
     if (bar.primary !== action && !bar.visible.includes(action) && !bar.more.includes(action)) return;
     void this.#run(action);
   }
@@ -750,6 +763,12 @@ export class EntryPanelElement extends UmbLitElement {
     const plan = await deleteEntries(this, this.form, [panel.key], false);
     if (!plan) {
       await this.#notify('danger', this.#term('deleteFailed'));
+      return;
+    }
+
+    // A hold set since the panel was read keeps the entry.
+    if (plan.entries === 0) {
+      await this.#notify('warning', this.#term(plan.held > 0 ? 'deleteOne_held' : 'deleteFailed'));
       return;
     }
 
@@ -1005,6 +1024,13 @@ export class EntryPanelElement extends UmbLitElement {
       panel.details.member || panel.details.ipAddress || (!spam && panel.details.spamReasons.length),
     );
     return html`${
+        panel.heldUntil
+          ? html`<p class="held">
+              <uui-icon name="icon-lock" aria-hidden="true"></uui-icon
+              ><span>${this.#term('panel_held', holdEnd(panel.heldUntil, this.localize.lang()))}</span>
+            </p>`
+          : nothing
+      }${
         spam
           ? html`<div class="spam">
               <strong id="why">${this.#term('spam_heading')}</strong>
@@ -1410,7 +1436,7 @@ export class EntryPanelElement extends UmbLitElement {
       </footer>`;
     }
 
-    const bar = panelBar(panel.state, panel.manualApproval, this.#permissions);
+    const bar = panelBar(panel.state, panel.manualApproval, this.#permissions, !!panel.heldUntil);
     const primary = bar.primary;
     if (!primary && bar.visible.length === 0) return html``;
     return html`<footer class="bar">

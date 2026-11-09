@@ -94,6 +94,7 @@ internal sealed record EntryPanelDetails(string? Page, string Culture, int? Dura
 /// <param name="Details">Where and how it was sent.</param>
 /// <param name="Pages">Its answers, by the pages and groups of its version.</param>
 /// <param name="Notes">How many notes it has.</param>
+/// <param name="HeldUntil">The end of its legal hold, while one keeps it (ADR-0222).</param>
 internal sealed record EntryPanel(
     Guid Key,
     Guid FormKey,
@@ -106,7 +107,8 @@ internal sealed record EntryPanel(
     bool IsTest,
     EntryPanelDetails Details,
     IReadOnlyList<EntryPanelPage> Pages,
-    int Notes);
+    int Notes,
+    DateTimeOffset? HeldUntil = null);
 
 /// <summary>
 /// Reads one entry for the entry panel (ADR-0208): its header, details and answers in the pages and groups of its
@@ -129,6 +131,7 @@ internal sealed record EntryPanel(
 /// <param name="members">The members.</param>
 /// <param name="edits">Which answers the panel edits.</param>
 /// <param name="logger">Where a signature that cannot be read goes.</param>
+/// <param name="time">The clock, by which a hold still lasts.</param>
 internal sealed partial class EntryPanels(
     FormBuilderDatabase database,
     IFormRepository forms,
@@ -145,7 +148,8 @@ internal sealed partial class EntryPanels(
     IFormBuilderFileStore files,
     IMemberService members,
     EntryEdits edits,
-    ILogger<EntryPanels> logger)
+    ILogger<EntryPanels> logger,
+    TimeProvider time)
 {
     /// <summary>The kind of the event that records the first time a backoffice user opened an entry.</summary>
     public const string OpenedEvent = "opened";
@@ -196,13 +200,34 @@ internal sealed partial class EntryPanels(
                 cancellationToken);
         }
 
+        return await PanelAsync(form, entry, mayEdit, plain: false, cancellationToken);
+    }
+
+    /// <summary>
+    /// Everything of one entry as the panel reads it, sensitive answers unmasked, for the export of its person's data
+    /// (ADR-0223); drafts too. It marks nothing seen and audits nothing, as the export is audited as a whole. Null when its
+    /// version is gone.
+    /// </summary>
+    /// <param name="form">The entry's form.</param>
+    /// <param name="entry">The entry.</param>
+    /// <param name="cancellationToken">Cancels the reads.</param>
+    public Task<EntryPanel?> ReadAllAsync(StoredForm form, StoredEntry entry, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(form);
+        ArgumentNullException.ThrowIfNull(entry);
+        return PanelAsync(form, entry, mayEdit: false, plain: true, cancellationToken);
+    }
+
+    // The panel of an entry: its answers masked where they are sensitive, or none masked when plain.
+    private async Task<EntryPanel?> PanelAsync(StoredForm form, StoredEntry entry, bool mayEdit, bool plain, CancellationToken cancellationToken)
+    {
         if (await reads.ReadWholeAsync(entry, form, cancellationToken) is not { } read)
         {
             return null;
         }
 
         var live = await LiveFieldsAsync(form, cancellationToken);
-        var shown = Shown(read.Scope).ToList();
+        var shown = Shown(read.Scope).Select(field => plain ? Plain(field) : field).ToList();
         var texts = await answers.TextsAsync(read.Scope, shown.SelectMany(field => field.Fields.Select(child => new AnswerField(child, field)).Prepend(new AnswerField(field, null))), cancellationToken);
         var removedValues = read.Timeline.Any(entryEvent => entryEvent.Kind == ActionSettlement.ValuesRemovedEvent);
         var pages = new List<EntryPanelPage>();
@@ -214,7 +239,9 @@ internal sealed partial class EntryPanels(
                 var found = new List<EntryPanelAnswer>();
                 foreach (var field in group.Fields.Where(field => HoldsValue(field) && !read.Scope.Answers.Hidden.Contains(field.Key)))
                 {
-                    found.Add(Editable(await AnswerAsync(field, read, texts, live, removedValues, cancellationToken), field, read, mayEdit));
+                    var asked = plain ? Plain(field) : field;
+                    var answer = await AnswerAsync(asked, read, texts, live, removedValues, cancellationToken);
+                    found.Add(plain ? answer with { Sensitive = field.Sensitive || field.Fields.Any(child => child.Sensitive) } : Editable(answer, field, read, mayEdit));
                 }
 
                 if (found.Count > 0)
@@ -249,7 +276,8 @@ internal sealed partial class EntryPanels(
                 entry.IpAddress,
                 [.. entry.SpamReasons.Split(',', StringSplitOptions.RemoveEmptyEntries)]),
             pages,
-            (await notes.ListAsync(entry.Id, cancellationToken)).Count);
+            (await notes.ListAsync(entry.Id, cancellationToken)).Count,
+            EntryDeletions.IsHeld(entry.HoldUntilUtc, time.GetUtcNow()) ? entry.HoldUntilUtc : null);
     }
 
     /// <summary>
@@ -277,7 +305,7 @@ internal sealed partial class EntryPanels(
         }
 
         var sensitive = field.Sensitive || field.Fields.Any(child => child.Sensitive);
-        var plain = field with { Sensitive = false, Fields = [.. field.Fields.Select(child => child with { Sensitive = false })] };
+        var plain = Plain(field);
         var texts = await answers.TextsAsync(read.Scope, plain.Fields.Select(child => new AnswerField(child, plain)).Prepend(new AnswerField(plain, null)), cancellationToken);
         var live = await LiveFieldsAsync(form, cancellationToken);
         var answer = await AnswerAsync(plain, read, texts, live, read.Timeline.Any(entryEvent => entryEvent.Kind == ActionSettlement.ValuesRemovedEvent), cancellationToken);
@@ -290,6 +318,10 @@ internal sealed partial class EntryPanels(
 
         return Editable(answer, field, read, mayEdit, revealed: true) with { Sensitive = sensitive };
     }
+
+    // A field and its children as if none were sensitive, so their answers read unmasked.
+    private static FormField Plain(FormField field) =>
+        field with { Sensitive = false, Fields = [.. field.Fields.Select(child => child with { Sensitive = false })] };
 
     // An answer with how the panel edits it, for a user who may edit: never a masked one, whose values stay on the server.
     private EntryPanelAnswer Editable(EntryPanelAnswer answer, FormField field, EntryRead read, bool mayEdit, bool revealed = false) =>

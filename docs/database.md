@@ -473,7 +473,8 @@ forms as files last saw (ADR-0220): under `mirror/<form key>` the hash of the fi
 it matched and the file's name, and under `mirror-problem/<kind>/<form key or the hash of a file's name>` the file of
 a conflict, a file that could not be written or taken in, or a draft that publishing refused. No indexes besides the primary key on `key`. A background export keeps its record under
 `jfb.export.<export key>` (ADR-0210): its owner, form and request, where it stands, its worker's lease and, once ready,
-the file store's id of its file; the exports' job removes both a day after it was ready or failed.
+the file store's id of its file; the exports' job removes both a day after it was ready or failed. A person's export
+(ADR-0223) stands for no form, its form being the empty key, and its request names the entries' keys, never the person.
 
 ### `jfbFolder`
 
@@ -539,7 +540,8 @@ Resume tokens and challenges are stored only as hashes and ids.
 - `IX_jfbEntry_submittedUtc`: the newest entries across forms, for the Overview.
 - `IX_jfbEntry_firstSeenUtc_submittedUtc`: the entries nobody opened yet, newest first, for the Inbox and its badge.
 - `IX_jfbEntry_formVersionId`: the versions entries point at, so pruning a draft save checks without a scan.
-- `IX_jfbEntry_memberKey`: a member's entries, for privacy requests.
+- `IX_jfbEntry_memberKey`: a member's entries, for privacy requests. `memberKey` is the member signed in when the entry
+  was sent; a test entry keeps none (ADR-0223).
 - `IX_jfbEntry_purgeAfterUtc`: retention, which finds the entries whose time has come, soonest first. `purgeAfterUtc` is
   stored with every new entry and every change of state, and given again when the rules change; `holdUntilUtc` and
   `holdReason` are a legal hold, which keeps an entry from every delete until it ends (ADR-0222).

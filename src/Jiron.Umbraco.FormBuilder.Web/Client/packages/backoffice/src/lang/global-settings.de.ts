@@ -2,6 +2,8 @@
 // Allgemein, E-Mail, Spamschutz, Dateien und Integrationen sowie Datenschutz › Datenerfassung.
 import type { UmbLocalizationDictionary } from '@umbraco-cms/backoffice/localization-api';
 
+const and = (parts: readonly string[]) => new Intl.ListFormat('de', { type: 'conjunction' }).format(parts);
+
 export default {
   jfbGlobalSettings: {
     loading: 'Die Einstellungen werden geladen…',
@@ -287,6 +289,98 @@ export default {
     retentionNoFiles: 'keine',
     retentionCounting: 'Wird gezählt…',
     retentionCountFailed: 'Die Einträge konnten nicht gezählt werden.',
+
+    // Datenschutz › Personen
+    people_findBox: 'Daten einer Person finden',
+    people_email: 'E-Mail-Adresse',
+    people_emailPlaceholder: 'Zum Beispiel: name@example.com',
+    people_find: 'Finden',
+    people_findHelp:
+      'Alle Formulare werden durchsucht, auch eingeschränkte, und die Suche wird im Prüfprotokoll festgehalten.',
+    people_byMember: 'Stattdessen ein Mitglied finden',
+    people_byEmail: 'Stattdessen eine E-Mail-Adresse verwenden',
+    people_member: 'Mitglied',
+    people_chooseMember: 'Mitglied auswählen',
+    people_someMember: 'das Mitglied',
+    people_emailInvalid: 'Geben Sie eine E-Mail-Adresse ein, zum Beispiel name@example.com.',
+    people_entries: (count: string, one: boolean) => `${count} ${one ? 'Eintrag' : 'Einträge'}`,
+    people_forms: (count: string, one: boolean) => `${count} ${one ? 'Formular' : 'Formularen'}`,
+    people_files: (count: string, one: boolean) => `${count} ${one ? 'Datei' : 'Dateien'}`,
+    people_emails: (count: string, one: boolean) => `${count} ${one ? 'E-Mail' : 'E-Mails'}`,
+    people_drafts: (count: string, one: boolean) =>
+      `${count} ${one ? 'gespeicherter Entwurf' : 'gespeicherte Entwürfe'}`,
+    people_found: (entries: string, forms: string) => `${entries} in ${forms}`,
+    people_more: 'Das sind die neuesten 500. Löschen Sie sie und suchen Sie dann erneut nach den übrigen.',
+    people_none: (who: string) =>
+      `Keine Einträge für ${who} gefunden. Einträge, die angemeldet gesendet wurden, finden Sie über das Mitglied.`,
+    people_noneMember: (who: string) => `Keine Einträge für ${who} gefunden.`,
+    people_failed: 'Die Einträge konnten nicht gefunden werden.',
+    people_export: 'Alles exportieren',
+    people_hold: 'Löschsperre setzen…',
+    people_erase: 'Löschen…',
+    people_columnEntry: 'Eintrag',
+    people_columnForm: 'Formular',
+    people_columnReceived: 'Eingegangen',
+    people_columnFiles: 'Dateien',
+    people_columnEmails: 'E-Mails',
+    people_entry: (number: string) => `Eintrag #${number}`,
+    people_draft: 'Gespeicherter Entwurf',
+    people_test: 'Testeintrag',
+    people_trashed: 'Im Papierkorb',
+    people_noneCount: 'keine',
+    people_heldUntil: (until: string) => `Löschsperre bis ${until}`,
+    people_release: 'Aufheben',
+    people_releaseLabel: (entry: string) => `Löschsperre für ${entry} aufheben`,
+    people_released: 'Die Löschsperre ist aufgehoben.',
+    people_exporting: (done: string, total: string) =>
+      `Der Export wird vorbereitet: ${done} von ${total} Einträgen. Sie können weiterarbeiten; eine Benachrichtigung verlinkt die Datei.`,
+    people_exportLabel: 'Export',
+    people_exportFailed: 'Der Export konnte nicht vorbereitet werden. Versuchen Sie es erneut.',
+    people_erased: (who: string, parts: readonly string[]) =>
+      `Alles über ${who} ist gelöscht: ${and(parts)}. Die Statistik bleibt.`,
+    people_erasedAnonymised: (who: string, entries: string, one: boolean, deleted: readonly string[]) =>
+      `Alles über ${who} ist gelöscht: ${entries} anonymisiert, ${one ? 'der in den Zahlen bleibt' : 'die in den Zahlen bleiben'}${deleted.length > 0 ? `, und ${and(deleted)} gelöscht` : ''}. Die Statistik bleibt.`,
+    people_erasedHeld: (entries: string, one: boolean) =>
+      one
+        ? `${entries} mit Löschsperre bleibt, bis die Sperre endet.`
+        : `${entries} mit Löschsperre bleiben, bis die Sperren enden.`,
+    people_auditOpen: 'Prüfprotokoll öffnen',
+    people_auditRecorded: 'Es ist im Prüfprotokoll festgehalten.',
+    people_eraseHeadline: (who: string) => `Alles über ${who} löschen?`,
+    people_eraseText: (parts: readonly string[], one: boolean) =>
+      `${and(parts)} ${one ? 'wird' : 'werden'} gelöscht. Die Statistik bleibt. Das lässt sich nicht rückgängig machen.`,
+    people_eraseHeld: (entries: string, one: boolean) =>
+      one
+        ? `${entries} mit Löschsperre bleibt, bis die Sperre endet.`
+        : `${entries} mit Löschsperre bleiben, bis die Sperren enden.`,
+    people_eraseMore:
+      'Diesmal werden nur die neuesten 500 Einträge gelöscht; suchen Sie danach erneut nach den übrigen.',
+    people_eraseFormHeld: (count: string) => `${count} mit Löschsperre`,
+    people_eraseHow: 'Was mit den Einträgen geschieht',
+    people_eraseDelete: 'Löschen',
+    people_eraseDeleteHelp: 'Die Einträge gehen mit ihren Dateien und E-Mails.',
+    people_eraseAnonymise: 'Anonymisieren',
+    people_eraseAnonymiseHelp: 'Die Einträge bleiben in den Zahlen, ohne eine Antwort, Datei oder E-Mail der Person.',
+    people_eraseConfirm: (entries: string) => `${entries} löschen`,
+    people_eraseNothing:
+      'Alle Einträge haben eine Löschsperre, daher gibt es nichts zu löschen, bis die Sperren enden.',
+    people_eraseFailed: 'Das Löschen konnte nicht ausgeführt werden. Nichts wurde geändert; versuchen Sie es erneut.',
+    people_holdHeadline: 'Löschsperre setzen',
+    people_holdEntries: 'Einträge',
+    people_holdOf: (form: string, received: string) => `${form}, ${received}`,
+    people_holdReason: 'Grund',
+    people_holdReasonHelp:
+      'Wird mit der Sperre gespeichert. Das Prüfprotokoll hält fest, wer sie gesetzt hat und bis wann.',
+    people_holdUntil: 'Aufbewahren bis',
+    people_holdUntilHelp: 'Höchstens ein Jahr ab heute. Sie können die Sperre verlängern, bevor sie endet.',
+    people_holdNote:
+      'Einträge mit Löschsperre bleiben über ihre Aufbewahrung hinaus, und Löschen… lässt sie aus, bis die Sperre endet.',
+    people_holdConfirm: (entries: string) => `Löschsperre für ${entries} setzen`,
+    people_holdChoose: 'Wählen Sie mindestens einen Eintrag.',
+    people_holdReasonNeeded: 'Geben Sie den Grund in einer Zeile an, höchstens 500 Zeichen.',
+    people_holdEndInvalid: 'Wählen Sie einen Tag nach heute und höchstens ein Jahr voraus.',
+    people_holdFailed: 'Die Löschsperre konnte nicht gesetzt werden. Versuchen Sie es erneut.',
+    people_holdDone: (entries: string) => `${entries} mit Löschsperre.`,
 
     // Datenschutz › Datenerfassung
     privacyBox_insights: 'Einblicke',

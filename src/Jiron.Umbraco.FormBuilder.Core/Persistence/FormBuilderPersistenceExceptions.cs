@@ -86,6 +86,9 @@ internal enum FormBuilderConflict
     /// would store another (ADR-0088).
     /// </summary>
     EntryLimitReached,
+
+    /// <summary>A legal hold keeps entries of the form, so it cannot be deleted for good until the holds end (ADR-0222).</summary>
+    EntriesHeld,
 }
 
 /// <summary>

@@ -889,6 +889,7 @@ export type EntryPanelResponseModel = {
     details: EntryPanelDetailsResponseModel;
     pages: Array<EntryPanelPageResponseModel>;
     notes: number;
+    heldUntil?: string | null;
     permissions: Array<string>;
 };
 
@@ -973,6 +974,7 @@ export type EntryTimelineEventResponseModel = {
     to: string | null;
     count: number | null;
     recipient: string | null;
+    until?: string | null;
     changes: Array<EntryTimelineChangeResponseModel>;
 };
 
@@ -1801,6 +1803,90 @@ export type PagedPickerItemResponseModel = {
 export type PagedTemplateResponseModel = {
     total: number;
     items: Array<TemplateResponseModel>;
+};
+
+export type PersonEntriesRequestModel = {
+    email?: string | null;
+    member?: string | null;
+    entries: Array<string>;
+};
+
+export type PersonEntryResponseModel = {
+    key: string;
+    number: number;
+    form: PersonFormResponseModel;
+    state: string;
+    test: boolean;
+    received: string;
+    files: number;
+    emails: number;
+    heldUntil?: string | null;
+};
+
+export type PersonEraseFormResponseModel = {
+    key: string;
+    name: string;
+    trashed: boolean;
+    entries: number;
+    drafts: number;
+    held: number;
+    files: number;
+    emails: number;
+};
+
+export type PersonErasePreviewResponseModel = {
+    entries: number;
+    drafts: number;
+    held: number;
+    files: number;
+    emails: number;
+    more: boolean;
+    forms: Array<PersonEraseFormResponseModel>;
+};
+
+export type PersonEraseRequestModel = {
+    email?: string | null;
+    member?: string | null;
+    mode: string;
+};
+
+export type PersonErasedResponseModel = {
+    mode: string;
+    entries: number;
+    drafts: number;
+    files: number;
+    emails: number;
+    held: number;
+    auditId: number;
+};
+
+export type PersonFormResponseModel = {
+    key: string;
+    name: string;
+    trashed: boolean;
+};
+
+export type PersonFoundResponseModel = {
+    entries: Array<PersonEntryResponseModel>;
+    more: boolean;
+    forms: number;
+};
+
+export type PersonHeldResponseModel = {
+    entries: number;
+};
+
+export type PersonHoldRequestModel = {
+    email?: string | null;
+    member?: string | null;
+    entries: Array<string>;
+    until: string;
+    reason?: string | null;
+};
+
+export type PersonRequestModel = {
+    email?: string | null;
+    member?: string | null;
 };
 
 export type PickerItemResponseModel = {
@@ -7337,6 +7423,307 @@ export type PickerThemesResponses = {
 };
 
 export type PickerThemesResponse = PickerThemesResponses[keyof PickerThemesResponses];
+
+export type PeopleEraseData = {
+    body?: PersonEraseRequestModel;
+    path?: never;
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/people/erase';
+};
+
+export type PeopleEraseErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+};
+
+export type PeopleEraseError = PeopleEraseErrors[keyof PeopleEraseErrors];
+
+export type PeopleEraseResponses = {
+    /**
+     * OK
+     */
+    200: PersonErasedResponseModel;
+};
+
+export type PeopleEraseResponse = PeopleEraseResponses[keyof PeopleEraseResponses];
+
+export type PeoplePreviewData = {
+    body?: PersonRequestModel;
+    path?: never;
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/people/erase/preview';
+};
+
+export type PeoplePreviewErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+};
+
+export type PeoplePreviewError = PeoplePreviewErrors[keyof PeoplePreviewErrors];
+
+export type PeoplePreviewResponses = {
+    /**
+     * OK
+     */
+    200: PersonErasePreviewResponseModel;
+};
+
+export type PeoplePreviewResponse = PeoplePreviewResponses[keyof PeoplePreviewResponses];
+
+export type PeopleExportData = {
+    body?: PersonRequestModel;
+    path?: never;
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/people/export';
+};
+
+export type PeopleExportErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+};
+
+export type PeopleExportError = PeopleExportErrors[keyof PeopleExportErrors];
+
+export type PeopleExportResponses = {
+    /**
+     * OK
+     */
+    200: EntryExportStatusResponseModel;
+};
+
+export type PeopleExportResponse = PeopleExportResponses[keyof PeopleExportResponses];
+
+export type PeopleStatusData = {
+    body?: never;
+    path: {
+        exportKey: string;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/people/export/{exportKey}';
+};
+
+export type PeopleStatusErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type PeopleStatusError = PeopleStatusErrors[keyof PeopleStatusErrors];
+
+export type PeopleStatusResponses = {
+    /**
+     * OK
+     */
+    200: EntryExportStatusResponseModel;
+};
+
+export type PeopleStatusResponse = PeopleStatusResponses[keyof PeopleStatusResponses];
+
+export type PeopleDownloadData = {
+    body?: never;
+    path: {
+        exportKey: string;
+    };
+    query?: {
+        ticket?: string;
+    };
+    url: '/umbraco/jfb/management/api/v1/people/export/{exportKey}/file';
+};
+
+export type PeopleDownloadErrors = {
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type PeopleDownloadError = PeopleDownloadErrors[keyof PeopleDownloadErrors];
+
+export type PeopleDownloadResponses = {
+    /**
+     * OK
+     */
+    200: Blob | File;
+};
+
+export type PeopleDownloadResponse = PeopleDownloadResponses[keyof PeopleDownloadResponses];
+
+export type PeopleTicketData = {
+    body?: never;
+    path: {
+        exportKey: string;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/people/export/{exportKey}/ticket';
+};
+
+export type PeopleTicketErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type PeopleTicketError = PeopleTicketErrors[keyof PeopleTicketErrors];
+
+export type PeopleTicketResponses = {
+    /**
+     * OK
+     */
+    200: EntryExportTicketResponseModel;
+};
+
+export type PeopleTicketResponse = PeopleTicketResponses[keyof PeopleTicketResponses];
+
+export type PeopleFindData = {
+    body?: PersonRequestModel;
+    path?: never;
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/people/find';
+};
+
+export type PeopleFindErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+};
+
+export type PeopleFindError = PeopleFindErrors[keyof PeopleFindErrors];
+
+export type PeopleFindResponses = {
+    /**
+     * OK
+     */
+    200: PersonFoundResponseModel;
+};
+
+export type PeopleFindResponse = PeopleFindResponses[keyof PeopleFindResponses];
+
+export type PeopleHoldData = {
+    body?: PersonHoldRequestModel;
+    path?: never;
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/people/hold';
+};
+
+export type PeopleHoldErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+};
+
+export type PeopleHoldError = PeopleHoldErrors[keyof PeopleHoldErrors];
+
+export type PeopleHoldResponses = {
+    /**
+     * OK
+     */
+    200: PersonHeldResponseModel;
+};
+
+export type PeopleHoldResponse = PeopleHoldResponses[keyof PeopleHoldResponses];
+
+export type PeopleReleaseData = {
+    body?: PersonEntriesRequestModel;
+    path?: never;
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/people/release';
+};
+
+export type PeopleReleaseErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+};
+
+export type PeopleReleaseError = PeopleReleaseErrors[keyof PeopleReleaseErrors];
+
+export type PeopleReleaseResponses = {
+    /**
+     * OK
+     */
+    200: PersonHeldResponseModel;
+};
+
+export type PeopleReleaseResponse = PeopleReleaseResponses[keyof PeopleReleaseResponses];
 
 export type RetentionGetData = {
     body?: never;

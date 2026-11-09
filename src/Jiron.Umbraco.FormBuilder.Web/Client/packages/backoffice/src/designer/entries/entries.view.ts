@@ -1379,10 +1379,16 @@ export class EntriesViewElement extends UmbLitElement {
 
     const entries = plans.reduce((sum, plan) => sum + (plan?.entries ?? 0), 0);
     const files = plans.reduce((sum, plan) => sum + (plan?.files ?? 0), 0);
-    if (entries === 0) return;
+    const held = plans.reduce((sum, plan) => sum + (plan?.held ?? 0), 0);
+    if (entries === 0) {
+      if (held > 0) await this.#notify('warning', this.#term('left_held', held));
+      return;
+    }
     const confirmed = await confirmText(this, {
       headline: this.#term('delete_headline', entries),
-      content: this.#term('delete_body', entries, files),
+      content: [this.#term('delete_body', entries, files), held > 0 ? this.#term('delete_held', held) : '']
+        .filter(Boolean)
+        .join(' '),
       confirmLabel: this.#term('delete_confirm', entries),
       color: 'danger',
     }).then(
@@ -1397,17 +1403,28 @@ export class EntriesViewElement extends UmbLitElement {
     if (deleted.length < done.length) await this.#notify('danger', this.#term('deleteFailed'));
     if (deleted.length === 0) return;
 
-    const gone = new Set(deleted.flatMap((one) => one.group.keys));
     refreshUnseen();
     const count = deleted.reduce((sum, one) => sum + (one.done?.entries ?? 0), 0);
-    this._rows = this._rows.filter((row) => !gone.has(row.key));
+    const kept = deleted.reduce((sum, one) => sum + (one.done?.held ?? 0), 0);
     this._ticked = [];
     this._cursor = -1;
-    if (this._open !== undefined && gone.has(this._open)) this._open = undefined;
-    if (this._total !== null && !this._totalMore) this._total = Math.max(0, this._total - count);
+    // The answer does not say which entries a hold kept, so the list is read again when one did.
+    if (kept > 0) {
+      this._open = undefined;
+      await this.#read();
+    } else {
+      const gone = new Set(deleted.flatMap((one) => one.group.keys));
+      this._rows = this._rows.filter((row) => !gone.has(row.key));
+      if (this._open !== undefined && gone.has(this._open)) this._open = undefined;
+      if (this._total !== null && !this._totalMore) this._total = Math.max(0, this._total - count);
+    }
     await this.#notify(
       'positive',
-      [this.#term('deleted', count), split.notAllowed > 0 ? this.#term('left_notAllowed', split.notAllowed) : '']
+      [
+        this.#term('deleted', count),
+        kept > 0 ? this.#term('left_held', kept) : '',
+        split.notAllowed > 0 ? this.#term('left_notAllowed', split.notAllowed) : '',
+      ]
         .filter(Boolean)
         .join(' '),
     );
@@ -1489,7 +1506,12 @@ export class EntriesViewElement extends UmbLitElement {
       }
 
       if (plan.entries === 0) {
-        await this.#notify('warning', this.#term('empty_none'));
+        await this.#notify(
+          'warning',
+          [this.#term('empty_none'), plan.held > 0 ? this.#term('empty_held', plan.held) : '']
+            .filter(Boolean)
+            .join(' '),
+        );
         return;
       }
 
@@ -1498,13 +1520,15 @@ export class EntriesViewElement extends UmbLitElement {
       // Rows Not spam took out since the list was read still count in its total, but are no longer in Spam.
       const narrowed = isFiltered(this._filter) || !!this._filter.search;
       const out = this._rows.filter((row) => row.state !== 'spam').length;
-      const staying = !narrowed && this._total !== null && !this._totalMore ? this._total - out - plan.entries : 0;
+      const staying =
+        !narrowed && this._total !== null && !this._totalMore ? this._total - out - plan.entries - plan.held : 0;
       const confirmed = await confirmText(this, {
         headline: this.#term('empty_headline'),
         content: [
           this.#term('empty_body', plan.entries),
           narrowed ? this.#term('empty_filtered') : '',
           staying > 0 ? this.#term('empty_staying', staying) : '',
+          plan.held > 0 ? this.#term('empty_held', plan.held) : '',
           plan.more ? this.#term('empty_more') : '',
           this.#term('delete_body', plan.entries, plan.files),
         ]

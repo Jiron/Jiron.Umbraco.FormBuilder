@@ -175,6 +175,10 @@ internal sealed class SubmissionEntries(
             Culture = submission.Culture,
             ContentKey = submission.Page.Content,
             PageUrl = await PathAsync(submission.Page, submission.Culture, cancellationToken),
+
+            // The member signed in when it was sent (ADR-0009), by whom the privacy tools find it (ADR-0223); a test
+            // entry has none.
+            MemberKey = submission.IsTest ? null : scope.Member,
             Context = Json(submission.Context),
             SpamScore = verdict.Score,
             SpamReasons = SpamReasons.Stored(verdict.Reasons),

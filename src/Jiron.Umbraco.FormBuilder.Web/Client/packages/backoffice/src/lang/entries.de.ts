@@ -181,6 +181,8 @@ export default {
       `${number.toLocaleString('de')} ${number === 1 ? 'wurde' : 'wurden'} ausgelassen, weil Sie das in ${number === 1 ? 'seinem' : 'ihrem'} Formular nicht dürfen.`,
     left_rerun: (number: number) =>
       `${number.toLocaleString('de')} ${number === 1 ? 'wurde' : 'wurden'} ausgelassen: im Spam, wartend auf Bestätigung oder ohne Aktionen.`,
+    left_held: (number: number) =>
+      `${number.toLocaleString('de')} ${number === 1 ? 'wurde' : 'wurden'} ausgelassen, weil eine Löschsperre ${number === 1 ? 'ihn' : 'sie'} hält.`,
     moveFailed: 'Die Einträge konnten nicht geändert werden. Versuchen Sie es erneut.',
     undo: 'Zurücknehmen',
     undone: 'Die Änderung ist zurückgenommen.',
@@ -197,6 +199,10 @@ export default {
           ? `Dabei werden auch ${files === 1 ? 'seine hochgeladene Datei' : `seine ${files} hochgeladenen Dateien`} und seine Chronik gelöscht.`
           : `Dabei werden auch ${files === 1 ? 'ihre hochgeladene Datei' : `ihre ${files.toLocaleString('de')} hochgeladenen Dateien`} und ihre Chroniken gelöscht.`) +
       ' Das lässt sich nicht rückgängig machen.',
+    delete_held: (number: number) =>
+      number === 1
+        ? 'Eine Löschsperre hält 1 weiteren Eintrag, der bleibt.'
+        : `Eine Löschsperre hält ${number.toLocaleString('de')} weitere Einträge, die bleiben.`,
     delete_confirm: (number: number) => `${entries(number)} löschen`,
     deleted: (number: number) => `${entries(number)} gelöscht.`,
     deleteFailed: 'Die Einträge konnten nicht gelöscht werden. Versuchen Sie es erneut.',
@@ -229,6 +235,10 @@ export default {
         : `${number.toLocaleString('de')} Einträge bleiben, weil Sie in ihren Formularen keine Einträge löschen dürfen.`,
     empty_more: 'Der Spam enthält mehr, als ein Durchgang löscht: „Spam leeren…“ löscht danach den Rest.',
     empty_none: 'Der Spam enthält keinen Eintrag, den Sie löschen dürfen.',
+    empty_held: (number: number) =>
+      number === 1
+        ? 'Eine Löschsperre hält 1 Eintrag im Spam, der bleibt.'
+        : `Eine Löschsperre hält ${number.toLocaleString('de')} Einträge im Spam, die bleiben.`,
     emptied: (number: number) => `${entries(number)} aus dem Spam gelöscht.`,
     emptiedMore: 'Der Spam enthält noch mehr. „Spam leeren…“ löscht den Rest.',
     emptyFailed: 'Der Spam konnte nicht geleert werden. Versuchen Sie es erneut.',
@@ -275,6 +285,8 @@ export default {
     key_help: 'Diese Kürzel zeigen',
     panel_title: (number: number) => `Eintrag #${number}`,
     panel_close: 'Eintrag schließen',
+    panel_held: (until: string) =>
+      `Mit Löschsperre bis ${until}: Kein Löschen erfasst ihn, auch die Aufbewahrung nicht.`,
     panel_loading: 'Der Eintrag wird geladen…',
     panel_failed: 'Der Eintrag konnte nicht angezeigt werden.',
     notFound_entity: 'Eintrag',
@@ -346,6 +358,7 @@ export default {
     movedOne_submitted: (number: number) => `Eintrag #${number} wartet wieder auf Genehmigung.`,
     deleteOne_headline: (number: number) => `Eintrag #${number} löschen?`,
     deleteOne_confirm: 'Eintrag löschen',
+    deleteOne_held: 'Eine Löschsperre hält diesen Eintrag, daher lässt er sich erst löschen, wenn die Sperre endet.',
     deletedOne: (number: number) => `Eintrag #${number} gelöscht.`,
     tl_submitted: 'Eingegangen',
     tl_submittedFrom: (page: string) => `Eingegangen von ${page}`,
@@ -357,6 +370,11 @@ export default {
     tl_actionsRerun: (count: number, user: string) =>
       `${count === 1 ? '1 Aktion' : `${count} Aktionen`} erneut eingereiht von ${user}`,
     tl_forwarded: (to: string, user: string) => `An ${to} weitergeleitet von ${user}`,
+    tl_forwardedNobody: (user: string) => `Weitergeleitet von ${user}`,
+    tl_held: (until: string, user: string) => `Löschsperre bis ${until} gesetzt von ${user}`,
+    tl_heldNoEnd: (user: string) => `Löschsperre gesetzt von ${user}`,
+    tl_released: (user: string) => `Löschsperre aufgehoben von ${user}`,
+    tl_anonymised: (user: string) => `Auf Wunsch einer Person anonymisiert von ${user}`,
     tl_answersEdited: (user: string) => `Antworten bearbeitet von ${user}`,
     tl_change: (label: string, before: string, after: string) => `${label}: ${before} → ${after}`,
     tl_changeMasked: (label: string) => `${label}: geändert`,

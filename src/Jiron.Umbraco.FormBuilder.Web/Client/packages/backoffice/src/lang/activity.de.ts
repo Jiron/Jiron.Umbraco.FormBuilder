@@ -188,8 +188,11 @@ export default {
     audit_entry_actionRetried: (f: AuditFacts) => `Eine Aktion ${ofEntry(f)} erneut versucht`,
     audit_entry_actionsRerun: (f: AuditFacts) =>
       `Die Aktionen für ${count(f.count, 'Eintrag', 'Einträge')} erneut ausgeführt`,
+    audit_entry_anonymised: (f: AuditFacts) =>
+      `${count(f.count, 'Eintrag', 'Einträge')} auf Wunsch einer Person anonymisiert`,
     audit_entry_answersEdited: (f: AuditFacts) => `Antworten ${ofEntry(f)} bearbeitet`,
     audit_entry_deleted: (f: AuditFacts) => `${count(f.count, 'Eintrag', 'Einträge')} gelöscht`,
+    audit_entry_erased: (f: AuditFacts) => `${count(f.count, 'Eintrag', 'Einträge')} auf Wunsch einer Person gelöscht`,
     audit_entry_forwarded: (f: AuditFacts) => `${entry(f)} weitergeleitet`,
     audit_entry_held: (f: AuditFacts) => `Löschsperre für ${f.entry ? `Eintrag ${f.entry}` : 'einen Eintrag'} gesetzt`,
     audit_entry_purged: (f: AuditFacts) =>
@@ -247,6 +250,11 @@ export default {
     audit_optionList_deleted: 'Die Optionsliste gelöscht',
     audit_optionList_fetched: 'Die Optionen der Liste neu abgerufen',
     audit_optionList_saved: 'Die Optionsliste gespeichert',
+    audit_people_erased: (f: AuditFacts) => `Daten einer Person aus ${count(f.count, 'Eintrag', 'Einträgen')} gelöscht`,
+    audit_people_exported: (f: AuditFacts) =>
+      `Daten einer Person aus ${count(f.count, 'Eintrag', 'Einträgen')} exportiert`,
+    audit_people_found: (f: AuditFacts) =>
+      `Nach den Daten einer Person gesucht und ${count(f.count, 'Eintrag', 'Einträge')} gefunden`,
     audit_settings_saved: (f: AuditFacts) =>
       f.changed
         ? `${f.changed} geändert`
