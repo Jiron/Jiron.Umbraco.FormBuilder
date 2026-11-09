@@ -79,12 +79,16 @@ async function axeNodes(page: Page): Promise<AxeNode[]> {
   );
 }
 
-/** How the page lies at this width: its sideways scroll, the boxes that scroll inside it, and the texts cut short. */
+/**
+ * How the page lies at this width: its sideways scroll, the boxes that scroll inside it, and the texts cut short. The
+ * forms tree's names end with Umbraco's ellipsis as its own trees' do (ADR-0221), so its rows are left out.
+ */
 const measure = (page: Page) =>
   page.evaluate(() => {
     const all: HTMLElement[] = [];
     const walk = (root: Document | ShadowRoot) => {
       for (const element of root.querySelectorAll('*')) {
+        if (element.localName === 'jfb-library-tree-item') continue;
         if (element instanceof HTMLElement) all.push(element);
         if (element.shadowRoot) walk(element.shadowRoot);
       }

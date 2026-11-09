@@ -93,6 +93,8 @@ walk and the reviews found:
     "..." and a click there opens the row's menu; it fails without the id (the name ending at 633 px, the "..." at
     236 px). The tests' `openRowActions`, like the walk's own, tries the hover and the click again together until the
     menu shows, as a tree still reading rows can move one away from the pointer.
+    The narrowest journey and the walk, which count texts cut short inside the section, leave the tree's rows out,
+    as the reviews have counted the tree as Umbraco's since Phase 9.
 
 ## Consequences
 

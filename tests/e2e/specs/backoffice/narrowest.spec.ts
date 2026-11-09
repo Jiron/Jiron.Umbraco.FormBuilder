@@ -13,13 +13,18 @@ import { splitAxe } from '../../support/ux-walk.ts';
 // in the template gallery, whose footer keeps its two buttons side by side inside the window. The form is live with a
 // change waiting, so its header carries the longest state with the name, which keeps its room (ADR-0206, ADR-0213).
 
-/** What the page measures: its width, and inside the section's own elements the cut texts and sideways scrolls. */
+/**
+ * What the page measures: its width, and inside the section's own elements the cut texts and sideways scrolls. A row of
+ * the forms tree is Umbraco's own tree item with the section's label in it, which ends a long name with Umbraco's
+ * ellipsis as its own trees do (ADR-0221), so the tree is Umbraco's here.
+ */
 const measure = (page: Page) =>
   page.evaluate(() => {
     const ours: Element[] = [];
     const collect = (root: Document | ShadowRoot, inside: boolean) => {
       for (const element of root.querySelectorAll('*')) {
-        const mine = inside || element.tagName.toLowerCase().startsWith('jfb-');
+        const name = element.tagName.toLowerCase();
+        const mine = (inside || name.startsWith('jfb-')) && name !== 'jfb-library-tree-item';
         if (mine) ours.push(element);
         if (element.shadowRoot) collect(element.shadowRoot, mine);
       }
