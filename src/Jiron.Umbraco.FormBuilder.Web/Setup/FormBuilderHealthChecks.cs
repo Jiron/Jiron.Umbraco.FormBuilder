@@ -58,6 +58,10 @@ internal sealed class MigrationsHealthCheck(MigrationsHealth probe, IBackOfficeS
 [HealthCheck("6f0d6c1e-3b52-4c0a-9d44-1f7a2b8e5c07", "Base URLs", Description = "Checks that each site has an address for the links in its emails.", Group = GroupName)]
 internal sealed class BaseUrlHealthCheck(BaseUrlHealth probe, IBackOfficeSecurityAccessor security) : FormBuilderHealthCheck(probe, security);
 
+/// <summary>Privacy (ADR-0009, ADR-0224): whether entries keep more of visitors than the defaults, as the host allows.</summary>
+[HealthCheck("6f0d6c1e-3b52-4c0a-9d44-1f7a2b8e5c0a", "Privacy", Description = "Checks whether entries keep full IP addresses, whether entries of a state are kept for good, and whether a captcha loads before visitors are asked.", Group = GroupName)]
+internal sealed class PrivacyHealthCheck(PrivacyHealth probe, IBackOfficeSecurityAccessor security) : FormBuilderHealthCheck(probe, security);
+
 /// <summary>Forms as files (ADR-0220): whether each published form and its file are in step.</summary>
 [HealthCheck("6f0d6c1e-3b52-4c0a-9d44-1f7a2b8e5c09", "Forms as files", Description = "When forms are written to files for source control, checks that each published form and its file are in step.", Group = GroupName)]
 internal sealed class MirrorHealthCheck(MirrorHealth probe, IBackOfficeSecurityAccessor security) : FormBuilderHealthCheck(probe, security)

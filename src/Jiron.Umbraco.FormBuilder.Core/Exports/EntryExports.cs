@@ -1,6 +1,7 @@
 using System.Collections.Frozen;
 using System.Globalization;
 using System.Runtime.CompilerServices;
+using Jiron.Umbraco.FormBuilder.Core.Actions;
 using Jiron.Umbraco.FormBuilder.Core.Audit;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Entries;
@@ -69,6 +70,7 @@ internal sealed record EntryExportFile(string FileName, string ContentType, int 
 /// </summary>
 /// <param name="forms">The forms and their catalogue.</param>
 /// <param name="entries">The entries and their files.</param>
+/// <param name="entryEvents">Which entries' answers kept only until the actions have run are gone.</param>
 /// <param name="queries">The entries query.</param>
 /// <param name="lists">The list's filter, which an export takes.</param>
 /// <param name="scopes">Reads a page's answers.</param>
@@ -86,6 +88,7 @@ internal sealed record EntryExportFile(string FileName, string ContentType, int 
 internal sealed partial class EntryExports(
     IFormRepository forms,
     IEntryRepository entries,
+    IEntryEventRepository entryEvents,
     IEntryQueryRepository queries,
     EntryLists lists,
     SubmissionEntries scopes,
@@ -452,6 +455,9 @@ internal sealed partial class EntryExports(
         }
 
         var read = await scopes.ScopesAsync(export.Form, page, cancellationToken);
+
+        // The entries whose answers kept only until the actions have run are gone, which their cells say (ADR-0225).
+        var removed = (await entryEvents.ListOfKindAsync([.. page.Select(entry => entry.Id)], ActionSettlement.ValuesRemovedEvent, cancellationToken)).Select(entryEvent => entryEvent.EntryId).ToHashSet();
         var zones = new Dictionary<Guid, TimeZoneInfo>();
         var files = export.Format.WritesFiles && export.FileFields.Count > 0
             ? (await entries.ListFilesAsync([.. page.Select(entry => entry.Id)], cancellationToken)).ToLookup(file => file.EntryId)
@@ -486,6 +492,10 @@ internal sealed partial class EntryExports(
                     FormBuilderExportColumnKind.Position => Ranked(ranked, field, scope, texts) is { } order && spec.Position <= order.Count ? [order[spec.Position - 1]] : [],
                     _ => answers.ExportTexts(new AnswerField(field, null), scope, texts),
                 };
+                if (field is not null && cells[index].Count == 0 && removed.Contains(entry.Id) && field.Keep == FieldKeep.UntilActionsRun)
+                {
+                    cells[index] = [export.Words.NotKept];
+                }
             }
 
             for (var index = 0; index < export.TableSpecs.Count; index++)
@@ -631,7 +641,8 @@ internal sealed partial class EntryExports(
 /// <param name="State">The state's column.</param>
 /// <param name="Received">The received column.</param>
 /// <param name="States">The states, as the lists name them (copy.md).</param>
-internal sealed record ExportWords(string Entry, string Reference, string State, string Received, IReadOnlyDictionary<EntryState, string> States)
+/// <param name="NotKept">An answer kept only until the actions have run, once it is gone (ADR-0225), as the entry panel says it.</param>
+internal sealed record ExportWords(string Entry, string Reference, string State, string Received, IReadOnlyDictionary<EntryState, string> States, string NotKept)
 {
     private static readonly ExportWords English = new("Entry", "Reference", "State", "Received", new Dictionary<EntryState, string>
     {
@@ -641,7 +652,7 @@ internal sealed record ExportWords(string Entry, string Reference, string State,
         [EntryState.Approved] = "Approved",
         [EntryState.Rejected] = "Rejected",
         [EntryState.Spam] = "Spam",
-    }.ToFrozenDictionary());
+    }.ToFrozenDictionary(), "not kept");
 
     private static readonly ExportWords German = new("Eintrag", "Referenz", "Status", "Eingegangen", new Dictionary<EntryState, string>
     {
@@ -651,7 +662,7 @@ internal sealed record ExportWords(string Entry, string Reference, string State,
         [EntryState.Approved] = "Genehmigt",
         [EntryState.Rejected] = "Abgelehnt",
         [EntryState.Spam] = "Spam",
-    }.ToFrozenDictionary());
+    }.ToFrozenDictionary(), "nicht aufbewahrt");
 
     /// <summary>The words of a language: German for German, English for every other.</summary>
     public static ExportWords Of(string culture) => culture.StartsWith("de", StringComparison.OrdinalIgnoreCase) ? German : English;

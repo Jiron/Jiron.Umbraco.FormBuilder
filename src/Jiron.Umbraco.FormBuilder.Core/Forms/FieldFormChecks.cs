@@ -1,9 +1,12 @@
+using Jiron.Umbraco.FormBuilder.Core.Configuration;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Definitions.Serialization;
 using Jiron.Umbraco.FormBuilder.Core.Email;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn;
+using Jiron.Umbraco.FormBuilder.Core.Settings;
 using Jiron.Umbraco.FormBuilder.Core.Submissions;
+using Microsoft.Extensions.Options;
 
 namespace Jiron.Umbraco.FormBuilder.Core.Forms;
 
@@ -163,5 +166,24 @@ internal sealed class EmailReplyFormCheck : IFormCheck
         }
 
         return ValueTask.FromResult<IReadOnlyList<FormCheckIssue>>(issues);
+    }
+}
+
+/// <summary>
+/// A form that keeps full IP addresses on a host that does not allow them (ADR-0008, ADR-0224): the site keeps them
+/// anonymised instead, so the form check warns that the host replaces the value the form stores, as it does for a field's
+/// locked setting.
+/// </summary>
+/// <param name="options">The host configuration.</param>
+internal sealed class FullIPFormCheck(IOptions<FormBuilderOptions> options) : IFormCheck
+{
+    /// <inheritdoc />
+    public ValueTask<IReadOnlyList<FormCheckIssue>> CheckAsync(FormDefinition definition, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(definition);
+        IReadOnlyList<FormCheckIssue> issues = definition.Settings.Privacy.IP == IPHandling.Full && !options.Value.Privacy.AllowFullIp
+            ? [new FormCheckIssue(FormCheckSeverity.Warning, FormCheck.LockReplacesValue, "$.settings.privacy.ip", $"The site does not allow full IP addresses ({FullIPRule.ConfigurationKey}), so the form's entries keep them anonymised instead.")]
+            : [];
+        return ValueTask.FromResult(issues);
     }
 }

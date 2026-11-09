@@ -29,6 +29,9 @@ const FINDING_LINKS: Record<string, { entityType: string; needs: string }> = {
   settingsEmail: { entityType: 'jfb-settings-email', needs: 'manageSettings' },
   settingsGeneral: { entityType: 'jfb-settings-general', needs: 'manageSettings' },
   deliveries: { entityType: 'jfb-deliveries', needs: 'manageSettings' },
+  privacyDataCollection: { entityType: 'jfb-privacy-collection', needs: 'manageSettings' },
+  privacyRetention: { entityType: 'jfb-privacy-retention', needs: 'manageSettings' },
+  settingsProtection: { entityType: 'jfb-settings-spam', needs: 'manageSettings' },
 };
 
 /** The API's answer while the migrations are pending; any other 503 (a gateway's) is a failure like the rest. */

@@ -52,6 +52,7 @@ export default {
     place_description: 'Beschreibung',
     place_redirect: 'Adresse der Weiterleitung',
     place_entryTitle: 'Titel des Eintrags',
+    place_ip: 'IP-Adressen',
     place_button: 'Text der Schaltfläche',
 
     code_fields_missing: 'Das Formular hat noch kein Feld zum Ausfüllen; Besucher hätten also nichts zu senden.',

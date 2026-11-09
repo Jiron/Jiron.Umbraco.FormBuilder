@@ -11,7 +11,7 @@ namespace Jiron.Umbraco.FormBuilder.Core.Entries;
 /// <param name="Label">The field's label when it was edited.</param>
 /// <param name="Before">Its answer's texts before.</param>
 /// <param name="After">Its answer's texts after.</param>
-/// <param name="Masked">Whether the field is sensitive and the reader may not see it, so neither is shown.</param>
+/// <param name="Masked">Whether the field is sensitive or kept only until the actions have run, so the event keeps neither text (ADR-0225).</param>
 internal sealed record EntryTimelineChange(string Label, IReadOnlyList<string> Before, IReadOnlyList<string> After, bool Masked);
 
 /// <summary>An event of an entry's timeline, with what its kind says.</summary>
@@ -66,8 +66,8 @@ internal sealed record EntryTimeline(IReadOnlyList<EntryTimelineEvent> Events, I
 
 /// <summary>
 /// An entry's timeline for the panel (ADR-0208): its events, its action runs named as its version names their actions,
-/// and its mail, newest first. What a reader may not see stays masked: an edit's sensitive values, and a recipient that
-/// is a sensitive answer of the entry.
+/// and its mail, newest first. An edit of a sensitive answer says the field changed and keeps no texts to show (ADR-0225),
+/// and a recipient that is a sensitive answer of the entry stays masked from a reader who may not see it.
 /// </summary>
 /// <param name="forms">The forms.</param>
 /// <param name="entries">The entries.</param>
@@ -97,7 +97,7 @@ internal sealed class EntryTimelines(IFormRepository forms, IEntryRepository ent
         var timeline = (await events.ListForEntryAsync(entry.Id, cancellationToken))
             .OrderByDescending(entryEvent => entryEvent.OccurredUtc)
             .ThenByDescending(entryEvent => entryEvent.Id)
-            .Select(entryEvent => EventOf(entryEvent, maySeeSensitive))
+            .Select(EventOf)
             .ToList();
         var mail = (await emails.ListForEntryAsync(entry.Id, cancellationToken))
             .Select(email => new EntryTimelineMail(email.Id, email.SentUtc ?? email.CreatedUtc, email.Kind, Masked(email.To, hidden), email.Subject, email.State, email.ActionRunId))
@@ -116,7 +116,7 @@ internal sealed class EntryTimelines(IFormRepository forms, IEntryRepository ent
     }
 
     // An event with what its kind's details say.
-    private static EntryTimelineEvent EventOf(StoredEntryEvent entryEvent, bool maySeeSensitive)
+    private static EntryTimelineEvent EventOf(StoredEntryEvent entryEvent)
     {
         string? from = null, to = null, recipient = null;
         int? count = null;
@@ -144,7 +144,8 @@ internal sealed class EntryTimelines(IFormRepository forms, IEntryRepository ent
                 case EntryEdits.EditedEvent when root.TryGetProperty("changes", out var edited) && edited.ValueKind == JsonValueKind.Array:
                     foreach (var change in edited.EnumerateArray())
                     {
-                        var masked = !maySeeSensitive && change.TryGetProperty("sensitive", out var sensitive) && sensitive.ValueKind == JsonValueKind.True;
+                        // A sensitive change keeps no texts (ADR-0225); one an older event kept stays unsaid to everyone too.
+                        var masked = change.TryGetProperty("sensitive", out var sensitive) && sensitive.ValueKind == JsonValueKind.True;
                         changes.Add(new EntryTimelineChange(Text(change, "label") ?? string.Empty, masked ? [] : Texts(change, "before"), masked ? [] : Texts(change, "after"), masked));
                     }
 

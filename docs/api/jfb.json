@@ -20430,6 +20430,7 @@
         "required": [
           "defaults",
           "emailLayouts",
+          "host",
           "limits",
           "memberGroups",
           "themes",
@@ -20477,6 +20478,13 @@
               ]
             }
           },
+          "host": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/FormSettingsHostResponseModel"
+              }
+            ]
+          },
           "limits": {
             "oneOf": [
               {
@@ -20492,6 +20500,7 @@
           "contentRules",
           "emailLayout",
           "insights",
+          "ip",
           "protection",
           "requiredMarker",
           "retention",
@@ -20543,6 +20552,9 @@
           "insights": {
             "type": "boolean"
           },
+          "ip": {
+            "type": "string"
+          },
           "retention": {
             "oneOf": [
               {
@@ -20565,6 +20577,22 @@
             "format": "uuid"
           },
           "name": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "FormSettingsHostResponseModel": {
+        "required": [
+          "fullIp",
+          "fullIpKey"
+        ],
+        "type": "object",
+        "properties": {
+          "fullIp": {
+            "type": "boolean"
+          },
+          "fullIpKey": {
             "type": "string"
           }
         },
@@ -23171,6 +23199,18 @@
         },
         "additionalProperties": false
       },
+      "PrivacyFactsResponseModel": {
+        "required": [
+          "fullIp"
+        ],
+        "type": "object",
+        "properties": {
+          "fullIp": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
       "ProblemDetails": {
         "type": "object",
         "properties": {
@@ -23807,6 +23847,14 @@
             "oneOf": [
               {
                 "$ref": "#/components/schemas/IntegrationsFactsResponseModel"
+              }
+            ],
+            "nullable": true
+          },
+          "privacy": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/PrivacyFactsResponseModel"
               }
             ],
             "nullable": true

@@ -1,6 +1,7 @@
 using Asp.Versioning;
 using Jiron.Umbraco.FormBuilder.Core;
 using Jiron.Umbraco.FormBuilder.Core.Access;
+using Jiron.Umbraco.FormBuilder.Core.Configuration;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Email;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
@@ -13,6 +14,7 @@ using Jiron.Umbraco.FormBuilder.Web.ManagementApi.Authorization;
 using Jiron.Umbraco.FormBuilder.Web.ManagementApi.Privacy;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Web.Common.Routing;
 
@@ -59,7 +61,8 @@ internal sealed class FormSettingsController(
     IThemeRepository library,
     IEmailLayoutRepository layouts,
     IMemberGroupService memberGroups,
-    DefinitionLimits limits) : FormBuilderManagementApiController
+    DefinitionLimits limits,
+    IOptions<FormBuilderOptions> options) : FormBuilderManagementApiController
 {
     // A page of the library's themes or layouts, read until the last.
     private const int LibraryPage = 200;
@@ -101,6 +104,7 @@ internal sealed class FormSettingsController(
                 NextLabel = general.NextLabel,
                 BackLabel = general.BackLabel,
                 Insights = privacy.Insights,
+                Ip = EnumNames<IPHandling>.ByValue[privacy.IP],
                 Retention = RetentionDaysResponseModel.Of(privacy.Retention ?? new SiteRetention()),
             },
             Themes =
@@ -120,6 +124,7 @@ internal sealed class FormSettingsController(
                     .Select(group => new FormSettingsMemberGroupResponseModel { Key = group.Key, Name = group.Name ?? string.Empty })
                     .OrderBy(group => group.Name, StringComparer.CurrentCultureIgnoreCase),
             ],
+            Host = new FormSettingsHostResponseModel { FullIp = options.Value.Privacy.AllowFullIp, FullIpKey = FullIPRule.ConfigurationKey },
             Limits = new FormSettingsLimitsResponseModel
             {
                 LineLength = DefinitionSaveChecks.LineLength,
@@ -183,6 +188,9 @@ internal sealed record FormSettingsChoicesResponseModel
     /// <summary>The layouts an email action may choose: the built-in card and letter, then the library's in name order.</summary>
     public required IReadOnlyList<FormSettingsEmailLayoutResponseModel> EmailLayouts { get; init; }
 
+    /// <summary>What the host allows of a form's settings.</summary>
+    public required FormSettingsHostResponseModel Host { get; init; }
+
     /// <summary>The bounds the save checks hold settings to.</summary>
     public required FormSettingsLimitsResponseModel Limits { get; init; }
 }
@@ -223,8 +231,21 @@ internal sealed record FormSettingsDefaultsResponseModel
     /// <summary>Whether the site's insights are on (Privacy, Data collection, ADR-0211): a form counts only while they and its own are.</summary>
     public required bool Insights { get; init; }
 
+    /// <summary>What the site's entries keep of IP addresses (Privacy, Data collection, ADR-0224): <c>none</c>, <c>anonymised</c> or <c>full</c>, as the host allows it.</summary>
+    public required string Ip { get; init; }
+
     /// <summary>The site's days per state (Privacy, Retention, ADR-0222), which a form's empty day stands for; none for kept for good.</summary>
     public required RetentionDaysResponseModel Retention { get; init; }
+}
+
+/// <summary>What the host allows of a form's settings (ADR-0008).</summary>
+internal sealed record FormSettingsHostResponseModel
+{
+    /// <summary>Whether entries may keep full IP addresses (ADR-0224); a form that asks for them keeps them anonymised otherwise.</summary>
+    public required bool FullIp { get; init; }
+
+    /// <summary>The configuration key that allows full IP addresses, which the view names while they are not.</summary>
+    public required string FullIpKey { get; init; }
 }
 
 /// <summary>A theme a form may choose.</summary>

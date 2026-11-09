@@ -157,7 +157,7 @@ export default {
     protection_captchaConsent_implicit: 'Ohne Nachfrage laden',
     protection_captchaConsent_implicitLine:
       'Es lädt mit dem Formular, für eine Website, die die Einwilligung auf anderem Weg hat.',
-    implicitLocked: (key: string) => `Durch die Konfiguration gesperrt: ${key}`,
+    choiceLocked: (key: string) => `Durch die Konfiguration gesperrt: ${key}`,
     protection_cookiebotCategory: 'Cookiebot-Kategorie',
     protection_cookiebotCategoryHelp:
       'Cookiebot ordnet das Cookie eines Captchas als notwendig ein; die Prüfung lädt also sofort, außer Sie wählen Marketing.',
@@ -383,6 +383,19 @@ export default {
     people_holdDone: (entries: string) => `${entries} mit Löschsperre.`,
 
     // Datenschutz › Datenerfassung
+    privacyBox_ip: 'IP-Adressen',
+    privacyBox_ipLead:
+      'Jeder Eintrag kann die Adresse speichern, von der er gesendet wurde. Ratenbegrenzungen und gesperrte Adressbereiche lesen die Adresse, ohne sie zu speichern.',
+    privacy_ip: 'Was Einträge speichern',
+    privacy_ipHelp: 'Jedes Formular kann in seiner Ansicht Einstellungen unter Datenschutz eine eigene Wahl treffen.',
+    privacy_ip_none: 'Nichts',
+    privacy_ip_noneLine: 'Einträge speichern die Adresse nicht.',
+    privacy_ip_anonymised: 'Die Adresse ohne ihr Ende',
+    privacy_ip_anonymisedLine:
+      'Genug, um ein Netz zu unterscheiden: 203.0.113.0 für 203.0.113.42, und die ersten 48 Bit einer IPv6-Adresse.',
+    privacy_ip_full: 'Die vollständige Adresse',
+    privacy_ip_fullLine:
+      'Nur für eine Website, die sie ganz braucht, etwa um Missbrauch zu melden. Nennen Sie das in Ihrer Datenschutzerklärung.',
     privacyBox_insights: 'Einblicke',
     privacyBox_insightsLead:
       'Formulare zählen, was Besucher mit ihnen tun, für die Ansicht Einblicke jedes Formulars und die Übersicht: Aufrufe, Begonnene, die Seiten, die sie erreichen, und die Felder, an denen sie hängen bleiben. Keine Antwort und kein Besucher wird gezählt, und im Browser des Besuchers wird nichts gespeichert.',

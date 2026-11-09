@@ -1,7 +1,7 @@
 import type { APIRequestContext, Locator, Page } from '@playwright/test';
 import { expect, test } from '../../fixtures.ts';
 import { axeInside } from '../../support/axe.ts';
-import { API, formWithFields, unique } from '../../support/forms-api.ts';
+import { API, formOf, formWithFields, unique } from '../../support/forms-api.ts';
 
 // The form's Settings view (ROADMAP 10.1a, IA 5.2, ADR-0184). Submission is open and the other groups are closed, each
 // with the line of what is set; each setting changes the draft, which Save draft keeps, and a value the view can't keep
@@ -235,6 +235,75 @@ test('retention: a number of days to store entries for and the days per state ea
   await expect(headOf(view, 'privacy').locator('.summary')).toHaveText(`Own retention days ${DOT} Insights on`);
   await headOf(view, 'submission').click();
   await expect(headOf(view, 'submission').locator('.summary')).toHaveText('Entries kept 400 days');
+});
+
+test("IP addresses: the Privacy group chooses what the form's entries keep, and an entry it then takes keeps the address that way", async ({
+  page,
+  request,
+  loginAs,
+  apiAs,
+}) => {
+  test.setTimeout(240_000);
+  const api = await apiAs('admin');
+  const { key } = await newForm(api, 'IP addresses');
+  await loginAs('admin');
+  const view = await openSettings(page, key);
+  await openGroup(view, 'privacy');
+  const ip = view.getByLabel('IP addresses', { exact: true });
+  await expect(ip.locator('option')).toHaveText([
+    'Site default (No IP addresses)',
+    'Keep none',
+    'Anonymised, the end removed',
+    'Full addresses',
+  ]);
+  // The host doesn't allow full addresses, and the help names the key that would.
+  await expect(ip.locator('option[value="full"]')).toBeDisabled();
+  await expect(view.locator('#ip-help')).toHaveText(
+    "What each entry keeps of the address it was sent from. Full addresses need JironFormBuilder:Privacy:AllowFullIp in the site's configuration.",
+  );
+  await ip.selectOption('anonymised');
+  await axeInside(page, 'jfb-form-settings-view');
+  await saveDraft(page, key);
+  expect((await draftOf(api, key)).definition.settings['privacy']).toMatchObject({ ip: 'anonymised' });
+  await headOf(view, 'privacy').click();
+  await expect(headOf(view, 'privacy').locator('.summary')).toHaveText(`Anonymised IP addresses ${DOT} Insights on`);
+
+  // Published for headless sites, it takes an entry from this machine, and keeps its address with the end removed.
+  const draft = await draftOf(api, key);
+  const developer = { ...(draft.definition.settings['developer'] ?? {}), headless: true };
+  const saved = await api.put(`${API}/form/${key}/draft`, {
+    data: {
+      concurrencyVersion: draft.form.concurrencyVersion,
+      definition: { ...draft.definition, settings: { ...draft.definition.settings, developer } },
+    },
+  });
+  expect(saved.ok(), await saved.text()).toBe(true);
+  const published = await api.post(`${API}/form/${key}/publish`, {
+    data: { concurrencyVersion: (await formOf(api, key)).concurrencyVersion },
+  });
+  expect(published.ok(), await published.text()).toBe(true);
+  let revision = 0;
+  await expect
+    .poll(async () => {
+      const served = await request.get(`/jfb/api/v1/forms/${key}`);
+      revision = served.ok() ? ((await served.json()) as { revision: number }).revision : 0;
+      return revision;
+    })
+    .toBeGreaterThan(0);
+  const asked = await request.post(`/jfb/api/v1/forms/${key}/challenge`);
+  const { challenge } = (await asked.json()) as { challenge: string };
+  const sent = await request.post(`/jfb/api/v1/forms/${key}/entries`, {
+    data: { revision, challenge, values: { name: 'Ada Lovelace', email: 'ada@example.com' } },
+  });
+  expect(sent.ok(), await sent.text()).toBe(true);
+
+  await page.goto(`${SECTION}/workspace/jfb-form/edit/${key}/view/entries`);
+  const entries = page.locator('jfb-entries-view');
+  await entries.locator('tbody tr').first().locator('.name').click();
+  const panel = entries.locator('jfb-entry-panel');
+  await panel.getByRole('button', { name: 'More details' }).click();
+  const address = panel.locator('dl.more dt', { hasText: 'IP address' }).locator('xpath=following-sibling::dd[1]');
+  await expect(address).toHaveText('127.0.0.0');
 });
 
 test('availability, spam protection, appearance and developer set what they say, refuse what they cannot keep, and Save draft keeps them', async ({

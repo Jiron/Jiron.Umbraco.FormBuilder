@@ -204,6 +204,13 @@ export default {
     retention_rejected: 'Abgelehnt',
     retention_spam: 'Spam',
     retentionForGood: 'Dauerhaft',
+    ip: 'IP-Adressen',
+    ipHelp: 'Was jeder Eintrag von der Adresse speichert, von der er gesendet wurde.',
+    ipHelpNoFull: (key: string) =>
+      `Was jeder Eintrag von der Adresse speichert, von der er gesendet wurde. Vollständige Adressen brauchen ${key} in der Konfiguration der Website.`,
+    ip_none: 'Keine speichern',
+    ip_anonymised: 'Anonymisiert, ohne das Ende',
+    ip_full: 'Vollständige Adressen',
     insights: 'Zählen, was Besucher mit diesem Formular tun',
     insightsHelp:
       'Aufrufe, Begonnene, die Seiten, die sie erreichen, und die Felder, an denen sie hängen bleiben, für seine Ansicht Einblicke. Keine Antwort und kein Besucher wird gezählt.',
@@ -243,6 +250,9 @@ export default {
     summary_headlessOn: 'Headless-Zugriff an',
     summary_headlessOff: 'Headless-Zugriff aus',
     summary_retentionOwn: 'Eigene Aufbewahrungstage',
+    summary_ip_none: 'Keine IP-Adressen',
+    summary_ip_anonymised: 'Anonymisierte IP-Adressen',
+    summary_ip_full: 'Vollständige IP-Adressen',
     summary_insightsOn: 'Einblicke an',
     summary_insightsOff: 'Einblicke aus',
     summary_insightsSiteOff: 'Einblicke für die ganze Website aus',

@@ -209,6 +209,29 @@ public sealed class FormCheckTests
     }
 
     [Test]
+    public async Task AFormThatKeepsFullIPAddresses_OnAHostThatDoesNotAllowThem_IsWarnedThatTheHostReplacesTheValue()
+    {
+        var refusing = new FullIPFormCheck(Options.Create(new FormBuilderOptions()));
+        var allowingOptions = new FormBuilderOptions();
+        allowingOptions.Privacy.AllowFullIp = true;
+        var allowing = new FullIPFormCheck(Options.Create(allowingOptions));
+
+        var full = await refusing.CheckAsync(WithIP("full"), CancellationToken.None);
+        var allowed = await allowing.CheckAsync(WithIP("full"), CancellationToken.None);
+        var anonymised = await refusing.CheckAsync(WithIP("anonymised"), CancellationToken.None);
+        var inherited = await refusing.CheckAsync(WithIP("inherit"), CancellationToken.None);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(full.Select(issue => (issue.Severity, issue.Code, issue.Path)), Is.EqualTo(new[] { (FormCheckSeverity.Warning, FormCheck.LockReplacesValue, "$.settings.privacy.ip") }));
+            Assert.That(full.Single().Message, Does.Contain("JironFormBuilder:Privacy:AllowFullIp"));
+            Assert.That(allowed, Is.Empty, "the host allows them");
+            Assert.That(anonymised, Is.Empty);
+            Assert.That(inherited, Is.Empty, "the site's setting, which its own rule keeps within what the host allows");
+        });
+    }
+
+    [Test]
     public async Task AnEmailAction_WithoutAnEmailFieldToReplyTo_IsAWarning_OrAHintWhereTheFormHasOne()
     {
         var check = new EmailReplyFormCheck();
@@ -378,6 +401,9 @@ public sealed class FormCheckTests
         new ActionSettingLocks(Options.Create(new FormBuilderOptions()), Actions));
 
     private static FormCheckIssue Issue(FormCheckSeverity severity, string code) => new(severity, code, "$", code);
+
+    private static FormDefinition WithIP(string ip) =>
+        Read("[]", ",\"settings\":{\"privacy\":{\"ip\":\"" + ip + "\"}}");
 
     private static FormDefinition WithCaptcha(string provider) =>
         Read("[]", ",\"settings\":{\"protection\":{\"captcha\":{\"provider\":\"" + provider + "\"}}}");

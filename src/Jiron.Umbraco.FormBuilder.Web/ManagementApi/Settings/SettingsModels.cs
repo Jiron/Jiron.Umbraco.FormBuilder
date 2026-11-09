@@ -110,6 +110,9 @@ internal sealed record SettingsFactsResponseModel
 
     /// <summary>Integrations': the hosts webhooks may call, and which references the host configuration holds.</summary>
     public IntegrationsFactsResponseModel? Integrations { get; init; }
+
+    /// <summary>Privacy's: whether the host allows full IP addresses.</summary>
+    public PrivacyFactsResponseModel? Privacy { get; init; }
 }
 
 /// <summary>General's facts.</summary>
@@ -140,6 +143,10 @@ internal sealed record EmailFactsResponseModel(bool CanSend, string SendingKey, 
 /// <param name="Captchas">The captcha providers the site has, in the order the screen offers them.</param>
 /// <param name="ImplicitConsent">Whether the host allows the implicit consent mode (<c>Privacy:AllowImplicitCaptchaConsent</c>).</param>
 internal sealed record ProtectionFactsResponseModel(IReadOnlyList<CaptchaKeysResponseModel> Captchas, bool ImplicitConsent);
+
+/// <summary>Privacy's facts (ADR-0224).</summary>
+/// <param name="FullIp">Whether the host allows full IP addresses (<c>Privacy:AllowFullIp</c>); the screen greys the choice out otherwise.</param>
+internal sealed record PrivacyFactsResponseModel(bool FullIp);
 
 /// <summary>A captcha provider as Spam protection offers it.</summary>
 /// <param name="Alias">Its alias, which the section stores.</param>

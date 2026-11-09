@@ -210,8 +210,9 @@ public sealed class PersonDataTests : ActionTestBase
     [Test]
     public async Task TheExport_HoldsAFolderPerEntry_WithItsAnswersTimelineAndNotes_AndItsFiles()
     {
-        var form = await PublishAsync("Contact", fields: [NameField, EmailField, Upload]);
-        var mine = await SubmitAsync(form, $$"""{"name":"Ada","email":"{{Ada}}"}""");
+        var note = new FormField { Key = Guid.Parse("e2230000-0000-4000-8000-000000000009"), Type = "text", Alias = "note", Label = new LocalizedText("Note"), Keep = FieldKeep.UntilActionsRun };
+        var form = await PublishAsync("Contact", fields: [NameField, EmailField, Upload, note]);
+        var mine = await SubmitAsync(form, $$"""{"name":"Ada","email":"{{Ada}}","note":"Only for the actions"}""");
         var withFile = await EntryWithFileAsync(form, Ada);
         await Notes.AddAsync(mine.Id, User, "Called back on Monday.");
         var exports = GetRequiredService<PersonExports>();
@@ -243,6 +244,7 @@ public sealed class PersonDataTests : ActionTestBase
             Assert.That(answers.Select(answer => answer!["label"]!.GetValue<string>()), Does.Contain("Email"));
             Assert.That(answers.First(answer => answer!["label"]!.GetValue<string>() == "Email")!["answer"]![0]!.GetValue<string>(), Is.EqualTo(Ada));
             Assert.That(json["notes"]![0]!["text"]!.GetValue<string>(), Is.EqualTo("Called back on Monday."));
+            Assert.That(answers.First(answer => answer!["label"]!.GetValue<string>() == "Note")!["notKept"]?.GetValue<bool>(), Is.True, "kept only until the actions ran, and no action could use it");
             Assert.That(json["timeline"]!.AsArray().Select(item => item!["kind"]!.GetValue<string>()), Does.Contain(SubmissionEntries.SubmittedEvent));
             Assert.That(await AuditOfAsync(PersonExports.ExportedAction), Has.Count.EqualTo(1));
         });
@@ -319,18 +321,5 @@ public sealed class PersonDataTests : ActionTestBase
         });
 
     // Every column of every Jiron Form Builder table that holds the text, in any case.
-    private async Task<IReadOnlyList<string>> TablesHoldingAsync(string text)
-    {
-        var found = new List<string>();
-        foreach (var table in FormBuilderTables.All)
-        {
-            var rows = await GetRequiredService<FormBuilderDatabase>().ReadAsync(db => db.FetchListAsync<dynamic>($"SELECT * FROM {new SqlNames(db).T(table)}"));
-            foreach (IDictionary<string, object?> row in rows)
-            {
-                found.AddRange(row.Where(cell => cell.Value is string value && value.Contains(text, StringComparison.OrdinalIgnoreCase)).Select(cell => $"{table}.{cell.Key}"));
-            }
-        }
-
-        return [.. found.Distinct()];
-    }
+    private Task<IReadOnlyList<string>> TablesHoldingAsync(string text) => DatabaseSearch.TablesHoldingAsync(GetRequiredService<FormBuilderDatabase>(), text);
 }

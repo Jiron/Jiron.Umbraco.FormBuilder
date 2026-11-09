@@ -232,7 +232,7 @@ public sealed class EntryPanelTests : ActionTestBase
     }
 
     [Test]
-    public async Task AnEdit_ChangesAnswers_KeepsTheOldOnTheTimeline_AndAuditsTheFields()
+    public async Task AnEdit_ChangesAnswers_KeepsTheOldOnTheTimeline_ButNoSensitiveText_AndAuditsTheFields()
     {
         var form = await FormAsync();
         var entry = await SubmitAsync(form, """{"name":"Ada","age":"36","salary":"90000"}""");
@@ -242,6 +242,7 @@ public sealed class EntryPanelTests : ActionTestBase
         var hidden = (await Timelines.ReadAsync(form, entry.Key, maySeeSensitive: false))!.Events.First(entryEvent => entryEvent.Kind == EntryEdits.EditedEvent);
         var shown = (await Timelines.ReadAsync(form, entry.Key, maySeeSensitive: true))!.Events.First(entryEvent => entryEvent.Kind == EntryEdits.EditedEvent);
         var audited = (await Audit.QueryAsync(new AuditQuery { Action = EntryEdits.EditedAction }, PageRequest.First(5))).Items;
+        var stored = (await GetRequiredService<IEntryEventRepository>().ListForEntryAsync(entry.Id)).Single(entryEvent => entryEvent.Kind == EntryEdits.EditedEvent);
 
         Assert.Multiple(() =>
         {
@@ -252,9 +253,11 @@ public sealed class EntryPanelTests : ActionTestBase
             {
                 ("Name", (IReadOnlyList<string>)["Ada"], (IReadOnlyList<string>)["Ada Lovelace"]),
                 ("Age", ["36"], ["37"]),
-                ("Salary", ["90000"], ["95000"]),
-            }));
-            Assert.That(hidden.Changes[2], Is.EqualTo(new EntryTimelineChange("Salary", [], [], Masked: true)).Using<EntryTimelineChange>((a, b) => a.Label == b.Label && a.Masked == b.Masked && a.Before.Count == 0 && a.After.Count == 0), "masked for a reader who may not see it");
+                ("Salary", [], []),
+            }), "a sensitive answer's change keeps no texts, even for a reader who may see it (ADR-0225)");
+            Assert.That(hidden.Changes[2], Is.EqualTo(new EntryTimelineChange("Salary", [], [], Masked: true)).Using<EntryTimelineChange>((a, b) => a.Label == b.Label && a.Masked == b.Masked && a.Before.Count == 0 && a.After.Count == 0));
+            Assert.That(shown.Changes[2].Masked, Is.True);
+            Assert.That(stored.Details, Does.Not.Contain("90000").And.Not.Contain("95000"), "the event itself holds neither");
             Assert.That(audited.Single().Details, Does.Contain(Salary.Key.ToString("D")).And.Not.Contain("95000"));
         });
     }

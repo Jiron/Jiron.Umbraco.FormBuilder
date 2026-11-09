@@ -200,6 +200,13 @@ export default {
     retention_rejected: 'Rejected',
     retention_spam: 'Spam',
     retentionForGood: 'Kept for good',
+    ip: 'IP addresses',
+    ipHelp: 'What each entry keeps of the address it was sent from.',
+    ipHelpNoFull: (key: string) =>
+      `What each entry keeps of the address it was sent from. Full addresses need ${key} in the site's configuration.`,
+    ip_none: 'Keep none',
+    ip_anonymised: 'Anonymised, the end removed',
+    ip_full: 'Full addresses',
     insights: 'Count what visitors do with this form',
     insightsHelp:
       'Views, starts, the pages they reach and the fields that stop them, for its Insights view. No answer and no visitor is counted.',
@@ -237,6 +244,9 @@ export default {
     summary_headlessOn: 'Headless access on',
     summary_headlessOff: 'Headless access off',
     summary_retentionOwn: 'Own retention days',
+    summary_ip_none: 'No IP addresses',
+    summary_ip_anonymised: 'Anonymised IP addresses',
+    summary_ip_full: 'Full IP addresses',
     summary_insightsOn: 'Insights on',
     summary_insightsOff: 'Insights off',
     summary_insightsSiteOff: 'Insights off for the whole site',

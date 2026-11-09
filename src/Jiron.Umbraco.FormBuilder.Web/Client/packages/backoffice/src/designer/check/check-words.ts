@@ -281,6 +281,7 @@ function placeOf(where: Where, words: CheckWordsContext): string {
   }
   if (where.top === 'settings') {
     if (first === 'submission' && second === 'entryTitle') return words.term('jfbCheck_place_entryTitle');
+    if (first === 'privacy' && second === 'ip') return words.term('jfbCheck_place_ip');
     if (where.rest.includes('closedMessage')) return words.term('jfbCheck_place_message');
     if (first === 'submission' && (second === 'submitLabel' || second === 'nextLabel' || second === 'backLabel'))
       return words.term('jfbCheck_place_button');

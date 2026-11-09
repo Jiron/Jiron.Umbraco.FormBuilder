@@ -594,6 +594,7 @@ export class InspectorElement extends UmbLitElement {
           ['always', 'untilActionsRun'].map((keep) => [keep, this.#term(`keep_${keep}`)]),
           (value) =>
             this.#change(key, (one) => withProperty(one, 'keep', value === 'always' ? undefined : value), name),
+          this.#helpOf(item),
         );
       case 'plain':
         return this.#plain(`prop-${item.property}`, name, String(own[item.property] ?? ''), (text) =>
@@ -682,12 +683,18 @@ export class InspectorElement extends UmbLitElement {
     value: string,
     choices: readonly (readonly [string, string])[],
     chosen: (value: string) => void,
+    help = '',
   ): TemplateResult {
     return html`<div class="item">
       <label class="label" for=${id}>${name}</label>
-      <select id=${id} @change=${(event: Event) => chosen((event.target as HTMLSelectElement).value)}>
+      <select
+        id=${id}
+        aria-describedby=${help ? `${id}-help` : nothing}
+        @change=${(event: Event) => chosen((event.target as HTMLSelectElement).value)}
+      >
         ${choices.map(([one, label]) => html`<option value=${one} ?selected=${one === value}>${label}</option>`)}
       </select>
+      ${help ? html`<p class="help" id=${`${id}-help`}>${help}</p>` : nothing}
     </div>`;
   }
 

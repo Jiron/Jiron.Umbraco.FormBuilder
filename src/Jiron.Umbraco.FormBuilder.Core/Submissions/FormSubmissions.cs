@@ -10,6 +10,7 @@ using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.MergeTags;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
+using Jiron.Umbraco.FormBuilder.Core.Privacy;
 using Jiron.Umbraco.FormBuilder.Core.Settings;
 using Jiron.Umbraco.FormBuilder.Logic;
 
@@ -41,6 +42,7 @@ internal sealed class FormSubmissions(
     FieldTypeRegistry types,
     SubmissionProtection protection,
     EntryDrafts drafts,
+    VisitorAddresses addresses,
     TimeProvider time)
 {
     /// <summary>The most values a query name may hold.</summary>
@@ -101,11 +103,18 @@ internal sealed class FormSubmissions(
         // One transaction (section 4.4, step 8).
         var (scope, page, read, wordings) = reading.Read;
         var draft = await drafts.FindAsync(request.ResumeToken, served.Row.Id, cancellationToken);
+
+        // What the entry keeps of the address (ADR-0224): nothing from the preview or a server key, whose address is the
+        // editor's or the site's own server, not a visitor's.
+        var address = request.Preview is null && request.ServerKey is null
+            ? await addresses.KeptAsync(served.Form.Definition, request.Address, cancellationToken)
+            : null;
         var submission = new NewSubmission(served.Row.Id, version.Info.Id, served.Form, read, wordings, request.SubmissionId ?? Guid.NewGuid(), digest, scope.Culture, page, scope.Context, request.Redirect, request.Ticket is { } used ? FormChallenges.StoredId(used) : null, reading.Verdict, draft, request.Ticket?.IssuedUtc)
         {
             // A preview's entry is a test entry, which sets off nothing unless its ticket runs actions (ADR-0204).
             IsTest = request.Preview is not null,
             RunsActions = request.Preview is null || request.PreviewRunsActions,
+            IpAddress = address,
         };
         try
         {

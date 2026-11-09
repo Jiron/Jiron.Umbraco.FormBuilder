@@ -148,7 +148,7 @@ export default {
       "It loads once the consent manager calls JironFormBuilder.consent.grant('captcha').",
     protection_captchaConsent_implicit: 'Load without asking',
     protection_captchaConsent_implicitLine: 'It loads with the form, for a site that has consent for it another way.',
-    implicitLocked: (key: string) => `Locked by configuration: ${key}`,
+    choiceLocked: (key: string) => `Locked by configuration: ${key}`,
     protection_cookiebotCategory: 'Cookiebot category',
     protection_cookiebotCategoryHelp:
       "Cookiebot files a captcha's cookie as necessary, so the check loads at once unless you pick Marketing.",
@@ -365,6 +365,18 @@ export default {
     people_holdDone: (entries: string) => `${entries} on legal hold.`,
 
     // Privacy › Data collection
+    privacyBox_ip: 'IP addresses',
+    privacyBox_ipLead:
+      'Each entry can keep the address it was sent from. Rate limits and blocked address ranges read the address without keeping it.',
+    privacy_ip: 'What entries keep',
+    privacy_ipHelp: 'Each form can choose its own in its Settings view, under Privacy.',
+    privacy_ip_none: 'Nothing',
+    privacy_ip_noneLine: "Entries don't keep the address.",
+    privacy_ip_anonymised: 'The address with its end removed',
+    privacy_ip_anonymisedLine:
+      'Enough to tell a network apart: 203.0.113.0 for 203.0.113.42, and the first 48 bits of an IPv6 address.',
+    privacy_ip_full: 'The full address',
+    privacy_ip_fullLine: 'Only for a site that needs it whole, such as to report abuse. Say so in your privacy policy.',
     privacyBox_insights: 'Insights',
     privacyBox_insightsLead:
       "Forms count what visitors do with them, for each form's Insights view and the Overview: views, starts, the pages they reach and the fields that stop them. No answer and no visitor is counted, and nothing is stored in the visitor's browser.",

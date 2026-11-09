@@ -199,6 +199,8 @@ export default {
     audit_entry_stateChangeUndone: (f: AuditFacts) => `Undid a move of ${entry(f)}`,
     audit_entry_stateChanged: (f: AuditFacts) =>
       f.from && f.to ? `Moved ${entry(f)} from ${f.from} to ${f.to}` : `Moved ${entry(f)}`,
+    audit_entry_valuesRemoved: (f: AuditFacts) =>
+      `Removed the answers of ${entry(f)} that were kept only until its actions ran`,
     audit_entry_verificationExpired: (f: AuditFacts) => `The address of ${entry(f)} was never confirmed, so it expired`,
     audit_entryFile_archiveStarted: 'Started a ZIP of the files',
     audit_entryFile_archived: (f: AuditFacts) => `Downloaded ${count(f.count, 'file', 'files')} as a ZIP`,

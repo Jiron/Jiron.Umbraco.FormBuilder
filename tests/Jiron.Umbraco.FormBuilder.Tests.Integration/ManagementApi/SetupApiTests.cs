@@ -1,9 +1,13 @@
 using Jiron.Umbraco.FormBuilder.Core.Access;
 using Jiron.Umbraco.FormBuilder.Core.Actions;
+using Jiron.Umbraco.FormBuilder.Core.Configuration;
+using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
+using Jiron.Umbraco.FormBuilder.Core.Settings;
 using Jiron.Umbraco.FormBuilder.Web.Picker;
 using Jiron.Umbraco.FormBuilder.Web.Setup;
+using Microsoft.Extensions.Options;
 using Umbraco.Cms.Core.HealthChecks;
 using Umbraco.Cms.Infrastructure.BackgroundJobs;
 using Umbraco.Cms.Tests.Common.Testing;
@@ -161,11 +165,63 @@ public sealed class SetupApiTests : ManagementApiTestBase
             Assert.That(checks.Select(check => check.GetType().Name).Order(), Is.EqualTo(new[]
             {
                 nameof(BaseUrlHealthCheck), nameof(DeliveriesHealthCheck), nameof(EmailHealthCheck), nameof(JobsHealthCheck),
-                nameof(KeyRingHealthCheck), nameof(MigrationsHealthCheck), nameof(MirrorHealthCheck), nameof(UploadsHealthCheck),
-                nameof(UsedOnHealthCheck),
+                nameof(KeyRingHealthCheck), nameof(MigrationsHealthCheck), nameof(MirrorHealthCheck), nameof(PrivacyHealthCheck),
+                nameof(UploadsHealthCheck), nameof(UsedOnHealthCheck),
             }));
             Assert.That(checks.Select(check => check.Id).Distinct().Count(), Is.EqualTo(checks.Count));
         });
+    }
+
+    [Test]
+    public async Task ThePrivacyCheck_SaysWhatTheHostAllowsBeyondTheDefaults_WhileASettingUsesIt()
+    {
+        var probe = GetRequiredService<PrivacyHealth>();
+        var host = GetRequiredService<IOptions<FormBuilderOptions>>().Value.Privacy;
+        var settings = GetRequiredService<IFormBuilderSettingsService>();
+        var words = HealthWords.Of("en-US");
+        async Task<string[]> CodesAsync() => [.. (await probe.FindAsync(words)).Select(finding => finding.Code)];
+        try
+        {
+            var quiet = await CodesAsync();
+            host.AllowFullIp = host.AllowRetentionOff = host.AllowImplicitCaptchaConsent = true;
+            var allowedOnly = await CodesAsync();
+
+            var privacy = await settings.GetAsync<PrivacySettings>();
+            _ = await settings.SaveAsync(privacy.Value with { IP = IPHandling.Full, Retention = new SiteRetention { Spam = SiteRetention.ForGood } }, privacy.Version, null);
+            var protection = await settings.GetAsync<ProtectionSettings>();
+            _ = await settings.SaveAsync(protection.Value with { CaptchaConsent = CaptchaConsentMode.Implicit }, protection.Version, null);
+            var used = (await probe.FindAsync(words)).ToList();
+
+            // The site keeps anonymised addresses again; a live form keeps full ones of its own.
+            privacy = await settings.GetAsync<PrivacySettings>();
+            _ = await settings.SaveAsync(privacy.Value with { IP = IPHandling.Anonymised }, privacy.Version, null);
+            var form = await FormAsync("Whole addresses");
+            var forms = GetRequiredService<IFormBuilderFormService>();
+            var draft = (await forms.GetDraftAsync(form))!;
+            var definition = Fillable(draft.Definition!);
+            var saved = (await forms.SaveDraftAsync(form, draft.Form.ConcurrencyVersion, definition with { Settings = definition.Settings with { Privacy = definition.Settings.Privacy with { IP = IPHandling.Full } } }, null, null))!;
+            _ = await forms.PublishAsync(form, saved.Form.ConcurrencyVersion, null, null);
+            var byForm = (await probe.FindAsync(words)).Single(finding => finding.Code.StartsWith("fullIp", StringComparison.Ordinal));
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(quiet, Is.Empty);
+                Assert.That(allowedOnly, Is.Empty, "allowed, but no setting uses it");
+                Assert.That(used.Select(finding => (finding.Code, finding.Link)), Is.EqualTo(new (string, HealthLink?)[]
+                {
+                    ("fullIp", HealthLink.PrivacyDataCollection),
+                    ("retentionOff", HealthLink.PrivacyRetention),
+                    ("captchaUnasked", HealthLink.SettingsProtection),
+                }));
+                Assert.That(used[0].Message, Does.Contain("JironFormBuilder:Privacy:AllowFullIp"));
+                Assert.That((byForm.Code, byForm.Message), Is.EqualTo(("fullIpForms", words.FullIpForms(1))));
+                Assert.That(probe.Passed(HealthWords.Of("de-DE")), Does.StartWith("Eintr\u00e4ge speichern keine"));
+            });
+        }
+        finally
+        {
+            host.AllowFullIp = host.AllowRetentionOff = host.AllowImplicitCaptchaConsent = false;
+        }
     }
 
     [Test]

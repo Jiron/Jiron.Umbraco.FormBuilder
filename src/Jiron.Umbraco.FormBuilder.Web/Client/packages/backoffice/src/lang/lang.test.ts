@@ -174,7 +174,15 @@ describe('the dictionaries', () => {
       for (const part of ['step', 'help', 'action']) used.add(`jfbOverview_${part}_${step}`);
     }
 
-    for (const link of ['settingsEmail', 'settingsGeneral', 'deliveries']) used.add(`jfbOverview_open_${link}`);
+    for (const link of [
+      'settingsEmail',
+      'settingsGeneral',
+      'deliveries',
+      'privacyDataCollection',
+      'privacyRetention',
+      'settingsProtection',
+    ])
+      used.add(`jfbOverview_open_${link}`);
     expect(termsOf(en).filter((term) => term.startsWith('jfbSection_') || term.startsWith('jfbOverview_'))).toEqual(
       [...used].sort(),
     );

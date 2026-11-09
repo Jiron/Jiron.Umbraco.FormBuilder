@@ -2,9 +2,11 @@ using System.Collections.Concurrent;
 using System.Globalization;
 using Jiron.Umbraco.FormBuilder.Core.Actions;
 using Jiron.Umbraco.FormBuilder.Core.Configuration;
+using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Email;
 using Jiron.Umbraco.FormBuilder.Core.Files;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
+using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Migrations;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Core.Settings;
@@ -31,6 +33,15 @@ internal enum HealthLink
 
     /// <summary>Activity, Deliveries.</summary>
     Deliveries,
+
+    /// <summary>Privacy, Data collection.</summary>
+    PrivacyDataCollection,
+
+    /// <summary>Privacy, Retention.</summary>
+    PrivacyRetention,
+
+    /// <summary>Settings, Spam protection.</summary>
+    SettingsProtection,
 }
 
 /// <summary>What a health check found to be wrong.</summary>
@@ -325,6 +336,102 @@ internal sealed class BaseUrlHealth(SiteBaseUrl baseUrls, IDocumentNavigationQue
 
     /// <inheritdoc />
     public override string Passed(HealthWords words) => words.BaseUrlPassed;
+}
+
+/// <summary>
+/// Privacy (ADR-0009, ADR-0224): what the host allows beyond the defaults, while a setting uses it. Full IP addresses, the
+/// site's or a live form's own; entries of a state kept for good; and a captcha that loads before visitors are asked, the
+/// settings' for all sites or a site's own. Each is the site's choice to make, and each is said while it is on.
+/// </summary>
+/// <param name="settings">The settings.</param>
+/// <param name="options">The host configuration.</param>
+/// <param name="forms">The live forms.</param>
+/// <param name="cache">Their published versions.</param>
+/// <param name="navigation">Finds the sites, each of which may consent to captchas its own way.</param>
+internal sealed class PrivacyHealth(IFormBuilderSettingsService settings, IOptions<FormBuilderOptions> options, IFormRepository forms, PublishedFormCache cache, IDocumentNavigationQueryService navigation) : HealthProbe
+{
+    // A page of the live forms, read until the last.
+    private const int FormsPage = 200;
+
+    /// <inheritdoc />
+    public override async Task<IReadOnlyList<HealthFinding>> FindAsync(HealthWords words, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(words);
+        var allowed = options.Value.Privacy;
+        var found = new List<HealthFinding>();
+        var privacy = (await settings.GetAsync<PrivacySettings>(null, cancellationToken)).Value;
+        if (allowed.AllowFullIp)
+        {
+            if (privacy.IP == IPHandling.Full)
+            {
+                found.Add(new HealthFinding("fullIp", words.FullIp, HealthLink.PrivacyDataCollection));
+            }
+            else if (await FullIPFormsAsync(cancellationToken) is var count and > 0)
+            {
+                found.Add(new HealthFinding("fullIpForms", words.FullIpForms(count)));
+            }
+        }
+
+        var retention = privacy.Retention ?? new SiteRetention();
+        if (allowed.AllowRetentionOff && SiteRetention.ForGood is var forGood && (retention.Submitted == forGood || retention.Approved == forGood || retention.Rejected == forGood || retention.Spam == forGood))
+        {
+            found.Add(new HealthFinding("retentionOff", words.RetentionOff, HealthLink.PrivacyRetention));
+        }
+
+        if (allowed.AllowImplicitCaptchaConsent && await CaptchaUnaskedAsync(cancellationToken))
+        {
+            found.Add(new HealthFinding("captchaUnasked", words.CaptchaUnasked, HealthLink.SettingsProtection));
+        }
+
+        return found;
+    }
+
+    /// <inheritdoc />
+    public override string Passed(HealthWords words) => words.PrivacyPassed;
+
+    // How many live forms keep full addresses of their own, as their published versions say.
+    private async Task<int> FullIPFormsAsync(CancellationToken cancellationToken)
+    {
+        var count = 0;
+        for (var skip = 0; ; skip += FormsPage)
+        {
+            var page = await forms.ListAsync(FormFilter.Live, new PageRequest(skip, FormsPage), cancellationToken);
+            foreach (var form in page.Items.Where(form => form.PublishedVersionId is not null))
+            {
+                if ((await cache.GetAsync(form.Key, cancellationToken))?.Published.Definition.Settings.Privacy.IP == IPHandling.Full)
+                {
+                    count++;
+                }
+            }
+
+            if (page.Items.Count < FormsPage || skip + page.Items.Count >= page.Total)
+            {
+                return count;
+            }
+        }
+    }
+
+    // Whether the settings for all sites, or a site's own, load a captcha before visitors are asked.
+    private async Task<bool> CaptchaUnaskedAsync(CancellationToken cancellationToken)
+    {
+        if ((await settings.GetAsync<ProtectionSettings>(null, cancellationToken)).Value.CaptchaConsent == CaptchaConsentMode.Implicit)
+        {
+            return true;
+        }
+
+        if (navigation.TryGetRootKeys(out var roots))
+        {
+            foreach (var root in roots)
+            {
+                if ((await settings.GetAsync<ProtectionSettings>(root, cancellationToken)).Value.CaptchaConsent == CaptchaConsentMode.Implicit)
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
 }
 
 /// <summary>

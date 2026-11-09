@@ -53,6 +53,7 @@ export default {
     place_description: 'Description',
     place_redirect: 'Redirect address',
     place_entryTitle: 'Entry title',
+    place_ip: 'IP addresses',
     place_button: 'Button text',
 
     code_fields_missing: 'The form has no field to fill in yet, so visitors would have nothing to send.',

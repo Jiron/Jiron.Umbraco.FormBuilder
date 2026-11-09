@@ -1,12 +1,14 @@
 using System.ComponentModel.DataAnnotations;
 using Jiron.Umbraco.FormBuilder.Core.Configuration;
+using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Microsoft.Extensions.Options;
 
 namespace Jiron.Umbraco.FormBuilder.Core.Settings;
 
 /// <summary>
 /// The privacy settings (ADR-0008, ADR-0009), the same for every site: on Privacy, Retention, how long entries are kept in
-/// each state (ADR-0222); on Privacy, Data collection, whether the forms count what visitors do with them (ADR-0211).
+/// each state (ADR-0222); on Privacy, Data collection, what entries keep of visitors' IP addresses (ADR-0224) and whether
+/// the forms count what visitors do with them (ADR-0211).
 /// </summary>
 internal sealed record PrivacySettings : ISettingsSection
 {
@@ -22,6 +24,13 @@ internal sealed record PrivacySettings : ISettingsSection
     /// <summary>How long entries are kept in each state, counted from their last change of state; a form may set its own.</summary>
     [SettingsField(RetentionBox)]
     public SiteRetention Retention { get; init; } = new();
+
+    /// <summary>
+    /// What entries keep of the visitor's IP address (ADR-0009, ADR-0224): nothing by default, the address with its end
+    /// removed, or all of it where the host allows it; each form may choose its own.
+    /// </summary>
+    [SettingsField("ip", Except = ["inherit"], Editor = "ipHandling")]
+    public IPHandling IP { get; init; } = IPHandling.None;
 
     /// <summary>Whether the forms count views, starts, pages and the fields that stop visitors; on by default, each form may turn it off.</summary>
     [SettingsField("insights")]
@@ -63,7 +72,10 @@ internal sealed record SiteRetention
     public int Spam { get; init; } = 30;
 }
 
-/// <summary>Checks the privacy settings: each state keeps its entries 1 to <see cref="SiteRetention.MaxDays"/> days, or for good (0).</summary>
+/// <summary>
+/// Checks the privacy settings: each state keeps its entries 1 to <see cref="SiteRetention.MaxDays"/> days, or for good (0),
+/// and the IP addresses are kept in one of the site's modes, not <c>inherit</c>, which is how a form takes the site's.
+/// </summary>
 internal sealed class PrivacySettingsValidator : ISettingsValidator<PrivacySettings>
 {
     /// <inheritdoc />
@@ -83,6 +95,11 @@ internal sealed class PrivacySettingsValidator : ISettingsValidator<PrivacySetti
         foreach (var (field, days) in new[] { ("submitted", retention.Submitted), ("approved", retention.Approved), ("rejected", retention.Rejected), ("spam", retention.Spam) })
         {
             errors.Between($"retention.{field}", days, SiteRetention.ForGood, SiteRetention.MaxDays);
+        }
+
+        if (section.IP is not (IPHandling.None or IPHandling.Anonymised or IPHandling.Full))
+        {
+            errors.Add("ip", SettingsErrors.IPHandlingCode, "Must be none, anonymised or full: inherit is how a form takes the site's.");
         }
     }
 }
@@ -129,4 +146,29 @@ internal sealed class RetentionOffRule(IOptions<FormBuilderOptions> options) : I
 
     // A state kept for good reads as its default days.
     private static int Kept(int days, int byDefault) => days == SiteRetention.ForGood ? byDefault : days;
+}
+
+/// <summary>
+/// The host's rule on full IP addresses (ADR-0008, ADR-0224): <c>full</c> is refused unless the host allows it, and a stored
+/// one reads as the nearest allowed mode, <c>anonymised</c>.
+/// </summary>
+/// <param name="options">The host configuration.</param>
+internal sealed class FullIPRule(IOptions<FormBuilderOptions> options) : ISettingsHostRule<PrivacySettings>
+{
+    /// <summary>The configuration key behind the rule.</summary>
+    public const string ConfigurationKey = FormBuilderOptions.SectionName + ":Privacy:AllowFullIp";
+
+    /// <inheritdoc />
+    public PrivacySettings Apply(PrivacySettings section, SettingsLocks locks)
+    {
+        ArgumentNullException.ThrowIfNull(section);
+        ArgumentNullException.ThrowIfNull(locks);
+        if (options.Value.Privacy.AllowFullIp)
+        {
+            return section;
+        }
+
+        locks.Add("ip", SettingsLockKind.Restricted, ConfigurationKey);
+        return section.IP == IPHandling.Full ? section with { IP = IPHandling.Anonymised } : section;
+    }
 }

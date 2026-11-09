@@ -107,6 +107,9 @@ describe("a problem's words", () => {
     expect(words('lock_replaces_value', `${F}[1].settings.maxBytes`).said).toBe(
       'The site locks "Largest file", so the form runs with the site\'s value instead of the one it holds.',
     );
+    expect(words('lock_replaces_value', '$.settings.privacy.ip').said).toBe(
+      'The site locks "IP addresses", so the form runs with the site\'s value instead of the one it holds.',
+    );
     expect(words('theme_missing', '$.settings.appearance.theme').said).toBe(
       'The site has no theme "bootstrap9", so the form shows with the default theme.',
     );

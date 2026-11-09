@@ -261,6 +261,8 @@ public sealed class TwoProcessorsTests : ActionTestBase
 
         public Task<int> SkipUnstartedOfEntryAsync(long entryId, CancellationToken cancellationToken = default) => inner.SkipUnstartedOfEntryAsync(entryId, cancellationToken);
 
+        public Task<int> ForgetErrorMessagesAsync(long entryId, CancellationToken cancellationToken = default) => inner.ForgetErrorMessagesAsync(entryId, cancellationToken);
+
         public Task<int> CountOfChangeAsync(Guid changeKey, CancellationToken cancellationToken = default) => inner.CountOfChangeAsync(changeKey, cancellationToken);
 
         public Task<IReadOnlyDictionary<long, ActionRunTally>> TallyOfEntriesAsync(IReadOnlyCollection<long> entryIds, CancellationToken cancellationToken = default) => inner.TallyOfEntriesAsync(entryIds, cancellationToken);

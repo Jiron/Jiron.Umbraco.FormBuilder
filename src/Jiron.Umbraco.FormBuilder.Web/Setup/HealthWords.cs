@@ -178,6 +178,36 @@ internal sealed class HealthWords
     /// <summary>The mirror is off.</summary>
     public string MirrorOff => _german ? "Ver\u00f6ffentlichte Formulare werden nicht als Dateien geschrieben." : "Published forms aren't written to files.";
 
+    /// <summary>The site's entries keep full IP addresses.</summary>
+    public string FullIp => _german
+        ? "Eintr\u00e4ge speichern die vollst\u00e4ndigen IP-Adressen der Besucher, was die Konfiguration erlaubt (JironFormBuilder:Privacy:AllowFullIp). Speichern Sie sie unter Datenschutz \u203a Datenerfassung anonymisiert, wenn Sie sie nicht ganz brauchen."
+        : "Entries keep visitors' full IP addresses, which the configuration allows (JironFormBuilder:Privacy:AllowFullIp). Keep them anonymised under Privacy \u203a Data collection unless you need them whole.";
+
+    /// <summary>Forms of their own keep full IP addresses.</summary>
+    /// <param name="count">How many live forms.</param>
+    public string FullIpForms(int count) => _german
+        ? (count == 1
+            ? "Ein Formular speichert die vollst\u00e4ndigen IP-Adressen der Besucher, was die Konfiguration erlaubt (JironFormBuilder:Privacy:AllowFullIp). Jedes Formular legt das in seiner Ansicht Einstellungen unter Datenschutz fest."
+            : Format("{0} Formulare speichern die vollst\u00e4ndigen IP-Adressen der Besucher, was die Konfiguration erlaubt (JironFormBuilder:Privacy:AllowFullIp). Jedes Formular legt das in seiner Ansicht Einstellungen unter Datenschutz fest.", count))
+        : count == 1
+            ? "One form keeps visitors' full IP addresses, which the configuration allows (JironFormBuilder:Privacy:AllowFullIp). Each form sets it in its Settings view, under Privacy."
+            : Format("{0} forms keep visitors' full IP addresses, which the configuration allows (JironFormBuilder:Privacy:AllowFullIp). Each form sets it in its Settings view, under Privacy.", count);
+
+    /// <summary>Entries of a state are kept for good.</summary>
+    public string RetentionOff => _german
+        ? "Eintr\u00e4ge in manchen Status werden unbegrenzt aufbewahrt, was die Konfiguration erlaubt (JironFormBuilder:Privacy:AllowRetentionOff). Legen Sie ihre Tage unter Datenschutz \u203a Aufbewahrung fest."
+        : "Entries in some states are kept for good, which the configuration allows (JironFormBuilder:Privacy:AllowRetentionOff). Set their days under Privacy \u203a Retention.";
+
+    /// <summary>A captcha loads before visitors are asked.</summary>
+    public string CaptchaUnasked => _german
+        ? "Ein Captcha l\u00e4dt, ohne die Besucher vorher zu fragen, was die Konfiguration erlaubt (JironFormBuilder:Privacy:AllowImplicitCaptchaConsent). W\u00e4hlen Sie in den Spamschutz-Einstellungen eine andere Art der Einwilligung."
+        : "A captcha loads without asking visitors first, which the configuration allows (JironFormBuilder:Privacy:AllowImplicitCaptchaConsent). Choose another way to ask in the spam protection settings.";
+
+    /// <summary>Nothing keeps more of visitors than the defaults.</summary>
+    public string PrivacyPassed => _german
+        ? "Eintr\u00e4ge speichern keine vollst\u00e4ndigen IP-Adressen, jeder Status hat eine Aufbewahrungsfrist, und Captchas fragen vorher."
+        : "Entries keep no full IP addresses, every state has a retention period, and captchas ask first.";
+
     /// <summary>A check itself failed.</summary>
     public string CheckFailed => _german ? "Eine Pr\u00fcfung konnte nicht abgeschlossen werden. Das Protokoll der Website nennt den Grund." : "A check couldn't finish. The site's log says why.";
 

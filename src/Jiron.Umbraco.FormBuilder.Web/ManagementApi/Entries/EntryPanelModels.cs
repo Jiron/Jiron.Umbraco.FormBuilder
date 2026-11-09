@@ -270,7 +270,7 @@ public sealed class EntryTimelineChangeResponseModel
     /// <summary>Its answer's texts after.</summary>
     public required IReadOnlyList<string> After { get; init; }
 
-    /// <summary>Whether the reader may not see them.</summary>
+    /// <summary>Whether the field is sensitive or kept only until the actions have run, so the change keeps no texts (ADR-0225).</summary>
     public required bool Masked { get; init; }
 }
 

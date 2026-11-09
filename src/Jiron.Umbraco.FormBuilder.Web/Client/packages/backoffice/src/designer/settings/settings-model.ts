@@ -183,7 +183,7 @@ export function anchorOf(path: string): Anchor | null {
     case 'privacy':
       if (name === 'retentionDays')
         return at('privacy', typeof inner === 'string' ? [`retention-${inner}`, 'retention'] : ['retention']);
-      return name === 'insights' ? at('privacy', ['insights']) : null;
+      return name === 'insights' || name === 'ip' ? at('privacy', [name]) : null;
     case 'developer': {
       const box = own(DEVELOPER, name);
       return box ? at('developer', [box]) : null;
@@ -380,10 +380,13 @@ export function summaryOf(
       break;
     }
     case 'privacy': {
-      // Days of its own first, then insights: a form counts only while the site does too (ADR-0211, ADR-0222).
+      // Days of its own first, then its own IP handling, then insights: a form counts only while the site does too
+      // (ADR-0211, ADR-0222, ADR-0224).
       const own = objectIn(groupOf(definition, 'privacy'), 'retentionDays');
       if (own && Object.values(own).some((days) => numberIn(days) !== undefined))
         parts.push(term('summary_retentionOwn'));
+      const ip = wordIn(groupOf(definition, 'privacy'), 'ip', 'inherit');
+      if (ip !== 'inherit') parts.push(term(`summary_ip_${ip}`));
       parts.push(
         term(
           flagIn(groupOf(definition, 'privacy'), 'insights', true)

@@ -115,9 +115,10 @@ export function fieldSections(type: FieldTypeResponseModel, groupColumns: number
   if (has('prefill')) advanced.push({ kind: 'prefill' });
   if (has('autocomplete')) advanced.push({ kind: 'plain', property: 'autocomplete' });
   if (type.holdsValue) {
+    // What is kept of the answer stands next to Sensitive, which masks it where Keep the answer removes it (ADR-0225).
     advanced.push({ kind: 'switch', property: 'sensitive' });
-    advanced.push({ kind: 'switch', property: 'includeInEmails' });
     advanced.push({ kind: 'keep' });
+    advanced.push({ kind: 'switch', property: 'includeInEmails' });
   }
   advanced.push(...shownSettings(type, 'advanced'));
   advanced.push({ kind: 'plain', property: 'cssClass' });

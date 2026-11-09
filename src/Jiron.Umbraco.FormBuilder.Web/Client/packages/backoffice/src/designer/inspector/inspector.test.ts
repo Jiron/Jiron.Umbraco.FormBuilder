@@ -239,6 +239,10 @@ describe('the inspector', () => {
     expect(applied(requests[1], NAME)['includeInEmails']).toBe(false);
     choose(must(root.querySelector<HTMLSelectElement>('#prop-span'), 'the width'), '2');
     expect(applied(requests[2], NAME)['span']).toBe(2);
+    // Keep the answer follows Sensitive, and says what it removes where Sensitive only masks.
+    expect(text(root.querySelector('#prop-keep-help'))).toBe(
+      'Until the actions have run: emails and webhooks still get the answer, then it is removed from the entry, which shows "not kept", and from its emails. Sensitive only masks an answer; this removes it.',
+    );
     choose(must(root.querySelector<HTMLSelectElement>('#prop-keep'), 'keep'), 'untilActionsRun');
     expect(applied(requests[3], NAME)['keep']).toBe('untilActionsRun');
     choose(must(root.querySelector<HTMLSelectElement>('#prop-keep'), 'keep'), 'always');

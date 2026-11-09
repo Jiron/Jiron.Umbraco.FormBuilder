@@ -72,6 +72,12 @@ public sealed class FormBuilderPrivacyOptions
     public bool AllowRetentionOff { get; set; }
 
     /// <summary>
+    /// Whether entries may keep visitors' full IP addresses (ADR-0009, ADR-0224). Off by default, and a site or form that
+    /// stores <c>full</c> then keeps them anonymised.
+    /// </summary>
+    public bool AllowFullIp { get; set; }
+
+    /// <summary>
     /// Whether a site may load a captcha's script without asking its visitors, the <c>implicit</c> consent mode (section 4.10,
     /// ADR-0157). Off by default, and a stored <c>implicit</c> then reads as <c>explicit</c>.
     /// </summary>

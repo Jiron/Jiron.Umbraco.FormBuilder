@@ -28,6 +28,7 @@ internal static class FormBuilderSettingsServices
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<ISettingsHostRule<FilesSettings>, FilesHostLimitRule>());
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<ISettingsValidator<FilesSettings>, FilesSettingsValidator>());
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<ISettingsHostRule<PrivacySettings>, RetentionOffRule>());
+        builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<ISettingsHostRule<PrivacySettings>, FullIPRule>());
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<ISettingsValidator<PrivacySettings>, PrivacySettingsValidator>());
         return builder;
     }

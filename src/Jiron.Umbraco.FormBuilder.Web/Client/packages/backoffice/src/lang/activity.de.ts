@@ -203,6 +203,8 @@ export default {
     audit_entry_stateChangeUndone: (f: AuditFacts) => `Eine Verschiebung ${ofEntry(f)} rückgängig gemacht`,
     audit_entry_stateChanged: (f: AuditFacts) =>
       f.from && f.to ? `${entry(f)} von ${f.from} nach ${f.to} verschoben` : `${entry(f)} verschoben`,
+    audit_entry_valuesRemoved: (f: AuditFacts) =>
+      `Antworten ${ofEntry(f)} entfernt, die nur bis zum Lauf seiner Aktionen aufbewahrt wurden`,
     audit_entry_verificationExpired: (f: AuditFacts) =>
       `Die Adresse ${ofEntry(f)} wurde nie bestätigt, daher ist er abgelaufen`,
     audit_entryFile_archiveStarted: 'Ein ZIP der Dateien begonnen',

@@ -67,7 +67,8 @@ export default {
     help_sensitive: 'In Einträgen maskiert, und nur für Benutzer sichtbar, die vertrauliche Daten sehen dürfen.',
     help_includeInEmails: 'Ob die Antwort in den E-Mails steht, die das Formular sendet.',
     help_alias: 'Platzhalter, Exporte und die API verwenden ihn.',
-    help_keep: 'Was von der Antwort bleibt, sobald der Eintrag da ist.',
+    help_keep:
+      'Bis die Aktionen gelaufen sind: E-Mails und Webhooks erhalten die Antwort noch, danach wird sie aus dem Eintrag, der dann „nicht aufbewahrt“ zeigt, und aus seinen E-Mails entfernt. Vertraulich maskiert eine Antwort nur, dies entfernt sie.',
     help_unique: 'Ein zweiter Eintrag mit derselben Antwort wird abgelehnt.',
     spanOf: (span: number, columns: number) => `${span} von ${columns} Spalten`,
     columnsCount: (count: number) => (count === 1 ? '1 Spalte' : `${count} Spalten`),

@@ -1472,11 +1472,15 @@ export class FormSettingsViewElement extends UmbLitElement {
     `;
   }
 
-  // Privacy (ADR-0211, ADR-0222): the form's own days per state, each empty for the site's, which its box shows, and the
-  // form's insights, which count only while the site's are on too.
+  // Privacy (ADR-0211, ADR-0222, ADR-0224): the form's own days per state, each empty for the site's, which its box shows;
+  // what its entries keep of IP addresses, the full address only where the host allows it; and the form's insights,
+  // which count only while the site's are on too.
   #privacy(definition: DesignDefinition, choices: FormSettingsChoicesResponseModel): TemplateResult {
     const own = objectIn(groupOf(definition, 'privacy'), 'retentionDays') ?? {};
     const site = choices.defaults.retention;
+    const ipLabel = this.#term('ip');
+    const ip = wordIn(groupOf(definition, 'privacy'), 'ip', 'inherit');
+    const fullIp = choices.host.fullIp;
     return html`
       <fieldset class="item" id="retention">
         <legend class="label">${this.#term('retentionDays')}</legend>
@@ -1503,6 +1507,22 @@ export class FormSettingsViewElement extends UmbLitElement {
           })}
         </div>
       </fieldset>
+      ${this.#select(
+        'ip',
+        ipLabel,
+        fullIp ? this.#term('ipHelp') : this.#term('ipHelpNoFull', choices.host.fullIpKey),
+        ip,
+        [
+          { value: 'inherit', label: this.#term('siteDefault', this.#term(`summary_ip_${choices.defaults.ip}`)) },
+          ...['none', 'anonymised', 'full'].map((value) => ({
+            value,
+            label: this.#term(`ip_${value}`),
+            // Full addresses wait for the host; one the form holds stays chosen, and the form check says what the site keeps.
+            disabled: value === 'full' && !fullIp && ip !== 'full',
+          })),
+        ],
+        (value) => this.#set(['privacy', 'ip'], value, ipLabel),
+      )}
       ${this.#switch(
         'insights',
         this.#term('insights'),

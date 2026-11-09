@@ -62,8 +62,10 @@ const CHOICES: FormSettingsChoicesResponseModel = {
     theme: 'default',
     emailLayout: CARD,
     insights: true,
+    ip: 'none',
     retention: { submitted: 365, approved: 365, rejected: 90, spam: 30 },
   },
+  host: { fullIp: false, fullIpKey: 'JironFormBuilder:Privacy:AllowFullIp' },
   themes: [
     { alias: 'default', label: 'Default' },
     { alias: 'brand', label: 'Brand' },

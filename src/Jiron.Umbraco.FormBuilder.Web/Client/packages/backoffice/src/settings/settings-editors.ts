@@ -131,6 +131,34 @@ export function settingsEditors(host: SettingsEditorHost): Readonly<Record<strin
     </fieldset>`;
   };
 
+  // Radios of a choice one value of which the host must allow: while it does not, that value is greyed with the key that
+  // allows it, and stays chosen only where it is stored, until another is picked.
+  const restricted = (
+    setting: FieldSettingResponseModel,
+    value: unknown,
+    path: string,
+    refusedValue: string,
+    allowed: boolean,
+  ) => {
+    const chosen = text(value);
+    const key = host.section.locks.find((lock) => lock.field === setting.name)?.configurationKey ?? '';
+    return radios(
+      setting,
+      path,
+      setting.choices.map((choice) => {
+        const refused = choice.value === refusedValue && !allowed;
+        return {
+          value: choice.value,
+          name: context.say(choice.label),
+          line: refused ? words('choiceLocked', key) : context.say(`${choice.label}Line`),
+          disabled: refused && chosen !== choice.value,
+          checked: chosen === choice.value,
+          pick: () => host.put(path, choice.value),
+        };
+      }),
+    );
+  };
+
   return {
     theme: (setting, value, path) =>
       facts.general ? choiceOf(setting, value, path, facts.general.themes, facts.general.defaultTheme) : nothing,
@@ -240,26 +268,12 @@ export function settingsEditors(host: SettingsEditorHost): Readonly<Record<strin
     captchaProvider: () => nothing,
 
     // Each mode with its line; the implicit one, which the host must allow, greyed with the key that allows it.
-    captchaConsent: (setting, value, path) => {
-      const chosen = text(value);
-      const allowed = facts.protection?.implicitConsent ?? false;
-      const key = host.section.locks.find((lock) => lock.field === setting.name)?.configurationKey ?? '';
-      return radios(
-        setting,
-        path,
-        setting.choices.map((choice) => {
-          const refused = choice.value === 'implicit' && !allowed;
-          return {
-            value: choice.value,
-            name: context.say(choice.label),
-            line: refused ? words('implicitLocked', key) : context.say(`${choice.label}Line`),
-            disabled: refused && chosen !== choice.value,
-            checked: chosen === choice.value,
-            pick: () => host.put(path, choice.value),
-          };
-        }),
-      );
-    },
+    captchaConsent: (setting, value, path) =>
+      restricted(setting, value, path, 'implicit', facts.protection?.implicitConsent ?? false),
+
+    // Each way an entry keeps the address, with its line; the full one, which the host must allow, greyed with the key
+    // that allows it (ADR-0224).
+    ipHandling: (setting, value, path) => restricted(setting, value, path, 'full', facts.privacy?.fullIp ?? false),
 
     // A switch, and once it is on the field's label and wording under it, in the language the screen edits.
     newFormConsent: (setting, value, path) => {

@@ -4,6 +4,7 @@ using Jiron.Umbraco.FormBuilder.Core.Composing;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Files;
 using Jiron.Umbraco.FormBuilder.Core.MergeTags;
+using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Core.Submissions;
 using Jiron.Umbraco.FormBuilder.Tests.Integration.Support;
@@ -15,7 +16,8 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Integration.Actions;
 /// <summary>
 /// What goes once an entry's actions are through (ROADMAP 8.1, section 4.4, ADR-0158): a value kept only until the actions have
 /// run stays while a run is retrying or uncertain or a trigger can still fire, and goes with an entry event once every run is
-/// final; a form that stores no entries lets the whole entry go the same way, its files too, at once when no action can fire, and
+/// final, with every copy the actions made of it and an audit entry (ADR-0225), or is never stored when no action could use it;
+/// a form that stores no entries lets the whole entry go the same way, its files too, at once when no action can fire, and
 /// still spends a challenge once.
 /// </summary>
 [TestFixture]
@@ -73,6 +75,60 @@ public sealed class ActionSettlementTests : ActionTestBase
             Assert.That(await NameOfAsync(entry), Is.EqualTo("Ada Lovelace"), "the other answers stay");
             Assert.That(removed, Has.Count.EqualTo(1));
             Assert.That(removed[0].Details, Is.EqualTo($$"""{"fields":["{{Note.Key}}"]}"""), "the keys, and nothing typed");
+        });
+    }
+
+    [Test]
+    public async Task AKeptValue_GoesWithEveryCopyTheActionsMadeOfIt_AndIsAudited_SoNoTableHoldsItOnceTheRunsAreFinal()
+    {
+        const string Kept = "Kept 7f3c for the actions";
+        var form = await PublishAsync(change: definition => definition with { Actions = [Action("echo")] }, fields: [NameField, Note]);
+
+        // The server answers with what it was sent, and gives up; a mail of the entry quotes the value and has left.
+        Scripted.Scripts["echo"] = (_, _) => Task.FromResult(ActionResult.Failed("http_400", $"Bad request: {Kept}"));
+        var entry = await SubmitAsync(form, $$"""{"name":"Ada Lovelace","note":"{{Kept}}"}""");
+        var mails = GetRequiredService<IEmailRepository>();
+        var mail = (await mails.AddAsync(new NewEmail(EmailKind.Action, "team@example.com", "site@example.com", $"About {Kept}", $"The note: {Kept}", "en-US", EntryId: entry.Id)))!;
+        var token = (await mails.ClaimAsync(mail.Id, "server", TimeSpan.FromMinutes(5)))!.LockedBy!;
+        await mails.SentAsync(mail.Id, token, TimeSpan.FromDays(30));
+        var database = GetRequiredService<FormBuilderDatabase>();
+        var before = await DatabaseSearch.TablesHoldingAsync(database, Kept);
+
+        await DrainAsync(entry.Id);
+
+        var after = await DatabaseSearch.TablesHoldingAsync(database, Kept);
+        var run = (await Runs.ListForEntryAsync(entry.Id)).Single();
+        var audited = await database.ReadAsync(async db =>
+        {
+            var n = new SqlNames(db);
+            return await db.FetchListAsync<dynamic>($"SELECT * FROM {n.T(FormBuilderTables.AuditEntry)} WHERE {n.C("action")} = @0", ActionSettlement.ValuesRemovedAction);
+        });
+        Assert.Multiple(async () =>
+        {
+            Assert.That(before, Has.Some.StartsWith(FormBuilderTables.EntryValue + ".").And.Some.StartsWith(FormBuilderTables.Email + "."));
+            Assert.That(after, Is.Empty, "no table holds the value once the runs are final");
+            Assert.That(await mails.ListForEntryAsync(entry.Id), Is.Empty, "the mail that quoted it went");
+            Assert.That((run.State, run.LastError), Is.EqualTo((ActionRunState.Failed, new DeliveryError("http_400"))), "the run says how it ended, not what the server answered");
+            Assert.That(audited, Has.Count.EqualTo(1));
+            var row = (IDictionary<string, object?>)audited[0];
+            Assert.That(row["entityKey"]?.ToString(), Is.EqualTo(entry.Key.ToString()).IgnoreCase);
+            Assert.That(row["details"]?.ToString(), Does.Contain(Note.Key.ToString()).And.Not.Contain(Kept));
+        });
+    }
+
+    [Test]
+    public async Task AKeptAnswerNoActionCouldUse_IsNeverStored_AndTheTimelineSaysSo()
+    {
+        var form = await PublishAsync(fields: [NameField, Note]);
+
+        var entry = await SubmitAsync(form, WithNote);
+
+        var removed = (await Events.ListForEntryAsync(entry.Id)).Where(item => item.Kind == ActionSettlement.ValuesRemovedEvent).ToList();
+        Assert.Multiple(async () =>
+        {
+            Assert.That(await NoteOfAsync(entry), Is.Null);
+            Assert.That(await NameOfAsync(entry), Is.EqualTo("Ada Lovelace"));
+            Assert.That(removed.Select(item => item.Details), Is.EqualTo(new[] { $$"""{"fields":["{{Note.Key}}"]}""" }));
         });
     }
 

@@ -248,7 +248,9 @@ internal sealed class EntryEdits(
         return chosen.Count == 0 && given.Count == 0 ? EntryMoveCheck.None : await checks.EditAsync(form, chosen, given, cancellationToken);
     }
 
-    // The new values, the search text, the timeline's event with the old and new texts, and the audit entry, in one unit.
+    // The new values, the search text, the timeline's event with the old and new texts, and the audit entry, in one unit. A
+    // sensitive answer, or one kept only until the actions have run, leaves no copy in the event: it says the field changed,
+    // without its texts (ADR-0009, ADR-0225).
     private async Task SaveAsync(StoredForm form, StoredEntry entry, EntryRead read, List<(FormField Field, ImmutableArray<FieldValue> Values)> changed, Guid userKey, CancellationToken cancellationToken)
     {
         var definition = read.Scope.Form;
@@ -261,13 +263,13 @@ internal sealed class EntryEdits(
         var texts = await answers.TextsAsync(read.Scope, changed.Select(item => new AnswerField(item.Field, null)), cancellationToken);
         var details = JsonSerializer.Serialize(new
         {
-            changes = changed.Select(item => new
+            changes = changed.Select(item => (item.Field, item.Values, Withheld: item.Field.Sensitive || item.Field.Keep == FieldKeep.UntilActionsRun)).Select(item => new
             {
                 field = item.Field.Key,
                 label = MergeTagAnswerTexts.Label(item.Field, read.Scope.Culture, texts.Dictionary),
-                sensitive = item.Field.Sensitive,
-                before = TextsOf(item.Field, read.Answers?.Find(item.Field.Key)?.Values.Select(value => value.Value).ToList() ?? [], read.Scope.Culture, texts),
-                after = TextsOf(item.Field, item.Values, read.Scope.Culture, texts),
+                sensitive = item.Withheld,
+                before = item.Withheld ? [] : TextsOf(item.Field, read.Answers?.Find(item.Field.Key)?.Values.Select(value => value.Value).ToList() ?? [], read.Scope.Culture, texts),
+                after = item.Withheld ? [] : TextsOf(item.Field, item.Values, read.Scope.Culture, texts),
             }),
         });
         await database.WriteAsync(

@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Jiron.Umbraco.FormBuilder.Core.Audit;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Entries;
 using Jiron.Umbraco.FormBuilder.Core.Files;
@@ -13,8 +14,9 @@ using Umbraco.Cms.Infrastructure.Persistence;
 namespace Jiron.Umbraco.FormBuilder.Core.Actions;
 
 /// <summary>
-/// What goes once an entry's actions are through (section 4.4, ADR-0158): the fields kept only until the actions have run,
-/// with the entry event that records it, and a whole entry of a form that stores none
+/// What goes once an entry's actions are through (section 4.4, ADR-0158, ADR-0225): the fields kept only until the actions
+/// have run, with every copy the actions made of them (the entry's mail and its runs' error messages), an entry event and an
+/// audit entry that record it, and a whole entry of a form that stores none
 /// (<c>settings.submission.store: never</c>), its files too. Both wait until every run of the entry is final, its mail has
 /// left or failed, as a mail still reads the files it attaches, and no trigger can still fire for it. The check runs in the unit that makes the last run final, which holds the entry's row first, so
 /// two last runs on two servers cannot both miss it and a crash cannot leave the values behind.
@@ -27,6 +29,7 @@ internal sealed partial class ActionSettlement(
     IEmailRepository emails,
     IFormRepository forms,
     IKeyValueRepository keyValues,
+    IAuditRepository audit,
     FormDocuments documents,
     EntryAnswerStore store,
     IFormBuilderFileStore files,
@@ -35,6 +38,9 @@ internal sealed partial class ActionSettlement(
 {
     /// <summary>The kind of the event that records the removal of the kept values.</summary>
     public const string ValuesRemovedEvent = "valuesRemoved";
+
+    /// <summary>The audit action of the removal of the kept values (ADR-0225); its details name the fields, never a value.</summary>
+    public const string ValuesRemovedAction = "entry.valuesRemoved";
 
     // What marks a used challenge of an entry that is gone, so a form that stores nothing keeps a challenge to one entry.
     private const string UsedChallengePrefix = "jfb.usedchallenge.";
@@ -274,7 +280,13 @@ internal sealed partial class ActionSettlement(
             await entries.DeleteFileAsync(file.Id, entry.Id, cancellationToken);
         }
 
+        // What the actions made of the values goes with them: the entry's mail, all of it final by now, and what its runs' servers
+        // answered (ADR-0225).
+        await emails.DeleteAllAsync([entry.Id], cancellationToken);
+        await runs.ForgetErrorMessagesAsync(entry.Id, cancellationToken);
         await events.AddAsync(new NewEntryEvent(entry.Id, ValuesRemovedEvent, Details: JsonSerializer.Serialize(new { fields = kept.Select(key => key.ToString("D")).Order(StringComparer.Ordinal) })), cancellationToken);
+        var formKey = (await forms.GetByIdAsync(entry.FormId, cancellationToken))?.Key;
+        await audit.AddAsync(new NewAuditEntry(ValuesRemovedAction, EntryPanels.EntityType, entry.Key, null, new AuditDetails().Add("form", formKey).AddKeys("fields", kept)), cancellationToken);
         return gone;
     }
 

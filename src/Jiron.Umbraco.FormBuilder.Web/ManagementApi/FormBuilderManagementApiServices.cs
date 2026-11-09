@@ -50,6 +50,7 @@ internal static class FormBuilderManagementApiServices
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<Settings.ISettingsFacts<Core.Settings.ProtectionSettings>, Settings.ProtectionFacts>());
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<Settings.ISettingsFacts<Core.Files.FilesSettings>, Settings.FilesFacts>());
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<Settings.ISettingsFacts<Core.Settings.IntegrationSettings>, Settings.IntegrationFacts>());
+        builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<Settings.ISettingsFacts<Core.Settings.PrivacySettings>, Settings.PrivacyFacts>());
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IConfigureOptions<SwaggerGenOptions>, ConfigureFormBuilderManagementApiSwagger>());
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IOperationIdHandler, FormBuilderOperationIdHandler>());
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<ISchemaIdHandler, FormBuilderSchemaIdHandler>());

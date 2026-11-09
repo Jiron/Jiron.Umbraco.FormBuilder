@@ -194,6 +194,23 @@ public sealed class EntryExportTests : ActionTestBase
     }
 
     [Test]
+    public async Task AnAnswerKeptOnlyUntilTheActionsRan_IsSaidNotKept_OnceItIsGone_InTheExportersLanguage()
+    {
+        var kept = Note with { Keep = FieldKeep.UntilActionsRun };
+        var form = await PublishAsync(name: "Kept export", fields: [NameField, kept]);
+        await SubmitAsync(form, """{"name":"Ada","note":"For the actions"}""");
+
+        var english = ExportFiles.Csv(Encoding.UTF8.GetString((await WriteAsync(form, new EntryExportRequest { Format = "csv" })).AsSpan(3)));
+        var german = ExportFiles.Csv(Encoding.UTF8.GetString((await WriteAsync(form, new EntryExportRequest { Format = "csv" }, new EntryExporter(Editor, MaySeeSensitive: false, Culture: "de-DE"))).AsSpan(3)));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(english[1].Skip(4), Is.EqualTo(new[] { "Ada", "not kept" }), "no action could use it, so it was never stored");
+            Assert.That(german[1].Skip(4), Is.EqualTo(new[] { "Ada", "nicht aufbewahrt" }));
+        });
+    }
+
+    [Test]
     public async Task ACsvExport_TakesTheDelimiterTheAliasesAndNoByteOrderMark()
     {
         var form = await FormAsync();

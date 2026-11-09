@@ -62,7 +62,8 @@ export default {
     help_sensitive: 'Shown masked in entries, and only to users who may see sensitive data.',
     help_includeInEmails: 'Whether the answer is listed in the emails the form sends.',
     help_alias: 'Merge tags, exports and the API use it.',
-    help_keep: 'What is kept of the answer once the entry is in.',
+    help_keep:
+      'Until the actions have run: emails and webhooks still get the answer, then it is removed from the entry, which shows "not kept", and from its emails. Sensitive only masks an answer; this removes it.',
     help_unique: 'A second entry with the same answer is refused.',
     spanOf: (span: number, columns: number) => `${span} of ${columns} columns`,
     columnsCount: (count: number) => (count === 1 ? '1 column' : `${count} columns`),

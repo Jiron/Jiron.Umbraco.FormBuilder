@@ -102,7 +102,10 @@ public sealed class HealthFindingResponseModel
     /// <summary>What is wrong and what to do, in the user's language.</summary>
     public required string Message { get; init; }
 
-    /// <summary>The screen that fixes it, when one does: <c>settingsEmail</c>, <c>settingsGeneral</c> or <c>deliveries</c>.</summary>
+    /// <summary>
+    /// The screen that fixes it, when one does: <c>settingsEmail</c>, <c>settingsGeneral</c>, <c>deliveries</c>,
+    /// <c>privacyDataCollection</c>, <c>privacyRetention</c> or <c>settingsProtection</c>.
+    /// </summary>
     public string? Link { get; init; }
 
     /// <summary>Whether the checklist's first step says the same while it is open.</summary>

@@ -67,8 +67,8 @@ describe("a field's sections", () => {
         'prefill',
         'autocomplete',
         'sensitive',
-        'includeInEmails',
         'keep',
+        'includeInEmails',
         'cssClass',
       ],
     });

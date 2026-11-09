@@ -86,8 +86,10 @@ const CHOICES: FormSettingsChoicesResponseModel = {
     theme: 'default',
     emailLayout: CARD,
     insights: true,
+    ip: 'none',
     retention: { submitted: 365, approved: 365, rejected: 90, spam: 30 },
   },
+  host: { fullIp: false, fullIpKey: 'JironFormBuilder:Privacy:AllowFullIp' },
   themes: [
     { alias: 'default', label: 'Default' },
     { alias: 'brand', label: 'Brand' },
@@ -666,6 +668,51 @@ describe('privacy', () => {
     const { head } = await viewOf(own);
     expect(text(head('privacy'))).toContain('Own retention days');
   });
+
+  it("chooses what entries keep of IP addresses: the site's on Site default, full waiting for the host", async () => {
+    const { root, box, open, choose, settings, head, click } = await viewOf();
+    await open('privacy');
+    const select = box<HTMLSelectElement>('ip');
+    expect([...select.options].map((option) => [text(option), option.disabled])).toEqual([
+      ['Site default (No IP addresses)', false],
+      ['Keep none', false],
+      ['Anonymised, the end removed', false],
+      ['Full addresses', true],
+    ]);
+    expect(text(root.getElementById('ip-help'))).toBe(
+      "What each entry keeps of the address it was sent from. Full addresses need JironFormBuilder:Privacy:AllowFullIp in the site's configuration.",
+    );
+    await choose('ip', 'anonymised');
+    expect(settings('privacy')['ip']).toBe('anonymised');
+    // Closed, the group says it.
+    await click(head('privacy'));
+    expect(text(head('privacy'))).toContain('Anonymised IP addresses');
+  });
+
+  it("offers full addresses where the host allows them, and keeps a form's full one chosen where it does not", async () => {
+    server.choices = {
+      ...CHOICES,
+      host: { ...CHOICES.host, fullIp: true },
+      defaults: { ...CHOICES.defaults, ip: 'anonymised' },
+    };
+    const allowed = await viewOf();
+    await allowed.open('privacy');
+    const select = allowed.box<HTMLSelectElement>('ip');
+    expect(text(select.options[0])).toBe('Site default (Anonymised IP addresses)');
+    expect(select.options[3]?.disabled).toBe(false);
+    expect(text(allowed.root.getElementById('ip-help'))).toBe('What each entry keeps of the address it was sent from.');
+    document.body.replaceChildren();
+
+    server.choices = CHOICES;
+    const full = {
+      ...DEFINITION,
+      settings: { ...(DEFINITION['settings'] as object), privacy: { ip: 'full', insights: true } },
+    };
+    const held = await viewOf(full);
+    await held.open('privacy');
+    const kept = held.box<HTMLSelectElement>('ip');
+    expect([kept.value, kept.options[3]?.disabled]).toEqual(['full', false]);
+  });
 });
 
 describe('the form check', () => {
@@ -705,6 +752,9 @@ describe('the form check', () => {
       'context-values',
     ]);
     workspace.requestFix({ kind: 'view', view: 'settings', path: '$.settings.privacy.ip' });
+    await settle(view);
+    expect([head('privacy').getAttribute('aria-expanded'), root.activeElement?.id]).toEqual(['true', 'ip']);
+    workspace.requestFix({ kind: 'view', view: 'settings', path: '$.settings.privacy.unknown' });
     await settle(view);
     expect(root.activeElement).toBe(head('submission'));
     expect(workspace.fixes.getValue()).toBeNull();

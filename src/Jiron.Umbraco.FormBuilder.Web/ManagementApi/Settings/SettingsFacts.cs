@@ -185,3 +185,15 @@ internal static class LibraryPages
         }
     }
 }
+
+/// <summary>
+/// Privacy, Data collection's facts (ADR-0224): whether the host allows full IP addresses, whose choice the screen greys out
+/// otherwise, naming the key that allows it.
+/// </summary>
+/// <param name="options">The host configuration.</param>
+internal sealed class PrivacyFacts(IOptions<FormBuilderOptions> options) : ISettingsFacts<PrivacySettings>
+{
+    /// <inheritdoc />
+    public Task<SettingsFactsResponseModel> ReadAsync(Guid? site, CancellationToken cancellationToken) =>
+        Task.FromResult(new SettingsFactsResponseModel { Privacy = new PrivacyFactsResponseModel(options.Value.Privacy.AllowFullIp) });
+}

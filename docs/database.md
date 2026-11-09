@@ -541,7 +541,9 @@ Resume tokens and challenges are stored only as hashes and ids.
 - `IX_jfbEntry_firstSeenUtc_submittedUtc`: the entries nobody opened yet, newest first, for the Inbox and its badge.
 - `IX_jfbEntry_formVersionId`: the versions entries point at, so pruning a draft save checks without a scan.
 - `IX_jfbEntry_memberKey`: a member's entries, for privacy requests. `memberKey` is the member signed in when the entry
-  was sent; a test entry keeps none (ADR-0223).
+  was sent; a test entry keeps none (ADR-0223). `ipAddress` is what the form's mode keeps of the visitor's address: none
+  by default, the address with its end removed, or all of it where the host allows it; a test entry, a server key's and a
+  draft keep none (ADR-0224).
 - `IX_jfbEntry_purgeAfterUtc`: retention, which finds the entries whose time has come, soonest first. `purgeAfterUtc` is
   stored with every new entry and every change of state, and given again when the rules change; `holdUntilUtc` and
   `holdReason` are a legal hold, which keeps an entry from every delete until it ends (ADR-0222).

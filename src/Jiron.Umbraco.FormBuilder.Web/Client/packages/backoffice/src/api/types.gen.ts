@@ -1280,6 +1280,7 @@ export type FormSettingsChoicesResponseModel = {
     themes: Array<FormSettingsThemeResponseModel>;
     memberGroups: Array<FormSettingsMemberGroupResponseModel>;
     emailLayouts: Array<FormSettingsEmailLayoutResponseModel>;
+    host: FormSettingsHostResponseModel;
     limits: FormSettingsLimitsResponseModel;
 };
 
@@ -1300,12 +1301,18 @@ export type FormSettingsDefaultsResponseModel = {
         [key: string]: string;
     } | null;
     insights: boolean;
+    ip: string;
     retention: RetentionDaysResponseModel;
 };
 
 export type FormSettingsEmailLayoutResponseModel = {
     key: string;
     name: string;
+};
+
+export type FormSettingsHostResponseModel = {
+    fullIp: boolean;
+    fullIpKey: string;
 };
 
 export type FormSettingsLimitsResponseModel = {
@@ -1927,6 +1934,10 @@ export type PreviewThemeRequestModel = {
     customCss?: string | null;
 };
 
+export type PrivacyFactsResponseModel = {
+    fullIp: boolean;
+};
+
 export type ProblemDetails = {
     type?: string | null;
     title?: string | null;
@@ -2086,6 +2097,7 @@ export type SettingsFactsResponseModel = {
     protection?: ProtectionFactsResponseModel | null;
     files?: FilesFactsResponseModel | null;
     integrations?: IntegrationsFactsResponseModel | null;
+    privacy?: PrivacyFactsResponseModel | null;
 };
 
 export type SettingsLockResponseModel = {

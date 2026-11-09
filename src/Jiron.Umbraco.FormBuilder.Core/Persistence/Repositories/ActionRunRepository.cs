@@ -328,6 +328,18 @@ internal sealed class ActionRunRepository(FormBuilderDatabase database) : IActio
             cancellationToken);
 
     /// <inheritdoc />
+    public Task<int> ForgetErrorMessagesAsync(long entryId, CancellationToken cancellationToken = default) =>
+        database.WriteAsync(
+            db =>
+            {
+                var n = new SqlNames(db);
+                return db.ExecAsync(
+                    $"UPDATE {n.T(FormBuilderTables.ActionRun)} SET {n.C("lastErrorMessage")} = NULL WHERE {n.C("entryId")} = @0 AND {n.C("lastErrorMessage")} IS NOT NULL",
+                    entryId);
+            },
+            cancellationToken);
+
+    /// <inheritdoc />
     public Task<int> CountOfChangeAsync(Guid changeKey, CancellationToken cancellationToken = default) =>
         database.ReadAsync(
             db =>

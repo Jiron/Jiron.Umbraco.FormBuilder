@@ -218,6 +218,30 @@ function protection(implicitConsent = false): SettingsSectionResponseModel {
   };
 }
 
+/** Privacy > Data collection: what entries keep of IP addresses, and insights; the host allows full addresses or not. */
+function privacy(fullIp = false): SettingsSectionResponseModel {
+  return {
+    section: 'privacy',
+    site: null,
+    version: 2,
+    values: { ip: 'none', insights: true },
+    overrides: [],
+    siteFields: [],
+    sites: [],
+    fields: [
+      field('privacy', 'ip', 'choice', 'ip', {
+        editor: 'ipHandling',
+        choices: choices('privacy', 'ip', ['none', 'anonymised', 'full']),
+      }),
+      field('privacy', 'insights', 'checkbox', 'insights'),
+    ],
+    locks: fullIp
+      ? []
+      : [{ field: 'ip', kind: 'restricted', configurationKey: 'JironFormBuilder:Privacy:AllowFullIp' }],
+    facts: { privacy: { fullIp } },
+  };
+}
+
 const refusal = (code: string, errors: readonly { path: string; code: string; message: string }[] = []) => ({
   error: new UmbApiError('refused', code === 'validation_failed' ? 400 : 409, null, { code, errors } as never),
 });
@@ -435,6 +459,24 @@ describe('the global settings screen', () => {
     must(root.querySelector<HTMLInputElement>('input[value="proofOfWork"]'), 'proofOfWork').click();
     await settle();
     expect(text(root.getElementById('setting-proofBits-unit'))).toBe('bits');
+  });
+
+  it('keeps IP addresses as the site chooses, the full address greyed with its key until the host allows it', async () => {
+    const { root, save } = await screenOf('privacy', privacy());
+    const radio = (value: string) => must(root.querySelector<HTMLInputElement>(`input[value="${value}"]`), value);
+    expect(said(root)).toContain('Each entry can keep the address it was sent from.');
+    expect([radio('none').checked, radio('full').disabled]).toEqual([true, true]);
+    expect(said(root)).toContain('Locked by configuration: JironFormBuilder:Privacy:AllowFullIp');
+    radio('anonymised').click();
+    await settle();
+    api.saves = [{ data: privacy() }];
+    await save();
+    expect(api.sent).toEqual([{ version: 2, site: null, values: { ip: 'anonymised' } }]);
+
+    document.body.replaceChildren();
+    const allowed = await screenOf('privacy', privacy(true));
+    expect(must(allowed.root.querySelector<HTMLInputElement>('input[value="full"]'), 'full').disabled).toBe(false);
+    expect(said(allowed.root)).toContain('Only for a site that needs it whole, such as to report abuse.');
   });
 
   it("says Email can't send yet with the key that sets it up, and offers no test mail until it can", async () => {

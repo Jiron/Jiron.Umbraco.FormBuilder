@@ -47,6 +47,9 @@ internal sealed class SettingsErrors(string section)
     /// <summary>The code of a site's protection level that a site cannot have (ADR-0141).</summary>
     public const string ProtectionLevelCode = "protectionLevel";
 
+    /// <summary>The code of a site's IP handling set to <c>inherit</c>, which is a form's (ADR-0224).</summary>
+    public const string IPHandlingCode = "ipHandling";
+
     /// <summary>The code of a site's content rules set to <c>inherit</c>, which is a form's (ADR-0140).</summary>
     public const string ContentRulesCode = "contentRules";
 

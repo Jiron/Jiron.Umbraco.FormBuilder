@@ -55,6 +55,9 @@ internal sealed record NewSubmission(
     /// <summary>Whether it is a test entry, sent from the preview (ADR-0204).</summary>
     public bool IsTest { get; init; }
 
+    /// <summary>What the entry keeps of the visitor's IP address, as the form's mode keeps it (ADR-0224); null for nothing.</summary>
+    public string? IpAddress { get; init; }
+
     /// <summary>
     /// Whether it sets off what an entry sets off as it arrives: its actions, its confirmation mail and the notification
     /// Umbraco's webhooks hear. Always for a visitor's; for a test entry only when its ticket says so (ADR-0204).
@@ -160,6 +163,10 @@ internal sealed class SubmissionEntries(
             && Runs(definition, submission.Answers.State.Actions, ArrivalTriggers(definition, verified: definition.Settings.Submission.Verification is not null)).Count > 0;
         var kept = queued.Count > 0 || waits || ActionSettlement.TriggerCanFire(definition, state);
         var answers = kept ? submission.Answers.Answers : [.. submission.Answers.Answers.Where(answer => !ActionSettlement.KeptUntilActions(definition, answer.Field))];
+
+        // The answers kept only until the actions have run that no action will use are never stored; the timeline says so, as
+        // it does once such answers go (ADR-0225).
+        var neverKept = kept ? [] : submission.Answers.Answers.Select(answer => answer.Field).Where(field => ActionSettlement.KeptUntilActions(definition, field)).Distinct().ToList();
         var now = time.GetUtcNow();
         var duration = submission.Started is { } started ? now - started : (TimeSpan?)null;
         var counts = await CountsAsync(submission, verdict, now, duration, cancellationToken);
@@ -179,6 +186,7 @@ internal sealed class SubmissionEntries(
             // The member signed in when it was sent (ADR-0009), by whom the privacy tools find it (ADR-0223); a test
             // entry has none.
             MemberKey = submission.IsTest ? null : scope.Member,
+            IpAddress = submission.IsTest ? null : submission.IpAddress,
             Context = Json(submission.Context),
             SpamScore = verdict.Score,
             SpamReasons = SpamReasons.Stored(verdict.Reasons),
@@ -247,6 +255,11 @@ internal sealed class SubmissionEntries(
                 }
 
                 await events.AddAsync(new NewEntryEvent(created.Id, SubmittedEvent, Details: Details(outcome, submission.Answers.State.Hidden, waits || KeepsChosenActions(definition, state) ? submission.Answers.State.Actions : null)), cancellationToken);
+                if (neverKept.Count > 0)
+                {
+                    await events.AddAsync(new NewEntryEvent(created.Id, ActionSettlement.ValuesRemovedEvent, Details: JsonSerializer.Serialize(new { fields = neverKept.Select(key => key.ToString("D")).Order(StringComparer.Ordinal) })), cancellationToken);
+                }
+
                 if (queued.Count > 0)
                 {
                     await runs.AddAsync(created.Id, created.FormVersionId, Guid.NewGuid(), queued, cancellationToken: cancellationToken);
