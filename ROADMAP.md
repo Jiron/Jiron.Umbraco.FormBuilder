@@ -2947,7 +2947,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
 
 ### Phase 13: Privacy, retention and compliance
 
-- [ ] **13.1 Privacy: retention, data subject tools, sensitive data and IP addresses, and phase review** (13.1, 13.2, 13.3 and 13.4 in one, ADR-0197)
+- [x] **13.1 Privacy: retention, data subject tools, sensitive data and IP addresses, and phase review** (13.1, 13.2, 13.3 and 13.4 in one, ADR-0197) (2026-11-10, 41d92b38)
   - **13.1 Retention**:
     - **Rules:** days per state per form, with global defaults. `PurgeAfterUtc` is computed on every state change.
     - **A form that keeps entries for a number of days** (added in 6.8i by the Phase 6 wiring sweep): `settings.submission.store: days` with `storeDays` (§4.3, ADR-0002) has only its save check so far. It caps what the rules above give an entry of that form, in every state.
