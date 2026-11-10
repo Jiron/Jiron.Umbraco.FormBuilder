@@ -1064,7 +1064,10 @@ describe('after sending', () => {
   it("leads a Fix it to an outcome's setting in its sidebar, and one at the list to Add outcome", async () => {
     const { root, view, workspace } = await viewOf(withOutcomes([message, press]));
     workspace.requestFix({ kind: 'view', view: 'settings', path: '$.outcomes[0].redirect.url', key: 'o2' });
+    // The sidebar opens once the router stays still (ADR-0227).
     await settle(view);
+    expect(opened.sidebars).toHaveLength(0);
+    await vi.waitFor(() => expect(opened.sidebars).toHaveLength(1));
     // The key leads, as the outcomes may have moved since the check.
     expect([
       (opened.sidebars[0] as OutcomeModalData).outcome?.key,

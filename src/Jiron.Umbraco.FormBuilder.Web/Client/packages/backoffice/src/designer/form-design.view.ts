@@ -32,7 +32,7 @@ import {
 import { bySeverity, type FixTarget } from './check/form-check';
 import type { CheckState } from './check/form-checker';
 import { FORM_CHECK_MODAL } from './check/form-check.modal.token';
-import { followFix } from './form-views';
+import { followFix, routerSettled } from './form-views';
 import { outcomesOf } from './settings/outcome-model';
 import { keepWidth, readWidth, type CanvasWidth } from './canvas/widths';
 import { isDragging } from './drag/pointer-drag';
@@ -1467,7 +1467,7 @@ export class FormDesignViewElement extends UmbLitElement {
   async #fixPending() {
     if (!this._look) return;
     const target = this.#context?.takeFix((one) => one.kind !== 'view');
-    if (target) await this.#fix(target);
+    if (target) await this.#fix(target, true);
   }
 
   /**
@@ -1475,7 +1475,7 @@ export class FormDesignViewElement extends UmbLitElement {
    * on a rule; the palette for the end of a page without fields; or the view where the form's settings, outcomes or
    * actions are edited. An element gone since the check leads nowhere.
    */
-  async #fix(target: FixTarget) {
+  async #fix(target: FixTarget, handedOn = false) {
     // The user's own choice ends the wait for a link's selection, so its focus never takes this one's; and the palette
     // over the canvas, which would leave the inspector out of reach, closes.
     this.#shownLink = true;
@@ -1504,8 +1504,12 @@ export class FormDesignViewElement extends UmbLitElement {
     if (index >= 0) this._shown = index;
     this._inspectorFolded = false;
     await this.updateComplete;
-    if (target.kind === 'rule') await this.#buildRule(target.key, target.rule);
-    else if (target.item) this.#inspector?.focusItem(target.item);
+    if (target.kind === 'rule') {
+      // A Fix it handed on from another view opens the builder once the router that showed this one stays still, as a
+      // navigation's end closes it (ADR-0227).
+      if (handedOn) await routerSettled();
+      if (this.isConnected) await this.#buildRule(target.key, target.rule);
+    } else if (target.item) this.#inspector?.focusItem(target.item);
     else await this.#focus(target.key);
   }
 

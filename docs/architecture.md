@@ -279,7 +279,9 @@ flowchart LR
   `form/{key}/setting-choices` for who may design the form (the defaults "Site default" names, the site's button
   labels, the time zone, the themes, the member groups and the save checks' bounds) and `captcha-provider` (each
   provider's label, whether it has its keys, never a key, and its settings). The workspace keeps the language either
-  view's switch chose, and hands each Fix it to the view that makes it (`FIXING_VIEWS`, `followFix`). From 10.1b
+  view's switch chose, and hands each Fix it to the view that makes it (`FIXING_VIEWS`, `followFix`); a view that
+  opens a sidebar for one handed on waits until the router stays still (`routerSettled`), as Umbraco closes such
+  sidebars when a navigation ends (ADR-0227). From 10.1b
   (ADR-0185): After sending lists the outcomes (`outcome-list.element.ts`), each edited in a sidebar of its own
   (`outcome.modal.element.ts`), `outcome-model.ts` holding, pure, what an outcome gives visitors and whether one can get
   it at all, the outcome as its sidebar edits it and as Update writes it back, and where a new one goes. The sidebar asks

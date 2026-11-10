@@ -27,6 +27,7 @@ import { UNCHECKED, type CheckState } from '../check/form-checker';
 import { FORM_WORKSPACE_CONTEXT } from '../constants';
 import type { DesignDefinition } from '../definition';
 import type { EditorView, FormWorkspaceContext } from '../form-workspace.context';
+import { routerSettled } from '../form-views';
 import { boxValue } from '../inspector/box-value';
 import { controlStyles } from '../inspector/control.styles';
 import { focusableIn } from '../inspector/item-focus';
@@ -450,7 +451,10 @@ export class FormSettingsViewElement extends UmbLitElement {
       return;
     }
     await list?.focusOutcome(known);
-    await this.#openOutcome(known, settingAtPath(steps.slice(2)));
+    // The Fix it, or the canvas's Change, came from another view: the sidebar opens once the router that showed this one
+    // stays still, as a navigation's end closes it (ADR-0227).
+    await routerSettled();
+    if (this.isConnected) await this.#openOutcome(known, settingAtPath(steps.slice(2)));
   }
 
   // The language of the text a path names, on a site with more than one, where the view shows another; null otherwise.

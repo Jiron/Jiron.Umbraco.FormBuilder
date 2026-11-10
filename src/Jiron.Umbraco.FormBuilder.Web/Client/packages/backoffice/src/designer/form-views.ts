@@ -42,3 +42,50 @@ export function followFix(fix: FixTarget, request: (fix: FixTarget) => void) {
   if (fix.kind !== 'view' || FIXING_VIEWS.has(fix.view)) request(fix);
   goToView(fix.kind === 'view' ? fix.view : 'design');
 }
+
+/**
+ * How long the router stays still before a sidebar opens for a Fix it handed on from another view (ADR-0227). Umbraco
+ * closes every sidebar not opened by an address as a navigation ends, and the router's last move comes a few ms after
+ * the view shows (its modal routes, 11 to 36 ms in the browser tests under load): several times that, and below the
+ * sidebar's own 250 ms slide.
+ */
+export const ROUTER_QUIET = 200;
+
+/** The longest wait, for a router that never stays still: the Fix it is not held up for good. */
+export const ROUTER_WAIT = 2000;
+
+/** What the router does, on `window`: the history's own moves and Umbraco's navigations. */
+const ROUTER_MOVES = [
+  'popstate',
+  'pushstate',
+  'replacestate',
+  'changestate',
+  'navigationstart',
+  'navigationsuccess',
+  'navigationcancel',
+  'navigationerror',
+  'navigationend',
+] as const;
+
+/**
+ * Resolves once the router has made no move for `quiet` ms, or after `wait` ms. A sidebar opened for a Fix it that
+ * came from another view waits for it: opened while the router still moves, it would be closed at once.
+ */
+export function routerSettled(target: EventTarget = window, quiet = ROUTER_QUIET, wait = ROUTER_WAIT): Promise<void> {
+  return new Promise((done) => {
+    let still: ReturnType<typeof setTimeout> | undefined;
+    const finish = () => {
+      for (const move of ROUTER_MOVES) target.removeEventListener(move, moved);
+      clearTimeout(still);
+      clearTimeout(longest);
+      done();
+    };
+    const moved = () => {
+      clearTimeout(still);
+      still = setTimeout(finish, quiet);
+    };
+    const longest = setTimeout(finish, wait);
+    for (const move of ROUTER_MOVES) target.addEventListener(move, moved);
+    moved();
+  });
+}

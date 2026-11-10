@@ -1897,4 +1897,34 @@ describe('the form check in the Design view (ADR-0181)', () => {
     expect(workspace.fixes.getValue()).toBeNull();
     expect(shadow(canvas).activeElement).toBe(control(canvas, 'email', 'select'));
   });
+
+  it("opens the rules builder for a Fix it handed on once the router stays still, as a navigation's end closes it", async () => {
+    const definition: DesignDefinition = {
+      pages: [
+        {
+          key: 'p1',
+          groups: [
+            {
+              key: 'g1',
+              fields: [
+                field('name'),
+                {
+                  ...field('email', 'email'),
+                  rules: [{ key: 'r1', effect: 'show', conditions: [{ field: 'name', op: 'isNotEmpty' }] }],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+    const { view, workspace } = await viewOf(definition);
+    workspace.fixes.setValue({ kind: 'rule', key: 'email', rule: 'r1' });
+    await settle(view);
+    expect(opened.dialogs).toHaveLength(0);
+    await vi.waitFor(() =>
+      expect(opened.dialogs.map((dialog) => dialog.alias)).toEqual(['Jiron.FormBuilder.Modal.RuleBuilder']),
+    );
+    expect(workspace.fixes.getValue()).toBeNull();
+  });
 });

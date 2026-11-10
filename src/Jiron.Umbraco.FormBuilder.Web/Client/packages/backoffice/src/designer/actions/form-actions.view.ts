@@ -24,7 +24,7 @@ import { UNCHECKED, type CheckState } from '../check/form-checker';
 import { FORM_WORKSPACE_CONTEXT } from '../constants';
 import type { DesignDefinition } from '../definition';
 import type { EditorView, FormWorkspaceContext } from '../form-workspace.context';
-import { followFix, viewPath } from '../form-views';
+import { followFix, routerSettled, viewPath } from '../form-views';
 import { same } from '../inspector/setting-values';
 import { readLook, type CanvasLook } from '../preview/look';
 import { elementNames, inspectorRuleWords } from '../rules/rule-names';
@@ -699,7 +699,11 @@ export class FormActionsViewElement extends UmbLitElement {
     }
     await this.#focusAction(key);
     const setting = settingAtPath(steps.slice(2));
-    if (setting.kind !== 'action') await this.#openAction(key, setting);
+    if (setting.kind === 'action') return;
+    // Every Fix it here came from another view: the sidebar opens once the router that showed this one stays still,
+    // as a navigation's end closes it (ADR-0227).
+    await routerSettled();
+    if (this.isConnected) await this.#openAction(key, setting);
   }
 
   // ---- Drawing ------------------------------------------------------------------------------------------------------

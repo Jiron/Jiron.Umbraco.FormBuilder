@@ -17,6 +17,7 @@ import { FORM_WORKSPACE_CONTEXT } from '../constants';
 import type { DesignDefinition } from '../definition';
 import type { Edit, EditorState } from '../editor-model';
 import type { EditorView } from '../form-workspace.context';
+import { ROUTER_QUIET } from '../form-views';
 import { EditorHistory } from '../history';
 import { builtInTypes, englishLook } from '../preview/fixtures';
 import type { ActionListElement } from './action-list.element';
@@ -851,6 +852,21 @@ describe('the Actions view', () => {
     // An action gone since leads to Add action.
     workspace.requestFix({ kind: 'view', view: 'actions', path: '$.actions[5].name', key: 'gone' });
     await vi.waitFor(() => expect(shadow(view).activeElement?.id).toBe('add'));
+  });
+
+  it("opens a Fix it's sidebar only once the router that showed the view stays still, as a navigation's end closes it", async () => {
+    const { workspace } = await viewOf(
+      definitionWith([action('a'), action('b', { type: 'webhook', settings: { url: 'http://x' } })]),
+    );
+    const asked = performance.now();
+    workspace.requestFix({ kind: 'view', view: 'actions', path: '$.actions[1].settings.url', key: 'b' });
+    // Umbraco's router makes its last move after the view shows: the wait starts again from it.
+    await new Promise((done) => setTimeout(done, 100));
+    window.dispatchEvent(new CustomEvent('navigationsuccess'));
+    const moved = performance.now();
+    await vi.waitFor(() => expect(opened.sidebars).toHaveLength(1));
+    expect(performance.now() - moved).toBeGreaterThanOrEqual(ROUTER_QUIET - 5);
+    expect(performance.now() - asked).toBeGreaterThanOrEqual(100 + ROUTER_QUIET - 5);
   });
 
   it('says a read that fails, and reads again with Try again', async () => {
