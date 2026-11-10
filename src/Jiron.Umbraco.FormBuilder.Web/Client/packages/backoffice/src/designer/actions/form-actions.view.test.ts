@@ -36,7 +36,13 @@ const ACTION_TYPES = JSON.parse(
 ) as ActionTypeResponseModel[];
 
 // What the server answers, or nothing while it fails; the sidebars opened, and what the one open answers.
-const server = vi.hoisted(() => ({ fails: false, limit: 50, documentTypes: [] as { value: string; label: string }[] }));
+const server = vi.hoisted(() => ({
+  fails: false,
+  limit: 50,
+  documentTypes: [] as { value: string; label: string }[],
+  // The language the look is read in, and whether the site has German as well as English.
+  german: false,
+}));
 const opened = vi.hoisted(() => ({ sidebars: [] as unknown[], sizes: [] as unknown[], answer: undefined as unknown }));
 /** Umbraco's confirm dialog: whether the user confirms, and how often it was asked. */
 const confirming = vi.hoisted(() => ({ yes: true, asked: 0, said: [] as unknown[] }));
@@ -100,7 +106,19 @@ vi.mock('../../api', async (original) => ({
 
 vi.mock('../preview/look', async (original) => ({
   ...(await original<typeof import('../preview/look')>()),
-  readLook: async () => (server.fails ? undefined : englishLook),
+  readLook: async () =>
+    server.fails
+      ? undefined
+      : server.german
+        ? {
+            ...englishLook,
+            culture: 'de-DE',
+            languages: [
+              { culture: 'en-US', name: 'English (United States)', isDefault: true },
+              { culture: 'de-DE', name: 'Deutsch (Deutschland)', isDefault: false },
+            ],
+          }
+        : englishLook,
 }));
 
 const { FormActionsViewElement } = await import('./form-actions.view');
@@ -275,6 +293,7 @@ beforeEach(() => {
   server.fails = false;
   server.limit = 50;
   server.documentTypes = [];
+  server.german = false;
   opened.sidebars = [];
   opened.sizes = [];
   opened.answer = undefined;
@@ -387,6 +406,28 @@ describe('the Actions view', () => {
       // Without a name of its own, its type is its name, said once.
       ['crm', '', ''],
     ]);
+  });
+
+  it('marks a card whose texts lack the language shown, before what it does, and none whose texts have it', async () => {
+    server.german = true;
+    const { cards } = await viewOf(
+      definitionWith([
+        action('a', { name: 'Email the team', settings: { to: ['sales@example.com'], subject: { '': 'New entry' } } }),
+        action('b', {
+          name: 'Email the visitor',
+          settings: {
+            to: ['sales@example.com'],
+            subject: { '': 'Thanks', de: 'Danke' },
+            body: { '': '<p>Hi</p>', de: '<p>Hallo</p>' },
+          },
+        }),
+      ]),
+    );
+    expect(cards('submitted').map((card) => text(card.querySelector('.line .untranslated')))).toEqual([
+      'No German text yet',
+      '',
+    ]);
+    expect(text(cards('submitted')[0]?.querySelector('.line'))).toBe('No German text yet \u00b7 To sales@example.com');
   });
 
   it("names a content action's document type on its card by the name the site gives it", async () => {

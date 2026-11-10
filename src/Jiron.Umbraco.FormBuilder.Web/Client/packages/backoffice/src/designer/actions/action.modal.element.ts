@@ -83,6 +83,7 @@ import { parentSourceOf, type TypeRead } from './content-model';
 import { EmailPreviewer, type EmailPreview } from './email-preview';
 import './email-preview.element';
 import { webhookEditorStyles } from './webhook-editors';
+import { DictionaryReader, dictionaryKeysIn, dictionaryLineOf, type DictionaryLookups } from '../dictionary-texts';
 
 /** The editors that draw a row's boxes, so a problem at a row's part lands on that box (ADR-0192). */
 const ROW_EDITORS: ReadonlySet<string> = new Set(['contentMapping']);
@@ -128,6 +129,7 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
     _at: { state: true },
     _preview: { state: true },
     _options: { state: true },
+    _lookups: { state: true },
   };
 
   static override styles = [
@@ -305,6 +307,11 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
   declare private _preview: PreviewState<EmailPreview>;
   /** The options of the fields whose options come from a source, by the field's key, as read for the recipient map. */
   declare private _options: ReadonlyMap<string, readonly PickOption[]>;
+  /** The dictionary items the action's texts name in the language shown (ADR-0228). */
+  declare private _lookups: DictionaryLookups;
+  readonly #dictionary = new DictionaryReader();
+  // The keys and language the lookups were asked for: an answer for others is dropped.
+  #dictionaryAsked = '';
 
   /** Whether the button is waiting for the check, so a second press does not keep the action twice. */
   #submitting = false;
@@ -330,6 +337,7 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
     this._at = null;
     this._preview = NO_PREVIEW;
     this._options = new Map();
+    this._lookups = new Map();
   }
 
   override connectedCallback() {
@@ -361,6 +369,24 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
     this.#checker?.reset();
     this.#previewer?.stop();
     this.data?.closed?.();
+  }
+
+  protected override updated(changed: PropertyValues) {
+    super.updated(changed);
+    this.#readDictionary();
+  }
+
+  // The texts of the dictionary items the action's texts name in the language shown, each asked once (ADR-0228).
+  #readDictionary() {
+    const culture = this.data?.culture ?? '';
+    const keys = dictionaryKeysIn(this._edit.settings, culture);
+    const asked = `${culture}|${[...keys].sort().join(' ')}`;
+    if (asked === this.#dictionaryAsked) return;
+    this.#dictionaryAsked = asked;
+    if (keys.size === 0) return;
+    void this.#dictionary.read(this, keys, culture).then((lookups) => {
+      if (this.#dictionaryAsked === asked) this._lookups = lookups;
+    });
   }
 
   protected override firstUpdated(changed: PropertyValues) {
@@ -1040,6 +1066,12 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
       defaultCulture: this.#defaultCulture(),
       problems: this._typed,
       set: (path, setting, parsed, done) => this.#setSetting(path, setting, parsed, done),
+      dictionaryLine: (text) =>
+        dictionaryLineOf(text, this._lookups, (key, ...args) => this.localize.term(`jfbInspector_${key}`, ...args)),
+      dictionaryPicked: () => {
+        this.#dictionary.forget();
+        this.#dictionaryAsked = '';
+      },
       // What the check found, under the box; a value typed that can't be kept the editor says itself.
       found: (id): BoxFound | undefined => {
         const problems = this.#checkedAt(id, found);

@@ -13,6 +13,7 @@ import type { CheckSeverity } from '../check/form-check';
 import { dragFrom } from '../drag/pointer-drag';
 import type { RuleWordsContext } from '../rules/rule-words';
 import { ruleWords } from '../rules/rule-words';
+import { outcomeLacks } from '../translations';
 import {
   kindOf,
   leavesDefault,
@@ -37,6 +38,7 @@ export class OutcomeListElement extends UmbLitElement {
   static override properties = {
     outcomes: { attribute: false },
     culture: {},
+    untranslated: {},
     defaultMessage: {},
     words: { attribute: false },
     flags: { attribute: false },
@@ -179,6 +181,10 @@ export class OutcomeListElement extends UmbLitElement {
         font-weight: 600;
       }
 
+      .untranslated {
+        color: var(--jfb-bo-color-warning-text);
+      }
+
       .flag[data-severity='warning'] {
         color: var(--jfb-bo-color-warning-text);
       }
@@ -223,6 +229,8 @@ export class OutcomeListElement extends UmbLitElement {
   declare outcomes: readonly DesignOutcome[];
   /** The language the view shows. */
   declare culture: string;
+  /** The mark of an outcome whose message lacks the language shown; none in the default language (ADR-0228). */
+  declare untranslated: string;
   /** The message visitors get where no outcome applies, in the language shown. */
   declare defaultMessage: string;
   /** Says a rule in words; none says only when the outcome applies. */
@@ -252,6 +260,7 @@ export class OutcomeListElement extends UmbLitElement {
     super();
     this.outcomes = [];
     this.culture = '';
+    this.untranslated = '';
     this.defaultMessage = '';
     this.words = null;
     this.flags = new Map();
@@ -434,11 +443,12 @@ export class OutcomeListElement extends UmbLitElement {
                       <span>
                         <span class="row-name">${name}</span>
                         <span class="row-line" data-reach=${shown}
-                          >${flagLine(
-                            this.flags.get(outcome.key),
-                            (count) => this.#term('problems', count),
-                            DOT,
-                          )}${this.#lineOf(outcome, shown)}</span
+                          >${flagLine(this.flags.get(outcome.key), (count) => this.#term('problems', count), DOT)}${
+                            this.untranslated &&
+                            outcomeLacks(outcome as unknown as Readonly<Record<string, unknown>>, this.culture)
+                              ? html`<span class="untranslated">${this.untranslated}</span> ${DOT} `
+                              : nothing
+                          }${this.#lineOf(outcome, shown)}</span
                         >
                       </span>
                       <uui-icon name="icon-navigation-right" aria-hidden="true"></uui-icon>

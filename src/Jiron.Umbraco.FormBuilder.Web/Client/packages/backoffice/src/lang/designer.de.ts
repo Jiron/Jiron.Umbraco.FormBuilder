@@ -89,6 +89,8 @@ export default {
     copyFailed: 'Der Alias konnte nicht kopiert werden.',
     language: 'Sprache',
     untranslated: (language: string) => `Noch kein Text auf ${language}`,
+    useDictionary: 'Wörterbucheintrag verwenden',
+    useDictionaryFor: (label: string) => `Wörterbucheintrag für ${label} verwenden`,
     moveToNamed: (name: string) => `Verschieben nach…, ${name}`,
     moveToHeadline: (name: string) => `${name} verschieben`,
     moveToLead: 'An das Ende von',

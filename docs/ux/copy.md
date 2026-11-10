@@ -161,7 +161,9 @@ One line that says where something stands, next to the thing it is about.
 | above the permission matrix, once, for the fixed Administrators column | Administrators hold every permission everywhere, because they could grant themselves any. | Die Gruppe Administratoren hat überall jede Berechtigung, weil ihre Mitglieder sich jede selbst geben könnten. |
 | a form's header, when no page picks it | Not used on any page | Auf keiner Seite verwendet |
 | the inspector, while the designer shows another language | Editing the German texts. Where one is empty, visitors see the English text. | Sie bearbeiten die deutschen Texte. Wo einer fehlt, sehen Besucher den englischen. |
-| a chip on a field without a text in that language | No German text yet | Noch kein deutscher Text |
+| a chip on a field, group or page, a box, an outcome's row or an action's card without a text in that language | No German text yet | Noch kein Text auf Deutsch |
+| under a text that names a dictionary item (`#key`) | From the dictionary: Email address · The dictionary has no item Forms.Email, so visitors see "#Forms.Email". · The dictionary item has no text in this language, so visitors see "#Forms.Email". | Aus dem Wörterbuch: E-Mail-Adresse · Das Wörterbuch hat keinen Eintrag Forms.Email, darum sehen Besucher „#Forms.Email“. · Der Wörterbucheintrag hat keinen Text in dieser Sprache, darum sehen Besucher „#Forms.Email“. |
+| the button in a text box's row that picks a dictionary item | Use a dictionary item | Wörterbucheintrag verwenden |
 | under a secret entered as a reference to host configuration | Found in host configuration | In der Hostkonfiguration gefunden |
 | under a revealed sensitive value | Shown to you and recorded in the audit log. | Für Sie sichtbar und im Protokoll vermerkt. |
 

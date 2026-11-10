@@ -14,6 +14,11 @@ export default {
     elementActions: 'Actions for this element',
     editingLanguage: (language: string, standard: string) =>
       `Editing the ${language} texts. Where one is empty, visitors see the ${standard} text.`,
+    dictionaryShows: (text: string) => `From the dictionary: ${text}`,
+    dictionaryEmpty: (written: string) =>
+      `The dictionary item has no text in this language, so visitors see “${written}”.`,
+    dictionaryMissing: (key: string, written: string) =>
+      `The dictionary has no item ${key}, so visitors see “${written}”.`,
     typeGone: (type: string) => `This site has no field type "${type}" any more, so its settings can't be shown.`,
 
     section_essentials: 'Essentials',

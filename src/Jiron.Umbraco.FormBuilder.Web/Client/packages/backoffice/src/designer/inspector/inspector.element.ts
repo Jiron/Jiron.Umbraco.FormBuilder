@@ -40,6 +40,8 @@ import {
 } from './inspector-model';
 import type { InspectorItem } from '../check/form-check';
 import { boxValue } from './box-value';
+import { dictionaryLineOf, type DictionaryLookups } from '../dictionary-texts';
+import './dictionary-pick.element';
 import { inspectorStyles } from './inspector.styles';
 import { boxesOf, focusableIn, isItem } from './item-focus';
 import { insertTagInto } from './merge-tag-picker.element';
@@ -151,6 +153,8 @@ export class InspectorElement extends UmbLitElement {
     languages: { attribute: false },
     form: { attribute: false },
     resolvedOptions: { attribute: false },
+    lookups: { attribute: false },
+    forgetDictionary: { attribute: false },
     mode: { reflect: true },
     saveGroups: { attribute: false },
     _open: { state: true },
@@ -171,6 +175,10 @@ export class InspectorElement extends UmbLitElement {
   declare form: string;
   /** The options of fields that take them from a source, as the server resolved the draft's, by field. */
   declare resolvedOptions: ReadonlyMap<string, readonly ResolvedOption[]>;
+  /** The dictionary items the draft's texts name in the language shown, as the server finds them (ADR-0228). */
+  declare lookups: DictionaryLookups;
+  /** Has every dictionary text read again: after an item was picked, as the dictionary may have changed meanwhile. */
+  declare forgetDictionary: () => void;
   declare mode: InspectorMode;
   /** Whether the user may save a group as a template, which a group's "..." then offers (ADR-0217). */
   declare saveGroups: boolean;
@@ -193,6 +201,8 @@ export class InspectorElement extends UmbLitElement {
     this.languages = [];
     this.form = '';
     this.resolvedOptions = new Map();
+    this.lookups = new Map();
+    this.forgetDictionary = () => undefined;
     this.mode = 'docked';
     this.saveGroups = false;
     this._open = readOpen();
@@ -378,6 +388,15 @@ export class InspectorElement extends UmbLitElement {
     return this.#isDefault ? textIn(texts, this.culture) : ownText(texts, this.culture);
   }
 
+  /**
+   * What visitors in the language shown see for a text that names a dictionary item (ADR-0228): the item's text, or
+   * that the item has none or doesn't exist, so the text shows as written; null for a text that names none, or whose
+   * item is still being read.
+   */
+  #dictionaryLine(text: string): string | null {
+    return dictionaryLineOf(text, this.lookups, this.#term);
+  }
+
   #placeholderOf(texts: LocalizedText | null | undefined): string | typeof nothing {
     return this.#isDefault ? nothing : textIn(texts, this.#defaultCulture) || nothing;
   }
@@ -391,6 +410,8 @@ export class InspectorElement extends UmbLitElement {
       problems: this._problems,
       set: (path, setting, parsed, done) => this.#setSetting(field, type, path, setting, parsed, done),
       mergeTags: (setting, path) => this.#tagPicker(placeOf(type.alias, setting.name), boxId(path), field.key),
+      dictionaryLine: (text) => this.#dictionaryLine(text),
+      dictionaryPicked: () => this.forgetDictionary(),
     };
   }
 
@@ -499,13 +520,17 @@ export class InspectorElement extends UmbLitElement {
             name,
             item.property,
           );
+        const written = this.#textOf(texts);
+        const said = this.#dictionaryLine(written);
+        const described = said ? `${id}-dictionary` : nothing;
         const box = item.long
           ? html`<textarea
               id=${id}
               rows="2"
               lang=${this.culture || nothing}
               placeholder=${this.#placeholderOf(texts)}
-              .value=${boxValue(this.#textOf(texts))}
+              aria-describedby=${described}
+              .value=${boxValue(written)}
               @input=${(event: Event) => write((event.target as HTMLTextAreaElement).value)}
             ></textarea>`
           : html`<input
@@ -514,10 +539,23 @@ export class InspectorElement extends UmbLitElement {
               autocomplete="off"
               lang=${this.culture || nothing}
               placeholder=${this.#placeholderOf(texts)}
-              .value=${boxValue(this.#textOf(texts))}
+              aria-describedby=${described}
+              .value=${boxValue(written)}
               @input=${(event: Event) => write((event.target as HTMLInputElement).value)}
             />`;
-        return html`<div class="item"><label class="label" for=${id}>${name}</label>${box}</div>`;
+        // An item picked from the dictionary is written as typing it would be, and the box keeps the focus after.
+        const pick = (text: string) => {
+          write(text);
+          this.forgetDictionary();
+          void this.updateComplete.then(() => this.shadowRoot?.getElementById(id)?.focus());
+        };
+        return html`<div class="item">
+          <div class="label-row">
+            <label class="label" for=${id}>${name}</label>
+            <jfb-dictionary-pick .label=${name} .pick=${pick}></jfb-dictionary-pick>
+          </div>
+          ${box} ${said ? html`<p class="help" id=${`${id}-dictionary`}>${said}</p>` : nothing}
+        </div>`;
       }
       case 'switch': {
         const id = `prop-${item.property}`;

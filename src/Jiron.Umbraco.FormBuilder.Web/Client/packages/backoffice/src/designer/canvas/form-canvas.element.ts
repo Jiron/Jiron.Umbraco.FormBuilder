@@ -4,7 +4,7 @@
 // and field selects itself; an insert point between fields and the Add field at the end of a page open the palette
 // for that place. Fields, groups and pages are dragged by their handles and steps, and the palette's types onto the
 // page (ADR-0016, ADR-0169). On a site with more than one language the toolbar switches the language the canvas and
-// the inspector show, and a field without a text in it carries a chip (ADR-0170). The canvas changes nothing itself:
+// the inspector show, and a field, group or page without a text in it carries a chip (ADR-0170, ADR-0228). The canvas changes nothing itself:
 // it says what was asked in a request, which the Design view does.
 import { html, nothing, repeat, type PropertyValues, type TemplateResult } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
@@ -28,6 +28,8 @@ import { modifierTerm } from '../moves/keys';
 import { CanvasDrag, type DragSource } from './canvas-drag';
 import { FarGroups } from './canvas-far';
 import { untranslated } from '../inspector/inspector-model';
+import { groupLacks, pageLacks } from '../translations';
+import { withDictionary, type DictionaryLookups } from '../dictionary-texts';
 import { chipsOf } from '../rules/rule-list';
 import { inspectorRuleWords } from '../rules/rule-names';
 import { holdsAlways, outcomesOf, useRuleOf } from '../settings/outcome-model';
@@ -108,6 +110,7 @@ export class FormCanvasElement extends UmbLitElement {
     types: { attribute: false },
     mediaUrls: { attribute: false },
     resolvedOptions: { attribute: false },
+    lookups: { attribute: false },
     width: { attribute: false },
     insertAt: { attribute: false },
     editing: { attribute: false },
@@ -123,6 +126,8 @@ export class FormCanvasElement extends UmbLitElement {
   static override styles = [jfbBackofficeTokens, canvasChrome];
 
   declare definition: DesignDefinition;
+  /** The dictionary items the draft's texts name in the language shown, as the server finds them (ADR-0228). */
+  declare lookups: DictionaryLookups;
   declare selection: string | null;
   declare shown: CanvasShown;
   declare look: CanvasLook | undefined;
@@ -173,6 +178,7 @@ export class FormCanvasElement extends UmbLitElement {
   constructor() {
     super();
     this.definition = { pages: [] };
+    this.lookups = new Map();
     this.selection = null;
     this.shown = 0;
     this.sheets = [];
@@ -199,11 +205,11 @@ export class FormCanvasElement extends UmbLitElement {
 
   readonly #drag = new CanvasDrag({
     root: () => this.renderRoot as ShadowRoot,
-    shownPage: () => (typeof this.shown === 'number' ? (this.definition.pages[this.shown]?.key ?? null) : null),
+    shownPage: () => (typeof this.shown === 'number' ? (this.#drawn.pages[this.shown]?.key ?? null) : null),
     pageEnd: (source, page) => this.#pageEnd(source, page),
     refusalOf: (source, place) => this.refusalOf(source, place),
     show: (page) => {
-      const index = this.definition.pages.findIndex((each) => each.key === page);
+      const index = this.#drawn.pages.findIndex((each) => each.key === page);
       if (index >= 0) this.#ask({ kind: 'show', shown: index });
     },
     drop: (source, place) => {
@@ -233,6 +239,49 @@ export class FormCanvasElement extends UmbLitElement {
     return this.look?.culture ?? '';
   }
 
+  #drawnOf:
+    | {
+        readonly definition: DesignDefinition;
+        readonly culture: string;
+        readonly lookups: DictionaryLookups;
+        readonly drawn: DesignDefinition;
+        labels?: ReadonlyMap<string, DesignField['label']>;
+      }
+    | undefined;
+
+  /**
+   * The draft as the canvas draws it: a text that names a dictionary item shows the item's text in the language shown
+   * (ADR-0228). What holds no such text stays the same object, so what was drawn for it is kept.
+   */
+  get #drawn(): DesignDefinition {
+    const culture = this.#culture();
+    const kept = this.#drawnOf;
+    if (kept && kept.definition === this.definition && kept.culture === culture && kept.lookups === this.lookups)
+      return kept.drawn;
+    const drawn = withDictionary(this.definition, culture, this.lookups);
+    this.#drawnOf = { definition: this.definition, culture, lookups: this.lookups, drawn };
+    return drawn;
+  }
+
+  /** A field's label as the draft holds it, which an edit on the canvas starts from: its key, not the item's text. */
+  #labelOf(field: DesignField): DesignField['label'] {
+    const drawn = this.#drawn;
+    const kept = this.#drawnOf;
+    if (!kept || drawn === this.definition) return field.label;
+    if (!kept.labels) {
+      const labels = new Map<string, DesignField['label']>();
+      const visit = (fields: readonly DesignField[]) => {
+        for (const each of fields) {
+          labels.set(each.key, each.label);
+          if (each.fields) visit(each.fields);
+        }
+      };
+      for (const page of this.definition.pages) for (const group of page.groups) visit(group.fields);
+      kept.labels = labels;
+    }
+    return kept.labels.has(field.key) ? kept.labels.get(field.key) : field.label;
+  }
+
   #find(key: string): DesignField | undefined {
     const visit = (fields: readonly DesignField[]): DesignField | undefined => {
       for (const field of fields) {
@@ -242,7 +291,7 @@ export class FormCanvasElement extends UmbLitElement {
       }
       return undefined;
     };
-    for (const page of this.definition.pages)
+    for (const page of this.#drawn.pages)
       for (const group of page.groups) {
         const found = visit(group.fields);
         if (found) return found;
@@ -252,7 +301,7 @@ export class FormCanvasElement extends UmbLitElement {
 
   // Where a drop on a page's step lands: a field at the end of the page's last group, a group at the page's end.
   #pageEnd(source: DragSource, key: string): Place | null {
-    const page = this.definition.pages.find((each) => each.key === key);
+    const page = this.#drawn.pages.find((each) => each.key === key);
     if (!page) return null;
     if (source.kind === 'group') return { container: page.key, index: page.groups.length };
     const group = page.groups.at(-1);
@@ -261,8 +310,8 @@ export class FormCanvasElement extends UmbLitElement {
 
   /** The elements of the page shown in the order the keyboard goes through them: the page, each group, its fields. */
   #order(): string[] {
-    const index = typeof this.shown === 'number' ? Math.min(this.shown, this.definition.pages.length - 1) : -1;
-    const page = index >= 0 ? this.definition.pages[index] : undefined;
+    const index = typeof this.shown === 'number' ? Math.min(this.shown, this.#drawn.pages.length - 1) : -1;
+    const page = index >= 0 ? this.#drawn.pages[index] : undefined;
     if (!page) return [];
     const keys = [page.key];
     const fields = (list: readonly DesignField[]) => {
@@ -362,7 +411,7 @@ export class FormCanvasElement extends UmbLitElement {
 
   // What the fields are built with, the same object while nothing it is made of changes, so their models are kept.
   #context(look: CanvasLook): PreviewContext & ReturnType<typeof formSettings> {
-    const key = [look, this.types, this.mediaUrls, this.resolvedOptions, this.definition['settings']];
+    const key = [look, this.types, this.mediaUrls, this.resolvedOptions, this.#drawn['settings']];
     const kept = this.#previewContext;
     if (kept && kept.key.every((part, at) => part === key[at])) return kept.context;
     const culture = look.culture;
@@ -376,7 +425,7 @@ export class FormCanvasElement extends UmbLitElement {
       showRows: true,
       mediaUrl: (media: string) => (Object.hasOwn(urls, media) ? urls[media] : undefined),
       resolved: (field: DesignField) => resolved.get(field.key),
-      ...formSettings(this.definition, look, culture),
+      ...formSettings(this.#drawn, look, culture),
     };
     this.#previewContext = { key, context };
     return context;
@@ -477,7 +526,7 @@ export class FormCanvasElement extends UmbLitElement {
       selected,
       editing,
       // What the canvas shows, in its culture, which is where an edit goes back to.
-      labelText: field.type === 'heading' ? label : textIn(field.label, context.culture),
+      labelText: field.type === 'heading' ? label : textIn(this.#labelOf(field), context.culture),
       insertActive,
       beforeSelected,
       refusal,
@@ -495,14 +544,7 @@ export class FormCanvasElement extends UmbLitElement {
    */
   #ruleChips(): ReadonlyMap<string, readonly string[]> {
     const culture = this.#culture();
-    const parts = [
-      this.definition,
-      culture,
-      this.localize.lang(),
-      this.types,
-      this.look?.languages,
-      this.resolvedOptions,
-    ];
+    const parts = [this.#drawn, culture, this.localize.lang(), this.types, this.look?.languages, this.resolvedOptions];
     const kept = this.#chips;
     if (kept && kept.parts.every((part, at) => part === parts[at])) return kept.chips;
     const languages = (this.look?.languages ?? []).map((language) => ({
@@ -510,7 +552,7 @@ export class FormCanvasElement extends UmbLitElement {
       name: language.name,
     }));
     const words = inspectorRuleWords(
-      this.definition,
+      this.#drawn,
       this.types,
       culture,
       languages,
@@ -518,7 +560,7 @@ export class FormCanvasElement extends UmbLitElement {
       this.resolvedOptions,
     );
     const chips = new Map<string, readonly string[]>();
-    for (const [key, said] of chipsOf(this.definition, words)) {
+    for (const [key, said] of chipsOf(this.#drawn, words)) {
       const before = kept?.chips.get(key);
       const same = before !== undefined && before.length === said.length && before.every((one, at) => one === said[at]);
       chips.set(key, same ? before : said);
@@ -527,12 +569,15 @@ export class FormCanvasElement extends UmbLitElement {
     return chips;
   }
 
-  /** An element's rule chips, beside its translation chip, at its top end; none while it is selected. */
-  #chipsOf(key: string, selected: boolean) {
-    const rules = this.#ruleChips().get(key);
-    if (!rules || selected) return nothing;
+  /**
+   * A page's or group's chips at its top end: its translation chip, then its rule chips; none while it is selected, as
+   * the inspector says it then (ADR-0228).
+   */
+  #chipsOf(key: string, selected: boolean, untranslated: string | null) {
+    const rules = this.#ruleChips().get(key) ?? [];
+    if (selected || (rules.length === 0 && !untranslated)) return nothing;
     return html`<span class="bo-chips"
-      >${rules.map(
+      >${untranslated ? html`<span class="bo-chip" id=${`jfb-chip-${key}`}>${untranslated}</span>` : nothing}${rules.map(
         (said, at) =>
           html`<span class="bo-chip bo-rule-chip" id=${`jfb-rule-chip-${key}-${at}`}
             ><uui-icon name="icon-split" aria-hidden="true"></uui-icon><span>${said}</span></span
@@ -541,10 +586,20 @@ export class FormCanvasElement extends UmbLitElement {
     >`;
   }
 
-  /** The ids of an element's rule chips, which describe the button that selects it. */
-  #chipIds(key: string, selected: boolean): string | typeof nothing {
-    const rules = this.#ruleChips().get(key);
-    return rules && !selected ? rules.map((_, at) => `jfb-rule-chip-${key}-${at}`).join(' ') : nothing;
+  /** The ids of a page's or group's chips, which describe the button that selects it. */
+  #chipIds(key: string, selected: boolean, untranslated: string | null): string | typeof nothing {
+    if (selected) return nothing;
+    const ids = [
+      ...(untranslated ? [`jfb-chip-${key}`] : []),
+      ...(this.#ruleChips().get(key) ?? []).map((_, at) => `jfb-rule-chip-${key}-${at}`),
+    ];
+    return ids.length > 0 ? ids.join(' ') : nothing;
+  }
+
+  /** The chip of a page or group without a text in the language shown, where that is not the default (ADR-0228). */
+  #containerUntranslated(lacking: boolean, culture: string): string | null {
+    if (!lacking || culture.toLowerCase() === this.#defaultCulture().toLowerCase()) return null;
+    return this.localize.term('jfbDesigner_untranslated', this.#languageName(culture));
   }
 
   /** The site's default language, whose texts visitors see where the language shown has none. */
@@ -616,7 +671,7 @@ export class FormCanvasElement extends UmbLitElement {
       const index = (container.fields ?? []).findIndex((each) => each.key === field.key);
       return at.container === container.key && at.index === index + 1;
     }
-    for (const page of this.definition.pages)
+    for (const page of this.#drawn.pages)
       for (const group of page.groups) {
         const index = group.fields.findIndex((each) => each.key === field.key);
         if (index >= 0) return at.container === group.key && at.index === index + 1;
@@ -682,6 +737,7 @@ export class FormCanvasElement extends UmbLitElement {
     const name = this.#groupName(group, index, culture);
     const columns = Math.min(4, Math.max(1, Math.trunc(Number(group['columns'] ?? 1)) || 1));
     const selected = this.selection === group.key;
+    const untranslated = this.#containerUntranslated(groupLacks(group, culture), culture);
     const first = group.fields[0];
     const firstActive = this.insertAt?.container === group.key && this.insertAt.index === 0;
     const select = html`<button
@@ -691,7 +747,7 @@ export class FormCanvasElement extends UmbLitElement {
         data-key=${group.key}
         data-control="select"
         aria-label=${this.localize.term('jfbDesigner_groupName', name)}
-        aria-describedby=${this.#chipIds(group.key, selected)}
+        aria-describedby=${this.#chipIds(group.key, selected, untranslated)}
         aria-current=${selected ? 'true' : 'false'}
         @click=${() => this.#ask({ kind: 'select', key: group.key })}
       ></button>
@@ -709,7 +765,7 @@ export class FormCanvasElement extends UmbLitElement {
         <uui-icon name="icon-grip" aria-hidden="true"></uui-icon>
       </button>
       ${this.#refusalAt(group.key)} ${selected ? this.#tools(group.key, name, true) : nothing}
-      ${this.#chipsOf(group.key, selected)}`;
+      ${this.#chipsOf(group.key, selected, untranslated)}`;
     const help = showsText(description) ? html`<div class="jfb-help" inert>${fragmentOf(description)}</div>` : nothing;
     const fields = html`<div class="jfb-fields" data-fields=${group.key}>
       ${
@@ -759,8 +815,9 @@ export class FormCanvasElement extends UmbLitElement {
     const description = safeHtml(textIn(page['description'] as LocalizedText | undefined, culture));
     const name = this.#pageName(page, index, culture);
     const selected = this.selection === page.key;
+    const untranslated = this.#containerUntranslated(pageLacks(page, culture), culture);
     const bare = pageIsBare(page, culture);
-    const formEmpty = this.definition.pages.every((each) => each.groups.every((group) => group.fields.length === 0));
+    const formEmpty = this.#drawn.pages.every((each) => each.groups.every((group) => group.fields.length === 0));
     const navigation = this.#navigationOf(index, context);
     return html`<section class="jfb-page bo-page${selected ? ' bo-selected' : ''}" data-groups=${page.key}>
         <button
@@ -770,12 +827,13 @@ export class FormCanvasElement extends UmbLitElement {
           data-key=${page.key}
           data-control="select"
           aria-label=${this.localize.term('jfbDesigner_pageName', name)}
-          aria-describedby=${this.#chipIds(page.key, selected)}
+          aria-describedby=${this.#chipIds(page.key, selected, untranslated)}
           aria-current=${selected ? 'true' : 'false'}
           @click=${() => this.#ask({ kind: 'select', key: page.key })}
         ></button>
         ${this.#refusalAt(page.key)} ${selected ? this.#tools(page.key, name) : nothing}
-        ${this.#chipsOf(page.key, selected)} ${title ? html`<h2 class="jfb-title" inert>${title}</h2>` : nothing}
+        ${this.#chipsOf(page.key, selected, untranslated)}
+        ${title ? html`<h2 class="jfb-title" inert>${title}</h2>` : nothing}
         ${showsText(description) ? html`<div class="jfb-intro" inert>${fragmentOf(description)}</div>` : nothing}
         ${
           bare
@@ -811,7 +869,7 @@ export class FormCanvasElement extends UmbLitElement {
   // The page's Back, Next or Send as the theme draws them, shown and never pressed.
   #navigationOf(index: number, context: PreviewContext & ReturnType<typeof formSettings>): HTMLElement {
     const back = index > 0 ? context.back || this.#word('back') : null;
-    const last = index === this.definition.pages.length - 1;
+    const last = index === this.#drawn.pages.length - 1;
     const forward = last ? context.send || this.#word('send') : context.next || this.#word('next');
     const parts = [context.look.classes, back, last, forward];
     const kept = this.#navigation;
@@ -839,7 +897,7 @@ export class FormCanvasElement extends UmbLitElement {
   // What visitors get after sending: the first outcome for every visitor (its rule off or always met), else the first,
   // else the package's thanks.
   #after(look: CanvasLook): TemplateResult {
-    const outcomes = outcomesOf(this.definition);
+    const outcomes = outcomesOf(this.#drawn);
     const outcome = outcomes.find((each) => holdsAlways(useRuleOf(each))) ?? outcomes[0];
     let shown: Node | TemplateResult;
     if (outcome?.kind === 'redirect')
@@ -973,7 +1031,7 @@ export class FormCanvasElement extends UmbLitElement {
 
   #steps(culture: string): TemplateResult {
     return html`<nav class="bo-steps" aria-label=${this.localize.term('jfbDesigner_pages')}>
-      ${this.definition.pages.map(
+      ${this.#drawn.pages.map(
         (page, index) =>
           html`<button
             type="button"
@@ -1026,7 +1084,7 @@ export class FormCanvasElement extends UmbLitElement {
     const look = this.look;
     if (!look) return this.#waiting();
     const context = this.#context(look);
-    const pages = this.definition.pages;
+    const pages = this.#drawn.pages;
     const index = this.shown === 'after' ? -1 : Math.min(this.shown, pages.length - 1);
     const page = index >= 0 ? pages[index] : undefined;
     const width = CANVAS_WIDTHS[this.width];

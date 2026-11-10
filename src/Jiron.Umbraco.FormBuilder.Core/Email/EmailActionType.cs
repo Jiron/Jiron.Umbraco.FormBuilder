@@ -4,6 +4,7 @@ using System.Text.Json.Serialization;
 using Jiron.Umbraco.FormBuilder.Core.Actions;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Definitions.Exchange;
+using Jiron.Umbraco.FormBuilder.Core.Definitions.Projection;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.MergeTags;
@@ -203,6 +204,8 @@ internal sealed record EmailRecipientMap
 internal sealed partial class EmailActionType(
     EmailOutbox outbox,
     IFormBuilderMergeTagService tags,
+    MergeTagDictionary dictionary,
+    EditorHtml html,
     IEmailRepository emails,
     IEntryRepository entries,
     IFormRepository forms,
@@ -650,7 +653,7 @@ internal sealed partial class EmailActionType(
             TableSkipsUnanswered = settings.WithoutUnanswered,
             BreaksVisitorLinks = toVisitor,
         };
-        var subject = settings.Subject?.Resolve(scope.Culture) ?? string.Empty;
+        var subject = await WrittenAsync(settings.Subject, scope.Culture, null);
         var rendered = (await tags.RenderAsync(subject, MergeTagPlace.Mail, MergeTagContext.Header, scope, cancellationToken)).Text;
         return new OutgoingEmail
         {
@@ -700,8 +703,21 @@ internal sealed partial class EmailActionType(
             }
         }
 
-        var body = settings.Body?.Resolve(scope.Culture) ?? string.Empty;
+        var body = await WrittenAsync(settings.Body, scope.Culture, settings.PlainText ? null : html);
         return (await tags.RenderAsync(body, MergeTagPlace.Mail, settings.PlainText ? MergeTagContext.Text : MergeTagContext.Html, scope, cancellationToken)).Text;
+    }
+
+    // A text as written in the culture, or, for one that names a dictionary item, the item's text there (ADR-0228); a
+    // body's item text is HTML only as the sanitiser leaves it, as an editor's body is.
+    private async Task<string> WrittenAsync(LocalizedString? text, string culture, EditorHtml? sanitiser)
+    {
+        var written = text?.Resolve(culture) ?? string.Empty;
+        if (!LocalizedString.TryGetDictionaryKey(written, out var item) || await dictionary.TextAsync(item, culture) is not { Length: > 0 } found)
+        {
+            return written;
+        }
+
+        return sanitiser is null ? found : sanitiser.Sanitise(found);
     }
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Form {Form} has no creator with an address, so the mail to its creator was not queued")]

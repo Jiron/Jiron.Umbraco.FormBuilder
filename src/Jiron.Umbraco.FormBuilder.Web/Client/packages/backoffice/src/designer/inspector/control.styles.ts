@@ -19,6 +19,25 @@ export const controlStyles = css`
     font-weight: 600;
   }
 
+  /* A label with the mark of a text the language shown lacks beside it, which wraps under it where it must (ADR-0228). */
+  .label-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    column-gap: var(--uui-size-space-3);
+  }
+
+  /* "Use a dictionary item", seen while its row is hovered or holds the focus (ADR-0228). */
+  .item:not(:hover, :focus-within) jfb-dictionary-pick {
+    opacity: 0;
+  }
+
+  /* What a translator has left: said in words, in the warning's colour, as a line's flag is (ADR-0228). */
+  .untranslated {
+    color: var(--jfb-bo-color-warning-text);
+    font-size: var(--uui-type-small-size);
+  }
+
   .help,
   .why {
     margin: 0;

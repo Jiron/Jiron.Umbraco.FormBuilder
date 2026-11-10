@@ -4,7 +4,7 @@
 // hides not at all. Pure, so the sections of every built-in type are tested without the DOM.
 import type { FieldSettingResponseModel, FieldTypeResponseModel } from '../../api';
 import type { DesignField, LocalizedText } from '../definition';
-import { keyIn } from '../preview/field-models';
+import { lacks } from '../translations';
 import { itemsOf, rowsOf } from './option-values';
 
 /** The inspector's sections, in their order. */
@@ -156,18 +156,11 @@ export function splitItems(items: readonly Item[]): {
   return { shown: items.slice(0, MOST_SHOWN), more: items.slice(MOST_SHOWN) };
 }
 
-const hasOwnText = (texts: LocalizedText | null | undefined, culture: string) =>
-  Boolean(texts) && keyIn(texts, culture) !== '';
-
-const hasDefaultText = (texts: LocalizedText | null | undefined) =>
-  Object.values(texts ?? {}).some((text) => text.trim() !== '');
-
 /**
  * Whether a field lacks a text in a language that is not the default: one of its texts (label, help, placeholder, a
  * message, a text setting) is written, but not in that language, so visitors in it read the default's (IA 5.1).
  */
 export function untranslated(field: DesignField, type: FieldTypeResponseModel | undefined, culture: string): boolean {
-  const lacks = (texts: LocalizedText | null | undefined) => hasDefaultText(texts) && !hasOwnText(texts, culture);
   const own = field as Readonly<Record<string, unknown>>;
   const texts: (LocalizedText | null | undefined)[] = [
     field.label,
@@ -188,5 +181,5 @@ export function untranslated(field: DesignField, type: FieldTypeResponseModel | 
     }
   };
   visit(type?.settings ?? [], settings);
-  return texts.some(lacks);
+  return texts.some((text) => lacks(text, culture));
 }

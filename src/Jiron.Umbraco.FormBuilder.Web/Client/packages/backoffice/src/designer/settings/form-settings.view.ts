@@ -7,7 +7,7 @@
 // setting is there, with the focus on the setting. The site's defaults, labels, time zone, themes, member groups and
 // captcha providers and the bounds of the save checks come from the server; the texts are shown in the Design view's
 // language.
-import { html, live, nothing, type TemplateResult } from '@umbraco-cms/backoffice/external/lit';
+import { html, live, nothing, type PropertyValues, type TemplateResult } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import { umbOpenModal } from '@umbraco-cms/backoffice/modal';
 import { UMB_NOTIFICATION_CONTEXT } from '@umbraco-cms/backoffice/notification';
@@ -28,6 +28,9 @@ import { FORM_WORKSPACE_CONTEXT } from '../constants';
 import type { DesignDefinition } from '../definition';
 import type { EditorView, FormWorkspaceContext } from '../form-workspace.context';
 import { routerSettled } from '../form-views';
+import { outcomeLacks, settingsLacking, type SettingText } from '../translations';
+import { DictionaryReader, dictionaryKeysIn, dictionaryLineOf, type DictionaryLookups } from '../dictionary-texts';
+import '../inspector/dictionary-pick.element';
 import { boxValue } from '../inspector/box-value';
 import { controlStyles } from '../inspector/control.styles';
 import { focusableIn } from '../inspector/item-focus';
@@ -166,6 +169,7 @@ export class FormSettingsViewElement extends UmbLitElement {
     _more: { state: true },
     _problems: { state: true },
     _said: { state: true },
+    _lookups: { state: true },
   };
 
   static override styles = [jfbBackofficeTokens, jfbVisuallyHidden, controlStyles, choiceStyles, settingsStyles];
@@ -182,6 +186,11 @@ export class FormSettingsViewElement extends UmbLitElement {
   /** Why a box's last value couldn't be kept, by the box's id, until it can, or Undo or another language comes. */
   declare private _problems: ReadonlyMap<string, string>;
   declare private _said: string;
+  /** The dictionary items the buttons' labels name in the language shown (ADR-0228). */
+  declare private _lookups: DictionaryLookups;
+  readonly #dictionary = new DictionaryReader();
+  // The keys and language the lookups were asked for: an answer for others is dropped.
+  #dictionaryAsked = '';
 
   #context: FormWorkspaceContext | undefined;
   /** The form whose choices were read, so another form open reads them again. */
@@ -192,6 +201,9 @@ export class FormSettingsViewElement extends UmbLitElement {
   #visit = 0;
   /** The form check's problems as this render placed them. */
   #checkedNow: Checked = NONE_CHECKED;
+  // The texts the language shown lacks, read at each render (ADR-0228).
+  #lackingNow: ReadonlySet<SettingText> = new Set();
+  #outcomesLackNow = false;
   /** Whether visitors get a published version, which an outcome added or changed reaches only once it is published. */
   #published = false;
   /** Whether an outcome's sidebar is open, so a second never opens over it. */
@@ -208,6 +220,7 @@ export class FormSettingsViewElement extends UmbLitElement {
     this._more = false;
     this._problems = new Map();
     this._said = '';
+    this._lookups = new Map();
     this.consumeContext(FORM_WORKSPACE_CONTEXT, (context) => {
       this.#context = context;
       if (!context) return;
@@ -571,14 +584,39 @@ export class FormSettingsViewElement extends UmbLitElement {
     label: string,
     help: string | null,
     box: (described: string | undefined, invalid: boolean) => TemplateResult,
-    options: { readonly after?: TemplateResult | typeof nothing; readonly besides?: readonly string[] } = {},
+    options: {
+      readonly after?: TemplateResult | typeof nothing;
+      readonly besides?: readonly string[];
+      readonly untranslated?: boolean;
+      readonly dictionary?: { readonly said: string | null; readonly pick: (text: string) => void };
+    } = {},
   ): TemplateResult {
     const problems = this.#problemsAt(id);
     const invalid = problems.some((problem) => problem.severity === 'error');
+    const mark = options.untranslated ? this.#untranslated() : '';
+    const said = options.dictionary?.said ?? null;
+    const besides = [
+      ...(options.besides ?? []),
+      ...(mark ? [`${id}-untranslated`] : []),
+      ...(said ? [`${id}-dictionary`] : []),
+    ];
+    const dictionary = options.dictionary;
     return html`<div class="item">
-      <label class="label" for=${id}>${label}</label>
+      ${
+        mark || dictionary
+          ? html`<div class="label-row">
+              <label class="label" for=${id}>${label}</label
+              >${mark ? html`<span class="untranslated" id=${`${id}-untranslated`}>${mark}</span>` : nothing}${
+                dictionary
+                  ? html`<jfb-dictionary-pick .label=${label} .pick=${dictionary.pick}></jfb-dictionary-pick>`
+                  : nothing
+              }
+            </div>`
+          : html`<label class="label" for=${id}>${label}</label>`
+      }
       ${help ? html`<p class="help" id=${`${id}-help`}>${help}</p>` : nothing}
-      ${box(this.#described(id, help !== null, problems, options.besides), invalid)} ${this.#whys(id, problems)}
+      ${box(this.#described(id, help !== null, problems, besides), invalid)}
+      ${said ? html`<p class="help" id=${`${id}-dictionary`}>${said}</p>` : nothing} ${this.#whys(id, problems)}
       ${options.after ?? nothing}
     </div>`;
   }
@@ -702,6 +740,8 @@ export class FormSettingsViewElement extends UmbLitElement {
       readonly placeholder?: string;
       readonly lang?: string;
       readonly after?: TemplateResult | typeof nothing;
+      readonly untranslated?: boolean;
+      readonly dictionary?: { readonly said: string | null; readonly pick: (text: string) => void };
     } = {},
   ): TemplateResult {
     const typed = (raw: string, done: boolean) => {
@@ -733,7 +773,11 @@ export class FormSettingsViewElement extends UmbLitElement {
           @input=${(event: Event) => typed((event.target as HTMLInputElement).value, false)}
           @change=${(event: Event) => typed((event.target as HTMLInputElement).value, true)}
         />`,
-      options.after === undefined ? {} : { after: options.after },
+      {
+        ...(options.after === undefined ? {} : { after: options.after }),
+        ...(options.dictionary === undefined ? {} : { dictionary: options.dictionary }),
+        untranslated: options.untranslated ?? false,
+      },
     );
   }
 
@@ -750,24 +794,30 @@ export class FormSettingsViewElement extends UmbLitElement {
     const texts = textsIn(groupOf(this.#definition(), 'submission'), name);
     const isDefault = this.#isDefault();
     const standard = this.#standardLabel(name, visitorWord);
-    return this.#line(
-      id,
-      label,
-      help,
-      isDefault ? textIn(texts, look.culture) : ownText(texts, look.culture),
-      this._choices?.limits.lineLength ?? 0,
-      (text, typed) =>
-        this.#set(
-          ['submission', name],
-          withText(textsIn(groupOf(this.#definition(), 'submission'), name), look.culture, text, isDefault),
-          label,
-          typed ? id : undefined,
+    const written = isDefault ? textIn(texts, look.culture) : ownText(texts, look.culture);
+    const write = (text: string, typed: boolean) =>
+      this.#set(
+        ['submission', name],
+        withText(textsIn(groupOf(this.#definition(), 'submission'), name), look.culture, text, isDefault),
+        label,
+        typed ? id : undefined,
+      );
+    return this.#line(id, label, help, written, this._choices?.limits.lineLength ?? 0, write, {
+      // An item picked from Umbraco's dictionary is written as typing it would be (ADR-0228).
+      dictionary: {
+        said: dictionaryLineOf(written, this._lookups, (key, ...args) =>
+          this.localize.term(`jfbInspector_${key}`, ...args),
         ),
-      {
-        placeholder: isDefault ? standard : textIn(texts, this.#defaultCulture()) || standard,
-        lang: look.culture,
+        pick: (text: string) => {
+          write(text, false);
+          this.#dictionary.forget();
+          this.#dictionaryAsked = '';
+        },
       },
-    );
+      placeholder: isDefault ? standard : textIn(texts, this.#defaultCulture()) || standard,
+      lang: look.culture,
+      untranslated: this.#lackingNow.has(name),
+    });
   }
 
   // ---- Submission ---------------------------------------------------------------------------------------------------
@@ -821,6 +871,11 @@ export class FormSettingsViewElement extends UmbLitElement {
           }</span
         >
         ${flagLine(hidden, (count) => this.#term('problems', count))}
+        ${
+          !this._more && (this.#lackingNow.has('nextLabel') || this.#lackingNow.has('backLabel'))
+            ? html`<span class="untranslated">${this.#untranslated()}</span>`
+            : nothing
+        }
       </button>
       ${
         this._more
@@ -1168,14 +1223,22 @@ export class FormSettingsViewElement extends UmbLitElement {
         done ? undefined : id,
       );
     };
+    const mark = this.#lackingNow.has('closedMessage') ? this.#untranslated() : '';
     // The editor lies in a shadow root of its own, which ids can't reach: its description carries the problems too.
     return html`<div class="item">
-      <p class="label" id=${`${id}-label`}>${label}</p>
+      ${
+        mark
+          ? html`<div class="label-row">
+              <p class="label" id=${`${id}-label`}>${label}</p>
+              <span class="untranslated">${mark}</span>
+            </div>`
+          : html`<p class="label" id=${`${id}-label`}>${label}</p>`
+      }
       <p class="help">${help}</p>
       <jfb-rich-text
         id=${id}
         .label=${label}
-        .description=${[help, ...problems.map((problem) => problem.text)].join(' ')}
+        .description=${[mark, help, ...problems.map((problem) => problem.text)].filter(Boolean).join(' ')}
         .language=${look.culture}
         .placeholder=${isDefault ? '' : textIn(texts, this.#defaultCulture())}
         .value=${isDefault ? textIn(texts, look.culture) : ownText(texts, look.culture)}
@@ -1621,6 +1684,7 @@ export class FormSettingsViewElement extends UmbLitElement {
       <jfb-outcome-list
         .outcomes=${outcomesOf(definition)}
         .culture=${look.culture}
+        .untranslated=${this.#untranslated()}
         .defaultMessage=${word(look, 'thankYou')}
         .words=${inspectorRuleWords(definition, this._types, look.culture, look.languages, term)}
         .flags=${this.#checkedNow.outcomes}
@@ -1809,18 +1873,14 @@ export class FormSettingsViewElement extends UmbLitElement {
     const line = open
       ? nothing
       : html`<span class="summary"
-          >${flagLine(this.#checkedNow.flagged.get(group), (count) => this.#term('problems', count), DOT)}${summaryOf(
-            group,
-            definition,
-            choices,
-            providers,
-            {
-              term: this.#term,
-              date: this.#date,
-              number: this.#number,
-              outcome: (outcome) => outcomeName(outcome, look.culture, thanks, new Map(), this.#term),
-            },
-          )}</span
+          >${flagLine(this.#checkedNow.flagged.get(group), (count) => this.#term('problems', count), DOT)}${
+            this.#groupLacks(group) ? html`<span class="untranslated">${this.#untranslated()}</span> ${DOT} ` : nothing
+          }${summaryOf(group, definition, choices, providers, {
+            term: this.#term,
+            date: this.#date,
+            number: this.#number,
+            outcome: (outcome) => outcomeName(outcome, look.culture, thanks, new Map(), this.#term),
+          })}</span
         >`;
     return html`<section class="group" data-group=${group}>
       <h2 class="group-head">
@@ -1844,6 +1904,28 @@ export class FormSettingsViewElement extends UmbLitElement {
           : nothing
       }
     </section>`;
+  }
+
+  /** The mark of a text the language shown lacks, "No German text yet"; none in the default language (ADR-0228). */
+  #untranslated(): string {
+    const look = this._look;
+    if (!look || this.#isDefault()) return '';
+    return this.localize.term('jfbDesigner_untranslated', this.#languageName(look.culture));
+  }
+
+  /** Whether a group holds a text the language shown lacks, which its closed line says once (ADR-0228). */
+  #groupLacks(group: GroupId): boolean {
+    const lacking = this.#lackingNow;
+    switch (group) {
+      case 'submission':
+        return lacking.has('submitLabel') || lacking.has('nextLabel') || lacking.has('backLabel');
+      case 'availability':
+        return lacking.has('closedMessage');
+      case 'after':
+        return this.#outcomesLackNow;
+      default:
+        return false;
+    }
   }
 
   // The language the texts are shown in, on a site with more than one, and whose texts visitors see where one is empty.
@@ -1876,6 +1958,30 @@ export class FormSettingsViewElement extends UmbLitElement {
     </div>`;
   }
 
+  protected override updated(changed: PropertyValues) {
+    super.updated(changed);
+    this.#readDictionary();
+  }
+
+  // The texts of the dictionary items the buttons' labels name in the language shown, each asked once (ADR-0228).
+  #readDictionary() {
+    const look = this._look;
+    const view = this._view;
+    if (!look || !view) return;
+    const submission = groupOf(view.state.definition, 'submission');
+    const keys = dictionaryKeysIn(
+      [submission['submitLabel'], submission['nextLabel'], submission['backLabel']],
+      look.culture,
+    );
+    const asked = `${look.culture}|${[...keys].sort().join(' ')}`;
+    if (asked === this.#dictionaryAsked) return;
+    this.#dictionaryAsked = asked;
+    if (keys.size === 0) return;
+    void this.#dictionary.read(this, keys, look.culture).then((lookups) => {
+      if (this.#dictionaryAsked === asked) this._lookups = lookups;
+    });
+  }
+
   override render() {
     if (this._failed)
       return html`<div class="page">
@@ -1895,6 +2001,14 @@ export class FormSettingsViewElement extends UmbLitElement {
       </div>`;
     const definition = view.state.definition;
     this.#checkedNow = this.#checked(definition);
+    const settings = definition['settings'] as Readonly<Record<string, unknown>> | undefined;
+    const isDefault = this.#isDefault();
+    this.#lackingNow = isDefault ? new Set() : settingsLacking(settings, look.culture);
+    this.#outcomesLackNow =
+      !isDefault &&
+      outcomesOf(definition).some((outcome) =>
+        outcomeLacks(outcome as unknown as Readonly<Record<string, unknown>>, look.culture),
+      );
     return html`<div class="page">
         ${this.#toolbar(look)} ${GROUPS.map((group) => this.#group(group, definition, choices, providers, look))}
       </div>

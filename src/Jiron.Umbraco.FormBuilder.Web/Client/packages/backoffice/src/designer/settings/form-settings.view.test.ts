@@ -895,6 +895,49 @@ describe('the language', () => {
   });
 });
 
+describe('what a translator has left', () => {
+  const lacking: DesignDefinition = {
+    ...DEFINITION,
+    settings: {
+      ...(DEFINITION['settings'] as Record<string, unknown>),
+      submission: { submitLabel: { '': 'Send' }, nextLabel: { '': 'On', 'de-DE': 'Weiter' } },
+      availability: { members: 'anyone', closedMessage: { '': '<p>Closed for now.</p>' } },
+    },
+    outcomes: [{ key: 'o1', kind: 'message', message: { '': '<p>Thanks!</p>' } }],
+  };
+
+  it('marks each text without the language shown beside its label, and a closed group says it once', async () => {
+    reading.german = true;
+    const { root, box, head, open, view } = await viewOf(lacking, 'de-DE');
+    const mark = root.querySelector('#submit-label-untranslated');
+    expect(text(mark)).toBe('No German text yet');
+    expect(box('submit-label').getAttribute('aria-describedby')?.split(' ')).toContain('submit-label-untranslated');
+    // The next button's label has its German text, and the back button's none at all: More options says nothing.
+    expect(text(root.querySelector('.more-toggle'))).not.toContain('No German text yet');
+    expect(text(head('availability'))).toContain('No German text yet');
+    expect(text(root.querySelector('jfb-outcome-list')?.shadowRoot?.querySelector('.row-line'))).toContain(
+      'No German text yet',
+    );
+    await open('availability');
+    expect(text(root.querySelector('[data-group="availability"] .label-row .untranslated'))).toBe('No German text yet');
+    expect(
+      must(
+        root.querySelector<HTMLElement & { description: string }>('jfb-rich-text#closed-message'),
+        'the closed message',
+      ).description,
+    ).toContain('No German text yet');
+    view.remove();
+  });
+
+  it('marks nothing in the default language', async () => {
+    reading.german = true;
+    const { root, head, open } = await viewOf(lacking, 'en-US');
+    await open('availability');
+    expect(root.querySelectorAll('.untranslated')).toHaveLength(0);
+    expect(text(head('submission'))).not.toContain('text yet');
+  });
+});
+
 describe('a Fix it in a text of another language', () => {
   it('shows the language of the text, and puts the focus in its box', async () => {
     reading.german = true;

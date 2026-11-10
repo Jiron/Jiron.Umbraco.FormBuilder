@@ -549,6 +549,95 @@ describe('the canvas', () => {
     expect(menu).toEqual(['Change type\u2026', 'Start a new page after this']);
   });
 
+  it('marks a page and a group whose title or description lacks the language shown, describing their buttons, and none while selected', async () => {
+    const languages = [
+      { culture: 'en-US', name: 'English (United States)', isDefault: true },
+      { culture: 'de-DE', name: 'Deutsch (Deutschland)', isDefault: false },
+    ];
+    const definition: DesignDefinition = {
+      pages: [
+        {
+          key: 'p',
+          title: { '': 'Your details', 'de-DE': 'Ihre Angaben' },
+          description: { '': '<p>We answer within a day.</p>' },
+          groups: [
+            {
+              key: 'g1',
+              title: { '': 'Contact' },
+              fields: [{ key: 'a', type: 'text', alias: 'a', label: { '': 'A', de: 'A' } }],
+            },
+            {
+              key: 'g2',
+              title: { '': 'More', de: 'Mehr' },
+              fields: [{ key: 'b', type: 'text', alias: 'b', label: { '': 'B', de: 'B' } }],
+            },
+          ],
+        },
+      ],
+      outcomes: [],
+    };
+    const marks = (root: ShadowRoot) =>
+      [...root.querySelectorAll(':is(.bo-page, .bo-group) > .bo-chips > .bo-chip:not(.bo-rule-chip)')].map((chip) => [
+        chip.id,
+        text(chip),
+      ]);
+    const german = await canvasOf(definition, { look: { ...englishLook, languages, culture: 'de-DE' } });
+    expect(marks(german.root)).toEqual([
+      ['jfb-chip-p', 'No German text yet'],
+      ['jfb-chip-g1', 'No German text yet'],
+    ]);
+    expect(must(german.root.querySelector('[data-select="p"]'), 'the page').getAttribute('aria-describedby')).toBe(
+      'jfb-chip-p',
+    );
+    expect(must(german.root.querySelector('[data-select="g1"]'), 'the group').getAttribute('aria-describedby')).toBe(
+      'jfb-chip-g1',
+    );
+    expect(
+      must(german.root.querySelector('[data-select="g2"]'), 'the other group').hasAttribute('aria-describedby'),
+    ).toBe(false);
+    german.element.selection = 'g1';
+    await german.element.updateComplete;
+    expect(marks(german.root)).toEqual([['jfb-chip-p', 'No German text yet']]);
+    document.body.replaceChildren();
+    const english = await canvasOf(definition, { look: { ...englishLook, languages, culture: 'en-US' } });
+    expect(marks(english.root)).toEqual([]);
+  });
+
+  it("draws a text that names a dictionary item as the item's text, and an edit of the label starts from its key", async () => {
+    const definition: DesignDefinition = {
+      pages: [
+        {
+          key: 'p',
+          title: { '': '#Forms.Page' },
+          groups: [
+            {
+              key: 'g',
+              fields: [
+                { key: 'a', type: 'text', alias: 'a', label: { '': '#Forms.Name' } },
+                { key: 'b', type: 'text', alias: 'b', label: { '': '#Forms.Gone' } },
+              ],
+            },
+          ],
+        },
+      ],
+      outcomes: [],
+    };
+    const lookups = new Map([
+      ['forms.page', { found: true, text: 'Your details' }],
+      ['forms.name', { found: true, text: 'Your name' }],
+      ['forms.gone', { found: false, text: '' }],
+    ]);
+    const { element, root } = await canvasOf(definition, { lookups });
+    const fields = all<CanvasFieldElement>(element, 'jfb-canvas-field');
+    for (const field of fields) await settle(field);
+    expect(text(root.querySelector('.jfb-title'))).toBe('Your details');
+    expect(fields.map((field) => text(field.querySelector('label')))).toEqual([
+      'Your name (optional)',
+      '#Forms.Gone (optional)',
+    ]);
+    expect(fields.map((field) => field.state?.labelText)).toEqual(['#Forms.Name', '#Forms.Gone']);
+  });
+
   it('carries a chip for each rule in use on a page, a group or a field, each describing it, and none while it is selected', async () => {
     const definition: DesignDefinition = {
       pages: [

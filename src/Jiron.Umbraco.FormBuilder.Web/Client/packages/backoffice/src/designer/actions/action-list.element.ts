@@ -26,6 +26,8 @@ export interface ActionCard {
   readonly on: boolean;
   /** The form check's problems in it. */
   readonly flag?: Flag | undefined;
+  /** The mark of an action whose texts lack the language shown (ADR-0228); none where they don't. */
+  readonly untranslated?: string | undefined;
   /** What its type's test does, said before it runs; none for a kind the backoffice does not know. */
   readonly testHint?: string | undefined;
   /** Its last run in words (ADR-0195); none for an action that has not run. */
@@ -174,6 +176,10 @@ export class ActionListElement extends UmbLitElement {
         color: var(--jfb-bo-color-text-muted);
         font-size: var(--uui-type-small-size);
         overflow-wrap: anywhere;
+      }
+
+      .line .untranslated {
+        color: var(--jfb-bo-color-warning-text);
       }
 
       .flag {
@@ -608,9 +614,18 @@ export class ActionListElement extends UmbLitElement {
               <button type="button" class="open" @click=${() => this.open(card.key)}>
                 <span class="name">${card.name}</span>
                 ${
-                  card.summary || card.flag?.count
+                  card.summary || card.flag?.count || card.untranslated
                     ? html`<span class="line"
-                        >${flagLine(card.flag, (number) => this.#term('problems', number), card.summary ? DOT : undefined)}${card.summary}</span
+                        >${flagLine(
+                          card.flag,
+                          (number) => this.#term('problems', number),
+                          card.summary || card.untranslated ? DOT : undefined,
+                        )}${
+                          card.untranslated
+                            ? html`<span class="untranslated">${card.untranslated}</span
+                                >${card.summary ? ` ${DOT} ` : nothing}`
+                            : nothing
+                        }${card.summary}</span
                       >`
                     : nothing
                 }

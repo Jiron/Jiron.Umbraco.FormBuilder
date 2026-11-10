@@ -27,6 +27,7 @@ import type { EditorView, FormWorkspaceContext } from '../form-workspace.context
 import { followFix, routerSettled, viewPath } from '../form-views';
 import { same } from '../inspector/setting-values';
 import { readLook, type CanvasLook } from '../preview/look';
+import { actionLacks } from '../translations';
 import { elementNames, inspectorRuleWords } from '../rules/rule-names';
 import { ruleWords } from '../rules/rule-words';
 import { flagWith, type Flag } from '../settings/problem-lines';
@@ -737,6 +738,7 @@ export class FormActionsViewElement extends UmbLitElement {
     const term = (key: string, ...args: unknown[]) => this.localize.term(key, ...args);
     const names = elementNames(definition, look?.culture ?? '', term);
     const words = look ? inspectorRuleWords(definition, this._types, look.culture, look.languages, term) : null;
+    const untranslated = look ? this.#untranslated(look) : '';
     return inTrigger(actionsOf(definition), trigger).map((action) => {
       const type = this.#typeOf(action.type);
       const line = this.#line(action, names);
@@ -750,10 +752,30 @@ export class FormActionsViewElement extends UmbLitElement {
         rule: said && rule?.enabled === false ? this.#term('ruleOff', said) : said,
         on: isOn(action),
         flag: flags.get(action.key),
+        untranslated:
+          untranslated && actionLacks(action.settings, type?.settings ?? [], look?.culture ?? '')
+            ? untranslated
+            : undefined,
         testHint: testHint(type?.test, this.#term),
         run: this.#runOf(action),
       };
     });
+  }
+
+  /** The mark of an action whose texts lack the language shown, "No German text yet"; none in the default (ADR-0228). */
+  #untranslated(look: CanvasLook): string {
+    const standard = look.languages.find((language) => language.isDefault)?.culture ?? look.culture;
+    if (look.languages.length < 2 || standard.toLowerCase() === look.culture.toLowerCase()) return '';
+    let name = look.culture;
+    try {
+      name =
+        new Intl.DisplayNames([this.localize.lang()], { type: 'language' }).of(
+          look.culture.split('-')[0] ?? look.culture,
+        ) ?? name;
+    } catch {
+      name = look.languages.find((language) => language.culture === look.culture)?.name ?? name;
+    }
+    return this.localize.term('jfbDesigner_untranslated', name);
   }
 
   // An action's last run in the reader's language, as its card says it.

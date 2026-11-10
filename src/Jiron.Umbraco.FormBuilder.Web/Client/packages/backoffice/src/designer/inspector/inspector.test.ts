@@ -365,6 +365,43 @@ describe('the inspector', () => {
     expect([own.value, own.hasAttribute('placeholder')]).toEqual(['Your name', false]);
   });
 
+  it("says under a text that names a dictionary item what visitors see, a text setting's too, and has it read again once picked", async () => {
+    localStorage.setItem('jfb.designer.inspector.open', JSON.stringify(['essentials', 'appearance']));
+    const field = {
+      ...NAME,
+      label: { '': '#Forms.Name' },
+      help: { '': '#Forms.Gone' },
+      placeholder: { '': '#Forms.Unread' },
+      settings: { prefix: { '': '#Forms.Empty' } },
+    };
+    let forgotten = 0;
+    const lookups = new Map([
+      ['forms.name', { found: true, text: 'Your name' }],
+      ['forms.gone', { found: false, text: '' }],
+      ['forms.empty', { found: true, text: '' }],
+    ]);
+    const { root } = await inspectorOf('name', { lookups, forgetDictionary: () => forgotten++ }, field);
+    const line = (id: string) => text(root.getElementById(`${id}-dictionary`));
+    expect(line('prop-label')).toBe('From the dictionary: Your name');
+    expect(line('prop-help')).toBe('The dictionary has no item Forms.Gone, so visitors see \u201c#Forms.Gone\u201d.');
+    // An item still being read says nothing yet.
+    expect(root.getElementById('prop-placeholder-dictionary')).toBeNull();
+    expect(line('setting-prefix')).toBe(
+      'The dictionary item has no text in this language, so visitors see \u201c#Forms.Empty\u201d.',
+    );
+    expect(must(root.querySelector('#prop-label'), 'the label').getAttribute('aria-describedby')).toBe(
+      'prop-label-dictionary',
+    );
+    expect(must(root.querySelector('#setting-prefix'), 'the prefix').getAttribute('aria-describedby')).toContain(
+      'setting-prefix-dictionary',
+    );
+    // Each plain text box has the picker in its row; picking writes the key as typing would, and the texts are read again.
+    const picks = [...root.querySelectorAll('jfb-dictionary-pick')];
+    expect(picks.map((pick) => pick.label)).toEqual(['Label', 'Help text', 'Placeholder', 'Text before', 'Text after']);
+    picks.find((pick) => pick.label === 'Label')?.pick('#Forms.Other');
+    expect(forgotten).toBe(1);
+  });
+
   it("shows a text setting's default words as its placeholder in another language, and none in the default", async () => {
     localStorage.setItem('jfb.designer.inspector.open', JSON.stringify(['appearance']));
     const field = { ...NAME, settings: { prefix: { '': 'Dr.' } } };

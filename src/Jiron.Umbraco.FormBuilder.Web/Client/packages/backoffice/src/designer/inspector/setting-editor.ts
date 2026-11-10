@@ -9,6 +9,7 @@ import type { FieldSettingResponseModel } from '../../api';
 import type { LocalizedText } from '../definition';
 import { textIn } from '../preview/field-models';
 import { boxValue } from './box-value';
+import './dictionary-pick.element';
 import './rich-text.element';
 import {
   ownText,
@@ -38,6 +39,13 @@ export interface EditorContext {
    * left, when a problem is shown.
    */
   readonly set: (path: string, setting: FieldSettingResponseModel, parsed: Parsed, done: boolean) => void;
+  /**
+   * What visitors see for a text that names a dictionary item, said under its box (ADR-0228); null for a text that
+   * names none. A host without it offers no dictionary picker either.
+   */
+  readonly dictionaryLine?: (text: string) => string | null;
+  /** Says that an item was picked from the dictionary, whose texts are then read again. */
+  readonly dictionaryPicked?: () => void;
   /** "Insert merge tag" under the box of a setting that takes tags, which puts a tag into it (ADR-0173). */
   readonly mergeTags?: (setting: FieldSettingResponseModel, path: string) => TemplateResult | typeof nothing;
   /**
@@ -196,17 +204,28 @@ export function settingFrame(
   path: string,
   box: (described: string | undefined, invalid: boolean, held: boolean) => TemplateResult,
   extra?: string,
+  dictionary?: { readonly said: string | null; readonly pick: (text: string) => void },
 ): TemplateResult {
   const id = boxId(path);
   const problem = context.problems.get(id);
   const found = context.found?.(id);
   const help = setting.description ? `${id}-help` : undefined;
   const why = problem ? `${id}-why` : undefined;
-  const described = [help, extra, why, ...(found?.ids ?? [])].filter(Boolean).join(' ') || undefined;
+  const said = dictionary?.said ? `${id}-dictionary` : undefined;
+  const described = [help, extra, said, why, ...(found?.ids ?? [])].filter(Boolean).join(' ') || undefined;
+  const label = html`<label class="label" for=${id}>${context.say(setting.label)}</label>`;
   return html`<div class="item">
-    <label class="label" for=${id}>${context.say(setting.label)}</label>
+    ${
+      dictionary
+        ? html`<div class="label-row">
+            ${label}
+            <jfb-dictionary-pick .label=${context.say(setting.label)} .pick=${dictionary.pick}></jfb-dictionary-pick>
+          </div>`
+        : label
+    }
     ${help ? html`<p class="help" id=${help}>${context.say(setting.description)}</p>` : nothing}
     ${box(described, problem !== undefined || (found?.error ?? false), problem !== undefined)}
+    ${said ? html`<p class="help" id=${said}>${dictionary?.said}</p>` : nothing}
     ${problem ? html`<p class="why" id=${why ?? ''}>${problem}</p>` : nothing} ${found?.lines ?? nothing}
     ${setting.supportsMergeTags ? (context.mergeTags?.(setting, path) ?? nothing) : nothing}
   </div>`;
@@ -278,6 +297,18 @@ export function settingEditor(
     case 'localizedText': {
       const texts = value as LocalizedText | undefined;
       const isDefault = context.culture === context.defaultCulture;
+      const written = isDefault ? textIn(texts, context.culture) : ownText(texts, context.culture);
+      // A host that says what a dictionary item shows offers the picker too (ADR-0228); the item chosen is written as
+      // typing it would be.
+      const dictionary = context.dictionaryLine
+        ? {
+            said: context.dictionaryLine(written),
+            pick: (text: string) => {
+              typed(text, true);
+              context.dictionaryPicked?.();
+            },
+          }
+        : undefined;
       return settingFrame(
         context,
         setting,
@@ -291,10 +322,12 @@ export function settingEditor(
             placeholder=${isDefault ? nothing : textIn(texts, context.defaultCulture) || nothing}
             aria-describedby=${described ?? nothing}
             aria-invalid=${invalid ? 'true' : 'false'}
-            .value=${boxValue(isDefault ? textIn(texts, context.culture) : ownText(texts, context.culture), held)}
+            .value=${boxValue(written, held)}
             @input=${(event: Event) => typed((event.target as HTMLInputElement).value, false)}
             @change=${(event: Event) => typed((event.target as HTMLInputElement).value, true)}
           />`,
+        undefined,
+        dictionary,
       );
     }
     case 'wholeNumber':

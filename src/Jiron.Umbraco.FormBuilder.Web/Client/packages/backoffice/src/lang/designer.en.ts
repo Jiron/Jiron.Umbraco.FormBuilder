@@ -90,6 +90,8 @@ export default {
     copyFailed: "The alias couldn't be copied.",
     language: 'Language',
     untranslated: (language: string) => `No ${language} text yet`,
+    useDictionary: 'Use a dictionary item',
+    useDictionaryFor: (label: string) => `Use a dictionary item for ${label}`,
     moveToNamed: (name: string) => `Move to…, ${name}`,
     moveToHeadline: (name: string) => `Move ${name}`,
     moveToLead: 'To the end of',

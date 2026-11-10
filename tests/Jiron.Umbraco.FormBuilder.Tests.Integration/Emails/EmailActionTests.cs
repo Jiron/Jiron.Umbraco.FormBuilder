@@ -13,6 +13,7 @@ using Jiron.Umbraco.FormBuilder.Tests.Integration.Support;
 using Microsoft.Extensions.DependencyInjection;
 using MimeKit;
 using Umbraco.Cms.Core;
+using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Tests.Common.Testing;
 
@@ -167,6 +168,45 @@ public sealed class EmailActionTests : EmailTestBase
             Assert.That(mail.Subject, Is.EqualTo("Hallo"));
             Assert.That(HtmlOf(mail), Does.Contain("Deutsch").And.Contain("Name (de)"));
             Assert.That(HtmlOf(mail), Does.Contain("lang=\"de-DE\""));
+        });
+    }
+
+    [Test]
+    public async Task ASubjectOrBodyThatNamesADictionaryItem_IsTheItemsTextInTheEntrysLanguage_TheBodySanitised()
+    {
+        var languages = GetRequiredService<ILanguageService>();
+        var english = (await languages.GetDefaultLanguageAsync())!;
+        var german = new Language("de-DE", "German") { FallbackIsoCode = english.IsoCode };
+        await languages.CreateAsync(german, Constants.Security.SuperUserKey);
+        var dictionary = GetRequiredService<IDictionaryItemService>();
+        await dictionary.CreateAsync(new DictionaryItem("Mail.Subject") { Translations = [new DictionaryTranslation(english, "Thanks, {{ field.name }}"), new DictionaryTranslation(german, "Danke, {{ field.name }}")] }, Constants.Security.SuperUserKey);
+        await dictionary.CreateAsync(new DictionaryItem("Mail.Body") { Translations = [new DictionaryTranslation(english, "<p>We read it.</p>"), new DictionaryTranslation(german, "<p onclick=\"steal()\">Wir lesen es.</p><script>steal()</script>")] }, Constants.Security.SuperUserKey);
+        var form = await FormAsync(Email("""{"to":["team@jfb.test"],"subject":{"":"#Mail.Subject"},"body":{"":"#Mail.Body"}}"""));
+        var row = (await FormRows.GetAsync(form))!;
+        var name = (await FormRows.ListFieldsAsync(row.Id)).Single(field => field.Values.FieldKey == NameField.Key);
+        var entry = (await Entries.CreateAsync(new NewEntry
+        {
+            Key = Guid.NewGuid(),
+            FormId = row.Id,
+            FormVersionId = row.PublishedVersionId!.Value,
+            State = EntryState.Submitted,
+            SubmissionId = Guid.NewGuid(),
+            SubmissionHash = new string('a', 64),
+            Culture = "de-DE",
+            Values = [new NewEntryValue(name.Id, "Ada")],
+        }))!;
+        var action = (await Forms.GetDraftAsync(form))!.Definition!.Actions.Single();
+        await Runs.AddAsync(entry.Id, entry.FormVersionId, Guid.NewGuid(), [new NewActionRun(action.Key, action.Type, action.Trigger, 0, false)]);
+
+        await DrainAsync(entry.Id);
+        await SendDueAsync();
+
+        var mail = Written().Single();
+        Assert.Multiple(() =>
+        {
+            Assert.That(mail.Subject, Is.EqualTo("Danke, Ada"));
+            Assert.That(HtmlOf(mail), Does.Contain("Wir lesen es.").And.Not.Contain("#Mail.Body"));
+            Assert.That(HtmlOf(mail), Does.Not.Contain("steal()"));
         });
     }
 

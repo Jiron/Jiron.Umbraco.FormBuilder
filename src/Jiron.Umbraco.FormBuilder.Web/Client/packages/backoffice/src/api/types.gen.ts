@@ -387,6 +387,17 @@ export type DeliveryTargetResponseModel = {
     text?: string | null;
 };
 
+export type DictionaryTextResponseModel = {
+    key: string;
+    found: boolean;
+    text: string;
+};
+
+export type DictionaryTextsResponseModel = {
+    culture: string;
+    texts: Array<DictionaryTextResponseModel>;
+};
+
 export type DraftComparisonResponseModel = {
     fromVersion: number;
     changes: Array<DefinitionChangeResponseModel>;
@@ -3023,6 +3034,42 @@ export type DeliveryRetryRunResponses = {
 };
 
 export type DeliveryRetryRunResponse = DeliveryRetryRunResponses[keyof DeliveryRetryRunResponses];
+
+export type DictionaryTextGetData = {
+    body?: never;
+    path?: never;
+    query?: {
+        key?: Array<string>;
+        culture?: string;
+    };
+    url: '/umbraco/jfb/management/api/v1/dictionary-text';
+};
+
+export type DictionaryTextGetErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+};
+
+export type DictionaryTextGetError = DictionaryTextGetErrors[keyof DictionaryTextGetErrors];
+
+export type DictionaryTextGetResponses = {
+    /**
+     * OK
+     */
+    200: DictionaryTextsResponseModel;
+};
+
+export type DictionaryTextGetResponse = DictionaryTextGetResponses[keyof DictionaryTextGetResponses];
 
 export type EmailLayoutLibraryCreateData = {
     body?: CreateEmailLayoutRequestModel;

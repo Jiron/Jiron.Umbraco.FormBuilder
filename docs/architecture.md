@@ -232,7 +232,13 @@ flowchart LR
   `setting-editor.ts` and whose values `setting-values.ts` reads, checks as the server does and writes back; it sends
   each change to the Design view as an edit of the editor model, typing in one box one step of the undo history. The
   canvas endpoint serves the site's languages, which the toolbar switches between, and the draft endpoint whether the
-  form has entries, which an alias change asks about first. From 9.4b the option editor (ADR-0172):
+  form has entries, which an alias change asks about first. From 14.1 (ADR-0228): `translations.ts` finds the texts the
+  language shown lacks, which the canvas marks on a field, group or page and the Settings and Actions views on a box, an
+  outcome's row, an action's card and a closed group's line; `dictionary-texts.ts` finds the dictionary items a draft's
+  texts name (`#key`), reads their texts from the management API's `dictionary-text` endpoint once per language and
+  key, and maps the draft the canvas draws to them, the inspector and the sidebars saying under a `#key` box what
+  visitors see; `inspector/dictionary-pick.element.ts` opens Umbraco's dictionary picker for a user with the
+  Translation section. From 9.4b the option editor (ADR-0172):
   `inspector/option-editor.element.ts` in Essentials, with "Options from", a field's own options and a grid's rows, over
   the pure helpers of `inspector/option-values.ts`; `inspector/option-data.ts` reads the management API's
   `option-source` (the kinds a field may name with their settings schemas, and the standard lists) and `option-list`

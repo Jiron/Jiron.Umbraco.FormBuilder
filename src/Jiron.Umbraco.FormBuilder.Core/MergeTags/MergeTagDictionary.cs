@@ -52,6 +52,38 @@ internal sealed class MergeTagDictionary(IDictionaryItemService items, ILanguage
         return new DictionaryTexts(texts.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase));
     }
 
+    /// <summary>
+    /// Each key's item in a culture, as the designer shows a text that names one (ADR-0228): its text, the empty text for
+    /// an item without one in any language tried, or null for a key no item has.
+    /// </summary>
+    /// <param name="keys">The items' keys, dots included.</param>
+    /// <param name="culture">The culture shown.</param>
+    public async Task<IReadOnlyDictionary<string, string?>> LookUpAsync(IReadOnlyCollection<string> keys, string culture)
+    {
+        var looked = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+        foreach (var key in keys)
+        {
+            looked.TryAdd(key, null);
+        }
+
+        if (looked.Count == 0)
+        {
+            return looked;
+        }
+
+        var found = await items.GetManyAsync([.. looked.Keys]);
+        var tried = await LanguagesAsync(culture);
+        foreach (var item in found)
+        {
+            if (looked.ContainsKey(item.ItemKey))
+            {
+                looked[item.ItemKey] = Pick(item, tried);
+            }
+        }
+
+        return looked;
+    }
+
     /// <summary>The ISO codes of the languages a culture's texts come from, in the order they are tried.</summary>
     /// <param name="culture">The template's culture.</param>
     public async Task<IReadOnlyList<string>> LanguagesAsync(string culture)

@@ -16,6 +16,11 @@ export default {
     elementActions: 'Aktionen für dieses Element',
     editingLanguage: (language: string, standard: string) =>
       `Sie bearbeiten die Texte auf ${language}. Wo einer leer ist, sehen Besucher den Text auf ${standard}.`,
+    dictionaryShows: (text: string) => `Aus dem Wörterbuch: ${text}`,
+    dictionaryEmpty: (written: string) =>
+      `Der Wörterbucheintrag hat keinen Text in dieser Sprache, darum sehen Besucher „${written}“.`,
+    dictionaryMissing: (key: string, written: string) =>
+      `Das Wörterbuch hat keinen Eintrag ${key}, darum sehen Besucher „${written}“.`,
     typeGone: (type: string) =>
       `Diese Website hat keinen Feldtyp „${type}“ mehr, darum können seine Einstellungen nicht gezeigt werden.`,
 

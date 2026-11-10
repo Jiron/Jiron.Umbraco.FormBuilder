@@ -86,6 +86,7 @@ import { rulesOn } from './rules/rule-list';
 import { elementNames, typeFactsOf } from './rules/rule-names';
 import { RULES_OVERVIEW_MODAL } from './rules/rules-overview.modal.token';
 import { textIn } from './preview/field-models';
+import { DictionaryReader, dictionaryKeysIn, type DictionaryLookups } from './dictionary-texts';
 import { ownText, withKey, withText } from './inspector/setting-values';
 import { readLook, themeSheets, type CanvasLook } from './preview/look';
 import {
@@ -189,6 +190,7 @@ export class FormDesignViewElement extends UmbLitElement {
     _sheets: { state: true },
     _media: { state: true },
     _resolved: { state: true },
+    _lookups: { state: true },
     _shown: { state: true },
     _width: { state: true },
     _insertAt: { state: true },
@@ -348,6 +350,8 @@ export class FormDesignViewElement extends UmbLitElement {
   declare private _media: Readonly<Record<string, string>>;
   /** The options of fields that take them from elsewhere, as the server resolved the draft's, by field (ADR-0172). */
   declare private _resolved: ReadonlyMap<string, readonly ResolvedOption[]>;
+  /** The dictionary items the draft's texts name in the canvas's language, as the server finds them (ADR-0228). */
+  declare private _lookups: DictionaryLookups;
   declare private _shown: CanvasShown;
   declare private _width: CanvasWidth;
   declare private _insertAt: Place | null;
@@ -387,6 +391,9 @@ export class FormDesignViewElement extends UmbLitElement {
   #mediaRead = new Set<string>();
   /** What each field's options were last asked for as, so a field is asked again only when they or the language change. */
   #optionsAsked = new Map<string, string>();
+  readonly #dictionary = new DictionaryReader();
+  // The keys and language the lookups shown were asked for: an answer for others is dropped.
+  #dictionaryAsked = '';
   /** The asks waiting for the typing to pause, by field. */
   #optionsWaiting = new Map<string, ReturnType<typeof setTimeout>>();
   #imaging: UmbImagingRepository | undefined;
@@ -417,6 +424,7 @@ export class FormDesignViewElement extends UmbLitElement {
     this._sheets = [];
     this._media = {};
     this._resolved = new Map();
+    this._lookups = new Map();
     this._shown = 0;
     this._width = readWidth();
     this._insertAt = null;
@@ -503,7 +511,10 @@ export class FormDesignViewElement extends UmbLitElement {
       return;
     }
     this._look = look;
-    if (this._view) this.#readOptions(this._view.state.definition);
+    if (this._view) {
+      this.#readOptions(this._view.state.definition);
+      this.#readDictionary(this._view.state.definition);
+    }
     void this.#fixPending();
     this._sheets = await themeSheets(look.stylesheets);
   }
@@ -521,6 +532,7 @@ export class FormDesignViewElement extends UmbLitElement {
     }
     void this.#readMedia(view.state.definition);
     this.#readOptions(view.state.definition);
+    this.#readDictionary(view.state.definition);
     // A field's changes of type are read ahead as it is selected, so Change type opens at once (ADR-0174); once, not
     // at every edit, so a read that fails is not asked again and again.
     const found = selection ? locate(view.state.definition, selection) : undefined;
@@ -561,6 +573,32 @@ export class FormDesignViewElement extends UmbLitElement {
       if (before === undefined) ask();
       else this.#optionsWaiting.set(field.key, setTimeout(ask, OPTIONS_PAUSE));
     }
+  }
+
+  // The texts of the dictionary items the draft's texts name in the canvas's language (ADR-0228): each key is asked once
+  // per language, and an answer for an earlier draft or language is dropped.
+  #readDictionary(definition: DesignDefinition) {
+    const culture = this._look?.culture;
+    if (culture === undefined) return;
+    const keys = dictionaryKeysIn(definition, culture);
+    const asked = `${culture}|${[...keys].sort().join(' ')}`;
+    if (asked === this.#dictionaryAsked) return;
+    this.#dictionaryAsked = asked;
+    if (keys.size === 0) {
+      if (this._lookups.size > 0) this._lookups = new Map();
+      return;
+    }
+    void this.#dictionary.read(this, keys, culture).then((lookups) => {
+      if (this.#dictionaryAsked === asked) this._lookups = lookups;
+    });
+  }
+
+  // After an item was picked from Umbraco's dictionary, whose texts may have changed in the meantime, every text is read
+  // again.
+  #forgetDictionary() {
+    this.#dictionary.forget();
+    this.#dictionaryAsked = '';
+    if (this._view) this.#readDictionary(this._view.state.definition);
   }
 
   async #readMedia(definition: DesignDefinition) {
@@ -1937,6 +1975,7 @@ export class FormDesignViewElement extends UmbLitElement {
         .types=${this._types}
         .mediaUrls=${this._media}
         .resolvedOptions=${this._resolved}
+        .lookups=${this._lookups}
         .width=${this._width}
         .insertAt=${this._insertAt}
         .editing=${this._editing}
@@ -1958,6 +1997,8 @@ export class FormDesignViewElement extends UmbLitElement {
               .languages=${this._look?.languages ?? []}
               .form=${this.#context?.getUnique() ?? ''}
               .resolvedOptions=${this._resolved}
+              .lookups=${this._lookups}
+              .forgetDictionary=${() => this.#forgetDictionary()}
               .saveGroups=${this._saveGroups}
               mode=${inspector}
             ></jfb-designer-inspector>`

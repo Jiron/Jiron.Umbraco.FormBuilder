@@ -25,6 +25,7 @@ import { EditorHistory } from './history';
 import { PALETTE_PICK, type PalettePick } from './palette/palette.element';
 import { builtInChanges, builtInTypes, englishLook } from './preview/fixtures';
 import type { UndoNotificationData } from '../ui/undo-notification.element';
+import type { InspectorElement } from './inspector/inspector.element';
 
 // What the dialogs answer, and each dialog opened with what it was given.
 const opened = vi.hoisted(() => ({
@@ -77,6 +78,19 @@ const resolving = vi.hoisted(() => ({
   answer: { options: [{ value: '1', label: 'January', parentValues: [] }], isAvailable: true } as {
     options: { value: string; label?: string; parentValues: string[] }[];
     isAvailable: boolean;
+  },
+}));
+
+// The dictionary items' texts the server gives, and the keys and languages asked for (ADR-0228).
+const dictionary = vi.hoisted(() => ({ asked: [] as { key: string[]; culture: string }[] }));
+
+vi.mock('../api', async (original) => ({
+  ...(await original<typeof import('../api')>()),
+  dictionaryTextGet: async ({ query }: { query: { key: string[]; culture: string } }) => {
+    dictionary.asked.push(query);
+    return {
+      data: { culture: query.culture, texts: query.key.map((key) => ({ key, found: true, text: `Text of ${key}` })) },
+    };
   },
 }));
 
@@ -1517,6 +1531,37 @@ describe('the inspector in the Design view', () => {
     await new Promise((done) => setTimeout(done, 80));
     await settle(view);
     expect((canvas as unknown as { look: { culture: string } }).look.culture).toBe('en-US');
+  });
+});
+
+describe('texts from the dictionary', () => {
+  it('hands the canvas and the inspector the texts of the items the draft names, each key asked once per language', async () => {
+    dictionary.asked.length = 0;
+    const definition: DesignDefinition = {
+      pages: [
+        {
+          key: 'p1',
+          groups: [
+            {
+              key: 'g1',
+              fields: [
+                { key: 'n', type: 'text', alias: 'name', label: { '': '#Forms.Name' } },
+                { key: 'm', type: 'text', alias: 'mail', label: { '': 'Email' } },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+    const { view, canvas, ask } = await viewOf(definition);
+    await settle(view);
+    expect(dictionary.asked).toEqual([{ key: ['forms.name'], culture: 'en-US' }]);
+    expect(canvas.lookups.get('forms.name')).toEqual({ found: true, text: 'Text of forms.name' });
+    await ask({ kind: 'select', key: 'n' });
+    const inspector = must(shadow(view).querySelector<InspectorElement>('jfb-designer-inspector'), 'the inspector');
+    expect(inspector.lookups).toBe(canvas.lookups);
+    // Selecting asks nothing again.
+    expect(dictionary.asked).toHaveLength(1);
   });
 });
 
