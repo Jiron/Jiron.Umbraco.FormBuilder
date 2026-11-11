@@ -61,6 +61,7 @@ idempotent, so a rerun changes nothing.
 | `jfb-012-form-library-uses` | `AddFormLibraryUsesV1` | Adds `jfbFormLibraryUse`, what of the library each form's draft and live version use, with `IX_jfbFormLibraryUse_itemKind_itemKey`, and writes the rows of the forms there are from their versions: the option lists their fields take options from ([ADR-0214](decisions/0214-the-option-list-library.md)), where the table is missing. |
 | `jfb-013-theme-and-layout-uses` | `AddThemeAndLayoutUsesV1` | Writes the `jfbFormLibraryUse` rows of two more kinds from the forms' draft and live versions: `theme`, the theme a form's settings name, under a name-based key of its lower-case alias, and `emailLayout`, the layouts its email actions name, with how many actions do ([ADR-0215](decisions/0215-library-themes-and-email-layouts.md)); it replaces the rows of those two kinds, so a rerun writes the same. |
 | `jfb-014-entry-file-name-index` | `AddEntryFileNameIndexV1` | Adds `IX_jfbEntryFile_storedName`, so retention's sweep of the file store looks up which of a folder's names a row still names ([ADR-0222](decisions/0222-retention.md)), where it is missing. |
+| `jfb-015-entry-site` | `AddEntrySiteV1` | Adds `jfbEntry.siteKey`, the site an entry was sent from, so its mail and its links follow that site once its page is gone or when its request named none ([ADR-0232](decisions/0232-the-site-of-a-request.md)), where it is missing. |
 
 A step that has shipped is never edited; a change to the schema is a new step with snapshot classes of its own. Step 1
 is frozen since the end of Phase 4, the tag `baseline/schema-v1`: `SchemaV1FreezeTests` pins the SHA-256 of a
@@ -234,6 +235,7 @@ erDiagram
         datetime holdUntilUtc "null"
         string(500) holdReason "null"
         datetime purgeAfterUtc "null"
+        guid siteKey "null"
     }
     jfbEntryFile {
         int id PK
@@ -534,7 +536,10 @@ could be checked against stays (ADR-0226). `state` is the entry's place in the r
 entries from the preview. The search text holds the answers cleaned and folded the way rules compare text, one per
 line, and leaves out sensitive fields (ADR-0039). `spamScore` and `spamReasons` are what the protection found (ADR-0139), kept
 for the folder's review; an entry in `Spam` runs no actions until someone says it is not spam. `firstSeenUtc` is set
-the first time a backoffice user opens the entry, for everyone (ADR-0166, ADR-0208).
+the first time a backoffice user opens the entry, for everyone (ADR-0166, ADR-0208). `contentKey` is the page it was
+sent from and `siteKey` its site: the root of that page, or of the site the request's host named when it named no page;
+mail and links take the page's site while the page lives and `siteKey` once it is gone, and an entry from before step 15,
+or from a host of no site, keeps none and gets the values every site shares (ADR-0232).
 Resume tokens and challenges are stored only as hashes and ids.
 
 - `IX_jfbEntry_key`: unique.

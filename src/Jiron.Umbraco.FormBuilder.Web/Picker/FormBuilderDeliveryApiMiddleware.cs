@@ -129,7 +129,7 @@ internal sealed class FormBuilderDeliveryApiMiddleware : IMiddleware
             var known = (marker.Form, marker.Expand, marker.Page, marker.Theme, marker.Redirect);
             if (!values.TryGetValue(known, out var value))
             {
-                value = await ValueAsync(marker, forms, requests, pages, culture, cancellationToken);
+                value = await ValueAsync(marker, forms, requests, pages, culture, context.Request.Host.Value, cancellationToken);
                 values[known] = value;
             }
 
@@ -143,7 +143,7 @@ internal sealed class FormBuilderDeliveryApiMiddleware : IMiddleware
 
     // What a marker stands for: the form's key, alias and name, the theme and the page after a send the picker's settings
     // give (ADR-0129), and the definition endpoint's form when expanded.
-    private static async Task<byte[]> ValueAsync(FoundMarker marker, PublishedFormCache forms, FormRequests requests, FormPages pages, string culture, CancellationToken cancellationToken)
+    private static async Task<byte[]> ValueAsync(FoundMarker marker, PublishedFormCache forms, FormRequests requests, FormPages pages, string culture, string? host, CancellationToken cancellationToken)
     {
         if (await forms.GetAsync(marker.Form, cancellationToken) is not { } form || !form.Published.Definition.Settings.Developer.Headless)
         {
@@ -169,7 +169,7 @@ internal sealed class FormBuilderDeliveryApiMiddleware : IMiddleware
 
             if (marker.Expand)
             {
-                var definition = await requests.DefinitionAsync(form, culture, await pages.PageAsync(marker.Page), cancellationToken);
+                var definition = await requests.DefinitionAsync(form, culture, await pages.PageAsync(marker.Page, host), cancellationToken);
                 using var document = JsonDocument.Parse(definition.Body);
                 writer.WritePropertyName("form");
                 writer.WriteRawValue(document.RootElement.GetProperty("form").GetRawText(), skipInputValidation: true);

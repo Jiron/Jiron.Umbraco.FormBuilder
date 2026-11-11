@@ -257,6 +257,7 @@ export default {
       `Daten einer Person aus ${count(f.count, 'Eintrag', 'Einträgen')} exportiert`,
     audit_people_found: (f: AuditFacts) =>
       `Nach den Daten einer Person gesucht und ${count(f.count, 'Eintrag', 'Einträge')} gefunden`,
+    audit_settings_removed: 'Die eigenen Einstellungen der gelöschten Website entfernt',
     audit_settings_saved: (f: AuditFacts) =>
       f.changed
         ? `${f.changed} geändert`

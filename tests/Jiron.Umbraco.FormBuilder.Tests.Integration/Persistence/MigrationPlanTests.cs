@@ -45,7 +45,7 @@ public sealed partial class MigrationPlanTests : FormBuilderMigrationTestBase
                 Is.EqualTo(typeof(FormBuilderMigrationPlan)),
                 "the plan states IgnoreCurrentState itself (ADR-0003)");
             Assert.That(walked, Is.EqualTo(Steps), "the plan's transitions are its steps, in order");
-            Assert.That(Steps.Select(s => s.Step), Is.EqualTo(new[] { typeof(CreateSchemaV1), typeof(CreateDefaultSettingsV1), typeof(GrantFormsSectionV1), typeof(RequestReferenceRebuildV1), typeof(AddFileScanIndexV1), typeof(ChangeFileScanIndexV1), typeof(AddEmailTimeIndexV1), typeof(AddEntryEventDueV1), typeof(AddEntryTimeIndexV1), typeof(AddActionRunLastAttemptV1), typeof(AddEntryUnseenIndexV1), typeof(AddFormLibraryUsesV1), typeof(AddThemeAndLayoutUsesV1), typeof(AddEntryFileNameIndexV1) }));
+            Assert.That(Steps.Select(s => s.Step), Is.EqualTo(new[] { typeof(CreateSchemaV1), typeof(CreateDefaultSettingsV1), typeof(GrantFormsSectionV1), typeof(RequestReferenceRebuildV1), typeof(AddFileScanIndexV1), typeof(ChangeFileScanIndexV1), typeof(AddEmailTimeIndexV1), typeof(AddEntryEventDueV1), typeof(AddEntryTimeIndexV1), typeof(AddActionRunLastAttemptV1), typeof(AddEntryUnseenIndexV1), typeof(AddFormLibraryUsesV1), typeof(AddThemeAndLayoutUsesV1), typeof(AddEntryFileNameIndexV1), typeof(AddEntrySiteV1) }));
             Assert.That(plan.FinalState, Is.EqualTo(FinalState));
             Assert.That(new TestPlan().FinalState, Is.EqualTo(plan.FinalState), "the tests' copy follows the plan");
             Assert.That(CreateSchemaV1.Tables.Select(t => t.Name), Is.EqualTo(FormBuilderTables.SchemaV1), "the step creates every table of schema v1 in order");
@@ -66,7 +66,7 @@ public sealed partial class MigrationPlanTests : FormBuilderMigrationTestBase
             Assert.That(schema.Columns.Keys, Is.EquivalentTo(ExpectedSchemaV1.Columns.Keys.Append(FormBuilderTables.FormLibraryUse)), "tables");
             foreach (var (table, columns) in ExpectedSchemaV1.Columns)
             {
-                Assert.That(schema.Columns.GetValueOrDefault(table), Is.EqualTo(table switch { "jfbEntryEvent" => columns + ", dueUtc?", "jfbActionRun" => columns + ", lastAttemptUtc?", _ => columns }), $"columns of {table}");
+                Assert.That(schema.Columns.GetValueOrDefault(table), Is.EqualTo(table switch { "jfbEntry" => columns + ", siteKey?", "jfbEntryEvent" => columns + ", dueUtc?", "jfbActionRun" => columns + ", lastAttemptUtc?", _ => columns }), $"columns of {table}");
                 Assert.That(schema.PrimaryKeys.GetValueOrDefault(table), Is.EqualTo(ExpectedSchemaV1.PrimaryKey(table)), $"primary key of {table}");
             }
 
@@ -220,6 +220,7 @@ public sealed partial class MigrationPlanTests : FormBuilderMigrationTestBase
             Assert.That(Inspect().Indexes, Has.One.Contains(AddEntryUnseenIndexV1.IndexName));
             Assert.That(Inspect().Indexes, Has.One.Contains(AddFormLibraryUsesV1.IndexName));
             Assert.That(Inspect().Columns[FormBuilderTables.ActionRun], Does.EndWith("lastAttemptUtc?"));
+            Assert.That(Inspect().Columns[FormBuilderTables.Entry], Does.EndWith(AddEntrySiteV1.ColumnName + "?"));
         });
     }
 

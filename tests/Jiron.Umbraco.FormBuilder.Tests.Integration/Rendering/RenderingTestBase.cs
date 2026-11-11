@@ -291,8 +291,8 @@ public abstract class RenderingTestBase : PublicApiTestBase
     }
 
     /// <summary>
-    /// A second site beside the first one's root: a root of its own with the pages, reached at the host <c>second.test</c>,
-    /// and the first site's root reached at <c>first.test</c>; the root's key and the pages' keys.
+    /// A second site beside the first one's root: a root of its own with the pages, reached at the host <c>site-b.localhost</c>,
+    /// and the first site's root reached at <c>site-a.localhost</c> (ROADMAP 14.4); the root's key and the pages' keys.
     /// </summary>
     private protected async Task<(Guid Root, IReadOnlyDictionary<string, Guid> Pages)> SecondSiteAsync(params string[] names)
     {
@@ -348,10 +348,10 @@ public abstract class RenderingTestBase : PublicApiTestBase
     }
 
     /// <summary>The host of the first site once there is a second one.</summary>
-    private protected const string FirstHost = "first.test";
+    private protected const string FirstHost = "site-a.localhost";
 
     /// <summary>The host of the second site.</summary>
-    private protected const string SecondHost = "second.test";
+    private protected const string SecondHost = "site-b.localhost";
 
     // A root's culture, and the host it is reached at, if any.
     private async Task DomainsAsync(Guid root, string culture, string? host = null)

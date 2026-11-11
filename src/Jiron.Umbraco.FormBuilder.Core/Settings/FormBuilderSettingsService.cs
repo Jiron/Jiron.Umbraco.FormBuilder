@@ -68,6 +68,16 @@ internal interface IFormBuilderSettingsService
     /// <exception cref="FormBuilderConcurrencyException">Someone saved the site's section meanwhile.</exception>
     Task<SettingsSnapshot<T>> SaveSiteAsync<T>(Guid siteKey, T values, IReadOnlyCollection<string> overrides, int expectedVersion, Guid? userKey, CancellationToken cancellationToken = default)
         where T : class, ISettingsSection, new();
+
+    /// <summary>
+    /// Removes everything a site set of its own, once its root is deleted for good (ADR-0043, ADR-0232): its rows go with an
+    /// audit entry each, and every server forgets them, while the other sites' rows and the global ones stay. The removal
+    /// is a unit of work of its own; the sections removed, none for content that was no site or set nothing.
+    /// </summary>
+    /// <param name="siteKey">The key of the deleted root.</param>
+    /// <param name="userKey">Who deleted it, or null when Umbraco did.</param>
+    /// <param name="cancellationToken">Cancels the removal.</param>
+    Task<IReadOnlyList<string>> RemoveSiteAsync(Guid siteKey, Guid? userKey, CancellationToken cancellationToken = default);
 }
 
 /// <inheritdoc />
@@ -84,6 +94,9 @@ internal sealed partial class FormBuilderSettingsService(
 {
     /// <summary>The audit action of a save.</summary>
     public const string SavedAction = "settings.saved";
+
+    /// <summary>The audit action of a site's section removed with its root (ADR-0232).</summary>
+    public const string RemovedAction = "settings.removed";
 
     /// <summary>The audit entity type of a section; the item is the site's key, none for the global values.</summary>
     public const string EntityType = "settings";
@@ -152,6 +165,32 @@ internal sealed partial class FormBuilderSettingsService(
         }
 
         return SaveAsync<T>(siteKey, _ => values, overrides, expectedVersion, userKey, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<string>> RemoveSiteAsync(Guid siteKey, Guid? userKey, CancellationToken cancellationToken = default)
+    {
+        changes.EnsureOwnUnit("Removing a site's settings is a unit of work of its own: it clears caches once it has committed (ADR-0043).");
+        var scope = SettingsScopes.ForSite(siteKey);
+        var removed = await changes.WriteAsync(
+            () => repository.DeleteScopeAsync(scope, cancellationToken),
+            sections => sections.Select(section => new NewAuditEntry(RemovedAction, EntityType, siteKey, userKey, new AuditDetails().AddIdentifier("section", section))),
+            cancellationToken);
+        if (removed.Count == 0)
+        {
+            return removed;
+        }
+
+        // Committed: this server forgets the site's copies and the lists of the sites that set each section at once, the others
+        // when the cache instruction reaches them.
+        SettingsCacheChange[] gone = [.. removed.Select(section => new SettingsCacheChange(scope, section))];
+        foreach (var change in gone)
+        {
+            FormBuilderSettingsCacheRefresher.Forget(appCaches.RuntimeCache, change);
+        }
+
+        distributedCache.RefreshByPayload(FormBuilderSettingsCacheRefresher.UniqueId, gone);
+        return removed;
     }
 
     // The values to save come from the stored scope, as read here: a whole section saved, or a change of the stored one.

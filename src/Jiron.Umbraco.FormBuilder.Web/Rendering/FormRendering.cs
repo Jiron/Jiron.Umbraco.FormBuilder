@@ -123,7 +123,8 @@ internal sealed partial class FormRendering(
         }
 
         var culture = await CultureAsync(requested);
-        var shown = await requests.ShowAsync(cached, culture, await pages.PageAsync(content), cancellationToken);
+        // A render that names no page, through the render or element endpoint, takes the site its host names (ADR-0232).
+        var shown = await requests.ShowAsync(cached, culture, await pages.PageAsync(content, request.Host.Value), cancellationToken);
         var availability = cached.Published.Definition.Settings.Availability;
         MemberGate? gate = null;
         string? challenge = null;

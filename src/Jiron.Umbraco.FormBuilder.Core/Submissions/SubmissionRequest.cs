@@ -44,6 +44,12 @@ internal sealed record SubmissionRequest
     public Guid? ContentKey { get; init; }
 
     /// <summary>
+    /// The host the request was sent to, with its port if any, which names the site of a request that names no page
+    /// (ADR-0008, ADR-0232). Set by the transport; it never chooses what protects the form (ADR-0147).
+    /// </summary>
+    public string? Host { get; init; }
+
+    /// <summary>
     /// The page a visitor goes to after the send in place of the outcome, which the form's placement names (ADR-0129):
     /// set only from a post's encrypted route token, never from a request's body.
     /// </summary>

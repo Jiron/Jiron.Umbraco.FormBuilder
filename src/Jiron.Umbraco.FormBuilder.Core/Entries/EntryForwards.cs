@@ -185,7 +185,7 @@ internal sealed class EntryForwards(
             return EntryForwardStatus.NotFound;
         }
 
-        var site = (await pages.PageAsync(entry.ContentKey)).Site;
+        var site = (await pages.EntryPageAsync(entry)).Site;
         var body = await BodyAsync(read, entry, sender?.Name ?? sender?.Username ?? string.Empty, message, includeSensitive, site, culture, cancellationToken);
         var words = WordsOf(culture);
         // "Entry #3 of Job application", after the entry's title, and a middle dot, when it has one.
@@ -230,7 +230,7 @@ internal sealed class EntryForwards(
 
     // The forward addresses of the entry's site.
     private async Task<IReadOnlyList<string>> AddressesAsync(StoredEntry entry, CancellationToken cancellationToken) =>
-        (await settings.GetAsync<EmailSettings>((await pages.PageAsync(entry.ContentKey)).Site, cancellationToken)).Value.ForwardAddresses;
+        (await settings.GetAsync<EmailSettings>((await pages.EntryPageAsync(entry)).Site, cancellationToken)).Value.ForwardAddresses;
 
     // The mail's body: who forwarded it and their message, each answer by its label, and the entry's link.
     private async Task<string> BodyAsync(EntryRead read, StoredEntry entry, string sender, string? message, bool includeSensitive, Guid? site, string culture, CancellationToken cancellationToken)

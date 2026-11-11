@@ -959,8 +959,12 @@ Two layers ([ADR-0008](decisions/0008-settings-model.md)):
 
 Effective value = code default, then the global row, then the site row, then the host rules (switch off only, clamp,
 lock), applied where the value is read, so a lock added later never rewrites a row. A form's `inherit` takes the
-effective site value. The site of a request is the root of its content, else the root whose domain matches its host,
-else global.
+effective site value. The site of a request is the root of its content, else the root an Umbraco domain on its host is
+assigned to (`SiteHosts`: domains with a host only, a domain's own port, none for a host of two sites or a root in the
+Recycle Bin), else global; the host never chooses the protection, and never becomes an address. An entry keeps its site
+(`jfbEntry.siteKey`), so its later mail follows that site once its page is gone. A root deleted for good takes its rows
+with it, audited as `settings.removed`, while a root in the Recycle Bin keeps them
+([ADR-0232](decisions/0232-the-site-of-a-request.md)).
 
 A save is a unit of work of its own, so its effects follow its commit: it refuses a value the host rules change
 (`409 setting_locked`) or clamp (`range`), validates (`422`), writes with the version the editor read

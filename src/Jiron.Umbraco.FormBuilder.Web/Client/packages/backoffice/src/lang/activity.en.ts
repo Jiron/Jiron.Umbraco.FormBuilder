@@ -242,6 +242,7 @@ export default {
     audit_people_erased: (f: AuditFacts) => `Erased a person's data from ${count(f.count, 'entry', 'entries')}`,
     audit_people_exported: (f: AuditFacts) => `Exported a person's data from ${count(f.count, 'entry', 'entries')}`,
     audit_people_found: (f: AuditFacts) => `Looked for a person's data and found ${count(f.count, 'entry', 'entries')}`,
+    audit_settings_removed: "Removed the deleted site's own settings",
     audit_settings_saved: (f: AuditFacts) =>
       f.changed
         ? `Changed ${f.changed}`

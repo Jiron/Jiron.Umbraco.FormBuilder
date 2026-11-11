@@ -3,6 +3,7 @@
 - Status: accepted; amended in 4.8c, 4.8g and 4.8i (the shared load); a stored time zone this server cannot resolve
   amended in 6.1a ([ADR-0084](0084-the-public-apis-frame-and-the-form-endpoint.md)); `general`'s required-marker style
   and button labels added in 6.2c ([ADR-0095](0095-visitor-texts-members-only-forms-and-the-pending-note.md))
+- Completed by: [ADR-0232](0232-the-site-of-a-request.md), which builds what this left to step 14.4 (a deleted root's rows)
 - Date: 2026-10-24
 - Roadmap step: 4.4b (decided and built); every step that adds a section or a field (4.5, 6.x, 7.x, 8.x, 13.x),
   6.1 (the first reader of the time zone), 12.4a (the screens and endpoints), 14.4 (the site of a request)

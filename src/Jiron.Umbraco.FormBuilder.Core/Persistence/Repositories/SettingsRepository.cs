@@ -60,6 +60,12 @@ internal interface ISettingsRepository
     /// rows always stay.
     /// </summary>
     Task<bool> DeleteAsync(string scope, string section, int expectedVersion, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Removes every section a site stores, once its root is deleted for good (ADR-0043, ADR-0232), whatever their
+    /// versions; the sections removed, by name, none when the scope stored none. The global rows always stay.
+    /// </summary>
+    Task<IReadOnlyList<string>> DeleteScopeAsync(string scope, CancellationToken cancellationToken = default);
 }
 
 /// <inheritdoc />
@@ -185,6 +191,31 @@ internal sealed class SettingsRepository(FormBuilderDatabase database) : ISettin
                 return await FindAsync(db, scope, section) is null
                     ? false
                     : throw new FormBuilderConcurrencyException($"The settings section '{section}' was saved by someone else meanwhile.");
+            },
+            cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public Task<IReadOnlyList<string>> DeleteScopeAsync(string scope, CancellationToken cancellationToken = default)
+    {
+        CheckScope(scope);
+        if (scope == SettingsScopes.Global)
+        {
+            throw new ArgumentException("The global settings rows always stay.", nameof(scope));
+        }
+
+        return database.WriteAsync<IReadOnlyList<string>>(
+            async db =>
+            {
+                var n = new SqlNames(db);
+                var table = n.T(FormBuilderTables.Setting);
+                var sections = await db.FetchListAsync<string>($"SELECT {n.C("section")} FROM {table} WHERE {n.C("scope")} = @0 ORDER BY {n.C("section")}", scope);
+                if (sections.Count > 0)
+                {
+                    await db.ExecAsync($"DELETE FROM {table} WHERE {n.C("scope")} = @0", scope);
+                }
+
+                return sections;
             },
             cancellationToken);
     }

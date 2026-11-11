@@ -477,7 +477,7 @@ internal sealed class FormSubmissions(
         }
 
         var culture = await pages.CultureAsync(request.Culture);
-        var page = await pages.PageAsync(request.ContentKey);
+        var page = await pages.PageAsync(request.ContentKey, request.Host);
         var scope = new MergeTagScope
         {
             Form = definition,

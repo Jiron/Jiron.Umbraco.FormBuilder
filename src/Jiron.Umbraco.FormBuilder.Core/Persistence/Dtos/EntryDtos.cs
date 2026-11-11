@@ -51,6 +51,10 @@ internal sealed class EntryDto
     [Column("memberKey")]
     public Guid? MemberKey { get; set; }
 
+    // Added by step 15 (ADR-0232).
+    [Column("siteKey")]
+    public Guid? SiteKey { get; set; }
+
     [Column("ipAddress")]
     public string? IpAddress { get; set; }
 

@@ -61,7 +61,7 @@ internal sealed partial class DeliveryNotices(
         {
             if (await entries.GetByIdAsync(id, CancellationToken.None) is { } entry && await forms.GetByIdAsync(entry.FormId, CancellationToken.None) is { } form)
             {
-                await TellAsync(form.Alias, form.Name, (await pages.PageAsync(entry.ContentKey)).Site, entry.Culture, StoredNames.Of(mail.Kind), mail.LastError?.Message ?? mail.LastError?.Code);
+                await TellAsync(form.Alias, form.Name, (await pages.EntryPageAsync(entry)).Site, entry.Culture, StoredNames.Of(mail.Kind), mail.LastError?.Message ?? mail.LastError?.Code);
             }
         }
         catch (Exception exception) when (exception is not OutOfMemoryException)

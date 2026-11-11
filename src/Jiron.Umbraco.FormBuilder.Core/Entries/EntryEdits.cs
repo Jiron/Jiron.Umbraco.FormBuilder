@@ -179,7 +179,7 @@ internal sealed class EntryEdits(
             }
         }
 
-        var zone = await timeZones.GetAsync((await pages.PageAsync(entry.ContentKey)).Site, cancellationToken);
+        var zone = await timeZones.GetAsync((await pages.EntryPageAsync(entry)).Site, cancellationToken);
         var today = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(time.GetUtcNow(), zone).DateTime);
         var others = current.ToImmutableDictionary(pair => pair.Key, pair => pair.Value.ToImmutableArray());
         var readValues = new List<(FormField Field, ImmutableArray<FieldValue> Values)>();

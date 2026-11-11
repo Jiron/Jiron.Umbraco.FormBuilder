@@ -53,6 +53,9 @@ internal sealed class FormBuilderMigrationPlan : PackageMigrationPlan
     /// <summary>The state after the index of the files' names in the file store, which retention's sweep reads (ADR-0222).</summary>
     public const string StateEntryFileNameIndex = "jfb-014-entry-file-name-index";
 
+    /// <summary>The state after an entry keeps the site it was sent from (ADR-0232).</summary>
+    public const string StateEntrySite = "jfb-015-entry-site";
+
     /// <summary>The steps in order, with the state each one leaves. The tests build their copies of the plan from it.</summary>
     internal static readonly IReadOnlyList<(string State, Type Step)> Steps =
     [
@@ -70,6 +73,7 @@ internal sealed class FormBuilderMigrationPlan : PackageMigrationPlan
         (StateFormLibraryUses, typeof(AddFormLibraryUsesV1)),
         (StateThemeAndLayoutUses, typeof(AddThemeAndLayoutUsesV1)),
         (StateEntryFileNameIndex, typeof(AddEntryFileNameIndexV1)),
+        (StateEntrySite, typeof(AddEntrySiteV1)),
     ];
 
     /// <summary>Creates the plan with Jiron Form Builder's package id, name and plan name.</summary>

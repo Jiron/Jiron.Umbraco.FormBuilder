@@ -60,6 +60,7 @@ internal static class FormBuilderFormServices
         builder.Services.TryAddSingleton<PreviewForms>();
         builder.Services.TryAddSingleton<EditorHtml>();
         builder.Services.TryAddSingleton<VisitorForms>();
+        builder.Services.TryAddSingleton<SiteHosts>();
         builder.Services.TryAddSingleton<FormPages>();
         builder.Services.TryAddSingleton<FormMirror>();
         builder.AddNotificationAsyncHandler<FormPublishedNotification, FormMirrorPublishedHandler>();

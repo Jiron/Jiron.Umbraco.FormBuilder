@@ -71,6 +71,10 @@ internal sealed class HookedSettingsRepository(SettingsRepository inner) : ISett
     /// <inheritdoc />
     public Task<bool> DeleteAsync(string scope, string section, int expectedVersion, CancellationToken cancellationToken = default) =>
         inner.DeleteAsync(scope, section, expectedVersion, cancellationToken);
+
+    /// <inheritdoc />
+    public Task<IReadOnlyList<string>> DeleteScopeAsync(string scope, CancellationToken cancellationToken = default) =>
+        inner.DeleteScopeAsync(scope, cancellationToken);
 }
 
 /// <summary>

@@ -3,6 +3,7 @@ using Jiron.Umbraco.FormBuilder.Core.Files;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Umbraco.Cms.Core.DependencyInjection;
+using Umbraco.Cms.Core.Notifications;
 
 namespace Jiron.Umbraco.FormBuilder.Core.Settings;
 
@@ -10,7 +11,7 @@ namespace Jiron.Umbraco.FormBuilder.Core.Settings;
 internal static class FormBuilderSettingsServices
 {
     /// <summary>
-    /// Registers the reader and the save, the cache refresher, and each section's validator. A section's migrations
+    /// Registers the reader and the save, the cache refresher, the removal of a deleted root's rows, and each section's validator. A section's migrations
     /// (<see cref="ISettingsSectionMigration"/>) and host rules (<see cref="ISettingsHostRule{T}"/>) are registered with
     /// it.
     /// </summary>
@@ -20,6 +21,7 @@ internal static class FormBuilderSettingsServices
         builder.Services.TryAddSingleton<IFormBuilderSettingsService, FormBuilderSettingsService>();
         builder.Services.TryAddSingleton<SiteTimeZones>();
         builder.CacheRefreshers().Add<FormBuilderSettingsCacheRefresher>();
+        builder.AddNotificationAsyncHandler<ContentDeletedNotification, SiteSettingsRemoval>();
 
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<ISettingsValidator<GeneralSettings>, GeneralSettingsValidator>());
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<ISettingsValidator<EmailSettings>, EmailSettingsValidator>());

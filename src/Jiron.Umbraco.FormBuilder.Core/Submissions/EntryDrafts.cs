@@ -170,6 +170,7 @@ internal sealed class EntryDrafts(
                 SubmissionHash = HashOf(token),
                 Culture = draft.Culture,
                 ContentKey = draft.Page.Content,
+                SiteKey = draft.Page.Site,
                 PageUrl = path,
                 ResumeTokenHash = HashOf(token),
                 ResumeExpiresUtc = time.GetUtcNow() + TimeSpan.FromDays(days),

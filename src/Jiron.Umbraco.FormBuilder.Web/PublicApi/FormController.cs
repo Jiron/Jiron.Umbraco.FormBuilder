@@ -60,7 +60,7 @@ internal sealed class FormController(
     /// </summary>
     /// <param name="keyOrAlias">The form's key, or its alias in any letter case.</param>
     /// <param name="culture">The culture: one of the site's languages, otherwise the default language.</param>
-    /// <param name="contentKey">The page the form is shown on, whose site's settings apply.</param>
+    /// <param name="contentKey">The page the form is shown on, whose site's settings apply; without one, the site the request's host names (ADR-0232).</param>
     /// <param name="cancellationToken">The request's cancellation, with its time limit.</param>
     [HttpGet("{keyOrAlias}")]
     [FormBuilderRateLimit(FormBuilderRateLimitPolicies.Read)]
@@ -103,7 +103,7 @@ internal sealed class FormController(
             return FormBuilderPublicProblems.MemberRequired();
         }
 
-        return Answered(await requests.DefinitionAsync(form, await pages.CultureAsync(culture), await pages.PageAsync(content), cancellationToken));
+        return Answered(await requests.DefinitionAsync(form, await pages.CultureAsync(culture), await pages.PageAsync(content, Request.Host.Value), cancellationToken));
     }
 
     /// <summary>
@@ -182,7 +182,7 @@ internal sealed class FormController(
             return FormBuilderPublicProblems.InvalidRequest("parent");
         }
 
-        return Answered(await requests.OptionsAsync(form, field, asked => answers.TryGetValue(asked, out var given) ? given : [], await pages.CultureAsync(culture), await pages.PageAsync(content), cancellationToken));
+        return Answered(await requests.OptionsAsync(form, field, asked => answers.TryGetValue(asked, out var given) ? given : [], await pages.CultureAsync(culture), await pages.PageAsync(content, Request.Host.Value), cancellationToken));
     }
 
     /// <summary>
@@ -199,7 +199,7 @@ internal sealed class FormController(
     /// local path with no query or fragment.
     /// </param>
     /// <param name="culture">The page's culture: one of the site's languages, otherwise the default language.</param>
-    /// <param name="contentKey">The page's content, whose site's settings apply.</param>
+    /// <param name="contentKey">The page's content, whose site's settings apply; without one, the site the request's host names (ADR-0232).</param>
     /// <param name="theme">The theme the page's placement names (ADR-0105), or none for the form's own; one the site lacks renders as <c>default</c>.</param>
     /// <param name="placement">The page's token of its placement's page after a send (ADR-0129), which the form renders with again.</param>
     /// <param name="cancellationToken">The request's cancellation, with its time limit.</param>
@@ -291,7 +291,7 @@ internal sealed class FormController(
     /// <param name="key">The form's key.</param>
     /// <param name="instance">The instance id the element gave the form, such as <c>jfb-1</c>.</param>
     /// <param name="culture">The page's culture: one of the site's languages, otherwise the default language.</param>
-    /// <param name="contentKey">The page's content, whose site's settings apply.</param>
+    /// <param name="contentKey">The page's content, whose site's settings apply; without one, the site the request's host names (ADR-0232).</param>
     /// <param name="theme">The theme the placement names (ADR-0105), or none for the form's own; one the site lacks renders as <c>default</c>.</param>
     /// <param name="cancellationToken">The request's cancellation, with its time limit.</param>
     [HttpGet("{key}/element")]

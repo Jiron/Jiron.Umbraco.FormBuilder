@@ -181,6 +181,7 @@ internal sealed class SubmissionEntries(
             SubmissionHash = submission.Digest,
             Culture = submission.Culture,
             ContentKey = submission.Page.Content,
+            SiteKey = submission.Page.Site,
             PageUrl = await PathAsync(submission.Page, submission.Culture, cancellationToken),
 
             // The member signed in when it was sent (ADR-0009), by whom the privacy tools find it (ADR-0223); a test
@@ -419,7 +420,7 @@ internal sealed class SubmissionEntries(
         }
 
         var definition = locks.Apply(documents.Readable(version));
-        var page = await pages.PageAsync(entry.ContentKey);
+        var page = await pages.EntryPageAsync(entry);
         var timeline = await events.ListForEntryAsync(entry.Id, cancellationToken);
         var answers = await store.ReadAsync(entry.Id, cancellationToken);
         return new EntryRead(ScopeOf(entry, definition, form.Name, form.Alias, page, timeline, answers), answers, timeline);
@@ -447,8 +448,7 @@ internal sealed class SubmissionEntries(
         var answers = await store.ReadManyAsync(form.Id, ids, cancellationToken);
         var submitted = (await events.ListOfKindAsync(ids, SubmittedEvent, cancellationToken)).ToLookup(entryEvent => entryEvent.EntryId);
         var definitions = new Dictionary<int, FormDefinition?>();
-        var places = new Dictionary<Guid, RequestPage>();
-        RequestPage? nowhere = null;
+        var places = new Dictionary<(Guid? Content, Guid? Site), RequestPage>();
         foreach (var entry in page)
         {
             if (!definitions.TryGetValue(entry.FormVersionId, out var definition))
@@ -463,17 +463,11 @@ internal sealed class SubmissionEntries(
                 continue;
             }
 
-            RequestPage place;
-            if (entry.ContentKey is { } content)
+            // Each page and each site an entry was sent from is read once.
+            var at = (entry.ContentKey, entry.SiteKey);
+            if (!places.TryGetValue(at, out var place))
             {
-                if (!places.TryGetValue(content, out place!))
-                {
-                    place = places[content] = await pages.PageAsync(content);
-                }
-            }
-            else
-            {
-                place = nowhere ??= await pages.PageAsync(null);
+                place = places[at] = await pages.EntryPageAsync(entry);
             }
 
             scopes[entry.Id] = ScopeOf(entry, definition, form.Name, form.Alias, place, [.. submitted[entry.Id]], answers.GetValueOrDefault(entry.Id));
@@ -497,7 +491,7 @@ internal sealed class SubmissionEntries(
     // fields the rules hid for it, and its timeline.
     private async Task<(MergeTagScope Scope, IReadOnlyList<StoredEntryEvent> Timeline)> ReadAsync(StoredEntry entry, FormDefinition definition, string formName, string formAlias, CancellationToken cancellationToken)
     {
-        var page = await pages.PageAsync(entry.ContentKey);
+        var page = await pages.EntryPageAsync(entry);
         var timeline = await events.ListForEntryAsync(entry.Id, cancellationToken);
         var answers = await store.ReadAsync(entry.Id, cancellationToken);
         return (ScopeOf(entry, definition, formName, formAlias, page, timeline, answers), timeline);

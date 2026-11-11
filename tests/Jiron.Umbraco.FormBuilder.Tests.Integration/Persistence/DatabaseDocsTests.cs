@@ -103,7 +103,12 @@ public sealed partial class DatabaseDocsTests
                 text.Append('\n');
             }
 
-            // The columns later steps add (ADR-0162, ADR-0195).
+            // The columns later steps add (ADR-0162, ADR-0195, ADR-0232).
+            if (table.Name == FormBuilderTables.Entry)
+            {
+                text.Append("        guid siteKey \"null\"\n");
+            }
+
             if (table.Name == FormBuilderTables.EntryEvent)
             {
                 text.Append("        datetime dueUtc \"null\"\n");

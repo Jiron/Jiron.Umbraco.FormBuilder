@@ -69,8 +69,8 @@ internal sealed partial class EntryRepository(FormBuilderDatabase database) : IE
                     inserted = await db.ExecAsync(
                         $"""
                         INSERT INTO {table} ({n.C("key")}, {n.C("formId")}, {n.C("formVersionId")}, {n.C("number")}, {n.C("state")}, {n.C("isTest")}, {n.C("submissionId")}, {n.C("submissionHash")}, {n.C("culture")}, {n.C("contentKey")}, {n.C("pageUrl")}, {n.C("memberKey")}, {n.C("ipAddress")}, {n.C("spamScore")}, {n.C("spamReasons")},
-                        {n.C("searchText")}, {n.C("context")}, {n.C("durationSeconds")}, {n.C("submittedUtc")}, {n.C("updatedUtc")}, {n.C("stateChangedUtc")}, {n.C("stateChangedByUserKey")}, {n.C("firstSeenUtc")}, {n.C("verifiedUtc")}, {n.C("resumeTokenHash")}, {n.C("resumeExpiresUtc")}, {n.C("currentPageKey")}, {n.C("challengeId")}, {n.C("holdUntilUtc")}, {n.C("holdReason")}, {n.C("purgeAfterUtc")})
-                        SELECT @0, @1, @2, (SELECT f.{n.C("lastEntryNumber")} FROM {forms} f WHERE f.{n.C("id")} = @1), @3, @4, @5, @6, @7, @8, @9, @10, @11, @12, @13, @14, @15, @16, @17, @17, @17, NULL, @18, @19, @20, @21, @22, @23, NULL, NULL, @24
+                        {n.C("searchText")}, {n.C("context")}, {n.C("durationSeconds")}, {n.C("submittedUtc")}, {n.C("updatedUtc")}, {n.C("stateChangedUtc")}, {n.C("stateChangedByUserKey")}, {n.C("firstSeenUtc")}, {n.C("verifiedUtc")}, {n.C("resumeTokenHash")}, {n.C("resumeExpiresUtc")}, {n.C("currentPageKey")}, {n.C("challengeId")}, {n.C("holdUntilUtc")}, {n.C("holdReason")}, {n.C("purgeAfterUtc")}, {n.C("siteKey")})
+                        SELECT @0, @1, @2, (SELECT f.{n.C("lastEntryNumber")} FROM {forms} f WHERE f.{n.C("id")} = @1), @3, @4, @5, @6, @7, @8, @9, @10, @11, @12, @13, @14, @15, @16, @17, @17, @17, NULL, @18, @19, @20, @21, @22, @23, NULL, NULL, @24, @25
                         WHERE EXISTS (SELECT 1 FROM {n.T(FormBuilderTables.FormVersion)} v{n.LockingRead} WHERE v.{n.C("id")} = @2 AND v.{n.C("formId")} = @1)
                         AND {free} {n.C("formId")} = @1 AND {n.C("submissionId")} = @5)
                         AND {free} {n.C("key")} = @0){challenge}{resume}
@@ -99,7 +99,8 @@ internal sealed partial class EntryRepository(FormBuilderDatabase database) : IE
                         FormBuilderDbTime.Write(entry.ResumeExpiresUtc),
                         entry.CurrentPageKey,
                         entry.ChallengeId,
-                        FormBuilderDbTime.Write(entry.PurgeAfterUtc));
+                        FormBuilderDbTime.Write(entry.PurgeAfterUtc),
+                        entry.SiteKey);
                 }
                 catch (Exception exception) when (FormBuilderDatabaseErrors.IsUniqueViolation(exception))
                 {
@@ -307,6 +308,7 @@ internal sealed partial class EntryRepository(FormBuilderDatabase database) : IE
         ContentKey = d.ContentKey,
         PageUrl = d.PageUrl,
         MemberKey = d.MemberKey,
+        SiteKey = d.SiteKey,
         IpAddress = d.IpAddress,
         SpamScore = d.SpamScore,
         SpamReasons = d.SpamReasons,

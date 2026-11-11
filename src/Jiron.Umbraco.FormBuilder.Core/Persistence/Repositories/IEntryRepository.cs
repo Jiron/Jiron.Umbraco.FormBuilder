@@ -119,6 +119,9 @@ internal sealed record NewEntry
     /// <summary>The signed-in member.</summary>
     public Guid? MemberKey { get; init; }
 
+    /// <summary>The site it was sent from: the root of its page, or of the site its request's host named (ADR-0232).</summary>
+    public Guid? SiteKey { get; init; }
+
     /// <summary>The address, only when the form keeps it (ADR-0009).</summary>
     public string? IpAddress { get; init; }
 
@@ -320,6 +323,9 @@ internal sealed record StoredEntry
 
     /// <summary>The member.</summary>
     public required Guid? MemberKey { get; init; }
+
+    /// <summary>The site it was sent from, or null for an entry sent before step 15 or outside every site (ADR-0232).</summary>
+    public Guid? SiteKey { get; init; }
 
     /// <summary>The address, when kept.</summary>
     public required string? IpAddress { get; init; }

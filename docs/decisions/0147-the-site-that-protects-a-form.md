@@ -2,6 +2,7 @@
 
 - Status: accepted; amends [ADR-0139](0139-the-signals-and-the-score.md), [ADR-0140](0140-content-rules-and-the-spam-folder.md),
   [ADR-0141](0141-proof-of-work-on-the-server.md) and [ADR-0142](0142-the-captcha-providers.md)
+- Kept by: [ADR-0232](0232-the-site-of-a-request.md), whose site a host names never chooses the protection (step 14.4)
 - Date: 2026-11-01
 - Roadmap step: 7.4a
 

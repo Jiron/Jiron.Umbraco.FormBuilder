@@ -245,6 +245,7 @@ internal sealed class FormPostHandler(
             Revision = revision,
             Culture = culture,
             ContentKey = content,
+            Host = http.Request.Host.Value,
             Redirect = Placement(http),
             Fields = fields,
             Rows = rows,

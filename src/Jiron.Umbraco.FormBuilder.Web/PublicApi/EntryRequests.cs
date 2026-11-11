@@ -57,7 +57,7 @@ internal sealed class EntryRequests(FormSubmissions submissions, UploadTokens to
         var invalid = new List<string>();
         var preview = PreviewRequest.Of(http);
         return EntryBodies.Read(body.Bytes, formKey, invalid, placements) is { } submission
-            ? Answer(await submissions.SubmitAsync(submission with { Preview = preview?.Version, PreviewRunsActions = preview?.RunsActions ?? false, Tokens = tokens, Challenges = challenges, Address = http.Connection.RemoteIpAddress, Member = preview is null ? await MemberAsync(http) : null, Members = MembersOf(http), ServerKey = ServerKeyRequest.NameOf(http) }, cancellationToken), formKey, EntryBodies.InstanceOf(body.Bytes))
+            ? Answer(await submissions.SubmitAsync(submission with { Preview = preview?.Version, PreviewRunsActions = preview?.RunsActions ?? false, Tokens = tokens, Challenges = challenges, Address = http.Connection.RemoteIpAddress, Member = preview is null ? await MemberAsync(http) : null, Members = MembersOf(http), ServerKey = ServerKeyRequest.NameOf(http), Host = http.Request.Host.Value }, cancellationToken), formKey, EntryBodies.InstanceOf(body.Bytes))
             : FormBuilderPublicProblems.InvalidRequest([.. invalid]);
     }
 
@@ -77,7 +77,7 @@ internal sealed class EntryRequests(FormSubmissions submissions, UploadTokens to
         var invalid = new List<string>();
         var preview = PreviewRequest.Of(http);
         return EntryBodies.ReadPage(body.Bytes, formKey, invalid) is ({ } submission, var page)
-            ? Answer(await submissions.ValidateAsync(submission with { Preview = preview?.Version, Tokens = tokens, Challenges = challenges, Address = http.Connection.RemoteIpAddress, Member = preview is null ? await MemberAsync(http) : null, Members = MembersOf(http), ServerKey = ServerKeyRequest.NameOf(http) }, page, cancellationToken))
+            ? Answer(await submissions.ValidateAsync(submission with { Preview = preview?.Version, Tokens = tokens, Challenges = challenges, Address = http.Connection.RemoteIpAddress, Member = preview is null ? await MemberAsync(http) : null, Members = MembersOf(http), ServerKey = ServerKeyRequest.NameOf(http), Host = http.Request.Host.Value }, page, cancellationToken))
             : FormBuilderPublicProblems.InvalidRequest([.. invalid]);
     }
 
@@ -99,7 +99,7 @@ internal sealed class EntryRequests(FormSubmissions submissions, UploadTokens to
             return FormBuilderPublicProblems.InvalidRequest([.. invalid]);
         }
 
-        var result = await submissions.SaveDraftAsync(submission with { Tokens = tokens, Challenges = challenges, Address = http.Connection.RemoteIpAddress, Member = await MemberAsync(http), Members = MembersOf(http), ServerKey = ServerKeyRequest.NameOf(http) }, page, cancellationToken);
+        var result = await submissions.SaveDraftAsync(submission with { Tokens = tokens, Challenges = challenges, Address = http.Connection.RemoteIpAddress, Member = await MemberAsync(http), Members = MembersOf(http), ServerKey = ServerKeyRequest.NameOf(http), Host = http.Request.Host.Value }, page, cancellationToken);
         return result.DraftExpires is { } expires
             ? new FileContentResult(JsonSerializer.SerializeToUtf8Bytes(new DraftResponseModel { ExpiresUtc = expires.UtcDateTime }, Json), "application/json; charset=utf-8")
             : Answer(result);
@@ -379,7 +379,7 @@ internal sealed record EntryRequestModel
     /// <summary>The culture the page is in: one of the site's languages, otherwise the default language.</summary>
     public string? Culture { get; init; }
 
-    /// <summary>The page the form is on, whose site's settings apply.</summary>
+    /// <summary>The page the form is on, whose site's settings apply; without one, the site the request's host names (ADR-0232).</summary>
     public Guid? ContentKey { get; init; }
 
     /// <summary>
@@ -428,7 +428,7 @@ internal sealed record PageRequestModel
     /// <summary>The culture the page is in: one of the site's languages, otherwise the default language.</summary>
     public string? Culture { get; init; }
 
-    /// <summary>The page the form is on, whose site's settings apply.</summary>
+    /// <summary>The page the form is on, whose site's settings apply; without one, the site the request's host names (ADR-0232).</summary>
     public Guid? ContentKey { get; init; }
 
     /// <summary>

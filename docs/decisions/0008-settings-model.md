@@ -6,6 +6,7 @@
   ([ADR-0060](0060-designer-locks-of-field-settings.md)); the base URL's form and its default from the domains amended
   in 5.3e ([ADR-0067](0067-the-umbraco-sources-and-the-base-url.md)); the allowlist test built in 6.1a
   ([ADR-0084](0084-the-public-apis-frame-and-the-form-endpoint.md))
+- Completed by: [ADR-0232](0232-the-site-of-a-request.md), which builds what this left to step 14.4 (the site a host names, an entry's site)
 - Date: 2026-10-23
 - Roadmap step: 1.7a (decided); built in 4.4 (the framework), each section in the step that builds its service, the
   screens in Phase 9 and later
