@@ -41,6 +41,11 @@ The demo also references the extension samples ([samples/](../samples/Jiron.Umbr
 [ADR-0234](../docs/decisions/0234-the-samples.md)), each off unless `Demo:Samples` names it (`Demo__Samples__0=colour`
 and so on), which `scripts/demo.ps1` never does: the demo shows Jiron Form Builder as a site gets it.
 
+The demo installs the AI add-on as a site does ([docs/ai.md](../docs/ai.md), [ADR-0018](../docs/decisions/0018-the-ai-add-on.md)).
+It has no AI provider, so Draft, Translate and Suggest say that the AI is not set up yet. The fake provider of
+Testing.AI is left out unless `JironFormBuilderTesting:FakeAI` offers it; the browser tests' host sets it to `Chosen`.
+No demo run ever uses a real key.
+
 ## Accounts and mail
 
 The first `start` generates these into `.local/credentials.json` under `demo` (git-ignored, never printed):

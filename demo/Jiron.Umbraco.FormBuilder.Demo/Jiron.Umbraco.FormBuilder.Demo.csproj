@@ -20,11 +20,23 @@
 
   <ItemGroup>
     <PackageReference Include="Umbraco.Cms" />
+    <!-- The latest Umbraco.AI the AI add-on was tested with (ADR-0018); the add-on itself accepts any 17.x from 17.5.2. -->
+    <PackageReference Include="Umbraco.AI" VersionOverride="17.7.0" />
   </ItemGroup>
 
   <ItemGroup>
     <!-- The meta package, as sites install it. -->
     <ProjectReference Include="..\..\src\Jiron.Umbraco.FormBuilder\Jiron.Umbraco.FormBuilder.csproj" />
+    <!--
+      The optional AI add-on, as a site installs it beside the meta package (ADR-0018). Without a provider and a chat
+      profile, its features say how to set it up; the browser tests give it the fake provider (Testing.AI).
+    -->
+    <ProjectReference Include="..\..\src\Jiron.Umbraco.FormBuilder.AI\Jiron.Umbraco.FormBuilder.AI.csproj" />
+    <!--
+      The add-on's fake provider, left out unless JironFormBuilderTesting:FakeAI offers it, which scripts/demo.ps1
+      never does. No demo run ever uses a real key (D22).
+    -->
+    <ProjectReference Include="..\..\tests\Jiron.Umbraco.FormBuilder.Testing.AI\Jiron.Umbraco.FormBuilder.Testing.AI.csproj" />
     <!--
       The test-only services (ADR-0029), so the browser tests run this build as their host (tests/e2e). Everything in
       it is off unless the host's JironFormBuilderTesting section turns it on, which scripts/demo.ps1 never does.

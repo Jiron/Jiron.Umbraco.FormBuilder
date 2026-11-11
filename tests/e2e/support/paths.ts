@@ -25,6 +25,9 @@ export const clientDir = join(repoRoot, 'src', 'Jiron.Umbraco.FormBuilder.Web', 
 /** The Testing project, whose log lines the host's start-up waits for. */
 export const testingProject = join(repoRoot, 'tests', 'Jiron.Umbraco.FormBuilder.Testing');
 
+/** The AI add-on's test-only project, whose fake provider the host offers (ADR-0018). */
+export const testingAIProject = join(repoRoot, 'tests', 'Jiron.Umbraco.FormBuilder.Testing.AI');
+
 /** The target framework of every project, from Directory.Build.props. */
 export const TARGET_FRAMEWORK: string = (() => {
   const props = readFileSync(join(repoRoot, 'Directory.Build.props'), 'utf8');

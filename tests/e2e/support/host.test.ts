@@ -12,6 +12,7 @@ import {
   REFUSAL_PORTS,
   STUB_PORT,
   TARGET_FRAMEWORK,
+  testingAIProject,
   testingProject,
 } from './paths.ts';
 import {
@@ -129,6 +130,7 @@ test('the host environment turns on what the browser tests need, and the Deliver
 
   for (const name of ['Endpoints', 'Clock', 'StartupMarker'])
     assert.equal(off[`JironFormBuilderTesting__${name}`], 'true', name);
+  assert.equal(off.JironFormBuilderTesting__FakeAI, 'Chosen');
   assert.equal(off.JironFormBuilderTesting__StubPort, String(STUB_PORT));
   assert.equal(off.Umbraco__CMS__DeliveryApi__Enabled, 'false');
   assert.equal(on.Umbraco__CMS__DeliveryApi__Enabled, 'true');
@@ -149,6 +151,7 @@ test('every log line the harness waits for is one the C# code writes', () => {
   const seeders = [
     source(testingProject, 'People', 'TestPeopleSeeder.cs'),
     source(demoProject, 'Seeding', 'DemoSeeder.cs'),
+    source(testingAIProject, 'FakeAI', 'FakeAISetup.cs'),
   ].join('\n');
   for (const line of [...READY_LINES, ...FAILED_LINES]) assert.ok(seeders.includes(`Message = "${line}`), line);
 });

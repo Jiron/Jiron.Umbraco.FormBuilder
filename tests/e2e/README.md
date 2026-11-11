@@ -26,6 +26,9 @@ folder `mail/` and the log `host.log`. The teardown stops it with its whole proc
 - **The static page** on `http://127.0.0.1:5521` (`support/static-site.ts`, ADR-0031): a site of its own whose page
   loads `<jfb-form>` from the host; the host's public API allows its origin, and `http://localhost:5521` is the same
   page on an origin the API does not allow. The headless spec starts it in its own process.
+- **The AI add-on** (ADR-0018): the host offers Testing.AI's fake provider and chooses its chat profile in Settings ›
+  AI at start-up (`JironFormBuilderTesting__FakeAI=Chosen`), and waits for its ready line, so the designer's Draft,
+  Translate and Suggest answer without a real key (`specs/backoffice/ai.spec.ts`).
 - **The samples** (ADR-0234): the host turns on the colour field type and the embed view, which the backoffice
   and website specs show; the protection host (`specs/website/protection-on-the-page.spec.ts`) also the arithmetic
   captcha, which would otherwise offer the captcha placement on every host.

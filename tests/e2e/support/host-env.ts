@@ -30,6 +30,8 @@ export function hostEnvironment(secrets: E2ESecrets, options: { deliveryApi: boo
     JironFormBuilderTesting__Clock: 'true',
     JironFormBuilderTesting__StubPort: String(STUB_PORT),
     JironFormBuilderTesting__StartupMarker: 'true',
+    // The AI add-on's fake provider, its connection and chat profile chosen in Settings > AI (ROADMAP 15.3, ADR-0018).
+    JironFormBuilderTesting__FakeAI: 'Chosen',
     // The extension samples the backoffice specs show (ROADMAP 15.1, ADR-0234): a site's own setting editor, field
     // preview and workspace view.
     Demo__Samples__0: 'colour',

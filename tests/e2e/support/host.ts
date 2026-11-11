@@ -7,11 +7,22 @@ import { setTimeout as delay } from 'node:timers/promises';
 import { stopThenRecordStall } from './host-health.ts';
 import { clientDir, DEMO_URL, demoProject, e2eState, PORT_RANGE, repoRoot, TARGET_FRAMEWORK } from './paths.ts';
 
-/** Log lines that mean the host is ready: the demo's seeder and the Testing project's people seeder are done. */
-export const READY_LINES = ['Demo seeding finished', 'Jiron Form Builder test people ready'] as const;
+/**
+ * Log lines that mean the host is ready: the demo's seeder and the Testing project's people seeder are done, and the AI
+ * add-on's fake profile is chosen (Testing.AI, ADR-0018).
+ */
+export const READY_LINES = [
+  'Demo seeding finished',
+  'Jiron Form Builder test people ready',
+  'Jiron Form Builder fake AI ready',
+] as const;
 
 /** Log lines that mean the host cannot become ready. */
-export const FAILED_LINES = ['Demo seeding failed', 'Jiron Form Builder test people failed'] as const;
+export const FAILED_LINES = [
+  'Demo seeding failed',
+  'Jiron Form Builder test people failed',
+  'Jiron Form Builder fake AI failed',
+] as const;
 
 const START_TIMEOUT_MS = 4 * 60_000;
 const REFUSAL_TIMEOUT_MS = 3 * 60_000;

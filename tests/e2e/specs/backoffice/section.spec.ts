@@ -18,7 +18,8 @@ const MENUS: Partial<Record<Role, Record<string, string[]>>> = {
   admin: {
     Entries: ENTRIES,
     Library: LIBRARY,
-    Settings: ['General', 'Email', 'Spam protection', 'Files', 'Access', 'Integrations'],
+    // The host installs the AI add-on, whose settings screen is the last (ADR-0018).
+    Settings: ['General', 'Email', 'Spam protection', 'Files', 'Access', 'Integrations', 'AI'],
     Privacy: ['People', 'Retention', 'Data collection'],
     Activity: ['Deliveries', 'Audit log'],
   },
