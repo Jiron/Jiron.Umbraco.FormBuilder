@@ -1125,6 +1125,7 @@ The budgets are §4.12's; the measured starting points come from the spikes.
 | Accessibility | WCAG 2.2 AA for every theme and screen | – (6.8, 16.3) |
 | Coverage | ≥ 85% of Core's lines; every endpoint; every vector in both runtimes | – (ADR-0011) |
 | Builds | zero warnings, formatters and analyzers clean | – (3.1) |
+| The backoffice's words | every word from its dictionaries in English and German; every key used | each area held to the keys its code uses (`lang/key-use.test.ts`, ADR-0229); no word in a template (`jfb/no-hard-coded-text`) |
 
 ## 12. Glossary
 

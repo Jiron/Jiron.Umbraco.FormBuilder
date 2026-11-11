@@ -41,7 +41,7 @@ import { loadSettingsWords } from './settings-words';
 export const MOST_IN_A_BOX = 7;
 
 /** The boxes whose headline has a sentence under it, by section. */
-const LEADS: Readonly<Record<string, readonly string[]>> = {
+export const LEADS: Readonly<Record<string, readonly string[]>> = {
   general: ['newForms', 'history'],
   protection: ['content'],
   integrations: ['chat'],

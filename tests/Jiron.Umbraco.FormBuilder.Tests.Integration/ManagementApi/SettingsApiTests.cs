@@ -8,6 +8,7 @@ using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.Retention;
 using Jiron.Umbraco.FormBuilder.Core.Settings;
 using Jiron.Umbraco.FormBuilder.Core.Themes;
+using Jiron.Umbraco.FormBuilder.Testing;
 using Jiron.Umbraco.FormBuilder.Testing.Time;
 using Microsoft.Extensions.DependencyInjection;
 using Umbraco.Cms.Core;
@@ -194,6 +195,69 @@ public sealed class SettingsApiTests : ManagementApiTestBase
             Assert.That(listed.Outcome, Is.EqualTo("200"), listed.ToString());
             Assert.That((await Settings.GetAsync<GeneralSettings>()).Value.TimeZone, Is.EqualTo("America/Buenos_Aires"));
         });
+    }
+
+    /// <summary>
+    /// The backoffice's keys the six sections' screens are served with (labels, help, units, choices, what the
+    /// screens' facts name, and the boxes the fields lie in), as the committed snapshot
+    /// <c>docs/api/settings-keys.json</c> holds them, which the backoffice's dictionaries' check reads (ROADMAP 14.1).
+    /// After a deliberate change, run with <c>JFB_UPDATE_SNAPSHOTS=1</c>: it writes the snapshot and fails.
+    /// </summary>
+    [Test]
+    public async Task TheSectionsKeys_AreTheReviewedSnapshot()
+    {
+        var keys = new SortedSet<string>(StringComparer.Ordinal);
+        foreach (var section in new[] { "general", "email", "protection", "files", "integrations", "privacy" })
+        {
+            var answer = await Api.CallAsync(Admin, HttpMethod.Get, $"settings/{section}");
+            Assert.That(answer.Outcome, Is.EqualTo("200"), answer.ToString());
+            Collect(answer.Body!["fields"], keys);
+            Collect(answer.Body!["facts"], keys);
+            // Each box the fields lie in, whose heading the screen names by the section and the box.
+            foreach (var field in answer.Body!["fields"]!.AsArray())
+            {
+                if (field!["group"]?.GetValue<string>() is { Length: > 0 } box)
+                {
+                    keys.Add($"jfbGlobalSettings_{section}Box_{box}");
+                }
+            }
+        }
+
+        var path = RepositoryRoot.Path(typeof(SettingsApiTests).Assembly, "docs", "api", "settings-keys.json");
+        var served = new JsonArray([.. keys.Select(key => JsonValue.Create(key))]).ToJsonString(new System.Text.Json.JsonSerializerOptions { WriteIndented = true }).ReplaceLineEndings("\n") + "\n";
+        if (Environment.GetEnvironmentVariable("JFB_UPDATE_SNAPSHOTS") == "1")
+        {
+            await System.IO.File.WriteAllTextAsync(path, served, new System.Text.UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+            Assert.Fail($"JFB_UPDATE_SNAPSHOTS=1: wrote {path}. Review the diff, commit it, and run again without the variable.");
+        }
+
+        Assert.That(keys, Has.Count.GreaterThan(100));
+        Assert.That(System.IO.File.Exists(path), Is.True, $"the reviewed snapshot {path}; run with JFB_UPDATE_SNAPSHOTS=1");
+        Assert.That((await System.IO.File.ReadAllTextAsync(path)).ReplaceLineEndings("\n"), Is.EqualTo(served), "the sections' keys changed: run with JFB_UPDATE_SNAPSHOTS=1 and review the diff");
+
+        static void Collect(JsonNode? node, SortedSet<string> into)
+        {
+            switch (node)
+            {
+                case JsonValue value when value.TryGetValue<string>(out var text) && text.StartsWith('#'):
+                    into.Add(text[1..]);
+                    break;
+                case JsonArray array:
+                    foreach (var item in array)
+                    {
+                        Collect(item, into);
+                    }
+
+                    break;
+                case JsonObject item:
+                    foreach (var (_, inner) in item)
+                    {
+                        Collect(inner, into);
+                    }
+
+                    break;
+            }
+        }
     }
 
     [Test]

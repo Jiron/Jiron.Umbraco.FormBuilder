@@ -30,7 +30,7 @@ export interface WordsCondition {
   readonly value?: Operand | null | undefined;
 }
 
-const CONTEXT_TERMS: Readonly<Record<string, string>> = {
+export const CONTEXT_TERMS: Readonly<Record<string, string>> = {
   culture: 'jfbRules_subjectCulture',
   memberSignedIn: 'jfbRules_subjectSignedIn',
   memberGroup: 'jfbRules_subjectGroups',

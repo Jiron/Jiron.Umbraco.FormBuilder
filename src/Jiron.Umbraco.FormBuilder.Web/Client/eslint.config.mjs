@@ -3,6 +3,7 @@ import { defineConfig } from 'eslint/config';
 import prettier from 'eslint-config-prettier';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
+import jfb from './scripts/no-hard-coded-text.mjs';
 
 const noHtmlStrings =
   'Build the DOM with createElement and textContent: website code sets no HTML from strings (ROADMAP section 4.10). The reviewed exceptions parse in an inert <template>: packages/runtime/src/html.ts for the rich texts that recall answers, whose nodes never enter the page (ADR-0115), the message of an outcome (ADR-0120), and the form after form_changed (ADR-0004); and the rich texts the server sanitised that the headless element writes as the Razor views do (ADR-0128).';
@@ -98,6 +99,13 @@ export default defineConfig(
         },
       ],
     },
+  },
+  {
+    // Every word the backoffice shows comes from its dictionaries in English and German (ROADMAP 14.1, ADR-0057).
+    files: ['packages/backoffice/src/**/*.ts'],
+    ignores: ['**/*.test.ts', 'packages/backoffice/src/lang/**', 'packages/backoffice/src/testing.ts'],
+    plugins: { jfb },
+    rules: { 'jfb/no-hard-coded-text': 'error' },
   },
   prettier,
 );
