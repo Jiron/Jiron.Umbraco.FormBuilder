@@ -1,5 +1,7 @@
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Jiron.Umbraco.FormBuilder.Samples;
+using Jiron.Umbraco.FormBuilder.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;
 using Umbraco.Cms.Core.DependencyInjection;
@@ -9,7 +11,8 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Samples;
 
 /// <summary>
 /// How the samples are turned on (ADR-0234): by their names only, each once, and with their backoffice manifests, which
-/// Umbraco reads beside every package's: none while no sample is on, else the samples' extensions with their words once.
+/// Umbraco reads beside every package's: none while no sample is on, else the samples' extensions with their words once;
+/// and every term a sample names has its words in English and German.
 /// </summary>
 public sealed class SampleManifestsTests
 {
@@ -57,6 +60,35 @@ public sealed class SampleManifestsTests
                 "localization Jiron.FormBuilder.Samples.Localization.en",
                 "localization Jiron.FormBuilder.Samples.Localization.de",
             }));
+        });
+    }
+
+    [Test]
+    public void EveryTermTheSamplesUse_IsInTheirWords_InEnglishAndGerman()
+    {
+        var samples = RepositoryRoot.Path(typeof(SampleManifestsTests).Assembly, "samples", "Jiron.Umbraco.FormBuilder.Samples");
+        var plugin = Path.Combine(samples, "wwwroot", "App_Plugins", "JironFormBuilderSamples");
+        static HashSet<string> Keys(string file) => Regex.Matches(File.ReadAllText(file), @"^\s{4}([A-Za-z]+):", RegexOptions.Multiline)
+            .Select(match => match.Groups[1].Value)
+            .ToHashSet(StringComparer.Ordinal);
+        var english = Keys(Path.Combine(plugin, "lang", "en.js"));
+        var german = Keys(Path.Combine(plugin, "lang", "de.js"));
+
+        // The terms the C# names as #jfbSamples_<term>, and the elements as localize.term('jfbSamples_<term>').
+        var sources = Directory.EnumerateFiles(samples, "*.cs", SearchOption.AllDirectories)
+            .Where(file => !file.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal) && !file.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
+            .Concat(Directory.EnumerateFiles(plugin, "*.js"));
+        var used = sources
+            .SelectMany(file => Regex.Matches(File.ReadAllText(file), @"jfbSamples_([A-Za-z]+)").Select(match => match.Groups[1].Value))
+            .ToHashSet(StringComparer.Ordinal);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(used, Has.Count.GreaterThan(20), "the terms were found");
+            Assert.That(used.Where(term => !english.Contains(term)).Order(StringComparer.Ordinal), Is.Empty, "terms without English words");
+            Assert.That(used.Where(term => !german.Contains(term)).Order(StringComparer.Ordinal), Is.Empty, "terms without German words");
+            Assert.That(german, Is.EquivalentTo(english), "the two languages' terms");
+            Assert.That(english.Where(term => !used.Contains(term)).Order(StringComparer.Ordinal), Is.Empty, "words no sample uses");
         });
     }
 }
