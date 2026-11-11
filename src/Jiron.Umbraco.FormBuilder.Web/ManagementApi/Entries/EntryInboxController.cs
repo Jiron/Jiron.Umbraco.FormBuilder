@@ -228,16 +228,14 @@ internal sealed class EntryInboxController(
 
         var visibility = await access.GetFormVisibilityAsync(RequestAccess.User, FormBuilderPermissions.ViewEntries, cancellationToken);
         var page = await lists.ListAcrossAsync(place, visibility, new EntryListRequest(filter) { Columns = request.Columns ?? [], After = request.After, Count = request.Count }, cancellationToken);
-        var named = new List<EntryListFormResponseModel>();
-        foreach (var form in page.Forms)
-        {
-            var permissions = await forms.GetAsync(form.Key, cancellationToken) is { } info
-                ? await access.GetForFormAsync(RequestAccess.User, FormAccessTarget.Of(info), cancellationToken)
-                : FormBuilderPermissions.None;
-            named.Add(new EntryListFormResponseModel { Key = form.Key, Name = form.Name, Permissions = PermissionRules.NamesOf(permissions) });
-        }
-
         var model = EntryListMapping.Model(page);
-        return Ok(new EntryListPageResponseModel { Items = model.Items, Next = model.Next, Total = model.Total, More = model.More, Forms = named });
+        return Ok(new EntryListPageResponseModel
+        {
+            Items = model.Items,
+            Next = model.Next,
+            Total = model.Total,
+            More = model.More,
+            Forms = await EntryListMapping.FormsAsync(page.Forms, forms, access, RequestAccess.User, cancellationToken),
+        });
     }
 }

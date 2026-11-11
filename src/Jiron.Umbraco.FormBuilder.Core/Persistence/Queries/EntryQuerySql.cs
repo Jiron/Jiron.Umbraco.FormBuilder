@@ -432,6 +432,11 @@ internal sealed partial class EntryQuerySql
             parts.Add($"e.{C("submittedUtc")} < {a.Add(before)}");
         }
 
+        if (_query.Member is { } member)
+        {
+            parts.Add($"e.{C("memberKey")} = {a.Add(member)}");
+        }
+
         if (Searches)
         {
             // A number the search names finds its entry as its search text would (ADR-0207).

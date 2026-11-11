@@ -168,6 +168,7 @@ public sealed class PermissionMatrixTests : ManagementApiTestBase
         ["POST entries/spam"] = (FormBuilderPermissions.None, FormBuilderAccessResourceKind.Global, null),
         ["GET entries/forms"] = (FormBuilderPermissions.None, FormBuilderAccessResourceKind.Global, null),
         ["GET entries/unseen"] = (FormBuilderPermissions.None, FormBuilderAccessResourceKind.Global, null),
+        ["GET members/{key}/entries"] = (FormBuilderPermissions.None, FormBuilderAccessResourceKind.Global, null),
         ["POST entries/spam/empty"] = (FormBuilderPermissions.None, FormBuilderAccessResourceKind.Global, null),
         ["GET entries/digest"] = (FormBuilderPermissions.None, FormBuilderAccessResourceKind.Global, null),
         ["PUT entries/digest"] = (FormBuilderPermissions.None, FormBuilderAccessResourceKind.Global, null),

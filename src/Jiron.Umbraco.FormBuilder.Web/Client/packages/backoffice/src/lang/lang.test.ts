@@ -152,7 +152,7 @@ describe('the dictionaries', () => {
   it("hold the section's and the Overview's keys that their code uses, and no other in those areas", () => {
     // Forms at a glance is the Overview's too, with its own words beside (insights, ADR-0211); the default theme's name
     // is the section's, as every screen that names a theme says it (themes/theme-label.ts).
-    const folders = ['section', 'overview', 'tree', 'insights', 'themes'].map((folder) =>
+    const folders = ['section', 'overview', 'tree', 'insights', 'themes', 'members'].map((folder) =>
       join(dirname(fileURLToPath(import.meta.url)), '..', folder),
     );
     const sources = folders.flatMap((folder) =>

@@ -6,6 +6,7 @@ export default {
     section: 'Form Builder',
     // The package's default theme by its name, a word each language says, wherever a theme is named.
     defaultTheme: 'Default',
+    memberEntries: 'Form entries',
     forms: 'Forms',
     overview: 'Overview',
     noForms: "You can't see any forms yet. An administrator can give your user group access in Settings › Access.",

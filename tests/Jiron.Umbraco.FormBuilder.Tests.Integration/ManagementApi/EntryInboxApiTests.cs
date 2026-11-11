@@ -8,7 +8,10 @@ using Umbraco.Cms.Tests.Common.Testing;
 
 namespace Jiron.Umbraco.FormBuilder.Tests.Integration.ManagementApi;
 
-/// <summary>The Inbox, Spam, the Form filter's forms and the unseen badge through the management API (ROADMAP 11.1, ADR-0209).</summary>
+/// <summary>
+/// The Inbox, Spam, the Form filter's forms and the unseen badge through the management API (ROADMAP 11.1, ADR-0209), and a
+/// member's entries for the member editor's Form entries view (ROADMAP 14.3, ADR-0231).
+/// </summary>
 [TestFixture]
 [UmbracoTest(Database = UmbracoTestOptions.Database.NewSchemaPerTest, Boot = true)]
 public sealed class EntryInboxApiTests : ManagementApiTestBase
@@ -228,7 +231,41 @@ public sealed class EntryInboxApiTests : ManagementApiTestBase
         return created.Key;
     }
 
-    private async Task<StoredEntry> EntryAsync(Guid form, EntryState state)
+    [Test]
+    public async Task AMembersEntries_AreThoseOfTheFormsEachUserMayView_NewestFirst_WithoutDrafts()
+    {
+        var open = await PublishedAsync("Contact");
+        var folder = await FolderAsync("People");
+        var restricted = await PublishedAsync("Applications", folder);
+        await RestrictAsync(folder, "hr", FormBuilderPermissions.ViewEntries);
+        var member = Guid.NewGuid();
+        var first = await EntryAsync(open, EntryState.Approved, member);
+        var hidden = await EntryAsync(restricted, EntryState.Submitted, member);
+        var second = await EntryAsync(open, EntryState.Rejected, member);
+        _ = await EntryAsync(open, EntryState.Draft, member);
+        _ = await EntryAsync(open, EntryState.Approved, Guid.NewGuid());
+        _ = await EntryAsync(open, EntryState.Approved);
+
+        var viewer = await CallAsync("viewer", HttpMethod.Get, $"members/{member}/entries");
+        var admin = await CallAsync(Admin, HttpMethod.Get, $"members/{member}/entries");
+        var nobody = await CallAsync("noAccess", HttpMethod.Get, $"members/{member}/entries");
+        var stranger = await CallAsync(Admin, HttpMethod.Get, $"members/{Guid.NewGuid()}/entries");
+        var badCursor = await CallAsync(Admin, HttpMethod.Get, $"members/{member}/entries?after=nonsense");
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(viewer.Outcome, Is.EqualTo("200"), viewer.ToString());
+            Assert.That(Keys(viewer, "items"), Is.EqualTo(new[] { second.Key, first.Key }), "newest first, without the restricted form's entry, a draft or another's (ADR-0231)");
+            Assert.That(viewer.Body!["total"]!.GetValue<int>(), Is.EqualTo(2), "the count leaves the forms out without a trace");
+            Assert.That(Keys(viewer, "forms"), Is.EqualTo(new[] { open }));
+            Assert.That(Keys(admin, "items"), Is.EqualTo(new[] { second.Key, hidden.Key, first.Key }));
+            Assert.That((nobody.Outcome, nobody.Body!["items"]!.AsArray().Count), Is.EqualTo(("200", 0)), "a user who may view no form's entries");
+            Assert.That((stranger.Outcome, stranger.Body!["items"]!.AsArray().Count), Is.EqualTo(("200", 0)), "a member without entries");
+            Assert.That(badCursor.Outcome, Is.EqualTo("400 invalid_cursor"), badCursor.ToString());
+        });
+    }
+
+    private async Task<StoredEntry> EntryAsync(Guid form, EntryState state, Guid? member = null)
     {
         var row = (await GetRequiredService<IFormRepository>().GetAsync(form))!;
         return (await Entries.CreateAsync(new NewEntry
@@ -240,6 +277,7 @@ public sealed class EntryInboxApiTests : ManagementApiTestBase
             SubmissionId = Guid.NewGuid(),
             SubmissionHash = new string('a', 64),
             Culture = "en-US",
+            MemberKey = member,
         }))!;
     }
 }

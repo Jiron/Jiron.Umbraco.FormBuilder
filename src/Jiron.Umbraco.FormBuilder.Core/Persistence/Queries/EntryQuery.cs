@@ -174,6 +174,9 @@ internal sealed record EntryQuery(int FormId)
 
     /// <summary>The order.</summary>
     public EntrySort Sort { get; init; } = EntrySort.Newest;
+
+    /// <summary>Only the entries that keep this member, as a member's entries list them (ADR-0231); null for any.</summary>
+    public Guid? Member { get; init; }
 }
 
 /// <summary>Where the walk of a value sort stood: the value row and its value, for a row deleted meanwhile.</summary>

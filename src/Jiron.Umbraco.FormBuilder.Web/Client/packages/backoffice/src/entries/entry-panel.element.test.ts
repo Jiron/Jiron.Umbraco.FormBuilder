@@ -1,6 +1,8 @@
 // The entry panel (ROADMAP 11.2, IA 6.3, ADR-0208): its header in each place, the answers with Reveal, files, consents
 // and signatures, the bar of each state and user, a change of state that stays on the entry with Undo, a move back that
 // asks first, Edit answers with its problems, the timeline with Retry, notes, Delete... and Forward....
+import { UMB_CURRENT_USER_CONTEXT } from '@umbraco-cms/backoffice/current-user';
+import { BehaviorSubject } from '@umbraco-cms/backoffice/external/rxjs';
 import { UMB_NOTIFICATION_CONTEXT } from '@umbraco-cms/backoffice/notification';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import type {
@@ -343,6 +345,44 @@ describe("the entry panel's header", () => {
     server.panel = undefined;
     const beside = await open('beside');
     expect(text(beside.root.querySelector('[role="alert"]'))).toBe("The entry couldn't be shown.");
+  });
+});
+
+describe("the entry panel's member", () => {
+  // The panel with More details open, for a user whose groups open these sections.
+  async function detailsFor(sections: string[], memberName: string | null) {
+    server.panel = panelOf({ details: { ...panelOf().details, member: 'm-1', memberName } });
+    const host = testHost();
+    host.provideContext(UMB_NOTIFICATION_CONTEXT, { peek: vi.fn(), getHostElement: () => host } as never);
+    host.provideContext(UMB_CURRENT_USER_CONTEXT, {
+      allowedSections: new BehaviorSubject<string[] | undefined>(sections).asObservable(),
+      getHostElement: () => host,
+    } as never);
+    const panel = document.createElement('jfb-entry-panel');
+    panel.form = 'form1';
+    panel.entry = 'e7';
+    host.append(panel);
+    await vi.waitFor(() => expect(shadow(panel).querySelector('.head')).not.toBeNull());
+    must(
+      all<HTMLElement>(panel, 'button').find((one) => text(one) === 'More details'),
+      'More details',
+    ).click();
+    await settle(panel);
+    return must(shadow(panel).querySelector('dl.more'), 'the details');
+  }
+
+  it('names the member who sent it, linked to their editor for a user who may open Members (ADR-0231)', async () => {
+    const linked = await detailsFor(['Umb.Section.Members'], 'Mira Holt');
+    expect(text(linked.querySelector('a'))).toBe('Mira Holt');
+    expect(linked.querySelector('a')?.getAttribute('href')).toContain('m-1');
+    document.body.replaceChildren();
+    const plain = await detailsFor(['Umb.Section.Content'], 'Mira Holt');
+    expect(plain.querySelector('a')).toBeNull();
+    expect(text(plain)).toContain('Mira Holt');
+    document.body.replaceChildren();
+    const gone = await detailsFor(['Umb.Section.Members'], null);
+    expect(gone.querySelector('a')).toBeNull();
+    expect(text(gone)).toContain('A member who no longer exists');
   });
 });
 

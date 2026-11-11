@@ -863,7 +863,7 @@ permission each needs:
 | Designer support: the registries (the field types, [ADR-0057](decisions/0057-field-types-endpoint-and-availability.md); the action types, [ADR-0158](decisions/0158-the-action-framework.md)) | any user of the section; they describe the site's code, the same for everyone |
 | Designer support: the form check, preview render, preview tickets | `design` |
 | Actions: edit, test against a sample entry | `manageActions` |
-| Entries: list, get, mark seen, notes, timeline, files, action runs, counts, the inbox and Spam | `viewEntries` |
+| Entries: list, get, mark seen, notes, timeline, files, action runs, counts, the inbox and Spam, and a member's entries (`GET members/{key}/entries`, the member editor's Form entries view, ADR-0231) | `viewEntries` |
 | Entries: change state, edit, forward | `editEntries` |
 | Entries: delete, empty Spam | `deleteEntries` |
 | Exports | `export` |

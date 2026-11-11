@@ -4437,6 +4437,47 @@ export type EntryPanelTimelineResponses = {
 
 export type EntryPanelTimelineResponse = EntryPanelTimelineResponses[keyof EntryPanelTimelineResponses];
 
+export type MemberEntriesEntriesData = {
+    body?: never;
+    path: {
+        key: string;
+    };
+    query?: {
+        after?: string;
+    };
+    url: '/umbraco/jfb/management/api/v1/members/{key}/entries';
+};
+
+export type MemberEntriesEntriesErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type MemberEntriesEntriesError = MemberEntriesEntriesErrors[keyof MemberEntriesEntriesErrors];
+
+export type MemberEntriesEntriesResponses = {
+    /**
+     * OK
+     */
+    200: EntryListPageResponseModel;
+};
+
+export type MemberEntriesEntriesResponse = MemberEntriesEntriesResponses[keyof MemberEntriesEntriesResponses];
+
 export type EntryActionRunListData = {
     body?: never;
     path: {

@@ -3,7 +3,9 @@
 // bar holds the actions of the entry's state that the user may use, the primary on the right. A change of state keeps
 // the panel on the entry and offers Undo for its window; nothing animates, as these are done hundreds of times a day.
 import { css, html, nothing, type PropertyValues, type TemplateResult } from '@umbraco-cms/backoffice/external/lit';
+import { UMB_CURRENT_USER_CONTEXT } from '@umbraco-cms/backoffice/current-user';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
+import { UMB_EDIT_MEMBER_WORKSPACE_PATH_PATTERN } from '@umbraco-cms/backoffice/member';
 import { umbOpenModal } from '@umbraco-cms/backoffice/modal';
 import { UMB_NOTIFICATION_CONTEXT } from '@umbraco-cms/backoffice/notification';
 import type {
@@ -80,6 +82,9 @@ export interface EntryMovedDetail {
   readonly state: string;
 }
 
+// Umbraco's Members section, whose editor the member who sent an entry links to (ADR-0231).
+const MEMBERS_SECTION = 'Umb.Section.Members';
+
 export class EntryPanelElement extends UmbLitElement {
   static override properties = {
     form: { type: String },
@@ -89,6 +94,7 @@ export class EntryPanelElement extends UmbLitElement {
     hidesState: { type: Boolean, attribute: 'hides-state' },
     rowShowsTitle: { type: Boolean, attribute: 'row-shows-title' },
     _words: { state: true },
+    _members: { state: true },
     _state: { state: true },
     _panel: { state: true },
     _tab: { state: true },
@@ -489,6 +495,7 @@ export class EntryPanelElement extends UmbLitElement {
   declare rowShowsTitle: boolean;
 
   declare private _words: boolean;
+  declare private _members: boolean;
   declare private _state: 'loading' | 'ready' | 'failed';
   declare private _panel: EntryPanelResponseModel | undefined;
   declare private _tab: Tab;
@@ -515,6 +522,15 @@ export class EntryPanelElement extends UmbLitElement {
   /** Counts the reads of an entry, so only the latest one's answer is shown. */
   #reads = 0;
 
+  // The member who sent the entry: their name, linked to their editor where the user may open it; a member Umbraco no
+  // longer has is said so.
+  #member(key: string, name: string | null | undefined): TemplateResult {
+    if (!name) return html`${this.#term('details_memberGone')}`;
+    return this._members
+      ? html`<a href=${UMB_EDIT_MEMBER_WORKSPACE_PATH_PATTERN.generateAbsolute({ unique: key })}>${name}</a>`
+      : html`${name}`;
+  }
+
   constructor() {
     super();
     this.form = '';
@@ -524,6 +540,13 @@ export class EntryPanelElement extends UmbLitElement {
     this.hidesState = false;
     this.rowShowsTitle = true;
     this._words = false;
+    this._members = false;
+    // The member's name links to their editor for a user who may open the Members section (ADR-0231).
+    this.consumeContext(UMB_CURRENT_USER_CONTEXT, (user) => {
+      this.observe(user?.allowedSections, (sections) => {
+        this._members = sections?.includes(MEMBERS_SECTION) ?? false;
+      });
+    });
     this._state = 'loading';
     this._tab = 'answers';
     this._more = false;
@@ -1061,7 +1084,7 @@ export class EntryPanelElement extends UmbLitElement {
               ${
                 panel.details.member
                   ? html`<dt>${this.#term('details_member')}</dt>
-                      <dd>${panel.details.memberName ?? this.#term('details_memberGone')}</dd>`
+                      <dd>${this.#member(panel.details.member, panel.details.memberName)}</dd>`
                   : nothing
               }
               ${

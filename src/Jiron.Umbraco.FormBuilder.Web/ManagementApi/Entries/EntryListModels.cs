@@ -1,7 +1,9 @@
 using System.Collections.Frozen;
 using System.Text.Json;
+using Jiron.Umbraco.FormBuilder.Core.Access;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Entries;
+using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Queries;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
@@ -489,6 +491,29 @@ internal static class EntryListMapping
         Tests = [.. field.Tests.Select(NameOf)],
         Options = [.. field.Options.Select(option => new EntryListOptionResponseModel { Value = option.Value, Label = option.Label })],
     };
+
+    /// <summary>
+    /// The forms a page of several forms' entries names, each with what the user may do on it, so a list offers per row
+    /// what its form allows (ADR-0209); a form gone since the page was read allows nothing.
+    /// </summary>
+    /// <param name="named">The forms the page names.</param>
+    /// <param name="forms">The forms, by key.</param>
+    /// <param name="access">The user's permissions on each.</param>
+    /// <param name="user">The user.</param>
+    /// <param name="cancellationToken">The request's cancellation.</param>
+    public static async Task<IReadOnlyList<EntryListFormResponseModel>> FormsAsync(IReadOnlyList<EntryListForm> named, IFormBuilderFormService forms, IFormBuilderAccessService access, AccessUser user, CancellationToken cancellationToken)
+    {
+        var models = new List<EntryListFormResponseModel>();
+        foreach (var form in named)
+        {
+            var permissions = await forms.GetAsync(form.Key, cancellationToken) is { } info
+                ? await access.GetForFormAsync(user, FormAccessTarget.Of(info), cancellationToken)
+                : FormBuilderPermissions.None;
+            models.Add(new EntryListFormResponseModel { Key = form.Key, Name = form.Name, Permissions = PermissionRules.NamesOf(permissions) });
+        }
+
+        return models;
+    }
 
     /// <summary>The model of a page.</summary>
     public static EntryListPageResponseModel Model(EntryListPage page) => new()

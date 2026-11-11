@@ -317,6 +317,49 @@ internal sealed partial class EntryLists(
         }
 
         var page = await queries.ListAsync(query, after, PageSize, request.Count, cancellationToken);
+        return await AcrossAsync(page, one, columns, chosen, cancellationToken);
+    }
+
+    /// <summary>
+    /// A page of a member's entries (ADR-0231): those that keep the member, of every form the user may view entries of,
+    /// in any state but a draft, newest first, 50 at a time, with their count on the first page. The caller passes the
+    /// user's visibility with <c>viewEntries</c>; a user who may view no form's entries gets none.
+    /// </summary>
+    /// <param name="visibility">The forms the user may view entries of.</param>
+    /// <param name="member">The member's key.</param>
+    /// <param name="after">The cursor of the page before, or null for the first.</param>
+    /// <param name="cancellationToken">The request's cancellation.</param>
+    /// <exception cref="FormBuilderValidationException">A cursor the list cannot read, at <c>after</c>.</exception>
+    public async Task<EntryListPage> ListOfMemberAsync(FormVisibility visibility, Guid member, string? after, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(visibility);
+        if (visibility.IsNothing)
+        {
+            return new EntryListPage([], null, new EntryCount(0, More: false));
+        }
+
+        var query = EntryQuery.Across(new EntryFormScope(visibility, [])) with
+        {
+            Member = member,
+            States = [.. Enum.GetValues<EntryState>().Where(state => state != EntryState.Draft)],
+            Sort = EntrySort.Newest,
+        };
+        var problems = new List<DefinitionProblem>();
+        var cursor = after is null ? null : Decode(after, query.Sort, problems);
+        if (problems.Count > 0)
+        {
+            throw new FormBuilderValidationException(problems);
+        }
+
+        var page = await queries.ListAsync(query, cursor, PageSize, count: after is null, cancellationToken);
+        return await AcrossAsync(page, one: null, columns: [], chosen: [], cancellationToken);
+    }
+
+    // The rows of a page of entries of several forms, each by its own form, and the forms they belong to: the groups keep the
+    // order their forms first appear in, so the forms do too; then come the forms a filter chose that no row holds, so a chip
+    // can name every form it filters by. A form deleted for good since the page was read takes its rows with it.
+    private async Task<EntryListPage> AcrossAsync(EntryPage page, StoredForm? one, IReadOnlyList<Guid> columns, IReadOnlyList<StoredForm> chosen, CancellationToken cancellationToken)
+    {
         var rows = new Dictionary<Guid, EntryListRow>();
         var named = new List<EntryListForm>();
         foreach (var group in page.Entries.GroupBy(entry => entry.FormId))
@@ -324,7 +367,6 @@ internal sealed partial class EntryLists(
             var form = one?.Id == group.Key ? one : await forms.GetByIdAsync(group.Key, cancellationToken);
             if (form is null)
             {
-                // Deleted for good since the page was read.
                 continue;
             }
 
@@ -335,8 +377,6 @@ internal sealed partial class EntryLists(
             }
         }
 
-        // The groups keep the order their forms first appear in, so the forms do too; then come the forms the filter
-        // chose that no row holds, so a chip can name every form it filters by.
         named.AddRange(chosen.Where(form => named.TrueForAll(seen => seen.Key != form.Key)).Select(form => new EntryListForm(form.Key, form.Name)));
         return new EntryListPage([.. page.Entries.Where(entry => rows.ContainsKey(entry.Key)).Select(entry => rows[entry.Key])], page.Next is { } next ? Encode(next) : null, page.Count)
         {
