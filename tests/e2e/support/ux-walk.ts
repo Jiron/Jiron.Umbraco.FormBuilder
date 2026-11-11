@@ -50,6 +50,21 @@ export const wantedScreen = (screen: string, env: NodeJS.ProcessEnv = process.en
   return only.length === 0 || only.some((prefix) => screen.startsWith(prefix));
 };
 
+/**
+ * Whether the walk looks at a screen this way: every way, or with `JFB_UX_LOOKS` only those its comma-separated looks
+ * name, each look the parts of a combination's name it must have (`de`, `light-de`, `1440-dark-de`), so a step
+ * that changed the German screens walks them in German only.
+ */
+export const wantedCombo = (combo: Combo, env: NodeJS.ProcessEnv = process.env): boolean => {
+  const looks =
+    env['JFB_UX_LOOKS']
+      ?.split(',')
+      .map((look) => look.trim())
+      .filter(Boolean) ?? [];
+  const parts = comboName(combo).split('-');
+  return looks.length === 0 || looks.some((look) => look.split('-').every((part) => parts.includes(part)));
+};
+
 /** Where a walk writes: `JFB_UX_OUT`, or `.local/ux/latest`. */
 export const walkDir = (env: NodeJS.ProcessEnv = process.env): string =>
   env['JFB_UX_OUT'] ?? join(e2eState, '..', 'ux', 'latest');

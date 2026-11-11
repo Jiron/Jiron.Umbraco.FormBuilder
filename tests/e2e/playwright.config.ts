@@ -76,6 +76,8 @@ export default defineConfig({
       ? [
           { name: 'ux', testDir: './specs/ux', use: browser },
           { name: 'ux-sheets', testDir: './specs/ux-sheets', dependencies: ['ux'], use: browser },
+          // The visitor's side in the seven languages, after the walk, as it adds the five languages the demo lacks.
+          { name: 'ux-languages', testDir: './specs/ux-languages', dependencies: ['ux'], use: browser },
         ]
       : []),
     // Two hosts on one SQL Server database in CI's load-balancing job; JFB_E2E_LB=1 proves the suite itself on one host.

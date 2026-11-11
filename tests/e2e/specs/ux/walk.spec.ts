@@ -12,6 +12,7 @@ import {
   LANGUAGE_CODES,
   splitAxe,
   walkDir,
+  wantedCombo,
   wantedScreen,
   type AxeNode,
   type Combo,
@@ -25,7 +26,8 @@ import {
 // shot keeps what axe found inside our own elements, how far the page scrolls sideways, what scrolls inside it and what
 // an ellipsis cuts short; the ux-sheets project puts each screen's twelve shots on one sheet. The walk finds its way
 // without words, by tags, data marks and icons, so it walks the German backoffice the same way. It runs only when asked:
-// JFB_E2E_UX=1 npx playwright test --project=ux-sheets (which walks first).
+// JFB_E2E_UX=1 npx playwright test --project=ux-sheets (which walks first); JFB_UX_ONLY names screens and JFB_UX_LOOKS
+// ways (support/ux-walk.ts).
 
 const SECTION = '/umbraco/section/jfb-forms';
 const workspaceOf = (key: string) => `${SECTION}/workspace/jfb-form/edit/${key}`;
@@ -402,6 +404,9 @@ async function seed(api: APIRequestContext, request: APIRequestContext, label: s
   );
   const deliveries = await api.post('/jfb-testing/deliveries', { data: { name: name('deliveries') } });
   expect(deliveries.ok(), await deliveries.text()).toBe(true);
+  // Phase 14's translating (14.1): a form written in English only, its second field's label an item of Umbraco's
+  // dictionary, with a mail to the visitor and an outcome, so the designer in German has something left in each view.
+  const english = await englishForm(api, name('to translate'));
   return {
     folderName,
     libraryName,
@@ -425,7 +430,52 @@ async function seed(api: APIRequestContext, request: APIRequestContext, label: s
     trashedName,
     versioned,
     conflicted,
+    english,
+    englishFields: await fieldsOf(api, english),
   };
+}
+
+/**
+ * A form written in English only, with a mail and an outcome, its address's label the demo's dictionary item for an
+ * email address: an item the demo seeds, since a walk that wrote one while the others seed would wait on SQLite's lock.
+ */
+async function englishForm(api: APIRequestContext, name: string): Promise<string> {
+  const key = await blankForm(api, name);
+  const draft = (await (await api.get(`${API}/form/${key}/draft`)).json()) as {
+    form: { concurrencyVersion: number };
+    definition: Record<string, unknown> & { pages: { groups: { fields: unknown[] }[] }[] };
+  };
+  const email = crypto.randomUUID();
+  const group = draft.definition.pages[0]?.groups[0];
+  if (group)
+    group.fields = [
+      { key: crypto.randomUUID(), type: 'text', alias: 'name', label: { '': 'Your name' }, required: true },
+      { key: email, type: 'email', alias: 'email', label: { '': '#Demo.Login.Email' }, required: true },
+      { key: crypto.randomUUID(), type: 'textarea', alias: 'message', label: { '': 'Your message' } },
+    ];
+  draft.definition['actions'] = [
+    {
+      key: crypto.randomUUID(),
+      type: 'email',
+      name: 'Confirm to the visitor',
+      enabled: true,
+      trigger: 'submitted',
+      stopOnFailure: false,
+      settings: {
+        toField: email,
+        subject: { '': 'We have your answer' },
+        body: { '': '<p>Thank you, {{ field.name }}.</p>' },
+      },
+    },
+  ];
+  draft.definition['outcomes'] = [
+    { key: crypto.randomUUID(), kind: 'message', message: { '': '<p>Thanks, it reached us.</p>' } },
+  ];
+  const saved = await api.put(`${API}/form/${key}/draft`, {
+    data: { concurrencyVersion: draft.form.concurrencyVersion, definition: draft.definition },
+  });
+  expect(saved.ok(), await saved.text()).toBe(true);
+  return key;
 }
 
 /** The demo's volunteer page, whose copy picks a walk's form, and the home page the copy goes below. */
@@ -576,7 +626,7 @@ async function openInspectorSection(design: Locator, id: string): Promise<void> 
   if ((await head.getAttribute('aria-expanded')) !== 'true') await head.click();
 }
 
-for (const combo of COMBOS) {
+for (const combo of COMBOS.filter((each) => wantedCombo(each))) {
   test(`the walk, ${comboName(combo)}`, async ({ page, browser, request, loginAs, apiAs }, testInfo) => {
     test.setTimeout(30 * 60_000);
     const api = await apiAs('admin');
@@ -886,6 +936,49 @@ for (const combo of COMBOS) {
         await expect(actionSidebar.locator('[id^="setting-"]').first()).toBeVisible();
       });
     }
+    // Translating (14.1, ADR-0228): the English form's designer in German marks what is left on its fields, page and
+    // group; the inspector holds the German text beside the dictionary's button, a dictionary item's label says what it
+    // shows, Umbraco's dictionary picker opens from the button, and the Settings view's outcome and the Actions view's
+    // mail are marked too. The language stays with the workspace, so the views are reached by their tabs.
+    const inGerman = async () => {
+      const design = await openDesign(page, made.english);
+      await design.locator('jfb-form-canvas .bo-language select').selectOption('de-DE');
+      await expect(design.locator('jfb-form-canvas .bo-chip').first()).toBeVisible();
+      return design;
+    };
+    const englishField = (index: number) => made.englishFields[index] as WalkField;
+    const toView = (view: string) => page.locator(`uui-tab[href$="/view/${view}"]`).first().click();
+    await walk.shot('translate-design', async () => {
+      await inGerman();
+    });
+    await walk.shot('translate-inspector', async () => {
+      const design = await inGerman();
+      await select(page, design, englishField(0));
+      await expect(design.locator('jfb-designer-inspector jfb-dictionary-pick').first()).toBeVisible();
+    });
+    await walk.shot('translate-dictionary', async () => {
+      const design = await inGerman();
+      await select(page, design, englishField(1));
+      await expect(design.locator('jfb-designer-inspector [id$="-dictionary"]').first()).not.toBeEmpty();
+    });
+    await walk.shot('translate-picker', async () => {
+      const design = await inGerman();
+      await select(page, design, englishField(0));
+      await design.locator('jfb-designer-inspector jfb-dictionary-pick button').first().click();
+      await expect(page.locator('umb-tree-picker-modal')).toBeVisible();
+    });
+    await walk.shot('translate-settings', async () => {
+      await inGerman();
+      await toView('settings');
+      await openSettingsGroup('after');
+      await expect(settingsView.locator('jfb-outcome-list .untranslated').first()).toBeVisible();
+    });
+    await walk.shot('translate-actions', async () => {
+      await inGerman();
+      await toView('actions');
+      await expect(actionsView.locator('jfb-action-list .untranslated').first()).toBeVisible();
+    });
+
     // The History view (10.3a, 10.3b): a form's versions, with its draft saves, one beside the current draft, two
     // compared, and an earlier version chosen from the form's "...".
     const historyView = page.locator('jfb-form-history-view');
