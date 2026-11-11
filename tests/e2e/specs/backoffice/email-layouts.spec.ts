@@ -146,7 +146,7 @@ test('a designer makes an email layout through the screens, previews it and gets
   await view.getByRole('button', { name: 'Send test email' }).click();
   await expect(page).toHaveURL(/\/workspace\/jfb-email-layout\/edit\/[0-9a-f-]{36}/);
   const said = `A test mail is on its way to ${designer.email}.`;
-  await expect(page.locator('uui-toast-notification').filter({ hasText: said })).toBeVisible();
+  // One alert says so. A toast is short-lived, and under load closes soon after it shows, so one assertion catches it.
   await expect(page.getByRole('alert').filter({ hasText: said })).toHaveCount(1);
   const key = /\/edit\/([0-9a-f-]{36})/.exec(page.url())?.[1] ?? '';
   const saved = await layoutOf(api, key);

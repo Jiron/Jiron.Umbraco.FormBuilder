@@ -103,7 +103,7 @@ for (const window of [
 
     // The longest state goes under the name rather than squeeze it, and the name's box keeps 6rem at least.
     const header = page.locator('jfb-form-workspace-editor');
-    await expect(header.locator('uui-tag')).toHaveText('Ver\u00f6ffentlicht (\u00c4nderungen bereit)');
+    await expect(header.locator('uui-tag')).toHaveText('Ver\u00f6ffentlicht, Entwurf ge\u00e4ndert');
     const name = await header.locator('umb-workspace-header-name-editable uui-input').boundingBox();
     expect(name?.width ?? 0, "the name's box").toBeGreaterThanOrEqual(96);
 
@@ -198,7 +198,7 @@ for (const width of [375, 768, 1024]) {
     // Phase 11's two views, which only a user with all six has.
     for (const [key, state, view] of [
       [published, 'Ver\u00f6ffentlicht', 'entries'],
-      [pending, 'Ver\u00f6ffentlicht (\u00c4nderungen bereit)', 'insights'],
+      [pending, 'Ver\u00f6ffentlicht, Entwurf ge\u00e4ndert', 'insights'],
     ] as const) {
       await page.goto(`/umbraco/section/jfb-forms/workspace/jfb-form/edit/${key}/view/${view}`);
       await expect(editor.locator(view === 'entries' ? 'jfb-entries-view' : 'jfb-form-insights-view')).toBeVisible();

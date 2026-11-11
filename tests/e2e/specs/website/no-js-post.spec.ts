@@ -137,6 +137,22 @@ async function filesOf(request: APIRequestContext, alias: string): Promise<Store
   return ((await response.json()) as { entries: { files: StoredFile[] }[] }).entries.map((entry) => entry.files);
 }
 
+/** The files of the entries since a count that hold an answer only this spec gives, as `ownEntries` finds them. */
+async function ownFiles(
+  request: APIRequestContext,
+  alias: string,
+  before: number,
+  field: string | undefined,
+  answer: string,
+): Promise<StoredFile[][]> {
+  const response = await request.get('/jfb-testing/entries', { params: { form: alias } });
+  expect(response.status()).toBe(200);
+  return ((await response.json()) as { entries: { values: StoredValue[]; files: StoredFile[] }[] }).entries
+    .slice(before)
+    .filter((entry) => entry.values.some((value) => value.field === field && value.text === answer))
+    .map((entry) => entry.files);
+}
+
 /** A file of a length whose first bytes are a PDF's, or a program's. */
 function bytesOf(head: string | number[], length: number): Buffer {
   const bytes = Buffer.alloc(length, 'x');
@@ -426,10 +442,12 @@ test('the job application takes a CV without JavaScript: one too large and a pro
 }) => {
   const keys = keysOf('application');
   const before = (await filesOf(request, 'application')).length;
+  // An address only this test gives, by which its entry is told from those other specs send meanwhile.
+  const email = `ada-cv-${Date.now().toString(36)}@visitor.jfb.test`;
   await page.goto('/en/careers/');
   await pageFormOn(page).locator('[name="fullName.first"]').fill('Ada');
   await pageFormOn(page).locator('[name="fullName.last"]').fill('Lovelace');
-  await fillForm({ email: 'ada@visitor.jfb.test', post: 'assistant' }, pageFormOn(page));
+  await fillForm({ email, post: 'assistant' }, pageFormOn(page));
   await pageFormOn(page).locator('button[data-jfb-nav="next"]').click();
   await fillForm(
     {
@@ -474,7 +492,7 @@ test('the job application takes a CV without JavaScript: one too large and a pro
 
   await fillForm({ letter: 'I would love to work in a library.' }, pageFormOn(page));
   expect(outcomeOf(await submitForm(pageFormOn(page))).message).toBe('Thank you, Ada. We reply within two weeks.');
-  const entries = (await filesOf(request, 'application')).slice(before);
+  const entries = await ownFiles(request, 'application', before, keys.email, email);
   expect(entries).toEqual([[{ field: keys.cv, name: 'cv.pdf', size: 100_000, typed: null }]]);
 });
 
