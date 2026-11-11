@@ -111,6 +111,14 @@ export default {
       'Das Formular fragt nach personenbezogenen Daten, etwa mit dieser Antwort, hat aber kein Einwilligungsfeld. Fügen Sie eines hinzu, wenn die Einträge auf Grundlage einer Einwilligung aufbewahrt und genutzt werden.',
     code_card_number_asked:
       'Dieses Feld fragt nach einer Kartennummer. Nehmen Sie Zahlungen über einen Zahlungsanbieter entgegen: Kartendaten gehören nie in die Einträge, E-Mails oder Exporte eines Formulars.',
+    code_anonymous_for_members:
+      'Ein anonymes Formular speichert kein Mitglied und kann daher nicht nur für Mitglieder sein: Wählen Sie „Alle“ oder schalten Sie „Anonym“ aus.',
+    code_anonymous_one_per_member:
+      'Ein anonymes Formular speichert kein Mitglied und kann daher den zweiten Eintrag eines Mitglieds nicht vom ersten unterscheiden: Schalten Sie „Ein Eintrag pro Mitglied“ oder „Anonym“ aus.',
+    code_anonymous_takes_member:
+      'Dieses Feld übernimmt einen Wert des Mitglieds, den ein anonymes Formular in seiner Antwort speichern würde. Entfernen Sie den Wert oder schalten Sie „Anonym“ aus.',
+    code_anonymous_member_tag:
+      'Ein anonymes Formular läuft ohne das Mitglied, daher bleiben die Platzhalter des Mitglieds in diesem Text leer.',
     code_password_asked:
       'Dieses Feld fragt nach einem Passwort, das in den Einträgen, E-Mails und Exporten des Formulars landen würde. Lassen Sie Mitglieder sich stattdessen anmelden.',
     code_file_size_unset:

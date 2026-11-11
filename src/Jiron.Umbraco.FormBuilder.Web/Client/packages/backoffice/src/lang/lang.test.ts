@@ -290,6 +290,7 @@ describe('the dictionaries', () => {
       ['Logic', 'LogicException.cs'],
       ['Actions', 'ActionCheckCodes.cs'],
       ...[
+        'AnonymousFormCheck',
         'CollectedDataFormChecks',
         'FieldFormChecks',
         'FormCheck',

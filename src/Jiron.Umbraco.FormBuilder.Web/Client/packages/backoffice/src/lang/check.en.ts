@@ -106,6 +106,13 @@ export default {
       'The form asks for personal data, such as this answer, but has no consent field. Add one if consent is the basis on which the entries are kept and used.',
     code_card_number_asked:
       "This field asks for a card number. Take payments through a payment provider: card data never belongs in a form's entries, mail or exports.",
+    code_anonymous_for_members:
+      'An anonymous form keeps no member, so it cannot be for members only: choose Anyone, or turn Anonymous off.',
+    code_anonymous_one_per_member:
+      "An anonymous form keeps no member, so it can't tell a member's second entry from their first: turn off One entry per member, or Anonymous.",
+    code_anonymous_takes_member:
+      'This field takes a value from the member, which an anonymous form would keep in its answer. Take the value away, or turn Anonymous off.',
+    code_anonymous_member_tag: "An anonymous form runs without the member, so this text's member tags stay empty.",
     code_password_asked:
       "This field asks for a password, which would end up in the form's entries, mail and exports. Let members sign in instead.",
     code_file_size_unset:

@@ -1,6 +1,8 @@
 using System.Net;
 using System.Text;
+using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
+using Jiron.Umbraco.FormBuilder.Core.Privacy;
 using Jiron.Umbraco.FormBuilder.Core.Retention;
 using Jiron.Umbraco.FormBuilder.Core.Settings;
 using Jiron.Umbraco.FormBuilder.Tests.Integration.Rendering;
@@ -11,8 +13,8 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Integration.Privacy;
 
 /// <summary>
 /// A member deleted in Umbraco (ROADMAP 14.3, ADR-0231): their entries are anonymised by default, keeping their place
-/// but nothing of the member, or deleted where Settings > Privacy says so; an entry a legal hold keeps stays as it is,
-/// and another visitor's entry is untouched.
+/// but nothing of the member, or deleted where Settings > Privacy says so; their drafts go; an entry a legal hold keeps
+/// stays as it is, and another visitor's entry is untouched; the erase is audited without a user when Umbraco deletes them.
 /// </summary>
 [TestFixture]
 [UmbracoTest(Database = UmbracoTestOptions.Database.NewSchemaPerTest, Boot = true)]
@@ -28,13 +30,17 @@ public sealed class MemberDeletionTests : RenderingTestBase
         var (key, member, theirs) = await TwoEntriesOfAMemberAndOneOfAVisitorAsync();
         var held = theirs[1];
         Assert.That(await GetRequiredService<EntryHolds>().HoldAsync(held.Key, DateTimeOffset.UtcNow.AddDays(30), "A complaint is open.", Editor), Is.EqualTo(EntryHoldRefusal.None));
+        var draft = await DraftAsync(key, member);
 
         GetRequiredService<IMemberService>().Delete(GetRequiredService<IMemberService>().GetById(member)!);
         var after = await EntriesAsync(key);
         var values = await Entries.ListValuesAsync([.. after.Select(entry => entry.Id)]);
+        var audited = await GetRequiredService<IAuditRepository>().QueryAsync(new AuditQuery { Action = PersonData.ErasedAction }, new PageRequest(0, 10));
 
         Assert.Multiple(() =>
         {
+            Assert.That(after.Select(entry => entry.Id), Has.None.EqualTo(draft.Id), "their draft goes");
+            Assert.That(audited.Items.Select(entry => entry.UserKey), Is.EqualTo(new Guid?[] { null }), "one erase, without a user, as Umbraco deleted the member");
             Assert.That(after, Has.Count.EqualTo(3), "anonymised entries keep their place");
             Assert.That(after.Single(entry => entry.Id == theirs[0].Id).MemberKey, Is.Null, "nothing names the member any more");
             Assert.That(values.Where(value => value.EntryId == theirs[0].Id), Is.Empty, "and no answer is left");
@@ -82,6 +88,23 @@ public sealed class MemberDeletionTests : RenderingTestBase
         }
 
         return (key, member, [.. (await EntriesAsync(key)).Where(entry => entry.MemberKey == member)]);
+    }
+
+    // A draft the member saved, as the drafts endpoint stores one.
+    private async Task<StoredEntry> DraftAsync(Guid key, Guid member)
+    {
+        var row = (await GetRequiredService<IFormRepository>().GetAsync(key))!;
+        return (await Entries.CreateAsync(new NewEntry
+        {
+            Key = Guid.NewGuid(),
+            FormId = row.Id,
+            FormVersionId = row.PublishedVersionId!.Value,
+            State = EntryState.Draft,
+            SubmissionId = Guid.NewGuid(),
+            SubmissionHash = new string('d', 64),
+            Culture = "en-US",
+            MemberKey = member,
+        }))!;
     }
 
     private async Task<HttpResponseMessage> PostAsync(Guid key)

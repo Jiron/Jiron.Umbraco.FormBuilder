@@ -187,11 +187,8 @@ describe('every key is used', () => {
       {},
       inFolders('settings', 'privacy', 'activity'),
     );
-    for (const key of snapshot('settings-keys.json') as string[]) {
-      // A served choice has the line under it its label names (`${choice.label}Line`).
-      used.add(key.slice('jfbGlobalSettings_'.length));
-      used.add(`${key.slice('jfbGlobalSettings_'.length)}Line`);
-    }
+    // The snapshot holds the line under a choice (`${choice.label}Line`) only where the field's editor draws one.
+    for (const key of snapshot('settings-keys.json') as string[]) used.add(key.slice('jfbGlobalSettings_'.length));
     for (const [section, boxes] of Object.entries(LEADS)) for (const box of boxes) used.add(`${section}Box_${box}Lead`);
     for (const days of SPANS) used.add(`retentionSpan_${days}`);
     expectHeld('jfbGlobalSettings', used);

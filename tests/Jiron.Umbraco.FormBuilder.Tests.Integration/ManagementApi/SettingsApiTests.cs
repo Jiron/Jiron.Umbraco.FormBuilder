@@ -203,6 +203,9 @@ public sealed class SettingsApiTests : ManagementApiTestBase
     /// <c>docs/api/settings-keys.json</c> holds them, which the backoffice's dictionaries' check reads (ROADMAP 14.1).
     /// After a deliberate change, run with <c>JFB_UPDATE_SNAPSHOTS=1</c>: it writes the snapshot and fails.
     /// </summary>
+    // The screens' editors that draw a line under each choice (settings-editors.ts).
+    private static readonly HashSet<string> LinedEditors = new(["choiceLines", "ipHandling", "captchaConsent", "protectionLevel"], StringComparer.Ordinal);
+
     [Test]
     public async Task TheSectionsKeys_AreTheReviewedSnapshot()
     {
@@ -213,12 +216,24 @@ public sealed class SettingsApiTests : ManagementApiTestBase
             Assert.That(answer.Outcome, Is.EqualTo("200"), answer.ToString());
             Collect(answer.Body!["fields"], keys);
             Collect(answer.Body!["facts"], keys);
-            // Each box the fields lie in, whose heading the screen names by the section and the box.
+            // Each box the fields lie in, whose heading the screen names by the section and the box, and the line under each
+            // choice of a field whose editor draws one.
             foreach (var field in answer.Body!["fields"]!.AsArray())
             {
                 if (field!["group"]?.GetValue<string>() is { Length: > 0 } box)
                 {
                     keys.Add($"jfbGlobalSettings_{section}Box_{box}");
+                }
+
+                if (field["editor"]?.GetValue<string>() is { } editor && LinedEditors.Contains(editor))
+                {
+                    foreach (var choice in field["choices"]!.AsArray())
+                    {
+                        if (choice!["label"]?.GetValue<string>() is { } label && label.StartsWith('#'))
+                        {
+                            keys.Add(label[1..] + "Line");
+                        }
+                    }
                 }
             }
         }

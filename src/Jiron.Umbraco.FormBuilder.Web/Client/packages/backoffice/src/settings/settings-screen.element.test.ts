@@ -218,13 +218,16 @@ function protection(implicitConsent = false): SettingsSectionResponseModel {
   };
 }
 
-/** Privacy > Data collection: what entries keep of IP addresses, and insights; the host allows full addresses or not. */
+/**
+ * Privacy > Data collection: what entries keep of IP addresses, and insights; the host allows full addresses or not. And
+ * what a member's deletion does to their entries (ADR-0231).
+ */
 function privacy(fullIp = false): SettingsSectionResponseModel {
   return {
     section: 'privacy',
     site: null,
     version: 2,
-    values: { ip: 'none', insights: true },
+    values: { ip: 'none', insights: true, memberDeleted: 'anonymise' },
     overrides: [],
     siteFields: [],
     sites: [],
@@ -234,6 +237,10 @@ function privacy(fullIp = false): SettingsSectionResponseModel {
         choices: choices('privacy', 'ip', ['none', 'anonymised', 'full']),
       }),
       field('privacy', 'insights', 'checkbox', 'insights'),
+      field('privacy', 'memberDeleted', 'choice', 'members', {
+        editor: 'choiceLines',
+        choices: choices('privacy', 'memberDeleted', ['anonymise', 'delete']),
+      }),
     ],
     locks: fullIp
       ? []
@@ -306,6 +313,25 @@ describe('the global settings screen', () => {
     expect(text(root.getElementById('setting-baseUrl'))).toBe('');
     expect(root.getElementById('setting-baseUrl')?.getAttribute('placeholder')).toBe('https://nordwind.example');
     expect(text(boxes[3])).toContain('Pages show forms through the block type Form, created on');
+  });
+
+  it("hands the site's own wording of the visitor texts to its editor, in the language the screen edits, and saves what it changes (ADR-0230)", async () => {
+    const texts = { 'message.email': { '': 'Your email, please' } };
+    const section = general({
+      values: { ...(general().values as Record<string, unknown>), texts },
+      fields: [...general().fields, field('general', 'texts', 'text', 'forms', { editor: 'visitorTexts' })],
+    });
+    const { root, save } = await screenOf('general', section);
+    const editor = must(root.querySelector<HTMLElement & { texts?: unknown }>('jfb-visitor-texts'), 'the editor');
+    expect(editor.texts).toEqual(texts);
+    expect(editor.getAttribute('culture'), "the default language's, which its texts keep under ''").toBe('');
+
+    const changed = { 'message.email': { '': 'Your email address' }, 'message.required': { '': 'Please answer this' } };
+    editor.dispatchEvent(new CustomEvent('change', { detail: { texts: changed } }));
+    await settle();
+    api.saves = [{ data: section }];
+    await save();
+    expect(api.sent).toEqual([{ version: 3, site: null, values: { texts: changed } }]);
   });
 
   it('saves only the fields changed, with the version read, and says so', async () => {
@@ -477,6 +503,18 @@ describe('the global settings screen', () => {
     const allowed = await screenOf('privacy', privacy(true));
     expect(must(allowed.root.querySelector<HTMLInputElement>('input[value="full"]'), 'full').disabled).toBe(false);
     expect(said(allowed.root)).toContain('Only for a site that needs it whole, such as to report abuse.');
+  });
+
+  it("says under each way a member's deletion goes what it does to their entries, and saves the one picked", async () => {
+    const { root, save } = await screenOf('privacy', privacy());
+    const radio = (value: string) => must(root.querySelector<HTMLInputElement>(`input[value="${value}"]`), value);
+    expect([radio('anonymise').checked, radio('delete').checked]).toEqual([true, false]);
+    expect(said(root)).toContain('The entries go, with their files and mail.');
+    radio('delete').click();
+    await settle();
+    api.saves = [{ data: privacy() }];
+    await save();
+    expect(api.sent).toEqual([{ version: 2, site: null, values: { memberDeleted: 'delete' } }]);
   });
 
   it("says Email can't send yet with the key that sets it up, and offers no test mail until it can", async () => {

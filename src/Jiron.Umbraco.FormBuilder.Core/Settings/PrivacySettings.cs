@@ -43,7 +43,7 @@ internal sealed record PrivacySettings : ISettingsSection
     /// What a member's deletion in Umbraco does to their entries (ADR-0231): anonymised by default, or deleted; for every
     /// site at once, since a member belongs to no site. Entries a legal hold keeps stay as they are.
     /// </summary>
-    [SettingsField("members")]
+    [SettingsField("members", Editor = "choiceLines")]
     public MemberDeletion MemberDeleted { get; init; } = MemberDeletion.Anonymise;
 }
 

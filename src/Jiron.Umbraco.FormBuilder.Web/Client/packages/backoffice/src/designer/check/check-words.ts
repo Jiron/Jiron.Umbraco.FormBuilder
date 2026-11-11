@@ -68,6 +68,11 @@ export const OWN_WORDS: ReadonlySet<string> = new Set([
   'consent_missing',
   'card_number_asked',
   'password_asked',
+  // An anonymous form's (ADR-0231).
+  'anonymous_for_members',
+  'anonymous_one_per_member',
+  'anonymous_takes_member',
+  'anonymous_member_tag',
   'file_size_unset',
   'file_size_above_site',
   'file_type_not_taken',

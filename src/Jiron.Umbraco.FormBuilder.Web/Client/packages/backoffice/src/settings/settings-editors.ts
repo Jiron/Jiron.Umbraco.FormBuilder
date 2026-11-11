@@ -273,6 +273,22 @@ export function settingsEditors(host: SettingsEditorHost): Readonly<Record<strin
     captchaConsent: (setting, value, path) =>
       restricted(setting, value, path, 'implicit', facts.protection?.implicitConsent ?? false),
 
+    // Each choice with the line under it that says what it does, such as what a member's deletion does to their entries
+    // (ADR-0231).
+    choiceLines: (setting, value, path) =>
+      radios(
+        setting,
+        path,
+        setting.choices.map((choice) => ({
+          value: choice.value,
+          name: context.say(choice.label),
+          line: context.say(`${choice.label}Line`),
+          disabled: false,
+          checked: text(value) === choice.value,
+          pick: () => host.put(path, choice.value),
+        })),
+      ),
+
     // Each way an entry keeps the address, with its line; the full one, which the host must allow, greyed with the key
     // that allows it (ADR-0224).
     ipHandling: (setting, value, path) => restricted(setting, value, path, 'full', facts.privacy?.fullIp ?? false),
