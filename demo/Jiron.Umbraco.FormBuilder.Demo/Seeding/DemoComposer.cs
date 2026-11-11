@@ -1,9 +1,10 @@
+using Jiron.Umbraco.FormBuilder.Samples;
 using Umbraco.Cms.Core.Composing;
 using Umbraco.Cms.Core.Notifications;
 
 namespace Jiron.Umbraco.FormBuilder.Demo.Seeding;
 
-/// <summary>Registers the demo's seeding (ROADMAP 3.3).</summary>
+/// <summary>Registers the demo's seeding (ROADMAP 3.3), and the extension samples its settings name (ADR-0234).</summary>
 public sealed class DemoComposer : IComposer
 {
     /// <inheritdoc />
@@ -14,6 +15,10 @@ public sealed class DemoComposer : IComposer
         builder.Services.AddTransient<DemoMediaSeeder>();
         builder.Services.AddTransient<DemoFormSeeder>();
         builder.AddNotificationAsyncHandler<UmbracoApplicationStartedNotification, DemoSeeder>();
+        foreach (var sample in builder.Config.GetSection($"{DemoOptions.Section}:{nameof(DemoOptions.Samples)}").Get<string[]>() ?? [])
+        {
+            builder.AddFormBuilderSample(sample);
+        }
     }
 }
 
@@ -34,6 +39,12 @@ public sealed class DemoOptions
     /// or the form block, as the setup checklist's run needs (ROADMAP 12.6).
     /// </summary>
     public bool Seed { get; set; } = true;
+
+    /// <summary>
+    /// The extension samples the demo turns on, by their names (<see cref="FormBuilderSamples.Names"/>): none by default,
+    /// so the demo shows Jiron Form Builder as a site gets it; the browser tests name the ones they show.
+    /// </summary>
+    public IList<string> Samples { get; } = [];
 }
 
 /// <summary>A generated library member.</summary>

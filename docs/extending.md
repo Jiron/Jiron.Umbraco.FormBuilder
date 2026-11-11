@@ -20,6 +20,7 @@ reviewed diff, and a breaking one waits for the next major version with its depr
 6. [The website](#6-the-website)
 7. [The backoffice](#7-the-backoffice)
 8. [Headless sites](#8-headless-sites)
+9. [The samples](#9-the-samples)
 
 ## 1. Registering your extensions
 
@@ -442,3 +443,18 @@ the markup contract, as the type's Razor view does: controls named as the field'
 first with the field's `id`, described by its help and error. The runtime then reads, checks and posts them as it does
 a built-in type's. A type with no function shows its label and a warning in the console.
 
+## 9. The samples
+
+[`samples/Jiron.Umbraco.FormBuilder.Samples`](../samples/Jiron.Umbraco.FormBuilder.Samples) holds an extension of each
+kind, compiled and tested with the rest of the repository ([ADR-0234](decisions/0234-the-samples.md)). None registers
+itself: a site turns one on by its name in a composer, `builder.AddFormBuilderSample(FormBuilderSamples.Colour)`, or
+copies what it needs. The demo turns on the ones its setting `Demo:Samples` names.
+
+| Sample | What it shows |
+| --- | --- |
+| `colour` | a field type whose colours are a JSON setting with its own editor (`colour-swatches.js`), drawn in the designer by its own preview (`colour-preview.js`) |
+| `embedView` | a view on the form workspace that shows a developer how to place the open form (`embed-view.js`) |
+
+The samples register their manifests from code (`SampleManifests`, an `IPackageManifestReader`) rather than with an
+`umbraco-package.json`, so each sample's backoffice part comes and goes with its server part. Their words are in
+`lang/en.js` and `lang/de.js`.

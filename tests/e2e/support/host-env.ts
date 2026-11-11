@@ -30,6 +30,10 @@ export function hostEnvironment(secrets: E2ESecrets, options: { deliveryApi: boo
     JironFormBuilderTesting__Clock: 'true',
     JironFormBuilderTesting__StubPort: String(STUB_PORT),
     JironFormBuilderTesting__StartupMarker: 'true',
+    // The extension samples the backoffice specs show (ROADMAP 15.1, ADR-0234): a site's own setting editor, field
+    // preview and workspace view.
+    Demo__Samples__0: 'colour',
+    Demo__Samples__1: 'embedView',
     // The webhook action calls the stub (ROADMAP 8.4).
     JironFormBuilder__Webhooks__AllowedHosts__0: `127.0.0.1:${STUB_PORT}`,
     JironFormBuilder__Webhooks__AllowHttp: 'true',

@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <!--
+    The extension samples (ROADMAP 15.1 and 15.2, docs/extending.md, ADR-0234): what a site writes to extend Jiron
+    Form Builder, compiled and tested with the rest of the repository and never packed. A Razor class library like a
+    site's own: its views are compiled into the assembly, and wwwroot is served from the site root, so its backoffice
+    files live under /App_Plugins/JironFormBuilderSamples/. Nothing in it registers itself: a site (or the demo, or a
+    test) turns each sample on by its name (FormBuilderSamples).
+  -->
+  <PropertyGroup>
+    <StaticWebAssetBasePath>/</StaticWebAssetBasePath>
+    <AddRazorSupportForMvc>true</AddRazorSupportForMvc>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The meta package, as a site installs it. -->
+    <ProjectReference Include="..\..\src\Jiron.Umbraco.FormBuilder\Jiron.Umbraco.FormBuilder.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Umbraco.Cms.Web.Website" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Jiron.Umbraco.FormBuilder.Tests.Unit" />
+  </ItemGroup>
+
+</Project>

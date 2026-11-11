@@ -30,6 +30,11 @@
       it is off unless the host's JironFormBuilderTesting section turns it on, which scripts/demo.ps1 never does.
     -->
     <ProjectReference Include="..\..\tests\Jiron.Umbraco.FormBuilder.Testing\Jiron.Umbraco.FormBuilder.Testing.csproj" />
+    <!--
+      The extension samples (ADR-0234), each off unless Demo:Samples names it, which scripts/demo.ps1 never does; the
+      browser tests turn on the ones they show.
+    -->
+    <ProjectReference Include="..\..\samples\Jiron.Umbraco.FormBuilder.Samples\Jiron.Umbraco.FormBuilder.Samples.csproj" />
   </ItemGroup>
 
   <ItemGroup>

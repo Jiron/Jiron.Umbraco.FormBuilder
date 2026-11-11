@@ -10,6 +10,8 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Jiron.Umbraco.FormBuilder.Web\Jiron.Umbraco.FormBuilder.Web.csproj" />
     <ProjectReference Include="..\Jiron.Umbraco.FormBuilder.Testing\Jiron.Umbraco.FormBuilder.Testing.csproj" />
+    <!-- The extension samples are tested here, as CI builds and tests them (ROADMAP 15.2, ADR-0234). -->
+    <ProjectReference Include="..\..\samples\Jiron.Umbraco.FormBuilder.Samples\Jiron.Umbraco.FormBuilder.Samples.csproj" />
   </ItemGroup>
 
   <ItemGroup>

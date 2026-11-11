@@ -1,0 +1,25 @@
+// The samples' words in German (docs/extending.md, section 7), the same terms as lang/en.js.
+export default {
+  jfbSamples: {
+    colour: 'Farbe',
+    colours: 'Farben',
+    coloursHelp: 'Die Farben, aus denen Besucher wählen, jede mit ihrem Namen.',
+    showNames: 'Namen der Farben zeigen',
+    addColour: 'Farbe hinzufügen',
+    newColour: 'Neue Farbe',
+    colourName: (/** @type {number} */ position) => `Name der Farbe ${position}`,
+    colourValue: (/** @type {string} */ name) => `Farbe von ${name}`,
+    removeColour: (/** @type {string} */ name) => `${name} entfernen`,
+    noColours: 'Noch keine Farben. Besucher brauchen mindestens eine zur Auswahl.',
+    embed: 'Einbinden',
+    embedHeadline: 'Dieses Formular auf einer Seite zeigen',
+    embedRazor: 'In einer Razor-Ansicht',
+    embedRazorHelp: 'Dort, wo das Formular in einer Vorlage oder Teilansicht stehen soll.',
+    embedHeadless: 'Auf einer anderen Website',
+    embedHeadlessHelp:
+      'Für eine Headless-Website: Schalten Sie in den Einstellungen des Formulars die Headless-Auslieferung ein, und tragen Sie die Adresse der Website in den Einstellungen dieser Website unter JironFormBuilder:PublicApi:AllowedOrigins ein.',
+    copy: 'Kopieren',
+    copied: 'Kopiert',
+    copyFailed: 'Markieren Sie den Text und kopieren Sie ihn selbst.',
+  },
+};

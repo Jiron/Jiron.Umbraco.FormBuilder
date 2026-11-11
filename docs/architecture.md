@@ -28,7 +28,8 @@ When this document and an ADR disagree, the ADR decides and this document is fix
 Four packages, one Testing project that is never packed, the samples, the tests and the demo
 ([ADR-0001](decisions/0001-solution-structure-and-packages.md)). The demo references the meta package and the Testing
 project, everything in it off, so the browser tests run the demo as their host
-([ADR-0029](decisions/0029-testing-project.md), [ADR-0031](decisions/0031-browser-harness.md)).
+([ADR-0029](decisions/0029-testing-project.md), [ADR-0031](decisions/0031-browser-harness.md)), and the samples, each off
+unless the setting `Demo:Samples` names it ([ADR-0234](decisions/0234-the-samples.md)).
 
 ```mermaid
 flowchart TB
@@ -36,6 +37,7 @@ flowchart TB
     meta["Jiron.Umbraco.FormBuilder<br/>meta package, no code"]
     ai["…FormBuilder.AI<br/>optional add-on"]
     testing["…FormBuilder.Testing<br/>never packed"]
+    samples["…FormBuilder.Samples<br/>never packed"]
     web["…FormBuilder.Web<br/>Razor class library"]
     core["…FormBuilder.Core"]
   end
@@ -50,6 +52,7 @@ flowchart TB
   ai --> web
   ai --> core
   ai --> umbAi
+  samples --> meta
   testing --> web
   testing --> core
   web --> core

@@ -1,0 +1,25 @@
+{
+  // The samples' backoffice files (samples/Jiron.Umbraco.FormBuilder.Samples, ADR-0234): plain JavaScript that the
+  // backoffice loads as it is, checked against Umbraco's types and the declarations Jiron Form Builder ships. They
+  // live outside this folder, where no node_modules is, so the three Umbraco modules they import are named here.
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": true,
+    // Plain JavaScript says no override keyword.
+    "noImplicitOverride": false,
+    "types": [],
+    "paths": {
+      "@umbraco-cms/backoffice/external/lit": [
+        "./node_modules/@umbraco-cms/backoffice/dist-cms/external/lit/index.d.ts"
+      ],
+      "@umbraco-cms/backoffice/element-api": [
+        "./node_modules/@umbraco-cms/backoffice/dist-cms/libs/element-api/index.d.ts"
+      ],
+      "@umbraco-cms/backoffice/context-api": [
+        "./node_modules/@umbraco-cms/backoffice/dist-cms/libs/context-api/index.d.ts"
+      ]
+    }
+  },
+  "include": ["../../../samples/Jiron.Umbraco.FormBuilder.Samples/wwwroot/App_Plugins/JironFormBuilderSamples/**/*.js"]
+}
