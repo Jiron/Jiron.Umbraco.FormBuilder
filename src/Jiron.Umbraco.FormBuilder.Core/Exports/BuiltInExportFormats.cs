@@ -200,6 +200,10 @@ internal sealed class JsonExportFormat : IFormBuilderExportFormat
             {
                 json.WriteString("state", ExportTexts.Joined(entry.Cells[index]));
             }
+            else if (column.Kind == FormBuilderExportColumnKind.Language)
+            {
+                json.WriteString("language", ExportTexts.Joined(entry.Cells[index]));
+            }
         }
 
         json.WriteString("received", entry.ReceivedUtc.UtcDateTime.ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", CultureInfo.InvariantCulture));
@@ -343,6 +347,13 @@ internal sealed class PrintExportFormat : IFormBuilderExportFormat
                         break;
                     case FormBuilderExportColumnKind.State or FormBuilderExportColumnKind.Received:
                         details.Add(text);
+                        break;
+                    case FormBuilderExportColumnKind.Language:
+                        if (text.Length > 0)
+                        {
+                            details.Add(text);
+                        }
+
                         break;
                     default:
                         if (text.Length > 0)

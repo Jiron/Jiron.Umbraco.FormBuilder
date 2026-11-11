@@ -312,8 +312,9 @@ internal sealed partial class EntryExports(
             new(FormBuilderExportColumnKind.Reference, words.Reference, "reference"),
             new(FormBuilderExportColumnKind.State, words.State, "state"),
             new(FormBuilderExportColumnKind.Received, words.Received, "received"),
+            new(FormBuilderExportColumnKind.Language, words.Language, "language"),
         };
-        var specs = new List<ColumnSpec> { new(FormBuilderExportColumnKind.Number), new(FormBuilderExportColumnKind.Reference), new(FormBuilderExportColumnKind.State), new(FormBuilderExportColumnKind.Received) };
+        var specs = new List<ColumnSpec> { new(FormBuilderExportColumnKind.Number), new(FormBuilderExportColumnKind.Reference), new(FormBuilderExportColumnKind.State), new(FormBuilderExportColumnKind.Received), new(FormBuilderExportColumnKind.Language) };
         var tables = new List<FormBuilderExportTable>();
         var tableSpecs = new List<TableSpec>();
         var fileFields = new Dictionary<Guid, string>();
@@ -493,6 +494,7 @@ internal sealed partial class EntryExports(
                     FormBuilderExportColumnKind.Reference => [EntryReferences.Format(reference, entry.Number, local.Year)],
                     FormBuilderExportColumnKind.State => [export.Words.StateOf(entry.State)],
                     FormBuilderExportColumnKind.Received => [local.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture)],
+                    FormBuilderExportColumnKind.Language => entry.Culture.Length > 0 ? [entry.Culture] : [],
                     _ when scope is null || texts is null || field is null => [],
                     FormBuilderExportColumnKind.GridRow => field.Rows.FirstOrDefault(row => row.Key == spec.Row) is { } row ? answers.ExportGridRow(field, row, scope, texts) : [],
                     FormBuilderExportColumnKind.Position => Ranked(ranked, field, scope, texts) is { } order && spec.Position <= order.Count ? [order[spec.Position - 1]] : [],
@@ -646,11 +648,12 @@ internal sealed partial class EntryExports(
 /// <param name="Reference">The reference's column.</param>
 /// <param name="State">The state's column.</param>
 /// <param name="Received">The received column.</param>
+/// <param name="Language">The column of the language an entry was sent in (ADR-0228).</param>
 /// <param name="States">The states, as the lists name them (copy.md).</param>
 /// <param name="NotKept">An answer kept only until the actions have run, once it is gone (ADR-0225), as the entry panel says it.</param>
-internal sealed record ExportWords(string Entry, string Reference, string State, string Received, IReadOnlyDictionary<EntryState, string> States, string NotKept)
+internal sealed record ExportWords(string Entry, string Reference, string State, string Received, string Language, IReadOnlyDictionary<EntryState, string> States, string NotKept)
 {
-    private static readonly ExportWords English = new("Entry", "Reference", "State", "Received", new Dictionary<EntryState, string>
+    private static readonly ExportWords English = new("Entry", "Reference", "State", "Received", "Language", new Dictionary<EntryState, string>
     {
         [EntryState.Draft] = "Draft",
         [EntryState.Unverified] = "Waiting for confirmation",
@@ -660,7 +663,7 @@ internal sealed record ExportWords(string Entry, string Reference, string State,
         [EntryState.Spam] = "Spam",
     }.ToFrozenDictionary(), "not kept");
 
-    private static readonly ExportWords German = new("Eintrag", "Referenz", "Status", "Eingegangen", new Dictionary<EntryState, string>
+    private static readonly ExportWords German = new("Eintrag", "Referenz", "Status", "Eingegangen", "Sprache", new Dictionary<EntryState, string>
     {
         [EntryState.Draft] = "Entwurf",
         [EntryState.Unverified] = "Wartet auf Best\u00e4tigung",

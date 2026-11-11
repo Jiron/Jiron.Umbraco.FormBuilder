@@ -57,6 +57,10 @@ chosen, and a box in another language shows the default text as its placeholder.
 4. **Emails.** An email action's subject or plain-text body of exactly `#key` is the item's text in the entry's
    language; an HTML body's item text is sanitised as an editor's body is. Merge tags inside the item's text render as
    in the action's own text.
+5. **Exports.** An entry keeps the language it was sent in, and an export writes its answers' numbers and dates in that
+   language, as it did; a new column, Language (`language` in JSON, `FormBuilderExportColumnKind.Language` for a format
+   of a site's own), names it, so a reader of a file with entries in several languages knows how each row is written.
+   The received time stays `yyyy-MM-dd HH:mm` in the site's time zone in every language, so the column sorts.
 
 ## Consequences
 

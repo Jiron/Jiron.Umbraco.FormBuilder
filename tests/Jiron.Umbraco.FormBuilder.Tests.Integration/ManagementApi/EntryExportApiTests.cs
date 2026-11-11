@@ -88,7 +88,7 @@ public sealed class EntryExportApiTests : ManagementApiTestBase
             Assert.That(answer.Headers.GetValues("X-Content-Type-Options"), Is.EqualTo(new[] { "nosniff" }));
             Assert.That(answer.Headers.CacheControl?.NoStore, Is.True, "never kept in a cache");
             Assert.That(rows[0], Does.Not.Contain("Salary"), "no sensitive field unless asked for");
-            Assert.That(rows.Skip(1).Select(row => row[4]), Is.EqualTo(new[] { "'=HYPERLINK(\"x\")", "Ada" }), "the formula guarded");
+            Assert.That(rows.Skip(1).Select(row => row[5]), Is.EqualTo(new[] { "'=HYPERLINK(\"x\")", "Ada" }), "the formula guarded");
         });
     }
 

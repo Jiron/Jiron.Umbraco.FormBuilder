@@ -87,6 +87,9 @@ public enum FormBuilderExportColumnKind
 
     /// <summary>One position of a ranking's answer.</summary>
     Position,
+
+    /// <summary>The language the entry was sent in, such as <c>de-DE</c>, in which its answers are written (ADR-0228); empty for none.</summary>
+    Language,
 }
 
 /// <summary>A column of an export, or of a repeatable group's table (ADR-0210).</summary>

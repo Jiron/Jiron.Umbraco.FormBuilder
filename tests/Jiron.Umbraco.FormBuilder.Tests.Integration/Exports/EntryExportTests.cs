@@ -161,7 +161,7 @@ public sealed class EntryExportTests : ActionTestBase
 
     private static readonly EntryExporter Owner = new(Editor, MaySeeSensitive: true, "en-US");
 
-    private static readonly string[] OwnHeaders = ["Entry", "Reference", "State", "Received"];
+    private static readonly string[] OwnHeaders = ["Entry", "Reference", "State", "Received", "Language"];
 
     private static readonly string Answers = $$"""{"name":"Ada","colours":["red","blue"],"rating.{{Speed.Key}}":"good","rating.{{Price.Key}}":"bad","order.b":"1","order.a":"2","order.c":"3","guests":[{"guestName":"Ben"},{"guestName":"Cy"}],"salary":"90000","note":"=SUM(A1)"}""";
 
@@ -189,7 +189,45 @@ public sealed class EntryExportTests : ActionTestBase
             Assert.That(rows, Has.Count.EqualTo(2));
             Assert.That(rows[1].Take(3), Is.EqualTo(new[] { entry.Number.ToString(System.Globalization.CultureInfo.InvariantCulture), $"2026-{entry.Number:00000}", "Approved" }));
             Assert.That(rows[1][3], Does.Match(@"^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$"));
-            Assert.That(rows[1].Skip(4), Is.EqualTo(new[] { "Ada", "Red, Blue", "Good", "Bad", "Bananas", "Apples", "Cherries", "'=SUM(A1)", string.Empty, "Guest: Ben\nGuest: Cy" }), "the formula guarded, a group's rows as lines");
+            Assert.That(rows[1].Skip(5), Is.EqualTo(new[] { "Ada", "Red, Blue", "Good", "Bad", "Bananas", "Apples", "Cherries", "'=SUM(A1)", string.Empty, "Guest: Ben\nGuest: Cy" }), "the formula guarded, a group's rows as lines");
+        });
+    }
+
+    [Test]
+    public async Task EachEntrysAnswers_AreWrittenInItsLanguage_WhichItsLanguageColumnNames_AndTheReceivedTimeStaysSortable()
+    {
+        var amount = new FormField { Key = Guid.Parse("c4100000-0000-4000-8000-0000000000a1"), Type = "number", Alias = "amount", Label = new LocalizedText("Amount") };
+        var day = new FormField { Key = Guid.Parse("c4100000-0000-4000-8000-0000000000a2"), Type = "date", Alias = "day", Label = new LocalizedText("Day") };
+        var form = await PublishAsync(name: "Languages export", fields: [NameField, amount, day]);
+        var row = (await FormRows.GetAsync(form))!;
+        var fields = (await FormRows.ListFieldsAsync(row.Id)).ToDictionary(field => field.Values.FieldKey, field => field.Id);
+        foreach (var culture in new[] { "en-US", "de-DE" })
+        {
+            _ = await Entries.CreateAsync(new NewEntry
+            {
+                Key = Guid.NewGuid(),
+                FormId = row.Id,
+                FormVersionId = row.PublishedVersionId!.Value,
+                State = EntryState.Submitted,
+                SubmissionId = Guid.NewGuid(),
+                SubmissionHash = new string('a', 64),
+                Culture = culture,
+                Values = [new NewEntryValue(fields[NameField.Key], "Ada"), new NewEntryValue(fields[amount.Key], "1234.5"), new NewEntryValue(fields[day.Key], "2026-03-01")],
+            });
+        }
+
+        var rows = ExportFiles.Csv(Encoding.UTF8.GetString((await WriteAsync(form, new EntryExportRequest { Format = "csv" })).AsSpan(3)));
+        var json = JsonNode.Parse(await WriteAsync(form, new EntryExportRequest { Format = "json" }))!.AsArray();
+        var byLanguage = rows.Skip(1).ToDictionary(each => each[4]);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(rows[0].Take(5), Is.EqualTo(OwnHeaders));
+            Assert.That(byLanguage.Keys, Is.EquivalentTo(new[] { "en-US", "de-DE" }));
+            Assert.That(byLanguage["en-US"].Skip(5), Is.EqualTo(new[] { "Ada", "1,234.5", "3/1/2026" }));
+            Assert.That(byLanguage["de-DE"].Skip(5), Is.EqualTo(new[] { "Ada", "1.234,5", "01.03.2026" }));
+            Assert.That(byLanguage.Values.Select(each => each[3]), Has.All.Match(@"^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$"), "the same sortable time in every language");
+            Assert.That(json.Select(each => each!["language"]!.GetValue<string>()), Is.EquivalentTo(new[] { "en-US", "de-DE" }));
         });
     }
 
@@ -205,8 +243,8 @@ public sealed class EntryExportTests : ActionTestBase
 
         Assert.Multiple(() =>
         {
-            Assert.That(english[1].Skip(4), Is.EqualTo(new[] { "Ada", "not kept" }), "no action could use it, so it was never stored");
-            Assert.That(german[1].Skip(4), Is.EqualTo(new[] { "Ada", "nicht aufbewahrt" }));
+            Assert.That(english[1].Skip(5), Is.EqualTo(new[] { "Ada", "not kept" }), "no action could use it, so it was never stored");
+            Assert.That(german[1].Skip(5), Is.EqualTo(new[] { "Ada", "nicht aufbewahrt" }));
         });
     }
 
@@ -223,9 +261,9 @@ public sealed class EntryExportTests : ActionTestBase
         Assert.Multiple(() =>
         {
             Assert.That(bytes[0], Is.EqualTo((byte)'n'), "no byte-order mark");
-            Assert.That(rows[0], Is.EqualTo(new[] { "number", "reference", "state", "received", "name", "colours", "rating.1", "rating.2", "order.1", "order.2", "order.3", "note", "upload", "guests" }));
-            Assert.That(rows[1][4], Is.EqualTo("Lovelace; Ada"), "a delimiter inside is quoted");
-            Assert.That(rows[1][11], Is.EqualTo("say \"hi\""), "quotes are doubled");
+            Assert.That(rows[0], Is.EqualTo(new[] { "number", "reference", "state", "received", "language", "name", "colours", "rating.1", "rating.2", "order.1", "order.2", "order.3", "note", "upload", "guests" }));
+            Assert.That(rows[1][5], Is.EqualTo("Lovelace; Ada"), "a delimiter inside is quoted");
+            Assert.That(rows[1][12], Is.EqualTo("say \"hi\""), "quotes are doubled");
         });
     }
 
@@ -243,7 +281,7 @@ public sealed class EntryExportTests : ActionTestBase
             Assert.That(sheets.Select(sheet => sheet.Name), Is.EqualTo(new[] { "Export test", "Guests" }));
             Assert.That(sheets[0].Rows[0], Is.EqualTo(OwnHeaders.Concat(["Name", "Colours", "Rating: Speed", "Rating: Price", "Order: 1", "Order: 2", "Order: 3", "Note", "Upload"])));
             Assert.That(sheets[0].Rows[1][0], Is.EqualTo(number), "the number as a number");
-            Assert.That(sheets[0].Rows[1].Skip(4), Is.EqualTo(new[] { "Ada", "Red, Blue", "Good", "Bad", "Bananas", "Apples", "Cherries", "=SUM(A1)" }), "an inline string is never a formula");
+            Assert.That(sheets[0].Rows[1].Skip(5), Is.EqualTo(new[] { "Ada", "Red, Blue", "Good", "Bad", "Bananas", "Apples", "Cherries", "=SUM(A1)" }), "an inline string is never a formula");
             Assert.That(sheets[1].Rows, Is.EqualTo(new[] { new[] { "Entry", "#", "Guest" }, new[] { number, "1", "Ben" }, new[] { number, "2", "Cy" } }));
         });
     }
@@ -411,11 +449,11 @@ public sealed class EntryExportTests : ActionTestBase
 
         Assert.Multiple(() =>
         {
-            Assert.That(left[0].Skip(4), Is.EqualTo(new[] { "Name", "Badges" }), "a sensitive group stays out");
-            Assert.That(left[1].Skip(4), Is.EqualTo(new[] { "Ada", "Visitor: Ben" }), "and so does a group's sensitive field");
+            Assert.That(left[0].Skip(5), Is.EqualTo(new[] { "Name", "Badges" }), "a sensitive group stays out");
+            Assert.That(left[1].Skip(5), Is.EqualTo(new[] { "Ada", "Visitor: Ben" }), "and so does a group's sensitive field");
             Assert.That(json.ToJsonString(), Is.EqualTo("""{"name":"Ada","badges":[{"visitor":"Ben"}]}"""));
-            Assert.That(asked[0].Skip(4), Is.EqualTo(new[] { "Name", "Badges", "Private" }));
-            Assert.That(asked[1].Skip(4), Is.EqualTo(new[] { "Ada", "Visitor: Ben; PIN: 1234", "Phone: 555" }), "both, when asked for and allowed");
+            Assert.That(asked[0].Skip(5), Is.EqualTo(new[] { "Name", "Badges", "Private" }));
+            Assert.That(asked[1].Skip(5), Is.EqualTo(new[] { "Ada", "Visitor: Ben; PIN: 1234", "Phone: 555" }), "both, when asked for and allowed");
         });
     }
 
@@ -440,10 +478,10 @@ public sealed class EntryExportTests : ActionTestBase
 
         Assert.Multiple(() =>
         {
-            Assert.That(left[0].Skip(4), Is.EqualTo(new[] { "Name", "Guests" }), "the note stays out");
-            Assert.That(left[1].Skip(4), Is.EqualTo(new[] { "Ada", "Guest: Ben" }), "and so does the group's plus one");
-            Assert.That(asked[0].Skip(4), Is.EqualTo(new[] { "Name", "Note", "Guests" }));
-            Assert.That(asked[1].Skip(4), Is.EqualTo(new[] { "Ada", "kept", "Guest: Ben; Plus one: Cy" }));
+            Assert.That(left[0].Skip(5), Is.EqualTo(new[] { "Name", "Guests" }), "the note stays out");
+            Assert.That(left[1].Skip(5), Is.EqualTo(new[] { "Ada", "Guest: Ben" }), "and so does the group's plus one");
+            Assert.That(asked[0].Skip(5), Is.EqualTo(new[] { "Name", "Note", "Guests" }));
+            Assert.That(asked[1].Skip(5), Is.EqualTo(new[] { "Ada", "kept", "Guest: Ben; Plus one: Cy" }));
         });
     }
 
@@ -463,8 +501,8 @@ public sealed class EntryExportTests : ActionTestBase
 
         Assert.Multiple(() =>
         {
-            Assert.That(rows[0].Skip(4), Is.EqualTo(new[] { "Name", "Note", "Badges" }), "the note its entries answered stays");
-            Assert.That(rows[1].Skip(4), Is.EqualTo(new[] { "Ada", "kept", "Visitor: Ben" }), "the PIN is as sensitive as when it was answered");
+            Assert.That(rows[0].Skip(5), Is.EqualTo(new[] { "Name", "Note", "Badges" }), "the note its entries answered stays");
+            Assert.That(rows[1].Skip(5), Is.EqualTo(new[] { "Ada", "kept", "Visitor: Ben" }), "the PIN is as sensitive as when it was answered");
         });
     }
 
@@ -566,7 +604,7 @@ public sealed class EntryExportTests : ActionTestBase
             Assert.That(ready!.State, Is.EqualTo(EntryExportState.Ready));
             Assert.That(ready.Done, Is.EqualTo(2));
             Assert.That(ready.FileName, Does.EndWith("-entries.csv"));
-            Assert.That(rows.Skip(1).Select(row => row[4]), Is.EqualTo(new[] { "Ben", "Ada" }));
+            Assert.That(rows.Skip(1).Select(row => row[5]), Is.EqualTo(new[] { "Ben", "Ada" }));
             Assert.That(someoneElse, Is.Null, "only its owner downloads it");
             Assert.That(otherForm, Is.Null, "only under its own form");
             Assert.That(Announced.Exports, Has.Count.EqualTo(1), "announced once its file is kept");
@@ -848,7 +886,7 @@ public sealed class EntryExportTests : ActionTestBase
 
     // The names a CSV export holds, in its order.
     private async Task<IReadOnlyList<string>> NamesAsync(Guid form, EntryExportRequest request) =>
-        [.. ExportFiles.Csv(Encoding.UTF8.GetString(await WriteAsync(form, request))).Skip(1).Select(row => row[4])];
+        [.. ExportFiles.Csv(Encoding.UTF8.GetString(await WriteAsync(form, request))).Skip(1).Select(row => row[5])];
 
     private Task<Guid> StoreTestEntryAsync(Guid form) => StoreEntryAsync(form, isTest: true);
 

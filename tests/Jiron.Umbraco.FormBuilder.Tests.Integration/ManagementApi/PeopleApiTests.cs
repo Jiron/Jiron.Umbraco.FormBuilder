@@ -4,6 +4,8 @@ using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Exports;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
 using Umbraco.Cms.Tests.Common.Testing;
 
 namespace Jiron.Umbraco.FormBuilder.Tests.Integration.ManagementApi;
@@ -114,6 +116,18 @@ public sealed class PeopleApiTests : ManagementApiTestBase
             Assert.That(withoutTicket.Outcome, Is.EqualTo("404 export_not_found"));
             Assert.That(asAForm.Outcome, Is.EqualTo("404 export_not_found"), "its ticket reaches no form's export");
         });
+    }
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// The export's own pass runs it, as the export tests' do: the server's worker, which the queued export wakes, would
+    /// otherwise claim it first and leave the test's pass nothing to do.
+    /// </remarks>
+    protected override void CustomTestSetup(IUmbracoBuilder builder)
+    {
+        ArgumentNullException.ThrowIfNull(builder);
+        base.CustomTestSetup(builder);
+        builder.Services.RemoveAll(descriptor => descriptor.ServiceType == typeof(IHostedService) && descriptor.ImplementationType == typeof(EntryExportWorker));
     }
 
     private async Task<Guid> FormAsync(string name)
