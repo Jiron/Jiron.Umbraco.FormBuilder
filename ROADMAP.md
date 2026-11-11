@@ -2565,6 +2565,8 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - **Retried at 14.1 (2026-11-11):** the branch merges into Phase 14's main with two conflicts, both on the server (the
     parameters of `FormModels` and the visitor words of `RenderingWords`), measures 61.53 KB against 60 KB (its words now
     in seven languages, the largest counted), and still waits.
+  - **Retried at 15.1 (2026-11-11):** the branch merges into Phase 15's main with the same two conflicts on the server,
+    both sides kept, measures 61.62 KB against 60 KB, and still waits.
   - **Blocked on the owner (2026-11-02):** the control and the restoring of answers are built and wait on the branch `wip/8.6b-resume-control`. As the chunk of their own they come to 1.94 KB gzip, which puts the runtime with every feature at 61.95 KB against the 60 KB of ADR-0146, and that ADR leaves anything past 60 KB to the owner. `docs/OWNER-TODO.md` asks.
   - **The control:** the runtime's "Save and continue later" (the only use of browser storage, §4.10), and a link's answers and page restored on arrival, its token taken out of the address at once.
   - **Its switch** in the Settings view's Submission group, under More options, with the link's days (moved from 10.1a: settings come with their feature).
@@ -3032,7 +3034,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
 
 ### Phase 15: Extensibility, samples and the AI add-on
 
-- [ ] **15.1 Extensibility, samples and the AI add-on, and phase review** (15.1, 15.2 and 15.3 in one, ADR-0197)
+- [x] **15.1 Extensibility, samples and the AI add-on, and phase review** (15.1, 15.2 and 15.3 in one, ADR-0197) (2026-11-11, 2398af89)
   - **15.1 The public C# surface and backoffice extension points**:
     - Complete the services and notifications of §4.9, including `IFormBuilderEntryReader`. Write `docs/extending.md`.
     - **Backoffice extension points:**
@@ -3142,6 +3144,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
       - a visitor fills in a form on a phone;
       - a privacy officer erases a person's data.
     - **Carried in from 14.1's German walk** (docs/ux/review-14.1.md): at 375 px, Availability's two date boxes and the retention days side by side, an action card's controls beside its text, the rule builder's subject select and „wenn“ on one row, and a German dialog button on two lines; and the walk sets the user's language on the server too, so the texts the server writes (the Overview's alert, the digest's preview, the email layout's sample) show in German.
+    - **Carried in from 15.3's look** (docs/ux/review-15.3.md): the Design view's outer scroll area overflows by about a thousand pixels at 1440 px, before any selection, so a scroll into view can shift the palette, the canvas and the inspector together; find what overflows it and keep the view to its own height, with a test that measures the area's overflow.
     - **Critique and simplify:** rerun all three design skills (ADR-0019, ADR-0020): `design-taste-frontend`, an `impeccable` critique and audit, and an `emil-design-eng` review; a subagent with the §4.13 checklist may add a fourth view. Fix every finding that is not purely taste. Count the clicks for the top five tasks per role and remove the unnecessary ones.
     - Done when: `docs/ux/review-16.6.md` lists the findings and fixes (a section per skill) with before and after screenshots, and the E2E suites are still green.
   - **16.7 Code quality and phase review**:

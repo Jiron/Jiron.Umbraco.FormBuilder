@@ -125,7 +125,7 @@ what to do and why. Items for blocked roadmap steps name the step as "step X.Y",
   review (2026-11-05): with Phase 9 merged in, 61.96 KB; at the Phase 10 review (2026-11-07): with Phase 10 merged in,
   61.95 KB; at the Phase 11 review (2026-11-08), the Phase 12 review and the Phase 13 review (both 2026-11-09): with each
   merged in, 62.15 KB; at the Phase 14 review (2026-11-11): with Phase 14 merged in, 61.53 KB, the runtime's words now in
-  seven languages.
+  seven languages; at the Phase 15 review (2026-11-11): with Phase 15 merged in, 61.62 KB.
 
 ## Legal judgements (privacy)
 
