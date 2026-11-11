@@ -151,7 +151,7 @@ public sealed class OutcomePreviewApiTests : ManagementApiTestBase
         Assert.Multiple(() =>
         {
             Assert.That(german.QuerySelector("[data-jfb-outcome] > p")!.TextContent, Is.EqualTo("Danke."));
-            Assert.That(german.QuerySelector("[data-jfb-reference]")!.TextContent, Is.EqualTo("Ihre Referenz lautet 2026-00042"));
+            Assert.That(german.QuerySelector("[data-jfb-reference]")!.TextContent, Is.EqualTo("Ihre Referenznummer lautet 2026-00042"));
             Assert.That(unknown.QuerySelector("[data-jfb-outcome] > p")!.TextContent, Is.EqualTo("Thanks."));
             Assert.That(unknown.QuerySelector("[data-jfb-reference]")!.TextContent, Is.EqualTo("Your reference is 2026-00042"));
             Assert.That(hebrew.Body!["direction"]!.GetValue<string>(), Is.EqualTo("rtl"), "a language written from the right, as its page is");
