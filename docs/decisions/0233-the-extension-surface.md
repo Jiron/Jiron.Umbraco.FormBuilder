@@ -100,3 +100,19 @@ whenever it changes.
 - The entry notifications a webhook carries (8.4) are unchanged; the two new events are for code only.
 - Extension authors compile against one shipped file; Jiron Form Builder's own build breaks before the file and the
   backoffice could disagree.
+
+## Amendment (Phase 15 review, 2026-11-11)
+
+The review found two deletes that take entries without `EntryDeletingNotification`, which section 5 had promised for
+every delete for good. Both stay as they are, and the promise is made exact:
+
+- **A form deleted for good** takes its entries in batches inside units that hold the form. `FormDeletingNotification`
+  (or `FolderDeletingNotification` and `TrashEmptyingNotification` for forms deleted with their folder or the trash)
+  is told before the first batch, while every entry can still be read, so a site that archives entries archives a
+  form's there, once, rather than hearing of each entry in turn.
+- **A form that keeps no entries** (`Store: never`) removes each entry inside the unit that settles it, once no mail,
+  run or move can come for it. A handler could not read it there, as the services refuse a caller's unit, and the
+  editor chose not to keep it; a site sees such an entry as `EntrySubmittedNotification`.
+
+`EntryDeletingNotification` is therefore told before a user's delete, retention and the privacy tools' erase, each
+entry once. Its declaration and docs/extending.md say so.

@@ -224,9 +224,12 @@ public sealed class BlockedDomainsHandler(IMemberDirectory directory) : INotific
 
 - `EntryStateChangedNotification` tells a state change once it stands, with `From` and `State`: at once for a move
   without a user, after the undo window of a user's move, when an entry leaves Spam or is verified.
-- `EntryDeletingNotification` comes before an entry is deleted for good, while your handler can still read it through
-  `IFormBuilderEntryService.GetAsync`, for example to archive it. It cannot stop the delete: deletes keep the site's
-  retention and privacy promises.
+- `EntryDeletingNotification` comes before a user's delete, retention or the privacy tools' erase deletes an entry for
+  good, while your handler can still read it through `IFormBuilderEntryService.GetAsync`, for example to archive it. It
+  cannot stop the delete: deletes keep the site's retention and privacy promises. A form deleted for good takes its
+  entries with it; hear of that as `FormDeletingNotification` (or `FolderDeletingNotification` and
+  `TrashEmptyingNotification`), while every entry can still be read. A form that keeps no entries removes each once
+  its actions are done; `EntrySubmittedNotification` is where you see it.
 
 ## 5. Services
 

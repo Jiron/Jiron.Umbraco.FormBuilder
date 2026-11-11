@@ -74,6 +74,13 @@ public sealed class EntryStateChangedNotification : EntryNotification
 /// to archive it through <see cref="IFormBuilderEntryService"/>. It cannot stop the delete, as deletes keep the site's
 /// retention and privacy promises; an entry that a legal hold keeps after all, or that another delete took first, gets no
 /// <see cref="EntryDeletedNotification"/>.
+/// <para>
+/// Two deletes take entries without it (ADR-0233, amended in the Phase 15 review): a form deleted for good takes its
+/// entries with it, which <see cref="Forms.FormDeletingNotification"/>, <see cref="Forms.FolderDeletingNotification"/>
+/// or <see cref="Forms.TrashEmptyingNotification"/> tells first, while every entry can still be read; and a form that
+/// keeps no entries removes each once nothing can run for it any more, which a site hears of as
+/// <see cref="EntrySubmittedNotification"/> when it arrives.
+/// </para>
 /// </summary>
 public sealed class EntryDeletingNotification : EntryNotification;
 
