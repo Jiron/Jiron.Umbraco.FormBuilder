@@ -6,8 +6,9 @@
  * Every name here is a string a manifest or a context token names: a site's extension needs no module of Jiron Form
  * Builder at run time, only Umbraco's own.
  */
-import type { ManifestElement } from '@umbraco-cms/backoffice/extension-api';
+import type { ManifestApi, ManifestElement, UmbApi } from '@umbraco-cms/backoffice/extension-api';
 import type { Observable } from '@umbraco-cms/backoffice/observable-api';
+import type { UmbWorkspaceContext } from '@umbraco-cms/backoffice/workspace';
 
 /** The form workspace's alias, which a site's `workspaceView` names in its `Umb.Condition.WorkspaceAlias` condition. */
 export type JfbFormWorkspaceAlias = 'Jiron.FormBuilder.Workspace.Form';
@@ -16,12 +17,47 @@ export type JfbFormWorkspaceAlias = 'Jiron.FormBuilder.Workspace.Form';
 export type JfbFormEntityType = 'jfb-form';
 
 /**
+ * The entity types of the places a form is created in, the top of the library and a folder, which an
+ * `entityCreateOptionAction` of the library's create menu names in `forEntityTypes` (ADR-0018).
+ */
+export type JfbLibraryPlaceEntityType = 'jfb-library-root' | 'jfb-folder';
+
+/** The Form Builder section's address below the backoffice: a form opens at `section/jfb-forms/workspace/jfb-form/edit/<key>`. */
+export type JfbSectionPathname = 'jfb-forms';
+
+/** The menu of the sidebar's Settings group, which a site's `menuItem` names in `meta.menus`. */
+export type JfbSettingsMenuAlias = 'Jiron.FormBuilder.Menu.Settings';
+
+/** A Jiron Form Builder permission, as the management API names it (ADR-0013). */
+export type JfbPermission =
+  | 'design'
+  | 'manageActions'
+  | 'viewEntries'
+  | 'viewSensitive'
+  | 'editEntries'
+  | 'deleteEntries'
+  | 'export'
+  | 'manageLibrary'
+  | 'manageSettings'
+  | 'managePermissions'
+  | 'privacyTools';
+
+/**
+ * The condition that shows an extension to a user who holds a permission: any of each need's permissions, globally, or
+ * on any folder or form with `anywhere`.
+ */
+export interface JfbPermissionConditionConfig {
+  alias: 'Jiron.FormBuilder.Condition.Permission';
+  needs: readonly { readonly anyOf: readonly JfbPermission[]; readonly anywhere?: boolean }[];
+}
+
+/**
  * What a site's workspace view on the form workspace reads of the open form, from Umbraco's workspace context:
  * `new UmbContextToken<UmbWorkspaceContext, JfbFormWorkspaceContext>('UmbWorkspaceContext', undefined,
  * (context): context is JfbFormWorkspaceContext => context.getEntityType() === 'jfb-form')`. It is read-only: a view
  * that changes a form does so through the management API, as the designer's do.
  */
-export interface JfbFormWorkspaceContext {
+export interface JfbFormWorkspaceContext extends UmbWorkspaceContext {
   /** Always `jfb-form`. */
   getEntityType(): string;
   /** The form's key, once it is read. */
@@ -180,6 +216,83 @@ export interface JfbControlField {
   };
 }
 
+/** One text of the open draft to change: by its path, in one language. */
+export interface JfbTextChange {
+  /**
+   * The text's path in the definition, as Jiron Form Builder's texts walker names it, such as
+   * `$.pages[0].groups[0].fields[1].help`.
+   */
+  readonly path: string;
+  /** The language, as the site names it; `''` for the default text. */
+  readonly culture: string;
+  /** The text. */
+  readonly text: string;
+}
+
+/**
+ * The open form's designer, as a designer action or a field text action gets it (ADR-0018): what the editor sees, a
+ * save, and a change of the draft's texts that the designer makes as one step Undo takes back. Nothing is saved until
+ * the editor saves.
+ */
+export interface JfbFormDesigner {
+  /** The open form's key. */
+  readonly formKey: string;
+  /** The language the designer shows; `''` for the site's default. */
+  getLanguage(): string;
+  /** The draft as the designer holds it, unsaved changes included, as its definition's JSON; a copy. */
+  getDefinition(): unknown;
+  /** Whether the draft has changes not saved yet. */
+  hasUnsavedChanges(): boolean;
+  /** Saves those changes, as Preview does first; false when the save was refused, which the designer says itself. */
+  save(): Promise<boolean>;
+  /**
+   * Changes texts as one step Undo takes back, which `said` names to a screen reader. False, and nothing changed, when
+   * a path is not a text of the draft, or a language other than the default is given for a text without its default.
+   */
+  changeTexts(changes: readonly JfbTextChange[], said: string): boolean;
+}
+
+/** What a designer action does when the editor chooses it. */
+export interface JfbDesignerActionApi extends UmbApi {
+  execute(designer: JfbFormDesigner): void | Promise<void>;
+}
+
+/** An item of the "..." in the designer's toolbar, after the designer's own (ADR-0018). */
+export interface ManifestJfbDesignerAction extends ManifestApi<JfbDesignerActionApi> {
+  type: 'jfbDesignerAction';
+  meta: {
+    /** Its label, a backoffice key such as `#acme_translate`, or the text itself. */
+    label: string;
+  };
+}
+
+/** Which of a field's texts a field text action sits beside. */
+export type JfbFieldText = 'label' | 'help' | 'placeholder';
+
+/**
+ * The element of a `jfbFieldTextAction`: drawn beside one of the selected field's texts in the inspector, after the
+ * dictionary's picker. It changes the field's texts through the designer.
+ */
+export interface JfbFieldTextActionElement extends HTMLElement {
+  /** The open form's designer. */
+  designer: JfbFormDesigner | undefined;
+  /** The selected field's key. */
+  fieldKey: string;
+  /** The text it sits beside. */
+  text: JfbFieldText;
+  /** The language the designer shows; `''` for the site's default. */
+  language: string;
+}
+
+/** An element beside some of a field's texts in the inspector (ADR-0018). */
+export interface ManifestJfbFieldTextAction extends ManifestElement<JfbFieldTextActionElement> {
+  type: 'jfbFieldTextAction';
+  meta: {
+    /** The texts it sits beside. */
+    texts: readonly JfbFieldText[];
+  };
+}
+
 /** `<jfb-form>`'s class, as `customElements.get('jfb-form')` gives it. */
 export interface JfbFormElementConstructor extends CustomElementConstructor {
   /** Registers the control a site's own field type writes; forms already shown without it are shown again with it. */
@@ -190,5 +303,7 @@ declare global {
   interface UmbExtensionManifestMap {
     jfbSettingEditor: ManifestJfbSettingEditor;
     jfbFieldPreview: ManifestJfbFieldPreview;
+    jfbDesignerAction: ManifestJfbDesignerAction;
+    jfbFieldTextAction: ManifestJfbFieldTextAction;
   }
 }

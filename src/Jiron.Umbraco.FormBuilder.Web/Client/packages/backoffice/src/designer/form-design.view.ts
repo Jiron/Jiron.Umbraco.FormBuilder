@@ -39,6 +39,10 @@ import { isDragging } from './drag/pointer-drag';
 import type { FormCanvasElement } from './canvas/form-canvas.element';
 import './canvas/form-canvas.element';
 import { FORM_WORKSPACE_CONTEXT } from './constants';
+import { createExtensionApi } from '@umbraco-cms/backoffice/extension-api';
+import { designerActions, EXTENSIONS_CHANGED } from '../extending/extension-registry';
+import { designerHost } from './designer-host';
+import type { DesignerActionItem } from './canvas/form-canvas.element';
 import { allFields, locate, pageOf, type DesignDefinition, type DesignField, type LocalizedText } from './definition';
 import { resolveOptions } from './inspector/option-data';
 import type { ResolvedOption } from './preview/field-models';
@@ -208,6 +212,7 @@ export class FormDesignViewElement extends UmbLitElement {
     _badge: { state: true },
     _saved: { state: true },
     _saveGroups: { state: true },
+    _actions: { state: true },
   };
 
   static override styles = [
@@ -376,6 +381,7 @@ export class FormDesignViewElement extends UmbLitElement {
   declare private _saved: readonly SavedGroup[];
   /** Whether a group's "..." saves it as a template: the user may manage the library. */
   declare private _saveGroups: boolean;
+  declare private _actions: readonly DesignerActionItem[];
 
   #context: FormWorkspaceContext | undefined;
   /** The page the palette adds to when it was opened from a page's Add field and the page has no group. */
@@ -442,6 +448,7 @@ export class FormDesignViewElement extends UmbLitElement {
     this._badge = { kind: 'none' };
     this._saved = [];
     this._saveGroups = false;
+    this._actions = [];
     this.consumeContext(FORM_WORKSPACE_CONTEXT, (context) => {
       this.#context = context;
       // The language the Settings view's switch chose, which this view shows too.
@@ -485,6 +492,22 @@ export class FormDesignViewElement extends UmbLitElement {
     super.connectedCallback();
     this.#resize.observe(this);
     void this.#readSaved();
+    window.addEventListener(EXTENSIONS_CHANGED, this.#readActions);
+    this.#readActions();
+  }
+
+  // The site's designer actions, as the toolbar's "..." lists them after its own (ADR-0018).
+  readonly #readActions = () => {
+    this._actions = designerActions().map((manifest) => ({ alias: manifest.alias, label: manifest.meta.label }));
+  };
+
+  // Runs a site's designer action with the open form's designer; a failing one is the site's, and the designer stays.
+  async #designerAction(alias: string) {
+    const manifest = designerActions().find((candidate) => candidate.alias === alias);
+    const context = this.#context;
+    if (!manifest || !context) return;
+    const api = await createExtensionApi(this, manifest);
+    await api?.execute(designerHost(context));
   }
 
   async #readSaved() {
@@ -494,6 +517,7 @@ export class FormDesignViewElement extends UmbLitElement {
   }
 
   override disconnectedCallback() {
+    window.removeEventListener(EXTENSIONS_CHANGED, this.#readActions);
     this.#resize.disconnect();
     for (const waiting of this.#optionsWaiting.values()) clearTimeout(waiting);
     this.#optionsWaiting.clear();
@@ -889,6 +913,9 @@ export class FormDesignViewElement extends UmbLitElement {
       case 'rulesOverview':
         await this.#rulesOverview();
         return;
+      case 'designerAction':
+        await this.#designerAction(request.alias);
+        return;
       case 'formCheck':
         await this.#formCheck();
         return;
@@ -903,10 +930,16 @@ export class FormDesignViewElement extends UmbLitElement {
         return;
       case 'culture':
         this._culture = request.culture;
-        this.#context?.setLanguage(request.culture);
+        // The workspace keeps null for the site's default, as its readers (and a site's designer actions) expect.
+        this.#context?.setLanguage(this.#isDefaultCulture(request.culture) ? null : request.culture);
         await this.#readLook();
         return;
     }
+  }
+
+  #isDefaultCulture(culture: string): boolean {
+    const standard = this._look?.languages.find((language) => language.isDefault)?.culture;
+    return standard !== undefined && culture.toLowerCase() === standard.toLowerCase();
   }
 
   // What the inspector asks: a change of the element it shows, its fold, its Close, and the element's own actions.
@@ -1985,6 +2018,7 @@ export class FormDesignViewElement extends UmbLitElement {
         .refusal=${this._refusal}
         .check=${this._badge}
         .saveGroups=${this._saveGroups}
+        .designerActions=${this._actions}
       ></jfb-form-canvas>
       ${
         inspects

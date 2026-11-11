@@ -9,6 +9,7 @@ import { compilePattern, LogicError, type Pattern } from '@jfb/logic';
 import { html, nothing, type PropertyValues, type TemplateResult } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import type { FieldSettingResponseModel, FieldTypeResponseModel } from '../../api';
+import type { JfbFieldText } from '../../../public/types/jiron-form-builder';
 import { jfbBackofficeTokens, jfbVisuallyHidden } from '../../styles/tokens';
 import {
   allFields,
@@ -42,6 +43,7 @@ import type { InspectorItem } from '../check/form-check';
 import { boxValue } from './box-value';
 import { dictionaryLineOf, type DictionaryLookups } from '../dictionary-texts';
 import './dictionary-pick.element';
+import '../../extending/field-text-actions.element';
 import { inspectorStyles } from './inspector.styles';
 import { boxesOf, focusableIn, isItem } from './item-focus';
 import { insertTagInto } from './merge-tag-picker.element';
@@ -98,6 +100,9 @@ export type InspectorRequest =
 export type InspectorMode = 'docked' | 'rail' | 'overlay';
 
 const OPEN_KEY = 'jfb.designer.inspector.open';
+
+/** A field's texts a site's field text action may sit beside (ADR-0018). */
+const FIELD_TEXTS: ReadonlySet<string> = new Set<JfbFieldText>(['label', 'help', 'placeholder']);
 const ALIAS = /^[a-z][a-zA-Z0-9]{0,63}$/;
 
 /** The sections this browser left open last; Essentials alone at first. */
@@ -570,6 +575,15 @@ export class InspectorElement extends UmbLitElement {
           <div class="label-row">
             <label class="label" for=${id}>${name}</label>
             <jfb-dictionary-pick .label=${name} .pick=${pick}></jfb-dictionary-pick>
+            ${
+              subject.kind === 'field' && FIELD_TEXTS.has(item.property)
+                ? html`<jfb-field-text-actions
+                    .fieldKey=${key}
+                    .text=${item.property as JfbFieldText}
+                    .language=${this.#isDefault ? '' : this.culture}
+                  ></jfb-field-text-actions>`
+                : nothing
+            }
           </div>
           ${box} ${said ? html`<p class="help" id=${`${id}-dictionary`}>${said}</p>` : nothing}
         </div>`;

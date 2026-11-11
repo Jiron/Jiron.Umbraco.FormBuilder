@@ -285,7 +285,8 @@ export class FormSettingsViewElement extends UmbLitElement {
 
   async #showLanguage(culture: string) {
     this.#culture = culture;
-    this.#context?.setLanguage(culture);
+    // The workspace keeps null for the site's default, as its readers (and a site's designer actions) expect.
+    this.#context?.setLanguage(culture.toLowerCase() === this.#defaultCulture().toLowerCase() ? null : culture);
     this._problems = new Map();
     const look = await readLook(this, culture);
     if (culture !== this.#culture) return;

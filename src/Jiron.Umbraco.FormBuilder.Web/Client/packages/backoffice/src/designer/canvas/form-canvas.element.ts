@@ -55,12 +55,21 @@ export type CanvasRequest =
   | { readonly kind: 'changeOutcome'; readonly key: string | null }
   | { readonly kind: 'shortcuts' }
   | { readonly kind: 'rulesOverview' }
+  /** A site's designer action from the toolbar's "...", by its manifest's alias (ADR-0018). */
+  | { readonly kind: 'designerAction'; readonly alias: string }
   | { readonly kind: 'formCheck' }
   /** A group saved as a template, from its "..." (ADR-0217). */
   | { readonly kind: 'saveGroup'; readonly key: string }
   | { readonly kind: 'culture'; readonly culture: string }
   | { readonly kind: 'drop'; readonly source: DragSource; readonly place: Place }
   | { readonly kind: 'refused'; readonly source: DragSource; readonly reason: string };
+
+/** A site's designer action as the toolbar's "..." lists it. */
+export interface DesignerActionItem {
+  readonly alias: string;
+  /** Its label: a backoffice key such as `#acme_translate`, or the text. */
+  readonly label: string;
+}
 
 /** Why the form can't take what is dragged at a place, in words; null where it can. */
 export type RefusalOf = (source: DragSource, place: Place | null) => string | null;
@@ -120,6 +129,7 @@ export class FormCanvasElement extends UmbLitElement {
     refusal: { attribute: false },
     check: { attribute: false },
     saveGroups: { attribute: false },
+    designerActions: { attribute: false },
     _narrowed: { state: true },
   };
 
@@ -152,6 +162,8 @@ export class FormCanvasElement extends UmbLitElement {
   declare check: CheckBadge;
   /** Whether a group's "..." offers Save group as template: the user may manage the library. */
   declare saveGroups: boolean;
+  /** The site's designer actions, after the menu's own items (ADR-0018): each by its manifest's alias and label. */
+  declare designerActions: readonly DesignerActionItem[];
   declare private _narrowed: boolean;
 
   #resize = new ResizeObserver(() => this.#measure());
@@ -194,6 +206,7 @@ export class FormCanvasElement extends UmbLitElement {
     this.refusal = null;
     this.check = { kind: 'none' };
     this.saveGroups = false;
+    this.designerActions = [];
     this._narrowed = false;
     this.addEventListener(FIELD_REQUEST, (event) => {
       event.stopPropagation();
@@ -984,6 +997,12 @@ export class FormCanvasElement extends UmbLitElement {
           <button type="button" @click=${() => this.#menu('shortcuts')}>
             <span>${this.localize.term('jfbDesigner_shortcuts')}</span><kbd>?</kbd>
           </button>
+          ${this.designerActions.map(
+            (action) =>
+              html`<button type="button" data-action=${action.alias} @click=${() => this.#act(action.alias)}>
+                <span>${this.localize.string(action.label)}</span>
+              </button>`,
+          )}
         </div>
       </uui-popover-container>
     </div>`;
@@ -1042,6 +1061,11 @@ export class FormCanvasElement extends UmbLitElement {
   #menu(kind: 'undo' | 'redo' | 'rulesOverview' | 'shortcuts') {
     this.shadowRoot?.querySelector<HTMLElement & { hidePopover?: () => void }>('#jfb-canvas-more')?.hidePopover?.();
     this.#ask({ kind });
+  }
+
+  #act(alias: string) {
+    this.shadowRoot?.querySelector<HTMLElement & { hidePopover?: () => void }>('#jfb-canvas-more')?.hidePopover?.();
+    this.#ask({ kind: 'designerAction', alias });
   }
 
   #steps(culture: string): TemplateResult {

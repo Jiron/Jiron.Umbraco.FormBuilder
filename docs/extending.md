@@ -333,8 +333,8 @@ Your backoffice extensions are an ordinary Umbraco package: an `umbraco-package.
 lists their manifests, and their scripts are ES modules the backoffice loads. They need no module of Jiron Form Builder
 at run time, only the names below. Their types ship with the package as
 `/App_Plugins/JironFormBuilder/types/jiron-form-builder.d.ts`; copy the file into your project, or point a `paths` entry
-of your `tsconfig.json` at it. It also adds the two manifest types to Umbraco's manifest map, so a typed manifest of
-yours is checked. Jiron Form Builder's own backoffice compiles against the same file.
+of your `tsconfig.json` at it. It also adds Jiron Form Builder's four manifest types to Umbraco's manifest map, so a
+typed manifest of yours is checked. Jiron Form Builder's own backoffice and its AI add-on compile against the same file.
 
 ### A setting's own editor
 
@@ -390,6 +390,81 @@ field's own values over the defaults) and `culture`, the language the designer s
 every change. It draws and takes no input: the canvas makes it inert, and a click on it selects the field. It lives in
 the light DOM of the form's own markup, so the form's theme reaches it; use a shadow root for rules of your own. Without
 a manifest the field shows its label alone.
+
+### Actions in the designer
+
+An item of your own in the "…" of the designer's toolbar, after the designer's own, is a `jfbDesignerAction`: an api
+whose `execute` gets the open form's designer when the editor chooses the item.
+
+```json
+{
+  "type": "jfbDesignerAction",
+  "alias": "Acme.DesignerAction.Glossary",
+  "name": "Check against the glossary",
+  "api": "/App_Plugins/Acme/glossary.action.js",
+  "meta": { "label": "#acme_glossary" }
+}
+```
+
+```js
+export class GlossaryAction extends UmbControllerBase {
+  async execute(designer) {
+    if (!(await designer.save())) return; // the designer says why itself
+    const { data } = await myGlossaryCheck(designer.formKey);
+    designer.changeTexts(data.changes, 'Applied the glossary');
+  }
+}
+export { GlossaryAction as api };
+```
+
+The designer (`JfbFormDesigner`) gives:
+
+| Member | What it does |
+| --- | --- |
+| `formKey` | the open form's key |
+| `getLanguage()` | the language the designer shows, `''` for the site's default |
+| `getDefinition()` | a copy of the draft as the designer holds it, unsaved changes included, as the definition's JSON |
+| `hasUnsavedChanges()` | whether the draft has changes not saved yet |
+| `save()` | saves those changes; false when the save was refused |
+| `changeTexts(changes, said)` | changes texts of the draft as one step Undo takes back, and says `said` to a screen reader |
+
+A change names its text by the path the server's texts walker gives, such as `$.pages[0].groups[0].fields[1].help`,
+with its language (`''` for the default text) and the text. The whole change is refused, and `changeTexts` answers
+false, when one path is not a text of the draft, or when a language other than the default is given for a text that has
+no default. Nothing is saved until the editor saves.
+
+### An action beside a field's text
+
+An element of your own beside a field's label, help text or placeholder in the inspector is a `jfbFieldTextAction`,
+drawn after the dictionary's picker for the texts `meta.texts` names:
+
+```json
+{
+  "type": "jfbFieldTextAction",
+  "alias": "Acme.FieldTextAction.Tone",
+  "name": "Tone of voice",
+  "element": "/App_Plugins/Acme/tone.element.js",
+  "meta": { "texts": ["label", "help"] }
+}
+```
+
+Your element gets `designer` (as above), `fieldKey`, `text` (`label`, `help` or `placeholder`) and `language`, the
+language the designer shows. It changes the field's texts through `designer.changeTexts`, so the inspector and the
+canvas follow and Undo takes the change back.
+
+### Places, menus and permissions
+
+The declarations also name the places a site's own manifests point at, so they are checked rather than copied as
+strings:
+
+| Name | What it is |
+| --- | --- |
+| `JfbLibraryPlaceEntityType` | `jfb-library-root` and `jfb-folder`, the places a form is created in, for an `entityCreateOptionAction` of the library's create menu |
+| `JfbSectionPathname` | `jfb-forms`, the section's address: a form opens at `section/jfb-forms/workspace/jfb-form/edit/<key>` |
+| `JfbSettingsMenuAlias` | the menu of the sidebar's Settings group, for a `menuItem` of your own settings screen |
+| `JfbPermissionConditionConfig` | the condition `Jiron.FormBuilder.Condition.Permission`, which shows an extension to a user who holds any of the permissions of each need, globally or, with `anywhere`, on any folder or form |
+
+A condition is a convenience of the screens; your endpoints still check the user's permissions themselves.
 
 ### Views on the form workspace
 

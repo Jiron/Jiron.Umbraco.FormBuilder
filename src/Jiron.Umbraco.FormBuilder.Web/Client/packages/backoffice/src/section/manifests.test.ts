@@ -63,6 +63,12 @@ describe('the section', () => {
     expect(section?.conditions).toEqual([{ alias: 'Umb.Condition.SectionUserPermission', match: SECTION_ALIAS }]);
   });
 
+  it("has the Settings menu a site's menu item names, as the public declarations promise (ADR-0018)", () => {
+    const promised: import('../../public/types/jiron-form-builder').JfbSettingsMenuAlias =
+      'Jiron.FormBuilder.Menu.Settings';
+    expect(byType('menu').map((menu) => menu.alias)).toContain(promised);
+  });
+
   it('has one dashboard, the Overview, only in this section', () => {
     const dashboards = byType('dashboard');
     expect(dashboards.map((dashboard) => dashboard.alias)).toEqual(['Jiron.FormBuilder.Dashboard.Overview']);

@@ -1010,6 +1010,7 @@ names and traits are read once, at start-up
 | The form views and their view models | a site's own view at a built-in view's path below `Views/JironFormBuilder/default/` or a theme's own folder, or in `_forms/<alias>/` there for one form, over the public models of `Jiron.Umbraco.FormBuilder.Web.Rendering.Models` with `FormBuilderHtml` for the contract's attributes; a contract header says the version it follows | ADR-0015, ADR-0093 |
 | `[FormBuilderSetting]` and the `jfbSettingEditor` manifest | settings editors for custom types without JavaScript, or with a custom element | §4.9, ADR-0055 |
 | `jfbFieldPreview` manifest and workspace views | the designer preview of a custom field, extra form views | 15.1 |
+| `jfbDesignerAction` and `jfbFieldTextAction` manifests | an item of the designer's "…", an element beside a field's label, help or placeholder, both changing the open draft through `JfbFormDesigner` | ADR-0018 |
 
 **Notifications:** `FormSaving`/`Saved`, `FormPublishing`/`Published`, `FormUnpublishing`/`Unpublished`,
 `FormRenaming`/`Renamed`, `FormMoving`/`Moved`, `FormVersionUpdating`/`Updated` for a version's pin or comment (the

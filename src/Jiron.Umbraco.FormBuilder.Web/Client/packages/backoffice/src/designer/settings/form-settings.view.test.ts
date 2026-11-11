@@ -906,7 +906,7 @@ describe('the language', () => {
     language.value = 'en-US';
     language.dispatchEvent(new Event('change'));
     await settle(view);
-    expect([workspace.language, box('submit-label').value]).toEqual(['en-US', '']);
+    expect([workspace.language, box('submit-label').value], "null for the site's default").toEqual([null, '']);
   });
 });
 

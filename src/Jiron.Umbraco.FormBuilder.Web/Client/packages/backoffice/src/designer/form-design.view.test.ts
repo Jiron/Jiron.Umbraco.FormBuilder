@@ -1425,6 +1425,11 @@ describe('the inspector in the Design view', () => {
     expect((canvas as unknown as { look: { culture: string } }).look.culture).toBe('de-DE');
     expect((inspectorOf(view) as unknown as { culture: string }).culture).toBe('de-DE');
     expect(workspace.language, 'kept for the Settings view').toBe('de-DE');
+
+    // Back to the site's default: the workspace keeps null for it, as its readers expect.
+    await ask({ kind: 'culture', culture: 'en-US' });
+    await settle(view);
+    expect(workspace.language, "null for the site's default").toBeNull();
   });
 
   it('opens in the language the Settings view chose', async () => {

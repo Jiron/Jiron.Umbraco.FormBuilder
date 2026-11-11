@@ -1006,6 +1006,26 @@ describe('the canvas', () => {
     expect(requests).toEqual([{ kind: 'rulesOverview' }, { kind: 'shortcuts' }]);
   });
 
+  it("lists the site's designer actions after its own items, by their labels, and asks for the one chosen (ADR-0018)", async () => {
+    const { requests, root } = await canvasOf(DEFINITION, {
+      designerActions: [
+        { alias: 'Test.Translate', label: 'Translate with a tool...' },
+        { alias: 'Test.Count', label: '#jfbDesigner_undo' },
+      ],
+    });
+    const items = [...root.querySelectorAll<HTMLButtonElement>('.bo-menu button')];
+    expect(items.map((item) => text(item.querySelector('span')))).toEqual([
+      'Undo',
+      'Redo',
+      'Rules overview',
+      'Keyboard shortcuts',
+      'Translate with a tool...',
+      'Undo',
+    ]);
+    items[4]?.click();
+    expect(requests).toEqual([{ kind: 'designerAction', alias: 'Test.Translate' }]);
+  });
+
   it("shows the form check's badge before its menu, which says what the check found and opens its sidebar (ADR-0181)", async () => {
     const none = await canvasOf(DEFINITION);
     expect(none.root.querySelector('.bo-check')).toBeNull();
