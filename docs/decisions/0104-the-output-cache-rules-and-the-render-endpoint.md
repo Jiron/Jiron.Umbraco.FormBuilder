@@ -4,6 +4,7 @@
   endpoint, and adds a second way of keeping a response out of Umbraco's cache to its `no-store`; keeps the renders
   [ADR-0095](0095-visitor-texts-members-only-forms-and-the-pending-note.md) calls per visitor out of the cache; the
   render endpoint's `theme` added in 6.3a by [ADR-0105](0105-the-theme-registry-and-the-base-rules.md)
+- Completed by: [ADR-0231](0231-members-entries.md), which builds what this left to step 14.3 (members)
 - Date: 2026-10-29
 - Roadmap step: 6.2l (decided and built); 6.4's runtime calls `render` after `form_changed`, 6.7 tags and evicts the
   pages that show a form, 14.3 adds the frame headers of a members-only page and of `render`

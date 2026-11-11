@@ -158,6 +158,7 @@ describe('where a path is in the view', () => {
       ['$.settings.protection.contentRules', { group: 'protection', more: false, boxes: ['content-rules'] }],
       ['$.settings.privacy.insights', { group: 'privacy', more: false, boxes: ['insights'] }],
       ['$.settings.appearance.theme', { group: 'appearance', more: false, boxes: ['theme'] }],
+      ['$.settings.availability.onePerMember', { group: 'availability', more: false, boxes: ['one-per-member'] }],
       ['$.settings.developer.contextValues[0]', { group: 'developer', more: false, boxes: ['context-values'] }],
     ];
     for (const [path, anchor] of cases) expect(anchorOf(path), path).toEqual(anchor);
@@ -169,13 +170,7 @@ describe('where a path is in the view', () => {
   });
 
   it('is nowhere for a setting this view does not show yet, or a path outside the settings', () => {
-    for (const path of [
-      '$.settings.submission.resume.days',
-      '$.settings.availability.onePerMember',
-      '$.settings',
-      '$.pages[0].label',
-      'nonsense',
-    ])
+    for (const path of ['$.settings.submission.resume.days', '$.settings', '$.pages[0].label', 'nonsense'])
       expect(anchorOf(path), path).toBeNull();
   });
 });
@@ -270,6 +265,12 @@ describe("a closed group's line", () => {
     expect(line(withSettingAt(DEFINITION, ['availability', 'members'], 'members'), 'availability').at(-1)).toBe(
       'summary_members',
     );
+    const once = withSettingAt(
+      withSettingAt(DEFINITION, ['availability', 'members'], 'members'),
+      ['availability', 'onePerMember'],
+      true,
+    );
+    expect(line(once, 'availability').slice(-2)).toEqual(['summary_members', 'summary_onePerMember']);
   });
 
   it("names the protection, the site's by what it stands for, and content checks of the form's own", () => {

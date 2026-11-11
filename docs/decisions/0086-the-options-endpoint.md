@@ -3,6 +3,7 @@
 - Status: accepted; extends [ADR-0081](0081-what-visitors-and-failures-cost-the-option-lists.md) (how the endpoint
   holds its `parent` and `culture`) and [ADR-0084](0084-the-public-apis-frame-and-the-form-endpoint.md) (another
   endpoint of the public API)
+- Completed by: [ADR-0231](0231-members-entries.md), which builds what this left to step 14.3 (members)
 - Date: 2026-10-28
 - Roadmap step: 6.1c (decided and built); 6.4's runtime asks it for a cascading field's options, 6.6's renderer too,
   14.3 admits only members to a members-only form's options

@@ -87,6 +87,12 @@ internal enum FormBuilderConflict
     /// </summary>
     EntryLimitReached,
 
+    /// <summary>
+    /// The form takes one entry per member (<c>availability.onePerMember</c>) and the member has one already, counted
+    /// inside the unit that would store another (ADR-0231).
+    /// </summary>
+    AlreadySubmitted,
+
     /// <summary>A legal hold keeps entries of the form, so it cannot be deleted for good until the holds end (ADR-0222).</summary>
     EntriesHeld,
 }

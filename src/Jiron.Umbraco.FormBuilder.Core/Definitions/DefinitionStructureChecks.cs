@@ -291,6 +291,12 @@ internal sealed partial class DefinitionStructureChecks
             Fail(DefinitionErrors.PropertyNotSupported, groupsPath, "Member groups belong only to a form for some member groups.");
         }
 
+        // On a form for anyone it could only hold back the visitors who sign in (ADR-0231).
+        if (availability.OnePerMember && availability.Access == MemberAccess.Anyone)
+        {
+            Fail(DefinitionErrors.PropertyNotSupported, P(P(path, "availability"), "onePerMember"), "One entry per member belongs only to a form for members.");
+        }
+
         var protection = settings.Protection;
         var captchaPath = P(P(path, "protection"), "captcha");
         if (protection.Level == ProtectionLevel.Captcha && protection.Captcha is null)

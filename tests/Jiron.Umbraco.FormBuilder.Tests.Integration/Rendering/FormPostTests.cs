@@ -411,8 +411,8 @@ public sealed partial class FormPostTests : RenderingTestBase
             Assert.That(opaque.StatusCode, Is.EqualTo(HttpStatusCode.Forbidden), "an opaque origin");
             Assert.That(own.StatusCode, Is.EqualTo(HttpStatusCode.OK));
             Assert.That(gated.QuerySelector("#jfb-1 .jfb-notice h2")!.TextContent, Is.EqualTo("This form is for members"), "a visitor the form does not admit gets its notice");
-            Assert.That(none.StatusCode, Is.EqualTo(HttpStatusCode.OK), "a post without an origin passes");
-            Assert.That(shown.QuerySelector("[data-jfb-notice]")!.GetAttribute("data-jfb-notice"), Is.EqualTo("not_sent"), "until members bind to their posts, a member's post is not sent");
+            Assert.That(none.StatusCode, Is.EqualTo(HttpStatusCode.Forbidden), "every browser sends an origin with a post, so one without counts as another site's unless the browser says same-origin (ADR-0231)");
+            Assert.That(shown.QuerySelector("[data-jfb-notice]")!.GetAttribute("data-jfb-notice"), Is.EqualTo("not_sent"), "without the challenge its page carries, a member's post is not sent (ADR-0231)");
             Assert.That(shown.QuerySelector("[data-jfb-notice] h2")!.TextContent, Is.EqualTo("Your answers weren't sent"));
             Assert.That(shown.QuerySelector("[data-jfb-notice]")!.GetAttribute("class"), Is.EqualTo("jfb-notice jfb-notice-error"), "a send that did not go through");
             Assert.That(shown.QuerySelector("[data-jfb-notice] + [data-jfb-summary], [data-jfb-summary] + [data-jfb-notice]"), Is.Null, "no summary beside it");

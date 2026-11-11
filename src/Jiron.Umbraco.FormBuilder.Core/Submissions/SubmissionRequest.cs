@@ -88,6 +88,22 @@ internal sealed record SubmissionRequest
     /// <summary>What the gate found in the request's challenge; null without one.</summary>
     public ChallengeTicket? Ticket { get; init; }
 
+    /// <summary>
+    /// Whom a form for members admits and which groups the member is in, as the transport knows them (ADR-0231); null for a
+    /// transport that knows no member, to which a form for members admits nobody.
+    /// </summary>
+    public IFormMemberContext? Members { get; init; }
+
+    /// <summary>
+    /// Whether the request is a post from a page without JavaScript (ADR-0100). On a form for members it carries the
+    /// challenge rendered into its page (ADR-0231), yet the protection treats it as it treats any post without script: no
+    /// puzzle, no captcha and no fill time, scored as <c>no_script</c> where the form's protection needs script.
+    /// </summary>
+    public bool WithoutScript { get; init; }
+
+    /// <summary>Whether the request comes from a page's script with its challenge: neither a server key's nor a post without JavaScript.</summary>
+    public bool IsScripted => Challenges is not null && ServerKey is null && !WithoutScript;
+
     /// <summary>The token of the draft this submission finishes, as posted (ADR-0163); null for none.</summary>
     public string? ResumeToken { get; init; }
 

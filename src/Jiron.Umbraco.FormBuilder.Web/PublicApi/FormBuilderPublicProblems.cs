@@ -97,6 +97,9 @@ internal static class FormBuilderPublicProblems
     /// <summary>The form holds as many entries as its limit allows.</summary>
     public const string EntryLimitReachedCode = "entry_limit_reached";
 
+    /// <summary>The form takes one entry per member, and the member signed in has one (ADR-0231).</summary>
+    public const string AlreadySubmittedCode = "already_submitted";
+
     /// <summary>The answers fail their checks, each error by where it is (ADR-0088).</summary>
     public const string ValidationFailedCode = "validation_failed";
 
@@ -202,6 +205,10 @@ internal static class FormBuilderPublicProblems
     /// <summary>A form that holds as many entries as its limit allows.</summary>
     public static FormBuilderProblemResult EntryLimitReached() =>
         FormBuilderProblems.Problem(StatusCodes.Status403Forbidden, EntryLimitReachedCode, "This form takes no more entries.");
+
+    /// <summary>A form that takes one entry per member, from a member who has sent it already (ADR-0231).</summary>
+    public static FormBuilderProblemResult AlreadySubmitted() =>
+        FormBuilderProblems.Problem(StatusCodes.Status409Conflict, AlreadySubmittedCode, "You have sent this form already. It takes one entry per member.");
 
     /// <summary>Answers that fail their checks, each error with its code, where it is and a line for developers (ADR-0088).</summary>
     /// <param name="problems">The errors.</param>

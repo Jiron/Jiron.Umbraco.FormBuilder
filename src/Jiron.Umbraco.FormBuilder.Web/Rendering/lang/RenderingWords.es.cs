@@ -28,6 +28,8 @@ internal sealed partial record RenderingWords
         SignInText = "Inicie sesión para completarlo.",
         GroupsHeading = "Este formulario no está disponible para su cuenta",
         GroupsText = "Es para miembros de determinados grupos.",
+        AlreadySentHeading = "Ya ha enviado este formulario",
+        AlreadySentText = "Cada miembro puede enviarlo una sola vez.",
         PendingHeading = "Este formulario está pendiente de una actualización",
         PendingText = "Los visitantes no ven nada aquí hasta que se ejecute la actualización de la base de datos de Jiron Form Builder. Solo los usuarios con sesión iniciada en el backoffice ven esta nota.",
         Other = "Otro",

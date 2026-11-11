@@ -23,6 +23,7 @@
   ([ADR-0159](0159-mail-the-queue-the-layouts-and-the-limits.md));
   the preview ticket's form, version, header and refusal, and the test member it stands in for, amended in 10.3e
   ([ADR-0203](0203-the-preview-frame-and-its-ticket.md))
+- Completed by: [ADR-0231](0231-members-entries.md), which builds what this left to step 14.3 (members)
 - Date: 2026-10-23
 - Roadmap step: 1.7b (decided); built in 6.1 (the public API and the pipeline), 6.6 (server keys), 7.1 (standard
   protection, content rules and the spam folder), 7.2 (proof of work and captchas), 8.x (mail limits) and 16.1 (the

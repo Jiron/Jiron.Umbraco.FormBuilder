@@ -171,6 +171,8 @@ export default {
     memberGroups: 'Mitgliedergruppen',
     memberGroupsNone: 'Die Website hat noch keine Mitgliedergruppen. Legen Sie sie im Bereich Mitglieder an.',
     memberGroupGone: 'Eine Gruppe, die die Website nicht mehr hat',
+    onePerMember: 'Ein Eintrag pro Mitglied',
+    onePerMemberHelp: 'Wer es gesendet hat, sieht das an seiner Stelle, und ein zweiter Eintrag wird abgelehnt.',
 
     protection: 'Wie Einträge auf Spam geprüft werden',
     protection_inherit: 'Folgt der Website, auch wenn sich ihre Einstellung ändert.',
@@ -229,6 +231,8 @@ export default {
     ip_none: 'Keine speichern',
     ip_anonymised: 'Anonymisiert, ohne das Ende',
     ip_full: 'Vollständige Adressen',
+    anonymous: 'Anonym',
+    anonymousHelp: 'Die Einträge speichern kein Mitglied, auch wenn ein Mitglied angemeldet ist.',
     insights: 'Zählen, was Besucher mit diesem Formular tun',
     insightsHelp:
       'Aufrufe, Begonnene, die Seiten, die sie erreichen, und die Felder, an denen sie hängen bleiben, für seine Ansicht Einblicke. Keine Antwort und kein Besucher wird gezählt.',
@@ -258,6 +262,7 @@ export default {
       count === 1 ? 'Höchstens 1 Eintrag' : `Höchstens ${number} Einträge`,
     summary_members: 'Nur Mitglieder',
     summary_groups: (number: number) => (number === 1 ? 'Mitglieder einer Gruppe' : `Mitglieder von ${number} Gruppen`),
+    summary_onePerMember: 'Ein Eintrag pro Mitglied',
     summary_content_off: 'Inhaltsprüfungen aus',
     summary_content_normal: 'Normale Inhaltsprüfungen',
     summary_content_strict: 'Strenge Inhaltsprüfungen',
@@ -271,6 +276,7 @@ export default {
     summary_ip_none: 'Keine IP-Adressen',
     summary_ip_anonymised: 'Anonymisierte IP-Adressen',
     summary_ip_full: 'Vollständige IP-Adressen',
+    summary_anonymous: 'Anonym',
     summary_insightsOn: 'Einblicke an',
     summary_insightsOff: 'Einblicke aus',
     summary_insightsSiteOff: 'Einblicke für die ganze Website aus',

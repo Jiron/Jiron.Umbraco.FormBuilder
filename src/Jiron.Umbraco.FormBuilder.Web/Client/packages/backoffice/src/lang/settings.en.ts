@@ -167,6 +167,8 @@ export default {
     memberGroups: 'Member groups',
     memberGroupsNone: 'The site has no member groups yet. Add them in the Members section.',
     memberGroupGone: 'A group the site no longer has',
+    onePerMember: 'One entry per member',
+    onePerMemberHelp: 'A member who has sent it sees that in its place, and a second entry is refused.',
 
     protection: 'How entries are checked for spam',
     protection_inherit: 'Follows the site, also when its setting changes.',
@@ -224,6 +226,8 @@ export default {
     ip_none: 'Keep none',
     ip_anonymised: 'Anonymised, the end removed',
     ip_full: 'Full addresses',
+    anonymous: 'Anonymous',
+    anonymousHelp: 'Its entries keep no member, even when a member is signed in.',
     insights: 'Count what visitors do with this form',
     insightsHelp:
       'Views, starts, the pages they reach and the fields that stop them, for its Insights view. No answer and no visitor is counted.',
@@ -251,6 +255,7 @@ export default {
     summary_limit: (number: string, count: number) => (count === 1 ? '1 entry at most' : `${number} entries at most`),
     summary_members: 'Members only',
     summary_groups: (number: number) => (number === 1 ? 'Members of 1 group' : `Members of ${number} groups`),
+    summary_onePerMember: 'One entry per member',
     summary_content_off: 'Content checks off',
     summary_content_normal: 'Normal content checks',
     summary_content_strict: 'Strict content checks',
@@ -264,6 +269,7 @@ export default {
     summary_ip_none: 'No IP addresses',
     summary_ip_anonymised: 'Anonymised IP addresses',
     summary_ip_full: 'Full IP addresses',
+    summary_anonymous: 'Anonymous',
     summary_insightsOn: 'Insights on',
     summary_insightsOff: 'Insights off',
     summary_insightsSiteOff: 'Insights off for the whole site',

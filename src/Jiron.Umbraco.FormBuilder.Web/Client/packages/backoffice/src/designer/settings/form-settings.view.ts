@@ -510,6 +510,8 @@ export class FormSettingsViewElement extends UmbLitElement {
     const box = anchor.boxes[0] ?? '';
     if (box === 'member-groups' && wordIn(groupOf(definition, 'availability'), 'members', 'anyone') !== 'groups')
       return 'access';
+    if (box === 'one-per-member' && wordIn(groupOf(definition, 'availability'), 'members', 'anyone') === 'anyone')
+      return 'access';
     if (
       (box === 'verification-field' || box === 'verification-days') &&
       !objectIn(groupOf(definition, 'submission'), 'verification')
@@ -1272,12 +1274,14 @@ export class FormSettingsViewElement extends UmbLitElement {
     </div>`;
   }
 
-  // Who may fill it in, and for some member groups the groups under it: one template for every choice, so the choice
-  // keeps the focus as it changes.
+  // Who may fill it in, and once it is for members whether each sends it once, with the groups under it for some member
+  // groups: one template for every choice, so the choice keeps the focus as it changes. Back to anyone, both go, since
+  // they belong only to a form for members (ADR-0231).
   #access(availability: Readonly<Record<string, unknown>>, choices: FormSettingsChoicesResponseModel): TemplateResult {
     const label = this.#term('access');
     const access = wordIn(availability, 'members', 'anyone');
     const chosen = namesIn(availability, 'memberGroups');
+    const once = availability['onePerMember'] === true;
     const choose = this.#select(
       'access',
       label,
@@ -1287,16 +1291,30 @@ export class FormSettingsViewElement extends UmbLitElement {
       (value) =>
         this.#change(
           withSettingAt(
-            withSettingAt(this.#definition(), ['availability', 'members'], value),
-            ['availability', 'memberGroups'],
-            value === 'groups' ? chosen : undefined,
+            withSettingAt(
+              withSettingAt(this.#definition(), ['availability', 'members'], value),
+              ['availability', 'memberGroups'],
+              value === 'groups' ? chosen : undefined,
+            ),
+            ['availability', 'onePerMember'],
+            value === 'anyone' || !once ? undefined : true,
           ),
           label,
         ),
     );
+    const onceLabel = this.#term('onePerMember');
     return html`<div class="item with-detail">
       ${choose}
-      ${access === 'groups' ? html`<div class="detail">${this.#memberGroups(chosen, choices)}</div>` : nothing}
+      ${
+        access === 'anyone'
+          ? nothing
+          : html`<div class="detail">
+              ${access === 'groups' ? this.#memberGroups(chosen, choices) : nothing}
+              ${this.#switch('one-per-member', onceLabel, this.#term('onePerMemberHelp'), once, (on) =>
+                this.#set(['availability', 'onePerMember'], on ? true : undefined, onceLabel),
+              )}
+            </div>`
+      }
     </div>`;
   }
 
@@ -1620,6 +1638,13 @@ export class FormSettingsViewElement extends UmbLitElement {
         choices.defaults.insights ? this.#term('insightsHelp') : this.#term('insightsSiteOff'),
         flagIn(groupOf(definition, 'privacy'), 'insights', true),
         (on) => this.#set(['privacy', 'insights'], on, this.#term('insights')),
+      )}
+      ${this.#switch(
+        'anonymous',
+        this.#term('anonymous'),
+        this.#term('anonymousHelp'),
+        flagIn(groupOf(definition, 'privacy'), 'anonymous', false),
+        (on) => this.#set(['privacy', 'anonymous'], on ? true : undefined, this.#term('anonymous')),
       )}
     `;
   }

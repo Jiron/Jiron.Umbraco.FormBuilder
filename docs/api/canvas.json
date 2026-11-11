@@ -31,6 +31,8 @@
     "signInText": "Sign in to fill it in.",
     "groupsHeading": "This form is not open to your account",
     "groupsText": "It is for members of certain groups.",
+    "alreadySentHeading": "You've already sent this form",
+    "alreadySentText": "Each member can send it once.",
     "pendingHeading": "This form waits for an update",
     "pendingText": "Visitors see nothing here until Jiron Form Builder's database update has run. Only signed-in backoffice users see this note.",
     "other": "Other",

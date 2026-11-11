@@ -212,6 +212,7 @@ internal sealed class DefinitionGenerator
                 RetentionDays = new RetentionDaysByState { Submitted = Maybe(1, DefinitionSaveChecks.MaxDays), Approved = Maybe(1, DefinitionSaveChecks.MaxDays), Rejected = Maybe(1, DefinitionSaveChecks.MaxDays), Spam = Maybe(1, DefinitionSaveChecks.MaxDays) },
                 IP = Word<IPHandling>(),
                 Insights = Chance(),
+                Anonymous = Chance(),
             },
             Appearance = new FormAppearanceSettings
             {

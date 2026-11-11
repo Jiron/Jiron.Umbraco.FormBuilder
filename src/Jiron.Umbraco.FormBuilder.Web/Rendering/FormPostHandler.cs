@@ -79,6 +79,7 @@ internal sealed record FormPostAnswer(FormPostAnswerKind Kind, string? Url = nul
 /// <param name="limits">The rate limits, which every post meets before anything else that costs (ADR-0012).</param>
 /// <param name="limiter">Holds a client to its share of what may wait for an entry (ADR-0148).</param>
 /// <param name="insights">What the form counts, the fields that stopped a visitor among it (ADR-0211).</param>
+/// <param name="challenges">Reads the challenge a form for members renders into its page (ADR-0012, ADR-0231).</param>
 internal sealed class FormPostHandler(
     PublishedFormCache forms,
     FormRequests requests,
@@ -92,7 +93,8 @@ internal sealed class FormPostHandler(
     FormAvailability availability,
     FormRateLimits limits,
     FormBuilderRateLimiter limiter,
-    FormInsights insights)
+    FormInsights insights,
+    ChallengeTokens challenges)
 {
     /// <summary>The notice's code after a post that met a form published again meanwhile.</summary>
     public const string FormChangedCode = "form_changed";
@@ -149,9 +151,9 @@ internal sealed class FormPostHandler(
             return FormPostAnswer.Page;
         }
 
-        // Another site may not post as the member signed in (ADR-0100): to a form for members, and to any form while a
-        // member is signed in, a post from another origin answers 403, as the public API refuses one. A visitor who is not
-        // signed in carries nothing another site could borrow.
+        // Another site may not post as the member signed in (ADR-0100, ADR-0231): to a form for members, and to any form while
+        // a member is signed in, a post from another origin answers a bare 403 before anything renders, as the public API
+        // refuses one. A visitor who is not signed in carries nothing another site could borrow.
         var definition = cached.Published.Definition;
         var members = http.RequestServices.GetRequiredService<FormMembers>();
         var member = await members.KeyAsync();
@@ -250,9 +252,23 @@ internal sealed class FormPostHandler(
             Context = reader.Context,
             Tokens = tokens,
             Member = member,
+            Members = members,
+            WithoutScript = true,
             Honeypot = posted[FormHoneypot.NameOf(formKey, revision)].ToString(),
             Address = http.Connection.RemoteIpAddress,
         };
+        if (definition.Settings.Availability.Access != MemberAccess.Anyone)
+        {
+            // A form for members' page carries a challenge issued to its member, whose id the submission id comes from, so
+            // a double click or a reload of the post finds the entry it made (ADR-0012, ADR-0231).
+            var challenge = One(posted, FormPostFields.Challenge);
+            request = request with
+            {
+                Challenges = challenges,
+                Challenge = challenge,
+                SubmissionId = challenges.Read(challenge, formKey, TimeSpan.Zero) is { } ticket ? FormChallenges.PostSubmissionId(ticket) : null,
+            };
+        }
         var page = Guid.TryParseExact(One(posted, FormPostFields.Page), "D", out var pageKey) ? pageKey : (Guid?)null;
         var state = new Step(reader, definition, page, query);
         switch (nav)
@@ -521,7 +537,8 @@ internal sealed class FormPostHandler(
                 };
                 state.Notice = new FormPostNotice(words.ChangedHeading, text, FormChangedCode);
                 return true;
-            case SubmissionRefusal.MemberRequired or SubmissionRefusal.InvalidRequest or SubmissionRefusal.DuplicateSubmission:
+            // A missing, expired, used or another member's challenge: the page again with the answers and a fresh challenge (ADR-0231).
+            case SubmissionRefusal.MemberRequired or SubmissionRefusal.InvalidRequest or SubmissionRefusal.DuplicateSubmission or SubmissionRefusal.ChallengeRequired:
                 state.Notice = new FormPostNotice(words.NotSentHeading, words.NotSentText, NotSentCode);
                 return true;
             default:
@@ -572,19 +589,16 @@ internal sealed class FormPostHandler(
         return QueryHelpers.AddQueryString(path.Length == 0 ? "/" : path, SentTokens.QueryName, token) + "#" + instance;
     }
 
-    // Whether a post comes from the site's own origin, as the public API counts it (ADR-0012): a post without an origin
-    // passes, as every browser sends one with a post; "null", several or another site's do not.
+    // Whether a post comes from the site's own origin, as the public API counts it (ADR-0012, ADR-0231): one origin, the
+    // site's own; several or another site's do not.
     private static bool IsOwnOrigin(HttpRequest request)
     {
         StringValues values = request.Headers.Origin;
-        if (StringValues.IsNullOrEmpty(values))
-        {
-            return true;
-        }
 
-        // A page that sends no referrer posts to itself with the origin "null", as a sandboxed frame on another site does.
-        // The browser's own word tells them apart, and without that word the post counts as another site's.
-        if (values.Count == 1 && values[0] == "null")
+        // A page that sends no referrer posts to itself with the origin "null", as a sandboxed frame on another site does,
+        // and every browser sends an origin with a post. The browser's own word tells the site's page apart, and without
+        // that word the post counts as another site's.
+        if (StringValues.IsNullOrEmpty(values) || (values.Count == 1 && values[0] == "null"))
         {
             return request.Headers["Sec-Fetch-Site"] == "same-origin";
         }

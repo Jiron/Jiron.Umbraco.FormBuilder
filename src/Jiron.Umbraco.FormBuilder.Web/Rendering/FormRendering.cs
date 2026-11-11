@@ -126,11 +126,23 @@ internal sealed partial class FormRendering(
         var shown = await requests.ShowAsync(cached, culture, await pages.PageAsync(content), cancellationToken);
         var availability = cached.Published.Definition.Settings.Availability;
         MemberGate? gate = null;
+        string? challenge = null;
+        var alreadySent = false;
         if (availability.Access != MemberAccess.Anyone && preview is null)
         {
-            // Who is signed in decides what shows (ADR-0095).
+            // Who is signed in decides what shows (ADR-0095), and no other origin may frame the member's page (ADR-0231).
             PageCaching.NoStore(httpContext);
-            gate = await httpContext.RequestServices.GetRequiredService<FormMembers>().GateAsync(availability);
+            PageFraming.OwnOriginOnly(httpContext);
+            var members = httpContext.RequestServices.GetRequiredService<FormMembers>();
+            gate = await members.GateAsync(availability);
+
+            // A member who has sent a form that takes one entry per member sees that in its place; any other member's page
+            // carries a challenge issued to them, which a post without JavaScript sends (ADR-0012, ADR-0231).
+            if (gate is null && await members.KeyAsync() is { } admitted)
+            {
+                alreadySent = availability.OnePerMember && await submissions.HasSentAsync(formKey, admitted, cancellationToken);
+                challenge = alreadySent ? null : httpContext.RequestServices.GetRequiredService<ChallengeTokens>().Issue(formKey, admitted);
+            }
         }
 
         var instance = target?.Instance ?? FormInstances.Next(httpContext);
@@ -146,12 +158,13 @@ internal sealed partial class FormRendering(
             && await httpContext.RequestServices.GetRequiredService<FormMembers>().KeyAsync() is { } signedIn)
         {
             PageCaching.NoStore(httpContext);
+            PageFraming.OwnOriginOnly(httpContext);
             member = signedIn;
         }
 
         // The picker's theme and page after a send are the placement's (ADR-0129); the render endpoint names its own theme.
         var formTheme = await themes.ResolveAsync(target is null ? theme ?? picked?.Theme : target.Theme, shown.Form.Settings.Theme, cancellationToken);
-        var (view, model) = await models.BuildAsync(new FormRender(httpContext, cached, shown, culture, instance, context ?? new Dictionary<string, string?>(), formTheme, gate, target?.Page, member, target is null ? picked?.Redirect : target.Redirect, content, Preview: preview is not null), cancellationToken);
+        var (view, model) = await models.BuildAsync(new FormRender(httpContext, cached, shown, culture, instance, context ?? new Dictionary<string, string?>(), formTheme, gate, target?.Page, member, target is null ? picked?.Redirect : target.Redirect, content, Preview: preview is not null) { Challenge = challenge, AlreadySent = alreadySent }, cancellationToken);
         return new RenderedForm(view, model, formTheme);
     }
 
@@ -166,7 +179,7 @@ internal sealed partial class FormRendering(
             || !httpContext.Request.Query.TryGetValue(SentTokens.QueryName, out var values)
             || values.Count != 1
             || sent.Read(values[0], form, instance) is not { } submissionId
-            || await submissions.ReceiptAsync(form, submissionId, cancellationToken) is not { Receipt: { } receipt, Outcome: { } outcome })
+            || await submissions.ReceiptAsync(form, submissionId, await MemberAsync(httpContext), cancellationToken) is not { Receipt: { } receipt, Outcome: { } outcome })
         {
             return;
         }
@@ -174,7 +187,7 @@ internal sealed partial class FormRendering(
         FormPostCopy? copy = null;
         if (outcome is { Kind: OutcomeKind.Message, ShowAnswers: true })
         {
-            var entry = HttpMethods.IsGet(httpContext.Request.Method) ? await submissions.CopyAsync(form, submissionId, cancellationToken) : null;
+            var entry = HttpMethods.IsGet(httpContext.Request.Method) ? await submissions.CopyAsync(form, submissionId, await MemberAsync(httpContext), cancellationToken) : null;
             copy = new FormPostCopy(entry is not null && await copies.TakeAsync(form, submissionId, entry.Submitted, cancellationToken) ? entry : null);
         }
 
@@ -188,6 +201,9 @@ internal sealed partial class FormRendering(
                 copy),
         });
     }
+
+    // The member signed in on the request, whose own entry alone a form for members shows the outcome of (ADR-0231).
+    private static Task<Guid?> MemberAsync(HttpContext httpContext) => httpContext.RequestServices.GetRequiredService<FormMembers>().KeyAsync();
 
     // The note in a form's place while the migrations are pending, for a signed-in backoffice user only: the page's
     // visitors see nothing there (ADR-0033). It is the default notice, in the page's culture.

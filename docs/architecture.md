@@ -624,7 +624,8 @@ Text        LocalizedText: culture → text, "" is the default; "#key" reads the
   [ADR-0083](decisions/0083-merge-tags-and-the-two-runtimes-after-the-phase-5-review.md)).
   `FormSubmissions` runs a submission end to end for every transport
   ([ADR-0088](decisions/0088-the-submission-pipeline-and-the-entries-endpoint.md)): the published form as the site
-  runs it (a trashed form is none), members-only forms refused until 14.3, a retry of the same answers (by the
+  runs it (a trashed form is none), the gate (a form for members admits a member it admits now whom the challenge
+  names, never a server key, ADR-0231), a retry of the same answers (by the
   digest `SubmissionDigest`) answered with its entry's receipt and outcome before anything else, the answers mapped
   from the aliases of the revision the page showed (an older one through the newest version published with it) to
   the live version's keys, `form_changed` when they do not fit or a ticked consent's wording changed, the
@@ -811,7 +812,7 @@ codes, `no-store` except the form and the options, the OpenAPI document `jfb-pub
 | `POST drafts/resume` | values by the form as it is served now, and the page, for a token from the URL fragment, until the draft is submitted or replaced; `entries` names the same token as `resume`, and the draft goes in the entry's unit | `verify` | the token |
 | `GET verify` | the page with the confirm button for double opt-in | `verify` | the verification token |
 | `POST verify` | confirms the address once | `verify` | the verification token |
-| `GET forms/{key}/options/{fieldKey}` | a field's options in one culture for the answers up its chain of parents (`parent` for its parent, `parent.{fieldKey}` for any level), each held to the options its parent offers, for every published form; `available: false` when a source failed; `no-cache` with an `ETag` from the answer's bytes | `read` | – |
+| `GET forms/{key}/options/{fieldKey}` | a field's options in one culture for the answers up its chain of parents (`parent` for its parent, `parent.{fieldKey}` for any level), each held to the options its parent offers, for every published form (a form for members only to a member it admits and a server key, ADR-0231); `available: false` when a source failed; `no-cache` with an `ETag` from the answer's bytes | `read` | – |
 | `POST forms/{key}/events` | the insights beacon, no identifiers | `events` | – |
 
 - **Every request** below the base path, in any letter case, meets a middleware before Umbraco's routing: no form
@@ -834,7 +835,9 @@ codes, `no-store` except the form and the options, the OpenAPI document `jfb-pub
   `503 migrations_pending` with `Retry-After: 10`. Anything unexpected answers `500 server_error`, logged with the
   endpoint's name.
 - **Members-only forms** bind the challenge to the signed-in member (`member_required` without one), with no cookie;
-  until that comes in 14.3, every submission to one answers `member_required`.
+  they take the entries of the members they admit, on both paths, and their options, receipts and outcomes are
+  those members' alone (ADR-0231). A form that takes one entry per member answers a member's second
+  `409 already_submitted`, and its page shows that member a notice in its place.
 - **Error codes:** `form_not_found`, `form_closed`, `form_changed`, `validation_failed`, `invalid_request`,
   `challenge_required`, `captcha_failed`, `rate_limited`, `payload_too_large`, `unsupported_media_type`,
   `member_required`, `duplicate_submission`, `entry_limit_reached`, `already_submitted`, `origin_denied`, `timeout`,
@@ -1070,7 +1073,7 @@ others in a cluster.
 | Spoofing | A bot names a lax site's page, or none, to escape a stricter site's protection | a page's site counts only when that page holds the form, by the reference index; anything else gets the strictest of the shared values and every site's | ADR-0147 | 7.4a |
 | Spoofing | A forged server key or token (resume, verification, upload, preview) | keys stored as SHA-256 and compared in fixed time; Data Protection tokens bound to form and time; resume tokens stored as hashes | ADR-0012 | 6.6, 7.1, 8.5, 8.6 |
 | Spoofing | A faked client address through `X-Forwarded-For` | the connection address only; forwarded headers only through ASP.NET Core with known proxies | ADR-0012 | 7.1 |
-| Spoofing | Someone posts as a member | a challenge bound to the signed-in member, readable only from the same origin, on members-only forms; a post without JavaScript from another origin refused while a member is signed in | ADR-0004, ADR-0012, ADR-0100 | 14.3 |
+| Spoofing | Someone posts as a member | a challenge bound to the signed-in member, readable only from the same origin, on members-only forms, and rendered into the member's page for a post without JavaScript; a post without JavaScript from another origin, or with no origin or `null` the browser does not vouch for, refused while a member is signed in; a member's page refuses another origin's frames | ADR-0004, ADR-0012, ADR-0100, ADR-0231 | 14.3 |
 | Spoofing | A forged Host header steers links in mail | links only from the site's base URL, never from the request | ADR-0008, ADR-0067 | 5.3e, 8.2 |
 | Tampering | Posted values for hidden fields, member-prefilled hidden fields or calculations | hidden fields stripped, hide-mode prefill ignored, calculations recomputed on the server | §4.3.3, ADR-0005 | 6.1, 6.5 |
 | Tampering | A submission against an older definition | the compatibility rule: `form_changed` when an error falls on a field the visitor never saw, an answered field is gone, or a consent wording changed (by its posted hash) | ADR-0002 | 6.1, 6.4 |

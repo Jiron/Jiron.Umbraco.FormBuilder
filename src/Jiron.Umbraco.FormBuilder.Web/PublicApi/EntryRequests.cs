@@ -57,7 +57,7 @@ internal sealed class EntryRequests(FormSubmissions submissions, UploadTokens to
         var invalid = new List<string>();
         var preview = PreviewRequest.Of(http);
         return EntryBodies.Read(body.Bytes, formKey, invalid, placements) is { } submission
-            ? Answer(await submissions.SubmitAsync(submission with { Preview = preview?.Version, PreviewRunsActions = preview?.RunsActions ?? false, Tokens = tokens, Challenges = challenges, Address = http.Connection.RemoteIpAddress, Member = preview is null ? await MemberAsync(http) : null, ServerKey = ServerKeyRequest.NameOf(http) }, cancellationToken), formKey, EntryBodies.InstanceOf(body.Bytes))
+            ? Answer(await submissions.SubmitAsync(submission with { Preview = preview?.Version, PreviewRunsActions = preview?.RunsActions ?? false, Tokens = tokens, Challenges = challenges, Address = http.Connection.RemoteIpAddress, Member = preview is null ? await MemberAsync(http) : null, Members = MembersOf(http), ServerKey = ServerKeyRequest.NameOf(http) }, cancellationToken), formKey, EntryBodies.InstanceOf(body.Bytes))
             : FormBuilderPublicProblems.InvalidRequest([.. invalid]);
     }
 
@@ -77,7 +77,7 @@ internal sealed class EntryRequests(FormSubmissions submissions, UploadTokens to
         var invalid = new List<string>();
         var preview = PreviewRequest.Of(http);
         return EntryBodies.ReadPage(body.Bytes, formKey, invalid) is ({ } submission, var page)
-            ? Answer(await submissions.ValidateAsync(submission with { Preview = preview?.Version, Tokens = tokens, Challenges = challenges, Address = http.Connection.RemoteIpAddress, Member = preview is null ? await MemberAsync(http) : null, ServerKey = ServerKeyRequest.NameOf(http) }, page, cancellationToken))
+            ? Answer(await submissions.ValidateAsync(submission with { Preview = preview?.Version, Tokens = tokens, Challenges = challenges, Address = http.Connection.RemoteIpAddress, Member = preview is null ? await MemberAsync(http) : null, Members = MembersOf(http), ServerKey = ServerKeyRequest.NameOf(http) }, page, cancellationToken))
             : FormBuilderPublicProblems.InvalidRequest([.. invalid]);
     }
 
@@ -99,7 +99,7 @@ internal sealed class EntryRequests(FormSubmissions submissions, UploadTokens to
             return FormBuilderPublicProblems.InvalidRequest([.. invalid]);
         }
 
-        var result = await submissions.SaveDraftAsync(submission with { Tokens = tokens, Challenges = challenges, Address = http.Connection.RemoteIpAddress, Member = await MemberAsync(http), ServerKey = ServerKeyRequest.NameOf(http) }, page, cancellationToken);
+        var result = await submissions.SaveDraftAsync(submission with { Tokens = tokens, Challenges = challenges, Address = http.Connection.RemoteIpAddress, Member = await MemberAsync(http), Members = MembersOf(http), ServerKey = ServerKeyRequest.NameOf(http) }, page, cancellationToken);
         return result.DraftExpires is { } expires
             ? new FileContentResult(JsonSerializer.SerializeToUtf8Bytes(new DraftResponseModel { ExpiresUtc = expires.UtcDateTime }, Json), "application/json; charset=utf-8")
             : Answer(result);
@@ -135,7 +135,10 @@ internal sealed class EntryRequests(FormSubmissions submissions, UploadTokens to
     }
 
     // The member signed in on the request, whose values a field prefilled from the member takes (ADR-0124).
-    private static Task<Guid?> MemberAsync(HttpContext http) => http.RequestServices.GetRequiredService<FormMembers>().KeyAsync();
+    private static Task<Guid?> MemberAsync(HttpContext http) => MembersOf(http).KeyAsync();
+
+    // Whom a form for members admits on the request, and the groups its rules ask about (ADR-0231).
+    private static FormMembers MembersOf(HttpContext http) => http.RequestServices.GetRequiredService<FormMembers>();
 
     /// <summary>Reads a receipt's submission id and answers with its entry's receipt and outcome, or the refusal (ADR-0089).</summary>
     /// <param name="http">The request.</param>
@@ -151,7 +154,7 @@ internal sealed class EntryRequests(FormSubmissions submissions, UploadTokens to
 
         var invalid = new List<string>();
         return EntryBodies.ReadReceipt(body.Bytes, invalid, placements, formKey) is ({ } submissionId, var challenge, var placement)
-            ? Answer(await submissions.ReceiptAsync(formKey, submissionId, ServerKeyRequest.NameOf(http), challenge, challenges, placement, PreviewRequest.Of(http)?.Version, cancellationToken))
+            ? Answer(await submissions.ReceiptAsync(formKey, submissionId, ServerKeyRequest.NameOf(http), challenge, challenges, placement, PreviewRequest.Of(http)?.Version, await MemberAsync(http), cancellationToken))
             : FormBuilderPublicProblems.InvalidRequest([.. invalid]);
     }
 
@@ -267,6 +270,7 @@ internal sealed class EntryRequests(FormSubmissions submissions, UploadTokens to
             SubmissionRefusal.FormChanged => FormBuilderPublicProblems.FormChanged(),
             SubmissionRefusal.FormClosed => FormBuilderPublicProblems.FormClosed(),
             SubmissionRefusal.EntryLimitReached => FormBuilderPublicProblems.EntryLimitReached(),
+            SubmissionRefusal.AlreadySubmitted => FormBuilderPublicProblems.AlreadySubmitted(),
             SubmissionRefusal.InvalidRequest => FormBuilderPublicProblems.InvalidRequest([.. result.Problems.Select(problem => problem.Path)]),
             SubmissionRefusal.ValidationFailed => FormBuilderPublicProblems.ValidationFailed(result.Problems),
             SubmissionRefusal.EntryNotFound => FormBuilderPublicProblems.NotFound(),

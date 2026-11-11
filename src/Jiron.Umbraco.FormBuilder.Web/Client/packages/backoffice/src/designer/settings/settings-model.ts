@@ -119,6 +119,7 @@ const AVAILABILITY: Readonly<Record<string, string>> = {
   closedMessage: 'closed-message',
   members: 'access',
   memberGroups: 'member-groups',
+  onePerMember: 'one-per-member',
 };
 
 const APPEARANCE: Readonly<Record<string, string>> = {
@@ -183,7 +184,7 @@ export function anchorOf(path: string): Anchor | null {
     case 'privacy':
       if (name === 'retentionDays')
         return at('privacy', typeof inner === 'string' ? [`retention-${inner}`, 'retention'] : ['retention']);
-      return name === 'insights' || name === 'ip' ? at('privacy', [name]) : null;
+      return name === 'insights' || name === 'ip' || name === 'anonymous' ? at('privacy', [name]) : null;
     case 'developer': {
       const box = own(DEVELOPER, name);
       return box ? at('developer', [box]) : null;
@@ -367,6 +368,7 @@ export function summaryOf(
       const access = wordIn(availability, 'members', 'anyone');
       if (access === 'members') parts.push(term('summary_members'));
       if (access === 'groups') parts.push(term('summary_groups', namesIn(availability, 'memberGroups').length));
+      if (access !== 'anyone' && availability['onePerMember'] === true) parts.push(term('summary_onePerMember'));
       break;
     }
     case 'protection': {
@@ -387,6 +389,7 @@ export function summaryOf(
         parts.push(term('summary_retentionOwn'));
       const ip = wordIn(groupOf(definition, 'privacy'), 'ip', 'inherit');
       if (ip !== 'inherit') parts.push(term(`summary_ip_${ip}`));
+      if (flagIn(groupOf(definition, 'privacy'), 'anonymous', false)) parts.push(term('summary_anonymous'));
       parts.push(
         term(
           flagIn(groupOf(definition, 'privacy'), 'insights', true)

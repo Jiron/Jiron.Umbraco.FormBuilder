@@ -2,6 +2,7 @@
 
 - Status: accepted; consent texts, sensitive fields in mail, the global privacy section and context values
   amended in 1.8; how long consent texts stay amended by [ADR-0222](0222-retention.md)
+- Completed by: [ADR-0231](0231-members-entries.md), which builds what this left to step 14.3 (members)
 - Date: 2026-10-23
 - Roadmap step: 1.7b (decided); built in 4.1 (the columns), 6.1 (what a submission stores), 8.x (mail), 13.1 to 13.4
   (retention, data subject tools, sensitive data and IP addresses, the documentation) and 14.3 (members)

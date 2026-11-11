@@ -291,6 +291,24 @@ public sealed class ChallengeTokensTests
         ],
     };
 
+    [Test]
+    public void APostWithoutScript_TakesItsSubmissionIdFromItsChallenge_TheSameEachTime_AndAnotherForAnother()
+    {
+        var one = _tokens.Read(_tokens.Issue(Form, Member), Form, TimeSpan.Zero)!;
+        var other = _tokens.Read(_tokens.Issue(Form, Member), Form, TimeSpan.Zero)!;
+        var id = FormChallenges.PostSubmissionId(one);
+        var bytes = id.ToByteArray(bigEndian: true);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(FormChallenges.PostSubmissionId(one), Is.EqualTo(id), "a reload of the post is a retry (ADR-0231)");
+            Assert.That(FormChallenges.PostSubmissionId(other), Is.Not.EqualTo(id), "another challenge, another post");
+            Assert.That(id, Is.Not.EqualTo(one.Id), "never the challenge's own id");
+            Assert.That(bytes[6] >> 4, Is.EqualTo(8), "a version-8 GUID (RFC 9562)");
+            Assert.That(bytes[8] >> 6, Is.EqualTo(0b10), "with the RFC's variant");
+        });
+    }
+
     // A clock that stands still until a test moves it.
     private sealed class StoppedClock : TimeProvider
     {

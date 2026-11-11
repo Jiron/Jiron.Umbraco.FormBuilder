@@ -2,6 +2,7 @@
 
 - Status: accepted; builds on [ADR-0012](0012-anonymous-endpoints-spam-protection-and-challenges.md),
   [ADR-0004](0004-rendering-and-submission-paths.md) and [ADR-0006](0006-file-storage-and-uploads.md)
+- Completed by: [ADR-0231](0231-members-entries.md), which builds what this left to step 14.3 (members)
 - Date: 2026-11-01
 - Roadmap step: 7.1b
 

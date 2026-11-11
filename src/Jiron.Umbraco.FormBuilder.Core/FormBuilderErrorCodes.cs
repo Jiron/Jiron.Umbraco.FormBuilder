@@ -65,6 +65,7 @@ internal static class FormBuilderErrorCodes
         FormBuilderConflict.NotTrashed => "not_trashed",
         FormBuilderConflict.LandingChanged => "landing_changed",
         FormBuilderConflict.EntryLimitReached => "entry_limit_reached",
+        FormBuilderConflict.AlreadySubmitted => "already_submitted",
         FormBuilderConflict.EntriesHeld => "entries_held",
         _ => throw new ArgumentOutOfRangeException(nameof(conflict), conflict, "A conflict without a code."),
     };

@@ -79,7 +79,7 @@ public sealed partial class FormPostTests
     }
 
     [Test]
-    public async Task APostFromAnotherOrigin_WhileAMemberIsSignedIn_Answers403AndStoresNothing_ButOneWithoutAnOriginAndAnAnonymousOnePass()
+    public async Task APostFromAnotherOrigin_WhileAMemberIsSignedIn_Answers403AndStoresNothing_ButOneTheBrowserVouchesForAndAnAnonymousOnePass()
     {
         const string Elsewhere = "https://elsewhere.example";
         var key = await PublishFormAsync("postPrefill", PrefillForm);
@@ -93,6 +93,12 @@ public sealed partial class FormPostTests
         using var foreign = await PostPairsAsync(action, Posted(form, FormPostFields.Submit), Elsewhere, PrefillPage);
         var afterForeign = await StoredAsync(key);
         using var originless = await PostPairsAsync(action, Posted(form, FormPostFields.Submit), null, PrefillPage);
+        var afterOriginless = await StoredAsync(key);
+        using var vouched = await SendAsync(HttpMethod.Post, action, request =>
+        {
+            request.Content = new FormUrlEncodedContent(Posted(form, FormPostFields.Submit));
+            request.Headers.TryAddWithoutValidation("Sec-Fetch-Site", "same-origin");
+        });
         var entries = (await StoredAsync(key)).Select(entry => entry.Select(value => value.Text).ToList()).ToList();
 
         Assert.Multiple(async () =>
@@ -102,7 +108,9 @@ public sealed partial class FormPostTests
             Assert.That(Header(foreign, "Cache-Control"), Is.EqualTo("no-store"));
             Assert.That(await foreign.Content.ReadAsStringAsync(), Does.Not.Contain("jfb-form"), "and renders nothing");
             Assert.That(afterForeign, Has.Count.EqualTo(1), "nothing stored as the member");
-            Assert.That(originless.Headers.Location?.OriginalString, Does.Contain("jfb-sent="), "a post without an Origin passes");
+            Assert.That(originless.StatusCode, Is.EqualTo(HttpStatusCode.Forbidden), "every browser sends an origin with a post, so one without counts as another site's (ADR-0231)");
+            Assert.That(afterOriginless, Has.Count.EqualTo(1), "and stores nothing");
+            Assert.That(vouched.Headers.Location?.OriginalString, Does.Contain("jfb-sent="), "unless the browser itself says the post is the site's own");
             Assert.That(entries, Has.Count.EqualTo(2));
             Assert.That(entries[1], Does.Contain(MemberEmail), "as the member's own");
         });

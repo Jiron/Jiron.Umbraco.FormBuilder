@@ -191,6 +191,7 @@ internal sealed class SubmissionEntries(
             SpamScore = verdict.Score,
             SpamReasons = SpamReasons.Stored(verdict.Reasons),
             EntryLimit = definition.Settings.Availability.MaxEntries,
+            OnePerMember = definition.Settings.Availability.OnePerMember,
             IsTest = submission.IsTest,
             DurationSeconds = duration is { } took ? (int)Math.Clamp(Math.Floor(took.TotalSeconds), 0, int.MaxValue) : null,
         };

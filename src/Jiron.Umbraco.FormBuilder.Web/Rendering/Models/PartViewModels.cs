@@ -142,6 +142,9 @@ public enum NoticeKind
     /// alone, without the form's element around it.
     /// </summary>
     MigrationsPending,
+
+    /// <summary>The form takes one entry per member, and the signed-in member has sent it (ADR-0231).</summary>
+    AlreadySent,
 }
 
 /// <summary>The model of <c>Notice.cshtml</c>: a notice in place of the form or above it (ADR-0015).</summary>

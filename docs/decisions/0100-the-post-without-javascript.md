@@ -4,6 +4,7 @@
   the redirect, a message with a redirect) and [ADR-0093](0093-the-razor-rendering.md) (the form's hidden inputs, the
   page shown after a post); extended by [ADR-0101](0101-rows-and-moves-without-javascript.md) in 6.2i (the rows'
   and the rankings' buttons) and by [ADR-0102](0102-files-in-a-post-without-javascript.md) in 6.2j (the post's files)
+- Completed by: [ADR-0231](0231-members-entries.md), which builds what this left to step 14.3 (members)
 - Date: 2026-10-29; amended 2026-10-31 (6.8a: another origin's post while a member is signed in; 6.8g: the origin "null")
 - Roadmap step: 6.2h (decided and built); 6.8a (another origin's post as a member); 6.2i gives a row's Add and Remove and a ranking's moves their effect
   (ADR-0101), 6.2j takes files (ADR-0102), 6.2k the typed signature, 6.2l adds the cache rules, 7.1 the honeypot, the challenge and

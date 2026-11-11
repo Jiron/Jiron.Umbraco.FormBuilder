@@ -6,6 +6,7 @@
   (a field the page cannot know is kept out of its rules), [ADR-0080](0080-reading-a-submission-after-the-phase-5-review.md)
   (a hidden field's server-side values) and [ADR-0104](0104-the-output-cache-rules-and-the-render-endpoint.md) (one
   more render per visitor)
+- Completed by: [ADR-0231](0231-members-entries.md), which builds what this left to step 14.3 (members)
 - Date: 2026-10-30; amended 2026-10-31 (6.8b: the page's checks leave a field the page left out to the server)
 - Roadmap step: 6.5c (decided and built); 14.3 binds members to the page's rules and adds the member link on entries
 

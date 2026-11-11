@@ -162,6 +162,14 @@ public sealed record FormPrivacySettings
 
     /// <summary>Whether the form's entries count in insights.</summary>
     public bool Insights { get; init; } = true;
+
+    /// <summary>
+    /// Whether the form is anonymous (ADR-0231): its entries keep no member, whoever is signed in, and its submissions run
+    /// without one, though its rules may still look at whether a member is signed in. Written only when on, so the
+    /// definitions written before it keep their bytes and their hashes (ADR-0002).
+    /// </summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public bool Anonymous { get; init; }
 }
 
 /// <summary>Retention in days per entry state, 1 to 3,650; absent means the site's default for that state.</summary>

@@ -54,6 +54,11 @@ internal sealed partial class EntryRepository(FormBuilderDatabase database) : IE
                 {
                     throw new FormBuilderConflictException(FormBuilderConflict.EntryLimitReached, "The form holds as many entries as its limit allows.");
                 }
+
+                if (entry.OnePerMember && entry.MemberKey is { } member && MemberEntries.Counts(entry.State, entry.IsTest, member) && await HasMemberEntryAsync(db, n, entry.FormId, member))
+                {
+                    throw new FormBuilderConflictException(FormBuilderConflict.AlreadySubmitted, "The member has sent the form already, and it takes one entry per member.");
+                }
                 // One check per unique index, so each is a seek. IS NOT NULL lets SQL Server use the filtered indexes.
                 var free = $"NOT EXISTS (SELECT 1 FROM {table}{n.InsertOnceHint} WHERE";
                 var challenge = entry.ChallengeId is null ? string.Empty : $" AND {free} {n.C("formId")} = @1 AND {n.C("challengeId")} = @23 AND {n.C("challengeId")} IS NOT NULL)";
@@ -131,6 +136,10 @@ internal sealed partial class EntryRepository(FormBuilderDatabase database) : IE
     /// <inheritdoc />
     public Task<int> CountTowardsLimitAsync(int formId, CancellationToken cancellationToken = default) =>
         database.ReadAsync(db => CountTowardsLimitAsync(db, new SqlNames(db), formId), cancellationToken);
+
+    /// <inheritdoc />
+    public Task<bool> HasMemberEntryAsync(int formId, Guid memberKey, CancellationToken cancellationToken = default) =>
+        database.ReadAsync(db => HasMemberEntryAsync(db, new SqlNames(db), formId, memberKey), cancellationToken);
 
     /// <inheritdoc />
     public Task<StoredEntry?> GetAsync(Guid key, CancellationToken cancellationToken = default) =>
@@ -345,6 +354,16 @@ internal sealed partial class EntryRepository(FormBuilderDatabase database) : IE
             $"SELECT COUNT(*) FROM {n.T(FormBuilderTables.Entry)}{n.LockingRead} WHERE {n.C("formId")} = @0 AND {n.C("isTest")} = @1 AND {n.C("state")} IN ({SqlArgs.Placeholders(2, states.Length)})",
             [formId, false, .. states]);
     }
+
+    // Whether the member has an entry of the form that counts as theirs (MemberEntries): a seek on the member's key, read
+    // under the unit's lock when a write runs it.
+    private static async Task<bool> HasMemberEntryAsync(IUmbracoDatabase db, SqlNames n, int formId, Guid memberKey) =>
+        await db.ScalarAsync<int>(
+            $"SELECT COUNT(*) FROM {n.T(FormBuilderTables.Entry)}{n.LockingRead} WHERE {n.C("memberKey")} = @0 AND {n.C("formId")} = @1 AND {n.C("isTest")} = @2 AND {n.C("state")} <> @3",
+            memberKey,
+            formId,
+            false,
+            StoredNames.Of(EntryState.Draft)) > 0;
 
     /// <summary>Why the insert of an entry was refused, or null when none of its conditions explains it.</summary>
     private static async Task<FormBuilderConflictException?> RefusedCreateAsync(IUmbracoDatabase db, SqlNames n, NewEntry entry)

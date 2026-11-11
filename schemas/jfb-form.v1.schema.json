@@ -115,7 +115,8 @@
       "properties": {
         "retentionDays": { "anyOf": [ { "$ref": "#/$defs/RetentionDaysByState" }, { "type": "null" } ] },
         "ip": { "anyOf": [ { "$ref": "#/$defs/IPHandling" }, { "type": "null" } ] },
-        "insights": { "type": [ "boolean", "null" ] }
+        "insights": { "type": [ "boolean", "null" ] },
+        "anonymous": { "type": [ "boolean", "null" ] }
       }
     },
     "RetentionDaysByState": {

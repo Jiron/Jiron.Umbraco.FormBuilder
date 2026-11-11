@@ -1125,7 +1125,8 @@
             "message",
             "signIn",
             "memberGroups",
-            "migrationsPending"
+            "migrationsPending",
+            "alreadySent"
           ]
         },
         "heading": {

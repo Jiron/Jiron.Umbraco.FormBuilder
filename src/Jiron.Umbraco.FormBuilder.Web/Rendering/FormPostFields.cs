@@ -27,6 +27,9 @@ internal static class FormPostFields
     /// <summary>The key of the page shown.</summary>
     public const string Page = "jfb-page";
 
+    /// <summary>The challenge rendered into the page of a form for members, issued to the member signed in (ADR-0012, ADR-0231).</summary>
+    public const string Challenge = "jfb-challenge";
+
     /// <summary>
     /// The query name in the action of a form that stores files, <c>?jfb-post=&lt;key&gt;.&lt;instance&gt;</c>, which tells the
     /// files' reader before routing which form a post is (ADR-0006, ADR-0102).

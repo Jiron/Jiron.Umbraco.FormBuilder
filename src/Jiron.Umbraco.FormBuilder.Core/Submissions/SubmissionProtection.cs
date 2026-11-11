@@ -124,7 +124,7 @@ internal sealed partial class SubmissionProtection(
     {
         ArgumentNullException.ThrowIfNull(request);
         ArgumentNullException.ThrowIfNull(site);
-        if (request.Challenges is null || request.ServerKey is not null)
+        if (!request.IsScripted)
         {
             return true;
         }
@@ -207,7 +207,7 @@ internal sealed partial class SubmissionProtection(
     {
         ArgumentNullException.ThrowIfNull(request);
         ArgumentNullException.ThrowIfNull(site);
-        if (request.Challenges is null || request.ServerKey is not null)
+        if (!request.IsScripted)
         {
             return FormBuilderCaptchaOutcome.Passed;
         }
@@ -268,7 +268,8 @@ internal sealed partial class SubmissionProtection(
             Add(HoneypotScore, SpamReasons.Honeypot);
         }
 
-        if (request.Ticket is { } ticket && time.GetUtcNow() - ticket.IssuedUtc < TimeSpan.FromSeconds(FormChallenges.MinFillSeconds))
+        // A post without JavaScript carries a challenge rendered into its page, whose time a re-render would restart (ADR-0231).
+        if (request.Ticket is { } ticket && !request.WithoutScript && time.GetUtcNow() - ticket.IssuedUtc < TimeSpan.FromSeconds(FormChallenges.MinFillSeconds))
         {
             Add(TooFastScore, SpamReasons.TooFast);
         }
@@ -285,7 +286,7 @@ internal sealed partial class SubmissionProtection(
         }
 
         // A real visitor without JavaScript is never lost and never trusted (ADR-0012).
-        if (request.Challenges is null && request.ServerKey is null && site.LevelOf(definition) is ProtectionLevel.ProofOfWork or ProtectionLevel.Captcha)
+        if ((request.Challenges is null || request.WithoutScript) && request.ServerKey is null && site.LevelOf(definition) is ProtectionLevel.ProofOfWork or ProtectionLevel.Captcha)
         {
             Add(NoScriptScore, SpamReasons.NoScript);
         }

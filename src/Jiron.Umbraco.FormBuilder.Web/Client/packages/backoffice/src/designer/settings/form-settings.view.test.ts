@@ -573,6 +573,20 @@ describe('the availability', () => {
     expect(settings('availability')).toEqual({ members: 'members' });
     expect(root.getElementById('member-groups')).toBeNull();
   });
+
+  it('asks for one entry per member once the form is for members, and drops it for anyone (ADR-0231)', async () => {
+    const { open, root, click, choose, settings } = await viewOf();
+    await open('availability');
+    expect(root.getElementById('one-per-member')).toBeNull();
+    await choose('access', 'members');
+    await click(must(root.getElementById('one-per-member'), 'One entry per member'));
+    expect(settings('availability')).toEqual({ members: 'members', onePerMember: true });
+    await choose('access', 'groups');
+    expect(settings('availability')['onePerMember']).toBe(true);
+    await choose('access', 'anyone');
+    expect(settings('availability')).toEqual({ members: 'anyone' });
+    expect(root.getElementById('one-per-member')).toBeNull();
+  });
 });
 
 describe('the spam protection', () => {

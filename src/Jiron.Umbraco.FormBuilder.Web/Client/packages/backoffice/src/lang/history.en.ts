@@ -218,6 +218,7 @@ export default {
     property_retention_spam: 'Spam (days)',
     property_ip: 'IP addresses',
     property_insights: 'Insights',
+    property_anonymous: 'Anonymous',
     property_onePerMember: 'One entry per member',
     property_redirect: 'Redirect',
 

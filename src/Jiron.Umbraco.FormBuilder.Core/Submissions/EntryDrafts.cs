@@ -53,6 +53,7 @@ internal sealed record DraftAnswer(DraftStatus Status, Guid Form = default, int 
 /// <param name="CurrentPage">The form's page the visitor was on, as the form knows it; null for the first.</param>
 /// <param name="ChallengeId">The id of the challenge that made it; null for a request without one.</param>
 /// <param name="Replaces">The draft it takes the place of, whose link stops working; null for none.</param>
+/// <param name="Member">The member signed in who saved it, whom a form for members gives it back to alone (ADR-0231); null for none.</param>
 internal sealed record NewDraft(
     int FormId,
     int FormVersionId,
@@ -63,7 +64,8 @@ internal sealed record NewDraft(
     string Email,
     Guid? CurrentPage,
     string? ChallengeId,
-    long? Replaces = null);
+    long? Replaces = null,
+    Guid? Member = null);
 
 /// <summary>
 /// Save and resume (section 4.4, ROADMAP 8.6, ADR-0163). A draft is an entry in the state <see cref="EntryState.Draft"/>: it holds
@@ -172,6 +174,7 @@ internal sealed class EntryDrafts(
                 ResumeTokenHash = HashOf(token),
                 ResumeExpiresUtc = time.GetUtcNow() + TimeSpan.FromDays(days),
                 CurrentPageKey = draft.CurrentPage,
+                MemberKey = draft.Member,
             },
             definition,
             answers,
@@ -229,6 +232,12 @@ internal sealed class EntryDrafts(
         if (definition.Settings.Availability.Access != MemberAccess.Anyone && member is null)
         {
             return new DraftAnswer(DraftStatus.MemberRequired);
+        }
+
+        // A draft of a form for members is the member's who saved it: another member's link finds nothing (ADR-0231).
+        if (definition.Settings.Availability.Access != MemberAccess.Anyone && draft.MemberKey is { } owner && owner != member)
+        {
+            return new DraftAnswer(DraftStatus.NotFound);
         }
 
         var page = definition.Pages.Any(each => each.Key == draft.CurrentPageKey) ? draft.CurrentPageKey : null;

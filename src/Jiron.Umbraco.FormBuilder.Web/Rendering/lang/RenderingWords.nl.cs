@@ -28,6 +28,8 @@ internal sealed partial record RenderingWords
         SignInText = "Log in om het in te vullen.",
         GroupsHeading = "Dit formulier staat niet open voor uw account",
         GroupsText = "Het is alleen voor leden van bepaalde groepen.",
+        AlreadySentHeading = "U hebt dit formulier al verstuurd",
+        AlreadySentText = "Elk lid kan het één keer versturen.",
         PendingHeading = "Dit formulier wacht op een update",
         PendingText = "Bezoekers zien hier niets totdat de database-update van Jiron Form Builder is uitgevoerd. Alleen ingelogde backoffice-gebruikers zien deze melding.",
         Other = "Anders",

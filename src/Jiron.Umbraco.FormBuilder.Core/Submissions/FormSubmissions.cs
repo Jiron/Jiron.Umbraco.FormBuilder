@@ -69,7 +69,7 @@ internal sealed class FormSubmissions(
             return SubmissionResult.Refused(SubmissionRefusal.FormNotFound);
         }
 
-        if (Gate(request, served.Form) is { } refused)
+        if (await GateAsync(request, served.Form) is { } refused)
         {
             return SubmissionResult.Refused(refused);
         }
@@ -109,7 +109,7 @@ internal sealed class FormSubmissions(
         var address = request.Preview is null && request.ServerKey is null
             ? await addresses.KeptAsync(served.Form.Definition, request.Address, cancellationToken)
             : null;
-        var submission = new NewSubmission(served.Row.Id, version.Info.Id, served.Form, read, wordings, request.SubmissionId ?? Guid.NewGuid(), digest, scope.Culture, page, scope.Context, request.Redirect, request.Ticket is { } used ? FormChallenges.StoredId(used) : null, reading.Verdict, draft, request.Ticket?.IssuedUtc)
+        var submission = new NewSubmission(served.Row.Id, version.Info.Id, served.Form, read, wordings, request.SubmissionId ?? Guid.NewGuid(), digest, scope.Culture, page, scope.Context, request.Redirect, request.Ticket is { } used ? FormChallenges.StoredId(used) : null, reading.Verdict, draft, request.WithoutScript ? null : request.Ticket?.IssuedUtc)
         {
             // A preview's entry is a test entry, which sets off nothing unless its ticket runs actions (ADR-0204).
             IsTest = request.Preview is not null,
@@ -138,6 +138,11 @@ internal sealed class FormSubmissions(
         {
             return SubmissionResult.Refused(SubmissionRefusal.EntryLimitReached);
         }
+        catch (FormBuilderConflictException conflict) when (conflict.Conflict == FormBuilderConflict.AlreadySubmitted)
+        {
+            // Another of the member's posts was stored a moment earlier.
+            return SubmissionResult.Refused(SubmissionRefusal.AlreadySubmitted);
+        }
         catch (SubmissionInvalidException invalid)
         {
             // An option ran out of places, or another entry took a unique answer, meanwhile (ADR-0090, ADR-0091): the
@@ -153,6 +158,16 @@ internal sealed class FormSubmissions(
                 .Select(answer => new SubmissionProblem(NameOf(FieldMessageKinds.Invalid), paths.Of(answer.Field, answer.Row))));
         }
     }
+
+    /// <summary>
+    /// Whether the member has an entry of the form that counts as theirs (ADR-0231), so that a form that takes one entry per
+    /// member says so in its place rather than taking answers it would refuse.
+    /// </summary>
+    /// <param name="form">The form's key.</param>
+    /// <param name="member">The member's key.</param>
+    /// <param name="cancellationToken">Cancels the reads.</param>
+    public async Task<bool> HasSentAsync(Guid form, Guid member, CancellationToken cancellationToken = default) =>
+        await forms.GetAsync(form, cancellationToken) is { } row && await entries.HasMemberEntryAsync(row.Id, member, cancellationToken);
 
     /// <summary>
     /// Saves the answers so far as a draft, and mails its link (ADR-0163). It runs what a submission runs up to the answers, the
@@ -178,7 +193,7 @@ internal sealed class FormSubmissions(
             return SubmissionResult.Refused(SubmissionRefusal.ResumeUnavailable);
         }
 
-        if (Gate(request, served.Form) is { } refused)
+        if (await GateAsync(request, served.Form) is { } refused)
         {
             return SubmissionResult.Refused(refused);
         }
@@ -220,7 +235,7 @@ internal sealed class FormSubmissions(
         var replaces = await drafts.FindAsync(request.ResumeToken, served.Row.Id, cancellationToken);
         try
         {
-            await drafts.SaveAsync(new NewDraft(served.Row.Id, version.Info.Id, served.Form, read, scope.Culture, page, request.DraftEmail!, current, challenge, replaces), cancellationToken);
+            await drafts.SaveAsync(new NewDraft(served.Row.Id, version.Info.Id, served.Form, read, scope.Culture, page, request.DraftEmail!, current, challenge, replaces, scope.Member), cancellationToken);
             return SubmissionResult.Saved(expires);
         }
         catch (FormBuilderConflictException conflict) when (conflict.Conflict == FormBuilderConflict.ChallengeUsed)
@@ -246,7 +261,7 @@ internal sealed class FormSubmissions(
             return SubmissionResult.Refused(SubmissionRefusal.FormNotFound);
         }
 
-        if (Gate(request, served.Form) is { } refused)
+        if (await GateAsync(request, served.Form) is { } refused)
         {
             return SubmissionResult.Refused(refused);
         }
@@ -257,38 +272,24 @@ internal sealed class FormSubmissions(
     }
 
     /// <summary>
-    /// The receipt and the outcome of the form's entry that a submission id names (ADR-0012, ADR-0089), as a retry of its
-    /// answers gets them; <see cref="SubmissionRefusal.EntryNotFound"/> when the form has no such entry, only a draft, or
-    /// an entry a server key made (ADR-0126).
+    /// The receipt and the outcome of the form's entry that a submission id names (ADR-0012, ADR-0089), as the page after a
+    /// post without JavaScript shows them: only an entry no server key made (ADR-0126) and, on a form for members, only the
+    /// member's own (ADR-0231); any other, a draft or no such entry is <see cref="SubmissionRefusal.EntryNotFound"/>.
     /// </summary>
     /// <param name="form">The form's key.</param>
     /// <param name="submissionId">The submission id the submission posted.</param>
+    /// <param name="member">The key of the member signed in on the request, or null.</param>
     /// <param name="cancellationToken">Cancelled when the request is, or when its time limit runs out.</param>
-    public async Task<SubmissionResult> ReceiptAsync(Guid form, Guid submissionId, CancellationToken cancellationToken = default) =>
-        await ReceiptAsync(form, submissionId, serverKey: null, cancellationToken);
-
-    /// <summary>
-    /// The receipt of a submission for the server key that made it (ADR-0126): with a key, only an entry that key
-    /// submitted answers, and without one only an entry no key made; any other is the same miss as an unknown submission.
-    /// </summary>
-    /// <param name="form">The form's key.</param>
-    /// <param name="submissionId">The submission's id.</param>
-    /// <param name="serverKey">The name of the server key the request carried, or null.</param>
-    /// <param name="cancellationToken">Cancelled when the request is.</param>
-    public async Task<SubmissionResult> ReceiptAsync(Guid form, Guid submissionId, string? serverKey, CancellationToken cancellationToken = default)
+    public async Task<SubmissionResult> ReceiptAsync(Guid form, Guid submissionId, Guid? member, CancellationToken cancellationToken = default)
     {
         if (await ServedAsync(form, cancellationToken) is not { } served)
         {
             return SubmissionResult.Refused(SubmissionRefusal.FormNotFound);
         }
 
-        if (IsForMembers(served.Form))
-        {
-            return SubmissionResult.Refused(SubmissionRefusal.MemberRequired);
-        }
-
         return await entries.GetBySubmissionAsync(served.Row.Id, submissionId, cancellationToken) is { State: not EntryState.Draft } entry
-            && string.Equals(KeyThatSubmitted(entry), serverKey, StringComparison.Ordinal)
+            && KeyThatSubmitted(entry) is null
+            && IsTheMembers(entry, served.Form, member)
             ? await ReplayAsync(entry, served.Form, placement: null, cancellationToken)
             : SubmissionResult.Refused(SubmissionRefusal.EntryNotFound);
     }
@@ -305,8 +306,9 @@ internal sealed class FormSubmissions(
     /// <param name="challenges">Reads the challenge.</param>
     /// <param name="placement">The page the placement names (ADR-0129), which no entry keeps, or null.</param>
     /// <param name="preview">The version a preview ticket names, whose request finds only a test entry (ADR-0204); null for a visitor's.</param>
+    /// <param name="member">The key of the member signed in on the request, which a form for members' challenge must name (ADR-0231).</param>
     /// <param name="cancellationToken">Cancelled when the request is.</param>
-    public async Task<SubmissionResult> ReceiptAsync(Guid form, Guid submissionId, string? serverKey, string? challenge, IChallengeReader challenges, Guid? placement = null, int? preview = null, CancellationToken cancellationToken = default)
+    public async Task<SubmissionResult> ReceiptAsync(Guid form, Guid submissionId, string? serverKey, string? challenge, IChallengeReader challenges, Guid? placement = null, int? preview = null, Guid? member = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(challenges);
         if (await ServedAsync(form, preview, cancellationToken) is not { } served)
@@ -314,7 +316,10 @@ internal sealed class FormSubmissions(
             return SubmissionResult.Refused(SubmissionRefusal.FormNotFound);
         }
 
-        if (IsForMembers(served.Form) && preview is null)
+        // A form for members answers its own code to a server key and to a visitor, and only the member's own challenge finds
+        // the member's entry (ADR-0231).
+        var forMembers = IsForMembers(served.Form) && preview is null;
+        if (forMembers && (serverKey is not null || member is null))
         {
             return SubmissionResult.Refused(SubmissionRefusal.MemberRequired);
         }
@@ -322,23 +327,29 @@ internal sealed class FormSubmissions(
         var ticket = serverKey is null ? challenges.Read(challenge, form, FormChallenges.ReceiptGrace) : null;
         return await entries.GetBySubmissionAsync(served.Row.Id, submissionId, cancellationToken) is { State: not EntryState.Draft } entry
             && entry.IsTest == (preview is not null)
+            && (!forMembers || (ticket?.Member == member && entry.MemberKey == member))
             && (serverKey is not null ? string.Equals(KeyThatSubmitted(entry), serverKey, StringComparison.Ordinal) : ticket is not null && entry.ChallengeId == FormChallenges.StoredId(ticket))
             ? await ReplayAsync(entry, served.Form, placement, cancellationToken)
             : SubmissionResult.Refused(SubmissionRefusal.EntryNotFound);
     }
 
-    // The gate (section 4.4, step 2, ADR-0012): the challenge's signature and expiry, and on a form for members the member
-    // it names. A server key skips the challenge, and a transport with no challenges has none to read. A form for members
-    // goes no further until 14.3, which admits its members.
-    private static SubmissionRefusal? Gate(SubmissionRequest request, PublishedForm form)
+    // The gate (section 4.4, step 2, ADR-0012, ADR-0231): the challenge's signature and expiry and, on a form for members, a
+    // member the form admits now whom the challenge names. A server key skips the challenge but never reaches a form for
+    // members, and a transport with no challenges has none to read.
+    private static async Task<SubmissionRefusal?> GateAsync(SubmissionRequest request, PublishedForm form)
     {
         var ticket = TicketOf(request);
         // A preview's ticket stands in for a test member, who has no key (ADR-0203).
         if (IsForMembers(form) && request.Preview is null)
         {
-            return request.Challenges is not null && request.ServerKey is null && request.Member is not null && (ticket is null || ticket.Member != request.Member)
-                ? SubmissionRefusal.ChallengeRequired
-                : SubmissionRefusal.MemberRequired;
+            // Groups are compared now, not only when the challenge was issued, so a member taken out of one stops here.
+            if (request.Challenges is null || request.ServerKey is not null || request.Member is null || request.Members is null
+                || !await request.Members.AdmitsAsync(form.Definition.Settings.Availability))
+            {
+                return SubmissionRefusal.MemberRequired;
+            }
+
+            return ticket is null || ticket.Member != request.Member ? SubmissionRefusal.ChallengeRequired : null;
         }
 
         return request.Challenges is not null && request.ServerKey is null && ticket is null ? SubmissionRefusal.ChallengeRequired : null;
@@ -371,20 +382,21 @@ internal sealed class FormSubmissions(
 
     /// <summary>
     /// What a copy of the form's entry that a submission id names shows (ADR-0123): its stored answers in the scope its
-    /// outcome renders in, with what the rules hid for it; null when the form is not served or is for members, and when
-    /// it has no such entry, or only a draft.
+    /// outcome renders in, with what the rules hid for it; null when the form is not served, when it has no such entry or
+    /// only a draft, and on a form for members when the entry is not the member's own (ADR-0231).
     /// </summary>
     /// <param name="form">The form's key.</param>
     /// <param name="submissionId">The submission id the submission posted.</param>
+    /// <param name="member">The key of the member signed in on the request, or null.</param>
     /// <param name="cancellationToken">Cancelled when the request is.</param>
-    public async Task<EntryCopy?> CopyAsync(Guid form, Guid submissionId, CancellationToken cancellationToken = default)
+    public async Task<EntryCopy?> CopyAsync(Guid form, Guid submissionId, Guid? member, CancellationToken cancellationToken = default)
     {
-        if (await ServedAsync(form, cancellationToken) is not { } served || IsForMembers(served.Form))
+        if (await ServedAsync(form, cancellationToken) is not { } served)
         {
             return null;
         }
 
-        return await entries.GetBySubmissionAsync(served.Row.Id, submissionId, cancellationToken) is { State: not EntryState.Draft } entry
+        return await entries.GetBySubmissionAsync(served.Row.Id, submissionId, cancellationToken) is { State: not EntryState.Draft } entry && IsTheMembers(entry, served.Form, member)
             ? await recorder.CopyAsync(entry, served.Form, cancellationToken)
             : null;
     }
@@ -406,8 +418,24 @@ internal sealed class FormSubmissions(
             ? new Served(cached.Published, row)
             : null;
 
-    // The gate: members-only forms wait for 14.3, which binds a request to the signed-in member (ADR-0012).
+    // Whether the form is for members (ADR-0095), which the gate admits only its members to (ADR-0231).
     private static bool IsForMembers(PublishedForm form) => form.Definition.Settings.Availability.Access != MemberAccess.Anyone;
+
+    // Whether an entry is the member's own on a form for members; on a form for anyone every entry is (ADR-0231).
+    private static bool IsTheMembers(StoredEntry entry, PublishedForm form, Guid? member) =>
+        !IsForMembers(form) || (member is not null && entry.MemberKey == member);
+
+    // The groups the form's rules name that the request's member is in: none without a member, or without a rule that names one.
+    private static async Task<IReadOnlyList<string>> GroupsOfAsync(SubmissionRequest request, FormDefinition definition)
+    {
+        if (request.Member is null || request.Members is null)
+        {
+            return [];
+        }
+
+        var named = FormMemberConditions.Of(definition).Groups;
+        return named.Count == 0 ? [] : await request.Members.GroupsAmongAsync(named);
+    }
 
     // Compatibility, availability and the answers read and checked (section 4.4, steps 4, 5 and 7), the places left on
     // the options they chose among them (ADR-0090) and, for a submission, the answers that must be unique (ADR-0091). For
@@ -458,7 +486,8 @@ internal sealed class FormSubmissions(
             Culture = culture,
             Site = page.Site,
             Page = page.Content,
-            Member = request.Member,
+            // An anonymous form runs without the member, so nothing it keeps names them (ADR-0231).
+            Member = definition.Settings.Privacy.Anonymous ? null : request.Member,
             Query = query,
             Context = context,
         };
@@ -475,6 +504,14 @@ internal sealed class FormSubmissions(
                 return Reading.Refused(SubmissionResult.Refused(SubmissionRefusal.FormClosed));
             case FormUnavailable.Full:
                 return Reading.Refused(SubmissionResult.Refused(SubmissionRefusal.EntryLimitReached));
+        }
+
+        // One entry per member (ADR-0231): a member who has one gets no second, which the entry's unit holds too. A draft
+        // is no entry, and the preview's test member has none.
+        if (!draft && request.Preview is null && definition.Settings.Availability.OnePerMember && request.Member is { } member
+            && await entries.HasMemberEntryAsync(served.Row.Id, member, cancellationToken))
+        {
+            return Reading.Refused(SubmissionResult.Refused(SubmissionRefusal.AlreadySubmitted));
         }
 
         // The answers, read by their types before the rules and checked once the rules leave them shown (ADR-0072).
@@ -503,6 +540,9 @@ internal sealed class FormSubmissions(
                 Fields = answers.Fields,
                 Rows = answers.Rows,
                 Uploads = await UploadsAsync(request, answers, definition, served.Row.Id, cancellationToken),
+                // The rules see the member as the page does: signed in, and in the groups they name (ADR-0138, ADR-0231).
+                MemberSignedIn = request.Member is not null,
+                MemberGroups = await GroupsOfAsync(request, definition),
             },
             cancellationToken);
         var paths = new FieldPaths(definition);
@@ -777,7 +817,7 @@ internal sealed class FormSubmissions(
 
             foreach (var token in answer.Values.OfType<string>().Select(TextSemantics.Clean).Where(token => token.Length > 0 && !uploads.ContainsKey(token)))
             {
-                if (tokens.FileOf(token, request.Form, field, request.Ticket?.Id) is { } key && await entries.GetFileAsync(key, cancellationToken) is { } file && file.FormId == formId && file.ScanState != FileScanStates.Quarantined)
+                if (tokens.FileOf(token, request.Form, field, request.WithoutScript ? null : request.Ticket?.Id) is { } key && await entries.GetFileAsync(key, cancellationToken) is { } file && file.FormId == formId && file.ScanState != FileScanStates.Quarantined)
                 {
                     uploads[token] = file;
                 }

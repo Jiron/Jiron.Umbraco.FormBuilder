@@ -28,6 +28,8 @@ internal sealed partial record RenderingWords
         SignInText = "Log ind for at udfylde den.",
         GroupsHeading = "Formularen er ikke åben for din konto",
         GroupsText = "Den er for medlemmer af bestemte grupper.",
+        AlreadySentHeading = "Du har allerede sendt denne formular",
+        AlreadySentText = "Hvert medlem kan sende den én gang.",
         PendingHeading = "Formularen venter på en opdatering",
         PendingText = "Besøgende ser intet her, før Jiron Form Builders databaseopdatering er kørt. Kun brugere, der er logget ind i backoffice, ser denne note.",
         Other = "Andet",

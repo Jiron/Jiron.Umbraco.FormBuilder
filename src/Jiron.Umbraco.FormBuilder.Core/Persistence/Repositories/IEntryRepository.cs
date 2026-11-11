@@ -167,11 +167,33 @@ internal sealed record NewEntry
     /// </summary>
     public int? EntryLimit { get; init; }
 
+    /// <summary>
+    /// Whether the form takes one entry per member (<c>availability.onePerMember</c>, ADR-0231): the unit then looks for
+    /// another entry of the form with the same <see cref="MemberKey"/> right after the form's counter, so two submissions
+    /// at once cannot both be the member's one, and refuses this one with <see cref="FormBuilderConflict.AlreadySubmitted"/>
+    /// when it finds one (<see cref="MemberEntries"/>). A draft, a test entry or an entry without a member is stored whatever
+    /// there is.
+    /// </summary>
+    public bool OnePerMember { get; init; }
+
     /// <summary>The values.</summary>
     public IReadOnlyList<NewEntryValue> Values { get; init; } = [];
 
     /// <summary>The uploaded files of the form that the entry takes, none of them another entry's yet (ADR-0006).</summary>
     public IReadOnlyList<int> FileIds { get; init; } = [];
+}
+
+/// <summary>Which entries are a member's one entry of a form that takes one per member (ADR-0231).</summary>
+internal static class MemberEntries
+{
+    /// <summary>
+    /// Whether an entry is a member's one entry of a form that takes one per member (ADR-0231): any that keeps the member
+    /// and is neither a draft nor a test entry, in every other state; a deleted, erased or anonymised one no longer is.
+    /// </summary>
+    /// <param name="state">The entry's state.</param>
+    /// <param name="isTest">Whether it is a test entry.</param>
+    /// <param name="memberKey">The member it keeps, if any.</param>
+    public static bool Counts(EntryState state, bool isTest, Guid? memberKey) => memberKey is not null && state != EntryState.Draft && !isTest;
 }
 
 /// <summary>
@@ -533,6 +555,12 @@ internal interface IEntryRepository
     /// <param name="formId">The form.</param>
     /// <param name="cancellationToken">Cancels the read.</param>
     Task<int> CountTowardsLimitAsync(int formId, CancellationToken cancellationToken = default);
+
+    /// <summary>Whether the member has an entry of the form that counts as theirs (<see cref="MemberEntries"/>, ADR-0231).</summary>
+    /// <param name="formId">The form.</param>
+    /// <param name="memberKey">The member's key.</param>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    Task<bool> HasMemberEntryAsync(int formId, Guid memberKey, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// How many places are held on each of these options of a form (ADR-0090): the option's count, or, for an option that

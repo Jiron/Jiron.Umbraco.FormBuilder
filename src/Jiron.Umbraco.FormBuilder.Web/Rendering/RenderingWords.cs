@@ -56,6 +56,8 @@ internal sealed partial record RenderingWords
             SignInText = "Sign in to fill it in.",
             GroupsHeading = "This form is not open to your account",
             GroupsText = "It is for members of certain groups.",
+            AlreadySentHeading = "You've already sent this form",
+            AlreadySentText = "Each member can send it once.",
             PendingHeading = "This form waits for an update",
             PendingText = "Visitors see nothing here until Jiron Form Builder's database update has run. Only signed-in backoffice users see this note.",
             Other = "Other",
@@ -166,6 +168,8 @@ internal sealed partial record RenderingWords
             SignInText = "Melden Sie sich an, um es auszuf" + UUmlaut + "llen.",
             GroupsHeading = "Dieses Formular ist f" + UUmlaut + "r Ihr Konto nicht freigegeben",
             GroupsText = "Es ist nur f" + UUmlaut + "r Mitglieder bestimmter Gruppen.",
+            AlreadySentHeading = "Sie haben dieses Formular bereits gesendet",
+            AlreadySentText = "Jedes Mitglied kann es einmal senden.",
             PendingHeading = "Dieses Formular wartet auf ein Update",
             PendingText = "Auf der Website ist hier nichts zu sehen, bis das Datenbank-Update von Jiron Form Builder ausgef" + UUmlaut + "hrt wurde. Diesen Hinweis sieht nur, wer im Backoffice angemeldet ist.",
             Other = "Sonstiges",
@@ -355,6 +359,12 @@ internal sealed partial record RenderingWords
 
     /// <summary>The text of the notice of a form for member groups to a member of none of them.</summary>
     public required string GroupsText { get; init; }
+
+    /// <summary>The heading in place of a form that takes one entry per member, to a member who has sent it (ADR-0231).</summary>
+    public required string AlreadySentHeading { get; init; }
+
+    /// <summary>The sentence under it.</summary>
+    public required string AlreadySentText { get; init; }
 
     /// <summary>The heading of the note a signed-in backoffice user sees in a form's place while the migrations are pending.</summary>
     public required string PendingHeading { get; init; }

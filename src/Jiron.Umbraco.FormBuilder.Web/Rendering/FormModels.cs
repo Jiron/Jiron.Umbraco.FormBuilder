@@ -63,6 +63,15 @@ internal sealed record FormRender(
 {
     /// <summary>What the server prefills (ADR-0124), worked out as the form's page is built.</summary>
     public FormPrefill Prefill { get; init; } = FormPrefill.None;
+
+    /// <summary>
+    /// The challenge a form for members carries in its page for a post without JavaScript, issued to the member signed in
+    /// for this render (ADR-0012, ADR-0231); null on any other form.
+    /// </summary>
+    public string? Challenge { get; init; }
+
+    /// <summary>Whether the member signed in has sent a form that takes one entry per member, which then says so in its place (ADR-0231).</summary>
+    public bool AlreadySent { get; init; }
 }
 
 /// <summary>
@@ -151,7 +160,7 @@ internal sealed partial class FormModels(
         var culture = CultureInfo.GetCultureInfo(render.Culture);
         var request = render.HttpContext.Request;
         var path = render.Page ?? (request.PathBase + request.Path).ToUriComponent();
-        var display = post?.Outcome is not null ? FormDisplay.Outcome : render.Shown.Unavailable is not null || render.Gate is not null ? FormDisplay.Notice : FormDisplay.Form;
+        var display = post?.Outcome is not null ? FormDisplay.Outcome : render.Shown.Unavailable is not null || render.Gate is not null || render.AlreadySent ? FormDisplay.Notice : FormDisplay.Form;
         var root = new Root(
             form.Form.Key,
             form.Form.Alias,
@@ -171,7 +180,7 @@ internal sealed partial class FormModels(
         var model = display switch
         {
             FormDisplay.Outcome => root.Model(outcome: Outcome(post!.Outcome!, words, classes, root.Views, await CopyAsync(render, root, post.Outcome!.Copy, words, culture, cancellationToken))),
-            FormDisplay.Notice => root.Model(notice: render.Shown.Unavailable is not null ? Unavailable(render, words, culture, classes) : Gated(render.Gate!.Value, words, classes)),
+            FormDisplay.Notice => root.Model(notice: render.Shown.Unavailable is not null ? Unavailable(render, words, culture, classes) : render.Gate is { } gate ? Gated(gate, words, classes) : AlreadySent(words, classes)),
             _ => await FormAsync(render, root, post, words, culture, cancellationToken),
         };
         return (formView, model);
@@ -182,6 +191,10 @@ internal sealed partial class FormModels(
     private static NoticeViewModel Gated(MemberGate gate, RenderingWords words, ThemeClassesModel classes) => gate == MemberGate.SignIn
         ? new NoticeViewModel { Classes = classes, CssClass = classes.Join("jfb-notice", FormBuilderThemeSlots.Notice), Kind = NoticeKind.SignIn, Heading = words.SignInHeading, Text = Paragraph(words.SignInText) }
         : new NoticeViewModel { Classes = classes, CssClass = classes.Join("jfb-notice", FormBuilderThemeSlots.Notice), Kind = NoticeKind.MemberGroups, Heading = words.GroupsHeading, Text = Paragraph(words.GroupsText) };
+
+    // The notice in place of a form that takes one entry per member, to a member who has sent it (ADR-0231).
+    private static NoticeViewModel AlreadySent(RenderingWords words, ThemeClassesModel classes) =>
+        new() { Classes = classes, CssClass = classes.Join("jfb-notice", FormBuilderThemeSlots.Notice), Kind = NoticeKind.AlreadySent, Heading = words.AlreadySentHeading, Text = Paragraph(words.AlreadySentText) };
 
     // The notice of a form that takes no entry now: the form's closed message when it is closed or full, otherwise the
     // package's heading and sentence; a form that opens later says when, in the site's time zone and the culture.
@@ -279,7 +292,7 @@ internal sealed partial class FormModels(
     // What a post without JavaScript carries besides the answers (ADR-0100): Umbraco's route token for the surface
     // action, the form, its instance, its revision and the page shown, and the query values a post carried; none is per
     // visitor on a first render.
-    private List<HiddenInputModel> PostValues(Root root, PublicPage? current, FormPostState? post, Guid? redirect)
+    private List<HiddenInputModel> PostValues(Root root, PublicPage? current, FormPostState? post, Guid? redirect, string? challenge)
     {
         // The placement's page after a send rides in the token, which only the server can write and read (ADR-0129).
         var routeValues = redirect is { } page ? new Dictionary<string, object> { [FormPostFields.Redirect] = page.ToString("D") } : null;
@@ -293,6 +306,11 @@ internal sealed partial class FormModels(
         if (current is not null)
         {
             values.Add(new(FormPostFields.Page, current.Key.ToString("D")));
+        }
+
+        if (challenge is not null)
+        {
+            values.Add(new(FormPostFields.Challenge, challenge));
         }
 
         foreach (var (name, texts) in post?.Query ?? NoQuery)
@@ -406,7 +424,7 @@ internal sealed partial class FormModels(
                 : null,
             honeypot: new HoneypotModel(root.Id + "-" + honeypot, honeypot, words.Honeypot),
             context: Context(render),
-            postValues: PostValues(root, current, post, render.Redirect),
+            postValues: PostValues(root, current, post, render.Redirect, render.Challenge),
             contentKey: render.Content,
             placement: render.Redirect is { } placement ? placements.Issue(root.Key, placement) : null,
             sending: Sending(root, words, shown.Pages.Count > 1 ? Moves(settings, words, root.Classes) : null));

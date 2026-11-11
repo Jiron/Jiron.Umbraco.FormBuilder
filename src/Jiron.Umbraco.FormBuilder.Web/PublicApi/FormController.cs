@@ -109,7 +109,8 @@ internal sealed class FormController(
     /// <summary>
     /// A field's options for the answers a request gives up its chain of parents, for a cascading field once a visitor
     /// answers its parent: each parent's answers held to the options that parent offers, so no text reaches a source
-    /// unless an option has it (ADR-0081). Every published form not in the trash answers, as the page that shows it.
+    /// unless an option has it (ADR-0081). Every published form not in the trash answers, as the page that shows it; a form
+    /// for members only a member it admits and a server key, as the form endpoint (ADR-0150, ADR-0231).
     /// <c>available</c> is false when the field's source could not give its options. <c>Cache-Control: no-cache</c>
     /// with an <c>ETag</c> that is a hash of the answer.
     /// </summary>
@@ -131,6 +132,7 @@ internal sealed class FormController(
     [ProducesResponseType<FieldOptionsResponseModel>(StatusCodes.Status200OK, "application/json")]
     [ProducesResponseType(StatusCodes.Status304NotModified)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest, FormBuilderProblemResult.MediaType)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden, FormBuilderProblemResult.MediaType)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound, FormBuilderProblemResult.MediaType)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status503ServiceUnavailable, FormBuilderProblemResult.MediaType)]
     public async Task<IActionResult> Options(
@@ -160,6 +162,14 @@ internal sealed class FormController(
         if (!Guid.TryParseExact(key, "D", out var formKey) || await ServedAsync(formKey, cancellationToken) is not { } form)
         {
             return FormBuilderPublicProblems.FormNotFound();
+        }
+
+        // A form for members gives its options to a member it admits or a server that signs for its own visitors, as the form
+        // endpoint shows the form (ADR-0150, ADR-0231); the preview's ticket stands in for a test member (ADR-0203).
+        if (PreviewRequest.Of(HttpContext) is null && ServerKeyRequest.NameOf(HttpContext) is null
+            && !await ChallengeRequests.AdmitsAsync(HttpContext, form.Published.Definition.Settings.Availability))
+        {
+            return FormBuilderPublicProblems.MemberRequired();
         }
 
         if (!Guid.TryParseExact(fieldKey, "D", out var fieldGuid) || OptionField(form.Published.Definition, fieldGuid) is not { } field)
@@ -490,8 +500,9 @@ internal sealed class FormController(
     /// <c>422 validation_failed</c> lists each error with its code (the field's kind of error, <c>check</c>, <c>rule</c>
     /// or <c>empty</c>) and its path (the alias, <c>grid.rowKey</c>, <c>group[row].child</c>, or empty for the form).
     /// <c>409 form_changed</c> asks the page to load the form again; <c>409 duplicate_submission</c> says the id was used
-    /// for other answers, or by another challenge. <c>401 challenge_required</c> asks the page for a new challenge: one
-    /// missing, forged, expired, another form's, or used for another entry.
+    /// for other answers, or by another challenge; <c>409 already_submitted</c> says the member signed in has sent a form
+    /// that takes one entry per member. <c>401 challenge_required</c> asks the page for a new challenge: one missing,
+    /// forged, expired, another form's, used for another entry or, on a form for members, another member's.
     /// </remarks>
     [HttpPost("{key}/entries")]
     [FormBuilderPreview]

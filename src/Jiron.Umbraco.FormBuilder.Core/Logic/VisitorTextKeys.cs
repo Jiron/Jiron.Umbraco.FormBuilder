@@ -71,6 +71,8 @@ internal static partial class VisitorTextKeys
         ("notices", "signInText", []),
         ("notices", "groupsHeading", []),
         ("notices", "groupsText", []),
+        ("notices", "alreadySentHeading", []),
+        ("notices", "alreadySentText", []),
         ("form", "other", []),
         ("form", "otherText", []),
         ("form", "choose", []),

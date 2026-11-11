@@ -33,6 +33,9 @@ internal enum SubmissionRefusal
     /// <summary>The form holds as many entries as its limit allows (<c>entry_limit_reached</c>).</summary>
     EntryLimitReached,
 
+    /// <summary>The form takes one entry per member, and the member signed in has one (<c>already_submitted</c>, ADR-0231).</summary>
+    AlreadySubmitted,
+
     /// <summary>The request names something the form does not have, or holds a value it cannot take (<c>invalid_request</c>).</summary>
     InvalidRequest,
 

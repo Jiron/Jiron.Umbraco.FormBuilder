@@ -300,7 +300,7 @@ export type NavigationViewModel = {
 };
 
 export type NoticeViewModel = {
-  kind: "notOpenYet" | "closed" | "full" | "message" | "signIn" | "memberGroups" | "migrationsPending";
+  kind: "notOpenYet" | "closed" | "full" | "message" | "signIn" | "memberGroups" | "migrationsPending" | "alreadySent";
   heading?: string;
   text: string;
   code?: string;

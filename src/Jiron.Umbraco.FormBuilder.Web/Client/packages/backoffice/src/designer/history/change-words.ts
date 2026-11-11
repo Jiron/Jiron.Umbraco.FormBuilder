@@ -158,6 +158,7 @@ export const VOCABULARY: Readonly<Record<string, Readonly<Record<string, Propert
     retentionDays: { term: 'jfbHistory_property_retentionDays', value: 'any', holds: 'RetentionDaysByState' },
     ip: { term: 'jfbHistory_property_ip', value: 'enum:IPHandling' },
     insights: { term: 'jfbHistory_property_insights', value: 'flag' },
+    anonymous: { term: 'jfbHistory_property_anonymous', value: 'flag' },
   },
   RetentionDaysByState: {
     submitted: { term: 'jfbHistory_property_retention_submitted', value: 'number' },

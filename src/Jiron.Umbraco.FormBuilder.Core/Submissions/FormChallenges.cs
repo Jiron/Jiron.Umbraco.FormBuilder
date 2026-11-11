@@ -35,11 +35,31 @@ internal static class FormChallenges
     /// <summary>The fewest seconds a person takes from a challenge to a submission.</summary>
     public const int MinFillSeconds = 3;
 
+    // The label that keeps a post's submission id apart from any other use of a challenge's id.
+    private const string PostLabel = "Jiron.FormBuilder.PostWithoutScript.v1:";
+
     /// <summary>A challenge's id as an entry stores it.</summary>
     /// <param name="ticket">The challenge.</param>
     public static string StoredId(ChallengeTicket ticket)
     {
         ArgumentNullException.ThrowIfNull(ticket);
         return ticket.Id.ToString("N");
+    }
+
+    /// <summary>
+    /// The submission id of a post without JavaScript that carries the challenge rendered into its page (ADR-0012,
+    /// ADR-0231): the first 16 bytes of SHA-256 over a fixed label and the challenge's id, as a version-8 GUID, so a double
+    /// click or a reload of the post is a retry of its entry rather than a second one.
+    /// </summary>
+    /// <param name="ticket">The challenge the post carried.</param>
+    public static Guid PostSubmissionId(ChallengeTicket ticket)
+    {
+        ArgumentNullException.ThrowIfNull(ticket);
+        Span<byte> hash = stackalloc byte[32];
+        System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(PostLabel + ticket.Id.ToString("N")), hash);
+        // RFC 9562: the version in the high nibble of byte 6 and the variant in the top bits of byte 8, in big-endian order.
+        hash[6] = (byte)((hash[6] & 0x0F) | 0x80);
+        hash[8] = (byte)((hash[8] & 0x3F) | 0x80);
+        return new Guid(hash[..16], bigEndian: true);
     }
 }

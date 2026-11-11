@@ -29,8 +29,9 @@ live, and again when a form's purpose changes. The [facts sheet](facts.md) says 
       your privacy policy, sign its data processing terms where it offers them, and pick a consent mode that asks first.
       A consent field that loads the captcha should be one of its own, naming the provider, not the field that agrees to
       the form's purpose. List the cookies the provider's script sets in your consent tool.
-- [ ] **Members.** An entry keeps which member sent it when the visitor is signed in. Until a form can leave that out
-      (roadmap step 14.3), keep a form meant to be anonymous off the pages members use signed in.
+- [ ] **Members.** An entry keeps which member sent it when the visitor is signed in. A form meant to be anonymous
+      turns on Anonymous in its Privacy group, which keeps no member on its entries (it cannot then be for members, nor
+      take one entry per member, nor fill a field from the member).
 - [ ] **Actions that send data elsewhere.** Every webhook, content action or mail to a third party makes its receiver a
       recipient you must name, and often a processor you need a contract with; check transfers outside the EU and
       Switzerland.

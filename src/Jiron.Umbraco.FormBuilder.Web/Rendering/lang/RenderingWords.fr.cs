@@ -28,6 +28,8 @@ internal sealed partial record RenderingWords
         SignInText = "Connectez-vous pour le remplir.",
         GroupsHeading = "Votre compte n’a pas accès à ce formulaire",
         GroupsText = "Il est réservé aux membres de certains groupes.",
+        AlreadySentHeading = "Vous avez déjà envoyé ce formulaire",
+        AlreadySentText = "Chaque membre ne peut l’envoyer qu’une fois.",
         PendingHeading = "Ce formulaire est en attente d’une mise à jour",
         PendingText = "Les visiteurs ne voient rien ici tant que la mise à jour de la base de données de Jiron Form Builder n’a pas été effectuée. Seuls les utilisateurs connectés au backoffice voient cette note.",
         Other = "Autre",

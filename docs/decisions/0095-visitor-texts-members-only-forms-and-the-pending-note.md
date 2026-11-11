@@ -6,6 +6,7 @@
   and the three button labels), [ADR-0084](0084-the-public-apis-frame-and-the-form-endpoint.md) and
   [ADR-0085](0085-visitor-texts-and-consent-wordings-on-the-form-endpoint.md) (the visitor's form carries the site's
   style and labels) and [ADR-0033](0033-schema-v1.md) (how a website page knows a backoffice user)
+- Completed by: [ADR-0231](0231-members-entries.md), which builds what this left to step 14.3 (members)
 - Date: 2026-10-29
 - Amended in 6.4g by [ADR-0115](0115-answer-recall-on-the-page.md): a visitor text with tags that renders empty is
   written hidden instead of left out, a group whose title has tags is a fieldset, and a description or help with tags is

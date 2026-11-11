@@ -49,6 +49,39 @@ public sealed class EntryLimitRepositoryTests : RepositoryTestBase
     }
 
     [Test]
+    public async Task OneEntryPerMember_IsHeldInTheUnitThatStoresTheEntry_OverTheMembersEntriesThatCount()
+    {
+        var form = await CreateTestFormAsync();
+        var other = await CreateTestFormAsync();
+        var member = Guid.NewGuid();
+        var someoneElse = Guid.NewGuid();
+        await Entries.CreateAsync(NewEntry(form.Id, form.VersionId) with { MemberKey = member, State = EntryState.Draft, OnePerMember = true });
+        await Entries.CreateAsync(NewEntry(form.Id, form.VersionId) with { MemberKey = member, IsTest = true, OnePerMember = true });
+        await Entries.CreateAsync(NewEntry(other.Id, other.VersionId) with { MemberKey = member, OnePerMember = true });
+        var before = await Entries.HasMemberEntryAsync(form.Id, member);
+
+        var first = await Entries.CreateAsync(NewEntry(form.Id, form.VersionId) with { MemberKey = member, State = EntryState.Rejected, OnePerMember = true });
+        var after = await Entries.HasMemberEntryAsync(form.Id, member);
+        var theirs = await Entries.CreateAsync(NewEntry(form.Id, form.VersionId) with { MemberKey = someoneElse, OnePerMember = true });
+        var anyone = await Entries.CreateAsync(NewEntry(form.Id, form.VersionId) with { OnePerMember = true });
+        var draft = await Entries.CreateAsync(NewEntry(form.Id, form.VersionId) with { MemberKey = member, State = EntryState.Draft, OnePerMember = true });
+        var withoutTheSetting = await Entries.CreateAsync(NewEntry(form.Id, form.VersionId) with { MemberKey = member });
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(before, Is.False, "a draft, a test entry and another form's entry are not the member's one");
+            Assert.That(first, Is.Not.Null);
+            Assert.That(after, Is.True, "a rejected entry still is (ADR-0231)");
+            AssertRefused(() => Entries.CreateAsync(NewEntry(form.Id, form.VersionId) with { MemberKey = member, OnePerMember = true }), FormBuilderConflict.AlreadySubmitted);
+            AssertRefused(() => Entries.CreateAsync(NewEntry(form.Id, form.VersionId) with { MemberKey = member, State = EntryState.Spam, OnePerMember = true }), FormBuilderConflict.AlreadySubmitted);
+            Assert.That(theirs, Is.Not.Null, "another member's own");
+            Assert.That(anyone, Is.Not.Null, "an entry without a member is stored whatever there is");
+            Assert.That(draft, Is.Not.Null, "a draft is no entry");
+            Assert.That(withoutTheSetting, Is.Not.Null, "a form that takes any number");
+        });
+    }
+
+    [Test]
     public async Task ARevision_IsReadAsTheNewestPublishedVersionWithIt()
     {
         var form = await CreateFormAsync();
