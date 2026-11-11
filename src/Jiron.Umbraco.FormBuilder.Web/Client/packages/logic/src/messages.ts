@@ -8,6 +8,7 @@ import { bound, FILE_TYPES } from './checks.ts';
 import { formatCalendar, formatNumber, type CultureFormats } from './culture.ts';
 import { formatDate, parseDate } from './dates.ts';
 import type { DisplayWords } from './display.ts';
+import { own } from './errors.ts';
 import { isEmailAddress } from './forms.ts';
 import { clean, isTrimmed } from './text.ts';
 
@@ -165,8 +166,33 @@ export interface VisitorError {
 const KILOBYTE = 1024n;
 const MEGABYTE = KILOBYTE * KILOBYTE;
 
-/** The words for a count: English and German say one only for 1; 14.2 adds the rules of five more languages. */
+/**
+ * The words for a count: one for 1, the other for any other number. That holds in all seven languages, French included,
+ * since a message names a count only where it can be at least 1 (ADR-0230).
+ */
 export const plural = (words: PluralWords, count: number): string => (count === 1 ? words.one : words.other);
+
+/**
+ * A table with the messages a form or its site rewords in place of its own (ADR-0230), as the form endpoint gives them:
+ * a word by its name, a counting word's forms as `name.one` and `name.other`, a cookie category's name as
+ * `captchaCategories.<category>`; the table itself when they reword none. A name the table has no word of is left out.
+ */
+export function rewordMessages(
+  words: MessageWords,
+  texts: Readonly<Record<string, string>> | null | undefined,
+): MessageWords {
+  const named = Object.entries(texts ?? {});
+  if (named.length === 0) return words;
+  const reworded: Record<string, unknown> = { ...words };
+  for (const [name, text] of named) {
+    const [word = '', form] = name.split('.');
+    const own: unknown = Object.hasOwn(words, word) ? reworded[word] : null;
+    if (form === undefined) {
+      if (typeof own === 'string') reworded[word] = text;
+    } else if (own && typeof own === 'object' && Object.hasOwn(own, form)) reworded[word] = { ...own, [form]: text };
+  }
+  return reworded as unknown as MessageWords;
+}
 
 /** The words of a culture among the tables by language: its own, its more general culture's, or English's. */
 export function messageWordsOf(culture: string, tables: Readonly<Record<string, MessageWords>>): MessageWords {
@@ -282,7 +308,7 @@ class Settings {
   }
 
   private find(name: string): unknown {
-    return Object.hasOwn(this.settings, name) ? this.settings[name] : undefined;
+    return own(this.settings, name);
   }
 
   text(name: string): string | null {

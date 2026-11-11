@@ -1,5 +1,5 @@
 {
   "agreement": ["Stimme überhaupt nicht zu", "Stimme nicht zu", "Teils, teils", "Stimme zu", "Stimme voll und ganz zu"],
   "satisfaction": ["Sehr unzufrieden", "Unzufrieden", "Weder zufrieden noch unzufrieden", "Zufrieden", "Sehr zufrieden"],
-  "yesNoNotSure": ["Ja", "Nein", "Nicht sicher"]
+  "yesNoNotSure": ["Ja", "Nein", "Weiß nicht"]
 }

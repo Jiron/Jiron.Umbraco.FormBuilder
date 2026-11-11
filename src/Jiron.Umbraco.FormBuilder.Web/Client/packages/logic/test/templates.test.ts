@@ -21,7 +21,9 @@ import {
   MAX_TAG_FILTERS,
   MAX_TEMPLATE_OUTPUT,
   MAX_TEMPLATE_TAGS,
+  parsePageTemplate,
   parseTemplate,
+  renderPageTemplate,
   renderTemplate,
   TEMPLATE_CONTEXTS,
   TEMPLATE_WARNINGS,
@@ -371,6 +373,31 @@ function broken(text: string, parsed: ParsedTemplate, rendered: RenderedTemplate
   }
   return null;
 }
+
+describe("the page's templates", () => {
+  it('parse and render as every context does, in the two contexts a page has', () => {
+    const generator = new TemplateGenerator(SEED + 1);
+    const differ: string[] = [];
+    let compared = 0;
+    while (compared < TEMPLATES / 2) {
+      const { text, context } = generator.template();
+      const values = generator.values();
+      const culture = generator.culture();
+      if (context !== 'html' && context !== 'text') continue;
+      compared++;
+      const general = parseTemplate(text, context);
+      const page = parsePageTemplate(text, context);
+      const lookup = (path: string) => values.get(path);
+      if (
+        JSON.stringify(page) !== JSON.stringify(general) ||
+        JSON.stringify(renderPageTemplate(page, lookup, culture)) !==
+          JSON.stringify(renderTemplate(general, lookup, culture))
+      )
+        differ.push(`${context}: ${show(text)}`);
+    }
+    expect(differ.slice(0, 5)).toEqual([]);
+  });
+});
 
 describe('random templates', () => {
   it('10,000 render without throwing, each in at most 50 ms, within the limit and with problems in order', async () => {

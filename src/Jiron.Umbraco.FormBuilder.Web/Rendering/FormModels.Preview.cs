@@ -18,7 +18,8 @@ namespace Jiron.Umbraco.FormBuilder.Web.Rendering;
 /// <param name="Reference">The sample entry's reference in the form's format.</param>
 /// <param name="Alias">The form's alias, whose own views come first.</param>
 /// <param name="Culture">The culture the visitor's words are in.</param>
-internal sealed record OutcomePreviewSource(SubmissionOutcome Outcome, CopyShown? Shown, MergeTagScope Entry, string Reference, string Alias, string Culture);
+/// <param name="Texts">The visitor texts the form or every site rewords in the culture, by key (ADR-0230).</param>
+internal sealed record OutcomePreviewSource(SubmissionOutcome Outcome, CopyShown? Shown, MergeTagScope Entry, string Reference, string Alias, string Culture, IReadOnlyDictionary<string, string> Texts);
 
 // An outcome's preview in the backoffice (ADR-0187): the model the site's Outcome view writes it with, as the runtime
 // shows it after a send, in the default theme the designer's canvas draws in.
@@ -38,7 +39,7 @@ internal sealed partial class FormModels
     public async Task<OutcomeViewModel> PreviewAsync(OutcomePreviewSource source, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(source);
-        var words = RenderingWords.Of(source.Culture);
+        var words = RenderingWords.Of(source.Culture).With(source.Texts);
         var classes = new ThemeClassesModel(new DefaultTheme().Classes);
         var (_, paths) = await views.PartsAsync(FormViews.DefaultFolder, source.Alias, cancellationToken);
         var outcome = source.Outcome;

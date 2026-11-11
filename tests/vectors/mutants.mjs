@@ -1002,7 +1002,7 @@ const mutants = [
   tpl('unknown-path-at-the-tag', "      if (value === undefined) problems.push({ code: 'unknown_path', at: part.pathAt });", "      if (value === undefined) problems.push({ code: 'unknown_path', at: part.at });"),
   tpl('output-limit-exclusive', '    if (out.length + piece.length <= MAX_TEMPLATE_OUTPUT) {', '    if (out.length + piece.length < MAX_TEMPLATE_OUTPUT) {'),
   tpl('output-cut-between-a-pair', '    if (room > 0 && isHigh(piece.charCodeAt(room - 1)) && isLow(piece.charCodeAt(room))) room--;' + NL, ''),
-  tpl('warned-tag-writes-its-value', 'else if (value !== undefined && part.problems.length === 0) add(write(value, part, culture), part.at);', 'else if (value !== undefined) add(write(value, part, culture), part.at);'),
+  tpl('warned-tag-writes-its-value', 'else if (value !== undefined && part.problems.length === 0) add(write(value, part, culture, encoders), part.at);', 'else if (value !== undefined) add(write(value, part, culture, encoders), part.at);'),
   tpl('problems-reversed', '[...problems].sort((a, b) => a.at - b.at)', '[...problems].sort((a, b) => b.at - a.at)'),
   tpl('problems-unsorted', '[...problems].sort((a, b) => a.at - b.at)', '[...problems]'),
 

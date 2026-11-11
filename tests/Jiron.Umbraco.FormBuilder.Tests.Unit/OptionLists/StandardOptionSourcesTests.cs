@@ -54,7 +54,7 @@ public sealed class StandardOptionSourcesTests
     }
 
     [Test]
-    public async Task TheScales_AndYesNoNotSure_HaveTheirWordsInEnglishAndGerman_AndEnglishForAnyOtherLanguage()
+    public async Task TheScales_AndYesNoNotSure_HaveTheirWordsInSevenLanguages_AndEnglishForAnyOtherLanguage()
     {
         var agreement = await OptionsAsync(new AgreementOptionSource(), "en");
         var satisfaction = await OptionsAsync(new SatisfactionOptionSource(), "en-GB");
@@ -62,7 +62,15 @@ public sealed class StandardOptionSourcesTests
         var germanAgreement = await OptionsAsync(new AgreementOptionSource(), "de");
         var swissSatisfaction = await OptionsAsync(new SatisfactionOptionSource(), "de-CH");
         var germanYesNo = await OptionsAsync(new YesNoNotSureOptionSource(), "DE-at");
-        var french = await OptionsAsync(new YesNoNotSureOptionSource(), "fr");
+        var swedish = await OptionsAsync(new YesNoNotSureOptionSource(), "sv-SE");
+        var added = new Dictionary<string, IReadOnlyList<FormBuilderOption>>();
+        foreach (var culture in new[] { "fr-FR", "it-IT", "nl-NL", "es-ES", "da-DK" })
+        {
+            added[culture] = await OptionsAsync(new YesNoNotSureOptionSource(), culture);
+        }
+
+        var frenchAgreement = await OptionsAsync(new AgreementOptionSource(), "fr-CA");
+        var danishSatisfaction = await OptionsAsync(new SatisfactionOptionSource(), "da");
         var none = await OptionsAsync(new AgreementOptionSource(), string.Empty);
 
         Assert.Multiple(() =>
@@ -84,10 +92,20 @@ public sealed class StandardOptionSourcesTests
             {
                 "Sehr unzufrieden", "Unzufrieden", "Weder zufrieden noch unzufrieden", "Zufrieden", "Sehr zufrieden",
             }), "a culture takes its language's words");
-            Assert.That(germanYesNo.Select(option => (option.Value, option.Label)), Is.EqualTo(new[] { ("yes", "Ja"), ("no", "Nein"), ("notSure", "Nicht sicher") }), "in any letter case");
-            Assert.That(french.Select(option => option.Label), Is.EqualTo(new[] { "Yes", "No", "Not sure" }), "a language without words of its own takes English");
+            Assert.That(germanYesNo.Select(option => (option.Value, option.Label)), Is.EqualTo(new[] { ("yes", "Ja"), ("no", "Nein"), ("notSure", "Wei\u00DF nicht") }), "in any letter case");
+            Assert.That(swedish.Select(option => option.Label), Is.EqualTo(new[] { "Yes", "No", "Not sure" }), "a language without words of its own takes English");
+            Assert.That(added.ToDictionary(pair => pair.Key, pair => string.Join(" / ", pair.Value.Select(option => option.Label))), Is.EqualTo(new Dictionary<string, string>
+            {
+                ["fr-FR"] = "Oui / Non / Je ne sais pas",
+                ["it-IT"] = "S\u00ec / No / Non so",
+                ["nl-NL"] = "Ja / Nee / Weet ik niet",
+                ["es-ES"] = "S\u00ed / No / No lo s\u00e9",
+                ["da-DK"] = "Ja / Nej / Ved ikke",
+            }), "the five languages 14.2 adds");
+            Assert.That(frenchAgreement.Select(option => option.Label), Is.EqualTo(new[] { "Pas du tout d\u2019accord", "Pas d\u2019accord", "Ni d\u2019accord ni pas d\u2019accord", "D\u2019accord", "Tout \u00e0 fait d\u2019accord" }));
+            Assert.That(danishSatisfaction.Select(option => option.Label), Is.EqualTo(new[] { "Meget utilfreds", "Utilfreds", "Hverken tilfreds eller utilfreds", "Tilfreds", "Meget tilfreds" }));
             Assert.That(none.Select(option => option.Label).First(), Is.EqualTo("Strongly disagree"), "and so does the invariant culture");
-            Assert.That(StandardOptionWords.Cultures, Is.EquivalentTo(new[] { "en", "de" }), "the tables this version has");
+            Assert.That(StandardOptionWords.Cultures, Is.EquivalentTo(new[] { "en", "de", "fr", "it", "nl", "es", "da" }), "the tables this version has");
         });
     }
 

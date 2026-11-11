@@ -34,7 +34,7 @@ afterEach(() => {
 describe('an option in a label', () => {
   it('says how many places it has left, in the words of the number', async () => {
     shape();
-    await showPlaces(document, { [FIELD]: { a: 3, b: 1 } }, 'en-US');
+    await showPlaces(document, { [FIELD]: { a: 3, b: 1 } }, { culture: 'en-US' });
 
     expect(label('a')).toBe('Morning 3 places left');
     expect(label('b')).toBe('Noon 1 place left');
@@ -44,7 +44,7 @@ describe('an option in a label', () => {
 
   it("says so in the page's language, with its number format", async () => {
     shape();
-    await showPlaces(document, { [FIELD]: { a: 1200, b: 1, c: 0 } }, 'de-DE');
+    await showPlaces(document, { [FIELD]: { a: 1200, b: 1, c: 0 } }, { culture: 'de-DE' });
 
     expect(label('a')).toBe('Morning 1.200 Pl\u00e4tze frei');
     expect(label('b')).toBe('Noon 1 Platz frei');
@@ -53,7 +53,7 @@ describe('an option in a label', () => {
 
   it('is disabled when it is full, which a rule leaves as it is', async () => {
     shape();
-    await showPlaces(document, { [FIELD]: { c: 0 } }, 'en-US');
+    await showPlaces(document, { [FIELD]: { c: 0 } }, { culture: 'en-US' });
 
     expect(label('c')).toBe('Evening Full');
     expect(control('c').disabled).toBe(true);
@@ -65,7 +65,7 @@ describe('an option in a label', () => {
   it("stays the visitor's to change when they have chosen it, for the server to say why", async () => {
     shape();
     control('c').checked = true;
-    await showPlaces(document, { [FIELD]: { c: 0 } }, 'en-US');
+    await showPlaces(document, { [FIELD]: { c: 0 } }, { culture: 'en-US' });
 
     expect(label('c')).toBe('Evening Full');
     expect(control('c').disabled).toBe(false);
@@ -76,7 +76,7 @@ describe('an option in a label', () => {
     shape();
     control('c').defaultChecked = true;
     control('c').checked = true;
-    await showPlaces(document, { [FIELD]: { c: 0 } }, 'en-US');
+    await showPlaces(document, { [FIELD]: { c: 0 } }, { culture: 'en-US' });
 
     expect(control('c').checked).toBe(false);
     expect(control('c').disabled).toBe(true);
@@ -85,28 +85,28 @@ describe('an option in a label', () => {
   it('keeps the one the keyboard is on until it moves on', async () => {
     shape();
     control('c').focus();
-    await showPlaces(document, { [FIELD]: { c: 0 } }, 'en-US');
+    await showPlaces(document, { [FIELD]: { c: 0 } }, { culture: 'en-US' });
     expect(control('c').disabled).toBe(false);
     expect(document.activeElement).toBe(control('c'));
     expect(label('c')).toBe('Evening Full');
 
     control('c').blur();
-    await showPlaces(document, { [FIELD]: { c: 0 } }, 'en-US');
+    await showPlaces(document, { [FIELD]: { c: 0 } }, { culture: 'en-US' });
     expect(control('c').disabled).toBe(true);
   });
 
   it('leaves an option with places as a rule left it', async () => {
     shape();
     control('a').disabled = true;
-    await showPlaces(document, { [FIELD]: { a: 2 } }, 'en-US');
+    await showPlaces(document, { [FIELD]: { a: 2 } }, { culture: 'en-US' });
 
     expect(control('a').disabled).toBe(true);
   });
 
   it('shows what a later answer says, once, and is free again when places came back', async () => {
     shape();
-    await showPlaces(document, { [FIELD]: { c: 0, a: 2 } }, 'en-US');
-    await showPlaces(document, { [FIELD]: { c: 4, a: 1 } }, 'en-US');
+    await showPlaces(document, { [FIELD]: { c: 0, a: 2 } }, { culture: 'en-US' });
+    await showPlaces(document, { [FIELD]: { c: 4, a: 1 } }, { culture: 'en-US' });
 
     expect(label('a')).toBe('Morning 1 place left');
     expect(label('c')).toBe('Evening 4 places left');
@@ -120,21 +120,21 @@ describe('an option in a label', () => {
     shape();
     control('a').disabled = true;
     control('a').setAttribute('data-jfb-disabled', '');
-    await showPlaces(document, { [FIELD]: { a: 2 } }, 'en-US');
+    await showPlaces(document, { [FIELD]: { a: 2 } }, { culture: 'en-US' });
 
     expect(label('a')).toBe('Morning 2 places left');
     expect(control('a').disabled).toBe(true);
     expect(control('a').hasAttribute('data-jfb-disabled')).toBe(true);
 
-    await showPlaces(document, { [FIELD]: { a: 0 } }, 'en-US');
-    await showPlaces(document, { [FIELD]: { a: 2 } }, 'en-US');
+    await showPlaces(document, { [FIELD]: { a: 0 } }, { culture: 'en-US' });
+    await showPlaces(document, { [FIELD]: { a: 2 } }, { culture: 'en-US' });
     expect(control('a').disabled, 'also once it was full and has places again').toBe(true);
     expect(control('a').hasAttribute('data-jfb-disabled')).toBe(true);
   });
 
   it('says so on a checkbox as on a radio button', async () => {
     shape();
-    await showPlaces(document, { 'k-other': { a: 0 } }, 'en-US');
+    await showPlaces(document, { 'k-other': { a: 0 } }, { culture: 'en-US' });
 
     expect(label('o')).toBe('Other Full');
     expect(control('o').disabled).toBe(true);
@@ -142,7 +142,7 @@ describe('an option in a label', () => {
 
   it('counts as an option of its own field only', async () => {
     shape();
-    await showPlaces(document, { [FIELD]: { a: 0 } }, 'en-US');
+    await showPlaces(document, { [FIELD]: { a: 0 } }, { culture: 'en-US' });
 
     expect(control('o').disabled).toBe(false);
     expect(label('o')).toBe('Other');
@@ -150,7 +150,7 @@ describe('an option in a label', () => {
 
   it('takes no value the answer inherits as a name', async () => {
     shape('<input type="radio" id="p" name="slot" value="constructor"><label for="p">Odd</label>');
-    await showPlaces(document, { [FIELD]: { a: 1 } }, 'en-US');
+    await showPlaces(document, { [FIELD]: { a: 1 } }, { culture: 'en-US' });
 
     expect(label('p')).toBe('Odd');
     expect(control('p').disabled).toBe(false);
@@ -161,7 +161,7 @@ describe('an option in a label', () => {
     const row = document.createElement('div');
     row.innerHTML = `<div data-jfb-field="${FIELD}"><input type="radio" id="r" name="row" value="a"><label for="r">Row</label></div>`;
     document.body.append(row);
-    await showPlaces(row, { [FIELD]: { a: 5 } }, 'en-US');
+    await showPlaces(row, { [FIELD]: { a: 5 } }, { culture: 'en-US' });
 
     expect(label('r')).toBe('Row 5 places left');
     expect(label('a'), 'nothing outside it').toBe('Morning');
@@ -171,8 +171,8 @@ describe('an option in a label', () => {
 describe('an option of a list', () => {
   it('says it in its text, from its own label each time', async () => {
     shape();
-    await showPlaces(document, { 'k-list': { x: 3 } }, 'en-US');
-    await showPlaces(document, { 'k-list': { x: 2, y: 0 } }, 'en-US');
+    await showPlaces(document, { 'k-list': { x: 3 } }, { culture: 'en-US' });
+    await showPlaces(document, { 'k-list': { x: 2, y: 0 } }, { culture: 'en-US' });
 
     expect(option('x').textContent).toBe('Ex (2 places left)');
     expect(option('y').textContent).toBe('Why (Full)');
@@ -184,7 +184,7 @@ describe('an option of a list', () => {
   it('lets a full option go that only a default chose', async () => {
     shape();
     option('y').defaultSelected = true;
-    await showPlaces(document, { 'k-list': { y: 0 } }, 'en-US');
+    await showPlaces(document, { 'k-list': { y: 0 } }, { culture: 'en-US' });
 
     expect(option('y').selected).toBe(false);
     expect(option('y').disabled).toBe(true);
@@ -194,7 +194,7 @@ describe('an option of a list', () => {
   it('stays chosen when it is full', async () => {
     shape();
     (document.getElementById('s') as HTMLSelectElement).value = 'y';
-    await showPlaces(document, { 'k-list': { y: 0 } }, 'en-US');
+    await showPlaces(document, { 'k-list': { y: 0 } }, { culture: 'en-US' });
 
     expect(option('y').disabled).toBe(false);
     expect(option('y').selected).toBe(true);

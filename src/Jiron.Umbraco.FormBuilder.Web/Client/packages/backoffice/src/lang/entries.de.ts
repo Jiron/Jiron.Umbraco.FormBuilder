@@ -214,7 +214,7 @@ export default {
 
     empty_design:
       'Noch keine Einträge. Teilen Sie das Formular, oder öffnen Sie die Vorschau und senden Sie einen Testeintrag.',
-    empty_others: 'Noch keine Einträge. Sie erscheinen hier, sobald jemand das Formular sendet.',
+    empty_others: 'Noch keine Einträge. Einträge erscheinen hier, sobald jemand das Formular sendet.',
     inbox_empty: 'Noch keine Einträge. Hier kommen die Einträge aller Formulare an, die Sie sehen dürfen.',
     spam_empty: 'Kein Spam. Einträge, die automatisiert wirken, landen hier, und nichts davon geht verloren.',
 
@@ -248,12 +248,12 @@ export default {
     digest_daily: 'Täglich',
     digest_weekly: 'Wöchentlich, montags',
     digest_when: (time: string, place: string) =>
-      `Sie geht um ${time} Uhr Ortszeit ${place}, der Zeitzone der Website, raus und umfasst den Tag oder die Woche davor.`,
+      `Die Zusammenfassung geht um ${time} Uhr Ortszeit ${place}, der Zeitzone der Website, raus und umfasst den Tag oder die Woche davor.`,
     digest_whenUtc: (time: string) =>
-      `Sie geht um ${time} Uhr UTC, der Zeitzone der Website, raus und umfasst den Tag oder die Woche davor.`,
+      `Die Zusammenfassung geht um ${time} Uhr UTC, der Zeitzone der Website, raus und umfasst den Tag oder die Woche davor.`,
     digest_preview: 'So sieht sie aus',
     digest_note: (address: string) =>
-      `Sie enthält Zahlen und Links, nie Antworten, und nur die Formulare, die Sie sehen dürfen. Sie geht an Ihre eigene Adresse, ${address}.`,
+      `Sie enthält Zahlen und Links, nie Antworten, und nur die Formulare, die Sie sehen dürfen, und geht an Ihre eigene Adresse, ${address}.`,
     digest_noAddress: 'Ihr Benutzer hat noch keine E-Mail-Adresse, deshalb kann keine Zusammenfassung rausgehen.',
     digest_test: 'Test-E-Mail senden',
     digest_testSent: (address: string) => `Test-E-Mail an ${address} gesendet.`,

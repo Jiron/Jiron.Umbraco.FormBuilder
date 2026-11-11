@@ -29,7 +29,7 @@ export default {
 
     site: 'Website',
     allSites: 'Alle Websites',
-    siteShared: 'Einstellungen, die alle Websites teilen, stehen unter Alle Websites.',
+    siteShared: 'Einstellungen, die alle Websites teilen, stehen unter „Alle Websites“.',
     siteOwn: 'Diese Website hat einen eigenen Wert.',
     siteUseAll: 'Den Wert aller Websites verwenden',
     siteGone: 'Diese Website ist nicht mehr im Inhalt. Wählen Sie eine andere.',
@@ -38,8 +38,8 @@ export default {
     // Allgemein
     generalBox_forms: 'Vorgaben für Formulare',
     general_theme: 'Standard-Theme',
-    general_themeHelp: 'Formulare verwenden es, wenn ihre Gruppe Darstellung kein anderes wählt.',
-    general_requiredMarker: 'Felder mit Kennzeichnung',
+    general_themeHelp: 'Formulare verwenden es, wenn sie unter „Darstellung“ kein anderes wählen.',
+    general_requiredMarker: 'Felder mit Markierung',
     general_requiredMarkerHelp:
       'Die meisten Formulare haben mehr Pflichtfelder als optionale; die wenigen optionalen zu kennzeichnen liest sich ruhiger.',
     general_requiredMarker_required: 'Pflichtfelder, mit „*“',
@@ -47,13 +47,16 @@ export default {
     general_requiredMarker_none: 'Keine Felder',
     general_submitLabel: 'Schaltfläche Senden',
     general_submitLabelHelp:
-      'Was die Schaltfläche der letzten Seite sagt, wenn ein Formular sie nicht selbst beschriftet. Leer sagt sie Senden.',
+      'Die Beschriftung der Schaltfläche auf der letzten Seite, wenn ein Formular keine eigene hat. Leer: „Senden“.',
     general_nextLabel: 'Schaltfläche Weiter',
     general_nextLabelHelp:
-      'Was die Schaltfläche zur nächsten Seite sagt, wenn ein Formular sie nicht selbst beschriftet. Leer sagt sie Weiter.',
+      'Die Beschriftung der Schaltfläche zur nächsten Seite, wenn ein Formular keine eigene hat. Leer: „Weiter“.',
     general_backLabel: 'Schaltfläche Zurück',
     general_backLabelHelp:
-      'Was die Schaltfläche zurück sagt, wenn ein Formular sie nicht selbst beschriftet. Leer sagt sie Zurück.',
+      'Die Beschriftung der Schaltfläche zurück, wenn ein Formular keine eigene hat. Leer: „Zurück“.',
+    general_texts: 'Texte für Besucher',
+    general_textsHelp:
+      'Eigene Worte für die Texte, die jedes Formular mitbringt, etwa seine Hinweise, Meldungen und Fehlermeldungen. Die eigenen Worte eines Formulars gehen vor.',
     generalBox_site: 'Adresse und Zeit',
     general_baseUrl: 'Basis-URL',
     general_baseUrlHelp: 'Links in E-Mails beginnen damit. Leer beginnen sie mit der Adresse, die das Feld zeigt.',
@@ -105,7 +108,7 @@ export default {
     testFailed: 'Die Test-E-Mail konnte nicht gesendet werden. Versuchen Sie es gleich noch einmal.',
     emailBox_sender: 'Absender',
     email_senderName: 'Name',
-    email_senderNameHelp: 'Von wem E-Mails kommen, wie Posteingänge es zeigen.',
+    email_senderNameHelp: 'Der Name, den Empfänger als Absender sehen.',
     email_senderAddress: 'Adresse',
     email_senderAddressHelp:
       'Verwenden Sie eine Adresse der eigenen Domain der Website, damit Mailserver ihr vertrauen.',
@@ -128,7 +131,7 @@ export default {
     protection_level_standard: 'Standard',
     protection_level_standardLine:
       'Ein verborgenes Feld, eine Mindestzeit zum Ausfüllen und eine signierte Prüfung. Nichts wird von anderen Websites geladen.',
-    protection_level_proofOfWork: 'Standard, mit einer Proof-of-Work-Prüfung',
+    protection_level_proofOfWork: 'Standard mit Rechenaufgabe',
     protection_level_proofOfWorkLine:
       'Der Browser des Besuchers löst zusätzlich ein kurzes Rätsel, das Bots Zeit kostet. Es braucht JavaScript.',
     protection_level_captcha: 'Ein Captcha',
@@ -218,10 +221,10 @@ export default {
     integrationsBox_webhooks: 'Webhooks',
     integrations_signingSecret: 'Signaturgeheimnis',
     integrations_signingSecretHelp:
-      'Webhook-Aktionen signieren jeden Aufruf damit, damit der Empfänger erkennt, dass er von dieser Website kommt. Das Geheimnis selbst bleibt in der Host-Konfiguration.',
+      'Webhook-Aktionen signieren jeden Aufruf mit diesem Geheimnis, sodass der Empfänger erkennt, dass er von dieser Website kommt. Das Geheimnis selbst bleibt in der Host-Konfiguration.',
     integrations_umbracoWebhookEvents: 'Eintragsereignisse anbieten',
     integrations_umbracoWebhookEventsHelp:
-      'Fügt Eintrag gesendet, freigegeben, abgelehnt und gelöscht sowie Aktion fehlgeschlagen den Ereignissen von Umbracos Einstellungen › Webhooks hinzu, wo Entwickler sie abonnieren.',
+      'Fügt Eintrag gesendet, genehmigt, abgelehnt und gelöscht sowie Aktion fehlgeschlagen den Ereignissen von Umbracos Einstellungen › Webhooks hinzu, wo Entwickler sie abonnieren.',
     hosts: 'Hosts, die Webhooks aufrufen dürfen',
     hostsNone: 'Noch keine, Webhook-Aktionen und JSON-Optionslisten rufen also keine Adresse auf.',
     hostsKey: (key: string) => `Die Host-Konfiguration legt sie fest: ${key}.`,
@@ -244,7 +247,7 @@ export default {
     privacy_retention: 'Tage, die Einträge aufbewahrt werden',
     privacy_retentionHelp:
       'Gezählt ab der letzten Statusänderung eines Eintrags. Testeinträge aus der Vorschau gehen nach 7 Tagen.',
-    privacy_retention_submitted: 'Eingereicht',
+    privacy_retention_submitted: 'Gesendet',
     privacy_retention_submittedHelp: 'Einträge, die auf Genehmigung warten, zählen hier mit.',
     privacy_retention_submittedUnit: 'Tage',
     privacy_retention_approved: 'Genehmigt',
@@ -296,7 +299,7 @@ export default {
     people_emailPlaceholder: 'Zum Beispiel: name@example.com',
     people_find: 'Finden',
     people_findHelp:
-      'Alle Formulare werden durchsucht, auch eingeschränkte, und die Suche wird im Prüfprotokoll festgehalten.',
+      'Alle Formulare werden durchsucht, auch eingeschränkte, und die Suche wird im Protokoll festgehalten.',
     people_byMember: 'Stattdessen ein Mitglied finden',
     people_byEmail: 'Stattdessen eine E-Mail-Adresse verwenden',
     people_member: 'Mitglied',
@@ -344,8 +347,8 @@ export default {
       one
         ? `${entries} mit Löschsperre bleibt, bis die Sperre endet.`
         : `${entries} mit Löschsperre bleiben, bis die Sperren enden.`,
-    people_auditOpen: 'Prüfprotokoll öffnen',
-    people_auditRecorded: 'Es ist im Prüfprotokoll festgehalten.',
+    people_auditOpen: 'Protokoll öffnen',
+    people_auditRecorded: 'Es ist im Protokoll festgehalten.',
     people_eraseHeadline: (who: string) => `Alles über ${who} löschen?`,
     people_eraseText: (parts: readonly string[], one: boolean) =>
       `${and(parts)} ${one ? 'wird' : 'werden'} gelöscht. Die Statistik bleibt. Das lässt sich nicht rückgängig machen.`,
@@ -390,7 +393,7 @@ export default {
     privacy_ipHelp: 'Jedes Formular kann in seiner Ansicht Einstellungen unter Datenschutz eine eigene Wahl treffen.',
     privacy_ip_none: 'Nichts',
     privacy_ip_noneLine: 'Einträge speichern die Adresse nicht.',
-    privacy_ip_anonymised: 'Die Adresse ohne ihr Ende',
+    privacy_ip_anonymised: 'Die Adresse, um ihr Ende gekürzt',
     privacy_ip_anonymisedLine:
       'Genug, um ein Netz zu unterscheiden: 203.0.113.0 für 203.0.113.42, und die ersten 48 Bit einer IPv6-Adresse.',
     privacy_ip_full: 'Die vollständige Adresse',

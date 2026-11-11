@@ -31,6 +31,7 @@ internal static class VisitorForm
                 SubmitLabel = map.Text(form.Settings.SubmitLabel),
                 NextLabel = map.Text(form.Settings.NextLabel),
                 BackLabel = map.Text(form.Settings.BackLabel),
+                Texts = null,
                 ClosedMessage = map.Html(form.Settings.ClosedMessage),
             },
             Pages = [.. form.Pages.Select(map.Page)],

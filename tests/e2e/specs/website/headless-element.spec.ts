@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { axe } from '../../support/axe.ts';
 import { E2E_BASE_URL } from '../../support/paths.ts';
-import { startStaticSite, type StaticSite } from '../../support/static-site.ts';
+import { STATIC_SITE_WAIT_MS, startStaticSite, type StaticSite } from '../../support/static-site.ts';
 
 // The element on a headless page (ROADMAP 6.6f, ADR-0128): a static site on 5521, an origin of its own that the host's
 // public API allows, loads <jfb-form> from the host and shows the demo's volunteer sign-up through it, in English and
@@ -15,6 +15,8 @@ let site: StaticSite | undefined;
 let key = '';
 
 test.beforeAll(async ({ request }) => {
+  // Another worker's spec may hold the static site's one port for a while (support/static-site.ts).
+  test.setTimeout(STATIC_SITE_WAIT_MS + 60_000);
   site = await startStaticSite();
   const answer = await request.get(`${E2E_BASE_URL}/jfb/api/v1/forms/volunteer`);
   expect(answer.status(), 'the volunteer sign-up is a headless form').toBe(200);

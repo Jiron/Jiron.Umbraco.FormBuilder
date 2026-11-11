@@ -2,7 +2,7 @@ import type { APIRequestContext, Page } from '@playwright/test';
 import { expect, test } from '../../fixtures.ts';
 import { axeInside } from '../../support/axe.ts';
 import { API, formOf, formWithFields, unique } from '../../support/forms-api.ts';
-import { startStaticSite, type StaticSite } from '../../support/static-site.ts';
+import { STATIC_SITE_WAIT_MS, startStaticSite, type StaticSite } from '../../support/static-site.ts';
 
 // Insights (ROADMAP 11.5, IA 5.5, ADR-0211): a form of two pages on a headless page of its own origin sends its
 // beacons as a visitor uses it (a view, a start, the field that stopped them, the page reached), which the host writes
@@ -16,6 +16,8 @@ const EVENTS = '/events';
 let site: StaticSite | undefined;
 
 test.beforeAll(async () => {
+  // Another worker's spec may hold the static site's one port for a while (support/static-site.ts).
+  test.setTimeout(STATIC_SITE_WAIT_MS + 60_000);
   site = await startStaticSite();
 });
 

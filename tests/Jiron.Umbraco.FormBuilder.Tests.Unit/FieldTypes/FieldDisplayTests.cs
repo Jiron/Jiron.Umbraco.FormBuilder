@@ -38,7 +38,8 @@ public sealed class FieldDisplayTests
     [TestCase("en-GB", "Yes", "No")]
     [TestCase("de-CH", "Ja", "Nein")]
     [TestCase("DE", "Ja", "Nein")]
-    [TestCase("fr-FR", "Yes", "No")]
+    [TestCase("fr-FR", "Oui", "Non")]
+    [TestCase("sv-SE", "Yes", "No")]
     [TestCase("", "Yes", "No")]
     public void TheWordsOfYesAndNo_AreTheCulturesOrItsLanguagesOrEnglish(string culture, string yes, string no)
     {
@@ -52,9 +53,15 @@ public sealed class FieldDisplayTests
     }
 
     [Test]
-    public void TheWords_AreInEnglishAndGerman_TheOtherLanguagesComeIn14_2()
+    public void TheWords_AreInTheSevenLanguagesOfTheVisitorTexts()
     {
-        Assert.That(FieldDisplayWords.Cultures, Is.EquivalentTo(new[] { "en", "de" }));
+        Assert.Multiple(() =>
+        {
+            Assert.That(FieldDisplayWords.Cultures, Is.EquivalentTo(new[] { "en", "de", "fr", "it", "nl", "es", "da" }));
+            Assert.That(
+                new[] { "fr-CH", "it-IT", "nl-BE", "es-MX", "da-DK" }.Select(culture => FieldDisplayWords.Yes(culture) + "/" + FieldDisplayWords.No(culture)),
+                Is.EqualTo(new[] { "Oui/Non", "S\u00ec/No", "Ja/Nee", "S\u00ed/No", "Ja/Nej" }));
+        });
     }
 
     [Test]

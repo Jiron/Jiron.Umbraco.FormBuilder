@@ -1,0 +1,5 @@
+{
+  "agreement": ["Pas du tout d’accord", "Pas d’accord", "Ni d’accord ni pas d’accord", "D’accord", "Tout à fait d’accord"],
+  "satisfaction": ["Très insatisfaisant", "Insatisfaisant", "Ni satisfaisant ni insatisfaisant", "Satisfaisant", "Très satisfaisant"],
+  "yesNoNotSure": ["Oui", "Non", "Je ne sais pas"]
+}

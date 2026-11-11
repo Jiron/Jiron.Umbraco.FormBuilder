@@ -49,8 +49,7 @@ import { recallAnswers } from '../src/recall.ts';
 import { parseTemplate, renderTemplate } from '../src/template.ts';
 import { today } from '../src/dates.ts';
 import { conflictOf, formSight, showsAtAll, type SearchRule, type SearchScope } from '../src/search.ts';
-import { de } from '../src/lang/messages.de.ts';
-import { en } from '../src/lang/messages.en.ts';
+import { MESSAGE_TABLES } from './message-tables.ts';
 import { repositoryRoot, vectorsFolder } from '../tools/repository.ts';
 
 interface VectorCase {
@@ -134,7 +133,7 @@ interface VectorMessage {
 }
 
 /** The message tables by language. */
-const MESSAGE_WORDS = { en, de };
+const MESSAGE_WORDS = MESSAGE_TABLES;
 
 /** A built-in type as the reviewed snapshot of the field types endpoint serves it (docs/api/field-types.json). */
 interface ServedType {

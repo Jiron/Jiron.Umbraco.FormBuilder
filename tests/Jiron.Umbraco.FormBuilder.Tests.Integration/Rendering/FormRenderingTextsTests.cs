@@ -6,6 +6,7 @@ using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.MergeTags;
 using Jiron.Umbraco.FormBuilder.Core.Settings;
 using Jiron.Umbraco.FormBuilder.Tests.Integration.Support;
+using Jiron.Umbraco.FormBuilder.Web.Rendering;
 using Umbraco.Cms.Tests.Common.Testing;
 
 namespace Jiron.Umbraco.FormBuilder.Tests.Integration.Rendering;
@@ -154,6 +155,68 @@ public sealed class FormRenderingTextsTests : RenderingTestBase
             Assert.That(settings.AsObject().ContainsKey("submitLabel"), Is.False);
         });
     }
+
+    [Test]
+    public async Task ASitesAndAFormsOwnWording_ShowOnThePage_InItsAnswer_AndInAPostsErrors()
+    {
+        // The form rewords the error of an empty answer and the summary's heading; the site the optional mark, the
+        // error too (which the form's wording beats) and the word for yes, in every language (ADR-0230).
+        var key = await PublishFormAsync(
+            "renderingWorded",
+            definition => Marked(definition, RequiredMarker.Optional, submit: null) with
+            {
+                Settings = definition.Settings with
+                {
+                    Appearance = definition.Settings.Appearance with { RequiredMarker = RequiredMarker.Optional },
+                    Submission = definition.Settings.Submission with
+                    {
+                        Texts = Worded(("message.answer", "", "Tell us this, please"), ("message.summaryHeading.one", "", "One answer to fix")),
+                    },
+                },
+            },
+            NameField with { Required = true },
+            City);
+        _ = await PagesAsync("worded");
+        var (second, pages) = await SecondSiteAsync("worded");
+        await GetRequiredService<IFormBuilderSettingsService>().SaveSiteAsync(
+            second,
+            new GeneralSettings { Texts = Worded(("form.optional", "", "(if you like)"), ("message.answer", "", "The site's words"), ("answer.yes", "", "Sure")) },
+            ["texts"],
+            0,
+            Editor);
+
+        var (_, there) = await PageAtAsync(SecondHost, "worded");
+        var (_, here) = await PageAtAsync(FirstHost, "worded");
+        using var answer = await GetAsync($"{Root}/forms/{key}?contentKey={pages["worded"]}");
+        var json = await JsonAsync(answer);
+        var form = there.QuerySelector("form#jfb-1")!;
+
+        // A city but no name, so the name's own error shows rather than the form's call for any answer at all.
+        using var posted = await SendAsync(HttpMethod.Post, "http://" + SecondHost + form.GetAttribute("action")!.Split('#')[0], request =>
+        {
+            request.Content = new FormUrlEncodedContent(Posted(form, FormPostFields.Submit).Select(pair => pair.Key == "city" ? new KeyValuePair<string, string>("city", "Bern") : pair));
+            request.Headers.TryAddWithoutValidation("Origin", "http://" + SecondHost);
+            request.Headers.Referrer = new Uri("http://" + SecondHost + "/worded/");
+        });
+        var again = new AngleSharp.Html.Parser.HtmlParser().ParseDocument(await posted.Content.ReadAsStringAsync()).QuerySelector("form#jfb-1")!;
+        var summary = again.Children.FirstOrDefault(child => child.ClassList.Contains("jfb-error-summary"));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(Marks(form), Is.EqualTo(new[] { ("name", ""), ("city", "(if you like)") }), "the site's optional mark");
+            Assert.That(Marks(here.QuerySelector("form#jfb-1")!), Is.EqualTo(new[] { ("name", ""), ("city", "(optional)") }), "another site keeps the package's");
+            Assert.That(json["texts"]!.ToJsonString(), Is.EqualTo("""{"answer":"Tell us this, please","summaryHeading.one":"One answer to fix"}"""), "the messages, the form's before the site's, for the browser");
+            Assert.That(json["words"]!["yes"]!.GetValue<string>(), Is.EqualTo("Sure"), "the site's word for yes");
+            Assert.That(again.QuerySelector("#jfb-1-name-error")?.TextContent.Trim(), Is.EqualTo("Tell us this, please"), "a post's error in the form's words, which beat the site's");
+            Assert.That(summary?.QuerySelector("h2")?.TextContent, Is.EqualTo("One answer to fix"), "the summary's heading in the form's words");
+        });
+    }
+
+    private static Dictionary<string, IReadOnlyDictionary<string, string>> Worded(params (string Key, string Culture, string Wording)[] texts) =>
+        texts.GroupBy(text => text.Key).ToDictionary(
+            group => group.Key,
+            group => (IReadOnlyDictionary<string, string>)group.ToDictionary(text => text.Culture, text => text.Wording),
+            StringComparer.Ordinal);
 
     private static readonly FormField City = new() { Key = Key(0x30), Type = "text", Alias = "city", Label = new LocalizedText("City") };
 

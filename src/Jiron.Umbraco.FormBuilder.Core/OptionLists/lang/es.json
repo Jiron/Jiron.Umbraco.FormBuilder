@@ -1,0 +1,5 @@
+{
+  "agreement": ["Totalmente en desacuerdo", "En desacuerdo", "Ni de acuerdo ni en desacuerdo", "De acuerdo", "Totalmente de acuerdo"],
+  "satisfaction": ["Muy insatisfactorio", "Insatisfactorio", "Ni satisfactorio ni insatisfactorio", "Satisfactorio", "Muy satisfactorio"],
+  "yesNoNotSure": ["Sí", "No", "No lo sé"]
+}

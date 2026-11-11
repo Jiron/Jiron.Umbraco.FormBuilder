@@ -6,17 +6,14 @@
  * type read them, a row's child the rules hide in that row left out), the elements the rules hide, the culture's words
  * and formats, and the endpoint's values for its other tags.
  */
-import type { FormState, RecallAnswer, RecallAnswers } from '@jfb/logic';
+import { own, type FormState, type RecallAnswer, type RecallAnswers } from '@jfb/logic';
 import { recallAnswers } from '@jfb/logic/recall';
-import { parseTemplate, renderTemplate, type TemplatePart } from '@jfb/logic/template';
+import { parsePageTemplate, renderPageTemplate, type TemplatePart } from '@jfb/logic/template';
 import type { TextRenderer } from './engine';
 import type { FormModel, ModelField, ModelText } from './model';
 import type { FieldRead, PageReading } from './page';
 
 export { fillDefaults } from './defaults';
-
-const own = <T>(record: Readonly<Record<string, T>>, key: string): T | undefined =>
-  Object.hasOwn(record, key) ? record[key] : undefined;
 
 /** The renderer of a form's visitor texts that recall answers; it renders none for a form without merge tags. */
 export function textsOf(model: FormModel): TextRenderer {
@@ -31,7 +28,7 @@ export function textsOf(model: FormModel): TextRenderer {
     // written as it stands, as the server writes it (ADR-0118).
     const refused = text.refused ?? [];
     const problem = recalled(text.owner, {}, []).pathProblem;
-    const parsed = parseTemplate(template, text.context, (path) =>
+    const parsed = parsePageTemplate(template, text.context, (path) =>
       refused.includes(path) ? 'source_not_for_place' : problem(path),
     );
     return parsed.parts.some(isFieldTag) ? [{ text, parsed }] : [];
@@ -43,7 +40,7 @@ export function textsOf(model: FormModel): TextRenderer {
         const found = recalled(text.owner, answers, state.hidden).values;
         const given = own(tags.values, text.context) ?? {};
         const values = (path: string) => found(path) ?? own(given, path);
-        return [`${text.owner} ${text.text}`, renderTemplate(parsed, values, model.formats).text];
+        return [`${text.owner} ${text.text}`, renderPageTemplate(parsed, values, model.formats).text];
       }),
     );
   };

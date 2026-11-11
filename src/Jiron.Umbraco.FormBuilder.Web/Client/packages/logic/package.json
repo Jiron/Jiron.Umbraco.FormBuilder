@@ -11,10 +11,16 @@
     "./signature": "./src/typed-name.ts",
     "./template": "./src/template.ts",
     "./lang/en": "./src/lang/messages.en.ts",
-    "./lang/de": "./src/lang/messages.de.ts"
+    "./lang/de": "./src/lang/messages.de.ts",
+    "./lang/fr": "./src/lang/messages.fr.ts",
+    "./lang/it": "./src/lang/messages.it.ts",
+    "./lang/nl": "./src/lang/messages.nl.ts",
+    "./lang/es": "./src/lang/messages.es.ts",
+    "./lang/da": "./src/lang/messages.da.ts"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.tools.json",
-    "tables": "node tools/unicode-tables.ts"
+    "tables": "node tools/unicode-tables.ts",
+    "words": "node tools/message-words.ts"
   }
 }

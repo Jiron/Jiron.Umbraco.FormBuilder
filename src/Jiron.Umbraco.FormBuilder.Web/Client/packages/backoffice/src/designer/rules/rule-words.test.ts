@@ -1,20 +1,28 @@
 // A rule in words (ROADMAP 9.5a, ADR-0175): how each kind of condition, value, group and effect is said, in English.
 import type { Kind } from '@jfb/logic';
 import { describe, expect, it } from 'vitest';
+import startDe from '../../lang/de';
 import start from '../../lang/en';
+import workspaceDe from '../../lang/workspace.de';
 import workspace from '../../lang/workspace.en';
 import { valueText } from './rule-names';
 import { conditionWords, operatorTerm, relativeWords, ruleWords, type RuleWordsContext } from './rule-words';
 
-const flat = Object.fromEntries(
-  Object.entries({ ...start, ...workspace } as Record<string, Record<string, unknown>>).flatMap(([area, texts]) =>
-    Object.entries(texts).map(([key, value]) => [`${area}_${key}`, value]),
-  ),
-);
-const term = (key: string, ...args: unknown[]): string => {
-  const value = flat[key];
-  return typeof value === 'function' ? (value as (...given: unknown[]) => string)(...args) : String(value ?? key);
-};
+const flatten = (...areas: object[]) =>
+  Object.fromEntries(
+    areas.flatMap((dictionary) =>
+      Object.entries(dictionary as Record<string, Record<string, unknown>>).flatMap(([area, texts]) =>
+        Object.entries(texts).map(([key, value]) => [`${area}_${key}`, value]),
+      ),
+    ),
+  );
+const termIn =
+  (flat: Record<string, unknown>) =>
+  (key: string, ...args: unknown[]): string => {
+    const value = flat[key];
+    return typeof value === 'function' ? (value as (...given: unknown[]) => string)(...args) : String(value ?? key);
+  };
+const term = termIn(flatten(start, workspace));
 
 const NAMES: Record<string, string> = {
   country: 'Country',
@@ -160,5 +168,45 @@ describe('a rule in words', () => {
     expect(
       ruleWords(CONTEXT, { effect: 'run', conditions: [{ field: 'country', op: 'equals', value: 'other' }] }),
     ).toBe('Runs when Country is Other');
+  });
+});
+
+describe('a rule in German words', () => {
+  // German puts a clause's verb last and quotes a field's name inside a sentence (ADR-0228, the German walk of 14.1).
+  const LOW = '\u201e';
+  const HIGH = '\u201c';
+  const GERMAN: RuleWordsContext = {
+    ...CONTEXT,
+    term: termIn(flatten(startDe, workspaceDe)),
+    nameOf: (key) => ({ guests: 'G\u00e4ste', which: 'Welches Land?' })[key] ?? key,
+    languageOf: (culture) => (culture === 'de-DE' ? 'Deutsch' : culture),
+    valueOf: (kind, text) => valueText('de-DE', kind, text),
+  };
+  const rule = (effect: string, condition: Record<string, unknown>) =>
+    ruleWords(GERMAN, { effect, conditions: [condition] });
+
+  it('says each condition with its verb last, a name in quotes', () => {
+    expect(rule('require', { field: 'guests', op: 'lessThan', value: '7' })).toBe(
+      `Pflicht, wenn ${LOW}G\u00e4ste${HIGH} kleiner als 7 ist`,
+    );
+    expect(rule('use', { context: 'culture', op: 'startsWith', value: 'de' })).toBe(
+      `Verwendet, wenn die Sprache mit ${LOW}de${HIGH} beginnt`,
+    );
+    expect(rule('show', { context: 'memberSignedIn', op: 'isChecked' })).toBe(
+      'Sichtbar, wenn die ausf\u00fcllende Person angemeldet ist',
+    );
+    expect(rule('hide', { field: 'which', op: 'notContains', value: 'land' })).toBe(
+      `Verborgen, wenn ${LOW}Welches Land?${HIGH} ${LOW}land${HIGH} nicht enth\u00e4lt`,
+    );
+    expect(rule('show', { field: 'guests', op: 'between', value: ['1', '4'] })).toBe(
+      `Sichtbar, wenn ${LOW}G\u00e4ste${HIGH} zwischen 1 und 4 liegt`,
+    );
+    expect(rule('show', { field: 'which', op: 'isEmpty' })).toBe(`Sichtbar, wenn ${LOW}Welches Land?${HIGH} leer ist`);
+  });
+
+  it("keeps a list's line in its own order, the name as it is", () => {
+    expect(conditionWords(GERMAN, { field: 'guests', op: 'lessThan', value: '7' })).toBe(
+      'G\u00e4ste ist kleiner als 7',
+    );
   });
 });

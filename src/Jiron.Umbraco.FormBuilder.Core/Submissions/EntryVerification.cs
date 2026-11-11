@@ -396,13 +396,13 @@ internal sealed record VerificationWords
         ["fr"] = new()
         {
             Subject = "Veuillez confirmer votre adresse e-mail",
-            Intro = "Vous avez rempli {0}. Veuillez confirmer qu'il s'agit bien de votre adresse.",
+            Intro = "Vous avez rempli {0}. Veuillez confirmer qu\u2019il s\u2019agit bien de votre adresse.",
             Button = "Confirmer mon adresse",
-            NotYou = "Si ce n'\u00e9tait pas vous, ignorez ce message. Rien ne se passe sans votre confirmation.",
+            NotYou = "Si ce n\u2019\u00e9tait pas vous, ignorez ce message. Rien ne se passe sans votre confirmation.",
             WaitingHeading = "Confirmez votre adresse",
-            WaitingText = "Plus qu'une \u00e9tape : appuyez sur le bouton pour confirmer qu'il s'agit bien de votre adresse.",
+            WaitingText = "Plus qu\u2019une \u00e9tape\u00a0: appuyez sur le bouton pour confirmer qu\u2019il s\u2019agit bien de votre adresse.",
             ConfirmedHeading = "Votre adresse est confirm\u00e9e",
-            ConfirmedText = "Merci. Vous n'avez rien d'autre \u00e0 faire.",
+            ConfirmedText = "Merci. Vous n\u2019avez rien d\u2019autre \u00e0 faire.",
             ExpiredHeading = "Ce lien est trop ancien",
             ExpiredText = "Vous pouvez demander un nouveau lien, envoy\u00e9 \u00e0 la m\u00eame adresse.",
             ResendButton = "Envoyer un nouveau lien",
@@ -413,10 +413,10 @@ internal sealed record VerificationWords
         },
         ["it"] = new()
         {
-            Subject = "Conferma il tuo indirizzo e-mail",
+            Subject = "Conferma il tuo indirizzo email",
             Intro = "Hai compilato {0}. Conferma che questo \u00e8 il tuo indirizzo.",
             Button = "Conferma il mio indirizzo",
-            NotYou = "Se non sei stato tu, ignora questo messaggio. Senza la tua conferma non succede nulla.",
+            NotYou = "Se non hai compilato tu il modulo, ignora questo messaggio. Senza la tua conferma non succede nulla.",
             WaitingHeading = "Conferma il tuo indirizzo",
             WaitingText = "Manca un solo passaggio: premi il pulsante per confermare che questo \u00e8 il tuo indirizzo.",
             ConfirmedHeading = "Il tuo indirizzo \u00e8 confermato",

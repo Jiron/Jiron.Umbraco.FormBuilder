@@ -8,7 +8,7 @@
  * send waits for it, and stops at a file that failed, whose row takes the focus, until the visitor tries again or takes it off.
  */
 import { hidesMarkup, HEAD_LENGTH, isExecutable, matchesKind } from '@jfb/logic/files';
-import { shownErrors, wordsFor } from './messages';
+import { formWords, shownErrors } from './messages';
 import type { FormModel, ModelField } from './model';
 import { fieldsOf, readPage } from './page';
 import { contextOf } from './rules';
@@ -64,7 +64,7 @@ export function enhanceUploads(form: HTMLFormElement, model: FormModel, options:
   async function messageOf(field: ModelField, code: string, row: number | null): Promise<string> {
     const reading = readPage(form, model);
     const context = contextOf(model, reading, Date.now(), form.ownerDocument.URL);
-    const words = await wordsFor(model.culture);
+    const words = await formWords(model);
     const [shown] = shownErrors(form, model, reading, [{ field: field.key, row, code }], context, words);
     return shown?.message ?? '';
   }

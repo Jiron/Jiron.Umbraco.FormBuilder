@@ -104,6 +104,7 @@ public sealed class PermissionMatrixTests : ManagementApiTestBase
         ["GET action-type/content/document-type/{alias}"] = (FormBuilderPermissions.None, FormBuilderAccessResourceKind.Global, null),
         ["GET canvas"] = (FormBuilderPermissions.None, FormBuilderAccessResourceKind.Global, null),
         ["GET dictionary-text"] = (FormBuilderPermissions.None, FormBuilderAccessResourceKind.Global, null),
+        ["GET visitor-texts"] = (FormBuilderPermissions.None, FormBuilderAccessResourceKind.Global, null),
         ["GET option-source"] = (FormBuilderPermissions.None, FormBuilderAccessResourceKind.Global, null),
         ["GET option-list"] = (FormBuilderPermissions.None, FormBuilderAccessResourceKind.Global, null),
         ["GET option-list/library"] = (FormBuilderPermissions.ManageLibrary, FormBuilderAccessResourceKind.Global, null),

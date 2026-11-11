@@ -47,7 +47,7 @@ public sealed class FormRenderingPendingTests : RenderingTestBase
 
         Assert.That(editor.QuerySelectorAll(".jfb-notice").Select(note => (note.QuerySelector("h2")!.TextContent, note.QuerySelector("p")!.TextContent)).ToArray(), Is.EqualTo(new[]
         {
-            ("Dieses Formular wartet auf ein Update", "Besucher sehen hier nichts, bis das Datenbank-Update von Jiron Form Builder gelaufen ist. Diesen Hinweis sehen nur angemeldete Backoffice-Benutzer."),
+            ("Dieses Formular wartet auf ein Update", "Auf der Website ist hier nichts zu sehen, bis das Datenbank-Update von Jiron Form Builder ausgef" + (char)0xFC + "hrt wurde. Diesen Hinweis sieht nur, wer im Backoffice angemeldet ist."),
         }));
     }
 }

@@ -51,7 +51,7 @@ public sealed class ProgressViewModel
     /// <summary>How many pages the rules show.</summary>
     public required int Total { get; init; }
 
-    /// <summary>The progress in words, such as "Step 2 of 3".</summary>
+    /// <summary>The progress in words, such as "Page 2 of 3".</summary>
     public required string Text { get; init; }
 
     /// <summary>Those words with their numbers to fill in (<c>data-jfb-words</c>), which the runtime writes as it moves through the pages (ADR-0155).</summary>

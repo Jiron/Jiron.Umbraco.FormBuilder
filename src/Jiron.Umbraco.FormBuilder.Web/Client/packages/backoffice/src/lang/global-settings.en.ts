@@ -52,6 +52,9 @@ export default {
       "What a page's button to the next one says, unless a form labels it. Left empty, it says Next.",
     general_backLabel: 'Back button',
     general_backLabelHelp: "What a page's button back says, unless a form labels it. Left empty, it says Back.",
+    general_texts: 'Visitor texts',
+    general_textsHelp:
+      "Your own words for the texts every form brings, such as its hints, notices and error messages. A form's own words come first.",
     generalBox_site: 'Address and time',
     general_baseUrl: 'Base URL',
     general_baseUrlHelp: 'Links in emails start with it. Left empty, they start with the address shown in the box.',

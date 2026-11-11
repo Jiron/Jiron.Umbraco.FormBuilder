@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
+using Jiron.Umbraco.FormBuilder.Logic;
 
 namespace Jiron.Umbraco.FormBuilder.Core.Settings;
 
@@ -53,6 +54,14 @@ internal sealed record GeneralSettings : ISettingsSection
     /// <summary>The label of the button to the page before of a form without one of its own, as <see cref="SubmitLabel"/>.</summary>
     [SettingsField("forms", Order = 4)]
     public IReadOnlyDictionary<string, string>? BackLabel { get; init; }
+
+    /// <summary>
+    /// The site's own wording of the package's visitor texts (ADR-0230), which a form's own wording comes before: a text's
+    /// key, such as <c>message.email</c>, to its wording per culture, a culture's own, its language's or, as <c>""</c>,
+    /// every language's; null for the package's texts.
+    /// </summary>
+    [SettingsField("forms", Order = 5, Editor = "visitorTexts")]
+    public IReadOnlyDictionary<string, IReadOnlyDictionary<string, string>>? Texts { get; init; }
 
     /// <summary>
     /// The address every link the server builds starts with (ADR-0008, ADR-0067): an <c>https</c> or <c>http</c> origin
@@ -197,6 +206,7 @@ internal sealed class GeneralSettingsValidator : ISettingsValidator<GeneralSetti
         Label(errors, "submitLabel", section.SubmitLabel);
         Label(errors, "nextLabel", section.NextLabel);
         Label(errors, "backLabel", section.BackLabel);
+        OwnWording(errors, section.Texts);
         if (section.Theme is { } theme && (theme.Length > DefinitionSaveChecks.ThemeLength || theme.Any(char.IsControl)))
         {
             errors.Add("theme", SettingsErrors.ThemeCode, $"Must be a theme's alias of at most {DefinitionSaveChecks.ThemeLength} characters on one line.");
@@ -212,6 +222,39 @@ internal sealed class GeneralSettingsValidator : ISettingsValidator<GeneralSetti
         {
             errors.Between("history.draftDays", history.DraftDays, HistorySettings.MinDraftDays, HistorySettings.MaxDraftDays);
             errors.Between("history.draftCount", history.DraftCount, 0, HistorySettings.MaxDraftCount);
+        }
+    }
+
+    // The site's own wording: each a text the package has, each culture a culture's name or "" for every language, each
+    // wording one the text may take (ADR-0230).
+    private static void OwnWording(SettingsErrors errors, IReadOnlyDictionary<string, IReadOnlyDictionary<string, string>>? texts)
+    {
+        foreach (var (key, cultures) in texts ?? new Dictionary<string, IReadOnlyDictionary<string, string>>())
+        {
+            var field = "texts." + key;
+            if (VisitorTextKeys.Find(key) is not { } text)
+            {
+                errors.Add(field, SettingsErrors.VisitorTextCode, "The package has no visitor text of this key.");
+                continue;
+            }
+
+            if (cultures is not { Count: > 0 })
+            {
+                errors.Add(field, SettingsErrors.VisitorTextCode, "A reworded text has a wording in at least one culture; leave the text out to keep the package's.");
+                continue;
+            }
+
+            foreach (var (culture, wording) in cultures)
+            {
+                if (culture.Length > 0 && !LocalizedString.IsCultureName(culture))
+                {
+                    errors.Add(field, SettingsErrors.VisitorTextCode, $"\"{culture}\" is not a culture name; \"\" stands for every language.");
+                }
+                else if (VisitorTextKeys.Problem(text, wording) is { } problem)
+                {
+                    errors.Add(field, SettingsErrors.VisitorTextCode, problem);
+                }
+            }
         }
     }
 

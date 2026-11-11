@@ -53,7 +53,7 @@ export {
   type DisplayRow,
   type DisplayWords,
 } from './display.ts';
-export { LogicError, type LogicErrorCode } from './errors.ts';
+export { LogicError, own, type LogicErrorCode } from './errors.ts';
 export {
   evaluateForm,
   hasCalculations,
@@ -76,6 +76,7 @@ export {
   fill,
   messageWordsOf,
   plural,
+  rewordMessages,
   summaryEntry,
   summaryHeading,
   type MessageField,

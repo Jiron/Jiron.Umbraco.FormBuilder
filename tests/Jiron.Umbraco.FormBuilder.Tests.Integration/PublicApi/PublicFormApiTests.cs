@@ -35,7 +35,7 @@ public sealed class PublicFormApiTests : PublicApiTestBase
             Assert.That(Header(byKey, "Cache-Control"), Is.EqualTo("no-cache"));
             Assert.That(byKey.Headers.ETag?.Tag, Does.Match("^\"[0-9a-f]{32}\"$"));
             Assert.That(Header(byKey, "Vary"), Does.Contain("Origin"));
-            Assert.That(json.AsObject().Select(property => property.Key), Is.EqualTo(new[] { "alias", "revision", "culture", "timeZone", "open", "form", "fields", "formats", "words", "mergeTags", "consents" }));
+            Assert.That(json.AsObject().Select(property => property.Key), Is.EqualTo(new[] { "alias", "revision", "culture", "timeZone", "open", "form", "fields", "formats", "words", "mergeTags", "consents", "texts" }));
             Assert.That((json["alias"]!.GetValue<string>(), json["revision"]!.GetValue<int>(), json["culture"]!.GetValue<string>(), json["timeZone"]!.GetValue<string>(), json["open"]!.GetValue<bool>()), Is.EqualTo(("contactUs", 1, "en-US", "UTC", true)));
             Assert.That(json["form"]!["key"]!.GetValue<Guid>(), Is.EqualTo(key));
             Assert.That(json["form"]!["pages"]![0]!["groups"]![0]!["fields"]![0]!["label"]!.GetValue<string>(), Is.EqualTo("Name"), "a text is the culture's string");
@@ -43,6 +43,7 @@ public sealed class PublicFormApiTests : PublicApiTestBase
             Assert.That(json["fields"]!.ToJsonString(), Is.EqualTo($$$"""{"{{{name}}}":{"kind":"text","canBeRequired":true,"builtIn":true}}"""), "what the browser decides the field by");
             Assert.That(json["mergeTags"], Is.Null, "no text holds a tag, so it is JSON null");
             Assert.That(json["words"]!.ToJsonString(), Is.EqualTo("""{"yes":"Yes","no":"No"}"""), "the words come all the same");
+            Assert.That(json["texts"]!.ToJsonString(), Is.EqualTo("{}"), "no message reworded, so an empty object");
             Assert.That((json["formats"]!["number"]!["decimal"]!.GetValue<string>(), json["formats"]!["months"]![2]!.GetValue<string>()), Is.EqualTo((".", "March")), "and the formats");
             Assert.That(byAlias.Headers.ETag, Is.EqualTo(byKey.Headers.ETag));
             Assert.That(byOtherCase.Headers.ETag, Is.EqualTo(byKey.Headers.ETag));

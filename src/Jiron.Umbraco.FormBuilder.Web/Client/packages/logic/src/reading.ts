@@ -9,6 +9,7 @@ import type { FieldAnswers } from './checks.ts';
 import { COUNTRY_CODES } from './countries.ts';
 import { parseDate, parseDateTime, parseTime } from './dates.ts';
 import { MAX_DIGITS } from './decimal.ts';
+import { own } from './errors.ts';
 import type { Kind } from './rules.ts';
 import { clean } from './text.ts';
 
@@ -159,7 +160,7 @@ export function cleanAnswer(posted: PostedAnswer | undefined): FieldAnswers {
  * answers only the server reads.
  */
 export function readField(field: ReadField, posted: PostedAnswer | undefined): FieldReading | null {
-  const type = Object.hasOwn(BUILT_IN_TYPES, field.type) ? BUILT_IN_TYPES[field.type] : undefined;
+  const type = own(BUILT_IN_TYPES, field.type);
   if (type === undefined) return null;
   const answers = cleanAnswer(posted);
   const settings = field.settings ?? {};
@@ -175,7 +176,7 @@ export function readField(field: ReadField, posted: PostedAnswer | undefined): F
     };
   }
   const reading = new Reading();
-  const reader = Object.hasOwn(READERS, field.type) ? READERS[field.type] : undefined;
+  const reader = own(READERS, field.type);
   (reader ?? readDefault)(field, type, settings, answers, reading);
   return { answers, limit: null, values: reading.unreadable ? [] : reading.values, unreadable: reading.unreadable };
 }
@@ -273,8 +274,7 @@ const names = (settings: Settings, name: string): readonly string[] => {
   const value = settings[name];
   return Array.isArray(value) ? value.filter((each): each is string => typeof each === 'string') : [];
 };
-const part = (answers: FieldAnswers, name: string): readonly string[] =>
-  answers.parts !== undefined && Object.hasOwn(answers.parts, name) ? (answers.parts[name] ?? []) : [];
+const part = (answers: FieldAnswers, name: string): readonly string[] => own(answers.parts ?? {}, name) ?? [];
 const hasDuplicates = (texts: readonly string[]): boolean => new Set(texts).size !== texts.length;
 
 /** How many texts the answer has, the parts' included, and its longest text or name of a part with texts. */

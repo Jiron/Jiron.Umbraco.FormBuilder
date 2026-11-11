@@ -40,6 +40,7 @@ import {
 } from './theme-model';
 import type { ThemeWorkspaceContext } from './theme-workspace.context';
 import { previewTheme, readEditor, readSample } from './themes-api';
+import { withThemeLabel } from './theme-label';
 
 /** How long the preview waits after a change before it asks. */
 const PAUSE_MS = 300;
@@ -760,7 +761,7 @@ export class ThemeViewElement extends UmbLitElement {
       return [this.#term(problem.code === 'alias_duplicate' ? 'problem_aliasTaken' : 'problem_alias')];
     });
     return html`<uui-box class="settings">
-      <p class="base">${this.#term('buildsOn', base.label)}</p>
+      <p class="base">${this.#term('buildsOn', withThemeLabel(base, (key) => this.localize.term(key)).label)}</p>
       ${
         general.length > 0
           ? html`<ul class="alert" role="alert">

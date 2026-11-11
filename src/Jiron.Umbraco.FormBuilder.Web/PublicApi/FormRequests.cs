@@ -47,6 +47,18 @@ internal sealed class FormRequests(
     public async Task<FormAnswer> DefinitionAsync(CachedForm form, string culture, RequestPage page, CancellationToken cancellationToken) =>
         (await ShowAsync(form, culture, page, cancellationToken)).Answer;
 
+    /// <summary>The visitor texts the form or its site rewords in a culture, as they show (ADR-0230).</summary>
+    /// <param name="form">The published form.</param>
+    /// <param name="culture">The culture, one of the site's languages.</param>
+    /// <param name="page">The page the form is shown or posted on.</param>
+    /// <param name="cancellationToken">Cancels the reads.</param>
+    public Task<IReadOnlyDictionary<string, string>> TextsAsync(CachedForm form, string culture, RequestPage page, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(form);
+        ArgumentNullException.ThrowIfNull(page);
+        return visitorForms.TextsAsync(form.Projection, culture, page.Site, cancellationToken);
+    }
+
     /// <summary>
     /// The form as a visitor's page shows it (ADR-0093): the form endpoint's answer, made by the same code, the visitor's
     /// form it holds, why the form takes no entry now, the site's time zone, and what the page renders the visitor texts
@@ -73,7 +85,7 @@ internal sealed class FormRequests(
         var shown = await visitorForms.ShowAsync(form.Projection, scope, cancellationToken);
         var visitor = shown.Answer;
         var unavailable = await availability.CheckAsync(form.Published.Definition.Settings.Availability, form.Published.Form.Key, cancellationToken);
-        var buffer = new ArrayBufferWriter<byte>(visitor.Form.Length + visitor.Fields.Length + visitor.Formats.Length + visitor.Words.Length + visitor.MergeTags.Length + visitor.Consents.Length + 256);
+        var buffer = new ArrayBufferWriter<byte>(visitor.Form.Length + visitor.Fields.Length + visitor.Formats.Length + visitor.Words.Length + visitor.MergeTags.Length + visitor.Consents.Length + visitor.Texts.Length + 256);
         using (var writer = new Utf8JsonWriter(buffer))
         {
             writer.WriteStartObject();
@@ -94,10 +106,12 @@ internal sealed class FormRequests(
             writer.WriteRawValue(visitor.MergeTags, skipInputValidation: true);
             writer.WritePropertyName("consents");
             writer.WriteRawValue(visitor.Consents, skipInputValidation: true);
+            writer.WritePropertyName("texts");
+            writer.WriteRawValue(visitor.Texts, skipInputValidation: true);
             writer.WriteEndObject();
         }
 
-        return new FormShown(Answer(buffer), shown.Form, unavailable, zone, scope, shown.Tagged, shown.Consents);
+        return new FormShown(Answer(buffer), shown.Form, unavailable, zone, scope, shown.Tagged, shown.Consents, shown.Texts);
     }
 
     /// <summary>
@@ -170,7 +184,8 @@ internal sealed class FormRequests(
 /// <param name="Scope">What the form's merge tags are rendered for: the form, the culture, the site and the page.</param>
 /// <param name="Tagged">The visitor texts that hold tags, in the form's order.</param>
 /// <param name="Consents">Each consent field's wording hash by the field's key, as the answer holds them (ADR-0096).</param>
-internal sealed record FormShown(FormAnswer Answer, PublicForm Form, FormUnavailable? Unavailable, TimeZoneInfo TimeZone, MergeTagScope Scope, IReadOnlyList<VisitorText> Tagged, IReadOnlyDictionary<Guid, string> Consents);
+/// <param name="Texts">The visitor texts the form or the site rewords in the culture, by key, as they show (ADR-0230).</param>
+internal sealed record FormShown(FormAnswer Answer, PublicForm Form, FormUnavailable? Unavailable, TimeZoneInfo TimeZone, MergeTagScope Scope, IReadOnlyList<VisitorText> Tagged, IReadOnlyDictionary<Guid, string> Consents, IReadOnlyDictionary<string, string> Texts);
 
 /// <summary>An answer of the form or the options endpoint.</summary>
 /// <param name="Body">The answer as UTF-8 JSON.</param>

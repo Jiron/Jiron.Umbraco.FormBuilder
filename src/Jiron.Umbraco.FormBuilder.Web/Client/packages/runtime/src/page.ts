@@ -8,6 +8,7 @@ import {
   BUILT_IN_TYPES,
   checkRows,
   cleanAnswer,
+  own,
   readField,
   readPost,
   type FieldReading,
@@ -143,7 +144,7 @@ function readOne(model: FormModel, field: ModelField, answers: ReadonlyMap<strin
     return { field, posted: given, reading: null, values: cleanAnswer(given).values };
   }
   // A value the server resolves is never taken from the page, unless the field is prefilled from the query.
-  const declared = Object.hasOwn(BUILT_IN_TYPES, field.type) ? BUILT_IN_TYPES[field.type] : undefined;
+  const declared = own(BUILT_IN_TYPES, field.type);
   const taken = declared?.serverOnly === true && typeof field.prefill?.query !== 'string' ? undefined : given;
   const reading = readField(readable(field), taken);
   return {
@@ -178,11 +179,10 @@ const isUnreadable = (read: FieldRead): boolean =>
   read.reading !== null && (read.reading.limit !== null || read.reading.unreadable);
 
 /** Whether a field is of a built-in type, which the page reads and checks; a site's own type only the server reads. */
-export const builtIn = (model: FormModel, field: ModelField): boolean =>
-  Object.hasOwn(model.fields, field.key) && model.fields[field.key]?.builtIn === true;
+export const builtIn = (model: FormModel, field: ModelField): boolean => own(model.fields, field.key)?.builtIn === true;
 
 /** A repeatable group: a built-in type that holds fields, or a site's own type that does. */
 function isGroup(model: FormModel, field: ModelField): boolean {
   if (!builtIn(model, field)) return (field.fields?.length ?? 0) > 0;
-  return Object.hasOwn(BUILT_IN_TYPES, field.type) && BUILT_IN_TYPES[field.type]?.childFields === true;
+  return own(BUILT_IN_TYPES, field.type)?.childFields === true;
 }

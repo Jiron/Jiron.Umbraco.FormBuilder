@@ -256,7 +256,7 @@ describe('a comparison in words', () => {
     expect(fields?.lines).toEqual(['Field moved: Email address', 'Field added: Order number', 'Field removed: Fax']);
     expect(fields?.rows).toEqual([
       { what: 'Email address, Label', older: 'Your email', newer: 'Email address' },
-      { what: 'Email address, Label (German)', older: 'E-Mail', newer: 'E-Mail-Adresse' },
+      { what: 'Email address, Label \u00b7 German', older: 'E-Mail', newer: 'E-Mail-Adresse' },
       { what: 'Email address, Required', older: 'No', newer: 'Yes' },
       { what: 'Email address, Message when no answer is given', older: 'none', newer: 'We need your address.' },
       { what: 'Topic, option "Press office", Label', older: 'Press', newer: 'Press office' },
@@ -289,7 +289,7 @@ describe('a comparison in words', () => {
     expect(name({ kind: 'settings', settingsGroup: 'privacy' }, ['retentionDays', 'spam'])).toBe(
       'Delete entries after, Spam (days)',
     );
-    expect(name({ type: 'email' }, ['help', 'de'])).toBe('Help text (German)');
+    expect(name({ type: 'email' }, ['help', 'de'])).toBe('Help text \u00b7 German');
     expect(name({ kind: 'outcome' }, ['redirect', 'url'])).toBe('Redirect, Address');
     const textType = builtInTypes['text'];
     const maxLength = textType?.settings.find((one) => one.name === 'maxLength');
@@ -525,7 +525,7 @@ describe('a difference of Review both versions in words (ROADMAP 10.3c, ADR-0200
       title: 'Field "Email address"',
       rows: [
         { what: 'Label', older: 'Your email', newer: 'Email address' },
-        { what: 'Label (German)', older: 'E-Mail', newer: 'E-Mail-Adresse' },
+        { what: 'Label \u00b7 German', older: 'E-Mail', newer: 'E-Mail-Adresse' },
         { what: 'Required', older: 'No', newer: 'Yes' },
         { what: 'Message when no answer is given', older: 'none', newer: 'We need your address.' },
         // A group without a title is named by its place.

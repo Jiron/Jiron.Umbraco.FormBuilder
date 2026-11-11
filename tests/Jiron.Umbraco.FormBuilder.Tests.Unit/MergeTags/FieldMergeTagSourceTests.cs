@@ -200,7 +200,7 @@ public sealed class FieldMergeTagSourceTests
         Assert.Multiple(() =>
         {
             Assert.That(german.Text, Is.EqualTo("Apfel|1" + (char)0x2019 + "234.5|07.03.2026|07.03.2026 14:30|Frankreich|Ja|Nein"));
-            Assert.That(french.Text, Is.EqualTo("Apple|1" + (char)0x202F + "234,5|07/03/2026|07/03/2026 14:30|France|Yes|No"), "French gets its words in 14.2");
+            Assert.That(french.Text, Is.EqualTo("Apple|1" + (char)0x202F + "234,5|07/03/2026|07/03/2026 14:30|France|Oui|Non"), "French has its own words for yes and no; the option keeps the form's only label");
             Assert.That(invariant.Text, Is.EqualTo("Apple|1,234.5|03/07/2026|03/07/2026 14:30|France|Yes|No"));
         });
     }

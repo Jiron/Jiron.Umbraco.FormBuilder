@@ -7,7 +7,7 @@ import { waitForStartupWork } from '../../support/host-health.ts';
 import { hostEnvironment } from '../../support/host-env.ts';
 import { startHost, type Host } from '../../support/host.ts';
 import { PROTECTION_BASE_URL, PROTECTION_PORT, PROTECTION_STUB_PORT } from '../../support/paths.ts';
-import { startStaticSite } from '../../support/static-site.ts';
+import { STATIC_SITE_WAIT_MS, startStaticSite } from '../../support/static-site.ts';
 import { account, readSecrets } from '../../support/users.ts';
 
 // What protects a form on the page (ROADMAP 7.2c, ADR-0157), on a host of its own with fake keys and the stub for the
@@ -131,6 +131,8 @@ const fill = (page: Page, name: string) =>
   fillForm(formOn(page), { name, email: 'visitor@visitor.jfb.test', message: 'A message long enough to send.' });
 
 test.beforeAll(async () => {
+  // Another worker's spec may hold the static site's one port for a while (support/static-site.ts).
+  test.setTimeout(STATIC_SITE_WAIT_MS + 60_000);
   test.setTimeout(600_000);
   host = await startHost({
     name: `host-${PROTECTION_PORT}`,

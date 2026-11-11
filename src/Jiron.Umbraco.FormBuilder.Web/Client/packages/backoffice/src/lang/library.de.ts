@@ -228,7 +228,7 @@ export default {
     copyLacksElement: 'Eine Seite, Gruppe oder ein Feld',
     copyLacksTag: (tag: string) => `Der Platzhalter ${tag}`,
     fixIn: 'Im Formular beheben',
-    openForm: (name: string) => `${name} öffnen`,
+    openForm: 'Formular öffnen',
 
     galleryHeadline: 'Vorlage wählen',
     searchTemplates: 'Vorlagen durchsuchen',
@@ -275,7 +275,7 @@ export default {
       'Sitzungen mit Plätzen, die Person auf zwei Seiten, eine Übersicht und eine Bestätigung.',
     template_jobApplication: 'Bewerbung',
     template_jobApplicationDescription:
-      'Die Person, Lebenslauf und Anschreiben als Dateien, Einwilligung und eine Freigabe vorab.',
+      'Die Person, Lebenslauf und Anschreiben als Dateien, Einwilligung und manuelle Genehmigung.',
     template_feedback: 'Feedback',
     template_feedbackDescription:
       'Wie wahrscheinlich jemand Sie weiterempfiehlt, von 0 bis 10, eine Bewertungsmatrix und ein Kommentar.',
@@ -334,7 +334,7 @@ export default {
     replaceIntro:
       'Wählen Sie eine JSON-Datei, die eine Website mit Jiron Form Builder exportiert hat. Ihr Formular wird zum Entwurf dieses Formulars; Name, Einträge und Zugriffsrechte bleiben, wie sie sind.',
     replacesDraft: (name: string) =>
-      `Sie wird zum Entwurf von ${name}. Besucher sehen weiter die veröffentlichte Version, bis Sie veröffentlichen.`,
+      `Die Datei wird zum Entwurf von ${name}. Besucher sehen weiter die veröffentlichte Version, bis Sie veröffentlichen.`,
     replaceDiscardsUnsaved: 'Änderungen, die Sie noch nicht gespeichert haben, werden verworfen.',
     replaceTheDraft: 'Entwurf ersetzen',
     replaced: (name: string) => `Der Entwurf von ${name} ist ersetzt. Besucher sehen ihn, sobald Sie veröffentlichen.`,

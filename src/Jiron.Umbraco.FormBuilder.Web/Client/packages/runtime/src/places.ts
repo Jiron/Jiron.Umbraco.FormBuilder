@@ -5,8 +5,9 @@
  * send it, as does the one the keyboard is on until it moves on; a full option that only a default chose is let go. An
  * option the answer does not name shows nothing; the server still refuses it once it is full.
  */
-import { fill, plural } from '@jfb/logic';
-import { wordsFor } from './messages';
+import { fill, own, plural } from '@jfb/logic';
+import type { FormModel } from './model';
+import { formWords } from './messages';
 
 /** The places left per option's value, per field's key, as the challenge tells them. */
 export type Places = Readonly<Record<string, Readonly<Record<string, number>>>>;
@@ -17,15 +18,19 @@ const FULL = 'data-jfb-full';
 const DISABLED = 'data-jfb-disabled';
 
 /** Shows the places left on the options in the root: a form, or a row just added to it. */
-export async function showPlaces(root: ParentNode, places: Places, culture: string): Promise<void> {
-  const words = await wordsFor(culture);
-  const numbers = new Intl.NumberFormat(culture);
+export async function showPlaces(
+  root: ParentNode,
+  places: Places,
+  model: Pick<FormModel, 'culture' | 'texts'>,
+): Promise<void> {
+  const words = await formWords(model);
+  const numbers = new Intl.NumberFormat(model.culture);
   for (const [key, options] of Object.entries(places)) {
     const field = `[data-jfb-field="${CSS.escape(key)}"]`;
     for (const control of root.querySelectorAll<HTMLInputElement | HTMLOptionElement>(
       `${field} input[type="radio"], ${field} input[type="checkbox"], ${field} option`,
     )) {
-      const left = Object.hasOwn(options, control.value) ? options[control.value] : undefined;
+      const left = own(options, control.value);
       if (left === undefined) continue;
       const text = left > 0 ? fill(plural(words.placesLeft, left), { count: numbers.format(left) }) : words.noPlaces;
       if (control instanceof HTMLOptionElement) {

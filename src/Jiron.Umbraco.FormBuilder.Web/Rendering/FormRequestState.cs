@@ -88,12 +88,14 @@ internal static class FormRenderTargets
 internal sealed record FormPostNotice(string? Heading, string Text, string? Code = null);
 
 /// <summary>The outcome of a post that sent the form.</summary>
-/// <param name="Html">The message, sanitised.</param>
+/// <param name="Html">
+/// The message, sanitised; null for the thank-you in the page's words, a site's or the form's own among them (ADR-0230).
+/// </param>
 /// <param name="Reference">The entry's reference, or null.</param>
 /// <param name="IsPending">Whether the visitor must still confirm their email address.</param>
 /// <param name="ContinueUrl">The redirect after the message, which the visitor follows by a link (ADR-0100); null for none.</param>
 /// <param name="Copy">The copy of the answers below a message that offers one (ADR-0123); null for a message that does not.</param>
-internal sealed record FormPostOutcome(string Html, string? Reference, bool IsPending, string? ContinueUrl = null, FormPostCopy? Copy = null);
+internal sealed record FormPostOutcome(string? Html, string? Reference, bool IsPending, string? ContinueUrl = null, FormPostCopy? Copy = null);
 
 /// <summary>The copy of the answers below an outcome (ADR-0123).</summary>
 /// <param name="Entry">The entry's answers, on the one view that shows them; null on any later view, which says so.</param>

@@ -48,7 +48,8 @@ internal sealed class GeneralFacts(
                 await baseUrls.GetDefaultAsync(site),
                 BuiltInThemes.DefaultAlias,
                 [
-                    .. themes.All.Select(theme => new FieldSettingChoiceResponseModel(theme.Name, theme.Label)),
+                    // The default theme's name is a word, which the backoffice says in its language.
+                    .. themes.All.Select(theme => new FieldSettingChoiceResponseModel(theme.Name, theme.Name == BuiltInThemes.DefaultAlias ? "#jfbSection_defaultTheme" : theme.Label)),
                     .. stored.Select(theme => new FieldSettingChoiceResponseModel(theme.Alias, theme.Name)),
                 ],
                 new FormBlockFactsResponseModel(

@@ -7,17 +7,21 @@ namespace Jiron.Umbraco.FormBuilder.Logic;
 /// <param name="Other">The words for any other number.</param>
 internal sealed record PluralWords(string One, string Other)
 {
-    /// <summary>The words for a count: English and German say one only for 1; 14.2 adds the rules of five more languages.</summary>
+    /// <summary>
+    /// The words for a count: one for 1, the other for any other number. That holds in all seven languages, French
+    /// included, since a message names a count only where it can be at least 1 (ADR-0230).
+    /// </summary>
     public string For(long count) => count == 1 ? One : Other;
 }
 
 /// <summary>
-/// The package's default messages for a visitor's errors (ADR-0099), in English and German so far; 14.2 adds the other
-/// five languages. Each is a whole sentence with named values in braces, never joined from pieces, as
-/// <c>docs/ux/copy.md</c> lists them, and <c>tests/vectors/messages.json</c> holds both runtimes to them. A culture
-/// without its own words takes its more general culture's, then English.
+/// The package's default messages for a visitor's errors (ADR-0099), in English and German here and in French, Italian,
+/// Dutch, Spanish and Danish in <c>lang/</c> (ADR-0230). Each is a whole sentence with named values in braces, never
+/// joined from pieces, as <c>docs/ux/copy.md</c> lists them; <c>tests/vectors/messages.json</c> holds both runtimes to
+/// them, and <c>tests/vectors/tables/message-words.json</c> to every word. A culture without its own words takes its more
+/// general culture's, then English.
 /// </summary>
-internal sealed record VisitorMessageWords
+internal sealed partial record VisitorMessageWords
 {
     // The letters outside ASCII the German words need.
     private const char AUmlaut = (char)0xE4;
@@ -109,6 +113,17 @@ internal sealed record VisitorMessageWords
             FilesLargerThan = "One of the files is larger than {size}. Choose a smaller one.",
             FilesAtMost = new("Choose only {max} file", "Choose at most {max} files"),
             OptionFull = "{option} is now full. Choose another option.",
+            PlacesLeft = new("{count} place left", "{count} places left"),
+            NoPlaces = "Full",
+            CaptchaNotice = "This form uses a spam check from an outside service, which loads only if you agree.",
+            CaptchaLoad = "Load the check",
+            CaptchaManager = "This form uses a spam check from an outside service, which loads once you agree in the cookie settings.",
+            CaptchaCookies = "This form uses a spam check from an outside service, which loads once you agree to {category} cookies.",
+            CaptchaCategories = new Dictionary<string, string>(StringComparer.Ordinal) { ["marketing"] = "marketing" }.ToFrozenDictionary(StringComparer.Ordinal),
+            CaptchaCookieSettings = "Change the cookie settings",
+            CaptchaMissing = "Complete the check before you send the form.",
+            CaptchaFailed = "The spam check could not load. You can still send the form.",
+            ProofHint = "Checking your browser, which can take a moment.",
             ChoiceFull = "One of your choices is now full. Choose another option.",
             Confirmation = "Enter the same email address twice",
             Digits = "Enter a number with fewer digits",
@@ -126,8 +141,8 @@ internal sealed record VisitorMessageWords
         ["de"] = new VisitorMessageWords
         {
             Or = "oder",
-            Kilobytes = "{size} KB",
-            Megabytes = "{size} MB",
+            Kilobytes = "{size}\u00a0KB",
+            Megabytes = "{size}\u00a0MB",
             Answer = "Geben Sie eine Antwort ein",
             Email = "Geben Sie eine E-Mail-Adresse ein",
             Phone = "Geben Sie eine Telefonnummer ein",
@@ -143,7 +158,7 @@ internal sealed record VisitorMessageWords
             ChooseSeveral = "W" + AUmlaut + "hlen Sie mindestens eine Antwort",
             GridRows = "W" + AUmlaut + "hlen Sie in jeder Zeile eine Antwort",
             GridRow = "W" + AUmlaut + "hlen Sie in dieser Zeile eine Antwort",
-            Order = "Bringen Sie die Optionen in eine Reihenfolge",
+            Order = "Bringen Sie die Optionen in die gew" + UUmlaut + "nschte Reihenfolge",
             Tick = "Kreuzen Sie das K" + AUmlaut + "stchen an",
             YesNo = "W" + AUmlaut + "hlen Sie {yes} oder {no}",
             Agree = "Kreuzen Sie das K" + AUmlaut + "stchen an, um zuzustimmen",
@@ -154,8 +169,8 @@ internal sealed record VisitorMessageWords
             Sign = "Unterschreiben Sie, oder geben Sie stattdessen Ihren Namen ein",
             AnswerThis = "Beantworten Sie diese Frage",
             EmailFormat = "Geben Sie eine vollst" + AUmlaut + "ndige E-Mail-Adresse ein, zum Beispiel name@example.com",
-            EmailDomain = "Verwenden Sie eine E-Mail-Adresse bei einer anderen Domain",
-            PhoneFormat = "Geben Sie eine Telefonnummer mit Ziffern ein, mit einem + f" + UUmlaut + "r die Landesvorwahl",
+            EmailDomain = "Verwenden Sie eine E-Mail-Adresse mit einer anderen Domain",
+            PhoneFormat = "Geben Sie eine Telefonnummer in Ziffern ein, mit + vor der Landesvorwahl",
             UrlFormat = "Geben Sie eine vollst" + AUmlaut + "ndige Webadresse ein, zum Beispiel https://example.com",
             NumberFormat = "Geben Sie eine Zahl ein, zum Beispiel {example}",
             DateFormat = "Geben Sie ein g" + UUmlaut + "ltiges Datum ein",
@@ -185,8 +200,8 @@ internal sealed record VisitorMessageWords
             WholeNumber = "Geben Sie eine ganze Zahl ein",
             Places = new("Geben Sie eine Zahl mit h" + OUmlaut + "chstens {places} Nachkommastelle ein", "Geben Sie eine Zahl mit h" + OUmlaut + "chstens {places} Nachkommastellen ein"),
             ValueStep = "W" + AUmlaut + "hlen Sie einen Wert in Schritten von {step}",
-            TimeStep = new("W" + AUmlaut + "hlen Sie eine Uhrzeit im Abstand von {minutes} Minute", "W" + AUmlaut + "hlen Sie eine Uhrzeit im Abstand von {minutes} Minuten"),
-            TimeStepFrom = new("W" + AUmlaut + "hlen Sie eine Uhrzeit im Abstand von {minutes} Minute ab {min}", "W" + AUmlaut + "hlen Sie eine Uhrzeit im Abstand von {minutes} Minuten ab {min}"),
+            TimeStep = new("W" + AUmlaut + "hlen Sie eine Uhrzeit in Schritten von {minutes} Minute", "W" + AUmlaut + "hlen Sie eine Uhrzeit in Schritten von {minutes} Minuten"),
+            TimeStepFrom = new("W" + AUmlaut + "hlen Sie eine Uhrzeit in Schritten von {minutes} Minute ab {min}", "W" + AUmlaut + "hlen Sie eine Uhrzeit in Schritten von {minutes} Minuten ab {min}"),
             DateBetween = "W" + AUmlaut + "hlen Sie ein Datum vom {min} bis zum {max}",
             DateFrom = "W" + AUmlaut + "hlen Sie ein Datum ab dem {min}",
             DateUpTo = "W" + AUmlaut + "hlen Sie ein Datum bis zum {max}",
@@ -205,12 +220,23 @@ internal sealed record VisitorMessageWords
             FilesLargerThan = "Eine der Dateien ist gr" + OUmlaut + SharpS + "er als {size}. W" + AUmlaut + "hlen Sie eine kleinere.",
             FilesAtMost = new("W" + AUmlaut + "hlen Sie nur {max} Datei", "W" + AUmlaut + "hlen Sie h" + OUmlaut + "chstens {max} Dateien"),
             OptionFull = "{option} ist jetzt ausgebucht. W" + AUmlaut + "hlen Sie eine andere Option.",
-            ChoiceFull = "Eine Ihrer gew" + AUmlaut + "hlten Optionen ist jetzt ausgebucht. W" + AUmlaut + "hlen Sie eine andere Option.",
+            PlacesLeft = new("{count} Platz frei", "{count} Pl" + AUmlaut + "tze frei"),
+            NoPlaces = "Ausgebucht",
+            CaptchaNotice = "Dieses Formular nutzt eine Spam-Pr" + UUmlaut + "fung eines externen Dienstes, die nur geladen wird, wenn Sie zustimmen.",
+            CaptchaLoad = "Pr" + UUmlaut + "fung laden",
+            CaptchaManager = "Dieses Formular nutzt eine Spam-Pr" + UUmlaut + "fung eines externen Dienstes, die geladen wird, sobald Sie in den Cookie-Einstellungen zustimmen.",
+            CaptchaCookies = "Dieses Formular nutzt eine Spam-Pr" + UUmlaut + "fung eines externen Dienstes, die geladen wird, sobald Sie {category}-Cookies zustimmen.",
+            CaptchaCategories = new Dictionary<string, string>(StringComparer.Ordinal) { ["marketing"] = "Marketing" }.ToFrozenDictionary(StringComparer.Ordinal),
+            CaptchaCookieSettings = "Cookie-Einstellungen " + AUmlaut + "ndern",
+            CaptchaMissing = "Schlie" + SharpS + "en Sie die Pr" + UUmlaut + "fung ab, bevor Sie das Formular senden.",
+            CaptchaFailed = "Die Spam-Pr" + UUmlaut + "fung konnte nicht geladen werden. Sie k" + OUmlaut + "nnen das Formular trotzdem senden.",
+            ProofHint = "Ihr Browser wird gepr" + UUmlaut + "ft, das kann einen Moment dauern.",
+            ChoiceFull = "Eine der von Ihnen gew" + AUmlaut + "hlten Optionen ist jetzt ausgebucht. W" + AUmlaut + "hlen Sie eine andere Option.",
             Confirmation = "Geben Sie zweimal dieselbe E-Mail-Adresse ein",
             Digits = "Geben Sie eine Zahl mit weniger Ziffern ein",
             RowsAtLeast = new("F" + UUmlaut + "gen Sie mindestens {min} Zeile hinzu", "F" + UUmlaut + "gen Sie mindestens {min} Zeilen hinzu"),
             RowsAtMost = new("Entfernen Sie Zeilen, sodass h" + OUmlaut + "chstens {max} bleibt", "Entfernen Sie Zeilen, sodass h" + OUmlaut + "chstens {max} bleiben"),
-            Pattern = "Geben Sie die Antwort im verlangten Format ein",
+            Pattern = "Geben Sie die Antwort im vorgegebenen Format ein",
             SameAs = "Geben Sie dasselbe ein wie bei {field}",
             Taken = "Diese Antwort wurde bereits gegeben. Geben Sie eine andere ein.",
             Empty = "Beantworten Sie mindestens eine Frage, bevor Sie das Formular senden",
@@ -219,6 +245,11 @@ internal sealed record VisitorMessageWords
             SummaryMarkedEntry = "{label} {message}",
             SummaryRowEntry = "{label} ({row}): {message}",
         },
+        ["fr"] = French,
+        ["it"] = Italian,
+        ["nl"] = Dutch,
+        ["es"] = Spanish,
+        ["da"] = Danish,
     }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>The languages with words of their own.</summary>
@@ -477,6 +508,42 @@ internal sealed record VisitorMessageWords
 
     /// <summary><c>full</c> of one option.</summary>
     public required string OptionFull { get; init; }
+
+    // What only the browser shows: an option's places in its label (ADR-0156), a third party's check and the puzzle's
+    // hint (ADR-0157). Core keeps them so the texts a site or a form rewords are all its own (ADR-0230).
+
+    /// <summary>How many places an option has left, in its label.</summary>
+    public required PluralWords PlacesLeft { get; init; }
+
+    /// <summary>An option without a place left, in its label.</summary>
+    public required string NoPlaces { get; init; }
+
+    /// <summary>What a form with a third party's check says before the check may load.</summary>
+    public required string CaptchaNotice { get; init; }
+
+    /// <summary>The button that loads the check.</summary>
+    public required string CaptchaLoad { get; init; }
+
+    /// <summary>The notice when a consent manager decides.</summary>
+    public required string CaptchaManager { get; init; }
+
+    /// <summary>The notice when a cookie category decides; <c>{category}</c> is its name.</summary>
+    public required string CaptchaCookies { get; init; }
+
+    /// <summary>The names of the cookie categories, by their keys.</summary>
+    public required IReadOnlyDictionary<string, string> CaptchaCategories { get; init; }
+
+    /// <summary>The link to the cookie settings.</summary>
+    public required string CaptchaCookieSettings { get; init; }
+
+    /// <summary>A send before the check is done.</summary>
+    public required string CaptchaMissing { get; init; }
+
+    /// <summary>A check that could not load.</summary>
+    public required string CaptchaFailed { get; init; }
+
+    /// <summary>What a slow device shows while it solves the puzzle.</summary>
+    public required string ProofHint { get; init; }
 
     /// <summary><c>full</c> of several options.</summary>
     public required string ChoiceFull { get; init; }

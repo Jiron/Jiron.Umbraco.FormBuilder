@@ -3,36 +3,16 @@
 // and .NET name too. The exceptionally reserved codes (such as EU or UK) are not countries a visitor lives in.
 
 /**
- * The codes a country field reads, each in capitals: two letters each, written together a line per first letter, which
- * keeps the website runtime small (section 4.12).
+ * The codes a country field reads, each in capitals: a first letter followed by the second letters it takes, a group
+ * per first letter, which keeps the website runtime small (section 4.12).
  */
 export const COUNTRY_CODES: ReadonlySet<string> = new Set(
   (
-    'ADAEAFAGAIALAMAOAQARASATAUAWAXAZ' +
-    'BABBBDBEBFBGBHBIBJBLBMBNBOBQBRBSBTBVBWBYBZ' +
-    'CACCCDCFCGCHCICKCLCMCNCOCRCUCVCWCXCYCZ' +
-    'DEDJDKDMDODZ' +
-    'ECEEEGEHERESET' +
-    'FIFJFKFMFOFR' +
-    'GAGBGDGEGFGGGHGIGLGMGNGPGQGRGSGTGUGWGY' +
-    'HKHMHNHRHTHU' +
-    'IDIEILIMINIOIQIRISIT' +
-    'JEJMJOJP' +
-    'KEKGKHKIKMKNKPKRKWKYKZ' +
-    'LALBLCLILKLRLSLTLULVLY' +
-    'MAMCMDMEMFMGMHMKMLMMMNMOMPMQMRMSMTMUMVMWMXMYMZ' +
-    'NANCNENFNGNINLNONPNRNUNZ' +
-    'OM' +
-    'PAPEPFPGPHPKPLPMPNPRPSPTPWPY' +
-    'QA' +
-    'RERORSRURW' +
-    'SASBSCSDSESGSHSISJSKSLSMSNSOSRSSSTSVSXSYSZ' +
-    'TCTDTFTGTHTJTKTLTMTNTOTRTTTVTWTZ' +
-    'UAUGUMUSUYUZ' +
-    'VAVCVEVGVIVNVU' +
-    'WFWS' +
-    'XK' +
-    'YEYT' +
-    'ZAZMZW'
-  ).match(/../g),
+    'ADEFGILMOQRSTUWXZ BABDEFGHIJLMNOQRSTVWYZ CACDFGHIKLMNORUVWXYZ DEJKMOZ ECEGHRST FIJKMOR ' +
+    'GABDEFGHILMNPQRSTUWY HKMNRTU IDELMNOQRST JEMOP KEGHIMNPRWYZ LABCIKRSTUVY ' +
+    'MACDEFGHKLMNOPQRSTUVWXYZ NACEFGILOPRUZ OM PAEFGHKLMNRSTWY QA REOSUW SABCDEGHIJKLMNORSTVXYZ ' +
+    'TCDFGHJKLMNORTVWZ UAGMSYZ VACEGINU WFS XK YET ZAMW'
+  )
+    .split(' ')
+    .flatMap((group) => [...group.slice(1)].map((second) => group.charAt(0) + second)),
 );

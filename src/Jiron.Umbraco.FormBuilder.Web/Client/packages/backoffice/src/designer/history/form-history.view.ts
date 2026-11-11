@@ -596,7 +596,7 @@ export class FormHistoryViewElement extends UmbLitElement {
             : nothing
         }
       </td>
-      <td class="comment comment-column ${comment ? '' : 'muted'}">${comment || this.#term('none')}</td>
+      <td class="comment comment-column">${comment}</td>
       <td class="end">${this.#menu(version, label, comparable)}</td>
     </tr>`;
   }

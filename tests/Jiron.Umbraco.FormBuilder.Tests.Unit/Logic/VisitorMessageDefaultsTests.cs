@@ -12,7 +12,7 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Logic;
 /// Every kind of error a built-in type declares has a default message of its own in every language of
 /// <see cref="VisitorMessageWords"/> (ADR-0099): not the general "Check this answer" or "Answer this question" a site's
 /// own type gets, never empty and with every value filled in. A kind a type declares without words of its own is found,
-/// and so is a word a language leaves empty; the copy guide lists every word in both languages.
+/// and so is a word a language leaves empty; the copy guide lists every word in all seven languages.
 /// </summary>
 [TestFixture]
 public sealed class VisitorMessageDefaultsTests
@@ -42,7 +42,7 @@ public sealed class VisitorMessageDefaultsTests
     {
         Assert.Multiple(() =>
         {
-            Assert.That(VisitorMessageWords.Languages, Is.EquivalentTo(new[] { "en", "de" }), "English and German now; 14.2 adds the other five");
+            Assert.That(VisitorMessageWords.Languages, Is.EquivalentTo(new[] { "en", "de", "fr", "it", "nl", "es", "da" }), "the seven languages of the visitor texts (ADR-0230)");
             Assert.That(BuiltIn.Count(type => type.Messages != FieldMessageKinds.None), Is.GreaterThan(20), "the types with messages are all read");
             Assert.That(Missing(BuiltIn), Is.Empty);
         });
@@ -54,7 +54,10 @@ public sealed class VisitorMessageDefaultsTests
         var time = BuiltIn.Single(type => type.Alias == "time");
         var leftOut = time with { Messages = time.Messages | FieldMessageKinds.DateWindow | FieldMessageKinds.Selections };
 
-        Assert.That(Missing([leftOut]), Is.EqualTo(new[] { "time.dateWindow (en)", "time.dateWindow (de)", "time.selections (en)", "time.selections (de)" }));
+        var expected = new[] { "dateWindow", "selections" }.SelectMany(kind => VisitorMessageWords.Languages.Select(language => $"time.{kind} ({language})")).ToList();
+
+        Assert.That(expected, Has.Count.EqualTo(14).And.Contains("time.dateWindow (da)"));
+        Assert.That(Missing([leftOut]), Is.EqualTo(expected));
     }
 
     [Test]

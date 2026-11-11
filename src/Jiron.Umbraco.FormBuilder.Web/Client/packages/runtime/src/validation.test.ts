@@ -2,13 +2,18 @@
 // checks.fixture.test.ts cannot hold them to the server: the words of a culture's language, loaded once; the empty
 // submission's link past what the page does not show; Next's page alone; an editor's empty message; an answer over its
 // limits; and what only the server decides: files, calculations, options from a list or a source, a site's own type.
+import { da } from '@jfb/logic/lang/da';
 import { de } from '@jfb/logic/lang/de';
 import { en } from '@jfb/logic/lang/en';
+import { es } from '@jfb/logic/lang/es';
+import { fr } from '@jfb/logic/lang/fr';
+import { it as italian } from '@jfb/logic/lang/it';
+import { nl } from '@jfb/logic/lang/nl';
 import { FORMULAS } from '@jfb/logic/calc';
 import { afterEach, describe, expect, it } from 'vitest';
 import { errorsOf } from './checks';
 import { engineOf } from './engine';
-import { languageOf, wordsFor } from './messages';
+import { formWords, languageOf, wordsFor } from './messages';
 import type { FormModel, ModelField, ModelPage } from './model';
 import { readPage } from './page';
 import { contextOf } from './rules';
@@ -85,13 +90,20 @@ afterEach(() => {
 
 describe("a culture's words", () => {
   it("are its language's, else those of its more general culture, else English, as Core's", () => {
-    expect(['de-DE', 'DE-at', 'de', 'en-GB', 'fr-FR', 'x-private-use', ''].map(languageOf)).toEqual([
+    expect(['de-DE', 'DE-at', 'de', 'en-GB', 'x-private-use', ''].map(languageOf)).toEqual([
       'de',
       'de',
       'de',
       'en',
       'en',
       'en',
+    ]);
+    expect(['fr-CH', 'it-IT', 'NL-be', 'es-MX', 'da', 'sv-SE'].map(languageOf)).toEqual([
+      'fr',
+      'it',
+      'nl',
+      'es',
+      'da',
       'en',
     ]);
   });
@@ -101,6 +113,25 @@ describe("a culture's words", () => {
     expect(wordsFor('de-CH')).toBe(first);
     expect(await first).toBe(de);
     expect(await wordsFor('en-US')).toBe(en);
+  });
+
+  it("take a form's own messages over its language's, once per form (ADR-0230)", async () => {
+    const model = {
+      culture: 'de-CH',
+      texts: { email: 'Ihre E-Mail, bitte', 'minLength.one': 'Mindestens {min} Zeichen' },
+    };
+    const words = await formWords(model);
+    expect(words.email).toBe('Ihre E-Mail, bitte');
+    expect(words.minLength).toEqual({ one: 'Mindestens {min} Zeichen', other: de.minLength.other });
+    expect(words.phone).toBe(de.phone);
+    expect(formWords(model)).toBe(formWords(model));
+    expect(await formWords({ culture: 'de-DE', texts: null })).toBe(de);
+  });
+
+  it('come in seven languages, each a file of its own', async () => {
+    const loaded = await Promise.all(['fr-FR', 'it-IT', 'nl-NL', 'es-ES', 'da-DK'].map(wordsFor));
+    expect(loaded.map((words) => words.answer)).toEqual([fr.answer, italian.answer, nl.answer, es.answer, da.answer]);
+    expect(new Set([en, de, ...loaded]).size).toBe(7);
   });
 });
 

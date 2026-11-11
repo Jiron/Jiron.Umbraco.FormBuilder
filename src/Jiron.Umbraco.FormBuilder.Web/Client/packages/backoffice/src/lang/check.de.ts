@@ -114,7 +114,7 @@ export default {
     code_password_asked:
       'Dieses Feld fragt nach einem Passwort, das in den Einträgen, E-Mails und Exporten des Formulars landen würde. Lassen Sie Mitglieder sich stattdessen anmelden.',
     code_file_size_unset:
-      'Dieses Feld nimmt Dateien bis zur Grenze der Website je Datei an: Geben Sie ihm die größte Größe, die seine Antworten brauchen.',
+      'Dieses Feld nimmt Dateien bis zur Grenze der Website je Datei an: Legen Sie die Höchstgröße fest, die seine Antworten brauchen.',
     code_file_size_above_site:
       'Die Website nimmt kleinere Dateien an, als dieses Feld erlaubt (Einstellungen › Dateien); eine größere Datei wird also abgewiesen.',
     code_file_type_not_taken:
@@ -176,7 +176,7 @@ export default {
         fields: 'Diese wiederholbare Gruppe hat keine Felder.',
         options: 'Dieses Feld hat keine Optionen.',
         list: 'Dieses Feld nimmt seine Optionen aus einer Optionsliste, nennt aber keine.',
-        memberGroups: 'Das Formular ist für einige Mitgliedergruppen, nennt aber keine.',
+        memberGroups: 'Das Formular ist nur für bestimmte Mitgliedergruppen, nennt aber keine.',
         captcha: 'Das Formular ist mit einem Captcha geschützt, nennt aber keinen Anbieter.',
         redirect: 'Die Weiterleitung sagt nicht, wohin sie führt.',
       })[part] ?? 'Etwas, das dieses Element braucht, fehlt.',

@@ -9,7 +9,7 @@
 import { isEmptyPost } from '@jfb/logic';
 import { errorsOf, type PageError } from './checks';
 import type { PageEngine } from './engine';
-import { emptyError, shownErrors, wordsFor, type ShownError } from './messages';
+import { emptyError, formWords, shownErrors, type ShownError } from './messages';
 import type { FormModel } from './model';
 import { fieldsOf, readPage } from './page';
 import { contextOf } from './rules';
@@ -89,7 +89,7 @@ async function check(
   const reading = readPage(form, model);
   const context = contextOf(model, reading, clock(), form.ownerDocument.URL);
   const state = engine.decide(reading.answers, context);
-  const words = await wordsFor(model.culture);
+  const words = await formWords(model);
   const server = typeof scope === 'object';
   if (server ? scope.some((problem) => problem.code === 'empty') : scope === 'send' && isEmptyPost(reading.post))
     return [emptyError(form, model, words)];

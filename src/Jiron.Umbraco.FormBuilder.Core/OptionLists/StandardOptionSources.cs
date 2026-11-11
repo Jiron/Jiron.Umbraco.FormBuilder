@@ -131,8 +131,8 @@ public sealed class YesNoNotSureOptionSource : IFormBuilderOptionSource
 }
 
 /// <summary>
-/// The words of the standard lists (ADR-0073) from the language tables in <c>OptionLists/lang/</c>, in English and
-/// German so far; 14.2 adds the other five languages. A culture without its own words takes its more general culture's,
+/// The words of the standard lists (ADR-0073) from the language tables in <c>OptionLists/lang/</c>, in the seven
+/// languages of the visitor texts (ADR-0230). A culture without its own words takes its more general culture's,
 /// then English. The tables are read once, as the assembly holds them.
 /// </summary>
 internal sealed record StandardOptionWords(ImmutableArray<string> Agreement, ImmutableArray<string> Satisfaction, ImmutableArray<string> YesNoNotSure)

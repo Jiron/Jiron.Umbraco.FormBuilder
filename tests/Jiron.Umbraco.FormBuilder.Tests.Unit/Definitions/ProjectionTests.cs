@@ -19,11 +19,11 @@ public sealed partial class ProjectionTests
     private const int Definitions = 500;
 
     // The projection's properties, one per line: arrays as [], a repeatable group's children as its fields. Texts,
-    // conditions, default values, messages and settings are values of their own types and end the path.
+    // conditions, default values, messages, settings and the visitor texts' wording are values of their own types and end the path.
     private static readonly string[] Allowlist =
     [
         "$.key",
-        "$.settings", "$.settings.submitLabel", "$.settings.nextLabel", "$.settings.backLabel", "$.settings.summaryPage",
+        "$.settings", "$.settings.submitLabel", "$.settings.nextLabel", "$.settings.backLabel", "$.settings.texts", "$.settings.summaryPage",
         "$.settings.progress", "$.settings.resume", "$.settings.closedMessage", "$.settings.membersOnly", "$.settings.protection",
         "$.settings.captchaProvider", "$.settings.theme", "$.settings.requiredMarker", "$.settings.validationSummary",
         "$.settings.choiceLayout", "$.settings.cssClass", "$.settings.queryValues",
@@ -60,7 +60,7 @@ public sealed partial class ProjectionTests
     private static readonly HashSet<string> Opaque = new(StringComparer.Ordinal)
     {
         "title", "description", "label", "help", "placeholder", "message", "messages", "submitLabel", "nextLabel", "backLabel",
-        "closedMessage", "defaultValue", "conditions", "settings",
+        "closedMessage", "defaultValue", "conditions", "settings", "texts",
     };
 
     public static IEnumerable<TestCaseData> PrivateChanges()

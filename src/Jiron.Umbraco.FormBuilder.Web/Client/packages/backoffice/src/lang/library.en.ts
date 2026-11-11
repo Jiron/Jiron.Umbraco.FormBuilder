@@ -209,7 +209,7 @@ export default {
     copyLacksElement: 'A page, group or field',
     copyLacksTag: (tag: string) => `The merge tag ${tag}`,
     fixIn: 'Fix it in the form',
-    openForm: (name: string) => `Open ${name}`,
+    openForm: 'Open the form',
 
     galleryHeadline: 'Choose a template',
     searchTemplates: 'Search templates',

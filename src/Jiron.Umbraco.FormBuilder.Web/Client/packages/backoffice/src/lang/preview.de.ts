@@ -16,7 +16,7 @@ export default {
     startAgain: 'Neu beginnen',
     testEntries: 'Testeinträge',
     runForTests: 'Aktionen für Testeinträge ausführen',
-    noteOff: 'Hier gesendete Einträge sind Testeinträge. Sie führen keine Aktionen aus.',
+    noteOff: 'Hier gesendete Einträge sind Testeinträge. Für sie laufen keine Aktionen.',
     noteOn:
       'Hier gesendete Einträge sind Testeinträge. Ihre Aktionen laufen, ihre E-Mails und Nachrichten gehen also wirklich hinaus.',
     saved: (number: number) => `Als Testeintrag #${number} gespeichert.`,

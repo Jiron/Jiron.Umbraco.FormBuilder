@@ -55,6 +55,11 @@ export default {
     or: 'or',
     listSeparator: ', ',
     quoted: (text: string) => `"${text}"`,
+    /** A field's name inside a sentence, as it is. */
+    named: (name: string) => name,
+    /** A condition inside a sentence: what it looks at, the operator's words, the value, in that order. */
+    clause: (subject: string, _op: string, words: string, value: string) =>
+      [subject, words, value].filter((part) => part !== '').join(' '),
     answerTo: (name: string) => `the answer to ${name}`,
     today: 'today',
     afterToday: (count: number, code: string) => `today plus ${unit(count, code)}`,

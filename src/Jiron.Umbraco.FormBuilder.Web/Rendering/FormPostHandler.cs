@@ -201,7 +201,7 @@ internal sealed class FormPostHandler(
             http.Response.Headers.RetryAfter = limit.RetryAfterSeconds.ToString(CultureInfo.InvariantCulture);
             var refused = new Step(reader, definition, Guid.TryParseExact(One(posted, FormPostFields.Page), "D", out var refusedPage) ? refusedPage : null, query)
             {
-                Notice = WaitNotice(culture, limit, hasFiles || FormPostFileNotes.Get(http, formKey, instance) is { LeftOutFiles: true }),
+                Notice = WaitNotice(await WordsAsync(cached, culture, content, cancellationToken), limit, hasFiles || FormPostFileNotes.Get(http, formKey, instance) is { LeftOutFiles: true }),
             };
             FormPosts.Set(http, formKey, instance, refused.State(await KeptAsync(reader, definition, formKey, cancellationToken)));
             return FormPostAnswer.Page;
@@ -227,7 +227,7 @@ internal sealed class FormPostHandler(
 
         if (noRoom)
         {
-            var words = RenderingWords.Of(culture);
+            var words = await WordsAsync(cached, culture, content, cancellationToken);
             var full = new Step(reader, definition, Guid.TryParseExact(One(posted, FormPostFields.Page), "D", out var fullPage) ? fullPage : null, query)
             {
                 Notice = new FormPostNotice(words.NotSentHeading, hasFiles ? words.NoRoomText + " " + words.ChooseFilesAgain : words.NoRoomText, NoRoomCode),
@@ -497,7 +497,7 @@ internal sealed class FormPostHandler(
     // A refusal as the page shows it (ADR-0100); false when the page shows the form as for any visitor now, with nothing of the post.
     private async Task<bool> RefusedAsync(Step state, SubmissionResult result, CachedForm cached, string culture, Guid? content, CancellationToken cancellationToken)
     {
-        var words = RenderingWords.Of(culture);
+        var words = await WordsAsync(cached, culture, content, cancellationToken);
         switch (result.Refusal)
         {
             case SubmissionRefusal.ValidationFailed:
@@ -546,10 +546,13 @@ internal sealed class FormPostHandler(
     private static bool HoldsTypedSignature(IFormCollection posted) =>
         posted.Any(pair => pair.Key.EndsWith("." + SignatureFieldType.TypedPart, StringComparison.Ordinal) && pair.Value.Any(value => !string.IsNullOrWhiteSpace(value)));
 
+    // The page's words, the ones the form or its site rewords in their place (ADR-0230).
+    private async Task<RenderingWords> WordsAsync(CachedForm cached, string culture, Guid? content, CancellationToken cancellationToken) =>
+        RenderingWords.Of(culture).With(await requests.TextsAsync(cached, culture, await pages.PageAsync(content), cancellationToken));
+
     // What a post over a rate limit shows: when to send again, in the larger unit from two minutes on.
-    private static FormPostNotice WaitNotice(string culture, RateLimitDecision limit, bool hadFiles)
+    private static FormPostNotice WaitNotice(RenderingWords words, RateLimitDecision limit, bool hadFiles)
     {
-        var words = RenderingWords.Of(culture);
         var seconds = Math.Max(2, limit.RetryAfterSeconds);
         var text = seconds < 120
             ? string.Format(CultureInfo.InvariantCulture, words.WaitSecondsText, seconds)

@@ -202,6 +202,11 @@ describe('a field without a text in a language', () => {
     expect(untranslated({ ...field, label: { '': 'Name', de: 'Name' } }, text, 'de-CH')).toBe(false);
     expect(untranslated({ key: 'e', type: 'text' }, text, 'de-DE')).toBe(false);
     expect(untranslated({ ...field, label: { '': ' ' } }, text, 'de-DE')).toBe(false);
+    // A label naming a dictionary item is the dictionary's to translate (ADR-0228).
+    const email = typeOf('email');
+    expect(
+      untranslated({ key: 'm', type: 'email', label: { '': '#Demo.Login.Email' }, required: true }, email, 'de-DE'),
+    ).toBe(false);
   });
 
   it('counts its help, placeholder, messages and text settings, nested ones too', () => {

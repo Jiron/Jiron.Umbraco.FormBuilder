@@ -29,6 +29,7 @@ internal static class PublicProjection
                 SubmitLabel = settings.Submission.SubmitLabel,
                 NextLabel = settings.Submission.NextLabel,
                 BackLabel = settings.Submission.BackLabel,
+                Texts = settings.Submission.Texts,
                 SummaryPage = settings.Submission.SummaryPage,
                 Progress = settings.Submission.Progress,
                 Resume = settings.Submission is { Resume: not null, Store: not EntryStorage.Never },

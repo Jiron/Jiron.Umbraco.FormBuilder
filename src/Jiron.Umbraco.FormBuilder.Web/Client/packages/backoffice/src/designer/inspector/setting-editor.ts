@@ -302,7 +302,8 @@ export function settingEditor(
       // typing it would be.
       const dictionary = context.dictionaryLine
         ? {
-            said: context.dictionaryLine(written),
+            // An empty box in another language shows the default's text, so the line says what that shows there.
+            said: context.dictionaryLine(written || textIn(texts, context.culture)),
             pick: (text: string) => {
               typed(text, true);
               context.dictionaryPicked?.();

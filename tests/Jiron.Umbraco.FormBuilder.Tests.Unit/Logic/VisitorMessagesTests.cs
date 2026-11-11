@@ -37,7 +37,8 @@ public sealed class VisitorMessagesTests
         {
             Assert.That(VisitorMessageWords.Of("DE-ch"), Is.SameAs(german));
             Assert.That(german, Is.Not.SameAs(VisitorMessageWords.Of("en")));
-            Assert.That(VisitorMessageWords.Of("fr-FR"), Is.SameAs(VisitorMessageWords.Of("en")));
+            Assert.That(VisitorMessageWords.Of("sv-SE"), Is.SameAs(VisitorMessageWords.Of("en")));
+            Assert.That(VisitorMessageWords.Of("fr-CA"), Is.SameAs(VisitorMessageWords.Of("fr")));
             Assert.That(VisitorMessageWords.Of(null), Is.SameAs(VisitorMessageWords.Of("en")));
         });
     }

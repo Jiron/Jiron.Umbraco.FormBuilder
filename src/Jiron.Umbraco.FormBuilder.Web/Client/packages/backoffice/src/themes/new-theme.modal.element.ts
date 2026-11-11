@@ -4,6 +4,7 @@
 import { css, html } from '@umbraco-cms/backoffice/external/lit';
 import { UmbModalBaseElement } from '@umbraco-cms/backoffice/modal';
 import type { NewThemeModalData, NewThemeModalValue } from './new-theme.modal.token';
+import { withThemeLabel } from './theme-label';
 
 export class NewThemeModalElement extends UmbModalBaseElement<NewThemeModalData, NewThemeModalValue> {
   static override styles = css`
@@ -26,7 +27,7 @@ export class NewThemeModalElement extends UmbModalBaseElement<NewThemeModalData,
         ${(this.data?.bases ?? []).map(
           (base) =>
             html`<umb-ref-item
-              name=${base.label}
+              name=${withThemeLabel(base, (key) => this.localize.term(key)).label}
               detail=${base.darkScheme ? this.#term('hasDark') : ''}
               icon="icon-palette"
               @open=${() => this.#choose(base.alias)}

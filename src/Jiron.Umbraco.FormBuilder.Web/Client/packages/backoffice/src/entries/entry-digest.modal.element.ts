@@ -69,6 +69,12 @@ export class EntryDigestModalElement extends UmbModalBaseElement<never, EntryDig
       }
 
       .note {
+        display: grid;
+        justify-items: start;
+        gap: var(--uui-size-space-3);
+      }
+
+      .note p {
         margin: 0;
         color: var(--jfb-bo-color-text-muted);
       }
@@ -217,7 +223,20 @@ export class EntryDigestModalElement extends UmbModalBaseElement<never, EntryDig
           .retry=${() => void this.#ask(true)}
         ></jfb-email-preview>
       </uui-box>
-      <p class="note">${choice.address ? this.#term('digest_note', choice.address) : this.#term('digest_noAddress')}</p>
+      <div class="note">
+        <p>${choice.address ? this.#term('digest_note', choice.address) : this.#term('digest_noAddress')}</p>
+        ${
+          // The test goes to the address the note names, so it sits under it rather than crowding the footer.
+          choice.address
+            ? html`<uui-button
+                look="secondary"
+                label=${this.#term('digest_test')}
+                .state=${this._testing ? 'waiting' : undefined}
+                @click=${() => void this.#test()}
+              ></uui-button>`
+            : nothing
+        }
+      </div>
       ${this._saveFailed ? html`<p class="failed" role="alert">${this.#term('digest_saveFailed')}</p>` : nothing}
     </div>`;
   }
@@ -226,17 +245,6 @@ export class EntryDigestModalElement extends UmbModalBaseElement<never, EntryDig
     const ready = this._choice !== undefined;
     return html`<umb-body-layout headline=${this.#term('digest_headline')}>
       ${this.#body()}
-      ${
-        ready && this._choice?.address
-          ? html`<uui-button
-              slot="footer-info"
-              look="secondary"
-              label=${this.#term('digest_test')}
-              .state=${this._testing ? 'waiting' : undefined}
-              @click=${() => void this.#test()}
-            ></uui-button>`
-          : nothing
-      }
       <div slot="actions" class="actions">
         <uui-button label=${this.#term('digest_cancel')} @click=${this._rejectModal}></uui-button>
         <uui-button

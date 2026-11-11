@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.Json.Nodes;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
+using Jiron.Umbraco.FormBuilder.Logic;
 
 namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Definitions;
 
@@ -125,6 +126,22 @@ internal sealed class DefinitionGenerator
         return texts;
     }
 
+    // A few of the package's visitor texts reworded, each in the default and some cultures, now and then naming a value its text names;
+    // with the default comparer, as the reader makes them.
+    private Dictionary<string, IReadOnlyDictionary<string, string>> VisitorTexts() =>
+        VisitorTextKeys.All.OrderBy(_ => _random.Next()).Take(_random.Next(1, 4)).ToDictionary(
+            key => key.Key,
+            key => (IReadOnlyDictionary<string, string>)new[] { string.Empty }.Concat(Cultures.OrderBy(_ => _random.Next()).Take(_random.Next(0, 3)))
+                .ToDictionary(culture => culture, _ => Wording(key)));
+
+    // A wording the save checks take: one line, no control character, no brace but a value its text names, never only white space.
+    private string Wording(VisitorTextKey key)
+    {
+        var line = new string([.. String(400).Where(character => !char.IsControl(character) && character is not ('{' or '}'))]);
+        var value = key.Values.Length > 0 && Chance() ? key.Values[0] : string.Empty;
+        return string.IsNullOrWhiteSpace(line + value) ? "a" + value : line + value;
+    }
+
     private SettingsObject? Extension() => Chance(80) ? SettingsObject.Parse(SettingsNode(0).ToJsonString()) : null;
 
     private JsonObject SettingsNode(int depth)
@@ -172,6 +189,7 @@ internal sealed class DefinitionGenerator
                 Resume = Chance() ? new SaveAndResume { Days = _random.Next(1, 366) } : null,
                 EntryTitle = Chance() ? String(500) : null,
                 EntryReference = Chance() ? new EntryReferenceFormat { Prefix = Chance() ? String(20) : null, IncludeYear = Chance(), Digits = _random.Next(1, 11) } : null,
+                Texts = Chance() ? VisitorTexts() : null,
             },
             Availability = new FormAvailabilitySettings
             {

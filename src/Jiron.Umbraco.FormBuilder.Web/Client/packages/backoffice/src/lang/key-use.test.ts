@@ -142,9 +142,17 @@ describe('every key is used', () => {
     expectHeld('jfbMergeTags', used);
   });
 
-  it("in the Settings view's area: by its code, and the captcha providers' settings the server serves", () => {
+  it("in the Settings view's area: by its code, the captcha providers' settings the server serves and the visitor texts' groups", () => {
     const used = usedKeys('jfbSettings', keysOf('jfbSettings'), {}, inFolders('designer'));
     for (const key of servedIn(snapshot('captcha-providers.json'), 'jfbSettings')) used.add(key);
+    // The visitor texts' groups, as Core lists them (ADR-0230): `textsGroup_${group.alias}`.
+    const groups =
+      /Groups \{ get; \} = \[([^\]]+)\]/.exec(
+        read('src', 'Jiron.Umbraco.FormBuilder.Core', 'Logic', 'VisitorTextKeys.cs'),
+      )?.[1] ?? '';
+    const aliases = [...groups.matchAll(/"([a-z]+)"/g)].map((match) => match[1] ?? '');
+    expect(aliases).toContain('errors');
+    for (const alias of aliases) used.add(`textsGroup_${alias}`);
     expectHeld('jfbSettings', used);
   });
 

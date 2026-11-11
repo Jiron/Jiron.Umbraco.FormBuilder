@@ -21,7 +21,7 @@ import {
 } from './display';
 import type { MessageWords } from '@jfb/logic';
 import type { PageEngine } from './engine';
-import { elementOf, wordsFor, type ShownError } from './messages';
+import { elementOf, formWords, type ShownError } from './messages';
 import type { FormModel } from './model';
 import type { Paging } from './pages-chunk';
 import type { Deliver } from './send';
@@ -213,7 +213,7 @@ export function pageErrorsOf(
 
   async function validate(scope: CheckScope): Promise<boolean> {
     const found = await safely(() => checkPage(form, model, engine, scope, clock));
-    const words = found === null ? null : await safely(() => wordsFor(model.culture));
+    const words = found === null ? null : await safely(() => formWords(model));
     if (found === null || words === null) return true;
     const here = found.filter((error) => error.code === 'empty' || fieldAt(error) !== null);
     const shown = here.length === 0 ? null : ofOnePage(here);
@@ -224,7 +224,7 @@ export function pageErrorsOf(
 
   async function server(problems: readonly ServerProblem[]): Promise<boolean> {
     const found = await safely(() => serverErrors(form, model, engine, problems, clock));
-    const words = found === null ? null : await safely(() => wordsFor(model.culture));
+    const words = found === null ? null : await safely(() => formWords(model));
     const shown = found === null || found.length === 0 ? null : ofOnePage(found);
     if (shown === null || words === null) return false;
     present(shown, 'send', words);

@@ -40,10 +40,10 @@ public sealed class FormRenderingViewTests : RenderingTestBase
                 (PageTwo.ToString("D"), true, false),
                 (Key(0x30).ToString("D"), true, true),
             }), "the first page is current; a later page waits hidden; a page a rule hides says so");
-            Assert.That(Text(form, ".jfb-progress-steps .jfb-progress-text"), Is.EqualTo("Step 1 of 2"), "a page the rules hide is no step");
+            Assert.That(Text(form, ".jfb-progress-steps .jfb-progress-text"), Is.EqualTo("Page 1 of 2"), "a page the rules hide is no step");
             Assert.That(form.QuerySelectorAll(".jfb-progress-steps li").Select(step => (step.TextContent, step.GetAttribute("aria-current"))), Is.EqualTo(new[] { ("Your details", "step"), ("Page 2", (string?)null) }));
             Assert.That(((AngleSharp.Html.Dom.IHtmlTemplateElement)form.QuerySelector(".jfb-progress-steps template[data-jfb-steps]")!).Content.QuerySelectorAll("li[data-jfb-step]"), Has.Length.EqualTo(1), "its step waits for a rule to show the page");
-            Assert.That(form.QuerySelector(".jfb-progress-steps .jfb-progress-text")!.GetAttribute("data-jfb-words"), Is.EqualTo("Step {0} of {1}"), "the words the runtime goes on with");
+            Assert.That(form.QuerySelector(".jfb-progress-steps .jfb-progress-text")!.GetAttribute("data-jfb-words"), Is.EqualTo("Page {0} of {1}"), "the words the runtime goes on with");
             Assert.That(form.QuerySelector(".jfb-progress-steps ol")!.GetAttribute("data-jfb-untitled"), Is.EqualTo("Page {0}"));
             Assert.That(form.QuerySelectorAll(".jfb-progress-steps [data-jfb-numbered]").Select(step => step.TextContent), Is.EqualTo(new[] { "Page 2" }), "a step without a title of its own");
             Assert.That(((AngleSharp.Html.Dom.IHtmlTemplateElement)form.QuerySelector(":scope > template[data-jfb-templates]")!).Content.QuerySelectorAll("[data-jfb-nav]").Select(button => (button.GetAttribute("value"), button.TextContent.Trim())), Is.EqualTo(new[] { ("next", "Next"), ("submit", "Send"), ("back", "Back") }), "every button a move may show, once");
@@ -193,7 +193,7 @@ public sealed class FormRenderingViewTests : RenderingTestBase
         Assert.Multiple(() =>
         {
             Assert.That(form.QuerySelectorAll("section.jfb-page").Select(page => page.HasAttribute("hidden")), Is.EqualTo(new[] { true, false }), "the post's page");
-            Assert.That(Compact(form.QuerySelector(".jfb-progress-bar")!.OuterHtml), Is.EqualTo("""<div class="jfb-progress jfb-progress-bar"><p class="jfb-progress-text" id="jfb-1-progress" data-jfb-words="Step {0} of {1}">Step 2 of 2</p><progress max="2" value="2" aria-labelledby="jfb-1-progress">Step 2 of 2</progress></div>"""));
+            Assert.That(Compact(form.QuerySelector(".jfb-progress-bar")!.OuterHtml), Is.EqualTo("""<div class="jfb-progress jfb-progress-bar"><p class="jfb-progress-text" id="jfb-1-progress" data-jfb-words="Page {0} of {1}">Page 2 of 2</p><progress max="2" value="2" aria-labelledby="jfb-1-progress">Page 2 of 2</progress></div>"""));
             Assert.That(Compact(form.QuerySelector(".jfb-notice")!.OuterHtml), Is.EqualTo("""<div class="jfb-notice"><h2>The form has changed</h2><p>Check your answers, then send them again.</p></div>"""));
             Assert.That(Compact(form.QuerySelector(".jfb-error-summary")!.OuterHtml), Is.EqualTo("""<div class="jfb-error-summary" data-jfb-summary="" role="alert" tabindex="-1" aria-labelledby="jfb-1-summary"><h2 id="jfb-1-summary">This answer needs a change</h2><ul role="list"><li><a href="#jfb-1-name">Enter your whole name</a></li></ul></div>"""), "the field's own message for the kind, as written");
             Assert.That(Control(form, "name").OuterHtml, Is.EqualTo("""<input class="jfb-control" type="text" id="jfb-1-name" name="name" value="Bob <b>" aria-invalid="true" aria-describedby="jfb-1-name-error">"""));

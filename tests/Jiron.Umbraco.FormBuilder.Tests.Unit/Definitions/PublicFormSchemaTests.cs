@@ -84,6 +84,31 @@ public sealed class PublicFormSchemaTests
         });
     }
 
+    [Test]
+    public void TheProjectionsServerOnlyProperties_AreCountedInItsHash_AndNeverInTheVisitorForm()
+    {
+        var definition = DefinitionFixtures.Read(DefinitionFixtures.Full);
+        var reworded = definition with
+        {
+            Settings = definition.Settings with
+            {
+                Submission = definition.Settings.Submission with
+                {
+                    Texts = new Dictionary<string, IReadOnlyDictionary<string, string>>(StringComparer.Ordinal) { ["message.answer"] = new Dictionary<string, string>(StringComparer.Ordinal) { [""] = "Tell us" } },
+                },
+            },
+        };
+        var projection = PublicProjection.Create(reworded, TestFieldTypes.Registry);
+        var visitor = JsonNode.Parse(VisitorForm.Write(VisitorForm.Map(projection, text => text.Resolve("en-US"), TestFieldTypes.Registry)))!;
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(PublicFormSchema.ServerOnly.Select(only => only.Property), Is.EqualTo(new[] { "texts" }));
+            Assert.That(visitor["settings"]!.AsObject().ContainsKey("texts"), Is.False, "the visitor form holds no other culture's wording");
+            Assert.That(PublicProjection.Hash(reworded, TestFieldTypes.Registry), Is.Not.EqualTo(PublicProjection.Hash(definition, TestFieldTypes.Registry)), "rewording a text is a new public revision");
+        });
+    }
+
     // A projection written as the definition endpoint writes it for a culture, checked against the published schema.
     private static void AssertFits(PublicForm projection, string culture, string what)
     {
@@ -103,6 +128,15 @@ public sealed class PublicFormSchemaTests
 internal static class PublicFormSchema
 {
     private static readonly JsonSerializerOptions Options = VisitorJsonContext.Default.Options;
+
+    /// <summary>
+    /// The projection's properties the visitor form never holds (<see cref="VisitorForm"/> leaves them null): the server
+    /// reads them, and the projection's hash counts them, so a change to them is a new public revision.
+    /// </summary>
+    public static readonly IReadOnlySet<(Type Record, string Property)> ServerOnly = new HashSet<(Type, string)>
+    {
+        (typeof(PublicFormSettings), "texts"),
+    };
 
     /// <summary>The schema, its root the visitor form.</summary>
     public static JsonObject Build()
@@ -200,7 +234,7 @@ internal static class PublicFormSchema
                 required.Add(kind.Name);
             }
 
-            foreach (var property in info.Properties)
+            foreach (var property in info.Properties.Where(property => !ServerOnly.Contains((info.Type, property.Name))))
             {
                 properties[property.Name] = Of(property.PropertyType);
                 if (!property.IsGetNullable)

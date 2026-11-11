@@ -21,7 +21,7 @@ import { showPlaces, type Places } from './places';
 import type { Captcha } from './protect-chunk';
 import { challengesOf, senderOf, valuesOf, type Carried, type Told } from './send';
 import { allOf, movesPages, takesUploads, type PageUploads, type UploadOptions } from './uploads';
-import { wordsFor, type ShownError } from './messages';
+import { formWords, type ShownError } from './messages';
 import { contextOf, rulesOf, tellMember, type PageRules } from './rules';
 import { checkPage, type CheckScope } from './validation';
 
@@ -107,7 +107,7 @@ async function wake(
   const api = form.dataset['jfbApi'];
   let places: Places | undefined;
   const showIn = async (root: ParentNode): Promise<void> => {
-    if (places !== undefined) await showPlaces(root, places, model.culture).catch(() => undefined);
+    if (places !== undefined) await showPlaces(root, places, model).catch(() => undefined);
   };
   let member: Told['member'];
   let captcha: Promise<Captcha | undefined> | undefined;
@@ -115,7 +115,7 @@ async function wake(
     const tells = told.places ?? told.member ?? member;
     const asked = told.captcha;
     if (asked !== undefined)
-      captcha ??= Promise.all([import('./protect-chunk'), wordsFor(model.culture)])
+      captcha ??= Promise.all([import('./protect-chunk'), formWords(model)])
         .then(([chunk, words]) => {
           const agreeing = allFieldsOf(model).find((field) => field.settings?.['loadsCaptcha'] === true);
           return chunk.enhanceCaptcha(

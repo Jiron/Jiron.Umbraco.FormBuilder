@@ -55,6 +55,8 @@
   "jfbGlobalSettings_general_requiredMarker_required",
   "jfbGlobalSettings_general_submitLabel",
   "jfbGlobalSettings_general_submitLabelHelp",
+  "jfbGlobalSettings_general_texts",
+  "jfbGlobalSettings_general_textsHelp",
   "jfbGlobalSettings_general_theme",
   "jfbGlobalSettings_general_themeHelp",
   "jfbGlobalSettings_general_timeZone",
@@ -129,5 +131,6 @@
   "jfbGlobalSettings_protection_maxLinksHelp",
   "jfbGlobalSettings_protection_proofBits",
   "jfbGlobalSettings_protection_proofBitsHelp",
-  "jfbGlobalSettings_protection_proofBitsUnit"
+  "jfbGlobalSettings_protection_proofBitsUnit",
+  "jfbSection_defaultTheme"
 ]

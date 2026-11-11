@@ -521,7 +521,8 @@ export class InspectorElement extends UmbLitElement {
             item.property,
           );
         const written = this.#textOf(texts);
-        const said = this.#dictionaryLine(written);
+        // An empty box in another language shows the default's text, so the line says what that shows there.
+        const said = this.#dictionaryLine(written || textIn(texts, this.culture));
         const described = said ? `${id}-dictionary` : nothing;
         const box = item.long
           ? html`<textarea

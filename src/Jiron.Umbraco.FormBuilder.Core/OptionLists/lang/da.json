@@ -1,0 +1,5 @@
+{
+  "agreement": ["Helt uenig", "Uenig", "Hverken enig eller uenig", "Enig", "Helt enig"],
+  "satisfaction": ["Meget utilfreds", "Utilfreds", "Hverken tilfreds eller utilfreds", "Tilfreds", "Meget tilfreds"],
+  "yesNoNotSure": ["Ja", "Nej", "Ved ikke"]
+}

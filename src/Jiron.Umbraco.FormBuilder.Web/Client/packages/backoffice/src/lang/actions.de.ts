@@ -36,11 +36,11 @@ export default {
     held_verification: 'Diese laufen erst, wenn das Formular die E-Mail-Bestätigung hat:',
     turnOn: 'in den Einstellungen einschalten',
     none: 'Hier noch keine Aktionen.',
-    triggerNeeds_approval: 'Sie läuft, sobald das Formular die manuelle Genehmigung hat.',
-    triggerNeeds_verification: 'Sie läuft, sobald das Formular die E-Mail-Bestätigung hat.',
+    triggerNeeds_approval: 'Läuft erst, wenn das Formular die manuelle Genehmigung verwendet.',
+    triggerNeeds_verification: 'Läuft erst, wenn das Formular die E-Mail-Bestätigung verwendet.',
 
     summary_emailTo: (recipients: string) => `An ${recipients}`,
-    summary_emailToField: (field: string) => `An die Antwort von ${field}`,
+    summary_emailToField: (field: string) => `An die Antwort von „${field}“`,
     summary_emailToCreator: 'An die Person, die das Formular erstellt hat',
     summary_emailToPrivacyTeam: 'An alle, die die Datenschutzwerkzeuge verwenden dürfen',
     summary_emailRouted: 'An die Adressen, die eine Antwort wählt',
@@ -85,11 +85,12 @@ export default {
 
     headlineNew: 'Neue Aktion',
     whatHappens: 'Was passiert',
-    whatHappensKept: 'Eine Aktion behält, was sie tut. Für etwas anderes fügen Sie eine weitere Aktion hinzu.',
+    whatHappensKept:
+      'Die Art einer Aktion lässt sich nicht ändern. Für etwas anderes fügen Sie eine weitere Aktion hinzu.',
     name: 'Name',
     nameHelp: 'Steht auf ihrer Karte und im Zustellprotokoll.',
     trigger: 'Wann sie läuft',
-    place: 'Platz in der Liste',
+    place: 'Position in der Liste',
     placeHelp: 'Aktionen desselben Auslösers laufen in dieser Reihenfolge.',
     placeOf: (place: number, count: number) => `${place} von ${count}`,
     stopOnFailure: 'Die übrigen anhalten, wenn diese fehlschlägt',
@@ -384,7 +385,7 @@ export default {
     runTestHelp_webhook: 'Testen sendet einen Beispieleintrag, so sehen Sie, ob der Server wieder antwortet.',
     runTestHelp: 'Testen führt die Aktion mit einem Beispieleintrag aus, so sehen Sie, ob sie jetzt funktioniert.',
     runRetryWho:
-      'Wer die Einträge dieses Formulars sieht und seine Aktionen ändern darf, findet den Eintrag unter Einträge mit dem Filter Aktionen und kann den Lauf dort wiederholen. Wer Administratorrechte hat, kann ihn auch unter Aktivität › Zustellungen wiederholen.',
+      'Wer die Einträge dieses Formulars sieht und seine Aktionen ändern darf, findet den Eintrag unter „Einträge“ mit dem Filter „Aktionen“ und kann den Lauf dort wiederholen. Wer Administratorrechte hat, kann ihn auch unter Aktivität › Zustellungen wiederholen.',
     runError_http: (status: string) => `Der Server antwortete mit ${status}.`,
     runError_timed_out: 'Der Server hat nicht rechtzeitig geantwortet.',
     runError_no_connection: 'Der Server war nicht erreichbar.',

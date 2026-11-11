@@ -120,7 +120,7 @@ test('six steps fold where a word of a name would break inside it, and unfold wh
   await expect(steps.locator('ol > li')).toHaveCount(6);
 
   await expect(steps, 'folded').toHaveAttribute('data-jfb-compact', '');
-  await expect(steps.locator('.jfb-progress-text'), 'with "Step 1 of 6" in their place').toBeVisible();
+  await expect(steps.locator('.jfb-progress-text'), 'with "Page 1 of 6" in their place').toBeVisible();
   await axe(page, 'folded steps');
 
   await page.setViewportSize({ width: 1440, height: 900 });

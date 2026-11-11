@@ -89,7 +89,7 @@ describe('the look', () => {
 
   it('says a word with its values, and the name of a word it lacks', () => {
     expect(word(englishLook, 'counter', '255')).toBe('Up to 255 characters');
-    expect(word(englishLook, 'step', '2', '3')).toBe('Step 2 of 3');
+    expect(word(englishLook, 'step', '2', '3')).toBe('Page 2 of 3');
     expect(word(englishLook, 'noSuchWord')).toBe('noSuchWord');
   });
 });

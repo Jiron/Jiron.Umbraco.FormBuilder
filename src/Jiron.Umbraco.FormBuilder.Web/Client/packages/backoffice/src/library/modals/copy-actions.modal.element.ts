@@ -287,7 +287,7 @@ export class CopyActionsModalElement extends UmbModalBaseElement<CopyActionsModa
                   look="primary"
                   color="positive"
                   href=${screenPath(FORM_ENTITY_TYPE, target.key)}
-                  label=${this.localize.term('jfbLibrary_openForm', target.name)}
+                  label=${this.localize.term('jfbLibrary_openForm')}
                   @click=${this._submitModal}
                 ></uui-button>`
             : html`<uui-button label=${this.localize.term('general_cancel')} @click=${this._rejectModal}></uui-button>

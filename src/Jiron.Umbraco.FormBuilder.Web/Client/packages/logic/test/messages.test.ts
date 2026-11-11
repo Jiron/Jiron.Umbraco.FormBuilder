@@ -2,9 +2,10 @@
 // VisitorMessagesTests: a template's name without a value and a brace left open stay as written, a value is never read
 // as a template, and a culture takes its own words, its more general culture's or English's.
 import { describe, expect, it } from 'vitest';
-import { fill, messageWordsOf } from '../src/index.ts';
+import { fill, messageWordsOf, rewordMessages } from '../src/index.ts';
 import { de } from '../src/lang/messages.de.ts';
 import { en } from '../src/lang/messages.en.ts';
+import { MESSAGE_TABLES } from './message-tables.ts';
 
 describe('fill', () => {
   it('keeps a name it has no value for, as written', () => {
@@ -28,11 +29,35 @@ describe('messageWordsOf', () => {
   });
 
   it('falls back to English', () => {
+    expect(messageWordsOf('sv-SE', MESSAGE_TABLES)).toBe(en);
     expect(messageWordsOf('fr-FR', { en, de })).toBe(en);
     expect(messageWordsOf('', { en, de })).toBe(en);
   });
 
   it('refuses tables without English', () => {
     expect(() => messageWordsOf('fr', { de })).toThrow('no English');
+  });
+});
+
+describe('rewordMessages', () => {
+  it("takes a form's or a site's words in place of the table's: a word, a counting form and a category's name", () => {
+    const words = rewordMessages(en, {
+      email: 'Your email, please',
+      'minLength.other': 'At least {min} letters',
+      'captchaCategories.marketing': 'advertising',
+      nothing: 'x',
+    });
+    expect(words.email).toBe('Your email, please');
+    expect(words.minLength).toEqual({ one: en.minLength.one, other: 'At least {min} letters' });
+    expect(words.captchaCategories).toEqual({ marketing: 'advertising' });
+    expect(words.phone).toBe(en.phone);
+    expect(words).not.toHaveProperty('nothing');
+    expect(en.email).toBe('Enter an email address');
+  });
+
+  it('is the table itself without words of its own', () => {
+    expect(rewordMessages(en, undefined)).toBe(en);
+    expect(rewordMessages(en, null)).toBe(en);
+    expect(rewordMessages(en, {})).toBe(en);
   });
 });

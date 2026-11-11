@@ -15125,6 +15125,50 @@
           }
         ]
       }
+    },
+    "/umbraco/jfb/management/api/v1/visitor-texts": {
+      "get": {
+        "tags": [
+          "Visitor texts"
+        ],
+        "operationId": "VisitorTextsGet",
+        "parameters": [
+          {
+            "name": "culture",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/VisitorTextsResponseModel"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The resource is protected and requires an authentication token"
+          },
+          "403": {
+            "description": "The authenticated user does not have access to this resource"
+          }
+        },
+        "security": [
+          {
+            "Backoffice-User": []
+          }
+        ]
+      }
     }
   },
   "components": {
@@ -24755,6 +24799,75 @@
           }
         },
         "additionalProperties": false
+      },
+      "VisitorTextGroupResponseModel": {
+        "required": [
+          "alias",
+          "texts"
+        ],
+        "type": "object",
+        "properties": {
+          "alias": {
+            "type": "string"
+          },
+          "texts": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/VisitorTextResponseModel"
+                }
+              ]
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "VisitorTextResponseModel": {
+        "required": [
+          "key",
+          "text",
+          "values"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "values": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "VisitorTextsResponseModel": {
+        "required": [
+          "culture",
+          "groups"
+        ],
+        "type": "object",
+        "properties": {
+          "culture": {
+            "type": "string"
+          },
+          "groups": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/VisitorTextGroupResponseModel"
+                }
+              ]
+            }
+          }
+        },
+        "additionalProperties": false
       }
     },
     "securitySchemes": {
@@ -24870,6 +24983,9 @@
     },
     {
       "name": "Version"
+    },
+    {
+      "name": "Visitor texts"
     }
   ]
 }

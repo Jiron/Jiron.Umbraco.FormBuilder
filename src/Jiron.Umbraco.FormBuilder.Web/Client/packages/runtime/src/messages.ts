@@ -8,6 +8,8 @@
 import {
   BUILT_IN_TYPES,
   defaultMessage,
+  own as ownOf,
+  rewordMessages,
   summaryEntry,
   today,
   type Context,
@@ -39,6 +41,11 @@ export interface ShownError {
 const LANGUAGES = {
   en: () => import('@jfb/logic/lang/en').then((module) => module.en),
   de: () => import('@jfb/logic/lang/de').then((module) => module.de),
+  fr: () => import('@jfb/logic/lang/fr').then((module) => module.fr),
+  it: () => import('@jfb/logic/lang/it').then((module) => module.it),
+  nl: () => import('@jfb/logic/lang/nl').then((module) => module.nl),
+  es: () => import('@jfb/logic/lang/es').then((module) => module.es),
+  da: () => import('@jfb/logic/lang/da').then((module) => module.da),
 } as const satisfies Readonly<Record<string, () => Promise<MessageWords>>>;
 
 /** A language whose words the runtime has. */
@@ -64,6 +71,21 @@ export function wordsFor(culture: string): Promise<MessageWords> {
   if (words === undefined) {
     words = LANGUAGES[language]();
     loaded.set(language, words);
+  }
+  return words;
+}
+
+const reworded = new WeakMap<object, Promise<MessageWords>>();
+
+/**
+ * The words of a form's page: its culture's language's, the messages the form or its site rewords in their place
+ * (ADR-0230), worked out once per form.
+ */
+export function formWords(model: Pick<FormModel, 'culture' | 'texts'>): Promise<MessageWords> {
+  let words = reworded.get(model);
+  if (words === undefined) {
+    words = wordsFor(model.culture).then((own) => rewordMessages(own, model.texts));
+    reworded.set(model, words);
   }
   return words;
 }
@@ -179,8 +201,7 @@ function ownMessage(model: FormModel, field: ModelField, error: PageError): stri
   let own: string | null | undefined;
   if (error.code === 'check') own = error.check === undefined ? undefined : field.validation?.[error.check]?.message;
   else if (error.code === 'rule') own = model.form.validationRules?.find((rule) => rule.key === error.rule)?.message;
-  else
-    own = field.messages != null && Object.hasOwn(field.messages, error.code) ? field.messages[error.code] : undefined;
+  else own = ownOf(field.messages ?? {}, error.code);
   return textOf(own);
 }
 
@@ -189,7 +210,7 @@ const textOf = (text: string | null | undefined): string | null => (text == null
 /** Whether a field takes an answer, so it has a label; a site's own type is taken to. */
 function holdsValue(model: FormModel, field: ModelField): boolean {
   if (!builtIn(model, field)) return true;
-  return !Object.hasOwn(BUILT_IN_TYPES, field.type) || BUILT_IN_TYPES[field.type]?.holdsValue !== false;
+  return ownOf(BUILT_IN_TYPES, field.type)?.holdsValue !== false;
 }
 
 /** A field's element on the page: outside any row, or in a repeatable group's row. */

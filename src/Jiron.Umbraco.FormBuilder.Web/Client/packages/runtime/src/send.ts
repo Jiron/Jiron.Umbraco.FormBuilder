@@ -17,7 +17,7 @@ import type { PageErrors, ServerProblem } from './errors';
 import { hostOf, markupOf, swapForm } from './changed';
 import { countdownFrom } from './countdown';
 import { parseSanitised } from './html';
-import { wordsFor } from './messages';
+import { formWords } from './messages';
 import type { Places } from './places';
 import type { Captcha, CaptchaTold, Puzzle } from './protect-chunk';
 import { optionsByPost, type PageUploads, type UploadedFile } from './uploads';
@@ -407,7 +407,7 @@ export function senderOf(form: HTMLFormElement, model: FormModel, options: Sende
       const puzzle = challenges.puzzle();
       if (puzzle === undefined) return undefined;
       const hint = setTimeout(() => {
-        void wordsFor(model.culture).then((words) => {
+        void formWords(model).then((words) => {
           if (live !== null && primary.hasAttribute(BUSY)) live.textContent = words.proofHint;
         });
       }, SLOW);

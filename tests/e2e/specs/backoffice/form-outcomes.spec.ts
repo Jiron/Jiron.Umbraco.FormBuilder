@@ -154,7 +154,7 @@ test('After sending edits each outcome in its sidebar, with its rule and its mes
 
   // The sidebar's place moves it without dragging, and says first where no visitor would get it.
   await rowOf(list, 'Redirect to /press/thanks').click();
-  await sidebar.getByLabel('Place in the list').selectOption({ label: '2 of 2' });
+  await sidebar.getByLabel('Position in the list').selectOption({ label: '2 of 2' });
   await expect(sidebar.locator('#rule-never')).toHaveText('Never used: an outcome above is used for every visitor');
   await sidebar.getByRole('button', { name: 'Update', exact: true }).click();
   await expect(sidebar).toHaveCount(0);

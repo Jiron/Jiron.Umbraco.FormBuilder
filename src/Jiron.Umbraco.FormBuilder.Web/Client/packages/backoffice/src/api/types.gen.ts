@@ -2311,6 +2311,22 @@ export type UpdateThemeRequestModel = {
     theme: ThemeRequestModel;
 };
 
+export type VisitorTextGroupResponseModel = {
+    alias: string;
+    texts: Array<VisitorTextResponseModel>;
+};
+
+export type VisitorTextResponseModel = {
+    key: string;
+    text: string;
+    values: Array<string>;
+};
+
+export type VisitorTextsResponseModel = {
+    culture: string;
+    groups: Array<VisitorTextGroupResponseModel>;
+};
+
 export type FormDocumentReferenceResponseModelWritable = {
     id: string;
     name?: string | null;
@@ -9101,3 +9117,32 @@ export type VersionCompareResponses = {
 };
 
 export type VersionCompareResponse = VersionCompareResponses[keyof VersionCompareResponses];
+
+export type VisitorTextsGetData = {
+    body?: never;
+    path?: never;
+    query?: {
+        culture?: string;
+    };
+    url: '/umbraco/jfb/management/api/v1/visitor-texts';
+};
+
+export type VisitorTextsGetErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+};
+
+export type VisitorTextsGetResponses = {
+    /**
+     * OK
+     */
+    200: VisitorTextsResponseModel;
+};
+
+export type VisitorTextsGetResponse = VisitorTextsGetResponses[keyof VisitorTextsGetResponses];

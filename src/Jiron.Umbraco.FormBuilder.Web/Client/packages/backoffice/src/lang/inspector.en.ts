@@ -207,7 +207,7 @@ export default {
     options_moved: (label: string, position: number, count: number) =>
       `Moved. ${label}: position ${position} of ${count}.`,
     options_edge: "It can't move any further.",
-    options_place: 'Place in the list',
+    options_place: 'Position in the list',
     options_placeOf: (place: number, count: number) => `${place} of ${count}`,
     options_labelOf: (number: number) => `Label of option ${number}`,
     options_details: (label: string) => `Details of ${label}`,

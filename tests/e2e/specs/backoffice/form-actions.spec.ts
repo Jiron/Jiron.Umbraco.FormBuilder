@@ -160,7 +160,7 @@ test('the Actions view adds an action from a preset, moves it by drag and keyboa
 
   // Without dragging, a pointer chooses its place in its sidebar (WCAG 2.5.7); Ctrl+Z takes the move back.
   await cardOf(view, 'Mark as approved').click();
-  await sidebar.getByRole('combobox', { name: 'Place in the list' }).selectOption({ label: '1 of 2' });
+  await sidebar.getByRole('combobox', { name: 'Position in the list' }).selectOption({ label: '1 of 2' });
   await sidebar.getByRole('button', { name: 'Update', exact: true }).click();
   await expect(sidebar).toHaveCount(0);
   await expect(names).toHaveText(['Mark as approved', 'Email the team']);

@@ -43,7 +43,9 @@ chosen, and a box in another language shows the default text as its placeholder.
    - in the Settings view: the box of the submit, next and back labels and of the closed message, beside its label, and
      a closed group's line says it once for the texts inside it; an outcome's row in the outcome list;
    - in the Actions view: an action's card, for any text of the action's settings (an email's subject and body).
-   The marks read the draft only; they change nothing and need no server.
+   The marks read the draft only; they change nothing and need no server. A text whose default is exactly `#key` lacks
+   no language: the dictionary holds its text in each one, and the line under its box (3.) says what visitors see, so
+   the chip would say something untrue (found in the German walk of 14.1).
 2. **The dictionary picker.** A plain text box of an element's own (a field's label, help and placeholder, a page's or
    group's title, a button's label, an email's subject) has the button "Use a dictionary item" at the end of its row,
    shown while the row is hovered or holds the focus, and only to a user whose groups open Umbraco's Translation
@@ -70,3 +72,8 @@ chosen, and a box in another language shows the default text as its placeholder.
   (`{{ dictionary.key }}`), as before.
 - Option labels and the error messages take `#key` typed, without the button, so the option editor's rows and the
   Validation section keep one line each.
+- The German walk of 14.1 (docs/ux/review-14.1.md) brought two more rules for words the screens build. A rule's
+  condition inside a sentence takes its language's clause order (`jfbRules_clause`): German puts the verb last and quotes
+  a field's name ("Pflicht, wenn „Gäste“ kleiner als 7 ist"), English keeps its order. And the package's default theme,
+  whose name is a word rather than a name, is said in the backoffice's language wherever a theme is named
+  (`jfbSection_defaultTheme`: Default, Standard); a site's theme keeps the label it registers.

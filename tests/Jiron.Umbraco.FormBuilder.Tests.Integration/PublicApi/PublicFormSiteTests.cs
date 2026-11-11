@@ -112,6 +112,7 @@ public sealed class PublicFormSiteTests : PublicApiTestBase
             SubmitLabel = new Dictionary<string, string> { [""] = "Send for the allowlist" },
             NextLabel = new Dictionary<string, string> { [""] = "Next for the allowlist" },
             BackLabel = new Dictionary<string, string> { [""] = "Back for the allowlist" },
+            Texts = new Dictionary<string, IReadOnlyDictionary<string, string>> { ["message.email"] = new Dictionary<string, string> { [""] = "Email for the allowlist" } },
             Theme = "bootstrap5",
             NewForms = new NewFormDefaults { NotifyCreator = true, Consent = new NewFormConsent { Label = new Dictionary<string, string> { [""] = "JFB_TEST consent label" }, Text = new Dictionary<string, string> { [""] = "<p>JFB_TEST consent text</p>" } } },
             History = new HistorySettings { DraftDays = 7, DraftCount = 3 },
@@ -159,6 +160,7 @@ public sealed class PublicFormSiteTests : PublicApiTestBase
         var set = await JsonAsync(after);
         var allowed = set.DeepClone();
         allowed["timeZone"] = unset["timeZone"]!.DeepClone();
+        allowed["texts"] = unset["texts"]!.DeepClone();
         var settings = allowed["form"]!["settings"]!.AsObject();
         var defaults = unset["form"]!["settings"]!.AsObject();
         foreach (var name in new[] { "requiredMarker", "submitLabel", "nextLabel", "backLabel", "theme" })
@@ -180,6 +182,7 @@ public sealed class PublicFormSiteTests : PublicApiTestBase
             Assert.That(sections, Is.EquivalentTo(new[] { typeof(GeneralSettings), typeof(ProtectionSettings), typeof(EmailSettings), typeof(IntegrationSettings), typeof(PrivacySettings), typeof(FilesSettings) }), "a new section is filled here too");
             Assert.That(unchanged, Is.Empty, "a new field is filled here too");
             Assert.That(set["timeZone"]!.GetValue<string>(), Is.EqualTo("Pacific/Chatham"), "visitors get the time zone");
+            Assert.That(set["texts"]!.ToJsonString(), Is.EqualTo("""{"email":"Email for the allowlist"}"""), "and the site's wording of a message, by its name in the table");
             Assert.That(set["form"]!["settings"]!["requiredMarker"]!.GetValue<string>(), Is.EqualTo("none"), "the style of a form that inherits it");
             Assert.That(set["form"]!["settings"]!["submitLabel"]!.GetValue<string>(), Is.EqualTo(defaults["submitLabel"]?.GetValue<string>() ?? "Send for the allowlist"), "and a label the form has not");
             Assert.That(set["form"]!["settings"]!["theme"]!.GetValue<string>(), Is.EqualTo(defaults["theme"]?.GetValue<string>() ?? "bootstrap5"), "and the site's theme for a form without one (ADR-0105)");

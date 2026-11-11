@@ -79,7 +79,7 @@ export default {
     name: 'Name',
     nameHelp: 'Shown on its card and in the deliveries log.',
     trigger: 'When it runs',
-    place: 'Place in the list',
+    place: 'Position in the list',
     placeHelp: 'Actions of the same trigger run in this order.',
     placeOf: (place: number, count: number) => `${place} of ${count}`,
     stopOnFailure: 'Stop the rest if this fails',

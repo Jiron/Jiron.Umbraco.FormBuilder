@@ -60,8 +60,8 @@ internal static class FieldDisplayDefaults
 }
 
 /// <summary>
-/// The words a field's answers are shown with (ADR-0066), in English and German so far; 14.2 adds the other five
-/// languages. A culture without its own words takes its more general culture's, then English.
+/// The words a field's answers are shown with (ADR-0066), in the seven languages of the visitor texts (ADR-0230). A
+/// culture without its own words takes its more general culture's, then English.
 /// </summary>
 internal static class FieldDisplayWords
 {
@@ -69,6 +69,11 @@ internal static class FieldDisplayWords
     {
         ["en"] = ("Yes", "No"),
         ["de"] = ("Ja", "Nein"),
+        ["fr"] = ("Oui", "Non"),
+        ["it"] = ("S\u00ec", "No"),
+        ["nl"] = ("Ja", "Nee"),
+        ["es"] = ("S\u00ed", "No"),
+        ["da"] = ("Ja", "Nej"),
     }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>The cultures with words of their own.</summary>

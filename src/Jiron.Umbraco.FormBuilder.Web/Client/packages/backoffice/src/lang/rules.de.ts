@@ -7,6 +7,41 @@ const UNITS: Readonly<Record<string, readonly [string, string]>> = {
   m: ['Monat', 'Monate'],
   y: ['Jahr', 'Jahre'],
 };
+/**
+ * A condition inside a sentence, which a "wenn" opens: the verb goes last ("wenn die Sprache mit „de“ beginnt"), and
+ * "nicht" before what it denies. By the operator's key, as `op_<key>` names its words.
+ */
+const CLAUSES: Readonly<Record<string, (subject: string, value: string) => string>> = {
+  equals: (s, v) => `${s} ${v} ist`,
+  notEquals: (s, v) => `${s} nicht ${v} ist`,
+  isOneOf: (s, v) => `${s} eines von ${v} ist`,
+  isNoneOf: (s, v) => `${s} keines von ${v} ist`,
+  isEmpty: (s) => `${s} leer ist`,
+  isNotEmpty: (s) => `${s} nicht leer ist`,
+  countAtLeast: (s, v) => `${s} mindestens ${v} hat`,
+  countAtMost: (s, v) => `${s} höchstens ${v} hat`,
+  contains: (s, v) => `${s} ${v} enthält`,
+  notContains: (s, v) => `${s} ${v} nicht enthält`,
+  startsWith: (s, v) => `${s} mit ${v} beginnt`,
+  endsWith: (s, v) => `${s} mit ${v} endet`,
+  matches: (s) => `${s} zu einem Muster passt`,
+  greaterThan: (s, v) => `${s} größer als ${v} ist`,
+  lessThan: (s, v) => `${s} kleiner als ${v} ist`,
+  between: (s, v) => `${s} zwischen ${v} liegt`,
+  isChecked: (s) => `${s} angekreuzt ist`,
+  isNotChecked: (s) => `${s} nicht angekreuzt ist`,
+  after: (s, v) => `${s} nach ${v} ist`,
+  before: (s, v) => `${s} vor ${v} ist`,
+  hasTicked: (s, v) => `${s} ${v} angekreuzt hat`,
+  hasNotTicked: (s, v) => `${s} ${v} nicht angekreuzt hat`,
+  signedIn: (s) => `${s} angemeldet ist`,
+  notSignedIn: (s) => `${s} nicht angemeldet ist`,
+  groupsInclude: (s, v) => `${s} ${v} enthalten`,
+  groupsExclude: (s, v) => `${s} ${v} nicht enthalten`,
+  groupsIncludeOneOf: (s, v) => `${s} eine von ${v} enthalten`,
+  groupsIncludeNoneOf: (s, v) => `${s} keine von ${v} enthalten`,
+};
+
 const unit = (count: number, code: string) => {
   const words = UNITS[code] ?? ['Tag', 'Tage'];
   return `${count} ${count === 1 ? words[0] : words[1]}`;
@@ -54,6 +89,11 @@ export default {
     or: 'oder',
     listSeparator: ', ',
     quoted: (text: string) => `„${text}“`,
+    /** A field's name inside a sentence, quoted, so a name that reads as a verb or a question stays a name. */
+    named: (name: string) => `„${name}“`,
+    /** A condition inside a sentence, the verb last (`CLAUSES`); in the list's order for an operator it has none for. */
+    clause: (subject: string, op: string, words: string, value: string) =>
+      CLAUSES[op]?.(subject, value) ?? [subject, words, value].filter((part) => part !== '').join(' '),
     answerTo: (name: string) => `Antwort auf ${name}`,
     today: 'heute',
     afterToday: (count: number, code: string) => `heute plus ${unit(count, code)}`,

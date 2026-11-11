@@ -53,6 +53,7 @@ vi.mock('../../api', async (original) => ({
     return server.fails ? undefined : server.choices;
   },
   captchaProviderList: async () => (server.fails ? undefined : server.providers),
+  visitorTextsGet: async ({ query }: { query: { culture: string } }) => ({ culture: query.culture, groups: [] }),
 }));
 
 vi.mock('../preview/look', async (original) => ({

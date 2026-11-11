@@ -13,6 +13,9 @@ describe('what a translator has left', () => {
     expect(lacks({ '': 'Email', 'DE-de': 'E-Mail' }, 'de-DE')).toBe(false);
     // Written only in German: visitors in French read the empty default.
     expect(lacks({ '': '', 'de-DE': 'Nur Deutsch' }, 'fr-FR')).toBe(true);
+    // A default naming a dictionary item is the dictionary's to translate.
+    expect(lacks({ '': '#Demo.Login.Email' }, 'de-DE')).toBe(false);
+    expect(lacks({ '': '#Demo.Login.Email and more' }, 'de-DE')).toBe(true);
     // Nothing written lacks nothing.
     expect(lacks({ '': '  ' }, 'de-DE')).toBe(false);
     expect(lacks(null, 'de-DE')).toBe(false);

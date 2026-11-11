@@ -19,17 +19,25 @@ namespace Jiron.Umbraco.FormBuilder.Core.Forms;
 /// and a grid row's, whether it can be required, and whether its type is the built-in one of its alias.
 /// </param>
 /// <param name="Formats">The culture's formats of numbers and dates, which messages and merge tags print with.</param>
-/// <param name="Words">The culture's words for yes and no.</param>
+/// <param name="Words">The culture's words for yes and no, a site's or the form's own among them.</param>
 /// <param name="MergeTags">What the browser renders the visitor texts that hold tags with; JSON <c>null</c> for none.</param>
 /// <param name="Consents">Each consent field's wording hash, by the field's key.</param>
-internal sealed record VisitorAnswer(byte[] Form, byte[] Fields, byte[] Formats, byte[] Words, byte[] MergeTags, byte[] Consents);
+/// <param name="Texts">
+/// The messages the site or the form rewords in the culture, by their names in the browser's tables, such as
+/// <c>minLength.one</c> (ADR-0230); an empty object for none.
+/// </param>
+internal sealed record VisitorAnswer(byte[] Form, byte[] Fields, byte[] Formats, byte[] Words, byte[] MergeTags, byte[] Consents, byte[] Texts);
 
 /// <summary>A published form as a visitor's page shows it (ADR-0093): the visitor's form, and its parts as JSON.</summary>
 /// <param name="Form">The projection with each text as the culture shows it, a consent's text as the wording it shows.</param>
 /// <param name="Answer">Its parts as the form endpoint writes them.</param>
 /// <param name="Tagged">The visitor texts that hold tags, in the form's order, which the page renders with its answers (ADR-0095).</param>
 /// <param name="Consents">Each consent field's wording hash by the field's key, as <see cref="VisitorAnswer.Consents"/> writes them (ADR-0096).</param>
-internal sealed record VisitorPage(PublicForm Form, VisitorAnswer Answer, IReadOnlyList<VisitorText> Tagged, IReadOnlyDictionary<Guid, string> Consents);
+/// <param name="Texts">
+/// The visitor texts the form or the site rewords in the culture, by their keys, as they show (ADR-0230): the server renders
+/// with them in the package's place.
+/// </param>
+internal sealed record VisitorPage(PublicForm Form, VisitorAnswer Answer, IReadOnlyList<VisitorText> Tagged, IReadOnlyDictionary<Guid, string> Consents, IReadOnlyDictionary<string, string> Texts);
 
 /// <summary>
 /// A published form as a visitor's page gets it in one culture (ADR-0084, ADR-0085): the site's required-marker style
@@ -75,7 +83,9 @@ internal sealed class VisitorForms(
         ArgumentNullException.ThrowIfNull(projection);
         ArgumentNullException.ThrowIfNull(scope);
         var culture = scope.Culture;
-        var site = WithSite(projection, (await settings.GetAsync<GeneralSettings>(scope.Site, cancellationToken)).Value);
+        var general = (await settings.GetAsync<GeneralSettings>(scope.Site, cancellationToken)).Value;
+        var site = WithSite(projection, general);
+        var reworded = VisitorWording.ForCulture(projection.Settings.Texts, general.Texts, culture);
 
         // The dictionary items the texts name in this culture, read at once.
         var keys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -91,11 +101,51 @@ internal sealed class VisitorForms(
                 return string.Empty;
             },
             types);
+        foreach (var wording in reworded.Values)
+        {
+            if (LocalizedString.TryGetDictionaryKey(wording, out var key))
+            {
+                keys.Add(key);
+            }
+        }
+
         var items = keys.Count == 0 ? DictionaryTexts.None : await dictionary.TextsAsync(keys, culture);
         var (shown, hashes) = await WithWordingsAsync(VisitorForm.Map(site, text => Show(text, culture, items), types), scope, cancellationToken);
         var (tags, tagged) = await MergeTagsAsync(shown, scope, cancellationToken);
-        var answer = new VisitorAnswer(VisitorForm.Write(shown), Fields(shown), Formats(culture), Words(culture), tags, Consents(hashes));
-        return new VisitorPage(shown, answer, tagged, hashes.ToDictionary(pair => pair.Field, pair => pair.Hash));
+        var texts = VisitorWording.Shown(reworded.ToDictionary(pair => pair.Key, pair => Show(new LocalizedText(pair.Value), culture, items), StringComparer.Ordinal));
+        var answer = new VisitorAnswer(VisitorForm.Write(shown), Fields(shown), Formats(culture), Words(culture, texts), tags, Consents(hashes), Texts(texts));
+        return new VisitorPage(shown, answer, tagged, hashes.ToDictionary(pair => pair.Field, pair => pair.Hash), texts);
+    }
+
+    /// <summary>
+    /// The visitor texts a form or its site rewords in a culture, as they show (ADR-0230): what a page that shows no form,
+    /// such as a post's notice, says them with.
+    /// </summary>
+    /// <param name="projection">The form's public projection.</param>
+    /// <param name="culture">The culture.</param>
+    /// <param name="site">The site's root, or null for every site's settings.</param>
+    /// <param name="cancellationToken">Cancels the reads.</param>
+    public async Task<IReadOnlyDictionary<string, string>> TextsAsync(PublicForm projection, string culture, Guid? site, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(projection);
+        var general = (await settings.GetAsync<GeneralSettings>(site, cancellationToken)).Value;
+        var reworded = VisitorWording.ForCulture(projection.Settings.Texts, general.Texts, culture);
+        if (reworded.Count == 0)
+        {
+            return VisitorWording.None;
+        }
+
+        var keys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var wording in reworded.Values)
+        {
+            if (LocalizedString.TryGetDictionaryKey(wording, out var key))
+            {
+                keys.Add(key);
+            }
+        }
+
+        var items = keys.Count == 0 ? DictionaryTexts.None : await dictionary.TextsAsync(keys, culture);
+        return VisitorWording.Shown(reworded.ToDictionary(pair => pair.Key, pair => Show(new LocalizedText(pair.Value), culture, items), StringComparer.Ordinal));
     }
 
     // The site's style for a form whose marker is inherit, the site's label for each button the form labels not itself
@@ -409,14 +459,32 @@ internal sealed class VisitorForms(
         return buffer.WrittenSpan.ToArray();
     }
 
-    private static byte[] Words(string culture)
+    private static byte[] Words(string culture, IReadOnlyDictionary<string, string> texts)
     {
         var buffer = new ArrayBufferWriter<byte>();
         using (var writer = new Utf8JsonWriter(buffer))
         {
             writer.WriteStartObject();
-            writer.WriteString("yes", FieldDisplayWords.Yes(culture));
-            writer.WriteString("no", FieldDisplayWords.No(culture));
+            writer.WriteString("yes", VisitorWording.Yes(culture, texts));
+            writer.WriteString("no", VisitorWording.No(culture, texts));
+            writer.WriteEndObject();
+        }
+
+        return buffer.WrittenSpan.ToArray();
+    }
+
+    // The reworded messages by their names in the browser's tables (ADR-0230).
+    private static byte[] Texts(IReadOnlyDictionary<string, string> texts)
+    {
+        var buffer = new ArrayBufferWriter<byte>();
+        using (var writer = new Utf8JsonWriter(buffer))
+        {
+            writer.WriteStartObject();
+            foreach (var (name, wording) in VisitorWording.Messages(texts).OrderBy(pair => pair.Key, StringComparer.Ordinal))
+            {
+                writer.WriteString(name, wording);
+            }
+
             writer.WriteEndObject();
         }
 

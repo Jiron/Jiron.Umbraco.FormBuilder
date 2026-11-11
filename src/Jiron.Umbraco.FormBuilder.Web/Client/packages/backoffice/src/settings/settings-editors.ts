@@ -9,6 +9,8 @@ import type { FieldSettingResponseModel, SettingsSectionResponseModel } from '..
 import type { LocalizedText } from '../designer/definition';
 import { boxValue } from '../designer/inspector/box-value';
 import '../designer/inspector/rich-text.element';
+import '../designer/settings/visitor-texts.element';
+import { isVisitorTexts, type VisitorTexts } from '../designer/settings/visitor-texts';
 import { boxId, settingEditor, settingFrame, type EditorContext } from '../designer/inspector/setting-editor';
 import { parseChoices } from '../designer/inspector/setting-values';
 import { textIn } from '../designer/preview/field-models';
@@ -274,6 +276,20 @@ export function settingsEditors(host: SettingsEditorHost): Readonly<Record<strin
     // Each way an entry keeps the address, with its line; the full one, which the host must allow, greyed with the key
     // that allows it (ADR-0224).
     ipHandling: (setting, value, path) => restricted(setting, value, path, 'full', facts.privacy?.fullIp ?? false),
+
+    // The site's own wording of the package's visitor texts (ADR-0230), in the language the screen edits; none for the
+    // package's words.
+    visitorTexts: (setting, value, path) =>
+      html`<fieldset class="item" id=${boxId(path)}>
+        <legend class="label">${context.say(setting.label)}</legend>
+        ${setting.description ? html`<p class="help">${context.say(setting.description)}</p>` : nothing}
+        <jfb-visitor-texts
+          .texts=${isVisitorTexts(value) ? value : undefined}
+          culture=${context.culture}
+          @change=${(event: CustomEvent<{ texts: VisitorTexts }>) =>
+            host.put(path, Object.keys(event.detail.texts).length > 0 ? event.detail.texts : null)}
+        ></jfb-visitor-texts>
+      </fieldset>`,
 
     // A switch, and once it is on the field's label and wording under it, in the language the screen edits.
     newFormConsent: (setting, value, path) => {

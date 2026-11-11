@@ -159,7 +159,7 @@ for (const javaScriptEnabled of [false, true]) {
     }) => {
       const form = await toSummary(page);
       await expect(form.locator('.jfb-progress-bar progress')).toHaveAttribute('value', '2');
-      await expect(form.locator('.jfb-progress-text')).toHaveText('Step 2 of 2');
+      await expect(form.locator('.jfb-progress-text')).toHaveText('Page 2 of 2');
       await expect(form.locator('.jfb-summary > section > h3')).toHaveText(['Every field type']);
       await expect(rowOf(form, 'Name on your library card').answer).toHaveText('Mira Okafor');
       await expect(rowOf(form, 'Branch').answer).toHaveText('Riverside');

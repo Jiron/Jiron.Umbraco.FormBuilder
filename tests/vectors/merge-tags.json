@@ -329,6 +329,426 @@
           "negative": "-n\u00a0$"
         }
       },
+      "it-IT": {
+        "monthsGenitive": [
+          "gennaio",
+          "febbraio",
+          "marzo",
+          "aprile",
+          "maggio",
+          "giugno",
+          "luglio",
+          "agosto",
+          "settembre",
+          "ottobre",
+          "novembre",
+          "dicembre"
+        ],
+        "monthsShortGenitive": [
+          "gen",
+          "feb",
+          "mar",
+          "apr",
+          "mag",
+          "giu",
+          "lug",
+          "ago",
+          "set",
+          "ott",
+          "nov",
+          "dic"
+        ],
+        "am": "AM",
+        "pm": "PM",
+        "minus": "-",
+        "dates": {
+          "short": "dd/MM/yyyy",
+          "medium": "d MMM yyyy",
+          "long": "dddd d MMMM yyyy",
+          "time": "HH:mm",
+          "dateTime": "dd/MM/yyyy HH:mm"
+        },
+        "months": [
+          "gennaio",
+          "febbraio",
+          "marzo",
+          "aprile",
+          "maggio",
+          "giugno",
+          "luglio",
+          "agosto",
+          "settembre",
+          "ottobre",
+          "novembre",
+          "dicembre"
+        ],
+        "monthsShort": [
+          "gen",
+          "feb",
+          "mar",
+          "apr",
+          "mag",
+          "giu",
+          "lug",
+          "ago",
+          "set",
+          "ott",
+          "nov",
+          "dic"
+        ],
+        "days": [
+          "domenica",
+          "luned\u00ec",
+          "marted\u00ec",
+          "mercoled\u00ec",
+          "gioved\u00ec",
+          "venerd\u00ec",
+          "sabato"
+        ],
+        "daysShort": [
+          "dom",
+          "lun",
+          "mar",
+          "mer",
+          "gio",
+          "ven",
+          "sab"
+        ],
+        "number": {
+          "decimal": ",",
+          "group": ".",
+          "sizes": [
+            3
+          ],
+          "negative": "-n"
+        },
+        "currency": {
+          "code": "EUR",
+          "symbol": "\u20ac",
+          "decimal": ",",
+          "group": ".",
+          "sizes": [
+            3
+          ],
+          "positive": "n\u00a0$",
+          "negative": "-n\u00a0$"
+        }
+      },
+      "nl-NL": {
+        "monthsGenitive": [
+          "januari",
+          "februari",
+          "maart",
+          "april",
+          "mei",
+          "juni",
+          "juli",
+          "augustus",
+          "september",
+          "oktober",
+          "november",
+          "december"
+        ],
+        "monthsShortGenitive": [
+          "jan",
+          "feb",
+          "mrt",
+          "apr",
+          "mei",
+          "jun",
+          "jul",
+          "aug",
+          "sep",
+          "okt",
+          "nov",
+          "dec"
+        ],
+        "am": "AM",
+        "pm": "PM",
+        "minus": "-",
+        "dates": {
+          "short": "dd-MM-yyyy",
+          "medium": "d MMM yyyy",
+          "long": "dddd d MMMM yyyy",
+          "time": "HH:mm",
+          "dateTime": "dd-MM-yyyy HH:mm"
+        },
+        "months": [
+          "januari",
+          "februari",
+          "maart",
+          "april",
+          "mei",
+          "juni",
+          "juli",
+          "augustus",
+          "september",
+          "oktober",
+          "november",
+          "december"
+        ],
+        "monthsShort": [
+          "jan",
+          "feb",
+          "mrt",
+          "apr",
+          "mei",
+          "jun",
+          "jul",
+          "aug",
+          "sep",
+          "okt",
+          "nov",
+          "dec"
+        ],
+        "days": [
+          "zondag",
+          "maandag",
+          "dinsdag",
+          "woensdag",
+          "donderdag",
+          "vrijdag",
+          "zaterdag"
+        ],
+        "daysShort": [
+          "zo",
+          "ma",
+          "di",
+          "wo",
+          "do",
+          "vr",
+          "za"
+        ],
+        "number": {
+          "decimal": ",",
+          "group": ".",
+          "sizes": [
+            3
+          ],
+          "negative": "-n"
+        },
+        "currency": {
+          "code": "EUR",
+          "symbol": "\u20ac",
+          "decimal": ",",
+          "group": ".",
+          "sizes": [
+            3
+          ],
+          "positive": "$\u00a0n",
+          "negative": "$\u00a0-n"
+        }
+      },
+      "es-ES": {
+        "monthsGenitive": [
+          "enero",
+          "febrero",
+          "marzo",
+          "abril",
+          "mayo",
+          "junio",
+          "julio",
+          "agosto",
+          "septiembre",
+          "octubre",
+          "noviembre",
+          "diciembre"
+        ],
+        "monthsShortGenitive": [
+          "ene",
+          "feb",
+          "mar",
+          "abr",
+          "may",
+          "jun",
+          "jul",
+          "ago",
+          "sept",
+          "oct",
+          "nov",
+          "dic"
+        ],
+        "am": "AM",
+        "pm": "PM",
+        "minus": "-",
+        "dates": {
+          "short": "dd/MM/yyyy",
+          "medium": "d MMM yyyy",
+          "long": "dddd, d 'de' MMMM 'de' yyyy",
+          "time": "H:mm",
+          "dateTime": "dd/MM/yyyy H:mm"
+        },
+        "months": [
+          "enero",
+          "febrero",
+          "marzo",
+          "abril",
+          "mayo",
+          "junio",
+          "julio",
+          "agosto",
+          "septiembre",
+          "octubre",
+          "noviembre",
+          "diciembre"
+        ],
+        "monthsShort": [
+          "ene",
+          "feb",
+          "mar",
+          "abr",
+          "may",
+          "jun",
+          "jul",
+          "ago",
+          "sept",
+          "oct",
+          "nov",
+          "dic"
+        ],
+        "days": [
+          "domingo",
+          "lunes",
+          "martes",
+          "mi\u00e9rcoles",
+          "jueves",
+          "viernes",
+          "s\u00e1bado"
+        ],
+        "daysShort": [
+          "dom",
+          "lun",
+          "mar",
+          "mi\u00e9",
+          "jue",
+          "vie",
+          "s\u00e1b"
+        ],
+        "number": {
+          "decimal": ",",
+          "group": ".",
+          "sizes": [
+            3
+          ],
+          "negative": "-n"
+        },
+        "currency": {
+          "code": "EUR",
+          "symbol": "\u20ac",
+          "decimal": ",",
+          "group": ".",
+          "sizes": [
+            3
+          ],
+          "positive": "n\u00a0$",
+          "negative": "-n\u00a0$"
+        }
+      },
+      "da-DK": {
+        "monthsGenitive": [
+          "januar",
+          "februar",
+          "marts",
+          "april",
+          "maj",
+          "juni",
+          "juli",
+          "august",
+          "september",
+          "oktober",
+          "november",
+          "december"
+        ],
+        "monthsShortGenitive": [
+          "jan.",
+          "feb.",
+          "mar.",
+          "apr.",
+          "maj",
+          "jun.",
+          "jul.",
+          "aug.",
+          "sep.",
+          "okt.",
+          "nov.",
+          "dec."
+        ],
+        "am": "AM",
+        "pm": "PM",
+        "minus": "-",
+        "dates": {
+          "short": "dd.MM.yyyy",
+          "medium": "d. MMM yyyy",
+          "long": "dddd 'den' d. MMMM yyyy",
+          "time": "HH.mm",
+          "dateTime": "dd.MM.yyyy HH.mm"
+        },
+        "months": [
+          "januar",
+          "februar",
+          "marts",
+          "april",
+          "maj",
+          "juni",
+          "juli",
+          "august",
+          "september",
+          "oktober",
+          "november",
+          "december"
+        ],
+        "monthsShort": [
+          "jan.",
+          "feb.",
+          "mar.",
+          "apr.",
+          "maj",
+          "jun.",
+          "jul.",
+          "aug.",
+          "sep.",
+          "okt.",
+          "nov.",
+          "dec."
+        ],
+        "days": [
+          "s\u00f8ndag",
+          "mandag",
+          "tirsdag",
+          "onsdag",
+          "torsdag",
+          "fredag",
+          "l\u00f8rdag"
+        ],
+        "daysShort": [
+          "s\u00f8n.",
+          "man.",
+          "tirs.",
+          "ons.",
+          "tors.",
+          "fre.",
+          "l\u00f8r."
+        ],
+        "number": {
+          "decimal": ",",
+          "group": ".",
+          "sizes": [
+            3
+          ],
+          "negative": "-n"
+        },
+        "currency": {
+          "code": "DKK",
+          "symbol": "kr.",
+          "decimal": ",",
+          "group": ".",
+          "sizes": [
+            3
+          ],
+          "positive": "n\u00a0$",
+          "negative": "-n\u00a0$"
+        }
+      },
       "pl-PL": {
         "monthsGenitive": [
           "stycznia",

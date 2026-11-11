@@ -10,11 +10,11 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Definitions;
 /// </summary>
 internal static class ModelProperties
 {
-    /// <summary>The leaf types: values with a converter of their own, which the schema describes as a whole.</summary>
+    /// <summary>The leaf types: values with a converter of their own, and the visitor texts' map, which the schema describes as a whole.</summary>
     public static readonly IReadOnlySet<Type> Leaves = new HashSet<Type>
     {
         typeof(string), typeof(int), typeof(bool), typeof(Guid), typeof(DateTime), typeof(LocalizedText), typeof(LocalizedHtml),
-        typeof(FieldDefaultValue), typeof(ConditionOperand), typeof(SettingsObject),
+        typeof(FieldDefaultValue), typeof(ConditionOperand), typeof(SettingsObject), typeof(IReadOnlyDictionary<string, IReadOnlyDictionary<string, string>>),
     };
 
     private static readonly Lazy<(Dictionary<string, Dictionary<string, string?>> Types, Dictionary<(string, string), string> Derived, Dictionary<string, Type> Clr)> Model = new(Build);

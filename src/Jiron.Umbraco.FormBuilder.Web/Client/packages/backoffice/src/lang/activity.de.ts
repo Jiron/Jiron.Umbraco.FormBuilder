@@ -114,7 +114,7 @@ export default {
     what_settings: 'Einstellungen und Zugriff',
     whoClear: (name: string) => `Alle zeigen, nicht nur ${name}`,
     chipWho: (name: string) => `Wer: ${name}`,
-    showOnly: (name: string) => `Nur Aktionen von ${name} zeigen`,
+    showOnly: (name: string) => `Nur Änderungen von ${name} zeigen`,
     export: 'Exportieren',
     exportFailed: 'Das Protokoll konnte nicht exportiert werden. Versuchen Sie es gleich noch einmal.',
     auditCaption: 'Protokollierte Aktionen, die neuesten zuerst',
@@ -154,7 +154,7 @@ export default {
     detail_uncertain: 'Vielleicht schon angekommen',
     detail_folders: 'Ordner',
     detail_forms: 'Formulare',
-    entryState_submitted: 'Eingereicht',
+    entryState_submitted: 'Gesendet',
     entryState_approved: 'Genehmigt',
     entryState_rejected: 'Abgelehnt',
     entryState_spam: 'Spam',
@@ -218,7 +218,7 @@ export default {
     audit_folder_restored: 'Den Ordner aus dem Papierkorb wiederhergestellt',
     audit_folder_trashed: 'Den Ordner in den Papierkorb verschoben',
     audit_form_actionsCopied: (f: AuditFacts) => `${count(f.count, 'Aktion', 'Aktionen')} in das Formular kopiert`,
-    audit_form_created: 'Das Formular erstellt',
+    audit_form_created: 'Formular erstellt',
     audit_form_createdFromTemplate: 'Das Formular aus einer Vorlage erstellt',
     audit_form_deleted: (f: AuditFacts) =>
       f.count > 0

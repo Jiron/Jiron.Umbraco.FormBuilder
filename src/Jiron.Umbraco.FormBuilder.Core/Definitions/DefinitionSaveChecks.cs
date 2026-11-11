@@ -2,6 +2,7 @@ using System.Buffers;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using Jiron.Umbraco.FormBuilder.Core.Definitions.Serialization;
+using Jiron.Umbraco.FormBuilder.Logic;
 
 namespace Jiron.Umbraco.FormBuilder.Core.Definitions;
 
@@ -264,6 +265,7 @@ internal sealed class DefinitionSaveChecks
         Text(submission.SubmitLabel, P(submissionPath, "submitLabel"), TextKind.Line);
         Text(submission.NextLabel, P(submissionPath, "nextLabel"), TextKind.Line);
         Text(submission.BackLabel, P(submissionPath, "backLabel"), TextKind.Line);
+        OwnWording(submission.Texts, P(submissionPath, "texts"));
         var storeDaysPath = P(submissionPath, "storeDays");
         if (submission.Store == EntryStorage.Days)
         {
@@ -724,6 +726,45 @@ internal sealed class DefinitionSaveChecks
         else if (singleLine && HasLineBreak(value))
         {
             Fail(DefinitionErrors.InvalidValue, path, "The text has no line break.");
+        }
+    }
+
+    // The form's own wording of the package's visitor texts (ADR-0230): each a text the package has, each culture a culture's
+    // name or "" for every language, each wording one the text may take.
+    private void OwnWording(IReadOnlyDictionary<string, IReadOnlyDictionary<string, string>>? texts, string path)
+    {
+        if (texts is null)
+        {
+            return;
+        }
+
+        foreach (var (key, cultures) in texts)
+        {
+            var keyPath = P(path, key);
+            if (VisitorTextKeys.Find(key) is not { } text)
+            {
+                Fail(DefinitionErrors.InvalidValue, keyPath, "The package has no visitor text of this key.");
+                continue;
+            }
+
+            if (cultures is not { Count: > 0 })
+            {
+                Fail(DefinitionErrors.InvalidValue, keyPath, "A reworded text has a wording in at least one culture; leave the text out to keep the package's.");
+                continue;
+            }
+
+            foreach (var (culture, wording) in cultures)
+            {
+                var culturePath = P(keyPath, culture);
+                if (culture.Length > 0 && !LocalizedString.IsCultureName(culture))
+                {
+                    Fail(DefinitionErrors.InvalidValue, culturePath, $"\"{culture}\" is not a culture name; \"\" stands for every language.");
+                }
+                else if (VisitorTextKeys.Problem(text, wording) is { } problem)
+                {
+                    Fail(wording?.Length > VisitorTextKeys.MaxLength ? DefinitionErrors.LimitExceeded : DefinitionErrors.InvalidValue, culturePath, problem);
+                }
+            }
         }
     }
 

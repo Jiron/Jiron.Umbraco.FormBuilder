@@ -115,7 +115,11 @@ function operandWords(
   const relative = relativeOf(operand);
   if (relative !== null) return relativeWords(context, relative);
   if (typeof operand !== 'string') return '';
-  if (condition.context === 'culture') return context.languageOf(operand);
+  if (condition.context === 'culture') {
+    // A language's name; the start of a culture, which names none, as written.
+    const name = context.languageOf(operand);
+    return name === operand ? context.term('jfbRules_quoted', operand) : name;
+  }
   if (condition.field && (kind === 'choice' || kind === 'choices')) return context.optionOf(condition.field, operand);
   if (kind === 'number' || (kind !== undefined && DATED.has(kind)) || condition.context === 'today')
     return context.valueOf(kind ?? 'date', operand);
@@ -146,15 +150,19 @@ export function valueWords(context: RuleWordsContext, condition: WordsCondition)
 }
 
 /**
- * A condition in words: "Country is Other", "Arrival is after today", "The visitor is signed in"; inside a sentence, a
- * part of the visit is said small.
+ * A condition in words: "Country is Other", "Arrival is after today", "The visitor is signed in". Inside a sentence a
+ * part of the visit is said small, a field's name as the language names one there (German quotes it), and the parts
+ * come in the language's order for a clause (`jfbRules_clause`: German puts the verb last).
  */
 export function conditionWords(context: RuleWordsContext, condition: WordsCondition, inSentence = false): string {
   const kind = kindOfCondition(context, condition);
-  const subject = subjectWords(context, condition, inSentence);
-  const op = condition.op ? context.term(operatorTerm(condition.op, kind, condition.context ?? null)) : '';
+  const name = subjectWords(context, condition, inSentence);
+  const term = condition.op ? operatorTerm(condition.op, kind, condition.context ?? null) : '';
+  const op = term === '' ? '' : context.term(term);
   const value = valueWords(context, condition);
-  return [subject, op, value].filter((part) => part !== '').join(' ');
+  if (!inSentence) return [name, op, value].filter((part) => part !== '').join(' ');
+  const subject = condition.field ? context.term('jfbRules_named', name) : name;
+  return context.term('jfbRules_clause', subject, term.slice('jfbRules_op_'.length), op, value);
 }
 
 /** A list of conditions and groups in words, joined by "and" or "or"; a nested group in brackets. */

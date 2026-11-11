@@ -21,7 +21,7 @@ export default {
     range_thisMonth: 'Dieser Monat',
     range_lastMonth: 'Letzter Monat',
     range_thisYear: 'Dieses Jahr',
-    range_custom: 'Daten wählen …',
+    range_custom: 'Zeitraum wählen…',
     rangeFrom: 'Von',
     rangeTo: 'Bis',
     rangeApply: 'Anzeigen',
@@ -42,7 +42,7 @@ export default {
     down: (change: string, before: string) => `${change} weniger als ${before}`,
     same: (before: string) => `so viele wie davor (${before})`,
     upFromNone: 'davor keine',
-    pointsUp: (points: string, before: string) => `${points} Punkte mehr als ${before}`,
+    pointsUp: (points: string, before: string) => `${points} Prozentpunkte mehr als ${before}`,
     pointsDown: (points: string, before: string) => `${points} Punkte weniger als ${before}`,
 
     showTable: 'Als Tabelle zeigen',
@@ -76,7 +76,7 @@ export default {
 
     fields: 'Felder, an denen Besucher am häufigsten hängen bleiben',
     fieldsNone: 'In diesem Zeitraum ist kein Besucher an einem Feld hängen geblieben.',
-    fieldLine: (count: string, share: string, kind: string) => `${count}, ${share} der Begonnenen, meist ${kind}`,
+    fieldLine: (count: string, share: string, kind: string) => `${count} (${share} der Begonnenen), meist ${kind}`,
     fieldLineAlone: (count: string, kind: string) => `${count}, meist ${kind}`,
     fieldGone: 'Ein Feld, das das Formular nicht mehr hat',
     col_field: 'Feld',
@@ -145,7 +145,7 @@ export default {
     optionOlder: (label: string) => `${label} (keine Option mehr)`,
     optionOther: 'Sonstiges, in eigenen Worten',
     optionSeveral: 'Mehrere konnten gewählt werden, daher ergeben die Anteile zusammen mehr als 100 %.',
-    positionLine: (position: string) => `durchschnittlich Platz ${position}`,
+    positionLine: (position: string) => `durchschnittlich auf Position ${position}`,
     rankingNote: 'Je höher eine Option im Durchschnitt steht, desto länger ist ihr Balken.',
     figure_average: 'Durchschnitt',
     figure_median: 'Median',
@@ -169,7 +169,7 @@ export default {
     col_group: 'Gruppe',
     col_answers: 'Antworten',
     col_answerShare: 'Anteil',
-    col_position: 'Durchschnittlicher Platz',
+    col_position: 'Durchschnittliche Position',
     col_row: 'Zeile',
 
     glance: 'Formulare im Überblick',
@@ -185,7 +185,7 @@ export default {
     short_down: (change: string) => `${change} weniger`,
     short_same: 'unverändert',
     short_new: 'davor keine',
-    short_pointsUp: (points: string) => `${points} Punkte mehr`,
+    short_pointsUp: (points: string) => `${points} Prozentpunkte mehr`,
     short_pointsDown: (points: string) => `${points} Punkte weniger`,
   },
 } satisfies UmbLocalizationDictionary;

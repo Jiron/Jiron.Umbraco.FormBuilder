@@ -41,7 +41,7 @@ public sealed class SettingsSchemaTests
         {
             Assert.That(fields.Select(field => (field.Box, field.Name)), Is.EqualTo(new[]
             {
-                ("forms", "theme"), ("forms", "requiredMarker"), ("forms", "submitLabel"), ("forms", "nextLabel"), ("forms", "backLabel"),
+                ("forms", "theme"), ("forms", "requiredMarker"), ("forms", "submitLabel"), ("forms", "nextLabel"), ("forms", "backLabel"), ("forms", "texts"),
                 ("site", "baseUrl"), ("site", "timeZone"), ("newForms", "newForms"), ("history", "history"),
             }));
             Assert.That((byName["theme"].Kind, byName["theme"].Editor), Is.EqualTo(("text", "theme")));
@@ -49,6 +49,7 @@ public sealed class SettingsSchemaTests
             Assert.That(byName["requiredMarker"].Choices, Is.EqualTo(new[] { "required", "optional", "none" }), "inherit is a form's");
             Assert.That((byName["submitLabel"].Kind, byName["submitLabel"].Editor), Is.EqualTo(("localizedText", "localizedText")));
             Assert.That((byName["submitLabel"].Label, byName["submitLabel"].Description), Is.EqualTo(("#jfbGlobalSettings_general_submitLabel", "#jfbGlobalSettings_general_submitLabelHelp")));
+            Assert.That((byName["texts"].Editor, byName["texts"].Label), Is.EqualTo(("visitorTexts", "#jfbGlobalSettings_general_texts")), "the visitor texts' own editor");
             Assert.That(history.Kind, Is.EqualTo("nested"));
             Assert.That(history.Fields.Select(field => (field.Name, field.Kind, field.Rules.Minimum, field.Rules.Maximum, field.Unit)), Is.EqualTo(new[]
             {

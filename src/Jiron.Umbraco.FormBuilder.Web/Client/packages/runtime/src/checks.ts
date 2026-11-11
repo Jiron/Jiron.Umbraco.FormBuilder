@@ -8,6 +8,7 @@ import {
   BUILT_IN_TYPES,
   checkField,
   clean,
+  own,
   type CheckedField,
   type CheckedOption,
   type Context,
@@ -99,9 +100,9 @@ function check(
   context: Context,
   onPage: ReadonlySet<string>,
 ): void {
-  const logic = Object.hasOwn(model.fields, field.key) ? model.fields[field.key] : undefined;
+  const logic = own(model.fields, field.key);
   const builtIn = logic?.builtIn === true;
-  const declared = builtIn && Object.hasOwn(BUILT_IN_TYPES, field.type) ? BUILT_IN_TYPES[field.type] : undefined;
+  const declared = builtIn ? own(BUILT_IN_TYPES, field.type) : undefined;
   const limit = read?.reading?.limit ?? null;
   if (limit !== null) {
     errors.push({ field: field.key, row, code: limit });
@@ -165,9 +166,7 @@ function withParts(
   const listed = textsOf(field.settings?.['requiredParts']).filter((part) => asked.includes(part));
   const needed = listed.length > 0 ? listed : isRequired ? asked : [];
   const given = read?.reading?.answers?.parts ?? {};
-  const empty = needed.filter((part) =>
-    (Object.hasOwn(given, part) ? (given[part] ?? []) : []).every((text) => clean(text).length === 0),
-  );
+  const empty = needed.filter((part) => (own(given, part) ?? []).every((text) => clean(text).length === 0));
   const parts = empty.length === 0 ? asked : empty;
   for (let at = from; at < errors.length; at++) {
     const error = errors[at];
@@ -186,7 +185,7 @@ function messages(
   row: number | null,
 ): void {
   for (const key of [field.key, ...(field.rows ?? []).map((gridRow) => gridRow.key)]) {
-    const rules = Object.hasOwn(shown, key) ? shown[key] : undefined;
+    const rules = own(shown, key);
     for (const rule of rules ?? [])
       errors.push({ field: field.key, row, code: 'rule', rule, ...(key === field.key ? {} : { gridRow: key }) });
   }

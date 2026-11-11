@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Perimeter-1.0.1
 // The visitor messages of ROADMAP 6.2g (ADR-0099): the package's default message for every kind of error each built-in
-// type declares, in English and in German, with the values the field's settings give printed in the culture's formats
+// type declares, in English and in German, and a broad sample in the five languages 14.2 adds (French, Italian, Dutch,
+// Spanish and Danish, ADR-0230), with the values the field's settings give printed in the culture's formats
 // (ADR-0064); a site's own type, a field's own checks, a validation rule and the empty submission; and the error
 // summary's heading and its links to a default message. A `message` case holds an `error` (the code, the field as the
 // form endpoint shows it, the answers and what else the message reads), a `heading` (how many errors the summary
@@ -22,9 +23,21 @@ const defaults = {
     query: {},
     hidden: [],
   },
-  cultures: { 'en-US': CULTURES['en-US'], 'de-CH': CULTURES['de-CH'], 'fr-FR': CULTURES['fr-FR'] },
+  cultures: Object.fromEntries(
+    ['en-US', 'de-CH', 'fr-FR', 'it-IT', 'nl-NL', 'es-ES', 'da-DK', 'sv-SE'].map((name) => [name, CULTURES[name]]),
+  ),
   // The culture's words for yes and no, which the form endpoint gives the browser with the page (ADR-0066).
-  words: { 'en-US': { yes: 'Yes', no: 'No' }, 'de-CH': { yes: 'Ja', no: 'Nein' }, 'fr-FR': { yes: 'Yes', no: 'No' } },
+  words: {
+    'en-US': { yes: 'Yes', no: 'No' },
+    'de-CH': { yes: 'Ja', no: 'Nein' },
+    'fr-FR': { yes: 'Oui', no: 'Non' },
+    'it-IT': { yes: String.fromCodePoint(0x53, 0xec), no: 'No' },
+    'nl-NL': { yes: 'Ja', no: 'Nee' },
+    'es-ES': { yes: String.fromCodePoint(0x53, 0xed), no: 'No' },
+    'da-DK': { yes: 'Ja', no: 'Nej' },
+    // A language without words of its own: the endpoint gives English's.
+    'sv-SE': { yes: 'Yes', no: 'No' },
+  },
 };
 
 const served = JSON.parse(readFileSync(new URL('../../../docs/api/field-types.json', import.meta.url), 'utf8')).types;
@@ -32,7 +45,6 @@ const served = JSON.parse(readFileSync(new URL('../../../docs/api/field-types.js
 /** Text with code points written as {hex}, so this file stays ASCII. */
 const x = (text) => text.replace(/\{([0-9a-f]{2,6})\}/g, (_, hex) => String.fromCodePoint(Number.parseInt(hex, 16)));
 const QUOTE = x('{2019}');
-const NNBSP = x('{202f}');
 
 /** A field of a built-in type as the form endpoint shows it: the public settings its type has defaults for, then the case's own. */
 function field(type, settings = {}, options) {
@@ -87,7 +99,7 @@ const required = [
     'Choose an answer in this row',
     'W{e4}hlen Sie in dieser Zeile eine Antwort',
   ),
-  ...both('required-ranking', at('required', field('ranking')), 'Put the options in order', 'Bringen Sie die Optionen in eine Reihenfolge'),
+  ...both('required-ranking', at('required', field('ranking')), 'Put the options in order', 'Bringen Sie die Optionen in die gew{fc}nschte Reihenfolge'),
   ...both('required-checkbox', at('required', field('checkbox')), 'Tick the box', 'Kreuzen Sie das K{e4}stchen an'),
   ...both('required-yesno-in-the-culture-words', at('required', field('yesno')), 'Choose Yes or No', 'W{e4}hlen Sie Ja oder Nein'),
   ...both(
@@ -120,7 +132,7 @@ const invalid = [
     'invalid-email-at-a-domain-the-field-refuses',
     at('invalid', field('email'), { answers: [' mira@example.org '] }),
     'Use an email address at another domain',
-    'Verwenden Sie eine E-Mail-Adresse bei einer anderen Domain',
+    'Verwenden Sie eine E-Mail-Adresse mit einer anderen Domain',
   ),
   ...both(
     'invalid-email-without-an-answer',
@@ -132,7 +144,7 @@ const invalid = [
     'invalid-phone',
     at('invalid', field('phone')),
     'Enter a phone number with digits, and a + for the country code',
-    'Geben Sie eine Telefonnummer mit Ziffern ein, mit einem + f{fc}r die Landesvorwahl',
+    'Geben Sie eine Telefonnummer in Ziffern ein, mit + vor der Landesvorwahl',
   ),
   ...both(
     'invalid-url',
@@ -258,19 +270,19 @@ const steps = [
     'time-step-from-its-earliest',
     at('step', field('time', { min: '08:00', stepMinutes: 15 })),
     'Choose a time in steps of 15 minutes from 8:00 AM',
-    'W{e4}hlen Sie eine Uhrzeit im Abstand von 15 Minuten ab 08:00',
+    'W{e4}hlen Sie eine Uhrzeit in Schritten von 15 Minuten ab 08:00',
   ),
   ...both(
     'time-step-from-midnight',
     at('step', field('time', { stepMinutes: 30 })),
     'Choose a time in steps of 30 minutes',
-    'W{e4}hlen Sie eine Uhrzeit im Abstand von 30 Minuten',
+    'W{e4}hlen Sie eine Uhrzeit in Schritten von 30 Minuten',
   ),
   ...both(
     'datetime-step',
     at('step', field('datetime', { stepMinutes: 10 })),
     'Choose a time in steps of 10 minutes',
-    'W{e4}hlen Sie eine Uhrzeit im Abstand von 10 Minuten',
+    'W{e4}hlen Sie eine Uhrzeit in Schritten von 10 Minuten',
   ),
   ...both('number-digits', at('digits', field('number')), 'Enter a number with fewer digits', 'Geben Sie eine Zahl mit weniger Ziffern ein'),
 ];
@@ -403,7 +415,7 @@ const choices = [
     'full-of-several-answers',
     at('full', field('checkboxes', {}, rows('session', ['morning', 'evening'])), { answers: ['morning', 'evening'] }),
     'One of your choices is now full. Choose another option.',
-    'Eine Ihrer gew{e4}hlten Optionen ist jetzt ausgebucht. W{e4}hlen Sie eine andere Option.',
+    'Eine der von Ihnen gew{e4}hlten Optionen ist jetzt ausgebucht. W{e4}hlen Sie eine andere Option.',
   ),
   ...both(
     'confirmation',
@@ -436,25 +448,25 @@ const files = [
     'file-size-in-megabytes',
     at('fileSize', field('file', { maxBytes: 10485760 })),
     'This file is larger than 10 MB. Choose a smaller one.',
-    'Diese Datei ist gr{f6}{df}er als 10 MB. W{e4}hlen Sie eine kleinere.',
+    'Diese Datei ist gr{f6}{df}er als 10{a0}MB. W{e4}hlen Sie eine kleinere.',
   ),
   ...both(
     'file-size-rounds-to-a-tenth',
     at('fileSize', field('file', { maxBytes: 5000000 })),
     'This file is larger than 4.8 MB. Choose a smaller one.',
-    'Diese Datei ist gr{f6}{df}er als 4.8 MB. W{e4}hlen Sie eine kleinere.',
+    'Diese Datei ist gr{f6}{df}er als 4.8{a0}MB. W{e4}hlen Sie eine kleinere.',
   ),
   ...both(
     'file-size-in-kilobytes',
     at('fileSize', field('file', { maxBytes: 512000, maxFiles: 3 })),
     'One of the files is larger than 500 KB. Choose a smaller one.',
-    'Eine der Dateien ist gr{f6}{df}er als 500 KB. W{e4}hlen Sie eine kleinere.',
+    'Eine der Dateien ist gr{f6}{df}er als 500{a0}KB. W{e4}hlen Sie eine kleinere.',
   ),
   ...both(
     'file-size-groups-a-large-limit',
     at('fileSize', field('file', { maxBytes: 2147483648 })),
     'This file is larger than 2,048 MB. Choose a smaller one.',
-    'Diese Datei ist gr{f6}{df}er als 2' + QUOTE + '048 MB. W{e4}hlen Sie eine kleinere.',
+    'Diese Datei ist gr{f6}{df}er als 2' + QUOTE + '048{a0}MB. W{e4}hlen Sie eine kleinere.',
   ),
   ...both(
     'file-size-held-to-the-host-limit',
@@ -542,7 +554,7 @@ const others = [
     'check-pattern',
     { code: 'check', check: 'pattern', field: field('text') },
     'Enter the answer in the format asked for',
-    'Geben Sie die Antwort im verlangten Format ein',
+    'Geben Sie die Antwort im vorgegebenen Format ein',
   ),
   ...both(
     'check-matches-a-field',
@@ -573,9 +585,9 @@ const others = [
   ...both('an-unknown-code', at('acme', field('text')), 'Check this answer', 'Pr{fc}fen Sie diese Antwort'),
   {
     id: 'a-culture-without-words-takes-english-with-its-own-formats',
-    context: { culture: 'fr-FR' },
+    context: { culture: 'sv-SE' },
     message: { error: at('maxLength', field('textarea')) },
-    expect: 'Enter at most 4' + NNBSP + '000 characters',
+    expect: 'Enter at most 4' + x('{a0}') + '000 characters',
   },
   {
     id: 'a-regional-culture-takes-its-language',
@@ -583,6 +595,259 @@ const others = [
     message: { error: at('required', field('text')) },
     expect: 'Geben Sie eine Antwort ein',
   },
+];
+
+// The languages 14.2 adds (ADR-0230), each in a culture of its own formats: the same message in French, Italian,
+// Dutch, Spanish and Danish, every expectation written out, the letters with {hex}.
+const ADDED = { fr: 'fr-FR', it: 'it-IT', nl: 'nl-NL', es: 'es-ES', da: 'da-DK' };
+
+/** The same message (an error, a heading or a summary entry) in each language 14.2 adds, with each language's text. */
+function added(id, message, texts) {
+  return Object.entries(ADDED).map(([language, culture]) => {
+    if (texts[language] === undefined) throw new Error(`${id}: no ${language} text`);
+    return { id: `${id}-${language}`, context: { culture }, message, expect: x(texts[language]) };
+  });
+}
+
+const languages = [
+  ...added('required-email', { error: at('required', field('email')) }, {
+    fr: 'Saisissez une adresse e-mail',
+    it: 'Inserisci un indirizzo email',
+    nl: 'Vul een e-mailadres in',
+    es: 'Escriba una direcci{f3}n de correo electr{f3}nico',
+    da: 'Skriv en e-mailadresse',
+  }),
+  ...added('required-yesno-in-the-culture-words', { error: at('required', field('yesno')) }, {
+    fr: 'Choisissez Oui ou Non',
+    it: 'Scegli S{ec} o No',
+    nl: 'Kies Ja of Nee',
+    es: 'Elija S{ed} o No',
+    da: 'V{e6}lg Ja eller Nej',
+  }),
+  ...added('required-signature', { error: at('required', field('signature')) }, {
+    fr: 'Signez, ou saisissez plut{f4}t votre nom',
+    it: 'Aggiungi la tua firma, oppure scrivi il tuo nome al suo posto',
+    nl: 'Zet uw handtekening, of typ in plaats daarvan uw naam',
+    es: 'A{f1}ada su firma o escriba su nombre en su lugar',
+    da: 'Skriv under, eller skriv dit navn i stedet',
+  }),
+  ...added('invalid-email-not-an-address', { error: at('invalid', field('email'), { answers: ['mira@'] }) }, {
+    fr: 'Saisissez une adresse e-mail compl{e8}te, par exemple nom@example.com',
+    it: 'Inserisci un indirizzo email completo, ad esempio nome@example.com',
+    nl: 'Vul een volledig e-mailadres in, bijvoorbeeld naam@example.com',
+    es: 'Escriba una direcci{f3}n de correo electr{f3}nico completa (por ejemplo, nombre@example.com)',
+    da: 'Skriv en fuldst{e6}ndig e-mailadresse, f.eks. navn@example.com',
+  }),
+  ...added('invalid-number-with-decimals', { error: at('invalid', field('number', { decimals: 2 })) }, {
+    fr: 'Saisissez un nombre, par exemple 12,5',
+    it: 'Inserisci un numero, ad esempio 12,5',
+    nl: 'Vul een getal in, bijvoorbeeld 12,5',
+    es: 'Escriba un n{fa}mero (por ejemplo, 12,5)',
+    da: 'Skriv et tal, f.eks. 12,5',
+  }),
+  ...added('invalid-slider', { error: at('invalid', field('slider', { min: '0', max: '2500' })) }, {
+    fr: 'Choisissez une valeur de 0 {e0} 2{202f}500',
+    it: 'Scegli un valore da 0 a 2.500',
+    nl: 'Kies een waarde van 0 tot en met 2.500',
+    es: 'Elija un valor de 0 a 2.500',
+    da: 'V{e6}lg en v{e6}rdi fra 0 til 2.500',
+  }),
+  ...added('max-length-of-a-long-text-groups-its-digits', { error: at('maxLength', field('textarea')) }, {
+    fr: 'Saisissez au plus 4{202f}000 caract{e8}res',
+    it: 'Inserisci al massimo 4.000 caratteri',
+    nl: 'Vul maximaal 4.000 tekens in',
+    es: 'Escriba como m{e1}ximo 4.000 caracteres',
+    da: 'Skriv h{f8}jst 4.000 tegn',
+  }),
+  ...added('min-length-of-one', { error: at('minLength', field('text', { minLength: 1 })) }, {
+    fr: 'Saisissez au moins 1 caract{e8}re',
+    it: 'Inserisci almeno 1 carattere',
+    nl: 'Vul minstens 1 teken in',
+    es: 'Escriba al menos 1 car{e1}cter',
+    da: 'Skriv mindst 1 tegn',
+  }),
+  ...added('min-words', { error: at('minWords', field('textarea', { minWords: 5 })) }, {
+    fr: 'Saisissez au moins 5 mots',
+    it: 'Inserisci almeno 5 parole',
+    nl: 'Vul minstens 5 woorden in',
+    es: 'Escriba al menos 5 palabras',
+    da: 'Skriv mindst 5 ord',
+  }),
+  ...added('number-max-of-both-limits', { error: at('max', field('number', { min: '-2.5', max: '1250.75', decimals: 2 })) }, {
+    fr: 'Saisissez un nombre de -2,5 {e0} 1{202f}250,75',
+    it: 'Inserisci un numero da -2,5 a 1.250,75',
+    nl: 'Vul een getal van -2,5 tot en met 1.250,75 in',
+    es: 'Escriba un n{fa}mero de -2,5 a 1.250,75',
+    da: 'Skriv et tal fra -2,5 til 1.250,75',
+  }),
+  ...added('number-min-only', { error: at('min', field('number', { min: '18' })) }, {
+    fr: 'Saisissez un nombre sup{e9}rieur ou {e9}gal {e0} 18',
+    it: 'Inserisci un numero uguale o superiore a 18',
+    nl: 'Vul een getal van 18 of hoger in',
+    es: 'Escriba un n{fa}mero igual o mayor que 18',
+    da: 'Skriv et tal p{e5} 18 eller derover',
+  }),
+  ...added('time-min-of-both-limits', { error: at('min', field('time', { min: '09:00', max: '17:30' })) }, {
+    fr: 'Saisissez une heure entre 09:00 et 17:30',
+    it: 'Inserisci un orario tra le 09:00 e le 17:30',
+    nl: 'Vul een tijd van 09:00 tot en met 17:30 in',
+    es: 'Escriba una hora de 9:00 a 17:30',
+    da: 'Skriv et klokkesl{e6}t fra 09.00 til 17.30',
+  }),
+  ...added('number-step-of-one-decimal', { error: at('step', field('number', { decimals: 1 })) }, {
+    fr: 'Saisissez un nombre avec au plus 1 d{e9}cimale',
+    it: 'Inserisci un numero con al massimo 1 cifra decimale',
+    nl: 'Vul een getal in met maximaal 1 decimaal',
+    es: 'Escriba un n{fa}mero con 1 decimal como m{e1}ximo',
+    da: 'Skriv et tal med h{f8}jst 1 decimal',
+  }),
+  ...added('number-step-from-its-least', { error: at('step', field('number', { min: '1', step: '2' })) }, {
+    fr: 'Saisissez un nombre par pas de 2, {e0} partir de 1',
+    it: 'Inserisci un numero a intervalli di 2, a partire da 1',
+    nl: 'Vul een getal in stappen van 2 in, vanaf 1',
+    es: 'Escriba un n{fa}mero en intervalos de 2, empezando por 1',
+    da: 'Skriv et tal i trin p{e5} 2 fra 1',
+  }),
+  ...added('time-step-from-its-earliest', { error: at('step', field('time', { min: '08:00', stepMinutes: 15 })) }, {
+    fr: 'Choisissez une heure par intervalles de 15 minutes {e0} partir de 08:00',
+    it: 'Scegli un orario a intervalli di 15 minuti dalle 08:00',
+    nl: 'Kies een tijd in stappen van 15 minuten vanaf 08:00',
+    es: 'Elija una hora en intervalos de 15 minutos a partir de las 8:00',
+    da: 'V{e6}lg et klokkesl{e6}t i trin p{e5} 15 minutter fra 08.00',
+  }),
+  ...added(
+    'date-window-of-weekdays-between-two-dates',
+    { error: at('dateWindow', field('date', { min: '2026-11-02', max: '2026-11-27', weekdaysOnly: true }), { answers: ['2026-11-07'] }) },
+    {
+      fr: 'Choisissez une date du 2 nov. 2026 au 27 nov. 2026, du lundi au vendredi',
+      it: 'Scegli una data dal 2 nov 2026 al 27 nov 2026, da luned{ec} a venerd{ec}',
+      nl: 'Kies een datum van 2 nov 2026 tot en met 27 nov 2026, maandag tot en met vrijdag',
+      es: 'Elija una fecha del 2 nov 2026 al 27 nov 2026, de lunes a viernes',
+      da: 'V{e6}lg en dato fra 2. nov. 2026 til 27. nov. 2026, mandag til fredag',
+    },
+  ),
+  ...added('date-window-from-tomorrow', { error: at('dateWindow', field('date', { min: { today: '+1d' } }), { answers: ['2026-06-15'] }) }, {
+    fr: 'Choisissez une date {e0} partir du 16 juin 2026',
+    it: 'Scegli una data dal 16 giu 2026 in poi',
+    nl: 'Kies een datum op of na 16 jun 2026',
+    es: 'Elija una fecha a partir del 16 jun 2026',
+    da: 'V{e6}lg en dato fra og med 16. jun. 2026',
+  }),
+  ...added('date-window-of-weekdays-alone', { error: at('dateWindow', field('date', { weekdaysOnly: true }), { answers: ['2026-06-21'] }) }, {
+    fr: 'Choisissez un jour du lundi au vendredi',
+    it: 'Scegli un giorno da luned{ec} a venerd{ec}',
+    nl: 'Kies een dag van maandag tot en met vrijdag',
+    es: 'Elija un d{ed}a de lunes a viernes',
+    da: 'V{e6}lg en dag fra mandag til fredag',
+  }),
+  ...added('selections-between', { error: at('selections', field('checkboxes', { minSelections: 2, maxSelections: 4 })) }, {
+    fr: 'Choisissez de 2 {e0} 4 r{e9}ponses',
+    it: 'Scegli da 2 a 4 risposte',
+    nl: 'Kies 2 tot en met 4 antwoorden',
+    es: 'Elija de 2 a 4 respuestas',
+    da: 'V{e6}lg fra 2 til 4 svar',
+  }),
+  ...added('selections-exactly-one', { error: at('selections', field('dropdown', { multiple: true, minSelections: 1, maxSelections: 1 })) }, {
+    fr: 'Choisissez 1 r{e9}ponse',
+    it: 'Scegli 1 risposta',
+    nl: 'Kies 1 antwoord',
+    es: 'Elija 1 respuesta',
+    da: 'V{e6}lg 1 svar',
+  }),
+  ...added(
+    'full-names-the-option-it-holds',
+    { error: at('full', field('radio', {}, [{ value: 'bike', label: 'Bike repair basics' }, { value: 'sew', label: 'Sewing' }]), { answers: ['bike'] }) },
+    {
+      fr: 'Il n{2019}y a plus de place pour Bike repair basics. Choisissez une autre option.',
+      it: 'Non ci sono pi{f9} posti per Bike repair basics. Scegli un{2019}altra opzione.',
+      nl: 'Bike repair basics is nu vol. Kies een andere optie.',
+      es: 'Ya no quedan plazas para Bike repair basics. Elija otra opci{f3}n.',
+      da: 'Bike repair basics er fuldt booket. V{e6}lg en anden mulighed.',
+    },
+  ),
+  ...added('file-type-of-groups-and-extensions', { error: at('fileType', field('file', { types: ['pdf', 'text'], extensions: ['.odt', 'pdf'] })) }, {
+    fr: 'Choisissez un fichier au format PDF, TXT, CSV ou ODT',
+    it: 'Scegli un file in formato PDF, TXT, CSV o ODT',
+    nl: 'Kies een bestand van het type PDF, TXT, CSV of ODT',
+    es: 'Elija un archivo en formato PDF, TXT, CSV o ODT',
+    da: 'V{e6}lg en fil i formatet PDF, TXT, CSV eller ODT',
+  }),
+  ...added('file-size-rounds-to-a-tenth', { error: at('fileSize', field('file', { maxBytes: 5000000 })) }, {
+    fr: 'Ce fichier d{e9}passe 4,8{a0}Mo. Choisissez-en un plus petit.',
+    it: 'Questo file supera il limite di 4,8 MB. Scegline uno pi{f9} piccolo.',
+    nl: 'Dit bestand is groter dan 4,8 MB. Kies een kleiner bestand.',
+    es: 'Este archivo ocupa m{e1}s de 4,8 MB. Elija uno m{e1}s peque{f1}o.',
+    da: 'Filen er st{f8}rre end 4,8 MB. V{e6}lg en mindre.',
+  }),
+  ...added('file-size-in-kilobytes', { error: at('fileSize', field('file', { maxBytes: 512000, maxFiles: 3 })) }, {
+    fr: 'L{2019}un des fichiers d{e9}passe 500{a0}Ko. Choisissez-en un plus petit.',
+    it: 'Uno dei file supera il limite di 500 KB. Scegline uno pi{f9} piccolo.',
+    nl: 'Een van de bestanden is groter dan 500 KB. Kies een kleiner bestand.',
+    es: 'Uno de los archivos ocupa m{e1}s de 500 KB. Elija uno m{e1}s peque{f1}o.',
+    da: 'En af filerne er st{f8}rre end 500 KB. V{e6}lg en mindre.',
+  }),
+  ...added('file-count-of-one', { error: at('fileCount', field('file')) }, {
+    fr: 'Choisissez au plus 1 fichier',
+    it: 'Scegli al massimo 1 file',
+    nl: 'Kies maximaal 1 bestand',
+    es: 'Elija solo 1 archivo',
+    da: 'V{e6}lg kun 1 fil',
+  }),
+  ...added('row-count-too-many', { error: at('rowCount', field('repeater', { minRows: 2, maxRows: 5 }), { rows: 6 }) }, {
+    fr: 'Supprimez des lignes pour en garder au plus 5',
+    it: 'Rimuovi delle righe per tenerne al massimo 5',
+    nl: 'Verwijder rijen zodat er maximaal 5 overblijven',
+    es: 'Quite filas para que queden como m{e1}ximo 5',
+    da: 'Fjern r{e6}kker, s{e5} der h{f8}jst er 5 tilbage',
+  }),
+  ...added('row-count-too-many-of-one', { error: at('rowCount', field('repeater', { maxRows: 1 }), { rows: 2 }) }, {
+    fr: 'Supprimez des lignes pour en garder au plus 1',
+    it: 'Rimuovi delle righe per tenerne al massimo 1',
+    nl: 'Verwijder rijen zodat er maximaal 1 overblijft',
+    es: 'Quite filas para que quede como m{e1}ximo 1',
+    da: 'Fjern r{e6}kker, s{e5} der h{f8}jst er 1 tilbage',
+  }),
+  ...added('check-matches-a-field', { error: { code: 'check', check: 'matchesField', other: 'Password', field: field('text') } }, {
+    fr: 'Saisissez la m{ea}me r{e9}ponse que pour Password',
+    it: 'Inserisci lo stesso valore di Password',
+    nl: 'Vul hetzelfde in als bij Password',
+    es: 'Escriba lo mismo que en Password',
+    da: 'Skriv det samme som ved Password',
+  }),
+  ...added('empty', { error: { code: 'empty' } }, {
+    fr: 'R{e9}pondez {e0} au moins une question avant d{2019}envoyer le formulaire',
+    it: 'Rispondi ad almeno una domanda prima di inviare il modulo',
+    nl: 'Beantwoord minstens {e9}{e9}n vraag voordat u het formulier verstuurt',
+    es: 'Responda al menos a una pregunta antes de enviar el formulario',
+    da: 'Besvar mindst {e9}t sp{f8}rgsm{e5}l, f{f8}r du sender formularen',
+  }),
+  ...added('heading-of-one', { heading: 1 }, {
+    fr: 'Cette r{e9}ponse doit {ea}tre modifi{e9}e',
+    it: 'Questa risposta va corretta',
+    nl: 'Dit antwoord moet nog worden aangepast',
+    es: 'Hay que corregir esta respuesta',
+    da: 'Dette svar skal rettes',
+  }),
+  ...added('heading-of-several', { heading: 3 }, {
+    fr: 'Ces r{e9}ponses doivent {ea}tre modifi{e9}es',
+    it: 'Queste risposte vanno corrette',
+    nl: 'Deze antwoorden moeten nog worden aangepast',
+    es: 'Hay que corregir estas respuestas',
+    da: 'Disse svar skal rettes',
+  }),
+  // A summary link joins the label and the message in each language's way: French puts a no-break space before the
+  // colon, and a label that ends in a question mark after its no-break space takes no colon there either.
+  { id: 'entry-names-its-field-fr', context: { culture: 'fr-FR' }, message: { entry: { message: x('Saisissez une r{e9}ponse'), label: x('Pr{e9}nom') } }, expect: x('Pr{e9}nom{a0}: Saisissez une r{e9}ponse') },
+  { id: 'entry-in-a-row-names-the-row-fr', context: { culture: 'fr-FR' }, message: { entry: { message: x('Saisissez une r{e9}ponse'), label: 'Nom', row: x('Invit{e9} 2') } }, expect: x('Nom (Invit{e9} 2){a0}: Saisissez une r{e9}ponse') },
+  { id: 'entry-after-a-question-takes-no-colon-fr', context: { culture: 'fr-FR' }, message: { entry: { message: x('Choisissez une r{e9}ponse'), label: x('O{f9} souhaitez-vous vous asseoir{a0}?') } }, expect: x('O{f9} souhaitez-vous vous asseoir{a0}? Choisissez une r{e9}ponse') },
+  { id: 'entry-names-its-field-it', context: { culture: 'it-IT' }, message: { entry: { message: 'Inserisci una risposta', label: 'Nome' } }, expect: 'Nome: Inserisci una risposta' },
+  { id: 'entry-in-a-row-names-the-row-it', context: { culture: 'it-IT' }, message: { entry: { message: 'Inserisci una risposta', label: 'Nome', row: 'Ospite 2' } }, expect: 'Nome (Ospite 2): Inserisci una risposta' },
+  { id: 'entry-names-its-field-nl', context: { culture: 'nl-NL' }, message: { entry: { message: 'Vul een antwoord in', label: 'Voornaam' } }, expect: 'Voornaam: Vul een antwoord in' },
+  { id: 'entry-in-a-row-names-the-row-nl', context: { culture: 'nl-NL' }, message: { entry: { message: 'Vul een antwoord in', label: 'Naam', row: 'Gast 2' } }, expect: 'Naam (Gast 2): Vul een antwoord in' },
+  { id: 'entry-names-its-field-es', context: { culture: 'es-ES' }, message: { entry: { message: 'Escriba una respuesta', label: 'Nombre' } }, expect: 'Nombre: Escriba una respuesta' },
+  { id: 'entry-in-a-row-names-the-row-es', context: { culture: 'es-ES' }, message: { entry: { message: 'Escriba una respuesta', label: 'Nombre', row: 'Invitado 2' } }, expect: 'Nombre (Invitado 2): Escriba una respuesta' },
+  { id: 'entry-names-its-field-da', context: { culture: 'da-DK' }, message: { entry: { message: 'Skriv et svar', label: 'Fornavn' } }, expect: 'Fornavn: Skriv et svar' },
+  { id: 'entry-in-a-row-names-the-row-da', context: { culture: 'da-DK' }, message: { entry: { message: 'Skriv et svar', label: 'Navn', row: x('G{e6}st 2') } }, expect: x('Navn (G{e6}st 2): Skriv et svar') },
 ];
 
 const summary = [
@@ -695,5 +960,18 @@ export default {
   suite: 'messages',
   defaults,
   fields: {},
-  cases: [...required, ...invalid, ...lengths, ...ranges, ...steps, ...window, ...choices, ...files, ...groups, ...others, ...summary],
+  cases: [
+    ...required,
+    ...invalid,
+    ...lengths,
+    ...ranges,
+    ...steps,
+    ...window,
+    ...choices,
+    ...files,
+    ...groups,
+    ...others,
+    ...summary,
+    ...languages,
+  ],
 };

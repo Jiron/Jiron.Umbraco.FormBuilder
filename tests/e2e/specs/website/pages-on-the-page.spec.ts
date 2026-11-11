@@ -92,7 +92,7 @@ test('next() and back() move through three pages, each checked on the server, wi
   await expect(shownTitle(form)).toHaveText('Your references');
   await expect(shownTitle(form), 'the focus goes to the title').toBeFocused();
   expect(checks, 'one check, of the page it left').toHaveLength(1);
-  await expect(form.locator('.jfb-progress-text')).toHaveText('Step 2 of 3');
+  await expect(form.locator('.jfb-progress-text')).toHaveText('Page 2 of 3');
   await expect(steps.nth(0)).toHaveAttribute('data-jfb-done', '');
   await expect(steps.nth(1)).toHaveAttribute('aria-current', 'step');
   await expect(form.locator('.jfb-navigation [data-jfb-nav="back"]')).toBeVisible();

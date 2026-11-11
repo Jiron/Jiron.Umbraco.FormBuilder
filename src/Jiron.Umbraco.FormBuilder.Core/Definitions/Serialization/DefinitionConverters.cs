@@ -68,6 +68,12 @@ internal sealed class StrictStringConverter : JsonConverter<string>
 
     public override void Write(Utf8JsonWriter writer, string value, JsonSerializerOptions options) => writer.WriteStringValue(Checked(value));
 
+    // A name of a map, such as a text's key in a form's own wording (ADR-0230), held to the same rule as a value.
+    public override string ReadAsPropertyName(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) =>
+        reader.GetString() ?? throw new JsonException("Expected a name.");
+
+    public override void WriteAsPropertyName(Utf8JsonWriter writer, string value, JsonSerializerOptions options) => writer.WritePropertyName(Checked(value));
+
     /// <summary>The string, if it is there and holds no lone surrogate.</summary>
     /// <exception cref="ArgumentNullException">The string is null where the model needs one.</exception>
     /// <exception cref="ArgumentException">The string holds a lone surrogate.</exception>

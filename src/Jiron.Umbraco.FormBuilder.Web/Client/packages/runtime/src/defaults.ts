@@ -8,15 +8,12 @@
  * value, where it has one, before its default (ADR-0124). Only the control named as the field takes it, as on the
  * server: a choice's "Other" text, a name's or an address's parts and an email's repeat stay empty (6.8b).
  */
-import type { Context } from '@jfb/logic';
-import { parseTemplate, renderTemplate, type MergeValue } from '@jfb/logic/template';
+import { own, type Context } from '@jfb/logic';
+import { parsePageTemplate, renderPageTemplate, type MergeValue } from '@jfb/logic/template';
 import type { FormModel } from './model';
 import { allFieldsOf } from './page';
 
 type Control = HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
-
-const own = <T>(record: Readonly<Record<string, T>>, key: string): T | undefined =>
-  Object.hasOwn(record, key) ? record[key] : undefined;
 
 /** Fills in the defaults of the fields the server marked, once: the marks go as they are filled. */
 export function fillDefaults(form: HTMLFormElement, model: FormModel, context: Context): void {
@@ -41,8 +38,8 @@ export function fillDefaults(form: HTMLFormElement, model: FormModel, context: C
       .map((template) =>
         refused === undefined
           ? template
-          : renderTemplate(
-              parseTemplate(template, 'text', (path) => (refused.includes(path) ? 'source_not_for_place' : null)),
+          : renderPageTemplate(
+              parsePageTemplate(template, 'text', (path) => (refused.includes(path) ? 'source_not_for_place' : null)),
               values,
               model.formats,
             ).text,

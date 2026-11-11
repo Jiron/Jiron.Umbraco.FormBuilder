@@ -136,7 +136,7 @@ internal sealed partial class FormRendering(
         var instance = target?.Instance ?? FormInstances.Next(httpContext);
         if (preview is null)
         {
-            await SentAsync(httpContext, formKey, instance, culture, cancellationToken);
+            await SentAsync(httpContext, formKey, instance, cancellationToken);
         }
 
         // A form that takes values from the member renders them for the member signed in, so their page is theirs (ADR-0124).
@@ -160,7 +160,7 @@ internal sealed partial class FormRendering(
     // nothing for this form and instance leaves the form as it is. The request carries jfb-sent, so the page is no-store.
     // A message that offers the copy of the answers shows them to the one GET that takes the entry's mark, and a line
     // in their place to any later view (ADR-0123).
-    private async Task SentAsync(HttpContext httpContext, Guid form, string instance, string culture, CancellationToken cancellationToken)
+    private async Task SentAsync(HttpContext httpContext, Guid form, string instance, CancellationToken cancellationToken)
     {
         if (FormPosts.Get(httpContext, form, instance) is not null
             || !httpContext.Request.Query.TryGetValue(SentTokens.QueryName, out var values)
@@ -178,11 +178,10 @@ internal sealed partial class FormRendering(
             copy = new FormPostCopy(entry is not null && await copies.TakeAsync(form, submissionId, entry.Submitted, cancellationToken) ? entry : null);
         }
 
-        var words = RenderingWords.Of(culture);
         FormPosts.Set(httpContext, form, instance, new FormPostState
         {
             Outcome = new FormPostOutcome(
-                outcome.Html ?? "<p>" + WebUtility.HtmlEncode(words.ThankYou) + "</p>",
+                outcome.Html,
                 receipt.Reference,
                 IsPending: false,
                 outcome is { Kind: OutcomeKind.Message, Url: { } url } ? url : null,

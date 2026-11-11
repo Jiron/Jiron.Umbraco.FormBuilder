@@ -4,6 +4,7 @@ using Jiron.Umbraco.FormBuilder.Core.Definitions.Projection;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn;
 using Jiron.Umbraco.FormBuilder.Core.Themes;
+using Jiron.Umbraco.FormBuilder.Logic;
 using Jiron.Umbraco.FormBuilder.Web.Rendering.Models;
 using Microsoft.AspNetCore.Html;
 
@@ -207,14 +208,14 @@ internal sealed partial class FormModels
                 {
                     Id = ChoiceId(id, 0),
                     Value = YesNoFieldType.Yes,
-                    Label = settings.Text("yesLabel") is { Length: > 0 } yes ? yes : FieldDisplayWords.Yes(culture),
+                    Label = settings.Text("yesLabel") is { Length: > 0 } yes ? yes : VisitorWording.Yes(culture, build.Render.Shown.Texts),
                     IsChecked = answers.Values.Contains(YesNoFieldType.Yes, StringComparer.Ordinal),
                 },
                 new ChoiceModel
                 {
                     Id = ChoiceId(id, 1),
                     Value = YesNoFieldType.No,
-                    Label = settings.Text("noLabel") is { Length: > 0 } no ? no : FieldDisplayWords.No(culture),
+                    Label = settings.Text("noLabel") is { Length: > 0 } no ? no : VisitorWording.No(culture, build.Render.Shown.Texts),
                     IsChecked = answers.Values.Contains(YesNoFieldType.No, StringComparer.Ordinal),
                 },
             ],

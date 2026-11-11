@@ -74,6 +74,9 @@ internal sealed class SettingsErrors(string section)
     /// <summary>The code of texts that are not a localised text: a culture name that is not one, or one named twice.</summary>
     public const string TextCode = "text";
 
+    /// <summary>A site's wording of a visitor text the package has not, or one the text cannot take (ADR-0230).</summary>
+    public const string VisitorTextCode = "visitorText";
+
     private readonly List<SettingsError> _errors = [];
 
     /// <summary>Everything found so far.</summary>

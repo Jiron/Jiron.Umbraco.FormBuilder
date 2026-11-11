@@ -15,7 +15,7 @@
     "requiredNote": "Questions marked {0} need an answer.",
     "asterisk": "with an asterisk",
     "required": "required",
-    "step": "Step {0} of {1}",
+    "step": "Page {0} of {1}",
     "progress": "Progress",
     "page": "Page {0}",
     "confirmEmail": "Repeat your email address",

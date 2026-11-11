@@ -28,7 +28,7 @@ public sealed class FormRenderingAccessTests : RenderingTestBase
         {
             Assert.That(gated.LocalName, Is.EqualTo("div"), "no form to fill in");
             Assert.That(gated.GetAttribute("lang"), Is.EqualTo("de-DE"));
-            Assert.That(gated.QuerySelector(".jfb-notice h2")!.TextContent, Is.EqualTo("Dieses Formular ist f" + (char)0xFC + "r Mitglieder"));
+            Assert.That(gated.QuerySelector(".jfb-notice h2")!.TextContent, Is.EqualTo("Dieses Formular ist nur f" + (char)0xFC + "r Mitglieder"));
             Assert.That(gated.QuerySelector(".jfb-notice p")!.TextContent, Is.EqualTo("Melden Sie sich an, um es auszuf" + (char)0xFC + "llen."));
             Assert.That(gated.QuerySelectorAll("input, script[data-jfb-model]"), Is.Empty, "nothing of the form");
             Assert.That(document.QuerySelector("#jfb-2")!.LocalName, Is.EqualTo("form"), "a form for anyone renders beside it");

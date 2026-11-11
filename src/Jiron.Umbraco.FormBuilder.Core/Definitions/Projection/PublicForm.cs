@@ -42,6 +42,13 @@ public sealed record PublicFormSettings
     /// <summary>The "previous page" button's label; absent as for <see cref="SubmitLabel"/>.</summary>
     public LocalizedText? BackLabel { get; init; }
 
+    /// <summary>
+    /// The form's own wording of the package's visitor texts per culture (ADR-0230), as the definition holds it. The
+    /// visitor's form holds none: a page takes the wording of its culture, the site's among it, apart. The projection's
+    /// hash counts it, so a text reworded is a new public revision.
+    /// </summary>
+    public IReadOnlyDictionary<string, IReadOnlyDictionary<string, string>>? Texts { get; init; }
+
     /// <summary>Whether a "check your answers" page comes before sending.</summary>
     public bool SummaryPage { get; init; }
 

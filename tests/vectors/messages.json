@@ -328,6 +328,531 @@
           "positive": "n\u00a0$",
           "negative": "-n\u00a0$"
         }
+      },
+      "it-IT": {
+        "monthsGenitive": [
+          "gennaio",
+          "febbraio",
+          "marzo",
+          "aprile",
+          "maggio",
+          "giugno",
+          "luglio",
+          "agosto",
+          "settembre",
+          "ottobre",
+          "novembre",
+          "dicembre"
+        ],
+        "monthsShortGenitive": [
+          "gen",
+          "feb",
+          "mar",
+          "apr",
+          "mag",
+          "giu",
+          "lug",
+          "ago",
+          "set",
+          "ott",
+          "nov",
+          "dic"
+        ],
+        "am": "AM",
+        "pm": "PM",
+        "minus": "-",
+        "dates": {
+          "short": "dd/MM/yyyy",
+          "medium": "d MMM yyyy",
+          "long": "dddd d MMMM yyyy",
+          "time": "HH:mm",
+          "dateTime": "dd/MM/yyyy HH:mm"
+        },
+        "months": [
+          "gennaio",
+          "febbraio",
+          "marzo",
+          "aprile",
+          "maggio",
+          "giugno",
+          "luglio",
+          "agosto",
+          "settembre",
+          "ottobre",
+          "novembre",
+          "dicembre"
+        ],
+        "monthsShort": [
+          "gen",
+          "feb",
+          "mar",
+          "apr",
+          "mag",
+          "giu",
+          "lug",
+          "ago",
+          "set",
+          "ott",
+          "nov",
+          "dic"
+        ],
+        "days": [
+          "domenica",
+          "luned\u00ec",
+          "marted\u00ec",
+          "mercoled\u00ec",
+          "gioved\u00ec",
+          "venerd\u00ec",
+          "sabato"
+        ],
+        "daysShort": [
+          "dom",
+          "lun",
+          "mar",
+          "mer",
+          "gio",
+          "ven",
+          "sab"
+        ],
+        "number": {
+          "decimal": ",",
+          "group": ".",
+          "sizes": [
+            3
+          ],
+          "negative": "-n"
+        },
+        "currency": {
+          "code": "EUR",
+          "symbol": "\u20ac",
+          "decimal": ",",
+          "group": ".",
+          "sizes": [
+            3
+          ],
+          "positive": "n\u00a0$",
+          "negative": "-n\u00a0$"
+        }
+      },
+      "nl-NL": {
+        "monthsGenitive": [
+          "januari",
+          "februari",
+          "maart",
+          "april",
+          "mei",
+          "juni",
+          "juli",
+          "augustus",
+          "september",
+          "oktober",
+          "november",
+          "december"
+        ],
+        "monthsShortGenitive": [
+          "jan",
+          "feb",
+          "mrt",
+          "apr",
+          "mei",
+          "jun",
+          "jul",
+          "aug",
+          "sep",
+          "okt",
+          "nov",
+          "dec"
+        ],
+        "am": "AM",
+        "pm": "PM",
+        "minus": "-",
+        "dates": {
+          "short": "dd-MM-yyyy",
+          "medium": "d MMM yyyy",
+          "long": "dddd d MMMM yyyy",
+          "time": "HH:mm",
+          "dateTime": "dd-MM-yyyy HH:mm"
+        },
+        "months": [
+          "januari",
+          "februari",
+          "maart",
+          "april",
+          "mei",
+          "juni",
+          "juli",
+          "augustus",
+          "september",
+          "oktober",
+          "november",
+          "december"
+        ],
+        "monthsShort": [
+          "jan",
+          "feb",
+          "mrt",
+          "apr",
+          "mei",
+          "jun",
+          "jul",
+          "aug",
+          "sep",
+          "okt",
+          "nov",
+          "dec"
+        ],
+        "days": [
+          "zondag",
+          "maandag",
+          "dinsdag",
+          "woensdag",
+          "donderdag",
+          "vrijdag",
+          "zaterdag"
+        ],
+        "daysShort": [
+          "zo",
+          "ma",
+          "di",
+          "wo",
+          "do",
+          "vr",
+          "za"
+        ],
+        "number": {
+          "decimal": ",",
+          "group": ".",
+          "sizes": [
+            3
+          ],
+          "negative": "-n"
+        },
+        "currency": {
+          "code": "EUR",
+          "symbol": "\u20ac",
+          "decimal": ",",
+          "group": ".",
+          "sizes": [
+            3
+          ],
+          "positive": "$\u00a0n",
+          "negative": "$\u00a0-n"
+        }
+      },
+      "es-ES": {
+        "monthsGenitive": [
+          "enero",
+          "febrero",
+          "marzo",
+          "abril",
+          "mayo",
+          "junio",
+          "julio",
+          "agosto",
+          "septiembre",
+          "octubre",
+          "noviembre",
+          "diciembre"
+        ],
+        "monthsShortGenitive": [
+          "ene",
+          "feb",
+          "mar",
+          "abr",
+          "may",
+          "jun",
+          "jul",
+          "ago",
+          "sept",
+          "oct",
+          "nov",
+          "dic"
+        ],
+        "am": "AM",
+        "pm": "PM",
+        "minus": "-",
+        "dates": {
+          "short": "dd/MM/yyyy",
+          "medium": "d MMM yyyy",
+          "long": "dddd, d 'de' MMMM 'de' yyyy",
+          "time": "H:mm",
+          "dateTime": "dd/MM/yyyy H:mm"
+        },
+        "months": [
+          "enero",
+          "febrero",
+          "marzo",
+          "abril",
+          "mayo",
+          "junio",
+          "julio",
+          "agosto",
+          "septiembre",
+          "octubre",
+          "noviembre",
+          "diciembre"
+        ],
+        "monthsShort": [
+          "ene",
+          "feb",
+          "mar",
+          "abr",
+          "may",
+          "jun",
+          "jul",
+          "ago",
+          "sept",
+          "oct",
+          "nov",
+          "dic"
+        ],
+        "days": [
+          "domingo",
+          "lunes",
+          "martes",
+          "mi\u00e9rcoles",
+          "jueves",
+          "viernes",
+          "s\u00e1bado"
+        ],
+        "daysShort": [
+          "dom",
+          "lun",
+          "mar",
+          "mi\u00e9",
+          "jue",
+          "vie",
+          "s\u00e1b"
+        ],
+        "number": {
+          "decimal": ",",
+          "group": ".",
+          "sizes": [
+            3
+          ],
+          "negative": "-n"
+        },
+        "currency": {
+          "code": "EUR",
+          "symbol": "\u20ac",
+          "decimal": ",",
+          "group": ".",
+          "sizes": [
+            3
+          ],
+          "positive": "n\u00a0$",
+          "negative": "-n\u00a0$"
+        }
+      },
+      "da-DK": {
+        "monthsGenitive": [
+          "januar",
+          "februar",
+          "marts",
+          "april",
+          "maj",
+          "juni",
+          "juli",
+          "august",
+          "september",
+          "oktober",
+          "november",
+          "december"
+        ],
+        "monthsShortGenitive": [
+          "jan.",
+          "feb.",
+          "mar.",
+          "apr.",
+          "maj",
+          "jun.",
+          "jul.",
+          "aug.",
+          "sep.",
+          "okt.",
+          "nov.",
+          "dec."
+        ],
+        "am": "AM",
+        "pm": "PM",
+        "minus": "-",
+        "dates": {
+          "short": "dd.MM.yyyy",
+          "medium": "d. MMM yyyy",
+          "long": "dddd 'den' d. MMMM yyyy",
+          "time": "HH.mm",
+          "dateTime": "dd.MM.yyyy HH.mm"
+        },
+        "months": [
+          "januar",
+          "februar",
+          "marts",
+          "april",
+          "maj",
+          "juni",
+          "juli",
+          "august",
+          "september",
+          "oktober",
+          "november",
+          "december"
+        ],
+        "monthsShort": [
+          "jan.",
+          "feb.",
+          "mar.",
+          "apr.",
+          "maj",
+          "jun.",
+          "jul.",
+          "aug.",
+          "sep.",
+          "okt.",
+          "nov.",
+          "dec."
+        ],
+        "days": [
+          "s\u00f8ndag",
+          "mandag",
+          "tirsdag",
+          "onsdag",
+          "torsdag",
+          "fredag",
+          "l\u00f8rdag"
+        ],
+        "daysShort": [
+          "s\u00f8n.",
+          "man.",
+          "tirs.",
+          "ons.",
+          "tors.",
+          "fre.",
+          "l\u00f8r."
+        ],
+        "number": {
+          "decimal": ",",
+          "group": ".",
+          "sizes": [
+            3
+          ],
+          "negative": "-n"
+        },
+        "currency": {
+          "code": "DKK",
+          "symbol": "kr.",
+          "decimal": ",",
+          "group": ".",
+          "sizes": [
+            3
+          ],
+          "positive": "n\u00a0$",
+          "negative": "-n\u00a0$"
+        }
+      },
+      "sv-SE": {
+        "monthsGenitive": [
+          "januari",
+          "februari",
+          "mars",
+          "april",
+          "maj",
+          "juni",
+          "juli",
+          "augusti",
+          "september",
+          "oktober",
+          "november",
+          "december"
+        ],
+        "monthsShortGenitive": [
+          "jan.",
+          "feb.",
+          "mars",
+          "apr.",
+          "maj",
+          "juni",
+          "juli",
+          "aug.",
+          "sep.",
+          "okt.",
+          "nov.",
+          "dec."
+        ],
+        "am": "AM",
+        "pm": "PM",
+        "minus": "\u2212",
+        "dates": {
+          "short": "yyyy-MM-dd",
+          "medium": "d MMM yyyy",
+          "long": "dddd d MMMM yyyy",
+          "time": "HH:mm",
+          "dateTime": "yyyy-MM-dd HH:mm"
+        },
+        "months": [
+          "januari",
+          "februari",
+          "mars",
+          "april",
+          "maj",
+          "juni",
+          "juli",
+          "augusti",
+          "september",
+          "oktober",
+          "november",
+          "december"
+        ],
+        "monthsShort": [
+          "jan.",
+          "feb.",
+          "mars",
+          "apr.",
+          "maj",
+          "juni",
+          "juli",
+          "aug.",
+          "sep.",
+          "okt.",
+          "nov.",
+          "dec."
+        ],
+        "days": [
+          "s\u00f6ndag",
+          "m\u00e5ndag",
+          "tisdag",
+          "onsdag",
+          "torsdag",
+          "fredag",
+          "l\u00f6rdag"
+        ],
+        "daysShort": [
+          "s\u00f6n",
+          "m\u00e5n",
+          "tis",
+          "ons",
+          "tors",
+          "fre",
+          "l\u00f6r"
+        ],
+        "number": {
+          "decimal": ",",
+          "group": "\u00a0",
+          "sizes": [
+            3
+          ],
+          "negative": "-n"
+        },
+        "currency": {
+          "code": "SEK",
+          "symbol": "kr",
+          "decimal": ",",
+          "group": "\u00a0",
+          "sizes": [
+            3
+          ],
+          "positive": "n\u00a0$",
+          "negative": "-n\u00a0$"
+        }
       }
     },
     "words": {
@@ -340,6 +865,26 @@
         "no": "Nein"
       },
       "fr-FR": {
+        "yes": "Oui",
+        "no": "Non"
+      },
+      "it-IT": {
+        "yes": "S\u00ec",
+        "no": "No"
+      },
+      "nl-NL": {
+        "yes": "Ja",
+        "no": "Nee"
+      },
+      "es-ES": {
+        "yes": "S\u00ed",
+        "no": "No"
+      },
+      "da-DK": {
+        "yes": "Ja",
+        "no": "Nej"
+      },
+      "sv-SE": {
         "yes": "Yes",
         "no": "No"
       }
@@ -996,7 +1541,7 @@
           }
         }
       },
-      "expect": "Bringen Sie die Optionen in eine Reihenfolge"
+      "expect": "Bringen Sie die Optionen in die gew\u00fcnschte Reihenfolge"
     },
     {
       "id": "required-checkbox-en",
@@ -1367,7 +1912,7 @@
           ]
         }
       },
-      "expect": "Verwenden Sie eine E-Mail-Adresse bei einer anderen Domain"
+      "expect": "Verwenden Sie eine E-Mail-Adresse mit einer anderen Domain"
     },
     {
       "id": "invalid-email-without-an-answer-en",
@@ -1429,7 +1974,7 @@
           }
         }
       },
-      "expect": "Geben Sie eine Telefonnummer mit Ziffern ein, mit einem + f\u00fcr die Landesvorwahl"
+      "expect": "Geben Sie eine Telefonnummer in Ziffern ein, mit + vor der Landesvorwahl"
     },
     {
       "id": "invalid-url-en",
@@ -2925,7 +3470,7 @@
           }
         }
       },
-      "expect": "W\u00e4hlen Sie eine Uhrzeit im Abstand von 15 Minuten ab 08:00"
+      "expect": "W\u00e4hlen Sie eine Uhrzeit in Schritten von 15 Minuten ab 08:00"
     },
     {
       "id": "time-step-from-midnight-en",
@@ -2958,7 +3503,7 @@
           }
         }
       },
-      "expect": "W\u00e4hlen Sie eine Uhrzeit im Abstand von 30 Minuten"
+      "expect": "W\u00e4hlen Sie eine Uhrzeit in Schritten von 30 Minuten"
     },
     {
       "id": "datetime-step-en",
@@ -2995,7 +3540,7 @@
           }
         }
       },
-      "expect": "W\u00e4hlen Sie eine Uhrzeit im Abstand von 10 Minuten"
+      "expect": "W\u00e4hlen Sie eine Uhrzeit in Schritten von 10 Minuten"
     },
     {
       "id": "number-digits-en",
@@ -3979,7 +4524,7 @@
           ]
         }
       },
-      "expect": "Eine Ihrer gew\u00e4hlten Optionen ist jetzt ausgebucht. W\u00e4hlen Sie eine andere Option."
+      "expect": "Eine der von Ihnen gew\u00e4hlten Optionen ist jetzt ausgebucht. W\u00e4hlen Sie eine andere Option."
     },
     {
       "id": "confirmation-en",
@@ -4200,7 +4745,7 @@
           }
         }
       },
-      "expect": "Diese Datei ist gr\u00f6\u00dfer als 10 MB. W\u00e4hlen Sie eine kleinere."
+      "expect": "Diese Datei ist gr\u00f6\u00dfer als 10\u00a0MB. W\u00e4hlen Sie eine kleinere."
     },
     {
       "id": "file-size-rounds-to-a-tenth-en",
@@ -4241,7 +4786,7 @@
           }
         }
       },
-      "expect": "Diese Datei ist gr\u00f6\u00dfer als 4.8 MB. W\u00e4hlen Sie eine kleinere."
+      "expect": "Diese Datei ist gr\u00f6\u00dfer als 4.8\u00a0MB. W\u00e4hlen Sie eine kleinere."
     },
     {
       "id": "file-size-in-kilobytes-en",
@@ -4282,7 +4827,7 @@
           }
         }
       },
-      "expect": "Eine der Dateien ist gr\u00f6\u00dfer als 500 KB. W\u00e4hlen Sie eine kleinere."
+      "expect": "Eine der Dateien ist gr\u00f6\u00dfer als 500\u00a0KB. W\u00e4hlen Sie eine kleinere."
     },
     {
       "id": "file-size-groups-a-large-limit-en",
@@ -4323,7 +4868,7 @@
           }
         }
       },
-      "expect": "Diese Datei ist gr\u00f6\u00dfer als 2\u2019048 MB. W\u00e4hlen Sie eine kleinere."
+      "expect": "Diese Datei ist gr\u00f6\u00dfer als 2\u2019048\u00a0MB. W\u00e4hlen Sie eine kleinere."
     },
     {
       "id": "file-size-held-to-the-host-limit-en",
@@ -5052,7 +5597,7 @@
           }
         }
       },
-      "expect": "Geben Sie die Antwort im verlangten Format ein"
+      "expect": "Geben Sie die Antwort im vorgegebenen Format ein"
     },
     {
       "id": "check-matches-a-field-en",
@@ -5304,7 +5849,7 @@
     {
       "id": "a-culture-without-words-takes-english-with-its-own-formats",
       "context": {
-        "culture": "fr-FR"
+        "culture": "sv-SE"
       },
       "message": {
         "error": {
@@ -5321,7 +5866,7 @@
           }
         }
       },
-      "expect": "Enter at most 4\u202f000 characters"
+      "expect": "Enter at most 4\u00a0000 characters"
     },
     {
       "id": "a-regional-culture-takes-its-language",
@@ -5575,6 +6120,3274 @@
         }
       },
       "expect": "Who is coming? (Guest 2): Enter an answer"
+    },
+    {
+      "id": "required-email-fr",
+      "context": {
+        "culture": "fr-FR"
+      },
+      "message": {
+        "error": {
+          "code": "required",
+          "field": {
+            "type": "email",
+            "settings": {
+              "confirm": false
+            }
+          }
+        }
+      },
+      "expect": "Saisissez une adresse e-mail"
+    },
+    {
+      "id": "required-email-it",
+      "context": {
+        "culture": "it-IT"
+      },
+      "message": {
+        "error": {
+          "code": "required",
+          "field": {
+            "type": "email",
+            "settings": {
+              "confirm": false
+            }
+          }
+        }
+      },
+      "expect": "Inserisci un indirizzo email"
+    },
+    {
+      "id": "required-email-nl",
+      "context": {
+        "culture": "nl-NL"
+      },
+      "message": {
+        "error": {
+          "code": "required",
+          "field": {
+            "type": "email",
+            "settings": {
+              "confirm": false
+            }
+          }
+        }
+      },
+      "expect": "Vul een e-mailadres in"
+    },
+    {
+      "id": "required-email-es",
+      "context": {
+        "culture": "es-ES"
+      },
+      "message": {
+        "error": {
+          "code": "required",
+          "field": {
+            "type": "email",
+            "settings": {
+              "confirm": false
+            }
+          }
+        }
+      },
+      "expect": "Escriba una direcci\u00f3n de correo electr\u00f3nico"
+    },
+    {
+      "id": "required-email-da",
+      "context": {
+        "culture": "da-DK"
+      },
+      "message": {
+        "error": {
+          "code": "required",
+          "field": {
+            "type": "email",
+            "settings": {
+              "confirm": false
+            }
+          }
+        }
+      },
+      "expect": "Skriv en e-mailadresse"
+    },
+    {
+      "id": "required-yesno-in-the-culture-words-fr",
+      "context": {
+        "culture": "fr-FR"
+      },
+      "message": {
+        "error": {
+          "code": "required",
+          "field": {
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          }
+        }
+      },
+      "expect": "Choisissez Oui ou Non"
+    },
+    {
+      "id": "required-yesno-in-the-culture-words-it",
+      "context": {
+        "culture": "it-IT"
+      },
+      "message": {
+        "error": {
+          "code": "required",
+          "field": {
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          }
+        }
+      },
+      "expect": "Scegli S\u00ec o No"
+    },
+    {
+      "id": "required-yesno-in-the-culture-words-nl",
+      "context": {
+        "culture": "nl-NL"
+      },
+      "message": {
+        "error": {
+          "code": "required",
+          "field": {
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          }
+        }
+      },
+      "expect": "Kies Ja of Nee"
+    },
+    {
+      "id": "required-yesno-in-the-culture-words-es",
+      "context": {
+        "culture": "es-ES"
+      },
+      "message": {
+        "error": {
+          "code": "required",
+          "field": {
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          }
+        }
+      },
+      "expect": "Elija S\u00ed o No"
+    },
+    {
+      "id": "required-yesno-in-the-culture-words-da",
+      "context": {
+        "culture": "da-DK"
+      },
+      "message": {
+        "error": {
+          "code": "required",
+          "field": {
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          }
+        }
+      },
+      "expect": "V\u00e6lg Ja eller Nej"
+    },
+    {
+      "id": "required-signature-fr",
+      "context": {
+        "culture": "fr-FR"
+      },
+      "message": {
+        "error": {
+          "code": "required",
+          "field": {
+            "type": "signature",
+            "settings": {}
+          }
+        }
+      },
+      "expect": "Signez, ou saisissez plut\u00f4t votre nom"
+    },
+    {
+      "id": "required-signature-it",
+      "context": {
+        "culture": "it-IT"
+      },
+      "message": {
+        "error": {
+          "code": "required",
+          "field": {
+            "type": "signature",
+            "settings": {}
+          }
+        }
+      },
+      "expect": "Aggiungi la tua firma, oppure scrivi il tuo nome al suo posto"
+    },
+    {
+      "id": "required-signature-nl",
+      "context": {
+        "culture": "nl-NL"
+      },
+      "message": {
+        "error": {
+          "code": "required",
+          "field": {
+            "type": "signature",
+            "settings": {}
+          }
+        }
+      },
+      "expect": "Zet uw handtekening, of typ in plaats daarvan uw naam"
+    },
+    {
+      "id": "required-signature-es",
+      "context": {
+        "culture": "es-ES"
+      },
+      "message": {
+        "error": {
+          "code": "required",
+          "field": {
+            "type": "signature",
+            "settings": {}
+          }
+        }
+      },
+      "expect": "A\u00f1ada su firma o escriba su nombre en su lugar"
+    },
+    {
+      "id": "required-signature-da",
+      "context": {
+        "culture": "da-DK"
+      },
+      "message": {
+        "error": {
+          "code": "required",
+          "field": {
+            "type": "signature",
+            "settings": {}
+          }
+        }
+      },
+      "expect": "Skriv under, eller skriv dit navn i stedet"
+    },
+    {
+      "id": "invalid-email-not-an-address-fr",
+      "context": {
+        "culture": "fr-FR"
+      },
+      "message": {
+        "error": {
+          "code": "invalid",
+          "field": {
+            "type": "email",
+            "settings": {
+              "confirm": false
+            }
+          },
+          "answers": [
+            "mira@"
+          ]
+        }
+      },
+      "expect": "Saisissez une adresse e-mail compl\u00e8te, par exemple nom@example.com"
+    },
+    {
+      "id": "invalid-email-not-an-address-it",
+      "context": {
+        "culture": "it-IT"
+      },
+      "message": {
+        "error": {
+          "code": "invalid",
+          "field": {
+            "type": "email",
+            "settings": {
+              "confirm": false
+            }
+          },
+          "answers": [
+            "mira@"
+          ]
+        }
+      },
+      "expect": "Inserisci un indirizzo email completo, ad esempio nome@example.com"
+    },
+    {
+      "id": "invalid-email-not-an-address-nl",
+      "context": {
+        "culture": "nl-NL"
+      },
+      "message": {
+        "error": {
+          "code": "invalid",
+          "field": {
+            "type": "email",
+            "settings": {
+              "confirm": false
+            }
+          },
+          "answers": [
+            "mira@"
+          ]
+        }
+      },
+      "expect": "Vul een volledig e-mailadres in, bijvoorbeeld naam@example.com"
+    },
+    {
+      "id": "invalid-email-not-an-address-es",
+      "context": {
+        "culture": "es-ES"
+      },
+      "message": {
+        "error": {
+          "code": "invalid",
+          "field": {
+            "type": "email",
+            "settings": {
+              "confirm": false
+            }
+          },
+          "answers": [
+            "mira@"
+          ]
+        }
+      },
+      "expect": "Escriba una direcci\u00f3n de correo electr\u00f3nico completa (por ejemplo, nombre@example.com)"
+    },
+    {
+      "id": "invalid-email-not-an-address-da",
+      "context": {
+        "culture": "da-DK"
+      },
+      "message": {
+        "error": {
+          "code": "invalid",
+          "field": {
+            "type": "email",
+            "settings": {
+              "confirm": false
+            }
+          },
+          "answers": [
+            "mira@"
+          ]
+        }
+      },
+      "expect": "Skriv en fuldst\u00e6ndig e-mailadresse, f.eks. navn@example.com"
+    },
+    {
+      "id": "invalid-number-with-decimals-fr",
+      "context": {
+        "culture": "fr-FR"
+      },
+      "message": {
+        "error": {
+          "code": "invalid",
+          "field": {
+            "type": "number",
+            "settings": {
+              "decimals": 2
+            }
+          }
+        }
+      },
+      "expect": "Saisissez un nombre, par exemple 12,5"
+    },
+    {
+      "id": "invalid-number-with-decimals-it",
+      "context": {
+        "culture": "it-IT"
+      },
+      "message": {
+        "error": {
+          "code": "invalid",
+          "field": {
+            "type": "number",
+            "settings": {
+              "decimals": 2
+            }
+          }
+        }
+      },
+      "expect": "Inserisci un numero, ad esempio 12,5"
+    },
+    {
+      "id": "invalid-number-with-decimals-nl",
+      "context": {
+        "culture": "nl-NL"
+      },
+      "message": {
+        "error": {
+          "code": "invalid",
+          "field": {
+            "type": "number",
+            "settings": {
+              "decimals": 2
+            }
+          }
+        }
+      },
+      "expect": "Vul een getal in, bijvoorbeeld 12,5"
+    },
+    {
+      "id": "invalid-number-with-decimals-es",
+      "context": {
+        "culture": "es-ES"
+      },
+      "message": {
+        "error": {
+          "code": "invalid",
+          "field": {
+            "type": "number",
+            "settings": {
+              "decimals": 2
+            }
+          }
+        }
+      },
+      "expect": "Escriba un n\u00famero (por ejemplo, 12,5)"
+    },
+    {
+      "id": "invalid-number-with-decimals-da",
+      "context": {
+        "culture": "da-DK"
+      },
+      "message": {
+        "error": {
+          "code": "invalid",
+          "field": {
+            "type": "number",
+            "settings": {
+              "decimals": 2
+            }
+          }
+        }
+      },
+      "expect": "Skriv et tal, f.eks. 12,5"
+    },
+    {
+      "id": "invalid-slider-fr",
+      "context": {
+        "culture": "fr-FR"
+      },
+      "message": {
+        "error": {
+          "code": "invalid",
+          "field": {
+            "type": "slider",
+            "settings": {
+              "min": "0",
+              "max": "2500",
+              "step": "1",
+              "showValue": true
+            }
+          }
+        }
+      },
+      "expect": "Choisissez une valeur de 0 \u00e0 2\u202f500"
+    },
+    {
+      "id": "invalid-slider-it",
+      "context": {
+        "culture": "it-IT"
+      },
+      "message": {
+        "error": {
+          "code": "invalid",
+          "field": {
+            "type": "slider",
+            "settings": {
+              "min": "0",
+              "max": "2500",
+              "step": "1",
+              "showValue": true
+            }
+          }
+        }
+      },
+      "expect": "Scegli un valore da 0 a 2.500"
+    },
+    {
+      "id": "invalid-slider-nl",
+      "context": {
+        "culture": "nl-NL"
+      },
+      "message": {
+        "error": {
+          "code": "invalid",
+          "field": {
+            "type": "slider",
+            "settings": {
+              "min": "0",
+              "max": "2500",
+              "step": "1",
+              "showValue": true
+            }
+          }
+        }
+      },
+      "expect": "Kies een waarde van 0 tot en met 2.500"
+    },
+    {
+      "id": "invalid-slider-es",
+      "context": {
+        "culture": "es-ES"
+      },
+      "message": {
+        "error": {
+          "code": "invalid",
+          "field": {
+            "type": "slider",
+            "settings": {
+              "min": "0",
+              "max": "2500",
+              "step": "1",
+              "showValue": true
+            }
+          }
+        }
+      },
+      "expect": "Elija un valor de 0 a 2.500"
+    },
+    {
+      "id": "invalid-slider-da",
+      "context": {
+        "culture": "da-DK"
+      },
+      "message": {
+        "error": {
+          "code": "invalid",
+          "field": {
+            "type": "slider",
+            "settings": {
+              "min": "0",
+              "max": "2500",
+              "step": "1",
+              "showValue": true
+            }
+          }
+        }
+      },
+      "expect": "V\u00e6lg en v\u00e6rdi fra 0 til 2.500"
+    },
+    {
+      "id": "max-length-of-a-long-text-groups-its-digits-fr",
+      "context": {
+        "culture": "fr-FR"
+      },
+      "message": {
+        "error": {
+          "code": "maxLength",
+          "field": {
+            "type": "textarea",
+            "settings": {
+              "minLength": 0,
+              "maxLength": 4000,
+              "rows": 4,
+              "autoGrow": true,
+              "counter": false
+            }
+          }
+        }
+      },
+      "expect": "Saisissez au plus 4\u202f000 caract\u00e8res"
+    },
+    {
+      "id": "max-length-of-a-long-text-groups-its-digits-it",
+      "context": {
+        "culture": "it-IT"
+      },
+      "message": {
+        "error": {
+          "code": "maxLength",
+          "field": {
+            "type": "textarea",
+            "settings": {
+              "minLength": 0,
+              "maxLength": 4000,
+              "rows": 4,
+              "autoGrow": true,
+              "counter": false
+            }
+          }
+        }
+      },
+      "expect": "Inserisci al massimo 4.000 caratteri"
+    },
+    {
+      "id": "max-length-of-a-long-text-groups-its-digits-nl",
+      "context": {
+        "culture": "nl-NL"
+      },
+      "message": {
+        "error": {
+          "code": "maxLength",
+          "field": {
+            "type": "textarea",
+            "settings": {
+              "minLength": 0,
+              "maxLength": 4000,
+              "rows": 4,
+              "autoGrow": true,
+              "counter": false
+            }
+          }
+        }
+      },
+      "expect": "Vul maximaal 4.000 tekens in"
+    },
+    {
+      "id": "max-length-of-a-long-text-groups-its-digits-es",
+      "context": {
+        "culture": "es-ES"
+      },
+      "message": {
+        "error": {
+          "code": "maxLength",
+          "field": {
+            "type": "textarea",
+            "settings": {
+              "minLength": 0,
+              "maxLength": 4000,
+              "rows": 4,
+              "autoGrow": true,
+              "counter": false
+            }
+          }
+        }
+      },
+      "expect": "Escriba como m\u00e1ximo 4.000 caracteres"
+    },
+    {
+      "id": "max-length-of-a-long-text-groups-its-digits-da",
+      "context": {
+        "culture": "da-DK"
+      },
+      "message": {
+        "error": {
+          "code": "maxLength",
+          "field": {
+            "type": "textarea",
+            "settings": {
+              "minLength": 0,
+              "maxLength": 4000,
+              "rows": 4,
+              "autoGrow": true,
+              "counter": false
+            }
+          }
+        }
+      },
+      "expect": "Skriv h\u00f8jst 4.000 tegn"
+    },
+    {
+      "id": "min-length-of-one-fr",
+      "context": {
+        "culture": "fr-FR"
+      },
+      "message": {
+        "error": {
+          "code": "minLength",
+          "field": {
+            "type": "text",
+            "settings": {
+              "minLength": 1,
+              "maxLength": 255,
+              "counter": false
+            }
+          }
+        }
+      },
+      "expect": "Saisissez au moins 1 caract\u00e8re"
+    },
+    {
+      "id": "min-length-of-one-it",
+      "context": {
+        "culture": "it-IT"
+      },
+      "message": {
+        "error": {
+          "code": "minLength",
+          "field": {
+            "type": "text",
+            "settings": {
+              "minLength": 1,
+              "maxLength": 255,
+              "counter": false
+            }
+          }
+        }
+      },
+      "expect": "Inserisci almeno 1 carattere"
+    },
+    {
+      "id": "min-length-of-one-nl",
+      "context": {
+        "culture": "nl-NL"
+      },
+      "message": {
+        "error": {
+          "code": "minLength",
+          "field": {
+            "type": "text",
+            "settings": {
+              "minLength": 1,
+              "maxLength": 255,
+              "counter": false
+            }
+          }
+        }
+      },
+      "expect": "Vul minstens 1 teken in"
+    },
+    {
+      "id": "min-length-of-one-es",
+      "context": {
+        "culture": "es-ES"
+      },
+      "message": {
+        "error": {
+          "code": "minLength",
+          "field": {
+            "type": "text",
+            "settings": {
+              "minLength": 1,
+              "maxLength": 255,
+              "counter": false
+            }
+          }
+        }
+      },
+      "expect": "Escriba al menos 1 car\u00e1cter"
+    },
+    {
+      "id": "min-length-of-one-da",
+      "context": {
+        "culture": "da-DK"
+      },
+      "message": {
+        "error": {
+          "code": "minLength",
+          "field": {
+            "type": "text",
+            "settings": {
+              "minLength": 1,
+              "maxLength": 255,
+              "counter": false
+            }
+          }
+        }
+      },
+      "expect": "Skriv mindst 1 tegn"
+    },
+    {
+      "id": "min-words-fr",
+      "context": {
+        "culture": "fr-FR"
+      },
+      "message": {
+        "error": {
+          "code": "minWords",
+          "field": {
+            "type": "textarea",
+            "settings": {
+              "minLength": 0,
+              "maxLength": 4000,
+              "rows": 4,
+              "autoGrow": true,
+              "counter": false,
+              "minWords": 5
+            }
+          }
+        }
+      },
+      "expect": "Saisissez au moins 5 mots"
+    },
+    {
+      "id": "min-words-it",
+      "context": {
+        "culture": "it-IT"
+      },
+      "message": {
+        "error": {
+          "code": "minWords",
+          "field": {
+            "type": "textarea",
+            "settings": {
+              "minLength": 0,
+              "maxLength": 4000,
+              "rows": 4,
+              "autoGrow": true,
+              "counter": false,
+              "minWords": 5
+            }
+          }
+        }
+      },
+      "expect": "Inserisci almeno 5 parole"
+    },
+    {
+      "id": "min-words-nl",
+      "context": {
+        "culture": "nl-NL"
+      },
+      "message": {
+        "error": {
+          "code": "minWords",
+          "field": {
+            "type": "textarea",
+            "settings": {
+              "minLength": 0,
+              "maxLength": 4000,
+              "rows": 4,
+              "autoGrow": true,
+              "counter": false,
+              "minWords": 5
+            }
+          }
+        }
+      },
+      "expect": "Vul minstens 5 woorden in"
+    },
+    {
+      "id": "min-words-es",
+      "context": {
+        "culture": "es-ES"
+      },
+      "message": {
+        "error": {
+          "code": "minWords",
+          "field": {
+            "type": "textarea",
+            "settings": {
+              "minLength": 0,
+              "maxLength": 4000,
+              "rows": 4,
+              "autoGrow": true,
+              "counter": false,
+              "minWords": 5
+            }
+          }
+        }
+      },
+      "expect": "Escriba al menos 5 palabras"
+    },
+    {
+      "id": "min-words-da",
+      "context": {
+        "culture": "da-DK"
+      },
+      "message": {
+        "error": {
+          "code": "minWords",
+          "field": {
+            "type": "textarea",
+            "settings": {
+              "minLength": 0,
+              "maxLength": 4000,
+              "rows": 4,
+              "autoGrow": true,
+              "counter": false,
+              "minWords": 5
+            }
+          }
+        }
+      },
+      "expect": "Skriv mindst 5 ord"
+    },
+    {
+      "id": "number-max-of-both-limits-fr",
+      "context": {
+        "culture": "fr-FR"
+      },
+      "message": {
+        "error": {
+          "code": "max",
+          "field": {
+            "type": "number",
+            "settings": {
+              "decimals": 2,
+              "min": "-2.5",
+              "max": "1250.75"
+            }
+          }
+        }
+      },
+      "expect": "Saisissez un nombre de -2,5 \u00e0 1\u202f250,75"
+    },
+    {
+      "id": "number-max-of-both-limits-it",
+      "context": {
+        "culture": "it-IT"
+      },
+      "message": {
+        "error": {
+          "code": "max",
+          "field": {
+            "type": "number",
+            "settings": {
+              "decimals": 2,
+              "min": "-2.5",
+              "max": "1250.75"
+            }
+          }
+        }
+      },
+      "expect": "Inserisci un numero da -2,5 a 1.250,75"
+    },
+    {
+      "id": "number-max-of-both-limits-nl",
+      "context": {
+        "culture": "nl-NL"
+      },
+      "message": {
+        "error": {
+          "code": "max",
+          "field": {
+            "type": "number",
+            "settings": {
+              "decimals": 2,
+              "min": "-2.5",
+              "max": "1250.75"
+            }
+          }
+        }
+      },
+      "expect": "Vul een getal van -2,5 tot en met 1.250,75 in"
+    },
+    {
+      "id": "number-max-of-both-limits-es",
+      "context": {
+        "culture": "es-ES"
+      },
+      "message": {
+        "error": {
+          "code": "max",
+          "field": {
+            "type": "number",
+            "settings": {
+              "decimals": 2,
+              "min": "-2.5",
+              "max": "1250.75"
+            }
+          }
+        }
+      },
+      "expect": "Escriba un n\u00famero de -2,5 a 1.250,75"
+    },
+    {
+      "id": "number-max-of-both-limits-da",
+      "context": {
+        "culture": "da-DK"
+      },
+      "message": {
+        "error": {
+          "code": "max",
+          "field": {
+            "type": "number",
+            "settings": {
+              "decimals": 2,
+              "min": "-2.5",
+              "max": "1250.75"
+            }
+          }
+        }
+      },
+      "expect": "Skriv et tal fra -2,5 til 1.250,75"
+    },
+    {
+      "id": "number-min-only-fr",
+      "context": {
+        "culture": "fr-FR"
+      },
+      "message": {
+        "error": {
+          "code": "min",
+          "field": {
+            "type": "number",
+            "settings": {
+              "decimals": 0,
+              "min": "18"
+            }
+          }
+        }
+      },
+      "expect": "Saisissez un nombre sup\u00e9rieur ou \u00e9gal \u00e0 18"
+    },
+    {
+      "id": "number-min-only-it",
+      "context": {
+        "culture": "it-IT"
+      },
+      "message": {
+        "error": {
+          "code": "min",
+          "field": {
+            "type": "number",
+            "settings": {
+              "decimals": 0,
+              "min": "18"
+            }
+          }
+        }
+      },
+      "expect": "Inserisci un numero uguale o superiore a 18"
+    },
+    {
+      "id": "number-min-only-nl",
+      "context": {
+        "culture": "nl-NL"
+      },
+      "message": {
+        "error": {
+          "code": "min",
+          "field": {
+            "type": "number",
+            "settings": {
+              "decimals": 0,
+              "min": "18"
+            }
+          }
+        }
+      },
+      "expect": "Vul een getal van 18 of hoger in"
+    },
+    {
+      "id": "number-min-only-es",
+      "context": {
+        "culture": "es-ES"
+      },
+      "message": {
+        "error": {
+          "code": "min",
+          "field": {
+            "type": "number",
+            "settings": {
+              "decimals": 0,
+              "min": "18"
+            }
+          }
+        }
+      },
+      "expect": "Escriba un n\u00famero igual o mayor que 18"
+    },
+    {
+      "id": "number-min-only-da",
+      "context": {
+        "culture": "da-DK"
+      },
+      "message": {
+        "error": {
+          "code": "min",
+          "field": {
+            "type": "number",
+            "settings": {
+              "decimals": 0,
+              "min": "18"
+            }
+          }
+        }
+      },
+      "expect": "Skriv et tal p\u00e5 18 eller derover"
+    },
+    {
+      "id": "time-min-of-both-limits-fr",
+      "context": {
+        "culture": "fr-FR"
+      },
+      "message": {
+        "error": {
+          "code": "min",
+          "field": {
+            "type": "time",
+            "settings": {
+              "min": "09:00",
+              "max": "17:30"
+            }
+          }
+        }
+      },
+      "expect": "Saisissez une heure entre 09:00 et 17:30"
+    },
+    {
+      "id": "time-min-of-both-limits-it",
+      "context": {
+        "culture": "it-IT"
+      },
+      "message": {
+        "error": {
+          "code": "min",
+          "field": {
+            "type": "time",
+            "settings": {
+              "min": "09:00",
+              "max": "17:30"
+            }
+          }
+        }
+      },
+      "expect": "Inserisci un orario tra le 09:00 e le 17:30"
+    },
+    {
+      "id": "time-min-of-both-limits-nl",
+      "context": {
+        "culture": "nl-NL"
+      },
+      "message": {
+        "error": {
+          "code": "min",
+          "field": {
+            "type": "time",
+            "settings": {
+              "min": "09:00",
+              "max": "17:30"
+            }
+          }
+        }
+      },
+      "expect": "Vul een tijd van 09:00 tot en met 17:30 in"
+    },
+    {
+      "id": "time-min-of-both-limits-es",
+      "context": {
+        "culture": "es-ES"
+      },
+      "message": {
+        "error": {
+          "code": "min",
+          "field": {
+            "type": "time",
+            "settings": {
+              "min": "09:00",
+              "max": "17:30"
+            }
+          }
+        }
+      },
+      "expect": "Escriba una hora de 9:00 a 17:30"
+    },
+    {
+      "id": "time-min-of-both-limits-da",
+      "context": {
+        "culture": "da-DK"
+      },
+      "message": {
+        "error": {
+          "code": "min",
+          "field": {
+            "type": "time",
+            "settings": {
+              "min": "09:00",
+              "max": "17:30"
+            }
+          }
+        }
+      },
+      "expect": "Skriv et klokkesl\u00e6t fra 09.00 til 17.30"
+    },
+    {
+      "id": "number-step-of-one-decimal-fr",
+      "context": {
+        "culture": "fr-FR"
+      },
+      "message": {
+        "error": {
+          "code": "step",
+          "field": {
+            "type": "number",
+            "settings": {
+              "decimals": 1
+            }
+          }
+        }
+      },
+      "expect": "Saisissez un nombre avec au plus 1 d\u00e9cimale"
+    },
+    {
+      "id": "number-step-of-one-decimal-it",
+      "context": {
+        "culture": "it-IT"
+      },
+      "message": {
+        "error": {
+          "code": "step",
+          "field": {
+            "type": "number",
+            "settings": {
+              "decimals": 1
+            }
+          }
+        }
+      },
+      "expect": "Inserisci un numero con al massimo 1 cifra decimale"
+    },
+    {
+      "id": "number-step-of-one-decimal-nl",
+      "context": {
+        "culture": "nl-NL"
+      },
+      "message": {
+        "error": {
+          "code": "step",
+          "field": {
+            "type": "number",
+            "settings": {
+              "decimals": 1
+            }
+          }
+        }
+      },
+      "expect": "Vul een getal in met maximaal 1 decimaal"
+    },
+    {
+      "id": "number-step-of-one-decimal-es",
+      "context": {
+        "culture": "es-ES"
+      },
+      "message": {
+        "error": {
+          "code": "step",
+          "field": {
+            "type": "number",
+            "settings": {
+              "decimals": 1
+            }
+          }
+        }
+      },
+      "expect": "Escriba un n\u00famero con 1 decimal como m\u00e1ximo"
+    },
+    {
+      "id": "number-step-of-one-decimal-da",
+      "context": {
+        "culture": "da-DK"
+      },
+      "message": {
+        "error": {
+          "code": "step",
+          "field": {
+            "type": "number",
+            "settings": {
+              "decimals": 1
+            }
+          }
+        }
+      },
+      "expect": "Skriv et tal med h\u00f8jst 1 decimal"
+    },
+    {
+      "id": "number-step-from-its-least-fr",
+      "context": {
+        "culture": "fr-FR"
+      },
+      "message": {
+        "error": {
+          "code": "step",
+          "field": {
+            "type": "number",
+            "settings": {
+              "decimals": 0,
+              "min": "1",
+              "step": "2"
+            }
+          }
+        }
+      },
+      "expect": "Saisissez un nombre par pas de 2, \u00e0 partir de 1"
+    },
+    {
+      "id": "number-step-from-its-least-it",
+      "context": {
+        "culture": "it-IT"
+      },
+      "message": {
+        "error": {
+          "code": "step",
+          "field": {
+            "type": "number",
+            "settings": {
+              "decimals": 0,
+              "min": "1",
+              "step": "2"
+            }
+          }
+        }
+      },
+      "expect": "Inserisci un numero a intervalli di 2, a partire da 1"
+    },
+    {
+      "id": "number-step-from-its-least-nl",
+      "context": {
+        "culture": "nl-NL"
+      },
+      "message": {
+        "error": {
+          "code": "step",
+          "field": {
+            "type": "number",
+            "settings": {
+              "decimals": 0,
+              "min": "1",
+              "step": "2"
+            }
+          }
+        }
+      },
+      "expect": "Vul een getal in stappen van 2 in, vanaf 1"
+    },
+    {
+      "id": "number-step-from-its-least-es",
+      "context": {
+        "culture": "es-ES"
+      },
+      "message": {
+        "error": {
+          "code": "step",
+          "field": {
+            "type": "number",
+            "settings": {
+              "decimals": 0,
+              "min": "1",
+              "step": "2"
+            }
+          }
+        }
+      },
+      "expect": "Escriba un n\u00famero en intervalos de 2, empezando por 1"
+    },
+    {
+      "id": "number-step-from-its-least-da",
+      "context": {
+        "culture": "da-DK"
+      },
+      "message": {
+        "error": {
+          "code": "step",
+          "field": {
+            "type": "number",
+            "settings": {
+              "decimals": 0,
+              "min": "1",
+              "step": "2"
+            }
+          }
+        }
+      },
+      "expect": "Skriv et tal i trin p\u00e5 2 fra 1"
+    },
+    {
+      "id": "time-step-from-its-earliest-fr",
+      "context": {
+        "culture": "fr-FR"
+      },
+      "message": {
+        "error": {
+          "code": "step",
+          "field": {
+            "type": "time",
+            "settings": {
+              "min": "08:00",
+              "stepMinutes": 15
+            }
+          }
+        }
+      },
+      "expect": "Choisissez une heure par intervalles de 15 minutes \u00e0 partir de 08:00"
+    },
+    {
+      "id": "time-step-from-its-earliest-it",
+      "context": {
+        "culture": "it-IT"
+      },
+      "message": {
+        "error": {
+          "code": "step",
+          "field": {
+            "type": "time",
+            "settings": {
+              "min": "08:00",
+              "stepMinutes": 15
+            }
+          }
+        }
+      },
+      "expect": "Scegli un orario a intervalli di 15 minuti dalle 08:00"
+    },
+    {
+      "id": "time-step-from-its-earliest-nl",
+      "context": {
+        "culture": "nl-NL"
+      },
+      "message": {
+        "error": {
+          "code": "step",
+          "field": {
+            "type": "time",
+            "settings": {
+              "min": "08:00",
+              "stepMinutes": 15
+            }
+          }
+        }
+      },
+      "expect": "Kies een tijd in stappen van 15 minuten vanaf 08:00"
+    },
+    {
+      "id": "time-step-from-its-earliest-es",
+      "context": {
+        "culture": "es-ES"
+      },
+      "message": {
+        "error": {
+          "code": "step",
+          "field": {
+            "type": "time",
+            "settings": {
+              "min": "08:00",
+              "stepMinutes": 15
+            }
+          }
+        }
+      },
+      "expect": "Elija una hora en intervalos de 15 minutos a partir de las 8:00"
+    },
+    {
+      "id": "time-step-from-its-earliest-da",
+      "context": {
+        "culture": "da-DK"
+      },
+      "message": {
+        "error": {
+          "code": "step",
+          "field": {
+            "type": "time",
+            "settings": {
+              "min": "08:00",
+              "stepMinutes": 15
+            }
+          }
+        }
+      },
+      "expect": "V\u00e6lg et klokkesl\u00e6t i trin p\u00e5 15 minutter fra 08.00"
+    },
+    {
+      "id": "date-window-of-weekdays-between-two-dates-fr",
+      "context": {
+        "culture": "fr-FR"
+      },
+      "message": {
+        "error": {
+          "code": "dateWindow",
+          "field": {
+            "type": "date",
+            "settings": {
+              "defaultToday": false,
+              "weekdaysOnly": true,
+              "min": "2026-11-02",
+              "max": "2026-11-27"
+            }
+          },
+          "answers": [
+            "2026-11-07"
+          ]
+        }
+      },
+      "expect": "Choisissez une date du 2 nov. 2026 au 27 nov. 2026, du lundi au vendredi"
+    },
+    {
+      "id": "date-window-of-weekdays-between-two-dates-it",
+      "context": {
+        "culture": "it-IT"
+      },
+      "message": {
+        "error": {
+          "code": "dateWindow",
+          "field": {
+            "type": "date",
+            "settings": {
+              "defaultToday": false,
+              "weekdaysOnly": true,
+              "min": "2026-11-02",
+              "max": "2026-11-27"
+            }
+          },
+          "answers": [
+            "2026-11-07"
+          ]
+        }
+      },
+      "expect": "Scegli una data dal 2 nov 2026 al 27 nov 2026, da luned\u00ec a venerd\u00ec"
+    },
+    {
+      "id": "date-window-of-weekdays-between-two-dates-nl",
+      "context": {
+        "culture": "nl-NL"
+      },
+      "message": {
+        "error": {
+          "code": "dateWindow",
+          "field": {
+            "type": "date",
+            "settings": {
+              "defaultToday": false,
+              "weekdaysOnly": true,
+              "min": "2026-11-02",
+              "max": "2026-11-27"
+            }
+          },
+          "answers": [
+            "2026-11-07"
+          ]
+        }
+      },
+      "expect": "Kies een datum van 2 nov 2026 tot en met 27 nov 2026, maandag tot en met vrijdag"
+    },
+    {
+      "id": "date-window-of-weekdays-between-two-dates-es",
+      "context": {
+        "culture": "es-ES"
+      },
+      "message": {
+        "error": {
+          "code": "dateWindow",
+          "field": {
+            "type": "date",
+            "settings": {
+              "defaultToday": false,
+              "weekdaysOnly": true,
+              "min": "2026-11-02",
+              "max": "2026-11-27"
+            }
+          },
+          "answers": [
+            "2026-11-07"
+          ]
+        }
+      },
+      "expect": "Elija una fecha del 2 nov 2026 al 27 nov 2026, de lunes a viernes"
+    },
+    {
+      "id": "date-window-of-weekdays-between-two-dates-da",
+      "context": {
+        "culture": "da-DK"
+      },
+      "message": {
+        "error": {
+          "code": "dateWindow",
+          "field": {
+            "type": "date",
+            "settings": {
+              "defaultToday": false,
+              "weekdaysOnly": true,
+              "min": "2026-11-02",
+              "max": "2026-11-27"
+            }
+          },
+          "answers": [
+            "2026-11-07"
+          ]
+        }
+      },
+      "expect": "V\u00e6lg en dato fra 2. nov. 2026 til 27. nov. 2026, mandag til fredag"
+    },
+    {
+      "id": "date-window-from-tomorrow-fr",
+      "context": {
+        "culture": "fr-FR"
+      },
+      "message": {
+        "error": {
+          "code": "dateWindow",
+          "field": {
+            "type": "date",
+            "settings": {
+              "defaultToday": false,
+              "weekdaysOnly": false,
+              "min": {
+                "today": "+1d"
+              }
+            }
+          },
+          "answers": [
+            "2026-06-15"
+          ]
+        }
+      },
+      "expect": "Choisissez une date \u00e0 partir du 16 juin 2026"
+    },
+    {
+      "id": "date-window-from-tomorrow-it",
+      "context": {
+        "culture": "it-IT"
+      },
+      "message": {
+        "error": {
+          "code": "dateWindow",
+          "field": {
+            "type": "date",
+            "settings": {
+              "defaultToday": false,
+              "weekdaysOnly": false,
+              "min": {
+                "today": "+1d"
+              }
+            }
+          },
+          "answers": [
+            "2026-06-15"
+          ]
+        }
+      },
+      "expect": "Scegli una data dal 16 giu 2026 in poi"
+    },
+    {
+      "id": "date-window-from-tomorrow-nl",
+      "context": {
+        "culture": "nl-NL"
+      },
+      "message": {
+        "error": {
+          "code": "dateWindow",
+          "field": {
+            "type": "date",
+            "settings": {
+              "defaultToday": false,
+              "weekdaysOnly": false,
+              "min": {
+                "today": "+1d"
+              }
+            }
+          },
+          "answers": [
+            "2026-06-15"
+          ]
+        }
+      },
+      "expect": "Kies een datum op of na 16 jun 2026"
+    },
+    {
+      "id": "date-window-from-tomorrow-es",
+      "context": {
+        "culture": "es-ES"
+      },
+      "message": {
+        "error": {
+          "code": "dateWindow",
+          "field": {
+            "type": "date",
+            "settings": {
+              "defaultToday": false,
+              "weekdaysOnly": false,
+              "min": {
+                "today": "+1d"
+              }
+            }
+          },
+          "answers": [
+            "2026-06-15"
+          ]
+        }
+      },
+      "expect": "Elija una fecha a partir del 16 jun 2026"
+    },
+    {
+      "id": "date-window-from-tomorrow-da",
+      "context": {
+        "culture": "da-DK"
+      },
+      "message": {
+        "error": {
+          "code": "dateWindow",
+          "field": {
+            "type": "date",
+            "settings": {
+              "defaultToday": false,
+              "weekdaysOnly": false,
+              "min": {
+                "today": "+1d"
+              }
+            }
+          },
+          "answers": [
+            "2026-06-15"
+          ]
+        }
+      },
+      "expect": "V\u00e6lg en dato fra og med 16. jun. 2026"
+    },
+    {
+      "id": "date-window-of-weekdays-alone-fr",
+      "context": {
+        "culture": "fr-FR"
+      },
+      "message": {
+        "error": {
+          "code": "dateWindow",
+          "field": {
+            "type": "date",
+            "settings": {
+              "defaultToday": false,
+              "weekdaysOnly": true
+            }
+          },
+          "answers": [
+            "2026-06-21"
+          ]
+        }
+      },
+      "expect": "Choisissez un jour du lundi au vendredi"
+    },
+    {
+      "id": "date-window-of-weekdays-alone-it",
+      "context": {
+        "culture": "it-IT"
+      },
+      "message": {
+        "error": {
+          "code": "dateWindow",
+          "field": {
+            "type": "date",
+            "settings": {
+              "defaultToday": false,
+              "weekdaysOnly": true
+            }
+          },
+          "answers": [
+            "2026-06-21"
+          ]
+        }
+      },
+      "expect": "Scegli un giorno da luned\u00ec a venerd\u00ec"
+    },
+    {
+      "id": "date-window-of-weekdays-alone-nl",
+      "context": {
+        "culture": "nl-NL"
+      },
+      "message": {
+        "error": {
+          "code": "dateWindow",
+          "field": {
+            "type": "date",
+            "settings": {
+              "defaultToday": false,
+              "weekdaysOnly": true
+            }
+          },
+          "answers": [
+            "2026-06-21"
+          ]
+        }
+      },
+      "expect": "Kies een dag van maandag tot en met vrijdag"
+    },
+    {
+      "id": "date-window-of-weekdays-alone-es",
+      "context": {
+        "culture": "es-ES"
+      },
+      "message": {
+        "error": {
+          "code": "dateWindow",
+          "field": {
+            "type": "date",
+            "settings": {
+              "defaultToday": false,
+              "weekdaysOnly": true
+            }
+          },
+          "answers": [
+            "2026-06-21"
+          ]
+        }
+      },
+      "expect": "Elija un d\u00eda de lunes a viernes"
+    },
+    {
+      "id": "date-window-of-weekdays-alone-da",
+      "context": {
+        "culture": "da-DK"
+      },
+      "message": {
+        "error": {
+          "code": "dateWindow",
+          "field": {
+            "type": "date",
+            "settings": {
+              "defaultToday": false,
+              "weekdaysOnly": true
+            }
+          },
+          "answers": [
+            "2026-06-21"
+          ]
+        }
+      },
+      "expect": "V\u00e6lg en dag fra mandag til fredag"
+    },
+    {
+      "id": "selections-between-fr",
+      "context": {
+        "culture": "fr-FR"
+      },
+      "message": {
+        "error": {
+          "code": "selections",
+          "field": {
+            "type": "checkboxes",
+            "settings": {
+              "other": false,
+              "layout": "inherit",
+              "minSelections": 2,
+              "maxSelections": 4
+            }
+          }
+        }
+      },
+      "expect": "Choisissez de 2 \u00e0 4 r\u00e9ponses"
+    },
+    {
+      "id": "selections-between-it",
+      "context": {
+        "culture": "it-IT"
+      },
+      "message": {
+        "error": {
+          "code": "selections",
+          "field": {
+            "type": "checkboxes",
+            "settings": {
+              "other": false,
+              "layout": "inherit",
+              "minSelections": 2,
+              "maxSelections": 4
+            }
+          }
+        }
+      },
+      "expect": "Scegli da 2 a 4 risposte"
+    },
+    {
+      "id": "selections-between-nl",
+      "context": {
+        "culture": "nl-NL"
+      },
+      "message": {
+        "error": {
+          "code": "selections",
+          "field": {
+            "type": "checkboxes",
+            "settings": {
+              "other": false,
+              "layout": "inherit",
+              "minSelections": 2,
+              "maxSelections": 4
+            }
+          }
+        }
+      },
+      "expect": "Kies 2 tot en met 4 antwoorden"
+    },
+    {
+      "id": "selections-between-es",
+      "context": {
+        "culture": "es-ES"
+      },
+      "message": {
+        "error": {
+          "code": "selections",
+          "field": {
+            "type": "checkboxes",
+            "settings": {
+              "other": false,
+              "layout": "inherit",
+              "minSelections": 2,
+              "maxSelections": 4
+            }
+          }
+        }
+      },
+      "expect": "Elija de 2 a 4 respuestas"
+    },
+    {
+      "id": "selections-between-da",
+      "context": {
+        "culture": "da-DK"
+      },
+      "message": {
+        "error": {
+          "code": "selections",
+          "field": {
+            "type": "checkboxes",
+            "settings": {
+              "other": false,
+              "layout": "inherit",
+              "minSelections": 2,
+              "maxSelections": 4
+            }
+          }
+        }
+      },
+      "expect": "V\u00e6lg fra 2 til 4 svar"
+    },
+    {
+      "id": "selections-exactly-one-fr",
+      "context": {
+        "culture": "fr-FR"
+      },
+      "message": {
+        "error": {
+          "code": "selections",
+          "field": {
+            "type": "dropdown",
+            "settings": {
+              "multiple": true,
+              "minSelections": 1,
+              "maxSelections": 1
+            }
+          }
+        }
+      },
+      "expect": "Choisissez 1 r\u00e9ponse"
+    },
+    {
+      "id": "selections-exactly-one-it",
+      "context": {
+        "culture": "it-IT"
+      },
+      "message": {
+        "error": {
+          "code": "selections",
+          "field": {
+            "type": "dropdown",
+            "settings": {
+              "multiple": true,
+              "minSelections": 1,
+              "maxSelections": 1
+            }
+          }
+        }
+      },
+      "expect": "Scegli 1 risposta"
+    },
+    {
+      "id": "selections-exactly-one-nl",
+      "context": {
+        "culture": "nl-NL"
+      },
+      "message": {
+        "error": {
+          "code": "selections",
+          "field": {
+            "type": "dropdown",
+            "settings": {
+              "multiple": true,
+              "minSelections": 1,
+              "maxSelections": 1
+            }
+          }
+        }
+      },
+      "expect": "Kies 1 antwoord"
+    },
+    {
+      "id": "selections-exactly-one-es",
+      "context": {
+        "culture": "es-ES"
+      },
+      "message": {
+        "error": {
+          "code": "selections",
+          "field": {
+            "type": "dropdown",
+            "settings": {
+              "multiple": true,
+              "minSelections": 1,
+              "maxSelections": 1
+            }
+          }
+        }
+      },
+      "expect": "Elija 1 respuesta"
+    },
+    {
+      "id": "selections-exactly-one-da",
+      "context": {
+        "culture": "da-DK"
+      },
+      "message": {
+        "error": {
+          "code": "selections",
+          "field": {
+            "type": "dropdown",
+            "settings": {
+              "multiple": true,
+              "minSelections": 1,
+              "maxSelections": 1
+            }
+          }
+        }
+      },
+      "expect": "V\u00e6lg 1 svar"
+    },
+    {
+      "id": "full-names-the-option-it-holds-fr",
+      "context": {
+        "culture": "fr-FR"
+      },
+      "message": {
+        "error": {
+          "code": "full",
+          "field": {
+            "type": "radio",
+            "settings": {
+              "other": false,
+              "layout": "inherit"
+            },
+            "options": [
+              {
+                "value": "bike",
+                "label": "Bike repair basics"
+              },
+              {
+                "value": "sew",
+                "label": "Sewing"
+              }
+            ]
+          },
+          "answers": [
+            "bike"
+          ]
+        }
+      },
+      "expect": "Il n\u2019y a plus de place pour Bike repair basics. Choisissez une autre option."
+    },
+    {
+      "id": "full-names-the-option-it-holds-it",
+      "context": {
+        "culture": "it-IT"
+      },
+      "message": {
+        "error": {
+          "code": "full",
+          "field": {
+            "type": "radio",
+            "settings": {
+              "other": false,
+              "layout": "inherit"
+            },
+            "options": [
+              {
+                "value": "bike",
+                "label": "Bike repair basics"
+              },
+              {
+                "value": "sew",
+                "label": "Sewing"
+              }
+            ]
+          },
+          "answers": [
+            "bike"
+          ]
+        }
+      },
+      "expect": "Non ci sono pi\u00f9 posti per Bike repair basics. Scegli un\u2019altra opzione."
+    },
+    {
+      "id": "full-names-the-option-it-holds-nl",
+      "context": {
+        "culture": "nl-NL"
+      },
+      "message": {
+        "error": {
+          "code": "full",
+          "field": {
+            "type": "radio",
+            "settings": {
+              "other": false,
+              "layout": "inherit"
+            },
+            "options": [
+              {
+                "value": "bike",
+                "label": "Bike repair basics"
+              },
+              {
+                "value": "sew",
+                "label": "Sewing"
+              }
+            ]
+          },
+          "answers": [
+            "bike"
+          ]
+        }
+      },
+      "expect": "Bike repair basics is nu vol. Kies een andere optie."
+    },
+    {
+      "id": "full-names-the-option-it-holds-es",
+      "context": {
+        "culture": "es-ES"
+      },
+      "message": {
+        "error": {
+          "code": "full",
+          "field": {
+            "type": "radio",
+            "settings": {
+              "other": false,
+              "layout": "inherit"
+            },
+            "options": [
+              {
+                "value": "bike",
+                "label": "Bike repair basics"
+              },
+              {
+                "value": "sew",
+                "label": "Sewing"
+              }
+            ]
+          },
+          "answers": [
+            "bike"
+          ]
+        }
+      },
+      "expect": "Ya no quedan plazas para Bike repair basics. Elija otra opci\u00f3n."
+    },
+    {
+      "id": "full-names-the-option-it-holds-da",
+      "context": {
+        "culture": "da-DK"
+      },
+      "message": {
+        "error": {
+          "code": "full",
+          "field": {
+            "type": "radio",
+            "settings": {
+              "other": false,
+              "layout": "inherit"
+            },
+            "options": [
+              {
+                "value": "bike",
+                "label": "Bike repair basics"
+              },
+              {
+                "value": "sew",
+                "label": "Sewing"
+              }
+            ]
+          },
+          "answers": [
+            "bike"
+          ]
+        }
+      },
+      "expect": "Bike repair basics er fuldt booket. V\u00e6lg en anden mulighed."
+    },
+    {
+      "id": "file-type-of-groups-and-extensions-fr",
+      "context": {
+        "culture": "fr-FR"
+      },
+      "message": {
+        "error": {
+          "code": "fileType",
+          "field": {
+            "type": "file",
+            "settings": {
+              "maxFiles": 1,
+              "dropZone": true,
+              "thumbnails": true,
+              "camera": false,
+              "types": [
+                "pdf",
+                "text"
+              ],
+              "extensions": [
+                ".odt",
+                "pdf"
+              ]
+            }
+          }
+        }
+      },
+      "expect": "Choisissez un fichier au format PDF, TXT, CSV ou ODT"
+    },
+    {
+      "id": "file-type-of-groups-and-extensions-it",
+      "context": {
+        "culture": "it-IT"
+      },
+      "message": {
+        "error": {
+          "code": "fileType",
+          "field": {
+            "type": "file",
+            "settings": {
+              "maxFiles": 1,
+              "dropZone": true,
+              "thumbnails": true,
+              "camera": false,
+              "types": [
+                "pdf",
+                "text"
+              ],
+              "extensions": [
+                ".odt",
+                "pdf"
+              ]
+            }
+          }
+        }
+      },
+      "expect": "Scegli un file in formato PDF, TXT, CSV o ODT"
+    },
+    {
+      "id": "file-type-of-groups-and-extensions-nl",
+      "context": {
+        "culture": "nl-NL"
+      },
+      "message": {
+        "error": {
+          "code": "fileType",
+          "field": {
+            "type": "file",
+            "settings": {
+              "maxFiles": 1,
+              "dropZone": true,
+              "thumbnails": true,
+              "camera": false,
+              "types": [
+                "pdf",
+                "text"
+              ],
+              "extensions": [
+                ".odt",
+                "pdf"
+              ]
+            }
+          }
+        }
+      },
+      "expect": "Kies een bestand van het type PDF, TXT, CSV of ODT"
+    },
+    {
+      "id": "file-type-of-groups-and-extensions-es",
+      "context": {
+        "culture": "es-ES"
+      },
+      "message": {
+        "error": {
+          "code": "fileType",
+          "field": {
+            "type": "file",
+            "settings": {
+              "maxFiles": 1,
+              "dropZone": true,
+              "thumbnails": true,
+              "camera": false,
+              "types": [
+                "pdf",
+                "text"
+              ],
+              "extensions": [
+                ".odt",
+                "pdf"
+              ]
+            }
+          }
+        }
+      },
+      "expect": "Elija un archivo en formato PDF, TXT, CSV o ODT"
+    },
+    {
+      "id": "file-type-of-groups-and-extensions-da",
+      "context": {
+        "culture": "da-DK"
+      },
+      "message": {
+        "error": {
+          "code": "fileType",
+          "field": {
+            "type": "file",
+            "settings": {
+              "maxFiles": 1,
+              "dropZone": true,
+              "thumbnails": true,
+              "camera": false,
+              "types": [
+                "pdf",
+                "text"
+              ],
+              "extensions": [
+                ".odt",
+                "pdf"
+              ]
+            }
+          }
+        }
+      },
+      "expect": "V\u00e6lg en fil i formatet PDF, TXT, CSV eller ODT"
+    },
+    {
+      "id": "file-size-rounds-to-a-tenth-fr",
+      "context": {
+        "culture": "fr-FR"
+      },
+      "message": {
+        "error": {
+          "code": "fileSize",
+          "field": {
+            "type": "file",
+            "settings": {
+              "maxFiles": 1,
+              "dropZone": true,
+              "thumbnails": true,
+              "camera": false,
+              "maxBytes": 5000000
+            }
+          }
+        }
+      },
+      "expect": "Ce fichier d\u00e9passe 4,8\u00a0Mo. Choisissez-en un plus petit."
+    },
+    {
+      "id": "file-size-rounds-to-a-tenth-it",
+      "context": {
+        "culture": "it-IT"
+      },
+      "message": {
+        "error": {
+          "code": "fileSize",
+          "field": {
+            "type": "file",
+            "settings": {
+              "maxFiles": 1,
+              "dropZone": true,
+              "thumbnails": true,
+              "camera": false,
+              "maxBytes": 5000000
+            }
+          }
+        }
+      },
+      "expect": "Questo file supera il limite di 4,8 MB. Scegline uno pi\u00f9 piccolo."
+    },
+    {
+      "id": "file-size-rounds-to-a-tenth-nl",
+      "context": {
+        "culture": "nl-NL"
+      },
+      "message": {
+        "error": {
+          "code": "fileSize",
+          "field": {
+            "type": "file",
+            "settings": {
+              "maxFiles": 1,
+              "dropZone": true,
+              "thumbnails": true,
+              "camera": false,
+              "maxBytes": 5000000
+            }
+          }
+        }
+      },
+      "expect": "Dit bestand is groter dan 4,8 MB. Kies een kleiner bestand."
+    },
+    {
+      "id": "file-size-rounds-to-a-tenth-es",
+      "context": {
+        "culture": "es-ES"
+      },
+      "message": {
+        "error": {
+          "code": "fileSize",
+          "field": {
+            "type": "file",
+            "settings": {
+              "maxFiles": 1,
+              "dropZone": true,
+              "thumbnails": true,
+              "camera": false,
+              "maxBytes": 5000000
+            }
+          }
+        }
+      },
+      "expect": "Este archivo ocupa m\u00e1s de 4,8 MB. Elija uno m\u00e1s peque\u00f1o."
+    },
+    {
+      "id": "file-size-rounds-to-a-tenth-da",
+      "context": {
+        "culture": "da-DK"
+      },
+      "message": {
+        "error": {
+          "code": "fileSize",
+          "field": {
+            "type": "file",
+            "settings": {
+              "maxFiles": 1,
+              "dropZone": true,
+              "thumbnails": true,
+              "camera": false,
+              "maxBytes": 5000000
+            }
+          }
+        }
+      },
+      "expect": "Filen er st\u00f8rre end 4,8 MB. V\u00e6lg en mindre."
+    },
+    {
+      "id": "file-size-in-kilobytes-fr",
+      "context": {
+        "culture": "fr-FR"
+      },
+      "message": {
+        "error": {
+          "code": "fileSize",
+          "field": {
+            "type": "file",
+            "settings": {
+              "maxFiles": 3,
+              "dropZone": true,
+              "thumbnails": true,
+              "camera": false,
+              "maxBytes": 512000
+            }
+          }
+        }
+      },
+      "expect": "L\u2019un des fichiers d\u00e9passe 500\u00a0Ko. Choisissez-en un plus petit."
+    },
+    {
+      "id": "file-size-in-kilobytes-it",
+      "context": {
+        "culture": "it-IT"
+      },
+      "message": {
+        "error": {
+          "code": "fileSize",
+          "field": {
+            "type": "file",
+            "settings": {
+              "maxFiles": 3,
+              "dropZone": true,
+              "thumbnails": true,
+              "camera": false,
+              "maxBytes": 512000
+            }
+          }
+        }
+      },
+      "expect": "Uno dei file supera il limite di 500 KB. Scegline uno pi\u00f9 piccolo."
+    },
+    {
+      "id": "file-size-in-kilobytes-nl",
+      "context": {
+        "culture": "nl-NL"
+      },
+      "message": {
+        "error": {
+          "code": "fileSize",
+          "field": {
+            "type": "file",
+            "settings": {
+              "maxFiles": 3,
+              "dropZone": true,
+              "thumbnails": true,
+              "camera": false,
+              "maxBytes": 512000
+            }
+          }
+        }
+      },
+      "expect": "Een van de bestanden is groter dan 500 KB. Kies een kleiner bestand."
+    },
+    {
+      "id": "file-size-in-kilobytes-es",
+      "context": {
+        "culture": "es-ES"
+      },
+      "message": {
+        "error": {
+          "code": "fileSize",
+          "field": {
+            "type": "file",
+            "settings": {
+              "maxFiles": 3,
+              "dropZone": true,
+              "thumbnails": true,
+              "camera": false,
+              "maxBytes": 512000
+            }
+          }
+        }
+      },
+      "expect": "Uno de los archivos ocupa m\u00e1s de 500 KB. Elija uno m\u00e1s peque\u00f1o."
+    },
+    {
+      "id": "file-size-in-kilobytes-da",
+      "context": {
+        "culture": "da-DK"
+      },
+      "message": {
+        "error": {
+          "code": "fileSize",
+          "field": {
+            "type": "file",
+            "settings": {
+              "maxFiles": 3,
+              "dropZone": true,
+              "thumbnails": true,
+              "camera": false,
+              "maxBytes": 512000
+            }
+          }
+        }
+      },
+      "expect": "En af filerne er st\u00f8rre end 500 KB. V\u00e6lg en mindre."
+    },
+    {
+      "id": "file-count-of-one-fr",
+      "context": {
+        "culture": "fr-FR"
+      },
+      "message": {
+        "error": {
+          "code": "fileCount",
+          "field": {
+            "type": "file",
+            "settings": {
+              "maxFiles": 1,
+              "dropZone": true,
+              "thumbnails": true,
+              "camera": false
+            }
+          }
+        }
+      },
+      "expect": "Choisissez au plus 1 fichier"
+    },
+    {
+      "id": "file-count-of-one-it",
+      "context": {
+        "culture": "it-IT"
+      },
+      "message": {
+        "error": {
+          "code": "fileCount",
+          "field": {
+            "type": "file",
+            "settings": {
+              "maxFiles": 1,
+              "dropZone": true,
+              "thumbnails": true,
+              "camera": false
+            }
+          }
+        }
+      },
+      "expect": "Scegli al massimo 1 file"
+    },
+    {
+      "id": "file-count-of-one-nl",
+      "context": {
+        "culture": "nl-NL"
+      },
+      "message": {
+        "error": {
+          "code": "fileCount",
+          "field": {
+            "type": "file",
+            "settings": {
+              "maxFiles": 1,
+              "dropZone": true,
+              "thumbnails": true,
+              "camera": false
+            }
+          }
+        }
+      },
+      "expect": "Kies maximaal 1 bestand"
+    },
+    {
+      "id": "file-count-of-one-es",
+      "context": {
+        "culture": "es-ES"
+      },
+      "message": {
+        "error": {
+          "code": "fileCount",
+          "field": {
+            "type": "file",
+            "settings": {
+              "maxFiles": 1,
+              "dropZone": true,
+              "thumbnails": true,
+              "camera": false
+            }
+          }
+        }
+      },
+      "expect": "Elija solo 1 archivo"
+    },
+    {
+      "id": "file-count-of-one-da",
+      "context": {
+        "culture": "da-DK"
+      },
+      "message": {
+        "error": {
+          "code": "fileCount",
+          "field": {
+            "type": "file",
+            "settings": {
+              "maxFiles": 1,
+              "dropZone": true,
+              "thumbnails": true,
+              "camera": false
+            }
+          }
+        }
+      },
+      "expect": "V\u00e6lg kun 1 fil"
+    },
+    {
+      "id": "row-count-too-many-fr",
+      "context": {
+        "culture": "fr-FR"
+      },
+      "message": {
+        "error": {
+          "code": "rowCount",
+          "field": {
+            "type": "repeater",
+            "settings": {
+              "minRows": 2,
+              "maxRows": 5
+            }
+          },
+          "rows": 6
+        }
+      },
+      "expect": "Supprimez des lignes pour en garder au plus 5"
+    },
+    {
+      "id": "row-count-too-many-it",
+      "context": {
+        "culture": "it-IT"
+      },
+      "message": {
+        "error": {
+          "code": "rowCount",
+          "field": {
+            "type": "repeater",
+            "settings": {
+              "minRows": 2,
+              "maxRows": 5
+            }
+          },
+          "rows": 6
+        }
+      },
+      "expect": "Rimuovi delle righe per tenerne al massimo 5"
+    },
+    {
+      "id": "row-count-too-many-nl",
+      "context": {
+        "culture": "nl-NL"
+      },
+      "message": {
+        "error": {
+          "code": "rowCount",
+          "field": {
+            "type": "repeater",
+            "settings": {
+              "minRows": 2,
+              "maxRows": 5
+            }
+          },
+          "rows": 6
+        }
+      },
+      "expect": "Verwijder rijen zodat er maximaal 5 overblijven"
+    },
+    {
+      "id": "row-count-too-many-es",
+      "context": {
+        "culture": "es-ES"
+      },
+      "message": {
+        "error": {
+          "code": "rowCount",
+          "field": {
+            "type": "repeater",
+            "settings": {
+              "minRows": 2,
+              "maxRows": 5
+            }
+          },
+          "rows": 6
+        }
+      },
+      "expect": "Quite filas para que queden como m\u00e1ximo 5"
+    },
+    {
+      "id": "row-count-too-many-da",
+      "context": {
+        "culture": "da-DK"
+      },
+      "message": {
+        "error": {
+          "code": "rowCount",
+          "field": {
+            "type": "repeater",
+            "settings": {
+              "minRows": 2,
+              "maxRows": 5
+            }
+          },
+          "rows": 6
+        }
+      },
+      "expect": "Fjern r\u00e6kker, s\u00e5 der h\u00f8jst er 5 tilbage"
+    },
+    {
+      "id": "row-count-too-many-of-one-fr",
+      "context": {
+        "culture": "fr-FR"
+      },
+      "message": {
+        "error": {
+          "code": "rowCount",
+          "field": {
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 1
+            }
+          },
+          "rows": 2
+        }
+      },
+      "expect": "Supprimez des lignes pour en garder au plus 1"
+    },
+    {
+      "id": "row-count-too-many-of-one-it",
+      "context": {
+        "culture": "it-IT"
+      },
+      "message": {
+        "error": {
+          "code": "rowCount",
+          "field": {
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 1
+            }
+          },
+          "rows": 2
+        }
+      },
+      "expect": "Rimuovi delle righe per tenerne al massimo 1"
+    },
+    {
+      "id": "row-count-too-many-of-one-nl",
+      "context": {
+        "culture": "nl-NL"
+      },
+      "message": {
+        "error": {
+          "code": "rowCount",
+          "field": {
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 1
+            }
+          },
+          "rows": 2
+        }
+      },
+      "expect": "Verwijder rijen zodat er maximaal 1 overblijft"
+    },
+    {
+      "id": "row-count-too-many-of-one-es",
+      "context": {
+        "culture": "es-ES"
+      },
+      "message": {
+        "error": {
+          "code": "rowCount",
+          "field": {
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 1
+            }
+          },
+          "rows": 2
+        }
+      },
+      "expect": "Quite filas para que quede como m\u00e1ximo 1"
+    },
+    {
+      "id": "row-count-too-many-of-one-da",
+      "context": {
+        "culture": "da-DK"
+      },
+      "message": {
+        "error": {
+          "code": "rowCount",
+          "field": {
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 1
+            }
+          },
+          "rows": 2
+        }
+      },
+      "expect": "Fjern r\u00e6kker, s\u00e5 der h\u00f8jst er 1 tilbage"
+    },
+    {
+      "id": "check-matches-a-field-fr",
+      "context": {
+        "culture": "fr-FR"
+      },
+      "message": {
+        "error": {
+          "code": "check",
+          "check": "matchesField",
+          "other": "Password",
+          "field": {
+            "type": "text",
+            "settings": {
+              "minLength": 0,
+              "maxLength": 255,
+              "counter": false
+            }
+          }
+        }
+      },
+      "expect": "Saisissez la m\u00eame r\u00e9ponse que pour Password"
+    },
+    {
+      "id": "check-matches-a-field-it",
+      "context": {
+        "culture": "it-IT"
+      },
+      "message": {
+        "error": {
+          "code": "check",
+          "check": "matchesField",
+          "other": "Password",
+          "field": {
+            "type": "text",
+            "settings": {
+              "minLength": 0,
+              "maxLength": 255,
+              "counter": false
+            }
+          }
+        }
+      },
+      "expect": "Inserisci lo stesso valore di Password"
+    },
+    {
+      "id": "check-matches-a-field-nl",
+      "context": {
+        "culture": "nl-NL"
+      },
+      "message": {
+        "error": {
+          "code": "check",
+          "check": "matchesField",
+          "other": "Password",
+          "field": {
+            "type": "text",
+            "settings": {
+              "minLength": 0,
+              "maxLength": 255,
+              "counter": false
+            }
+          }
+        }
+      },
+      "expect": "Vul hetzelfde in als bij Password"
+    },
+    {
+      "id": "check-matches-a-field-es",
+      "context": {
+        "culture": "es-ES"
+      },
+      "message": {
+        "error": {
+          "code": "check",
+          "check": "matchesField",
+          "other": "Password",
+          "field": {
+            "type": "text",
+            "settings": {
+              "minLength": 0,
+              "maxLength": 255,
+              "counter": false
+            }
+          }
+        }
+      },
+      "expect": "Escriba lo mismo que en Password"
+    },
+    {
+      "id": "check-matches-a-field-da",
+      "context": {
+        "culture": "da-DK"
+      },
+      "message": {
+        "error": {
+          "code": "check",
+          "check": "matchesField",
+          "other": "Password",
+          "field": {
+            "type": "text",
+            "settings": {
+              "minLength": 0,
+              "maxLength": 255,
+              "counter": false
+            }
+          }
+        }
+      },
+      "expect": "Skriv det samme som ved Password"
+    },
+    {
+      "id": "empty-fr",
+      "context": {
+        "culture": "fr-FR"
+      },
+      "message": {
+        "error": {
+          "code": "empty"
+        }
+      },
+      "expect": "R\u00e9pondez \u00e0 au moins une question avant d\u2019envoyer le formulaire"
+    },
+    {
+      "id": "empty-it",
+      "context": {
+        "culture": "it-IT"
+      },
+      "message": {
+        "error": {
+          "code": "empty"
+        }
+      },
+      "expect": "Rispondi ad almeno una domanda prima di inviare il modulo"
+    },
+    {
+      "id": "empty-nl",
+      "context": {
+        "culture": "nl-NL"
+      },
+      "message": {
+        "error": {
+          "code": "empty"
+        }
+      },
+      "expect": "Beantwoord minstens \u00e9\u00e9n vraag voordat u het formulier verstuurt"
+    },
+    {
+      "id": "empty-es",
+      "context": {
+        "culture": "es-ES"
+      },
+      "message": {
+        "error": {
+          "code": "empty"
+        }
+      },
+      "expect": "Responda al menos a una pregunta antes de enviar el formulario"
+    },
+    {
+      "id": "empty-da",
+      "context": {
+        "culture": "da-DK"
+      },
+      "message": {
+        "error": {
+          "code": "empty"
+        }
+      },
+      "expect": "Besvar mindst \u00e9t sp\u00f8rgsm\u00e5l, f\u00f8r du sender formularen"
+    },
+    {
+      "id": "heading-of-one-fr",
+      "context": {
+        "culture": "fr-FR"
+      },
+      "message": {
+        "heading": 1
+      },
+      "expect": "Cette r\u00e9ponse doit \u00eatre modifi\u00e9e"
+    },
+    {
+      "id": "heading-of-one-it",
+      "context": {
+        "culture": "it-IT"
+      },
+      "message": {
+        "heading": 1
+      },
+      "expect": "Questa risposta va corretta"
+    },
+    {
+      "id": "heading-of-one-nl",
+      "context": {
+        "culture": "nl-NL"
+      },
+      "message": {
+        "heading": 1
+      },
+      "expect": "Dit antwoord moet nog worden aangepast"
+    },
+    {
+      "id": "heading-of-one-es",
+      "context": {
+        "culture": "es-ES"
+      },
+      "message": {
+        "heading": 1
+      },
+      "expect": "Hay que corregir esta respuesta"
+    },
+    {
+      "id": "heading-of-one-da",
+      "context": {
+        "culture": "da-DK"
+      },
+      "message": {
+        "heading": 1
+      },
+      "expect": "Dette svar skal rettes"
+    },
+    {
+      "id": "heading-of-several-fr",
+      "context": {
+        "culture": "fr-FR"
+      },
+      "message": {
+        "heading": 3
+      },
+      "expect": "Ces r\u00e9ponses doivent \u00eatre modifi\u00e9es"
+    },
+    {
+      "id": "heading-of-several-it",
+      "context": {
+        "culture": "it-IT"
+      },
+      "message": {
+        "heading": 3
+      },
+      "expect": "Queste risposte vanno corrette"
+    },
+    {
+      "id": "heading-of-several-nl",
+      "context": {
+        "culture": "nl-NL"
+      },
+      "message": {
+        "heading": 3
+      },
+      "expect": "Deze antwoorden moeten nog worden aangepast"
+    },
+    {
+      "id": "heading-of-several-es",
+      "context": {
+        "culture": "es-ES"
+      },
+      "message": {
+        "heading": 3
+      },
+      "expect": "Hay que corregir estas respuestas"
+    },
+    {
+      "id": "heading-of-several-da",
+      "context": {
+        "culture": "da-DK"
+      },
+      "message": {
+        "heading": 3
+      },
+      "expect": "Disse svar skal rettes"
+    },
+    {
+      "id": "entry-names-its-field-fr",
+      "context": {
+        "culture": "fr-FR"
+      },
+      "message": {
+        "entry": {
+          "message": "Saisissez une r\u00e9ponse",
+          "label": "Pr\u00e9nom"
+        }
+      },
+      "expect": "Pr\u00e9nom\u00a0: Saisissez une r\u00e9ponse"
+    },
+    {
+      "id": "entry-in-a-row-names-the-row-fr",
+      "context": {
+        "culture": "fr-FR"
+      },
+      "message": {
+        "entry": {
+          "message": "Saisissez une r\u00e9ponse",
+          "label": "Nom",
+          "row": "Invit\u00e9 2"
+        }
+      },
+      "expect": "Nom (Invit\u00e9 2)\u00a0: Saisissez une r\u00e9ponse"
+    },
+    {
+      "id": "entry-after-a-question-takes-no-colon-fr",
+      "context": {
+        "culture": "fr-FR"
+      },
+      "message": {
+        "entry": {
+          "message": "Choisissez une r\u00e9ponse",
+          "label": "O\u00f9 souhaitez-vous vous asseoir\u00a0?"
+        }
+      },
+      "expect": "O\u00f9 souhaitez-vous vous asseoir\u00a0? Choisissez une r\u00e9ponse"
+    },
+    {
+      "id": "entry-names-its-field-it",
+      "context": {
+        "culture": "it-IT"
+      },
+      "message": {
+        "entry": {
+          "message": "Inserisci una risposta",
+          "label": "Nome"
+        }
+      },
+      "expect": "Nome: Inserisci una risposta"
+    },
+    {
+      "id": "entry-in-a-row-names-the-row-it",
+      "context": {
+        "culture": "it-IT"
+      },
+      "message": {
+        "entry": {
+          "message": "Inserisci una risposta",
+          "label": "Nome",
+          "row": "Ospite 2"
+        }
+      },
+      "expect": "Nome (Ospite 2): Inserisci una risposta"
+    },
+    {
+      "id": "entry-names-its-field-nl",
+      "context": {
+        "culture": "nl-NL"
+      },
+      "message": {
+        "entry": {
+          "message": "Vul een antwoord in",
+          "label": "Voornaam"
+        }
+      },
+      "expect": "Voornaam: Vul een antwoord in"
+    },
+    {
+      "id": "entry-in-a-row-names-the-row-nl",
+      "context": {
+        "culture": "nl-NL"
+      },
+      "message": {
+        "entry": {
+          "message": "Vul een antwoord in",
+          "label": "Naam",
+          "row": "Gast 2"
+        }
+      },
+      "expect": "Naam (Gast 2): Vul een antwoord in"
+    },
+    {
+      "id": "entry-names-its-field-es",
+      "context": {
+        "culture": "es-ES"
+      },
+      "message": {
+        "entry": {
+          "message": "Escriba una respuesta",
+          "label": "Nombre"
+        }
+      },
+      "expect": "Nombre: Escriba una respuesta"
+    },
+    {
+      "id": "entry-in-a-row-names-the-row-es",
+      "context": {
+        "culture": "es-ES"
+      },
+      "message": {
+        "entry": {
+          "message": "Escriba una respuesta",
+          "label": "Nombre",
+          "row": "Invitado 2"
+        }
+      },
+      "expect": "Nombre (Invitado 2): Escriba una respuesta"
+    },
+    {
+      "id": "entry-names-its-field-da",
+      "context": {
+        "culture": "da-DK"
+      },
+      "message": {
+        "entry": {
+          "message": "Skriv et svar",
+          "label": "Fornavn"
+        }
+      },
+      "expect": "Fornavn: Skriv et svar"
+    },
+    {
+      "id": "entry-in-a-row-names-the-row-da",
+      "context": {
+        "culture": "da-DK"
+      },
+      "message": {
+        "entry": {
+          "message": "Skriv et svar",
+          "label": "Navn",
+          "row": "G\u00e6st 2"
+        }
+      },
+      "expect": "Navn (G\u00e6st 2): Skriv et svar"
     }
   ]
 }

@@ -387,7 +387,7 @@ export const inspectorStyles = css`
     inline-size: 32px;
   }
 
-  /* A row's "Place in the list", under its line, as its details are. */
+  /* A row's "Position in the list", under its line, as its details are. */
   .row-place {
     display: grid;
     gap: var(--uui-size-space-1);

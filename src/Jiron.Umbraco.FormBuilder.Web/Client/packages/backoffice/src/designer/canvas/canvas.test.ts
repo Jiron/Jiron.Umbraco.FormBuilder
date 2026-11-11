@@ -636,6 +636,16 @@ describe('the canvas', () => {
       '#Forms.Gone (optional)',
     ]);
     expect(fields.map((field) => field.state?.labelText)).toEqual(['#Forms.Name', '#Forms.Gone']);
+
+    // In another language the marks read the draft's own texts: a key is the dictionary's to translate (ADR-0228).
+    document.body.replaceChildren();
+    const languages = [
+      { culture: 'en-US', name: 'English (United States)', isDefault: true },
+      { culture: 'de-DE', name: 'Deutsch (Deutschland)', isDefault: false },
+    ];
+    const german = await canvasOf(definition, { lookups, look: { ...englishLook, languages, culture: 'de-DE' } });
+    for (const field of all<CanvasFieldElement>(german.element, 'jfb-canvas-field')) await settle(field);
+    expect(german.root.querySelectorAll('.bo-chip:not(.bo-rule-chip)')).toHaveLength(0);
   });
 
   it('carries a chip for each rule in use on a page, a group or a field, each describing it, and none while it is selected', async () => {

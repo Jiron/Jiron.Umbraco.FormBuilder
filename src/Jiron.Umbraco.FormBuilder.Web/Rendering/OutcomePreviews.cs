@@ -75,7 +75,9 @@ internal sealed class OutcomePreviews(
         var zone = await zones.GetAsync(null, cancellationToken);
         var entry = scope.Entry!;
         var reference = EntryReferences.Format(locked.Settings.Submission.EntryReference, entry.Number, TimeZoneInfo.ConvertTime(entry.Submitted, zone).Year);
-        var model = await models.PreviewAsync(new OutcomePreviewSource(rendered, shown is null ? null : new CopyShown(shown.Form, shown.Tagged, scope), scope, reference, form.Alias, culture), cancellationToken);
+        // The form's own wording, and every site's, of what the outcome shows (ADR-0230).
+        var texts = shown?.Texts ?? await visitorForms.TextsAsync(PublicProjection.Create(locked, types), culture, null, cancellationToken);
+        var model = await models.PreviewAsync(new OutcomePreviewSource(rendered, shown is null ? null : new CopyShown(shown.Form, shown.Tagged, scope), scope, reference, form.Alias, culture, texts), cancellationToken);
         var found = engine.GetView(null, model.Views.Outcome, isMainPage: false);
         if (!found.Success)
         {

@@ -7,6 +7,7 @@ import { css, html, type PropertyValues } from '@umbraco-cms/backoffice/external
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import type { UmbPropertyEditorUiElement } from '@umbraco-cms/backoffice/property-editor';
 import { jfbBackofficeTokens } from '../styles/tokens';
+import { withThemeLabel } from '../themes/theme-label';
 import { formPickerData, type PickerTheme } from './picker-data';
 
 /**
@@ -69,7 +70,11 @@ export class FormPickerThemeElement extends UmbLitElement implements UmbProperty
     const current = this.value ?? '';
     const options: ThemeOption[] = [
       { name: this.localize.term('jfbFormPicker_themeOwn'), value: OWN_THEME, selected: current === '' },
-      ...themes.map((theme) => ({ name: theme.label, value: theme.alias, selected: theme.alias === current })),
+      ...themes.map((theme) => ({
+        name: withThemeLabel(theme, (key) => this.localize.term(key)).label,
+        value: theme.alias,
+        selected: theme.alias === current,
+      })),
     ];
     if (current !== '' && !themes.some((theme) => theme.alias === current)) {
       options.push({ name: this.localize.term('jfbFormPicker_themeMissing', current), value: current, selected: true });

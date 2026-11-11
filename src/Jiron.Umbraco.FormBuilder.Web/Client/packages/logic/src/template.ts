@@ -324,7 +324,13 @@ function jsonItem(item: MergeItem): string {
   return '"' + jsonContent(textOf(item)) + '"';
 }
 
-const ENCODERS: Readonly<Record<Exclude<Writer, 'jsonValue'>, (text: string) => string>> = {
+/** How each writer encodes a value's text; a page's template needs only `html` and `text`. */
+type Encoders = Readonly<Partial<Record<Exclude<Writer, 'jsonValue'>, (text: string) => string>>>;
+
+/** The encoders of the two contexts the page renders in. */
+const PAGE_ENCODERS: Encoders = { html: escapeHtml, text: (text) => text };
+
+const ENCODERS: Encoders = {
   html: escapeHtml,
   xml: escapeXml,
   text: (text) => text,
@@ -1167,7 +1173,7 @@ function filterProblems(filters: readonly TemplateFilter[], writer: Writer): Tem
 }
 
 /** A value through a tag's filters, written as its place writes it. */
-function write(source: MergeValue, tag: TagPart, culture: CultureFormats): string {
+function write(source: MergeValue, tag: TagPart, culture: CultureFormats, encoders: Encoders): string {
   let value: Value = isList(source)
     ? { items: source, list: true, encoded: null }
     : { items: [source], list: false, encoded: null };
@@ -1182,7 +1188,7 @@ function write(source: MergeValue, tag: TagPart, culture: CultureFormats): strin
   if ((value.encoded === 'html' && tag.writer === 'html') || (value.encoded === 'url' && tag.writer === 'url')) {
     return text;
   }
-  return ENCODERS[tag.writer](text);
+  return (encoders[tag.writer] ?? escapeHtml)(text);
 }
 
 // ---- Parsing and rendering ----
@@ -1208,7 +1214,18 @@ export type PathProblem = (path: string) => TemplateProblemCode | null;
  * problem a path has where the template stands, as Core's template rules give it. Never throws.
  */
 export function parseTemplate(text: string, context: TemplateContext, pathProblem?: PathProblem): ParsedTemplate {
-  const scan = scanFor(context);
+  return parseWith(scanFor(context), text, context, pathProblem);
+}
+
+/**
+ * Parses a template as parseTemplate does, in one of the two contexts the form endpoint gives the page's visitor texts
+ * (`html` and `text`): the website runtime's bundle then holds no scan of an address, of JSON or of XML (section 4.12).
+ */
+export function parsePageTemplate(text: string, context: 'html' | 'text', pathProblem?: PathProblem): ParsedTemplate {
+  return parseWith(context === 'html' ? new MarkupScan(true) : new AnywhereScan('text'), text, context, pathProblem);
+}
+
+function parseWith(scan: Scan, text: string, context: TemplateContext, pathProblem?: PathProblem): ParsedTemplate {
   const parts: TemplatePart[] = [];
   const written = (at: number, end: number, code: TemplateProblemCode, where: number): void => {
     parts.push({ kind: 'written', at, text: text.slice(at, end), problem: { code, at: where } });
@@ -1282,6 +1299,24 @@ export function renderTemplate(
   values: MergeValues,
   culture: CultureFormats,
 ): RenderedTemplate {
+  return renderWith(ENCODERS, template, values, culture);
+}
+
+/** Renders a template that parsePageTemplate parsed, as renderTemplate does, with the encoders of its two contexts only. */
+export function renderPageTemplate(
+  template: ParsedTemplate,
+  values: MergeValues,
+  culture: CultureFormats,
+): RenderedTemplate {
+  return renderWith(PAGE_ENCODERS, template, values, culture);
+}
+
+function renderWith(
+  encoders: Encoders,
+  template: ParsedTemplate,
+  values: MergeValues,
+  culture: CultureFormats,
+): RenderedTemplate {
   const problems: TemplateProblem[] = [];
   let out = '';
   let stopped = false;
@@ -1312,7 +1347,7 @@ export function renderTemplate(
       if (value === undefined) problems.push({ code: 'unknown_path', at: part.pathAt });
       problems.push(...part.problems);
       if (part.problems.some((problem) => !TEMPLATE_WARNINGS.has(problem.code))) add(part.text, part.at);
-      else if (value !== undefined && part.problems.length === 0) add(write(value, part, culture), part.at);
+      else if (value !== undefined && part.problems.length === 0) add(write(value, part, culture, encoders), part.at);
     }
   }
   return { text: out, problems: ordered(problems) };

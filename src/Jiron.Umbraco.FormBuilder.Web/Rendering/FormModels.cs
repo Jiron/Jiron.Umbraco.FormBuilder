@@ -143,7 +143,7 @@ internal sealed partial class FormModels(
         var form = render.Form.Published;
         var (formView, parts) = await views.PartsAsync(render.Theme.ViewFolder, form.Form.Alias, cancellationToken);
         var classes = new ThemeClassesModel(render.Theme.Classes);
-        var words = RenderingWords.Of(render.Culture);
+        var words = RenderingWords.Of(render.Culture).With(render.Shown.Texts);
         var post = FormPosts.Get(render.HttpContext, form.Form.Key, render.Instance)
             ?? (FormPostFileNotes.Get(render.HttpContext, form.Form.Key, render.Instance) is { IsRefused: true }
                 ? new FormPostState { Notice = new FormPostNotice(words.NotSentHeading, words.TooLargeText, FormPostHandler.TooLargeCode) }
@@ -213,7 +213,7 @@ internal sealed partial class FormModels(
         Classes = classes,
         Views = views,
         Copy = copy,
-        Message = new HtmlString(outcome.Html),
+        Message = new HtmlString(outcome.Html ?? "<p>" + WebUtility.HtmlEncode(words.ThankYou) + "</p>"),
         Reference = outcome.Reference is { Length: > 0 } reference ? WithMarkup(words.Reference, "<strong>" + WebUtility.HtmlEncode(reference) + "</strong>") : null,
         IsPending = outcome.IsPending,
         Continue = outcome.ContinueUrl is { } url ? new OutcomeLinkModel(url, words.Continue) : null,
@@ -393,7 +393,7 @@ internal sealed partial class FormModels(
                 : null,
             progress: Progress(settings, shown.Pages, shownPages, current, build),
             errors: errors.Count > 0
-                ? new ErrorSummaryViewModel { Classes = root.Classes, Heading = VisitorMessages.SummaryHeading(errors.Count, render.Culture), HeadingId = root.Id + "-summary", Errors = errors }
+                ? new ErrorSummaryViewModel { Classes = root.Classes, Heading = VisitorMessages.SummaryHeading(errors.Count, render.Culture, render.Shown.Texts), HeadingId = root.Id + "-summary", Errors = errors }
                 : null,
             navigation: navigation,
             requiredNote: build.MarksRequired || (build.Hooks && build.Marker == RequiredMarker.Required && build.WritesMarks)

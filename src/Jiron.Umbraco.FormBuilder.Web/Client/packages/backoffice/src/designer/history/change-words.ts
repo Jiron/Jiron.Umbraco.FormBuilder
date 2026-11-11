@@ -122,6 +122,7 @@ export const VOCABULARY: Readonly<Record<string, Readonly<Record<string, Propert
     resume: { term: 'jfbHistory_property_resume', value: 'any', holds: 'SaveAndResume' },
     entryTitle: { term: 'jfbSettings_entryTitle', value: 'line' },
     entryReference: { term: 'jfbSettings_reference', value: 'any', holds: 'EntryReferenceFormat' },
+    texts: { term: 'jfbSettings_texts', value: 'any' },
   },
   EmailVerification: {
     emailField: { term: 'jfbSettings_verificationField', value: 'field' },
@@ -403,6 +404,9 @@ const cut = (text: string): string =>
   text.length > LONGEST ? `${text.slice(0, LONGEST - 1).trimEnd()}${ELLIPSIS}` : text;
 
 /** Whether a path's segment is a language's code: "" for the default, "de", "en-US". */
+/** What sets a text's language off after its name: a middle dot and a space. */
+const LANGUAGE_MARK = `${String.fromCharCode(0xb7)} `;
+
 const isCulture = (segment: string): boolean => segment === '' || /^[a-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$/.test(segment);
 
 /** Which side of the comparison a value is from. */
@@ -758,14 +762,14 @@ class Words {
     if (!isCulture(culture)) return rest.filter((segment) => segment !== '');
     return !languages || culture === '' || culture.toLowerCase() === this.#context.culture.toLowerCase()
       ? []
-      : [`(${this.languageOf(culture)})`];
+      : [`${LANGUAGE_MARK}${this.languageOf(culture)}`];
   }
 
   #joined(names: readonly string[]): string {
-    // A language closes the name it follows: "Label (German)".
+    // A language closes the name it follows, after a middle dot, as its own name may hold brackets ("German (Germany)").
     const out: string[] = [];
     for (const name of names) {
-      if (name.startsWith('(') && out.length > 0) out[out.length - 1] = `${out[out.length - 1]} ${name}`;
+      if (name.startsWith(LANGUAGE_MARK) && out.length > 0) out[out.length - 1] = `${out[out.length - 1]} ${name}`;
       else out.push(name);
     }
     const [first = '', ...more] = out;

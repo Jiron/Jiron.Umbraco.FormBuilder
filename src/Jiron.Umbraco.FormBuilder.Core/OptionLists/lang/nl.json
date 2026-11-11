@@ -1,0 +1,5 @@
+{
+  "agreement": ["Helemaal mee oneens", "Mee oneens", "Niet mee eens, niet mee oneens", "Mee eens", "Helemaal mee eens"],
+  "satisfaction": ["Zeer ontevreden", "Ontevreden", "Niet tevreden, niet ontevreden", "Tevreden", "Zeer tevreden"],
+  "yesNoNotSure": ["Ja", "Nee", "Weet ik niet"]
+}

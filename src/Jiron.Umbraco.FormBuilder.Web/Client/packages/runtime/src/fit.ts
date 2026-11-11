@@ -2,7 +2,7 @@
  * Fitting a form to its page (ROADMAP 6.4l, ADR-0022 as amended in 2.4), in the frame, as both show before the visitor
  * touches anything. The ground check: a form with no scheme class, on itself or an ancestor (ADR-0106), takes the dark
  * tokens when the first opaque background behind it is dark, so its text never sits dark on dark; a class the site set
- * is never changed. Step folding: the steps fold into "Step 2 of 6" when a word of a step name is wider than its step, so
+ * is never changed. Step folding: the steps fold into "Page 2 of 6" when a word of a step name is wider than its step, so
  * no name breaks inside a word where the browser cannot hyphenate, after layout, once the fonts are in, and on every
  * change of width.
  */

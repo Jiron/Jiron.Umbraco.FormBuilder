@@ -88,6 +88,9 @@ import { OUTCOME_MODAL } from './outcome.modal.token';
 import { described, flagLine, flagWith, NO_FLAG, whyLine, whys, type Flag, type Shown } from './problem-lines';
 import { settingsStyles } from './settings.styles';
 import { isInstant, toInstant, toLocal, zoneOf } from './time-zone';
+import { withThemeLabel } from '../../themes/theme-label';
+import './visitor-texts.element';
+import { isVisitorTexts, type VisitorTexts } from './visitor-texts';
 
 const OPEN_KEY = 'jfb.designer.settings.open';
 
@@ -269,7 +272,11 @@ export class FormSettingsViewElement extends UmbLitElement {
       this._failed = true;
       return;
     }
-    this._choices = choices.data;
+    // The default theme by its name in the language shown, wherever the view names a theme.
+    this._choices = {
+      ...choices.data,
+      themes: choices.data.themes.map((theme) => withThemeLabel(theme, (key) => this.localize.term(key))),
+    };
     this._providers = providers.data;
     this._look = look;
     await this.updateComplete;
@@ -1012,6 +1019,23 @@ export class FormSettingsViewElement extends UmbLitElement {
           ${this.#buttonLabel('next-label', 'nextLabel', this.#term('nextLabel'), null, word(look, 'next'))}
           ${this.#buttonLabel('back-label', 'backLabel', this.#term('backLabel'), null, word(look, 'back'))}
         </div>
+      </fieldset>
+      <fieldset class="item">
+        <legend class="label">${this.#term('texts')}</legend>
+        <p class="help">${this.#term('textsHelp')}</p>
+        <jfb-visitor-texts
+          .texts=${isVisitorTexts(submission['texts']) ? submission['texts'] : undefined}
+          culture=${look.culture}
+          @change=${(event: CustomEvent<{ texts: VisitorTexts }>) => {
+            const texts = event.detail.texts;
+            this.#set(
+              ['submission', 'texts'],
+              Object.keys(texts).length > 0 ? texts : undefined,
+              this.#term('texts'),
+              'visitor-texts',
+            );
+          }}
+        ></jfb-visitor-texts>
       </fieldset>
       ${this.#switch(
         'summary-page',

@@ -201,7 +201,7 @@ Use Umbraco's own words where Umbraco has the same action, so the section feels 
 | a saved template's "…" (Library › Templates; a built-in one has none) · its dialog's primary | Rename… · Delete… · Save template · Rename | Umbenennen… · Löschen… · Vorlage speichern · Umbenennen |
 | turn a list of questions into fields | Paste questions… | Fragen einfügen… |
 | turn lines into a choice field's options, or a grid's rows (one a line) | Paste options… · Paste rows… | Optionen einfügen… · Zeilen einfügen… |
-| move an option or a grid's row with single presses: what its handle opens under it | Place in the list · 1 of 3 | Platz in der Liste · 1 von 3 |
+| move an option or a grid's row with single presses: what its handle opens under it | Position in the list · 1 of 3 | Position in der Liste · 1 von 3 |
 | add a merge tag to a text | Insert merge tag | Platzhalter einfügen |
 | add who gets an email (its To box; it offers An address, The answer of a field, The person who created the form, Addresses chosen by an answer, each kind once) | Add recipient | Empfänger hinzufügen |
 | add a row to a webhook's names and values, or to its headers | Add a name · Add header | Namen hinzufügen · Kopfzeile hinzufügen |
@@ -330,7 +330,7 @@ code as the message, never blames the user, and never claims a cause it cannot k
 | a setting's value | Enter an alias that starts with a letter and uses only letters, digits and hyphens. | Geben Sie einen Alias ein, der mit einem Buchstaben beginnt und nur Buchstaben, Ziffern und Bindestriche enthält. |
 | email not configured (Send test email is hidden meanwhile) | Emails can't be sent yet: no mail server is configured. Entries are kept, and their emails go out once sending works. A developer sets up sending in `Umbraco:CMS:Global:Smtp`. | E-Mails können noch nicht versendet werden: Es ist kein Mailserver eingerichtet. Die Einträge bleiben erhalten, und ihre E-Mails gehen raus, sobald der Versand funktioniert. Den Versand richtet jemand aus der Entwicklung in `Umbraco:CMS:Global:Smtp` ein. |
 | a delivery failed | The webhook to crm.example.com failed: the server answered "503 Service Unavailable". It is tried again at 14:30. [Retry now] | Der Webhook an crm.example.com ist fehlgeschlagen: Der Server antwortete „503 Service Unavailable“. Er wird um 14:30 erneut versucht. [Jetzt wiederholen] |
-| a failed run's Details (the Actions view), under What can be done | Test sends a sample entry, so you can see whether the server answers again. Someone who sees this form's entries and may change its actions finds the entry in Entries with the Actions filter, and can retry the run there. An administrator can also retry it in Activity › Deliveries. [Test] | Testen sendet einen Beispieleintrag, so sehen Sie, ob der Server wieder antwortet. Wer die Einträge dieses Formulars sieht und seine Aktionen ändern darf, findet den Eintrag unter Einträge mit dem Filter Aktionen und kann den Lauf dort wiederholen. Wer Administratorrechte hat, kann ihn auch unter Aktivität › Zustellungen wiederholen. [Testen] |
+| a failed run's Details (the Actions view), under What can be done | Test sends a sample entry, so you can see whether the server answers again. Someone who sees this form's entries and may change its actions finds the entry in Entries with the Actions filter, and can retry the run there. An administrator can also retry it in Activity › Deliveries. [Test] | Testen sendet einen Beispieleintrag, so sehen Sie, ob der Server wieder antwortet. Wer die Einträge dieses Formulars sieht und seine Aktionen ändern darf, findet den Eintrag unter „Einträge“ mit dem Filter „Aktionen“ und kann den Lauf dort wiederholen. Wer Administratorrechte hat, kann ihn auch unter Aktivität › Zustellungen wiederholen. [Testen] |
 | a failed run's Details, what happened and the tries | **What happened** The server answered 503. **Tries** Tried 3 times, the first at 13:40. | **Was passiert ist** Der Server antwortete mit 503. **Versuche** 3-mal versucht, zuerst um 13:40. |
 | a mail held back by a sending limit (no Retry; the limit is the one the host sets now) | Not sent: this site's forms had already sent 3 emails to anna@example.org that day, the most one address gets in a day. The limit keeps the forms from being used to send mail to strangers. A limited email is never sent later, so it can't be retried. Host configuration sets the limit: `JironFormBuilder:Limits:Mail:PerRecipientPerDay`. | Nicht gesendet: Die Formulare dieser Website hatten an diesem Tag schon 3 E-Mails an anna@example.org gesendet, die Höchstzahl für eine Adresse an einem Tag. Die Grenze verhindert, dass die Formulare genutzt werden, um Fremden E-Mails zu schicken. Eine begrenzte E-Mail wird nie später gesendet und lässt sich deshalb nicht wiederholen. Die Hostkonfiguration legt die Grenze fest: `JironFormBuilder:Limits:Mail:PerRecipientPerDay`. |
 | a delivery's details, for a reader who may not retry it | Only someone who may manage the actions of this form can retry it. | Wiederholen kann nur, wer die Aktionen dieses Formulars verwalten darf. |
@@ -357,7 +357,7 @@ useful action. One sentence, plus a button or link where there is one.
 | Activity › Audit log, nothing recorded yet · nothing matches | Nothing is recorded yet. The log fills as people work with forms, entries and settings. · No actions match the search and the filters. | Noch ist nichts protokolliert. Das Protokoll füllt sich, wenn Personen mit Formularen, Einträgen und Einstellungen arbeiten. · Keine Aktion passt zur Suche und zu den Filtern. |
 | an audit log list or Deliveries past its read budget | The list took too long to load. Narrow it down with the search or the filters. [Try again] | Die Liste hat zu lange gebraucht. Grenzen Sie sie mit der Suche oder den Filtern ein. [Erneut versuchen] |
 | no entries yet, for a user who may design the form | No entries yet. Share the form, or preview it and send a test entry. | Noch keine Einträge. Teilen Sie das Formular, oder öffnen Sie die Vorschau und senden Sie einen Testeintrag. |
-| no entries yet, for everyone else (they can neither share nor preview it) | No entries yet. They appear here as soon as visitors send the form. [Email me a summary…] | Noch keine Einträge. Sie erscheinen hier, sobald jemand das Formular sendet. [Zusammenfassung per E-Mail…] |
+| no entries yet, for everyone else (they can neither share nor preview it) | No entries yet. They appear here as soon as visitors send the form. [Email me a summary…] | Noch keine Einträge. Einträge erscheinen hier, sobald jemand das Formular sendet. [Zusammenfassung per E-Mail…] |
 | filters match nothing (Clear filters sits in the chip row above, so the empty state has no button of its own) | No entries match these filters. Remove one above, or clear them all. | Keine Einträge passen zu diesen Filtern. Entfernen Sie oben einen davon, oder setzen Sie alle zurück. |
 | a search finds nothing, and sensitive fields exist | No entries match "Jana". Sensitive fields aren't searched. [Clear search] | Keine Einträge passen zu „Jana“. Vertrauliche Felder werden nicht durchsucht. [Suche zurücksetzen] |
 | an empty folder (its footer holds Create form) | No forms here yet. A template gives you a working form in a minute. [Choose a template…] | Hier gibt es noch keine Formulare. Mit einer Vorlage haben Sie in einer Minute ein fertiges Formular. [Vorlage wählen…] |
@@ -378,14 +378,14 @@ useful action. One sentence, plus a button or link where there is one.
 | no insights yet | No data yet. Numbers appear after the first visit to a page with this form. | Noch keine Daten. Zahlen erscheinen nach dem ersten Besuch einer Seite mit diesem Formular. |
 | insights off for the site (the Insights view's Overview, and nothing else; its Answers come from the entries and stay) | Insights are off for this site. An administrator can turn them on in Privacy › Data collection. | Die Einblicke sind für diese Website ausgeschaltet. Ein Administrator kann sie unter Datenschutz › Datenerfassung einschalten. |
 | insights off for the form | Insights are off for this form. Turn them on in its Settings view, under Privacy. | Die Einblicke sind für dieses Formular ausgeschaltet. Schalten Sie sie in seiner Ansicht Einstellungen unter Datenschutz ein. |
-| a number's change from the period before, in words, never in colour | up 6% from 4,540 · down 25% from 400 · up 0.4 points from 7.7% · up from none | 6 % mehr als 4.540 · 25 % weniger als 400 · 0,4 Punkte mehr als 7,7 % · davor keine |
-| a field that stops visitors | Email: 212, 16% of starts, mostly the format | E-Mail: 212, 16 % der Begonnenen, meist das Format |
+| a number's change from the period before, in words, never in colour | up 6% from 4,540 · down 25% from 400 · up 0.4 points from 7.7% · up from none | 6 % mehr als 4.540 · 25 % weniger als 400 · 0,4 Prozentpunkte mehr als 7,7 % · davor keine |
+| a field that stops visitors | Email: 212, 16% of starts, mostly the format | E-Mail: 212 (16 % der Begonnenen), meist das Format |
 | the median time to complete | Half of those who send it finish within 3 minutes. | Die Hälfte derer, die es senden, ist innerhalb von 3 Minuten fertig. |
 | no visits yet on Forms at a glance | No visits yet. Numbers appear after the first visit to a page with a form. | Noch keine Aufrufe. Zahlen erscheinen nach dem ersten Besuch einer Seite mit einem Formular. |
 | the Answers without an entry in the range · with the filter set too | No entries in this period. · No entries in this period match these filters. | Keine Einträge in diesem Zeitraum. · Kein Eintrag in diesem Zeitraum entspricht diesen Filtern. |
 | the fields nobody answered in the range (one line under the Answers' boxes) | Not answered in this period: Phone and Company. | In diesem Zeitraum nicht beantwortet: Telefon und Firma. |
 | an option's line in the Answers: its share of the answers and its count · an older version's option · the visitors' own texts · several chosen | 42% (163) · Press (no longer an option) · Other, in their own words · More than one could be chosen, so the shares add up to more than 100%. | 42 % (163) · Presse (keine Option mehr) · Sonstiges, in eigenen Worten · Mehrere konnten gewählt werden, daher ergeben die Anteile zusammen mehr als 100 %. |
-| a ranking's line, and the note under its bars | average position 1.4 · The higher an option ranks on average, the longer its bar. | durchschnittlich Platz 1,4 · Je höher eine Option im Durchschnitt steht, desto länger ist ihr Balken. |
+| a ranking's line, and the note under its bars | average position 1.4 · The higher an option ranks on average, the longer its bar. | durchschnittlich auf Position 1,4 · Je höher eine Option im Durchschnitt steht, desto länger ist ihr Balken. |
 | a 0-to-10 scale's score, and the line under it | Recommendation score: +42 · The share who chose 9 or 10, less the share who chose 0 to 6, from -100 to 100. | Weiterempfehlungswert: +42 · Der Anteil, der 9 oder 10 gewählt hat, abzüglich des Anteils, der 0 bis 6 gewählt hat, von -100 bis 100. |
 | a field answered, not summarised · a field of a repeatable group · a checkbox there | Answered in 80% of the entries. · One answer for each row of Guests. · Ticked in 3 rows. | In 80 % der Einträge beantwortet. · Eine Antwort für jede Zeile von „Gäste“. · In 3 Zeilen angehakt. |
 | Privacy › Data collection, Insights | Forms count what visitors do with them, for each form's Insights view and the Overview: views, starts, the pages they reach and the fields that stop them. No answer and no visitor is counted, and nothing is stored in the visitor's browser. | Formulare zählen, was Besucher mit ihnen tun, für die Ansicht Einblicke jedes Formulars und die Übersicht: Aufrufe, Begonnene, die Seiten, die sie erreichen, und die Felder, an denen sie hängen bleiben. Keine Antwort und kein Besucher wird gezählt, und im Browser des Besuchers wird nichts gespeichert. |
@@ -395,7 +395,7 @@ useful action. One sentence, plus a button or link where there is one.
 | the preview while the draft is rendered | Loading the preview… | Die Vorschau wird geladen… |
 | the preview got no answer | The preview couldn't be loaded. [Try again] | Die Vorschau konnte nicht geladen werden. [Erneut versuchen] |
 | the preview of a draft whose rules have errors, which it never runs | This draft's rules have errors, so it can't be shown as visitors would get it. The form check on the Design view lists them. | Die Regeln dieses Entwurfs haben Fehler, deshalb lässt er sich nicht so zeigen, wie Besucher ihn bekämen. Die Formularprüfung in der Ansicht „Gestaltung“ listet sie auf. |
-| the note above the preview's frame, as the frame's ticket has it, its test entries' actions off · on | Entries sent here are test entries. They run no actions. · Entries sent here are test entries. Their actions run, so their emails and messages really go out. | Hier gesendete Einträge sind Testeinträge. Sie führen keine Aktionen aus. · Hier gesendete Einträge sind Testeinträge. Ihre Aktionen laufen, ihre E-Mails und Nachrichten gehen also wirklich hinaus. |
+| the note above the preview's frame, as the frame's ticket has it, its test entries' actions off · on | Entries sent here are test entries. They run no actions. · Entries sent here are test entries. Their actions run, so their emails and messages really go out. | Hier gesendete Einträge sind Testeinträge. Für sie laufen keine Aktionen. · Hier gesendete Einträge sind Testeinträge. Ihre Aktionen laufen, ihre E-Mails und Nachrichten gehen also wirklich hinaus. |
 | the note once the frame sent the form (Run actions… only for who may run them, while its actions wait) · its actions running · waiting for its address to be confirmed · no test entry found | Saved as test entry #1044. No actions ran. [Run actions…] · Saved as test entry #1044. Its actions are running. · Saved as test entry #1044. Its actions run once its email address is confirmed. · Sent as a test entry. | Als Testeintrag #1044 gespeichert. Es liefen keine Aktionen. [Aktionen ausführen…] · Als Testeintrag #1044 gespeichert. Seine Aktionen laufen. · Als Testeintrag #1044 gespeichert. Seine Aktionen laufen, sobald seine E-Mail-Adresse bestätigt ist. · Als Testeintrag gesendet. |
 | the note's Run actions… as a screen reader names it, its shown words first (WCAG 2.5.3) | Run actions for test entry #1044… | Aktionen ausführen für Testeintrag #1044… |
 | a test entry's actions got no answer (in the note, Run actions… kept) | The actions couldn't be run. | Die Aktionen konnten nicht ausgeführt werden. |
@@ -531,9 +531,9 @@ Help text sits under its setting and answers the question the label leaves open;
 | Settings › Email while Umbraco can't send mail (one line at the top; no Send test email) | Emails can't be sent yet: no mail server is configured. Entries are kept, and their emails go out once sending works. A developer sets up sending in Umbraco:CMS:Global:Smtp. | E-Mails können noch nicht gesendet werden: Es ist kein Mailserver eingerichtet. Einträge bleiben erhalten, und ihre E-Mails gehen hinaus, sobald das Senden funktioniert. Eine Entwicklerin oder ein Entwickler richtet das Senden in Umbraco:CMS:Global:Smtp ein. |
 | a box of the Access matrix ticked that needs another, or unticked that others need (said to screen readers) | View entries is on too: Export entries needs it. · Edit entries and Export entries are off too: they need View entries. | View entries ist ebenfalls an: Export entries braucht das. · Edit entries und Export entries sind ebenfalls aus: sie brauchen View entries. |
 | Settings › Access, a group that can't open the section yet (with a link to each such group) | A group can't open Form Builder yet. Add the section to its user group: Translators | Eine Gruppe kann Form Builder noch nicht öffnen. Fügen Sie den Bereich ihrer Benutzergruppe hinzu: Translators |
-| a folder or form on Settings › Access's list | Only these groups: HR team · Also: Sales · Only administrators | Nur diese Gruppen: HR team · Zusätzlich: Sales · Nur Administratoren |
+| a folder or form on Settings › Access's list | Only these groups: HR team · Also: Sales · Only administrators | Nur diese Benutzergruppen: HR team · Zusätzlich: Sales · Nur Administratoren |
 | a field a site sets of its own (under it, with Use the value for all sites) | This site has its own value. | Diese Website hat einen eigenen Wert. |
-| a site chosen on a settings screen (one line at the top) | Settings every site shares are under All sites. | Einstellungen, die alle Websites teilen, stehen unter Alle Websites. |
+| a site chosen on a settings screen (one line at the top) | Settings every site shares are under All sites. | Einstellungen, die alle Websites teilen, stehen unter „Alle Websites“. |
 | a captcha without its keys (its line; it can't be chosen) | No keys yet. A developer adds them in JironFormBuilder:Captcha:RecaptchaV2. | Noch keine Schlüssel. Eine Entwicklerin oder ein Entwickler fügt sie in JironFormBuilder:Captcha:RecaptchaV2 hinzu. |
 | a choice the host refuses (its line; it can't be chosen) | Locked by configuration: JironFormBuilder:Privacy:AllowImplicitCaptchaConsent | Durch die Konfiguration gesperrt: JironFormBuilder:Privacy:AllowImplicitCaptchaConsent |
 | a saved reference to a secret (under its box) | Found in host configuration. · Not in host configuration yet: a developer adds JironFormBuilder:Secrets:Slack. | In der Host-Konfiguration gefunden. · Noch nicht in der Host-Konfiguration: Eine Entwicklerin oder ein Entwickler fügt JironFormBuilder:Secrets:Slack hinzu. |
@@ -552,7 +552,7 @@ Help text sits under its setting and answers the question the label leaves open;
 | Fields that get a mark · Felder mit Markierung | Most forms have more required fields than optional ones, so marking the few optional ones reads calmer. | Die meisten Formulare haben mehr Pflichtfelder als optionale, deshalb wirkt es ruhiger, die wenigen optionalen zu markieren. |
 | Use this rule · Diese Regel verwenden | Turn it off to keep the rule without using it. The field then always shows. | Schalten Sie sie aus, um die Regel zu behalten, ohne sie zu verwenden. Das Feld wird dann immer angezeigt. |
 | Keep fetched options for · Abgerufene Optionen behalten für | Forms use the kept copy and fetch a new one after this time. If the address doesn't answer, the last copy stays in use. | Formulare verwenden die behaltene Kopie und rufen nach dieser Zeit eine neue ab. Antwortet die Adresse nicht, bleibt die letzte Kopie in Gebrauch. |
-| How often (Email me a summary; the place is the last part of the time zone's name, and a site on UTC says "07:00 UTC") · Wie oft | It goes out at 07:00 Berlin time, the site's time zone, and covers the day or week before. | Sie geht um 07:00 Uhr Ortszeit Berlin, der Zeitzone der Website, raus und umfasst den Tag oder die Woche davor. |
+| How often (Email me a summary; the place is the last part of the time zone's name, and a site on UTC says "07:00 UTC") · Wie oft | It goes out at 07:00 Berlin time, the site's time zone, and covers the day or week before. | Die Zusammenfassung geht um 07:00 Uhr Ortszeit Berlin, der Zeitzone der Website, raus und umfasst den Tag oder die Woche davor. |
 | the summary email's sidebar, under its preview (whose head names the sender and the subject; the address is said here once) | It holds counts and links, never answers, and only the forms you may view. It goes to your own address, jonas@example.com. | Sie enthält Zahlen und Links, nie Antworten, und nur die Formulare, die Sie sehen dürfen. Sie geht an Ihre eigene Adresse, jonas@example.com. |
 | the same place, for a user without an address (Send test email is left out) | Your user has no email address yet, so no summary can go out. | Ihr Benutzer hat noch keine E-Mail-Adresse, deshalb kann keine Zusammenfassung rausgehen. |
 | New note · Neue Notiz | Visitors never see notes. Everyone who may open this entry can read them. | Wer das Formular sendet, sieht Notizen nie. Alle, die diesen Eintrag öffnen dürfen, können sie lesen. |
@@ -567,15 +567,17 @@ Help text sits under its setting and answers the question the label leaves open;
 | Preview with a sample entry (an email only a field's answer gets) · Vorschau mit einem Beispieleintrag | As the visitor gets it, with sample answers made from the form's fields. | So bekommt die Person, die das Formular sendet, die E-Mail, mit Beispielantworten aus den Feldern des Formulars. |
 | An address (under Add recipient; said once on the sidebar, though Copy to's boxes take several the same way) · Eine Adresse | Several at once: separate them with commas. | Mehrere auf einmal: durch Kommas getrennt. |
 | Addresses chosen by (each option's addresses) · Adressen je nach | The addresses each answer sends to, separated by commas. An answer without addresses adds no one. | Die Adressen, an die jede Antwort geht, durch Kommas getrennt. Eine Antwort ohne Adressen fügt niemanden hinzu. |
-| What happens, for an action of the form · Was passiert | An action keeps what it does. To do something else, add another action. | Eine Aktion behält, was sie tut. Für etwas anderes fügen Sie eine weitere Aktion hinzu. |
+| What happens, for an action of the form · Was passiert | An action keeps what it does. To do something else, add another action. | Die Art einer Aktion lässt sich nicht ändern. Für etwas anderes fügen Sie eine weitere Aktion hinzu. |
 | Name (an action) · Name | Shown on its card and in the deliveries log. | Steht auf ihrer Karte und im Zustellprotokoll. |
 | Columns, on the Inbox or Spam not filtered to one form (in the fields' place) · Spalten | Filter the list by one form to choose that form's fields as columns. | Filtern Sie die Liste nach einem Formular, um dessen Felder als Spalten zu wählen. |
-| Place in the list (an action) · Platz in der Liste | Actions of the same trigger run in this order. | Aktionen desselben Auslösers laufen in dieser Reihenfolge. |
+| Position in the list (an action) · Position in der Liste | Actions of the same trigger run in this order. | Aktionen desselben Auslösers laufen in dieser Reihenfolge. |
 | Stop the rest if this fails · Die übrigen anhalten, wenn diese fehlschlägt | If it fails for good, the actions after it for the same entry don't run. Retrying it from Deliveries brings them back. | Schlägt sie endgültig fehl, laufen die Aktionen danach für denselben Eintrag nicht. Ein neuer Versuch unter Zustellungen bringt sie zurück. |
 | Rule, without one (an action) · Regel | Runs for every entry its trigger brings. | Läuft für jeden Eintrag, den ihr Auslöser bringt. |
 | Your questions (Paste questions) · Ihre Fragen | One question per line. Each becomes a field, with a type guessed from its words; you can change it afterwards. | Eine Frage pro Zeile. Jede wird ein Feld, mit einem aus ihren Wörtern erratenen Typ; Sie können ihn danach ändern. |
 | Save as template, under its name and description, in the form's workspace while it has changes not saved yet · Save group as template | The template holds the form as last saved: changes not saved yet stay out. · The template holds the group as you see it, with the validation rules of its fields. Rules and validation rules that depend on fields outside the group are left out. | Die Vorlage enthält das Formular, wie es zuletzt gespeichert wurde: Ungespeicherte Änderungen bleiben außen vor. · Die Vorlage enthält die Gruppe, wie Sie sie sehen, mit den Prüfregeln ihrer Felder. Regeln und Prüfregeln, die von Feldern außerhalb der Gruppe abhängen, bleiben außen vor. |
 | a saved group's preview (Library › Templates, in Use template's place) | A group: the designer's palette inserts it into any form, under Saved groups. | Eine Gruppe: Die Palette des Designers fügt sie unter „Gespeicherte Gruppen“ in jedes Formular ein. |
+| Visitor texts (the Settings view, under More options) · Texte für Besucher | Your own words for the texts this form brings, such as its hints, notices and error messages. Texts you don't reword keep the site's words. | Eigene Worte für die Texte, die dieses Formular mitbringt, etwa seine Hinweise, Meldungen und Fehlermeldungen. Texte, die Sie nicht umformulieren, behalten die Worte der Website. |
+| Visitor texts (Settings › General) · Texte für Besucher | Your own words for the texts every form brings, such as its hints, notices and error messages. A form's own words come first. | Eigene Worte für die Texte, die jedes Formular mitbringt, etwa seine Hinweise, Meldungen und Fehlermeldungen. Die eigenen Worte eines Formulars gehen vor. |
 
 A "Learn more" link goes to the docs page when a setting needs more than two sentences. Its text makes sense on its
 own ("Learn more about retention" · „Mehr zur Aufbewahrung“).
@@ -621,7 +623,7 @@ it is the example form's own wording, and the default follows the same pattern w
 | Case | English | German |
 | --- | --- | --- |
 | while sending (the live region) | Sending your answers | Ihre Antworten werden gesendet |
-| the connection dropped (above the buttons) | **Your answers weren't sent** Check your connection, then send again. Your answers are kept. | **Ihre Antworten wurden nicht gesendet** Prüfen Sie die Verbindung und senden Sie erneut. Ihre Antworten bleiben erhalten. |
+| the connection dropped (above the buttons) | **Your answers weren't sent** Check your connection, then send again. Your answers are kept. | **Ihre Antworten wurden nicht gesendet** Prüfen Sie Ihre Internetverbindung und senden Sie erneut. Ihre Antworten bleiben erhalten. |
 | the server failed on a send (above the buttons) | **Your answers weren't sent** Something went wrong on our side. Send again in a moment. Your answers are kept. | **Ihre Antworten wurden nicht gesendet** Bei uns ist etwas schiefgegangen. Senden Sie gleich noch einmal. Ihre Antworten bleiben erhalten. |
 | too many attempts (above the buttons) | **Your answers weren't sent** Too many attempts from your network. Your answers are kept; send again in 2 minutes. | **Ihre Antworten wurden nicht gesendet** Zu viele Versuche aus Ihrem Netzwerk. Ihre Antworten bleiben erhalten; senden Sie in 2 Minuten erneut. |
 | the form was published again meanwhile (in the error summary's place) | **This form was updated while you filled it in** Your answers are kept. The agreement at the end has new wording, so it is no longer ticked: read it again before you send. | **Dieses Formular wurde geändert, während Sie es ausgefüllt haben** Ihre Antworten bleiben erhalten. Die Einwilligung am Ende hat einen neuen Wortlaut und ist deshalb nicht mehr angehakt: Lesen Sie sie vor dem Senden noch einmal. |
@@ -651,12 +653,12 @@ it is the example form's own wording, and the default follows the same pattern w
 | closed: every place taken (instead of the form) | **All places are taken** Every place in the November workshops is booked. Ask at the library desk to join the waiting list. | **Alle Plätze sind vergeben** Jeder Platz in den November-Workshops ist gebucht. Fragen Sie an der Theke der Bibliothek nach der Warteliste. |
 | closed: for signed-in members only | **Sign in to book** The workshops are for library members. Sign in with your library card, and the booking form appears here. [Sign in] | **Melden Sie sich an, um zu buchen** Die Workshops sind für Mitglieder der Bibliothek. Melden Sie sich mit Ihrem Bibliotheksausweis an, dann erscheint hier das Buchungsformular. [Anmelden] |
 | closed: one entry per member, already sent | **You have already booked** You booked a place on 3 November, and each member can book one workshop a month. To change your booking, write to events@lindenhall.example. | **Sie haben bereits gebucht** Sie haben am 3. November einen Platz gebucht, und jedes Mitglied kann einen Workshop pro Monat buchen. Um Ihre Buchung zu ändern, schreiben Sie an events@lindenhall.example. |
-| the signature's Clear, until the next stroke | Undo clear | Löschen zurücknehmen |
+| the signature's Clear, until the next stroke | Undo clear | Löschen rückgängig machen |
 | a counter as the text changes | 453 characters left · 1 character left · 16 characters too many · 1 character too many | Noch 453 Zeichen · 16 Zeichen zu viel |
 | said when a ranking's option moves, or a row goes | Bread moved to place 1. · Guest 2 removed. | Bread auf Platz 1 verschoben. · Gast 2 entfernt. |
 | the signature's pad (the line above it, what a screen reader calls it, its button) | Sign with your finger or the mouse, or type your name instead. · Your signature, drawn · Clear | Unterschreiben Sie mit dem Finger oder der Maus, oder geben Sie stattdessen Ihren Namen ein. · Ihre Unterschrift, gezeichnet · Löschen |
 | the way between the pad and the typed name | Type your name instead · Sign by hand instead | Stattdessen Namen eingeben · Stattdessen von Hand unterschreiben |
-| an upload that stopped (in the file's row) | The upload stopped before it finished. [Try again] | Das Hochladen wurde vor dem Ende abgebrochen. [Erneut versuchen] |
+| an upload that stopped (in the file's row) | The upload stopped before it finished. [Try again] | Das Hochladen wurde unterbrochen. [Erneut versuchen] |
 | a file field, with the runtime (one file or several) | Drag a file here, or [Choose a file] · Drag files here, or [Choose files] · [Take a photo] | Datei hierher ziehen oder [Datei auswählen] · Dateien hierher ziehen oder [Dateien auswählen] · [Foto aufnehmen] |
 | a file on its way (in its row, and said once it is there) | 60% uploaded · cv.pdf is uploaded. | 60 % hochgeladen · cv.pdf ist hochgeladen. |
 | a file's button, for screen readers | Stop uploading cv.pdf · Remove cv.pdf | Hochladen von cv.pdf abbrechen · cv.pdf entfernen |
@@ -667,7 +669,7 @@ it is the example form's own wording, and the default follows the same pattern w
 
 What a visitor sees for an error the editor wrote no message for (ADR-0099): a field's own message for the kind, a
 check's or a validation rule's comes first. Both runtimes use these words, held to one text by
-`tests/vectors/messages.json`; the other five languages come with 14.2. A value in braces prints in the culture's
+`tests/vectors/messages.json`; the other five languages follow this table. A value in braces prints in the culture's
 format; where a count changes the words, the singular comes first, then the plural, after a ·. Under the field a
 message stands alone, but for a grid's row, which it names first ("Morning: Choose an answer in this row"); in the
 summary a default follows the field's label, and a row's legend or a grid's row after it in brackets; a label that
@@ -678,8 +680,8 @@ stands alone, and a legend made only of spaces is left out (ADR-0109).
 | Case | English | German |
 | --- | --- | --- |
 | the word before the last of a list | or | oder |
-| a size below a megabyte, 1,024 based, one place at most | {size} KB | {size} KB |
-| a size from a megabyte | {size} MB | {size} MB |
+| a size below a megabyte, 1,024 based, one place at most | {size} KB | {size} KB |
+| a size from a megabyte | {size} MB | {size} MB |
 | `required`: a text or a text area | Enter an answer | Geben Sie eine Antwort ein |
 | `required`: an email address | Enter an email address | Geben Sie eine E-Mail-Adresse ein |
 | `required`: a phone number | Enter a phone number | Geben Sie eine Telefonnummer ein |
@@ -695,7 +697,7 @@ stands alone, and a legend made only of spaces is left out (ADR-0109).
 | `required`: checkboxes, a dropdown of several | Choose at least one answer | Wählen Sie mindestens eine Antwort |
 | `required`: a grid | Choose an answer in each row | Wählen Sie in jeder Zeile eine Antwort |
 | `required`: one of a grid's rows | Choose an answer in this row | Wählen Sie in dieser Zeile eine Antwort |
-| `required`: a ranking | Put the options in order | Bringen Sie die Optionen in eine Reihenfolge |
+| `required`: a ranking | Put the options in order | Bringen Sie die Optionen in die gewünschte Reihenfolge |
 | `required`: a checkbox | Tick the box | Kreuzen Sie das Kästchen an |
 | `required`: yes or no, in the field's own words for them | Choose {yes} or {no} | Wählen Sie {yes} oder {no} |
 | `required`: a consent | Tick the box to agree | Kreuzen Sie das Kästchen an, um zuzustimmen |
@@ -706,8 +708,8 @@ stands alone, and a legend made only of spaces is left out (ADR-0109).
 | `required`: a signature | Add your signature, or type your name instead | Unterschreiben Sie, oder geben Sie stattdessen Ihren Namen ein |
 | `required`: a site's own type | Answer this question | Beantworten Sie diese Frage |
 | `invalid`: an email address | Enter a complete email address, for example name@example.com | Geben Sie eine vollständige E-Mail-Adresse ein, zum Beispiel name@example.com |
-| `invalid`: a well-formed email address at a domain the field does not take | Use an email address at another domain | Verwenden Sie eine E-Mail-Adresse bei einer anderen Domain |
-| `invalid`: a phone number | Enter a phone number with digits, and a + for the country code | Geben Sie eine Telefonnummer mit Ziffern ein, mit einem + für die Landesvorwahl |
+| `invalid`: a well-formed email address at a domain the field does not take | Use an email address at another domain | Verwenden Sie eine E-Mail-Adresse mit einer anderen Domain |
+| `invalid`: a phone number | Enter a phone number with digits, and a + for the country code | Geben Sie eine Telefonnummer in Ziffern ein, mit + vor der Landesvorwahl |
 | `invalid`: a web address | Enter a complete web address, for example https://example.com | Geben Sie eine vollständige Webadresse ein, zum Beispiel https://example.com |
 | `invalid`: a number; the example is 12, or 12.5 with decimals, in the culture's format | Enter a number, for example {example} | Geben Sie eine Zahl ein, zum Beispiel {example} |
 | `invalid`: a date | Enter a valid date | Geben Sie ein gültiges Datum ein |
@@ -737,8 +739,8 @@ stands alone, and a legend made only of spaces is left out (ADR-0109).
 | `step`: a number without decimals | Enter a whole number | Geben Sie eine ganze Zahl ein |
 | `step`: a number's decimal places | Enter a number with at most {places} decimal place · Enter a number with at most {places} decimal places | Geben Sie eine Zahl mit höchstens {places} Nachkommastelle ein · Geben Sie eine Zahl mit höchstens {places} Nachkommastellen ein |
 | `step`: a slider | Choose a value in steps of {step} | Wählen Sie einen Wert in Schritten von {step} |
-| `step`: the minutes of a time or a date and time | Choose a time in steps of {minutes} minute · Choose a time in steps of {minutes} minutes | Wählen Sie eine Uhrzeit im Abstand von {minutes} Minute · Wählen Sie eine Uhrzeit im Abstand von {minutes} Minuten |
-| `step`: the minutes of a time from its earliest | Choose a time in steps of {minutes} minute from {min} · Choose a time in steps of {minutes} minutes from {min} | Wählen Sie eine Uhrzeit im Abstand von {minutes} Minute ab {min} · Wählen Sie eine Uhrzeit im Abstand von {minutes} Minuten ab {min} |
+| `step`: the minutes of a time or a date and time | Choose a time in steps of {minutes} minute · Choose a time in steps of {minutes} minutes | Wählen Sie eine Uhrzeit in Schritten von {minutes} Minute · Wählen Sie eine Uhrzeit in Schritten von {minutes} Minuten |
+| `step`: the minutes of a time from its earliest | Choose a time in steps of {minutes} minute from {min} · Choose a time in steps of {minutes} minutes from {min} | Wählen Sie eine Uhrzeit in Schritten von {minutes} Minute ab {min} · Wählen Sie eine Uhrzeit in Schritten von {minutes} Minuten ab {min} |
 | `dateWindow`: a window with both ends | Choose a date from {min} to {max} | Wählen Sie ein Datum vom {min} bis zum {max} |
 | `dateWindow`: a window with a start only | Choose a date on or after {min} | Wählen Sie ein Datum ab dem {min} |
 | `dateWindow`: a window with an end only | Choose a date on or before {max} | Wählen Sie ein Datum bis zum {max} |
@@ -757,12 +759,22 @@ stands alone, and a legend made only of spaces is left out (ADR-0109).
 | `fileSize`: several files | One of the files is larger than {size}. Choose a smaller one. | Eine der Dateien ist größer als {size}. Wählen Sie eine kleinere. |
 | `fileCount` | Choose only {max} file · Choose at most {max} files | Wählen Sie nur {max} Datei · Wählen Sie höchstens {max} Dateien |
 | `full`: one option, by its label | {option} is now full. Choose another option. | {option} ist jetzt ausgebucht. Wählen Sie eine andere Option. |
-| `full`: several options | One of your choices is now full. Choose another option. | Eine Ihrer gewählten Optionen ist jetzt ausgebucht. Wählen Sie eine andere Option. |
+| `full`: several options | One of your choices is now full. Choose another option. | Eine der von Ihnen gewählten Optionen ist jetzt ausgebucht. Wählen Sie eine andere Option. |
+| an option's places left, in its label (ADR-0156) | {count} place left · {count} places left | {count} Platz frei · {count} Plätze frei |
+| an option without a place left, in its label | Full | Ausgebucht |
+| a third party's check before it may load (ADR-0157) | This form uses a spam check from an outside service, which loads only if you agree. | Dieses Formular nutzt eine Spam-Prüfung eines externen Dienstes, die nur geladen wird, wenn Sie zustimmen. |
+| the button that loads the check | Load the check | Prüfung laden |
+| the check, when a consent manager decides | This form uses a spam check from an outside service, which loads once you agree in the cookie settings. | Dieses Formular nutzt eine Spam-Prüfung eines externen Dienstes, die geladen wird, sobald Sie in den Cookie-Einstellungen zustimmen. |
+| the check, when a cookie category decides, by its name | This form uses a spam check from an outside service, which loads once you agree to {category} cookies. | Dieses Formular nutzt eine Spam-Prüfung eines externen Dienstes, die geladen wird, sobald Sie {category}-Cookies zustimmen. |
+| the link to the cookie settings | Change the cookie settings | Cookie-Einstellungen ändern |
+| a send before the check is done | Complete the check before you send the form. | Schließen Sie die Prüfung ab, bevor Sie das Formular senden. |
+| a check that could not load | The spam check could not load. You can still send the form. | Die Spam-Prüfung konnte nicht geladen werden. Sie können das Formular trotzdem senden. |
+| a slow device while it solves the puzzle | Checking your browser, which can take a moment. | Ihr Browser wird geprüft, das kann einen Moment dauern. |
 | `confirmation` | Enter the same email address twice | Geben Sie zweimal dieselbe E-Mail-Adresse ein |
 | `digits` | Enter a number with fewer digits | Geben Sie eine Zahl mit weniger Ziffern ein |
 | `rowCount`: too few rows | Add at least {min} row · Add at least {min} rows | Fügen Sie mindestens {min} Zeile hinzu · Fügen Sie mindestens {min} Zeilen hinzu |
 | `rowCount`: too many rows | Remove rows to keep at most {max} | Entfernen Sie Zeilen, sodass höchstens {max} bleibt · Entfernen Sie Zeilen, sodass höchstens {max} bleiben |
-| `check`: a pattern without a message | Enter the answer in the format asked for | Geben Sie die Antwort im verlangten Format ein |
+| `check`: a pattern without a message | Enter the answer in the format asked for | Geben Sie die Antwort im vorgegebenen Format ein |
 | `check`: the same as another field, named by its label | Enter the same as for {field} | Geben Sie dasselbe ein wie bei {field} |
 | `check`: unique per form | This answer has already been given. Enter another one. | Diese Antwort wurde bereits gegeben. Geben Sie eine andere ein. |
 | a submission without an answer, in the summary | Answer at least one question before you send the form | Beantworten Sie mindestens eine Frage, bevor Sie das Formular senden |
@@ -770,6 +782,554 @@ stands alone, and a legend made only of spaces is left out (ADR-0109).
 | a summary link to a default | {label}: {message} | {label}: {message} |
 | a summary link to a default after a label that ends in a question mark, an exclamation mark, a full stop or a colon | {label} {message} | {label} {message} |
 | a summary link to a default in a repeatable group's row | {label} ({row}): {message} | {label} ({row}): {message} |
+
+### The default error messages in the other five languages
+
+The same messages in French, Italian, Dutch, Spanish and Danish (ADR-0230), row for row as above. French and Spanish
+address the visitor as "vous" and "usted", Dutch as "u" where a pronoun is needed, Italian and Danish in the informal
+imperative their forms use; French puts a no-break space before a colon and writes sizes in Ko and Mo. A count
+takes its singular for 1 and its plural otherwise in every language: a message names a count only where it is at
+least 1. `tests/vectors/tables/message-words.json` holds both runtimes to every word.
+
+#### French
+
+| Case | French |
+| --- | --- |
+| the word before the last of a list | ou |
+| a size below a megabyte, 1,024 based, one place at most | {size} Ko |
+| a size from a megabyte | {size} Mo |
+| `required`: a text or a text area | Saisissez une réponse |
+| `required`: an email address | Saisissez une adresse e-mail |
+| `required`: a phone number | Saisissez un numéro de téléphone |
+| `required`: a web address | Saisissez une adresse web |
+| `required`: a number | Saisissez un nombre |
+| `required`: a date | Saisissez une date |
+| `required`: a time | Saisissez une heure |
+| `required`: a date and a time | Saisissez une date et une heure |
+| `required`: a rating | Choisissez une note |
+| `required`: a scale | Choisissez un point sur l’échelle |
+| `required`: a slider | Choisissez une valeur |
+| `required`: radio buttons, a dropdown of one | Choisissez une réponse |
+| `required`: checkboxes, a dropdown of several | Choisissez au moins une réponse |
+| `required`: a grid | Choisissez une réponse dans chaque ligne |
+| `required`: one of a grid's rows | Choisissez une réponse dans cette ligne |
+| `required`: a ranking | Classez les options dans l’ordre |
+| `required`: a checkbox | Cochez la case |
+| `required`: yes or no, in the field's own words for them | Choisissez {yes} ou {no} |
+| `required`: a consent | Cochez la case pour donner votre accord |
+| `required`: a country | Choisissez un pays |
+| `required`: a name | Saisissez le nom complet |
+| `required`: an address | Saisissez l’adresse complète |
+| `required`: a file upload | Choisissez un fichier |
+| `required`: a signature | Signez, ou saisissez plutôt votre nom |
+| `required`: a site's own type | Répondez à cette question |
+| `invalid`: an email address | Saisissez une adresse e-mail complète, par exemple nom@example.com |
+| `invalid`: a well-formed email address at a domain the field does not take | Utilisez une adresse e-mail d’un autre domaine |
+| `invalid`: a phone number | Saisissez un numéro de téléphone en chiffres, avec un + pour l’indicatif du pays |
+| `invalid`: a web address | Saisissez une adresse web complète, par exemple https://example.com |
+| `invalid`: a number; the example is 12, or 12.5 with decimals, in the culture's format | Saisissez un nombre, par exemple {example} |
+| `invalid`: a date | Saisissez une date valide |
+| `invalid`: a time | Saisissez une heure valide |
+| `invalid`: a date and a time | Saisissez une date et une heure valides |
+| `invalid`: a rating | Choisissez une note de 1 à {count} |
+| `invalid`: a scale | Choisissez un point de {from} à {to} |
+| `invalid`, `min`, `max`: a slider | Choisissez une valeur de {min} à {max} |
+| `invalid`: a choice, a grid or a ranking | Choisissez l’une des options proposées |
+| `invalid`: a country | Choisissez un pays dans la liste |
+| `invalid`: a name | Vérifiez le nom |
+| `invalid`: an address | Vérifiez l’adresse |
+| `invalid`: a signature | Signez à nouveau, ou saisissez plutôt votre nom |
+| `invalid` of a site's own type, a validation rule without a message, a kind without words of its own | Vérifiez cette réponse |
+| `minLength` | Saisissez au moins {min} caractère · Saisissez au moins {min} caractères |
+| `maxLength` | Saisissez au plus {max} caractère · Saisissez au plus {max} caractères |
+| `minWords` | Saisissez au moins {min} mot · Saisissez au moins {min} mots |
+| `maxWords` | Saisissez au plus {max} mot · Saisissez au plus {max} mots |
+| `min`, `max`: a number with both limits | Saisissez un nombre de {min} à {max} |
+| `min`, `max`: a number with a least only | Saisissez un nombre supérieur ou égal à {min} |
+| `min`, `max`: a number with a most only | Saisissez un nombre inférieur ou égal à {max} |
+| `min`, `max`: a time with both limits | Saisissez une heure entre {min} et {max} |
+| `min`, `max`: a time with an earliest only | Saisissez une heure à partir de {min} |
+| `min`, `max`: a time with a latest only | Saisissez une heure jusqu’à {max} |
+| `step`: a number's step | Saisissez un nombre par pas de {step} |
+| `step`: a number's step from its least | Saisissez un nombre par pas de {step}, à partir de {min} |
+| `step`: a number without decimals | Saisissez un nombre entier |
+| `step`: a number's decimal places | Saisissez un nombre avec au plus {places} décimale · Saisissez un nombre avec au plus {places} décimales |
+| `step`: a slider | Choisissez une valeur par pas de {step} |
+| `step`: the minutes of a time or a date and time | Choisissez une heure par intervalles de {minutes} minute · Choisissez une heure par intervalles de {minutes} minutes |
+| `step`: the minutes of a time from its earliest | Choisissez une heure par intervalles de {minutes} minute à partir de {min} · Choisissez une heure par intervalles de {minutes} minutes à partir de {min} |
+| `dateWindow`: a window with both ends | Choisissez une date du {min} au {max} |
+| `dateWindow`: a window with a start only | Choisissez une date à partir du {min} |
+| `dateWindow`: a window with an end only | Choisissez une date jusqu’au {max} |
+| `dateWindow`: weekdays only, with both ends | Choisissez une date du {min} au {max}, du {monday} au {friday} |
+| `dateWindow`: weekdays only, with a start only | Choisissez une date à partir du {min}, du {monday} au {friday} |
+| `dateWindow`: weekdays only, with an end only | Choisissez une date jusqu’au {max}, du {monday} au {friday} |
+| `dateWindow`: weekdays only, without ends | Choisissez un jour du {monday} au {friday} |
+| `dateWindow`: a date the window takes that the field excludes | Cette date n’est pas disponible. Choisissez-en une autre. |
+| `selections`: as many as the fewest and the most | Choisissez {count} réponse · Choisissez {count} réponses |
+| `selections`: the fewest and the most | Choisissez de {min} à {max} réponses |
+| `selections`: the fewest only | Choisissez au moins {min} réponse · Choisissez au moins {min} réponses |
+| `selections`: the most only | Choisissez au plus {max} réponse · Choisissez au plus {max} réponses |
+| `fileType`: the formats, joined with commas and "or" | Choisissez un fichier au format {formats} |
+| `fileSize`: a field without a limit of its own | Ce fichier est trop volumineux. Choisissez-en un plus petit. |
+| `fileSize`: one file | Ce fichier dépasse {size}. Choisissez-en un plus petit. |
+| `fileSize`: several files | L’un des fichiers dépasse {size}. Choisissez-en un plus petit. |
+| `fileCount` | Choisissez au plus {max} fichier · Choisissez au plus {max} fichiers |
+| `full`: one option, by its label | Il n’y a plus de place pour {option}. Choisissez une autre option. |
+| `full`: several options | Il n’y a plus de place pour l’une de vos options. Choisissez-en une autre. |
+| an option's places left, in its label (ADR-0156) | {count} place restante · {count} places restantes |
+| an option without a place left, in its label | Complet |
+| a third party's check before it may load (ADR-0157) | Ce formulaire utilise une vérification anti-spam fournie par un service externe. Elle ne se charge qu’avec votre accord. |
+| the button that loads the check | Charger la vérification |
+| the check, when a consent manager decides | Ce formulaire utilise une vérification anti-spam fournie par un service externe. Elle se charge dès que vous donnez votre accord dans les paramètres des cookies. |
+| the check, when a cookie category decides, by its name | Ce formulaire utilise une vérification anti-spam fournie par un service externe. Elle se charge dès que vous acceptez les cookies {category}. |
+| the link to the cookie settings | Modifier les paramètres des cookies |
+| a send before the check is done | Effectuez la vérification avant d’envoyer le formulaire. |
+| a check that could not load | La vérification anti-spam n’a pas pu se charger. Vous pouvez tout de même envoyer le formulaire. |
+| a slow device while it solves the puzzle | Vérification de votre navigateur en cours. Cela peut prendre un instant. |
+| `confirmation` | Saisissez deux fois la même adresse e-mail |
+| `digits` | Saisissez un nombre comportant moins de chiffres |
+| `rowCount`: too few rows | Ajoutez au moins {min} ligne · Ajoutez au moins {min} lignes |
+| `rowCount`: too many rows | Supprimez des lignes pour en garder au plus {max} |
+| `check`: a pattern without a message | Saisissez la réponse au format demandé |
+| `check`: the same as another field, named by its label | Saisissez la même réponse que pour {field} |
+| `check`: unique per form | Cette réponse a déjà été donnée. Saisissez-en une autre. |
+| a submission without an answer, in the summary | Répondez à au moins une question avant d’envoyer le formulaire |
+| the error summary's heading, by the number of its links | Cette réponse doit être modifiée · Ces réponses doivent être modifiées |
+| a summary link to a default | {label} : {message} |
+| a summary link to a default after a label that ends in a question mark, an exclamation mark, a full stop or a colon | {label} {message} |
+| a summary link to a default in a repeatable group's row | {label} ({row}) : {message} |
+
+#### Italian
+
+| Case | Italian |
+| --- | --- |
+| the word before the last of a list | o |
+| a size below a megabyte, 1,024 based, one place at most | {size} KB |
+| a size from a megabyte | {size} MB |
+| `required`: a text or a text area | Inserisci una risposta |
+| `required`: an email address | Inserisci un indirizzo email |
+| `required`: a phone number | Inserisci un numero di telefono |
+| `required`: a web address | Inserisci un indirizzo web |
+| `required`: a number | Inserisci un numero |
+| `required`: a date | Inserisci una data |
+| `required`: a time | Inserisci un orario |
+| `required`: a date and a time | Inserisci una data e un orario |
+| `required`: a rating | Scegli una valutazione |
+| `required`: a scale | Scegli un punto della scala |
+| `required`: a slider | Scegli un valore |
+| `required`: radio buttons, a dropdown of one | Scegli una risposta |
+| `required`: checkboxes, a dropdown of several | Scegli almeno una risposta |
+| `required`: a grid | Scegli una risposta in ogni riga |
+| `required`: one of a grid's rows | Scegli una risposta in questa riga |
+| `required`: a ranking | Metti le opzioni in ordine |
+| `required`: a checkbox | Seleziona la casella |
+| `required`: yes or no, in the field's own words for them | Scegli {yes} o {no} |
+| `required`: a consent | Seleziona la casella per dare il tuo consenso |
+| `required`: a country | Scegli un paese |
+| `required`: a name | Inserisci il nome completo |
+| `required`: an address | Inserisci l’indirizzo completo |
+| `required`: a file upload | Scegli un file |
+| `required`: a signature | Aggiungi la tua firma, oppure scrivi il tuo nome al suo posto |
+| `required`: a site's own type | Rispondi a questa domanda |
+| `invalid`: an email address | Inserisci un indirizzo email completo, ad esempio nome@example.com |
+| `invalid`: a well-formed email address at a domain the field does not take | Usa un indirizzo email di un altro dominio |
+| `invalid`: a phone number | Inserisci un numero di telefono in cifre, con un + per il prefisso internazionale |
+| `invalid`: a web address | Inserisci un indirizzo web completo, ad esempio https://example.com |
+| `invalid`: a number; the example is 12, or 12.5 with decimals, in the culture's format | Inserisci un numero, ad esempio {example} |
+| `invalid`: a date | Inserisci una data valida |
+| `invalid`: a time | Inserisci un orario valido |
+| `invalid`: a date and a time | Inserisci una data e un orario validi |
+| `invalid`: a rating | Scegli una valutazione da 1 a {count} |
+| `invalid`: a scale | Scegli un punto da {from} a {to} |
+| `invalid`, `min`, `max`: a slider | Scegli un valore da {min} a {max} |
+| `invalid`: a choice, a grid or a ranking | Scegli una delle opzioni proposte |
+| `invalid`: a country | Scegli un paese dall’elenco |
+| `invalid`: a name | Controlla il nome |
+| `invalid`: an address | Controlla l’indirizzo |
+| `invalid`: a signature | Firma di nuovo, oppure scrivi il tuo nome al suo posto |
+| `invalid` of a site's own type, a validation rule without a message, a kind without words of its own | Controlla questa risposta |
+| `minLength` | Inserisci almeno {min} carattere · Inserisci almeno {min} caratteri |
+| `maxLength` | Inserisci al massimo {max} carattere · Inserisci al massimo {max} caratteri |
+| `minWords` | Inserisci almeno {min} parola · Inserisci almeno {min} parole |
+| `maxWords` | Inserisci al massimo {max} parola · Inserisci al massimo {max} parole |
+| `min`, `max`: a number with both limits | Inserisci un numero da {min} a {max} |
+| `min`, `max`: a number with a least only | Inserisci un numero uguale o superiore a {min} |
+| `min`, `max`: a number with a most only | Inserisci un numero uguale o inferiore a {max} |
+| `min`, `max`: a time with both limits | Inserisci un orario tra le {min} e le {max} |
+| `min`, `max`: a time with an earliest only | Inserisci un orario dalle {min} in poi |
+| `min`, `max`: a time with a latest only | Inserisci un orario fino alle {max} |
+| `step`: a number's step | Inserisci un numero a intervalli di {step} |
+| `step`: a number's step from its least | Inserisci un numero a intervalli di {step}, a partire da {min} |
+| `step`: a number without decimals | Inserisci un numero intero |
+| `step`: a number's decimal places | Inserisci un numero con al massimo {places} cifra decimale · Inserisci un numero con al massimo {places} cifre decimali |
+| `step`: a slider | Scegli un valore a intervalli di {step} |
+| `step`: the minutes of a time or a date and time | Scegli un orario a intervalli di {minutes} minuto · Scegli un orario a intervalli di {minutes} minuti |
+| `step`: the minutes of a time from its earliest | Scegli un orario a intervalli di {minutes} minuto dalle {min} · Scegli un orario a intervalli di {minutes} minuti dalle {min} |
+| `dateWindow`: a window with both ends | Scegli una data dal {min} al {max} |
+| `dateWindow`: a window with a start only | Scegli una data dal {min} in poi |
+| `dateWindow`: a window with an end only | Scegli una data fino al {max} |
+| `dateWindow`: weekdays only, with both ends | Scegli una data dal {min} al {max}, da {monday} a {friday} |
+| `dateWindow`: weekdays only, with a start only | Scegli una data dal {min} in poi, da {monday} a {friday} |
+| `dateWindow`: weekdays only, with an end only | Scegli una data fino al {max}, da {monday} a {friday} |
+| `dateWindow`: weekdays only, without ends | Scegli un giorno da {monday} a {friday} |
+| `dateWindow`: a date the window takes that the field excludes | Questa data non è disponibile. Scegline un’altra. |
+| `selections`: as many as the fewest and the most | Scegli {count} risposta · Scegli {count} risposte |
+| `selections`: the fewest and the most | Scegli da {min} a {max} risposte |
+| `selections`: the fewest only | Scegli almeno {min} risposta · Scegli almeno {min} risposte |
+| `selections`: the most only | Scegli al massimo {max} risposta · Scegli al massimo {max} risposte |
+| `fileType`: the formats, joined with commas and "or" | Scegli un file in formato {formats} |
+| `fileSize`: a field without a limit of its own | Questo file è troppo grande. Scegline uno più piccolo. |
+| `fileSize`: one file | Questo file supera il limite di {size}. Scegline uno più piccolo. |
+| `fileSize`: several files | Uno dei file supera il limite di {size}. Scegline uno più piccolo. |
+| `fileCount` | Scegli al massimo {max} file |
+| `full`: one option, by its label | Non ci sono più posti per {option}. Scegli un’altra opzione. |
+| `full`: several options | Non ci sono più posti per una delle opzioni scelte. Scegli un’altra opzione. |
+| an option's places left, in its label (ADR-0156) | {count} posto disponibile · {count} posti disponibili |
+| an option without a place left, in its label | Posti esauriti |
+| a third party's check before it may load (ADR-0157) | Questo modulo usa un controllo antispam di un servizio esterno, che si carica solo se acconsenti. |
+| the button that loads the check | Carica il controllo |
+| the check, when a consent manager decides | Questo modulo usa un controllo antispam di un servizio esterno, che si carica quando acconsenti nelle impostazioni dei cookie. |
+| the check, when a cookie category decides, by its name | Questo modulo usa un controllo antispam di un servizio esterno, che si carica quando accetti i cookie di {category}. |
+| the link to the cookie settings | Modifica le impostazioni dei cookie |
+| a send before the check is done | Completa il controllo prima di inviare il modulo. |
+| a check that could not load | Il controllo antispam non si è caricato. Puoi comunque inviare il modulo. |
+| a slow device while it solves the puzzle | Stiamo verificando il tuo browser, potrebbe volerci un momento. |
+| `confirmation` | Inserisci due volte lo stesso indirizzo email |
+| `digits` | Inserisci un numero con meno cifre |
+| `rowCount`: too few rows | Aggiungi almeno {min} riga · Aggiungi almeno {min} righe |
+| `rowCount`: too many rows | Rimuovi delle righe per tenerne al massimo {max} |
+| `check`: a pattern without a message | Inserisci la risposta nel formato richiesto |
+| `check`: the same as another field, named by its label | Inserisci lo stesso valore di {field} |
+| `check`: unique per form | Questa risposta è già stata data. Inseriscine un’altra. |
+| a submission without an answer, in the summary | Rispondi ad almeno una domanda prima di inviare il modulo |
+| the error summary's heading, by the number of its links | Questa risposta va corretta · Queste risposte vanno corrette |
+| a summary link to a default | {label}: {message} |
+| a summary link to a default after a label that ends in a question mark, an exclamation mark, a full stop or a colon | {label} {message} |
+| a summary link to a default in a repeatable group's row | {label} ({row}): {message} |
+
+#### Dutch
+
+| Case | Dutch |
+| --- | --- |
+| the word before the last of a list | of |
+| a size below a megabyte, 1,024 based, one place at most | {size} KB |
+| a size from a megabyte | {size} MB |
+| `required`: a text or a text area | Vul een antwoord in |
+| `required`: an email address | Vul een e-mailadres in |
+| `required`: a phone number | Vul een telefoonnummer in |
+| `required`: a web address | Vul een webadres in |
+| `required`: a number | Vul een getal in |
+| `required`: a date | Vul een datum in |
+| `required`: a time | Vul een tijd in |
+| `required`: a date and a time | Vul een datum en een tijd in |
+| `required`: a rating | Kies een beoordeling |
+| `required`: a scale | Kies een punt op de schaal |
+| `required`: a slider | Kies een waarde |
+| `required`: radio buttons, a dropdown of one | Kies een antwoord |
+| `required`: checkboxes, a dropdown of several | Kies minstens één antwoord |
+| `required`: a grid | Kies in elke rij een antwoord |
+| `required`: one of a grid's rows | Kies in deze rij een antwoord |
+| `required`: a ranking | Zet de opties in volgorde |
+| `required`: a checkbox | Vink het vakje aan |
+| `required`: yes or no, in the field's own words for them | Kies {yes} of {no} |
+| `required`: a consent | Vink het vakje aan om akkoord te gaan |
+| `required`: a country | Kies een land |
+| `required`: a name | Vul de volledige naam in |
+| `required`: an address | Vul het volledige adres in |
+| `required`: a file upload | Kies een bestand |
+| `required`: a signature | Zet uw handtekening, of typ in plaats daarvan uw naam |
+| `required`: a site's own type | Beantwoord deze vraag |
+| `invalid`: an email address | Vul een volledig e-mailadres in, bijvoorbeeld naam@example.com |
+| `invalid`: a well-formed email address at a domain the field does not take | Gebruik een e-mailadres met een ander domein |
+| `invalid`: a phone number | Vul een telefoonnummer in met cijfers en een + voor de landcode |
+| `invalid`: a web address | Vul een volledig webadres in, bijvoorbeeld https://example.com |
+| `invalid`: a number; the example is 12, or 12.5 with decimals, in the culture's format | Vul een getal in, bijvoorbeeld {example} |
+| `invalid`: a date | Vul een geldige datum in |
+| `invalid`: a time | Vul een geldige tijd in |
+| `invalid`: a date and a time | Vul een geldige datum en tijd in |
+| `invalid`: a rating | Kies een beoordeling van 1 tot en met {count} |
+| `invalid`: a scale | Kies een punt van {from} tot en met {to} |
+| `invalid`, `min`, `max`: a slider | Kies een waarde van {min} tot en met {max} |
+| `invalid`: a choice, a grid or a ranking | Kies een van de aangeboden opties |
+| `invalid`: a country | Kies een land uit de lijst |
+| `invalid`: a name | Controleer de naam |
+| `invalid`: an address | Controleer het adres |
+| `invalid`: a signature | Zet uw handtekening opnieuw, of typ in plaats daarvan uw naam |
+| `invalid` of a site's own type, a validation rule without a message, a kind without words of its own | Controleer dit antwoord |
+| `minLength` | Vul minstens {min} teken in · Vul minstens {min} tekens in |
+| `maxLength` | Vul maximaal {max} teken in · Vul maximaal {max} tekens in |
+| `minWords` | Vul minstens {min} woord in · Vul minstens {min} woorden in |
+| `maxWords` | Vul maximaal {max} woord in · Vul maximaal {max} woorden in |
+| `min`, `max`: a number with both limits | Vul een getal van {min} tot en met {max} in |
+| `min`, `max`: a number with a least only | Vul een getal van {min} of hoger in |
+| `min`, `max`: a number with a most only | Vul een getal van {max} of lager in |
+| `min`, `max`: a time with both limits | Vul een tijd van {min} tot en met {max} in |
+| `min`, `max`: a time with an earliest only | Vul een tijd van {min} of later in |
+| `min`, `max`: a time with a latest only | Vul een tijd van {max} of eerder in |
+| `step`: a number's step | Vul een getal in stappen van {step} in |
+| `step`: a number's step from its least | Vul een getal in stappen van {step} in, vanaf {min} |
+| `step`: a number without decimals | Vul een geheel getal in |
+| `step`: a number's decimal places | Vul een getal in met maximaal {places} decimaal · Vul een getal in met maximaal {places} decimalen |
+| `step`: a slider | Kies een waarde in stappen van {step} |
+| `step`: the minutes of a time or a date and time | Kies een tijd in stappen van {minutes} minuut · Kies een tijd in stappen van {minutes} minuten |
+| `step`: the minutes of a time from its earliest | Kies een tijd in stappen van {minutes} minuut vanaf {min} · Kies een tijd in stappen van {minutes} minuten vanaf {min} |
+| `dateWindow`: a window with both ends | Kies een datum van {min} tot en met {max} |
+| `dateWindow`: a window with a start only | Kies een datum op of na {min} |
+| `dateWindow`: a window with an end only | Kies een datum op of vóór {max} |
+| `dateWindow`: weekdays only, with both ends | Kies een datum van {min} tot en met {max}, {monday} tot en met {friday} |
+| `dateWindow`: weekdays only, with a start only | Kies een datum op of na {min}, {monday} tot en met {friday} |
+| `dateWindow`: weekdays only, with an end only | Kies een datum op of vóór {max}, {monday} tot en met {friday} |
+| `dateWindow`: weekdays only, without ends | Kies een dag van {monday} tot en met {friday} |
+| `dateWindow`: a date the window takes that the field excludes | Deze datum is niet beschikbaar. Kies een andere. |
+| `selections`: as many as the fewest and the most | Kies {count} antwoord · Kies {count} antwoorden |
+| `selections`: the fewest and the most | Kies {min} tot en met {max} antwoorden |
+| `selections`: the fewest only | Kies minstens {min} antwoord · Kies minstens {min} antwoorden |
+| `selections`: the most only | Kies maximaal {max} antwoord · Kies maximaal {max} antwoorden |
+| `fileType`: the formats, joined with commas and "or" | Kies een bestand van het type {formats} |
+| `fileSize`: a field without a limit of its own | Dit bestand is te groot. Kies een kleiner bestand. |
+| `fileSize`: one file | Dit bestand is groter dan {size}. Kies een kleiner bestand. |
+| `fileSize`: several files | Een van de bestanden is groter dan {size}. Kies een kleiner bestand. |
+| `fileCount` | Kies maximaal {max} bestand · Kies maximaal {max} bestanden |
+| `full`: one option, by its label | {option} is nu vol. Kies een andere optie. |
+| `full`: several options | Een van uw gekozen opties is nu vol. Kies een andere optie. |
+| an option's places left, in its label (ADR-0156) | Nog {count} plek vrij · Nog {count} plekken vrij |
+| an option without a place left, in its label | Vol |
+| a third party's check before it may load (ADR-0157) | Dit formulier gebruikt een spamcontrole van een externe dienst, die alleen wordt geladen als u daarmee akkoord gaat. |
+| the button that loads the check | Controle laden |
+| the check, when a consent manager decides | Dit formulier gebruikt een spamcontrole van een externe dienst, die wordt geladen zodra u akkoord gaat in de cookie-instellingen. |
+| the check, when a cookie category decides, by its name | Dit formulier gebruikt een spamcontrole van een externe dienst, die wordt geladen zodra u {category}cookies accepteert. |
+| the link to the cookie settings | Cookie-instellingen wijzigen |
+| a send before the check is done | Voer de controle uit voordat u het formulier verstuurt. |
+| a check that could not load | De spamcontrole kon niet worden geladen. U kunt het formulier toch versturen. |
+| a slow device while it solves the puzzle | Uw browser wordt gecontroleerd. Dit kan even duren. |
+| `confirmation` | Vul twee keer hetzelfde e-mailadres in |
+| `digits` | Vul een getal met minder cijfers in |
+| `rowCount`: too few rows | Voeg minstens {min} rij toe · Voeg minstens {min} rijen toe |
+| `rowCount`: too many rows | Verwijder rijen zodat er maximaal {max} overblijft · Verwijder rijen zodat er maximaal {max} overblijven |
+| `check`: a pattern without a message | Vul het antwoord in de gevraagde vorm in |
+| `check`: the same as another field, named by its label | Vul hetzelfde in als bij {field} |
+| `check`: unique per form | Dit antwoord is al gegeven. Vul een ander antwoord in. |
+| a submission without an answer, in the summary | Beantwoord minstens één vraag voordat u het formulier verstuurt |
+| the error summary's heading, by the number of its links | Dit antwoord moet nog worden aangepast · Deze antwoorden moeten nog worden aangepast |
+| a summary link to a default | {label}: {message} |
+| a summary link to a default after a label that ends in a question mark, an exclamation mark, a full stop or a colon | {label} {message} |
+| a summary link to a default in a repeatable group's row | {label} ({row}): {message} |
+
+#### Spanish
+
+| Case | Spanish |
+| --- | --- |
+| the word before the last of a list | o |
+| a size below a megabyte, 1,024 based, one place at most | {size} KB |
+| a size from a megabyte | {size} MB |
+| `required`: a text or a text area | Escriba una respuesta |
+| `required`: an email address | Escriba una dirección de correo electrónico |
+| `required`: a phone number | Escriba un número de teléfono |
+| `required`: a web address | Escriba una dirección web |
+| `required`: a number | Escriba un número |
+| `required`: a date | Escriba una fecha |
+| `required`: a time | Escriba una hora |
+| `required`: a date and a time | Escriba una fecha y una hora |
+| `required`: a rating | Elija una valoración |
+| `required`: a scale | Elija un punto de la escala |
+| `required`: a slider | Elija un valor |
+| `required`: radio buttons, a dropdown of one | Elija una respuesta |
+| `required`: checkboxes, a dropdown of several | Elija al menos una respuesta |
+| `required`: a grid | Elija una respuesta en cada fila |
+| `required`: one of a grid's rows | Elija una respuesta en esta fila |
+| `required`: a ranking | Ordene las opciones |
+| `required`: a checkbox | Marque la casilla |
+| `required`: yes or no, in the field's own words for them | Elija {yes} o {no} |
+| `required`: a consent | Marque la casilla para aceptar |
+| `required`: a country | Elija un país |
+| `required`: a name | Escriba el nombre completo |
+| `required`: an address | Escriba la dirección completa |
+| `required`: a file upload | Elija un archivo |
+| `required`: a signature | Añada su firma o escriba su nombre en su lugar |
+| `required`: a site's own type | Responda a esta pregunta |
+| `invalid`: an email address | Escriba una dirección de correo electrónico completa (por ejemplo, nombre@example.com) |
+| `invalid`: a well-formed email address at a domain the field does not take | Use una dirección de correo electrónico de otro dominio |
+| `invalid`: a phone number | Escriba un número de teléfono con cifras y un + delante del prefijo del país |
+| `invalid`: a web address | Escriba una dirección web completa (por ejemplo, https://example.com) |
+| `invalid`: a number; the example is 12, or 12.5 with decimals, in the culture's format | Escriba un número (por ejemplo, {example}) |
+| `invalid`: a date | Escriba una fecha válida |
+| `invalid`: a time | Escriba una hora válida |
+| `invalid`: a date and a time | Escriba una fecha y una hora válidas |
+| `invalid`: a rating | Elija una valoración de 1 a {count} |
+| `invalid`: a scale | Elija un punto de {from} a {to} |
+| `invalid`, `min`, `max`: a slider | Elija un valor de {min} a {max} |
+| `invalid`: a choice, a grid or a ranking | Elija una de las opciones disponibles |
+| `invalid`: a country | Elija un país de la lista |
+| `invalid`: a name | Revise el nombre |
+| `invalid`: an address | Revise la dirección |
+| `invalid`: a signature | Vuelva a firmar o escriba su nombre en su lugar |
+| `invalid` of a site's own type, a validation rule without a message, a kind without words of its own | Revise esta respuesta |
+| `minLength` | Escriba al menos {min} carácter · Escriba al menos {min} caracteres |
+| `maxLength` | Escriba como máximo {max} carácter · Escriba como máximo {max} caracteres |
+| `minWords` | Escriba al menos {min} palabra · Escriba al menos {min} palabras |
+| `maxWords` | Escriba como máximo {max} palabra · Escriba como máximo {max} palabras |
+| `min`, `max`: a number with both limits | Escriba un número de {min} a {max} |
+| `min`, `max`: a number with a least only | Escriba un número igual o mayor que {min} |
+| `min`, `max`: a number with a most only | Escriba un número igual o menor que {max} |
+| `min`, `max`: a time with both limits | Escriba una hora de {min} a {max} |
+| `min`, `max`: a time with an earliest only | Escriba una hora a partir de las {min} |
+| `min`, `max`: a time with a latest only | Escriba una hora hasta las {max} |
+| `step`: a number's step | Escriba un número en intervalos de {step} |
+| `step`: a number's step from its least | Escriba un número en intervalos de {step}, empezando por {min} |
+| `step`: a number without decimals | Escriba un número entero |
+| `step`: a number's decimal places | Escriba un número con {places} decimal como máximo · Escriba un número con {places} decimales como máximo |
+| `step`: a slider | Elija un valor en intervalos de {step} |
+| `step`: the minutes of a time or a date and time | Elija una hora en intervalos de {minutes} minuto · Elija una hora en intervalos de {minutes} minutos |
+| `step`: the minutes of a time from its earliest | Elija una hora en intervalos de {minutes} minuto a partir de las {min} · Elija una hora en intervalos de {minutes} minutos a partir de las {min} |
+| `dateWindow`: a window with both ends | Elija una fecha del {min} al {max} |
+| `dateWindow`: a window with a start only | Elija una fecha a partir del {min} |
+| `dateWindow`: a window with an end only | Elija una fecha hasta el {max} |
+| `dateWindow`: weekdays only, with both ends | Elija una fecha del {min} al {max}, de {monday} a {friday} |
+| `dateWindow`: weekdays only, with a start only | Elija una fecha a partir del {min}, de {monday} a {friday} |
+| `dateWindow`: weekdays only, with an end only | Elija una fecha hasta el {max}, de {monday} a {friday} |
+| `dateWindow`: weekdays only, without ends | Elija un día de {monday} a {friday} |
+| `dateWindow`: a date the window takes that the field excludes | Esta fecha no está disponible. Elija otra. |
+| `selections`: as many as the fewest and the most | Elija {count} respuesta · Elija {count} respuestas |
+| `selections`: the fewest and the most | Elija de {min} a {max} respuestas |
+| `selections`: the fewest only | Elija al menos {min} respuesta · Elija al menos {min} respuestas |
+| `selections`: the most only | Elija como máximo {max} respuesta · Elija como máximo {max} respuestas |
+| `fileType`: the formats, joined with commas and "or" | Elija un archivo en formato {formats} |
+| `fileSize`: a field without a limit of its own | Este archivo es demasiado grande. Elija uno más pequeño. |
+| `fileSize`: one file | Este archivo ocupa más de {size}. Elija uno más pequeño. |
+| `fileSize`: several files | Uno de los archivos ocupa más de {size}. Elija uno más pequeño. |
+| `fileCount` | Elija solo {max} archivo · Elija como máximo {max} archivos |
+| `full`: one option, by its label | Ya no quedan plazas para {option}. Elija otra opción. |
+| `full`: several options | Ya no quedan plazas para una de las opciones elegidas. Elija otra opción. |
+| an option's places left, in its label (ADR-0156) | Queda {count} plaza · Quedan {count} plazas |
+| an option without a place left, in its label | Completo |
+| a third party's check before it may load (ADR-0157) | Este formulario usa una comprobación antispam de un servicio externo, que solo se carga si usted lo acepta. |
+| the button that loads the check | Cargar la comprobación |
+| the check, when a consent manager decides | Este formulario usa una comprobación antispam de un servicio externo, que se carga en cuanto lo acepte en la configuración de cookies. |
+| the check, when a cookie category decides, by its name | Este formulario usa una comprobación antispam de un servicio externo, que se carga en cuanto acepte las cookies de {category}. |
+| the link to the cookie settings | Cambiar la configuración de cookies |
+| a send before the check is done | Complete la comprobación antes de enviar el formulario. |
+| a check that could not load | La comprobación antispam no se ha podido cargar. Aun así, puede enviar el formulario. |
+| a slow device while it solves the puzzle | Estamos comprobando su navegador. Puede tardar un momento. |
+| `confirmation` | Escriba dos veces la misma dirección de correo electrónico |
+| `digits` | Escriba un número con menos cifras |
+| `rowCount`: too few rows | Añada al menos {min} fila · Añada al menos {min} filas |
+| `rowCount`: too many rows | Quite filas para que quede como máximo {max} · Quite filas para que queden como máximo {max} |
+| `check`: a pattern without a message | Escriba la respuesta en el formato indicado |
+| `check`: the same as another field, named by its label | Escriba lo mismo que en {field} |
+| `check`: unique per form | Esta respuesta ya está en uso. Escriba otra. |
+| a submission without an answer, in the summary | Responda al menos a una pregunta antes de enviar el formulario |
+| the error summary's heading, by the number of its links | Hay que corregir esta respuesta · Hay que corregir estas respuestas |
+| a summary link to a default | {label}: {message} |
+| a summary link to a default after a label that ends in a question mark, an exclamation mark, a full stop or a colon | {label} {message} |
+| a summary link to a default in a repeatable group's row | {label} ({row}): {message} |
+
+#### Danish
+
+| Case | Danish |
+| --- | --- |
+| the word before the last of a list | eller |
+| a size below a megabyte, 1,024 based, one place at most | {size} KB |
+| a size from a megabyte | {size} MB |
+| `required`: a text or a text area | Skriv et svar |
+| `required`: an email address | Skriv en e-mailadresse |
+| `required`: a phone number | Skriv et telefonnummer |
+| `required`: a web address | Skriv en webadresse |
+| `required`: a number | Skriv et tal |
+| `required`: a date | Skriv en dato |
+| `required`: a time | Skriv et klokkeslæt |
+| `required`: a date and a time | Skriv en dato og et klokkeslæt |
+| `required`: a rating | Vælg en bedømmelse |
+| `required`: a scale | Vælg et punkt på skalaen |
+| `required`: a slider | Vælg en værdi |
+| `required`: radio buttons, a dropdown of one | Vælg et svar |
+| `required`: checkboxes, a dropdown of several | Vælg mindst ét svar |
+| `required`: a grid | Vælg et svar i hver række |
+| `required`: one of a grid's rows | Vælg et svar i denne række |
+| `required`: a ranking | Sæt mulighederne i rækkefølge |
+| `required`: a checkbox | Sæt kryds i feltet |
+| `required`: yes or no, in the field's own words for them | Vælg {yes} eller {no} |
+| `required`: a consent | Sæt kryds i feltet for at give dit samtykke |
+| `required`: a country | Vælg et land |
+| `required`: a name | Skriv hele navnet |
+| `required`: an address | Skriv hele adressen |
+| `required`: a file upload | Vælg en fil |
+| `required`: a signature | Skriv under, eller skriv dit navn i stedet |
+| `required`: a site's own type | Besvar dette spørgsmål |
+| `invalid`: an email address | Skriv en fuldstændig e-mailadresse, f.eks. navn@example.com |
+| `invalid`: a well-formed email address at a domain the field does not take | Brug en e-mailadresse på et andet domæne |
+| `invalid`: a phone number | Skriv et telefonnummer med cifre og et + foran landekoden |
+| `invalid`: a web address | Skriv en fuldstændig webadresse, f.eks. https://example.com |
+| `invalid`: a number; the example is 12, or 12.5 with decimals, in the culture's format | Skriv et tal, f.eks. {example} |
+| `invalid`: a date | Skriv en gyldig dato |
+| `invalid`: a time | Skriv et gyldigt klokkeslæt |
+| `invalid`: a date and a time | Skriv en gyldig dato og et gyldigt klokkeslæt |
+| `invalid`: a rating | Vælg en bedømmelse fra 1 til {count} |
+| `invalid`: a scale | Vælg et punkt fra {from} til {to} |
+| `invalid`, `min`, `max`: a slider | Vælg en værdi fra {min} til {max} |
+| `invalid`: a choice, a grid or a ranking | Vælg en af de viste muligheder |
+| `invalid`: a country | Vælg et land på listen |
+| `invalid`: a name | Tjek navnet |
+| `invalid`: an address | Tjek adressen |
+| `invalid`: a signature | Skriv under igen, eller skriv dit navn i stedet |
+| `invalid` of a site's own type, a validation rule without a message, a kind without words of its own | Tjek dette svar |
+| `minLength` | Skriv mindst {min} tegn |
+| `maxLength` | Skriv højst {max} tegn |
+| `minWords` | Skriv mindst {min} ord |
+| `maxWords` | Skriv højst {max} ord |
+| `min`, `max`: a number with both limits | Skriv et tal fra {min} til {max} |
+| `min`, `max`: a number with a least only | Skriv et tal på {min} eller derover |
+| `min`, `max`: a number with a most only | Skriv et tal på {max} eller derunder |
+| `min`, `max`: a time with both limits | Skriv et klokkeslæt fra {min} til {max} |
+| `min`, `max`: a time with an earliest only | Skriv et klokkeslæt fra og med {min} |
+| `min`, `max`: a time with a latest only | Skriv et klokkeslæt til og med {max} |
+| `step`: a number's step | Skriv et tal i trin på {step} |
+| `step`: a number's step from its least | Skriv et tal i trin på {step} fra {min} |
+| `step`: a number without decimals | Skriv et helt tal |
+| `step`: a number's decimal places | Skriv et tal med højst {places} decimal · Skriv et tal med højst {places} decimaler |
+| `step`: a slider | Vælg en værdi i trin på {step} |
+| `step`: the minutes of a time or a date and time | Vælg et klokkeslæt i trin på {minutes} minut · Vælg et klokkeslæt i trin på {minutes} minutter |
+| `step`: the minutes of a time from its earliest | Vælg et klokkeslæt i trin på {minutes} minut fra {min} · Vælg et klokkeslæt i trin på {minutes} minutter fra {min} |
+| `dateWindow`: a window with both ends | Vælg en dato fra {min} til {max} |
+| `dateWindow`: a window with a start only | Vælg en dato fra og med {min} |
+| `dateWindow`: a window with an end only | Vælg en dato til og med {max} |
+| `dateWindow`: weekdays only, with both ends | Vælg en dato fra {min} til {max}, {monday} til {friday} |
+| `dateWindow`: weekdays only, with a start only | Vælg en dato fra og med {min}, {monday} til {friday} |
+| `dateWindow`: weekdays only, with an end only | Vælg en dato til og med {max}, {monday} til {friday} |
+| `dateWindow`: weekdays only, without ends | Vælg en dag fra {monday} til {friday} |
+| `dateWindow`: a date the window takes that the field excludes | Denne dato kan ikke vælges. Vælg en anden. |
+| `selections`: as many as the fewest and the most | Vælg {count} svar |
+| `selections`: the fewest and the most | Vælg fra {min} til {max} svar |
+| `selections`: the fewest only | Vælg mindst {min} svar |
+| `selections`: the most only | Vælg højst {max} svar |
+| `fileType`: the formats, joined with commas and "or" | Vælg en fil i formatet {formats} |
+| `fileSize`: a field without a limit of its own | Filen er for stor. Vælg en mindre. |
+| `fileSize`: one file | Filen er større end {size}. Vælg en mindre. |
+| `fileSize`: several files | En af filerne er større end {size}. Vælg en mindre. |
+| `fileCount` | Vælg kun {max} fil · Vælg højst {max} filer |
+| `full`: one option, by its label | {option} er fuldt booket. Vælg en anden mulighed. |
+| `full`: several options | Et af dine valg er fuldt booket. Vælg en anden mulighed. |
+| an option's places left, in its label (ADR-0156) | {count} ledig plads · {count} ledige pladser |
+| an option without a place left, in its label | Fuldt booket |
+| a third party's check before it may load (ADR-0157) | Formularen bruger et spamtjek fra en ekstern tjeneste, som kun indlæses, hvis du giver samtykke. |
+| the button that loads the check | Indlæs tjekket |
+| the check, when a consent manager decides | Formularen bruger et spamtjek fra en ekstern tjeneste, som indlæses, når du giver samtykke i cookieindstillingerne. |
+| the check, when a cookie category decides, by its name | Formularen bruger et spamtjek fra en ekstern tjeneste, som indlæses, når du accepterer {category}cookies. |
+| the link to the cookie settings | Skift cookieindstillinger |
+| a send before the check is done | Gennemfør tjekket, før du sender formularen. |
+| a check that could not load | Spamtjekket kunne ikke indlæses. Du kan stadig sende formularen. |
+| a slow device while it solves the puzzle | Vi tjekker din browser. Det kan tage et øjeblik. |
+| `confirmation` | Skriv den samme e-mailadresse to gange |
+| `digits` | Skriv et tal med færre cifre |
+| `rowCount`: too few rows | Tilføj mindst {min} række · Tilføj mindst {min} rækker |
+| `rowCount`: too many rows | Fjern rækker, så der højst er {max} tilbage |
+| `check`: a pattern without a message | Skriv svaret i det ønskede format |
+| `check`: the same as another field, named by its label | Skriv det samme som ved {field} |
+| `check`: unique per form | Dette svar er allerede brugt. Skriv et andet. |
+| a submission without an answer, in the summary | Besvar mindst ét spørgsmål, før du sender formularen |
+| the error summary's heading, by the number of its links | Dette svar skal rettes · Disse svar skal rettes |
+| a summary link to a default | {label}: {message} |
+| a summary link to a default after a label that ends in a question mark, an exclamation mark, a full stop or a colon | {label} {message} |
+| a summary link to a default in a repeatable group's row | {label} ({row}): {message} |
 
 ## Checklist for every new string
 

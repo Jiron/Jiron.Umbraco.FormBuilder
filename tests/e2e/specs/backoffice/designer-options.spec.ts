@@ -6,7 +6,7 @@ import { API, formWithFields, unique } from '../../support/forms-api.ts';
 // The option editor (ROADMAP 9.4b, ADR-0172): a dropdown takes its options from the library's list the demo seeds and
 // another from a standard list, depending on the first, and the canvas shows the options they resolve in English and
 // German; a radio field's options are pasted one a line, moved by drag, with Alt+Up and with single presses (its
-// handle's "Place in the list", WCAG 2.5.7, ROADMAP 10.4), and one gets a place limit; a grid's rows and columns are
+// handle's "Position in the list", WCAG 2.5.7, ROADMAP 10.4), and one gets a place limit; a grid's rows and columns are
 // added, pasted, marked, moved and removed. Each is saved and read back from the draft.
 
 const SECTION = '/umbraco/section/jfb-forms';
@@ -179,13 +179,13 @@ test("a radio field's options are pasted one a line, moved by drag, with Alt+Up 
   const moveEvening = editor.getByRole('button', { name: 'Move Evening', exact: true });
   await moveEvening.click();
   await expect(moveEvening).toHaveAttribute('aria-expanded', 'true');
-  const place = editor.getByLabel('Place in the list');
+  const place = editor.getByLabel('Position in the list');
   await expect(place).toHaveValue('0');
   await expect.poll(() => holdsFocus(place)).toBe(true);
   await place.selectOption({ label: '3 of 3' });
   await expect(status).toHaveText('Moved. Evening: position 3 of 3.');
   expect(await labelsIn(editor)).toEqual(['Afternoon', 'Morning', 'Evening']);
-  await expect(editor.getByLabel('Place in the list')).toHaveCount(0);
+  await expect(editor.getByLabel('Position in the list')).toHaveCount(0);
   await expect.poll(() => holdsFocus(moveEvening)).toBe(true);
 
   // Afternoon's details: twelve places, and a stored value that is refused before one that is kept.

@@ -47,7 +47,7 @@ export default {
     addItem: 'Ordner oder Formular hinzufügen…',
     itemsNone:
       'Kein Ordner und kein Formular hat eigenen Zugriff; der Zugriff jeder Gruppe oben reicht also bis zu jedem Formular.',
-    only: (names: readonly string[]) => `Nur diese Gruppen: ${list(names)}`,
+    only: (names: readonly string[]) => `Nur diese Benutzergruppen: ${list(names)}`,
     onlyAdministrators: 'Nur Administratoren',
     also: (names: readonly string[]) => `Zusätzlich: ${list(names)}`,
     alsoNone: 'Keine Gruppe hat hier mehr',
@@ -56,14 +56,14 @@ export default {
     form: 'Formular',
 
     headline: (name: string) => `Berechtigungen für ${name}`,
-    restrict: 'Nur diese Gruppen',
+    restrict: 'Nur diese Benutzergruppen',
     restrictHelpFolder:
       'Nur die Gruppen unten und Administratoren sehen die Formulare dieses Ordners. Zugriff auf jedes Formular oder auf einen übergeordneten Ordner endet hier.',
     restrictHelpForm:
       'Nur die Gruppen unten und Administratoren sehen dieses Formular. Zugriff auf jedes Formular oder auf seinen Ordner endet hier.',
     groupsHere: 'Gruppen mit Zugriff hier',
     addGroup: 'Benutzergruppe hinzufügen',
-    addGroupNone: 'Gruppe wählen',
+    addGroupNone: 'Benutzergruppe wählen',
     removeGroup: (group: string) => `${group} entfernen`,
     noneHereFolder: 'Noch keine. Zugriff auf jedes Formular reicht bis in diesen Ordner.',
     noneHereForm: 'Noch keine. Zugriff auf jedes Formular reicht bis zu diesem Formular.',

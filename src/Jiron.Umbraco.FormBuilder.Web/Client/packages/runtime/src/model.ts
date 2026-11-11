@@ -11,7 +11,6 @@ import type {
   ProjectedRule,
   ProjectedValidationRule,
   RecallForm,
-  TemplateContext,
 } from '@jfb/logic';
 
 /** A field of the public projection (ADR-0002, ADR-0035), as far as the runtime reads it: its rules too (ADR-0111). */
@@ -75,7 +74,7 @@ export interface ModelText {
   readonly owner: string;
   /** `title`, `description`, `label`, `help`, `placeholder`, or `settings.` and a setting's path. */
   readonly text: string;
-  readonly context: TemplateContext;
+  readonly context: 'html' | 'text';
   /** The paths of its tags that its place refuses for their source, written as they stand (ADR-0118). */
   readonly refused?: readonly string[];
 }
@@ -123,8 +122,13 @@ export interface FormModel {
   readonly consents: Readonly<Record<string, string>>;
   /** The culture's formats, which the messages print values in (ADR-0109). */
   readonly formats: CultureFormats;
-  /** The culture's words for yes and no. */
+  /** The culture's words for yes and no, a site's or the form's own among them. */
   readonly words: DisplayWords;
+  /**
+   * The messages the site or the form rewords in the culture, by their names in the language's table, such as
+   * `minLength.one` (ADR-0230); absent or empty for none.
+   */
+  readonly texts?: Readonly<Record<string, string>> | null;
   /** The visitor texts that hold merge tags, and what they render with; null for a form without one. */
   readonly mergeTags?: ModelMergeTags | null;
 }

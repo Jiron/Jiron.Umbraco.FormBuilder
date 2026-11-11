@@ -14,7 +14,7 @@ export default {
     usedBy: (count: number) => (count === 0 ? 'keinem Formular' : count === 1 ? '1 Formular' : `${count} Formularen`),
     loadMore: 'Mehr laden',
     default: 'Standard',
-    import: 'Theme importieren …',
+    import: 'Theme importieren…',
     imported: (name: string) => `${name} wurde importiert.`,
     importNotTheme: 'Diese Datei ist kein Theme. Wählen Sie eine Datei, die aus einem Theme exportiert wurde.',
     importRefused:

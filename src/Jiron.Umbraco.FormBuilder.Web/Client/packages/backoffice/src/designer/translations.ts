@@ -3,6 +3,7 @@
 // each element that holds one; the field's own test is the inspector model's `untranslated`. Pure, read from the draft.
 import type { FieldSettingResponseModel } from '../api';
 import type { DesignGroup, DesignPage, LocalizedText } from './definition';
+import { dictionaryKeyOf } from './dictionary-texts';
 import { keyIn } from './preview/field-models';
 
 /** The texts of the Settings view that are a visitor's (ADR-0228): the three buttons' labels and the closed message. */
@@ -20,11 +21,12 @@ const written = (texts: LocalizedText | null | undefined) =>
 
 /**
  * Whether a text lacks the language: it is written in some language, but neither in this one nor in a more general one
- * (`de` for `de-CH`), so visitors in it read the default's. Ask it only for a language that is not the site's default,
- * whose text is the default text (`''`) itself.
+ * (`de` for `de-CH`), so visitors in it read the default's. A default that names a dictionary item (`#key`) lacks
+ * nothing: the dictionary holds its text in each language, as the inspector's line under it says. Ask it only for a
+ * language that is not the site's default, whose text is the default text (`''`) itself.
  */
 export function lacks(texts: LocalizedText | null | undefined, culture: string): boolean {
-  return written(texts) && keyIn(texts, culture) === '';
+  return written(texts) && keyIn(texts, culture) === '' && dictionaryKeyOf(texts?.['']) === null;
 }
 
 const textOf = (element: Readonly<Record<string, unknown>>, name: string) =>

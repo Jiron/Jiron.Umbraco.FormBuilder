@@ -1,4 +1,5 @@
 import { createServer } from 'node:http';
+import { setTimeout as delay } from 'node:timers/promises';
 import { E2E_BASE_URL, STATIC_PORT } from './paths.ts';
 
 // The static page of the headless tests (ROADMAP 4.11, 6.6f; ADR-0031): a site that does not run Umbraco, on an origin
@@ -61,7 +62,13 @@ export function headlessPage(host: string, attributes: Readonly<Record<string, s
   ].join('\n');
 }
 
-/** Starts the static site on 5521 for the host's address, the run's host by default. */
+/** How long a spec waits for another worker's static site to stop: hooks that start one allow for it. */
+export const STATIC_SITE_WAIT_MS = 4 * 60_000;
+
+/**
+ * Starts the static site on 5521 for the host's address, the run's host by default. The public API allows that one
+ * origin, so the port is the lock: a spec on another worker that holds it is waited for, until it stops its site.
+ */
 export async function startStaticSite(host: string = E2E_BASE_URL): Promise<StaticSite> {
   const server = createServer((request, response) => {
     const url = new URL(request.url ?? '/', 'http://static.invalid');
@@ -76,10 +83,29 @@ export async function startStaticSite(host: string = E2E_BASE_URL): Promise<Stat
       response.writeHead(400, { 'Content-Type': 'text/plain; charset=utf-8' }).end(String(error));
     }
   });
-  await new Promise<void>((resolve, reject) => {
-    server.once('error', reject);
-    server.listen(STATIC_PORT, '127.0.0.1', () => resolve());
-  });
+  const deadline = Date.now() + STATIC_SITE_WAIT_MS;
+  for (;;) {
+    try {
+      await new Promise<void>((resolve, reject) => {
+        // A failed attempt takes both its listeners away, so waiting adds none.
+        const failed = (error: Error) => {
+          server.off('listening', listening);
+          reject(error);
+        };
+        const listening = () => {
+          server.off('error', failed);
+          resolve();
+        };
+        server.once('error', failed);
+        server.once('listening', listening);
+        server.listen(STATIC_PORT, '127.0.0.1');
+      });
+      break;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'EADDRINUSE' || Date.now() > deadline) throw error;
+      await delay(500);
+    }
+  }
   return {
     url: `http://127.0.0.1:${STATIC_PORT}`,
     otherOrigin: `http://localhost:${STATIC_PORT}`,

@@ -3,7 +3,7 @@ import { expect, test } from '../../fixtures.ts';
 import { fillForm } from '../../support/form.ts';
 import { API, formOf, formWithFields, unique } from '../../support/forms-api.ts';
 import { bodyOf, headerOf, visibleText, type Mail } from '../../support/mail.ts';
-import { startStaticSite, type StaticSite } from '../../support/static-site.ts';
+import { STATIC_SITE_WAIT_MS, startStaticSite, type StaticSite } from '../../support/static-site.ts';
 
 // A form in English and German, end to end (ROADMAP 14.1, ADR-0228): a designer switches the designer to German, finds
 // what is left by its marks on the fields, the outcome's row and the action's card, writes the German texts there, and
@@ -19,6 +19,8 @@ const UNTRANSLATED = 'No German text yet';
 let site: StaticSite | undefined;
 
 test.beforeAll(async () => {
+  // Another worker's spec may hold the static site's one port for a while (support/static-site.ts).
+  test.setTimeout(STATIC_SITE_WAIT_MS + 60_000);
   site = await startStaticSite();
 });
 

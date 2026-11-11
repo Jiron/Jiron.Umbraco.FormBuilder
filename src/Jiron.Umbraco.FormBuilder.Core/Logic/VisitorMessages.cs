@@ -3,7 +3,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Text;
 using System.Text.Json;
-using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn;
 
 namespace Jiron.Umbraco.FormBuilder.Logic;
@@ -80,11 +79,12 @@ internal static class VisitorMessages
     /// <param name="culture">The page's culture, whose language picks the words.</param>
     /// <param name="formats">The culture's formats, which print the values.</param>
     /// <param name="today">The site's today as a day number, from which a date window relative to today counts.</param>
-    public static string Default(VisitorError error, string culture, CultureFormats formats, int today)
+    /// <param name="texts">The visitor texts the form or the site rewords, by key (ADR-0230); null for none.</param>
+    public static string Default(VisitorError error, string culture, CultureFormats formats, int today, IReadOnlyDictionary<string, string>? texts = null)
     {
         ArgumentNullException.ThrowIfNull(error);
         ArgumentNullException.ThrowIfNull(formats);
-        var words = VisitorMessageWords.Of(culture);
+        var words = Words(culture, texts);
         switch (error.Code)
         {
             case "empty":
@@ -115,7 +115,7 @@ internal static class VisitorMessages
         var said = new Saying(words, formats);
         return error.Code switch
         {
-            "required" => Required(error, field, settings, words, culture),
+            "required" => Required(error, field, settings, words, culture, texts),
             "invalid" => Invalid(error, field, settings, said),
             "minLength" when settings.Long("minLength") is { } min => Fill(words.MinLength.For(min), ("min", said.Count(min))),
             "maxLength" when settings.Long("maxLength") is { } max => Fill(words.MaxLength.For(max), ("max", said.Count(max))),
@@ -139,7 +139,14 @@ internal static class VisitorMessages
     /// <summary>The error summary's heading for a number of errors.</summary>
     /// <param name="errors">How many errors the summary lists.</param>
     /// <param name="culture">The page's culture.</param>
-    public static string SummaryHeading(int errors, string culture) => VisitorMessageWords.Of(culture).SummaryHeading.For(errors);
+    /// <param name="texts">The visitor texts the form or the site rewords, by key (ADR-0230); null for none.</param>
+    public static string SummaryHeading(int errors, string culture, IReadOnlyDictionary<string, string>? texts = null) => Words(culture, texts).SummaryHeading.For(errors);
+
+    /// <summary>The words of a culture, the messages the form or the site rewords in their place (ADR-0230).</summary>
+    /// <param name="culture">The page's culture.</param>
+    /// <param name="texts">The visitor texts reworded, by key; null for none.</param>
+    public static VisitorMessageWords Words(string culture, IReadOnlyDictionary<string, string>? texts) =>
+        texts is { Count: > 0 } ? VisitorWording.Apply(VisitorMessageWords.Of(culture), texts) : VisitorMessageWords.Of(culture);
 
     /// <summary>
     /// The error summary's link to a default message: the field's label first, and in a row the row's legend, so each
@@ -151,14 +158,15 @@ internal static class VisitorMessages
     /// <param name="label">The field's label as the page shows it, or null when it shows none.</param>
     /// <param name="row">The legend of the row the field is in, or null outside a row.</param>
     /// <param name="culture">The page's culture.</param>
-    public static string SummaryEntry(string message, string? label, string? row, string culture)
+    /// <param name="texts">The visitor texts the form or the site rewords, by key (ADR-0230); null for none.</param>
+    public static string SummaryEntry(string message, string? label, string? row, string culture, IReadOnlyDictionary<string, string>? texts = null)
     {
         if (IsBlank(label))
         {
             return message;
         }
 
-        var words = VisitorMessageWords.Of(culture);
+        var words = Words(culture, texts);
         return IsBlank(row)
             ? Fill(EndsWithMark(label) ? words.SummaryMarkedEntry : words.SummaryEntry, ("label", label), ("message", message))
             : Fill(words.SummaryRowEntry, ("label", label), ("row", row), ("message", message));
@@ -211,7 +219,7 @@ internal static class VisitorMessages
     }
 
     // required, by what the control asks for.
-    private static string Required(VisitorError error, MessageField field, Settings settings, VisitorMessageWords words, string culture) => field.Type switch
+    private static string Required(VisitorError error, MessageField field, Settings settings, VisitorMessageWords words, string culture, IReadOnlyDictionary<string, string>? texts) => field.Type switch
     {
         "text" or "textarea" => words.Answer,
         "email" => words.Email,
@@ -232,8 +240,8 @@ internal static class VisitorMessages
         "checkbox" => words.Tick,
         "yesno" => Fill(
             words.YesNo,
-            ("yes", settings.Text("yesLabel") is { Length: > 0 } yes ? yes : FieldDisplayWords.Yes(culture)),
-            ("no", settings.Text("noLabel") is { Length: > 0 } no ? no : FieldDisplayWords.No(culture))),
+            ("yes", settings.Text("yesLabel") is { Length: > 0 } yes ? yes : VisitorWording.Yes(culture, texts)),
+            ("no", settings.Text("noLabel") is { Length: > 0 } no ? no : VisitorWording.No(culture, texts))),
         "consent" => words.Agree,
         "country" => words.Country,
         "name" => words.Name,

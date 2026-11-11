@@ -36,6 +36,13 @@ public sealed record FormSubmissionSettings
     /// <summary>The "previous page" button's label.</summary>
     public LocalizedText? BackLabel { get; init; }
 
+    /// <summary>
+    /// The form's own wording of the package's visitor texts (ADR-0230): a text's key, such as <c>message.email</c> or
+    /// <c>form.chooseFile</c>, to its wording per culture, a culture's own, its language's or, as <c>""</c>, every
+    /// language's; absent means the site's wording, else the package's.
+    /// </summary>
+    public IReadOnlyDictionary<string, IReadOnlyDictionary<string, string>>? Texts { get; init; }
+
     /// <summary>Whether a "check your answers" page comes before sending.</summary>
     public bool SummaryPage { get; init; }
 

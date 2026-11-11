@@ -137,6 +137,7 @@ internal sealed partial class DefinitionShapeReader
         {
             JsonTypeInfoKind.Object => TryReadObject(value, info, path, null, out node),
             JsonTypeInfoKind.Enumerable => TryReadArray(value, info, path, out node),
+            JsonTypeInfoKind.Dictionary => TryReadMap(value, info, path, out node),
             _ => throw new InvalidOperationException($"The definition model has no shape rule for {target}."),
         };
     }
@@ -238,6 +239,54 @@ internal sealed partial class DefinitionShapeReader
         if (ok && items.Count > 0)
         {
             node = items;
+        }
+
+        return ok;
+    }
+
+    // A map from a name to a value, such as a form's own wording of the visitor texts (ADR-0230): an object, each name
+    // once in any letter case, each value read as its type is; a map without values is none.
+    private bool TryReadMap(JsonElement value, JsonTypeInfo info, string path, out JsonNode? node)
+    {
+        node = null;
+        if (value.ValueKind != JsonValueKind.Object)
+        {
+            return WrongType(value, path, "an object");
+        }
+
+        var result = new JsonObject();
+        var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var ok = true;
+        foreach (var property in value.EnumerateObject())
+        {
+            var child = JsonPaths.Property(path, property.Name);
+            if (!names.Add(property.Name))
+            {
+                ok = Fail(DefinitionErrors.DuplicateProperty, child, $"\"{property.Name}\" appears twice, in some letter case.");
+                continue;
+            }
+
+            if (property.Value.ValueKind == JsonValueKind.Null)
+            {
+                ok = WrongType(property.Value, child, "a value") && ok;
+                continue;
+            }
+
+            if (!TryRead(property.Value, info.ElementType!, child, out var read))
+            {
+                ok = false;
+                continue;
+            }
+
+            if (read is not null)
+            {
+                result[property.Name] = read;
+            }
+        }
+
+        if (ok && result.Count > 0)
+        {
+            node = result;
         }
 
         return ok;

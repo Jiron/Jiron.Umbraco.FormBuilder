@@ -9,6 +9,7 @@ import { ENGLISH } from './testing';
 vi.mock('./messages', async (importOriginal) => ({
   ...(await importOriginal<typeof import('./messages')>()),
   wordsFor: () => Promise.reject(new Error('The language file did not load.')),
+  formWords: () => Promise.reject(new Error('The language file did not load.')),
 }));
 
 const model: FormModel = {

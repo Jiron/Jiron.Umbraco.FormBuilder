@@ -2,15 +2,16 @@ using System.Collections.Frozen;
 using System.Collections.Immutable;
 using System.Reflection;
 using System.Text.Json;
+using Jiron.Umbraco.FormBuilder.Logic;
 
 namespace Jiron.Umbraco.FormBuilder.Web.Rendering;
 
 /// <summary>
-/// The words a rendered form brings of its own (ADR-0093), in English and German so far; 14.2 adds the other five
-/// languages. A culture without its own words takes its more general culture's, then English. A form's own labels and
-/// messages win over these. A text with <c>{0}</c> takes a value there.
+/// The words a rendered form brings of its own (ADR-0093), in English and German here and in French, Italian, Dutch,
+/// Spanish and Danish in <c>lang/</c> (ADR-0230). A culture without its own words takes its more general culture's,
+/// then English. A form's own labels and messages win over these. A text with <c>{0}</c> takes a value there.
 /// </summary>
-internal sealed record RenderingWords
+internal sealed partial record RenderingWords
 {
     // The letters outside ASCII the German words need.
     private const char AUmlaut = (char)0xE4;
@@ -33,7 +34,7 @@ internal sealed record RenderingWords
             RequiredNote = "Questions marked {0} need an answer.",
             Asterisk = "with an asterisk",
             Required = "required",
-            Step = "Step {0} of {1}",
+            Step = "Page {0} of {1}",
             Progress = "Progress",
             Page = "Page {0}",
             ConfirmEmail = "Repeat your email address",
@@ -143,7 +144,7 @@ internal sealed record RenderingWords
             RequiredNote = "Fragen mit {0} m" + UUmlaut + "ssen beantwortet werden.",
             Asterisk = "Sternchen",
             Required = "erforderlich",
-            Step = "Schritt {0} von {1}",
+            Step = "Seite {0} von {1}",
             Progress = "Fortschritt",
             Page = "Seite {0}",
             ConfirmEmail = "E-Mail-Adresse wiederholen",
@@ -154,26 +155,26 @@ internal sealed record RenderingWords
             CounterOverOne = "{0} Zeichen zu viel",
             RankingMoved = "{0} auf Platz {1} verschoben.",
             RowRemoved = "{0} entfernt.",
-            Reference = "Ihre Referenz lautet {0}",
+            Reference = "Ihre Referenznummer lautet {0}",
             OpensHeading = "Dieses Formular " + OUmlaut + "ffnet am {0}",
             OpensText = "Kommen Sie dann wieder, um es auszuf" + UUmlaut + "llen.",
             ClosedHeading = "Dieses Formular ist geschlossen",
             ClosedText = "Es nimmt keine Antworten mehr an.",
             FullHeading = "Dieses Formular ist voll",
-            FullText = "Es hat alle Antworten, die es annehmen kann.",
-            SignInHeading = "Dieses Formular ist f" + UUmlaut + "r Mitglieder",
+            FullText = "Die H" + OUmlaut + "chstzahl an Antworten ist erreicht.",
+            SignInHeading = "Dieses Formular ist nur f" + UUmlaut + "r Mitglieder",
             SignInText = "Melden Sie sich an, um es auszuf" + UUmlaut + "llen.",
-            GroupsHeading = "Dieses Formular steht Ihrem Konto nicht offen",
+            GroupsHeading = "Dieses Formular ist f" + UUmlaut + "r Ihr Konto nicht freigegeben",
             GroupsText = "Es ist nur f" + UUmlaut + "r Mitglieder bestimmter Gruppen.",
             PendingHeading = "Dieses Formular wartet auf ein Update",
-            PendingText = "Besucher sehen hier nichts, bis das Datenbank-Update von Jiron Form Builder gelaufen ist. Diesen Hinweis sehen nur angemeldete Backoffice-Benutzer.",
+            PendingText = "Auf der Website ist hier nichts zu sehen, bis das Datenbank-Update von Jiron Form Builder ausgef" + UUmlaut + "hrt wurde. Diesen Hinweis sieht nur, wer im Backoffice angemeldet ist.",
             Other = "Sonstiges",
             OtherText = "Ihre eigene Antwort",
             Choose = "Bitte w" + AUmlaut + "hlen",
             ChooseCountry = "Land w" + AUmlaut + "hlen",
             SeveralHint = "Um mehr als eine Antwort zu w" + AUmlaut + "hlen, halten Sie beim Klicken Strg gedr" + UUmlaut + "ckt (am Mac Cmd).",
             NoChoices = "Hier gibt es noch nichts zur Auswahl.",
-            ChoicesUnavailable = "Die Auswahl konnte nicht geladen werden. Bitte versuchen Sie es sp" + AUmlaut + "ter noch einmal.",
+            ChoicesUnavailable = "Die Optionen konnten nicht geladen werden. Bitte versuchen Sie es sp" + AUmlaut + "ter noch einmal.",
             MoveUp = "{0} nach oben verschieben",
             MoveDown = "{0} nach unten verschieben",
             Row = "Zeile {0}",
@@ -188,14 +189,14 @@ internal sealed record RenderingWords
             Street2 = "Adresszusatz",
             Postcode = "Postleitzahl",
             City = "Ort",
-            Region = "Bundesland oder Region",
+            Region = "Bundesland, Kanton oder Region",
             Country = "Land",
             SignatureName = "Ihr vollst" + AUmlaut + "ndiger Name",
             SignatureTyped = "Geben Sie Ihren vollst" + AUmlaut + "ndigen Namen ein. Er gilt als Ihre Unterschrift.",
             SignatureHand = "Unterschreiben Sie mit dem Finger oder der Maus, oder geben Sie stattdessen Ihren Namen ein.",
             SignatureDrawn = "Ihre Unterschrift, gezeichnet",
             SignatureClear = "L" + OUmlaut + "schen",
-            SignatureUndoClear = "L" + OUmlaut + "schen zur" + UUmlaut + "cknehmen",
+            SignatureUndoClear = "L" + OUmlaut + "schen r" + UUmlaut + "ckg" + AUmlaut + "ngig machen",
             SignatureTypeInstead = "Stattdessen Namen eingeben",
             SignatureByHand = "Stattdessen von Hand unterschreiben",
             ThankYou = "Vielen Dank. Wir haben Ihre Nachricht erhalten.",
@@ -205,7 +206,7 @@ internal sealed record RenderingWords
             CountdownOne = "In {0} Sekunde geht es weiter zur n" + AUmlaut + "chsten Seite.",
             CountdownOther = "In {0} Sekunden geht es weiter zur n" + AUmlaut + "chsten Seite.",
             Sending = "Ihre Antworten werden gesendet",
-            ConnectionText = "Pr" + UUmlaut + "fen Sie die Verbindung und senden Sie erneut. Ihre Antworten bleiben erhalten.",
+            ConnectionText = "Pr" + UUmlaut + "fen Sie Ihre Internetverbindung und senden Sie erneut. Ihre Antworten bleiben erhalten.",
             ServerErrorText = "Bei uns ist etwas schiefgegangen. Senden Sie gleich noch einmal. Ihre Antworten bleiben erhalten.",
             ChangedHeading = "Dieses Formular wurde ge" + AUmlaut + "ndert, w" + AUmlaut + "hrend Sie es ausgef" + UUmlaut + "llt haben",
             ChangedText = "Ihre Antworten bleiben erhalten.",
@@ -225,16 +226,16 @@ internal sealed record RenderingWords
             DragFile = "Datei hierher ziehen oder",
             DragFiles = "Dateien hierher ziehen oder",
             YourFiles = "Ihre Dateien",
-            FileUploading = "{0} % hochgeladen",
+            FileUploading = "{0}\u00a0% hochgeladen",
             FileUploaded = "{0} ist hochgeladen.",
             RemoveFile = "{0} entfernen",
             StopUploading = "Hochladen von {0} abbrechen",
             TryAgain = "Erneut versuchen",
             TryAgainFor = ", um {0} hochzuladen",
-            UploadStopped = "Das Hochladen wurde vor dem Ende abgebrochen.",
+            UploadStopped = "Das Hochladen wurde unterbrochen.",
             UploadLater = "Dieses Formular kann gerade keine Dateien annehmen. Versuchen Sie es sp" + AUmlaut + "ter noch einmal. Ihre Antworten bleiben erhalten.",
-            Kilobytes = "{0} KB",
-            Megabytes = "{0} MB",
+            Kilobytes = "{0}\u00a0KB",
+            Megabytes = "{0}\u00a0MB",
             Honeypot = "Lassen Sie dieses Feld leer",
             Change = CapitalAUmlaut + "ndern",
             NotAnswered = "Nicht beantwortet",
@@ -244,10 +245,44 @@ internal sealed record RenderingWords
             FillInAgain = "Formular erneut ausf" + UUmlaut + "llen",
             CopyShown = "Ihre Antworten werden nur einmal angezeigt, direkt nach dem Senden.",
         },
+        ["fr"] = French,
+        ["it"] = Italian,
+        ["nl"] = Dutch,
+        ["es"] = Spanish,
+        ["da"] = Danish,
     }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
+
+    // Each word's property by its name in a key after the prefix (ADR-0230), read once.
+    private static readonly ImmutableArray<(string Name, PropertyInfo Property)> Named =
+        [.. Properties.Select(property => (JsonNamingPolicy.CamelCase.ConvertName(property.Name), property))];
 
     /// <summary>The cultures with words of their own.</summary>
     public static IReadOnlyCollection<string> Cultures => Words.Keys;
+
+    /// <summary>
+    /// These words with the ones a form or its site rewords in their place (ADR-0230), by their keys
+    /// (<c>form.chooseFile</c>); these words themselves when they reword none.
+    /// </summary>
+    /// <param name="texts">The visitor texts a page shows, by key.</param>
+    public RenderingWords With(IReadOnlyDictionary<string, string>? texts)
+    {
+        if (texts is not { Count: > 0 })
+        {
+            return this;
+        }
+
+        RenderingWords? copy = null;
+        foreach (var (name, property) in Named)
+        {
+            if (texts.TryGetValue(VisitorTextKeys.FormPrefix + name, out var wording))
+            {
+                copy ??= this with { };
+                property.SetValue(copy, wording);
+            }
+        }
+
+        return copy ?? this;
+    }
 
     /// <summary>The button back to the previous page.</summary>
     public required string Back { get; init; }

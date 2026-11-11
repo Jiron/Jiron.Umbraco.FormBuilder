@@ -247,7 +247,7 @@ describe("a form's History", () => {
     expect(cell(0, 2)).toBe('Email address Comment: Press enquiries go to the press page');
     expect(cell(1, 2)).toBe('2 fields, Spam protection');
     expect(cell(2, 2)).toBe('First published version');
-    expect([cell(0, 3), cell(1, 3)]).toEqual(['Press enquiries go to the press page', 'none']);
+    expect([cell(0, 3), cell(1, 3)]).toEqual(['Press enquiries go to the press page', '']);
     // The draft saves are one switch away; nothing says how long they are kept until they show.
     expect(root.querySelector('.note')).toBeNull();
     expect(rows()[0]?.querySelector('uui-checkbox')?.getAttribute('aria-label')).toBe('Select Version 14');
@@ -410,7 +410,7 @@ describe("a form's History", () => {
     expect(said()).toBe('Comment on Version 12 saved.');
     opened.answer = { comment: '' };
     menu(1)[2]?.click();
-    await vi.waitFor(() => expect(cell(1, 3)).toBe('none'));
+    await vi.waitFor(() => expect(cell(1, 3)).toBe(''));
     expect(said()).toBe('Comment on Version 12 removed.');
     // Cancelled, or saved as it was: nothing is sent.
     opened.answer = undefined;

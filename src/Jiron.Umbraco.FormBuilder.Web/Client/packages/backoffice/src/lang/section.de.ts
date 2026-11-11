@@ -4,6 +4,7 @@ export default {
   jfbSection: {
     // Der Name des Bereichs in Umbracos oberer Leiste ist ein Name und bleibt unübersetzt (ADR-0171).
     section: 'Form Builder',
+    defaultTheme: 'Standard',
     forms: 'Formulare',
     overview: 'Übersicht',
     noForms:

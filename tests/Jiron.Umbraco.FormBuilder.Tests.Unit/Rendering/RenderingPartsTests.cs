@@ -198,12 +198,12 @@ public sealed class RenderingPartsTests
     [TestCase(1536L, "en", "1.5 KB")]
     [TestCase(2048L, "en", "2 KB")]
     [TestCase(40_000L, "en", "39.1 KB")]
-    [TestCase(40_000L, "de", "39,1 KB")]
+    [TestCase(40_000L, "de", "39,1\u00a0KB")]
     [TestCase(1_048_524L, "en", "1023.9 KB")]
     [TestCase(1_048_525L, "en", "1 MB")]
     [TestCase(1_048_576L, "en", "1 MB")]
     [TestCase(1_500_000L, "en", "1.4 MB")]
-    [TestCase(1_500_000L, "de", "1,4 MB")]
+    [TestCase(1_500_000L, "de", "1,4\u00a0MB")]
     [TestCase(10_485_760L, "en", "10 MB")]
     public void AKeptFilesSize_IsInKilobytesUntilAMegabyte_WithOnePlaceOnlyWhenItIsNotWhole(long bytes, string culture, string shown) =>
         Assert.That(FormModels.SizeOf(bytes, RenderingWords.Of(culture), CultureInfo.GetCultureInfo(culture)), Is.EqualTo(shown));
@@ -212,7 +212,12 @@ public sealed class RenderingPartsTests
     [TestCase("de-CH", "Senden")]
     [TestCase("de-DE", "Senden")]
     [TestCase("en-GB", "Send")]
-    [TestCase("fr-FR", "Send")]
+    [TestCase("fr-FR", "Envoyer")]
+    [TestCase("it-CH", "Invia")]
+    [TestCase("nl-BE", "Versturen")]
+    [TestCase("es-MX", "Enviar")]
+    [TestCase("da", "Send")]
+    [TestCase("sv-SE", "Send")]
     [TestCase("", "Send")]
     [TestCase(null, "Send")]
     public void TheWords_OfACulture_AreItsOwn_ElseItsMoreGeneralCulturesOrEnglish(string? culture, string send) =>
@@ -221,7 +226,7 @@ public sealed class RenderingPartsTests
     [Test]
     public void TheWordsOfEachCulture_AreAllThere_AndTheirPlaceholdersFormat()
     {
-        Assert.That(RenderingWords.Cultures, Is.EquivalentTo(new[] { "en", "de" }));
+        Assert.That(RenderingWords.Cultures, Is.EquivalentTo(new[] { "en", "de", "fr", "it", "nl", "es", "da" }));
         foreach (var culture in RenderingWords.Cultures)
         {
             var words = RenderingWords.Of(culture);
@@ -247,7 +252,8 @@ public sealed class RenderingPartsTests
                 Assert.That(Format(words.MoveDown, "Seats"), Does.Contain("Seats").And.Not.EqualTo(Format(words.MoveUp, "Seats")), culture);
                 Assert.That(Format(words.Row, 2), Does.Contain("2"), culture);
                 Assert.That(Format(words.KeepFile, "cv.pdf", "2 KB"), Does.Contain("cv.pdf (2 KB)"), culture);
-                Assert.That((Format(words.Kilobytes, 2), Format(words.Megabytes, 2)), Is.EqualTo(("2 KB", "2 MB")), culture);
+                // French writes sizes in Ko and Mo after a no-break space.
+                Assert.That((Format(words.Kilobytes, 2), Format(words.Megabytes, 2)), Is.EqualTo(culture switch { "fr" => ("2\u00a0Ko", "2\u00a0Mo"), "de" => ("2\u00a0KB", "2\u00a0MB"), _ => ("2 KB", "2 MB") }), culture);
             });
         }
     }

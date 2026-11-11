@@ -46,7 +46,8 @@
         "verification": { "anyOf": [ { "$ref": "#/$defs/EmailVerification" }, { "type": "null" } ] },
         "resume": { "anyOf": [ { "$ref": "#/$defs/SaveAndResume" }, { "type": "null" } ] },
         "entryTitle": { "$ref": "#/$defs/SingleLine", "maxLength": 500 },
-        "entryReference": { "anyOf": [ { "$ref": "#/$defs/EntryReferenceFormat" }, { "type": "null" } ] }
+        "entryReference": { "anyOf": [ { "$ref": "#/$defs/EntryReferenceFormat" }, { "type": "null" } ] },
+        "texts": { "$ref": "#/$defs/VisitorTexts" }
       },
       "if": { "required": [ "store" ], "properties": { "store": { "const": "days" } } },
       "then": { "required": [ "storeDays" ], "properties": { "storeDays": { "type": "integer" } } },
@@ -438,6 +439,17 @@
       "additionalProperties": { "type": [ "string", "null" ], "maxLength": 50000 },
       "if": { "type": "object", "not": { "additionalProperties": { "type": "null" } } },
       "then": { "required": [ "" ], "properties": { "": { "type": "string" } } }
+    },
+    "VisitorTexts": {
+      "description": "The form's own wording of the package's visitor texts, such as its hints, notices and error messages: each text by its key, with a wording per culture (\"\" for every language). A wording is one line of at most 500 characters, and names in braces only the values its text names.",
+      "type": [ "object", "null" ],
+      "propertyNames": { "type": "string", "minLength": 1, "maxLength": 100 },
+      "additionalProperties": {
+        "type": "object",
+        "minProperties": 1,
+        "propertyNames": { "$ref": "#/$defs/Culture" },
+        "additionalProperties": { "$ref": "#/$defs/SingleLine", "type": "string", "maxLength": 500 }
+      }
     },
     "Culture": {
       "description": "\"\" for the default text, or a culture name such as de, de-CH or sr-Latn-RS.",

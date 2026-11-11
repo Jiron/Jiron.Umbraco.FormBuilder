@@ -245,7 +245,7 @@ export class FormCanvasElement extends UmbLitElement {
         readonly culture: string;
         readonly lookups: DictionaryLookups;
         readonly drawn: DesignDefinition;
-        labels?: ReadonlyMap<string, DesignField['label']>;
+        own?: ReadonlyMap<string, DesignPage | DesignGroup | DesignField>;
       }
     | undefined;
 
@@ -263,23 +263,38 @@ export class FormCanvasElement extends UmbLitElement {
     return drawn;
   }
 
-  /** A field's label as the draft holds it, which an edit on the canvas starts from: its key, not the item's text. */
-  #labelOf(field: DesignField): DesignField['label'] {
-    const drawn = this.#drawn;
+  /**
+   * A page, group or field as the draft holds it, by the drawn one's key: a text that names a dictionary item holds its
+   * key there, not the item's text. An edit on the canvas starts from it, and the translation marks read it, as the
+   * dictionary holds such a text's words in each language (ADR-0228).
+   */
+  #ownOf<T extends DesignPage | DesignGroup | DesignField>(drawn: T): T {
+    const shown = this.#drawn;
     const kept = this.#drawnOf;
-    if (!kept || drawn === this.definition) return field.label;
-    if (!kept.labels) {
-      const labels = new Map<string, DesignField['label']>();
+    if (!kept || shown === this.definition) return drawn;
+    if (!kept.own) {
+      const own = new Map<string, DesignPage | DesignGroup | DesignField>();
       const visit = (fields: readonly DesignField[]) => {
         for (const each of fields) {
-          labels.set(each.key, each.label);
+          own.set(each.key, each);
           if (each.fields) visit(each.fields);
         }
       };
-      for (const page of this.definition.pages) for (const group of page.groups) visit(group.fields);
-      kept.labels = labels;
+      for (const page of this.definition.pages) {
+        own.set(page.key, page);
+        for (const group of page.groups) {
+          own.set(group.key, group);
+          visit(group.fields);
+        }
+      }
+      kept.own = own;
     }
-    return kept.labels.has(field.key) ? kept.labels.get(field.key) : field.label;
+    return (kept.own.get(drawn.key) as T | undefined) ?? drawn;
+  }
+
+  /** A field's label as the draft holds it, which an edit on the canvas starts from: its key, not the item's text. */
+  #labelOf(field: DesignField): DesignField['label'] {
+    return this.#ownOf(field).label;
   }
 
   #find(key: string): DesignField | undefined {
@@ -623,7 +638,7 @@ export class FormCanvasElement extends UmbLitElement {
   #untranslated(field: DesignField, culture: string): string | null {
     if (culture.toLowerCase() === this.#defaultCulture().toLowerCase()) return null;
     const type = Object.hasOwn(this.types, field.type) ? this.types[field.type] : undefined;
-    return untranslated(field, type, culture)
+    return untranslated(this.#ownOf(field), type, culture)
       ? this.localize.term('jfbDesigner_untranslated', this.#languageName(culture))
       : null;
   }
@@ -737,7 +752,7 @@ export class FormCanvasElement extends UmbLitElement {
     const name = this.#groupName(group, index, culture);
     const columns = Math.min(4, Math.max(1, Math.trunc(Number(group['columns'] ?? 1)) || 1));
     const selected = this.selection === group.key;
-    const untranslated = this.#containerUntranslated(groupLacks(group, culture), culture);
+    const untranslated = this.#containerUntranslated(groupLacks(this.#ownOf(group), culture), culture);
     const first = group.fields[0];
     const firstActive = this.insertAt?.container === group.key && this.insertAt.index === 0;
     const select = html`<button
@@ -815,7 +830,7 @@ export class FormCanvasElement extends UmbLitElement {
     const description = safeHtml(textIn(page['description'] as LocalizedText | undefined, culture));
     const name = this.#pageName(page, index, culture);
     const selected = this.selection === page.key;
-    const untranslated = this.#containerUntranslated(pageLacks(page, culture), culture);
+    const untranslated = this.#containerUntranslated(pageLacks(this.#ownOf(page), culture), culture);
     const bare = pageIsBare(page, culture);
     const formEmpty = this.#drawn.pages.every((each) => each.groups.every((group) => group.fields.length === 0));
     const navigation = this.#navigationOf(index, context);

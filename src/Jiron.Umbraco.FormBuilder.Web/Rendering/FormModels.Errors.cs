@@ -53,12 +53,13 @@ internal sealed partial class FormModels
             Rows = build.Post?.Rows.GetValueOrDefault(field.Key)?.Count,
         };
         var culture = build.Render.Culture;
-        var message = VisitorMessages.Default(shown, culture, build.Formats, build.Today.DayNumber);
+        var texts = build.Render.Shown.Texts;
+        var message = VisitorMessages.Default(shown, culture, build.Formats, build.Today.DayNumber, texts);
 
         // A grid shows its errors below its rows, so a default at one of them names the row there and in the summary.
         var gridRow = error.GridRow is { } rowKey ? Text(field.Rows.FirstOrDefault(each => each.Key == rowKey)?.Label) : null;
         var row = gridRow ?? build.Place?.Legend;
-        return (gridRow is null ? message : VisitorMessages.SummaryEntry(message, gridRow, null, culture), VisitorMessages.SummaryEntry(message, label, row, culture));
+        return (gridRow is null ? message : VisitorMessages.SummaryEntry(message, gridRow, null, culture, texts), VisitorMessages.SummaryEntry(message, label, row, culture, texts));
     }
 
     // The error summary's links: the empty submission's first, linked to the first field of the page that takes an
@@ -71,7 +72,7 @@ internal sealed partial class FormModels
         {
             var first = current?.Groups.Where(group => !group.IsHidden).SelectMany(group => group.Fields)
                 .FirstOrDefault(field => !field.IsHidden && field.LabelElement != FieldLabelElement.None);
-            links.Add(new ErrorLinkModel(VisitorMessageWords.Of(build.Render.Culture).Empty, first?.Id ?? build.Root.Id));
+            links.Add(new ErrorLinkModel(VisitorMessages.Words(build.Render.Culture, build.Render.Shown.Texts).Empty, first?.Id ?? build.Root.Id));
         }
 
         if (everyError)

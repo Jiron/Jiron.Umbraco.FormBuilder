@@ -332,7 +332,7 @@ describe('the option editor', () => {
     const select = must(element.querySelector<HTMLSelectElement>('#option-0-place-select'), 'the place');
     expect(handle('Red').getAttribute('aria-expanded')).toBe('true');
     expect(handle('Red').getAttribute('aria-controls')).toBe('option-0-place');
-    expect(text(element.querySelector('.row-place label'))).toBe('Place in the list');
+    expect(text(element.querySelector('.row-place label'))).toBe('Position in the list');
     expect([...select.options].map((option) => [text(option), option.selected])).toEqual([
       ['1 of 3', true],
       ['2 of 3', false],
