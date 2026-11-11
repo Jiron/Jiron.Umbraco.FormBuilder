@@ -1319,7 +1319,7 @@ const mutants = [
   cs('cs-msg-blank-of-trimmed-units-shown', 'VisitorMessages.cs', 'text is null || text.All(TextSemantics.IsTrimmed);', 'string.IsNullOrWhiteSpace(text);'),
   cs('cs-msg-site-type-as-built-in', 'VisitorMessages.cs', 'if (!field.BuiltIn)', 'if (!field.BuiltIn && field.Type.Length == 0)'),
   cs('cs-msg-dropdown-of-several-as-one', 'VisitorMessages.cs', '"dropdown" => settings.Bool("multiple") ? words.ChooseSeveral : words.Choose,', '"dropdown" => settings.Bool("several") ? words.ChooseSeveral : words.Choose,'),
-  cs('cs-msg-yes-label-ignored', 'VisitorMessages.cs', '("yes", settings.Text("yesLabel") is { Length: > 0 } yes ? yes : FieldDisplayWords.Yes(culture)),', '("yes", settings.Text("yesText") is { Length: > 0 } yes ? yes : FieldDisplayWords.Yes(culture)),'),
+  cs('cs-msg-yes-label-ignored', 'VisitorMessages.cs', '("yes", settings.Text("yesLabel") is { Length: > 0 } yes ? yes : VisitorWording.Yes(culture, texts)),', '("yes", settings.Text("yesText") is { Length: > 0 } yes ? yes : VisitorWording.Yes(culture, texts)),'),
   cs('cs-msg-email-domain-as-format', 'VisitorMessages.cs', 'BuiltInForms.IsEmailAddress(TextSemantics.Clean(address)) ? words.EmailDomain', 'address.Length < 0 ? words.EmailDomain'),
   cs('cs-msg-number-example-without-decimals', 'VisitorMessages.cs', 'said.Number(settings.Long("decimals") is > 0 ? "12.5" : "12")', 'said.Number(settings.Long("decimals") is > 100 ? "12.5" : "12")'),
   cs('cs-msg-window-relative-to-day-zero', 'VisitorMessages.cs', 'BuiltInValidation.TryBound(settings.Json("min"), today, out var low)', 'BuiltInValidation.TryBound(settings.Json("min"), 0, out var low)'),
