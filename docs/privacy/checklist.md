@@ -31,7 +31,8 @@ live, and again when a form's purpose changes. The [facts sheet](facts.md) says 
       the form's purpose. List the cookies the provider's script sets in your consent tool.
 - [ ] **Members.** An entry keeps which member sent it when the visitor is signed in. A form meant to be anonymous
       turns on Anonymous in its Privacy group, which keeps no member on its entries (it cannot then be for members, nor
-      take one entry per member, nor fill a field from the member).
+      take one entry per member, nor fill a field from the member). Choose under Settings › Privacy › Members whether a
+      member deleted in Umbraco has their entries anonymised (the default) or deleted.
 - [ ] **Actions that send data elsewhere.** Every webhook, content action or mail to a third party makes its receiver a
       recipient you must name, and often a processor you need a contract with; check transfers outside the EU and
       Switzerland.

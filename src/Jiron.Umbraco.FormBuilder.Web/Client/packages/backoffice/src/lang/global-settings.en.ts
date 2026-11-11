@@ -385,5 +385,15 @@ export default {
       "Forms count what visitors do with them, for each form's Insights view and the Overview: views, starts, the pages they reach and the fields that stop them. No answer and no visitor is counted, and nothing is stored in the visitor's browser.",
     privacy_insights: 'Count what visitors do with the forms',
     privacy_insightsHelp: 'Each form can turn it off in its Settings view, under Privacy.',
+    privacyBox_members: 'Members',
+    privacyBox_membersLead:
+      'When a member is deleted in Umbraco, their entries in every form go with them, or keep nothing that names them. Their drafts always go, and a legal hold keeps its entries as they are.',
+    privacy_memberDeleted: 'When a member is deleted',
+    privacy_memberDeletedHelp: 'The same for every site, since a member belongs to none.',
+    privacy_memberDeleted_anonymise: 'Anonymise their entries',
+    privacy_memberDeleted_anonymiseLine:
+      'The entries stay with their form, number and state, so counts and statistics keep them; every answer and everything else about the member goes.',
+    privacy_memberDeleted_delete: 'Delete their entries',
+    privacy_memberDeleted_deleteLine: 'The entries go, with their files and mail.',
   },
 } satisfies UmbLocalizationDictionary;

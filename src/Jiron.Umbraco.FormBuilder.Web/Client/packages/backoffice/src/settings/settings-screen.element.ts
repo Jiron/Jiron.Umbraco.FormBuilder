@@ -45,7 +45,7 @@ export const LEADS: Readonly<Record<string, readonly string[]>> = {
   general: ['newForms', 'history'],
   protection: ['content'],
   integrations: ['chat'],
-  privacy: ['ip', 'insights'],
+  privacy: ['ip', 'insights', 'members'],
 };
 
 type Values = Readonly<Record<string, unknown>>;

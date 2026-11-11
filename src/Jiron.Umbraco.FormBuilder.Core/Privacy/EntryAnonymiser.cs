@@ -51,9 +51,9 @@ internal sealed class EntryAnonymiser(
     /// <summary>Anonymises entries of a form; those of another form, drafts and those a hold keeps are left out.</summary>
     /// <param name="form">The form.</param>
     /// <param name="entryIds">The entries, at most <see cref="EntryDeletions.MaxEntries"/>.</param>
-    /// <param name="userKey">The user who anonymises them.</param>
+    /// <param name="userKey">The user who anonymises them; null when Umbraco does, for a member it deleted (ADR-0231).</param>
     /// <param name="cancellationToken">Cancels the unit of work.</param>
-    public async Task<EntryAnonymised> AnonymiseAsync(StoredForm form, IReadOnlyCollection<long> entryIds, Guid userKey, CancellationToken cancellationToken = default)
+    public async Task<EntryAnonymised> AnonymiseAsync(StoredForm form, IReadOnlyCollection<long> entryIds, Guid? userKey, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(form);
         ArgumentNullException.ThrowIfNull(entryIds);

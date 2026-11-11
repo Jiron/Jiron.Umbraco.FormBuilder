@@ -1,14 +1,17 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 using Jiron.Umbraco.FormBuilder.Core.Configuration;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
+using Jiron.Umbraco.FormBuilder.Core.Definitions.Serialization;
 using Microsoft.Extensions.Options;
 
 namespace Jiron.Umbraco.FormBuilder.Core.Settings;
 
 /// <summary>
 /// The privacy settings (ADR-0008, ADR-0009), the same for every site: on Privacy, Retention, how long entries are kept in
-/// each state (ADR-0222); on Privacy, Data collection, what entries keep of visitors' IP addresses (ADR-0224) and whether
-/// the forms count what visitors do with them (ADR-0211).
+/// each state (ADR-0222); on Privacy, Data collection, what entries keep of visitors' IP addresses (ADR-0224), whether
+/// the forms count what visitors do with them (ADR-0211) and what a member's deletion in Umbraco does to their entries
+/// (ADR-0231).
 /// </summary>
 internal sealed record PrivacySettings : ISettingsSection
 {
@@ -35,6 +38,27 @@ internal sealed record PrivacySettings : ISettingsSection
     /// <summary>Whether the forms count views, starts, pages and the fields that stop visitors; on by default, each form may turn it off.</summary>
     [SettingsField("insights")]
     public bool Insights { get; init; } = true;
+
+    /// <summary>
+    /// What a member's deletion in Umbraco does to their entries (ADR-0231): anonymised by default, or deleted; for every
+    /// site at once, since a member belongs to no site. Entries a legal hold keeps stay as they are.
+    /// </summary>
+    [SettingsField("members")]
+    public MemberDeletion MemberDeleted { get; init; } = MemberDeletion.Anonymise;
+}
+
+/// <summary>What a member's deletion in Umbraco does to their entries (ADR-0231), as the privacy tools erase a person (ADR-0223).</summary>
+[JsonConverter(typeof(DefinitionEnumConverter<MemberDeletion>))]
+internal enum MemberDeletion
+{
+    /// <summary>
+    /// The entries stay with their form, number, state and times, for counts and statistics, and everything else about the
+    /// member goes (<c>anonymise</c>, the default).
+    /// </summary>
+    Anonymise,
+
+    /// <summary>The entries go, with their files and mail (<c>delete</c>).</summary>
+    Delete,
 }
 
 /// <summary>

@@ -404,5 +404,15 @@ export default {
       'Formulare zählen, was Besucher mit ihnen tun, für die Ansicht Einblicke jedes Formulars und die Übersicht: Aufrufe, Begonnene, die Seiten, die sie erreichen, und die Felder, an denen sie hängen bleiben. Keine Antwort und kein Besucher wird gezählt, und im Browser des Besuchers wird nichts gespeichert.',
     privacy_insights: 'Zählen, was Besucher mit den Formularen tun',
     privacy_insightsHelp: 'Jedes Formular kann es in seiner Ansicht Einstellungen unter Datenschutz ausschalten.',
+    privacyBox_members: 'Mitglieder',
+    privacyBox_membersLead:
+      'Wird ein Mitglied in Umbraco gelöscht, gehen seine Einträge in allen Formularen mit oder behalten nichts, was es nennt. Seine Entwürfe gehen immer, und eine Löschsperre behält ihre Einträge, wie sie sind.',
+    privacy_memberDeleted: 'Wenn ein Mitglied gelöscht wird',
+    privacy_memberDeletedHelp: 'Für alle Websites gleich, da ein Mitglied zu keiner gehört.',
+    privacy_memberDeleted_anonymise: 'Seine Einträge anonymisieren',
+    privacy_memberDeleted_anonymiseLine:
+      'Die Einträge bleiben mit Formular, Nummer und Status erhalten, sodass Zählungen und Statistiken sie behalten; jede Antwort und alles andere über das Mitglied geht.',
+    privacy_memberDeleted_delete: 'Seine Einträge löschen',
+    privacy_memberDeleted_deleteLine: 'Die Einträge gehen, mit ihren Dateien und E-Mails.',
   },
 } satisfies UmbLocalizationDictionary;

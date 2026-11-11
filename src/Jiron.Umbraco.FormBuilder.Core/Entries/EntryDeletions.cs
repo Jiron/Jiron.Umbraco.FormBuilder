@@ -107,10 +107,10 @@ internal sealed class EntryDeletions(
     /// </summary>
     /// <param name="form">The form.</param>
     /// <param name="entryIds">The entries, at most <see cref="MaxEntries"/>, of the form.</param>
-    /// <param name="userKey">The user who erases them.</param>
+    /// <param name="userKey">The user who erases them; null when Umbraco does, for a member it deleted (ADR-0231).</param>
     /// <param name="cancellationToken">Cancels the unit of work.</param>
     /// <returns>What it deleted, and the entries it left as held.</returns>
-    public Task<EntryDeletion> EraseAsync(StoredForm form, IReadOnlyCollection<long> entryIds, Guid userKey, CancellationToken cancellationToken = default)
+    public Task<EntryDeletion> EraseAsync(StoredForm form, IReadOnlyCollection<long> entryIds, Guid? userKey, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(form);
         ArgumentNullException.ThrowIfNull(entryIds);

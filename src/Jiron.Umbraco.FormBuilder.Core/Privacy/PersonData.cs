@@ -200,9 +200,9 @@ internal sealed class PersonData(
     /// </summary>
     /// <param name="query">Whom.</param>
     /// <param name="mode">How the entries go.</param>
-    /// <param name="userKey">The user who erases.</param>
+    /// <param name="userKey">The user who erases; null when Umbraco erases, as when a member is deleted without a user (ADR-0231).</param>
     /// <param name="cancellationToken">Cancels what has not started.</param>
-    public async Task<PersonErased> EraseAsync(PersonQuery query, PersonEraseMode mode, Guid userKey, CancellationToken cancellationToken = default)
+    public async Task<PersonErased> EraseAsync(PersonQuery query, PersonEraseMode mode, Guid? userKey, CancellationToken cancellationToken = default)
     {
         var found = await LookAsync(query, cancellationToken);
         var (taken, drafts, files, mails, held) = (0, 0, 0, 0, 0);
