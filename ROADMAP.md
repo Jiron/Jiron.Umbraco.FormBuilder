@@ -3138,6 +3138,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
       - an admin sets permissions and retention;
       - a visitor fills in a form on a phone;
       - a privacy officer erases a person's data.
+    - **Carried in from 14.1's German walk** (docs/ux/review-14.1.md): at 375 px, Availability's two date boxes and the retention days side by side, an action card's controls beside its text, the rule builder's subject select and „wenn“ on one row, and a German dialog button on two lines; and the walk sets the user's language on the server too, so the texts the server writes (the Overview's alert, the digest's preview, the email layout's sample) show in German.
     - **Critique and simplify:** rerun all three design skills (ADR-0019, ADR-0020): `design-taste-frontend`, an `impeccable` critique and audit, and an `emil-design-eng` review; a subagent with the §4.13 checklist may add a fourth view. Fix every finding that is not purely taste. Count the clicks for the top five tasks per role and remove the unnecessary ones.
     - Done when: `docs/ux/review-16.6.md` lists the findings and fixes (a section per skill) with before and after screenshots, and the E2E suites are still green.
   - **16.7 Code quality and phase review**:
