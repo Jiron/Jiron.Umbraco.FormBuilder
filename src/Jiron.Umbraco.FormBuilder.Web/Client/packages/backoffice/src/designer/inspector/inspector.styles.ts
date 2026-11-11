@@ -197,19 +197,25 @@ export const inspectorStyles = css`
     overflow-wrap: anywhere;
   }
 
+  /*
+   * Add a rule sits beside the closed header while the rule's sentence keeps about 14rem (the header's 18rem less its
+   * chevron and padding); where it would leave the sentence a narrow column, as at the inspector's usual width, it moves
+   * under the sentence, at the same end.
+   */
   .section-line {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
   }
 
   .section-line .section-head {
-    flex: 1 1 auto;
+    flex: 1 1 18rem;
     min-inline-size: 0;
   }
 
   .section-line .add-rule {
     flex: none;
-    margin-inline-end: var(--uui-size-space-4);
+    margin-inline: auto var(--uui-size-space-5);
   }
 
   .add-rule,

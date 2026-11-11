@@ -253,7 +253,7 @@ export default {
       `Die Zusammenfassung geht um ${time} Uhr UTC, der Zeitzone der Website, raus und umfasst den Tag oder die Woche davor.`,
     digest_preview: 'So sieht sie aus',
     digest_note: (address: string) =>
-      `Sie enthält Zahlen und Links, nie Antworten, und nur die Formulare, die Sie sehen dürfen, und geht an Ihre eigene Adresse, ${address}.`,
+      `Enthalten sind Zahlen und Links, nie Antworten, und nur die Formulare, die Sie sehen dürfen. Die E-Mail geht an Ihre eigene Adresse, ${address}.`,
     digest_noAddress: 'Ihr Benutzer hat noch keine E-Mail-Adresse, deshalb kann keine Zusammenfassung rausgehen.',
     digest_test: 'Test-E-Mail senden',
     digest_testSent: (address: string) => `Test-E-Mail an ${address} gesendet.`,
