@@ -3,6 +3,7 @@
     <Project Path="src/Jiron.Umbraco.FormBuilder.Core/Jiron.Umbraco.FormBuilder.Core.csproj" />
     <Project Path="src/Jiron.Umbraco.FormBuilder.Web/Jiron.Umbraco.FormBuilder.Web.csproj" />
     <Project Path="src/Jiron.Umbraco.FormBuilder/Jiron.Umbraco.FormBuilder.csproj" />
+    <Project Path="src/Jiron.Umbraco.FormBuilder.AI/Jiron.Umbraco.FormBuilder.AI.csproj" />
   </Folder>
   <Folder Name="/demo/">
     <Project Path="demo/Jiron.Umbraco.FormBuilder.Demo/Jiron.Umbraco.FormBuilder.Demo.csproj" />
@@ -12,6 +13,8 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Jiron.Umbraco.FormBuilder.Testing/Jiron.Umbraco.FormBuilder.Testing.csproj" />
+    <Project Path="tests/Jiron.Umbraco.FormBuilder.Testing.AI/Jiron.Umbraco.FormBuilder.Testing.AI.csproj" />
+    <Project Path="tests/Jiron.Umbraco.FormBuilder.Tests.AI/Jiron.Umbraco.FormBuilder.Tests.AI.csproj" />
     <Project Path="tests/Jiron.Umbraco.FormBuilder.Tests.Integration/Jiron.Umbraco.FormBuilder.Tests.Integration.csproj" />
     <Project Path="tests/Jiron.Umbraco.FormBuilder.Tests.Unit/Jiron.Umbraco.FormBuilder.Tests.Unit.csproj" />
   </Folder>

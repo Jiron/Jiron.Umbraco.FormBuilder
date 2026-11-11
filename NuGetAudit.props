@@ -48,4 +48,25 @@
     <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-v76p-62qx-wwq2" Package="SixLabors.ImageSharp" />
   </ItemGroup>
 
+  <!--
+    The AI add-on only (ADR-0018): the one Jiron Form Builder package that brings these, transitively through
+    Umbraco.AI, which the site installs at its own version beside its own CMS; the add-on uses neither. The project sets
+    JfbUmbracoAI. Reviewed 2026-11-11 at the add-on's floor, Umbraco.AI 17.5.2 on CMS 17.6.0. A host that references the
+    add-on (the demo, its tests) has the host group's entries instead, which NuGet refuses to see twice.
+  -->
+  <ItemGroup Condition="'$(JfbUmbracoAI)' == 'true' And '$(JfbUmbracoHost)' != 'true'">
+    <!-- SixLabors.ImageSharp 3.1.12, via Umbraco.AI.Core 17.5.2 (its file processing). Never reference it directly. -->
+    <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-j3p4-wp97-rph4" Package="SixLabors.ImageSharp" />
+    <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-j9gm-c75j-xc9q" Package="SixLabors.ImageSharp" />
+    <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-jjfr-hcj7-qf5w" Package="SixLabors.ImageSharp" />
+    <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-gwg2-r3hj-4w44" Package="SixLabors.ImageSharp" />
+    <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-wmxv-xphr-5c9g" Package="SixLabors.ImageSharp" />
+    <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-v76p-62qx-wwq2" Package="SixLabors.ImageSharp" />
+    <!--
+      SQLitePCLRaw.lib.e_sqlite3 2.1.11, via Umbraco.AI.Persistence.Sqlite 17.5.2 and Umbraco.Cms.Persistence.EFCore.Sqlite
+      at the CMS floor 17.6.0; a site's own CMS decides the version it runs.
+    -->
+    <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-2m69-gcr7-jv3q" Package="SQLitePCLRaw.lib.e_sqlite3" />
+  </ItemGroup>
+
 </Project>

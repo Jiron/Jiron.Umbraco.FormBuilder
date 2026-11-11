@@ -150,6 +150,11 @@ export function packageMetadata(cache, pkg) {
     throw new Error(`${pkg.id} ${pkg.version} is not in ${cache}: restore and this script must use the same NUGET_PACKAGES`);
   }
   const meta = readNuspec(readFileSync(join(folder, nuspec), 'utf8'));
+  if (meta.kind === 'none') {
+    // A nuspec without a licence may still carry one beside it (Umbraco.AI's LICENSE.md): its text, for a review.
+    const bundled = readdirSync(folder).find((file) => /^licen[cs]e(\.(md|txt))?$/i.test(file));
+    return bundled ? { ...meta, bundled, text: readFileSync(join(folder, bundled), 'utf8') } : meta;
+  }
   if (meta.kind !== 'file') return meta;
   const licenceFile = join(folder, meta.value);
   if (!existsSync(licenceFile)) throw new Error(`${pkg.id} ${pkg.version} names the licence file ${meta.value}, which is missing`);

@@ -27,11 +27,87 @@ import { licenceTextHash, packageMetadata, packagesFolder, solutionPackages } fr
 
 const repo = resolve(fileURLToPath(new URL('..', import.meta.url)));
 
+/** The Umbraco.AI repository's LICENSE.md, the MIT licence, which each Umbraco.AI package carries (ADR-0018). */
+const UMBRACO_AI_LICENCE = 'c68b4275faddbe003509822d146b0bd56abcfefe970ba0fa3ed84a22e79518b4';
+
 /**
  * Packages whose nuspec licence is not an allowed expression, reviewed by reading the licence. `files` holds the
- * SHA-256 of each reviewed licence file (scripts/lib/nuget.mjs, licenceTextHash).
+ * SHA-256 of each reviewed licence file (scripts/lib/nuget.mjs, licenceTextHash): the one the nuspec names, or the one
+ * the package carries when its nuspec names none; `urls` the licence URLs read for a nuspec that gives only a URL.
  */
 export const EXCEPTIONS = [
+  {
+    id: 'Umbraco.AI',
+    tiers: ['shipped', 'dev'],
+    licence: 'MIT',
+    files: [UMBRACO_AI_LICENCE],
+    reason: "its nuspec names no licence; the package carries the Umbraco.AI repository's LICENSE.md, the MIT licence (17.5.2 and 17.7.0, read 2026-11-11, ADR-0018)",
+  },
+  {
+    id: 'Umbraco.AI.Core',
+    tiers: ['shipped', 'dev'],
+    licence: 'MIT',
+    files: [UMBRACO_AI_LICENCE],
+    reason: "its nuspec names no licence; the package carries the Umbraco.AI repository's LICENSE.md, the MIT licence (17.5.2 and 17.7.0, read 2026-11-11, ADR-0018)",
+  },
+  {
+    id: 'Umbraco.AI.Startup',
+    tiers: ['shipped', 'dev'],
+    licence: 'MIT',
+    files: [UMBRACO_AI_LICENCE],
+    reason: "its nuspec names no licence; the package carries the Umbraco.AI repository's LICENSE.md, the MIT licence (17.5.2 and 17.7.0, read 2026-11-11, ADR-0018)",
+  },
+  {
+    id: 'Umbraco.AI.Web',
+    tiers: ['shipped', 'dev'],
+    licence: 'MIT',
+    files: [UMBRACO_AI_LICENCE],
+    reason: "its nuspec names no licence; the package carries the Umbraco.AI repository's LICENSE.md, the MIT licence (17.5.2 and 17.7.0, read 2026-11-11, ADR-0018)",
+  },
+  {
+    id: 'Umbraco.AI.Web.StaticAssets',
+    tiers: ['shipped', 'dev'],
+    licence: 'MIT',
+    files: [UMBRACO_AI_LICENCE],
+    reason: "its nuspec names no licence; the package carries the Umbraco.AI repository's LICENSE.md, the MIT licence (17.5.2 and 17.7.0, read 2026-11-11, ADR-0018)",
+  },
+  {
+    id: 'Umbraco.AI.Persistence',
+    tiers: ['shipped', 'dev'],
+    licence: 'MIT',
+    files: [UMBRACO_AI_LICENCE],
+    reason: "its nuspec names no licence; the package carries the Umbraco.AI repository's LICENSE.md, the MIT licence (17.5.2 and 17.7.0, read 2026-11-11, ADR-0018)",
+  },
+  {
+    id: 'Umbraco.AI.Persistence.Sqlite',
+    tiers: ['shipped', 'dev'],
+    licence: 'MIT',
+    files: [UMBRACO_AI_LICENCE],
+    reason: "its nuspec names no licence; the package carries the Umbraco.AI repository's LICENSE.md, the MIT licence (17.5.2 and 17.7.0, read 2026-11-11, ADR-0018)",
+  },
+  {
+    id: 'Umbraco.AI.Persistence.SqlServer',
+    tiers: ['shipped', 'dev'],
+    licence: 'MIT',
+    files: [UMBRACO_AI_LICENCE],
+    reason: "its nuspec names no licence; the package carries the Umbraco.AI repository's LICENSE.md, the MIT licence (17.5.2 and 17.7.0, read 2026-11-11, ADR-0018)",
+  },
+  {
+    id: 'SixLabors.ImageSharp',
+    tiers: ['shipped'],
+    licence: 'Apache-2.0',
+    files: ['ddea3b89824c01d16b644f4e48d9082188a08f3364e0c41eab0ce59824b49b62'],
+    reason:
+      'the Six Labors Split License 1.0 grants Apache-2.0 to a transitive package dependency, which it is: only Umbraco.AI.Core brings it to the AI add-on, which never references it (3.1.12, read 2026-11-11, ADR-0018)',
+  },
+  {
+    id: 'System.Security.Cryptography.ProtectedData',
+    tiers: ['dev'],
+    licence: 'MIT',
+    urls: ['https://github.com/dotnet/corefx/blob/master/LICENSE.TXT'],
+    reason:
+      "an old .NET package whose nuspec gives only the corefx repository's licence URL, the MIT licence; the samples' Azure Blob provider brings it (4.5.0, read 2026-11-11, ADR-0234)",
+  },
   {
     id: 'NUnit',
     tiers: ['dev'],
@@ -71,10 +147,15 @@ export function judge(pkg, meta, exceptions = EXCEPTIONS) {
 
   const exception = exceptions.find((entry) => entry.id.toLowerCase() === pkg.id.toLowerCase());
   if (exception && exception.tiers.includes(pkg.tier)) {
-    if (meta.kind === 'file' && exception.files?.includes(licenceTextHash(meta.text ?? ''))) {
+    // A licence file the nuspec names, or one the package carries beside a nuspec that names none.
+    const read = meta.kind === 'file' || (meta.kind === 'none' && meta.text !== undefined);
+    if (read && exception.files?.includes(licenceTextHash(meta.text ?? ''))) {
       return { ok: true, licence: exception.licence, note: exception.reason };
     }
-    if (meta.kind === 'file') {
+    if (meta.kind === 'url' && exception.urls?.includes(meta.value)) {
+      return { ok: true, licence: exception.licence, note: exception.reason };
+    }
+    if (read) {
       return {
         ok: false,
         licence: describe(meta),

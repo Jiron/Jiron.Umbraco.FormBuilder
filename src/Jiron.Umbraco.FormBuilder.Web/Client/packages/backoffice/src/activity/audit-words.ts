@@ -29,13 +29,15 @@ type Term = (key: string, ...args: unknown[]) => string;
 export type AuditNames = Readonly<Record<string, AuditNameResponseModel>>;
 
 /** Where each settings section sits in the sidebar: its group and its item (IA 1). */
-const SECTION_ITEMS: Readonly<Record<string, readonly [string, string]>> = {
+export const SECTION_ITEMS: Readonly<Record<string, readonly [string, string]>> = {
   general: ['settings', 'general'],
   email: ['settings', 'email'],
   protection: ['settings', 'spamProtection'],
   files: ['settings', 'files'],
   integrations: ['settings', 'integrations'],
   privacy: ['privacy', 'dataCollection'],
+  // The AI add-on's Settings > AI (ADR-0018).
+  ai: ['settings', 'ai'],
 };
 
 /** The items whose name an action is on, each with the words for one that is gone. */

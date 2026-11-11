@@ -18,7 +18,23 @@ Runtime dependencies, direct and transitive, may only be MIT, Apache-2.0, BSD-2-
 | --- | --- | --- | --- |
 | `AngleSharp` | 1.7.2 | MIT | Copyright 2013-2026, AngleSharp. |
 | `AngleSharp.Css` | 1.0.2 | MIT | - |
+| `DocumentFormat.OpenXml` | 3.5.1 | MIT | © Microsoft Corporation. All rights reserved. |
+| `DocumentFormat.OpenXml.Framework` | 3.5.1 | MIT | © Microsoft Corporation. All rights reserved. |
 | `HtmlSanitizer` | 9.2.1039 | MIT | Copyright 2013-2026 Michael Ganss |
+| `Microsoft.Extensions.AI` | 10.7.0 | MIT | © Microsoft Corporation. All rights reserved. |
+| `Microsoft.Extensions.AI.Abstractions` | 10.7.0 | MIT | © Microsoft Corporation. All rights reserved. |
+| `SixLabors.ImageSharp` | 3.1.12 | Apache-2.0 (the Six Labors Split License 1.0 grants Apache-2.0 to a transitive package dependency, which it is: only Umbraco.AI.Core brings it to the AI add-on, which never references it (3.1.12, read 2026-11-11, ADR-0018)) | Copyright © Six Labors |
+| `SmartReader` | 0.11.1 | Apache-2.0 | Strumenta |
+| `System.IO.Packaging` | 10.0.2 | MIT | © Microsoft Corporation. All rights reserved. |
+| `System.Numerics.Tensors` | 10.0.9 | MIT | © Microsoft Corporation. All rights reserved. |
+| `Umbraco.AI` | 17.5.2 | MIT (its nuspec names no licence; the package carries the Umbraco.AI repository's LICENSE.md, the MIT licence (17.5.2 and 17.7.0, read 2026-11-11, ADR-0018)) | Copyright © Umbraco 2026 |
+| `Umbraco.AI.Core` | 17.5.2 | MIT (its nuspec names no licence; the package carries the Umbraco.AI repository's LICENSE.md, the MIT licence (17.5.2 and 17.7.0, read 2026-11-11, ADR-0018)) | Copyright © Umbraco 2026 |
+| `Umbraco.AI.Persistence` | 17.5.2 | MIT (its nuspec names no licence; the package carries the Umbraco.AI repository's LICENSE.md, the MIT licence (17.5.2 and 17.7.0, read 2026-11-11, ADR-0018)) | Copyright © Umbraco 2026 |
+| `Umbraco.AI.Persistence.Sqlite` | 17.5.2 | MIT (its nuspec names no licence; the package carries the Umbraco.AI repository's LICENSE.md, the MIT licence (17.5.2 and 17.7.0, read 2026-11-11, ADR-0018)) | Copyright © Umbraco 2026 |
+| `Umbraco.AI.Persistence.SqlServer` | 17.5.2 | MIT (its nuspec names no licence; the package carries the Umbraco.AI repository's LICENSE.md, the MIT licence (17.5.2 and 17.7.0, read 2026-11-11, ADR-0018)) | Copyright © Umbraco 2026 |
+| `Umbraco.AI.Startup` | 17.5.2 | MIT (its nuspec names no licence; the package carries the Umbraco.AI repository's LICENSE.md, the MIT licence (17.5.2 and 17.7.0, read 2026-11-11, ADR-0018)) | Copyright © Umbraco 2026 |
+| `Umbraco.AI.Web` | 17.5.2 | MIT (its nuspec names no licence; the package carries the Umbraco.AI repository's LICENSE.md, the MIT licence (17.5.2 and 17.7.0, read 2026-11-11, ADR-0018)) | Copyright © Umbraco 2026 |
+| `Umbraco.AI.Web.StaticAssets` | 17.5.2 | MIT (its nuspec names no licence; the package carries the Umbraco.AI repository's LICENSE.md, the MIT licence (17.5.2 and 17.7.0, read 2026-11-11, ADR-0018)) | Copyright © Umbraco 2026 |
 <!-- jfb-shipped:end -->
 
 Umbraco CMS packages, and what they bring, are not listed here: sites already run them, and Jiron Form Builder only

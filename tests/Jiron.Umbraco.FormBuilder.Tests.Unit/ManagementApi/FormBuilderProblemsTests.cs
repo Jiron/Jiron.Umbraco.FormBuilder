@@ -196,8 +196,9 @@ public sealed class FormBuilderProblemsTests
     {
         var feature = new ControllerFeature();
 
-        new FormBuilderControllerFeatureProvider().PopulateFeature([], feature);
-        new FormBuilderControllerFeatureProvider().PopulateFeature([], feature);
+        var web = typeof(FormBuilderControllerFeatureProvider).Assembly;
+        new FormBuilderControllerFeatureProvider(web).PopulateFeature([], feature);
+        new FormBuilderControllerFeatureProvider(web).PopulateFeature([], feature);
 
         Assert.That(feature.Controllers.Select(type => type.Name).Order(), Is.EqualTo(new[] { "AccessController", "ActionLastRunController", "ActionTestController", "ActionTypeController", "AuditController", "CanvasController", "CaptchaProviderController", "ContentDocumentTypeController", "DeliveryController", "DictionaryTextController", "DraftOptionsController", "EmailLayoutLibraryController", "EmailPreviewController", "EntryActionRunController", "EntryDigestController", "EntryExportController", "EntryFileController", "EntryFilterSetController", "EntryInboxController", "EntryListController", "EntryLocationController", "EntryPanelController", "EntryStateController", "FieldTypeController", "FolderController", "FormCheckController", "FormController", "FormExchangeController", "FormPreviewController", "FormReferenceController", "FormSettingsController", "InsightController", "LibraryListController", "MeController", "MemberEntriesController", "MergeTagPathController", "OptionListController", "OptionListLibraryController", "OptionSourceController", "OutcomePreviewController", "PeopleController", "PickerController", "RecentEntryController", "RetentionController", "SettingsController", "SetupController", "TemplateController", "TestEmailController", "ThemeLibraryController", "TrashController", "TreeController", "VersionController", "VisitorTextsController" }), "once each, never the abstract base");
     }

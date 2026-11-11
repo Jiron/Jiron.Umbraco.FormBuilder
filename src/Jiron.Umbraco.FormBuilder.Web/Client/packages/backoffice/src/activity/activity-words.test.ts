@@ -117,6 +117,9 @@ describe('the audit log in words', () => {
     });
     expect(whereOf(saved, names, term, section)).toBe('Privacy \u203a Data collection');
     expect(whereOf({ ...saved, details: { section: 'email' } }, names, term, section)).toBe('Settings \u203a Email');
+    expect(
+      whereOf({ ...saved, action: 'settings.aiProfileChosen', details: { section: 'ai' } }, names, term, section),
+    ).toBe('Settings \u203a AI');
     expect(whereOf(action({ entityType: 'access', entityKey: null }), names, term, section)).toBe(
       'Settings \u203a Access',
     );

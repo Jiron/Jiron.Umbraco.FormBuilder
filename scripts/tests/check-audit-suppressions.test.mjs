@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, test } from 'node:test';
-import { findViolations, HOST_CONDITION, isHostOnly, readReferences, readSuppressions, run } from '../check-audit-suppressions.mjs';
+import { AI_CONDITION, findViolations, HOST_CONDITION, isHostOnly, readReferences, readSuppressions, run } from '../check-audit-suppressions.mjs';
 
 const props = (hostEntries, sharedEntries = '') => `<Project>
   <!-- <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-in-a-comment" Package="Commented.Out" /> -->
@@ -71,6 +71,12 @@ describe('findViolations', () => {
     const otherCondition = findViolations(readSuppressions(`<ItemGroup Condition="'$(Configuration)' == 'Release'">${imageSharp}</ItemGroup>`), []);
     assert.equal(otherCondition.length, 1);
     assert.deepEqual(findViolations(readSuppressions(props(imageSharp)), []), []);
+  });
+
+  test("an ImageSharp suppression may stand in the AI add-on's group, which only the add-on sets (ADR-0018)", () => {
+    const inAddOn = readSuppressions(`<ItemGroup Condition="${AI_CONDITION}">${imageSharp}</ItemGroup>`);
+    assert.equal(inAddOn[0]?.condition, AI_CONDITION);
+    assert.deepEqual(findViolations(inAddOn, []), []);
   });
 
   test('a suppression outside any ItemGroup fails', () => {

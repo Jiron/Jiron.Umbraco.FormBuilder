@@ -28,6 +28,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- The AI add-on's endpoints sit in this management API, behind its access declarations (ADR-0018). -->
+    <InternalsVisibleTo Include="Jiron.Umbraco.FormBuilder.AI" />
+  </ItemGroup>
+
+  <ItemGroup>
     <!--
       The client sources are built into wwwroot/App_Plugins/JironFormBuilder (the backoffice, static web assets) and
       WebsiteAssets (embedded, below); the sources themselves are never packed (ADR-0026).

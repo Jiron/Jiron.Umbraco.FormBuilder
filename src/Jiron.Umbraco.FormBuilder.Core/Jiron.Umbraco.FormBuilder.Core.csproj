@@ -23,6 +23,8 @@
       projects see internals through src/Directory.Build.props.
     -->
     <InternalsVisibleTo Include="Jiron.Umbraco.FormBuilder.Web" />
+    <!-- The AI add-on installs with the same version and builds on the same internals (ADR-0001, ADR-0018). -->
+    <InternalsVisibleTo Include="Jiron.Umbraco.FormBuilder.AI" />
   </ItemGroup>
 
   <ItemGroup>

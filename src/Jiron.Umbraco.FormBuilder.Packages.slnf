@@ -3,6 +3,7 @@
     "path": "../Jiron.Umbraco.FormBuilder.slnx",
     "projects": [
       "src/Jiron.Umbraco.FormBuilder/Jiron.Umbraco.FormBuilder.csproj",
+      "src/Jiron.Umbraco.FormBuilder.AI/Jiron.Umbraco.FormBuilder.AI.csproj",
       "src/Jiron.Umbraco.FormBuilder.Core/Jiron.Umbraco.FormBuilder.Core.csproj",
       "src/Jiron.Umbraco.FormBuilder.Web/Jiron.Umbraco.FormBuilder.Web.csproj"
     ]

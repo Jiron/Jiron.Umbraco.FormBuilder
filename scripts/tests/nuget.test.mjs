@@ -112,6 +112,17 @@ describe('the nuspec', () => {
       putPackage(repo.cache, { id: 'With.File', version: '1.0.0-Beta', licence: '<license type="file">LICENSE.txt</license>', files: { 'LICENSE.txt': 'the terms' } });
       const meta = packageMetadata(repo.cache, { id: 'With.File', version: '1.0.0-Beta' });
       assert.equal(meta.text, 'the terms');
+      // A nuspec that names no licence: the licence file the package carries, for a review (ADR-0018).
+      putPackage(repo.cache, { id: 'Carries.One', version: '2.0.0', files: { 'LICENSE.md': 'the MIT text' } });
+      assert.deepEqual(packageMetadata(repo.cache, { id: 'Carries.One', version: '2.0.0' }), {
+        kind: 'none',
+        value: '',
+        copyright: '',
+        bundled: 'LICENSE.md',
+        text: 'the MIT text',
+      });
+      putPackage(repo.cache, { id: 'Carries.None', version: '2.0.0' });
+      assert.equal(packageMetadata(repo.cache, { id: 'Carries.None', version: '2.0.0' }).text, undefined);
       assert.throws(() => packageMetadata(repo.cache, { id: 'Not.There', version: '1.0.0' }), /NUGET_PACKAGES/);
     } finally {
       repo.cleanup();

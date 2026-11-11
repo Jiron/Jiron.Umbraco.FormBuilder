@@ -27,6 +27,15 @@
   </ItemGroup>
 
   <!--
+    The AI add-on only (D23, ADR-0018): Umbraco HQ's Umbraco.AI (MIT), a range like the CMS's. 17.5.2 is the floor: its
+    profile picker needs only backoffice access. The demo and the add-on's test host pin the latest 17.x it was tested
+    with through VersionOverride.
+  -->
+  <ItemGroup>
+    <PackageVersion Include="Umbraco.AI" Version="[17.5.2, 18.0.0)" />
+  </ItemGroup>
+
+  <!--
     Shipped to sites (CLAUDE.md rule 4): the allowlist sanitiser of editors' rich text (section 4.10, ADR-0084), MIT,
     with its MIT dependencies AngleSharp and AngleSharp.Css. The packages depend on this version or a later one, and the
     builds restore exactly this one.

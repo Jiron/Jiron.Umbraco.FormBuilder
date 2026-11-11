@@ -27,6 +27,8 @@ export default {
     files: 'Files',
     access: 'Access',
     integrations: 'Integrations',
+    // The AI add-on's settings, which the audit log names as the sidebar does (ADR-0018).
+    ai: 'AI',
     privacy: 'Privacy',
     people: 'People',
     retention: 'Retention',

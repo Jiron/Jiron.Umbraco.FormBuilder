@@ -38,6 +38,7 @@
   <ItemGroup>
     <InternalsVisibleTo Include="Jiron.Umbraco.FormBuilder.Tests.Unit" />
     <InternalsVisibleTo Include="Jiron.Umbraco.FormBuilder.Tests.Integration" />
+    <InternalsVisibleTo Include="Jiron.Umbraco.FormBuilder.Tests.AI" />
     <InternalsVisibleTo Include="Jiron.Umbraco.FormBuilder.Testing" />
     <InternalsVisibleTo Include="Jiron.Umbraco.FormBuilder.Demo" />
     <InternalsVisibleTo Include="DynamicProxyGenAssembly2" />

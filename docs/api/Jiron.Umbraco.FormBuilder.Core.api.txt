@@ -3080,6 +3080,7 @@ public enum Jiron.Umbraco.FormBuilder.Core.Forms.FormSource
   Template = 1
   Import = 2
   Duplicate = 3
+  Drafted = 4
 
 public sealed record Jiron.Umbraco.FormBuilder.Core.Forms.FormSummary
   Guid Key { get; init; }

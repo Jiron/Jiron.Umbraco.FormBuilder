@@ -70,4 +70,26 @@ public sealed class FormBuilderTestingOptions
 
     /// <summary>Members to create, with their groups; existing email addresses are left as they are.</summary>
     public IList<TestMember> Members { get; } = [];
+
+    /// <summary>
+    /// How a host that references Testing.AI uses the AI add-on's fake provider (ADR-0018): left out by default, so the
+    /// host lists only the providers a site installs.
+    /// </summary>
+    public FakeAIMode FakeAI { get; set; }
+}
+
+/// <summary>How a test host uses the AI add-on's fake provider (Testing.AI, ADR-0018).</summary>
+public enum FakeAIMode
+{
+    /// <summary>Not at all: the provider is left out.</summary>
+    Off,
+
+    /// <summary>The provider is offered; the host's tests set up its connection and chat profile themselves.</summary>
+    Offered,
+
+    /// <summary>
+    /// The provider is offered, and once Umbraco runs the host gets a connection and a chat profile on it, chosen in
+    /// Settings > AI when nothing is chosen yet: a host whose browser tests use the AI features.
+    /// </summary>
+    Chosen,
 }

@@ -218,6 +218,7 @@ export default {
     audit_form_deleted: (f: AuditFacts) =>
       f.count > 0 ? `Deleted the form and its ${count(f.count, 'entry', 'entries')}` : 'Deleted the form',
     audit_form_deleting: 'Started deleting the form',
+    audit_form_drafted: 'Drafted the form with AI',
     audit_form_draftsPruned: (f: AuditFacts) => `Cleared ${count(f.count, 'old draft save', 'old draft saves')}`,
     audit_form_duplicated: 'Created the form as a copy of another',
     audit_form_imported: 'Imported the form',
@@ -242,6 +243,7 @@ export default {
     audit_people_erased: (f: AuditFacts) => `Erased a person's data from ${count(f.count, 'entry', 'entries')}`,
     audit_people_exported: (f: AuditFacts) => `Exported a person's data from ${count(f.count, 'entry', 'entries')}`,
     audit_people_found: (f: AuditFacts) => `Looked for a person's data and found ${count(f.count, 'entry', 'entries')}`,
+    audit_settings_aiProfileChosen: 'Chose the AI profile',
     audit_settings_removed: "Removed the deleted site's own settings",
     audit_settings_saved: (f: AuditFacts) =>
       f.changed

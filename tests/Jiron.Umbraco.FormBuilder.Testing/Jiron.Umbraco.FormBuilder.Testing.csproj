@@ -2,8 +2,10 @@
 
   <!--
     Test-only code for the test hosts and the demo (ADR-0001, ADR-0011, ADR-0029): the HTTP stub on 5560, the test
-    clocks, the user and member factories, the mail pickup reader and the test-only endpoints under /jfb-testing/. The
-    captcha and AI fakes and the test transport join with their features. Never packed (IsPackable is false for
+    clocks, the user and member factories, the mail pickup reader, the test-only endpoints under /jfb-testing/ and the
+    architecture rules more than one test project holds a package to. The captcha fakes and the test transport joined
+    with their features; the AI fake lives in Testing.AI, as Umbraco.AI's migrations must stay out of the other test
+    hosts (ADR-0018). Never packed (IsPackable is false for
     everything outside src/), and never referenced by a package.
   -->
   <ItemGroup>

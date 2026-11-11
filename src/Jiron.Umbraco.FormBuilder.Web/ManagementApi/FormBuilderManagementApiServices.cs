@@ -23,15 +23,7 @@ internal static class FormBuilderManagementApiServices
     {
         ArgumentNullException.ThrowIfNull(builder);
         builder.AddFormBuilderAuthorization();
-        builder.Services.AddControllers()
-            .AddApplicationPart(typeof(FormBuilderManagementApiController).Assembly)
-            .ConfigureApplicationPartManager(manager =>
-            {
-                if (!manager.FeatureProviders.OfType<FormBuilderControllerFeatureProvider>().Any())
-                {
-                    manager.FeatureProviders.Add(new FormBuilderControllerFeatureProvider());
-                }
-            });
+        builder.AddFormBuilderControllers(typeof(FormBuilderManagementApiController).Assembly);
         builder.Services.TryAddScoped<FormBuilderAccessFilter>();
         builder.Services.TryAddSingleton<Library.FormSensitivityChecks>();
         builder.Services.TryAddSingleton<Picker.FormBlockTypes>();
@@ -56,19 +48,43 @@ internal static class FormBuilderManagementApiServices
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<ISchemaIdHandler, FormBuilderSchemaIdHandler>());
         return builder;
     }
+
+    /// <summary>
+    /// Adds the management API's controllers of <paramref name="assembly"/> to MVC: Web's own, and the AI add-on's, which
+    /// sit behind the same base controller (ADR-0018). Safe to call more than once for an assembly.
+    /// </summary>
+    public static IUmbracoBuilder AddFormBuilderControllers(this IUmbracoBuilder builder, Assembly assembly)
+    {
+        ArgumentNullException.ThrowIfNull(builder);
+        ArgumentNullException.ThrowIfNull(assembly);
+        builder.Services.AddControllers()
+            .AddApplicationPart(assembly)
+            .ConfigureApplicationPartManager(manager =>
+            {
+                if (!manager.FeatureProviders.OfType<FormBuilderControllerFeatureProvider>().Any(provider => provider.Assembly == assembly))
+                {
+                    manager.FeatureProviders.Add(new FormBuilderControllerFeatureProvider(assembly));
+                }
+            });
+        return builder;
+    }
 }
 
 /// <summary>
-/// Adds the management API's controllers to MVC: they are internal, like the services they use, and MVC finds only
-/// public controllers by itself, so Jiron Form Builder's public surface stays its extension points.
+/// Adds the management API's controllers of one assembly to MVC: they are internal, like the services they use, and MVC
+/// finds only public controllers by itself, so Jiron Form Builder's public surface stays its extension points.
 /// </summary>
-internal sealed class FormBuilderControllerFeatureProvider : IApplicationFeatureProvider<ControllerFeature>
+/// <param name="assembly">The assembly whose controllers it adds.</param>
+internal sealed class FormBuilderControllerFeatureProvider(Assembly assembly) : IApplicationFeatureProvider<ControllerFeature>
 {
+    /// <summary>The assembly whose controllers it adds.</summary>
+    public Assembly Assembly { get; } = assembly;
+
     /// <inheritdoc />
     public void PopulateFeature(IEnumerable<ApplicationPart> parts, ControllerFeature feature)
     {
         ArgumentNullException.ThrowIfNull(feature);
-        foreach (var type in typeof(FormBuilderControllerFeatureProvider).Assembly.GetTypes())
+        foreach (var type in Assembly.GetTypes())
         {
             var info = type.GetTypeInfo();
             if (info is { IsClass: true, IsAbstract: false, ContainsGenericParameters: false }

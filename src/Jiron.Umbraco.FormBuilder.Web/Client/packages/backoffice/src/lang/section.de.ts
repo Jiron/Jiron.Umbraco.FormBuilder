@@ -26,6 +26,7 @@ export default {
     files: 'Dateien',
     access: 'Zugriff',
     integrations: 'Integrationen',
+    ai: 'KI',
     privacy: 'Datenschutz',
     people: 'Personen',
     retention: 'Aufbewahrung',

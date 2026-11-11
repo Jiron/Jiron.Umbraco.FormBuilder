@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The AI add-on's test-only code (ADR-0018): the fake Umbraco.AI provider, ported from Tandem, and the set-up that gives
+    a host a connection and a chat profile on it. Apart from the shared Testing project, because Umbraco.AI.Core holds a
+    package migration plan that type scanning would add to every test host. Never packed; referenced only by the add-on's
+    tests and the demo.
+  -->
+  <PropertyGroup>
+    <!-- What Umbraco.AI brings transitively has the add-on's own reviewed audit entries (NuGetAudit.props, ADR-0018). -->
+    <JfbUmbracoAI>true</JfbUmbracoAI>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Jiron.Umbraco.FormBuilder.AI\Jiron.Umbraco.FormBuilder.AI.csproj" />
+    <!-- The host's testing options, which say whether the fake provider is offered (FakeAIMode). -->
+    <ProjectReference Include="..\Jiron.Umbraco.FormBuilder.Testing\Jiron.Umbraco.FormBuilder.Testing.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Jiron.Umbraco.FormBuilder.Tests.AI" />
+    <InternalsVisibleTo Include="Jiron.Umbraco.FormBuilder.Demo" />
+  </ItemGroup>
+
+</Project>

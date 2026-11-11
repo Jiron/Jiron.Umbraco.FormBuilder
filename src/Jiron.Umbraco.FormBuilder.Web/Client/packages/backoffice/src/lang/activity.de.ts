@@ -225,6 +225,7 @@ export default {
         ? `Das Formular und seine ${count(f.count, 'Eintrag', 'Einträge')} gelöscht`
         : 'Das Formular gelöscht',
     audit_form_deleting: 'Begonnen, das Formular zu löschen',
+    audit_form_drafted: 'Das Formular mit KI entworfen',
     audit_form_draftsPruned: (f: AuditFacts) =>
       `${count(f.count, 'alte Entwurfsspeicherung', 'alte Entwurfsspeicherungen')} aufgeräumt`,
     audit_form_duplicated: 'Das Formular als Kopie eines anderen erstellt',
@@ -257,6 +258,7 @@ export default {
       `Daten einer Person aus ${count(f.count, 'Eintrag', 'Einträgen')} exportiert`,
     audit_people_found: (f: AuditFacts) =>
       `Nach den Daten einer Person gesucht und ${count(f.count, 'Eintrag', 'Einträge')} gefunden`,
+    audit_settings_aiProfileChosen: 'Das KI-Profil gewählt',
     audit_settings_removed: 'Die eigenen Einstellungen der gelöschten Website entfernt',
     audit_settings_saved: (f: AuditFacts) =>
       f.changed

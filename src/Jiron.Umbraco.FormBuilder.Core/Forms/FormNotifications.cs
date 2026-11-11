@@ -89,6 +89,9 @@ public enum FormSource
 
     /// <summary>The draft of another form, as it is.</summary>
     Duplicate,
+
+    /// <summary>A draft the AI add-on wrote from an editor's description, with the new-form defaults (ADR-0018).</summary>
+    Drafted,
 }
 
 /// <summary>A form is about to be created, or its draft about to be saved.</summary>

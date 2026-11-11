@@ -13,6 +13,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { CANVAS_WIDTHS } from '../designer/canvas/widths';
 import { OWN_WORDS, SERVER_WORDS } from '../designer/check/check-words';
+import { SECTION_ITEMS } from '../activity/audit-words';
 import { SIDEBAR } from '../section/sidebar';
 import actionsDe from './actions.de';
 import actionsEn from './actions.en';
@@ -165,10 +166,16 @@ describe('the dictionaries', () => {
         [...source.matchAll(/(?:'|#)(jfb(?:Section|Overview)_[A-Za-z_]+)'/g)].map((match) => match[1]),
       ),
     );
-    // The keys code builds: an item's and a group's label, and a step's texts and a finding's link.
+    // The keys code builds: an item's and a group's label, the audit log's place of a settings section (Settings > AI
+    // among them, which the AI add-on's sidebar item shows), and a step's texts and a finding's link.
     for (const group of SIDEBAR) {
       used.add(`jfbSection_${group.id}`);
       for (const item of group.items) used.add(`jfbSection_${item.id}`);
+    }
+
+    for (const [group, item] of Object.values(SECTION_ITEMS)) {
+      used.add(`jfbSection_${group}`);
+      used.add(`jfbSection_${item}`);
     }
 
     for (const step of ['email', 'form', 'testEntry', 'formBlock', 'access']) {

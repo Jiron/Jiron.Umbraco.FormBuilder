@@ -1,0 +1,48 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <!--
+    The optional AI add-on (D23, ADR-0018): drafting a form, translating its texts and suggesting help texts in the
+    designer, through Umbraco.AI, for editors only. A site installs it beside Jiron.Umbraco.FormBuilder; the core
+    packages never reference Umbraco.AI. A Razor class library like Web, serving wwwroot from the site root, so its
+    backoffice files live under /App_Plugins/JironFormBuilderAI/.
+  -->
+  <PropertyGroup>
+    <Title>Jiron Form Builder AI</Title>
+    <Description>An optional add-on for Jiron Form Builder on Umbraco 17: editors draft a form from a description or a pasted questionnaire, translate a form's texts and get help texts suggested, through Umbraco.AI. Nothing a visitor enters ever reaches an AI.</Description>
+    <PackageTags>umbraco umbraco-marketplace forms form-builder ai</PackageTags>
+    <StaticWebAssetBasePath>/</StaticWebAssetBasePath>
+    <!-- What Umbraco.AI brings transitively has the add-on's own reviewed audit entries (NuGetAudit.props, ADR-0018). -->
+    <JfbUmbracoAI>true</JfbUmbracoAI>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The meta package, so that installing the add-on installs a working Umbraco.AI; a site adds its provider's package. -->
+    <PackageReference Include="Umbraco.AI" />
+    <PackageReference Include="Umbraco.Cms.Api.Management" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Jiron.Umbraco.FormBuilder.Core\Jiron.Umbraco.FormBuilder.Core.csproj" />
+    <ProjectReference Include="..\Jiron.Umbraco.FormBuilder.Web\Jiron.Umbraco.FormBuilder.Web.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The fake provider (ADR-0018); the test projects see internals through src/Directory.Build.props. -->
+    <InternalsVisibleTo Include="Jiron.Umbraco.FormBuilder.Testing.AI" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Its backoffice is built from the client's packages/ai workspace into wwwroot/App_Plugins/JironFormBuilderAI. -->
+    <Folder Include="wwwroot\" />
+  </ItemGroup>
+
+  <!--
+    The built backoffice is not committed (ADR-0001), so packing checks, as Web's pack does, that the client assets
+    exist, match the current Client sources, were built for this package's version and carry the licence banner and
+    no source map (JFB001, ADR-0026). The add-on embeds no website assets, so no assembly is checked.
+  -->
+  <Target Name="JfbCheckClientAssets" BeforeTargets="GenerateNuspec">
+    <Exec Command="node &quot;$(MSBuildThisFileDirectory)../Jiron.Umbraco.FormBuilder.Web/Client/scripts/stamp.mjs&quot; check &quot;$(PackageVersion)&quot;" />
+  </Target>
+
+</Project>

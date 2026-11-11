@@ -37,6 +37,27 @@ describe('judge', () => {
     assert.equal(judge(pkg('Tool', 'shipped'), file('the MIT text'), exceptions).ok, false);
   });
 
+  test('a licence a package carries beside a nuspec that names none, or a URL read, holds by its exception (ADR-0018)', () => {
+    const exceptions = [
+      { id: 'Carried', tiers: ['shipped'], licence: 'MIT', files: [licenceTextHash('the MIT text')], reason: 'carried' },
+      { id: 'Linked', tiers: ['dev'], licence: 'MIT', urls: ['https://example.test/MIT'], reason: 'linked' },
+    ];
+    const carried = (text) => ({ kind: 'none', value: '', copyright: '', bundled: 'LICENSE.md', text });
+    assert.deepEqual(judge(pkg('Carried', 'shipped'), carried('the MIT text'), exceptions), { ok: true, licence: 'MIT', note: 'carried' });
+    assert.match(judge(pkg('Carried', 'shipped'), carried('other terms'), exceptions).note, /differs from the reviewed licence file/);
+    assert.equal(judge(pkg('Carried', 'shipped'), { kind: 'none', value: '', copyright: '' }, exceptions).ok, false);
+    const url = (value) => ({ kind: 'url', value, copyright: '' });
+    assert.deepEqual(judge(pkg('Linked', 'dev'), url('https://example.test/MIT'), exceptions), { ok: true, licence: 'MIT', note: 'linked' });
+    assert.equal(judge(pkg('Linked', 'dev'), url('https://example.test/other'), exceptions).ok, false);
+  });
+
+  test("Umbraco.AI's packages hold by the one MIT licence they carry, and ImageSharp only as the add-on's transitive dependency", () => {
+    const umbracoAi = EXCEPTIONS.filter((entry) => entry.id.startsWith('Umbraco.AI'));
+    assert.ok(umbracoAi.length >= 8);
+    assert.equal(new Set(umbracoAi.map((entry) => entry.files.join())).size, 1);
+    assert.deepEqual(EXCEPTIONS.find((entry) => entry.id === 'SixLabors.ImageSharp').tiers, ['shipped']);
+  });
+
   test("NUnit's reviewed exception is for development only", () => {
     const nunit = EXCEPTIONS.find((entry) => entry.id === 'NUnit');
     assert.deepEqual(nunit.tiers, ['dev']);

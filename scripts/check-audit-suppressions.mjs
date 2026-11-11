@@ -9,7 +9,8 @@
  *   - a package that only whole Umbraco sites bring (ImageSharp) is referenced directly at all, suppressed or not
  *     (CLAUDE.md rule 4);
  *   - a suppression for such a package leaves the host-only group, the ItemGroup with the condition
- *     HOST_CONDITION, where it would cover Jiron Form Builder's own packages too;
+ *     HOST_CONDITION, where it would cover Jiron Form Builder's own packages too; the one other place it may stand is
+ *     the AI add-on's group (AI_CONDITION), whose Umbraco.AI brings it (ADR-0018);
  *   - a suppression sits outside any ItemGroup, where the groups cannot be told apart.
  *
  * XML comments are ignored, so a comment may name a package.
@@ -27,7 +28,13 @@ const repo = resolve(fileURLToPath(new URL('..', import.meta.url)));
 /** The condition of the ItemGroup whose suppressions apply to Umbraco hosts only (ADR-0024). */
 export const HOST_CONDITION = "'$(JfbUmbracoHost)' == 'true'";
 
-/** Packages that only a whole Umbraco site brings: never referenced directly, suppressed only for hosts. */
+/**
+ * The condition of the ItemGroup whose suppressions apply to the AI add-on only (ADR-0018): what Umbraco.AI brings
+ * transitively, at the versions the site's own Umbraco.AI and CMS decide.
+ */
+export const AI_CONDITION = "'$(JfbUmbracoAI)' == 'true' And '$(JfbUmbracoHost)' != 'true'";
+
+/** Packages that only a whole Umbraco site brings: never referenced directly, suppressed only for hosts and the AI add-on. */
 export const HOST_ONLY = Object.freeze([/^SixLabors\.ImageSharp(?:\..+)?$/i]);
 
 /** Folders that hold no build file of the repository's own. */
@@ -90,8 +97,10 @@ export function findViolations(suppressions, filesWithText) {
   for (const s of suppressions) {
     if (s.condition === null) {
       problems.push(`NuGetAudit.props: the suppression of ${s.url} (${s.packageId}) is outside an ItemGroup`);
-    } else if (isHostOnly(s.packageId) && s.condition !== HOST_CONDITION) {
-      problems.push(`NuGetAudit.props: ${s.packageId}'s ${s.url} left the host-only group (Condition="${HOST_CONDITION}", ADR-0024)`);
+    } else if (isHostOnly(s.packageId) && s.condition !== HOST_CONDITION && s.condition !== AI_CONDITION) {
+      problems.push(
+        `NuGetAudit.props: ${s.packageId}'s ${s.url} left the host-only group (Condition="${HOST_CONDITION}", ADR-0024) and the AI add-on's (Condition="${AI_CONDITION}", ADR-0018)`,
+      );
     }
   }
   return problems;
@@ -130,8 +139,9 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   }
   const packages = new Set(suppressions.map((s) => s.packageId));
   const hostOnly = suppressions.filter((s) => s.condition === HOST_CONDITION).length;
+  const aiOnly = suppressions.filter((s) => s.condition === AI_CONDITION).length;
   console.log(
     `check-audit-suppressions: ok (${suppressions.length} advisories on ${packages.size} transitive packages, ` +
-      `${hostOnly} of them for Umbraco hosts only; ${checked} build files checked)`,
+      `${hostOnly} of them for Umbraco hosts only, ${aiOnly} for the AI add-on only; ${checked} build files checked)`,
   );
 }
