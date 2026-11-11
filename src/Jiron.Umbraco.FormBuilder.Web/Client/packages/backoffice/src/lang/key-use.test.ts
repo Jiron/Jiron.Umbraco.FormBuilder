@@ -29,7 +29,12 @@ const read = (...parts: string[]) => readFileSync(join(root, ...parts), 'utf8');
 const core = (...parts: string[]) => read('src', 'Jiron.Umbraco.FormBuilder.Core', ...parts);
 
 /** Every dictionary of the backoffice, in English: each file's areas, as Umbraco loads them. */
-const modules = import.meta.glob<{ default: Record<string, Record<string, unknown>> }>('./*.en.ts', { eager: true });
+interface Dictionary {
+  readonly default: Record<string, Record<string, unknown>>;
+}
+const modules: Record<string, Dictionary> = {};
+for (const file of readdirSync(here).filter((name) => name.endsWith('.en.ts')))
+  modules[`./${file}`] = (await import(`./${file}`)) as Dictionary;
 
 /** Each area's keys, from every file but the two that merge others. */
 const areas = new Map<string, Set<string>>();
@@ -294,7 +299,5 @@ describe('every area', () => {
       expect(readFileSync(join(src, file), 'utf8'), `${file} holds ${area}`).toContain(area);
     expect([...areas.keys()].filter((area) => !HERE.includes(area) && !Object.hasOwn(ELSEWHERE, area))).toEqual([]);
     expect(HERE.filter((area) => Object.hasOwn(ELSEWHERE, area))).toEqual([]);
-    // Every dictionary file is one Umbraco loads, so none of its areas escapes this list.
-    expect(readdirSync(here).filter((file) => file.endsWith('.en.ts')).length).toBe(Object.keys(modules).length);
   });
 });

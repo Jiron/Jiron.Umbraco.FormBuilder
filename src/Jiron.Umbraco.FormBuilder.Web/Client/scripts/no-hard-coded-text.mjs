@@ -26,14 +26,19 @@ const LETTER = /\p{L}/u;
 const ADDRESS = /^[a-z][a-z0-9+.-]*:\/\/\S*$/i;
 const REFERENCE = /&(?:[a-z]+|#\d+|#x[0-9a-f]+);/gi;
 
-/** Whether a piece of a template, character references taken out, holds a letter. */
+/**
+ * Whether a piece of a template, character references taken out, holds a letter.
+ * @param {string} text
+ */
 const hasWords = (text) => LETTER.test(text.replace(REFERENCE, ''));
 
 /**
  * Walks a template's static parts as one text, the expressions standing as a mark, and reports each place that holds
  * words: a run of text between tags, or a spoken attribute's own value.
+ * @param {readonly import('estree').TemplateElement[]} quasis
  */
 function wordsIn(quasis) {
+  /** @type {{ at: number; what: string }[]} */
   const found = [];
   let state = 'text';
   let quote = '';
@@ -43,6 +48,7 @@ function wordsIn(quasis) {
   let tag = '';
   let inStyle = false;
   let inKeys = 0;
+  /** @param {number} at */
   const flushText = (at) => {
     if (!inStyle && inKeys === 0 && hasWords(text)) found.push({ at, what: `text "${text.trim().slice(0, 40)}"` });
     text = '';
