@@ -20,6 +20,12 @@ describe('ADR-0027 in a development package', () => {
     }
   });
 
+  test("reads tv4's public-domain statement as a dedication, which ships nowhere", () => {
+    const statement = 'http://geraintluff.github.io/tv4/LICENSE.txt';
+    assert.equal(verdict(dev(statement)), true);
+    assert.equal(verdict(shipped(statement)), false);
+  });
+
   test('refuses UNLICENSED, an empty or missing licence, and the forbidden families', () => {
     for (const license of ['UNLICENSED', '', undefined, 'GPL-3.0-only', 'AGPL-3.0', 'LGPL-2.1-or-later', 'SSPL-1.0', 'MIT AND GPL-2.0', 'BUSL-1.1']) {
       assert.equal(verdict(dev(license)), false, String(license));

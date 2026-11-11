@@ -42,6 +42,14 @@
   </ItemGroup>
 
   <!--
+    The samples only, never shipped (ADR-0234): Umbraco HQ's official Azure Blob provider (MIT), which the blob store
+    sample stores through (ADR-0006), pinned exactly.
+  -->
+  <ItemGroup>
+    <PackageVersion Include="Umbraco.StorageProviders.AzureBlob" Version="17.1.0" />
+  </ItemGroup>
+
+  <!--
     Test tools (ADR-0011), pinned exactly, all dev-only. NUnit stays on 3.x, because Umbraco.Cms.Tests.Integration 17
     depends on it (D19).
   -->

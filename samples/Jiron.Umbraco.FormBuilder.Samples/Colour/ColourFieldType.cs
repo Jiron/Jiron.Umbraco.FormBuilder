@@ -9,6 +9,8 @@ namespace Jiron.Umbraco.FormBuilder.Samples.Colour;
 /// each a swatch with its name. The answer is the colour's value, such as <c>#1f6feb</c>, which mail, merge tags and
 /// exports show with the colour's name. The colours are one setting that no built-in editor draws, a list of names and
 /// values, so the backoffice draws it with the sample's own editor and shows the field with the sample's own preview.
+/// On the website its view (<c>fields/sample.colour.cshtml</c>) and on a headless site its control
+/// (<c>/jfb-samples/colour-control.js</c>) write a radio button for each colour, which the field's legend names.
 /// </summary>
 public sealed class ColourFieldType() : FormBuilderFieldTypeBase<ColourSettings>(new FieldTypeDeclaration
 {
@@ -19,6 +21,7 @@ public sealed class ColourFieldType() : FormBuilderFieldTypeBase<ColourSettings>
     HoldsValue = true,
     Storage = FieldStorageKind.Text,
     RuleKind = FieldKind.Choice,
+    GroupsControls = true,
     Features = FieldFeatures.Label | FieldFeatures.HideLabel | FieldFeatures.Help | FieldFeatures.Required | FieldFeatures.VisibilityRules,
     Messages = FieldMessageKinds.Required,
 })

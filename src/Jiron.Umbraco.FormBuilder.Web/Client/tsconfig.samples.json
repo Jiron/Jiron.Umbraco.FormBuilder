@@ -1,6 +1,6 @@
 {
-  // The samples' backoffice files (samples/Jiron.Umbraco.FormBuilder.Samples, ADR-0234): plain JavaScript that the
-  // backoffice loads as it is, checked against Umbraco's types and the declarations Jiron Form Builder ships. They
+  // The samples' scripts (samples/Jiron.Umbraco.FormBuilder.Samples, ADR-0234): plain JavaScript that the backoffice
+  // and a headless site load as it is, checked against Umbraco's types and the declarations Jiron Form Builder ships. They
   // live outside this folder, where no node_modules is, so the three Umbraco modules they import are named here.
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
@@ -21,5 +21,8 @@
       ]
     }
   },
-  "include": ["../../../samples/Jiron.Umbraco.FormBuilder.Samples/wwwroot/App_Plugins/JironFormBuilderSamples/**/*.js"]
+  "include": [
+    "../../../samples/Jiron.Umbraco.FormBuilder.Samples/wwwroot/App_Plugins/JironFormBuilderSamples/**/*.js",
+    "../../../samples/Jiron.Umbraco.FormBuilder.Samples/wwwroot/jfb-samples/**/*.js"
+  ]
 }

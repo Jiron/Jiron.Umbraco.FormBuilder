@@ -20,7 +20,7 @@ public sealed class SampleManifestsTests
 
         Assert.That(
             () => builder.AddFormBuilderSample("colours"),
-            Throws.ArgumentException.With.Message.StartsWith("There is no sample 'colours'; the samples are colour, embedView."));
+            Throws.ArgumentException.With.Message.StartsWith("There is no sample 'colours'; the samples are colour, embedView, crm, products, iCalendar, "));
     }
 
     [Test]

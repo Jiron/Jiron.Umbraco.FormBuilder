@@ -1,8 +1,10 @@
 # 0234. The samples: one project, each sample turned on by its name
 
-- Status: accepted; builds on [ADR-0233](0233-the-extension-surface.md) (the extension points the samples use)
+- Status: accepted; builds on [ADR-0233](0233-the-extension-surface.md) (the extension points the samples use), and
+  extends [ADR-0142](0142-the-captcha-providers.md) (a site's own captcha script) and [ADR-0006](0006-file-storage-and-uploads.md)
+  (the blob store, tested against the emulator)
 - Date: 2026-11-11
-- Roadmap step: 15.1 (the sample extension of part 15.1, and the project part 15.2 fills)
+- Roadmap step: 15.1 (the sample extension of part 15.1, and the samples of part 15.2)
 
 ## Context
 
@@ -38,6 +40,27 @@ would stand beside every form's views. They are also what a site copies, so they
    style; a name is one text for every language, at most 40 characters; a field offers 1 to 24 colours, each value once.
    The answer is the colour's value, shown as "Blue (#1f6feb)" in mail, merge tags and exports. An empty list is no
    setting at all, so the field would hold the default colours again: the editor never removes the last colour.
+   Its swatches on the website are SVG circles whose fill is the value, so no style attribute meets a strict content
+   security policy.
+7. **What the samples showed the extension surface lacked,** added to it in the same part:
+   - `FieldTypeDeclaration.GroupsControls`: a site's type whose control is a group (the colour's radio buttons) is
+     labelled by a fieldset's legend and marks each control at an error, as the built-in choices; before, every site's
+     type had one `<label for>`, which names only its first control;
+   - `FormBuilderCaptchaClient.ScriptGlobal`, which the challenge carries as `global`: the global object a site's own
+     captcha script defines with the calls the built-in providers' scripts have (`render`, `reset`, and optionally
+     `ready` and `execute`); the runtime knew only `hcaptcha` and `grecaptcha`. A provider's `Client` is read for every
+     challenge, so the arithmetic sample gives each page a sum of its own, sealed with Data Protection, and needs no
+     endpoint;
+   - the control writer of `<jfb-form>` gets the theme's classes as a third argument (`JfbThemeClasses`), and its field
+     `choiceErrorId` and `isDisabled`, so a site's control looks and reads as its Razor view;
+   - a Razor class library whose only MVC code is its views is not among the application parts a site lists for itself:
+     the colour sample adds its assembly as one, and the guide says so.
+8. **The blob store's contract tests** run against Azurite's blob service, a development tool (MIT) in `scripts/`, which
+   CI installs before the .NET tests: the fixture starts it in memory on a port the system assigns (section 4.11 allows
+   that), without telemetry, for an account whose key it makes for the run, and stops its process tree after. The
+   tests that every store passes moved into `FileStoreContract`, which the physical store's fixture runs with every
+   check it had; each store adds its own. Azurite brings `uri-templates` 0.2.0, whose licence field is the address of
+   tv4's public-domain statement: a dedication ADR-0027 accepts in development tools, read as such by the licence check.
 
 ## Alternatives considered
 

@@ -31,6 +31,7 @@ describe('parseExpression', () => {
     assert.deepEqual(parseExpression('(MIT OR ISC) AND 0BSD'), { and: [{ or: [{ id: 'MIT' }, { id: 'ISC' }] }, { id: '0BSD' }] });
     assert.deepEqual(parseExpression('Apache-2.0 WITH LLVM-exception'), { id: 'Apache-2.0' });
     assert.deepEqual(parseExpression('BSD 3-Clause'), { id: 'BSD-3-Clause' });
+    assert.deepEqual(parseExpression('http://geraintluff.github.io/tv4/LICENSE.txt'), { id: 'Unlicense' });
   });
 
   test('refuses an empty or malformed expression', () => {

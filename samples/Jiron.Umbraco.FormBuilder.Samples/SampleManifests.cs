@@ -25,10 +25,10 @@ internal sealed class SampleManifests(IEnumerable<SampleOn> samples) : IPackageM
     /// <inheritdoc />
     public Task<IEnumerable<PackageManifest>> ReadPackageManifestsAsync()
     {
-        // The samples' words come once, whichever samples are on.
-        var on = samples.SelectMany(sample => sample.Extensions).ToList();
-        var extensions = on.Count == 0 ? [] : on.Concat([Words("en"), Words("de")]).ToArray();
-        IEnumerable<PackageManifest> manifests = extensions.Length == 0
+        // The samples' words come once, whichever samples are on, also for those whose names alone need them.
+        var on = samples.ToList();
+        var extensions = on.SelectMany(sample => sample.Extensions).Concat([Words("en"), Words("de")]).ToArray();
+        IEnumerable<PackageManifest> manifests = on.Count == 0
             ? []
             :
             [

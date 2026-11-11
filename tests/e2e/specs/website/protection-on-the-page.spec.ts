@@ -15,7 +15,9 @@ import { account, readSecrets } from '../../support/users.ts';
 // request ever happens. Zero requests go to it before consent, in the explicit and cmp modes; the script loads after, and a
 // check that passes sends the entry. consent.grant('captcha') loads it on a form in the cmp mode, and after withdraw() the next
 // page loads none. Proof of work completes in under 2 s at the default level, in a worker, and the server takes the answer; on
-// a page of another origin, where no worker can start, it is solved in slices.
+// a page of another origin, where no worker can start, it is solved in slices. A site's own captcha, the arithmetic sample
+// (ROADMAP 15.2, ADR-0234), loads at consent as a third party's does, through the global its provider names, and a wrong
+// sum is refused and asked again while the right one sends the entry.
 
 test.describe.configure({ mode: 'serial', timeout: 120_000 });
 test.use({ baseURL: PROTECTION_BASE_URL });
@@ -146,6 +148,8 @@ test.beforeAll(async () => {
       JironFormBuilder__Captcha__Hcaptcha__SiteKey: 'JFB_FAKE-site-key',
       JironFormBuilder__Captcha__Hcaptcha__SecretKey: 'JFB_FAKE-secret-key',
       JironFormBuilder__Captcha__Hcaptcha__VerifyAddress: `http://127.0.0.1:${String(PROTECTION_STUB_PORT)}/captcha/hcaptcha/siteverify`,
+      // A captcha of the site's own beside the third party's (ADR-0234).
+      Demo__Samples__2: 'arithmeticCaptcha',
     },
   });
   const wait = await waitForStartupWork(host.logFile);
@@ -344,4 +348,38 @@ test('proof of work on a page of another origin is solved in slices, as no worke
   } finally {
     await site.stop();
   }
+});
+
+test("a site's own captcha: the arithmetic sample's sum loads at consent, a wrong answer is asked again, the right one sends", async ({
+  page,
+}) => {
+  await publishAt(page, await managing(), { level: 'captcha', captcha: { provider: 'sampleArithmetic' } });
+  await consentMode(page, 'explicit');
+  await page.goto(pathOfForm('contact'));
+  const form = formOn(page);
+  const place = form.locator('.jfb-captcha');
+  await fill(page, 'Ari Thmetic');
+
+  // Nothing of the check loads before the visitor agrees, as for a third party's.
+  await expect(place.getByRole('button', { name: 'Load the check' })).toBeVisible();
+  expect(await page.evaluate(() => 'jfbSampleArithmetic' in window)).toBe(false);
+  await place.getByRole('button', { name: 'Load the check' }).click();
+  const answer = place.getByRole('textbox', { name: /^\d \+ \d =$/ });
+  await expect(answer).toBeVisible();
+  await axe(page, 'the arithmetic check');
+
+  const [first, second] = (await place.locator('label').innerText())
+    .replace('=', '')
+    .split('+')
+    .map((part) => Number(part.trim()));
+  const sum = (first ?? 0) + (second ?? 0);
+  await answer.fill(String(sum + 1));
+  await pressOnThePage(form.locator('button[data-jfb-nav="submit"]'));
+  await expect(answer, 'refused, the check asks again').toHaveValue('');
+  expect(await stateOf(page, 'Ari Thmetic'), 'nothing stored').toBeUndefined();
+
+  await answer.fill(String(sum));
+  await pressOnThePage(form.locator('button[data-jfb-nav="submit"]'));
+  await expect(page.locator('main [data-jfb-outcome]')).toBeFocused();
+  expect(await stateOf(page, 'Ari Thmetic'), 'the sum passed').toBe('Approved');
 });

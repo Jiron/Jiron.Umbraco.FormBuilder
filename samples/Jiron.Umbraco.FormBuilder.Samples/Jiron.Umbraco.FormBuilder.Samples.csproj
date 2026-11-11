@@ -19,6 +19,7 @@
 
   <ItemGroup>
     <PackageReference Include="Umbraco.Cms.Web.Website" />
+    <PackageReference Include="Umbraco.StorageProviders.AzureBlob" />
   </ItemGroup>
 
   <ItemGroup>

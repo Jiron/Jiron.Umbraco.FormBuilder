@@ -50,7 +50,9 @@ test("a site's setting editor draws the colours under their label, and its previ
   await expect(field).toContainText('Favourite colour');
 
   // The inspector draws the colours with the site's editor, under the setting's label in the backoffice's words.
-  await expect(design.locator('jfb-designer-palette').getByRole('button', { name: 'Colour', exact: true })).toBeVisible();
+  await expect(
+    design.locator('jfb-designer-palette').getByRole('button', { name: 'Colour', exact: true }),
+  ).toBeVisible();
   await design.getByRole('button', { name: 'Favourite colour, colour field' }).click();
   const inspector = design.locator('jfb-designer-inspector');
   await expect(inspector.getByRole('heading', { name: 'Colour field' })).toBeVisible();

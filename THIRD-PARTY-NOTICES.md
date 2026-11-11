@@ -43,6 +43,7 @@ These tools build and test Jiron Form Builder. They are used unmodified and are 
 | `@axe-core/playwright` | 4.14.0 | MPL-2.0 | accessibility checks in Playwright (`scripts/`, `tests/e2e/`) |
 | `@actions/workflow-parser` | 0.3.61 | MIT | GitHub's workflow parser, for the workflow check (`scripts/`) |
 | `yaml` | 2.9.1 | ISC | reading the workflow files and `dependabot.yml` (`scripts/`) |
+| `azurite` | 3.37.0 | MIT | the local storage emulator the blob store sample's contract tests start, in memory and without telemetry (`scripts/`, ADR-0234); its dependency `uri-templates` 0.2.0 is in the public domain (ADR-0027) |
 | `NUnit` | 3.14.0 | MIT | unit and integration tests (`tests/`) |
 | `NUnit3TestAdapter` | 5.0.0 | MIT | running the NUnit tests (`tests/`) |
 | `Microsoft.NET.Test.Sdk` | 18.9.0 | MIT | running the tests, and with its MIT dependency Microsoft.CodeCoverage the coverage of the phase reviews, instrumented in memory (ADR-0079) (`tests/`) |
@@ -63,7 +64,7 @@ These tools build and test Jiron Form Builder. They are used unmodified and are 
 | `eslint-config-prettier` | 10.1.8 | MIT | leaving formatting to Prettier (`Client/`) |
 | `globals` | 17.13.0 | MIT | the browser and Node globals for linting (`Client/`) |
 | `prettier` | 3.9.9 | MIT | formatting (`Client/`, `tests/e2e/`) |
-| `@types/node` | 24.19.1 | MIT | Node types for the build scripts and the browser tests (`Client/`, `tests/e2e/`) |
+| `@types/node` | 24.19.1, 26.6.6 | MIT | Node types for the build scripts and the browser tests (`Client/`, `tests/e2e/`); 26.6.6 comes with Azurite (`scripts/`) |
 
 `Client/` is `src/Jiron.Umbraco.FormBuilder.Web/Client/`. The transitive packages of these tools are MIT,
 Apache-2.0, BSD-2-Clause, BSD-3-Clause, ISC, 0BSD, MPL-2.0, BlueOak-1.0.0 or Python-2.0, with two kinds of
@@ -80,6 +81,7 @@ packages come through jsdom, the Unlicense one through a peer of `@umbraco-cms/b
 | `@csstools/css-syntax-patches-for-csstree` | 1.1.15 | MIT-0 | `Client/` |
 | `fetch-cookie` | 2.2.0 | Unlicense | `Client/` |
 | `mdn-data` | 2.27.1 | CC0-1.0 | `Client/` |
+| `uri-templates` | 0.2.0 | http://geraintluff.github.io/tv4/LICENSE.txt | `scripts/` |
 <!-- jfb-public-domain:end -->
 
 ## In the demo (never shipped)

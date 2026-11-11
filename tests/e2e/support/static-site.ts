@@ -4,7 +4,8 @@ import { E2E_BASE_URL, STATIC_PORT } from './paths.ts';
 
 // The static page of the headless tests (ROADMAP 4.11, 6.6f; ADR-0031): a site that does not run Umbraco, on an origin
 // of its own beside the host, whose page loads the element from the host and shows a form through it. It serves one
-// page, made from its query: the element's attributes. The server runs in the test's own process and stops with it.
+// page, made from its query: the element's attributes, and `script`, a script of the samples' on the host that the
+// page loads beside the element (ADR-0234). The server runs in the test's own process and stops with it.
 
 /** The static site while it runs: its address, and how to stop it. */
 export interface StaticSite {
@@ -26,9 +27,16 @@ const escape = (text: string): string =>
 
 /**
  * The page: the element's module from the host and a `<jfb-form>` for the host's public API with the attributes
- * given, in a page of the culture's language, as a site would write it.
+ * given, in a page of the culture's language, as a site would write it; with the scripts of the samples' named, each a
+ * path under `/jfb-samples/` on the host.
  */
-export function headlessPage(host: string, attributes: Readonly<Record<string, string>>): string {
+export function headlessPage(
+  host: string,
+  attributes: Readonly<Record<string, string>>,
+  scripts: readonly string[] = [],
+): string {
+  for (const script of scripts)
+    if (!/^\/jfb-samples\/[a-z0-9-]+\.js$/.test(script)) throw new Error(`"${script}" is no script of the samples.`);
   const all = { api: `${host}/jfb/api/v1`, ...attributes };
   const written = Object.entries(all)
     .map(([name, value]) => {
@@ -50,6 +58,8 @@ export function headlessPage(host: string, attributes: Readonly<Record<string, s
     // The site's own look, as a site has one: the form takes its type and its width from it.
     '<style>body { margin: 0; font: 100%/1.5 system-ui, sans-serif; color: #1f2328; } h1 { line-height: 1.2; } main { max-inline-size: 40rem; margin-inline: auto; padding: 2rem 1rem; }</style>',
     `<script type="module" src="${escape(host)}/jfb/assets/element/jfb-element.js"></script>`,
+    // Classic scripts, which a page loads from the host without the host's leave, as a module would need.
+    ...scripts.map((script) => `<script src="${escape(host)}${script}" defer></script>`),
     '</head>',
     '<body>',
     '<main>',
@@ -77,7 +87,9 @@ export async function startStaticSite(host: string = E2E_BASE_URL): Promise<Stat
       return;
     }
     try {
-      const page = headlessPage(host, Object.fromEntries(url.searchParams));
+      const scripts = url.searchParams.getAll('script');
+      url.searchParams.delete('script');
+      const page = headlessPage(host, Object.fromEntries(url.searchParams), scripts);
       response.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' }).end(page);
     } catch (error) {
       response.writeHead(400, { 'Content-Type': 'text/plain; charset=utf-8' }).end(String(error));

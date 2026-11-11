@@ -1,0 +1,34 @@
+@* jfb-view: fields/sample.colour 1 *@
+@*
+    The colour sample's control (docs/extending.md): a radio button for each colour the field offers, with its swatch and
+    its name, which Field.cshtml puts in a fieldset under the field's legend, as the type groups its controls. It keeps
+    the markup contract as the built-in radio buttons do, and takes the theme's classes for a choice. A swatch is an SVG
+    whose fill is the colour's value, so no style attribute meets a page's content security policy; ColourSwatch.Read
+    has held each value to # and six hexadecimal digits. Hidden names stay each swatch's accessible name.
+*@
+@model Jiron.Umbraco.FormBuilder.Web.Rendering.Models.FieldViewModel
+@using System.Text.Json
+@using Jiron.Umbraco.FormBuilder.Samples.Colour
+@using Jiron.Umbraco.FormBuilder.Web.Rendering
+@using Jiron.Umbraco.FormBuilder.Web.Rendering.Models
+@{
+    var settings = ((CustomControlModel)Model.Control!).Settings ?? default;
+    var colours = settings.ValueKind == JsonValueKind.Object && settings.TryGetProperty(ColourSettings.ColoursName, out var listed)
+        ? ColourSwatch.Read(listed)
+        : [];
+    var names = !(settings.ValueKind == JsonValueKind.Object && settings.TryGetProperty("showNames", out var shown) && shown.ValueKind == JsonValueKind.False);
+}
+<div class="@Model.Classes.Choices">
+    @for (var at = 0; at < colours.Length; at++)
+    {
+        var colour = colours[at];
+        var id = at == 0 ? Model.Id : $"{Model.Id}-{at}";
+        <div class="@Model.Classes.Choice">
+            <input class="@Model.Classes.ChoiceInput" type="radio" id="@id" name="@Model.Name" value="@colour.Value" checked="@Model.Values.Contains(colour.Value)" required="@Model.IsRequired" @FormBuilderHtml.Flag("data-jfb-requires", Model.Hooks) disabled="@Model.IsDisabled" aria-invalid="@(Model.ChoiceErrorId is null ? null : "true")" aria-describedby="@Model.ChoiceErrorId">
+            <label class="@Model.Classes.ChoiceLabel" for="@id">
+                <svg width="1.5em" height="1.5em" viewBox="0 0 2 2" aria-hidden="true" focusable="false"><circle cx="1" cy="1" r="0.94" fill="@colour.Value" stroke="currentColor" stroke-opacity="0.25" stroke-width="0.06" /></svg>
+                <span class="@(names ? null : "jfb-visually-hidden")">@colour.Name</span>
+            </label>
+        </div>
+    }
+</div>

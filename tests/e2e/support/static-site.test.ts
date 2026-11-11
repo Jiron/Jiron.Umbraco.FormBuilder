@@ -31,6 +31,20 @@ test('the static page escapes what it writes and refuses a name that is no attri
   assert.throws(() => headlessPage('http://127.0.0.1:5520', { 'on load': 'x' }), /no attribute name/);
 });
 
+test("the static page loads a sample's script from the host after the element, and no other script", () => {
+  const page = headlessPage('http://127.0.0.1:5520', { form: 'a-key' }, ['/jfb-samples/colour-control.js']);
+
+  assert.match(
+    page,
+    /jfb-element\.js"><\/script>\n<script src="http:\/\/127\.0\.0\.1:5520\/jfb-samples\/colour-control\.js" defer><\/script>/,
+  );
+  assert.throws(
+    () => headlessPage('http://127.0.0.1:5520', {}, ['https://elsewhere.test/x.js']),
+    /no script of the samples/,
+  );
+  assert.throws(() => headlessPage('http://127.0.0.1:5520', {}, ['/jfb-samples/../x.js']), /no script of the samples/);
+});
+
 test("the static page's port is 5521, in the run's range", () => {
   assert.equal(STATIC_PORT, 5521);
   assert.equal(STATIC_ORIGIN, 'http://127.0.0.1:5521');

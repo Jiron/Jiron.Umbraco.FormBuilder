@@ -27,6 +27,9 @@ export const ALIASES = new Map([
   ['BSD 2-Clause', 'BSD-2-Clause'],
   ['Apache 2.0', 'Apache-2.0'],
   ['Apache License 2.0', 'Apache-2.0'],
+  // The address of tv4's statement that its code is in the public domain, which uri-templates 0.2.0 (brought by the
+  // storage emulator Azurite, a development tool, ADR-0234) gives as its licence: a dedication ADR-0027 accepts.
+  ['http://geraintluff.github.io/tv4/LICENSE.txt', 'Unlicense'],
 ]);
 
 /**

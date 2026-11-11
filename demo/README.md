@@ -37,6 +37,10 @@ section turns it on, which `scripts/demo.ps1` never does ([ADR-0029](../docs/dec
 The Content Delivery API is registered, as the template's "use Delivery API" option does, and stays off until
 `Umbraco:CMS:DeliveryApi:Enabled` turns it on ([ADR-0031](../docs/decisions/0031-browser-harness.md)).
 
+The demo also references the extension samples ([samples/](../samples/Jiron.Umbraco.FormBuilder.Samples/README.md),
+[ADR-0234](../docs/decisions/0234-the-samples.md)), each off unless `Demo:Samples` names it (`Demo__Samples__0=colour`
+and so on), which `scripts/demo.ps1` never does: the demo shows Jiron Form Builder as a site gets it.
+
 ## Accounts and mail
 
 The first `start` generates these into `.local/credentials.json` under `demo` (git-ignored, never printed):

@@ -29,6 +29,8 @@
     <!-- The meta package, as sites install it: the test server validates the whole container. -->
     <ProjectReference Include="..\..\src\Jiron.Umbraco.FormBuilder\Jiron.Umbraco.FormBuilder.csproj" />
     <ProjectReference Include="..\Jiron.Umbraco.FormBuilder.Testing\Jiron.Umbraco.FormBuilder.Testing.csproj" />
+    <!-- The samples' tests that need a running site: the blob store against the storage emulator (ADR-0234). -->
+    <ProjectReference Include="..\..\samples\Jiron.Umbraco.FormBuilder.Samples\Jiron.Umbraco.FormBuilder.Samples.csproj" />
   </ItemGroup>
 
   <ItemGroup>

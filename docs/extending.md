@@ -456,7 +456,7 @@ the field's `id`; a control of its own described by the help and the error, a ty
 by the fieldset around them, each control naming `choiceErrorId` while the field has an error. The runtime then reads,
 checks and posts them as it does a built-in type's. A type with no function shows its label and a warning in the
 console. The script that registers the function is the site's own: a module on the page's origin, or a classic script
-from another, which a page loads without that origin's CORS headers.
+from another, which a page loads without that origin's CORS headers (the colour sample's is one).
 
 ## 9. The samples
 
@@ -467,9 +467,19 @@ copies what it needs. The demo turns on the ones its setting `Demo:Samples` name
 
 | Sample | What it shows |
 | --- | --- |
-| `colour` | a field type whose colours are a JSON setting with its own editor (`colour-swatches.js`), drawn in the designer by its own preview (`colour-preview.js`) |
+| `colour` | a field type whose colours are a JSON setting with its own editor (`colour-swatches.js`), drawn in the designer by its own preview (`colour-preview.js`), on the website by its view (`fields/sample.colour.cshtml`) and on a headless site by its control (`/jfb-samples/colour-control.js`) |
 | `embedView` | a view on the form workspace that shows a developer how to place the open form (`embed-view.js`) |
+| `crm` | an action that adds the visitor to a list of the site's CRM, the contact written with merge tags, once per delivery, tried again while the CRM is away; its CRM is a stub (`ICrmClient`) |
+| `products` | an option source (`sampleProducts`) of a fake shop's products in stock, with their prices, under their categories for a cascade |
+| `iCalendar` | an export format that writes a form of bookings as an `.ics` file, an event per entry from its date, time and `hours` |
+| `arithmeticCaptcha` | a captcha of the site's own (`sampleArithmetic`): a sum sealed with the site's Data Protection keys, shown by its script (`/jfb-samples/arithmetic-captcha.js`) |
+| `linkDensity` | a spam check that counts the links in the answers against their words |
+| `siteSettings` | a merge-tag source of the site's settings node, `{{ siteSettings.phone }}`, per site |
+| `eicarScanner` | a file scanner stub that quarantines every file whose name holds "eicar" |
+| `blobStore` | the uploaded files in a private container of Azure Blob Storage through Umbraco's official provider, configured in `Umbraco:Storage:AzureBlob:JironFormBuilder` (`ConnectionString`, `ContainerName`, `ContainerRootPath`) |
+| `blockedDomains` | a notification handler that refuses email addresses at the domains in `JironFormBuilderSamples:BlockedDomains:Domains`, at their field |
 
 The samples register their manifests from code (`SampleManifests`, an `IPackageManifestReader`) rather than with an
 `umbraco-package.json`, so each sample's backoffice part comes and goes with its server part. Their words are in
-`lang/en.js` and `lang/de.js`.
+`lang/en.js` and `lang/de.js`. The blob store passes the same contract tests as the built-in store, against the local
+storage emulator (Azurite, a development tool the tests start themselves).
