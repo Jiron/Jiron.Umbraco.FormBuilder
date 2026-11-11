@@ -2562,6 +2562,9 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     measures 62.15 KB against 60 KB (the runtime did not change in Phase 12), and still waits.
   - **Retried at 13.4 (2026-11-09):** the branch merges into Phase 13's main with the same conflict, both sides kept,
     measures 62.15 KB against 60 KB (the runtime did not change in Phase 13), and still waits.
+  - **Retried at 14.1 (2026-11-11):** the branch merges into Phase 14's main with two conflicts, both on the server (the
+    parameters of `FormModels` and the visitor words of `RenderingWords`), measures 61.53 KB against 60 KB (its words now
+    in seven languages, the largest counted), and still waits.
   - **Blocked on the owner (2026-11-02):** the control and the restoring of answers are built and wait on the branch `wip/8.6b-resume-control`. As the chunk of their own they come to 1.94 KB gzip, which puts the runtime with every feature at 61.95 KB against the 60 KB of ADR-0146, and that ADR leaves anything past 60 KB to the owner. `docs/OWNER-TODO.md` asks.
   - **The control:** the runtime's "Save and continue later" (the only use of browser storage, §4.10), and a link's answers and page restored on arrival, its token taken out of the address at once.
   - **Its switch** in the Settings view's Submission group, under More options, with the link's days (moved from 10.1a: settings come with their feature).
@@ -2989,7 +2992,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
 
 ### Phase 14: Languages, members and multi-site
 
-- [ ] **14.1 Languages, members and multi-site, and phase review** (14.1, 14.2, 14.3 and 14.4 in one, ADR-0197)
+- [x] **14.1 Languages, members and multi-site, and phase review** (14.1, 14.2, 14.3 and 14.4 in one, ADR-0197) (2026-11-11, 1d2acdcf)
   - **14.1 Culture variants and backoffice localisation**:
     - **Texts:** every `LocalizedText` in the designer, settings, emails and outcomes, with the culture switcher, "missing translation" marks, `#dictionary` keys (with a picker) and fallback.
     - **Entries** keep their culture, and exports format dates and numbers by it.
