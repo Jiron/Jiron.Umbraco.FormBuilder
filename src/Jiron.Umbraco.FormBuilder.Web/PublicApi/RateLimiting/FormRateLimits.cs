@@ -36,7 +36,8 @@ internal sealed class FormRateLimits(FormBuilderRateLimiter limiter, PublishedFo
     {
         ArgumentNullException.ThrowIfNull(limits);
         var (count, named) = limits;
-        var isKey = Guid.TryParse(named, out var key);
+        // A key in its "D" form, as the form endpoint reads one: an alias of 32 hex digits stays an alias.
+        var isKey = Guid.TryParseExact(named, "D", out var key);
 
         // What can be no form asks nothing of the database.
         if (isKey ? key == Guid.Empty : !DefinitionStructureChecks.IsAlias(named.ToLowerInvariant()))

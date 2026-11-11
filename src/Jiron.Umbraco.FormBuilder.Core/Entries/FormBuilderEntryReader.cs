@@ -41,7 +41,8 @@ internal sealed class FormBuilderEntryReader(
         ArgumentOutOfRangeException.ThrowIfLessThan(request.Take, 1, nameof(request));
         ArgumentOutOfRangeException.ThrowIfGreaterThan(request.Take, FormBuilderEntryReadRequest.MaxTake, nameof(request));
         var after = request.After is null ? null : FormBuilderEntryService.Decode(request.After);
-        var key = Guid.TryParse(form, out var parsed) ? parsed : await cache.KeyOfAsync(form, cancellationToken);
+        // A key in its "D" form, which no alias can be: an alias may be 32 hex digits, which Guid.TryParse would take.
+        var key = Guid.TryParseExact(form, "D", out var parsed) ? parsed : await cache.KeyOfAsync(form, cancellationToken);
         if (key is not { } formKey || await cache.GetAsync(formKey, cancellationToken) is null || await forms.GetAsync(formKey, cancellationToken) is not { } stored)
         {
             return null;

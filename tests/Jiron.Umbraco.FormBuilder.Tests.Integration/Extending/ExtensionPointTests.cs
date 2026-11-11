@@ -88,8 +88,10 @@ public sealed class ExtensionPointTests : ActionTestBase
 
     private IFormBuilderEntryService Service => GetRequiredService<IFormBuilderEntryService>();
 
+    // Its name, and so its alias, is 32 hex digits starting with a letter: an alias Guid.TryParse would take for a key,
+    // so the reader's tests read a form by such an alias every time, never by chance.
     private Task<Guid> FormAsync(ApprovalMode approval = ApprovalMode.Automatic, params FormField[] fields) => PublishAsync(
-        name: Guid.NewGuid().ToString("N"),
+        name: "a" + Guid.NewGuid().ToString("N")[1..],
         change: definition => definition with { Settings = definition.Settings with { Submission = definition.Settings.Submission with { Approval = approval } } },
         fields: fields.Length == 0 ? [NameField] : fields);
 

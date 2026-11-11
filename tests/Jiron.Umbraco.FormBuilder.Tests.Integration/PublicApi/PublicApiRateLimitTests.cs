@@ -297,10 +297,12 @@ public sealed class PublicApiRateLimitTests : PublicApiTestBase
         });
     }
 
-    [Test]
-    public async Task AnAlias_CountsAsItsForm()
+    [TestCase("Contact us")]
+    // An alias of 32 hex digits, which Guid.TryParse would take for a key: a key is read in its "D" form only.
+    [TestCase("abcdef0123456789abcdef0123456789")]
+    public async Task AnAlias_CountsAsItsForm(string name)
     {
-        var key = await PublishAsync();
+        var key = await PublishAsync(name);
         var other = await PublishAsync("Another");
         var alias = (await FormRows.GetAsync(key))!.Alias;
 
