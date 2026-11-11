@@ -169,10 +169,11 @@ export function shownErrors(
 }
 
 /**
- * The empty submission's message, linked as the server links it: to the first field of the page shown, in a group
- * the rules show, that the rules show and that takes an answer; to the form without one.
+ * An error at the form, the empty submission's or a site's handler's, linked as the server links it: to the first
+ * field of the page shown, in a group the rules show, that the rules show and that takes an answer; to the form
+ * without one.
  */
-export function emptyError(form: HTMLFormElement, model: FormModel, words: MessageWords): ShownError {
+export function formError(form: HTMLFormElement, model: FormModel, code: string, message: string): ShownError {
   const page = form.querySelector<HTMLElement>('[data-jfb-page]:not([hidden])');
   const shown = model.form.pages.find((each) => each.key === page?.dataset['jfbPage']);
   let target = form.id;
@@ -187,7 +188,7 @@ export function emptyError(form: HTMLFormElement, model: FormModel, words: Messa
       break;
     }
   }
-  return { field: '', row: null, code: 'empty', target, message: words.empty, link: words.empty };
+  return { field: '', row: null, code, target, message, link: message };
 }
 
 /** No visitor text that recalls answers. */
@@ -201,6 +202,7 @@ function ownMessage(model: FormModel, field: ModelField, error: PageError): stri
   let own: string | null | undefined;
   if (error.code === 'check') own = error.check === undefined ? undefined : field.validation?.[error.check]?.message;
   else if (error.code === 'rule') own = model.form.validationRules?.find((rule) => rule.key === error.rule)?.message;
+  else if (error.code === 'custom') own = error.text;
   else own = ownOf(field.messages ?? {}, error.code);
   return textOf(own);
 }

@@ -656,6 +656,7 @@ internal sealed class FormPostHandler(
     {
         private readonly Dictionary<Guid, FormPostError> _errors = [];
         private readonly Dictionary<Guid, Dictionary<int, Dictionary<Guid, FormPostError>>> _rowErrors = [];
+        private readonly List<string?> _formErrors = [];
         private bool _isEmpty;
         private Guid? _page = page;
         private Guid? _errorPage;
@@ -680,13 +681,20 @@ internal sealed class FormPostHandler(
                     continue;
                 }
 
+                if (problem.Code == SubmissionProblems.Custom && problem.Path.Length == 0)
+                {
+                    _formErrors.Add(problem.Text);
+                    Move = FormPostMove.Stay;
+                    continue;
+                }
+
                 if (paths.Find(problem.Path) is not { } at)
                 {
                     continue;
                 }
 
                 first ??= at.Top;
-                var error = new FormPostError(problem.Code, problem.Check, problem.Rule, at.GridRow);
+                var error = new FormPostError(problem.Code, problem.Check, problem.Rule, at.GridRow, problem.Text);
                 if (at.Row is { } row)
                 {
                     if (!_rowErrors.TryGetValue(at.Top, out var rows))
@@ -735,6 +743,7 @@ internal sealed class FormPostHandler(
                 Answers = answers,
                 Errors = _errors,
                 IsEmpty = _isEmpty,
+                FormErrors = _formErrors,
                 Rows = rows.ToDictionary(pair => pair.Key, pair => Rows(pair.Key, pair.Value, orders.Rows[pair.Key], kept.Rows.GetValueOrDefault(pair.Key) ?? [])),
                 Orders = orders.Fields,
                 Files = kept.Fields,

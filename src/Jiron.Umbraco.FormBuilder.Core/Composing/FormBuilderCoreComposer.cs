@@ -172,6 +172,7 @@ public sealed class FormBuilderCoreComposer : IComposer
         builder.Services.TryAddSingleton<CaptchaHosts>();
         builder.Services.TryAddSingleton<UniqueAnswers>();
         builder.Services.TryAddSingleton<SubmissionEntries>();
+        builder.Services.TryAddSingleton<SubmittingHandlers>();
         builder.Services.TryAddSingleton<FormSubmissions>();
 
         // The retention job (ADR-0045): the draft-version cleanup first.

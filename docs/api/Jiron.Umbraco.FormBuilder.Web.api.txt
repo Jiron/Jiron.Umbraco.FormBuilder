@@ -1,0 +1,1760 @@
+public sealed class Jiron.Umbraco.FormBuilder.Web.Composing.FormBuilderWebComposer : IComposer, IDiscoverable
+  ctor()
+  void Compose(IUmbracoBuilder builder)
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Designer.ActionPresetResponseModel
+  ctor()
+  required string Name { get; init; }
+  required string Settings { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries.EntryColumnsRequestModel
+  IReadOnlyList<Guid> Columns { get; init; }
+  ctor()
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries.EntryDeleteRequestModel
+  IReadOnlyList<Guid> Entries { get; init; }
+  bool Confirm { get; init; }
+  ctor()
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries.EntryDeleteResponseModel
+  ctor()
+  required bool Deleted { get; init; }
+  required int Entries { get; init; }
+  required int Files { get; init; }
+  required int Held { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries.EntryDigestRequestModel
+  ctor()
+  string Frequency { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries.EntryDigestResponseModel
+  ctor()
+  required string Address { get; init; }
+  required string Frequency { get; init; }
+  required string SendsAt { get; init; }
+  required string TimeZone { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries.EntryDigestTestResponseModel
+  ctor()
+  required string To { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries.EntryEditAnswerRequestModel
+  Guid Field { get; init; }
+  IReadOnlyList<string> Values { get; init; }
+  ctor()
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries.EntryEditRequestModel
+  IReadOnlyList<EntryEditAnswerRequestModel> Answers { get; init; }
+  bool Overbook { get; init; }
+  ctor()
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries.EntryEditResponseModel
+  ctor()
+  required EntryMoveAsksResponseModel? Asks { get; init; }
+  required int Changed { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries.EntryExportChoicesResponseModel
+  IReadOnlyList<Guid>? Fields { get; init; }
+  bool Sensitive { get; init; }
+  ctor()
+  required EntryExportOptionsResponseModel Options { get; init; }
+  required string Format { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries.EntryExportFormatResponseModel
+  bool TakesDelimiter { get; init; }
+  bool TakesHeaders { get; init; }
+  bool WritesFiles { get; init; }
+  ctor()
+  required string DisplayName { get; init; }
+  required string FileName { get; init; }
+  required string Name { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries.EntryExportOptionsRequestModel
+  bool ByteOrderMark { get; init; }
+  ctor()
+  string Delimiter { get; init; }
+  string Headers { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries.EntryExportOptionsResponseModel
+  bool ByteOrderMark { get; init; }
+  ctor()
+  required string Delimiter { get; init; }
+  required string Headers { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries.EntryExportPlanResponseModel
+  bool Background { get; init; }
+  bool More { get; init; }
+  ctor()
+  int Entries { get; init; }
+  int Unconfirmed { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries.EntryExportRequestModel
+  EntryExportOptionsRequestModel? Options { get; init; }
+  EntryListFilterRequestModel? Filter { get; init; }
+  IReadOnlyList<Guid>? Entries { get; init; }
+  IReadOnlyList<Guid>? Fields { get; init; }
+  bool Remember { get; init; }
+  bool Sensitive { get; init; }
+  ctor()
+  string Format { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries.EntryExportStatusResponseModel
+  DateTimeOffset? ExpiresUtc { get; init; }
+  Guid Key { get; init; }
+  bool More { get; init; }
+  ctor()
+  int Done { get; init; }
+  int Total { get; init; }
+  required string State { get; init; }
+  string? FileName { get; init; }
+  string? Problem { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries.EntryExportTicketResponseModel
+  ctor()
+  required DateTimeOffset ExpiresUtc { get; init; }
+  required string Url { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries.EntryExportViewResponseModel
+  EntryExportChoicesResponseModel? Choices { get; init; }
+  bool MaySeeSensitive { get; init; }
+  ctor()
+  required IReadOnlyList<EntryExportFormatResponseModel> Formats { get; init; }
+  required IReadOnlyList<EntryExportStatusResponseModel> Exports { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries.EntryFieldFilterRequestModel
+  DateOnly? From { get; init; }
+  DateOnly? To { get; init; }
+  Guid Field { get; init; }
+  IReadOnlyList<string> Values { get; init; }
+  ctor()
+  decimal? Max { get; init; }
+  decimal? Min { get; init; }
+  string Test { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries.EntryFilterSetDeleteResponseModel
+  ctor()
+  required bool Deleted { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries.EntryFilterSetRequestModel
+  EntryListFilterRequestModel? Filter { get; init; }
+  Guid? Form { get; init; }
+  ctor()
+  string Name { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries.EntryFilterSetResponseModel
+  Guid? Form { get; init; }
+  ctor()
+  required EntryListFilterRequestModel Filter { get; init; }
+  required Guid Key { get; init; }
+  required string Name { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries.EntryForwardRecipientsResponseModel
+  ctor()
+  required IReadOnlyList<EntryForwardUserResponseModel> Users { get; init; }
+  required IReadOnlyList<string> Addresses { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries.EntryForwardRequestModel
+  Guid? User { get; init; }
+  bool IncludeSensitive { get; init; }
+  ctor()
+  string? Address { get; init; }
+  string? Message { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries.EntryForwardUserResponseModel
+  ctor()
+  required Guid Key { get; init; }
+  required string Name { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries.EntryFullOptionResponseModel
+  ctor()
+  required Guid Field { get; init; }
+  required int Places { get; init; }
+  required int Taken { get; init; }
+  required string FieldLabel { get; init; }
+  required string Option { get; init; }
+  required string OptionLabel { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries.EntryHeldAnswerResponseModel
+  ctor()
+  required Guid Field { get; init; }
+  required string FieldLabel { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries.EntryInboxViewResponseModel
+  ctor()
+  required IReadOnlyList<EntryFilterSetResponseModel> FilterSets { get; init; }
+  required IReadOnlyList<EntryListFormResponseModel> Forms { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries.EntryListActionsResponseModel
+  ctor()
+  required int Delivered { get; init; }
+  required int Failed { get; init; }
+  required int Skipped { get; init; }
+  required int Uncertain { get; init; }
+  required int Waiting { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries.EntryListCellResponseModel
+  ctor()
+  required Guid Field { get; init; }
+  required IReadOnlyList<string> Texts { get; init; }
+  required bool Masked { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries.EntryListFieldResponseModel
+  Guid? Parent { get; init; }
+  ctor()
+  required Guid Key { get; init; }
+  required IReadOnlyList<EntryListOptionResponseModel> Options { get; init; }
+  required IReadOnlyList<string> Tests { get; init; }
+  required bool Column { get; init; }
+  required bool Removed { get; init; }
+  required bool Sensitive { get; init; }
+  required bool Sorts { get; init; }
+  required string Alias { get; init; }
+  required string Kind { get; init; }
+  required string Label { get; init; }
+  required string Type { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries.EntryListFilterRequestModel
+  EntryListSortRequestModel? Sort { get; init; }
+  EntryReceivedRequestModel? Received { get; init; }
+  IReadOnlyList<EntryFieldFilterRequestModel> Fields { get; init; }
+  IReadOnlyList<Guid> Forms { get; init; }
+  IReadOnlyList<string> States { get; init; }
+  ctor()
+  string? Actions { get; init; }
+  string? Search { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries.EntryListFormResponseModel
+  IReadOnlyList<string> Permissions { get; init; }
+  ctor()
+  required Guid Key { get; init; }
+  required string Name { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries.EntryListOptionResponseModel
+  ctor()
+  required string Label { get; init; }
+  required string Value { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries.EntryListPageResponseModel
+  IReadOnlyList<EntryListFormResponseModel> Forms { get; init; }
+  bool More { get; init; }
+  ctor()
+  int? Total { get; init; }
+  required IReadOnlyList<EntryListRowResponseModel> Items { get; init; }
+  string? Next { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries.EntryListRequestModel
+  EntryListFilterRequestModel? Filter { get; init; }
+  IReadOnlyList<Guid>? Columns { get; init; }
+  bool Count { get; init; }
+  ctor()
+  string? After { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries.EntryListRowResponseModel
+  ctor()
+  required DateTimeOffset Received { get; init; }
+  required EntryListActionsResponseModel Actions { get; init; }
+  required Guid Form { get; init; }
+  required Guid Key { get; init; }
+  required IReadOnlyList<EntryListCellResponseModel> Cells { get; init; }
+  required bool Unseen { get; init; }
+  required int Number { get; init; }
+  required string State { get; init; }
+  string? Title { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries.EntryListSortRequestModel
+  Guid? Field { get; init; }
+  bool Descending { get; init; }
+  ctor()
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries.EntryListViewResponseModel
+  ctor()
+  required IReadOnlyList<EntryFilterSetResponseModel> FilterSets { get; init; }
+  required IReadOnlyList<EntryListFieldResponseModel> Fields { get; init; }
+  required IReadOnlyList<Guid> Columns { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries.EntryLocationResponseModel
+  ctor()
+  required Guid? Form { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries.EntryMoveAsksResponseModel
+  ctor()
+  required IReadOnlyList<EntryFullOptionResponseModel> Full { get; init; }
+  required IReadOnlyList<EntryHeldAnswerResponseModel> Held { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries.EntryNoteRequestModel
+  ctor()
+  string Body { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries.EntryNoteResponseModel
+  ctor()
+  required DateTimeOffset Created { get; init; }
+  required DateTimeOffset? Edited { get; init; }
+  required bool Mine { get; init; }
+  required int Id { get; init; }
+  required string Author { get; init; }
+  required string Body { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries.EntryPanelAnswerResponseModel
+  ctor()
+  required EntryPanelEditResponseModel? Edit { get; init; }
+  required Guid Field { get; init; }
+  required IReadOnlyList<EntryPanelFileResponseModel> Files { get; init; }
+  required IReadOnlyList<string> Texts { get; init; }
+  required bool Masked { get; init; }
+  required bool NotKept { get; init; }
+  required bool Removed { get; init; }
+  required bool Sensitive { get; init; }
+  required string Label { get; init; }
+  required string? Consent { get; init; }
+  required string? SignedName { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries.EntryPanelDetailsResponseModel
+  ctor()
+  required Guid? Member { get; init; }
+  required IReadOnlyList<string> SpamReasons { get; init; }
+  required int? Duration { get; init; }
+  required string Culture { get; init; }
+  required string? IpAddress { get; init; }
+  required string? MemberName { get; init; }
+  required string? Page { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries.EntryPanelEditResponseModel
+  ctor()
+  required IReadOnlyList<EntryListOptionResponseModel> Options { get; init; }
+  required IReadOnlyList<string> Values { get; init; }
+  required bool Required { get; init; }
+  required string Kind { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries.EntryPanelFileResponseModel
+  ctor()
+  required Guid Key { get; init; }
+  required bool Held { get; init; }
+  required bool Image { get; init; }
+  required long Size { get; init; }
+  required string ContentType { get; init; }
+  required string Name { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries.EntryPanelGroupResponseModel
+  ctor()
+  required Guid Key { get; init; }
+  required IReadOnlyList<EntryPanelAnswerResponseModel> Answers { get; init; }
+  required string? Title { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries.EntryPanelPageResponseModel
+  ctor()
+  required Guid Key { get; init; }
+  required IReadOnlyList<EntryPanelGroupResponseModel> Groups { get; init; }
+  required string? Title { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries.EntryPanelResponseModel
+  DateTimeOffset? HeldUntil { get; init; }
+  ctor()
+  required DateTimeOffset Received { get; init; }
+  required EntryPanelDetailsResponseModel Details { get; init; }
+  required Guid Form { get; init; }
+  required Guid Key { get; init; }
+  required IReadOnlyList<EntryPanelPageResponseModel> Pages { get; init; }
+  required IReadOnlyList<string> Permissions { get; init; }
+  required bool IsTest { get; init; }
+  required bool ManualApproval { get; init; }
+  required int Notes { get; init; }
+  required int Number { get; init; }
+  required string FormName { get; init; }
+  required string State { get; init; }
+  required string? Title { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries.EntryReceivedRequestModel
+  DateOnly? From { get; init; }
+  DateOnly? To { get; init; }
+  ctor()
+  string? Preset { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries.EntryRerunActionResponseModel
+  ctor()
+  required Guid Key { get; init; }
+  required string Trigger { get; init; }
+  required string Type { get; init; }
+  string? Name { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries.EntryRerunRequestModel
+  IReadOnlyList<Guid> Entries { get; init; }
+  bool Confirm { get; init; }
+  ctor()
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries.EntryRerunResponseModel
+  ctor()
+  required IReadOnlyList<EntryRerunActionResponseModel> Actions { get; init; }
+  required bool Queued { get; init; }
+  required int Entries { get; init; }
+  required int LeftOut { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries.EntryRevealRequestModel
+  Guid Field { get; init; }
+  ctor()
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries.EntrySpamEmptyRequestModel
+  bool Confirm { get; init; }
+  ctor()
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries.EntrySpamEmptyResponseModel
+  ctor()
+  required bool Deleted { get; init; }
+  required bool More { get; init; }
+  required int Entries { get; init; }
+  required int Files { get; init; }
+  required int Held { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries.EntryStateMovedResponseModel
+  ctor()
+  required Guid Key { get; init; }
+  required string State { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries.EntryStateRequestModel
+  IReadOnlyList<Guid> Entries { get; init; }
+  bool Check { get; init; }
+  bool Overbook { get; init; }
+  ctor()
+  string State { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries.EntryStateResponseModel
+  EntryMoveAsksResponseModel? Asks { get; init; }
+  ctor()
+  required DateTimeOffset? UndoUntilUtc { get; init; }
+  required Guid ChangeKey { get; init; }
+  required IReadOnlyList<EntryStateMovedResponseModel> Moved { get; init; }
+  required IReadOnlyList<Guid> Unmoved { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries.EntryStateUndoRequestModel
+  Guid ChangeKey { get; init; }
+  ctor()
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries.EntryTimelineChangeResponseModel
+  ctor()
+  required IReadOnlyList<string> After { get; init; }
+  required IReadOnlyList<string> Before { get; init; }
+  required bool Masked { get; init; }
+  required string Label { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries.EntryTimelineEventResponseModel
+  DateTimeOffset? Until { get; init; }
+  ctor()
+  required DateTimeOffset When { get; init; }
+  required IReadOnlyList<EntryTimelineChangeResponseModel> Changes { get; init; }
+  required int? Count { get; init; }
+  required long Id { get; init; }
+  required string Kind { get; init; }
+  required string? From { get; init; }
+  required string? Recipient { get; init; }
+  required string? To { get; init; }
+  required string? User { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries.EntryTimelineMailResponseModel
+  ctor()
+  required DateTimeOffset When { get; init; }
+  required long Id { get; init; }
+  required long? ActionRun { get; init; }
+  required string Kind { get; init; }
+  required string State { get; init; }
+  required string Subject { get; init; }
+  required string To { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries.EntryTimelineResponseModel
+  ctor()
+  required IReadOnlyList<EntryTimelineEventResponseModel> Events { get; init; }
+  required IReadOnlyList<EntryTimelineMailResponseModel> Mail { get; init; }
+  required IReadOnlyList<EntryTimelineRunResponseModel> Runs { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries.EntryTimelineRunResponseModel
+  ctor()
+  required DateTimeOffset When { get; init; }
+  required Guid Action { get; init; }
+  required int Attempts { get; init; }
+  required long Id { get; init; }
+  required string State { get; init; }
+  required string Type { get; init; }
+  required string? Error { get; init; }
+  required string? Name { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries.EntryUnseenResponseModel
+  ctor()
+  required bool More { get; init; }
+  required int Count { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries.RecentEntriesResponseModel
+  ctor()
+  required IReadOnlyList<RecentEntryResponseModel> Items { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries.RecentEntryResponseModel
+  ctor()
+  required DateTimeOffset Submitted { get; init; }
+  required Guid FormKey { get; init; }
+  required Guid Key { get; init; }
+  required bool Unseen { get; init; }
+  required int Number { get; init; }
+  required string FormName { get; init; }
+  string? Title { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Insights.InsightAnswerGridRowResponseModel
+  ctor()
+  required Guid Key { get; init; }
+  required IReadOnlyList<InsightAnswerOptionResponseModel> Options { get; init; }
+  required bool Removed { get; init; }
+  required long Answered { get; init; }
+  required string Label { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Insights.InsightAnswerNumbersResponseModel
+  InsightAnswerScaleResponseModel? Groups { get; init; }
+  ctor()
+  required double Average { get; init; }
+  required double Highest { get; init; }
+  required double Lowest { get; init; }
+  required double Median { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Insights.InsightAnswerOptionResponseModel
+  ctor()
+  double? Position { get; init; }
+  required bool Older { get; init; }
+  required bool Other { get; init; }
+  required long Count { get; init; }
+  required string Label { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Insights.InsightAnswerResponseModel
+  Guid? Parent { get; init; }
+  InsightAnswerNumbersResponseModel? Numbers { get; init; }
+  ctor()
+  required Guid Key { get; init; }
+  required IReadOnlyList<InsightAnswerGridRowResponseModel> Rows { get; init; }
+  required IReadOnlyList<InsightAnswerOptionResponseModel> Options { get; init; }
+  required IReadOnlyList<InsightAnswerTextResponseModel> Texts { get; init; }
+  required bool Removed { get; init; }
+  required bool Several { get; init; }
+  required long Answered { get; init; }
+  required long Ticked { get; init; }
+  required string Kind { get; init; }
+  required string Label { get; init; }
+  string? More { get; init; }
+  string? ParentLabel { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Insights.InsightAnswerScaleResponseModel
+  ctor()
+  required int Score { get; init; }
+  required long High { get; init; }
+  required long Low { get; init; }
+  required long Middle { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Insights.InsightAnswerTextResponseModel
+  ctor()
+  required DateTimeOffset Received { get; init; }
+  required Guid Entry { get; init; }
+  required string Text { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Insights.InsightAnswerTextsRequestModel
+  EntryListFilterRequestModel? Filter { get; init; }
+  ctor()
+  required string After { get; init; }
+  string? From { get; init; }
+  string? To { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Insights.InsightAnswerTextsResponseModel
+  ctor()
+  required IReadOnlyList<InsightAnswerTextResponseModel> Texts { get; init; }
+  string? More { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Insights.InsightAnswersRequestModel
+  EntryListFilterRequestModel? Filter { get; init; }
+  ctor()
+  string? From { get; init; }
+  string? To { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Insights.InsightAnswersResponseModel
+  ctor()
+  required IReadOnlyList<InsightAnswerResponseModel> Fields { get; init; }
+  required long Entries { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Insights.InsightFieldResponseModel
+  ctor()
+  required Guid Key { get; init; }
+  required long Stops { get; init; }
+  required string Kind { get; init; }
+  string? Label { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Insights.InsightGlanceItemResponseModel
+  ctor()
+  required Guid Key { get; init; }
+  required InsightTotalsResponseModel Before { get; init; }
+  required InsightTotalsResponseModel Totals { get; init; }
+  required string Name { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Insights.InsightGlanceResponseModel
+  ctor()
+  required IReadOnlyList<InsightGlanceItemResponseModel> Items { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Insights.InsightOriginResponseModel
+  ctor()
+  required Guid Key { get; init; }
+  required long Entries { get; init; }
+  string? Name { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Insights.InsightPageResponseModel
+  ctor()
+  required Guid Key { get; init; }
+  required long Reached { get; init; }
+  string? Name { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Insights.InsightPeriodResponseModel
+  ctor()
+  long? Before { get; init; }
+  required DateOnly Start { get; init; }
+  required long Entries { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Insights.InsightReportResponseModel
+  InsightTotalsResponseModel? Before { get; init; }
+  ctor()
+  long? MembersBefore { get; init; }
+  required IReadOnlyList<InsightFieldResponseModel> Fields { get; init; }
+  required IReadOnlyList<InsightOriginResponseModel> Origins { get; init; }
+  required IReadOnlyList<InsightPageResponseModel> Pages { get; init; }
+  required IReadOnlyList<InsightPeriodResponseModel> Periods { get; init; }
+  required IReadOnlyList<long> Hours { get; init; }
+  required IReadOnlyList<string> Tables { get; init; }
+  required InsightTotalsResponseModel Totals { get; init; }
+  required bool FormOn { get; init; }
+  required bool SiteOn { get; init; }
+  required long MemberEntries { get; init; }
+  required long Members { get; init; }
+  required string TimeZone { get; init; }
+  string? MedianCompletion { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Insights.InsightTablesRequestModel
+  IReadOnlyList<string>? Tables { get; init; }
+  ctor()
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Insights.InsightTablesResponseModel
+  ctor()
+  required IReadOnlyList<string> Tables { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Insights.InsightTotalsResponseModel
+  ctor()
+  double? Conversion { get; init; }
+  required long Entries { get; init; }
+  required long Spam { get; init; }
+  required long Starts { get; init; }
+  required long Views { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Privacy.PersonEntriesRequestModel
+  Guid? Member { get; init; }
+  ctor()
+  required IReadOnlyList<Guid> Entries { get; init; }
+  string? Email { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Privacy.PersonEntryResponseModel
+  DateTimeOffset? HeldUntil { get; init; }
+  ctor()
+  required DateTimeOffset Received { get; init; }
+  required Guid Key { get; init; }
+  required PersonFormResponseModel Form { get; init; }
+  required bool Test { get; init; }
+  required int Emails { get; init; }
+  required int Files { get; init; }
+  required int Number { get; init; }
+  required string State { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Privacy.PersonEraseFormResponseModel
+  ctor()
+  required Guid Key { get; init; }
+  required bool Trashed { get; init; }
+  required int Drafts { get; init; }
+  required int Emails { get; init; }
+  required int Entries { get; init; }
+  required int Files { get; init; }
+  required int Held { get; init; }
+  required string Name { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Privacy.PersonErasePreviewResponseModel
+  ctor()
+  required IReadOnlyList<PersonEraseFormResponseModel> Forms { get; init; }
+  required bool More { get; init; }
+  required int Drafts { get; init; }
+  required int Emails { get; init; }
+  required int Entries { get; init; }
+  required int Files { get; init; }
+  required int Held { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Privacy.PersonEraseRequestModel
+  Guid? Member { get; init; }
+  ctor()
+  required string Mode { get; init; }
+  string? Email { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Privacy.PersonErasedResponseModel
+  ctor()
+  required int Drafts { get; init; }
+  required int Emails { get; init; }
+  required int Entries { get; init; }
+  required int Files { get; init; }
+  required int Held { get; init; }
+  required long AuditId { get; init; }
+  required string Mode { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Privacy.PersonFormResponseModel
+  ctor()
+  required Guid Key { get; init; }
+  required bool Trashed { get; init; }
+  required string Name { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Privacy.PersonFoundResponseModel
+  ctor()
+  required IReadOnlyList<PersonEntryResponseModel> Entries { get; init; }
+  required bool More { get; init; }
+  required int Forms { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Privacy.PersonHeldResponseModel
+  ctor()
+  required int Entries { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Privacy.PersonHoldRequestModel
+  Guid? Member { get; init; }
+  ctor()
+  required DateTimeOffset Until { get; init; }
+  required IReadOnlyList<Guid> Entries { get; init; }
+  string? Email { get; init; }
+  string? Reason { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Privacy.PersonRequestModel
+  Guid? Member { get; init; }
+  ctor()
+  string? Email { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Privacy.RetentionDaysRequestModel
+  ctor()
+  required int Approved { get; init; }
+  required int Rejected { get; init; }
+  required int Spam { get; init; }
+  required int Submitted { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Privacy.RetentionDaysResponseModel
+  ctor()
+  required int Approved { get; init; }
+  required int Rejected { get; init; }
+  required int Spam { get; init; }
+  required int Submitted { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Privacy.RetentionDryRunFormResponseModel
+  ctor()
+  required Guid Key { get; init; }
+  required bool Trashed { get; init; }
+  required long Entries { get; init; }
+  required long Files { get; init; }
+  required long Held { get; init; }
+  required string Name { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Privacy.RetentionDryRunRequestModel
+  RetentionDaysRequestModel? Days { get; init; }
+  ctor()
+  int Span { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Privacy.RetentionDryRunResponseModel
+  ctor()
+  required IReadOnlyList<RetentionDryRunFormResponseModel> Forms { get; init; }
+  required int Span { get; init; }
+  required long Entries { get; init; }
+  required long Files { get; init; }
+  required long Held { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Privacy.RetentionFormResponseModel
+  ctor()
+  int? Approved { get; init; }
+  int? Rejected { get; init; }
+  int? Spam { get; init; }
+  int? StoreDays { get; init; }
+  int? Submitted { get; init; }
+  required Guid Key { get; init; }
+  required bool Trashed { get; init; }
+  required string Name { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Privacy.RetentionResponseModel
+  ctor()
+  required IReadOnlyList<RetentionFormResponseModel> Forms { get; init; }
+  required RetentionDaysResponseModel Days { get; init; }
+  required bool KeepForGood { get; init; }
+  required int Version { get; init; }
+  required string KeepForGoodKey { get; init; }
+  string? LockedBy { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Settings.SettingsLockResponseModel
+  ctor()
+  required string ConfigurationKey { get; init; }
+  required string Field { get; init; }
+  required string Kind { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Setup.ChecklistItemResponseModel
+  ctor()
+  required bool CanDo { get; init; }
+  required bool Done { get; init; }
+  required string Step { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Setup.ChecklistResponseModel
+  Guid? PreviewForm { get; init; }
+  ctor()
+  required IReadOnlyList<ChecklistItemResponseModel> Items { get; init; }
+  required bool Complete { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Setup.FormBlockPartResponseModel
+  ctor()
+  required Guid Key { get; init; }
+  required bool Created { get; init; }
+  required string Name { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Setup.FormBlockTypesResponseModel
+  ctor()
+  required FormBlockPartResponseModel DataType { get; init; }
+  required FormBlockPartResponseModel ElementType { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Setup.HealthFindingResponseModel
+  ctor()
+  required bool CoversEmail { get; init; }
+  required string Code { get; init; }
+  required string Message { get; init; }
+  string? Link { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Setup.HealthResponseModel
+  ctor()
+  required IReadOnlyList<HealthFindingResponseModel> Findings { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Setup.MyPermissionsResponseModel
+  ctor()
+  required IReadOnlyList<string> Anywhere { get; init; }
+  required IReadOnlyList<string> Global { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Setup.TestEmailRequestModel
+  Guid? Layout { get; init; }
+  Guid? Site { get; init; }
+  ctor()
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Setup.TestEmailResponseModel
+  ctor()
+  required string To { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.Picker.FormPickerConfiguration
+  Guid? RedirectKey { get; }
+  IReadOnlyList<string>? AllowedFolders { get; set; }
+  IReadOnlyList<string>? AllowedForms { get; set; }
+  IReadOnlySet<Guid> Folders { get; }
+  IReadOnlySet<Guid> Forms { get; }
+  bool Allows(Guid form, IEnumerable<Guid> folders)
+  bool Multiple { get; set; }
+  ctor()
+  string? Redirect { get; set; }
+  string? Theme { get; set; }
+  string? ThemeAlias { get; }
+
+public sealed record Jiron.Umbraco.FormBuilder.Web.Picker.FormPickerDeliveryMarker
+  Guid Form { get; init; }
+  Guid? Redirect { get; init; }
+  bool Equals(FormPickerDeliveryMarker? other)
+  bool Expand { get; init; }
+  const string ExpandName = "expand"
+  const string FormName = "jfbForm"
+  const string RedirectName = "redirect"
+  const string ThemeName = "theme"
+  ctor(Guid Form, bool Expand, string? Theme = default, Guid? Redirect = default)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(FormPickerDeliveryMarker? left, FormPickerDeliveryMarker? right)
+  static bool op_Inequality(FormPickerDeliveryMarker? left, FormPickerDeliveryMarker? right)
+  string? Theme { get; init; }
+  void Deconstruct(out Guid Form, out bool Expand, out string? Theme, out Guid? Redirect)
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.Picker.FormPickerPropertyEditor : DataEditor
+  const string EditorAlias = "Jiron.FormBuilder.FormPicker"
+  const string EditorUiAlias = "Jiron.FormBuilder.PropertyEditorUi.FormPicker"
+  ctor(IDataValueEditorFactory dataValueEditorFactory, IServiceProvider services)
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.Picker.FormPickerValueConverter : PropertyValueConverterBase, IDeliveryApiPropertyValueConverter
+  PropertyCacheLevel GetDeliveryApiPropertyCacheLevel(IPublishedPropertyType propertyType)
+  PropertyCacheLevel GetDeliveryApiPropertyCacheLevelForExpansion(IPublishedPropertyType propertyType)
+  Type GetDeliveryApiPropertyValueType(IPublishedPropertyType propertyType)
+  ctor()
+  object? ConvertIntermediateToDeliveryApiObject(IPublishedElement owner, IPublishedPropertyType propertyType, PropertyCacheLevel referenceCacheLevel, object? inter, bool preview, bool expanding)
+  override PropertyCacheLevel GetPropertyCacheLevel(IPublishedPropertyType propertyType)
+  override Type GetPropertyValueType(IPublishedPropertyType propertyType)
+  override bool IsConverter(IPublishedPropertyType propertyType)
+  override object? ConvertIntermediateToObject(IPublishedElement owner, IPublishedPropertyType propertyType, PropertyCacheLevel referenceCacheLevel, object? inter, bool preview)
+  override object? ConvertSourceToIntermediate(IPublishedElement owner, IPublishedPropertyType propertyType, object? source, bool preview)
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.Rendering.FormBuilderAssetsTagHelper : TagHelper
+  ViewContext ViewContext { get; set; }
+  ctor()
+  override void Process(TagHelperContext context, TagHelperOutput output)
+  string? Nonce { get; set; }
+
+public sealed record Jiron.Umbraco.FormBuilder.Web.Rendering.FormBuilderFormReference
+  Guid Key { get; init; }
+  Guid? Redirect { get; init; }
+  bool Equals(FormBuilderFormReference? other)
+  ctor(Guid Key)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(FormBuilderFormReference? left, FormBuilderFormReference? right)
+  static bool op_Inequality(FormBuilderFormReference? left, FormBuilderFormReference? right)
+  string? Theme { get; init; }
+  void Deconstruct(out Guid Key)
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.Rendering.FormBuilderFormViewComponent : ViewComponent
+  Task<IViewComponentResult> InvokeAsync(object? form, bool? assets = default, IReadOnlyDictionary<string, string?>? context = default, string? theme = default)
+  const string Name = "FormBuilderForm"
+  ctor()
+
+public static class Jiron.Umbraco.FormBuilder.Web.Rendering.FormBuilderHtml
+  static IHtmlContent Attribute(string name, string? value)
+  static IHtmlContent Flag(string name, bool on)
+  static IHtmlContent Label(FieldViewModel field)
+  static IHtmlContent Mark(FieldViewModel field)
+  static IHtmlContent Mark(GridRowModel row)
+  static IHtmlContent Mark(PartModel part)
+  static IHtmlContent Text(FieldViewModel field, string name)
+  static IHtmlContent Text(GroupViewModel group, string name)
+  static IHtmlContent Text(PageViewModel page, string name)
+  static IHtmlContent Text(ProgressStepModel step)
+  static string? Ids(params string?[] ids)
+
+public sealed record Jiron.Umbraco.FormBuilder.Web.Rendering.FormBuilderRenderRequest
+  IReadOnlyDictionary<string, string?>? Context { get; init; }
+  bool Equals(FormBuilderRenderRequest? other)
+  bool? Assets { get; init; }
+  ctor(object Form)
+  object Form { get; init; }
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(FormBuilderRenderRequest? left, FormBuilderRenderRequest? right)
+  static bool op_Inequality(FormBuilderRenderRequest? left, FormBuilderRenderRequest? right)
+  string? Theme { get; init; }
+  void Deconstruct(out object Form)
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.Rendering.FormBuilderRenderTagHelper : TagHelper
+  FormBuilderFormReference? Picked { get; set; }
+  IDictionary<string, string?> Context { get; set; }
+  ViewContext ViewContext { get; set; }
+  bool? Assets { get; set; }
+  ctor(IViewComponentHelper components)
+  override Task ProcessAsync(TagHelperContext context, TagHelperOutput output)
+  string? Form { get; set; }
+  string? Theme { get; set; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.Rendering.FormBuilderSurfaceController : SurfaceController
+  Task<IActionResult> Post()
+  const string ActionName = "Post"
+  const string ControllerName = "FormBuilderSurface"
+  ctor(IUmbracoContextAccessor umbracoContextAccessor, IUmbracoDatabaseFactory databaseFactory, ServiceContext services, AppCaches appCaches, IProfilingLogger profilingLogger, IPublishedUrlProvider publishedUrlProvider)
+
+public interface Jiron.Umbraco.FormBuilder.Web.Rendering.IFormBuilderCspNonceProvider
+  string? GetNonce(HttpContext httpContext)
+
+public interface Jiron.Umbraco.FormBuilder.Web.Rendering.IFormBuilderRenderer
+  Task<IHtmlContent?> RenderAsync(HttpContext httpContext, FormBuilderRenderRequest request, CancellationToken cancellationToken = default)
+
+public sealed record Jiron.Umbraco.FormBuilder.Web.Rendering.Models.AffixModel
+  bool Equals(AffixModel? other)
+  ctor(string Text, string Id)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(AffixModel? left, AffixModel? right)
+  static bool op_Inequality(AffixModel? left, AffixModel? right)
+  string Id { get; init; }
+  string Text { get; init; }
+  void Deconstruct(out string Text, out string Id)
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.Rendering.Models.CalculationControlModel
+  ctor()
+  required string Text { get; init; }
+
+public sealed record Jiron.Umbraco.FormBuilder.Web.Rendering.Models.CaptchaControlModel
+  bool Equals(CaptchaControlModel? other)
+  ctor(string Provider)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(CaptchaControlModel? left, CaptchaControlModel? right)
+  static bool op_Inequality(CaptchaControlModel? left, CaptchaControlModel? right)
+  string Provider { get; init; }
+  void Deconstruct(out string Provider)
+
+public sealed record Jiron.Umbraco.FormBuilder.Web.Rendering.Models.ChoiceImageModel
+  bool Equals(ChoiceImageModel? other)
+  ctor(string Url, int? Width, int? Height)
+  int? Height { get; init; }
+  int? Width { get; init; }
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(ChoiceImageModel? left, ChoiceImageModel? right)
+  static bool op_Inequality(ChoiceImageModel? left, ChoiceImageModel? right)
+  string Url { get; init; }
+  void Deconstruct(out string Url, out int? Width, out int? Height)
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.Rendering.Models.ChoiceModel
+  ChoiceImageModel? Image { get; init; }
+  bool IsChecked { get; init; }
+  ctor()
+  required string Id { get; init; }
+  required string Label { get; init; }
+  required string Value { get; init; }
+  string DescriptionId { get; }
+  string? Description { get; init; }
+  string? HiddenText { get; init; }
+
+public sealed record Jiron.Umbraco.FormBuilder.Web.Rendering.Models.ChoicesCascadeModel
+  ChoiceModel Sample { get; init; }
+  bool Equals(ChoicesCascadeModel? other)
+  ctor(ChoiceModel Sample, string None, string Unavailable)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(ChoicesCascadeModel? left, ChoicesCascadeModel? right)
+  static bool op_Inequality(ChoicesCascadeModel? left, ChoicesCascadeModel? right)
+  string None { get; init; }
+  string Unavailable { get; init; }
+  void Deconstruct(out ChoiceModel Sample, out string None, out string Unavailable)
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.Rendering.Models.ChoicesControlModel
+  ChoicesCascadeModel? Cascade { get; init; }
+  OtherChoiceModel? Other { get; init; }
+  ScaleEndsModel? Ends { get; init; }
+  ctor()
+  required IReadOnlyList<ChoiceModel> Choices { get; init; }
+  required string CssClass { get; init; }
+  required string InputType { get; init; }
+  string? Empty { get; init; }
+
+public sealed record Jiron.Umbraco.FormBuilder.Web.Rendering.Models.ConfirmInputModel
+  bool Equals(ConfirmInputModel? other)
+  ctor(string Label, string Id, string Name, string Value)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(ConfirmInputModel? left, ConfirmInputModel? right)
+  static bool op_Inequality(ConfirmInputModel? left, ConfirmInputModel? right)
+  string Id { get; init; }
+  string Label { get; init; }
+  string Name { get; init; }
+  string Value { get; init; }
+  void Deconstruct(out string Label, out string Id, out string Name, out string Value)
+
+public sealed record Jiron.Umbraco.FormBuilder.Web.Rendering.Models.CounterModel
+  bool Equals(CounterModel? other)
+  ctor(string Text, string Id, int Limit, string Left, string LeftOne, string Over, string OverOne)
+  int Limit { get; init; }
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(CounterModel? left, CounterModel? right)
+  static bool op_Inequality(CounterModel? left, CounterModel? right)
+  string Id { get; init; }
+  string Left { get; init; }
+  string LeftOne { get; init; }
+  string Over { get; init; }
+  string OverOne { get; init; }
+  string Text { get; init; }
+  void Deconstruct(out string Text, out string Id, out int Limit, out string Left, out string LeftOne, out string Over, out string OverOne)
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.Rendering.Models.CustomControlModel
+  IReadOnlyDictionary<string, IReadOnlyList<string>> Parts { get; init; }
+  JsonElement? Settings { get; init; }
+  ctor()
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.Rendering.Models.DateControlModel
+  ctor()
+  required string InputType { get; init; }
+  string? Max { get; init; }
+  string? Min { get; init; }
+  string? Step { get; init; }
+
+public sealed record Jiron.Umbraco.FormBuilder.Web.Rendering.Models.ErrorLinkModel
+  bool Equals(ErrorLinkModel? other)
+  ctor(string Message, string Target)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(ErrorLinkModel? left, ErrorLinkModel? right)
+  static bool op_Inequality(ErrorLinkModel? left, ErrorLinkModel? right)
+  string Message { get; init; }
+  string Target { get; init; }
+  void Deconstruct(out string Message, out string Target)
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.Rendering.Models.ErrorSummaryViewModel
+  ThemeClassesModel Classes { get; init; }
+  ctor()
+  required IReadOnlyList<ErrorLinkModel> Errors { get; init; }
+  required string Heading { get; init; }
+  required string HeadingId { get; init; }
+
+public enum Jiron.Umbraco.FormBuilder.Web.Rendering.Models.FieldLabelElement
+  None = 0
+  Label = 1
+  Legend = 2
+  Choice = 3
+
+public enum Jiron.Umbraco.FormBuilder.Web.Rendering.Models.FieldMark
+  None = 0
+  Optional = 1
+  Required = 2
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.Rendering.Models.FieldViewModel
+  FieldMark Mark { get; init; }
+  IReadOnlyList<string> Values { get; init; }
+  IReadOnlySet<string> Recalling { get; init; }
+  ThemeClassesModel Classes { get; init; }
+  bool FillsDefault { get; init; }
+  bool HideLabel { get; init; }
+  bool Hooks { get; init; }
+  bool IsDisabled { get; init; }
+  bool IsHidden { get; init; }
+  bool IsMarkShown { get; init; }
+  bool IsRequired { get; init; }
+  ctor()
+  object? Control { get; init; }
+  required FieldLabelElement LabelElement { get; init; }
+  required Guid Key { get; init; }
+  required string ControlView { get; init; }
+  required string CssClass { get; init; }
+  required string ErrorId { get; init; }
+  required string HelpId { get; init; }
+  required string Id { get; init; }
+  required string Name { get; init; }
+  required string Type { get; init; }
+  string MarkText { get; init; }
+  string Value { get; }
+  string? Alias { get; init; }
+  string? Autocomplete { get; init; }
+  string? ChoiceErrorId { get; init; }
+  string? DescribedBy { get; init; }
+  string? Error { get; init; }
+  string? Help { get; init; }
+  string? Label { get; init; }
+  string? MarkShownWhile { get; init; }
+  string? MarkSpoken { get; init; }
+  string? Placeholder { get; init; }
+
+public sealed record Jiron.Umbraco.FormBuilder.Web.Rendering.Models.FileCameraModel
+  bool Equals(FileCameraModel? other)
+  ctor(string Id, string Text)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(FileCameraModel? left, FileCameraModel? right)
+  static bool op_Inequality(FileCameraModel? left, FileCameraModel? right)
+  string Id { get; init; }
+  string Text { get; init; }
+  void Deconstruct(out string Id, out string Text)
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.Rendering.Models.FileControlModel
+  FileCameraModel? Camera { get; init; }
+  IReadOnlyList<KeptFileModel> Kept { get; init; }
+  bool DropZone { get; init; }
+  bool Multiple { get; init; }
+  bool Thumbnails { get; init; }
+  ctor()
+  required FileUploadWordsModel Upload { get; init; }
+  required string Accept { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.Rendering.Models.FileUploadWordsModel
+  ctor()
+  required string Choose { get; init; }
+  required string Kilobytes { get; init; }
+  required string Later { get; init; }
+  required string List { get; init; }
+  required string Megabytes { get; init; }
+  required string Remove { get; init; }
+  required string Stop { get; init; }
+  required string Stopped { get; init; }
+  required string TryAgain { get; init; }
+  required string TryAgainFor { get; init; }
+  required string Uploaded { get; init; }
+  required string Uploading { get; init; }
+  string? Drag { get; init; }
+
+public enum Jiron.Umbraco.FormBuilder.Web.Rendering.Models.FormDisplay
+  Form = 0
+  Notice = 1
+  Outcome = 2
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.Rendering.Models.FormSendingModel
+  NavigationViewModel? Moves { get; init; }
+  ctor()
+  required IReadOnlyList<NoticeViewModel> Notices { get; init; }
+  required OutcomeViewModel Outcome { get; init; }
+  required string SendingText { get; init; }
+  required string ThanksText { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.Rendering.Models.FormViewModel
+  ErrorSummaryViewModel? ErrorSummary { get; init; }
+  ErrorSummaryViewModel? ErrorSummaryTemplate { get; init; }
+  FormSendingModel? Sending { get; init; }
+  Guid? ContentKey { get; init; }
+  Guid? InsightsReached { get; init; }
+  HoneypotModel? Honeypot { get; init; }
+  IHtmlContent? RequiredNote { get; init; }
+  IReadOnlyList<HiddenInputModel> ContextValues { get; init; }
+  IReadOnlyList<HiddenInputModel> PostValues { get; init; }
+  IReadOnlyList<PageViewModel> Pages { get; init; }
+  NavigationButtonModel? DefaultButton { get; init; }
+  NavigationViewModel? Navigation { get; init; }
+  NoticeViewModel? Notice { get; init; }
+  OutcomeViewModel? Outcome { get; init; }
+  ProgressViewModel? Progress { get; init; }
+  ThemeClassesModel Classes { get; init; }
+  bool AsksAtOnce { get; init; }
+  bool Hooks { get; init; }
+  bool Insights { get; init; }
+  bool InsightsContinued { get; init; }
+  bool IsRequiredNoteHidden { get; init; }
+  const int ContractVersion = 1
+  ctor()
+  required FormDisplay Display { get; init; }
+  required FormViewPaths Views { get; init; }
+  required Guid Key { get; init; }
+  required IHtmlContent ModelData { get; init; }
+  required int Revision { get; init; }
+  required string Alias { get; init; }
+  required string ApiBase { get; init; }
+  required string CssClass { get; init; }
+  required string Culture { get; init; }
+  required string Direction { get; init; }
+  required string Id { get; init; }
+  required string? Action { get; init; }
+  string? EncodingType { get; init; }
+  string? InsightsUrl { get; }
+  string? Placement { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.Rendering.Models.FormViewPaths
+  ctor()
+  required string ErrorSummary { get; init; }
+  required string Field { get; init; }
+  required string Group { get; init; }
+  required string Navigation { get; init; }
+  required string Notice { get; init; }
+  required string Outcome { get; init; }
+  required string Page { get; init; }
+  required string Progress { get; init; }
+  required string Summary { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.Rendering.Models.GridControlModel
+  ctor()
+  required IReadOnlyList<GridRowModel> Rows { get; init; }
+  required IReadOnlyList<string> Columns { get; init; }
+  required string InputType { get; init; }
+  string? Empty { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.Rendering.Models.GridRowModel
+  FieldMark Mark { get; init; }
+  bool FollowsRequired { get; init; }
+  bool IsMarkShown { get; init; }
+  bool IsRequired { get; init; }
+  ctor()
+  required Guid Key { get; init; }
+  required IReadOnlyList<ChoiceModel> Choices { get; init; }
+  required string Label { get; init; }
+  required string Name { get; init; }
+  string MarkText { get; init; }
+  string? ErrorId { get; init; }
+  string? MarkShownWhile { get; init; }
+  string? MarkSpoken { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.Rendering.Models.GroupViewModel
+  IHtmlContent? Description { get; init; }
+  IReadOnlySet<string> Recalling { get; init; }
+  ThemeClassesModel Classes { get; init; }
+  ctor()
+  required FormViewPaths Views { get; init; }
+  required Guid Key { get; init; }
+  required IReadOnlyList<FieldViewModel> Fields { get; init; }
+  required bool IsHidden { get; init; }
+  required string CssClass { get; init; }
+  required string DescriptionId { get; init; }
+  string? Title { get; init; }
+
+public sealed record Jiron.Umbraco.FormBuilder.Web.Rendering.Models.HeadingControlModel
+  bool Equals(HeadingControlModel? other)
+  ctor(string Text, int Level)
+  int Level { get; init; }
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(HeadingControlModel? left, HeadingControlModel? right)
+  static bool op_Inequality(HeadingControlModel? left, HeadingControlModel? right)
+  string Text { get; init; }
+  void Deconstruct(out string Text, out int Level)
+
+public sealed record Jiron.Umbraco.FormBuilder.Web.Rendering.Models.HiddenInputModel
+  bool Equals(HiddenInputModel? other)
+  ctor(string Name, string Value)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(HiddenInputModel? left, HiddenInputModel? right)
+  static bool op_Inequality(HiddenInputModel? left, HiddenInputModel? right)
+  string Name { get; init; }
+  string Value { get; init; }
+  void Deconstruct(out string Name, out string Value)
+
+public sealed record Jiron.Umbraco.FormBuilder.Web.Rendering.Models.HintModel
+  bool Equals(HintModel? other)
+  ctor(string Text, string Id)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(HintModel? left, HintModel? right)
+  static bool op_Inequality(HintModel? left, HintModel? right)
+  string Id { get; init; }
+  string Text { get; init; }
+  void Deconstruct(out string Text, out string Id)
+
+public sealed record Jiron.Umbraco.FormBuilder.Web.Rendering.Models.HoneypotModel
+  bool Equals(HoneypotModel? other)
+  ctor(string Id, string Name, string Label)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(HoneypotModel? left, HoneypotModel? right)
+  static bool op_Inequality(HoneypotModel? left, HoneypotModel? right)
+  string Id { get; init; }
+  string Label { get; init; }
+  string Name { get; init; }
+  void Deconstruct(out string Id, out string Name, out string Label)
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.Rendering.Models.ImageControlModel
+  ctor()
+  int? Height { get; init; }
+  int? Width { get; init; }
+  required string Alt { get; init; }
+  required string Size { get; init; }
+  string? Url { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.Rendering.Models.KeptFileModel
+  ctor()
+  required string Id { get; init; }
+  required string Label { get; init; }
+  required string Token { get; init; }
+
+public static class Jiron.Umbraco.FormBuilder.Web.Rendering.Models.MarkWhile
+  const string Optional = "optional"
+  const string Required = "required"
+
+public sealed record Jiron.Umbraco.FormBuilder.Web.Rendering.Models.NavigationButtonModel
+  bool Equals(NavigationButtonModel? other)
+  ctor(string Label, string Value)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(NavigationButtonModel? left, NavigationButtonModel? right)
+  static bool op_Inequality(NavigationButtonModel? left, NavigationButtonModel? right)
+  string Label { get; init; }
+  string Value { get; init; }
+  void Deconstruct(out string Label, out string Value)
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.Rendering.Models.NavigationViewModel
+  NavigationButtonModel? Back { get; init; }
+  NavigationButtonModel? Next { get; init; }
+  NavigationButtonModel? Submit { get; init; }
+  ThemeClassesModel Classes { get; init; }
+  ctor()
+
+public enum Jiron.Umbraco.FormBuilder.Web.Rendering.Models.NoticeKind
+  NotOpenYet = 0
+  Closed = 1
+  Full = 2
+  Message = 3
+  SignIn = 4
+  MemberGroups = 5
+  MigrationsPending = 6
+  AlreadySent = 7
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.Rendering.Models.NoticeViewModel
+  ThemeClassesModel Classes { get; init; }
+  ctor()
+  required IHtmlContent Text { get; init; }
+  required NoticeKind Kind { get; init; }
+  string CssClass { get; init; }
+  string? Code { get; init; }
+  string? Heading { get; init; }
+  string? HeadingId { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.Rendering.Models.NumberControlModel
+  AffixModel? Prefix { get; init; }
+  AffixModel? Suffix { get; init; }
+  ctor()
+  required string InputType { get; init; }
+  string? InputMode { get; init; }
+  string? Max { get; init; }
+  string? Min { get; init; }
+  string? Step { get; init; }
+
+public sealed record Jiron.Umbraco.FormBuilder.Web.Rendering.Models.OtherChoiceModel
+  ChoiceModel Choice { get; init; }
+  bool Equals(OtherChoiceModel? other)
+  ctor(ChoiceModel Choice, string TextLabel, string TextId, string TextName, string Text)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(OtherChoiceModel? left, OtherChoiceModel? right)
+  static bool op_Inequality(OtherChoiceModel? left, OtherChoiceModel? right)
+  string Text { get; init; }
+  string TextId { get; init; }
+  string TextLabel { get; init; }
+  string TextName { get; init; }
+  void Deconstruct(out ChoiceModel Choice, out string TextLabel, out string TextId, out string TextName, out string Text)
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.Rendering.Models.OutcomeCopyModel
+  SummaryViewModel? Answers { get; init; }
+  ctor()
+  required OutcomeLinkModel Again { get; init; }
+  required string PrintText { get; init; }
+  required string ShownText { get; init; }
+
+public sealed record Jiron.Umbraco.FormBuilder.Web.Rendering.Models.OutcomeCountdownModel
+  bool Equals(OutcomeCountdownModel? other)
+  ctor(string One, string Other, string Stay)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(OutcomeCountdownModel? left, OutcomeCountdownModel? right)
+  static bool op_Inequality(OutcomeCountdownModel? left, OutcomeCountdownModel? right)
+  string One { get; init; }
+  string Other { get; init; }
+  string Stay { get; init; }
+  void Deconstruct(out string One, out string Other, out string Stay)
+
+public sealed record Jiron.Umbraco.FormBuilder.Web.Rendering.Models.OutcomeLinkModel
+  bool Equals(OutcomeLinkModel? other)
+  ctor(string Url, string Text)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(OutcomeLinkModel? left, OutcomeLinkModel? right)
+  static bool op_Inequality(OutcomeLinkModel? left, OutcomeLinkModel? right)
+  string Text { get; init; }
+  string Url { get; init; }
+  void Deconstruct(out string Url, out string Text)
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.Rendering.Models.OutcomeViewModel
+  IHtmlContent? Reference { get; init; }
+  OutcomeCopyModel? Copy { get; init; }
+  OutcomeCountdownModel? Countdown { get; init; }
+  OutcomeLinkModel? Continue { get; init; }
+  ThemeClassesModel Classes { get; init; }
+  bool IsPending { get; init; }
+  ctor()
+  required FormViewPaths Views { get; init; }
+  required IHtmlContent Message { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.Rendering.Models.PageViewModel
+  IHtmlContent? Description { get; init; }
+  IReadOnlySet<string> Recalling { get; init; }
+  SummaryViewModel? Summary { get; init; }
+  ThemeClassesModel Classes { get; init; }
+  ctor()
+  required FormViewPaths Views { get; init; }
+  required Guid Key { get; init; }
+  required IReadOnlyList<GroupViewModel> Groups { get; init; }
+  required bool IsCurrent { get; init; }
+  required bool IsHidden { get; init; }
+  string? Title { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.Rendering.Models.PartModel
+  FieldMark Mark { get; init; }
+  SelectControlModel? Countries { get; init; }
+  bool FollowsRequired { get; init; }
+  bool IsInvalid { get; init; }
+  bool IsMarkShown { get; init; }
+  bool IsRequired { get; init; }
+  bool IsWide { get; init; }
+  ctor()
+  required string Autocomplete { get; init; }
+  required string Id { get; init; }
+  required string Label { get; init; }
+  required string Name { get; init; }
+  required string Part { get; init; }
+  string MarkText { get; init; }
+  string Value { get; init; }
+  string? MarkShownWhile { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.Rendering.Models.PartsControlModel
+  ctor()
+  required IReadOnlyList<PartModel> Parts { get; init; }
+
+public sealed record Jiron.Umbraco.FormBuilder.Web.Rendering.Models.ProgressStepModel
+  Guid Page { get; init; }
+  bool Equals(ProgressStepModel? other)
+  bool IsCurrent { get; init; }
+  bool IsDone { get; init; }
+  bool IsHidden { get; init; }
+  bool IsUntitled { get; init; }
+  bool RecallsTitle { get; init; }
+  ctor(string Title, bool IsCurrent, bool IsDone)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(ProgressStepModel? left, ProgressStepModel? right)
+  static bool op_Inequality(ProgressStepModel? left, ProgressStepModel? right)
+  string Fallback { get; init; }
+  string Title { get; init; }
+  void Deconstruct(out string Title, out bool IsCurrent, out bool IsDone)
+
+public enum Jiron.Umbraco.FormBuilder.Web.Rendering.Models.ProgressStyle
+  Steps = 0
+  Bar = 1
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.Rendering.Models.ProgressViewModel
+  ThemeClassesModel Classes { get; init; }
+  bool IsHidden { get; init; }
+  ctor()
+  required IReadOnlyList<ProgressStepModel> Steps { get; init; }
+  required ProgressStyle Style { get; init; }
+  required int Current { get; init; }
+  required int Total { get; init; }
+  required string Label { get; init; }
+  required string Text { get; init; }
+  required string TextId { get; init; }
+  string? UntitledWords { get; init; }
+  string? Words { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.Rendering.Models.RankingControlModel
+  ctor()
+  required IReadOnlyList<RankingItemModel> Items { get; init; }
+  required int Ranked { get; init; }
+  required string Moved { get; init; }
+  required string Name { get; init; }
+  string? Empty { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.Rendering.Models.RankingItemModel
+  HiddenInputModel? Input { get; init; }
+  ctor()
+  int? Position { get; init; }
+  required HiddenInputModel Order { get; init; }
+  required RankingMoveModel Down { get; init; }
+  required RankingMoveModel Up { get; init; }
+  required string Id { get; init; }
+  required string Label { get; init; }
+
+public sealed record Jiron.Umbraco.FormBuilder.Web.Rendering.Models.RankingMoveModel
+  bool Equals(RankingMoveModel? other)
+  bool IsDisabled { get; init; }
+  ctor(string Label, string Value, bool IsDisabled, string? Id, string? Action)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(RankingMoveModel? left, RankingMoveModel? right)
+  static bool op_Inequality(RankingMoveModel? left, RankingMoveModel? right)
+  string Label { get; init; }
+  string Value { get; init; }
+  string? Action { get; init; }
+  string? Id { get; init; }
+  void Deconstruct(out string Label, out string Value, out bool IsDisabled, out string? Id, out string? Action)
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.Rendering.Models.RepeaterControlModel
+  ctor()
+  required HiddenInputModel RowCount { get; init; }
+  required IReadOnlyList<RepeaterRowModel> Rows { get; init; }
+  required RepeaterRowModel Template { get; init; }
+  required RowButtonModel Add { get; init; }
+  required int Least { get; init; }
+  required int Most { get; init; }
+  required string FieldView { get; init; }
+  required string FieldsCssClass { get; init; }
+  required string Legend { get; init; }
+  required string Removed { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.Rendering.Models.RepeaterRowModel
+  ctor()
+  required IReadOnlyList<FieldViewModel> Fields { get; init; }
+  required RowButtonModel Remove { get; init; }
+  required int Index { get; init; }
+  required string Id { get; init; }
+  required string Legend { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.Rendering.Models.RowButtonModel
+  bool IsHidden { get; init; }
+  ctor()
+  required string Text { get; init; }
+  required string Value { get; init; }
+  required string? Action { get; init; }
+  string? Context { get; init; }
+
+public sealed record Jiron.Umbraco.FormBuilder.Web.Rendering.Models.ScaleEndsModel
+  bool Equals(ScaleEndsModel? other)
+  ctor(string Low, string High)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(ScaleEndsModel? left, ScaleEndsModel? right)
+  static bool op_Inequality(ScaleEndsModel? left, ScaleEndsModel? right)
+  string High { get; init; }
+  string Low { get; init; }
+  void Deconstruct(out string Low, out string High)
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.Rendering.Models.SelectControlModel
+  HintModel? Hint { get; init; }
+  bool Cascades { get; init; }
+  bool Multiple { get; init; }
+  ctor()
+  int? Size { get; init; }
+  required IReadOnlyList<SelectOptionModel> Options { get; init; }
+  string? Empty { get; init; }
+  string? None { get; init; }
+  string? Prompt { get; init; }
+  string? Unavailable { get; init; }
+
+public sealed record Jiron.Umbraco.FormBuilder.Web.Rendering.Models.SelectOptionModel
+  bool Equals(SelectOptionModel? other)
+  bool IsSelected { get; init; }
+  ctor(string Value, string Label, bool IsSelected)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(SelectOptionModel? left, SelectOptionModel? right)
+  static bool op_Inequality(SelectOptionModel? left, SelectOptionModel? right)
+  string Label { get; init; }
+  string Value { get; init; }
+  void Deconstruct(out string Value, out string Label, out bool IsSelected)
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.Rendering.Models.SignatureControlModel
+  ctor()
+  int MaxLength { get; init; }
+  required SignaturePadModel Pad { get; init; }
+  required string Help { get; init; }
+  required string HelpId { get; init; }
+  required string Label { get; init; }
+  required string Name { get; init; }
+  string Value { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.Rendering.Models.SignaturePadModel
+  ctor()
+  required int Height { get; init; }
+  required int Width { get; init; }
+  required string ByHand { get; init; }
+  required string Clear { get; init; }
+  required string Drawn { get; init; }
+  required string Help { get; init; }
+  required string TypeInstead { get; init; }
+  required string UndoClear { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.Rendering.Models.SingleChoiceControlModel
+  HiddenInputModel? Wording { get; init; }
+  bool IsChecked { get; init; }
+  ctor()
+  required IHtmlContent Label { get; init; }
+  required string Value { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.Rendering.Models.SliderControlModel
+  ctor()
+  required string Max { get; init; }
+  required string Min { get; init; }
+  required string Step { get; init; }
+  required string Value { get; init; }
+  string? Shown { get; init; }
+  string? ValueText { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.Rendering.Models.SummaryAnswerModel
+  IReadOnlyList<IReadOnlyList<string>> Texts { get; init; }
+  SummaryChangeModel? Change { get; init; }
+  bool IsAnswered { get; }
+  bool IsEmpty { get; }
+  bool IsMasked { get; init; }
+  bool IsRows { get; init; }
+  ctor()
+  required Guid Field { get; init; }
+  required string EmptyText { get; init; }
+  required string ErrorId { get; init; }
+  required string HiddenText { get; init; }
+  required string Label { get; init; }
+  required string Mask { get; init; }
+  string? Error { get; init; }
+
+public sealed record Jiron.Umbraco.FormBuilder.Web.Rendering.Models.SummaryChangeModel
+  bool Equals(SummaryChangeModel? other)
+  ctor(string Id, string Value, string? Action, string Text, string Label)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(SummaryChangeModel? left, SummaryChangeModel? right)
+  static bool op_Inequality(SummaryChangeModel? left, SummaryChangeModel? right)
+  string Id { get; init; }
+  string Label { get; init; }
+  string Text { get; init; }
+  string Value { get; init; }
+  string? Action { get; init; }
+  void Deconstruct(out string Id, out string Value, out string? Action, out string Text, out string Label)
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.Rendering.Models.SummarySectionModel
+  ctor()
+  required Guid Page { get; init; }
+  required IReadOnlyList<SummaryAnswerModel> Answers { get; init; }
+  required string HeadingId { get; init; }
+  required string Title { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.Rendering.Models.SummaryViewModel
+  ThemeClassesModel Classes { get; init; }
+  ctor()
+  required IReadOnlyList<SummarySectionModel> Sections { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.Rendering.Models.TextAreaControlModel
+  CounterModel? Counter { get; init; }
+  bool AutoGrow { get; init; }
+  ctor()
+  required int Rows { get; init; }
+
+public sealed record Jiron.Umbraco.FormBuilder.Web.Rendering.Models.TextBlockControlModel
+  IHtmlContent Html { get; init; }
+  bool Equals(TextBlockControlModel? other)
+  bool IsEmpty { get; init; }
+  ctor(IHtmlContent Html)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(TextBlockControlModel? left, TextBlockControlModel? right)
+  static bool op_Inequality(TextBlockControlModel? left, TextBlockControlModel? right)
+  void Deconstruct(out IHtmlContent Html)
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.Rendering.Models.TextControlModel
+  AffixModel? Prefix { get; init; }
+  AffixModel? Suffix { get; init; }
+  ConfirmInputModel? Confirm { get; init; }
+  CounterModel? Counter { get; init; }
+  bool? Spellcheck { get; init; }
+  ctor()
+  required string InputType { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Web.Rendering.Models.ThemeClassesModel
+  static ThemeClassesModel None { get; }
+  string Affix { get; }
+  string Button { get; }
+  string ButtonIcon { get; }
+  string ButtonLink { get; }
+  string ButtonPrimary { get; }
+  string Choice { get; }
+  string Choices { get; }
+  string Control { get; }
+  string Counter { get; }
+  string Error { get; }
+  string ErrorSummary { get; }
+  string Help { get; }
+  string Label { get; }
+  string Navigation { get; }
+  string Outcome { get; }
+  string Page { get; }
+  string ProgressBar { get; }
+  string ProgressSteps { get; }
+  string Select { get; }
+  string SwitchChoice { get; }
+  string SwitchInput { get; }
+  string? AffixText { get; }
+  string? ChoiceInput { get; }
+  string? ChoiceLabel { get; }
+  string? FileInput { get; }
+  string? PartLabel { get; }
+  string? Range { get; }
+

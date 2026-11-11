@@ -33,6 +33,8 @@ export interface PageError {
   readonly rule?: string;
   /** For a validation rule's message at a grid's row, the row's key. */
   readonly gridRow?: string;
+  /** For `custom`, the words a site's handler gave the error (ADR-0233). */
+  readonly text?: string;
   /** For a name or an address, the parts the page marks invalid: the needed ones that are empty, else every part. */
   readonly parts?: readonly string[];
 }

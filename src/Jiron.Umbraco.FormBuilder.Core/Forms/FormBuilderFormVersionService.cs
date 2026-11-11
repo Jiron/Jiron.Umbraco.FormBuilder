@@ -14,7 +14,7 @@ namespace Jiron.Umbraco.FormBuilder.Core.Forms;
 /// a unit of work of their own, the cancelable notification, one unit with the change and its audit entry, then the
 /// notification that it happened. A missing form or version gives null.
 /// </summary>
-internal interface IFormBuilderFormVersionService
+public interface IFormBuilderFormVersionService
 {
     /// <summary>
     /// A page of a form's versions, newest first: the publishes, and the draft saves too when <paramref name="includeDrafts"/>,

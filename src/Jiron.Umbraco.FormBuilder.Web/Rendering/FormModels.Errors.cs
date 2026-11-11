@@ -23,6 +23,7 @@ internal sealed partial class FormModels
         {
             SubmissionProblems.Check => Text(check?.Message),
             SubmissionProblems.Rule => Text(build.Render.Shown.Form.ValidationRules.FirstOrDefault(rule => rule.Key == error.Rule)?.Message),
+            SubmissionProblems.Custom => error.Text is { Length: > 0 } said ? said : null,
             _ => Text(FieldMessageProperties.All.FirstOrDefault(property => property.Name == error.Code)?.Read(field.Messages)),
         };
         if (own is not null)
@@ -62,17 +63,25 @@ internal sealed partial class FormModels
         return (gridRow is null ? message : VisitorMessages.SummaryEntry(message, gridRow, null, culture, texts), VisitorMessages.SummaryEntry(message, label, row, culture, texts));
     }
 
-    // The error summary's links: the empty submission's first, linked to the first field of the page that takes an
-    // answer (the form without one), then the fields' in the page's order. A form without the summary still shows the
-    // empty submission's, which belongs to no field.
+    // The error summary's links: the empty submission's and a site's handler's errors at the form first, linked to the
+    // first field of the page that takes an answer (the form without one), then the fields' in the page's order. A form
+    // without the summary still shows those, which belong to no field; a handler's error without words shows the words
+    // of a check without its own message (ADR-0233).
     private static List<ErrorLinkModel> Summary(Build build, bool everyError, PageViewModel? current)
     {
         var links = new List<ErrorLinkModel>();
-        if (build.Post?.IsEmpty == true)
+        var formErrors = build.Post?.FormErrors ?? [];
+        if (build.Post?.IsEmpty == true || formErrors.Count > 0)
         {
             var first = current?.Groups.Where(group => !group.IsHidden).SelectMany(group => group.Fields)
                 .FirstOrDefault(field => !field.IsHidden && field.LabelElement != FieldLabelElement.None);
-            links.Add(new ErrorLinkModel(VisitorMessages.Words(build.Render.Culture, build.Render.Shown.Texts).Empty, first?.Id ?? build.Root.Id));
+            var words = VisitorMessages.Words(build.Render.Culture, build.Render.Shown.Texts);
+            if (build.Post?.IsEmpty == true)
+            {
+                links.Add(new ErrorLinkModel(words.Empty, first?.Id ?? build.Root.Id));
+            }
+
+            links.AddRange(formErrors.Select(text => new ErrorLinkModel(text is { Length: > 0 } said ? said : words.CheckThis, first?.Id ?? build.Root.Id)));
         }
 
         if (everyError)

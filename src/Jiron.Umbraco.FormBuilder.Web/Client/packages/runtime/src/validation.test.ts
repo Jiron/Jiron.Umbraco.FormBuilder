@@ -18,7 +18,7 @@ import type { FormModel, ModelField, ModelPage } from './model';
 import { readPage } from './page';
 import { contextOf } from './rules';
 import { ENGLISH } from './testing';
-import { checkPage, type CheckScope } from './validation';
+import { checkPage, placeOf, serverErrors, type CheckScope } from './validation';
 
 const NOW = Date.UTC(2026, 9, 30, 9, 15, 0);
 const clock = (): number => NOW;
@@ -191,6 +191,64 @@ describe('an empty submission', () => {
       { key: 'p1', groups: [{ key: 'g2', fields: [field('k-name', 'text', 'name', { required: true })] }] },
     ];
     expect((await checked(form, modelOf(required), 'page')).map((error) => error.code)).toEqual(['required']);
+  });
+});
+
+describe("a site's handler's errors (ADR-0233)", () => {
+  const pages: ModelPage[] = [
+    {
+      key: 'p1',
+      groups: [{ key: 'g1', fields: [field('k-name', 'text', 'name'), field('k-topic', 'text', 'topic')] }],
+    },
+  ];
+  const page = (): HTMLFormElement =>
+    formOf(
+      `<section data-jfb-page="p1"><div data-jfb-group="g1">${text('k-name', 'name', 'Name', 'Ada')}${text('k-topic', 'topic', 'Topic', 'Ideas')}</div></section>`,
+    );
+  const model = modelOf(pages);
+
+  it('show in their own words: at the form first, linked to the first field, then at their fields as written', async () => {
+    const shown = await serverErrors(
+      page(),
+      model,
+      engineOf(model, FORMULAS),
+      [
+        { code: 'custom', path: 'topic', text: 'Name a topic we know.' },
+        { code: 'custom', path: '', text: 'We take no ideas on Sundays.' },
+      ],
+      clock,
+    );
+    expect(shown).toEqual([
+      {
+        field: '',
+        row: null,
+        code: 'custom',
+        target: 'jfb-1-name',
+        message: 'We take no ideas on Sundays.',
+        link: 'We take no ideas on Sundays.',
+      },
+      expect.objectContaining({
+        field: 'k-topic',
+        code: 'custom',
+        target: 'jfb-1-topic',
+        message: 'Name a topic we know.',
+        link: 'Name a topic we know.',
+      }),
+    ]);
+  });
+
+  it('without words, show the words of a check without its own message', async () => {
+    const shown = await serverErrors(page(), model, engineOf(model, FORMULAS), [{ code: 'custom', path: '' }], clock);
+    expect(shown.map((error) => error.message)).toEqual([en.checkThis]);
+  });
+
+  it("keep a handler's words on the error its path names", () => {
+    expect(placeOf(model, { code: 'custom', path: 'topic', text: 'Taken.' })).toEqual({
+      field: 'k-topic',
+      row: null,
+      code: 'custom',
+      text: 'Taken.',
+    });
   });
 });
 

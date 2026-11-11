@@ -10,7 +10,7 @@ namespace Jiron.Umbraco.FormBuilder.Core.Definitions.Exchange;
 /// <param name="Rules">The rules.</param>
 /// <param name="Outcomes">The outcomes.</param>
 /// <param name="Actions">The actions.</param>
-internal sealed record DefinitionCounts(int Pages, int Fields, int Rules, int Outcomes, int Actions)
+public sealed record DefinitionCounts(int Pages, int Fields, int Rules, int Outcomes, int Actions)
 {
     /// <summary>The counts of a definition.</summary>
     public static DefinitionCounts Of(FormDefinition definition)

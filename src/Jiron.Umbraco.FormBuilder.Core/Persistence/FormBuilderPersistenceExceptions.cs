@@ -4,7 +4,7 @@ namespace Jiron.Umbraco.FormBuilder.Core.Persistence;
 /// Thrown when a write expected a version that changed meanwhile (optimistic concurrency, ADR-0002): someone else saved
 /// first, and nothing was written. The caller reloads and decides again; the API answers <c>409 concurrency_conflict</c>.
 /// </summary>
-internal sealed class FormBuilderConcurrencyException : Exception
+public sealed class FormBuilderConcurrencyException : Exception
 {
     /// <summary>Creates the exception.</summary>
     public FormBuilderConcurrencyException()
@@ -26,7 +26,7 @@ internal sealed class FormBuilderConcurrencyException : Exception
 }
 
 /// <summary>Why the database refused a change (ADR-0036). Each becomes one error code of the API.</summary>
-internal enum FormBuilderConflict
+public enum FormBuilderConflict
 {
     /// <summary>Another row already has this alias, in any letter case (ADR-0033).</summary>
     DuplicateAlias,
@@ -101,7 +101,7 @@ internal enum FormBuilderConflict
 /// Thrown when the database refused a change because of the state of other rows (<see cref="Conflict"/> says which);
 /// nothing was written. Missing rows are not conflicts: the repositories answer them with null or false.
 /// </summary>
-internal sealed class FormBuilderConflictException : Exception
+public sealed class FormBuilderConflictException : Exception
 {
     /// <summary>Creates the exception for <paramref name="conflict"/>.</summary>
     public FormBuilderConflictException(FormBuilderConflict conflict, string message)
@@ -125,7 +125,7 @@ internal sealed class FormBuilderConflictException : Exception
 /// Thrown when a read ran past its time budget and was stopped (ADR-0003, ADR-0039); the API answers
 /// <c>query_timeout</c>. The read ends without a result and is never run again; the gate is free for the next unit at once.
 /// </summary>
-internal sealed class FormBuilderQueryTimeoutException : Exception
+public sealed class FormBuilderQueryTimeoutException : Exception
 {
     /// <summary>Creates the exception.</summary>
     public FormBuilderQueryTimeoutException()

@@ -138,7 +138,11 @@ internal sealed class EntrySpamFolder(
 
         if (userKey is null && taken?.State is EntryState.Submitted or EntryState.Approved && form is not null)
         {
-            await entryEvents.TellArrivedAsync(taken, form.Alias);
+            await entryEvents.TellArrivedAsync(taken, form.Alias, EntryState.Spam);
+        }
+        else if (userKey is null && taken?.State is EntryState.Unverified && form is not null)
+        {
+            await entryEvents.TellMovedAsync(taken, form.Alias, EntryState.Spam);
         }
 
         return taken;

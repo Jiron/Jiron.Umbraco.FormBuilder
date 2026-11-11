@@ -13,6 +13,7 @@ using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Core.Privacy;
 using Jiron.Umbraco.FormBuilder.Core.Settings;
 using Jiron.Umbraco.FormBuilder.Logic;
+using Umbraco.Cms.Core.Events;
 
 namespace Jiron.Umbraco.FormBuilder.Core.Submissions;
 
@@ -43,6 +44,7 @@ internal sealed class FormSubmissions(
     SubmissionProtection protection,
     EntryDrafts drafts,
     VisitorAddresses addresses,
+    SubmittingHandlers handlers,
     TimeProvider time)
 {
     /// <summary>The most values a query name may hold.</summary>
@@ -100,8 +102,30 @@ internal sealed class FormSubmissions(
             return reading.Refusal;
         }
 
-        // One transaction (section 4.4, step 8).
+        // A site's handlers may refuse the entry in their own words before anything is written (ADR-0233).
         var (scope, page, read, wordings) = reading.Read;
+        var objections = await handlers.AskAsync(new EntrySubmittingNotification(new EventMessages())
+        {
+            FormKey = served.Form.Form.Key,
+            FormAlias = served.Form.Form.Alias,
+            Form = served.Form.Definition,
+            Version = served.Form.Version,
+            Culture = scope.Culture,
+            Answers = read.ForMergeTags,
+            Member = scope.Member,
+            Site = scope.Site,
+            Page = scope.Page,
+            Context = scope.Context,
+            IsSpam = reading.Verdict?.IsSpam == true,
+            IsTest = request.Preview is not null,
+            IsFromCode = request.ServerKey == FormBuilderEntryService.CodeKey,
+        });
+        if (objections.Count > 0)
+        {
+            return SubmissionResult.Invalid(new FieldPaths(served.Form.Definition).Problems(objections));
+        }
+
+        // One transaction (section 4.4, step 8).
         var draft = await drafts.FindAsync(request.ResumeToken, served.Row.Id, cancellationToken);
 
         // What the entry keeps of the address (ADR-0224): nothing from the preview or a server key, whose address is the
@@ -338,6 +362,12 @@ internal sealed class FormSubmissions(
     // members, and a transport with no challenges has none to read.
     private static async Task<SubmissionRefusal?> GateAsync(SubmissionRequest request, PublishedForm form)
     {
+        // A site's own code vouches for the member it names, as it runs on the site's server (ADR-0233).
+        if (request.ServerKey == FormBuilderEntryService.CodeKey)
+        {
+            return IsForMembers(form) && request.Preview is null && request.Member is null ? SubmissionRefusal.MemberRequired : null;
+        }
+
         var ticket = TicketOf(request);
         // A preview's ticket stands in for a test member, who has no key (ADR-0203).
         if (IsForMembers(form) && request.Preview is null)
@@ -920,6 +950,22 @@ internal sealed class FormSubmissions(
         // place keep their order (OrderBy is stable), so the reader's come before those added after it.
         public (int Field, int Row, int Child) Rank(SubmissionError error) =>
             _order.TryGetValue(error.Field, out var at) ? (at.Field, error.Row ?? -1, at.Child) : (int.MaxValue, 0, 0);
+
+        // A handler's errors (ADR-0233): those at the form first, then those at fields in the order of the form and its
+        // rows, each in the handler's words.
+        public IEnumerable<SubmissionProblem> Problems(IReadOnlyList<EntrySubmittingError> errors)
+        {
+            var keys = _fields.Where(pair => pair.Value.Alias.Length > 0).ToDictionary(pair => pair.Value.Alias, pair => pair.Key, StringComparer.Ordinal);
+            return errors
+                .Select((error, index) => (Error: error, Index: index, Key: error.Field is { } alias ? keys[alias] : (Guid?)null))
+                .OrderBy(item => item.Key is { } key ? _order[key] : (-1, -1))
+                .ThenBy(item => item.Error.Row ?? -1)
+                .ThenBy(item => item.Index)
+                .Select(item => new SubmissionProblem(
+                    SubmissionProblems.Custom,
+                    item.Key is { } key ? Of(key, item.Error.Row) : string.Empty,
+                    Text: item.Error.Message.Length == 0 ? null : item.Error.Message));
+        }
 
         public SubmissionProblem Problem(SubmissionError error)
         {

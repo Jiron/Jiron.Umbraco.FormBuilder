@@ -91,7 +91,7 @@ export function pageErrorsOf(
 
   /** The field an error shows at: the one that holds the control it names, else the field by its key. */
   const fieldAt = (error: ShownError): HTMLElement | null => {
-    if (error.code === 'empty') return null;
+    if (error.field === '') return null;
     const target = form.ownerDocument.getElementById(error.target);
     if (target !== null && form.contains(target)) return fieldOf(target);
     const group =
@@ -194,7 +194,7 @@ export function pageErrorsOf(
   // A form that posts between its pages leaves it to the server to show the first page that holds an error.
   const elsewhere = (errors: readonly ShownError[]): boolean =>
     errors.some((error) => {
-      if (error.code === 'empty') return false;
+      if (error.field === '') return false;
       const field = fieldAt(error);
       return field === null || offPage(field);
     });
@@ -202,20 +202,20 @@ export function pageErrorsOf(
   /** The errors of the first page that holds one, which a form that moves on the page shows now; null to leave them to the post. */
   const ofOnePage = (errors: readonly ShownError[]): readonly ShownError[] | null => {
     if (!elsewhere(errors)) return errors;
-    const fields = errors.filter((error) => error.code !== 'empty').map(fieldAt);
+    const fields = errors.filter((error) => error.field !== '').map(fieldAt);
     if (pages === undefined || fields.includes(null)) return null;
     const first = (fields as HTMLElement[]).reduce((one, other) =>
       (one.compareDocumentPosition(other) & FOLLOWING) !== 0 ? one : other,
     );
     pages.reveal(first);
-    return errors.filter((error) => error.code === 'empty' || !offPage(fieldAt(error)));
+    return errors.filter((error) => error.field === '' || !offPage(fieldAt(error)));
   };
 
   async function validate(scope: CheckScope): Promise<boolean> {
     const found = await safely(() => checkPage(form, model, engine, scope, clock));
     const words = found === null ? null : await safely(() => formWords(model));
     if (found === null || words === null) return true;
-    const here = found.filter((error) => error.code === 'empty' || fieldAt(error) !== null);
+    const here = found.filter((error) => error.field === '' || fieldAt(error) !== null);
     const shown = here.length === 0 ? null : ofOnePage(here);
     if (shown === null) return true;
     present(withKept(shown), scope, words);
@@ -246,11 +246,11 @@ export function pageErrorsOf(
     // The server's own stay as it marked them, as only it knows a grid's row.
     for (const [field, error] of shown) if (error.code !== SERVER) showFieldError(form, field, error);
     const listed =
-      model.form.settings?.validationSummary === false ? errors.filter((error) => error.code === 'empty') : errors;
+      model.form.settings?.validationSummary === false ? errors.filter((error) => error.field === '') : errors;
     if (listed.length > 0) showSummary(form, listed, words).focus();
     else {
       removeSummary(form);
-      const first = errors.find((error) => error.code !== 'empty');
+      const first = errors.find((error) => error.field !== '');
       if (first !== undefined) focusTarget(form, first.target);
     }
     form.dispatchEvent(
@@ -261,7 +261,7 @@ export function pageErrorsOf(
           alias: model.alias,
           scope,
           errors: errors.map((error) => ({
-            field: error.code === 'empty' ? null : (fieldAt(error)?.dataset['jfbAlias'] ?? null),
+            field: error.field === '' ? null : (fieldAt(error)?.dataset['jfbAlias'] ?? null),
             kind: error.code,
           })),
         },

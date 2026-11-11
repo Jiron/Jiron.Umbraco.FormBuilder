@@ -52,8 +52,9 @@ internal enum SubmissionRefusal
 /// </summary>
 /// <param name="Code">
 /// For a validation error, the field's kind of error as its <c>messages</c> name it (<c>required</c>,
-/// <c>maxLength</c>, ...), <see cref="SubmissionProblems.Check"/>, <see cref="SubmissionProblems.Rule"/> or
-/// <see cref="SubmissionProblems.Empty"/>; for a request, <see cref="SubmissionProblems.InvalidValue"/>.
+/// <c>maxLength</c>, ...), <see cref="SubmissionProblems.Check"/>, <see cref="SubmissionProblems.Rule"/>,
+/// <see cref="SubmissionProblems.Empty"/> or <see cref="SubmissionProblems.Custom"/>; for a request,
+/// <see cref="SubmissionProblems.InvalidValue"/>.
 /// </param>
 /// <param name="Path">
 /// The field's alias, <c>&lt;grid&gt;.&lt;rowKey&gt;</c> for a grid row, <c>&lt;group&gt;[&lt;row&gt;].&lt;child&gt;</c>
@@ -61,7 +62,11 @@ internal enum SubmissionRefusal
 /// </param>
 /// <param name="Check">The index of the field's own check that fails, for <see cref="SubmissionProblems.Check"/>.</param>
 /// <param name="Rule">The key of the validation rule whose message shows, for <see cref="SubmissionProblems.Rule"/>.</param>
-internal sealed record SubmissionProblem(string Code, string Path, int? Check = null, Guid? Rule = null);
+/// <param name="Text">
+/// For <see cref="SubmissionProblems.Custom"/>, the words a site's handler gave it, which the page shows as they are; null
+/// for none, when the page shows the words of a check without its own message.
+/// </param>
+internal sealed record SubmissionProblem(string Code, string Path, int? Check = null, Guid? Rule = null, string? Text = null);
 
 /// <summary>The codes of <see cref="SubmissionProblem"/> that are no field's kind of error.</summary>
 internal static class SubmissionProblems
@@ -74,6 +79,9 @@ internal static class SubmissionProblems
 
     /// <summary>The submission holds no answer at all.</summary>
     public const string Empty = "empty";
+
+    /// <summary>A site's handler of <see cref="Entries.EntrySubmittingNotification"/> refused the entry, in its own words (ADR-0233).</summary>
+    public const string Custom = "custom";
 
     /// <summary>A value of the request cannot be read.</summary>
     public const string InvalidValue = "invalid_value";

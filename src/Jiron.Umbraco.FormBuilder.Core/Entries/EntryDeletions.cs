@@ -129,6 +129,18 @@ internal sealed class EntryDeletions(
     // their mail, and audited; the bytes and the notifications after the commit.
     private async Task<EntryDeletion> RemoveAsync(StoredForm form, IReadOnlyCollection<long> ids, Guid? userKey, string action, Func<EntryRetentionRow, bool> still, CancellationToken cancellationToken)
     {
+        // Handlers hear of each entry about to go before the unit, while they can still read it (ADR-0233).
+        var soon = time.GetUtcNow();
+        var going = (await entries.ListForRetentionAsync(ids, cancellationToken)).Where(row => row.FormId == form.Id && !IsHeld(row.HoldUntilUtc, soon) && still(row)).ToList();
+        await entryEvents.PublishEachAsync(going.Select<EntryRetentionRow, Func<bool, EntryDeletingNotification>>(row => _ => new EntryDeletingNotification
+        {
+            EntryKey = row.Key,
+            EntryNumber = row.Number,
+            State = StoredNames.Of(row.State),
+            FormAlias = form.Alias,
+            OccurredUtc = soon,
+        }).ToList());
+
         IReadOnlyList<StoredEntryFile> gone = [];
         IReadOnlyList<EntryRetentionRow> taken = [];
         var held = 0;

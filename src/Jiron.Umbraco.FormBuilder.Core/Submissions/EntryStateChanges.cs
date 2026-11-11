@@ -372,7 +372,7 @@ internal sealed class EntryStateChanges(
         await settlement.DeleteBytesAsync(gone);
         if (moved is not null && userKey is null)
         {
-            await entryEvents.TellMovedAsync(moved, form.Alias);
+            await entryEvents.TellMovedAsync(moved, form.Alias, entry.State);
         }
 
         return moved;
@@ -541,17 +541,19 @@ internal sealed partial class EntryChangeQueue(
             return;
         }
 
+        var left = StoredNames.Parse<EntryState>(EntryStateChanges.DetailOf(due, "from"));
         if (reached == EntryState.Unverified)
         {
             wake.Wake();
+            await entryEvents.TellMovedAsync(entry, form.Alias, left);
         }
         else if (due.Kind == EntrySpamFolder.NotSpamEvent)
         {
-            await entryEvents.TellArrivedAsync(entry, form.Alias);
+            await entryEvents.TellArrivedAsync(entry, form.Alias, left);
         }
         else
         {
-            await entryEvents.TellMovedAsync(entry, form.Alias);
+            await entryEvents.TellMovedAsync(entry, form.Alias, left);
         }
     }
 

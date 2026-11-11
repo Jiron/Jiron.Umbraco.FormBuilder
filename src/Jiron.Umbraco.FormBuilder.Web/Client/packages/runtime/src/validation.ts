@@ -9,7 +9,7 @@
 import { isEmptyPost } from '@jfb/logic';
 import { errorsOf, type PageError } from './checks';
 import type { PageEngine } from './engine';
-import { emptyError, formWords, shownErrors, type ShownError } from './messages';
+import { formError, formWords, shownErrors, type ShownError } from './messages';
 import type { FormModel } from './model';
 import { fieldsOf, readPage } from './page';
 import { contextOf } from './rules';
@@ -17,12 +17,13 @@ import { contextOf } from './rules';
 /** What a check covers: a send, every page and the empty submission; or the page shown, as Next asks. */
 export type CheckScope = 'send' | 'page';
 
-/** An error of the entries endpoint's `422`: the field's kind of error, the field by its path, its check or rule. */
+/** An error of the entries endpoint's `422`: the field's kind of error, the field by its path, its check or rule, a handler's words. */
 export interface ServerProblem {
   readonly code: string;
   readonly path: string;
   readonly check?: number | null;
   readonly rule?: string | null;
+  readonly text?: string | null;
 }
 
 /** The errors the page shows for its answers now, in the order it shows them. */
@@ -75,6 +76,7 @@ export function placeOf(model: FormModel, problem: ServerProblem): PageError | n
     code: problem.code,
     ...(problem.check == null ? {} : { check: problem.check }),
     ...(problem.rule == null ? {} : { rule: problem.rule }),
+    ...(problem.text == null ? {} : { text: problem.text }),
     ...(found[4] === undefined ? {} : { gridRow: found[4] }),
   };
 }
@@ -92,7 +94,13 @@ async function check(
   const words = await formWords(model);
   const server = typeof scope === 'object';
   if (server ? scope.some((problem) => problem.code === 'empty') : scope === 'send' && isEmptyPost(reading.post))
-    return [emptyError(form, model, words)];
+    return [formError(form, model, 'empty', words.empty)];
+  // A site's handler's errors at the form come first, in its words or those of a check without its own (ADR-0233).
+  const atForm = server
+    ? scope
+        .filter((problem) => problem.code === 'custom' && problem.path === '')
+        .map((problem) => formError(form, model, 'custom', problem.text || words.checkThis))
+    : [];
   let errors = server
     ? scope.map((problem) => placeOf(model, problem)).filter((error) => error !== null)
     : errorsOf(
@@ -117,5 +125,5 @@ async function check(
     errors = errors.filter((error) => onPage.has(error.field));
   }
   const texts = engine.texts === null ? undefined : engine.texts(reading, state);
-  return shownErrors(form, model, reading, errors, context, words, texts);
+  return [...atForm, ...shownErrors(form, model, reading, errors, context, words, texts)];
 }

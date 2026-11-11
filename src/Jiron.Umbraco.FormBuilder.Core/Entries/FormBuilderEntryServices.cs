@@ -23,6 +23,8 @@ internal static class FormBuilderEntryServices
         builder.Services.TryAddSingleton<SubmissionReader>();
         builder.Services.TryAddSingleton<ConsentWordings>();
         builder.Services.TryAddSingleton<EntryAnswerStore>();
+        builder.Services.TryAddSingleton<IFormBuilderEntryService, FormBuilderEntryService>();
+        builder.Services.TryAddSingleton<IFormBuilderEntryReader, FormBuilderEntryReader>();
         builder.Services.TryAddSingleton<RecentEntries>();
         builder.Services.TryAddSingleton<EntryTitles>();
         builder.Services.TryAddSingleton<EntryUserSettings>();

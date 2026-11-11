@@ -1,7 +1,7 @@
 namespace Jiron.Umbraco.FormBuilder.Core.Persistence;
 
 /// <summary>Which rows of a list to read: the database pages, never the caller (ADR-0036).</summary>
-internal readonly record struct PageRequest
+public readonly record struct PageRequest
 {
     /// <summary>The most rows one page may hold.</summary>
     public const int MaxTake = 500;
@@ -31,4 +31,4 @@ internal readonly record struct PageRequest
 /// <typeparam name="T">The rows.</typeparam>
 /// <param name="Items">The page's rows, in the list's order.</param>
 /// <param name="Total">How many rows the list holds in all.</param>
-internal sealed record Page<T>(IReadOnlyList<T> Items, long Total);
+public sealed record Page<T>(IReadOnlyList<T> Items, long Total);

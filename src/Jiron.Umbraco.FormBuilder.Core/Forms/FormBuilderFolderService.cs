@@ -17,7 +17,7 @@ namespace Jiron.Umbraco.FormBuilder.Core.Forms;
 /// <see cref="FormBuilderConflictException"/>, <see cref="FormBuilderConcurrencyException"/> or
 /// <see cref="FormBuilderCancelledException"/>, each with a code from <see cref="FormBuilderErrorCodes"/>.
 /// </summary>
-internal interface IFormBuilderFolderService
+public interface IFormBuilderFolderService
 {
     /// <summary>A folder by key, or null.</summary>
     Task<FolderInfo?> GetAsync(Guid key, CancellationToken cancellationToken = default);

@@ -1,0 +1,4069 @@
+public sealed record Jiron.Umbraco.FormBuilder.Core.Access.FolderVisibility
+  IReadOnlySet<Guid> FolderKeys { get; init; }
+  bool Allows(Guid folderKey)
+  bool Equals(FolderVisibility? other)
+  bool IsEverything { get; init; }
+  ctor(bool IsEverything, IReadOnlySet<Guid> FolderKeys)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static FolderVisibility Everything { get; }
+  static bool op_Equality(FolderVisibility? left, FolderVisibility? right)
+  static bool op_Inequality(FolderVisibility? left, FolderVisibility? right)
+  void Deconstruct(out bool IsEverything, out IReadOnlySet<Guid> FolderKeys)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Access.FormAccessTarget
+  Guid Key { get; init; }
+  Guid? FolderKey { get; init; }
+  bool Equals(FormAccessTarget? other)
+  bool IsRestricted { get; init; }
+  ctor(Guid Key, Guid? FolderKey, bool IsRestricted)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static FormAccessTarget Of(FormInfo form)
+  static bool op_Equality(FormAccessTarget? left, FormAccessTarget? right)
+  static bool op_Inequality(FormAccessTarget? left, FormAccessTarget? right)
+  void Deconstruct(out Guid Key, out Guid? FolderKey, out bool IsRestricted)
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Access.FormBuilderAccessOptions
+  IList<HostGrant> Grants { get; }
+  ctor()
+
+public enum Jiron.Umbraco.FormBuilder.Core.Access.FormBuilderPermissions
+  None = 0
+  Design = 1
+  ManageActions = 2
+  ViewEntries = 4
+  ViewSensitive = 8
+  EditEntries = 16
+  DeleteEntries = 32
+  Export = 64
+  ManageLibrary = 128
+  ManageSettings = 256
+  ManagePermissions = 512
+  PrivacyTools = 1024
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Access.HostGrant
+  IList<string> Permissions { get; }
+  ctor()
+  string? Group { get; set; }
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Actions.ActionPreset
+  bool Equals(ActionPreset? other)
+  ctor(string Name, string Settings)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(ActionPreset? left, ActionPreset? right)
+  static bool op_Inequality(ActionPreset? left, ActionPreset? right)
+  string Name { get; init; }
+  string Settings { get; init; }
+  void Deconstruct(out string Name, out string Settings)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Actions.ActionResult
+  ActionResultKind Kind { get; }
+  bool Equals(ActionResult? other)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static ActionResult Failed(string code, string? message = default)
+  static ActionResult Succeeded { get; }
+  static ActionResult TryAgain(string code, string? message = default)
+  static ActionResult Uncertain(string code, string? message = default)
+  static bool op_Equality(ActionResult? left, ActionResult? right)
+  static bool op_Inequality(ActionResult? left, ActionResult? right)
+  string? Code { get; }
+  string? Message { get; }
+
+public enum Jiron.Umbraco.FormBuilder.Core.Actions.ActionResultKind
+  Succeeded = 0
+  TryAgain = 1
+  Failed = 2
+  Uncertain = 3
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Actions.ActionRunCompletedNotification : INotification
+  ActionRunContext Context { get; }
+  ctor(ActionRunContext context, string type)
+  string Type { get; }
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Actions.ActionRunContext
+  bool Equals(ActionRunContext? other)
+  ctor()
+  long? EntryId { get; init; }
+  long? RunId { get; init; }
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  required ActionTrigger Trigger { get; init; }
+  required FormAction Action { get; init; }
+  required MergeTagScope Scope { get; init; }
+  required int Attempt { get; init; }
+  required string DeliveryKey { get; init; }
+  static bool op_Equality(ActionRunContext? left, ActionRunContext? right)
+  static bool op_Inequality(ActionRunContext? left, ActionRunContext? right)
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Actions.ActionRunFailedNotification : INotification
+  ActionRunContext Context { get; }
+  bool WillRetry { get; }
+  ctor(ActionRunContext context, string type, bool willRetry, string? code)
+  string Type { get; }
+  string? Code { get; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Actions.ActionRunningNotification : INotification
+  ActionRunContext Context { get; }
+  ctor(ActionRunContext context, string type)
+  string Type { get; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Actions.ActionSettingsCheck
+  FormAction Action { get; }
+  FormDefinition Definition { get; }
+  void Invalid(string setting, string code, string message)
+  void Invalid(string setting, string message)
+  void Warn(string setting, string code, string message)
+
+public static class Jiron.Umbraco.FormBuilder.Core.Actions.ActionTestCodes
+  const string DryRun = "dry_run"
+  const string Failed = "failed"
+  const string MailOff = "mail_off"
+  const string NoAddress = "no_address"
+  const string Paused = "paused"
+  const string Sent = "sent"
+  const string SentToYou = "sent_to_you"
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Actions.ActionTestContext
+  bool Equals(ActionTestContext? other)
+  ctor()
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  required ActionTestUser User { get; init; }
+  required FormAction Action { get; init; }
+  required MergeTagScope Scope { get; init; }
+  static bool op_Equality(ActionTestContext? left, ActionTestContext? right)
+  static bool op_Inequality(ActionTestContext? left, ActionTestContext? right)
+
+public enum Jiron.Umbraco.FormBuilder.Core.Actions.ActionTestKind
+  DryRun = 0
+  ToCurrentUser = 1
+  AfterConfirmation = 2
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Actions.ActionTestLine
+  IReadOnlyList<string> Args { get; init; }
+  bool Equals(ActionTestLine? other)
+  ctor(string Text)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static ActionTestLine FromString(string text)
+  static ActionTestLine op_Implicit(string text)
+  static bool op_Equality(ActionTestLine? left, ActionTestLine? right)
+  static bool op_Inequality(ActionTestLine? left, ActionTestLine? right)
+  string Text { get; init; }
+  string? Code { get; init; }
+  void Deconstruct(out string Text)
+
+public enum Jiron.Umbraco.FormBuilder.Core.Actions.ActionTestOutcome
+  Sent = 0
+  DryRun = 1
+  Failed = 2
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Actions.ActionTestResult
+  ActionTestOutcome Outcome { get; init; }
+  IReadOnlyList<ActionTestLine>? Preview { get; init; }
+  IReadOnlyList<string> Args { get; init; }
+  bool Equals(ActionTestResult? other)
+  ctor(ActionTestOutcome Outcome, string? Message = default, IReadOnlyList<ActionTestLine>? Preview = default)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(ActionTestResult? left, ActionTestResult? right)
+  static bool op_Inequality(ActionTestResult? left, ActionTestResult? right)
+  string? Code { get; init; }
+  string? Message { get; init; }
+  void Deconstruct(out ActionTestOutcome Outcome, out string? Message, out IReadOnlyList<ActionTestLine>? Preview)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Actions.ActionTestUser
+  Guid Key { get; init; }
+  bool Equals(ActionTestUser? other)
+  ctor(Guid Key, string? Email, string Name)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(ActionTestUser? left, ActionTestUser? right)
+  static bool op_Inequality(ActionTestUser? left, ActionTestUser? right)
+  string Name { get; init; }
+  string? Culture { get; init; }
+  string? Email { get; init; }
+  void Deconstruct(out Guid Key, out string? Email, out string Name)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Actions.ActionTypeDeclaration
+  ActionTestKind Test { get; init; }
+  IReadOnlyList<ActionPreset> Presets { get; init; }
+  TimeSpan? AttemptTimeout { get; init; }
+  bool Equals(ActionTypeDeclaration? other)
+  ctor()
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  required string Alias { get; init; }
+  required string Icon { get; init; }
+  required string Name { get; init; }
+  static bool op_Equality(ActionTypeDeclaration? left, ActionTypeDeclaration? right)
+  static bool op_Inequality(ActionTypeDeclaration? left, ActionTypeDeclaration? right)
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Actions.ContentActionSettings
+  ContentParentSource ParentSource { get; init; }
+  Guid? MediaFolder { get; init; }
+  Guid? Parent { get; init; }
+  IReadOnlyList<Guid> IncludeSensitive { get; init; }
+  JsonElement? Mapping { get; init; }
+  bool Publish { get; init; }
+  bool UpdateExisting { get; init; }
+  ctor()
+  string? DocumentType { get; init; }
+  string? Name { get; init; }
+
+public enum Jiron.Umbraco.FormBuilder.Core.Actions.ContentParentSource
+  Picked = 0
+  Page = 1
+  SiteRoot = 2
+
+public abstract class Jiron.Umbraco.FormBuilder.Core.Actions.FormBuilderActionTypeBase<TSettings> : IFormBuilderActionType
+  ActionTypeDeclaration Declaration { get; }
+  FieldSettingsSchema SettingsSchema { get; }
+  IReadOnlyList<string> MissingConfiguration(FormAction action)
+  TSettings ReadSettings(SettingsObject? settings)
+  Task<ActionResult> RunAsync(ActionRunContext context, CancellationToken cancellationToken)
+  Task<ActionTestResult> TestAsync(ActionTestContext context, CancellationToken cancellationToken)
+  protected abstract Task<ActionResult> RunAsync(TSettings settings, ActionRunContext context, CancellationToken cancellationToken)
+  protected ctor(ActionTypeDeclaration declaration)
+  protected virtual IReadOnlyList<string> MissingConfiguration(TSettings settings, FormAction action)
+  protected virtual Task<ActionTestResult> TestAsync(TSettings settings, ActionTestContext context, CancellationToken cancellationToken)
+  protected virtual void CheckSettings(TSettings settings, ActionSettingsCheck check)
+  virtual ValueTask<IReadOnlyDictionary<string, IReadOnlyList<FieldSettingChoice>>> SiteChoicesAsync(CancellationToken cancellationToken)
+  void CheckSettings(ActionSettingsCheck check)
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Actions.FormBuilderActionTypeCollection : BuilderCollectionBase<IFormBuilderActionType>
+  ctor(Func<IEnumerable<IFormBuilderActionType>> items)
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Actions.FormBuilderActionTypeCollectionBuilder : OrderedCollectionBuilderBase<FormBuilderActionTypeCollectionBuilder, FormBuilderActionTypeCollection, IFormBuilderActionType>
+  ctor()
+
+public interface Jiron.Umbraco.FormBuilder.Core.Actions.IFormBuilderActionType
+  ActionTypeDeclaration Declaration { get; }
+  FieldSettingsSchema SettingsSchema { get; }
+  IReadOnlyList<string> MissingConfiguration(FormAction action)
+  Task<ActionResult> RunAsync(ActionRunContext context, CancellationToken cancellationToken)
+  Task<ActionTestResult> TestAsync(ActionTestContext context, CancellationToken cancellationToken)
+  ValueTask<IReadOnlyDictionary<string, IReadOnlyList<FieldSettingChoice>>> SiteChoicesAsync(CancellationToken cancellationToken)
+  void CheckSettings(ActionSettingsCheck check)
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Actions.SetStateActionSettings
+  SetStateTarget State { get; init; }
+  ctor()
+
+public enum Jiron.Umbraco.FormBuilder.Core.Actions.SetStateTarget
+  Approved = 0
+  Rejected = 1
+  Spam = 2
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Composing.FormBuilderComposition
+  FormBuilderActionTypeCollectionBuilder ActionTypes()
+  FormBuilderCaptchaProviderCollectionBuilder CaptchaProviders()
+  FormBuilderExportFormatCollectionBuilder ExportFormats()
+  FormBuilderFieldTypeCollectionBuilder FieldTypes()
+  FormBuilderFileScannerCollectionBuilder FileScanners()
+  FormBuilderMergeTagFilterCollectionBuilder MergeTagFilters()
+  FormBuilderMergeTagSourceCollectionBuilder MergeTagSources()
+  FormBuilderOptionSourceCollectionBuilder OptionSources()
+  FormBuilderSpamCheckCollectionBuilder SpamChecks()
+  FormBuilderThemeCollectionBuilder Themes()
+  IUmbracoBuilder Builder { get; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Composing.FormBuilderCoreComposer : IComposer, IDiscoverable
+  ctor()
+  void Compose(IUmbracoBuilder builder)
+
+public static class Jiron.Umbraco.FormBuilder.Core.Composing.FormBuilderUmbracoBuilderExtensions
+  static FormBuilderComposition JironFormBuilder(IUmbracoBuilder builder)
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Configuration.DesignerSettingLock
+  bool Hidden { get; set; }
+  const string ActionKind = "action"
+  const string FieldKind = "field"
+  ctor()
+  string? Kind { get; set; }
+  string? Setting { get; set; }
+  string? Type { get; set; }
+  string? Value { get; set; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Configuration.FormBuilderActionsOptions
+  bool Paused { get; set; }
+  ctor()
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Configuration.FormBuilderCaptchaKeys
+  ctor()
+  string? SecretKey { get; set; }
+  string? SiteKey { get; set; }
+  string? VerifyAddress { get; set; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Configuration.FormBuilderCaptchaOptions
+  FormBuilderCaptchaKeys Hcaptcha { get; }
+  FormBuilderCaptchaKeys RecaptchaV2 { get; }
+  FormBuilderCaptchaKeys RecaptchaV3 { get; }
+  bool UseRecaptchaNet { get; set; }
+  ctor()
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Configuration.FormBuilderDefinitionsOptions
+  bool Mirror { get; set; }
+  const string DefaultFolder = "~/umbraco/JironFormBuilder/forms"
+  const string FolderKey = "JironFormBuilder:Definitions:Folder"
+  const string MirrorKey = "JironFormBuilder:Definitions:Mirror"
+  ctor()
+  string Folder { get; set; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Configuration.FormBuilderDesignerOptions
+  IList<DesignerSettingLock> SettingLocks { get; }
+  ctor()
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Configuration.FormBuilderLimitsOptions
+  DefinitionLimits Definitions { get; }
+  FormBuilderMailLimitsOptions Mail { get; }
+  FormBuilderRatePolicyOptions Challenge { get; }
+  FormBuilderRatePolicyOptions Events { get; }
+  FormBuilderRatePolicyOptions Read { get; }
+  FormBuilderRatePolicyOptions Submit { get; }
+  FormBuilderRatePolicyOptions Upload { get; }
+  FormBuilderRatePolicyOptions Verify { get; }
+  const int HighestRate = 10000000
+  const int HighestServerKeyFactor = 1000
+  const int LeastTrackedClients = 1000
+  ctor()
+  int MaxTrackedClients { get; set; }
+  int ServerKeyFactor { get; set; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Configuration.FormBuilderMailLimitsOptions
+  const int HighestCount = 1000000
+  const long HighestAttachmentBytes = 104857600
+  ctor()
+  int PerRecipientPerDay { get; set; }
+  int PerSitePerHour { get; set; }
+  long AttachmentBytes { get; set; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Configuration.FormBuilderOptions
+  FormBuilderAccessOptions Access { get; }
+  FormBuilderActionsOptions Actions { get; }
+  FormBuilderCaptchaOptions Captcha { get; }
+  FormBuilderDefinitionsOptions Definitions { get; }
+  FormBuilderDesignerOptions Designer { get; }
+  FormBuilderFilesOptions Files { get; }
+  FormBuilderLimitsOptions Limits { get; }
+  FormBuilderPrivacyOptions Privacy { get; }
+  FormBuilderPublicApiOptions PublicApi { get; }
+  FormBuilderRenderingOptions Rendering { get; }
+  FormBuilderWebhooksOptions Webhooks { get; }
+  IDictionary<string, string?> Secrets { get; }
+  IList<string> LockedSections { get; }
+  const string SectionName = "JironFormBuilder"
+  ctor()
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Configuration.FormBuilderPrivacyOptions
+  bool AllowFullIp { get; set; }
+  bool AllowImplicitCaptchaConsent { get; set; }
+  bool AllowRetentionOff { get; set; }
+  ctor()
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Configuration.FormBuilderPublicApiOptions
+  IList<ServerKeyOptions> ServerKeys { get; }
+  IList<string> AllowedOrigins { get; }
+  const string DefaultBasePath = "/jfb/api"
+  ctor()
+  string BasePath { get; set; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Configuration.FormBuilderRatePolicyOptions
+  ctor()
+  int PerAddressAndFormPerMinute { get; set; }
+  int PerAddressPerHour { get; set; }
+  int PerAddressPerMinute { get; set; }
+  int PerFormPerMinute { get; set; }
+  int SitePerSecond { get; set; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Configuration.FormBuilderRenderingOptions
+  bool IncludeAssetsAutomatically { get; set; }
+  ctor()
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Configuration.FormBuilderWebhooksOptions
+  IList<string> AllowedHosts { get; }
+  bool AllowHttp { get; set; }
+  ctor()
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Configuration.ServerKeyOptions
+  ctor()
+  string Name { get; set; }
+  string Sha256 { get; set; }
+
+public enum Jiron.Umbraco.FormBuilder.Core.Definitions.ActionTrigger
+  Submitted = 0
+  Approved = 1
+  Rejected = 2
+  Verified = 3
+
+public enum Jiron.Umbraco.FormBuilder.Core.Definitions.ApprovalMode
+  Automatic = 0
+  Manual = 1
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Definitions.CaptchaChoice
+  SettingsObject? Settings { get; init; }
+  bool Equals(CaptchaChoice? other)
+  ctor()
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  required string Provider { get; init; }
+  static bool op_Equality(CaptchaChoice? left, CaptchaChoice? right)
+  static bool op_Inequality(CaptchaChoice? left, CaptchaChoice? right)
+
+public enum Jiron.Umbraco.FormBuilder.Core.Definitions.ChoiceLayout
+  Vertical = 0
+  Horizontal = 1
+  Cards = 2
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Definitions.Comparison.DefinitionChange
+  DefinitionChangeKind ChangeKind { get; init; }
+  DefinitionChangeSummary Summarize()
+  DefinitionElementKind ElementKind { get; init; }
+  Guid? Key { get; init; }
+  Guid? ParentKey { get; init; }
+  Guid? PreviousParentKey { get; init; }
+  IReadOnlyList<DefinitionPropertyChange> Properties { get; init; }
+  JsonObject? After { get; init; }
+  JsonObject? Before { get; init; }
+  bool Equals(DefinitionChange? other)
+  bool Moved { get; init; }
+  ctor(DefinitionElementKind ElementKind, Guid? Key, string? SettingsGroup, Guid? ParentKey, Guid? PreviousParentKey, DefinitionChangeKind ChangeKind, bool Moved, string? Label, string? Alias, string? Type, JsonObject? Before, JsonObject? After, IReadOnlyList<DefinitionPropertyChange> Properties)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(DefinitionChange? left, DefinitionChange? right)
+  static bool op_Inequality(DefinitionChange? left, DefinitionChange? right)
+  string? Alias { get; init; }
+  string? Label { get; init; }
+  string? SettingsGroup { get; init; }
+  string? Type { get; init; }
+  void Deconstruct(out DefinitionElementKind ElementKind, out Guid? Key, out string? SettingsGroup, out Guid? ParentKey, out Guid? PreviousParentKey, out DefinitionChangeKind ChangeKind, out bool Moved, out string? Label, out string? Alias, out string? Type, out JsonObject? Before, out JsonObject? After, out IReadOnlyList<DefinitionPropertyChange> Properties)
+
+public enum Jiron.Umbraco.FormBuilder.Core.Definitions.Comparison.DefinitionChangeKind
+  Added = 0
+  Removed = 1
+  Changed = 2
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Definitions.Comparison.DefinitionChangeSummary
+  DefinitionChangeKind ChangeKind { get; init; }
+  DefinitionElementKind ElementKind { get; init; }
+  Guid? Key { get; init; }
+  Guid? ParentKey { get; init; }
+  bool Equals(DefinitionChangeSummary? other)
+  bool Moved { get; init; }
+  ctor(DefinitionElementKind ElementKind, Guid? Key, string? SettingsGroup, Guid? ParentKey, DefinitionChangeKind ChangeKind, bool Moved, string? Label, string? Alias)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(DefinitionChangeSummary? left, DefinitionChangeSummary? right)
+  static bool op_Inequality(DefinitionChangeSummary? left, DefinitionChangeSummary? right)
+  string? Alias { get; init; }
+  string? Label { get; init; }
+  string? SettingsGroup { get; init; }
+  void Deconstruct(out DefinitionElementKind ElementKind, out Guid? Key, out string? SettingsGroup, out Guid? ParentKey, out DefinitionChangeKind ChangeKind, out bool Moved, out string? Label, out string? Alias)
+
+public enum Jiron.Umbraco.FormBuilder.Core.Definitions.Comparison.DefinitionElementKind
+  Settings = 0
+  Page = 1
+  Group = 2
+  Field = 3
+  Rule = 4
+  ValidationRule = 5
+  Action = 6
+  Outcome = 7
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Definitions.Comparison.DefinitionPropertyChange
+  IReadOnlyList<string> Path { get; init; }
+  JsonNode? From { get; init; }
+  JsonNode? To { get; init; }
+  bool Equals(DefinitionPropertyChange? other)
+  ctor(IReadOnlyList<string> Path, JsonNode? From, JsonNode? To)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(DefinitionPropertyChange? left, DefinitionPropertyChange? right)
+  static bool op_Inequality(DefinitionPropertyChange? left, DefinitionPropertyChange? right)
+  void Deconstruct(out IReadOnlyList<string> Path, out JsonNode? From, out JsonNode? To)
+
+public abstract record Jiron.Umbraco.FormBuilder.Core.Definitions.ConditionOperand
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  protected ctor(ConditionOperand original)
+  protected virtual Type EqualityContract { get; }
+  protected virtual bool PrintMembers(StringBuilder builder)
+  static bool op_Equality(ConditionOperand? left, ConditionOperand? right)
+  static bool op_Inequality(ConditionOperand? left, ConditionOperand? right)
+  virtual bool Equals(ConditionOperand? other)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Definitions.ConditionOperand.Field : ConditionOperand
+  Guid Key { get; init; }
+  bool Equals(ConditionOperand.Field? other)
+  ctor(Guid Key)
+  override bool Equals(ConditionOperand? other)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(ConditionOperand.Field? left, ConditionOperand.Field? right)
+  static bool op_Inequality(ConditionOperand.Field? left, ConditionOperand.Field? right)
+  void Deconstruct(out Guid Key)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Definitions.ConditionOperand.List : ConditionOperand
+  IReadOnlyList<ConditionOperand> Items { get; }
+  bool Equals(ConditionOperand.List? other)
+  ctor(IReadOnlyList<ConditionOperand> items)
+  override bool Equals(ConditionOperand? other)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(ConditionOperand.List? left, ConditionOperand.List? right)
+  static bool op_Inequality(ConditionOperand.List? left, ConditionOperand.List? right)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Definitions.ConditionOperand.Text : ConditionOperand
+  bool Equals(ConditionOperand.Text? other)
+  ctor(string Value)
+  override bool Equals(ConditionOperand? other)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(ConditionOperand.Text? left, ConditionOperand.Text? right)
+  static bool op_Inequality(ConditionOperand.Text? left, ConditionOperand.Text? right)
+  string Value { get; init; }
+  void Deconstruct(out string Value)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Definitions.ConditionOperand.Today : ConditionOperand
+  bool Equals(ConditionOperand.Today? other)
+  ctor(string Offset)
+  override bool Equals(ConditionOperand? other)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(ConditionOperand.Today? left, ConditionOperand.Today? right)
+  static bool op_Inequality(ConditionOperand.Today? left, ConditionOperand.Today? right)
+  string Offset { get; init; }
+  void Deconstruct(out string Offset)
+
+public enum Jiron.Umbraco.FormBuilder.Core.Definitions.ContentRuleLevel
+  Inherit = 0
+  Off = 1
+  Normal = 2
+  Strict = 3
+
+public readonly record struct Jiron.Umbraco.FormBuilder.Core.Definitions.CultureText
+  bool Equals(CultureText other)
+  ctor(string Culture, string Text)
+  override bool Equals(object obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(CultureText left, CultureText right)
+  static bool op_Inequality(CultureText left, CultureText right)
+  string Culture { get; init; }
+  string Text { get; init; }
+  void Deconstruct(out string Culture, out string Text)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Definitions.DefinitionLimits
+  bool Equals(DefinitionLimits? other)
+  const int CeilingFactor = 10
+  ctor()
+  int MaxActions { get; init; }
+  int MaxBytes { get; init; }
+  int MaxFields { get; init; }
+  int MaxGroups { get; init; }
+  int MaxOptionsPerField { get; init; }
+  int MaxOutcomes { get; init; }
+  int MaxPages { get; init; }
+  int MaxRules { get; init; }
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static DefinitionLimits Ceiling { get; }
+  static bool op_Equality(DefinitionLimits? left, DefinitionLimits? right)
+  static bool op_Inequality(DefinitionLimits? left, DefinitionLimits? right)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Definitions.DefinitionProblem
+  bool Equals(DefinitionProblem? other)
+  ctor(string Code, string Path, string Message)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(DefinitionProblem? left, DefinitionProblem? right)
+  static bool op_Inequality(DefinitionProblem? left, DefinitionProblem? right)
+  string Code { get; init; }
+  string Message { get; init; }
+  string Path { get; init; }
+  void Deconstruct(out string Code, out string Path, out string Message)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Definitions.EmailVerification
+  bool Equals(EmailVerification? other)
+  ctor()
+  int Days { get; init; }
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  required Guid EmailField { get; init; }
+  static bool op_Equality(EmailVerification? left, EmailVerification? right)
+  static bool op_Inequality(EmailVerification? left, EmailVerification? right)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Definitions.EntryReferenceFormat
+  bool Equals(EntryReferenceFormat? other)
+  bool IncludeYear { get; init; }
+  ctor()
+  int Digits { get; init; }
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(EntryReferenceFormat? left, EntryReferenceFormat? right)
+  static bool op_Inequality(EntryReferenceFormat? left, EntryReferenceFormat? right)
+  string? Prefix { get; init; }
+
+public enum Jiron.Umbraco.FormBuilder.Core.Definitions.EntryStorage
+  Always = 0
+  Never = 1
+  Days = 2
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Definitions.Exchange.CopiedAction
+  Guid Key { get; init; }
+  Guid SourceKey { get; init; }
+  IReadOnlyList<UnmappedMergeTag> MergeTags { get; init; }
+  IReadOnlyList<UnmappedReference> Unmapped { get; init; }
+  bool Equals(CopiedAction? other)
+  ctor(Guid SourceKey, Guid Key, IReadOnlyList<UnmappedReference> Unmapped, IReadOnlyList<UnmappedMergeTag> MergeTags)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(CopiedAction? left, CopiedAction? right)
+  static bool op_Inequality(CopiedAction? left, CopiedAction? right)
+  void Deconstruct(out Guid SourceKey, out Guid Key, out IReadOnlyList<UnmappedReference> Unmapped, out IReadOnlyList<UnmappedMergeTag> MergeTags)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Definitions.Exchange.DefinitionCounts
+  bool Equals(DefinitionCounts? other)
+  ctor(int Pages, int Fields, int Rules, int Outcomes, int Actions)
+  int Actions { get; init; }
+  int Fields { get; init; }
+  int Outcomes { get; init; }
+  int Pages { get; init; }
+  int Rules { get; init; }
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static DefinitionCounts Of(FormDefinition definition)
+  static bool op_Equality(DefinitionCounts? left, DefinitionCounts? right)
+  static bool op_Inequality(DefinitionCounts? left, DefinitionCounts? right)
+  void Deconstruct(out int Pages, out int Fields, out int Rules, out int Outcomes, out int Actions)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Definitions.Exchange.UnmappedMergeTag
+  bool Equals(UnmappedMergeTag? other)
+  ctor(string Path, string Tag, int At)
+  int At { get; init; }
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(UnmappedMergeTag? left, UnmappedMergeTag? right)
+  static bool op_Inequality(UnmappedMergeTag? left, UnmappedMergeTag? right)
+  string Path { get; init; }
+  string Tag { get; init; }
+  void Deconstruct(out string Path, out string Tag, out int At)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Definitions.Exchange.UnmappedReference
+  Guid SourceKey { get; init; }
+  bool Equals(UnmappedReference? other)
+  ctor(string Path, Guid SourceKey, string? Alias)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(UnmappedReference? left, UnmappedReference? right)
+  static bool op_Inequality(UnmappedReference? left, UnmappedReference? right)
+  string Path { get; init; }
+  string? Alias { get; init; }
+  void Deconstruct(out string Path, out Guid SourceKey, out string? Alias)
+
+public abstract record Jiron.Umbraco.FormBuilder.Core.Definitions.FieldCheck
+  LocalizedText? Message { get; init; }
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  protected ctor(FieldCheck original)
+  protected virtual Type EqualityContract { get; }
+  protected virtual bool PrintMembers(StringBuilder builder)
+  static bool op_Equality(FieldCheck? left, FieldCheck? right)
+  static bool op_Inequality(FieldCheck? left, FieldCheck? right)
+  virtual bool Equals(FieldCheck? other)
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Definitions.FieldDefaultValue : IEquatable<FieldDefaultValue>
+  IReadOnlyList<string> Values { get; }
+  bool Equals(FieldDefaultValue? other)
+  bool IsList { get; }
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  static FieldDefaultValue Of(string value)
+  static FieldDefaultValue OfList(IEnumerable<string> values)
+
+public enum Jiron.Umbraco.FormBuilder.Core.Definitions.FieldKeep
+  Always = 0
+  UntilActionsRun = 1
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Definitions.FieldMessages
+  LocalizedText? Confirmation { get; init; }
+  LocalizedText? DateWindow { get; init; }
+  LocalizedText? Digits { get; init; }
+  LocalizedText? FileCount { get; init; }
+  LocalizedText? FileSize { get; init; }
+  LocalizedText? FileType { get; init; }
+  LocalizedText? Full { get; init; }
+  LocalizedText? Invalid { get; init; }
+  LocalizedText? Max { get; init; }
+  LocalizedText? MaxLength { get; init; }
+  LocalizedText? MaxWords { get; init; }
+  LocalizedText? Min { get; init; }
+  LocalizedText? MinLength { get; init; }
+  LocalizedText? MinWords { get; init; }
+  LocalizedText? Required { get; init; }
+  LocalizedText? RowCount { get; init; }
+  LocalizedText? Selections { get; init; }
+  LocalizedText? Step { get; init; }
+  bool Equals(FieldMessages? other)
+  ctor()
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(FieldMessages? left, FieldMessages? right)
+  static bool op_Inequality(FieldMessages? left, FieldMessages? right)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Definitions.FieldOption
+  Guid? Image { get; init; }
+  IReadOnlyList<string> ParentValues { get; init; }
+  LocalizedText? Description { get; init; }
+  LocalizedText? Label { get; init; }
+  bool Equals(FieldOption? other)
+  ctor()
+  int? Places { get; init; }
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  required string Value { get; init; }
+  static bool op_Equality(FieldOption? left, FieldOption? right)
+  static bool op_Inequality(FieldOption? left, FieldOption? right)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Definitions.FieldOptions
+  Guid? OptionList { get; init; }
+  Guid? Parent { get; init; }
+  IReadOnlyList<FieldOption> Items { get; init; }
+  OptionSource Source { get; init; }
+  SettingsObject? Config { get; init; }
+  bool Equals(FieldOptions? other)
+  ctor()
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(FieldOptions? left, FieldOptions? right)
+  static bool op_Inequality(FieldOptions? left, FieldOptions? right)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Definitions.FieldPrefill
+  PrefillMemberMode MemberMode { get; init; }
+  bool Equals(FieldPrefill? other)
+  ctor()
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(FieldPrefill? left, FieldPrefill? right)
+  static bool op_Inequality(FieldPrefill? left, FieldPrefill? right)
+  string? Context { get; init; }
+  string? Member { get; init; }
+  string? Query { get; init; }
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Definitions.FormAction
+  ActionTrigger Trigger { get; init; }
+  IReadOnlyList<FormRule> Rules { get; init; }
+  SettingsObject? Settings { get; init; }
+  bool Enabled { get; init; }
+  bool Equals(FormAction? other)
+  bool StopOnFailure { get; init; }
+  ctor()
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  required Guid Key { get; init; }
+  required string Type { get; init; }
+  static bool op_Equality(FormAction? left, FormAction? right)
+  static bool op_Inequality(FormAction? left, FormAction? right)
+  string? Name { get; init; }
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Definitions.FormAppearanceSettings
+  ChoiceLayout ChoiceLayout { get; init; }
+  RequiredMarker RequiredMarker { get; init; }
+  bool Equals(FormAppearanceSettings? other)
+  bool ValidationSummary { get; init; }
+  ctor()
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(FormAppearanceSettings? left, FormAppearanceSettings? right)
+  static bool op_Inequality(FormAppearanceSettings? left, FormAppearanceSettings? right)
+  string? CssClass { get; init; }
+  string? Theme { get; init; }
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Definitions.FormAvailabilitySettings
+  DateTime? ClosesAt { get; init; }
+  DateTime? OpensAt { get; init; }
+  IReadOnlyList<Guid> MemberGroups { get; init; }
+  LocalizedHtml? ClosedMessage { get; init; }
+  MemberAccess Access { get; init; }
+  bool Equals(FormAvailabilitySettings? other)
+  bool OnePerMember { get; init; }
+  ctor()
+  int? MaxEntries { get; init; }
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(FormAvailabilitySettings? left, FormAvailabilitySettings? right)
+  static bool op_Inequality(FormAvailabilitySettings? left, FormAvailabilitySettings? right)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Definitions.FormDefinition
+  FormSettings Settings { get; init; }
+  IReadOnlyList<FormAction> Actions { get; init; }
+  IReadOnlyList<FormOutcome> Outcomes { get; init; }
+  IReadOnlyList<FormPage> Pages { get; init; }
+  IReadOnlyList<FormValidationRule> ValidationRules { get; init; }
+  bool Equals(FormDefinition? other)
+  const int CurrentSchemaVersion = 1
+  ctor()
+  int SchemaVersion { get; }
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  required Guid Key { get; init; }
+  static bool op_Equality(FormDefinition? left, FormDefinition? right)
+  static bool op_Inequality(FormDefinition? left, FormDefinition? right)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Definitions.FormDeveloperSettings
+  IReadOnlyList<string> ContextValues { get; init; }
+  IReadOnlyList<string> QueryValues { get; init; }
+  bool Equals(FormDeveloperSettings? other)
+  bool Headless { get; init; }
+  const string ReservedContextPrefix = "jfb"
+  ctor()
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(FormDeveloperSettings? left, FormDeveloperSettings? right)
+  static bool op_Inequality(FormDeveloperSettings? left, FormDeveloperSettings? right)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Definitions.FormField
+  FieldDefaultValue? DefaultValue { get; init; }
+  FieldKeep Keep { get; init; }
+  FieldMessages Messages { get; init; }
+  FieldOptions? Options { get; init; }
+  FieldPrefill? Prefill { get; init; }
+  IReadOnlyList<FieldCheck> Validation { get; init; }
+  IReadOnlyList<FormField> Fields { get; init; }
+  IReadOnlyList<FormRule> Rules { get; init; }
+  IReadOnlyList<GridRow> Rows { get; init; }
+  IReadOnlyList<string> FormerAliases { get; init; }
+  LocalizedText? Help { get; init; }
+  LocalizedText? Label { get; init; }
+  LocalizedText? Placeholder { get; init; }
+  SettingsObject? Settings { get; init; }
+  bool Equals(FormField? other)
+  bool HideLabel { get; init; }
+  bool IncludeInEmails { get; init; }
+  bool Required { get; init; }
+  bool Sensitive { get; init; }
+  ctor()
+  int Span { get; init; }
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  required Guid Key { get; init; }
+  required string Type { get; init; }
+  static bool op_Equality(FormField? left, FormField? right)
+  static bool op_Inequality(FormField? left, FormField? right)
+  string? Alias { get; init; }
+  string? Autocomplete { get; init; }
+  string? CssClass { get; init; }
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Definitions.FormGroup
+  GroupStyle Style { get; init; }
+  IReadOnlyList<FormField> Fields { get; init; }
+  IReadOnlyList<FormRule> Rules { get; init; }
+  LocalizedHtml? Description { get; init; }
+  LocalizedText? Title { get; init; }
+  bool Equals(FormGroup? other)
+  ctor()
+  int Columns { get; init; }
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  required Guid Key { get; init; }
+  static bool op_Equality(FormGroup? left, FormGroup? right)
+  static bool op_Inequality(FormGroup? left, FormGroup? right)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Definitions.FormOutcome
+  IReadOnlyList<FormRule> Rules { get; init; }
+  LocalizedHtml? Message { get; init; }
+  OutcomeKind Kind { get; init; }
+  OutcomeRedirect? Redirect { get; init; }
+  bool Equals(FormOutcome? other)
+  bool ShowAnswers { get; init; }
+  ctor()
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  required Guid Key { get; init; }
+  static bool op_Equality(FormOutcome? left, FormOutcome? right)
+  static bool op_Inequality(FormOutcome? left, FormOutcome? right)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Definitions.FormPage
+  IReadOnlyList<FormGroup> Groups { get; init; }
+  IReadOnlyList<FormRule> Rules { get; init; }
+  LocalizedHtml? Description { get; init; }
+  LocalizedText? Title { get; init; }
+  bool Equals(FormPage? other)
+  ctor()
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  required Guid Key { get; init; }
+  static bool op_Equality(FormPage? left, FormPage? right)
+  static bool op_Inequality(FormPage? left, FormPage? right)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Definitions.FormPrivacySettings
+  IPHandling IP { get; init; }
+  RetentionDaysByState RetentionDays { get; init; }
+  bool Anonymous { get; init; }
+  bool Equals(FormPrivacySettings? other)
+  bool Insights { get; init; }
+  ctor()
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(FormPrivacySettings? left, FormPrivacySettings? right)
+  static bool op_Inequality(FormPrivacySettings? left, FormPrivacySettings? right)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Definitions.FormProtectionSettings
+  CaptchaChoice? Captcha { get; init; }
+  ContentRuleLevel ContentRules { get; init; }
+  ProtectionLevel Level { get; init; }
+  bool Equals(FormProtectionSettings? other)
+  ctor()
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(FormProtectionSettings? left, FormProtectionSettings? right)
+  static bool op_Inequality(FormProtectionSettings? left, FormProtectionSettings? right)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Definitions.FormRule
+  IReadOnlyList<RuleItem> Conditions { get; init; }
+  RuleMatch Match { get; init; }
+  bool Enabled { get; init; }
+  bool Equals(FormRule? other)
+  ctor()
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  required Guid Key { get; init; }
+  required RuleEffect Effect { get; init; }
+  static bool op_Equality(FormRule? left, FormRule? right)
+  static bool op_Inequality(FormRule? left, FormRule? right)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Definitions.FormSettings
+  FormAppearanceSettings Appearance { get; init; }
+  FormAvailabilitySettings Availability { get; init; }
+  FormDeveloperSettings Developer { get; init; }
+  FormPrivacySettings Privacy { get; init; }
+  FormProtectionSettings Protection { get; init; }
+  FormSubmissionSettings Submission { get; init; }
+  bool Equals(FormSettings? other)
+  ctor()
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(FormSettings? left, FormSettings? right)
+  static bool op_Inequality(FormSettings? left, FormSettings? right)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Definitions.FormSubmissionSettings
+  ApprovalMode Approval { get; init; }
+  EmailVerification? Verification { get; init; }
+  EntryReferenceFormat? EntryReference { get; init; }
+  EntryStorage Store { get; init; }
+  IReadOnlyDictionary<string, IReadOnlyDictionary<string, string>>? Texts { get; init; }
+  LocalizedText? BackLabel { get; init; }
+  LocalizedText? NextLabel { get; init; }
+  LocalizedText? SubmitLabel { get; init; }
+  ProgressIndicator Progress { get; init; }
+  SaveAndResume? Resume { get; init; }
+  bool Equals(FormSubmissionSettings? other)
+  bool SummaryPage { get; init; }
+  ctor()
+  int? StoreDays { get; init; }
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(FormSubmissionSettings? left, FormSubmissionSettings? right)
+  static bool op_Inequality(FormSubmissionSettings? left, FormSubmissionSettings? right)
+  string? EntryTitle { get; init; }
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Definitions.FormValidationRule
+  IReadOnlyList<RuleItem> Conditions { get; init; }
+  LocalizedText? Message { get; init; }
+  RuleMatch Match { get; init; }
+  bool Enabled { get; init; }
+  bool Equals(FormValidationRule? other)
+  ctor()
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  required Guid Field { get; init; }
+  required Guid Key { get; init; }
+  static bool op_Equality(FormValidationRule? left, FormValidationRule? right)
+  static bool op_Inequality(FormValidationRule? left, FormValidationRule? right)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Definitions.GridRow
+  LocalizedText? Label { get; init; }
+  bool Equals(GridRow? other)
+  bool Required { get; init; }
+  ctor()
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  required Guid Key { get; init; }
+  static bool op_Equality(GridRow? left, GridRow? right)
+  static bool op_Inequality(GridRow? left, GridRow? right)
+
+public enum Jiron.Umbraco.FormBuilder.Core.Definitions.GroupStyle
+  Plain = 0
+  Card = 1
+
+public enum Jiron.Umbraco.FormBuilder.Core.Definitions.IPHandling
+  Inherit = 0
+  None = 1
+  Anonymised = 2
+  Full = 3
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Definitions.LocalizedHtml : LocalizedString
+  ctor(IEnumerable<KeyValuePair<string, string>> texts)
+  ctor(string html)
+
+public abstract class Jiron.Umbraco.FormBuilder.Core.Definitions.LocalizedString : IEquatable<LocalizedString>
+  IReadOnlyList<CultureText> Texts { get; }
+  bool Equals(LocalizedString? other)
+  bool TryGetText(string culture, out string? text)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool IsCultureName(string name)
+  static bool TryGetDictionaryKey(string text, out string? key)
+  string Default { get; }
+  string Resolve(string? culture)
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Definitions.LocalizedText : LocalizedString
+  ctor(IEnumerable<KeyValuePair<string, string>> texts)
+  ctor(string text)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Definitions.MatchesFieldCheck : FieldCheck
+  bool Equals(MatchesFieldCheck? other)
+  ctor()
+  override bool Equals(FieldCheck? other)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  required Guid Field { get; init; }
+  static bool op_Equality(MatchesFieldCheck? left, MatchesFieldCheck? right)
+  static bool op_Inequality(MatchesFieldCheck? left, MatchesFieldCheck? right)
+
+public enum Jiron.Umbraco.FormBuilder.Core.Definitions.MemberAccess
+  Anyone = 0
+  Members = 1
+  Groups = 2
+
+public enum Jiron.Umbraco.FormBuilder.Core.Definitions.OptionSource
+  Items = 0
+  List = 1
+  Content = 2
+  DataType = 3
+  Url = 4
+  File = 5
+  Countries = 6
+  Code = 7
+
+public enum Jiron.Umbraco.FormBuilder.Core.Definitions.OutcomeKind
+  Message = 0
+  Redirect = 1
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Definitions.OutcomeRedirect
+  Guid? Content { get; init; }
+  bool Equals(OutcomeRedirect? other)
+  ctor()
+  int DelaySeconds { get; init; }
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(OutcomeRedirect? left, OutcomeRedirect? right)
+  static bool op_Inequality(OutcomeRedirect? left, OutcomeRedirect? right)
+  string? Url { get; init; }
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Definitions.PatternCheck : FieldCheck
+  bool Equals(PatternCheck? other)
+  ctor()
+  override bool Equals(FieldCheck? other)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  required string Pattern { get; init; }
+  static bool op_Equality(PatternCheck? left, PatternCheck? right)
+  static bool op_Inequality(PatternCheck? left, PatternCheck? right)
+
+public enum Jiron.Umbraco.FormBuilder.Core.Definitions.PrefillMemberMode
+  Show = 0
+  Hide = 1
+
+public enum Jiron.Umbraco.FormBuilder.Core.Definitions.ProgressIndicator
+  Steps = 0
+  Bar = 1
+  None = 2
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Definitions.Projection.PublicField
+  FieldDefaultValue? DefaultValue { get; init; }
+  FieldMessages Messages { get; init; }
+  IReadOnlyList<FieldCheck> Validation { get; init; }
+  IReadOnlyList<PublicField> Fields { get; init; }
+  IReadOnlyList<PublicGridRow> Rows { get; init; }
+  IReadOnlyList<PublicRule> Rules { get; init; }
+  LocalizedText? Help { get; init; }
+  LocalizedText? Label { get; init; }
+  LocalizedText? Placeholder { get; init; }
+  PublicOptions? Options { get; init; }
+  PublicPrefill? Prefill { get; init; }
+  SettingsObject? Settings { get; init; }
+  bool Equals(PublicField? other)
+  bool HideLabel { get; init; }
+  bool Required { get; init; }
+  ctor()
+  int Span { get; init; }
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  required Guid Key { get; init; }
+  required string Type { get; init; }
+  static bool op_Equality(PublicField? left, PublicField? right)
+  static bool op_Inequality(PublicField? left, PublicField? right)
+  string? Alias { get; init; }
+  string? Autocomplete { get; init; }
+  string? CssClass { get; init; }
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Definitions.Projection.PublicForm
+  IReadOnlyList<PublicPage> Pages { get; init; }
+  IReadOnlyList<PublicValidationRule> ValidationRules { get; init; }
+  PublicFormSettings Settings { get; init; }
+  bool Equals(PublicForm? other)
+  ctor()
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  required Guid Key { get; init; }
+  static bool op_Equality(PublicForm? left, PublicForm? right)
+  static bool op_Inequality(PublicForm? left, PublicForm? right)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Definitions.Projection.PublicFormSettings
+  ChoiceLayout ChoiceLayout { get; init; }
+  IReadOnlyDictionary<string, IReadOnlyDictionary<string, string>>? Texts { get; init; }
+  IReadOnlyList<string> QueryValues { get; init; }
+  LocalizedHtml? ClosedMessage { get; init; }
+  LocalizedText? BackLabel { get; init; }
+  LocalizedText? NextLabel { get; init; }
+  LocalizedText? SubmitLabel { get; init; }
+  ProgressIndicator Progress { get; init; }
+  ProtectionLevel Protection { get; init; }
+  RequiredMarker RequiredMarker { get; init; }
+  bool Equals(PublicFormSettings? other)
+  bool MembersOnly { get; init; }
+  bool Resume { get; init; }
+  bool SummaryPage { get; init; }
+  bool ValidationSummary { get; init; }
+  ctor()
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(PublicFormSettings? left, PublicFormSettings? right)
+  static bool op_Inequality(PublicFormSettings? left, PublicFormSettings? right)
+  string? CaptchaProvider { get; init; }
+  string? CssClass { get; init; }
+  string? Theme { get; init; }
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Definitions.Projection.PublicGridRow
+  LocalizedText? Label { get; init; }
+  bool Equals(PublicGridRow? other)
+  bool Required { get; init; }
+  ctor()
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  required Guid Key { get; init; }
+  static bool op_Equality(PublicGridRow? left, PublicGridRow? right)
+  static bool op_Inequality(PublicGridRow? left, PublicGridRow? right)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Definitions.Projection.PublicGroup
+  GroupStyle Style { get; init; }
+  IReadOnlyList<PublicField> Fields { get; init; }
+  IReadOnlyList<PublicRule> Rules { get; init; }
+  LocalizedHtml? Description { get; init; }
+  LocalizedText? Title { get; init; }
+  bool Equals(PublicGroup? other)
+  ctor()
+  int Columns { get; init; }
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  required Guid Key { get; init; }
+  static bool op_Equality(PublicGroup? left, PublicGroup? right)
+  static bool op_Inequality(PublicGroup? left, PublicGroup? right)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Definitions.Projection.PublicOption
+  Guid? Image { get; init; }
+  IReadOnlyList<string> ParentValues { get; init; }
+  LocalizedText? Description { get; init; }
+  LocalizedText? Label { get; init; }
+  bool Equals(PublicOption? other)
+  ctor()
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  required string Value { get; init; }
+  static bool op_Equality(PublicOption? left, PublicOption? right)
+  static bool op_Inequality(PublicOption? left, PublicOption? right)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Definitions.Projection.PublicOptions
+  Guid? Parent { get; init; }
+  IReadOnlyList<PublicOption> Items { get; init; }
+  bool Equals(PublicOptions? other)
+  bool FromSource { get; init; }
+  ctor()
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(PublicOptions? left, PublicOptions? right)
+  static bool op_Inequality(PublicOptions? left, PublicOptions? right)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Definitions.Projection.PublicPage
+  IReadOnlyList<PublicGroup> Groups { get; init; }
+  IReadOnlyList<PublicRule> Rules { get; init; }
+  LocalizedHtml? Description { get; init; }
+  LocalizedText? Title { get; init; }
+  bool Equals(PublicPage? other)
+  ctor()
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  required Guid Key { get; init; }
+  static bool op_Equality(PublicPage? left, PublicPage? right)
+  static bool op_Inequality(PublicPage? left, PublicPage? right)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Definitions.Projection.PublicPrefill
+  PrefillMemberMode MemberMode { get; init; }
+  bool Equals(PublicPrefill? other)
+  bool FromMember { get; init; }
+  ctor()
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(PublicPrefill? left, PublicPrefill? right)
+  static bool op_Inequality(PublicPrefill? left, PublicPrefill? right)
+  string? Context { get; init; }
+  string? Query { get; init; }
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Definitions.Projection.PublicRule
+  IReadOnlyList<RuleItem> Conditions { get; init; }
+  RuleMatch Match { get; init; }
+  bool Equals(PublicRule? other)
+  ctor()
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  required Guid Key { get; init; }
+  required RuleEffect Effect { get; init; }
+  static bool op_Equality(PublicRule? left, PublicRule? right)
+  static bool op_Inequality(PublicRule? left, PublicRule? right)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Definitions.Projection.PublicValidationRule
+  IReadOnlyList<RuleItem> Conditions { get; init; }
+  LocalizedText? Message { get; init; }
+  RuleMatch Match { get; init; }
+  bool Equals(PublicValidationRule? other)
+  ctor()
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  required Guid Field { get; init; }
+  required Guid Key { get; init; }
+  static bool op_Equality(PublicValidationRule? left, PublicValidationRule? right)
+  static bool op_Inequality(PublicValidationRule? left, PublicValidationRule? right)
+
+public enum Jiron.Umbraco.FormBuilder.Core.Definitions.ProtectionLevel
+  Inherit = 0
+  Standard = 1
+  ProofOfWork = 2
+  Captcha = 3
+
+public enum Jiron.Umbraco.FormBuilder.Core.Definitions.RequiredMarker
+  Inherit = 0
+  Required = 1
+  Optional = 2
+  None = 3
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Definitions.RetentionDaysByState
+  bool Equals(RetentionDaysByState? other)
+  ctor()
+  int? Approved { get; init; }
+  int? Rejected { get; init; }
+  int? Spam { get; init; }
+  int? Submitted { get; init; }
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(RetentionDaysByState? left, RetentionDaysByState? right)
+  static bool op_Inequality(RetentionDaysByState? left, RetentionDaysByState? right)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Definitions.RuleCondition : RuleItem
+  ConditionOperand? Value { get; init; }
+  Guid? Field { get; init; }
+  bool Equals(RuleCondition? other)
+  ctor()
+  override bool Equals(RuleItem? other)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  required string Operator { get; init; }
+  static bool op_Equality(RuleCondition? left, RuleCondition? right)
+  static bool op_Inequality(RuleCondition? left, RuleCondition? right)
+  string? Context { get; init; }
+
+public enum Jiron.Umbraco.FormBuilder.Core.Definitions.RuleEffect
+  Show = 0
+  Hide = 1
+  Require = 2
+  Run = 3
+  Use = 4
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Definitions.RuleGroup : RuleItem
+  IReadOnlyList<RuleItem> Conditions { get; init; }
+  RuleMatch Match { get; init; }
+  bool Equals(RuleGroup? other)
+  ctor()
+  override bool Equals(RuleItem? other)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(RuleGroup? left, RuleGroup? right)
+  static bool op_Inequality(RuleGroup? left, RuleGroup? right)
+
+public abstract record Jiron.Umbraco.FormBuilder.Core.Definitions.RuleItem
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  protected ctor(RuleItem original)
+  protected virtual Type EqualityContract { get; }
+  protected virtual bool PrintMembers(StringBuilder builder)
+  static bool op_Equality(RuleItem? left, RuleItem? right)
+  static bool op_Inequality(RuleItem? left, RuleItem? right)
+  virtual bool Equals(RuleItem? other)
+
+public enum Jiron.Umbraco.FormBuilder.Core.Definitions.RuleMatch
+  All = 0
+  Any = 1
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Definitions.SaveAndResume
+  bool Equals(SaveAndResume? other)
+  ctor()
+  int Days { get; init; }
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(SaveAndResume? left, SaveAndResume? right)
+  static bool op_Inequality(SaveAndResume? left, SaveAndResume? right)
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Definitions.SettingsObject : IEquatable<SettingsObject>
+  JsonElement Value { get; }
+  T? Bind<T>(JsonTypeInfo<T> typeInfo)
+  bool Equals(SettingsObject? other)
+  bool TryGetProperty(string name, out JsonElement value)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static SettingsObject From(JsonElement value)
+  static SettingsObject Parse(string json)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Definitions.UniquePerFormCheck : FieldCheck
+  bool Equals(UniquePerFormCheck? other)
+  ctor()
+  override bool Equals(FieldCheck? other)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(UniquePerFormCheck? left, UniquePerFormCheck? right)
+  static bool op_Inequality(UniquePerFormCheck? left, UniquePerFormCheck? right)
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Email.EmailActionSettings
+  Guid? Layout { get; init; }
+  Guid? ReplyToField { get; init; }
+  Guid? ToField { get; init; }
+  IReadOnlyList<Guid> Attachments { get; init; }
+  IReadOnlyList<Guid> IncludeSensitive { get; init; }
+  IReadOnlyList<string> Bcc { get; init; }
+  IReadOnlyList<string> Cc { get; init; }
+  IReadOnlyList<string> To { get; init; }
+  JsonElement? RecipientMap { get; init; }
+  LocalizedHtml? Body { get; init; }
+  LocalizedText? Subject { get; init; }
+  bool PlainText { get; init; }
+  bool ToCreator { get; init; }
+  bool ToPrivacyTeam { get; init; }
+  bool WithoutUnanswered { get; init; }
+  ctor()
+  string? From { get; init; }
+  string? View { get; init; }
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Email.EmailViewModel
+  bool Equals(EmailViewModel? other)
+  ctor()
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  required int EntryNumber { get; init; }
+  required string Answers { get; init; }
+  required string Culture { get; init; }
+  required string FormName { get; init; }
+  required string Subject { get; init; }
+  static bool op_Equality(EmailViewModel? left, EmailViewModel? right)
+  static bool op_Inequality(EmailViewModel? left, EmailViewModel? right)
+
+public interface Jiron.Umbraco.FormBuilder.Core.Email.IFormBuilderEmailView
+  Task<string?> RenderAsync(string view, EmailViewModel model, CancellationToken cancellationToken)
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Entries.EntryActionFailedNotification : EntryNotification
+  ctor()
+  override object Payload()
+  required string ActionType { get; init; }
+  required string? Code { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Entries.EntryApprovedNotification : EntryNotification
+  ctor()
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Entries.EntryDeletedNotification : EntryNotification
+  ctor()
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Entries.EntryDeletingNotification : EntryNotification
+  ctor()
+
+public abstract class Jiron.Umbraco.FormBuilder.Core.Entries.EntryNotification : INotification
+  protected ctor()
+  required DateTimeOffset OccurredUtc { get; init; }
+  required Guid EntryKey { get; init; }
+  required int EntryNumber { get; init; }
+  required string FormAlias { get; init; }
+  required string State { get; init; }
+  virtual object Payload()
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Entries.EntryRejectedNotification : EntryNotification
+  ctor()
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Entries.EntryStateChangedNotification : EntryNotification
+  ctor()
+  required string From { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Entries.EntrySubmittedNotification : EntryNotification
+  ctor()
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Entries.EntrySubmittingError
+  bool Equals(EntrySubmittingError? other)
+  ctor(string? Field, int? Row, string Message)
+  int? Row { get; init; }
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(EntrySubmittingError? left, EntrySubmittingError? right)
+  static bool op_Inequality(EntrySubmittingError? left, EntrySubmittingError? right)
+  string Message { get; init; }
+  string? Field { get; init; }
+  void Deconstruct(out string? Field, out int? Row, out string Message)
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Entries.EntrySubmittingNotification : CancelableNotification
+  Guid? Member { get; init; }
+  Guid? Page { get; init; }
+  Guid? Site { get; init; }
+  IReadOnlyDictionary<string, string> Context { get; init; }
+  IReadOnlyList<EntrySubmittingError> Errors { get; }
+  MergeTagAnswer? AnswerOf(string fieldAlias, int row = 0)
+  bool IsFromCode { get; init; }
+  bool IsSpam { get; init; }
+  bool IsTest { get; init; }
+  ctor(EventMessages messages)
+  required FormDefinition Form { get; init; }
+  required Guid FormKey { get; init; }
+  required MergeTagAnswers Answers { get; init; }
+  required int Version { get; init; }
+  required string Culture { get; init; }
+  required string FormAlias { get; init; }
+  void AddError(string fieldAlias, string message, int? row = default)
+  void AddFormError(string message)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Entries.FormBuilderEntry
+  Guid? Member { get; init; }
+  Guid? Page { get; init; }
+  Guid? Site { get; init; }
+  bool Equals(FormBuilderEntry? other)
+  bool IsTest { get; init; }
+  ctor()
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  required DateTimeOffset SubmittedUtc { get; init; }
+  required FormBuilderEntryState State { get; init; }
+  required Guid FormKey { get; init; }
+  required Guid Key { get; init; }
+  required IReadOnlyList<FormBuilderEntryAnswer> Answers { get; init; }
+  required int Number { get; init; }
+  required string Culture { get; init; }
+  required string FormAlias { get; init; }
+  required string Reference { get; init; }
+  static bool op_Equality(FormBuilderEntry? left, FormBuilderEntry? right)
+  static bool op_Inequality(FormBuilderEntry? left, FormBuilderEntry? right)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Entries.FormBuilderEntryAnswer
+  IReadOnlyList<FormBuilderEntryFile> Files { get; init; }
+  IReadOnlyList<Guid> GridRows { get; init; }
+  bool Equals(FormBuilderEntryAnswer? other)
+  bool IsSensitive { get; init; }
+  ctor()
+  int? Row { get; init; }
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  required Guid FieldKey { get; init; }
+  required IReadOnlyList<string> Values { get; init; }
+  required string Field { get; init; }
+  required string Type { get; init; }
+  static bool op_Equality(FormBuilderEntryAnswer? left, FormBuilderEntryAnswer? right)
+  static bool op_Inequality(FormBuilderEntryAnswer? left, FormBuilderEntryAnswer? right)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Entries.FormBuilderEntryFile
+  Guid Key { get; init; }
+  bool Equals(FormBuilderEntryFile? other)
+  ctor(Guid Key, string Name, long SizeBytes)
+  long SizeBytes { get; init; }
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(FormBuilderEntryFile? left, FormBuilderEntryFile? right)
+  static bool op_Inequality(FormBuilderEntryFile? left, FormBuilderEntryFile? right)
+  string Name { get; init; }
+  void Deconstruct(out Guid Key, out string Name, out long SizeBytes)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Entries.FormBuilderEntryPage
+  IReadOnlyList<FormBuilderEntry> Entries { get; init; }
+  bool Equals(FormBuilderEntryPage? other)
+  ctor(IReadOnlyList<FormBuilderEntry> Entries, string? Next)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(FormBuilderEntryPage? left, FormBuilderEntryPage? right)
+  static bool op_Inequality(FormBuilderEntryPage? left, FormBuilderEntryPage? right)
+  string? Next { get; init; }
+  void Deconstruct(out IReadOnlyList<FormBuilderEntry> Entries, out string? Next)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Entries.FormBuilderEntryProblem
+  bool Equals(FormBuilderEntryProblem? other)
+  ctor(string Code, string Path, string? Text = default)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(FormBuilderEntryProblem? left, FormBuilderEntryProblem? right)
+  static bool op_Inequality(FormBuilderEntryProblem? left, FormBuilderEntryProblem? right)
+  string Code { get; init; }
+  string Path { get; init; }
+  string? Text { get; init; }
+  void Deconstruct(out string Code, out string Path, out string? Text)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Entries.FormBuilderEntryQuery
+  DateTimeOffset? SubmittedBefore { get; init; }
+  DateTimeOffset? SubmittedFrom { get; init; }
+  IReadOnlyCollection<FormBuilderEntryState> States { get; init; }
+  bool Equals(FormBuilderEntryQuery? other)
+  bool IncludeTest { get; init; }
+  const int MaxTake = 100
+  ctor()
+  int Take { get; init; }
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(FormBuilderEntryQuery? left, FormBuilderEntryQuery? right)
+  static bool op_Inequality(FormBuilderEntryQuery? left, FormBuilderEntryQuery? right)
+  string? After { get; init; }
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Entries.FormBuilderEntryReadRequest
+  IReadOnlyList<string>? Fields { get; init; }
+  bool Equals(FormBuilderEntryReadRequest? other)
+  const int MaxTake = 100
+  ctor()
+  int Take { get; init; }
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(FormBuilderEntryReadRequest? left, FormBuilderEntryReadRequest? right)
+  static bool op_Inequality(FormBuilderEntryReadRequest? left, FormBuilderEntryReadRequest? right)
+  string? After { get; init; }
+  string? Culture { get; init; }
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Entries.FormBuilderEntryReading
+  IReadOnlyList<FormBuilderReadEntry> Entries { get; init; }
+  bool Equals(FormBuilderEntryReading? other)
+  ctor(IReadOnlyList<FormBuilderReadEntry> Entries, string? Next)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(FormBuilderEntryReading? left, FormBuilderEntryReading? right)
+  static bool op_Inequality(FormBuilderEntryReading? left, FormBuilderEntryReading? right)
+  string? Next { get; init; }
+  void Deconstruct(out IReadOnlyList<FormBuilderReadEntry> Entries, out string? Next)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Entries.FormBuilderEntryResult
+  FormBuilderEntry? Entry { get; init; }
+  IReadOnlyList<FormBuilderEntryProblem> Problems { get; init; }
+  bool Equals(FormBuilderEntryResult? other)
+  bool Replayed { get; init; }
+  ctor()
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(FormBuilderEntryResult? left, FormBuilderEntryResult? right)
+  static bool op_Inequality(FormBuilderEntryResult? left, FormBuilderEntryResult? right)
+  string? Refusal { get; init; }
+
+public enum Jiron.Umbraco.FormBuilder.Core.Entries.FormBuilderEntryState
+  Unverified = 0
+  Submitted = 1
+  Approved = 2
+  Rejected = 3
+  Spam = 4
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Entries.FormBuilderNewAnswer
+  IReadOnlyDictionary<string, string>? Parts { get; init; }
+  IReadOnlyList<string> Values { get; }
+  bool Equals(FormBuilderNewAnswer? other)
+  ctor(params string[] values)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(FormBuilderNewAnswer? left, FormBuilderNewAnswer? right)
+  static bool op_Inequality(FormBuilderNewAnswer? left, FormBuilderNewAnswer? right)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Entries.FormBuilderNewEntry
+  Guid? Member { get; init; }
+  Guid? Page { get; init; }
+  Guid? SubmissionId { get; init; }
+  IReadOnlyDictionary<string, FormBuilderNewAnswer> Answers { get; init; }
+  IReadOnlyDictionary<string, IReadOnlyList<IReadOnlyDictionary<string, FormBuilderNewAnswer>>> Rows { get; init; }
+  IReadOnlyDictionary<string, string> Context { get; init; }
+  bool Equals(FormBuilderNewEntry? other)
+  ctor()
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  required Guid Form { get; init; }
+  static bool op_Equality(FormBuilderNewEntry? left, FormBuilderNewEntry? right)
+  static bool op_Inequality(FormBuilderNewEntry? left, FormBuilderNewEntry? right)
+  string? Culture { get; init; }
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Entries.FormBuilderReadAnswer
+  IReadOnlyList<string> Texts { get; init; }
+  bool Equals(FormBuilderReadAnswer? other)
+  ctor(string Field, string Label, IReadOnlyList<string> Texts, int? Row = default)
+  int? Row { get; init; }
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(FormBuilderReadAnswer? left, FormBuilderReadAnswer? right)
+  static bool op_Inequality(FormBuilderReadAnswer? left, FormBuilderReadAnswer? right)
+  string Field { get; init; }
+  string Label { get; init; }
+  void Deconstruct(out string Field, out string Label, out IReadOnlyList<string> Texts, out int? Row)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Entries.FormBuilderReadEntry
+  DateTimeOffset SubmittedUtc { get; init; }
+  IReadOnlyList<FormBuilderReadAnswer> Answers { get; init; }
+  bool Equals(FormBuilderReadEntry? other)
+  ctor(int Number, DateTimeOffset SubmittedUtc, IReadOnlyList<FormBuilderReadAnswer> Answers)
+  int Number { get; init; }
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(FormBuilderReadEntry? left, FormBuilderReadEntry? right)
+  static bool op_Inequality(FormBuilderReadEntry? left, FormBuilderReadEntry? right)
+  void Deconstruct(out int Number, out DateTimeOffset SubmittedUtc, out IReadOnlyList<FormBuilderReadAnswer> Answers)
+
+public interface Jiron.Umbraco.FormBuilder.Core.Entries.IFormBuilderEntryReader
+  Task<FormBuilderEntryReading?> ReadApprovedAsync(string form, FormBuilderEntryReadRequest request, CancellationToken cancellationToken = default)
+
+public interface Jiron.Umbraco.FormBuilder.Core.Entries.IFormBuilderEntryService
+  Task<FormBuilderEntry?> GetAsync(Guid entryKey, CancellationToken cancellationToken = default)
+  Task<FormBuilderEntryPage?> ListAsync(Guid formKey, FormBuilderEntryQuery query, CancellationToken cancellationToken = default)
+  Task<FormBuilderEntryResult> CreateAsync(FormBuilderNewEntry entry, CancellationToken cancellationToken = default)
+  Task<bool> ChangeStateAsync(Guid entryKey, FormBuilderEntryState state, CancellationToken cancellationToken = default)
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Exports.ExportCompletedNotification : INotification
+  Guid FormKey { get; }
+  Guid UserKey { get; }
+  ctor(Guid formKey, string format, int entries, Guid userKey)
+  int Entries { get; }
+  string Format { get; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Exports.FormBuilderExport
+  ctor()
+  required FormBuilderExportOptions Options { get; init; }
+  required Func<FormBuilderExportFile, CancellationToken, Task<Stream?>> OpenFileAsync { get; init; }
+  required IAsyncEnumerable<FormBuilderExportEntry> Entries { get; init; }
+  required IReadOnlyList<FormBuilderExportColumn> Columns { get; init; }
+  required IReadOnlyList<FormBuilderExportTable> Tables { get; init; }
+  required string Culture { get; init; }
+  required string FormAlias { get; init; }
+  required string FormName { get; init; }
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Exports.FormBuilderExportColumn
+  FormBuilderExportColumnKind Kind { get; init; }
+  bool Equals(FormBuilderExportColumn? other)
+  ctor(FormBuilderExportColumnKind Kind, string Label, string Alias, string? Field = default, string? Part = default)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(FormBuilderExportColumn? left, FormBuilderExportColumn? right)
+  static bool op_Inequality(FormBuilderExportColumn? left, FormBuilderExportColumn? right)
+  string Alias { get; init; }
+  string Header(FormBuilderExportHeaders headers)
+  string Label { get; init; }
+  string? Field { get; init; }
+  string? Part { get; init; }
+  void Deconstruct(out FormBuilderExportColumnKind Kind, out string Label, out string Alias, out string? Field, out string? Part)
+
+public enum Jiron.Umbraco.FormBuilder.Core.Exports.FormBuilderExportColumnKind
+  Number = 0
+  Reference = 1
+  State = 2
+  Received = 3
+  Answer = 4
+  GridRow = 5
+  Position = 6
+  Language = 7
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Exports.FormBuilderExportEntry
+  DateTimeOffset ReceivedUtc { get; init; }
+  Guid Key { get; init; }
+  IReadOnlyList<FormBuilderExportFile> Files { get; init; }
+  IReadOnlyList<IReadOnlyList<IReadOnlyList<IReadOnlyList<string>>>> Tables { get; init; }
+  IReadOnlyList<IReadOnlyList<string>> Cells { get; init; }
+  bool Equals(FormBuilderExportEntry? other)
+  ctor(Guid Key, int Number, DateTimeOffset ReceivedUtc, IReadOnlyList<IReadOnlyList<string>> Cells, IReadOnlyList<IReadOnlyList<IReadOnlyList<IReadOnlyList<string>>>> Tables, IReadOnlyList<FormBuilderExportFile> Files)
+  int Number { get; init; }
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(FormBuilderExportEntry? left, FormBuilderExportEntry? right)
+  static bool op_Inequality(FormBuilderExportEntry? left, FormBuilderExportEntry? right)
+  void Deconstruct(out Guid Key, out int Number, out DateTimeOffset ReceivedUtc, out IReadOnlyList<IReadOnlyList<string>> Cells, out IReadOnlyList<IReadOnlyList<IReadOnlyList<IReadOnlyList<string>>>> Tables, out IReadOnlyList<FormBuilderExportFile> Files)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Exports.FormBuilderExportFile
+  Guid Key { get; init; }
+  bool Equals(FormBuilderExportFile? other)
+  ctor(Guid Key, string Name, string Field)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(FormBuilderExportFile? left, FormBuilderExportFile? right)
+  static bool op_Inequality(FormBuilderExportFile? left, FormBuilderExportFile? right)
+  string Field { get; init; }
+  string Name { get; init; }
+  void Deconstruct(out Guid Key, out string Name, out string Field)
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Exports.FormBuilderExportFormatCollection : BuilderCollectionBase<IFormBuilderExportFormat>
+  IFormBuilderExportFormat? Find(string? name)
+  IReadOnlyList<IFormBuilderExportFormat> Offered()
+  ctor(Func<IEnumerable<IFormBuilderExportFormat>> items)
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Exports.FormBuilderExportFormatCollectionBuilder : OrderedCollectionBuilderBase<FormBuilderExportFormatCollectionBuilder, FormBuilderExportFormatCollection, IFormBuilderExportFormat>
+  ctor()
+
+public enum Jiron.Umbraco.FormBuilder.Core.Exports.FormBuilderExportHeaders
+  Labels = 0
+  Aliases = 1
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Exports.FormBuilderExportOptions
+  FormBuilderExportHeaders Headers { get; init; }
+  bool ByteOrderMark { get; init; }
+  bool Equals(FormBuilderExportOptions? other)
+  char Delimiter { get; init; }
+  ctor()
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(FormBuilderExportOptions? left, FormBuilderExportOptions? right)
+  static bool op_Inequality(FormBuilderExportOptions? left, FormBuilderExportOptions? right)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Exports.FormBuilderExportTable
+  IReadOnlyList<FormBuilderExportColumn> Columns { get; init; }
+  bool Equals(FormBuilderExportTable? other)
+  ctor(string Label, string Alias, IReadOnlyList<FormBuilderExportColumn> Columns)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(FormBuilderExportTable? left, FormBuilderExportTable? right)
+  static bool op_Inequality(FormBuilderExportTable? left, FormBuilderExportTable? right)
+  string Alias { get; init; }
+  string Label { get; init; }
+  void Deconstruct(out string Label, out string Alias, out IReadOnlyList<FormBuilderExportColumn> Columns)
+
+public interface Jiron.Umbraco.FormBuilder.Core.Exports.IFormBuilderExportFormat
+  Task WriteAsync(FormBuilderExport content, Stream output, CancellationToken cancellationToken)
+  bool TakesDelimiter { get; }
+  bool TakesHeaders { get; }
+  bool WritesFiles { get; }
+  string ContentType { get; }
+  string DisplayName { get; }
+  string FileExtension { get; }
+  string Name { get; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn.AddressFieldSettings
+  IReadOnlyList<AddressPart> Parts { get; init; }
+  IReadOnlyList<AddressPart> RequiredParts { get; init; }
+  ctor()
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn.AddressFieldType : FormBuilderFieldTypeBase<AddressFieldSettings>
+  const int LongestPart = 200
+  ctor()
+
+public enum Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn.AddressPart
+  Street = 0
+  Street2 = 1
+  Postcode = 2
+  City = 3
+  Region = 4
+  Country = 5
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn.CalculationFieldSettings
+  CalculationFormat? Format { get; init; }
+  bool Visible { get; init; }
+  ctor()
+  string? Formula { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn.CalculationFieldType : FormBuilderFieldTypeBase<CalculationFieldSettings>
+  ctor()
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn.CalculationFormat
+  LocalizedText? Prefix { get; init; }
+  LocalizedText? Suffix { get; init; }
+  const int DefaultDecimals = 2
+  ctor()
+  int? Decimals { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn.CaptchaFieldType : FormBuilderFieldTypeBase<NoFieldSettings>
+  const string NoKeys = "#jfbFieldTypeAvailability_captchaNoKeys"
+  ctor(FormBuilderCaptchaProviderCollection providers)
+  override ValueTask<FieldTypeAvailability> CheckAvailabilityAsync(CancellationToken cancellationToken)
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn.CheckboxFieldSettings
+  LocalizedHtml? Text { get; init; }
+  ctor()
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn.CheckboxFieldType : FormBuilderFieldTypeBase<CheckboxFieldSettings>
+  ctor()
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn.CheckboxesFieldSettings
+  FieldChoiceLayout Layout { get; init; }
+  LocalizedText? OtherLabel { get; init; }
+  bool Other { get; init; }
+  ctor()
+  int? MaxSelections { get; init; }
+  int? MinSelections { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn.CheckboxesFieldType : FormBuilderFieldTypeBase<CheckboxesFieldSettings>
+  const string OtherPart = "other"
+  ctor()
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn.ConsentFieldSettings
+  LocalizedHtml? Text { get; init; }
+  bool? LoadsCaptcha { get; init; }
+  ctor()
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn.ConsentFieldType : FormBuilderFieldTypeBase<ConsentFieldSettings>
+  const int WordingHashLength = 64
+  const string WordingPart = "wording"
+  ctor()
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn.CountryFieldSettings
+  IReadOnlyList<string> Allowed { get; init; }
+  IReadOnlyList<string> Top { get; init; }
+  ctor()
+  string? Default { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn.CountryFieldType : FormBuilderFieldTypeBase<CountryFieldSettings>
+  ctor()
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn.DateFieldSettings
+  IReadOnlyList<string> Excluded { get; init; }
+  JsonElement? Max { get; init; }
+  JsonElement? Min { get; init; }
+  bool DefaultToday { get; init; }
+  bool WeekdaysOnly { get; init; }
+  ctor()
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn.DateFieldType : FormBuilderFieldTypeBase<DateFieldSettings>
+  ctor()
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn.DateTimeFieldSettings
+  IReadOnlyList<string> Excluded { get; init; }
+  JsonElement? Max { get; init; }
+  JsonElement? Min { get; init; }
+  bool DefaultToday { get; init; }
+  bool WeekdaysOnly { get; init; }
+  ctor()
+  int? StepMinutes { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn.DateTimeFieldType : FormBuilderFieldTypeBase<DateTimeFieldSettings>
+  ctor()
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn.DividerFieldType : FormBuilderFieldTypeBase<NoFieldSettings>
+  ctor()
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn.DropdownFieldSettings
+  LocalizedText? Prompt { get; init; }
+  bool Multiple { get; init; }
+  ctor()
+  int? MaxSelections { get; init; }
+  int? MinSelections { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn.DropdownFieldType : FormBuilderFieldTypeBase<DropdownFieldSettings>
+  ctor()
+
+public enum Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn.EmailDomainMode
+  Any = 0
+  Allow = 1
+  Block = 2
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn.EmailDomains
+  EmailDomainMode Mode { get; init; }
+  IReadOnlyList<string> List { get; init; }
+  ctor()
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn.EmailFieldSettings
+  EmailDomains? Domains { get; init; }
+  LocalizedText? ConfirmLabel { get; init; }
+  bool Confirm { get; init; }
+  ctor()
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn.EmailFieldType : FormBuilderFieldTypeBase<EmailFieldSettings>
+  const int LongestAnswer = 254
+  const string ConfirmPart = "confirm"
+  ctor()
+
+public enum Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn.FieldChoiceLayout
+  Inherit = 0
+  Vertical = 1
+  Horizontal = 2
+  Cards = 3
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn.FileFieldSettings
+  IReadOnlyList<FileTypeGroup> Types { get; init; }
+  IReadOnlyList<string> Extensions { get; init; }
+  bool Camera { get; init; }
+  bool DropZone { get; init; }
+  bool Thumbnails { get; init; }
+  ctor()
+  int MaxFiles { get; init; }
+  long? MaxBytes { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn.FileFieldType : FormBuilderFieldTypeBase<FileFieldSettings>
+  const int LongestToken = 1024
+  const int MostFiles = 20
+  ctor()
+  static FileTypeGroup? GroupOf(string extension)
+  static ImmutableArray<string> ExtensionsOf(FileTypeGroup group)
+  static string ExtensionOf(string name)
+
+public enum Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn.FileTypeGroup
+  Images = 0
+  Pdf = 1
+  Office = 2
+  Text = 3
+  Archives = 4
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn.GridFieldSettings
+  GridScale? Scale { get; init; }
+  bool Multiple { get; init; }
+  ctor()
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn.GridFieldType : FormBuilderFieldTypeBase<GridFieldSettings>
+  ctor()
+  static string RowPart(Guid row)
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn.GridScale
+  ctor()
+  int From { get; init; }
+  int To { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn.HeadingFieldSettings
+  LocalizedText? Text { get; init; }
+  ctor()
+  int Level { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn.HeadingFieldType : FormBuilderFieldTypeBase<HeadingFieldSettings>
+  ctor()
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn.HiddenFieldType : FormBuilderFieldTypeBase<NoFieldSettings>
+  ctor()
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn.ImageFieldSettings
+  Guid? Media { get; init; }
+  ImageSize Size { get; init; }
+  LocalizedText? Alt { get; init; }
+  ctor()
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn.ImageFieldType : FormBuilderFieldTypeBase<ImageFieldSettings>
+  ctor()
+
+public enum Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn.ImageSize
+  Small = 0
+  Medium = 1
+  Large = 2
+  Full = 3
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn.NameFieldSettings
+  IReadOnlyList<NamePart> Parts { get; init; }
+  IReadOnlyList<NamePart> RequiredParts { get; init; }
+  ctor()
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn.NameFieldType : FormBuilderFieldTypeBase<NameFieldSettings>
+  const int LongestPart = 200
+  ctor()
+
+public enum Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn.NamePart
+  Title = 0
+  First = 1
+  Middle = 2
+  Last = 3
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn.NumberFieldSettings
+  LocalizedText? Prefix { get; init; }
+  LocalizedText? Suffix { get; init; }
+  ctor()
+  int Decimals { get; init; }
+  string? Max { get; init; }
+  string? Min { get; init; }
+  string? Step { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn.NumberFieldType : FormBuilderFieldTypeBase<NumberFieldSettings>
+  ctor()
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn.ParagraphFieldSettings
+  LocalizedHtml? Html { get; init; }
+  ctor()
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn.ParagraphFieldType : FormBuilderFieldTypeBase<ParagraphFieldSettings>
+  ctor()
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn.PhoneFieldSettings
+  ctor()
+  string? DefaultCountry { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn.PhoneFieldType : FormBuilderFieldTypeBase<PhoneFieldSettings>
+  const int LongestAnswer = 64
+  ctor()
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn.RadioFieldSettings
+  FieldChoiceLayout Layout { get; init; }
+  LocalizedText? OtherLabel { get; init; }
+  bool Other { get; init; }
+  ctor()
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn.RadioFieldType : FormBuilderFieldTypeBase<RadioFieldSettings>
+  const string OtherPart = "other"
+  ctor()
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn.RankingFieldSettings
+  ctor()
+  int? Top { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn.RankingFieldType : FormBuilderFieldTypeBase<RankingFieldSettings>
+  ctor()
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn.RatingFieldSettings
+  LocalizedText? HighLabel { get; init; }
+  LocalizedText? LowLabel { get; init; }
+  RatingSymbol Symbol { get; init; }
+  ctor()
+  int Count { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn.RatingFieldType : FormBuilderFieldTypeBase<RatingFieldSettings>
+  ctor()
+
+public enum Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn.RatingSymbol
+  Star = 0
+  Heart = 1
+  Circle = 2
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn.RepeaterFieldSettings
+  LocalizedText? AddLabel { get; init; }
+  LocalizedText? RemoveLabel { get; init; }
+  LocalizedText? RowLabel { get; init; }
+  ctor()
+  int MaxRows { get; init; }
+  int MinRows { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn.RepeaterFieldType : FormBuilderFieldTypeBase<RepeaterFieldSettings>
+  const int MostRows = 100
+  ctor()
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn.ScaleFieldSettings
+  LocalizedText? HighLabel { get; init; }
+  LocalizedText? LowLabel { get; init; }
+  ctor()
+  int From { get; init; }
+  int To { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn.ScaleFieldType : FormBuilderFieldTypeBase<ScaleFieldSettings>
+  ctor()
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn.SignatureFieldSettings
+  ctor()
+  int? Height { get; init; }
+  int? Width { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn.SignatureFieldType : FormBuilderFieldTypeBase<SignatureFieldSettings>
+  const int MostPixelRatio = 3
+  const int TallestPad = 600
+  const int WidestPad = 1200
+  const long MaxBytes = 1048576
+  const string TypedPart = "typed"
+  ctor()
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn.SliderFieldSettings
+  LocalizedText? Unit { get; init; }
+  bool ShowValue { get; init; }
+  ctor()
+  string Max { get; init; }
+  string Min { get; init; }
+  string Step { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn.SliderFieldType : FormBuilderFieldTypeBase<SliderFieldSettings>
+  ctor()
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn.TextFieldSettings
+  LocalizedText? Prefix { get; init; }
+  LocalizedText? Suffix { get; init; }
+  bool Counter { get; init; }
+  ctor()
+  int MaxLength { get; init; }
+  int MinLength { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn.TextFieldType : FormBuilderFieldTypeBase<TextFieldSettings>
+  const int LongestAnswer = 4000
+  ctor()
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn.TextareaFieldSettings
+  bool AutoGrow { get; init; }
+  bool Counter { get; init; }
+  ctor()
+  int MaxLength { get; init; }
+  int MinLength { get; init; }
+  int Rows { get; init; }
+  int? MaxWords { get; init; }
+  int? MinWords { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn.TextareaFieldType : FormBuilderFieldTypeBase<TextareaFieldSettings>
+  const int LongestAnswer = 100000
+  ctor()
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn.TimeFieldSettings
+  ctor()
+  int? StepMinutes { get; init; }
+  string? Max { get; init; }
+  string? Min { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn.TimeFieldType : FormBuilderFieldTypeBase<TimeFieldSettings>
+  ctor()
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn.UrlFieldSettings
+  IReadOnlyList<UrlScheme> Schemes { get; init; }
+  ctor()
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn.UrlFieldType : FormBuilderFieldTypeBase<UrlFieldSettings>
+  const int LongestAnswer = 2048
+  ctor()
+
+public enum Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn.UrlScheme
+  Https = 0
+  Http = 1
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn.YesNoFieldSettings
+  LocalizedText? NoLabel { get; init; }
+  LocalizedText? YesLabel { get; init; }
+  YesNoStyle Style { get; init; }
+  ctor()
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn.YesNoFieldType : FormBuilderFieldTypeBase<YesNoFieldSettings>
+  const string No = "no"
+  const string Yes = "yes"
+  ctor()
+
+public enum Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn.YesNoStyle
+  Buttons = 0
+  Switch = 1
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.FieldTypes.FieldAnswerLimits
+  bool Allows(FieldAnswers answers)
+  bool Equals(FieldAnswerLimits? other)
+  bool TakesAnswers { get; }
+  const int DefaultTextLength = 2000
+  ctor(int longestText, int mostTexts)
+  int LongestText { get; }
+  int MostTexts { get; }
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static FieldAnswerLimits None { get; }
+  static bool op_Equality(FieldAnswerLimits? left, FieldAnswerLimits? right)
+  static bool op_Inequality(FieldAnswerLimits? left, FieldAnswerLimits? right)
+  static int DefaultManyTexts { get; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.FieldTypes.FieldAnswers
+  ImmutableArray<string> Part(string name)
+  ImmutableArray<string> Values { get; }
+  ImmutableSortedDictionary<string, ImmutableArray<string>> Parts { get; }
+  bool IsEmpty { get; }
+  ctor(IEnumerable<string> values)
+  ctor(IEnumerable<string> values, IEnumerable<KeyValuePair<string, IEnumerable<string>>>? parts)
+  int Count { get; }
+  int LongestText { get; }
+  static FieldAnswers None { get; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.FieldTypes.FieldDisplay
+  FormField Field { get; }
+  ImmutableArray<FieldFile> Files { get; }
+  ImmutableArray<FieldValue> Values { get; }
+  bool IsListing { get; }
+  string CountryName(string code)
+  string Culture { get; }
+  string Date(string date)
+  string No { get; }
+  string Number(string number, int? decimals = default)
+  string OptionLabel(string value)
+  string Text(LocalizedText? text)
+  string Yes { get; }
+  void Add(string text)
+  void AddDate(string text, string date)
+  void AddNumber(string text, string number)
+
+public enum Jiron.Umbraco.FormBuilder.Core.FieldTypes.FieldFeatures
+  None = 0
+  Label = 1
+  HideLabel = 2
+  Help = 4
+  Placeholder = 8
+  Required = 16
+  DefaultValue = 32
+  Prefill = 64
+  Autocomplete = 128
+  PatternCheck = 256
+  MatchesFieldCheck = 512
+  UniquePerFormCheck = 1024
+  VisibilityRules = 2048
+  Options = 4096
+  NeedsOptions = 8192
+  Places = 16384
+  Rows = 32768
+  ChildFields = 65536
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.FieldTypes.FieldFile
+  bool Equals(FieldFile? other)
+  ctor(string name, long size)
+  long Size { get; }
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(FieldFile? left, FieldFile? right)
+  static bool op_Inequality(FieldFile? left, FieldFile? right)
+  string Name { get; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.FieldTypes.FieldHostLimits
+  IReadOnlySet<string> BlockedExtensions { get; }
+  ctor(long maxFileBytes, IEnumerable<string> blockedExtensions)
+  long MaxFileBytes { get; }
+  static FieldHostLimits Default { get; }
+
+public enum Jiron.Umbraco.FormBuilder.Core.FieldTypes.FieldMessageKinds
+  None = 0
+  Required = 1
+  Invalid = 2
+  MinLength = 4
+  MaxLength = 8
+  MinWords = 16
+  MaxWords = 32
+  Min = 64
+  Max = 128
+  Step = 256
+  DateWindow = 512
+  Selections = 1024
+  FileType = 2048
+  FileSize = 4096
+  FileCount = 8192
+  Full = 16384
+  Confirmation = 32768
+  Digits = 65536
+  RowCount = 131072
+
+public enum Jiron.Umbraco.FormBuilder.Core.FieldTypes.FieldPaletteGroup
+  Text = 0
+  NumbersAndDates = 1
+  Choices = 2
+  People = 3
+  Files = 4
+  Structure = 5
+  Content = 6
+  Protection = 7
+
+public enum Jiron.Umbraco.FormBuilder.Core.FieldTypes.FieldPick
+  Any = 0
+  Email = 1
+  Choice = 2
+  File = 3
+  Sensitive = 4
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.FieldTypes.FieldReading
+  FieldAnswers Answers { get; }
+  FormField Field { get; }
+  ImmutableArray<FieldValue> Values { get; }
+  bool IsInvalid { get; }
+  void Add(FieldValue value)
+  void Add(string text)
+  void Add(string text, Guid row)
+  void Invalid()
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.FieldTypes.FieldRowsValidation
+  FormField Field { get; }
+  ImmutableArray<FieldMessageKinds> Errors { get; }
+  int Rows { get; }
+  void Fail(FieldMessageKinds kind)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.FieldTypes.FieldSettingChoice
+  bool Equals(FieldSettingChoice? other)
+  ctor(string Value, string Label)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(FieldSettingChoice? left, FieldSettingChoice? right)
+  static bool op_Inequality(FieldSettingChoice? left, FieldSettingChoice? right)
+  string Label { get; init; }
+  string Value { get; init; }
+  void Deconstruct(out string Value, out string Label)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.FieldTypes.FieldSettingDescriptor
+  FieldPick Picks { get; init; }
+  FieldSettingGroup Group { get; init; }
+  FieldSettingKind? ItemKind { get; init; }
+  FieldSettingRules Rules { get; init; }
+  ImmutableArray<FieldSettingChoice> Choices { get; init; }
+  ImmutableArray<FieldSettingDescriptor> Settings { get; init; }
+  JsonElement? Default { get; init; }
+  bool Equals(FieldSettingDescriptor? other)
+  bool IsPublic { get; init; }
+  bool SupportsMergeTags { get; init; }
+  ctor()
+  int Order { get; init; }
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  required FieldSettingKind Kind { get; init; }
+  required string Editor { get; init; }
+  required string Label { get; init; }
+  required string Name { get; init; }
+  static bool op_Equality(FieldSettingDescriptor? left, FieldSettingDescriptor? right)
+  static bool op_Inequality(FieldSettingDescriptor? left, FieldSettingDescriptor? right)
+  string? Description { get; init; }
+  string? Within { get; init; }
+
+public enum Jiron.Umbraco.FormBuilder.Core.FieldTypes.FieldSettingGroup
+  Essentials = 0
+  Validation = 1
+  Appearance = 2
+  Advanced = 3
+
+public enum Jiron.Umbraco.FormBuilder.Core.FieldTypes.FieldSettingKind
+  Inferred = 0
+  Boolean = 1
+  WholeNumber = 2
+  Number = 3
+  Text = 4
+  Date = 5
+  Time = 6
+  LocalizedText = 7
+  LocalizedHtml = 8
+  Choice = 9
+  Key = 10
+  List = 11
+  Nested = 12
+  Json = 13
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.FieldTypes.FieldSettingRules
+  ImmutableArray<string> AllowedValues { get; init; }
+  bool Equals(FieldSettingRules? other)
+  bool MaximumIsExclusive { get; init; }
+  bool MinimumIsExclusive { get; init; }
+  bool Required { get; init; }
+  const int HtmlLength = 50000
+  const int ListCount = 1000
+  const int TextLength = 2000
+  ctor()
+  int? MaximumCount { get; init; }
+  int? MaximumLength { get; init; }
+  int? MinimumCount { get; init; }
+  int? MinimumLength { get; init; }
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static FieldSettingRules None { get; }
+  static bool op_Equality(FieldSettingRules? left, FieldSettingRules? right)
+  static bool op_Inequality(FieldSettingRules? left, FieldSettingRules? right)
+  string? Maximum { get; init; }
+  string? Minimum { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.FieldTypes.FieldSettingsCheck
+  FieldHostLimits Host { get; }
+  FormField Field { get; }
+  void Invalid(string setting, string message)
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.FieldTypes.FieldSettingsSchema
+  FieldSettingDescriptor? Find(string name)
+  ImmutableArray<FieldSettingDescriptor> Settings { get; }
+  ctor(ImmutableArray<FieldSettingDescriptor> settings)
+  static FieldSettingsSchema Empty { get; }
+
+public enum Jiron.Umbraco.FormBuilder.Core.FieldTypes.FieldStorageKind
+  None = 0
+  Text = 1
+  LongText = 2
+  Number = 3
+  Date = 4
+  Bool = 5
+  File = 6
+  Json = 7
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.FieldTypes.FieldTypeAvailability
+  bool Equals(FieldTypeAvailability? other)
+  bool IsAvailable { get; }
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static FieldTypeAvailability Available { get; }
+  static FieldTypeAvailability NotConfigured(string reason)
+  static bool op_Equality(FieldTypeAvailability? left, FieldTypeAvailability? right)
+  static bool op_Inequality(FieldTypeAvailability? left, FieldTypeAvailability? right)
+  string? Reason { get; }
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.FieldTypes.FieldTypeDeclaration
+  FieldFeatures Features { get; init; }
+  FieldKind? RuleKind { get; init; }
+  FieldMessageKinds Messages { get; init; }
+  FieldStorageKind Storage { get; init; }
+  bool Equals(FieldTypeDeclaration? other)
+  bool HoldsValue { get; init; }
+  bool MultipleSetting { get; init; }
+  bool OnePerForm { get; init; }
+  bool PersonalData { get; init; }
+  bool ServerOnlyDefault { get; init; }
+  ctor()
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  required FieldPaletteGroup PaletteGroup { get; init; }
+  required string Alias { get; init; }
+  required string Icon { get; init; }
+  required string Name { get; init; }
+  static bool op_Equality(FieldTypeDeclaration? left, FieldTypeDeclaration? right)
+  static bool op_Inequality(FieldTypeDeclaration? left, FieldTypeDeclaration? right)
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.FieldTypes.FieldUploadCheck
+  FormField Field { get; }
+  ImmutableArray<FieldMessageKinds> Errors { get; }
+  ReadOnlyMemory<byte> Head { get; }
+  const int HeadLength = 512
+  string Name { get; }
+  void Fail(FieldMessageKinds kind)
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.FieldTypes.FieldValidation
+  DateOnly Today { get; }
+  FieldAnswers Answers { get; }
+  FormField Field { get; }
+  IReadOnlySet<string>? Options { get; }
+  ImmutableArray<FieldFile> Files { get; }
+  ImmutableArray<FieldMessageKinds> Errors { get; }
+  ImmutableArray<FieldValue> Values { get; }
+  bool IsRequired { get; }
+  void Fail(FieldMessageKinds kind)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.FieldTypes.FieldValue
+  Guid? Row { get; }
+  bool Equals(FieldValue? other)
+  bool IsOwnText { get; init; }
+  ctor(string text)
+  ctor(string text, Guid? row)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(FieldValue? left, FieldValue? right)
+  static bool op_Inequality(FieldValue? left, FieldValue? right)
+  string Text { get; }
+  string? StoredText { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.FieldTypes.FormBuilderChoiceAttribute : Attribute
+  ctor(string label)
+  string Label { get; }
+
+public abstract class Jiron.Umbraco.FormBuilder.Core.FieldTypes.FormBuilderFieldTypeBase<TSettings> : IFormBuilderFieldType
+  FieldAnswerLimits AnswerLimits(FormField field)
+  FieldSettingsSchema SettingsSchema { get; }
+  FieldTypeDeclaration Declaration { get; }
+  TSettings ReadSettings(SettingsObject? settings)
+  long? UploadLimit(FormField field)
+  protected ctor(FieldTypeDeclaration declaration)
+  protected virtual FieldAnswerLimits AnswerLimits(TSettings settings, FormField field)
+  protected virtual long? UploadLimit(TSettings settings, FormField field)
+  protected virtual void CheckSettings(TSettings settings, FieldSettingsCheck check)
+  protected virtual void CheckUpload(TSettings settings, FieldUploadCheck check)
+  protected virtual void Display(TSettings settings, FieldDisplay display)
+  protected virtual void Read(TSettings settings, FieldReading reading)
+  protected virtual void Validate(TSettings settings, FieldValidation validation)
+  protected virtual void ValidateRows(TSettings settings, FieldRowsValidation validation)
+  virtual ValueTask<FieldTypeAvailability> CheckAvailabilityAsync(CancellationToken cancellationToken)
+  void CheckSettings(FieldSettingsCheck check)
+  void CheckUpload(FieldUploadCheck check)
+  void Display(FieldDisplay display)
+  void Read(FieldReading reading)
+  void Validate(FieldValidation validation)
+  void ValidateRows(FieldRowsValidation validation)
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.FieldTypes.FormBuilderFieldTypeCollection : BuilderCollectionBase<IFormBuilderFieldType>
+  ctor(Func<IEnumerable<IFormBuilderFieldType>> items)
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.FieldTypes.FormBuilderFieldTypeCollectionBuilder : OrderedCollectionBuilderBase<FormBuilderFieldTypeCollectionBuilder, FormBuilderFieldTypeCollection, IFormBuilderFieldType>
+  ctor()
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.FieldTypes.FormBuilderSettingAttribute : Attribute
+  FieldPick Picks { get; set; }
+  FieldSettingGroup Group { get; set; }
+  FieldSettingKind Kind { get; set; }
+  bool Public { get; set; }
+  bool SupportsMergeTags { get; set; }
+  ctor(string label)
+  int Order { get; set; }
+  string Label { get; }
+  string? Description { get; set; }
+  string? Editor { get; set; }
+  string? Within { get; set; }
+
+public interface Jiron.Umbraco.FormBuilder.Core.FieldTypes.IFormBuilderFieldType
+  FieldAnswerLimits AnswerLimits(FormField field)
+  FieldSettingsSchema SettingsSchema { get; }
+  FieldTypeDeclaration Declaration { get; }
+  ValueTask<FieldTypeAvailability> CheckAvailabilityAsync(CancellationToken cancellationToken)
+  long? UploadLimit(FormField field)
+  void CheckSettings(FieldSettingsCheck check)
+  void CheckUpload(FieldUploadCheck check)
+  void Display(FieldDisplay display)
+  void Read(FieldReading reading)
+  void Validate(FieldValidation validation)
+  void ValidateRows(FieldRowsValidation validation)
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.FieldTypes.NoFieldSettings
+  ctor()
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Files.FileTooLargeException : IOException
+  ctor()
+  ctor(long limit)
+  ctor(string message)
+  ctor(string message, Exception innerException)
+  long Limit { get; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Files.FileUploadReadException : IOException
+  ctor()
+  ctor(string message)
+  ctor(string message, Exception innerException)
+
+public static class Jiron.Umbraco.FormBuilder.Core.Files.FormBuilderFileId
+  const int Length = 32
+  static bool IsValid(string? id)
+  static string New()
+  static void ThrowIfInvalid(string id, string? parameterName = default)
+
+public enum Jiron.Umbraco.FormBuilder.Core.Files.FormBuilderFileScanOutcome
+  Clean = 0
+  Quarantine = 1
+  Unavailable = 2
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Files.FormBuilderFileScannerCollection : BuilderCollectionBase<IFormBuilderFileScanner>
+  ctor(Func<IEnumerable<IFormBuilderFileScanner>> items)
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Files.FormBuilderFileScannerCollectionBuilder : OrderedCollectionBuilderBase<FormBuilderFileScannerCollectionBuilder, FormBuilderFileScannerCollection, IFormBuilderFileScanner>
+  ctor()
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Files.FormBuilderFileToScan
+  Guid Key { get; init; }
+  Stream Content { get; init; }
+  bool Equals(FormBuilderFileToScan? other)
+  ctor(Guid Key, string Name, string ContentType, long SizeBytes, string Sha256, Stream Content)
+  long SizeBytes { get; init; }
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(FormBuilderFileToScan? left, FormBuilderFileToScan? right)
+  static bool op_Inequality(FormBuilderFileToScan? left, FormBuilderFileToScan? right)
+  string ContentType { get; init; }
+  string Name { get; init; }
+  string Sha256 { get; init; }
+  void Deconstruct(out Guid Key, out string Name, out string ContentType, out long SizeBytes, out string Sha256, out Stream Content)
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Files.FormBuilderFilesOptions
+  IList<string> BlockedExtensions { get; }
+  const int MaxExtensionLength = 10
+  const long DefaultMaxFileBytes = 52428800
+  const long DefaultMaxWaitingBytes = 10737418240
+  const long DefaultMaxWaitingBytesPerAddress = 1073741824
+  const long HighestMaxFileBytes = 999999999999999
+  const string DefaultRoot = "~/umbraco/Data/JironFormBuilder/Uploads"
+  const string RootKey = "JironFormBuilder:Files:Root"
+  const string SectionName = "JironFormBuilder:Files"
+  ctor()
+  long MaxFileBytes { get; set; }
+  long MaxWaitingBytes { get; set; }
+  long MaxWaitingBytesPerAddress { get; set; }
+  static IReadOnlyList<string> DefaultBlockedExtensions { get; }
+  string Root { get; set; }
+
+public interface Jiron.Umbraco.FormBuilder.Core.Files.IFormBuilderFileScanner
+  Task<FormBuilderFileScanOutcome> ScanAsync(FormBuilderFileToScan file, CancellationToken cancellationToken)
+
+public interface Jiron.Umbraco.FormBuilder.Core.Files.IFormBuilderFileStore
+  Task DeleteAsync(string id, CancellationToken cancellationToken = default)
+  Task SaveAsync(string id, Stream content, CancellationToken cancellationToken = default)
+  Task<Stream?> OpenReadAsync(string id, CancellationToken cancellationToken = default)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Forms.CancelMessage
+  bool Equals(CancelMessage? other)
+  ctor(string Category, string Message)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(CancelMessage? left, CancelMessage? right)
+  static bool op_Inequality(CancelMessage? left, CancelMessage? right)
+  string Category { get; init; }
+  string Message { get; init; }
+  void Deconstruct(out string Category, out string Message)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Forms.CopyActionsRequest
+  Guid SourceKey { get; init; }
+  Guid TargetKey { get; init; }
+  Guid? UserKey { get; init; }
+  IReadOnlyList<Guid>? ActionKeys { get; init; }
+  bool Equals(CopyActionsRequest? other)
+  ctor(Guid SourceKey, Guid TargetKey, int ExpectedConcurrencyVersion, IReadOnlyList<Guid>? ActionKeys = default, Guid? UserKey = default)
+  int ExpectedConcurrencyVersion { get; init; }
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(CopyActionsRequest? left, CopyActionsRequest? right)
+  static bool op_Inequality(CopyActionsRequest? left, CopyActionsRequest? right)
+  void Deconstruct(out Guid SourceKey, out Guid TargetKey, out int ExpectedConcurrencyVersion, out IReadOnlyList<Guid>? ActionKeys, out Guid? UserKey)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Forms.DeletionCandidate
+  IReadOnlyList<FormAccessTarget> Forms { get; init; }
+  IReadOnlyList<Guid> FolderKeys { get; init; }
+  bool Equals(DeletionCandidate? other)
+  ctor(IReadOnlyList<Guid> FolderKeys, IReadOnlyList<FormAccessTarget> Forms)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(DeletionCandidate? left, DeletionCandidate? right)
+  static bool op_Inequality(DeletionCandidate? left, DeletionCandidate? right)
+  void Deconstruct(out IReadOnlyList<Guid> FolderKeys, out IReadOnlyList<FormAccessTarget> Forms)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Forms.DraftComparison
+  IReadOnlyList<DefinitionChange> Changes { get; init; }
+  bool Equals(DraftComparison? other)
+  ctor(int FromVersion, IReadOnlyList<DefinitionChange> Changes)
+  int FromVersion { get; init; }
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(DraftComparison? left, DraftComparison? right)
+  static bool op_Inequality(DraftComparison? left, DraftComparison? right)
+  void Deconstruct(out int FromVersion, out IReadOnlyList<DefinitionChange> Changes)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Forms.DuplicateFormRequest
+  Guid? FolderKey { get; init; }
+  Guid? UserKey { get; init; }
+  bool Equals(DuplicateFormRequest? other)
+  bool IncludeActions { get; init; }
+  ctor(string Name, bool IncludeActions, string? Alias = default, Guid? FolderKey = default, Guid? UserKey = default)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(DuplicateFormRequest? left, DuplicateFormRequest? right)
+  static bool op_Inequality(DuplicateFormRequest? left, DuplicateFormRequest? right)
+  string Name { get; init; }
+  string? Alias { get; init; }
+  void Deconstruct(out string Name, out bool IncludeActions, out string? Alias, out Guid? FolderKey, out Guid? UserKey)
+
+public abstract class Jiron.Umbraco.FormBuilder.Core.Forms.FolderCancelableNotification : CancelableNotification
+  Guid FolderKey { get; }
+  Guid? UserKey { get; }
+  protected ctor(Guid folderKey, string name, Guid? userKey, EventMessages messages)
+  string Name { get; }
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Forms.FolderChange
+  FolderInfo Folder { get; init; }
+  IReadOnlyList<FolderSummary> Folders { get; init; }
+  IReadOnlyList<FormSummary> Forms { get; init; }
+  bool Equals(FolderChange? other)
+  ctor(FolderInfo Folder, IReadOnlyList<FolderSummary> Folders, IReadOnlyList<FormSummary> Forms)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(FolderChange? left, FolderChange? right)
+  static bool op_Inequality(FolderChange? left, FolderChange? right)
+  void Deconstruct(out FolderInfo Folder, out IReadOnlyList<FolderSummary> Folders, out IReadOnlyList<FormSummary> Forms)
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Forms.FolderCreatedNotification : FolderNotification
+  Guid? ParentKey { get; }
+  ctor(Guid folderKey, string name, Guid? parentKey, Guid? userKey)
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Forms.FolderCreatingNotification : FolderCancelableNotification
+  Guid? ParentKey { get; }
+  ctor(Guid folderKey, string name, Guid? parentKey, Guid? userKey, EventMessages messages)
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Forms.FolderDeletedNotification : FolderNotification
+  IReadOnlyList<FolderSummary> Folders { get; }
+  IReadOnlyList<FormSummary> Forms { get; }
+  ctor(Guid folderKey, string name, IReadOnlyList<FolderSummary> folders, IReadOnlyList<FormSummary> forms, Guid? userKey)
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Forms.FolderDeletingNotification : FolderCancelableNotification
+  IReadOnlyList<FolderSummary> Folders { get; }
+  IReadOnlyList<FormSummary> Forms { get; }
+  ctor(Guid folderKey, string name, IReadOnlyList<FolderSummary> folders, IReadOnlyList<FormSummary> forms, Guid? userKey, EventMessages messages)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Forms.FolderInfo
+  DateTimeOffset CreatedUtc { get; init; }
+  DateTimeOffset UpdatedUtc { get; init; }
+  DateTimeOffset? TrashedUtc { get; init; }
+  Guid Key { get; init; }
+  Guid? CreatedByUserKey { get; init; }
+  Guid? ParentKey { get; init; }
+  Guid? UpdatedByUserKey { get; init; }
+  bool Equals(FolderInfo? other)
+  bool IsRestricted { get; init; }
+  ctor(Guid Key, string Name, Guid? ParentKey, int SortOrder, bool IsRestricted, DateTimeOffset? TrashedUtc, DateTimeOffset CreatedUtc, DateTimeOffset UpdatedUtc, Guid? CreatedByUserKey, Guid? UpdatedByUserKey)
+  int SortOrder { get; init; }
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(FolderInfo? left, FolderInfo? right)
+  static bool op_Inequality(FolderInfo? left, FolderInfo? right)
+  string Name { get; init; }
+  void Deconstruct(out Guid Key, out string Name, out Guid? ParentKey, out int SortOrder, out bool IsRestricted, out DateTimeOffset? TrashedUtc, out DateTimeOffset CreatedUtc, out DateTimeOffset UpdatedUtc, out Guid? CreatedByUserKey, out Guid? UpdatedByUserKey)
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Forms.FolderMovedNotification : FolderNotification
+  Guid? ParentKey { get; }
+  Guid? PreviousParentKey { get; }
+  ctor(Guid folderKey, string name, Guid? parentKey, Guid? previousParentKey, Guid? userKey)
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Forms.FolderMovingNotification : FolderCancelableNotification
+  Guid? ParentKey { get; }
+  Guid? PreviousParentKey { get; }
+  ctor(Guid folderKey, string name, Guid? parentKey, Guid? previousParentKey, Guid? userKey, EventMessages messages)
+
+public abstract class Jiron.Umbraco.FormBuilder.Core.Forms.FolderNotification : INotification
+  Guid FolderKey { get; }
+  Guid? UserKey { get; }
+  protected ctor(Guid folderKey, string name, Guid? userKey)
+  string Name { get; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Forms.FolderRenamedNotification : FolderNotification
+  ctor(Guid folderKey, string name, string previousName, Guid? userKey)
+  string PreviousName { get; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Forms.FolderRenamingNotification : FolderCancelableNotification
+  ctor(Guid folderKey, string name, string previousName, Guid? userKey, EventMessages messages)
+  string PreviousName { get; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Forms.FolderRestoredNotification : FolderNotification
+  Guid? ParentKey { get; }
+  IReadOnlyList<FolderSummary> Folders { get; }
+  IReadOnlyList<FormSummary> Forms { get; }
+  ctor(Guid folderKey, string name, Guid? parentKey, IReadOnlyList<FolderSummary> folders, IReadOnlyList<FormSummary> forms, Guid? userKey)
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Forms.FolderRestoringNotification : FolderCancelableNotification
+  Guid? ParentKey { get; }
+  IReadOnlyList<FolderSummary> Folders { get; }
+  IReadOnlyList<FormSummary> Forms { get; }
+  ctor(Guid folderKey, string name, Guid? parentKey, IReadOnlyList<FolderSummary> folders, IReadOnlyList<FormSummary> forms, Guid? userKey, EventMessages messages)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Forms.FolderSummary
+  Guid Key { get; init; }
+  bool Equals(FolderSummary? other)
+  ctor(Guid Key, string Name)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(FolderSummary? left, FolderSummary? right)
+  static bool op_Inequality(FolderSummary? left, FolderSummary? right)
+  string Name { get; init; }
+  void Deconstruct(out Guid Key, out string Name)
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Forms.FolderTrashedNotification : FolderNotification
+  IReadOnlyList<FolderSummary> Folders { get; }
+  IReadOnlyList<FormSummary> Forms { get; }
+  ctor(Guid folderKey, string name, IReadOnlyList<FolderSummary> folders, IReadOnlyList<FormSummary> forms, Guid? userKey)
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Forms.FolderTrashingNotification : FolderCancelableNotification
+  IReadOnlyList<FolderSummary> Folders { get; }
+  IReadOnlyList<FormSummary> Forms { get; }
+  ctor(Guid folderKey, string name, IReadOnlyList<FolderSummary> folders, IReadOnlyList<FormSummary> forms, Guid? userKey, EventMessages messages)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Forms.FormActionsCopy
+  FormVersionResult Target { get; init; }
+  IReadOnlyList<CopiedAction> Actions { get; init; }
+  bool Equals(FormActionsCopy? other)
+  ctor(FormVersionResult Target, IReadOnlyList<CopiedAction> Actions)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(FormActionsCopy? left, FormActionsCopy? right)
+  static bool op_Inequality(FormActionsCopy? left, FormActionsCopy? right)
+  void Deconstruct(out FormVersionResult Target, out IReadOnlyList<CopiedAction> Actions)
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Forms.FormBuilderCancelledException : Exception
+  IReadOnlyList<CancelMessage> Messages { get; }
+  ctor(EventMessages messages)
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Forms.FormBuilderValidationException : Exception
+  IReadOnlyList<DefinitionProblem> Problems { get; }
+  ctor(IReadOnlyList<DefinitionProblem> problems)
+
+public abstract class Jiron.Umbraco.FormBuilder.Core.Forms.FormCancelableNotification : CancelableNotification
+  Guid FormKey { get; }
+  Guid? UserKey { get; }
+  protected ctor(Guid formKey, string alias, string name, Guid? userKey, EventMessages messages)
+  string Alias { get; }
+  string Name { get; }
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Forms.FormComparison
+  IReadOnlyList<DefinitionChange> Changes { get; init; }
+  bool Equals(FormComparison? other)
+  ctor(int FromVersion, int ToVersion, IReadOnlyList<DefinitionChange> Changes)
+  int FromVersion { get; init; }
+  int ToVersion { get; init; }
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(FormComparison? left, FormComparison? right)
+  static bool op_Inequality(FormComparison? left, FormComparison? right)
+  void Deconstruct(out int FromVersion, out int ToVersion, out IReadOnlyList<DefinitionChange> Changes)
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Forms.FormDeletedNotification : FormNotification
+  ctor(Guid formKey, string alias, string name, long entryCount, long fileCount, Guid? userKey)
+  long EntryCount { get; }
+  long FileCount { get; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Forms.FormDeletingNotification : FormCancelableNotification
+  ctor(Guid formKey, string alias, string name, Guid? userKey, EventMessages messages)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Forms.FormDeletion
+  Guid Key { get; init; }
+  bool Equals(FormDeletion? other)
+  ctor(Guid Key, long Entries, long Files)
+  long Entries { get; init; }
+  long Files { get; init; }
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(FormDeletion? left, FormDeletion? right)
+  static bool op_Inequality(FormDeletion? left, FormDeletion? right)
+  void Deconstruct(out Guid Key, out long Entries, out long Files)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Forms.FormDraft
+  FormDefinition? Definition { get; init; }
+  FormInfo Form { get; init; }
+  IReadOnlyList<DefinitionProblem> Problems { get; init; }
+  bool Equals(FormDraft? other)
+  bool HasUnpublishedChanges { get; init; }
+  ctor(FormInfo Form, FormDefinition? Definition, IReadOnlyList<DefinitionProblem> Problems, int DraftVersion, int? PublishedVersion, bool HasUnpublishedChanges)
+  int DraftVersion { get; init; }
+  int? PublishedVersion { get; init; }
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(FormDraft? left, FormDraft? right)
+  static bool op_Inequality(FormDraft? left, FormDraft? right)
+  void Deconstruct(out FormInfo Form, out FormDefinition? Definition, out IReadOnlyList<DefinitionProblem> Problems, out int DraftVersion, out int? PublishedVersion, out bool HasUnpublishedChanges)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Forms.FormExport
+  bool Equals(FormExport? other)
+  ctor(string FileName, string Json)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(FormExport? left, FormExport? right)
+  static bool op_Inequality(FormExport? left, FormExport? right)
+  string FileName { get; init; }
+  string Json { get; init; }
+  void Deconstruct(out string FileName, out string Json)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Forms.FormImport
+  FormInfo Form { get; init; }
+  IReadOnlyList<FormImportNote> Notes { get; init; }
+  bool Equals(FormImport? other)
+  ctor(FormInfo Form, IReadOnlyList<FormImportNote> Notes)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(FormImport? left, FormImport? right)
+  static bool op_Inequality(FormImport? left, FormImport? right)
+  void Deconstruct(out FormInfo Form, out IReadOnlyList<FormImportNote> Notes)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Forms.FormImportCheck
+  DateTimeOffset ExportedUtc { get; init; }
+  DefinitionCounts Counts { get; init; }
+  IReadOnlyList<FormImportNote> Notes { get; init; }
+  bool Equals(FormImportCheck? other)
+  ctor(string Name, string Alias, string PackageVersion, DateTimeOffset ExportedUtc, DefinitionCounts Counts, IReadOnlyList<FormImportNote> Notes)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(FormImportCheck? left, FormImportCheck? right)
+  static bool op_Inequality(FormImportCheck? left, FormImportCheck? right)
+  string Alias { get; init; }
+  string Name { get; init; }
+  string PackageVersion { get; init; }
+  void Deconstruct(out string Name, out string Alias, out string PackageVersion, out DateTimeOffset ExportedUtc, out DefinitionCounts Counts, out IReadOnlyList<FormImportNote> Notes)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Forms.FormImportNote
+  bool Equals(FormImportNote? other)
+  ctor(string Code, string Path, string? Alias)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(FormImportNote? left, FormImportNote? right)
+  static bool op_Inequality(FormImportNote? left, FormImportNote? right)
+  string Code { get; init; }
+  string Path { get; init; }
+  string? Alias { get; init; }
+  void Deconstruct(out string Code, out string Path, out string? Alias)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Forms.FormInfo
+  DateTimeOffset CreatedUtc { get; init; }
+  DateTimeOffset UpdatedUtc { get; init; }
+  DateTimeOffset? TrashedUtc { get; init; }
+  Guid Key { get; init; }
+  Guid? CreatedByUserKey { get; init; }
+  Guid? FolderKey { get; init; }
+  Guid? UpdatedByUserKey { get; init; }
+  bool Equals(FormInfo? other)
+  bool IsPublished { get; init; }
+  bool IsRestricted { get; init; }
+  ctor(Guid Key, string Alias, string Name, Guid? FolderKey, int ConcurrencyVersion, bool IsPublished, int PublicRevision, bool IsRestricted, DateTimeOffset? TrashedUtc, DateTimeOffset CreatedUtc, DateTimeOffset UpdatedUtc, Guid? CreatedByUserKey, Guid? UpdatedByUserKey)
+  int ConcurrencyVersion { get; init; }
+  int PublicRevision { get; init; }
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(FormInfo? left, FormInfo? right)
+  static bool op_Inequality(FormInfo? left, FormInfo? right)
+  string Alias { get; init; }
+  string Name { get; init; }
+  void Deconstruct(out Guid Key, out string Alias, out string Name, out Guid? FolderKey, out int ConcurrencyVersion, out bool IsPublished, out int PublicRevision, out bool IsRestricted, out DateTimeOffset? TrashedUtc, out DateTimeOffset CreatedUtc, out DateTimeOffset UpdatedUtc, out Guid? CreatedByUserKey, out Guid? UpdatedByUserKey)
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Forms.FormMovedNotification : FormNotification
+  Guid? FolderKey { get; }
+  Guid? PreviousFolderKey { get; }
+  ctor(Guid formKey, string alias, string name, Guid? folderKey, Guid? previousFolderKey, Guid? userKey)
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Forms.FormMovingNotification : FormCancelableNotification
+  Guid? FolderKey { get; }
+  Guid? PreviousFolderKey { get; }
+  ctor(Guid formKey, string alias, string name, Guid? folderKey, Guid? previousFolderKey, Guid? userKey, EventMessages messages)
+
+public abstract class Jiron.Umbraco.FormBuilder.Core.Forms.FormNotification : INotification
+  Guid FormKey { get; }
+  Guid? UserKey { get; }
+  protected ctor(Guid formKey, string alias, string name, Guid? userKey)
+  string Alias { get; }
+  string Name { get; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Forms.FormPublishedNotification : FormNotification
+  bool RevisionChanged { get; }
+  ctor(Guid formKey, string alias, string name, int version, int publicRevision, bool revisionChanged, Guid? userKey)
+  int PublicRevision { get; }
+  int Version { get; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Forms.FormPublishingNotification : FormCancelableNotification
+  FormDefinition Definition { get; }
+  ctor(FormDefinition definition, string alias, string name, Guid? userKey, EventMessages messages)
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Forms.FormRenamedNotification : FormNotification
+  ctor(Guid formKey, string alias, string name, string previousAlias, string previousName, Guid? userKey)
+  string PreviousAlias { get; }
+  string PreviousName { get; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Forms.FormRenamingNotification : FormCancelableNotification
+  ctor(Guid formKey, string alias, string name, string previousAlias, string previousName, Guid? userKey, EventMessages messages)
+  string PreviousAlias { get; }
+  string PreviousName { get; }
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Forms.FormReplace
+  FormVersionResult Result { get; init; }
+  IReadOnlyList<FormImportNote> Notes { get; init; }
+  bool Equals(FormReplace? other)
+  ctor(FormVersionResult Result, IReadOnlyList<FormImportNote> Notes)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(FormReplace? left, FormReplace? right)
+  static bool op_Inequality(FormReplace? left, FormReplace? right)
+  void Deconstruct(out FormVersionResult Result, out IReadOnlyList<FormImportNote> Notes)
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Forms.FormRestoredNotification : FormNotification
+  Guid? FolderKey { get; }
+  ctor(Guid formKey, string alias, string name, Guid? folderKey, Guid? userKey)
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Forms.FormRestoringNotification : FormCancelableNotification
+  Guid? FolderKey { get; }
+  ctor(Guid formKey, string alias, string name, Guid? folderKey, Guid? userKey, EventMessages messages)
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Forms.FormSavedNotification : FormNotification
+  FormSource? CreatedFrom { get; init; }
+  Guid? ActionsCopiedFrom { get; init; }
+  Guid? SourceKey { get; init; }
+  bool IsNew { get; }
+  ctor(Guid formKey, string alias, string name, int version, bool isNew, Guid? userKey)
+  int Version { get; }
+  int? RestoredFromVersion { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Forms.FormSavingNotification : FormCancelableNotification
+  FormDefinition Definition { get; }
+  FormSource? CreatedFrom { get; init; }
+  Guid? ActionsCopiedFrom { get; init; }
+  Guid? SourceKey { get; init; }
+  bool IsNew { get; }
+  ctor(FormDefinition definition, string alias, string name, bool isNew, Guid? userKey, EventMessages messages)
+  int? RestoredFromVersion { get; init; }
+
+public enum Jiron.Umbraco.FormBuilder.Core.Forms.FormSource
+  Blank = 0
+  Template = 1
+  Import = 2
+  Duplicate = 3
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Forms.FormSummary
+  Guid Key { get; init; }
+  bool Equals(FormSummary? other)
+  ctor(Guid Key, string Alias, string Name)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(FormSummary? left, FormSummary? right)
+  static bool op_Inequality(FormSummary? left, FormSummary? right)
+  string Alias { get; init; }
+  string Name { get; init; }
+  void Deconstruct(out Guid Key, out string Alias, out string Name)
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Forms.FormTrashedNotification : FormNotification
+  ctor(Guid formKey, string alias, string name, Guid? userKey)
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Forms.FormTrashingNotification : FormCancelableNotification
+  ctor(Guid formKey, string alias, string name, Guid? userKey, EventMessages messages)
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Forms.FormUnpublishedNotification : FormNotification
+  ctor(Guid formKey, string alias, string name, Guid? userKey)
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Forms.FormUnpublishingNotification : FormCancelableNotification
+  ctor(Guid formKey, string alias, string name, Guid? userKey, EventMessages messages)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Forms.FormVersion
+  DateTimeOffset CreatedUtc { get; init; }
+  DateTimeOffset? PublishedUtc { get; init; }
+  FormVersionKind Kind { get; init; }
+  Guid? CreatedByUserKey { get; init; }
+  Guid? PublishedByUserKey { get; init; }
+  bool Equals(FormVersion? other)
+  bool IsDraft { get; init; }
+  bool IsLive { get; init; }
+  bool IsPinned { get; init; }
+  ctor(int Number, FormVersionKind Kind, int? PublicRevision, string? Comment, bool IsPinned, DateTimeOffset CreatedUtc, Guid? CreatedByUserKey, DateTimeOffset? PublishedUtc, Guid? PublishedByUserKey, bool IsDraft, bool IsLive)
+  int Number { get; init; }
+  int? PublicRevision { get; init; }
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(FormVersion? left, FormVersion? right)
+  static bool op_Inequality(FormVersion? left, FormVersion? right)
+  string? Comment { get; init; }
+  void Deconstruct(out int Number, out FormVersionKind Kind, out int? PublicRevision, out string? Comment, out bool IsPinned, out DateTimeOffset CreatedUtc, out Guid? CreatedByUserKey, out DateTimeOffset? PublishedUtc, out Guid? PublishedByUserKey, out bool IsDraft, out bool IsLive)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Forms.FormVersionDocument
+  FormDefinition? Definition { get; init; }
+  FormVersion Version { get; init; }
+  IReadOnlyList<DefinitionProblem> Problems { get; init; }
+  bool Equals(FormVersionDocument? other)
+  ctor(FormVersion Version, FormDefinition? Definition, IReadOnlyList<DefinitionProblem> Problems)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(FormVersionDocument? left, FormVersionDocument? right)
+  static bool op_Inequality(FormVersionDocument? left, FormVersionDocument? right)
+  void Deconstruct(out FormVersion Version, out FormDefinition? Definition, out IReadOnlyList<DefinitionProblem> Problems)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Forms.FormVersionEntry
+  FormVersion Version { get; init; }
+  IReadOnlyList<DefinitionChangeSummary>? Changes { get; init; }
+  bool Equals(FormVersionEntry? other)
+  ctor(FormVersion Version, IReadOnlyList<DefinitionChangeSummary>? Changes)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(FormVersionEntry? left, FormVersionEntry? right)
+  static bool op_Inequality(FormVersionEntry? left, FormVersionEntry? right)
+  void Deconstruct(out FormVersion Version, out IReadOnlyList<DefinitionChangeSummary>? Changes)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Forms.FormVersionResult
+  FormInfo Form { get; init; }
+  bool Equals(FormVersionResult? other)
+  ctor(FormInfo Form, int? Version)
+  int? Version { get; init; }
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(FormVersionResult? left, FormVersionResult? right)
+  static bool op_Inequality(FormVersionResult? left, FormVersionResult? right)
+  void Deconstruct(out FormInfo Form, out int? Version)
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Forms.FormVersionUpdatedNotification : FormNotification
+  bool IsPinned { get; }
+  ctor(Guid formKey, string alias, string name, int version, string? comment, bool isPinned, Guid? userKey)
+  int Version { get; }
+  string? Comment { get; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Forms.FormVersionUpdatingNotification : FormCancelableNotification
+  bool IsPinned { get; }
+  ctor(Guid formKey, string alias, string name, int version, string? comment, bool isPinned, Guid? userKey, EventMessages messages)
+  int Version { get; }
+  string? Comment { get; }
+
+public interface Jiron.Umbraco.FormBuilder.Core.Forms.IFormBuilderFolderService
+  Task<DeletionCandidate?> GetDeletionCandidateAsync(Guid key, CancellationToken cancellationToken = default)
+  Task<FolderChange?> RestoreAsync(Guid key, Guid? userKey, RestoreLanding? landing = default, CancellationToken cancellationToken = default)
+  Task<FolderChange?> TrashAsync(Guid key, Guid? userKey, CancellationToken cancellationToken = default)
+  Task<FolderInfo> CreateAsync(NewFolderRequest request, CancellationToken cancellationToken = default)
+  Task<FolderInfo?> GetAsync(Guid key, CancellationToken cancellationToken = default)
+  Task<FolderInfo?> MoveAsync(Guid key, Guid? parentKey, Guid? userKey, CancellationToken cancellationToken = default)
+  Task<FolderInfo?> RenameAsync(Guid key, string name, Guid? userKey, CancellationToken cancellationToken = default)
+  Task<IReadOnlyList<FolderInfo>> ListAsync(FolderVisibility? visibility = default, CancellationToken cancellationToken = default)
+  Task<LibraryDeletion?> DeleteAsync(Guid key, Guid? userKey, CancellationToken cancellationToken = default)
+  Task<LibraryDeletion?> DeleteEmptyAsync(Guid key, Guid? userKey, CancellationToken cancellationToken = default)
+  Task<RestoreLanding?> GetRestoreLandingAsync(Guid key, CancellationToken cancellationToken = default)
+  Task<TrashEmptied> EmptyTrashAsync(Func<DeletionCandidate, CancellationToken, Task<bool>> include, Guid? userKey, CancellationToken cancellationToken = default)
+  Task<TrashPreview> PreviewEmptyTrashAsync(Func<DeletionCandidate, CancellationToken, Task<bool>> include, CancellationToken cancellationToken = default)
+
+public interface Jiron.Umbraco.FormBuilder.Core.Forms.IFormBuilderFormExchangeService
+  Task<FormActionsCopy?> CopyActionsAsync(CopyActionsRequest request, CancellationToken cancellationToken = default)
+  Task<FormExport?> ExportAsync(Guid key, int? version = default, CancellationToken cancellationToken = default)
+  Task<FormImport> ImportAsync(ImportFormRequest request, CancellationToken cancellationToken = default)
+  Task<FormImportCheck> CheckImportAsync(ImportFormRequest request, CancellationToken cancellationToken = default)
+  Task<FormImportCheck> CheckReplaceAsync(ImportFormRequest request, CancellationToken cancellationToken = default)
+  Task<FormInfo?> CreateFromTemplateAsync(TemplateFormRequest request, CancellationToken cancellationToken = default)
+  Task<FormInfo?> DuplicateAsync(Guid key, DuplicateFormRequest request, CancellationToken cancellationToken = default)
+  Task<FormReplace?> ReplaceAsync(ReplaceFormRequest request, CancellationToken cancellationToken = default)
+
+public interface Jiron.Umbraco.FormBuilder.Core.Forms.IFormBuilderFormService
+  Task<FormDeletion?> DeleteAsync(Guid key, int expectedConcurrencyVersion, Guid? userKey, CancellationToken cancellationToken = default)
+  Task<FormDraft?> GetDraftAsync(Guid key, CancellationToken cancellationToken = default)
+  Task<FormInfo> CreateAsync(NewFormRequest request, CancellationToken cancellationToken = default)
+  Task<FormInfo?> GetAsync(Guid key, CancellationToken cancellationToken = default)
+  Task<FormInfo?> GetByAliasAsync(string formAlias, CancellationToken cancellationToken = default)
+  Task<FormInfo?> MoveAsync(Guid key, int expectedConcurrencyVersion, Guid? folderKey, Guid? userKey, CancellationToken cancellationToken = default)
+  Task<FormInfo?> RenameAsync(Guid key, int expectedConcurrencyVersion, string name, string? formAlias, Guid? userKey, CancellationToken cancellationToken = default)
+  Task<FormInfo?> RestoreAsync(Guid key, int expectedConcurrencyVersion, Guid? userKey, RestoreLanding? landing = default, CancellationToken cancellationToken = default)
+  Task<FormInfo?> TrashAsync(Guid key, int expectedConcurrencyVersion, Guid? userKey, CancellationToken cancellationToken = default)
+  Task<FormInfo?> UnpublishAsync(Guid key, int expectedConcurrencyVersion, Guid? userKey, CancellationToken cancellationToken = default)
+  Task<FormVersionResult?> PublishAsync(Guid key, int expectedConcurrencyVersion, string? comment, Guid? userKey, CancellationToken cancellationToken = default)
+  Task<FormVersionResult?> SaveDraftAsync(Guid key, int expectedConcurrencyVersion, FormDefinition definition, string? comment, Guid? userKey, CancellationToken cancellationToken = default)
+  Task<PublishedForm?> GetPreviewAsync(Guid key, int number, CancellationToken cancellationToken = default)
+  Task<PublishedForm?> GetPublishedAsync(Guid key, CancellationToken cancellationToken = default)
+  Task<RestoreLanding?> GetRestoreLandingAsync(Guid key, CancellationToken cancellationToken = default)
+
+public interface Jiron.Umbraco.FormBuilder.Core.Forms.IFormBuilderFormVersionService
+  Task<DraftComparison?> CompareWithAsync(Guid key, int fromNumber, FormDefinition definition, CancellationToken cancellationToken = default)
+  Task<FormComparison?> CompareAsync(Guid key, int fromNumber, int toNumber, CancellationToken cancellationToken = default)
+  Task<FormVersion?> CommentVersionAsync(Guid key, int number, string? comment, Guid? userKey, CancellationToken cancellationToken = default)
+  Task<FormVersion?> PinVersionAsync(Guid key, int number, bool isPinned, Guid? userKey, CancellationToken cancellationToken = default)
+  Task<FormVersionDocument?> GetVersionAsync(Guid key, int number, CancellationToken cancellationToken = default)
+  Task<FormVersionResult?> RestoreVersionAsync(Guid key, int expectedConcurrencyVersion, int number, Guid? userKey, CancellationToken cancellationToken = default)
+  Task<Page<FormVersionEntry>?> ListVersionsAsync(Guid key, bool includeDrafts, PageRequest page, CancellationToken cancellationToken = default)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Forms.ImportFormRequest
+  Guid? FolderKey { get; init; }
+  Guid? UserKey { get; init; }
+  bool Equals(ImportFormRequest? other)
+  bool KeepKeys { get; init; }
+  ctor(string Json, string? Name = default, string? Alias = default, Guid? FolderKey = default, Guid? UserKey = default)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(ImportFormRequest? left, ImportFormRequest? right)
+  static bool op_Inequality(ImportFormRequest? left, ImportFormRequest? right)
+  string Json { get; init; }
+  string? Alias { get; init; }
+  string? Name { get; init; }
+  void Deconstruct(out string Json, out string? Name, out string? Alias, out Guid? FolderKey, out Guid? UserKey)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Forms.LibraryDeletion
+  IReadOnlyList<FolderSummary> Folders { get; init; }
+  IReadOnlyList<FormSummary> Forms { get; init; }
+  bool Equals(LibraryDeletion? other)
+  ctor(IReadOnlyList<FolderSummary> Folders, IReadOnlyList<FormSummary> Forms, long Entries, long Files)
+  long Entries { get; init; }
+  long Files { get; init; }
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(LibraryDeletion? left, LibraryDeletion? right)
+  static bool op_Inequality(LibraryDeletion? left, LibraryDeletion? right)
+  void Deconstruct(out IReadOnlyList<FolderSummary> Folders, out IReadOnlyList<FormSummary> Forms, out long Entries, out long Files)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Forms.NewFolderRequest
+  Guid? ParentKey { get; init; }
+  Guid? UserKey { get; init; }
+  bool Equals(NewFolderRequest? other)
+  ctor(string Name, Guid? ParentKey = default, Guid? UserKey = default)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(NewFolderRequest? left, NewFolderRequest? right)
+  static bool op_Inequality(NewFolderRequest? left, NewFolderRequest? right)
+  string Name { get; init; }
+  void Deconstruct(out string Name, out Guid? ParentKey, out Guid? UserKey)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Forms.NewFormRequest
+  Guid? FolderKey { get; init; }
+  Guid? UserKey { get; init; }
+  bool Equals(NewFormRequest? other)
+  ctor(string Name, string? Alias = default, Guid? FolderKey = default, Guid? UserKey = default)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(NewFormRequest? left, NewFormRequest? right)
+  static bool op_Inequality(NewFormRequest? left, NewFormRequest? right)
+  string Name { get; init; }
+  string? Alias { get; init; }
+  void Deconstruct(out string Name, out string? Alias, out Guid? FolderKey, out Guid? UserKey)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Forms.PublishedForm
+  FormDefinition Definition { get; init; }
+  FormInfo Form { get; init; }
+  bool Equals(PublishedForm? other)
+  ctor(FormInfo Form, FormDefinition Definition, int Version)
+  int Version { get; init; }
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(PublishedForm? left, PublishedForm? right)
+  static bool op_Inequality(PublishedForm? left, PublishedForm? right)
+  void Deconstruct(out FormInfo Form, out FormDefinition Definition, out int Version)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Forms.ReplaceFormRequest
+  Guid Key { get; init; }
+  Guid? UserKey { get; init; }
+  bool Equals(ReplaceFormRequest? other)
+  ctor(Guid Key, string Json, int ExpectedConcurrencyVersion, Guid? UserKey = default)
+  int ExpectedConcurrencyVersion { get; init; }
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(ReplaceFormRequest? left, ReplaceFormRequest? right)
+  static bool op_Inequality(ReplaceFormRequest? left, ReplaceFormRequest? right)
+  string Json { get; init; }
+  void Deconstruct(out Guid Key, out string Json, out int ExpectedConcurrencyVersion, out Guid? UserKey)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Forms.RestoreLanding
+  Guid? FolderKey { get; init; }
+  bool Equals(RestoreLanding? other)
+  ctor(Guid? FolderKey)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(RestoreLanding? left, RestoreLanding? right)
+  static bool op_Inequality(RestoreLanding? left, RestoreLanding? right)
+  void Deconstruct(out Guid? FolderKey)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Forms.TemplateFormRequest
+  Guid TemplateKey { get; init; }
+  Guid? FolderKey { get; init; }
+  Guid? UserKey { get; init; }
+  bool Equals(TemplateFormRequest? other)
+  ctor(Guid TemplateKey, string? Name = default, string? Alias = default, Guid? FolderKey = default, Guid? UserKey = default)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(TemplateFormRequest? left, TemplateFormRequest? right)
+  static bool op_Inequality(TemplateFormRequest? left, TemplateFormRequest? right)
+  string? Alias { get; init; }
+  string? Name { get; init; }
+  void Deconstruct(out Guid TemplateKey, out string? Name, out string? Alias, out Guid? FolderKey, out Guid? UserKey)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Forms.TrashEmptied
+  LibraryDeletion Deleted { get; init; }
+  bool Equals(TrashEmptied? other)
+  ctor(LibraryDeletion Deleted, int Left)
+  int Left { get; init; }
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(TrashEmptied? left, TrashEmptied? right)
+  static bool op_Inequality(TrashEmptied? left, TrashEmptied? right)
+  void Deconstruct(out LibraryDeletion Deleted, out int Left)
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Forms.TrashEmptiedNotification : INotification
+  Guid? UserKey { get; }
+  IReadOnlyList<FolderSummary> Folders { get; }
+  IReadOnlyList<FormSummary> Forms { get; }
+  ctor(IReadOnlyList<FolderSummary> folders, IReadOnlyList<FormSummary> forms, Guid? userKey)
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Forms.TrashEmptyingNotification : CancelableNotification
+  Guid? UserKey { get; }
+  IReadOnlyList<FolderSummary> Folders { get; }
+  IReadOnlyList<FormSummary> Forms { get; }
+  ctor(IReadOnlyList<FolderSummary> folders, IReadOnlyList<FormSummary> forms, Guid? userKey, EventMessages messages)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Forms.TrashPreview
+  bool Equals(TrashPreview? other)
+  ctor(int Folders, int Forms, long Entries, long Files, int Left)
+  int Folders { get; init; }
+  int Forms { get; init; }
+  int Left { get; init; }
+  long Entries { get; init; }
+  long Files { get; init; }
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(TrashPreview? left, TrashPreview? right)
+  static bool op_Inequality(TrashPreview? left, TrashPreview? right)
+  void Deconstruct(out int Folders, out int Forms, out long Entries, out long Files, out int Left)
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.MergeTags.FormBuilderMergeTagFilterCollection : BuilderCollectionBase<IFormBuilderMergeTagFilter>
+  ctor(Func<IEnumerable<IFormBuilderMergeTagFilter>> items)
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.MergeTags.FormBuilderMergeTagFilterCollectionBuilder : OrderedCollectionBuilderBase<FormBuilderMergeTagFilterCollectionBuilder, FormBuilderMergeTagFilterCollection, IFormBuilderMergeTagFilter>
+  ctor()
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.MergeTags.FormBuilderMergeTagSourceCollection : BuilderCollectionBase<IFormBuilderMergeTagSource>
+  ctor(Func<IEnumerable<IFormBuilderMergeTagSource>> items)
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.MergeTags.FormBuilderMergeTagSourceCollectionBuilder : OrderedCollectionBuilderBase<FormBuilderMergeTagSourceCollectionBuilder, FormBuilderMergeTagSourceCollection, IFormBuilderMergeTagSource>
+  ctor()
+
+public interface Jiron.Umbraco.FormBuilder.Core.MergeTags.IFormBuilderMergeTagFilter
+  MergeTagValue Apply(MergeTagFilterRequest request)
+  bool Accepts(IReadOnlyList<MergeTagArgument> arguments)
+  string Name { get; }
+
+public interface Jiron.Umbraco.FormBuilder.Core.MergeTags.IFormBuilderMergeTagService
+  IReadOnlyList<MergeTagPathInfo> Paths(MergeTagPlace place, FormDefinition form)
+  IReadOnlyList<MergeTagProblem> Check(string text, MergeTagPlace place, MergeTagContext context, FormDefinition form, Guid? textOwner = default)
+  Task<MergeTagRendering> RenderAsync(string text, MergeTagPlace place, MergeTagContext context, MergeTagScope scope, CancellationToken cancellationToken = default)
+  Task<MergeTagTemplateValues> ValuesAsync(string text, MergeTagPlace place, MergeTagContext context, MergeTagScope scope, CancellationToken cancellationToken = default)
+
+public interface Jiron.Umbraco.FormBuilder.Core.MergeTags.IFormBuilderMergeTagSource
+  IEnumerable<MergeTagPathInfo> Paths(FormDefinition form)
+  IReadOnlySet<MergeTagPlace>? Places { get; }
+  ValueTask<MergeTagValue?> ResolveAsync(MergeTagSourceRequest request, CancellationToken cancellationToken)
+  bool IsPerVisitor { get; }
+  string Name { get; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.MergeTags.MergeTagAnswer
+  Guid Field { get; }
+  ImmutableArray<FieldFile> Files { get; }
+  ImmutableArray<FieldValue> Values { get; }
+  ctor(Guid field, IReadOnlyList<FieldValue> values, IReadOnlyList<FieldFile>? files = default, int row = 0)
+  int Row { get; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.MergeTags.MergeTagAnswers
+  IReadOnlySet<Guid> Hidden { get; }
+  MergeTagAnswer? Find(Guid field, int row = 0)
+  ctor(IEnumerable<MergeTagAnswer> answers, IEnumerable<Guid>? hidden = default)
+  static MergeTagAnswers None { get; }
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.MergeTags.MergeTagArgument
+  bool Equals(MergeTagArgument? other)
+  bool IsString { get; init; }
+  ctor(string Text, bool IsString)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(MergeTagArgument? left, MergeTagArgument? right)
+  static bool op_Inequality(MergeTagArgument? left, MergeTagArgument? right)
+  string Text { get; init; }
+  void Deconstruct(out string Text, out bool IsString)
+
+public enum Jiron.Umbraco.FormBuilder.Core.MergeTags.MergeTagContext
+  Html = 0
+  Text = 1
+  Header = 2
+  Url = 3
+  Json = 4
+  JsonString = 5
+  Form = 6
+  Xml = 7
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.MergeTags.MergeTagEntry
+  bool Equals(MergeTagEntry? other)
+  ctor()
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  required DateTimeOffset Submitted { get; init; }
+  required Guid Key { get; init; }
+  required int Number { get; init; }
+  required string State { get; init; }
+  static bool op_Equality(MergeTagEntry? left, MergeTagEntry? right)
+  static bool op_Inequality(MergeTagEntry? left, MergeTagEntry? right)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.MergeTags.MergeTagFilterRequest
+  IReadOnlyList<MergeTagArgument> Arguments { get; init; }
+  MergeTagValue Value { get; init; }
+  bool Equals(MergeTagFilterRequest? other)
+  ctor(MergeTagValue Value, IReadOnlyList<MergeTagArgument> Arguments, string Culture)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(MergeTagFilterRequest? left, MergeTagFilterRequest? right)
+  static bool op_Inequality(MergeTagFilterRequest? left, MergeTagFilterRequest? right)
+  string Culture { get; init; }
+  void Deconstruct(out MergeTagValue Value, out IReadOnlyList<MergeTagArgument> Arguments, out string Culture)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.MergeTags.MergeTagItem
+  bool Equals(MergeTagItem? other)
+  ctor(string Text, string? Number = default, string? Date = default)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(MergeTagItem? left, MergeTagItem? right)
+  static bool op_Inequality(MergeTagItem? left, MergeTagItem? right)
+  string Text { get; init; }
+  string? Date { get; init; }
+  string? Number { get; init; }
+  void Deconstruct(out string Text, out string? Number, out string? Date)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.MergeTags.MergeTagPathInfo
+  bool Equals(MergeTagPathInfo? other)
+  ctor(string Path, string? Label = default)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(MergeTagPathInfo? left, MergeTagPathInfo? right)
+  static bool op_Inequality(MergeTagPathInfo? left, MergeTagPathInfo? right)
+  string Path { get; init; }
+  string? Label { get; init; }
+  void Deconstruct(out string Path, out string? Label)
+
+public enum Jiron.Umbraco.FormBuilder.Core.MergeTags.MergeTagPlace
+  VisitorText = 0
+  ConsentText = 1
+  DefaultValue = 2
+  HiddenValue = 3
+  Outcome = 4
+  Redirect = 5
+  EntryTitle = 6
+  Mail = 7
+  Action = 8
+
+public readonly record struct Jiron.Umbraco.FormBuilder.Core.MergeTags.MergeTagProblem
+  bool Equals(MergeTagProblem other)
+  bool IsWarning { get; }
+  ctor(string Code, int At)
+  int At { get; init; }
+  override bool Equals(object obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(MergeTagProblem left, MergeTagProblem right)
+  static bool op_Inequality(MergeTagProblem left, MergeTagProblem right)
+  string Code { get; init; }
+  void Deconstruct(out string Code, out int At)
+
+public static class Jiron.Umbraco.FormBuilder.Core.MergeTags.MergeTagProblems
+  const string FieldAfterText = "field_after_text"
+  const string FilterAfterEncoding = "filter_after_encoding"
+  const string FilterNotForContext = "filter_not_for_context"
+  const string FilterNotForPlace = "filter_not_for_place"
+  const string InvalidArgument = "invalid_argument"
+  const string MalformedTag = "malformed_tag"
+  const string SourceNotForPlace = "source_not_for_place"
+  const string TagBeforePath = "tag_before_path"
+  const string TagInEscape = "tag_in_escape"
+  const string TagInMarkup = "tag_in_markup"
+  const string TooLong = "too_long"
+  const string TooManyFilters = "too_many_filters"
+  const string TooManyTags = "too_many_tags"
+  const string UnclosedTag = "unclosed_tag"
+  const string UnknownFilter = "unknown_filter"
+  const string UnknownPath = "unknown_path"
+  static bool IsWarning(string code)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.MergeTags.MergeTagRendering
+  IReadOnlyList<MergeTagProblem> Problems { get; init; }
+  bool Equals(MergeTagRendering? other)
+  ctor(string Text, IReadOnlyList<MergeTagProblem> Problems)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(MergeTagRendering? left, MergeTagRendering? right)
+  static bool op_Inequality(MergeTagRendering? left, MergeTagRendering? right)
+  string Text { get; init; }
+  void Deconstruct(out string Text, out IReadOnlyList<MergeTagProblem> Problems)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.MergeTags.MergeTagScope
+  Guid? Member { get; init; }
+  Guid? Page { get; init; }
+  Guid? Site { get; init; }
+  Guid? TextOwner { get; init; }
+  IReadOnlyDictionary<string, IReadOnlyList<string>> Query { get; init; }
+  IReadOnlyDictionary<string, string> Context { get; init; }
+  IReadOnlySet<Guid> IncludedSensitive { get; init; }
+  MergeTagAnswers Answers { get; init; }
+  MergeTagEntry? Entry { get; init; }
+  bool Equals(MergeTagScope? other)
+  ctor()
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  required FormDefinition Form { get; init; }
+  required string Culture { get; init; }
+  required string FormAlias { get; init; }
+  required string FormName { get; init; }
+  static bool op_Equality(MergeTagScope? left, MergeTagScope? right)
+  static bool op_Inequality(MergeTagScope? left, MergeTagScope? right)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.MergeTags.MergeTagSourceRequest
+  MergeTagContext Context { get; init; }
+  MergeTagPlace Place { get; init; }
+  MergeTagScope Scope { get; init; }
+  bool Equals(MergeTagSourceRequest? other)
+  ctor(string Path, MergeTagScope Scope, MergeTagPlace Place, MergeTagContext Context)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(MergeTagSourceRequest? left, MergeTagSourceRequest? right)
+  static bool op_Inequality(MergeTagSourceRequest? left, MergeTagSourceRequest? right)
+  string Path { get; init; }
+  void Deconstruct(out string Path, out MergeTagScope Scope, out MergeTagPlace Place, out MergeTagContext Context)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.MergeTags.MergeTagTemplateValues
+  IReadOnlyDictionary<string, MergeTagValue> Values { get; init; }
+  IReadOnlyList<Guid> Recalled { get; init; }
+  IReadOnlyList<string> Refused { get; init; }
+  bool Equals(MergeTagTemplateValues? other)
+  bool Renders { get; init; }
+  ctor(bool Renders, IReadOnlyDictionary<string, MergeTagValue> Values, IReadOnlyList<Guid> Recalled)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(MergeTagTemplateValues? left, MergeTagTemplateValues? right)
+  static bool op_Inequality(MergeTagTemplateValues? left, MergeTagTemplateValues? right)
+  void Deconstruct(out bool Renders, out IReadOnlyDictionary<string, MergeTagValue> Values, out IReadOnlyList<Guid> Recalled)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.MergeTags.MergeTagValue
+  IReadOnlyList<MergeTagItem> Items { get; init; }
+  bool Equals(MergeTagValue? other)
+  bool IsList { get; init; }
+  ctor(IReadOnlyList<MergeTagItem> Items, bool IsList)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static MergeTagValue Empty { get; }
+  static MergeTagValue ListOf(IReadOnlyList<MergeTagItem> items)
+  static MergeTagValue Of(MergeTagItem item)
+  static MergeTagValue Of(string text)
+  static bool op_Equality(MergeTagValue? left, MergeTagValue? right)
+  static bool op_Inequality(MergeTagValue? left, MergeTagValue? right)
+  void Deconstruct(out IReadOnlyList<MergeTagItem> Items, out bool IsList)
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.OptionLists.AgreementOptionSource : IFormBuilderOptionSource
+  ValueTask<IReadOnlyList<FormBuilderOption>> GetOptionsAsync(FormBuilderOptionRequest request, CancellationToken cancellationToken)
+  ctor()
+  string Label { get; }
+  string Name { get; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.OptionLists.CodeOptionListSettings
+  ctor()
+  string? Source { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.OptionLists.ContentOptionListSettings
+  ContentOptionOrder Order { get; init; }
+  Guid? Root { get; init; }
+  IReadOnlyList<Guid> DocumentTypes { get; init; }
+  bool Descendants { get; init; }
+  ctor()
+  string LabelFrom { get; init; }
+  string ValueFrom { get; init; }
+
+public enum Jiron.Umbraco.FormBuilder.Core.OptionLists.ContentOptionOrder
+  Tree = 0
+  Label = 1
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.OptionLists.CountriesOptionListSettings
+  IReadOnlyList<string> Countries { get; init; }
+  ctor()
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.OptionLists.DataTypeOptionListSettings
+  Guid? DataType { get; init; }
+  ctor()
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.OptionLists.FileOptionListSettings
+  ctor()
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.OptionLists.FormBuilderOption
+  Guid? Image { get; init; }
+  IReadOnlyList<string> ParentValues { get; init; }
+  bool Equals(FormBuilderOption? other)
+  ctor(string value, string? label = default)
+  int? Places { get; init; }
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(FormBuilderOption? left, FormBuilderOption? right)
+  static bool op_Inequality(FormBuilderOption? left, FormBuilderOption? right)
+  string Value { get; }
+  string? Description { get; init; }
+  string? Label { get; init; }
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.OptionLists.FormBuilderOptionContext
+  Guid? Page { get; init; }
+  IReadOnlyList<string> ParentValues { get; init; }
+  bool Equals(FormBuilderOptionContext? other)
+  ctor(string Culture)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(FormBuilderOptionContext? left, FormBuilderOptionContext? right)
+  static bool op_Inequality(FormBuilderOptionContext? left, FormBuilderOptionContext? right)
+  string Culture { get; init; }
+  void Deconstruct(out string Culture)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.OptionLists.FormBuilderOptionRequest
+  Guid? Page { get; init; }
+  IReadOnlyList<string> ParentValues { get; init; }
+  bool Equals(FormBuilderOptionRequest? other)
+  ctor(string Culture, IReadOnlyList<string> ParentValues, Guid? Page)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(FormBuilderOptionRequest? left, FormBuilderOptionRequest? right)
+  static bool op_Inequality(FormBuilderOptionRequest? left, FormBuilderOptionRequest? right)
+  string Culture { get; init; }
+  void Deconstruct(out string Culture, out IReadOnlyList<string> ParentValues, out Guid? Page)
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.OptionLists.FormBuilderOptionSourceCollection : BuilderCollectionBase<IFormBuilderOptionSource>
+  ctor(Func<IEnumerable<IFormBuilderOptionSource>> items)
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.OptionLists.FormBuilderOptionSourceCollectionBuilder : OrderedCollectionBuilderBase<FormBuilderOptionSourceCollectionBuilder, FormBuilderOptionSourceCollection, IFormBuilderOptionSource>
+  ctor()
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.OptionLists.FormBuilderResolvedOptions
+  IReadOnlyList<FormBuilderOption> Options { get; init; }
+  bool Equals(FormBuilderResolvedOptions? other)
+  bool IsAvailable { get; init; }
+  ctor(IReadOnlyList<FormBuilderOption> Options, bool IsAvailable)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static FormBuilderResolvedOptions None { get; }
+  static FormBuilderResolvedOptions Unavailable { get; }
+  static bool op_Equality(FormBuilderResolvedOptions? left, FormBuilderResolvedOptions? right)
+  static bool op_Inequality(FormBuilderResolvedOptions? left, FormBuilderResolvedOptions? right)
+  void Deconstruct(out IReadOnlyList<FormBuilderOption> Options, out bool IsAvailable)
+
+public interface Jiron.Umbraco.FormBuilder.Core.OptionLists.IFormBuilderOptionService
+  Task<FormBuilderResolvedOptions> GetAsync(FormField field, FormBuilderOptionContext context, CancellationToken cancellationToken = default)
+  Task<FormBuilderResolvedOptions> GetListAsync(Guid list, FormBuilderOptionContext context, CancellationToken cancellationToken = default)
+
+public interface Jiron.Umbraco.FormBuilder.Core.OptionLists.IFormBuilderOptionSource
+  ValueTask<IReadOnlyList<FormBuilderOption>> GetOptionsAsync(FormBuilderOptionRequest request, CancellationToken cancellationToken)
+  string Label { get; }
+  string Name { get; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.OptionLists.ManualOptionListSettings
+  ctor()
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.OptionLists.MonthsOptionSource : IFormBuilderOptionSource
+  ValueTask<IReadOnlyList<FormBuilderOption>> GetOptionsAsync(FormBuilderOptionRequest request, CancellationToken cancellationToken)
+  ctor()
+  string Label { get; }
+  string Name { get; }
+
+public enum Jiron.Umbraco.FormBuilder.Core.OptionLists.OptionListKind
+  Manual = 0
+  Content = 1
+  DataType = 2
+  Url = 3
+  File = 4
+  Countries = 5
+  Code = 6
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.OptionLists.SatisfactionOptionSource : IFormBuilderOptionSource
+  ValueTask<IReadOnlyList<FormBuilderOption>> GetOptionsAsync(FormBuilderOptionRequest request, CancellationToken cancellationToken)
+  ctor()
+  string Label { get; }
+  string Name { get; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.OptionLists.UrlOptionListSettings
+  ctor()
+  string LabelFrom { get; init; }
+  string ListPath { get; init; }
+  string ValueFrom { get; init; }
+  string? Url { get; init; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.OptionLists.WeekdaysOptionSource : IFormBuilderOptionSource
+  ValueTask<IReadOnlyList<FormBuilderOption>> GetOptionsAsync(FormBuilderOptionRequest request, CancellationToken cancellationToken)
+  ctor()
+  string Label { get; }
+  string Name { get; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.OptionLists.YesNoNotSureOptionSource : IFormBuilderOptionSource
+  ValueTask<IReadOnlyList<FormBuilderOption>> GetOptionsAsync(FormBuilderOptionRequest request, CancellationToken cancellationToken)
+  ctor()
+  string Label { get; }
+  string Name { get; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Persistence.FormBuilderConcurrencyException : Exception
+  ctor()
+  ctor(string message)
+  ctor(string message, Exception innerException)
+
+public enum Jiron.Umbraco.FormBuilder.Core.Persistence.FormBuilderConflict
+  DuplicateAlias = 0
+  DuplicateKey = 1
+  MissingFolder = 2
+  FolderIntoItself = 3
+  FolderTooDeep = 4
+  FolderNotEmpty = 5
+  InUse = 6
+  DuplicateSubmission = 7
+  ChallengeUsed = 8
+  MissingFile = 9
+  MissingField = 10
+  MissingVersion = 11
+  Trashed = 12
+  NotTrashed = 13
+  LandingChanged = 14
+  EntryLimitReached = 15
+  AlreadySubmitted = 16
+  EntriesHeld = 17
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Persistence.FormBuilderConflictException : Exception
+  FormBuilderConflict Conflict { get; }
+  ctor(FormBuilderConflict conflict, string message)
+  ctor(FormBuilderConflict conflict, string message, Exception innerException)
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Persistence.FormBuilderQueryTimeoutException : Exception
+  ctor()
+  ctor(string message)
+  ctor(string message, Exception innerException)
+
+public readonly record struct Jiron.Umbraco.FormBuilder.Core.Persistence.PageRequest
+  bool Equals(PageRequest other)
+  const int MaxTake = 500
+  ctor(long skip, int take)
+  int Take { get; }
+  long Skip { get; }
+  override bool Equals(object obj)
+  override int GetHashCode()
+  override string ToString()
+  static PageRequest First(int take)
+  static bool op_Equality(PageRequest left, PageRequest right)
+  static bool op_Inequality(PageRequest left, PageRequest right)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Persistence.Page<T>
+  IReadOnlyList<T?> Items { get; init; }
+  bool Equals(Page<T>? other)
+  ctor(IReadOnlyList<T?> Items, long Total)
+  long Total { get; init; }
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(Page<T>? left, Page<T>? right)
+  static bool op_Inequality(Page<T>? left, Page<T>? right)
+  void Deconstruct(out IReadOnlyList<T?> Items, out long Total)
+
+public enum Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories.FormVersionKind
+  Draft = 0
+  Published = 1
+
+public static class Jiron.Umbraco.FormBuilder.Core.Settings.FormBuilderSettingsSections
+  const string Access = "access"
+  const string Email = "email"
+  const string Files = "files"
+  const string General = "general"
+  const string Integrations = "integrations"
+  const string Privacy = "privacy"
+  const string Protection = "protection"
+  static IReadOnlyList<string> All { get; }
+  static IReadOnlyList<string> Lockable { get; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Settings.SettingsSavedNotification : INotification
+  Guid? SiteKey { get; }
+  Guid? UserKey { get; }
+  IReadOnlyList<string> ChangedFields { get; }
+  ctor(string section, Guid? siteKey, int version, Guid? userKey, IReadOnlyList<string> changedFields)
+  int Version { get; }
+  string Section { get; }
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Submissions.FormBuilderCaptchaCheck
+  IReadOnlySet<string> Hosts { get; init; }
+  SettingsObject? Settings { get; init; }
+  bool Equals(FormBuilderCaptchaCheck? other)
+  ctor(string Token, IReadOnlySet<string> Hosts, SettingsObject? Settings)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(FormBuilderCaptchaCheck? left, FormBuilderCaptchaCheck? right)
+  static bool op_Inequality(FormBuilderCaptchaCheck? left, FormBuilderCaptchaCheck? right)
+  string Token { get; init; }
+  void Deconstruct(out string Token, out IReadOnlySet<string> Hosts, out SettingsObject? Settings)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Submissions.FormBuilderCaptchaClient
+  bool Equals(FormBuilderCaptchaClient? other)
+  ctor(string SiteKey, string ScriptAddress, string? Action = default)
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(FormBuilderCaptchaClient? left, FormBuilderCaptchaClient? right)
+  static bool op_Inequality(FormBuilderCaptchaClient? left, FormBuilderCaptchaClient? right)
+  string ScriptAddress { get; init; }
+  string SiteKey { get; init; }
+  string? Action { get; init; }
+  void Deconstruct(out string SiteKey, out string ScriptAddress, out string? Action)
+
+public enum Jiron.Umbraco.FormBuilder.Core.Submissions.FormBuilderCaptchaOutcome
+  Passed = 0
+  Failed = 1
+  Unavailable = 2
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Submissions.FormBuilderCaptchaProviderCollection : BuilderCollectionBase<IFormBuilderCaptchaProvider>
+  IFormBuilderCaptchaProvider? Find(string? name)
+  IReadOnlyList<IFormBuilderCaptchaProvider> Offered()
+  ctor(Func<IEnumerable<IFormBuilderCaptchaProvider>> items)
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Submissions.FormBuilderCaptchaProviderCollectionBuilder : OrderedCollectionBuilderBase<FormBuilderCaptchaProviderCollectionBuilder, FormBuilderCaptchaProviderCollection, IFormBuilderCaptchaProvider>
+  ctor()
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Submissions.FormBuilderSpamCheckCollection : BuilderCollectionBase<IFormBuilderSpamCheck>
+  ctor(Func<IEnumerable<IFormBuilderSpamCheck>> items)
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Submissions.FormBuilderSpamCheckCollectionBuilder : OrderedCollectionBuilderBase<FormBuilderSpamCheckCollectionBuilder, FormBuilderSpamCheckCollection, IFormBuilderSpamCheck>
+  ctor()
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Submissions.FormBuilderSpamCheckContext
+  Guid? Page { get; init; }
+  IPAddress? Address { get; init; }
+  bool Equals(FormBuilderSpamCheckContext? other)
+  bool IsFromServerKey { get; init; }
+  ctor()
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  required Guid Form { get; init; }
+  required IReadOnlyDictionary<string, IReadOnlyList<string>> Answers { get; init; }
+  required string Culture { get; init; }
+  static bool op_Equality(FormBuilderSpamCheckContext? left, FormBuilderSpamCheckContext? right)
+  static bool op_Inequality(FormBuilderSpamCheckContext? left, FormBuilderSpamCheckContext? right)
+
+public sealed record Jiron.Umbraco.FormBuilder.Core.Submissions.FormBuilderSpamSignal
+  bool Equals(FormBuilderSpamSignal? other)
+  ctor(int Score, string Reason)
+  int Score { get; init; }
+  override bool Equals(object? obj)
+  override int GetHashCode()
+  override string ToString()
+  static bool op_Equality(FormBuilderSpamSignal? left, FormBuilderSpamSignal? right)
+  static bool op_Inequality(FormBuilderSpamSignal? left, FormBuilderSpamSignal? right)
+  string Reason { get; init; }
+  void Deconstruct(out int Score, out string Reason)
+
+public interface Jiron.Umbraco.FormBuilder.Core.Submissions.IFormBuilderCaptchaProvider
+  FormBuilderCaptchaClient? Client { get; }
+  Task<FormBuilderCaptchaOutcome> VerifyAsync(FormBuilderCaptchaCheck check, CancellationToken cancellationToken)
+  Type? SettingsType { get; }
+  bool IsConfigured { get; }
+  string Label { get; }
+  string Name { get; }
+
+public interface Jiron.Umbraco.FormBuilder.Core.Submissions.IFormBuilderSpamCheck
+  Task<FormBuilderSpamSignal?> CheckAsync(FormBuilderSpamCheckContext context, CancellationToken cancellationToken)
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Themes.Bootstrap5Theme : IFormBuilderTheme
+  IReadOnlyDictionary<string, string> Classes { get; }
+  IReadOnlyDictionary<string, string> Tokens { get; }
+  bool DarkScheme { get; }
+  const string StylesheetPath = "/jfb/assets/themes/bootstrap5.css"
+  ctor()
+  string Label { get; }
+  string Name { get; }
+  string ViewFolder { get; }
+  string? Stylesheet { get; }
+
+public static class Jiron.Umbraco.FormBuilder.Core.Themes.BuiltInThemes
+  const string DefaultAlias = "default"
+  static IReadOnlyList<Type> All { get; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Themes.DefaultTheme : IFormBuilderTheme
+  IReadOnlyDictionary<string, string> Classes { get; }
+  IReadOnlyDictionary<string, string> DarkTokens { get; }
+  IReadOnlyDictionary<string, string> Tokens { get; }
+  bool DarkScheme { get; }
+  const string StylesheetPath = "/jfb/assets/themes/default.css"
+  ctor()
+  string Label { get; }
+  string Name { get; }
+  string ViewFolder { get; }
+  string? Stylesheet { get; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Themes.FormBuilderThemeCollection : BuilderCollectionBase<IFormBuilderTheme>
+  ctor(Func<IEnumerable<IFormBuilderTheme>> items)
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Themes.FormBuilderThemeCollectionBuilder : OrderedCollectionBuilderBase<FormBuilderThemeCollectionBuilder, FormBuilderThemeCollection, IFormBuilderTheme>
+  ctor()
+
+public static class Jiron.Umbraco.FormBuilder.Core.Themes.FormBuilderThemeSlots
+  const string Affix = "affix"
+  const string AffixText = "affix-text"
+  const string Button = "button"
+  const string ButtonLink = "button-link"
+  const string ButtonPrimary = "button-primary"
+  const string Choice = "choice"
+  const string ChoiceInput = "choice-input"
+  const string ChoiceLabel = "choice-label"
+  const string Choices = "choices"
+  const string Control = "control"
+  const string Counter = "counter"
+  const string Error = "error"
+  const string ErrorSummary = "error-summary"
+  const string Field = "field"
+  const string Form = "form"
+  const string Group = "group"
+  const string Help = "help"
+  const string Label = "label"
+  const string Navigation = "navigation"
+  const string Notice = "notice"
+  const string Outcome = "outcome"
+  const string Page = "page"
+  const string Progress = "progress"
+  const string Range = "range"
+  const string Select = "select"
+  const string Switch = "switch"
+  static IReadOnlyList<string> All { get; }
+
+public interface Jiron.Umbraco.FormBuilder.Core.Themes.IFormBuilderTheme
+  IReadOnlyDictionary<string, string> Classes { get; }
+  IReadOnlyDictionary<string, string> DarkTokens { get; }
+  IReadOnlyDictionary<string, string> Tokens { get; }
+  bool DarkScheme { get; }
+  string Label { get; }
+  string Name { get; }
+  string ViewFolder { get; }
+  string? Stylesheet { get; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Themes.UnstyledTheme : IFormBuilderTheme
+  IReadOnlyDictionary<string, string> Classes { get; }
+  IReadOnlyDictionary<string, string> Tokens { get; }
+  bool DarkScheme { get; }
+  ctor()
+  string Label { get; }
+  string Name { get; }
+  string ViewFolder { get; }
+  string? Stylesheet { get; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Webhooks.EntryActionFailedWebhookEvent : EntryWebhookEvent<EntryActionFailedNotification>
+  ctor(IWebhookFiringService firing, IWebhookService webhooks, IOptionsMonitor<WebhookSettings> settings)
+  override string Alias { get; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Webhooks.EntryApprovedWebhookEvent : EntryWebhookEvent<EntryApprovedNotification>
+  ctor(IWebhookFiringService firing, IWebhookService webhooks, IOptionsMonitor<WebhookSettings> settings)
+  override string Alias { get; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Webhooks.EntryDeletedWebhookEvent : EntryWebhookEvent<EntryDeletedNotification>
+  ctor(IWebhookFiringService firing, IWebhookService webhooks, IOptionsMonitor<WebhookSettings> settings)
+  override string Alias { get; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Webhooks.EntryRejectedWebhookEvent : EntryWebhookEvent<EntryRejectedNotification>
+  ctor(IWebhookFiringService firing, IWebhookService webhooks, IOptionsMonitor<WebhookSettings> settings)
+  override string Alias { get; }
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Webhooks.EntrySubmittedWebhookEvent : EntryWebhookEvent<EntrySubmittedNotification>
+  ctor(IWebhookFiringService firing, IWebhookService webhooks, IOptionsMonitor<WebhookSettings> settings)
+  override string Alias { get; }
+
+public abstract class Jiron.Umbraco.FormBuilder.Core.Webhooks.EntryWebhookEvent<T> : WebhookEventBase<T>
+  override bool ShouldFireWebhookForNotification(T notificationObject)
+  override object? ConvertNotificationToRequestPayload(T notification)
+  protected ctor(IWebhookFiringService firing, IWebhookService webhooks, IOptionsMonitor<WebhookSettings> settings)
+
+public sealed class Jiron.Umbraco.FormBuilder.Core.Webhooks.WebhookActionSettings
+  IReadOnlyList<Guid> IncludeSensitive { get; init; }
+  JsonElement? Fields { get; init; }
+  JsonElement? Headers { get; init; }
+  WebhookFormat Format { get; init; }
+  WebhookTarget Target { get; init; }
+  bool Metadata { get; init; }
+  bool WithoutAnswers { get; init; }
+  ctor()
+  string? Message { get; init; }
+  string? Secret { get; init; }
+  string? Template { get; init; }
+  string? Url { get; init; }
+
+public enum Jiron.Umbraco.FormBuilder.Core.Webhooks.WebhookFormat
+  Json = 0
+  Form = 1
+  Xml = 2
+
+public enum Jiron.Umbraco.FormBuilder.Core.Webhooks.WebhookTarget
+  Url = 0
+  Slack = 1
+  Teams = 2
+
+public enum Jiron.Umbraco.FormBuilder.Logic.FieldKind
+  Text = 0
+  Choice = 1
+  Choices = 2
+  Checkbox = 3
+  Files = 4
+  Number = 5
+  Date = 6
+  Time = 7
+  DateTime = 8
+

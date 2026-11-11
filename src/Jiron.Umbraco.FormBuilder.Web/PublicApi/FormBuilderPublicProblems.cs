@@ -9,21 +9,24 @@ using Microsoft.AspNetCore.Http;
 namespace Jiron.Umbraco.FormBuilder.Web.PublicApi;
 
 /// <summary>
-/// One error of <c>422 validation_failed</c> (ADR-0088): the field's kind of error, <c>check</c>, <c>rule</c> or
-/// <c>empty</c>; where it is; a neutral line for developers; and the index of the field's own check or the key of the
-/// validation rule, so a page shows the form's own message for it from the visitor's form.
+/// One error of <c>422 validation_failed</c> (ADR-0088): the field's kind of error, <c>check</c>, <c>rule</c>,
+/// <c>empty</c> or <c>custom</c>; where it is; a neutral line for developers; and the index of the field's own check or
+/// the key of the validation rule, so a page shows the form's own message for it from the visitor's form, or for
+/// <c>custom</c> the words a site's handler gave it (ADR-0233).
 /// </summary>
 /// <param name="Code">Its code.</param>
 /// <param name="Path">The field's alias, <c>&lt;grid&gt;.&lt;rowKey&gt;</c>, <c>&lt;group&gt;[&lt;row&gt;].&lt;child&gt;</c>, or <c>""</c> for the form.</param>
 /// <param name="Message">What is wrong, for developers.</param>
 /// <param name="Check">The index of the field's own check that fails; only for <c>check</c>.</param>
 /// <param name="Rule">The key of the validation rule whose message shows; only for <c>rule</c>.</param>
+/// <param name="Text">What the visitor reads; only for <c>custom</c>, and not there when the handler gave no words.</param>
 internal sealed record FormBuilderValidationError(
     string Code,
     string Path,
     string Message,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] int? Check,
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] Guid? Rule);
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] Guid? Rule,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Text = null);
 
 /// <summary>
 /// The public API's refusals as ProblemDetails (section 4.6, ADR-0012), each with its stable <c>code</c> and a title
@@ -217,7 +220,7 @@ internal static class FormBuilderPublicProblems
             StatusCodes.Status422UnprocessableEntity,
             ValidationFailedCode,
             "Some answers need another look.",
-            extensions: new Dictionary<string, object?> { ["errors"] = problems.Select(problem => new FormBuilderValidationError(problem.Code, problem.Path, LineOf(problem.Code), problem.Check, problem.Rule)).ToList() });
+            extensions: new Dictionary<string, object?> { ["errors"] = problems.Select(problem => new FormBuilderValidationError(problem.Code, problem.Path, LineOf(problem.Code), problem.Check, problem.Rule, problem.Text)).ToList() });
 
     /// <summary>A rate limit is reached: the answer says when to send again, and the visitor keeps every answer (ADR-0012).</summary>
     /// <param name="http">The request, whose response gets <c>Retry-After</c>.</param>
@@ -264,6 +267,7 @@ internal static class FormBuilderPublicProblems
         SubmissionProblems.Check => "This answer fails one of the field's checks.",
         SubmissionProblems.Rule => "A rule of the form shows its message here.",
         SubmissionProblems.Empty => "The submission holds no answer.",
+        SubmissionProblems.Custom => "A check of the site refused this; the page shows its text.",
         _ => "This answer cannot be taken as it is.",
     };
 

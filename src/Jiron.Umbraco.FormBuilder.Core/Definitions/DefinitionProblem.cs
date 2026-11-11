@@ -10,7 +10,7 @@ namespace Jiron.Umbraco.FormBuilder.Core.Definitions;
 /// <param name="Code">The stable code.</param>
 /// <param name="Path">The JSON path, <c>$</c> for the whole document.</param>
 /// <param name="Message">What is wrong, in English, for logs and developers.</param>
-internal sealed record DefinitionProblem(string Code, string Path, string Message);
+public sealed record DefinitionProblem(string Code, string Path, string Message);
 
 /// <summary>
 /// The problems one read or check collects, in the order found, at most <see cref="Max"/>: past that they would only

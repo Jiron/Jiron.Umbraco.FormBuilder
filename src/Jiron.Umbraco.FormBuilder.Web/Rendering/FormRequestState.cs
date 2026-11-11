@@ -120,12 +120,13 @@ internal enum FormPostMove
 /// </summary>
 /// <param name="Code">
 /// The field's kind of error as its <c>messages</c> name it (<c>required</c>, <c>maxLength</c>, ...), <c>check</c> for one
-/// of its own checks or <c>rule</c> for a validation rule.
+/// of its own checks, <c>rule</c> for a validation rule or <c>custom</c> for a site's handler (ADR-0233).
 /// </param>
 /// <param name="Check">For <c>check</c>, the index of the field's check that fails.</param>
 /// <param name="Rule">For <c>rule</c>, the key of the validation rule whose message shows.</param>
 /// <param name="GridRow">For a grid, the key of the row the error is at; null for the grid's own.</param>
-internal sealed record FormPostError(string Code, int? Check = null, Guid? Rule = null, Guid? GridRow = null);
+/// <param name="Text">For <c>custom</c>, the handler's words; null for none.</param>
+internal sealed record FormPostError(string Code, int? Check = null, Guid? Rule = null, Guid? GridRow = null, string? Text = null);
 
 /// <summary>
 /// What a post without JavaScript leaves for the form it renders again (ADR-0004, ADR-0093, ADR-0100): the answers, the
@@ -143,6 +144,12 @@ internal sealed record FormPostState
 
     /// <summary>Whether the post held no answer at all (ADR-0099): the error summary says so, linked to the page's first field.</summary>
     public bool IsEmpty { get; init; }
+
+    /// <summary>
+    /// The errors a site's handler gave the form (ADR-0233), each its words or null for none, which the error summary
+    /// shows first, linked to the page's first field, as the empty submission's.
+    /// </summary>
+    public IReadOnlyList<string?> FormErrors { get; init; } = [];
 
     /// <summary>
     /// Each repeatable group's rows by the group's key, in the order the visitor saw them, each with its child fields'

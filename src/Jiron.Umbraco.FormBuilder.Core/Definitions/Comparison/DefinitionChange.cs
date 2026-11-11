@@ -3,7 +3,7 @@ using System.Text.Json.Nodes;
 namespace Jiron.Umbraco.FormBuilder.Core.Definitions.Comparison;
 
 /// <summary>What an element of a definition is, for a comparison (ADR-0045).</summary>
-internal enum DefinitionElementKind
+public enum DefinitionElementKind
 {
     /// <summary>A group of the form settings, named by <see cref="DefinitionChange.SettingsGroup"/>.</summary>
     Settings,
@@ -31,7 +31,7 @@ internal enum DefinitionElementKind
 }
 
 /// <summary>What happened to an element between two versions.</summary>
-internal enum DefinitionChangeKind
+public enum DefinitionChangeKind
 {
     /// <summary>Only the newer version has it.</summary>
     Added,
@@ -50,7 +50,7 @@ internal enum DefinitionChangeKind
 /// </param>
 /// <param name="From">The older value as JSON, or null where the older version has none.</param>
 /// <param name="To">The newer value as JSON, or null where the newer version has none.</param>
-internal sealed record DefinitionPropertyChange(IReadOnlyList<string> Path, JsonNode? From, JsonNode? To);
+public sealed record DefinitionPropertyChange(IReadOnlyList<string> Path, JsonNode? From, JsonNode? To);
 
 /// <summary>An element of a definition that differs between two versions (ADR-0045).</summary>
 /// <param name="ElementKind">What the element is.</param>
@@ -69,7 +69,7 @@ internal sealed record DefinitionPropertyChange(IReadOnlyList<string> Path, Json
 /// <param name="Before">Its own properties in the older version, without its key and the elements it holds; null when added.</param>
 /// <param name="After">Its own properties in the newer version, without its key and the elements it holds; null when removed.</param>
 /// <param name="Properties">The properties that differ, in the newer version's order; empty when added, removed or only moved.</param>
-internal sealed record DefinitionChange(
+public sealed record DefinitionChange(
     DefinitionElementKind ElementKind,
     Guid? Key,
     string? SettingsGroup,
@@ -97,7 +97,7 @@ internal sealed record DefinitionChange(
 /// <param name="Moved">Whether its place changed.</param>
 /// <param name="Label">Its default-culture title, label or name, or null.</param>
 /// <param name="Alias">A field's alias, or null.</param>
-internal sealed record DefinitionChangeSummary(
+public sealed record DefinitionChangeSummary(
     DefinitionElementKind ElementKind,
     Guid? Key,
     string? SettingsGroup,

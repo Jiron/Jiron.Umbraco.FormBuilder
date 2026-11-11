@@ -8,7 +8,7 @@ namespace Jiron.Umbraco.FormBuilder.Core.Forms;
 /// alias or comment (ADR-0044). Nothing was written. Each problem has a stable code, a path and a message; the path is a
 /// JSON path into the definition, or <c>name</c>, <c>alias</c> or <c>comment</c>.
 /// </summary>
-internal sealed class FormBuilderValidationException : Exception
+public sealed class FormBuilderValidationException : Exception
 {
     /// <summary>Creates the exception for at least one problem.</summary>
     public FormBuilderValidationException(IReadOnlyList<DefinitionProblem> problems)
@@ -21,7 +21,7 @@ internal sealed class FormBuilderValidationException : Exception
     public IReadOnlyList<DefinitionProblem> Problems { get; }
 
     /// <summary>The exception for one problem.</summary>
-    public static FormBuilderValidationException For(string code, string path, string message) => new([new DefinitionProblem(code, path, message)]);
+    internal static FormBuilderValidationException For(string code, string path, string message) => new([new DefinitionProblem(code, path, message)]);
 
     private static string Describe(IReadOnlyList<DefinitionProblem> problems)
     {
@@ -37,7 +37,7 @@ internal sealed class FormBuilderValidationException : Exception
 /// Thrown when a handler of a cancelable notification cancelled a change before it was written (ADR-0044). It carries
 /// the messages the handlers gave; nothing was written.
 /// </summary>
-internal sealed class FormBuilderCancelledException : Exception
+public sealed class FormBuilderCancelledException : Exception
 {
     /// <summary>Creates the exception with the handlers' messages.</summary>
     public FormBuilderCancelledException(EventMessages messages)
@@ -64,4 +64,4 @@ internal sealed class FormBuilderCancelledException : Exception
 /// <summary>A message a handler gave when it cancelled a change.</summary>
 /// <param name="Category">The handler's category, such as its name.</param>
 /// <param name="Message">Why it cancelled the change.</param>
-internal sealed record CancelMessage(string Category, string Message);
+public sealed record CancelMessage(string Category, string Message);

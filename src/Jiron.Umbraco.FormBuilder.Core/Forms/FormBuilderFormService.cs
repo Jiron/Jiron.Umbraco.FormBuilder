@@ -19,13 +19,13 @@ namespace Jiron.Umbraco.FormBuilder.Core.Forms;
 /// <see cref="FormBuilderConflictException"/> or <see cref="FormBuilderCancelledException"/>, each with a code from
 /// <see cref="FormBuilderErrorCodes"/>.
 /// </summary>
-internal interface IFormBuilderFormService
+public interface IFormBuilderFormService
 {
     /// <summary>A form by key, or null.</summary>
     Task<FormInfo?> GetAsync(Guid key, CancellationToken cancellationToken = default);
 
     /// <summary>A form by alias in any letter case (ADR-0033), trashed ones included, or null.</summary>
-    Task<FormInfo?> GetByAliasAsync(string alias, CancellationToken cancellationToken = default);
+    Task<FormInfo?> GetByAliasAsync(string formAlias, CancellationToken cancellationToken = default);
 
     /// <summary>A form opened for editing, with its draft, or null.</summary>
     Task<FormDraft?> GetDraftAsync(Guid key, CancellationToken cancellationToken = default);
@@ -88,7 +88,7 @@ internal interface IFormBuilderFormService
     /// <exception cref="FormBuilderValidationException">The name or the alias is not allowed.</exception>
     /// <exception cref="FormBuilderConflictException">The alias is taken, or the form is in the trash.</exception>
     /// <exception cref="FormBuilderCancelledException">A handler cancelled the change.</exception>
-    Task<FormInfo?> RenameAsync(Guid key, int expectedConcurrencyVersion, string name, string? alias, Guid? userKey, CancellationToken cancellationToken = default);
+    Task<FormInfo?> RenameAsync(Guid key, int expectedConcurrencyVersion, string name, string? formAlias, Guid? userKey, CancellationToken cancellationToken = default);
 
     /// <summary>Moves a form to a folder outside the trash, or to the root. Null when it does not exist.</summary>
     /// <exception cref="FormBuilderConcurrencyException">Someone changed the form meanwhile.</exception>
@@ -175,10 +175,10 @@ internal sealed partial class FormBuilderFormService(
         await forms.GetAsync(key, cancellationToken) is { } form ? await infos.InfoAsync(form, cancellationToken) : null;
 
     /// <inheritdoc />
-    public async Task<FormInfo?> GetByAliasAsync(string alias, CancellationToken cancellationToken = default)
+    public async Task<FormInfo?> GetByAliasAsync(string formAlias, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(alias);
-        return await forms.GetByAliasAsync(alias, cancellationToken) is { } form ? await infos.InfoAsync(form, cancellationToken) : null;
+        ArgumentNullException.ThrowIfNull(formAlias);
+        return await forms.GetByAliasAsync(formAlias, cancellationToken) is { } form ? await infos.InfoAsync(form, cancellationToken) : null;
     }
 
     /// <inheritdoc />

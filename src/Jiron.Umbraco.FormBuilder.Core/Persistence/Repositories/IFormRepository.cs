@@ -5,7 +5,7 @@ using Jiron.Umbraco.FormBuilder.Core.Forms;
 namespace Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 
 /// <summary>Whether a version is a saved draft or a publish (ADR-0002).</summary>
-internal enum FormVersionKind
+public enum FormVersionKind
 {
     /// <summary>A save of the draft.</summary>
     Draft,

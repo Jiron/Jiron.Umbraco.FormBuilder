@@ -2,6 +2,7 @@ using Jiron.Umbraco.FormBuilder.Core.Actions;
 using Jiron.Umbraco.FormBuilder.Core.Composing;
 using Jiron.Umbraco.FormBuilder.Core.Configuration;
 using Jiron.Umbraco.FormBuilder.Core.Email;
+using Jiron.Umbraco.FormBuilder.Core.Entries;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Core.Privacy;
@@ -13,7 +14,6 @@ using Microsoft.Extensions.Options;
 using Umbraco.Cms.Core.Configuration.Models;
 using Umbraco.Cms.Core.DependencyInjection;
 using Umbraco.Cms.Core.Events;
-using Umbraco.Cms.Core.Notifications;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Core.Sync;
 using Umbraco.Cms.Core.Webhooks;
@@ -78,56 +78,6 @@ internal sealed class FormBuilderSecrets(IOptionsMonitor<FormBuilderOptions> opt
     }
 }
 
-/// <summary>What an entry notification says of its entry (ROADMAP 8.4): never an answer, as Umbraco sends it as it is.</summary>
-public abstract class EntryNotification : INotification
-{
-    /// <summary>The entry's key.</summary>
-    public required Guid EntryKey { get; init; }
-
-    /// <summary>The entry's number within its form.</summary>
-    public required int EntryNumber { get; init; }
-
-    /// <summary>The entry's state as entries store it.</summary>
-    public required string State { get; init; }
-
-    /// <summary>The form's alias.</summary>
-    public required string FormAlias { get; init; }
-
-    /// <summary>When it happened.</summary>
-    public required DateTimeOffset OccurredUtc { get; init; }
-
-    /// <summary>Whether the integrations settings have Umbraco's webhook events on.</summary>
-    internal bool FiresWebhooks { get; init; }
-
-    /// <summary>What Umbraco's webhooks send: a stable payload (docs/webhooks.md).</summary>
-    public virtual object Payload() => new { form = new { alias = FormAlias }, entry = new { key = EntryKey, number = EntryNumber, state = State }, occurredUtc = OccurredUtc };
-}
-
-/// <summary>An entry was submitted, and did not go to Spam.</summary>
-public sealed class EntrySubmittedNotification : EntryNotification;
-
-/// <summary>An entry was approved.</summary>
-public sealed class EntryApprovedNotification : EntryNotification;
-
-/// <summary>An entry was rejected.</summary>
-public sealed class EntryRejectedNotification : EntryNotification;
-
-/// <summary>An entry was deleted.</summary>
-public sealed class EntryDeletedNotification : EntryNotification;
-
-/// <summary>An action of an entry failed for good.</summary>
-public sealed class EntryActionFailedNotification : EntryNotification
-{
-    /// <summary>The action's type.</summary>
-    public required string ActionType { get; init; }
-
-    /// <summary>Why it failed, as a stable code.</summary>
-    public required string? Code { get; init; }
-
-    /// <inheritdoc />
-    public override object Payload() => new { form = new { alias = FormAlias }, entry = new { key = EntryKey, number = EntryNumber, state = State }, occurredUtc = OccurredUtc, action = new { type = ActionType, code = Code } };
-}
-
 /// <summary>
 /// Publishes the entry notifications (ROADMAP 8.4): what a site's handlers hear of always, and Umbraco's webhooks while the integrations
 /// settings have them on. It decides nothing: the entry stands, so a handler that fails is logged and the visitor never hears of it.
@@ -174,10 +124,14 @@ internal sealed partial class EntryEvents(IEventAggregator events, IFormBuilderS
                 });
     }
 
-    /// <summary>Tells of an entry that arrived: that it is submitted, then that it is approved when it was approved as it came in.</summary>
+    /// <summary>
+    /// Tells of an entry that arrived: that it is submitted, that its state changed when it came from Spam or was
+    /// verified, then that it is approved when it was approved as it came in.
+    /// </summary>
     /// <param name="entry">The entry.</param>
     /// <param name="formAlias">Its form's alias.</param>
-    public async Task TellArrivedAsync(StoredEntry entry, string formAlias)
+    /// <param name="from">The state it left, Spam or unverified; null for an entry that was just submitted.</param>
+    public async Task TellArrivedAsync(StoredEntry entry, string formAlias, EntryState? from = null)
     {
         ArgumentNullException.ThrowIfNull(entry);
         await GuardedAsync(
@@ -185,18 +139,34 @@ internal sealed partial class EntryEvents(IEventAggregator events, IFormBuilderS
             async on =>
             {
                 await events.PublishAsync(new EntrySubmittedNotification { EntryKey = entry.Key, EntryNumber = entry.Number, State = StoredNames.Of(entry.State), FormAlias = formAlias, OccurredUtc = entry.SubmittedUtc, FiresWebhooks = on }, CancellationToken.None);
+                if (from is { } left)
+                {
+                    await PublishChangedAsync(entry, formAlias, left);
+                }
+
                 await PublishMovedAsync(entry, formAlias, on);
             });
     }
 
-    /// <summary>Tells of an entry that reached approved or rejected; of any other state, nothing.</summary>
-    /// <param name="entry">The entry.</param>
+    /// <summary>Tells of an entry whose state changed and stands (ADR-0233), then that it is approved or rejected when it reached one.</summary>
+    /// <param name="entry">The entry, in the state it reached.</param>
     /// <param name="formAlias">Its form's alias.</param>
-    public Task TellMovedAsync(StoredEntry entry, string formAlias)
+    /// <param name="from">The state it left.</param>
+    public Task TellMovedAsync(StoredEntry entry, string formAlias, EntryState from)
     {
         ArgumentNullException.ThrowIfNull(entry);
-        return GuardedAsync(nameof(TellMovedAsync), on => PublishMovedAsync(entry, formAlias, on));
+        return GuardedAsync(
+            nameof(TellMovedAsync),
+            async on =>
+            {
+                await PublishChangedAsync(entry, formAlias, from);
+                await PublishMovedAsync(entry, formAlias, on);
+            });
     }
+
+    private Task PublishChangedAsync(StoredEntry entry, string formAlias, EntryState from) => from == entry.State
+        ? Task.CompletedTask
+        : events.PublishAsync(new EntryStateChangedNotification { EntryKey = entry.Key, EntryNumber = entry.Number, State = StoredNames.Of(entry.State), From = StoredNames.Of(from), FormAlias = formAlias, OccurredUtc = entry.StateChangedUtc }, CancellationToken.None);
 
     private Task PublishMovedAsync(StoredEntry entry, string formAlias, bool on) => entry.State switch
     {

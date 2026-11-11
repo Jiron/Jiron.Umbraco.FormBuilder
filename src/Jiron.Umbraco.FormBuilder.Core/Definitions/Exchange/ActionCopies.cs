@@ -8,13 +8,13 @@ namespace Jiron.Umbraco.FormBuilder.Core.Definitions.Exchange;
 /// <param name="Key">The copy's key in the target form.</param>
 /// <param name="Unmapped">The references the copy keeps because the target has nothing that matches them.</param>
 /// <param name="MergeTags">The merge tags in the copy's settings that name a field the target lacks.</param>
-internal sealed record CopiedAction(Guid SourceKey, Guid Key, IReadOnlyList<UnmappedReference> Unmapped, IReadOnlyList<UnmappedMergeTag> MergeTags);
+public sealed record CopiedAction(Guid SourceKey, Guid Key, IReadOnlyList<UnmappedReference> Unmapped, IReadOnlyList<UnmappedMergeTag> MergeTags);
 
 /// <summary>A reference of a copied action to something of the source form that the target has no match for (ADR-0046).</summary>
 /// <param name="Path">Where the reference is in the target's definition.</param>
 /// <param name="SourceKey">The key it names in the source form, which the copy keeps until the editor fixes it.</param>
 /// <param name="Alias">The alias of the source field it names, or of the grid a row belongs to; null for other elements.</param>
-internal sealed record UnmappedReference(string Path, Guid SourceKey, string? Alias);
+public sealed record UnmappedReference(string Path, Guid SourceKey, string? Alias);
 
 /// <summary>
 /// A merge tag in a copied action that names a field the target lacks (ADR-0046), which renders empty there until the
@@ -23,7 +23,7 @@ internal sealed record UnmappedReference(string Path, Guid SourceKey, string? Al
 /// <param name="Path">Where the text that holds the tag is in the target's definition.</param>
 /// <param name="Tag">The tag's path, such as <c>field.topic</c>.</param>
 /// <param name="At">Where the tag's path starts in the text, from 0.</param>
-internal sealed record UnmappedMergeTag(string Path, string Tag, int At);
+public sealed record UnmappedMergeTag(string Path, string Tag, int At);
 
 /// <summary>The target with the copied actions, or why the copies do not fit it.</summary>
 /// <param name="Target">The target's definition with the copies after its own actions, or null.</param>

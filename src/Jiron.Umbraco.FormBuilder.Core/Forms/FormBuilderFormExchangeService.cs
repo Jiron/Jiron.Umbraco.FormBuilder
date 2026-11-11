@@ -22,7 +22,7 @@ namespace Jiron.Umbraco.FormBuilder.Core.Forms;
 /// change to a form (<see cref="IFormBuilderFormService"/>): a unit of work of its own, the cancelable notification, one
 /// unit with the change and its audit entry, then the notification that it happened. A missing form gives null.
 /// </summary>
-internal interface IFormBuilderFormExchangeService
+public interface IFormBuilderFormExchangeService
 {
     /// <summary>
     /// Creates a copy of a form's draft, with or without its actions, in which every element has a new key that the

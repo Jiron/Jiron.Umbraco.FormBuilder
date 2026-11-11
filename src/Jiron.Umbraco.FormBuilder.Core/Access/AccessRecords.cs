@@ -8,7 +8,7 @@ namespace Jiron.Umbraco.FormBuilder.Core.Access;
 /// <param name="Key">The form's key.</param>
 /// <param name="FolderKey">Its folder, or null at the root.</param>
 /// <param name="IsRestricted">Whether only the grants on it count below its folders.</param>
-internal sealed record FormAccessTarget(Guid Key, Guid? FolderKey, bool IsRestricted)
+public sealed record FormAccessTarget(Guid Key, Guid? FolderKey, bool IsRestricted)
 {
     /// <summary>The target of a form the form service answered with.</summary>
     public static FormAccessTarget Of(FormInfo form)
@@ -66,7 +66,7 @@ internal sealed record FormVisibility
 /// <summary>Which folders a folder list holds for a user: those that lead to something the user may see (ADR-0048).</summary>
 /// <param name="IsEverything">True for every folder.</param>
 /// <param name="FolderKeys">The folders it holds, unless <paramref name="IsEverything"/>.</param>
-internal sealed record FolderVisibility(bool IsEverything, IReadOnlySet<Guid> FolderKeys)
+public sealed record FolderVisibility(bool IsEverything, IReadOnlySet<Guid> FolderKeys)
 {
     /// <summary>Every folder: an administrator's lists.</summary>
     public static FolderVisibility Everything { get; } = new(true, FrozenSet<Guid>.Empty);

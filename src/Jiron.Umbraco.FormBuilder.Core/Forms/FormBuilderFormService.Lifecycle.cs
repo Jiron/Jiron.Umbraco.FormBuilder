@@ -171,18 +171,18 @@ internal sealed partial class FormBuilderFormService
     }
 
     /// <inheritdoc />
-    public async Task<FormInfo?> RenameAsync(Guid key, int expectedConcurrencyVersion, string name, string? alias, Guid? userKey, CancellationToken cancellationToken = default)
+    public async Task<FormInfo?> RenameAsync(Guid key, int expectedConcurrencyVersion, string name, string? formAlias, Guid? userKey, CancellationToken cancellationToken = default)
     {
         changes.EnsureOwnUnit(FormChecks.OwnUnit);
         var newName = FormChecks.Name(name);
-        FormChecks.Alias(alias);
+        FormChecks.Alias(formAlias);
         if (await forms.GetAsync(key, cancellationToken) is not { } form)
         {
             return null;
         }
 
         FormChecks.Current(form, expectedConcurrencyVersion);
-        var newAlias = alias ?? form.Alias;
+        var newAlias = formAlias ?? form.Alias;
         if (newName == form.Name && newAlias == form.Alias)
         {
             return await infos.InfoAsync(form, cancellationToken);

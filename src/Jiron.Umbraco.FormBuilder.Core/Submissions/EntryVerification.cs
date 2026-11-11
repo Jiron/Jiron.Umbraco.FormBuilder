@@ -229,7 +229,7 @@ internal sealed partial class EntryVerification(
             return new VerificationAnswer(VerificationStatus.Invalid, entry.Culture);
         }
 
-        await entryEvents.TellArrivedAsync(moved, form.Alias);
+        await entryEvents.TellArrivedAsync(moved, form.Alias, EntryState.Unverified);
         return new VerificationAnswer(VerificationStatus.Confirmed, entry.Culture);
     }
 
