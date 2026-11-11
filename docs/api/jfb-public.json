@@ -2365,6 +2365,10 @@
           "scriptAddress": {
             "type": "string"
           },
+          "global": {
+            "type": "string",
+            "nullable": true
+          },
           "action": {
             "type": "string",
             "nullable": true

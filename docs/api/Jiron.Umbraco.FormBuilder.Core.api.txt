@@ -2484,6 +2484,7 @@ public sealed record Jiron.Umbraco.FormBuilder.Core.FieldTypes.FieldTypeDeclarat
   FieldMessageKinds Messages { get; init; }
   FieldStorageKind Storage { get; init; }
   bool Equals(FieldTypeDeclaration? other)
+  bool GroupsControls { get; init; }
   bool HoldsValue { get; init; }
   bool MultipleSetting { get; init; }
   bool OnePerForm { get; init; }
@@ -3866,6 +3867,7 @@ public sealed record Jiron.Umbraco.FormBuilder.Core.Submissions.FormBuilderCaptc
   string ScriptAddress { get; init; }
   string SiteKey { get; init; }
   string? Action { get; init; }
+  string? ScriptGlobal { get; init; }
   void Deconstruct(out string SiteKey, out string ScriptAddress, out string? Action)
 
 public enum Jiron.Umbraco.FormBuilder.Core.Submissions.FormBuilderCaptchaOutcome

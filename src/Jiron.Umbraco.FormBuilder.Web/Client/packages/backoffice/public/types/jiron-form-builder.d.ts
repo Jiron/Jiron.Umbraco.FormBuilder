@@ -136,10 +136,25 @@ export interface ManifestJfbFieldPreview extends ManifestElement<JfbFieldPreview
 /**
  * What `<jfb-form>` writes in a field's place for a site's own field type, on a headless site (ADR-0128):
  * `customElements.whenDefined('jfb-form').then((form) => form.defineControl('colour', writeColour))`. It writes the
- * controls a visitor answers with: named as the field's `name` (a part as `name.part`), the first with the field's
- * `id`, described by `helpId` and `errorId`, as the Razor view `fields/<type>.cshtml` of the type writes them.
+ * controls a visitor answers with, as the Razor view `fields/<type>.cshtml` of the type writes them: named as the
+ * field's `name` (a part as `name.part`), the first with the field's `id`, with the theme's classes. A type of one
+ * control describes it by `helpId` and `errorId`; a type that groups its controls is described by the fieldset around
+ * them, and each control names `choiceErrorId` while the field has an error.
  */
-export type JfbControlWriter = (field: JfbControlField, document: Document) => Node | null;
+export type JfbControlWriter = (field: JfbControlField, document: Document, classes: JfbThemeClasses) => Node | null;
+
+/** The theme's classes for a control's parts, as a Razor view's `Model.Classes` gives them; an optional one may be absent. */
+export interface JfbThemeClasses {
+  readonly control: string;
+  readonly select: string;
+  readonly choices: string;
+  readonly choice: string;
+  readonly choiceInput?: string;
+  readonly choiceLabel?: string;
+  readonly label: string;
+  readonly help: string;
+  readonly error: string;
+}
 
 /** A field as `<jfb-form>` writes it, with what the element endpoint gave for the type (`control.settings`, `control.parts`). */
 export interface JfbControlField {
@@ -152,6 +167,9 @@ export interface JfbControlField {
   readonly helpId: string;
   readonly errorId: string;
   readonly isRequired: boolean;
+  readonly isDisabled: boolean;
+  /** For a type that groups its controls, the error's id while the field has one, which each control names. */
+  readonly choiceErrorId?: string;
   readonly values: readonly string[];
   readonly control?: {
     readonly kind: 'custom';

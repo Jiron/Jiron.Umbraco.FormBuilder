@@ -18,14 +18,15 @@ internal sealed partial class FormModels
     // The most lines a list box shows at once.
     private const int MostListLines = 6;
 
-    // What labels a field that holds a value: a fieldset's legend for a group of choices, the box's own label for one
-    // box, otherwise a label for its control.
+    // What labels a field that holds a value: a fieldset's legend for a group of choices or of a site's type's controls
+    // (ADR-0234), the box's own label for one box, otherwise a label for its control.
     private static FieldLabelElement LabelElementOf(IFormBuilderFieldType type, ShownSettings settings) => type switch
     {
         RadioFieldType or CheckboxesFieldType or GridFieldType or RankingFieldType or ScaleFieldType or RatingFieldType => FieldLabelElement.Legend,
         NameFieldType or AddressFieldType or SignatureFieldType or RepeaterFieldType => FieldLabelElement.Legend,
         YesNoFieldType => IsSwitch(settings) ? FieldLabelElement.Choice : FieldLabelElement.Legend,
         CheckboxFieldType or ConsentFieldType => FieldLabelElement.Choice,
+        _ when type.Declaration.GroupsControls => FieldLabelElement.Legend,
         _ => FieldLabelElement.Label,
     };
 

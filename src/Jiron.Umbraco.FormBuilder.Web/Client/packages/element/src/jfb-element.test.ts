@@ -478,9 +478,10 @@ describe('<jfb-form>', () => {
       ),
     );
     const seenFields: unknown[] = [];
-    JfbFormElement.defineControl('site-colour', (field, doc) => {
+    JfbFormElement.defineControl('site-colour', (field, doc, classes) => {
       seenFields.push(field.control);
       const select = doc.createElement('select');
+      select.className = classes.select;
       select.id = field.id;
       select.name = field.name;
       for (const colour of (field.control as { settings: { colours: string[] } }).settings.colours) {
@@ -497,6 +498,8 @@ describe('<jfb-form>', () => {
     const select = must(frame.querySelector('select'), 'its control');
     expect([...select.options].map((option) => option.value)).toEqual(['#1f6feb', '#2da44e']);
     expect(select.id).toBe(must(frame.querySelector('label'), 'its label').getAttribute('for'));
+    // It writes with the theme's classes, as the type's Razor view does.
+    expect(select.className).toBe('jfb-control');
     expect(seenFields).toEqual([{ kind: 'custom', settings: { colours: ['#1f6feb', '#2da44e'] }, parts: {} }]);
   });
 

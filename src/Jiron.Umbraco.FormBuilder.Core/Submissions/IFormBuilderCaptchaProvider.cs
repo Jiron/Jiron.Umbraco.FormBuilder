@@ -57,7 +57,17 @@ public enum FormBuilderCaptchaOutcome
 /// <param name="SiteKey">The provider's public key.</param>
 /// <param name="ScriptAddress">The address of the provider's script, which a page loads only after consent (section 4.10).</param>
 /// <param name="Action">The action a score-based provider's token is asked for; null for the others.</param>
-public sealed record FormBuilderCaptchaClient(string SiteKey, string ScriptAddress, string? Action = null);
+public sealed record FormBuilderCaptchaClient(string SiteKey, string ScriptAddress, string? Action = null)
+{
+    /// <summary>
+    /// The name of the global object the provider's script defines (ADR-0234): one with <c>render(place, options)</c>, which
+    /// shows the check in the place and calls <c>options.callback(token)</c> once it passes and
+    /// <c>options['expired-callback']()</c> when the token is gone, and <c>reset(widget)</c>, with <c>ready(run)</c> for a
+    /// script that is not ready at once and <c>execute(siteKey, { action })</c> for a score-based provider. Null, as by
+    /// default, for the built-in providers' own: <c>hcaptcha</c> for hCaptcha, <c>grecaptcha</c> for the others.
+    /// </summary>
+    public string? ScriptGlobal { get; init; }
+}
 
 /// <summary>A token to verify.</summary>
 /// <param name="Token">The token a visitor's page posted.</param>

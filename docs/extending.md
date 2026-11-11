@@ -79,9 +79,14 @@ an answer's life. Derive from `FormBuilderFieldTypeBase<TSettings>` and override
 | `AnswerLimits` | the longest answer and the most values the field takes |
 | `CheckAvailabilityAsync` | the designer asks whether the type can be used now (a type that needs a key it lacks says so) |
 
-Its view on the website is `Views/JironFormBuilder/<theme>/fields/<alias>.cshtml`, over the field's view model; the
-markup contract (section 6) is what the runtime reads. On a headless site, `<jfb-form>` writes its control with the
-function the site registers for it.
+Its view on the website is `Views/JironFormBuilder/<theme>/fields/<alias>.cshtml` (`default` serves every theme), over
+the field's view model; the markup contract (section 6) is what the runtime reads. A type whose control is a group of
+controls a visitor answers with together, such as radio buttons, says `GroupsControls = true` in its declaration: its
+field is then a fieldset under a legend, and an error marks each control through `ChoiceErrorId`, as the built-in
+choices do. A view compiled into a Razor class library of yours is found once the library is an application part
+(`builder.Services.AddMvcCore().AddApplicationPart(typeof(MyType).Assembly)`): a library whose only MVC code is its views
+is not among the parts a site lists for itself. On a headless site, `<jfb-form>` writes its control with the function the
+site registers for it (section 8).
 
 ### Actions
 
@@ -106,7 +111,13 @@ asks for them. It names its content type and extension, and whether it takes the
 ### Captchas, spam signals and file scanners
 
 - `IFormBuilderCaptchaProvider` verifies a token for a form that chose it; a provider that fails or lost its keys sends
-  the entry to Spam rather than turning the visitor away.
+  the entry to Spam rather than turning the visitor away. Its `Client` is read for every challenge, so it may give each
+  page a check of its own. The page loads its script only once the visitor agrees, in the consent mode the site chose,
+  and talks to the global object the script defines: a provider of your own names it in `Client.ScriptGlobal`. The
+  object has `render(place, options)`, which shows the check in the place and calls `options.callback(token)` once it
+  passes and `options['expired-callback']()` when the token is gone, and `reset(widget)`, which the runtime calls with
+  what `render` returned after a send was refused; `ready(run)` for a script that is not ready at once and
+  `execute(siteKey, { action })` for a score-based check are optional.
 - `IFormBuilderSpamCheck` adds a score and a reason to an entry's spam score; one that throws or takes over 5 seconds
   counts for nothing.
 - `IFormBuilderFileScanner` is asked about each uploaded file in the background; any scanner's quarantine decides, and
@@ -437,11 +448,15 @@ form.defineControl('acme.colour', (field, document) => {
 ```
 
 The function gets the field as the element endpoint answers it (`JfbControlField`: its `id`, `name`, `helpId`,
-`errorId`, `isRequired`, its `values`, and in `control` the type's public settings and the answer's parts) and the
-document to create nodes in, and returns the node that goes between the label and the help, or null for none. It keeps
-the markup contract, as the type's Razor view does: controls named as the field's `name` (a part as `name.part`), the
-first with the field's `id`, described by its help and error. The runtime then reads, checks and posts them as it does
-a built-in type's. A type with no function shows its label and a warning in the console.
+`errorId`, `choiceErrorId`, `isRequired`, `isDisabled`, its `values`, and in `control` the type's public settings and
+the answer's parts), the document to create nodes in, and the theme's classes (`JfbThemeClasses`, as a view's
+`Model.Classes`), and returns the node that goes between the label and the help, or null for none. It keeps the markup
+contract, as the type's Razor view does: controls named as the field's `name` (a part as `name.part`), the first with
+the field's `id`; a control of its own described by the help and the error, a type that groups its controls described
+by the fieldset around them, each control naming `choiceErrorId` while the field has an error. The runtime then reads,
+checks and posts them as it does a built-in type's. A type with no function shows its label and a warning in the
+console. The script that registers the function is the site's own: a module on the page's origin, or a classic script
+from another, which a page loads without that origin's CORS headers.
 
 ## 9. The samples
 

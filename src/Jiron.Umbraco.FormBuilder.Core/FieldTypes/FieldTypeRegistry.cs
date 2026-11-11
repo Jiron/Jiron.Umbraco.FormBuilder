@@ -121,9 +121,10 @@ internal sealed partial class FieldTypeRegistry
         if (!declaration.HoldsValue)
         {
             if ((features & ~WithoutValue) != 0 || declaration.Storage != FieldStorageKind.None || declaration.RuleKind is not null
-                || declaration.Messages != FieldMessageKinds.None || declaration.MultipleSetting || declaration.ServerOnlyDefault || declaration.PersonalData)
+                || declaration.Messages != FieldMessageKinds.None || declaration.MultipleSetting || declaration.ServerOnlyDefault || declaration.PersonalData
+                || declaration.GroupsControls)
             {
-                yield return "holds no value, so it has no storage, rule kind, error kinds, multiple setting, server-only default or personal data, and supports nothing but show and hide rules.";
+                yield return "holds no value, so it has no storage, rule kind, error kinds, multiple setting, server-only default, personal data or group of controls, and supports nothing but show and hide rules.";
             }
 
             yield break;

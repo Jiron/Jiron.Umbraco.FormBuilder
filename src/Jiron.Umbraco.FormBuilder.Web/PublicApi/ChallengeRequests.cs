@@ -101,6 +101,7 @@ internal sealed class ChallengeRequests(ChallengeTokens tokens, IEntryRepository
                 Provider = chosen!.Provider,
                 SiteKey = client.SiteKey,
                 ScriptAddress = client.ScriptAddress,
+                Global = client.ScriptGlobal,
                 Action = client.Action,
                 Consent = JsonNamingPolicy.CamelCase.ConvertName(site.CaptchaConsent.ToString()),
                 Category = site.CaptchaConsent == CaptchaConsentMode.Cookiebot ? site.CookiebotCategory : null,
@@ -191,6 +192,9 @@ internal sealed record ChallengeCaptchaResponseModel
 
     /// <summary>The address of the provider's script, which a page loads only after consent.</summary>
     public required string ScriptAddress { get; init; }
+
+    /// <summary>The global object a site's own provider's script defines; left out for the built-in providers (ADR-0234).</summary>
+    public string? Global { get; init; }
 
     /// <summary>The action a score-based provider's token is asked for; left out for the others.</summary>
     public string? Action { get; init; }

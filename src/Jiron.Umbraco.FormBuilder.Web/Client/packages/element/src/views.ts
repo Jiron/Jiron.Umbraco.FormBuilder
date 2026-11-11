@@ -38,9 +38,9 @@ export const CONTRACT_VERSION = 1;
 
 /**
  * Writes a site's own field type's control from the field's view model (ADR-0233): the controls a visitor answers
- * with, named and described as the type's Razor view names and describes them; null for none.
+ * with, named, described and classed by the theme as the type's Razor view does; null for none.
  */
-export type ControlWriter = (field: CustomField, document: Document) => Node | null;
+export type ControlWriter = (field: CustomField, document: Document, classes: ThemeClassesModel) => Node | null;
 
 /** A field of a site's own type: its control is the type's part of the answer, or none. */
 export type CustomField = Omit<FieldViewModel, 'control'> & { readonly control?: CustomControl };
@@ -973,7 +973,7 @@ function writeControl(context: ViewContext, classes: ThemeClassesModel, field: F
   }
   if (control?.kind === 'custom' || (control === undefined && !BUILT_IN.has(field.type))) {
     const write = context.control?.(field.type);
-    if (write !== undefined) return write(field as CustomField, d);
+    if (write !== undefined) return write(field as CustomField, d, classes);
   }
   if (control !== undefined || !BUILT_IN.has(field.type)) context.onCustom?.(field.type);
   return null;

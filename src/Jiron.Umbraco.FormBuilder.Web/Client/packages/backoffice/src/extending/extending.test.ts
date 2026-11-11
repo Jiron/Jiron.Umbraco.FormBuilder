@@ -179,7 +179,7 @@ describe("a site's field preview", () => {
     sheet.lang = 'de-DE';
     document.body.append(sheet);
     const host = must(
-      previewControl()(custom(fieldModel(COLOUR, context())), document),
+      previewControl()(custom(fieldModel(COLOUR, context())), document, englishLook.classes),
       'the host',
     ) as FieldPreviewExtensionElement;
     sheet.append(host);

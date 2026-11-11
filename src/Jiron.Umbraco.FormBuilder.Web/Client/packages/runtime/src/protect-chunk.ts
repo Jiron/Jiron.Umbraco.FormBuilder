@@ -114,6 +114,8 @@ export interface CaptchaTold {
   readonly provider: string;
   readonly siteKey: string;
   readonly scriptAddress: string;
+  /** The global object a site's own provider's script defines (ADR-0234); none for the built-in providers. */
+  readonly global?: string;
   readonly action?: string;
   readonly consent: string;
   readonly category?: string;
@@ -162,7 +164,12 @@ export function enhanceCaptcha(
   const document = form.ownerDocument;
   const view = document.defaultView as unknown as ProviderWindow & Window;
   const consent = view.JironFormBuilder?.consent;
-  const provider = (): Provider | undefined => (told.provider === 'hcaptcha' ? view.hcaptcha : view.grecaptcha);
+  const provider = (): Provider | undefined =>
+    told.global !== undefined
+      ? (view as unknown as Readonly<Record<string, Provider | undefined>>)[told.global]
+      : told.provider === 'hcaptcha'
+        ? view.hcaptcha
+        : view.grecaptcha;
   const scored = told.action !== undefined;
   const ticked = told.consent === 'explicit' ? agreeing : null;
   const agreed = (): boolean =>

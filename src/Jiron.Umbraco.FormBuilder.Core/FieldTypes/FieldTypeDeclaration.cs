@@ -70,6 +70,13 @@ public sealed record FieldTypeDeclaration
     /// that holds no value is none.
     /// </summary>
     public bool PersonalData { get; init; }
+
+    /// <summary>
+    /// Whether the type's control is a group of controls a visitor answers with together, such as a set of radio buttons
+    /// (ADR-0234): the website then names it with a fieldset's legend, and an error marks each control of the group,
+    /// where a type of one control is named by its label. A type that holds no value has no control to group.
+    /// </summary>
+    public bool GroupsControls { get; init; }
 }
 
 /// <summary>The groups of the designer's palette (section 4.3.2), in the order the palette shows them.</summary>

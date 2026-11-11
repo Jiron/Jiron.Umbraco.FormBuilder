@@ -262,6 +262,24 @@ describe('the captcha', () => {
       expect(scriptsOf()[0]?.nonce).toBe('n0nce');
     });
 
+    it("shows a site's own provider through the global its challenge names (ADR-0234)", async () => {
+      const form = open();
+      const captcha = await give(form, { provider: 'arithmetic', global: 'siteChecks' });
+      consent().grant('captcha');
+      const own = provider();
+      const other = provider();
+      Object.assign(window, { siteChecks: own, grecaptcha: other });
+      scriptsOf().at(-1)?.dispatchEvent(new Event('load'));
+
+      await vi.waitFor(() => expect(own.render).toHaveBeenCalledOnce());
+      expect(other.render).not.toHaveBeenCalled();
+      (own.render.mock.calls[0]?.[1] as Record<string, (token?: string) => void>)['callback']?.('7:abc');
+      expect(await captcha.token()).toBe('7:abc');
+      captcha.spent();
+      expect(own.reset).toHaveBeenCalledWith(7);
+      Reflect.deleteProperty(window, 'siteChecks');
+    });
+
     it('gives the token the check gave, and none once it expired', async () => {
       const form = open();
       const captcha = await give(form);

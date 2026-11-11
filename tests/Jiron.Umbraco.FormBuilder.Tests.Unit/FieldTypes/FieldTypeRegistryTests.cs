@@ -46,7 +46,8 @@ public sealed class FieldTypeRegistryTests
         yield return Case("a type without a value that has storage", Valid with { HoldsValue = false, RuleKind = null, Messages = FieldMessageKinds.None, Features = FieldFeatures.VisibilityRules }, "holds no value");
         yield return Case("a type without a value that has a label", new FieldTypeDeclaration { Alias = "acme.thing", Name = "Thing", Icon = "icon-thing", PaletteGroup = FieldPaletteGroup.Content, Features = FieldFeatures.Label }, "holds no value");
         yield return Case("a type without a value that keeps its default on the server", new FieldTypeDeclaration { Alias = "acme.thing", Name = "Thing", Icon = "icon-thing", PaletteGroup = FieldPaletteGroup.Content, ServerOnlyDefault = true }, "holds no value");
-        yield return Case("a type without a value that is personal data", new FieldTypeDeclaration { Alias = "acme.thing", Name = "Thing", Icon = "icon-thing", PaletteGroup = FieldPaletteGroup.Content, PersonalData = true }, "or personal data");
+        yield return Case("a type without a value that is personal data", new FieldTypeDeclaration { Alias = "acme.thing", Name = "Thing", Icon = "icon-thing", PaletteGroup = FieldPaletteGroup.Content, PersonalData = true }, "personal data or group of controls");
+        yield return Case("a type without a value that groups controls", new FieldTypeDeclaration { Alias = "acme.thing", Name = "Thing", Icon = "icon-thing", PaletteGroup = FieldPaletteGroup.Content, GroupsControls = true }, "or group of controls");
         yield return Case("a value without a label", Valid with { Features = FieldFeatures.Required }, "supports a label");
         yield return Case("storage None without parts", Valid with { Storage = FieldStorageKind.None }, "storage None exactly when");
         yield return Case("rows with storage of its own", Valid with { Features = Input | FieldFeatures.Rows }, "storage None exactly when");
