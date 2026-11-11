@@ -18,6 +18,8 @@ reviewed diff, and a breaking one waits for the next major version with its depr
 4. [Notifications](#4-notifications)
 5. [Services](#5-services)
 6. [The website](#6-the-website)
+7. [The backoffice](#7-the-backoffice)
+8. [Headless sites](#8-headless-sites)
 
 ## 1. Registering your extensions
 
@@ -312,3 +314,131 @@ post back to the page. Its assets come once per request; pass `Assets = false` f
   `next()`, `back()`, `submit()` and `values()`; `consent.grant('captcha')` and `withdraw()` follow a cookie banner.
 - **Events** for your analytics: `jfb:ready`, `jfb:page`, `jfb:invalid`, `jfb:submitting`, `jfb:submitted` and
   `jfb:error` bubble from the form. Jiron Form Builder tracks nothing itself.
+
+## 7. The backoffice
+
+Your backoffice extensions are an ordinary Umbraco package: an `umbraco-package.json` in `App_Plugins/<your folder>/`
+lists their manifests, and their scripts are ES modules the backoffice loads. They need no module of Jiron Form Builder
+at run time, only the names below. Their types ship with the package as
+`/App_Plugins/JironFormBuilder/types/jiron-form-builder.d.ts`; copy the file into your project, or point a `paths` entry
+of your `tsconfig.json` at it. It also adds the two manifest types to Umbraco's manifest map, so a typed manifest of
+yours is checked. Jiron Form Builder's own backoffice compiles against the same file.
+
+### A setting's own editor
+
+A setting whose `Editor` no built-in editor draws (section 3) is drawn by the element of a `jfbSettingEditor` manifest
+whose `meta.editor` names it, in a field type's settings and in an action type's alike:
+
+```json
+{
+  "type": "jfbSettingEditor",
+  "alias": "Acme.SettingEditor.Swatches",
+  "name": "Swatches",
+  "element": "/App_Plugins/Acme/swatches.js",
+  "meta": { "editor": "acme.swatches" }
+}
+```
+
+The designer draws the setting's label, its help and any problem around your element, and gives it:
+
+| Property | What it is |
+| --- | --- |
+| `value` | the setting's value as stored, or undefined for none |
+| `setting` | the setting: its `name`, `kind`, `itemKind`, `editor`, `default` and `choices` |
+| `label` | the setting's label in the backoffice's language; give it to your control as its accessible name |
+| `culture` | the language the designer edits the form's texts in, such as `en-US` |
+| `invalid` | whether the value you gave last cannot be kept |
+
+Your element sets `value` and dispatches a `change` event on itself. The designer keeps the value as it is, and the
+server holds it to the setting's kind when the draft is saved and to your type's `CheckSettings` when the form is
+published, as it does every setting, so your editor needs no rules of its own beyond what helps the editor. A value that no built-in kind describes, such as a list of objects, is a setting of
+the kind `Json` (a `JsonElement` property), which your type's `CheckSettings` holds to its shape.
+
+The label above your element is the designer's. Words of your own come from a `localization` manifest of your
+package, in English and German like the backoffice's, and a setting's label or a type's name may be such a term
+(`#acme_colours`).
+
+### A field type's preview
+
+The canvas and the preview draw a site's own field type with its label and help, and with the element of a
+`jfbFieldPreview` manifest whose `meta.fieldType` names the type in the control's place:
+
+```json
+{
+  "type": "jfbFieldPreview",
+  "alias": "Acme.FieldPreview.Colour",
+  "name": "Colour preview",
+  "element": "/App_Plugins/Acme/colour-preview.js",
+  "meta": { "fieldType": "acme.colour" }
+}
+```
+
+It gets `field` (its `key`, `type`, `alias`, `id`, `label`, `required` and `settings`, the type's settings with the
+field's own values over the defaults) and `culture`, the language the designer shows, and it is given both again after
+every change. It draws and takes no input: the canvas makes it inert, and a click on it selects the field. It lives in
+the light DOM of the form's own markup, so the form's theme reaches it; use a shadow root for rules of your own. Without
+a manifest the field shows its label alone.
+
+### Views on the form workspace
+
+A view of your own beside a form's Design, Settings, Actions and History is Umbraco's own `workspaceView`, with a
+condition on the form workspace:
+
+```json
+{
+  "type": "workspaceView",
+  "alias": "Acme.WorkspaceView.Embed",
+  "name": "Embed",
+  "element": "/App_Plugins/Acme/embed-view.js",
+  "weight": 10,
+  "meta": { "label": "#acme_embed", "pathname": "embed", "icon": "icon-code" },
+  "conditions": [{ "alias": "Umb.Condition.WorkspaceAlias", "match": "Jiron.FormBuilder.Workspace.Form" }]
+}
+```
+
+The view reads the open form from Umbraco's workspace context, whose entity type for a form is `jfb-form`:
+
+```js
+const FORM_WORKSPACE = new UmbContextToken('UmbWorkspaceContext', undefined, (context) => context.getEntityType() === 'jfb-form');
+
+this.consumeContext(FORM_WORKSPACE, (context) => {
+  this.observe(context?.form, (form) => (this.alias = form?.alias));
+});
+```
+
+`JfbFormWorkspaceContext` declares what it gives: the form's key, alias and name, and its draft's and live version's
+numbers. It is read-only; a view that changes a form does so through the management API, as the designer does.
+
+## 8. Headless sites
+
+`<jfb-form>` writes every built-in type's control itself. For a site's own type it asks the site: register the function
+that writes the type's control once the element is defined, and forms shown before it are shown again with it.
+
+```js
+const form = await customElements.whenDefined('jfb-form');
+form.defineControl('acme.colour', (field, document) => {
+  const choices = document.createElement('div');
+  choices.setAttribute('role', 'radiogroup');
+  choices.setAttribute('aria-describedby', `${field.helpId} ${field.errorId}`);
+  for (const [at, colour] of (field.control?.settings?.colours ?? []).entries()) {
+    const label = document.createElement('label');
+    const input = document.createElement('input');
+    input.type = 'radio';
+    input.name = field.name;
+    input.value = colour.value;
+    input.checked = field.values.includes(colour.value);
+    if (at === 0) input.id = field.id;
+    label.append(input, ` ${colour.name}`);
+    choices.append(label);
+  }
+  return choices;
+});
+```
+
+The function gets the field as the element endpoint answers it (`JfbControlField`: its `id`, `name`, `helpId`,
+`errorId`, `isRequired`, its `values`, and in `control` the type's public settings and the answer's parts) and the
+document to create nodes in, and returns the node that goes between the label and the help, or null for none. It keeps
+the markup contract, as the type's Razor view does: controls named as the field's `name` (a part as `name.part`), the
+first with the field's `id`, described by its help and error. The runtime then reads, checks and posts them as it does
+a built-in type's. A type with no function shows its label and a warning in the console.
+

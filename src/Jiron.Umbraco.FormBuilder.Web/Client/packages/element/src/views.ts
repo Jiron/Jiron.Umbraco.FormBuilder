@@ -9,6 +9,7 @@
 import type {
   ChoiceModel,
   ChoicesControl,
+  CustomControl,
   CounterModel,
   ErrorSummaryViewModel,
   FieldViewModel,
@@ -35,12 +36,23 @@ import { append, el, FLAG, flag, hookOf, html, labelText, mark, type Child } fro
 /** The version of the markup contract the views write (`FormViewModel.ContractVersion`, ADR-0015). */
 export const CONTRACT_VERSION = 1;
 
+/**
+ * Writes a site's own field type's control from the field's view model (ADR-0233): the controls a visitor answers
+ * with, named and described as the type's Razor view names and describes them; null for none.
+ */
+export type ControlWriter = (field: CustomField, document: Document) => Node | null;
+
+/** A field of a site's own type: its control is the type's part of the answer, or none. */
+export type CustomField = Omit<FieldViewModel, 'control'> & { readonly control?: CustomControl };
+
 /** What the views write with besides the model. */
 export interface ViewContext {
   /** The document the markup is made in. */
   document: Document;
   /** The public API's base the runtime calls, absolute when the API is on another origin (`data-jfb-api`). */
   api: string;
+  /** The writer of a site's own field type's control, by the type's alias; undefined for a type without one. */
+  control?: (type: string) => ControlWriter | undefined;
   /** Told of a field whose type the element has no control for, once per type. */
   onCustom?: (type: string) => void;
 }
@@ -958,6 +970,10 @@ function writeControl(context: ViewContext, classes: ThemeClassesModel, field: F
     case 'repeater':
       if (control?.kind !== 'repeater') break;
       return repeater(context, classes, field, control);
+  }
+  if (control?.kind === 'custom' || (control === undefined && !BUILT_IN.has(field.type))) {
+    const write = context.control?.(field.type);
+    if (write !== undefined) return write(field as CustomField, d);
   }
   if (control !== undefined || !BUILT_IN.has(field.type)) context.onCustom?.(field.type);
   return null;

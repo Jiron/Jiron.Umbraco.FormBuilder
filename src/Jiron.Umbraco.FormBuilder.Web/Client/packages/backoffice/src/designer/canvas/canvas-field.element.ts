@@ -18,6 +18,7 @@ import {
 } from '@umbraco-cms/backoffice/external/lit';
 import type { FieldViewModel, ThemeClassesModel } from '@jfb/element/answer';
 import { writeField } from '@jfb/element/views';
+import { previewControl } from '../../extending/preview-control';
 import { asEnhanced } from '../preview/field-models';
 
 /** What a field asks the canvas to do; the canvas passes each on as a designer request. */
@@ -249,7 +250,9 @@ export class CanvasFieldElement extends LitElement {
     this.#written = { model: state.model, editing: state.editing, classes: this.classes };
     const model = state.model;
     const written =
-      model && this.classes ? writeField({ document, api: '' }, this.classes, model) : document.createElement('div');
+      model && this.classes
+        ? writeField({ document, api: '', control: previewControl }, this.classes, model)
+        : document.createElement('div');
     asEnhanced(written);
     const seen = model !== null && showsSomething(written);
     this.className = ['bo-field', model ? model.cssClass : 'jfb-field', seen ? '' : 'bo-unseen'].join(' ').trim();

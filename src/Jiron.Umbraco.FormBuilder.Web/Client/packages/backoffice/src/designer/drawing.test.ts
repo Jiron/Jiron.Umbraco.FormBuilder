@@ -1,6 +1,6 @@
 // One drawing of a field in the backoffice (ROADMAP 9.3b, ADR-0166, ADR-0168): the backoffice writes a field's markup
 // only through the headless element's views, which the server's markup holds them to. The views are imported by the
-// preview and the canvas alone; a field's classes are named only where the preview builds its view models and where
+// preview and the canvas alone (a site's own type's writer names only their types, ADR-0233); a field's classes are named only where the preview builds its view models and where
 // the canvas finds a label it edits in place; and the template gallery shows a template with the preview.
 import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
@@ -24,7 +24,7 @@ const FIELD_CLASSES =
 describe('the drawing of a field', () => {
   it("goes through the element's views, which only the preview and the canvas import", () => {
     const importers = sources
-      .filter((source) => /['"]@jfb\/element\/views['"]/.test(source.text))
+      .filter((source) => /^import (?!type )[^;]*['"]@jfb\/element\/views['"]/m.test(source.text))
       .map((source) => source.file);
     expect(importers.sort()).toEqual([
       'designer/canvas/canvas-field.element.ts',

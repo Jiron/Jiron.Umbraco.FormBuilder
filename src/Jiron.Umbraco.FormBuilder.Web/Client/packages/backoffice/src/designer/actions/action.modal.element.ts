@@ -84,6 +84,7 @@ import { EmailPreviewer, type EmailPreview } from './email-preview';
 import './email-preview.element';
 import { webhookEditorStyles } from './webhook-editors';
 import { DictionaryReader, dictionaryKeysIn, dictionaryLineOf, type DictionaryLookups } from '../dictionary-texts';
+import { EXTENSIONS_CHANGED } from '../../extending/extension-registry';
 
 /** The editors that draw a row's boxes, so a problem at a row's part lands on that box (ADR-0192). */
 const ROW_EDITORS: ReadonlySet<string> = new Set(['contentMapping']);
@@ -342,6 +343,7 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
 
   override connectedCallback() {
     super.connectedCallback();
+    window.addEventListener(EXTENSIONS_CHANGED, this.#extensionsChanged);
     const data = this.data;
     if (!data) return;
     const first = data.choices[0];
@@ -366,10 +368,14 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
 
   override disconnectedCallback() {
     super.disconnectedCallback();
+    window.removeEventListener(EXTENSIONS_CHANGED, this.#extensionsChanged);
     this.#checker?.reset();
     this.#previewer?.stop();
     this.data?.closed?.();
   }
+
+  // A site's editor registered after the sidebar opened draws its setting now (ADR-0233).
+  readonly #extensionsChanged = () => this.requestUpdate();
 
   protected override updated(changed: PropertyValues) {
     super.updated(changed);

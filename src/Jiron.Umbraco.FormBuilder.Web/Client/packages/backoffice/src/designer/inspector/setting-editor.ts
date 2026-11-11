@@ -8,6 +8,9 @@ import '@umbraco-cms/backoffice/media';
 import type { FieldSettingResponseModel } from '../../api';
 import type { LocalizedText } from '../definition';
 import { textIn } from '../preview/field-models';
+import type { JfbSetting } from '../../../public/types/jiron-form-builder';
+import { editorFor } from '../../extending/extension-registry';
+import '../../extending/setting-extension.element';
 import { boxValue } from './box-value';
 import './dictionary-pick.element';
 import './rich-text.element';
@@ -374,8 +377,42 @@ export function settingEditor(
     case 'inlineHtml':
       return richText(context, setting, value, path);
     default:
-      return context.editors?.[setting.editor]?.(setting, value, path) ?? nothing;
+      return context.editors?.[setting.editor]?.(setting, value, path) ?? siteEditor(context, setting, value, path);
   }
+}
+
+/**
+ * The site's own editor of a setting, from its `jfbSettingEditor` manifest (ADR-0233), under the setting's label and
+ * help; nothing for an editor no manifest registers.
+ */
+function siteEditor(context: EditorContext, setting: FieldSettingResponseModel, value: unknown, path: string) {
+  const manifest = editorFor(setting.editor);
+  if (!manifest) return nothing;
+  const shown: JfbSetting = {
+    name: setting.name,
+    kind: setting.kind,
+    itemKind: setting.itemKind ?? null,
+    editor: setting.editor,
+    default: setting.default,
+    choices: setting.choices.map((choice) => ({ value: choice.value, label: context.say(choice.label) })),
+  };
+  return settingFrame(
+    context,
+    setting,
+    path,
+    (_described, invalid) =>
+      html`<jfb-setting-extension
+        id=${boxId(path)}
+        .manifest=${manifest}
+        .setting=${shown}
+        .value=${value}
+        .label=${context.say(setting.label)}
+        .culture=${context.culture}
+        .invalid=${invalid}
+        @jfb-setting-change=${(event: CustomEvent<unknown>) =>
+          context.set(path, setting, { ok: true, value: event.detail }, true)}
+      ></jfb-setting-extension>`,
+  );
 }
 
 /** The keys a picker's setting holds: a list's, or the one of a single key. */

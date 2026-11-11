@@ -69,9 +69,15 @@ export interface Section {
   readonly items: readonly Item[];
 }
 
-const shownSettings = (type: FieldTypeResponseModel, group: string): Item[] =>
+/** Whether a site's own manifest draws the editor a setting names (ROADMAP 15.1, ADR-0233). */
+export type SiteEditors = (editor: string) => boolean;
+
+const shownSettings = (type: FieldTypeResponseModel, group: string, site: SiteEditors): Item[] =>
   type.settings
-    .filter((setting) => setting.group === group && PLAIN_EDITORS.has(setting.editor) && !setting.lock?.hidden)
+    .filter(
+      (setting) =>
+        setting.group === group && (PLAIN_EDITORS.has(setting.editor) || site(setting.editor)) && !setting.lock?.hidden,
+    )
     .map((setting) => ({ kind: 'setting', setting }));
 
 const sections = (by: Partial<Record<SectionId, Item[]>>, rules: boolean): Section[] =>
@@ -84,9 +90,13 @@ const sections = (by: Partial<Record<SectionId, Item[]>>, rules: boolean): Secti
  * A field's sections: in Essentials its label, help, Required and placeholder; in Validation its type's checks, the
  * checks no type owns that it allows, and the messages it may say; Rules where its type takes them; in Appearance a
  * hidden label and its width in the group's columns; in Advanced its alias, default value, prefill, autocomplete, what
- * is kept of its answer, and a class.
+ * is kept of its answer, and a class. A setting whose editor a site's manifest draws shows with the others.
  */
-export function fieldSections(type: FieldTypeResponseModel, groupColumns: number): Section[] {
+export function fieldSections(
+  type: FieldTypeResponseModel,
+  groupColumns: number,
+  site: SiteEditors = () => false,
+): Section[] {
   const has = (feature: string) => type.features.includes(feature);
   const essentials: Item[] = [];
   if (has('label')) essentials.push({ kind: 'text', property: 'label' });
@@ -96,9 +106,9 @@ export function fieldSections(type: FieldTypeResponseModel, groupColumns: number
   // A grid's rows, then its columns, which are its options (IA 5.1: choice fields add their options to Essentials).
   if (has('rows')) essentials.push({ kind: 'rows' });
   if (has('options')) essentials.push({ kind: 'options' });
-  essentials.push(...shownSettings(type, 'essentials'));
+  essentials.push(...shownSettings(type, 'essentials', site));
 
-  const validation: Item[] = [...shownSettings(type, 'validation')];
+  const validation: Item[] = [...shownSettings(type, 'validation', site)];
   if (has('patternCheck')) validation.push({ kind: 'pattern' });
   if (has('uniquePerFormCheck')) validation.push({ kind: 'unique' });
   if (has('matchesFieldCheck')) validation.push({ kind: 'matches' });
@@ -107,7 +117,7 @@ export function fieldSections(type: FieldTypeResponseModel, groupColumns: number
   const appearance: Item[] = [];
   if (has('hideLabel')) appearance.push({ kind: 'switch', property: 'hideLabel' });
   if (groupColumns > 1) appearance.push({ kind: 'span', columns: groupColumns });
-  appearance.push(...shownSettings(type, 'appearance'));
+  appearance.push(...shownSettings(type, 'appearance', site));
 
   const advanced: Item[] = [];
   if (type.holdsValue) advanced.push({ kind: 'alias' });
@@ -120,7 +130,7 @@ export function fieldSections(type: FieldTypeResponseModel, groupColumns: number
     advanced.push({ kind: 'keep' });
     advanced.push({ kind: 'switch', property: 'includeInEmails' });
   }
-  advanced.push(...shownSettings(type, 'advanced'));
+  advanced.push(...shownSettings(type, 'advanced', site));
   advanced.push({ kind: 'plain', property: 'cssClass' });
 
   // Rules where the type takes show and hide rules, or require rules.

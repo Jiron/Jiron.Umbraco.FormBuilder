@@ -5,6 +5,7 @@
 import { css, html, type PropertyValues } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import { writePage } from '@jfb/element/views';
+import { previewControl } from '../../extending/preview-control';
 import type { FieldTypeResponseModel } from '../../api';
 import { jfbBackofficeTokens, jfbVisuallyHidden } from '../../styles/tokens';
 import { normalise, type DesignField } from '../definition';
@@ -118,7 +119,7 @@ export class FormPreviewElement extends UmbLitElement {
       ...formSettings(definition, look, culture),
     };
     const pages = definition.pages.map((page) => {
-      const written = writePage({ document, api: '' }, look.classes, pageModel(page, context));
+      const written = writePage({ document, api: '', control: previewControl }, look.classes, pageModel(page, context));
       asEnhanced(written);
       return written;
     });

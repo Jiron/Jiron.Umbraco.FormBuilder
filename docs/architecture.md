@@ -200,7 +200,8 @@ flowchart LR
   (`src/answer.d.ts`) `scripts/generate-public-types.mjs` makes from the schema the unit tests write
   (`src/answer.schema.json`); the element (`src/jfb-element.ts`) keeps its instance id, adds the theme's
   stylesheets and the runtime once per document, shows the form once its stylesheets loaded, and never posts it as a
-  page would (ADR-0128);
+  page would (ADR-0128); a site's own field type's control is written by the function the site registers with the
+  element's `defineControl`, and the forms shown before it are shown again with it (ADR-0233);
 - `backoffice`: the Form Builder section in Lit and TypeScript with UUI, through the generated client. Its build takes the
   comments and line breaks out of its Lit templates first (`scripts/templates.mjs`), and puts the start's modules in
   one chunk and each folder's on-demand modules in chunks of the folder, every module run in its source order
@@ -476,6 +477,16 @@ flowchart LR
   through people (Umbraco's user filter) and items by name; `AuditNames` answers the names of every key a page names.
   Each action has a sentence (`activity/audit-words.ts`, `lang/activity.*.ts`), which `AuditActionsTests` holds to every
   action the product records. `GET audit/export` writes the filtered log as CSV and records the export first.
+  From 15.1 (ADR-0233): a site's own extensions of the designer (`extending/`). `extension-registry.ts` follows the
+  registry's `jfbSettingEditor` and `jfbFieldPreview` manifests, the highest weight for a name, and says each change on
+  the window, which the inspector and the action sidebar hear, so a bundle that registers later still draws. The
+  inspector shows a setting whose editor a site's manifest draws (`inspector-model.ts`), drawn by `jfb-setting-extension`,
+  which makes the site's element once, hands it the setting, value, label, culture and `invalid` on every update and
+  forwards its `change`; a site's own field type's model carries its effective settings (`preview/field-models.ts`), and
+  the canvas and the preview write it through `preview-control.ts` as `jfb-field-preview-extension`, which draws the
+  site's preview in the culture the form's root names. The declarations extension authors compile against are
+  `public/types/jiron-form-builder.d.ts`, shipped as `App_Plugins/JironFormBuilder/types/`; `public-types.check.ts` holds
+  the workspace context, the canvas's field and the element's control writer to them.
 
 ## 2. The definition model
 

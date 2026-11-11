@@ -114,6 +114,16 @@ class Settings {
     return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
   }
 
+  /** Every setting of the schema with its value, the field's own or the default; one without either is left out. */
+  effective(): Record<string, unknown> {
+    const values: Record<string, unknown> = {};
+    for (const setting of this.schema) {
+      const value = this.value(setting.name);
+      if (value !== undefined && value !== null) values[setting.name] = value;
+    }
+    return values;
+  }
+
   child(name: string): Settings | undefined {
     const value = this.value(name);
     if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
@@ -489,8 +499,11 @@ function controlOf(shown: Shown): Control {
     case 'repeater':
       return repeater(shown);
     default:
-      // A divider adds nothing to its wrapper's line; a site's own type is the site's to draw (15.1).
-      return {};
+      // A divider adds nothing to its wrapper's line; a site's own type carries its settings to the site's preview of
+      // it, which draws it (ADR-0233).
+      return shown.field.type === 'divider'
+        ? {}
+        : { control: { kind: 'custom', settings: shown.settings.effective(), parts: {} } };
   }
 }
 

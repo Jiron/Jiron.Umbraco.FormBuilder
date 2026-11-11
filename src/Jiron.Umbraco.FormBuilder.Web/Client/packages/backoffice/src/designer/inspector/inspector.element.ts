@@ -60,6 +60,7 @@ import {
   withText,
   type Parsed,
 } from './setting-values';
+import { EXTENSIONS_CHANGED, editorFor } from '../../extending/extension-registry';
 
 /** The event an inspector's request travels in, up to the Design view. */
 export const INSPECTOR_REQUEST = 'jfb-inspector-request';
@@ -191,6 +192,19 @@ export class InspectorElement extends UmbLitElement {
 
   /** Counts the focus's visits to the inspector's boxes, so typing in a box again later is a step of its own. */
   #visit = 0;
+
+  override connectedCallback() {
+    super.connectedCallback();
+    window.addEventListener(EXTENSIONS_CHANGED, this.#extensionsChanged);
+  }
+
+  override disconnectedCallback() {
+    window.removeEventListener(EXTENSIONS_CHANGED, this.#extensionsChanged);
+    super.disconnectedCallback();
+  }
+
+  // A site's editor registered after the inspector opened draws its setting now (ADR-0233).
+  readonly #extensionsChanged = () => this.requestUpdate();
 
   constructor() {
     super();
@@ -366,7 +380,9 @@ export class InspectorElement extends UmbLitElement {
   #sections(subject: Subject): Section[] {
     if (subject.kind === 'page') return pageSections();
     if (subject.kind === 'group') return groupSections();
-    return subject.type ? fieldSections(subject.type, subject.columns) : [];
+    return subject.type
+      ? fieldSections(subject.type, subject.columns, (editor) => editorFor(editor) !== undefined)
+      : [];
   }
 
   #keyOf(subject: Subject): string {

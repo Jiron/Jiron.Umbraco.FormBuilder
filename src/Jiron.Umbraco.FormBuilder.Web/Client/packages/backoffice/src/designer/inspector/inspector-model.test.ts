@@ -161,6 +161,23 @@ describe("a field's sections", () => {
     expect(shape(fieldSections(typeOf('checkbox'), 1))['essentials'] ?? []).toContain('setting:text');
   });
 
+  it("show a setting whose editor a site's manifest draws, and only then (ADR-0233)", () => {
+    const text = typeOf('text');
+    const own: FieldTypeResponseModel = {
+      ...text,
+      settings: [
+        ...text.settings,
+        ...text.settings
+          .slice(0, 1)
+          .map((setting) => ({ ...setting, name: 'colours', editor: 'site.swatches', group: 'appearance' })),
+      ],
+    };
+    expect(shape(fieldSections(own, 1))['appearance']).not.toContain('setting:colours');
+    expect(shape(fieldSections(own, 1, (editor) => editor === 'site.swatches'))['appearance']).toContain(
+      'setting:colours',
+    );
+  });
+
   it("take a list of answers as a default where the field takes several: choices, files, a dropdown's Multiple", () => {
     const field = (type: string, settings?: Record<string, unknown>): DesignField => ({
       key: 'f',

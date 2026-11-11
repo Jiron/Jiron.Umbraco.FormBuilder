@@ -7,7 +7,7 @@
  * it empty, says why in the console, and dispatches `jfb:error`.
  */
 import type { JfbElementAnswer } from './answer';
-import { writeForm } from './views';
+import { writeForm, type ControlWriter } from './views';
 
 /** The version of the element endpoint's answer this element reads (`ElementAnswer.Version`). */
 export const ANSWER_CONTRACT = 1;
@@ -34,6 +34,10 @@ const taken = new WeakMap<Document, Set<number>>();
 
 // The site's own field types each document was told of, so each is said once.
 const told = new WeakMap<Document, Set<string>>();
+
+// The controls the site registered for its own field types (ADR-0233), and the elements shown without one they need.
+const controls = new Map<string, ControlWriter>();
+const waiting = new Set<JfbFormElement>();
 
 // Each document's stylesheets by address, settled once loaded, failed or waited for, so each is added once.
 const sheets = new WeakMap<Document, Map<string, Promise<void>>>();
@@ -158,6 +162,12 @@ export class JfbFormElement extends HTMLElement {
   /** Renders the form when the element first joins a document; moved to another place, it keeps its form. */
   connectedCallback(): void {
     if (this.#render === 0) void this.render();
+    else if (this.#missing.size > 0) waiting.add(this);
+  }
+
+  /** Lets the element go: a control registered later shows it again once it is back on a page. */
+  disconnectedCallback(): void {
+    waiting.delete(this);
   }
 
   /** Renders the form again when one of its attributes changes once it rendered. */
@@ -217,13 +227,35 @@ export class JfbFormElement extends HTMLElement {
     return form instanceof HTMLFormElement ? form : null;
   }
 
+  /**
+   * Registers the control a site's own field type writes, from the field's view model and the type's part of the element
+   * endpoint's answer (ADR-0128, ADR-0233): `customElements.get('jfb-form').defineControl(type, write)`. A form shown
+   * before without it is shown again with it.
+   */
+  static defineControl(type: string, write: ControlWriter): void {
+    if (typeof type !== 'string' || type.length === 0) throw new TypeError('jfb-form: a control names its field type.');
+    if (typeof write !== 'function') throw new TypeError('jfb-form: a control is a function that writes it.');
+    controls.set(type, write);
+    for (const element of [...waiting]) {
+      if (element.isConnected && element.#missing.has(type)) void element.render();
+    }
+  }
+
+  /** The site's own types the last render had no control for. */
+  #missing = new Set<string>();
+
   #write(answer: JfbElementAnswer, base: string): HTMLElement {
     const document = this.ownerDocument;
+    this.#missing = new Set<string>();
+    waiting.delete(this);
     return writeForm(
       {
         document,
         api: base,
+        control: (type) => controls.get(type),
         onCustom: (type) => {
+          this.#missing.add(type);
+          waiting.add(this);
           const said = told.get(document) ?? new Set<string>();
           told.set(document, said);
           if (said.has(type)) return;

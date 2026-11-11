@@ -467,6 +467,68 @@ describe('<jfb-form>', () => {
     ]);
   });
 
+  it("writes a site's own type with the control the site registered, from the type's part of the answer", async () => {
+    serve((url) =>
+      json(
+        answerFor(instanceOf(url), (answer) => {
+          const field = must(answer.form.pages[0]?.groups[0]?.fields[0], 'a first field');
+          field.type = 'site-colour';
+          field.control = { kind: 'custom', settings: { colours: ['#1f6feb', '#2da44e'] }, parts: {} };
+        }),
+      ),
+    );
+    const seenFields: unknown[] = [];
+    JfbFormElement.defineControl('site-colour', (field, doc) => {
+      seenFields.push(field.control);
+      const select = doc.createElement('select');
+      select.id = field.id;
+      select.name = field.name;
+      for (const colour of (field.control as { settings: { colours: string[] } }).settings.colours) {
+        select.append(new Option(colour, colour));
+      }
+      return select;
+    });
+    const rendered = collect('jfb:rendered');
+
+    const form = element();
+    await vi.waitFor(() => expect(rendered).toHaveLength(1));
+
+    const frame = must(form.querySelector('[data-jfb-type="site-colour"]'), "the site's field");
+    const select = must(frame.querySelector('select'), 'its control');
+    expect([...select.options].map((option) => option.value)).toEqual(['#1f6feb', '#2da44e']);
+    expect(select.id).toBe(must(frame.querySelector('label'), 'its label').getAttribute('for'));
+    expect(seenFields).toEqual([{ kind: 'custom', settings: { colours: ['#1f6feb', '#2da44e'] }, parts: {} }]);
+  });
+
+  it('shows a form again once the site registers a control it waited for, and refuses one that is no control', async () => {
+    serve((url) =>
+      json(
+        answerFor(instanceOf(url), (answer) => {
+          const field = must(answer.form.pages[0]?.groups[0]?.fields[0], 'a first field');
+          field.type = 'site-late';
+          delete (field as { control?: unknown }).control;
+        }),
+      ),
+    );
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const rendered = collect('jfb:rendered');
+    const form = element();
+    await vi.waitFor(() => expect(rendered).toHaveLength(1));
+    expect(form.querySelector('[data-jfb-type="site-late"] input')).toBeNull();
+
+    JfbFormElement.defineControl('site-late', (field, doc) => {
+      const input = doc.createElement('input');
+      input.id = field.id;
+      input.name = field.name;
+      return input;
+    });
+    await vi.waitFor(() => expect(rendered).toHaveLength(2));
+
+    expect(form.querySelector('[data-jfb-type="site-late"] input')).not.toBeNull();
+    expect(() => JfbFormElement.defineControl('', () => null)).toThrow(TypeError);
+    expect(() => JfbFormElement.defineControl('x', 'write' as never)).toThrow(TypeError);
+  });
+
   it('shows the form without the runtime when it cannot be loaded, and says so', async () => {
     serve((url) =>
       json(
