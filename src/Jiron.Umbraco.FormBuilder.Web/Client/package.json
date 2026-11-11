@@ -9,7 +9,8 @@
     "packages/runtime",
     "packages/element",
     "packages/themes",
-    "packages/backoffice"
+    "packages/backoffice",
+    "packages/ai"
   ],
   "engines": {
     "node": ">=24"

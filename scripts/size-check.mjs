@@ -41,6 +41,8 @@ export const BUDGETS = {
   backofficeStart: 64 * KB,
   backofficeFile: 64 * KB,
   backofficeAll: 512 * KB,
+  aiStart: 8 * KB,
+  aiAll: 64 * KB,
 };
 
 /** The gzip size of some bytes at the strongest level, which servers and CDNs come close to. */
@@ -178,6 +180,31 @@ export function check({ reports = REPORTS, webProject = WEB_PROJECT } = {}) {
     const [largest, largestSize] = [...sizes].reduce((most, next) => (next[1] > most[1] ? next : most), ['', 0]);
     budget(`backoffice's largest file (${largest})`, largestSize, BUDGETS.backofficeFile);
     budget(`backoffice bundle (${files(sizes.size)})`, [...sizes.values()].reduce((sum, size) => sum + size, 0), BUDGETS.backofficeAll);
+  }
+
+  // The AI add-on (ADR-0018), which a site installs on its own: what it adds to every backoffice session's start, its
+  // words included as the backoffice's are, and its whole bundle. Its files are measured where its project serves them.
+  const ai = readReport('ai', reports);
+  if (!ai) missing('ai');
+  else {
+    const own = new Set(ai.files.map((f) => f.file));
+    const sizes = new Map(ai.files.map((f) => [f.file, measure(ai, [f.file], webProject)]));
+    // A file of one language's words holds the add-on's table of that language and nothing else.
+    const language = (file) => {
+      const modules = file.modules ?? [];
+      if (modules.length !== 1) return null;
+      return /(^|\/)packages\/ai\/src\/lang\/([a-z]+)\.ts$/.exec(modules[0])?.[2] ?? null;
+    };
+    const words = ai.files.filter((f) => language(f) !== null);
+    const english = words.filter((f) => language(f) === 'en').reduce((sum, f) => sum + sizes.get(f.file), 0);
+    const other = Math.max(0, ...words.filter((f) => language(f) !== 'en').map((f) => sizes.get(f.file)));
+    const start = staticClosure(ai).filter((file) => own.has(file));
+    budget(
+      `AI add-on at start (${files(start.length + (words.length > 0 ? Math.min(words.length, 2) : 0))}: the entry, its static imports, and the words of English and of the largest other language)`,
+      start.reduce((sum, file) => sum + sizes.get(file), 0) + english + other,
+      BUDGETS.aiStart,
+    );
+    budget(`AI add-on bundle (${files(sizes.size)})`, [...sizes.values()].reduce((sum, size) => sum + size, 0), BUDGETS.aiAll);
   }
   return results;
 }

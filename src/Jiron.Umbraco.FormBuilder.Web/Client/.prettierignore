@@ -3,5 +3,7 @@ package-lock.json
 .build
 packages/backoffice/src/api
 packages/backoffice/src/.api-check-*
+packages/ai/src/api
+packages/ai/src/.api-check-*
 packages/element/src/answer.schema.json
 packages/element/src/answer.d.ts

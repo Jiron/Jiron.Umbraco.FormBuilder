@@ -13,6 +13,15 @@ export const clientRoot = join(fileURLToPath(new URL('.', import.meta.url)), '..
 export const webProject = join(clientRoot, '..');
 /** The backoffice files: static web assets under /App_Plugins/JironFormBuilder/. */
 export const backofficeFolder = join(webProject, 'wwwroot', 'App_Plugins', 'JironFormBuilder');
+/** The AI add-on's backoffice files: static web assets of its own project, under /App_Plugins/JironFormBuilderAI/ (ADR-0018). */
+export const addOnFolder = join(
+  webProject,
+  '..',
+  'Jiron.Umbraco.FormBuilder.AI',
+  'wwwroot',
+  'App_Plugins',
+  'JironFormBuilderAI',
+);
 /** The website assets: embedded in the Web assembly and served under /jfb/assets/ (ADR-0026). */
 export const websiteAssets = join(webProject, 'WebsiteAssets');
 /** Build records that are not assets: the chunk reports and the stamp. Git-ignored, never packed. */

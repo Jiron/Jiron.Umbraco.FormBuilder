@@ -53,6 +53,7 @@ test-results/
 blob-report/
 # Built client assets (built by npm in scripts, CI and pack; never committed)
 src/Jiron.Umbraco.FormBuilder.Web/wwwroot/App_Plugins/JironFormBuilder/
+src/Jiron.Umbraco.FormBuilder.AI/wwwroot/App_Plugins/JironFormBuilderAI/
 src/Jiron.Umbraco.FormBuilder.Web/WebsiteAssets/
 *.log
 npm-debug.log*

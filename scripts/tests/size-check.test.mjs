@@ -15,8 +15,10 @@ after(() => {
 
 /** A Web project with built files and the chunk reports that describe them. */
 function project(reports) {
-  const web = mkdtempSync(join(tmpdir(), 'jfb-size-'));
-  folders.push(web);
+  // The Web project inside a folder of the test's own, so the AI add-on's project beside it stays in there too.
+  const base = mkdtempSync(join(tmpdir(), 'jfb-size-'));
+  folders.push(base);
+  const web = join(base, 'Jiron.Umbraco.FormBuilder.Web');
   const reportDir = join(web, 'Client', '.build');
   mkdirSync(reportDir, { recursive: true });
   for (const [name, { folder, files }] of Object.entries(reports)) {
@@ -40,7 +42,7 @@ const chunk = (file, imports = [], dynamicImports = [], entry = false, modules =
 });
 
 describe('the budgets', () => {
-  test('are those of ROADMAP section 4.12', () => {
+  test("are those of ROADMAP section 4.12, and the AI add-on's of ADR-0018", () => {
     assert.deepEqual(BUDGETS, {
       runtimeCore: 16 * 1024,
       runtimeAll: 60 * 1024,
@@ -48,6 +50,8 @@ describe('the budgets', () => {
       backofficeStart: 64 * 1024,
       backofficeFile: 64 * 1024,
       backofficeAll: 512 * 1024,
+      aiStart: 8 * 1024,
+      aiAll: 64 * 1024,
     });
   });
 });
@@ -73,6 +77,10 @@ describe('the check', () => {
     backoffice: {
       folder: 'wwwroot/App_Plugins/JironFormBuilder',
       files: [{ meta: chunk('jfb-backoffice.js', [], [], true), bytes: small('b') }],
+    },
+    ai: {
+      folder: '../Jiron.Umbraco.FormBuilder.AI/wwwroot/App_Plugins/JironFormBuilderAI',
+      files: [{ meta: chunk('jfb-ai.js', [], [], true), bytes: small('a') }],
     },
   });
 
@@ -267,6 +275,38 @@ describe('the check', () => {
       assert.match(line(paths, "backoffice's largest file").line, /, ok$/);
       assert.equal(line(paths, 'backoffice bundle').ok, false);
       assert.match(line(paths, 'backoffice bundle').line, /^backoffice bundle [(]10 files[)]: .* OVER BUDGET$/);
+    });
+  });
+
+  describe('the AI add-on', () => {
+    const runtime = { folder: 'WebsiteAssets/runtime', files: [{ meta: chunk('jfb-runtime.js', [], [], true), bytes: small('r') }] };
+    const folder = '../Jiron.Umbraco.FormBuilder.AI/wwwroot/App_Plugins/JironFormBuilderAI';
+    const addOn = (files) => project({ ...base(), runtime, ai: { folder, files } });
+    const line = (paths, start) => check(paths).find((r) => r.line.startsWith(start));
+
+    test("counts at start the entry, its static imports and the words of English and of the largest other language, from the add-on's own project", () => {
+      const [entry, start, english, german, translate] = [900, 700, 1500, 1700, 2800].map((size) => randomBytes(size));
+      const paths = addOn([
+        { meta: chunk('jfb-ai.js', ['chunks/ai-start-x.js', '@umbraco-cms/backoffice/modal'], ['chunks/en-x.js', 'chunks/de-x.js', 'chunks/ai-translate-x.js'], true), bytes: entry },
+        { meta: chunk('chunks/ai-start-x.js'), bytes: start },
+        { meta: chunk('chunks/en-x.js', [], [], false, ['Client/packages/ai/src/lang/en.ts']), bytes: english },
+        { meta: chunk('chunks/de-x.js', [], [], false, ['Client/packages/ai/src/lang/de.ts']), bytes: german },
+        { meta: chunk('chunks/ai-translate-x.js', [], [], false, ['Client/packages/ai/src/translate/translate.modal.element.ts']), bytes: translate },
+      ]);
+      const counted = [entry, start, english, german].reduce((sum, bytes) => sum + gzipSize(bytes), 0);
+      assert.equal(
+        line(paths, 'AI add-on at start').line,
+        `AI add-on at start (4 files: the entry, its static imports, and the words of English and of the largest other language): ${(counted / 1024).toFixed(2)} KB gzip of 8.00 KB, ok`,
+      );
+      assert.match(line(paths, 'AI add-on bundle').line, /^AI add-on bundle [(]5 files[)]: .* gzip of 64[.]00 KB, ok$/);
+    });
+
+    test('fails at start over its budget, and without its report', () => {
+      const paths = addOn([{ meta: chunk('jfb-ai.js', [], [], true), bytes: randomBytes(9 * 1024) }]);
+      assert.match(line(paths, 'AI add-on at start').line, /OVER BUDGET$/);
+      const { ai: _ai, ...withoutAddOn } = base();
+      assert.ok(check(project({ ...withoutAddOn, runtime })).some((r) => !r.ok && /ai: no chunk report/.test(r.line)));
+      assert.equal(BUDGETS.aiStart, 8 * 1024);
     });
   });
 

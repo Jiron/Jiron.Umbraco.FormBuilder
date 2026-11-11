@@ -60,10 +60,16 @@ describe('the packed files', () => {
     ...PACKAGE_IDS.map((id) => `${id}.${VERSION}.nupkg`),
     `Jiron.Umbraco.FormBuilder.Core.${VERSION}.snupkg`,
     `Jiron.Umbraco.FormBuilder.Web.${VERSION}.snupkg`,
+    `Jiron.Umbraco.FormBuilder.AI.${VERSION}.snupkg`,
   ];
 
-  test('are the three packages of the version, with the symbols of Core and Web', () => {
-    assert.deepEqual(PACKAGE_IDS, ['Jiron.Umbraco.FormBuilder', 'Jiron.Umbraco.FormBuilder.Core', 'Jiron.Umbraco.FormBuilder.Web']);
+  test('are the four packages of the version, with the symbols of all but the meta package', () => {
+    assert.deepEqual(PACKAGE_IDS, [
+      'Jiron.Umbraco.FormBuilder',
+      'Jiron.Umbraco.FormBuilder.Core',
+      'Jiron.Umbraco.FormBuilder.Web',
+      'Jiron.Umbraco.FormBuilder.AI',
+    ]);
     assert.deepEqual(packProblems(complete, VERSION), []);
   });
 

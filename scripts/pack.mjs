@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // SPDX-License-Identifier: LicenseRef-PolyForm-Perimeter-1.0.1
 /**
- * Packs Jiron Form Builder's three packages (ROADMAP 3.2; the file allowlist follows in 18.1, ADR-0026). Each pack
+ * Packs Jiron Form Builder's packages, the three a site installs and the AI add-on (ROADMAP 3.2, ADR-0018; the file allowlist follows in 18.1, ADR-0026). Each pack
  * builds the client for the version it packs (JFB_VERSION), then runs `dotnet pack` of the packages' solution filter
  * in Release, which runs NuGet's package validation and the JFB001 check of the client assets. CI, the local gate
  * and the release pack through this script, so they pack the same way.
@@ -25,7 +25,8 @@ import { fileURLToPath } from 'node:url';
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
 export const SOLUTION_FILTER = 'src/Jiron.Umbraco.FormBuilder.Packages.slnf';
 export const CLIENT = 'src/Jiron.Umbraco.FormBuilder.Web/Client';
-export const PACKAGE_IDS = ['Jiron.Umbraco.FormBuilder', 'Jiron.Umbraco.FormBuilder.Core', 'Jiron.Umbraco.FormBuilder.Web'];
+/** The packages a release packs: the meta package first, then its two parts, then the optional AI add-on (ADR-0018). */
+export const PACKAGE_IDS = ['Jiron.Umbraco.FormBuilder', 'Jiron.Umbraco.FormBuilder.Core', 'Jiron.Umbraco.FormBuilder.Web', 'Jiron.Umbraco.FormBuilder.AI'];
 
 /** The local test version for a moment: VersionPrefix plus -dev.<yyyyMMddHHmm> in UTC. */
 export function devVersion(propsText, now = new Date()) {
@@ -66,8 +67,8 @@ export function packageFiles(folder) {
 }
 
 /**
- * What is wrong with the packed files: each of the three packages must be there once with the version, every file
- * must carry the version, and nothing else may be packed. Symbol packages (.snupkg) belong to Core and Web.
+ * What is wrong with the packed files: each package must be there once with the version, every file must carry the
+ * version, and nothing else may be packed. Symbol packages (.snupkg) belong to every package but the meta package.
  */
 export function packProblems(files, version) {
   const problems = [];

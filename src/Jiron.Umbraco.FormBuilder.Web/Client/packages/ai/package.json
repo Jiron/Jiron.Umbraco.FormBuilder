@@ -1,0 +1,11 @@
+{
+  "name": "@jfb/ai",
+  "private": true,
+  "type": "module",
+  "description": "The AI add-on's backoffice (ADR-0018): Draft with AI, Translate with AI, Suggest, the drafted mark and Settings > AI, built to the add-on's /App_Plugins/JironFormBuilderAI/.",
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "build": "vite build",
+    "generate-client": "node scripts/generate-client.mjs"
+  }
+}

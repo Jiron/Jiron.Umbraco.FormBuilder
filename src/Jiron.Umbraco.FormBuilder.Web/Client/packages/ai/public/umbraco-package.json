@@ -1,0 +1,14 @@
+{
+  "id": "Jiron.Umbraco.FormBuilder.AI",
+  "name": "Jiron Form Builder AI",
+  "version": "17.0.0-alpha.0",
+  "allowTelemetry": false,
+  "extensions": [
+    {
+      "type": "bundle",
+      "alias": "Jiron.FormBuilder.AI.Bundle",
+      "name": "Jiron Form Builder AI bundle",
+      "js": "/App_Plugins/JironFormBuilderAI/jfb-ai.js"
+    }
+  ]
+}

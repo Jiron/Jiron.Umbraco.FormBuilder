@@ -11,7 +11,8 @@
   2. Client: npm ci, lint, tests, build, the size budgets.
   3. .NET: restore, a Release build with warnings as errors, dotnet format, the NuGet licences, the third-party
      notices.
-  4. Packages: the three packages from the Release build, through scripts/pack.mjs as CI and the release pack them.
+  4. Packages: the four packages from the Release build (the three a site installs and the AI add-on), through
+     scripts/pack.mjs as CI and the release pack them.
   5. Unit and integration tests on SQLite; a test that hangs fails after 10 minutes and is named.
   6. The browser projects on a fresh demo host from the Release build, in Edge, through scripts/e2e-gate.mjs. When
      a host's SQLite database hung (Umbraco 17's start-up stall, ADR-0011), the harness leaves the hang marker, and

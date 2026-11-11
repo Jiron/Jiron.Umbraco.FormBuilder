@@ -17,6 +17,8 @@ export default defineConfig(
       '.build/**',
       'packages/backoffice/src/api/**',
       'packages/backoffice/src/.api-check-*/**',
+      'packages/ai/src/api/**',
+      'packages/ai/src/.api-check-*/**',
       // Made by scripts/generate-public-types.mjs and held to its schema there (ADR-0128).
       'packages/element/src/answer.d.ts',
     ],

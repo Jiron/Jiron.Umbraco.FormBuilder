@@ -25,11 +25,13 @@ When this document and an ADR disagree, the ADR decides and this document is fix
 
 ## 1. Modules
 
-Four packages, one Testing project that is never packed, the samples, the tests and the demo
+Four packages, two Testing projects that are never packed, the samples, the tests and the demo
 ([ADR-0001](decisions/0001-solution-structure-and-packages.md)). The demo references the meta package and the Testing
 project, everything in it off, so the browser tests run the demo as their host
-([ADR-0029](decisions/0029-testing-project.md), [ADR-0031](decisions/0031-browser-harness.md)), and the samples, each off
-unless the setting `Demo:Samples` names it ([ADR-0234](decisions/0234-the-samples.md)).
+([ADR-0029](decisions/0029-testing-project.md), [ADR-0031](decisions/0031-browser-harness.md)), the samples, each off
+unless the setting `Demo:Samples` names it ([ADR-0234](decisions/0234-the-samples.md)), and the AI add-on as a site
+installs it, with Testing.AI, whose fake provider is left out unless `JironFormBuilderTesting:FakeAI` offers it
+([ADR-0018](decisions/0018-the-ai-add-on.md)).
 
 ```mermaid
 flowchart TB
@@ -37,6 +39,7 @@ flowchart TB
     meta["Jiron.Umbraco.FormBuilder<br/>meta package, no code"]
     ai["…FormBuilder.AI<br/>optional add-on"]
     testing["…FormBuilder.Testing<br/>never packed"]
+    testingAi["…FormBuilder.Testing.AI<br/>never packed"]
     samples["…FormBuilder.Samples<br/>never packed"]
     web["…FormBuilder.Web<br/>Razor class library"]
     core["…FormBuilder.Core"]
@@ -55,13 +58,15 @@ flowchart TB
   samples --> meta
   testing --> web
   testing --> core
+  testingAi --> ai
+  testingAi --> testing
   web --> core
   web --> umbWeb
   core --> umbCore
 ```
 
-All Umbraco references are `[17.6.0, 18.0.0)`; references between our packages are exact versions
-([ADR-0010](decisions/0010-versioning-branching-and-upgrade-policy.md)).
+All Umbraco references are `[17.6.0, 18.0.0)`, and the AI add-on's of Umbraco.AI `[17.5.2, 18.0.0)`; references
+between our packages are exact versions ([ADR-0010](decisions/0010-versioning-branching-and-upgrade-policy.md)).
 
 **Core** holds every rule of the product and knows nothing about HTTP; an architecture test keeps ASP.NET Core's HTTP,
 MVC, routing and Razor assemblies and Umbraco's web and API packages out of it, and another fails when it constructs a
@@ -490,6 +495,35 @@ flowchart LR
   site's preview in the culture the form's root names. The declarations extension authors compile against are
   `public/types/jiron-form-builder.d.ts`, shipped as `App_Plugins/JironFormBuilder/types/`; `public-types.check.ts` holds
   the workspace context, the canvas's field and the element's control writer to them.
+  From 15.3 (ADR-0018): a `jfbDesignerAction` is an item of the canvas's "…" after the designer's own, whose api the
+  Design view makes and runs, and a `jfbFieldTextAction` an element beside a field's label, help or placeholder in the
+  inspector (`extending/field-text-actions.element.ts`). Both get the open form's designer (`designer/designer-host.ts`):
+  the language shown, the draft, a save, and `changeTexts`, which `designer/text-changes.ts` applies as one step of the
+  undo history or refuses whole.
+- `ai`: the AI add-on's backoffice (ADR-0018), built into the add-on's project
+  (`src/Jiron.Umbraco.FormBuilder.AI/wwwroot/App_Plugins/JironFormBuilderAI/`) with its own `umbraco-package.json`, a
+  client generated from the `jfb-ai` document's snapshot, and words in English and German. Its start chunk holds the
+  manifests alone; the draft sidebar, the mark, Translate, Suggest and Settings › AI load on demand, each in a chunk of
+  its folder. It reaches the core's backoffice only through the public names of `jiron-form-builder.d.ts` and the
+  contract strings of `names.ts`.
+
+**The AI add-on** (`Jiron.Umbraco.FormBuilder.AI`, [ADR-0018](decisions/0018-the-ai-add-on.md)) is a package a site
+installs beside the meta package. It shares Core's and Web's internals at the exact version and is the only package
+that references Umbraco.AI, which an architecture test reads. Its controllers sit in the management API below `ai/`,
+behind the same access declarations, in an OpenAPI document of their own, `jfb-ai`, so the core's document is the same
+with or without it:
+
+| Area | Holds |
+| --- | --- |
+| Chat | one question to Umbraco.AI's chat service with the profile Settings › AI names, or else Umbraco.AI's default chat profile (`AIChat`, `AIProfileChoice`); the prompts and their strict JSON schemas (`AIPrompts`); a reply read as untrusted text (`AIReplies`) |
+| Drafting | an editor's description or pasted questionnaire to a small draft of the built-in types, read into a definition with the new-form defaults, held to the structural validator, and created through the form creation as `FormSource.Drafted` (`form.drafted`), its version commented and marked until the first save (`DraftMarks`) |
+| Translating | the saved draft's texts that lack a language, or all of them, merge tags kept and dictionary items skipped, for the backoffice to preview and apply |
+| Suggesting | a help text and up to three improvements of one field's own texts |
+| Health | the probe and Umbraco health check "AI add-on": the profile, its connection and a test of it, cached for five minutes |
+
+What reaches the AI is the editor's own text and the form's texts. No entry, answer or visitor detail ever does, which
+a test asserts on every prompt. Its tests live in `tests/…Tests.AI`, with the fake provider in `tests/…Testing.AI`,
+because Umbraco.AI.Core's migration plan would join every host that loads it.
 
 ## 2. The definition model
 
@@ -934,7 +968,8 @@ conflicts, a cancelled change, a locked setting or a stale version, `503 query_t
 `application/problem+json` with a title for editors and the type `about:blank`, without which Umbraco's client drops
 the status and the code. The document `jfb` names its operations `<controller><action>`; its snapshot
 `docs/api/jfb.json` is the source of the backoffice's client (`packages/backoffice/src/api`, one function per
-operation), and tests keep the two in step.
+operation), and tests keep the two in step. The AI add-on's document `jfb-ai` and its client
+(`packages/ai/src/api`) are kept the same way.
 
 ## 7. Settings
 
@@ -1146,7 +1181,8 @@ The budgets are §4.12's; the measured starting points come from the spikes.
 | The first page of 100,000 entries; a 10,000-entry CSV | ≤ 300 ms; ≤ 5 s | 7.9 to 16.7 ms by date; 0.77 to 1.09 s (ADR-0003) |
 | The first email after a submission | ≤ 10 s | median 7.8 ms, highest 22.7 ms after the commit (ADR-0007) |
 | The designer with 300 fields; the tree with 1,000 forms | < 100 ms per interaction; < 1 s | 72 to 80 ms at the slowest interaction alone (9.4d, ADR-0176); the tree – (16.2) |
-| The backoffice's files | ≤ 64 KB gzip at each start, in any section (the entry, its static imports, English's words and the largest other language's); ≤ 64 KB any one file; ≤ 512 KB the whole (ADR-0183) | at start 54.47 KB, the Design view's chunk 55.14 KB, the whole 246.76 KB (9.6b); at start 42.28 KB, the Design view's 45.20 KB, the whole 378.65 KB once the workspace's words load with it (10.3c, ADR-0201) |
+| The backoffice's files | ≤ 64 KB gzip at each start, in any section (the entry, its static imports, English's words and the largest other language's); ≤ 64 KB any one file; ≤ 512 KB the whole (ADR-0183) | at start 54.47 KB, the Design view's chunk 55.14 KB, the whole 246.76 KB (9.6b); at start 42.28 KB, the Design view's 45.20 KB, the whole 378.65 KB once the workspace's words load with it (10.3c, ADR-0201); at start 44.05 KB, the largest file 25.74 KB, the whole 511.66 KB (15.3) |
+| The AI add-on's backoffice files | ≤ 8 KB gzip added to each start (its entry, static imports and words); ≤ 64 KB the whole (ADR-0018) | at start 5.11 KB, the whole 18.30 KB (15.3) |
 | Accessibility | WCAG 2.2 AA for every theme and screen | – (6.8, 16.3) |
 | Coverage | ≥ 85% of Core's lines; every endpoint; every vector in both runtimes | – (ADR-0011) |
 | Builds | zero warnings, formatters and analyzers clean | – (3.1) |

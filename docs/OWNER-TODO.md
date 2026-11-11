@@ -154,7 +154,11 @@ keeps its defaults meanwhile, and `docs/privacy/` describes them; a site can cha
   variables (`JironFormBuilder__Captcha__…`).
 - [ ] **Email:** test with a real SMTP server and a few real mail clients (Outlook, Gmail, Apple Mail,
   dark mode).
-- [ ] **The AI add-on:** try it with a real Umbraco.AI provider and profile.
+- [ ] **The AI add-on:** try it with a real Umbraco.AI provider and profile (ROADMAP 15.3, docs/ai.md): add the
+  provider's package to a site with the add-on, create a connection and a chat profile in Umbraco.AI, choose it in
+  Form Builder's Settings › AI, check that the health check "AI add-on" passes, and try Draft (a description and a
+  pasted questionnaire), Translate (with a preview edited and applied) and Suggest. The build only ever talks to a fake
+  provider.
 - [ ] **Blob storage:** try the file-store sample against a real storage account if you use one.
 - [ ] **Report to Umbraco HQ** (added 2026-10-31, ROADMAP 6.7f): in Umbraco 17.7.1's dark theme UUI's positive
   primary button (`#347d39` under `#eeeeef`) is 4.37:1, below WCAG AA's 4.5:1, on every dialog's main button. Jiron

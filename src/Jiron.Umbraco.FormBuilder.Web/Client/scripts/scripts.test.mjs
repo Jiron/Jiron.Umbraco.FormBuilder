@@ -295,7 +295,8 @@ describe('the stamp', () => {
     put(client, 'package.json', '{}');
     put(client, 'packages/runtime/src/jfb-runtime.ts', 'export const a = 1;');
     put(client, 'packages/runtime/src/jfb-runtime.test.ts', 'test');
-    const project = tempFolder();
+    // The Web project inside a folder of the test's own, so the add-on's project beside it stays in there too.
+    const project = join(tempFolder(), 'Jiron.Umbraco.FormBuilder.Web');
     const banner = licenceBanner(VERSION, licenseText);
     for (const file of OUTPUTS) {
       if (file.endsWith('umbraco-package.json')) put(project, file, JSON.stringify({ version: VERSION }));

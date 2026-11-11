@@ -23,11 +23,15 @@ export const defaultProjectRoot = join(clientRoot, '..');
 /** @param {string} root */
 const stampFile = (root) => join(root, '.build', 'stamp.json');
 
+/** The AI add-on's backoffice files, relative to the Web project: in the add-on's own project beside it (ADR-0018). */
+const ADD_ON_FOLDER = '../Jiron.Umbraco.FormBuilder.AI/wwwroot/App_Plugins/JironFormBuilderAI';
+
 /**
  * The folders the client builds into, relative to the Web project: everything in them ships, the backoffice as
- * static web assets and the website assets embedded in the assembly (ADR-0026).
+ * static web assets and the website assets embedded in the assembly (ADR-0026), and the AI add-on's backoffice as its
+ * own project's static web assets (ADR-0018).
  */
-export const OUTPUT_FOLDERS = ['wwwroot/App_Plugins/JironFormBuilder', 'WebsiteAssets'];
+export const OUTPUT_FOLDERS = ['wwwroot/App_Plugins/JironFormBuilder', 'WebsiteAssets', ADD_ON_FOLDER];
 
 /** The built files that must exist, relative to the Web project. */
 export const OUTPUTS = [
@@ -35,6 +39,8 @@ export const OUTPUTS = [
   'wwwroot/App_Plugins/JironFormBuilder/jfb-backoffice.js',
   'WebsiteAssets/runtime/jfb-runtime.js',
   'WebsiteAssets/element/jfb-element.js',
+  `${ADD_ON_FOLDER}/umbraco-package.json`,
+  `${ADD_ON_FOLDER}/jfb-ai.js`,
 ];
 
 /** The website assets, which 6.2 serves precompressed. */
@@ -117,9 +123,11 @@ export function outputProblems({ projectRoot = defaultProjectRoot, version, lice
   const missing = OUTPUTS.filter((file) => !existsSync(join(projectRoot, file)));
   if (missing.length > 0) return [`build outputs are missing: ${missing.join(', ')}`];
 
-  const manifest = JSON.parse(readFileSync(join(projectRoot, OUTPUTS[0] ?? ''), 'utf8'));
-  if (manifest.version !== version)
-    problems.push(`umbraco-package.json has version ${manifest.version}, not ${version}`);
+  // Each package's manifest, the core's and the add-on's, names the version: the backoffice busts its cache by it.
+  for (const file of OUTPUTS.filter((output) => output.endsWith('umbraco-package.json'))) {
+    const manifest = JSON.parse(readFileSync(join(projectRoot, file), 'utf8'));
+    if (manifest.version !== version) problems.push(`${file} has version ${manifest.version}, not ${version}`);
+  }
 
   const files = outputFiles(projectRoot);
   for (const file of files.filter((f) => /[.](js|css)$/.test(f))) {
