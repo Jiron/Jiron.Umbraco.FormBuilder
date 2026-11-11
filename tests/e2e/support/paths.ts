@@ -86,6 +86,14 @@ export const FRESH_PORT = 5537;
 export const FRESH_BASE_URL = `http://127.0.0.1:${FRESH_PORT}`;
 
 /**
+ * The host of two sites on their own names, site-a.localhost and site-b.localhost, each loopback by itself in Edge and
+ * Chromium (ROADMAP 14.4, ADR-0232); its API calls send the Host header themselves, as the API request context resolves
+ * those names to IPv6, where no host listens.
+ */
+export const SITES_PORT = 5538;
+export const SITES_BASE_URL = `http://127.0.0.1:${SITES_PORT}`;
+
+/**
  * The host of the refused uploads (ROADMAP 7.3d, ADR-0006): the plain port its start-up wait reads, and the port with HTTPS
  * and HTTP/2, under a certificate of the Testing project's that nothing trusts, so its browser ignores that.
  */

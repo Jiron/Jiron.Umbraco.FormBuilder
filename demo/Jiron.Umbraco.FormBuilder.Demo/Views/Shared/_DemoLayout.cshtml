@@ -11,8 +11,9 @@
     var children = home.Children().ToList();
     var menu = children.Where(page => page.ContentType.Alias is "demoPage" or "demoMembers").ToList();
     var legal = children.Where(page => page.ContentType.Alias == "demoLegalPage").ToList();
-    var brand = home.Value<string>("heading") ?? home.Name;
-    var title = Model.Id == home.Id ? brand : $"{Model.Value<string>("heading") ?? Model.Name} | {brand}";
+    // A root whose heading is empty still names itself, so the brand link always has a name (WCAG 2.4.4).
+    var brand = home.Value<string>("heading") is { Length: > 0 } heading ? heading : home.Name;
+    var title = Model.Id == home.Id ? brand : $"{(Model.Value<string>("heading") is { Length: > 0 } pageHeading ? pageHeading : Model.Name)} | {brand}";
     // The current page by address: the sign-in page is shown at the address of the protected page it guards.
     var path = (Context.Request.Path.Value ?? "/").TrimEnd('/');
     string? Current(IPublishedContent item) => item.Url().TrimEnd('/') == path ? "page" : null;
