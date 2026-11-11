@@ -81,8 +81,12 @@ export class MemberEntriesViewElement extends UmbLitElement {
         color: var(--jfb-bo-color-text-muted);
       }
 
+      .name,
       .small {
         display: block;
+      }
+
+      .small {
         font-size: var(--uui-type-small-size);
       }
 
@@ -229,7 +233,11 @@ export class MemberEntriesViewElement extends UmbLitElement {
     // The link stands on a line of its own, so no text beside it needs telling apart from it by colour (WCAG 1.4.1).
     return html`<tr>
       <td>
-        <a href=${screenPath(ENTRY_ENTITY_TYPE, row.key)}>${this.#term('memberEntries_entry', String(row.number))}</a>
+        <span class="name"
+          ><a href=${screenPath(ENTRY_ENTITY_TYPE, row.key)}
+            >${this.#term('memberEntries_entry', String(row.number))}</a
+          ></span
+        >
         <span class="small narrow">${form}, ${this.#date(row.received)}</span>
       </td>
       <td class="wide muted">${form}</td>

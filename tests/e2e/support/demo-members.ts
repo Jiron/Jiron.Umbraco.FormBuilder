@@ -6,7 +6,7 @@ export async function signInMember(page: Page, email: string, password: string):
   await page.goto('/en/');
   await page
     .getByRole('navigation')
-    .getByRole('link', { name: pageOf('demoMembers', 'en').name })
+    .getByRole('link', { name: pageOf('demoMembers', 'en').name, exact: true })
     .click();
   const main = page.getByRole('main');
   await main.getByLabel(textOf('Demo.Login.Email', 'en')).fill(email);

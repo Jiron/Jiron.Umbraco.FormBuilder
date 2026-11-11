@@ -237,6 +237,20 @@ export class EntryPanelElement extends UmbLitElement {
         margin: 0 0 var(--uui-size-space-5);
       }
 
+      /* The member's link in Umbraco's link colour: the browser's own blue is 1.4:1 on the dark theme's box. */
+      .more a {
+        color: var(--uui-color-interactive);
+      }
+
+      .more a:hover {
+        color: var(--uui-color-interactive-emphasis);
+      }
+
+      .more a:focus-visible {
+        outline: 2px solid var(--jfb-bo-color-focus);
+        outline-offset: 2px;
+      }
+
       .spam {
         margin: 0 0 var(--uui-size-space-5);
       }

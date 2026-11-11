@@ -68,6 +68,7 @@ public sealed partial class FormPostTests
             Assert.That(stored[0].State, Is.Not.EqualTo(EntryState.Spam), "sent at once after its page rendered, as the minimum fill time does not apply without JavaScript (ADR-0012)");
             Assert.That(outcome.QuerySelector("#jfb-1 [data-jfb-outcome]"), Is.Not.Null, "the page shows its outcome");
             Assert.That(outcome.QuerySelector("form#jfb-1 input[name='name']"), Is.Null, "in the form's place");
+            Assert.That((Header(sent, "Set-Cookie"), Header(again, "Set-Cookie")), Is.EqualTo(((string?)null, (string?)null)), "neither post sets a cookie (ADR-0004)");
         });
     }
 

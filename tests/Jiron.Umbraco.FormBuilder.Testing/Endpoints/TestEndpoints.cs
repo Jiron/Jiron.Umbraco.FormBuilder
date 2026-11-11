@@ -82,7 +82,7 @@ internal sealed class TestEndpointsStartupFilter(IOptions<FormBuilderTestingOpti
 /// globally, at the root and on each root folder outside the trash in the library's order (ADR-0049), so the browser
 /// tests can see that the personas have their grants.</description></item>
 /// <item><description><c>GET /jfb-testing/entries?form=&lt;alias&gt;</c>: the form's entries, oldest first, each with its
-/// stored values by the field's key, row and item (ADR-0100) and its files by the field's key, name, size and the name
+/// state, the member it keeps (ADR-0231), its stored values by the field's key, row and item (ADR-0100) and its files by the field's key, name, size and the name
 /// a typed signature holds (ADR-0102, ADR-0103), so the browser tests can compare what two paths stored for the same
 /// answers; <c>404</c> for a form the host does not have.</description></item>
 /// <item><description><c>POST /jfb-testing/protection {"captchaConsent": "cmp"}</c>: sets the protection settings' consent mode for
@@ -904,16 +904,18 @@ internal sealed class TestEndpointsMiddleware(RequestDelegate next)
             typed[file.StoredName] = await TypedNameAsync(store, file.StoredName, context.RequestAborted);
         }
 
-        var states = new Dictionary<long, string?>();
+        var stored = new Dictionary<long, (string? State, Guid? Member)>();
         foreach (var id in ids)
         {
-            states[id] = (await entries.GetByIdAsync(id, context.RequestAborted))?.State.ToString();
+            var entry = await entries.GetByIdAsync(id, context.RequestAborted);
+            stored[id] = (entry?.State.ToString(), entry?.MemberKey);
         }
 
         var answer = ids.Order().Select(id => new
         {
             id,
-            state = states[id],
+            state = stored[id].State,
+            member = stored[id].Member,
             values = values
                 .Where(value => value.EntryId == id)
                 .OrderBy(value => value.FieldId).ThenBy(value => value.RowIndex).ThenBy(value => value.ValueIndex)

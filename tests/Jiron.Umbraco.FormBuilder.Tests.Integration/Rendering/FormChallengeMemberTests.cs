@@ -15,7 +15,7 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Integration.Rendering;
 /// members binds it to the member and gives it to no one else; another member's, a visitor's or none is refused on
 /// entries, page checks and uploads, and a server key never reaches the form; the member's own makes their entry while the
 /// form admits them, its receipt theirs alone; and it tells a member only what the form's rules ask, which the server's
-/// rules see alike.
+/// rules see alike. A page on another origin gets nothing of the member's, and no response sets a cookie.
 /// </summary>
 [TestFixture]
 [UmbracoTest(Database = UmbracoTestOptions.Database.NewSchemaPerTest, Boot = true)]
@@ -367,6 +367,74 @@ public sealed class FormChallengeMemberTests : RenderingTestBase
         });
     }
 
+    [Test]
+    public async Task OnAFormForMembers_ARequestFromAPageOnAnotherOrigin_IsRefusedBeforeAnythingRuns_ThoughItCarriesTheirOwnChallenge()
+    {
+        var key = await PublishFormAsync("forMembers", ForMembers, NameField);
+        _ = await PagesAsync("limited");
+        await SignInMemberAsync("member@example.com");
+        var challenge = await ChallengeAsync(key);
+        const string Elsewhere = "https://elsewhere.example";
+
+        using var entry = await PostAsync(key, "entries", Entry, challenge, origin: Elsewhere);
+        using var check = await PostAsync(key, "validate", """{"revision":1,"pageKey":"00000000-0000-4000-8000-000000000001","values":{}}""", challenge, origin: Elsewhere);
+        using var asked = await SendAsync(HttpMethod.Post, $"{Root}/forms/{key}/challenge", request => request.Headers.Add("Origin", Elsewhere));
+        var row = (await GetRequiredService<IFormRepository>().GetAsync(key))!;
+        var before = await GetRequiredService<IEntryRepository>().ListIdsAsync(row.Id, 10);
+        using var own = await PostAsync(key, "entries", Entry, challenge);
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(await RefusalAsync(entry), Is.EqualTo("403 origin_denied"), "the member's cookie and challenge make no entry from another origin (ADR-0004, ADR-0231)");
+            Assert.That(await RefusalAsync(check), Is.EqualTo("403 origin_denied"));
+            Assert.That(await RefusalAsync(asked), Is.EqualTo("403 origin_denied"), "nor does another origin get a challenge of the member's");
+            Assert.That(Header(asked, "Access-Control-Allow-Origin"), Is.Null);
+            Assert.That(before, Is.Empty);
+            Assert.That(own.StatusCode, Is.EqualTo(HttpStatusCode.OK), "the refused requests used up nothing: " + await own.Content.ReadAsStringAsync());
+        });
+    }
+
+    [Test]
+    public async Task NoResponseToAMemberOrAVisitor_OnAFormForMembers_SetsACookie()
+    {
+        var key = await PublishFormAsync("forMembers", ForMembers, NameField);
+        _ = await PagesAsync("limited");
+        var answers = new List<(string What, HttpResponseMessage Response)>();
+        try
+        {
+            answers.Add(("a visitor's form", await GetAsync($"{Root}/forms/{key}")));
+            answers.Add(("a visitor's render", await GetAsync($"{Root}/forms/{key}/render?instance=jfb-1&page=%2Flimited%2F")));
+            answers.Add(("a visitor's challenge", await Client.PostAsync($"{Root}/forms/{key}/challenge", null)));
+            answers.Add(("a visitor's entry", await PostAsync(key, "entries", Entry, null)));
+            await SignInMemberAsync("member@example.com");
+            var challenge = await ChallengeAsync(key);
+            var submission = Guid.NewGuid();
+            answers.Add(("the member's form", await GetAsync($"{Root}/forms/{key}")));
+            answers.Add(("the member's render", await GetAsync($"{Root}/forms/{key}/render?instance=jfb-1&page=%2Flimited%2F")));
+            answers.Add(("the member's challenge", await Client.PostAsync($"{Root}/forms/{key}/challenge", null)));
+            answers.Add(("the member's page check", await PostAsync(key, "validate", """{"revision":1,"pageKey":"00000000-0000-4000-8000-000000000001","values":{}}""", challenge)));
+            answers.Add(("the member's entry", await PostAsync(key, "entries", $$$"""{"submissionId":"{{{submission}}}","revision":1,"values":{"name":"Ada"}}""", challenge)));
+            answers.Add(("the member's receipt", await PostAsync(key, "receipt", $$"""{"submissionId":"{{submission}}"}""", challenge)));
+
+            Assert.Multiple(() =>
+            {
+                foreach (var (what, response) in answers)
+                {
+                    Assert.That(response.Headers.Contains("Set-Cookie"), Is.False, $"{what} ({(int)response.StatusCode}) sets no cookie (ADR-0004, ADR-0231)");
+                }
+
+                Assert.That(answers.Single(answer => answer.What == "the member's entry").Response.StatusCode, Is.EqualTo(HttpStatusCode.OK), "the sweep reaches a stored entry");
+            });
+        }
+        finally
+        {
+            foreach (var (_, response) in answers)
+            {
+                response.Dispose();
+            }
+        }
+    }
+
     private static FormDefinition Anonymous(FormDefinition definition) => definition with
     {
         Settings = definition.Settings with { Privacy = definition.Settings.Privacy with { Anonymous = true } },
@@ -389,7 +457,7 @@ public sealed class FormChallengeMemberTests : RenderingTestBase
         return created.Result!.Key;
     }
 
-    private Task<HttpResponseMessage> PostAsync(Guid key, string endpoint, string body, string? challenge, bool withChallenge = true)
+    private Task<HttpResponseMessage> PostAsync(Guid key, string endpoint, string body, string? challenge, bool withChallenge = true, string? origin = null)
     {
         var posted = JsonNode.Parse(body)!.AsObject();
         if (withChallenge)
@@ -397,7 +465,14 @@ public sealed class FormChallengeMemberTests : RenderingTestBase
             posted["challenge"] = challenge;
         }
 
-        return SendAsync(HttpMethod.Post, $"{Root}/forms/{key}/{endpoint}", request => request.Content = new StringContent(posted.ToJsonString(), Encoding.UTF8, "application/json"));
+        return SendAsync(HttpMethod.Post, $"{Root}/forms/{key}/{endpoint}", request =>
+        {
+            request.Content = new StringContent(posted.ToJsonString(), Encoding.UTF8, "application/json");
+            if (origin is not null)
+            {
+                request.Headers.Add("Origin", origin);
+            }
+        });
     }
 
     private Task<HttpResponseMessage> UploadAsync(Guid key, string challenge) =>
