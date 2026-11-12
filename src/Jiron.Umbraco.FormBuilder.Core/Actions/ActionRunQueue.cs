@@ -2,7 +2,6 @@ using System.Collections.Immutable;
 using System.Text;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
-using Jiron.Umbraco.FormBuilder.Core.Privacy;
 using Jiron.Umbraco.FormBuilder.Core.Submissions;
 using Microsoft.Extensions.Logging;
 using Umbraco.Cms.Core.Events;
@@ -65,7 +64,7 @@ internal sealed partial class ActionRunQueue(IActionRunRepository runs, ActionAt
     }
 
     [LoggerMessage(Level = LogLevel.Error, Message = "Jiron Form Builder could not run action run {Run}; it stays queued, or becomes uncertain when it was claimed")]
-    private static partial void LogAttemptFailed(ILogger logger, long run, Exception exception);
+    private static partial void LogAttemptFailed(ILogger logger, long run, LoggedException exception);
 }
 
 /// <summary>
@@ -339,14 +338,14 @@ internal sealed partial class ActionAttempts(
     private static partial void LogDoesNotStop(ILogger logger, string type, long run);
 
     [LoggerMessage(Level = LogLevel.Error, Message = "Jiron Form Builder could not read what action run {Run} needs; it tries again after the back-off")]
-    private static partial void LogPrepareFailed(ILogger logger, long run, Exception exception);
+    private static partial void LogPrepareFailed(ILogger logger, long run, LoggedException exception);
 
     [LoggerMessage(Level = LogLevel.Error, Message = "Jiron Form Builder could not record the outcome of action run {Run}; it becomes uncertain when its lease runs out")]
-    private static partial void LogRecordFailed(ILogger logger, long run, Exception exception);
+    private static partial void LogRecordFailed(ILogger logger, long run, LoggedException exception);
 
     [LoggerMessage(Level = LogLevel.Error, Message = "The late end of action run {Run} failed; it stays uncertain")]
-    private static partial void LogLateFailed(ILogger logger, long run, Exception exception);
+    private static partial void LogLateFailed(ILogger logger, long run, LoggedException exception);
 
     [LoggerMessage(Level = LogLevel.Error, Message = "A handler of {Notification} failed; the action run goes on")]
-    private static partial void LogHandlerFailed(ILogger logger, string notification, Exception exception);
+    private static partial void LogHandlerFailed(ILogger logger, string notification, LoggedException exception);
 }

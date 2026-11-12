@@ -475,6 +475,33 @@ public sealed class EmailPickupTests : EmailTestBase
         Assert.That(await CountLimitedAsync(), Is.Zero);
     }
 
+    [Test]
+    public async Task AMailHeldBackByTheLimits_KeepsNoLinkCode_WhileOneThatWaitsToBeSentDoes()
+    {
+        var limits = new EmailLimits(1, 200, TimeSpan.FromDays(1));
+        NewEmail Confirm(string code) => new(
+            EmailKind.Verification,
+            "ada@jfb.test",
+            HostSender,
+            "Confirm",
+            $"Confirm: https://site.test/jfb/api/v1/verify?t={code}",
+            "en",
+            HtmlBody: $"<a href=\"https://site.test/jfb/api/v1/verify?t={code}\">Confirm</a>",
+            RecipientKey: "ada@jfb.test");
+
+        var first = (await Emails.AddWithinLimitsAsync(Confirm("FIRSTCODE123"), limits))!;
+        var held = (await Emails.AddWithinLimitsAsync(Confirm("SECONDCODE456"), limits))!;
+        var stored = (await Emails.GetAsync(held.Id))!;
+
+        Assert.Multiple(() =>
+        {
+            Assert.That((first.State, held.State), Is.EqualTo((EmailState.Queued, EmailState.Limited)));
+            Assert.That(first.TextBody, Does.Contain("FIRSTCODE123"), "a mail that waits is sent with its code");
+            Assert.That(stored.HtmlBody + stored.TextBody, Does.Not.Contain("SECONDCODE456"), "nobody who reads the database can use a held-back code");
+            Assert.That(stored.TextBody, Does.Contain($"verify?t={LinkSecrets.Removed}"), "the link still names its page");
+        });
+    }
+
     /// <inheritdoc />
     protected override void CustomTestSetup(IUmbracoBuilder builder)
     {

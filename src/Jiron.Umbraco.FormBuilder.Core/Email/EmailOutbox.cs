@@ -58,6 +58,9 @@ internal sealed record OutgoingEmail
 
     /// <summary>The keys of the files to attach.</summary>
     public IReadOnlyList<Guid> Attachments { get; init; } = [];
+
+    /// <summary>Its name alone: the compiler's would print its recipients and body (16.1's review).</summary>
+    public override string ToString() => nameof(OutgoingEmail);
 }
 
 /// <summary>A mail as the site sends it (ADR-0189), whoever it goes to; each recipient is one address.</summary>

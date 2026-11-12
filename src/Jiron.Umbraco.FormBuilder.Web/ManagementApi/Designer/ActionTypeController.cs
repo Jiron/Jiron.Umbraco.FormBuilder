@@ -129,7 +129,7 @@ internal sealed record ContentPropertyResponseModel
 [ApiVersion("1.0")]
 [BackOfficeRoute(FormBuilderManagementApi.Route + "/form/{key:guid}/action/{actionKey:guid}/test")]
 [ApiExplorerSettings(GroupName = "Action type")]
-internal sealed class ActionTestController(ActionTestRuns tests, FormDefinitionSerializer serializer, IUserService users, IFormBuilderFormService forms, Library.ActionGrantChecks grants) : FormBuilderManagementApiController
+internal sealed class ActionTestController(ActionTestRuns tests, FormDefinitionSerializer serializer, IUserService users, IFormBuilderFormService forms, Library.ActionGrantChecks grants, TestLimits limits) : FormBuilderManagementApiController
 {
     /// <summary>Runs an action of the form's draft against a sample entry.</summary>
     /// <param name="key">The form.</param>
@@ -143,8 +143,14 @@ internal sealed class ActionTestController(ActionTestRuns tests, FormDefinitionS
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status429TooManyRequests)]
     public async Task<IActionResult> Test(Guid key, Guid actionKey, ActionTestRequestModel? request = null, CancellationToken cancellationToken = default)
     {
+        if (limits.Refusal(RequestAccess.User.Key, Response) is { } limited)
+        {
+            return limited;
+        }
+
         FormDefinition? held = null;
         if (request?.Definition is { } sent)
         {

@@ -1,5 +1,5 @@
+using Jiron.Umbraco.FormBuilder.Core;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
-using Jiron.Umbraco.FormBuilder.Core.Privacy;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Umbraco.Cms.Core.Cache;
@@ -45,7 +45,7 @@ internal sealed partial class FormCacheTags(PageForms forms, ILogger<FormCacheTa
     }
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Jiron Form Builder could not read the forms content {ContentKey} uses; its cached page is evicted only with every form's")]
-    private static partial void LogReadFailed(ILogger logger, Guid contentKey, Exception exception);
+    private static partial void LogReadFailed(ILogger logger, Guid contentKey, LoggedException exception);
 }
 
 /// <summary>

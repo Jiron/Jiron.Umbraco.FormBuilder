@@ -533,7 +533,10 @@ export class SettingsScreenElement extends UmbLitElement {
     const notifications = await this.getContext(UMB_NOTIFICATION_CONTEXT);
     if (answer.kind === 'sent')
       notifications?.peek('positive', { data: { message: this.#words('testSent', answer.to) } });
-    else notifications?.peek('danger', { data: { message: this.#words('testFailed') } });
+    else
+      notifications?.peek('danger', {
+        data: { message: answer.limited ? this.localize.term('jfbLibrary_testsLimited') : this.#words('testFailed') },
+      });
   }
 
   async #createBlock() {

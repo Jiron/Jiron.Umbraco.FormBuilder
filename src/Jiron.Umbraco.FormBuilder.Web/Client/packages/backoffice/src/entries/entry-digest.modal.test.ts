@@ -14,6 +14,7 @@ const server = vi.hoisted(() => ({
   saved: [] as string[],
   tests: [] as string[],
   fails: false,
+  limited: false,
 }));
 
 const mail = (frequency: string): EmailPreviewResponseModel => ({
@@ -40,7 +41,8 @@ vi.mock('./entries-api', () => ({
   },
   testDigest: async (_host: unknown, frequency: string) => {
     server.tests.push(frequency);
-    return server.fails ? undefined : server.choice?.address;
+    if (server.limited) return { refused: 'limited' };
+    return server.fails || !server.choice?.address ? { refused: 'failed' } : { to: server.choice.address };
   },
 }));
 
@@ -165,6 +167,14 @@ describe('the summary email', () => {
     expect(peek).toHaveBeenLastCalledWith('danger', {
       data: { message: "The test email couldn't be sent. Try again." },
     });
+
+    // Past the tests a user runs in an hour (16.1's review).
+    server.limited = true;
+    await press('Send test email');
+    expect(peek).toHaveBeenLastCalledWith('danger', {
+      data: { message: "You've run as many tests as an hour allows. Try again later." },
+    });
+    server.limited = false;
   });
 
   it('names a site on UTC as UTC, and offers no test to a user without an address', async () => {

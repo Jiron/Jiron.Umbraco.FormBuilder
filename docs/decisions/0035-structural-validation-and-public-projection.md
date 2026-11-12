@@ -175,6 +175,8 @@ runtimes.
   of two hexadecimal digits.
 - **When the outcome runs (6.1),** the rendered URL is checked again by the same rule. A URL that fails it is not
   followed: the visitor gets the default thank-you message, and the site logs a warning without the answers.
+  Amended by [ADR-0236](0236-what-the-security-review-changed.md): the template is checked again when it runs too, a second guard beside the renderer, which
+  writes a tag before the path as it stands.
 
 **Outcomes.** A `redirect` outcome has a redirect, shows no message and no answers, and leaves at once, with no delay.
 A `message` outcome may redirect after its message, with a delay. A redirect names a content page or a URL, never both.

@@ -1,5 +1,5 @@
 using System.Data.Common;
-using Jiron.Umbraco.FormBuilder.Core.Privacy;
+using Jiron.Umbraco.FormBuilder.Core;
 
 namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Settings;
 

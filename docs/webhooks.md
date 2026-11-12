@@ -132,6 +132,8 @@ Each preset starts with a **message**: text with merge tags, in the chat's own f
 - **Slack** gets `{"text": "<the message>"}` for an incoming webhook.
 - **Teams** gets an Adaptive Card for a workflow that receives webhooks, with a wrapping text block for each line of the message, as a card shows a line break only between blocks; an empty line becomes the space before the next.
 
+Slack and Teams make a link of every address they find in a message, an answer's among them, so a visitor can put a link in your channel; their own formatting characters in an answer are written as text. Quote answers in a message only where the channel's readers expect what visitors write.
+
 Without a message, a chat gets "New entry in" the form's name and the answers. **A body you write** still wins over the message, for another shape of message; actions saved with the earlier presets hold such a body and keep working as they are. A test sends the message with a first line that says it is a test, in the tester's backoffice language.
 
 ## Umbraco's webhook events
@@ -163,5 +165,7 @@ The payload never holds an answer, because Umbraco sends it as it is:
 A handler's failure is logged and never fails the visitor, and a slow one holds the visitor up for 5 seconds at most. As with every Umbraco notification, one that throws can stop the handlers after it.
 
 The request is queued by whichever server took the entry. Umbraco sends it from its scheduling server, under its own settings (`Umbraco:CMS:Webhook`) and its own retries, and Jiron Form Builder does not sign it.
+
+Umbraco sends it where a webhook in Settings, Webhooks says, without `AllowedHosts` and the checks of private addresses that hold Jiron Form Builder's own calls: whoever may manage Umbraco's webhooks decides where these go, so give that right only to those you would let call any address from your server. The payload holds keys and states, never an answer.
 
 These events tell of a change at most once: a server that stops between the entry's save and the event loses that event. Use the webhook action where each entry has to arrive, as it is part of the entry's own save and retried. On a form that stores no entries, the key names an entry that is gone moments later.

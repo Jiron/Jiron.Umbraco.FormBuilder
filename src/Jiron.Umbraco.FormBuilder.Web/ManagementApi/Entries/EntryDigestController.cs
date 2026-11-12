@@ -54,7 +54,8 @@ public sealed class EntryDigestTestResponseModel
 internal sealed class EntryDigestController(
     EntryDigests digests,
     SiteTimeZones timeZones,
-    IUserService users) : FormBuilderManagementApiController
+    IUserService users,
+    TestLimits limits) : FormBuilderManagementApiController
 {
     /// <summary>The user's choice, with when and where the summary goes.</summary>
     /// <param name="cancellationToken">The request's cancellation.</param>
@@ -114,8 +115,14 @@ internal sealed class EntryDigestController(
     [FormBuilderSection]
     [ProducesResponseType(typeof(EntryDigestTestResponseModel), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status429TooManyRequests)]
     public async Task<IActionResult> Test(EntryDigestRequestModel request, CancellationToken cancellationToken = default)
     {
+        if (limits.Refusal(RequestAccess.User.Key, Response) is { } limited)
+        {
+            return limited;
+        }
+
         var frequency = FrequencyOf(request);
         var user = await UserAsync();
         if (await digests.SendTestAsync(user, frequency, cancellationToken) != EntryDigestOutcome.Queued)

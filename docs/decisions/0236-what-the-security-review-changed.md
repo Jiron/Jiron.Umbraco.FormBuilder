@@ -89,6 +89,65 @@ their own, and a ticket reads only for the form its link names. The file answers
 `nosniff` and its sandbox. A ticket still counts more than once in its minute, as a ticket used once would need a store that
 every server shares.
 
+### Mail: a held-back link mail keeps no code
+
+A confirmation or resume mail's stored copy lost its code once the mail was sent ([ADR-0226](0226-the-phase-13-privacy-review.md)),
+but one the visitor-mail limits held back kept it for as long as it was kept, though it is never sent nor tried again. The
+unit of work that stores such a mail as limited now replaces its code with `removed`. A failed or uncertain mail keeps its
+code, as a retry from the deliveries log must send a working link; the code expires on its own, and no screen shows a body.
+
+### Redirects: the template is checked when it runs
+
+An outcome's redirect was rendered and the result held to the publish rule, but not the template, which a version stored
+without publishing's check (from before the rule, or written another way) could hold with a merge tag in the host
+([ADR-0035](0035-structural-validation-and-public-projection.md)). It was not reachable: the renderer writes a tag before the
+path as it stands, so `https://{{ field.site }}/thanks` gives an address with braces in its host, which the rule refuses.
+The template is now held to the rule when it runs as well, so the guard no longer rests on the renderer alone; a test holds
+the behaviour, and a tamper that takes both guards away fails it.
+
+### Logs: no exception reaches a log as it is
+
+Every log call was to pass `LoggedException.Of(…)`, which keeps an exception's type, a database's codes and its stack
+and drops its message ([ADR-0226](0226-the-phase-13-privacy-review.md)), but nothing held a call to it: ten places (the
+entry lists, recent entries, an entry's title and panel, a member's erase, a site's settings removal, the mail queue's record
+of a send, the field types' checks, the health check's probes and a failing change handler) passed the exception as it was, whose message may quote an answer, an address or a file name. Now a log message's
+exception parameter is a `LoggedException`, so such a call does not build, and an architecture test finds any log message of
+Core and Web that takes another exception. The class moved from the privacy namespace to Core's root, as every part logs
+through it. A site's own handler that throws is logged by its type and stack too, as every other exception.
+
+### Logs: only named values, never a record
+
+A record's generated `ToString`, or a structured log that unfolds an object, writes every property, answers and addresses
+among them. A log message now takes only scalars (texts, numbers, keys, times, enums and a `LoggedException`), so each value
+it writes is one its call names, which an architecture test holds; and the records that carry a submission, a draft or a
+mail (`SubmissionRequest`, `NewDraft`, `NewEmail`, `StoredEmail`, `OutgoingEmail`) print their name alone, for a debugger,
+a test's message or an exception that quotes one.
+
+### Tests: a user runs sixty an hour
+
+A test mail goes to the user's own address, and an action's test to where the action sends, but nothing limited how many a
+user ran. The settings' test mail, a layout's, the summary's and an action's test now share a limit of sixty an hour per user
+on each server (`TestLimits`), far past what anyone trying a mail needs; past it they answer `429 tests_limited` with
+`Retry-After` and send nothing.
+
+### Entries: another form's entry is none of this form's
+
+Every entry endpoint finds its entry by the route's form and the entry's key together, so a key of another form's entry
+answers as an entry that is gone, even for a user who may see both, and changes nothing. A test now holds that for each:
+opening, revealing, the timeline, notes, editing answers, the forward's recipients, a forward and the action runs.
+
+### The AI add-on in the permission model
+
+The management API's matrix enumerates Web's endpoints; the AI add-on's were tested one by one. A matrix of its own now
+holds that each declares exactly one access and none is anonymous, and that each answers `401` without a token and `403
+no_section` to a user without the Forms section.
+
+### The blob sample: a container anyone may read is refused
+
+The sample made its container private where it was missing, but used an existing one as it was, so a site whose container
+allowed public reads stored visitors' files where an address alone opened them. The first save or read now refuses such a
+container, naming it, and stores nothing.
+
 ### Mail limits: a Gmail mailbox is one however it is spelled
 
 The limit of mails to one visitor's address counted a mailbox by its key: case-folded, normalised, without a `+tag`, its

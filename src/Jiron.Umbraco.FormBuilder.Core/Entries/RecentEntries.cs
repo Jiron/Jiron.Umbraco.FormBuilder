@@ -86,11 +86,11 @@ internal sealed partial class RecentEntries(
         }
         catch (Exception exception) when (exception is not OutOfMemoryException && exception is not OperationCanceledException)
         {
-            LogUnreadable(logger, exception, entry.Key);
+            LogUnreadable(logger, LoggedException.Of(exception), entry.Key);
             return null;
         }
     }
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "The entry {Entry} could not be read for its title.")]
-    private static partial void LogUnreadable(ILogger logger, Exception exception, Guid entry);
+    private static partial void LogUnreadable(ILogger logger, LoggedException exception, Guid entry);
 }

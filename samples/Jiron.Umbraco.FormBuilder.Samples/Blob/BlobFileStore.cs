@@ -21,7 +21,8 @@ namespace Jiron.Umbraco.FormBuilder.Samples.Blob;
 /// </list>
 /// The blobs are named <c>&lt;xx&gt;/&lt;id&gt;</c> by the id's first two characters, below the container's root path, which the
 /// site sets so that no virtual path is in the names. Nothing serves the container: files go out only through the
-/// management API's downloads.
+/// management API's downloads. A container that already lets anyone read its blobs is refused at the first save or read,
+/// so no upload lands where an address alone would open it (16.1's review).
 /// </summary>
 /// <param name="provider">The provider's file systems.</param>
 public sealed class BlobFileStore(IAzureBlobFileSystemProvider provider) : IFormBuilderFileStore
@@ -122,7 +123,7 @@ public sealed class BlobFileStore(IAzureBlobFileSystemProvider provider) : IForm
 
     private BlobClient BlobOf(string id, string suffix = "") => provider.GetFileSystem(FileSystemName).GetBlobClient(NameOf(id) + suffix);
 
-    // The container, made private once where it is missing.
+    // The container, made private once where it is missing, and refused where it lets anyone read it.
     private Task ContainerAsync(CancellationToken cancellationToken)
     {
         var made = _container;
@@ -131,9 +132,19 @@ public sealed class BlobFileStore(IAzureBlobFileSystemProvider provider) : IForm
             return made;
         }
 
-        made = BlobOf(FormBuilderFileId.New()).GetParentBlobContainerClient().CreateIfNotExistsAsync(PublicAccessType.None, cancellationToken: cancellationToken);
+        made = PrivateAsync(BlobOf(FormBuilderFileId.New()).GetParentBlobContainerClient(), cancellationToken);
         _container = made;
         return made;
+    }
+
+    private static async Task PrivateAsync(BlobContainerClient container, CancellationToken cancellationToken)
+    {
+        await container.CreateIfNotExistsAsync(PublicAccessType.None, cancellationToken: cancellationToken);
+        var access = await container.GetAccessPolicyAsync(cancellationToken: cancellationToken);
+        if (access.Value.BlobPublicAccess != PublicAccessType.None)
+        {
+            throw new InvalidOperationException($"The container '{container.Name}' lets anyone read its blobs; make it private before Jiron Form Builder stores visitors' files in it.");
+        }
     }
 
     // Another blob holds the name: a claim or a stored file.

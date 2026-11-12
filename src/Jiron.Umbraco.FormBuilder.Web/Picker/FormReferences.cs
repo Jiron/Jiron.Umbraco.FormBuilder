@@ -1,5 +1,5 @@
+using Jiron.Umbraco.FormBuilder.Core;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
-using Jiron.Umbraco.FormBuilder.Core.Privacy;
 using Microsoft.Extensions.Logging;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Events;
@@ -159,5 +159,5 @@ internal sealed partial class FormReferenceHandler(FormReferenceIndex index, ILo
     }
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Jiron Form Builder could not update the forms used by content {ContentKey}; a rebuild of the references repairs them")]
-    private static partial void LogIndexFailed(ILogger logger, Guid contentKey, Exception exception);
+    private static partial void LogIndexFailed(ILogger logger, Guid contentKey, LoggedException exception);
 }

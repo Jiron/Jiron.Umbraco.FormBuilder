@@ -8,7 +8,6 @@ using Jiron.Umbraco.FormBuilder.Core.Email;
 using Jiron.Umbraco.FormBuilder.Core.MergeTags;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
-using Jiron.Umbraco.FormBuilder.Core.Privacy;
 using Jiron.Umbraco.FormBuilder.Core.Settings;
 using Microsoft.Extensions.Logging;
 using Umbraco.Cms.Core.Models.Membership;
@@ -477,7 +476,7 @@ internal sealed partial class EntryDigests(
     }
 
     [LoggerMessage(Level = LogLevel.Error, Message = "Jiron Form Builder could not send the summary email of the user {UserKey}; the next run tries again")]
-    private static partial void LogFailed(ILogger logger, Guid userKey, Exception exception);
+    private static partial void LogFailed(ILogger logger, Guid userKey, LoggedException exception);
 
     private sealed record Choice(string Frequency);
 

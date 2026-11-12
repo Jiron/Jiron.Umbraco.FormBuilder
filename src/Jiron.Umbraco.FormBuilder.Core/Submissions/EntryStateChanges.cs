@@ -5,7 +5,6 @@ using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
-using Jiron.Umbraco.FormBuilder.Core.Privacy;
 using Jiron.Umbraco.FormBuilder.Core.Retention;
 using Jiron.Umbraco.FormBuilder.Core.Webhooks;
 using Microsoft.Extensions.Logging;
@@ -572,5 +571,5 @@ internal sealed partial class EntryChangeQueue(
     }
 
     [LoggerMessage(Level = LogLevel.Error, Message = "Finishing the entry change of event {Event} failed; it is tried again later")]
-    private static partial void LogFinishFailed(ILogger logger, long @event, Exception exception);
+    private static partial void LogFinishFailed(ILogger logger, long @event, LoggedException exception);
 }

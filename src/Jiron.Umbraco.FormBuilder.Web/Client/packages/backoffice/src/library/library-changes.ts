@@ -108,6 +108,7 @@ export function refusalText(localize: UmbLocalizationController, error: unknown)
     template_not_found: localize.term('jfbLibrary_templateGone'),
     version_not_found: localize.term('jfbLibrary_versionGone'),
     concurrency_conflict: localize.term('jfbLibrary_changedMeanwhile'),
+    tests_limited: localize.term('jfbLibrary_testsLimited'),
   };
   return code === 'forbidden' && permission
     ? localize.term('jfbLibrary_missingPermission', localize.term(`jfbLibrary_permission_${permission}`))

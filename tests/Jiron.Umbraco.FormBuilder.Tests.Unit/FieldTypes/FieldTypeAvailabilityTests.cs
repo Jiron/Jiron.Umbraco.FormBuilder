@@ -118,10 +118,10 @@ public sealed class FieldTypeAvailabilityTests
             Assert.That(logger.Entries.Select(entry => (entry.Level, entry.Exception?.Message)).OrderBy(entry => entry.Message, StringComparer.Ordinal), Is.EqualTo(new[]
             {
                 (LogLevel.Error, (string?)null),
-                (LogLevel.Error, "No connection."),
-                (LogLevel.Error, "The operation was canceled."),
-                (LogLevel.Error, "Timed out upstream."),
-            }));
+                (LogLevel.Error, "System.InvalidOperationException; its message is not logged"),
+                (LogLevel.Error, "System.InvalidOperationException; its message is not logged"),
+                (LogLevel.Error, "System.OperationCanceledException; its message is not logged"),
+            }), "the type of each, never its message (16.1's review)");
             Assert.That(logger.Entries.Select(entry => entry.Message), Has.Some.Contains("'acme.throws'").And.Some.Contains("'acme.null'").And.Some.Contains("'acme.faults'").And.Some.Contains("'acme.cancels'"));
         });
     }

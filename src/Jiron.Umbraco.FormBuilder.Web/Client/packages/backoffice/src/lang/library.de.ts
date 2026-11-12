@@ -188,6 +188,7 @@ export default {
     missingPermission: (permission: string) =>
       `Dafür brauchen Sie die Berechtigung „${permission}“. Wer Administratorrechte hat, kann sie unter Einstellungen › Zugriff vergeben.`,
     failed: 'Das hat nicht geklappt. Versuchen Sie es erneut, oder laden Sie die Seite neu.',
+    testsLimited: 'Sie haben so viele Tests ausgeführt, wie eine Stunde erlaubt. Versuchen Sie es später noch einmal.',
     contentRights_contentSection:
       'Eine Inhaltsaktion braucht Umbracos Bereich „Inhalt“. Bitten Sie jemanden, der ihn hat, sie einzurichten.',
     contentRights_content:

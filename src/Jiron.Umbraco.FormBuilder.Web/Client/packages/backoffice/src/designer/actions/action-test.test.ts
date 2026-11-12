@@ -103,6 +103,10 @@ describe("an action's test", () => {
       "The test couldn't be run.",
     );
     expect(testToast({ kind: 'noAnswer' }, term).message).toBe("The site didn't answer. Try again in a moment.");
+    // Past the tests a user runs in an hour (16.1's review): later, not now.
+    expect(testToast(testAnswer(undefined, 'tests_limited'), term).message).toBe(
+      "You've run as many tests as an hour allows. Try again later.",
+    );
   });
 
   it("says a webhook's codes in its own words, with the status a host answered or the key a site lacks (ADR-0191)", () => {

@@ -5,7 +5,6 @@ using Jiron.Umbraco.FormBuilder.Core.Actions;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
-using Jiron.Umbraco.FormBuilder.Core.Privacy;
 using Jiron.Umbraco.FormBuilder.Core.Settings;
 using Microsoft.Extensions.Logging;
 
@@ -110,5 +109,5 @@ internal sealed partial class DeliveryNotices(
     }
 
     [LoggerMessage(Level = LogLevel.Error, Message = "Telling the team recipients of a failed delivery failed")]
-    private static partial void LogFailed(ILogger logger, Exception exception);
+    private static partial void LogFailed(ILogger logger, LoggedException exception);
 }

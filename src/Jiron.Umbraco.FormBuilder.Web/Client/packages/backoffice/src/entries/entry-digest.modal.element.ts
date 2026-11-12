@@ -172,12 +172,16 @@ export class EntryDigestModalElement extends UmbModalBaseElement<never, EntryDig
   async #test() {
     if (this._testing) return;
     this._testing = true;
-    const to = await testDigest(this, mailOf(this._frequency));
+    const test = await testDigest(this, mailOf(this._frequency));
     this._testing = false;
     const notifications = await this.getContext(UMB_NOTIFICATION_CONTEXT);
-    notifications?.peek(to ? 'positive' : 'danger', {
-      data: { message: to ? this.#term('digest_testSent', to) : this.#term('digest_testFailed') },
-    });
+    const message =
+      'to' in test
+        ? this.#term('digest_testSent', test.to)
+        : test.refused === 'limited'
+          ? this.localize.term('jfbLibrary_testsLimited')
+          : this.#term('digest_testFailed');
+    notifications?.peek('to' in test ? 'positive' : 'danger', { data: { message } });
   }
 
   #when(choice: EntryDigestResponseModel): string {

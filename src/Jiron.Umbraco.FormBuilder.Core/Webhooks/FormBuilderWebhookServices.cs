@@ -5,7 +5,6 @@ using Jiron.Umbraco.FormBuilder.Core.Email;
 using Jiron.Umbraco.FormBuilder.Core.Entries;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
-using Jiron.Umbraco.FormBuilder.Core.Privacy;
 using Jiron.Umbraco.FormBuilder.Core.Settings;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -192,7 +191,7 @@ internal sealed partial class EntryEvents(IEventAggregator events, IFormBuilderS
     }
 
     [LoggerMessage(Level = LogLevel.Error, Message = "Publishing {Notification} failed.")]
-    private static partial void LogPublishFailed(ILogger logger, string notification, Exception exception);
+    private static partial void LogPublishFailed(ILogger logger, string notification, LoggedException exception);
 }
 
 /// <summary>Tells of an action that failed for good.</summary>

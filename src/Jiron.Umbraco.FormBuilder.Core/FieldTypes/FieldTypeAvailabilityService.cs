@@ -50,7 +50,7 @@ internal sealed partial class FieldTypeAvailabilityService(FieldTypeRegistry reg
         }
         catch (Exception exception) when (!cancellationToken.IsCancellationRequested && exception is not OutOfMemoryException)
         {
-            LogFailed(logger, exception, alias);
+            LogFailed(logger, LoggedException.Of(exception), alias);
         }
         finally
         {
@@ -71,5 +71,5 @@ internal sealed partial class FieldTypeAvailabilityService(FieldTypeRegistry reg
     private static partial void LogTooSlow(ILogger logger, string alias, double seconds);
 
     [LoggerMessage(Level = LogLevel.Error, Message = "The field type '{Alias}' failed to say whether it is configured; the designer shows it as not configured")]
-    private static partial void LogFailed(ILogger logger, Exception exception, string alias);
+    private static partial void LogFailed(ILogger logger, LoggedException exception, string alias);
 }

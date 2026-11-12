@@ -541,6 +541,25 @@ describe('the global settings screen', () => {
       }),
     );
     expect(api.sent).toEqual([{ version: 1, site: null, values: { senderName: 'Nordwind Travel' } }]);
+
+    // Past the tests a user runs in an hour (16.1's review).
+    api.mails = [
+      {
+        error: new UmbApiError('limited', 429, null, {
+          type: 'about:blank',
+          status: 429,
+          title: 'You ran 60 tests in the last hour.',
+          // The problem's own member, which Umbraco's type does not name.
+          ...{ code: 'tests_limited' },
+        }),
+      },
+    ];
+    must(can.button('Send test email'), 'test').click();
+    await vi.waitFor(() =>
+      expect(can.peek).toHaveBeenLastCalledWith('danger', {
+        data: { message: "You've run as many tests as an hour allows. Try again later." },
+      }),
+    );
   });
 
   it("keeps Files' largest file in megabytes under the host's cap, which it names", async () => {

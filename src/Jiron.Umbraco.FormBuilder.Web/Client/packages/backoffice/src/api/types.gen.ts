@@ -2656,6 +2656,10 @@ export type ActionTestTestErrors = {
      * Conflict
      */
     409: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
 };
 
 export type ActionTestTestError = ActionTestTestErrors[keyof ActionTestTestErrors];
@@ -3306,6 +3310,10 @@ export type EmailLayoutLibraryTestErrors = {
      * Conflict
      */
     409: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
 };
 
 export type EmailLayoutLibraryTestError = EmailLayoutLibraryTestErrors[keyof EmailLayoutLibraryTestErrors];
@@ -3470,6 +3478,10 @@ export type TestEmailSendErrors = {
      * Conflict
      */
     409: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
 };
 
 export type TestEmailSendError = TestEmailSendErrors[keyof TestEmailSendErrors];
@@ -3598,6 +3610,10 @@ export type EntryDigestTestErrors = {
      * The authenticated user does not have access to this resource
      */
     403: unknown;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
 };
 
 export type EntryDigestTestError = EntryDigestTestErrors[keyof EntryDigestTestErrors];

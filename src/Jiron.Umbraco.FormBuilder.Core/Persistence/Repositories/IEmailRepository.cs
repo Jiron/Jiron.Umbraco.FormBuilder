@@ -79,7 +79,11 @@ internal sealed record NewEmail(
     long? EntryId = null,
     long? ActionRunId = null,
     IReadOnlyList<Guid>? Attachments = null,
-    string? RecipientKey = null);
+    string? RecipientKey = null)
+{
+    /// <summary>Its name alone: the compiler's would print every answer, address and code it holds (16.1's review).</summary>
+    public override string ToString() => nameof(NewEmail);
+}
 
 /// <summary>A stored mail.</summary>
 /// <param name="Id">The row's id.</param>
@@ -130,7 +134,11 @@ internal sealed record StoredEmail(
     DeliveryError? LastError,
     DateTimeOffset CreatedUtc,
     DateTimeOffset? SentUtc,
-    DateTimeOffset? PurgeAfterUtc);
+    DateTimeOffset? PurgeAfterUtc)
+{
+    /// <summary>Its name alone: the compiler's would print every answer, address and code it holds (16.1's review).</summary>
+    public override string ToString() => nameof(StoredEmail);
+}
 
 /// <summary>The limits of mail to an address a visitor typed (ADR-0012).</summary>
 /// <param name="PerRecipientPerDay">How many one recipient key may get in 24 hours.</param>

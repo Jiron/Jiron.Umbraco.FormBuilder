@@ -312,6 +312,7 @@ export default {
     },
     testSettingsInvalid: "This action's settings have errors. Open the action, fix them, then test again.",
     testNoAnswer: "The test couldn't be run.",
+    testsLimited: "You've run as many tests as an hour allows. Try again later.",
     testNoReply: "The site didn't answer. Try again in a moment.",
     previewFrom: 'From',
     previewTo: 'To',

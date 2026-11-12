@@ -3,7 +3,6 @@ using System.Threading.Channels;
 using Jiron.Umbraco.FormBuilder.Core.Configuration;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Migrations;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
-using Jiron.Umbraco.FormBuilder.Core.Privacy;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -164,7 +163,7 @@ internal sealed partial class OutboxPass(
     }
 
     [LoggerMessage(Level = LogLevel.Error, Message = "A pass over Jiron Form Builder's queue of {Queue} failed; the next wake tries again")]
-    private static partial void LogQueueFailed(ILogger logger, string queue, Exception exception);
+    private static partial void LogQueueFailed(ILogger logger, string queue, LoggedException exception);
 }
 
 /// <summary>
@@ -203,7 +202,7 @@ internal sealed partial class OutboxWorker(OutboxWake wake, IServiceProvider ser
     }
 
     [LoggerMessage(Level = LogLevel.Error, Message = "A pass of Jiron Form Builder's outbox failed; the next wake tries again")]
-    private static partial void LogPassFailed(ILogger logger, Exception exception);
+    private static partial void LogPassFailed(ILogger logger, LoggedException exception);
 }
 
 /// <summary>

@@ -1,7 +1,7 @@
 using System.Globalization;
+using Jiron.Umbraco.FormBuilder.Core;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Migrations;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
-using Jiron.Umbraco.FormBuilder.Core.Privacy;
 using Microsoft.Extensions.Logging;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Events;
@@ -141,7 +141,7 @@ internal sealed partial class FormReferenceRebuild(
     }
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Jiron Form Builder's rebuild could not read the forms used by content {ContentKey}, and went on without it")]
-    private static partial void LogDocumentFailed(ILogger logger, Guid contentKey, Exception exception);
+    private static partial void LogDocumentFailed(ILogger logger, Guid contentKey, LoggedException exception);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Jiron Form Builder rebuilt the forms used by content; removed {Removed} references of deleted content")]
     private static partial void LogDone(ILogger logger, int removed);
@@ -193,7 +193,7 @@ internal sealed partial class FormReferenceTypeHandler(FormReferenceRebuild rebu
     }
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Jiron Form Builder could not ask for a rebuild of the forms used by content after a type changed; the health check's rebuild repairs them")]
-    private static partial void LogRequestFailed(ILogger logger, Exception exception);
+    private static partial void LogRequestFailed(ILogger logger, LoggedException exception);
 }
 
 /// <summary>
@@ -250,5 +250,5 @@ internal sealed partial class FormReferenceRebuildJob(
     }
 
     [LoggerMessage(Level = LogLevel.Error, Message = "Jiron Form Builder's rebuild of the forms used by content failed; it goes on in {Period}")]
-    private static partial void LogFailed(ILogger logger, TimeSpan period, Exception exception);
+    private static partial void LogFailed(ILogger logger, TimeSpan period, LoggedException exception);
 }

@@ -1,5 +1,4 @@
 using Jiron.Umbraco.FormBuilder.Core.Entries;
-using Jiron.Umbraco.FormBuilder.Core.Privacy;
 using Microsoft.Extensions.Logging;
 using Umbraco.Cms.Core.Events;
 
@@ -63,7 +62,7 @@ internal sealed partial class SubmittingHandlers(IEventAggregator events, TimePr
     }
 
     [LoggerMessage(Level = LogLevel.Error, Message = "A handler of EntrySubmittingNotification for the form {Form} failed; the entry is stored without its word.")]
-    private static partial void LogFailed(ILogger logger, string form, Exception exception);
+    private static partial void LogFailed(ILogger logger, string form, LoggedException exception);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "The handlers of EntrySubmittingNotification for the form {Form} took longer than {Seconds} seconds; the entry is stored without their word.")]
     private static partial void LogTooSlow(ILogger logger, string form, double seconds);

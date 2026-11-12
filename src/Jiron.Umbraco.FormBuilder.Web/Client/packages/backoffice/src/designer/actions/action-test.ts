@@ -138,7 +138,9 @@ function answerToast(answer: TestAnswer, term: (key: string, ...args: unknown[])
     case 'needsConfirmation':
       return failed(term('testNoAnswer'));
     case 'noAnswer':
-      // Without a problem's code the site did not answer at all, which trying again may mend.
+      // Without a problem's code the site did not answer at all, which trying again may mend; past the tests of an hour
+      // (16.1's review), later.
+      if (answer.code === 'tests_limited') return failed(term('testsLimited'));
       return failed(term(answer.code ? 'testNoAnswer' : 'testNoReply'));
     case 'done': {
       const { outcome, code, message, recipient, preview, args } = answer.result;

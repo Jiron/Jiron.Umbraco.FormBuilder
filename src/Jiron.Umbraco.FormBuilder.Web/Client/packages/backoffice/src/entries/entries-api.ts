@@ -110,9 +110,13 @@ export async function previewDigest(
 }
 
 /** Sends the summary email now, marked as a test; the address it went to, or undefined on a failure. */
-export async function testDigest(host: UmbClassInterface, frequency: 'daily' | 'weekly'): Promise<string | undefined> {
-  return (await tryExecute(host, entryDigestTest({ body: { frequency } }), quiet)).data?.to;
+export async function testDigest(host: UmbClassInterface, frequency: 'daily' | 'weekly'): Promise<DigestTest> {
+  const { data, error } = await tryExecute(host, entryDigestTest({ body: { frequency } }), quiet);
+  return data ? { to: data.to } : { refused: codeOf(error) === 'tests_limited' ? 'limited' : 'failed' };
 }
+
+/** What a test of the summary came to: the address it went to, or why it did not go (16.1's review). */
+export type DigestTest = { readonly to: string } | { readonly refused: 'limited' | 'failed' };
 
 /** What emptying Spam deletes, without <code>confirm</code>, or what it deleted. */
 export async function emptySpam(

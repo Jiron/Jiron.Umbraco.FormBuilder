@@ -1,5 +1,4 @@
 using System.Data.Common;
-using Jiron.Umbraco.FormBuilder.Core.Privacy;
 using Microsoft.Extensions.Logging;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Services;
@@ -83,7 +82,7 @@ internal sealed partial class FormBuilderMigrationState(
     }
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Jiron Form Builder could not read its migration state; it treats its migrations as pending")]
-    private static partial void LogStateUnreadable(ILogger logger, Exception exception);
+    private static partial void LogStateUnreadable(ILogger logger, LoggedException exception);
 
     private sealed record Snapshot(bool Pending, DateTimeOffset CheckedAt);
 }

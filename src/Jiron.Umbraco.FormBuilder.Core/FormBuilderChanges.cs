@@ -84,7 +84,7 @@ internal sealed class FormBuilderChanges<TService>(
         }
         catch (Exception exception) when (exception is not OutOfMemoryException)
         {
-            FormBuilderChangeLog.HandlerFailed(logger, typeof(TNotification).Name, subject, exception);
+            FormBuilderChangeLog.HandlerFailed(logger, typeof(TNotification).Name, subject, LoggedException.Of(exception));
         }
     }
 
@@ -98,5 +98,5 @@ internal static partial class FormBuilderChangeLog
 {
     /// <summary>A handler of the notification after a change failed; the change stands.</summary>
     [LoggerMessage(Level = LogLevel.Error, Message = "A handler of {Notification} failed after a change to {Subject} committed; the change stands")]
-    public static partial void HandlerFailed(ILogger logger, string notification, string subject, Exception exception);
+    public static partial void HandlerFailed(ILogger logger, string notification, string subject, LoggedException exception);
 }

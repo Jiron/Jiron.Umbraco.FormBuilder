@@ -95,8 +95,10 @@ internal sealed partial class SubmissionOutcomes(
         return shown.Trim().Length == 0 ? null : shown;
     }
 
-    // Where the redirect leads, or null when it cannot be followed: a URL that fails the publish rule once rendered, or
-    // content Umbraco gives no address.
+    // Where the redirect leads, or null when it cannot be followed: a template or a rendered URL that fails the publish rule,
+    // or content Umbraco gives no address. The template is held to the rule again, as a version stored before it, or not
+    // through publishing, could hold a merge tag in the host, which renders to an address the rule cannot tell from the
+    // editor's own (16.1's review).
     private async Task<string?> RedirectAsync(OutcomeRedirect redirect, MergeTagScope scope, CancellationToken cancellationToken)
     {
         if (redirect.Content is { } content)
@@ -111,7 +113,7 @@ internal sealed partial class SubmissionOutcomes(
             return address is null || baseUrl is not null || !address.StartsWith(NoOrigin + "/", StringComparison.Ordinal) ? address : address[NoOrigin.Length..];
         }
 
-        if (redirect.Url is not { Length: > 0 } template)
+        if (redirect.Url is not { Length: > 0 } template || RedirectUrls.Problem(template) is not null)
         {
             return null;
         }

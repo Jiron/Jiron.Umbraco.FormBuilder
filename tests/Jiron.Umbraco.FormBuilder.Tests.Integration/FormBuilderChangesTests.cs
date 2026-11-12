@@ -136,7 +136,7 @@ public sealed class FormBuilderChangesTests : RepositoryTestBase
         Assert.Multiple(() =>
         {
             Assert.That(errors.Select(entry => entry.Message), Is.EqualTo(new[] { "A handler of TestChangedNotification failed after a change to the test subject committed; the change stands" }));
-            Assert.That(errors.Single().Exception?.Message, Is.EqualTo("JFB_TEST: a handler that fails"));
+            Assert.That(errors.Single().Exception?.Message, Is.EqualTo("System.InvalidOperationException; its message is not logged"), "its type, never its message");
         });
     }
 

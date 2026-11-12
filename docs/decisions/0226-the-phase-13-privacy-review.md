@@ -51,7 +51,8 @@ pages accessible. It also found what this ADR settles:
 3. **A sent link mail keeps no code.** Once the outbox records a confirmation or resume mail as sent, it replaces the
    code in its stored bodies with `removed` (`LinkSecrets`, `IEmailRepository.ReplaceSentBodiesAsync`); the link still
    names its page. A mail that has not left yet keeps its code, as a retry must send a working link, and a new link is a
-   new mail. The confirmation code stays in the address (`?t=`) rather than moving to a fragment: the confirmation page
+   new mail. Amended by [ADR-0236](0236-what-the-security-review-changed.md): a mail the limits hold back, which is never sent nor tried again, keeps no
+   code either, from the unit of work that stores it. The confirmation code stays in the address (`?t=`) rather than moving to a fragment: the confirmation page
    works without JavaScript, which a fragment would need; the checklist and the facts sheet tell sites to keep their
    access logs short or without query strings, and the code is worth nothing once the address is confirmed.
 4. **The personal export adds** the entry's context values, its spam check (score and reasons), its seconds to
@@ -64,6 +65,9 @@ pages accessible. It also found what this ADR settles:
    which keeps the exception's type, a database's error code and SQL state, its stack and its inner exceptions so
    wrapped, and says "its message is not logged" in place of the message. The type, codes and stack are what an
    operator needs to find a failing part; the message is what may hold an answer.
+   Amended by [ADR-0236](0236-what-the-security-review-changed.md): a log message's exception parameter is a
+   `LoggedException` itself, now in Core's root namespace, so a call that passes an exception as it is does not build, and
+   an architecture test finds any log message of Core and Web that takes another exception.
 7. **The demo's newsletter asks for confirmation** and says so after the send ("Almost done: we sent a link to …"), as
    the built-in template does, whose wording now says the subscription starts once the visitor confirms it, not once
    they open the link. The careers form's consent becomes optional and asks for something optional: keeping the

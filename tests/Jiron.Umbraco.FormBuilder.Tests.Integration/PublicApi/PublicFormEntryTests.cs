@@ -403,6 +403,30 @@ public sealed class PublicFormEntryTests : PublicApiTestBase
     }
 
     [Test]
+    public async Task ARedirectWhoseStoredTemplateNamesTheHostByATag_IsNotFollowed_ThoughItRendersToAnHttpsAddress()
+    {
+        // A version stored without publishing's check holds a host chosen by an answer: rendered, it is an https address
+        // the rule alone cannot tell from the editor's own.
+        var next = Field("next", "text");
+        var key = await PublishAsync(fields: [NameField, next]);
+        var row = (await FormRows.GetAsync(key))!;
+        var published = (await Forms.GetPublishedAsync(key))!.Definition;
+        var steered = new FormOutcome { Key = Guid.NewGuid(), Kind = OutcomeKind.Redirect, Redirect = new OutcomeRedirect { Url = "https://{{ field.next }}/thanks" } };
+        Assert.That(RedirectUrls.Problem(steered.Redirect!.Url!), Is.Not.Null, "the publish rule refuses it");
+        Assert.That(RedirectUrls.Problem("https://evil.example/thanks"), Is.Null, "and would let what it renders to through");
+        _ = await FormRows.PublishAsync(row.Id, row.ConcurrencyVersion, Stored(published with { Outcomes = [steered] }), null, null, Editor);
+        GetRequiredService<FormCacheInvalidator>().Changed(key);
+
+        using var response = await PostAsync(key, """{"revision":1,"values":{"name":"Grace","next":"evil.example"}}""");
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK), await response.Content.ReadAsStringAsync());
+            Assert.That(Text((await JsonAsync(response))["outcome"]), Is.EqualTo("""{"kind":"message"}"""), "the page's own thank-you, never the visitor's host");
+        });
+    }
+
+    [Test]
     public async Task ARedirectToAPage_LeadsToItsAddress_AndOneThatLeadsNowhere_IsNotFollowed()
     {
         var page = await PageAsync();

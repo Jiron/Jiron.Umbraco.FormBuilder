@@ -8,7 +8,6 @@ using Jiron.Umbraco.FormBuilder.Core.Files;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Migrations;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
-using Jiron.Umbraco.FormBuilder.Core.Privacy;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -675,5 +674,5 @@ internal sealed partial class FormMirrorJob(
     }
 
     [LoggerMessage(Level = LogLevel.Error, Message = "Jiron Form Builder's pass over the form files failed")]
-    private static partial void LogPassFailed(ILogger logger, Exception exception);
+    private static partial void LogPassFailed(ILogger logger, LoggedException exception);
 }

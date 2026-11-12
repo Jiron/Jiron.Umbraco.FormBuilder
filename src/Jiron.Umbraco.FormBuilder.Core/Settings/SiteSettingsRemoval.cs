@@ -33,11 +33,11 @@ internal sealed partial class SiteSettingsRemoval(
             }
             catch (Exception exception) when (exception is not OperationCanceledException)
             {
-                LogRemovalFailed(logger, exception, root);
+                LogRemovalFailed(logger, LoggedException.Of(exception), root);
             }
         }
     }
 
     [LoggerMessage(Level = LogLevel.Error, Message = "The settings of deleted content {Root} could not be removed; they stay unread, as no page names that site.")]
-    private static partial void LogRemovalFailed(ILogger logger, Exception exception, Guid root);
+    private static partial void LogRemovalFailed(ILogger logger, LoggedException exception, Guid root);
 }

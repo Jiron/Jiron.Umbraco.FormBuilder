@@ -1,6 +1,5 @@
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Migrations;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
-using Jiron.Umbraco.FormBuilder.Core.Privacy;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -161,7 +160,7 @@ internal sealed partial class InsightWriter(InsightCounts counts, IFormRepositor
     }
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Jiron Form Builder could not write insights; they wait for the next write")]
-    private static partial void LogWriteFailed(ILogger logger, Exception exception);
+    private static partial void LogWriteFailed(ILogger logger, LoggedException exception);
 }
 
 /// <summary>
@@ -221,5 +220,5 @@ internal sealed partial class InsightFlusher(IServiceProvider services, TimeProv
     }
 
     [LoggerMessage(Level = LogLevel.Error, Message = "Jiron Form Builder's write of insights failed; the next period tries again")]
-    private static partial void LogFlushFailed(ILogger logger, Exception exception);
+    private static partial void LogFlushFailed(ILogger logger, LoggedException exception);
 }

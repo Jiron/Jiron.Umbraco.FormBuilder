@@ -526,7 +526,7 @@ internal sealed partial class EntryExportJobs(
     internal static string TempFolder => XlsxTableSheets.Folder;
 
     [LoggerMessage(Level = LogLevel.Error, Message = "Jiron Form Builder's export {ExportKey} failed on attempt {Attempt}")]
-    private static partial void LogFailed(ILogger logger, Guid exportKey, int attempt, Exception exception);
+    private static partial void LogFailed(ILogger logger, Guid exportKey, int attempt, LoggedException exception);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Jiron Form Builder could not delete the file of an export it stopped ({ExceptionType}); the store keeps it")]
     private static partial void LogFileLeft(ILogger logger, string exceptionType);
@@ -599,7 +599,7 @@ internal sealed partial class EntryExportWorker(EntryExportWake wake, IServicePr
     }
 
     [LoggerMessage(Level = LogLevel.Error, Message = "A pass of Jiron Form Builder's export worker failed; the next wake tries again")]
-    private static partial void LogPassFailed(ILogger logger, Exception exception);
+    private static partial void LogPassFailed(ILogger logger, LoggedException exception);
 }
 
 /// <summary>
@@ -653,5 +653,5 @@ internal sealed partial class FormBuilderExportJob(
     }
 
     [LoggerMessage(Level = LogLevel.Error, Message = "Jiron Form Builder's clean-up of exports failed; the job runs again in {Seconds} s")]
-    private static partial void LogFailed(ILogger logger, string seconds, Exception exception);
+    private static partial void LogFailed(ILogger logger, string seconds, LoggedException exception);
 }

@@ -36,11 +36,11 @@ internal sealed partial class EntryTitles(IFormBuilderMergeTagService tags, ILog
         }
         catch (Exception exception) when (exception is not OutOfMemoryException && exception is not OperationCanceledException)
         {
-            LogUnwritten(logger, exception, entryKey);
+            LogUnwritten(logger, LoggedException.Of(exception), entryKey);
             return null;
         }
     }
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "The title of the entry {Entry} could not be written.")]
-    private static partial void LogUnwritten(ILogger logger, Exception exception, Guid entry);
+    private static partial void LogUnwritten(ILogger logger, LoggedException exception, Guid entry);
 }

@@ -100,6 +100,9 @@ internal static class FormBuilderProblems
     /// <summary>The code of a test mail for a user without an address (ADR-0159).</summary>
     public const string EmailNoAddressCode = "email_no_address";
 
+    /// <summary>The code of a test past the tests a user runs in an hour (16.1's review).</summary>
+    public const string TestsLimitedCode = "tests_limited";
+
     /// <summary>A test run that reaches what the action is set up to reach, and was not confirmed (section 4.4).</summary>
     public const string TestNeedsConfirmationCode = "test_needs_confirmation";
 
@@ -273,6 +276,10 @@ internal static class FormBuilderProblems
     /// <summary>A test mail while no mail server or pickup folder is set up (ADR-0159).</summary>
     public static FormBuilderProblemResult EmailNotConfigured() =>
         Problem(StatusCodes.Status409Conflict, EmailNotConfiguredCode, "This site has no mail server or pickup folder set up, so it cannot send mail.");
+
+    /// <summary>A test, a test mail or an action's, past the tests a user runs in an hour (<see cref="TestLimits"/>).</summary>
+    public static FormBuilderProblemResult TestsLimited() =>
+        Problem(StatusCodes.Status429TooManyRequests, TestsLimitedCode, $"You ran {TestLimits.PerHour} tests in the last hour. Try again later.");
 
     /// <summary>A test mail for a user whose account has no address it can go to (ADR-0159).</summary>
     public static FormBuilderProblemResult EmailNoAddress() =>

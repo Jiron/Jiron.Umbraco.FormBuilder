@@ -153,7 +153,9 @@ keeps its defaults meanwhile, and `docs/privacy/` describes them; a site can cha
 - [ ] **Captcha providers:** test reCAPTCHA v2/v3 and hCaptcha with real keys, set as environment
   variables (`JironFormBuilder__Captcha__…`).
 - [ ] **Email:** test with a real SMTP server and a few real mail clients (Outlook, Gmail, Apple Mail,
-  dark mode).
+  dark mode). Check too (added 2026-11-12, ROADMAP 16.1) that an address a visitor typed into an answer stays plain
+  text in a mail to the visitor (the mail breaks it with an invisible character so no client makes a link of it), and
+  that the confirmation and resume links still open.
 - [ ] **The AI add-on:** try it with a real Umbraco.AI provider and profile (ROADMAP 15.3, docs/ai.md): add the
   provider's package to a site with the add-on, create a connection and a chat profile in Umbraco.AI, choose it in
   Form Builder's Settings › AI, check that the health check "AI add-on" passes, and try Draft (a description and a

@@ -24,7 +24,7 @@ namespace Jiron.Umbraco.FormBuilder.Web.ManagementApi.Library;
 [ApiVersion("1.0")]
 [BackOfficeRoute(FormBuilderManagementApi.Route + "/email-layout")]
 [ApiExplorerSettings(GroupName = "Email layout")]
-internal sealed class EmailLayoutLibraryController(EmailLayoutLibrary library, ILanguageService languages, IUserService users) : FormBuilderManagementApiController
+internal sealed class EmailLayoutLibraryController(EmailLayoutLibrary library, ILanguageService languages, IUserService users, TestLimits limits) : FormBuilderManagementApiController
 {
     /// <summary>A page of the layouts by name, each with how many email actions name it and whether it is the default.</summary>
     /// <param name="skip">How many layouts to skip.</param>
@@ -192,8 +192,14 @@ internal sealed class EmailLayoutLibraryController(EmailLayoutLibrary library, I
     [ProducesResponseType(typeof(TestEmailResponseModel), StatusCodes.Status202Accepted)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status429TooManyRequests)]
     public async Task<IActionResult> Test(Guid key, TestEmailLayoutRequestModel? request = null, CancellationToken cancellationToken = default)
     {
+        if (limits.Refusal(RequestAccess.User.Key, Response) is { } limited)
+        {
+            return limited;
+        }
+
         var user = await users.GetAsync(RequestAccess.User.Key);
         return await library.SendTestAsync(key, user?.Email, request?.Culture ?? user?.Language, RequestAccess.User.Key, cancellationToken) switch
         {

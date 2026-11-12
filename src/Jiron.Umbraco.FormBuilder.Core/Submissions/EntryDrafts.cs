@@ -65,7 +65,11 @@ internal sealed record NewDraft(
     Guid? CurrentPage,
     string? ChallengeId,
     long? Replaces = null,
-    Guid? Member = null);
+    Guid? Member = null)
+{
+    /// <summary>Its name alone: the compiler's would print every answer, address and code it holds (16.1's review).</summary>
+    public override string ToString() => nameof(NewDraft);
+}
 
 /// <summary>
 /// Save and resume (section 4.4, ROADMAP 8.6, ADR-0163). A draft is an entry in the state <see cref="EntryState.Draft"/>: it holds

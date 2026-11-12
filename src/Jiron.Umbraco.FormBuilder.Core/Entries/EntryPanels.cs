@@ -417,7 +417,7 @@ internal sealed partial class EntryPanels(
         }
         catch (IOException exception)
         {
-            LogSignatureUnreadable(logger, exception, file.Key);
+            LogSignatureUnreadable(logger, LoggedException.Of(exception), file.Key);
             return null;
         }
     }
@@ -426,5 +426,5 @@ internal sealed partial class EntryPanels(
         texts.Dictionary.Resolve(text, culture) is { Length: > 0 } resolved ? resolved : null;
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "The signature {File} could not be read for the name it was typed with.")]
-    private static partial void LogSignatureUnreadable(ILogger logger, Exception exception, Guid file);
+    private static partial void LogSignatureUnreadable(ILogger logger, LoggedException exception, Guid file);
 }

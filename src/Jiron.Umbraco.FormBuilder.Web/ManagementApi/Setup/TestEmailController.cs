@@ -13,7 +13,7 @@ namespace Jiron.Umbraco.FormBuilder.Web.ManagementApi.Setup;
 [ApiVersion("1.0")]
 [BackOfficeRoute(FormBuilderManagementApi.Route + "/email/test")]
 [ApiExplorerSettings(GroupName = "Email")]
-internal sealed class TestEmailController(TestEmails emails, IUserService users) : FormBuilderManagementApiController
+internal sealed class TestEmailController(TestEmails emails, IUserService users, TestLimits limits) : FormBuilderManagementApiController
 {
     /// <summary>Queues a test mail to the user who asks; it leaves like any other mail.</summary>
     /// <param name="request">Whose sender and which layout it shows.</param>
@@ -23,8 +23,14 @@ internal sealed class TestEmailController(TestEmails emails, IUserService users)
     [FormBuilderPermission(FormBuilderPermissions.ManageSettings)]
     [ProducesResponseType(typeof(TestEmailResponseModel), StatusCodes.Status202Accepted)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status429TooManyRequests)]
     public async Task<IActionResult> Send(TestEmailRequestModel? request = null, CancellationToken cancellationToken = default)
     {
+        if (limits.Refusal(RequestAccess.User.Key, Response) is { } limited)
+        {
+            return limited;
+        }
+
         var user = await users.GetAsync(RequestAccess.User.Key);
         var status = await emails.SendAsync(user?.Email, user?.Language, request?.Site, request?.Layout, cancellationToken);
         return status switch

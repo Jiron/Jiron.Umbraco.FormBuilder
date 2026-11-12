@@ -1,12 +1,13 @@
 using System.Data.Common;
 using System.Globalization;
 
-namespace Jiron.Umbraco.FormBuilder.Core.Privacy;
+namespace Jiron.Umbraco.FormBuilder.Core;
 
 /// <summary>
 /// An exception as a background loop logs it (ADR-0226): its type, the codes a database gives, and where it was thrown,
 /// but never its message, which may quote a value it could not store, such as a truncated answer or a duplicate key. Its
-/// inner exceptions are logged the same way.
+/// inner exceptions are logged the same way. Every log message that takes an exception takes this one (16.1's review), which
+/// an architecture test holds, so no message reaches a log by another way.
 /// </summary>
 internal sealed class LoggedException : Exception
 {
@@ -38,7 +39,7 @@ internal sealed class LoggedException : Exception
 
     /// <summary>What to log in place of an exception: the exception as this class holds it.</summary>
     /// <param name="exception">The exception caught.</param>
-    public static Exception Of(Exception exception)
+    public static LoggedException Of(Exception exception)
     {
         ArgumentNullException.ThrowIfNull(exception);
         return exception as LoggedException ?? new LoggedException(exception);

@@ -136,6 +136,9 @@ internal sealed record SubmissionRequest
     /// it knows how its tokens are protected; null for a transport that posts none, so every such value is invalid.
     /// </summary>
     public IUploadTokenReader? Tokens { get; init; }
+
+    /// <summary>Its name alone: the compiler's would print every answer it holds (16.1's review).</summary>
+    public override string ToString() => nameof(SubmissionRequest);
 }
 
 /// <summary>Reads a transport's upload tokens (ADR-0087, ADR-0088).</summary>

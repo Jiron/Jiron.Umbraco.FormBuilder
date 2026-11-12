@@ -4,7 +4,6 @@ using Jiron.Umbraco.FormBuilder.Core.Audit;
 using Jiron.Umbraco.FormBuilder.Core.Configuration;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
-using Jiron.Umbraco.FormBuilder.Core.Privacy;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -370,7 +369,7 @@ internal sealed partial class FormBuilderSettingsService(
         where T : ISettingsSection => services.GetServices<ISettingsHostRule<T>>();
 
     [LoggerMessage(Level = LogLevel.Error, Message = "Jiron Form Builder could not read the settings section {Section} of scope {Scope}; the defaults apply until it is saved again")]
-    private static partial void LogUnreadable(ILogger logger, string section, string scope, Exception exception);
+    private static partial void LogUnreadable(ILogger logger, string section, string scope, LoggedException exception);
 
     // The rows a scope reads: the global row's JSON, the site row's, and the version of the scope's own row.
     private sealed record StoredScope(JsonObject Global, JsonObject? Site, int Version);

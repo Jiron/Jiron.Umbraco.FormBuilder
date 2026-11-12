@@ -1,6 +1,6 @@
 using System.Collections.Concurrent;
+using Jiron.Umbraco.FormBuilder.Core;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
-using Jiron.Umbraco.FormBuilder.Core.Privacy;
 using Jiron.Umbraco.FormBuilder.Web.Picker;
 using Microsoft.Extensions.Logging;
 using NSubstitute;

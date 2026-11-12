@@ -1,5 +1,4 @@
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Migrations;
-using Jiron.Umbraco.FormBuilder.Core.Privacy;
 using Microsoft.Extensions.Logging;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Services;
@@ -83,5 +82,5 @@ internal sealed partial class FormBuilderRetentionJob(
     }
 
     [LoggerMessage(Level = LogLevel.Error, Message = "Jiron Form Builder's retention of {Part} failed; it runs again in {Period}")]
-    private static partial void LogPartFailed(ILogger logger, string part, TimeSpan period, Exception exception);
+    private static partial void LogPartFailed(ILogger logger, string part, TimeSpan period, LoggedException exception);
 }

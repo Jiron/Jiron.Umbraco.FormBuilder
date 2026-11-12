@@ -1,5 +1,4 @@
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Migrations;
-using Jiron.Umbraco.FormBuilder.Core.Privacy;
 using Microsoft.Extensions.Logging;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Services;
@@ -54,5 +53,5 @@ internal sealed partial class FormBuilderDigestJob(
     }
 
     [LoggerMessage(Level = LogLevel.Error, Message = "Jiron Form Builder's summary emails failed; the job runs again in {Period}")]
-    private static partial void LogFailed(ILogger logger, TimeSpan period, Exception exception);
+    private static partial void LogFailed(ILogger logger, TimeSpan period, LoggedException exception);
 }

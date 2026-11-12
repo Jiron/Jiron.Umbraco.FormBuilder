@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Jiron.Umbraco.FormBuilder.Core.Actions;
+using Jiron.Umbraco.FormBuilder.Core.Email;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Dtos;
 using Umbraco.Cms.Infrastructure.Persistence;
 
@@ -160,6 +161,16 @@ internal sealed class EmailRepository(FormBuilderDatabase database) : IEmailRepo
                 if (stored?.State == EmailState.Queued)
                 {
                     database.PublishAfterCommit(new OutboxQueuedNotification());
+                }
+
+                // A mail held back is never sent nor tried again, so its copy keeps no code that would confirm an address or
+                // open a draft, as a sent one's does not (ADR-0226, 16.1's review).
+                if (stored is { State: EmailState.Limited } && LinkSecrets.Holds(stored.Kind))
+                {
+                    var html = stored.HtmlBody is { } body ? LinkSecrets.Mask(body) : null;
+                    var text = LinkSecrets.Mask(stored.TextBody);
+                    await db.ExecAsync($"UPDATE {emails} SET {n.C("htmlBody")} = @1, {n.C("textBody")} = @2 WHERE {n.C("id")} = @0", stored.Id, html, text);
+                    stored = stored with { HtmlBody = html, TextBody = text };
                 }
 
                 return stored;

@@ -338,6 +338,7 @@ export default {
     testSettingsInvalid:
       'Die Einstellungen dieser Aktion haben Fehler. Öffnen Sie die Aktion, beheben Sie sie, und testen Sie dann erneut.',
     testNoAnswer: 'Der Test konnte nicht ausgeführt werden.',
+    testsLimited: 'Sie haben so viele Tests ausgeführt, wie eine Stunde erlaubt. Versuchen Sie es später noch einmal.',
     testNoReply: 'Die Website hat nicht geantwortet. Versuchen Sie es gleich noch einmal.',
     previewFrom: 'Von',
     previewTo: 'An',

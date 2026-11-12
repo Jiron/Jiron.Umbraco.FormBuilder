@@ -167,6 +167,7 @@ export default {
     missingPermission: (permission: string) =>
       `This needs the "${permission}" permission. An administrator can grant it in Settings › Access.`,
     failed: "That didn't work. Try again, or reload the page.",
+    testsLimited: "You've run as many tests as an hour allows. Try again later.",
     contentRights_contentSection:
       "A content action needs Umbraco's Content section. Ask someone who has it to set this up.",
     contentRights_content:

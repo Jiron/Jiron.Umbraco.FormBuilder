@@ -70,6 +70,20 @@ public sealed class BlobFileStoreTests : FileStoreContract
         });
     }
 
+    [Test]
+    public async Task AContainerThatLetsAnyoneReadIt_IsRefused_AndHoldsNothing()
+    {
+        await Container().CreateAsync(PublicAccessType.Blob);
+
+        var refused = Assert.ThrowsAsync<InvalidOperationException>(async () => await Store.SaveAsync(FormBuilderFileId.New(), new MemoryStream([1, 2, 3])));
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(refused!.Message, Does.Contain("lets anyone read its blobs"));
+            Assert.That(await StoredAsync(), Is.Empty, "no upload lands where an address opens it");
+        });
+    }
+
     /// <inheritdoc />
     protected override void CustomTestSetup(IUmbracoBuilder builder)
     {

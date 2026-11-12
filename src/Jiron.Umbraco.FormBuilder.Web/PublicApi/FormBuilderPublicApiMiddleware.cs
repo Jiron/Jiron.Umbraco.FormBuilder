@@ -1,5 +1,5 @@
+using Jiron.Umbraco.FormBuilder.Core;
 using Jiron.Umbraco.FormBuilder.Core.Configuration;
-using Jiron.Umbraco.FormBuilder.Core.Privacy;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.Extensions.Logging;
@@ -200,7 +200,7 @@ internal sealed partial class FormBuilderPublicApiMiddleware(FormBuilderPublicAp
     }
 
     [LoggerMessage(Level = LogLevel.Error, Message = "The public API's endpoint {Endpoint} failed unexpectedly; the visitor got server_error.")]
-    private static partial void LogUnexpected(ILogger logger, string endpoint, Exception exception);
+    private static partial void LogUnexpected(ILogger logger, string endpoint, LoggedException exception);
     [LoggerMessage(Level = LogLevel.Warning, Message = "A request carried a server key that matches none; it got server_key_invalid. This is said at most once a minute.")]
     private static partial void LogServerKeyInvalid(ILogger logger);
 

@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Globalization;
+using Jiron.Umbraco.FormBuilder.Core;
 using Jiron.Umbraco.FormBuilder.Core.Actions;
 using Jiron.Umbraco.FormBuilder.Core.Configuration;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
@@ -539,7 +540,7 @@ internal sealed partial class FormBuilderHealth(IEnumerable<HealthProbe> probes,
             }
             catch (Exception exception) when (exception is not OutOfMemoryException && exception is not OperationCanceledException)
             {
-                LogProbeFailed(logger, exception, probe.GetType().Name);
+                LogProbeFailed(logger, LoggedException.Of(exception), probe.GetType().Name);
                 found.Add(new HealthFinding("checkFailed", words.CheckFailed));
             }
         }
@@ -548,5 +549,5 @@ internal sealed partial class FormBuilderHealth(IEnumerable<HealthProbe> probes,
     }
 
     [LoggerMessage(Level = LogLevel.Error, Message = "Jiron Form Builder's health check {Probe} failed.")]
-    private static partial void LogProbeFailed(ILogger logger, Exception exception, string probe);
+    private static partial void LogProbeFailed(ILogger logger, LoggedException exception, string probe);
 }

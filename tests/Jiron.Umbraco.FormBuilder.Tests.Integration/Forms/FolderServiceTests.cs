@@ -564,7 +564,7 @@ public sealed class FolderServiceTests : RepositoryTestBase
         {
             Assert.That(await Service.GetAsync(created.Key), Is.EqualTo(created));
             Assert.That(errors.Single().Message, Does.Contain(nameof(FolderCreatedNotification)).And.Contain("the change stands"));
-            Assert.That(errors.Single().Exception?.Message, Is.EqualTo("JFB_TEST: a handler that fails"));
+            Assert.That(errors.Single().Exception?.Message, Is.EqualTo("System.InvalidOperationException; its message is not logged"), "its type, never its message");
         });
     }
 

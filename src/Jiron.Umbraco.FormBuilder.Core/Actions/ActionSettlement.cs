@@ -6,7 +6,6 @@ using Jiron.Umbraco.FormBuilder.Core.Files;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
-using Jiron.Umbraco.FormBuilder.Core.Privacy;
 using Jiron.Umbraco.FormBuilder.Core.Retention;
 using Jiron.Umbraco.FormBuilder.Core.Submissions;
 using Microsoft.Extensions.Logging;
@@ -292,10 +291,10 @@ internal sealed partial class ActionSettlement(
     }
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Entry {Entry} could not be settled after its mail; the retention job looks again")]
-    private static partial void LogSettleAfterMailFailed(ILogger logger, long entry, Exception exception);
+    private static partial void LogSettleAfterMailFailed(ILogger logger, long entry, LoggedException exception);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "The bytes of file {File} could not be deleted after its entry let it go")]
-    private static partial void LogBytesFailed(ILogger logger, Guid file, Exception exception);
+    private static partial void LogBytesFailed(ILogger logger, Guid file, LoggedException exception);
 }
 
 /// <summary>

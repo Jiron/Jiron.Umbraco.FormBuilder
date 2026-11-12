@@ -80,6 +80,7 @@ describe('a refusal', () => {
         'template_not_found',
         'version_not_found',
         'concurrency_conflict',
+        'tests_limited',
       ].map((code) => refusalText(localize, problem({ code }))),
     ).toEqual([
       'jfbLibrary_folderNotEmpty',
@@ -89,6 +90,7 @@ describe('a refusal', () => {
       'jfbLibrary_templateGone',
       'jfbLibrary_versionGone',
       'jfbLibrary_changedMeanwhile',
+      'jfbLibrary_testsLimited',
     ]);
   });
 

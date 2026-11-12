@@ -2,7 +2,6 @@ using Jiron.Umbraco.FormBuilder.Core.Actions;
 using Jiron.Umbraco.FormBuilder.Core.Configuration;
 using Jiron.Umbraco.FormBuilder.Core.Files;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
-using Jiron.Umbraco.FormBuilder.Core.Privacy;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Umbraco.Cms.Core.Mail;
@@ -70,7 +69,7 @@ internal sealed partial class EmailQueue(IEmailRepository emails, IEmailSender s
     }
 
     [LoggerMessage(Level = LogLevel.Error, Message = "Jiron Form Builder could not send mail {Email}; it stays queued, or becomes uncertain when it was claimed")]
-    private static partial void LogAttemptFailed(ILogger logger, long email, Exception exception);
+    private static partial void LogAttemptFailed(ILogger logger, long email, LoggedException exception);
 }
 
 /// <summary>
@@ -287,7 +286,7 @@ internal sealed partial class EmailAttempts(
         }
         catch (Exception recording) when (recording is not OutOfMemoryException)
         {
-            LogRecordFailed(logger, mail.Id, recording);
+            LogRecordFailed(logger, mail.Id, LoggedException.Of(recording));
         }
     }
 
@@ -301,10 +300,10 @@ internal sealed partial class EmailAttempts(
     private static partial void LogLateFailed(ILogger logger, long email, string? exception);
 
     [LoggerMessage(Level = LogLevel.Error, Message = "Jiron Form Builder could not record what came of mail {Email}; its lease runs out and it becomes uncertain")]
-    private static partial void LogRecordFailed(ILogger logger, long email, Exception exception);
+    private static partial void LogRecordFailed(ILogger logger, long email, LoggedException exception);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Jiron Form Builder could not close a mail's attachment")]
-    private static partial void LogCloseFailed(ILogger logger, Exception exception);
+    private static partial void LogCloseFailed(ILogger logger, LoggedException exception);
 
     private enum OutcomeKind
     {

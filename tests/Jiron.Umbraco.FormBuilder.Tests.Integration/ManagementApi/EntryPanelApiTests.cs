@@ -227,6 +227,47 @@ public sealed class EntryPanelApiTests : ManagementApiTestBase
     }
 
     [Test]
+    public async Task AnEntryOfAnotherForm_IsNoEntryOfThisOne_OnEveryEndpoint_AndNothingChanges()
+    {
+        // The route's form is the one the user's permissions were checked on; an entry of another form is none of its own,
+        // even for an administrator who may see both (16.1's review).
+        var (form, _) = await EntryAsync();
+        var (_, other) = await EntryAsync();
+        var path = $"form/{form}/entry/{other.Key}";
+        await CallAsync("viewer", HttpMethod.Get, "me");
+        var viewerKey = GetRequiredService<IUserService>().GetByEmail("api-viewer@jfb.test")!.Key;
+        var eventsBefore = (await GetRequiredService<IEntryEventRepository>().ListForEntryAsync(other.Id)).Count;
+
+        var answers = new (string What, ApiAnswer Answer)[]
+        {
+            ("open", await CallAsync(Admin, HttpMethod.Get, path)),
+            ("reveal", await CallAsync(Admin, HttpMethod.Post, $"{path}/reveal", new { field = Salary.Key })),
+            ("timeline", await CallAsync(Admin, HttpMethod.Get, $"{path}/timeline")),
+            ("notes", await CallAsync(Admin, HttpMethod.Get, $"{path}/notes")),
+            ("add a note", await CallAsync(Admin, HttpMethod.Post, $"{path}/notes", new { body = "Not this form's." })),
+            ("edit answers", await CallAsync(Admin, HttpMethod.Put, $"{path}/answers", new { answers = new[] { new { field = Age.Key, values = new[] { "40" } } } })),
+            ("recipients", await CallAsync(Admin, HttpMethod.Get, $"{path}/forward")),
+            ("forward", await CallAsync(Admin, HttpMethod.Post, $"{path}/forward", new { user = viewerKey })),
+            ("action runs", await CallAsync(Admin, HttpMethod.Get, $"{path}/action-run")),
+        };
+        var stored = (await GetRequiredService<IEntryRepository>().GetByIdAsync(other.Id))!;
+        var eventsAfter = (await GetRequiredService<IEntryEventRepository>().ListForEntryAsync(other.Id)).Count;
+        var mail = await GetRequiredService<IEmailRepository>().ListForEntryAsync(other.Id);
+
+        Assert.Multiple(() =>
+        {
+            foreach (var (what, answer) in answers)
+            {
+                Assert.That(answer.Status, Is.EqualTo(System.Net.HttpStatusCode.NotFound), $"{what}: {answer}");
+                Assert.That(answer.Text, Does.Not.Contain("Ada").And.Not.Contain("90000"), $"{what} says nothing of the entry");
+            }
+
+            Assert.That((stored.SearchText, stored.UpdatedUtc, eventsAfter), Is.EqualTo((other.SearchText, other.UpdatedUtc, eventsBefore)), "nothing of it changed, and no note or forward was recorded");
+            Assert.That(mail, Is.Empty, "nothing was forwarded");
+        });
+    }
+
+    [Test]
     public async Task TheEntrysLink_NamesItsForm_OnlyToWhoMayViewItsEntries()
     {
         var (form, entry) = await EntryAsync();

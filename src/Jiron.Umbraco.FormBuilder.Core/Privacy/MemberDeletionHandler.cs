@@ -44,11 +44,11 @@ internal sealed partial class MemberDeletionHandler(
             }
             catch (Exception exception) when (exception is not OperationCanceledException)
             {
-                LogEraseFailed(logger, exception, member);
+                LogEraseFailed(logger, LoggedException.Of(exception), member);
             }
         }
     }
 
     [LoggerMessage(Level = LogLevel.Error, Message = "The entries of deleted member {Member} could not be erased; Privacy > People can erase them by member.")]
-    private static partial void LogEraseFailed(ILogger logger, Exception exception, Guid member);
+    private static partial void LogEraseFailed(ILogger logger, LoggedException exception, Guid member);
 }

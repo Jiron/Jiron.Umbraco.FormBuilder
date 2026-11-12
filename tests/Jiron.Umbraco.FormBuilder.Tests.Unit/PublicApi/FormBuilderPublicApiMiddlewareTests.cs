@@ -1,6 +1,6 @@
 using System.Text.Json.Nodes;
+using Jiron.Umbraco.FormBuilder.Core;
 using Jiron.Umbraco.FormBuilder.Core.Configuration;
-using Jiron.Umbraco.FormBuilder.Core.Privacy;
 using Jiron.Umbraco.FormBuilder.Testing.Time;
 using Jiron.Umbraco.FormBuilder.Tests.Unit.OptionLists;
 using Jiron.Umbraco.FormBuilder.Web.PublicApi;

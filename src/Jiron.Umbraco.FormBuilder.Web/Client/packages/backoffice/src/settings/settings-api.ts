@@ -65,12 +65,15 @@ export async function saveSection(
 }
 
 /** How a test mail ended: queued to the user's own address, or not sent. */
-export type TestMail = { readonly kind: 'sent'; readonly to: string } | { readonly kind: 'failed' };
+export type TestMail =
+  | { readonly kind: 'sent'; readonly to: string }
+  /** Not sent: past the tests a user runs in an hour (16.1's review), or for another reason. */
+  | { readonly kind: 'failed'; readonly limited: boolean };
 
 /** Queues a test mail of a scope's sender and layout to the user who asks. */
 export async function sendTestMail(host: UmbClassInterface, site: string | null): Promise<TestMail> {
-  const { data } = await tryExecute(host, testEmailSend({ body: { site } }), { disableNotifications: true });
-  return data ? { kind: 'sent', to: data.to } : { kind: 'failed' };
+  const { data, error } = await tryExecute(host, testEmailSend({ body: { site } }), { disableNotifications: true });
+  return data ? { kind: 'sent', to: data.to } : { kind: 'failed', limited: codeOf(error) === 'tests_limited' };
 }
 
 /** The fields a refusal names, within the section: `general.history.draftDays` is `history.draftDays`. */
