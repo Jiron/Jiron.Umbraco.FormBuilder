@@ -65,6 +65,7 @@ export const OWN_WORDS: ReadonlySet<string> = new Set([
   'reply_field_unset',
   'required_can_hide',
   'page_unreachable',
+  'rule_value_not_option',
   'consent_missing',
   'card_number_asked',
   'password_asked',
@@ -319,6 +320,8 @@ function argumentsOf(
       return [where.top === 'actions' ? 'action' : where.top === 'settings' ? 'captcha' : 'field', text];
     case 'page_unreachable':
       return [typeof steps[1] === 'number' ? steps[1] + 1 : 1];
+    case 'rule_value_not_option':
+      return [text];
     case 'captcha_not_configured':
     case 'theme_missing':
     case 'alias_invalid':

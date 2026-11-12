@@ -34,6 +34,7 @@ public sealed class LogicFormCheckTests
     private const string Meals = "30000000-0000-4000-8000-000000000009";
     private const string Party = "30000000-0000-4000-8000-00000000000b";
     private const string Child = "30000000-0000-4000-8000-00000000000c";
+    private const string Joined = "30000000-0000-4000-8000-00000000000d";
 
     private static readonly FieldTypeRegistry Types = TestFieldTypes.Build();
 
@@ -230,6 +231,53 @@ public sealed class LogicFormCheckTests
 
         Assert.That(await Unreachable().CheckAsync(Form(TopicField), CancellationToken.None), Has.Count.EqualTo(1));
         Assert.That(await Unreachable().CheckAsync(Form(OtherTopic(Topic)), CancellationToken.None), Is.Empty, "\"Other\" takes any text");
+    }
+
+    [Test]
+    public async Task ARulesValueNoneOfItsChoicesOwnOptions_IsWarnedAtTheValue_AYesOrNosAnswersAmongThem()
+    {
+        // 16.6's review: a typed "Yes" for a yes or no question, whose answer is yes, never held.
+        var joined = Field(Joined, "yesno", "joined");
+        var definition = Read(
+            PageWith(1, null, Group(1, null, joined, TopicField, Field(Notes, "textarea", "notes", Rule("show", Joined, "equals", "Yes"), Rule("require", Joined, "notEquals", "no")))),
+            PageWith(2, Rule("show", Topic, "isOneOf", new[] { "press", "Press" }), Group(2, Rule("hide", Topic, "isNoneOf", new[] { "delivery" }), Field(Later, "text", "later", Rule("show", Topic, "equals", "shipping")))));
+
+        var issues = await new RuleValueOptionFormCheck().CheckAsync(definition, CancellationToken.None);
+
+        Assert.That(issues.Select(issue => (issue.Severity, issue.Code, issue.Path)), Is.EqualTo(new[]
+        {
+            (FormCheckSeverity.Warning, RuleValueOptionFormCheck.RuleValueNotOption, "$.pages[0].groups[0].fields[2].rules[0].conditions[0].value"),
+            (FormCheckSeverity.Warning, RuleValueOptionFormCheck.RuleValueNotOption, "$.pages[1].rules[0].conditions[0].value[1]"),
+        }));
+        Assert.That(issues[0].Message, Does.Contain("'Yes'"));
+    }
+
+    [Test]
+    public async Task ARulesValue_IsHeldOnlyToOptionsTheFormOwns_AndOnlyWhereItIsCompared()
+    {
+        var definition = DefinitionFixtures.Read($$"""
+            {"schemaVersion":1,"key":"f0000000-0000-4000-8000-000000000001",
+             "pages":[{"key":"10000000-0000-4000-8000-000000000001","groups":[{"key":"20000000-0000-4000-8000-000000000001","fields":[
+               {{OtherTopic(Others)}},
+               {{Choice(Listed, "dropdown", "listed", """{"source":"list","list":"50000000-0000-4000-8000-000000000001"}""")}},
+               {{Field(Joined, "yesno", "joined")}},
+               {{Field(Notes, "textarea", "notes", Rule("show", Others, "equals", "elsewhere"), Rule("hide", Listed, "equals", "anything"), Rule("require", Joined, "isNotEmpty"))}}]}]}],
+             "actions":[{"key":"60000000-0000-4000-8000-000000000001","type":"email","name":"Tell","rules":[{{Rule("run", Joined, "equals", "Ja")}}]}],
+             "outcomes":[{"key":"70000000-0000-4000-8000-000000000001","kind":"message","rules":[{{Rule("use", Joined, "equals", "yes")}}]}]}
+            """);
+
+        var issues = await new RuleValueOptionFormCheck().CheckAsync(definition, CancellationToken.None);
+
+        Assert.That(issues.Select(issue => issue.Path), Is.EqualTo(new[] { "$.actions[0].rules[0].conditions[0].value" }), "an action's rule; not a choice with Other, a library list, an operator without a value, or yes");
+    }
+
+    [Test]
+    public async Task APageShownForAYesOrNoAnswerItDoesNotHave_IsUnreachable_AndForYes_IsNot()
+    {
+        FormDefinition Form(string value) => Read(Page(1, Group(1, null, Field(Joined, "yesno", "joined"))), PageWith(2, Rule("show", Joined, "equals", value), Group(2, null, Field(Notes, "textarea", "notes"))));
+
+        Assert.That(await Unreachable().CheckAsync(Form("Yes"), CancellationToken.None), Has.Count.EqualTo(1), "the search tries a yes or no's two answers");
+        Assert.That(await Unreachable().CheckAsync(Form("yes"), CancellationToken.None), Is.Empty);
     }
 
     private static string TopicField => Choice(Topic, "dropdown", "topic", """{"items":[{"value":"delivery"},{"value":"shipping"},{"value":"press"}]}""");

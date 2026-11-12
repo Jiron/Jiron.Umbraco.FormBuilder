@@ -13,7 +13,7 @@ import { resolveOptions } from '../inspector/option-data';
 import { ownText, withText } from '../inspector/setting-values';
 import { textIn } from '../preview/field-models';
 import { readMemberGroups } from './rule-data';
-import { valueText } from './rule-names';
+import { ownOptionLabel, valueText } from './rule-names';
 import {
   addCondition,
   addGroup,
@@ -494,6 +494,19 @@ export class RuleBuilderModalElement extends UmbModalBaseElement<RuleBuilderModa
     const field = this.#optionField(key);
     const data = this.data;
     if (!field || !data) return null;
+    // A yes or no has its two answers of its own, named as the field names them (16.6's review: a typed "Yes" never held).
+    if (field.type === 'yesno') {
+      const named = (answer: 'yes' | 'no') =>
+        ownOptionLabel(data.definition, field.key, answer, data.culture, (value) =>
+          this.localize.term(value === 'yes' ? 'general_yes' : 'general_no'),
+        );
+      const options = [
+        { value: 'yes', label: named('yes') },
+        { value: 'no', label: named('no') },
+      ];
+      this._options = new Map(this._options).set(key, options);
+      return options;
+    }
     void resolveOptions(this, data.form, field, data.culture).then((answer) => {
       const options =
         answer?.isAvailable === true

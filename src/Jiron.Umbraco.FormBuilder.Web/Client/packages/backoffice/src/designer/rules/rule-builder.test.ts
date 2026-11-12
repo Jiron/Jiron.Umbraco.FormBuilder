@@ -233,6 +233,34 @@ describe('the rules builder', () => {
     expect(modal.submit).toHaveBeenCalled();
   });
 
+  it("offers a yes or no question's two answers, as the field names them, and keeps their values (16.6's review)", async () => {
+    const base = definitionWith();
+    const joined = field('joined', 'yesno', 'Joined before', {
+      settings: { yesLabel: { '': 'Sure' }, noLabel: { '': 'Not yet' } },
+    });
+    const definition: DesignDefinition = {
+      ...base,
+      pages: base.pages.map((page, at) =>
+        at === 0
+          ? { ...page, groups: page.groups.map((group) => ({ ...group, fields: [joined, ...group.fields] })) }
+          : page,
+      ),
+    };
+    const { element, modal, root } = await builderOf({ definition, names: elementNames(definition, '', term) });
+    await pick(element, inRow(root, 'select.subject'), 'field:joined');
+    // A box would take "Yes", which never matches the answer yes.
+    expect(row(root).querySelector('input.plain')).toBeNull();
+    const value = inRow<HTMLSelectElement>(root, 'select.plain');
+    expect(options(value)).toEqual(['Choose a value', 'Sure', 'Not yet']);
+    await pick(element, value, 'yes');
+    keep(root).click();
+    await settle(element);
+    expect(modal.getValue()).toEqual({
+      target: 'which',
+      rule: expect.objectContaining({ conditions: [{ field: 'joined', op: 'equals', value: 'yes' }] }) as unknown,
+    });
+  });
+
   it('ticks options for "is one of", and takes texts one per line', async () => {
     const { element, modal, root } = await builderOf();
     await pick(element, inRow(root, 'select.subject'), 'field:topics');

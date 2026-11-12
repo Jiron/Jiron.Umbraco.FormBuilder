@@ -53,7 +53,10 @@ const DEFINITION: DesignDefinition = {
   },
   outcomes: [
     { kind: 'redirect', redirect: { content: 'c1', url: '/x?q={{ field.email }}' } },
-    { kind: 'message', rules: [{ key: 'o', effect: 'use', conditions: [] }] },
+    {
+      kind: 'message',
+      rules: [{ key: 'o', effect: 'use', conditions: [{ field: 'topic', op: 'equals', value: 'Ja' }] }],
+    },
   ],
   actions: [{ key: 'a1', type: 'email', settings: { subject: '{{ field.nope }}' } }],
   validationRules: [{ key: 'v', field: 'email', conditions: [], message: { '': '#rule' } }],
@@ -139,6 +142,9 @@ describe("a problem's words", () => {
     expect(words('unknown_type', '$.actions[0].type', 'error').said).toBe('The site has no action type "email".');
     expect(words('unknown_type', `${F}[0].type`, 'error').said).toBe('The site has no field type "email".');
     expect(words('page_unreachable', '$.pages[1].rules[0]').said).toContain('before page 2 make it show');
+    expect(words('rule_value_not_option', '$.outcomes[1].rules[0].conditions[0].value').said).toBe(
+      'This rule compares the answer to \u201cJa\u201d, which is none of its options, so a visitor never gives it. Choose one of the options.',
+    );
     expect(words('limit_without_entries', `${F}[3].options`).said).toBe(
       'The form keeps no entries, so this limit forgets each entry once its actions have run.',
     );

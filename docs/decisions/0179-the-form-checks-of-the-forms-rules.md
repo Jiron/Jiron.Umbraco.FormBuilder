@@ -97,3 +97,19 @@ Three things are open:
   per require rule, and the overview finds its conflicts once while it is open.
 - The designer says these codes in 9.5f, with a "fix it" that opens the rules builder on the rule.
 - Codes added: `required_can_hide`, `page_unreachable` (warnings).
+
+## Amendment (2026-11-12, step 16.5)
+
+The UX polish pass found a rule that compared a yes or no question to "Yes", typed into a box, while the question's
+answer is `yes`: the rule never held, and the form check said nothing. Two changes:
+
+- **A yes or no's two answers are its own options** (`RuleSearchScopes.OwnOptions`), beside the options listed on a
+  field, so the rule search tries them too: a page shown only for an answer the question does not have is unreachable,
+  as for any other choice.
+- **A new warning, `rule_value_not_option`**, at each text a condition compares a choice to with "is", "is not", "is one
+  of" or "is none of" that is none of the choice's own options, in the rules of fields, groups, pages, actions and
+  outcomes and in validation rules. Options from a library list, a data source or a parent's answer, and a choice whose
+  "Other" takes any text, are not held to it: they are not the form's alone. The rules builder offers a yes or no's two
+  answers in a list, as the field names them (ADR-0241, decision 10), so a new rule cannot be written so.
+
+Tested in `LogicFormCheckTests` and `check-words.test.ts`.

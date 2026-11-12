@@ -1,8 +1,10 @@
+using System.Collections.Frozen;
 using System.Text.Json;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Definitions.Exchange;
 using Jiron.Umbraco.FormBuilder.Core.Definitions.Serialization;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
+using Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn;
 using Jiron.Umbraco.FormBuilder.Core.Settings;
 using Jiron.Umbraco.FormBuilder.Logic;
 using Umbraco.Cms.Core.Services;
@@ -11,8 +13,7 @@ namespace Jiron.Umbraco.FormBuilder.Core.Forms;
 
 /// <summary>
 /// What the rule search tries a form's answers with on this site (ROADMAP 9.5d, ADR-0179): the kinds of its fields and
-/// grid rows as its rules see them, each choice's own options (none for options from a library list or a data source,
-/// for a cascading list, whose options hang on its parent's answer, or for a choice whose "Other" takes any text), the
+/// grid rows as its rules see them, each choice's own options (<see cref="OwnOptions"/>), the
 /// site's languages, today in the site's time zone, the fields the form hides for the answers tried, as the form engine
 /// decides, and the repeatable groups' child fields, whose answers are several where rules outside them read them.
 /// </summary>
@@ -58,21 +59,7 @@ internal sealed class RuleSearchScopes(FieldTypeRegistry types, ILanguageService
             Kinds(group.Fields, inRows: false);
         }
 
-        var options = new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal);
-        foreach (var field in DefinitionKeys.Fields(definition))
-        {
-            var other = field.Settings?.TryGetProperty("other", out var setting) == true && setting.ValueKind == JsonValueKind.True;
-            if (field.Options is { Source: OptionSource.Items, Parent: null } own && !other)
-            {
-                IReadOnlyList<string> values = [.. own.Items.Select(item => item.Value).Where(value => value.Length > 0)];
-                options[DefinitionLogic.Id(field.Key)] = values;
-                foreach (var row in field.Rows)
-                {
-                    options[DefinitionLogic.Id(row.Key)] = values;
-                }
-            }
-        }
-
+        var options = OwnOptions(definition);
         var general = await settings.GetAsync<GeneralSettings>(null, cancellationToken);
         var zone = CalendarValues.FindTimeZone(general.Value.TimeZone) is null ? "UTC" : general.Value.TimeZone;
         var now = time.GetUtcNow().ToString("yyyy'-'MM'-'dd'T'HH':'mm':'ss'Z'", System.Globalization.CultureInfo.InvariantCulture);
@@ -88,6 +75,42 @@ internal sealed class RuleSearchScopes(FieldTypeRegistry types, ILanguageService
         };
         return (logic, scope);
     }
+
+    /// <summary>
+    /// The values of each choice whose options are its own, by its logic id and its grid rows' ids: the options listed on
+    /// the field, and a yes or no's two (16.6's review). Options from a library list or a data source, a cascading list's,
+    /// which hang on its parent's answer, and a choice whose "Other" takes any text have none: they are not the form's alone.
+    /// </summary>
+    /// <param name="definition">The form.</param>
+    public static IReadOnlyDictionary<string, IReadOnlyList<string>> OwnOptions(FormDefinition definition)
+    {
+        ArgumentNullException.ThrowIfNull(definition);
+        var options = new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal);
+        foreach (var field in DefinitionKeys.Fields(definition))
+        {
+            var other = field.Settings?.TryGetProperty("other", out var setting) == true && setting.ValueKind == JsonValueKind.True;
+            IReadOnlyList<string>? values = field.Type == YesNo
+                ? [YesNoFieldType.Yes, YesNoFieldType.No]
+                : field.Options is { Source: OptionSource.Items, Parent: null } own && !other
+                    ? [.. own.Items.Select(item => item.Value).Where(value => value.Length > 0)]
+                    : null;
+            if (values is null)
+            {
+                continue;
+            }
+
+            options[DefinitionLogic.Id(field.Key)] = values;
+            foreach (var row in field.Rows)
+            {
+                options[DefinitionLogic.Id(row.Key)] = values;
+            }
+        }
+
+        return options;
+    }
+
+    // The yes or no type's alias, whose two values are its options.
+    private const string YesNo = "yesno";
 }
 
 /// <summary>
@@ -223,4 +246,123 @@ internal sealed class UnreachablePageFormCheck(RuleSearchScopes scopes) : IFormC
             }
         }
     }
+}
+
+/// <summary>
+/// A rule's value that is none of its choice's own options (16.6's review): a warning at each text a condition compares
+/// a choice to with "is", "is not", "is one of" or "is none of" that the choice does not offer, such as "Yes" for a yes or
+/// no question, whose answer is <c>yes</c>. A visitor never gives it, so the condition never holds as written, or always for
+/// "is not". Only a choice whose options are the form's own is held to them (<see cref="RuleSearchScopes.OwnOptions"/>);
+/// a value from a library list, a data source or another answer may come later.
+/// </summary>
+internal sealed class RuleValueOptionFormCheck : IFormCheck
+{
+    /// <summary>A condition's value that its choice does not offer.</summary>
+    public const string RuleValueNotOption = "rule_value_not_option";
+
+    private static readonly FrozenSet<string> Compared = new[] { "equals", "notEquals", "isOneOf", "isNoneOf" }.ToFrozenSet(StringComparer.Ordinal);
+
+    /// <inheritdoc />
+    public ValueTask<IReadOnlyList<FormCheckIssue>> CheckAsync(FormDefinition definition, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(definition);
+        var options = RuleSearchScopes.OwnOptions(definition);
+        var issues = new List<FormCheckIssue>();
+        if (options.Count == 0)
+        {
+            return ValueTask.FromResult<IReadOnlyList<FormCheckIssue>>(issues);
+        }
+
+        var pages = JsonPaths.Property(JsonPaths.Root, "pages");
+        for (var p = 0; p < definition.Pages.Count; p++)
+        {
+            var page = definition.Pages[p];
+            var pagePath = JsonPaths.Index(pages, p);
+            Rules(page.Rules, JsonPaths.Property(pagePath, "rules"));
+            for (var g = 0; g < page.Groups.Count; g++)
+            {
+                var groupPath = JsonPaths.Index(JsonPaths.Property(pagePath, "groups"), g);
+                Rules(page.Groups[g].Rules, JsonPaths.Property(groupPath, "rules"));
+                Fields(page.Groups[g].Fields, JsonPaths.Property(groupPath, "fields"));
+            }
+        }
+
+        var validationRules = JsonPaths.Property(JsonPaths.Root, "validationRules");
+        for (var v = 0; v < definition.ValidationRules.Count; v++)
+        {
+            Conditions(definition.ValidationRules[v].Conditions, JsonPaths.Property(JsonPaths.Index(validationRules, v), "conditions"));
+        }
+
+        var actions = JsonPaths.Property(JsonPaths.Root, "actions");
+        for (var a = 0; a < definition.Actions.Count; a++)
+        {
+            Rules(definition.Actions[a].Rules, JsonPaths.Property(JsonPaths.Index(actions, a), "rules"));
+        }
+
+        var outcomes = JsonPaths.Property(JsonPaths.Root, "outcomes");
+        for (var o = 0; o < definition.Outcomes.Count; o++)
+        {
+            Rules(definition.Outcomes[o].Rules, JsonPaths.Property(JsonPaths.Index(outcomes, o), "rules"));
+        }
+
+        return ValueTask.FromResult<IReadOnlyList<FormCheckIssue>>(issues);
+
+        void Fields(IReadOnlyList<FormField> fields, string path)
+        {
+            for (var f = 0; f < fields.Count; f++)
+            {
+                var fieldPath = JsonPaths.Index(path, f);
+                Rules(fields[f].Rules, JsonPaths.Property(fieldPath, "rules"));
+                Fields(fields[f].Fields, JsonPaths.Property(fieldPath, "fields"));
+            }
+        }
+
+        void Rules(IReadOnlyList<FormRule> rules, string path)
+        {
+            for (var r = 0; r < rules.Count; r++)
+            {
+                Conditions(rules[r].Conditions, JsonPaths.Property(JsonPaths.Index(path, r), "conditions"));
+            }
+        }
+
+        void Conditions(IReadOnlyList<RuleItem> items, string path)
+        {
+            for (var i = 0; i < items.Count; i++)
+            {
+                var at = JsonPaths.Index(path, i);
+                switch (items[i])
+                {
+                    case RuleGroup group:
+                        Conditions(group.Conditions, JsonPaths.Property(at, "conditions"));
+                        break;
+                    case RuleCondition { Field: { } key } condition when Compared.Contains(condition.Operator)
+                        && options.TryGetValue(DefinitionLogic.Id(key), out var values):
+                        foreach (var (text, textPath) in Texts(condition.Value, JsonPaths.Property(at, "value")))
+                        {
+                            if (!values.Contains(text, StringComparer.Ordinal))
+                            {
+                                issues.Add(new FormCheckIssue(
+                                    FormCheckSeverity.Warning,
+                                    RuleValueNotOption,
+                                    textPath,
+                                    $"The condition compares the answer to '{text}', which is none of its options, so a visitor never gives it."));
+                            }
+                        }
+
+                        break;
+                }
+            }
+        }
+    }
+
+    // The texts an operand compares to, each with its path: one text, or the texts of a list; another answer or a date is none.
+    private static IEnumerable<(string Text, string Path)> Texts(ConditionOperand? operand, string path) => operand switch
+    {
+        ConditionOperand.Text text => [(text.Value, path)],
+        ConditionOperand.List list => list.Items
+            .Select((item, index) => (Item: item, Path: JsonPaths.Index(path, index)))
+            .Where(each => each.Item is ConditionOperand.Text)
+            .Select(each => (((ConditionOperand.Text)each.Item).Value, each.Path)),
+        _ => [],
+    };
 }

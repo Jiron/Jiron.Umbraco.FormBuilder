@@ -61,9 +61,22 @@ export function typeFactsOf(types: Readonly<Record<string, FieldTypeResponseMode
   return facts;
 }
 
-/** A field's own option's label, or a grid row's column's; the value itself where the field takes options elsewhere. */
-export function ownOptionLabel(definition: DesignDefinition, key: string, value: string, culture: string): string {
+/**
+ * A field's own option's label, or a grid row's column's; a yes or no's answer as the field names it, else as yesNo
+ * words it; the value itself where the field takes options elsewhere.
+ */
+export function ownOptionLabel(
+  definition: DesignDefinition,
+  key: string,
+  value: string,
+  culture: string,
+  yesNo?: (answer: 'yes' | 'no') => string,
+): string {
   const field = allFields(definition).find((one) => one.key === key || (one.rows ?? []).some((row) => row.key === key));
+  if (field?.type === 'yesno' && (value === 'yes' || value === 'no')) {
+    const settings = (field['settings'] ?? {}) as Readonly<Record<string, LocalizedText | null | undefined>>;
+    return textIn(settings[value === 'yes' ? 'yesLabel' : 'noLabel'], culture) || yesNo?.(value) || value;
+  }
   const items = (
     field?.['options'] as { items?: readonly { value?: unknown; label?: LocalizedText | null }[] } | undefined
   )?.items;
@@ -91,7 +104,9 @@ export function inspectorRuleWords(
     nameOf: (key) => names[key] ?? key,
     kindOf: (field) => kinds[field],
     optionOf: (field, value) => {
-      const own = ownOptionLabel(definition, field, value, culture);
+      const own = ownOptionLabel(definition, field, value, culture, (answer) =>
+        term(answer === 'yes' ? 'general_yes' : 'general_no'),
+      );
       return own !== value ? own : resolved.get(field)?.find((option) => option.value === value)?.label || value;
     },
     languageOf: (code) => languages.find((language) => language.culture === code)?.name ?? code,

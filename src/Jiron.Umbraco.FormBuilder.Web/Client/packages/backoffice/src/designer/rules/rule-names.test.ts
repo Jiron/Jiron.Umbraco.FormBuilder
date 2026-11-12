@@ -99,6 +99,31 @@ describe('the names rules are said with', () => {
     expect(ownOptionLabel(DEFINITION, 'gone', 'de', '')).toBe('de');
   });
 
+  it("say a yes or no's answer as the field names it, else in the user's words, and anything else as it is (16.6's review)", () => {
+    const definition: DesignDefinition = {
+      pages: [
+        {
+          key: 'p',
+          groups: [
+            {
+              key: 'g',
+              fields: [
+                field('joined', 'yesno', { settings: { yesLabel: { '': 'Sure', 'de-DE': 'Klar' } } }),
+                field('plain', 'yesno'),
+              ],
+            },
+          ],
+        },
+      ],
+    };
+    const words = (answer: 'yes' | 'no') => (answer === 'yes' ? 'Yes' : 'No');
+    expect(ownOptionLabel(definition, 'joined', 'yes', 'de-DE', words)).toBe('Klar');
+    expect(ownOptionLabel(definition, 'joined', 'no', 'de-DE', words)).toBe('No');
+    expect(ownOptionLabel(definition, 'plain', 'yes', '')).toBe('yes');
+    expect(ownOptionLabel(definition, 'plain', 'Yes', '', words)).toBe('Yes');
+    expect(inspectorRuleWords(definition, builtInTypes, '', [], term).optionOf('plain', 'no')).toBe('general_no');
+  });
+
   it("give the inspector its words: names, kinds, options, languages by name, and dates in the user's language", () => {
     const words = inspectorRuleWords(DEFINITION, builtInTypes, 'en-GB', [{ culture: 'de-DE', name: 'German' }], term);
     expect(words.nameOf('r1')).toBe('Food: Lunch');

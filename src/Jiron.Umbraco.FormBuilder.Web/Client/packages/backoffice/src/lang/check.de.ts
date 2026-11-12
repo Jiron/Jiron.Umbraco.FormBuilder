@@ -107,6 +107,9 @@ export default {
     code_page_unreachable: (number: number) =>
       `Keine Antwort, die Besucher vor Seite ${number} geben können, lässt die Seite erscheinen; wer weitergeht, erreicht sie also nie.`,
 
+    code_rule_value_not_option: (value: string) =>
+      `Diese Regel vergleicht die Antwort mit „${value}“, das keine ihrer Optionen ist; Besucher geben es also nie. Wählen Sie eine der Optionen.`,
+
     code_consent_missing:
       'Das Formular fragt nach personenbezogenen Daten, etwa mit dieser Antwort, hat aber kein Einwilligungsfeld. Fügen Sie eines hinzu, wenn die Einträge auf Grundlage einer Einwilligung aufbewahrt und genutzt werden.',
     code_card_number_asked:

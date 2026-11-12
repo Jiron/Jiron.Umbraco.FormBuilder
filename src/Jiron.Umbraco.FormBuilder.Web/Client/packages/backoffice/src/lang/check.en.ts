@@ -102,6 +102,9 @@ export default {
     code_page_unreachable: (number: number) =>
       `No answers a visitor can give before page ${number} make it show, so a visitor going forward never reaches it.`,
 
+    code_rule_value_not_option: (value: string) =>
+      `This rule compares the answer to “${value}”, which is none of its options, so a visitor never gives it. Choose one of the options.`,
+
     code_consent_missing:
       'The form asks for personal data, such as this answer, but has no consent field. Add one if consent is the basis on which the entries are kept and used.',
     code_card_number_asked:
