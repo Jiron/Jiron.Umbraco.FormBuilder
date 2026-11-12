@@ -76,17 +76,23 @@ belongs on SQL Server ([database.md](database.md)).
 | The tree: a folder of 1,000 forms opened in Edge, from the click to its first form drawn | 5 | 476 | 510 | 510 | < 1,000 | yes |
 | The tree: its first 100 forms through the API, in the database of the 100,000 entries | 9 | 52.5 | 61.3 | 61.3 | < 1,000 | yes |
 
-**The designer with 300 fields** (`specs/budgets/designer.spec.ts`, ADR-0169, ADR-0186): a form of three pages, thirty
-groups and 300 fields, open in Edge at 1,440 pixels, through selecting by click and by keyboard, adding, undoing and
-redoing a field, scrolling the canvas and moving a field. The browser's own measures, in milliseconds:
+**The designer with 300 fields** (`specs/budgets/designer.spec.ts`, ADR-0169, ADR-0186, ADR-0242): a form of three
+pages, thirty groups and 300 fields, open in Edge at 1,440 pixels, through selecting by click and by keyboard, adding,
+undoing and redoing a field, scrolling the canvas and moving a field. The browser's own measures, in milliseconds, the
+highest of five runs alone (16.5):
 
 | Measure | Found | Budget | Met |
 | --- | --- | --- | --- |
-| The slowest interaction, from the input to the next paint (152 of them over 16 ms) | 88 | < 100 | yes |
+| The slowest interaction, from the input to the next paint (133 to 162 of them over 16 ms) | 88 | < 100 | yes |
 | The longest task holding the main thread (none reached 50 ms) | 0 | < 100 | yes |
-| The most work of scripts and rendering in one frame | 21 | < 100 | yes |
+| The most work of scripts and rendering in one frame | 1 | < 100 | yes |
 | The most rendering in one frame | 1 | < 50 | yes |
-| The longest frame, the wait for the browser's own drawing included | 93 | reported | |
+| The longest frame, the wait for the browser's own drawing included | 110 | reported | |
+
+The slowest interactions left are the click that selects a field and opens its inspector (64 to 88 ms, most of it the
+inspector's work on the main thread) and Delete (72 to 80 ms, the view redrawn as the fields below move up). A move by
+the keyboard takes 32 to 56 ms and a drag's first moves 24 to 32 ms since the canvas's dashed lines run along square
+corners (ADR-0242).
 
 ## Files
 

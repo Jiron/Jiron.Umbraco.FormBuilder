@@ -398,6 +398,13 @@ export const canvasChrome = css`
     pointer-events: auto;
   }
 
+  /*
+   * The button over a field, a group or a page, whose ring shows what is selected, focused or under the pointer. Its
+   * corners stay square, as a selection box's do. The ring under the pointer is dashed, and a dashed line around rounded
+   * corners is drawn as a path, slowly on some graphics chips: the hover moving to the next field as a move by the
+   * keyboard went through took up to 112 ms to show on a form of 300 fields. Every dashed line on the canvas runs along
+   * square corners (ADR-0242).
+   */
   .jfb-form .bo-select {
     position: absolute;
     inset: -8px;
@@ -405,7 +412,7 @@ export const canvasChrome = css`
     margin: 0;
     padding: 0;
     border: 0;
-    border-radius: var(--uui-border-radius);
+    border-radius: 0;
     background: transparent;
     cursor: pointer;
   }
@@ -752,7 +759,7 @@ export const canvasChrome = css`
     margin: 0;
     padding: 8px 16px;
     border: 1px dashed var(--bo-sheet-line);
-    border-radius: var(--uui-border-radius);
+    border-radius: 0;
     background: none;
     color: var(--bo-sheet-quiet);
     font: inherit;
@@ -822,7 +829,7 @@ export const canvasChrome = css`
     margin: 0;
     padding: 10px 14px;
     border: 1px dashed var(--bo-sheet-line);
-    border-radius: var(--uui-border-radius);
+    border-radius: 0;
     color: var(--bo-sheet-quiet);
     font-size: 0.875em;
   }
@@ -993,7 +1000,7 @@ export const canvasChrome = css`
   .bo-slot {
     box-sizing: border-box;
     border: 1px dashed var(--jfb-bo-color-control-border);
-    border-radius: var(--uui-border-radius);
+    border-radius: 0;
     background: var(--uui-color-surface-emphasis);
   }
 
