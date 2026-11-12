@@ -3122,7 +3122,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
       - one broken form on a page not breaking the others.
     - Done when: each case has a test.
   - Done when: every part's "Done when" above passes, as each part says.
-- [ ] **16.5 Upgrade tests, the UX polish pass and code quality, and phase review** (16.5, 16.6 and 16.7 in one, ADR-0197)
+- [x] **16.5 Upgrade tests, the UX polish pass and code quality, and phase review** (16.5, 16.6 and 16.7 in one, ADR-0197) (2026-11-13, 463a9639)
   - **16.5 Upgrade and migration tests** (this step builds the install harness that 18.3 reuses):
     - **`scripts/install-test.ps1`:**
       - creates a fresh Umbraco 17 site (SQLite, unattended, generated credentials, the private template hive) under `%TEMP%\jfb-install-<timestamp>` on port 5530;
