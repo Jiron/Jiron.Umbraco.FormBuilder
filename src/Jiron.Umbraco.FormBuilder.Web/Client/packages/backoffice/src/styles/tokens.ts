@@ -44,13 +44,18 @@ export const jfbBackofficeTokens = css`
 
 /**
  * Hides an element's text from sight and keeps it for assistive technology. It wins over any sizing rule, as a hidden
- * control is still a control the form styles size (a file input drawn at full width stuck out of its screen, 12.6).
+ * control is still a control the form styles size (a file input drawn at full width stuck out of its screen, 12.6), and
+ * takes no room of its own: without padding, border or margin the 1 px box adds nothing to a scroll area that holds it
+ * (a caption's padding made the Overview's table scroll sideways by 17 px, 16.6), as the website's rule has it.
  */
 export const jfbVisuallyHidden = css`
   .visually-hidden {
     position: absolute !important;
     inline-size: 1px !important;
     block-size: 1px !important;
+    margin: -1px !important;
+    padding: 0 !important;
+    border: 0 !important;
     overflow: hidden !important;
     clip-path: inset(50%) !important;
     white-space: nowrap !important;

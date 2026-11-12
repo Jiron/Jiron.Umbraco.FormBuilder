@@ -61,6 +61,7 @@ import { ACTION_MODAL } from './action.modal.token';
 import { ACTION_RUN_MODAL } from './action-run.modal.token';
 import { runDetails, runLine, type LastRun } from './run-words';
 import { loadActionWords } from './action-words';
+import { jfbPhoneColumn } from '../../styles/phone';
 
 /** The setting a trigger needs, as a Fix it in the Settings view names it. */
 const NEEDED_AT: Readonly<Record<TriggerNeed, string>> = {
@@ -203,6 +204,7 @@ export class FormActionsViewElement extends UmbLitElement {
         margin: 0;
       }
     `,
+    jfbPhoneColumn,
   ];
 
   declare private _view: EditorView | undefined;

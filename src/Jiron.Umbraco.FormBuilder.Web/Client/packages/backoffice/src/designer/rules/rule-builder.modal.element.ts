@@ -7,7 +7,7 @@
 import type { Kind, Operand, Rule } from '@jfb/logic';
 import { css, html, nothing, type PropertyValues, type TemplateResult } from '@umbraco-cms/backoffice/external/lit';
 import { UmbModalBaseElement } from '@umbraco-cms/backoffice/modal';
-import { jfbBackofficeTokens } from '../../styles/tokens';
+import { jfbBackofficeTokens, jfbVisuallyHidden } from '../../styles/tokens';
 import { allFields, locate, validationRulesOf, type DesignField } from '../definition';
 import { resolveOptions } from '../inspector/option-data';
 import { ownText, withText } from '../inspector/setting-values';
@@ -101,6 +101,7 @@ export class RuleBuilderModalElement extends UmbModalBaseElement<RuleBuilderModa
 
   static override styles = [
     jfbBackofficeTokens,
+    jfbVisuallyHidden,
     css`
       /* The sidebar's whole height, so its actions sit at its foot. */
       :host {
@@ -370,19 +371,15 @@ export class RuleBuilderModalElement extends UmbModalBaseElement<RuleBuilderModa
         inline-size: 100%;
       }
 
-      .visually-hidden {
-        position: absolute;
-        inline-size: 1px;
-        block-size: 1px;
-        overflow: hidden;
-        clip-path: inset(50%);
-        white-space: nowrap;
-      }
-
-      /* A narrow sidebar puts each part of a row on a line of its own, at its full width. */
+      /* A narrow sidebar puts each part of a row on a line of its own, at its full width; in the first line the target
+         takes its own, so its name is not cut beside "when", which then leads into the conditions below it. */
       @container (max-width: 560px) {
         .parts {
           grid-template-columns: minmax(0, 1fr);
+        }
+
+        .first-line #target {
+          flex-basis: 100%;
         }
       }
     `,

@@ -198,7 +198,7 @@ Use Umbraco's own words where Umbraco has the same action, so the section feels 
 | start from a ready-made form (the checklist, an empty folder) | Choose a template… | Vorlage wählen… |
 | make a JSON file a form's draft (a form's "…", for who may design it; the import sidebar for that form) · its primary | Replace from a file… · Replace the draft | Aus einer Datei ersetzen… · Entwurf ersetzen |
 | keep a form as a template (its "…" in the tree, for who may manage the library and design the form) · keep the selected group as one (its "…" on the canvas) | Save as template… · Save group as template… | Als Vorlage speichern… · Gruppe als Vorlage speichern… |
-| a saved template's "…" (Library › Templates; a built-in one has none) · its dialog's primary | Rename… · Delete… · Save template · Rename | Umbenennen… · Löschen… · Vorlage speichern · Umbenennen |
+| a saved template's "…" (Library › Templates; a built-in one has none) · the primary of the dialog that keeps a form or group as one, whose title names it · the rename dialog's primary | Rename… · Delete… · Save · Rename | Umbenennen… · Löschen… · Speichern · Umbenennen |
 | turn a list of questions into fields | Paste questions… | Fragen einfügen… |
 | turn lines into a choice field's options, or a grid's rows (one a line) | Paste options… · Paste rows… | Optionen einfügen… · Zeilen einfügen… |
 | move an option or a grid's row with single presses: what its handle opens under it | Position in the list · 1 of 3 | Position in der Liste · 1 von 3 |

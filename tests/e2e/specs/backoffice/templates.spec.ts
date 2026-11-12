@@ -149,7 +149,7 @@ test('a group saved on one form is inserted into another with keys of its own an
   await dialog.getByRole('textbox', { name: 'Name of the template' }).fill(block);
   await axeInside(page, 'jfb-template-name-modal');
   await look(page, info, 'save group as template');
-  await dialog.getByRole('button', { name: 'Save template' }).click();
+  await dialog.getByRole('button', { name: 'Save', exact: true }).click();
   await expect(
     toast(page, `${block} was saved without 1 rule and 1 validation rule that depend on fields outside the group.`),
   ).toBeVisible();
@@ -211,7 +211,7 @@ test('a form saved as a template is found, used, renamed and deleted in Library 
   const dialog = page.locator('jfb-template-name-modal');
   await expect(dialog.getByRole('textbox', { name: 'Name of the template' })).toHaveValue(name);
   await dialog.getByRole('textbox', { name: 'Description' }).fill('For questions about an order');
-  await dialog.getByRole('button', { name: 'Save template' }).click();
+  await dialog.getByRole('button', { name: 'Save', exact: true }).click();
   await expect(toast(page, `${name} was saved as a template.`)).toBeVisible();
 
   await page.locator('umb-menu-item-layout[label="Templates"], uui-menu-item[label="Templates"]').first().click();

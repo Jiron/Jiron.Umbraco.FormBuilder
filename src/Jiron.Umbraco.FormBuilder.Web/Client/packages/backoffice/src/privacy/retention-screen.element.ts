@@ -26,6 +26,7 @@ import { saveSection } from '../settings/settings-api';
 import { loadSettingsWords } from '../settings/settings-words';
 import { jfbBackofficeTokens, jfbVisuallyHidden } from '../styles/tokens';
 import { jfbSkeleton, skeletonLines } from '../ui/skeleton';
+import { jfbPhoneColumn } from '../styles/phone';
 
 /** The states retention keeps entries in, in the order the screen names them. */
 export const STATES = ['submitted', 'approved', 'rejected', 'spam'] as const;
@@ -365,6 +366,7 @@ export class RetentionScreenElement extends UmbLitElement {
         gap: var(--uui-size-space-4);
       }
     `,
+    jfbPhoneColumn,
   ];
 
   declare private _model: RetentionResponseModel | undefined;

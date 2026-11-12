@@ -21,6 +21,7 @@ import { accessMatrix, matrixStyles, type MatrixPart } from './access-matrix';
 import { changedGrants, grantsOf, sentenceOf, withPermission, type Grants } from './access-model';
 import { loadAccessWords } from './access-words';
 import { PERMISSIONS_MODAL } from './permissions.modal.token';
+import { jfbPhoneColumn } from '../styles/phone';
 
 /** What the screen says once, at its top, about the last save. */
 type Alert = '' | 'conflict' | 'lockedNow' | 'invalid';
@@ -144,6 +145,7 @@ export class AccessScreenElement extends UmbLitElement {
         gap: var(--uui-size-space-4);
       }
     `,
+    jfbPhoneColumn,
   ];
 
   declare private _answer: AccessResponseModel | undefined;

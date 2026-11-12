@@ -87,6 +87,7 @@ import {
 import { OUTCOME_MODAL } from './outcome.modal.token';
 import { described, flagLine, flagWith, NO_FLAG, whyLine, whys, type Flag, type Shown } from './problem-lines';
 import { settingsStyles } from './settings.styles';
+import { jfbPhoneColumn } from '../../styles/phone';
 import { isInstant, toInstant, toLocal, zoneOf } from './time-zone';
 import { withThemeLabel } from '../../themes/theme-label';
 import './visitor-texts.element';
@@ -175,7 +176,14 @@ export class FormSettingsViewElement extends UmbLitElement {
     _lookups: { state: true },
   };
 
-  static override styles = [jfbBackofficeTokens, jfbVisuallyHidden, controlStyles, choiceStyles, settingsStyles];
+  static override styles = [
+    jfbBackofficeTokens,
+    jfbVisuallyHidden,
+    controlStyles,
+    choiceStyles,
+    settingsStyles,
+    jfbPhoneColumn,
+  ];
 
   declare private _view: EditorView | undefined;
   declare private _choices: FormSettingsChoicesResponseModel | undefined;

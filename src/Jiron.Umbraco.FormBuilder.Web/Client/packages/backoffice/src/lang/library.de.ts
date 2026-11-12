@@ -97,7 +97,7 @@ export default {
     templateName: 'Name der Vorlage',
     templateDescription: 'Beschreibung',
     optional: '(optional)',
-    saveTemplate: 'Vorlage speichern',
+    saveTemplate: 'Speichern',
     saveAsTemplateHeadline: (name: string) => `${name} als Vorlage speichern`,
     saveAsTemplateNote:
       'Die Vorlage enthält das Formular, wie es zuletzt gespeichert wurde: Ungespeicherte Änderungen bleiben außen vor.',

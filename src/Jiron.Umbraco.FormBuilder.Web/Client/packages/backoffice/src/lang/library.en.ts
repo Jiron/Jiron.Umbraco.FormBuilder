@@ -86,7 +86,7 @@ export default {
     templateName: 'Name of the template',
     templateDescription: 'Description',
     optional: '(optional)',
-    saveTemplate: 'Save template',
+    saveTemplate: 'Save',
     saveAsTemplateHeadline: (name: string) => `Save ${name} as a template`,
     saveAsTemplateNote: 'The template holds the form as last saved: changes not saved yet stay out.',
     savedAsTemplate: (name: string) => `${name} was saved as a template.`,

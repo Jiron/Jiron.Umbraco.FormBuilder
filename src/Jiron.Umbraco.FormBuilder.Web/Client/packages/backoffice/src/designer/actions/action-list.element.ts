@@ -226,10 +226,17 @@ export class ActionListElement extends UmbLitElement {
       }
 
       /* Test sits on a card wide enough to keep its name readable beside it; a narrow card offers it in its "...", once
-         either way (IA 5.3). */
+         either way (IA 5.3), and puts its switch and "..." on a row of their own under the text and the last run, so
+         the name and its line keep the card's width on a phone. */
       @container jfb-action-list (width < 26rem) {
         .end .test {
           display: none;
+        }
+
+        .end {
+          grid-row: 3;
+          grid-column: 3 / -1;
+          justify-self: end;
         }
       }
 

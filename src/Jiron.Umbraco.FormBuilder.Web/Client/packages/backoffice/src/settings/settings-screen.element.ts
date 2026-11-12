@@ -36,6 +36,7 @@ import { readSection, saveSection, sendTestMail, type Refused } from './settings
 import { consentLabelOf, settingsEditors } from './settings-editors';
 import { megabytesOf } from './settings-values';
 import { loadSettingsWords } from './settings-words';
+import { jfbPhoneColumn } from '../styles/phone';
 
 /** The most settings a box shows before More options (IA 8). */
 export const MOST_IN_A_BOX = 7;
@@ -246,6 +247,7 @@ export class SettingsScreenElement extends UmbLitElement {
         gap: var(--uui-size-space-4);
       }
     `,
+    jfbPhoneColumn,
   ];
 
   /** The section the screen shows, as the management API names it. */
