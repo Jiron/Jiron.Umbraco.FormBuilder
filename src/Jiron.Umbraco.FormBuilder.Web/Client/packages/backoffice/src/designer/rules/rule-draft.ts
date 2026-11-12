@@ -4,7 +4,6 @@
 // builder never writes a condition that publishing refuses. Pure: the sidebar draws it, and the tests read it.
 import {
   checkGroup,
-  compilePattern,
   contextKindOf,
   LogicError,
   MAX_DEPTH,
@@ -704,17 +703,6 @@ export function problemsOf(draft: DraftRule, scope: RuleScope): Map<string, RowP
     if (problem) problems.set(condition.id, problem);
   }
   return problems;
-}
-
-/** Whether a pattern is one the site's matcher takes. */
-export function patternWorks(pattern: string): boolean {
-  try {
-    compilePattern(pattern);
-    return true;
-  } catch (error) {
-    if (error instanceof LogicError) return false;
-    throw error;
-  }
 }
 
 // The first line: what the rule does, and to what.

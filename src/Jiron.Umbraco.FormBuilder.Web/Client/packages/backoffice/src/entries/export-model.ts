@@ -181,9 +181,6 @@ export function exportLabel(term: Term, format: string, plan: EntryExportPlanRes
   return term(format === 'print' ? 'export_printCount' : 'export_startCount', plan.entries);
 }
 
-/** A background export's state, as the API names it. */
-export type ExportState = 'queued' | 'running' | 'ready' | 'failed';
-
 /** Whether a background export has come to its end: ready or failed. */
 export const isFinished = (status: EntryExportStatusResponseModel): boolean =>
   status.state === 'ready' || status.state === 'failed';

@@ -3,7 +3,7 @@
 // each other.
 import { UmbContextToken } from '@umbraco-cms/backoffice/context-api';
 import type { UmbWorkspaceContext } from '@umbraco-cms/backoffice/workspace';
-import { screenPath, SECTION_PATHNAME } from '../section/entity-types';
+import { SECTION_PATHNAME } from '../section/entity-types';
 import type { EmailLayoutDetailStore } from './email-layout-detail.store';
 import type { EmailLayoutWorkspaceContext } from './email-layout-workspace.context';
 
@@ -30,6 +30,3 @@ export const EMAIL_LAYOUT_WORKSPACE_CONTEXT = new UmbContextToken<UmbWorkspaceCo
 
 /** The address of a new layout's workspace, relative to the backoffice. */
 export const newLayoutPath = (): string => `section/${SECTION_PATHNAME}/workspace/${EMAIL_LAYOUT_ENTITY_TYPE}/create`;
-
-/** The address of a layout's workspace. */
-export const layoutPath = (key: string): string => screenPath(EMAIL_LAYOUT_ENTITY_TYPE, key);

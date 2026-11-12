@@ -3,18 +3,10 @@
 // an outcome after a send, the countdown's seconds and the print button, the preview adds the same way.
 import { countdownFrom } from '@jfb/runtime/countdown';
 import type { OutcomePreviewResponseModel } from '../../api';
-import {
-  DraftPreviewer,
-  NO_PREVIEW,
-  type PreviewAsk,
-  type PreviewState as DraftPreviewState,
-} from '../preview/draft-previewer';
+import { DraftPreviewer, NO_PREVIEW, type PreviewState as DraftPreviewState } from '../preview/draft-previewer';
 
 /** What the server answers for an outcome: its markup, or for a redirect where visitors go. */
 export type OutcomePreview = OutcomePreviewResponseModel;
-
-/** Asks the server for the preview of an outcome of a definition; undefined when there is no answer. */
-export type OutcomePreviewAsk = PreviewAsk<OutcomePreview>;
 
 /** The preview as the outcome's sidebar shows it. */
 export type PreviewState = DraftPreviewState<OutcomePreview>;

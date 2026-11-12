@@ -162,11 +162,6 @@ export function objectOf(
   return kept;
 }
 
-/** Whether two objects of names and texts hold the same, in the same order. */
-export function sameRows(a: unknown, b: unknown): boolean {
-  return JSON.stringify(rowsOf(a)) === JSON.stringify(rowsOf(b)) && isObject(a) === isObject(b);
-}
-
 // ---- Where an editor starts ----------------------------------------------------------------------------------------
 
 /** The tag of a field's answer. */

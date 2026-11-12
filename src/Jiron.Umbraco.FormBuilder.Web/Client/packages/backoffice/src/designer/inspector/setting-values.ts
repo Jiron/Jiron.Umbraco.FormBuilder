@@ -31,9 +31,6 @@ const refused = (problem: Problem): Parsed => ({ ok: false, problem });
 export const settingsOf = (field: DesignField): Readonly<Record<string, unknown>> =>
   (field['settings'] as Readonly<Record<string, unknown>> | undefined) ?? {};
 
-/** Whether the host locks the setting, so the inspector shows it read-only; a hidden lock shows nothing. */
-export const isLocked = (setting: FieldSettingResponseModel) => Boolean(setting.lock);
-
 /** A setting's value: the host's locked one, else the field's own, else the type's default. */
 export function valueOf(settings: Readonly<Record<string, unknown>>, setting: FieldSettingResponseModel): unknown {
   const lock = setting.lock;
