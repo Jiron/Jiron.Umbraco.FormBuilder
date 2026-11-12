@@ -140,6 +140,13 @@
   gap: 1em;
 }
 
+/* Two long end words on a narrow screen, or with wider text spacing, break rather than push the page sideways: with a
+   hyphen where the browser knows the language, anywhere else. */
+.jfb-form .jfb-ends > * {
+  overflow-wrap: anywhere;
+  hyphens: auto;
+}
+
 .jfb-form .jfb-matrix-head {
   display: none;
 }
@@ -219,6 +226,16 @@
 .jfb-form .jfb-upload:not([data-jfb-enhanced]) :is(label, p),
 .jfb-form .jfb-upload .jfb-upload-camera {
   display: none;
+}
+
+/* The browser's own file input is as wide as its button and words; on a narrow screen it shrinks with the form. */
+.jfb-form .jfb-upload-actions {
+  min-inline-size: 0;
+  max-inline-size: 100%;
+}
+
+.jfb-form .jfb-upload input[type='file'] {
+  min-inline-size: 0;
 }
 
 .jfb-form .jfb-upload[data-jfb-enhanced] input[type='file'] {

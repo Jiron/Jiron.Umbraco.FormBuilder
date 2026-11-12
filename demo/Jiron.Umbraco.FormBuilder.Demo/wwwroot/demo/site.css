@@ -171,11 +171,14 @@ main:focus {
   padding: 40px 24px 72px;
 }
 
+/* A long word of a heading (Formularmuster at 320 pixels with wider letter spacing) breaks rather than scroll the page. */
 .site-main h1 {
   margin: 0 0 12px;
   font-family: Georgia, "Times New Roman", serif;
   font-size: 40px;
   line-height: 1.15;
+  overflow-wrap: break-word;
+  hyphens: auto;
 }
 
 .site-lede {
