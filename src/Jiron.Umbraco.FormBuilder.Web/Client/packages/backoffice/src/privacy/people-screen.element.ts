@@ -5,6 +5,7 @@
 // line in the list's place says what went and where it is recorded. Every request names the person again; the server
 // finds the entries again, and the audit log never names whom they were about. The sidebar names the screen.
 import { css, html, nothing, type TemplateResult } from '@umbraco-cms/backoffice/external/lit';
+import { UMB_CURRENT_USER_CONTEXT } from '@umbraco-cms/backoffice/current-user';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import { UMB_MEMBER_PICKER_MODAL, UmbMemberItemRepository } from '@umbraco-cms/backoffice/member';
 import { umbOpenModal } from '@umbraco-cms/backoffice/modal';
@@ -34,6 +35,10 @@ import { bodyOf, downloadPersonExport, personExportFollower, type Person } from 
 import { startIdleGate } from '../ui/idle-gate';
 import { PEOPLE_ERASE_MODAL } from './people-erase.modal.token';
 import { PEOPLE_HOLD_MODAL } from './people-hold.modal.token';
+import { jfbPhoneColumn } from '../styles/phone';
+
+/** Umbraco's Members section, whose users may list members in its picker. */
+const MEMBERS_SECTION = 'Umb.Section.Members';
 
 /** The longest address (RFC 5321). */
 const MOST_ADDRESS = 254;
@@ -259,6 +264,7 @@ export class PeopleScreenElement extends UmbLitElement {
         }
       }
     `,
+    jfbPhoneColumn,
   ];
 
   declare private _ready: boolean;
@@ -275,6 +281,8 @@ export class PeopleScreenElement extends UmbLitElement {
   declare private _exportFailed: boolean;
   declare private _erased: { readonly erased: PersonErasedResponseModel; readonly who: string } | undefined;
   declare private _canAudit: boolean;
+  /** Whether the user may open Umbraco's Members section, whose member picker the member search needs (16.6). */
+  declare private _membersAllowed: boolean;
 
   #notices: Notices | undefined;
 
@@ -292,7 +300,16 @@ export class PeopleScreenElement extends UmbLitElement {
     this._exportFailed = false;
     this._erased = undefined;
     this._canAudit = false;
+    this._membersAllowed = false;
     this.consumeContext(UMB_NOTIFICATION_CONTEXT, (notices) => (this.#notices = notices));
+    // Umbraco lists members only to users who may open its Members section; the others find a member's entries by the
+    // member's address, which finds what the member search finds (ADR-0223, ADR-0241).
+    this.consumeContext(UMB_CURRENT_USER_CONTEXT, (user) => {
+      this.observe(user?.allowedSections, (sections) => {
+        this._membersAllowed = sections?.includes(MEMBERS_SECTION) ?? false;
+        if (!this._membersAllowed) this._byMember = false;
+      });
+    });
   }
 
   override connectedCallback() {
@@ -342,6 +359,12 @@ export class PeopleScreenElement extends UmbLitElement {
     }
     this._emailProblem = false;
     await this.#find({ email }, email);
+  }
+
+  /** Finds by address or by member; switched to members, the picker opens at once, so a member is one click away (16.6). */
+  #switchWay() {
+    this._byMember = !this._byMember;
+    if (this._byMember) void this.#chooseMember();
   }
 
   async #chooseMember() {
@@ -509,9 +532,13 @@ export class PeopleScreenElement extends UmbLitElement {
       ${this._emailProblem && !this._byMember ? html`<p class="why" id="email-why">${this.#term('people_emailInvalid')}</p>` : nothing}
       <p class="help" id="find-help">
         ${this.#term('people_findHelp')}
-        <button type="button" class="link" @click=${() => (this._byMember = !this._byMember)}>
-          ${this.#term(this._byMember ? 'people_byEmail' : 'people_byMember')}
-        </button>
+        ${
+          this._membersAllowed
+            ? html`<button type="button" class="link" @click=${() => this.#switchWay()}>
+                ${this.#term(this._byMember ? 'people_byEmail' : 'people_byMember')}
+              </button>`
+            : nothing
+        }
       </p>
     </uui-box>`;
   }
@@ -602,7 +629,7 @@ export class PeopleScreenElement extends UmbLitElement {
     if (found.entries.length === 0)
       return html`<uui-box>
         <p role="status">
-          ${this._person && 'email' in this._person ? this.#term('people_none', this._who) : this.#term('people_noneMember', this._who)}
+          ${this._person && 'email' in this._person && this._membersAllowed ? this.#term('people_none', this._who) : this.#term('people_noneFound', this._who)}
         </p>
       </uui-box>`;
     const headline = this.#term(

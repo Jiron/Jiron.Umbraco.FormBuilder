@@ -287,7 +287,7 @@ export default {
     people_emailPlaceholder: 'For example: name@example.com',
     people_find: 'Find',
     people_findHelp: 'Every form is searched, restricted ones included, and the search is recorded in the audit log.',
-    people_byMember: 'Find a member instead',
+    people_byMember: 'Find a member instead…',
     people_byEmail: 'Use an email address instead',
     people_member: 'Member',
     people_chooseMember: 'Choose a member',
@@ -302,7 +302,7 @@ export default {
     people_more: 'These are the newest 500. Erase them, then find again for the rest.',
     people_none: (who: string) =>
       `No entries found for ${who}. Entries sent while signed in are found through the member.`,
-    people_noneMember: (who: string) => `No entries found for ${who}.`,
+    people_noneFound: (who: string) => `No entries found for ${who}.`,
     people_failed: "The entries couldn't be found.",
     people_export: 'Export everything',
     people_hold: 'Set legal hold…',

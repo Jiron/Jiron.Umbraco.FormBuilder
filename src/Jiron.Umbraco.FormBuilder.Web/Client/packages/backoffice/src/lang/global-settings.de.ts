@@ -300,7 +300,7 @@ export default {
     people_find: 'Finden',
     people_findHelp:
       'Alle Formulare werden durchsucht, auch eingeschränkte, und die Suche wird im Protokoll festgehalten.',
-    people_byMember: 'Stattdessen ein Mitglied finden',
+    people_byMember: 'Stattdessen ein Mitglied finden…',
     people_byEmail: 'Stattdessen eine E-Mail-Adresse verwenden',
     people_member: 'Mitglied',
     people_chooseMember: 'Mitglied auswählen',
@@ -316,7 +316,7 @@ export default {
     people_more: 'Das sind die neuesten 500. Löschen Sie sie und suchen Sie dann erneut nach den übrigen.',
     people_none: (who: string) =>
       `Keine Einträge für ${who} gefunden. Einträge, die angemeldet gesendet wurden, finden Sie über das Mitglied.`,
-    people_noneMember: (who: string) => `Keine Einträge für ${who} gefunden.`,
+    people_noneFound: (who: string) => `Keine Einträge für ${who} gefunden.`,
     people_failed: 'Die Einträge konnten nicht gefunden werden.',
     people_export: 'Alles exportieren',
     people_hold: 'Löschsperre setzen…',

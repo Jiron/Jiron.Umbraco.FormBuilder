@@ -3,6 +3,8 @@
 // went and where it is recorded; Export everything says how far it is and links the file from a toast. The erase dialog
 // names the counts, deletes by default and anonymises when chosen, with Cancel focused; the hold sidebar says each
 // problem under its box and sends the day the hold ends.
+import { UMB_CURRENT_USER_CONTEXT } from '@umbraco-cms/backoffice/current-user';
+import { BehaviorSubject } from '@umbraco-cms/backoffice/external/rxjs';
 import { UMB_NOTIFICATION_CONTEXT } from '@umbraco-cms/backoffice/notification';
 import { UmbObjectState } from '@umbraco-cms/backoffice/observable-api';
 import { UmbApiError } from '@umbraco-cms/backoffice/resources';
@@ -135,11 +137,16 @@ const FOUND: PersonFoundResponseModel = {
   forms: 2,
 };
 
-async function screenOf() {
+/** The screen, for a user of these sections: by default one who may open Umbraco's Members, whose picker it uses. */
+async function screenOf(sections: string[] = ['Umb.Section.Members']) {
   const host = testHost();
   const peek = vi.fn();
   const stay = vi.fn();
   host.provideContext(UMB_NOTIFICATION_CONTEXT, { peek, stay, getHostElement: () => host } as never);
+  host.provideContext(UMB_CURRENT_USER_CONTEXT, {
+    allowedSections: new BehaviorSubject<string[] | undefined>(sections).asObservable(),
+    getHostElement: () => host,
+  } as never);
   const screen = new PeopleScreenElement();
   host.append(screen);
   await vi.waitFor(() => expect(shadow(screen).querySelector('#email')).not.toBeNull());
@@ -230,19 +237,41 @@ describe('the People screen', () => {
     );
   });
 
-  it('finds by a member chosen with the member picker, named as the picker names them', async () => {
+  it('finds by a member chosen with the member picker, which the switch to members opens at once, named as the picker names them', async () => {
     api.found = { entries: [entry()], more: false, forms: 1 };
     api.answers['Umb.Modal.MemberPicker'] = { selection: ['cccccccc-cccc-4ccc-8ccc-cccccccccccc'] };
     const { root, screen, button } = await screenOf();
 
-    button('Find a member instead').click();
-    await settle(screen);
-    button('Choose a member').click();
+    button('Find a member instead\u2026').click();
     await vi.waitFor(() => expect(api.asked).toHaveLength(1));
     await settle(screen);
 
     expect(api.asked).toEqual([{ member: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc' }]);
     expect(said(root.querySelector('.member'))).toContain('Member: Ada Lovelace');
+  });
+
+  it('offers the member search only to who may open Members, and says plainly that nobody was found to the others', async () => {
+    api.found = { entries: [], more: false, forms: 0 };
+    const { root, find } = await screenOf(['Jiron.FormBuilder.Section']);
+
+    expect([...root.querySelectorAll('#find-help button')]).toHaveLength(0);
+    await find('l.weber@example.com');
+
+    expect(said(root.querySelector('[role="status"]'))).toBe('No entries found for l.weber@example.com.');
+  });
+
+  it('keeps Choose a member for another member, and for a picker closed without one', async () => {
+    api.found = { entries: [entry()], more: false, forms: 1 };
+    const { root, screen, button } = await screenOf();
+
+    button('Find a member instead\u2026').click();
+    await settle(screen);
+
+    expect(api.asked).toEqual([]);
+    expect(root.querySelector('.member uui-button')?.getAttribute('label')).toBe('Choose a member');
+    button('Use an email address instead').click();
+    await settle(screen);
+    expect(root.querySelector('#email')).not.toBeNull();
   });
 
   it('releases a legal hold from its row', async () => {
