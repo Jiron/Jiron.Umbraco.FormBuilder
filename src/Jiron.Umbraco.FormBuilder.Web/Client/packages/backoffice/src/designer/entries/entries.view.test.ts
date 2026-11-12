@@ -715,6 +715,16 @@ describe("a form's Entries view", () => {
     expect(opened.modals.at(-1)?.token).toBe(ENTRY_KEYS_MODAL_ALIAS);
   });
 
+  it('takes its keys only while the focus is in the list, never from elsewhere on the page (WCAG 2.1.4)', async () => {
+    const { rows, press } = await viewOf();
+    await press('j', document.body);
+    await press('a', document.body);
+    expect(rows().some((row) => row.classList.contains('cursor'))).toBe(false);
+    expect(server.moves).toEqual([]);
+    await press('j');
+    expect(rows()[0]?.classList.contains('cursor')).toBe(true);
+  });
+
   it('says on first use what makes entries appear, without a toolbar, in the words of what the user may do', async () => {
     server.rows = [];
     const designer = await viewOf((workspace) => workspace.forms.setValue({ permissions: ['viewEntries', 'design'] }));

@@ -1568,11 +1568,15 @@ export class EntriesViewElement extends UmbLitElement {
 
   // ---- The keyboard -------------------------------------------------------------------------------------------------
 
-  /** The keys of section 4.13 while the list is where the user is: nothing they type in a box, and no motion. */
+  /**
+   * The keys of section 4.13 while the focus is in the list: nothing typed in a box, and no motion. Keys of one
+   * character act only there, never from elsewhere on the page, so speech input that types a word sets off none of
+   * them (WCAG 2.1.4, ROADMAP 16.3).
+   */
   #keys = (event: KeyboardEvent) => {
     if (!this._words || event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey) return;
     const path = event.composedPath();
-    if (!path.includes(this) && document.activeElement !== document.body) return;
+    if (!path.includes(this)) return;
     if (isTyping(path[0] ?? null)) return;
     const row = this._rows[this._cursor];
     switch (event.key) {
