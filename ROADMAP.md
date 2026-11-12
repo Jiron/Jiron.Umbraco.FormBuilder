@@ -3081,7 +3081,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
 
 ### Phase 16: Hardening
 
-- [ ] **16.1 Hardening: security, performance and load, accessibility and resilience** (16.1, 16.2, 16.3 and 16.4 in one, ADR-0197)
+- [x] **16.1 Hardening: security, performance and load, accessibility and resilience** (16.1, 16.2, 16.3 and 16.4 in one, ADR-0197) (2026-11-12, 34cfee0e)
   - **16.1 Security review**:
     - A STRIDE pass over the architecture, and an OWASP ASVS-style checklist on the code:
       - XSS, injection, authorisation on every endpoint, CSRF posture;
