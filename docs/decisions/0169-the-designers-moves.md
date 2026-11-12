@@ -1,6 +1,7 @@
 # 0169. The designer's moves: a handle on every element, refusals where they happen, keys on the focused element
 
-- Status: accepted; narrows IA 5.1's "deleting or moving something shows a toast with Undo"
+- Status: accepted; narrows IA 5.1's "deleting or moving something shows a toast with Undo"; the browser the budget is
+  held in amended by [ADR-0243](0243-the-designer-budget-in-a-browser-that-has-drawn-before.md) in 16.5
 - Date: 2026-11-03
 - Roadmap step: 9.3c (decided and built); builds on ADR-0016 (the pointer drag and its keyboard path) and ADR-0168 (the canvas)
 
@@ -126,3 +127,6 @@ For move toasts:
   still names every slow interaction in its message.
 - 2026-11-05: the frames are measured by the main thread's hold, not by their whole duration, which also counts the
   browser's drawing after the main thread is idle ([ADR-0186](0186-the-designer-budget-measures-the-main-thread.md)).
+- 2026-11-12 (16.5's gate): the steps run twice, on a form of 300 fields each in a new page: first in the new browser,
+  whose graphics chip draws each kind of thing for the first time (each interaction under 200 ms, the main thread as
+  before), then in a second page of the same browser, where every budget holds ([ADR-0243](0243-the-designer-budget-in-a-browser-that-has-drawn-before.md)).

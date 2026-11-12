@@ -1,6 +1,7 @@
 # 0186. The designer's budget measures the main thread's hold, not the browser's drawing after it
 
-- Status: accepted
+- Status: accepted; the browser the budget is held in amended by
+  [ADR-0243](0243-the-designer-budget-in-a-browser-that-has-drawn-before.md) in 16.5
 - Date: 2026-11-05
 - Roadmap step: 10.1b (its gate); amends [ADR-0169](0169-the-designers-moves.md) (the 300-field budget) and builds on
   [ADR-0176](0176-the-designer-budget-on-long-forms.md); §4.12

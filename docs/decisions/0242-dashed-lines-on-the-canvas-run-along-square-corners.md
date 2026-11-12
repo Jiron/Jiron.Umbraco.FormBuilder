@@ -2,7 +2,8 @@
 
 - Status: accepted; builds on [ADR-0169](0169-the-designers-moves.md) (the 300-field budget),
   [ADR-0176](0176-the-designer-budget-on-long-forms.md) and
-  [ADR-0186](0186-the-designer-budget-measures-the-main-thread.md)
+  [ADR-0186](0186-the-designer-budget-measures-the-main-thread.md); what its measures counted amended by
+  [ADR-0243](0243-the-designer-budget-in-a-browser-that-has-drawn-before.md) in 16.5
 - Date: 2026-11-12
 - Roadmap step: 16.5 (its phase-review gate found it); §4.12, §3.5 "Flaky means broken"
 

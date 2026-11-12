@@ -1,7 +1,8 @@
 # 0176. The designer's budget on long forms
 
 - Status: accepted; builds on [ADR-0169](0169-the-designers-moves.md) (the budgets project, section 4.12) and
-  [ADR-0168](0168-the-canvas-draws-with-the-elements-views.md) (the canvas draws the form in its theme)
+  [ADR-0168](0168-the-canvas-draws-with-the-elements-views.md) (the canvas draws the form in its theme); the browser the
+  budget is held in amended by [ADR-0243](0243-the-designer-budget-in-a-browser-that-has-drawn-before.md) in 16.5
 - Date: 2026-11-04
 - Roadmap step: 9.4d (its gate found it)
 
