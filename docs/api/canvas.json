@@ -35,6 +35,8 @@
     "alreadySentText": "Each member can send it once.",
     "pendingHeading": "This form waits for an update",
     "pendingText": "Visitors see nothing here until Jiron Form Builder's database update has run. Only signed-in backoffice users see this note.",
+    "brokenHeading": "This form couldn't be shown",
+    "brokenText": "Something went wrong while it was rendered ({0}). Visitors see nothing here, and the site's log has the details. Only signed-in backoffice users see this note.",
     "other": "Other",
     "otherText": "Your own answer",
     "choose": "Choose one",
