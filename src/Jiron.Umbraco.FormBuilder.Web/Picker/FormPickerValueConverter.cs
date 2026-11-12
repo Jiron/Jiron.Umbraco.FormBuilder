@@ -16,7 +16,7 @@ namespace Jiron.Umbraco.FormBuilder.Web.Picker;
 /// <param name="Expand">Whether the request expands the property.</param>
 /// <param name="Theme">The theme the picker's settings name, or null.</param>
 /// <param name="Redirect">The page after a send the picker's settings name, or null.</param>
-public sealed record FormPickerDeliveryMarker(
+internal sealed record FormPickerDeliveryMarker(
     [property: JsonPropertyName(FormPickerDeliveryMarker.FormName)] Guid Form,
     [property: JsonPropertyName(FormPickerDeliveryMarker.ExpandName)] bool Expand,
     [property: JsonPropertyName(FormPickerDeliveryMarker.ThemeName)] string? Theme = null,

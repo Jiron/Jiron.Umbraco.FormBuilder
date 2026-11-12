@@ -243,7 +243,7 @@ internal sealed record ActionTypeResponseModel
 }
 
 /// <summary>A ready-made start for an action (ADR-0160).</summary>
-public sealed class ActionPresetResponseModel
+internal sealed class ActionPresetResponseModel
 {
     /// <summary>The name to show: plain text, or a <c>#</c> key of the backoffice's localisation.</summary>
     public required string Name { get; init; }

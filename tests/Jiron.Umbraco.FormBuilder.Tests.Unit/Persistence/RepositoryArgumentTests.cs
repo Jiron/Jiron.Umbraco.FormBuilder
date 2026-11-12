@@ -202,15 +202,19 @@ public sealed class RepositoryArgumentTests
         });
     }
 
-    [TestCase(OptionListKind.Manual, "manual")]
-    [TestCase(OptionListKind.Content, "content")]
-    [TestCase(OptionListKind.DataType, "dataType")]
-    [TestCase(OptionListKind.Url, "url")]
-    [TestCase(OptionListKind.File, "file")]
-    [TestCase(OptionListKind.Countries, "countries")]
-    [TestCase(OptionListKind.Code, "code")]
-    public void OptionLists_StoreTheirKindAsItsCamelCaseName(OptionListKind kind, string stored) =>
+    // The kind is internal, so a public test names it by its member's name.
+    [TestCase(nameof(OptionListKind.Manual), "manual")]
+    [TestCase(nameof(OptionListKind.Content), "content")]
+    [TestCase(nameof(OptionListKind.DataType), "dataType")]
+    [TestCase(nameof(OptionListKind.Url), "url")]
+    [TestCase(nameof(OptionListKind.File), "file")]
+    [TestCase(nameof(OptionListKind.Countries), "countries")]
+    [TestCase(nameof(OptionListKind.Code), "code")]
+    public void OptionLists_StoreTheirKindAsItsCamelCaseName(string member, string stored)
+    {
+        var kind = Enum.Parse<OptionListKind>(member);
         Assert.That((StoredNames.Of(kind), StoredNames.Parse<OptionListKind>(stored)), Is.EqualTo((stored, kind)));
+    }
 
     [Test]
     public void TheLibrary_RefusesWhatItsColumnsCannotHold()

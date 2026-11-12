@@ -5,7 +5,7 @@ using Jiron.Umbraco.FormBuilder.Core.Submissions;
 namespace Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries;
 
 /// <summary>One entry as the entry panel shows it (ADR-0208).</summary>
-public sealed class EntryPanelResponseModel
+internal sealed class EntryPanelResponseModel
 {
     /// <summary>The entry.</summary>
     public required Guid Key { get; init; }
@@ -51,7 +51,7 @@ public sealed class EntryPanelResponseModel
 }
 
 /// <summary>Where and how an entry was sent.</summary>
-public sealed class EntryPanelDetailsResponseModel
+internal sealed class EntryPanelDetailsResponseModel
 {
     /// <summary>The address of the page it was sent from, or none.</summary>
     public required string? Page { get; init; }
@@ -76,7 +76,7 @@ public sealed class EntryPanelDetailsResponseModel
 }
 
 /// <summary>A page of an entry's version, with its groups the rules showed.</summary>
-public sealed class EntryPanelPageResponseModel
+internal sealed class EntryPanelPageResponseModel
 {
     /// <summary>The page.</summary>
     public required Guid Key { get; init; }
@@ -89,7 +89,7 @@ public sealed class EntryPanelPageResponseModel
 }
 
 /// <summary>A group of an entry's version, with the answers of its fields the rules showed.</summary>
-public sealed class EntryPanelGroupResponseModel
+internal sealed class EntryPanelGroupResponseModel
 {
     /// <summary>The group.</summary>
     public required Guid Key { get; init; }
@@ -102,7 +102,7 @@ public sealed class EntryPanelGroupResponseModel
 }
 
 /// <summary>A field's answer in the panel.</summary>
-public sealed class EntryPanelAnswerResponseModel
+internal sealed class EntryPanelAnswerResponseModel
 {
     /// <summary>The field.</summary>
     public required Guid Field { get; init; }
@@ -139,7 +139,7 @@ public sealed class EntryPanelAnswerResponseModel
 }
 
 /// <summary>An uploaded file of an answer.</summary>
-public sealed class EntryPanelFileResponseModel
+internal sealed class EntryPanelFileResponseModel
 {
     /// <summary>The file, which its authorised download names.</summary>
     public required Guid Key { get; init; }
@@ -161,7 +161,7 @@ public sealed class EntryPanelFileResponseModel
 }
 
 /// <summary>How the panel edits an answer.</summary>
-public sealed class EntryPanelEditResponseModel
+internal sealed class EntryPanelEditResponseModel
 {
     /// <summary><c>text</c>, <c>longText</c>, <c>number</c>, <c>date</c>, <c>choice</c>, <c>choices</c> or <c>checkbox</c>.</summary>
     public required string Kind { get; init; }
@@ -177,14 +177,14 @@ public sealed class EntryPanelEditResponseModel
 }
 
 /// <summary>Reveal one answer.</summary>
-public sealed class EntryRevealRequestModel
+internal sealed class EntryRevealRequestModel
 {
     /// <summary>A field of a group of the entry's version, which may be a repeatable group.</summary>
     public Guid Field { get; init; }
 }
 
 /// <summary>An entry's events and mail, newest first.</summary>
-public sealed class EntryTimelineResponseModel
+internal sealed class EntryTimelineResponseModel
 {
     /// <summary>Its events.</summary>
     public required IReadOnlyList<EntryTimelineEventResponseModel> Events { get; init; }
@@ -197,7 +197,7 @@ public sealed class EntryTimelineResponseModel
 }
 
 /// <summary>An action run of an entry.</summary>
-public sealed class EntryTimelineRunResponseModel
+internal sealed class EntryTimelineRunResponseModel
 {
     /// <summary>The run, which its retry names.</summary>
     public required long Id { get; init; }
@@ -225,7 +225,7 @@ public sealed class EntryTimelineRunResponseModel
 }
 
 /// <summary>An event of an entry's timeline.</summary>
-public sealed class EntryTimelineEventResponseModel
+internal sealed class EntryTimelineEventResponseModel
 {
     /// <summary>The event.</summary>
     public required long Id { get; init; }
@@ -259,7 +259,7 @@ public sealed class EntryTimelineEventResponseModel
 }
 
 /// <summary>A field an edit changed.</summary>
-public sealed class EntryTimelineChangeResponseModel
+internal sealed class EntryTimelineChangeResponseModel
 {
     /// <summary>Its label.</summary>
     public required string Label { get; init; }
@@ -275,7 +275,7 @@ public sealed class EntryTimelineChangeResponseModel
 }
 
 /// <summary>A mail of an entry.</summary>
-public sealed class EntryTimelineMailResponseModel
+internal sealed class EntryTimelineMailResponseModel
 {
     /// <summary>The mail.</summary>
     public required long Id { get; init; }
@@ -300,7 +300,7 @@ public sealed class EntryTimelineMailResponseModel
 }
 
 /// <summary>A note on an entry.</summary>
-public sealed class EntryNoteResponseModel
+internal sealed class EntryNoteResponseModel
 {
     /// <summary>The note.</summary>
     public required int Id { get; init; }
@@ -322,14 +322,14 @@ public sealed class EntryNoteResponseModel
 }
 
 /// <summary>Write or change a note.</summary>
-public sealed class EntryNoteRequestModel
+internal sealed class EntryNoteRequestModel
 {
     /// <summary>What it says: 1 to 10,000 characters.</summary>
     public string Body { get; init; } = string.Empty;
 }
 
 /// <summary>Edit an entry's answers.</summary>
-public sealed class EntryEditRequestModel
+internal sealed class EntryEditRequestModel
 {
     /// <summary>The new answers, each field once.</summary>
     public IReadOnlyList<EntryEditAnswerRequestModel> Answers { get; init; } = [];
@@ -339,7 +339,7 @@ public sealed class EntryEditRequestModel
 }
 
 /// <summary>A field's new answer.</summary>
-public sealed class EntryEditAnswerRequestModel
+internal sealed class EntryEditAnswerRequestModel
 {
     /// <summary>The field.</summary>
     public Guid Field { get; init; }
@@ -349,7 +349,7 @@ public sealed class EntryEditAnswerRequestModel
 }
 
 /// <summary>What an edit did, or what it asks first.</summary>
-public sealed class EntryEditResponseModel
+internal sealed class EntryEditResponseModel
 {
     /// <summary>How many fields it changed; none while it asks.</summary>
     public required int Changed { get; init; }
@@ -359,7 +359,7 @@ public sealed class EntryEditResponseModel
 }
 
 /// <summary>What a move back or an edit would overbook or double (ADR-0208).</summary>
-public sealed class EntryMoveAsksResponseModel
+internal sealed class EntryMoveAsksResponseModel
 {
     /// <summary>The options past their places.</summary>
     public required IReadOnlyList<EntryFullOptionResponseModel> Full { get; init; }
@@ -369,7 +369,7 @@ public sealed class EntryMoveAsksResponseModel
 }
 
 /// <summary>An option past its places.</summary>
-public sealed class EntryFullOptionResponseModel
+internal sealed class EntryFullOptionResponseModel
 {
     /// <summary>The field.</summary>
     public required Guid Field { get; init; }
@@ -391,7 +391,7 @@ public sealed class EntryFullOptionResponseModel
 }
 
 /// <summary>An answer another entry holds.</summary>
-public sealed class EntryHeldAnswerResponseModel
+internal sealed class EntryHeldAnswerResponseModel
 {
     /// <summary>The field.</summary>
     public required Guid Field { get; init; }
@@ -401,7 +401,7 @@ public sealed class EntryHeldAnswerResponseModel
 }
 
 /// <summary>Whom an entry may be forwarded to.</summary>
-public sealed class EntryForwardRecipientsResponseModel
+internal sealed class EntryForwardRecipientsResponseModel
 {
     /// <summary>The users who may view the form's entries, by name.</summary>
     public required IReadOnlyList<EntryForwardUserResponseModel> Users { get; init; }
@@ -411,7 +411,7 @@ public sealed class EntryForwardRecipientsResponseModel
 }
 
 /// <summary>A user an entry may be forwarded to.</summary>
-public sealed class EntryForwardUserResponseModel
+internal sealed class EntryForwardUserResponseModel
 {
     /// <summary>The user.</summary>
     public required Guid Key { get; init; }
@@ -424,7 +424,7 @@ public sealed class EntryForwardUserResponseModel
 }
 
 /// <summary>Forward an entry to a user or an address.</summary>
-public sealed class EntryForwardRequestModel
+internal sealed class EntryForwardRequestModel
 {
     /// <summary>The user it goes to; or none, for an address.</summary>
     public Guid? User { get; init; }
@@ -440,7 +440,7 @@ public sealed class EntryForwardRequestModel
 }
 
 /// <summary>The form an entry belongs to.</summary>
-public sealed class EntryLocationResponseModel
+internal sealed class EntryLocationResponseModel
 {
     /// <summary>The form; none for an entry that is gone, a draft, or one the user may not view.</summary>
     public required Guid? Form { get; init; }

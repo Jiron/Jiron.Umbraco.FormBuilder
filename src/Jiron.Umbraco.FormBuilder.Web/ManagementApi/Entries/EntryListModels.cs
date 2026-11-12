@@ -11,7 +11,7 @@ using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 namespace Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries;
 
 /// <summary>Which entries a list holds and in which order (ADR-0207): the shape a filter set keeps, too.</summary>
-public sealed class EntryListFilterRequestModel
+internal sealed class EntryListFilterRequestModel
 {
     /// <summary>The states: <c>unverified</c>, <c>submitted</c>, <c>approved</c>, <c>rejected</c> or <c>spam</c>; none for every state but Spam.</summary>
     public IReadOnlyList<string> States { get; init; } = [];
@@ -36,7 +36,7 @@ public sealed class EntryListFilterRequestModel
 }
 
 /// <summary>When the entries were received, in the site's time zone: a preset or a range of days.</summary>
-public sealed class EntryReceivedRequestModel
+internal sealed class EntryReceivedRequestModel
 {
     /// <summary><c>today</c>, <c>thisWeek</c>, <c>last7Days</c>, <c>thisMonth</c> or <c>lastMonth</c>; none for a range.</summary>
     public string? Preset { get; init; }
@@ -49,7 +49,7 @@ public sealed class EntryReceivedRequestModel
 }
 
 /// <summary>A filter on one of the form's fields.</summary>
-public sealed class EntryFieldFilterRequestModel
+internal sealed class EntryFieldFilterRequestModel
 {
     /// <summary>The field's key.</summary>
     public Guid Field { get; init; }
@@ -77,7 +77,7 @@ public sealed class EntryFieldFilterRequestModel
 }
 
 /// <summary>The order of a list.</summary>
-public sealed class EntryListSortRequestModel
+internal sealed class EntryListSortRequestModel
 {
     /// <summary>The field to sort by, one whose <c>sorts</c> is true; none for when the entries were received.</summary>
     public Guid? Field { get; init; }
@@ -87,7 +87,7 @@ public sealed class EntryListSortRequestModel
 }
 
 /// <summary>A page of a form's entries to read.</summary>
-public sealed class EntryListRequestModel
+internal sealed class EntryListRequestModel
 {
     /// <summary>Which entries; none for every entry a list holds, newest first.</summary>
     public EntryListFilterRequestModel? Filter { get; init; }
@@ -103,7 +103,7 @@ public sealed class EntryListRequestModel
 }
 
 /// <summary>A page of a form's entries.</summary>
-public sealed class EntryListPageResponseModel
+internal sealed class EntryListPageResponseModel
 {
     /// <summary>The entries, in the list's order: at most 50.</summary>
     public required IReadOnlyList<EntryListRowResponseModel> Items { get; init; }
@@ -125,7 +125,7 @@ public sealed class EntryListPageResponseModel
 }
 
 /// <summary>A form the Inbox or Spam names: on a page, with what the user may do on it, or for the Form filter.</summary>
-public sealed class EntryListFormResponseModel
+internal sealed class EntryListFormResponseModel
 {
     /// <summary>The form's key.</summary>
     public required Guid Key { get; init; }
@@ -138,7 +138,7 @@ public sealed class EntryListFormResponseModel
 }
 
 /// <summary>An entry as the list shows it.</summary>
-public sealed class EntryListRowResponseModel
+internal sealed class EntryListRowResponseModel
 {
     /// <summary>The entry's key.</summary>
     public required Guid Key { get; init; }
@@ -169,7 +169,7 @@ public sealed class EntryListRowResponseModel
 }
 
 /// <summary>An entry's action runs, counted by where they are.</summary>
-public sealed class EntryListActionsResponseModel
+internal sealed class EntryListActionsResponseModel
 {
     /// <summary>Delivered.</summary>
     public required int Delivered { get; init; }
@@ -188,7 +188,7 @@ public sealed class EntryListActionsResponseModel
 }
 
 /// <summary>A column's cell.</summary>
-public sealed class EntryListCellResponseModel
+internal sealed class EntryListCellResponseModel
 {
     /// <summary>The column's field.</summary>
     public required Guid Field { get; init; }
@@ -201,7 +201,7 @@ public sealed class EntryListCellResponseModel
 }
 
 /// <summary>What a form's Entries view opens with.</summary>
-public sealed class EntryListViewResponseModel
+internal sealed class EntryListViewResponseModel
 {
     /// <summary>The form's fields that hold answers: the live version's in their order, then the removed ones.</summary>
     public required IReadOnlyList<EntryListFieldResponseModel> Fields { get; init; }
@@ -214,7 +214,7 @@ public sealed class EntryListViewResponseModel
 }
 
 /// <summary>A field of the form as the list offers it.</summary>
-public sealed class EntryListFieldResponseModel
+internal sealed class EntryListFieldResponseModel
 {
     /// <summary>The field's key.</summary>
     public required Guid Key { get; init; }
@@ -254,7 +254,7 @@ public sealed class EntryListFieldResponseModel
 }
 
 /// <summary>One of a choice field's own options.</summary>
-public sealed class EntryListOptionResponseModel
+internal sealed class EntryListOptionResponseModel
 {
     /// <summary>What entries store.</summary>
     public required string Value { get; init; }
@@ -264,7 +264,7 @@ public sealed class EntryListOptionResponseModel
 }
 
 /// <summary>A filter set.</summary>
-public sealed class EntryFilterSetResponseModel
+internal sealed class EntryFilterSetResponseModel
 {
     /// <summary>The set's key.</summary>
     public required Guid Key { get; init; }
@@ -280,7 +280,7 @@ public sealed class EntryFilterSetResponseModel
 }
 
 /// <summary>A filter set to save.</summary>
-public sealed class EntryFilterSetRequestModel
+internal sealed class EntryFilterSetRequestModel
 {
     /// <summary>Its name, 1 to 60 characters.</summary>
     public string Name { get; init; } = string.Empty;
@@ -293,21 +293,21 @@ public sealed class EntryFilterSetRequestModel
 }
 
 /// <summary>What a filter set's delete did.</summary>
-public sealed class EntryFilterSetDeleteResponseModel
+internal sealed class EntryFilterSetDeleteResponseModel
 {
     /// <summary>Whether the user kept the set; false when it was gone already.</summary>
     public required bool Deleted { get; init; }
 }
 
 /// <summary>A form's columns to keep for the user.</summary>
-public sealed class EntryColumnsRequestModel
+internal sealed class EntryColumnsRequestModel
 {
     /// <summary>The fields, at most 20, in their order; none to show only the entries' details.</summary>
     public IReadOnlyList<Guid> Columns { get; init; } = [];
 }
 
 /// <summary>Entries to delete for good.</summary>
-public sealed class EntryDeleteRequestModel
+internal sealed class EntryDeleteRequestModel
 {
     /// <summary>The entries, 1 to 500.</summary>
     public IReadOnlyList<Guid> Entries { get; init; } = [];
@@ -317,7 +317,7 @@ public sealed class EntryDeleteRequestModel
 }
 
 /// <summary>What a delete did, or would do.</summary>
-public sealed class EntryDeleteResponseModel
+internal sealed class EntryDeleteResponseModel
 {
     /// <summary>How many entries it deletes: those of the form that exist and no legal hold keeps.</summary>
     public required int Entries { get; init; }
@@ -333,7 +333,7 @@ public sealed class EntryDeleteResponseModel
 }
 
 /// <summary>Entries whose actions to run again.</summary>
-public sealed class EntryRerunRequestModel
+internal sealed class EntryRerunRequestModel
 {
     /// <summary>The entries, 1 to 500.</summary>
     public IReadOnlyList<Guid> Entries { get; init; } = [];
@@ -343,7 +343,7 @@ public sealed class EntryRerunRequestModel
 }
 
 /// <summary>What a re-run of actions does, or would do.</summary>
-public sealed class EntryRerunResponseModel
+internal sealed class EntryRerunResponseModel
 {
     /// <summary>The actions it runs for one entry at least, in the form's order.</summary>
     public required IReadOnlyList<EntryRerunActionResponseModel> Actions { get; init; }
@@ -359,7 +359,7 @@ public sealed class EntryRerunResponseModel
 }
 
 /// <summary>An action a re-run runs.</summary>
-public sealed class EntryRerunActionResponseModel
+internal sealed class EntryRerunActionResponseModel
 {
     /// <summary>The action's key.</summary>
     public required Guid Key { get; init; }

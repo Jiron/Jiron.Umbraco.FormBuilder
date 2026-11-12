@@ -17,7 +17,7 @@ using Umbraco.Cms.Core.Services;
 namespace Jiron.Umbraco.FormBuilder.Core.Email;
 
 /// <summary>The settings of the email action (ROADMAP 8.3, ADR-0160).</summary>
-public sealed class EmailActionSettings
+internal sealed class EmailActionSettings
 {
     /// <summary>Fixed addresses it goes to, usually the team's; its editor holds every kind of recipient (ADR-0189).</summary>
     [FormBuilderSetting("#jfbActionSettings_emailTo", Order = 1, Editor = "recipients")]

@@ -61,7 +61,7 @@ internal sealed class SetupController(FormBlockTypes blocks, SetupChecklist chec
 }
 
 /// <summary>One step of the setup checklist.</summary>
-public sealed class ChecklistItemResponseModel
+internal sealed class ChecklistItemResponseModel
 {
     /// <summary>The step: <c>email</c>, <c>form</c>, <c>testEntry</c>, <c>formBlock</c> or <c>access</c>.</summary>
     public required string Step { get; init; }
@@ -74,7 +74,7 @@ public sealed class ChecklistItemResponseModel
 }
 
 /// <summary>The setup checklist as a user sees it.</summary>
-public sealed class ChecklistResponseModel
+internal sealed class ChecklistResponseModel
 {
     /// <summary>The steps, in their order.</summary>
     public required IReadOnlyList<ChecklistItemResponseModel> Items { get; init; }
@@ -94,7 +94,7 @@ public sealed class ChecklistResponseModel
 }
 
 /// <summary>One thing that is wrong with the site.</summary>
-public sealed class HealthFindingResponseModel
+internal sealed class HealthFindingResponseModel
 {
     /// <summary>What it is, which never changes.</summary>
     public required string Code { get; init; }
@@ -113,7 +113,7 @@ public sealed class HealthFindingResponseModel
 }
 
 /// <summary>What is wrong with the site; nothing when all checks pass.</summary>
-public sealed class HealthResponseModel
+internal sealed class HealthResponseModel
 {
     /// <summary>The findings, in the order of the checks.</summary>
     public required IReadOnlyList<HealthFindingResponseModel> Findings { get; init; }
@@ -131,7 +131,7 @@ public sealed class HealthResponseModel
 }
 
 /// <summary>One of Umbraco's types the form block needs.</summary>
-public sealed class FormBlockPartResponseModel
+internal sealed class FormBlockPartResponseModel
 {
     /// <summary>The type's key.</summary>
     public required Guid Key { get; init; }
@@ -144,7 +144,7 @@ public sealed class FormBlockPartResponseModel
 }
 
 /// <summary>The form block's types: the element type <c>Form</c> and the form picker's data type its property uses.</summary>
-public sealed class FormBlockTypesResponseModel
+internal sealed class FormBlockTypesResponseModel
 {
     /// <summary>The element type, which an editor allows in a block list or grid.</summary>
     public required FormBlockPartResponseModel ElementType { get; init; }

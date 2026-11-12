@@ -69,7 +69,7 @@ internal sealed record SettingsSectionRequestModel
 }
 
 /// <summary>A host rule on a settings field (ADR-0008).</summary>
-public sealed class SettingsLockResponseModel
+internal sealed class SettingsLockResponseModel
 {
     /// <summary>The field's path within the section, such as <c>history.draftDays</c>; <c>*</c> for the whole section.</summary>
     public required string Field { get; init; }

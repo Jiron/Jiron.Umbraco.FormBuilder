@@ -5,7 +5,7 @@ using Jiron.Umbraco.FormBuilder.Core.Exports;
 namespace Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries;
 
 /// <summary>An export of a form's entries (ADR-0210).</summary>
-public sealed class EntryExportRequestModel
+internal sealed class EntryExportRequestModel
 {
     /// <summary>The format's name, one of the export view's <c>formats</c>.</summary>
     public string Format { get; init; } = string.Empty;
@@ -33,7 +33,7 @@ public sealed class EntryExportRequestModel
 }
 
 /// <summary>What an export writes beside the format and the fields.</summary>
-public sealed class EntryExportOptionsRequestModel
+internal sealed class EntryExportOptionsRequestModel
 {
     /// <summary>A CSV file's delimiter: <c>comma</c>, <c>semicolon</c> or <c>tab</c>.</summary>
     public string Delimiter { get; init; } = "comma";
@@ -46,7 +46,7 @@ public sealed class EntryExportOptionsRequestModel
 }
 
 /// <summary>What the export dialog opens with.</summary>
-public sealed class EntryExportViewResponseModel
+internal sealed class EntryExportViewResponseModel
 {
     /// <summary>The formats the site offers, in the dialog's order.</summary>
     public required IReadOnlyList<EntryExportFormatResponseModel> Formats { get; init; }
@@ -62,7 +62,7 @@ public sealed class EntryExportViewResponseModel
 }
 
 /// <summary>A format the dialog offers.</summary>
-public sealed class EntryExportFormatResponseModel
+internal sealed class EntryExportFormatResponseModel
 {
     /// <summary>The format's name, which an export names.</summary>
     public required string Name { get; init; }
@@ -84,7 +84,7 @@ public sealed class EntryExportFormatResponseModel
 }
 
 /// <summary>What the user last exported of a form.</summary>
-public sealed class EntryExportChoicesResponseModel
+internal sealed class EntryExportChoicesResponseModel
 {
     /// <summary>The format's name.</summary>
     public required string Format { get; init; }
@@ -100,7 +100,7 @@ public sealed class EntryExportChoicesResponseModel
 }
 
 /// <summary>What the user last chose beside the format and the fields.</summary>
-public sealed class EntryExportOptionsResponseModel
+internal sealed class EntryExportOptionsResponseModel
 {
     /// <summary>A CSV file's delimiter: <c>comma</c>, <c>semicolon</c> or <c>tab</c>.</summary>
     public required string Delimiter { get; init; }
@@ -113,7 +113,7 @@ public sealed class EntryExportOptionsResponseModel
 }
 
 /// <summary>How many entries an export holds, and whether it runs in the background.</summary>
-public sealed class EntryExportPlanResponseModel
+internal sealed class EntryExportPlanResponseModel
 {
     /// <summary>The number of entries; a lower bound when <c>more</c>.</summary>
     public int Entries { get; init; }
@@ -129,7 +129,7 @@ public sealed class EntryExportPlanResponseModel
 }
 
 /// <summary>A link that downloads a background export's file.</summary>
-public sealed class EntryExportTicketResponseModel
+internal sealed class EntryExportTicketResponseModel
 {
     /// <summary>The file's address on the site, with its ticket; a link to it downloads the file.</summary>
     public required string Url { get; init; }
@@ -139,7 +139,7 @@ public sealed class EntryExportTicketResponseModel
 }
 
 /// <summary>A background export, as its owner sees it.</summary>
-public sealed class EntryExportStatusResponseModel
+internal sealed class EntryExportStatusResponseModel
 {
     /// <summary>The export.</summary>
     public Guid Key { get; init; }

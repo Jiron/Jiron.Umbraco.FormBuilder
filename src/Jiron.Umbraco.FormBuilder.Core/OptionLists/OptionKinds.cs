@@ -311,10 +311,10 @@ internal sealed class CodeOptionKind(OptionSourceRegistry sources) : OptionKind<
 }
 
 /// <summary>A manual list's configuration (ADR-0073): none, as its options are its items.</summary>
-public sealed class ManualOptionListSettings;
+internal sealed class ManualOptionListSettings;
 
 /// <summary>The configuration of the countries (ADR-0073), each country as its ISO 3166 alpha-2 code.</summary>
-public sealed class CountriesOptionListSettings
+internal sealed class CountriesOptionListSettings
 {
     /// <summary>The countries offered; every country by default.</summary>
     [FormBuilderSetting("#jfbOptionListSettings_countries", Description = "#jfbOptionListSettings_countriesHelp")]
@@ -322,7 +322,7 @@ public sealed class CountriesOptionListSettings
 }
 
 /// <summary>The configuration of options from code (ADR-0073).</summary>
-public sealed class CodeOptionListSettings
+internal sealed class CodeOptionListSettings
 {
     /// <summary>The name of the option source, such as <c>months</c>.</summary>
     [Required]

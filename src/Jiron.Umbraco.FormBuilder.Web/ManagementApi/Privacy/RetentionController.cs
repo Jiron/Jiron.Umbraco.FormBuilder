@@ -100,7 +100,7 @@ internal sealed class RetentionController(
 }
 
 /// <summary>The days entries are kept in each state, 1 to 3,650, or 0 for kept for good, which the host allows or not.</summary>
-public sealed class RetentionDaysResponseModel
+internal sealed class RetentionDaysResponseModel
 {
     /// <summary>Submitted entries, those waiting for approval among them.</summary>
     public required int Submitted { get; init; }
@@ -125,7 +125,7 @@ public sealed class RetentionDaysResponseModel
 }
 
 /// <summary>The days to count a dry run with, each 1 to 3,650, or 0 for kept for good.</summary>
-public sealed class RetentionDaysRequestModel
+internal sealed class RetentionDaysRequestModel
 {
     /// <summary>Submitted entries, those waiting for approval among them.</summary>
     [Range(SiteRetention.ForGood, SiteRetention.MaxDays)]
@@ -147,7 +147,7 @@ public sealed class RetentionDaysRequestModel
 }
 
 /// <summary>Privacy > Retention as it reads (ADR-0222).</summary>
-public sealed class RetentionResponseModel
+internal sealed class RetentionResponseModel
 {
     /// <summary>The site's days per state, with the host's rules applied.</summary>
     public required RetentionDaysResponseModel Days { get; init; }
@@ -169,7 +169,7 @@ public sealed class RetentionResponseModel
 }
 
 /// <summary>A form with retention of its own: its days per state where it sets them, and its days of storage.</summary>
-public sealed class RetentionFormResponseModel
+internal sealed class RetentionFormResponseModel
 {
     /// <summary>The form's key.</summary>
     public required Guid Key { get; init; }
@@ -197,7 +197,7 @@ public sealed class RetentionFormResponseModel
 }
 
 /// <summary>A dry run to count.</summary>
-public sealed class RetentionDryRunRequestModel
+internal sealed class RetentionDryRunRequestModel
 {
     /// <summary>The days per state to count with, not saved yet; none for those saved.</summary>
     public RetentionDaysRequestModel? Days { get; init; }
@@ -208,7 +208,7 @@ public sealed class RetentionDryRunRequestModel
 }
 
 /// <summary>What retention deletes within the span (ADR-0222).</summary>
-public sealed class RetentionDryRunResponseModel
+internal sealed class RetentionDryRunResponseModel
 {
     /// <summary>The span counted, in days.</summary>
     public required int Span { get; init; }
@@ -227,7 +227,7 @@ public sealed class RetentionDryRunResponseModel
 }
 
 /// <summary>What retention deletes of one form within the span.</summary>
-public sealed class RetentionDryRunFormResponseModel
+internal sealed class RetentionDryRunFormResponseModel
 {
     /// <summary>The form's key.</summary>
     public required Guid Key { get; init; }

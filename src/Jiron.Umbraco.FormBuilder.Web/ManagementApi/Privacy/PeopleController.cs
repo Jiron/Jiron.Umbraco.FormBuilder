@@ -257,7 +257,7 @@ internal sealed class PeopleController(
 }
 
 /// <summary>A person: an email address or a member, never both (ADR-0223).</summary>
-public sealed class PersonRequestModel
+internal sealed class PersonRequestModel
 {
     /// <summary>An email address; or none, for a member.</summary>
     [MaxLength(254)]
@@ -268,7 +268,7 @@ public sealed class PersonRequestModel
 }
 
 /// <summary>A person and some of their entries.</summary>
-public sealed class PersonEntriesRequestModel
+internal sealed class PersonEntriesRequestModel
 {
     /// <summary>An email address; or none, for a member.</summary>
     [MaxLength(254)]
@@ -284,7 +284,7 @@ public sealed class PersonEntriesRequestModel
 }
 
 /// <summary>A legal hold on some of a person's entries.</summary>
-public sealed class PersonHoldRequestModel
+internal sealed class PersonHoldRequestModel
 {
     /// <summary>An email address; or none, for a member.</summary>
     [MaxLength(254)]
@@ -307,7 +307,7 @@ public sealed class PersonHoldRequestModel
 }
 
 /// <summary>An erase of a person.</summary>
-public sealed class PersonEraseRequestModel
+internal sealed class PersonEraseRequestModel
 {
     /// <summary>An email address; or none, for a member.</summary>
     [MaxLength(254)]
@@ -322,7 +322,7 @@ public sealed class PersonEraseRequestModel
 }
 
 /// <summary>A person's entries in every form.</summary>
-public sealed class PersonFoundResponseModel
+internal sealed class PersonFoundResponseModel
 {
     /// <summary>The entries, newest first, at most 500.</summary>
     public required IReadOnlyList<PersonEntryResponseModel> Entries { get; init; }
@@ -335,7 +335,7 @@ public sealed class PersonFoundResponseModel
 }
 
 /// <summary>One of a person's entries.</summary>
-public sealed class PersonEntryResponseModel
+internal sealed class PersonEntryResponseModel
 {
     /// <summary>The entry.</summary>
     public required Guid Key { get; init; }
@@ -366,7 +366,7 @@ public sealed class PersonEntryResponseModel
 }
 
 /// <summary>A form a person's entries are in.</summary>
-public sealed class PersonFormResponseModel
+internal sealed class PersonFormResponseModel
 {
     /// <summary>The form.</summary>
     public required Guid Key { get; init; }
@@ -379,7 +379,7 @@ public sealed class PersonFormResponseModel
 }
 
 /// <summary>What an erase of a person would take.</summary>
-public sealed class PersonErasePreviewResponseModel
+internal sealed class PersonErasePreviewResponseModel
 {
     /// <summary>The entries that would be deleted or anonymised.</summary>
     public required int Entries { get; init; }
@@ -404,7 +404,7 @@ public sealed class PersonErasePreviewResponseModel
 }
 
 /// <summary>What an erase of a person would take of one form.</summary>
-public sealed class PersonEraseFormResponseModel
+internal sealed class PersonEraseFormResponseModel
 {
     /// <summary>The form.</summary>
     public required Guid Key { get; init; }
@@ -432,7 +432,7 @@ public sealed class PersonEraseFormResponseModel
 }
 
 /// <summary>What an erase of a person took.</summary>
-public sealed class PersonErasedResponseModel
+internal sealed class PersonErasedResponseModel
 {
     /// <summary>How the entries went: <c>delete</c> or <c>anonymise</c>.</summary>
     public required string Mode { get; init; }
@@ -457,7 +457,7 @@ public sealed class PersonErasedResponseModel
 }
 
 /// <summary>How many entries a hold or a release changed.</summary>
-public sealed class PersonHeldResponseModel
+internal sealed class PersonHeldResponseModel
 {
     /// <summary>The entries.</summary>
     public required int Entries { get; init; }

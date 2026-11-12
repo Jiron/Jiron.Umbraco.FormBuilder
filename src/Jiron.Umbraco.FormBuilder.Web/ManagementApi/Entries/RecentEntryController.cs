@@ -27,7 +27,7 @@ internal sealed class RecentEntryController(RecentEntries recent) : FormBuilderM
 }
 
 /// <summary>One of the newest entries.</summary>
-public sealed class RecentEntryResponseModel
+internal sealed class RecentEntryResponseModel
 {
     /// <summary>The entry's key.</summary>
     public required Guid Key { get; init; }
@@ -63,7 +63,7 @@ public sealed class RecentEntryResponseModel
 }
 
 /// <summary>The newest entries a user may view.</summary>
-public sealed class RecentEntriesResponseModel
+internal sealed class RecentEntriesResponseModel
 {
     /// <summary>The entries, newest first.</summary>
     public required IReadOnlyList<RecentEntryResponseModel> Items { get; init; }

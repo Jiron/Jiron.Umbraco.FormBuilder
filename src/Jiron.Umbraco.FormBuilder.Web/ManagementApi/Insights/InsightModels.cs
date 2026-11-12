@@ -3,7 +3,7 @@ using Jiron.Umbraco.FormBuilder.Core.Insights;
 namespace Jiron.Umbraco.FormBuilder.Web.ManagementApi.Insights;
 
 /// <summary>A form's report over a span (ADR-0211).</summary>
-public sealed class InsightReportResponseModel
+internal sealed class InsightReportResponseModel
 {
     /// <summary>Whether the site's insights are on.</summary>
     public required bool SiteOn { get; init; }
@@ -55,7 +55,7 @@ public sealed class InsightReportResponseModel
 }
 
 /// <summary>A form's main numbers over a span.</summary>
-public sealed class InsightTotalsResponseModel
+internal sealed class InsightTotalsResponseModel
 {
     /// <summary>How often the form was shown.</summary>
     public required long Views { get; init; }
@@ -83,7 +83,7 @@ public sealed class InsightTotalsResponseModel
 }
 
 /// <summary>A day, week or month of a report.</summary>
-public sealed class InsightPeriodResponseModel
+internal sealed class InsightPeriodResponseModel
 {
     /// <summary>Its first day: the day, the Monday of the week, or the first of the month.</summary>
     public required DateOnly Start { get; init; }
@@ -96,7 +96,7 @@ public sealed class InsightPeriodResponseModel
 }
 
 /// <summary>A page after the first and how often visitors reached it.</summary>
-public sealed class InsightPageResponseModel
+internal sealed class InsightPageResponseModel
 {
     /// <summary>The page's key.</summary>
     public required Guid Key { get; init; }
@@ -109,7 +109,7 @@ public sealed class InsightPageResponseModel
 }
 
 /// <summary>A field that stopped visitors.</summary>
-public sealed class InsightFieldResponseModel
+internal sealed class InsightFieldResponseModel
 {
     /// <summary>The field's key.</summary>
     public required Guid Key { get; init; }
@@ -125,7 +125,7 @@ public sealed class InsightFieldResponseModel
 }
 
 /// <summary>A website page entries came from.</summary>
-public sealed class InsightOriginResponseModel
+internal sealed class InsightOriginResponseModel
 {
     /// <summary>The content's key.</summary>
     public required Guid Key { get; init; }
@@ -138,14 +138,14 @@ public sealed class InsightOriginResponseModel
 }
 
 /// <summary>The site's table of forms over a span.</summary>
-public sealed class InsightGlanceResponseModel
+internal sealed class InsightGlanceResponseModel
 {
     /// <summary>The forms with the most entries, then views, at most 10.</summary>
     public required IReadOnlyList<InsightGlanceItemResponseModel> Items { get; init; }
 }
 
 /// <summary>A form of the site's table.</summary>
-public sealed class InsightGlanceItemResponseModel
+internal sealed class InsightGlanceItemResponseModel
 {
     /// <summary>The form's key.</summary>
     public required Guid Key { get; init; }
@@ -161,14 +161,14 @@ public sealed class InsightGlanceItemResponseModel
 }
 
 /// <summary>The boxes of insights the user shows as tables, as they are kept.</summary>
-public sealed class InsightTablesResponseModel
+internal sealed class InsightTablesResponseModel
 {
     /// <summary>The boxes, in order of their names.</summary>
     public required IReadOnlyList<string> Tables { get; init; }
 }
 
 /// <summary>The boxes of insights the user shows as tables.</summary>
-public sealed class InsightTablesRequestModel
+internal sealed class InsightTablesRequestModel
 {
     /// <summary>The boxes: <c>entries</c>, <c>funnel</c>, <c>fields</c>, <c>origins</c>, <c>hours</c> and <c>answers</c>.</summary>
     public IReadOnlyList<string>? Tables { get; init; }

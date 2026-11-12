@@ -168,7 +168,7 @@ internal sealed partial class ContentOptionKind(OptionListUmbraco umbraco) : Opt
 }
 
 /// <summary>The order of a content list's options (ADR-0075).</summary>
-public enum ContentOptionOrder
+internal enum ContentOptionOrder
 {
     /// <summary>As the content tree shows the pages, each page's own pages after it (<c>tree</c>).</summary>
     [FormBuilderChoice("#jfbOptionListChoices_contentOrderTree")]
@@ -180,7 +180,7 @@ public enum ContentOptionOrder
 }
 
 /// <summary>The configuration of a content list (ADR-0075).</summary>
-public sealed class ContentOptionListSettings
+internal sealed class ContentOptionListSettings
 {
     /// <summary>The page whose children, or every page below it, are the options; the page the form is on by default.</summary>
     [FormBuilderSetting("#jfbOptionListSettings_contentRoot", Description = "#jfbOptionListSettings_contentRootHelp", Editor = "contentPicker")]

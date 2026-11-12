@@ -12,7 +12,7 @@ using Umbraco.Cms.Web.Common.Routing;
 namespace Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries;
 
 /// <summary>Move entries to a state.</summary>
-public sealed class EntryStateRequestModel
+internal sealed class EntryStateRequestModel
 {
     /// <summary>The entries, at most 500.</summary>
     public IReadOnlyList<Guid> Entries { get; init; } = [];
@@ -31,7 +31,7 @@ public sealed class EntryStateRequestModel
 }
 
 /// <summary>What a change of state did.</summary>
-public sealed class EntryStateResponseModel
+internal sealed class EntryStateResponseModel
 {
     /// <summary>The change, which Undo names.</summary>
     public required Guid ChangeKey { get; init; }
@@ -50,7 +50,7 @@ public sealed class EntryStateResponseModel
 }
 
 /// <summary>An entry a change moved.</summary>
-public sealed class EntryStateMovedResponseModel
+internal sealed class EntryStateMovedResponseModel
 {
     /// <summary>The entry.</summary>
     public required Guid Key { get; init; }
@@ -60,7 +60,7 @@ public sealed class EntryStateMovedResponseModel
 }
 
 /// <summary>Undo a change.</summary>
-public sealed class EntryStateUndoRequestModel
+internal sealed class EntryStateUndoRequestModel
 {
     /// <summary>The change.</summary>
     public Guid ChangeKey { get; init; }

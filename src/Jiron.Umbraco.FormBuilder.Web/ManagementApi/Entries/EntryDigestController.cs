@@ -14,7 +14,7 @@ using Umbraco.Cms.Web.Common.Routing;
 namespace Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries;
 
 /// <summary>A user's choice of the summary email, with when and where it goes.</summary>
-public sealed class EntryDigestResponseModel
+internal sealed class EntryDigestResponseModel
 {
     /// <summary>How often: <c>off</c>, <c>daily</c> or <c>weekly</c> (on Mondays).</summary>
     public required string Frequency { get; init; }
@@ -30,14 +30,14 @@ public sealed class EntryDigestResponseModel
 }
 
 /// <summary>How often the user wants the summary email.</summary>
-public sealed class EntryDigestRequestModel
+internal sealed class EntryDigestRequestModel
 {
     /// <summary><c>off</c>, <c>daily</c> or <c>weekly</c>.</summary>
     public string Frequency { get; init; } = string.Empty;
 }
 
 /// <summary>Where a test of the summary email went.</summary>
-public sealed class EntryDigestTestResponseModel
+internal sealed class EntryDigestTestResponseModel
 {
     /// <summary>The user's own address.</summary>
     public required string To { get; init; }

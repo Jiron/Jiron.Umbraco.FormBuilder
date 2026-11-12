@@ -70,7 +70,7 @@ internal sealed class DataTypeOptionKind(OptionListUmbraco umbraco) : OptionKind
 }
 
 /// <summary>The configuration of a data type list (ADR-0075).</summary>
-public sealed class DataTypeOptionListSettings
+internal sealed class DataTypeOptionListSettings
 {
     /// <summary>The data type whose values are the options: a dropdown, a checkbox list or a radio button list.</summary>
     [Required]

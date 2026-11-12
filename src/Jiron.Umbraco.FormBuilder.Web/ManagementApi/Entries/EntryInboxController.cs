@@ -11,7 +11,7 @@ using Umbraco.Cms.Web.Common.Routing;
 namespace Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries;
 
 /// <summary>What the Inbox and Spam open with: the user's filter sets, of every form and of each.</summary>
-public sealed class EntryInboxViewResponseModel
+internal sealed class EntryInboxViewResponseModel
 {
     /// <summary>The user's filter sets: those of every form, and those of a form the user may still view entries of.</summary>
     public required IReadOnlyList<EntryFilterSetResponseModel> FilterSets { get; init; }
@@ -21,7 +21,7 @@ public sealed class EntryInboxViewResponseModel
 }
 
 /// <summary>How many entries nobody opened yet the Inbox holds, for its badge.</summary>
-public sealed class EntryUnseenResponseModel
+internal sealed class EntryUnseenResponseModel
 {
     /// <summary>The count, at most 99.</summary>
     public required int Count { get; init; }
@@ -31,14 +31,14 @@ public sealed class EntryUnseenResponseModel
 }
 
 /// <summary>Empty spam: whether to delete, after the answer that says what would go.</summary>
-public sealed class EntrySpamEmptyRequestModel
+internal sealed class EntrySpamEmptyRequestModel
 {
     /// <summary>Whether to delete them; without it, the answer says what would go and deletes nothing.</summary>
     public bool Confirm { get; init; }
 }
 
 /// <summary>What emptying Spam deleted, or would delete.</summary>
-public sealed class EntrySpamEmptyResponseModel
+internal sealed class EntrySpamEmptyResponseModel
 {
     /// <summary>The entries.</summary>
     public required int Entries { get; init; }

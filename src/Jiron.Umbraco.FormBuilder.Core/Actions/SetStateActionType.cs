@@ -6,7 +6,7 @@ using Jiron.Umbraco.FormBuilder.Core.Submissions;
 namespace Jiron.Umbraco.FormBuilder.Core.Actions;
 
 /// <summary>The states the set-state action moves an entry to.</summary>
-public enum SetStateTarget
+internal enum SetStateTarget
 {
     /// <summary>Approved.</summary>
     [FormBuilderChoice("#jfbActionChoices_setStateApproved")]
@@ -22,7 +22,7 @@ public enum SetStateTarget
 }
 
 /// <summary>The settings of the set-state action (section 4.4).</summary>
-public sealed class SetStateActionSettings
+internal sealed class SetStateActionSettings
 {
     /// <summary>The state; the action's rule says when.</summary>
     [FormBuilderSetting("#jfbActionSettings_setStateState", Description = "#jfbActionSettings_setStateStateHelp", Order = 1)]

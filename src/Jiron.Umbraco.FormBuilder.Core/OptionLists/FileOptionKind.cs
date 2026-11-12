@@ -19,7 +19,7 @@ internal sealed class FileOptionKind() : OptionKind<FileOptionListSettings>(Opti
 }
 
 /// <summary>A file list's configuration (ADR-0076): none, as its options are its items.</summary>
-public sealed class FileOptionListSettings;
+internal sealed class FileOptionListSettings;
 
 /// <summary>The kinds of file an upload of options may be (ADR-0076).</summary>
 internal enum OptionFileFormat

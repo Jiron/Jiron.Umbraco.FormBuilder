@@ -5,7 +5,7 @@ using Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries;
 namespace Jiron.Umbraco.FormBuilder.Web.ManagementApi.Insights;
 
 /// <summary>Which entries' answers to summarise (ADR-0212).</summary>
-public sealed class InsightAnswersRequestModel
+internal sealed class InsightAnswersRequestModel
 {
     /// <summary>The first UTC day they were received on, <c>yyyy-MM-dd</c>; with <c>to</c>, or neither for the last 30 days.</summary>
     public string? From { get; init; }
@@ -18,7 +18,7 @@ public sealed class InsightAnswersRequestModel
 }
 
 /// <summary>Which entries' free-text answers to read on, and from where.</summary>
-public sealed class InsightAnswerTextsRequestModel
+internal sealed class InsightAnswerTextsRequestModel
 {
     /// <summary>The first UTC day, as the summary had it.</summary>
     public string? From { get; init; }
@@ -34,7 +34,7 @@ public sealed class InsightAnswerTextsRequestModel
 }
 
 /// <summary>The answers of a form's entries, summarised per field.</summary>
-public sealed class InsightAnswersResponseModel
+internal sealed class InsightAnswersResponseModel
 {
     /// <summary>How many entries the summaries are of.</summary>
     public required long Entries { get; init; }
@@ -50,7 +50,7 @@ public sealed class InsightAnswersResponseModel
 }
 
 /// <summary>A field's summary.</summary>
-public sealed class InsightAnswerResponseModel
+internal sealed class InsightAnswerResponseModel
 {
     /// <summary>The field's key.</summary>
     public required Guid Key { get; init; }
@@ -123,7 +123,7 @@ public sealed class InsightAnswerResponseModel
 }
 
 /// <summary>An option's line.</summary>
-public sealed class InsightAnswerOptionResponseModel
+internal sealed class InsightAnswerOptionResponseModel
 {
     /// <summary>What it shows as; empty for the line of the visitors' own "Other" texts.</summary>
     public required string Label { get; init; }
@@ -151,7 +151,7 @@ public sealed class InsightAnswerOptionResponseModel
 }
 
 /// <summary>A grid's row.</summary>
-public sealed class InsightAnswerGridRowResponseModel
+internal sealed class InsightAnswerGridRowResponseModel
 {
     /// <summary>The row's key.</summary>
     public required Guid Key { get; init; }
@@ -170,7 +170,7 @@ public sealed class InsightAnswerGridRowResponseModel
 }
 
 /// <summary>A number field's figures.</summary>
-public sealed class InsightAnswerNumbersResponseModel
+internal sealed class InsightAnswerNumbersResponseModel
 {
     /// <summary>The mean.</summary>
     public required double Average { get; init; }
@@ -189,7 +189,7 @@ public sealed class InsightAnswerNumbersResponseModel
 }
 
 /// <summary>The groups of a scale from 0 to 10.</summary>
-public sealed class InsightAnswerScaleResponseModel
+internal sealed class InsightAnswerScaleResponseModel
 {
     /// <summary>How many answered 0 to 6.</summary>
     public required long Low { get; init; }
@@ -205,7 +205,7 @@ public sealed class InsightAnswerScaleResponseModel
 }
 
 /// <summary>A free-text answer.</summary>
-public sealed class InsightAnswerTextResponseModel
+internal sealed class InsightAnswerTextResponseModel
 {
     /// <summary>Its entry's key, which opens the entry.</summary>
     public required Guid Entry { get; init; }
@@ -220,7 +220,7 @@ public sealed class InsightAnswerTextResponseModel
 }
 
 /// <summary>More free-text answers.</summary>
-public sealed class InsightAnswerTextsResponseModel
+internal sealed class InsightAnswerTextsResponseModel
 {
     /// <summary>The answers, newest entry first.</summary>
     public required IReadOnlyList<InsightAnswerTextResponseModel> Texts { get; init; }

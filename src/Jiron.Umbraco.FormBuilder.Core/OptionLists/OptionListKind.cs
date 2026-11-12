@@ -4,7 +4,7 @@ namespace Jiron.Umbraco.FormBuilder.Core.OptionLists;
 /// Where an option list's options come from (ADR-0073), stored and written as the camelCase name of its value
 /// (<c>dataType</c>). A library list has one, and a field's source other than its own items or a library list is one.
 /// </summary>
-public enum OptionListKind
+internal enum OptionListKind
 {
     /// <summary>Options an editor types or pastes (<c>manual</c>); a field's own options are of this kind too.</summary>
     Manual,

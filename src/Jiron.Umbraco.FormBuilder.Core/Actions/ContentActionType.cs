@@ -24,7 +24,7 @@ using Umbraco.Extensions;
 namespace Jiron.Umbraco.FormBuilder.Core.Actions;
 
 /// <summary>Where the content action puts what it creates.</summary>
-public enum ContentParentSource
+internal enum ContentParentSource
 {
     /// <summary>The picked content item.</summary>
     [FormBuilderChoice("#jfbActionChoices_contentParentPicked")]
@@ -46,7 +46,7 @@ public enum ContentParentSource
 internal sealed record ContentMapping(string Property, Guid? Field, string? Value);
 
 /// <summary>The settings of the content action (section 4.4, ADR-0162).</summary>
-public sealed class ContentActionSettings
+internal sealed class ContentActionSettings
 {
     /// <summary>The alias of the document type it creates.</summary>
     [FormBuilderSetting("#jfbActionSettings_contentDocumentType", Description = "#jfbActionSettings_contentDocumentTypeHelp", Order = 1, Editor = "documentTypePicker")]

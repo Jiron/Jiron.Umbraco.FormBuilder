@@ -212,23 +212,6 @@ public sealed record Jiron.Umbraco.FormBuilder.Core.Actions.ActionTypeDeclaratio
   static bool op_Equality(ActionTypeDeclaration? left, ActionTypeDeclaration? right)
   static bool op_Inequality(ActionTypeDeclaration? left, ActionTypeDeclaration? right)
 
-public sealed class Jiron.Umbraco.FormBuilder.Core.Actions.ContentActionSettings
-  ContentParentSource ParentSource { get; init; }
-  Guid? MediaFolder { get; init; }
-  Guid? Parent { get; init; }
-  IReadOnlyList<Guid> IncludeSensitive { get; init; }
-  JsonElement? Mapping { get; init; }
-  bool Publish { get; init; }
-  bool UpdateExisting { get; init; }
-  ctor()
-  string? DocumentType { get; init; }
-  string? Name { get; init; }
-
-public enum Jiron.Umbraco.FormBuilder.Core.Actions.ContentParentSource
-  Picked = 0
-  Page = 1
-  SiteRoot = 2
-
 public abstract class Jiron.Umbraco.FormBuilder.Core.Actions.FormBuilderActionTypeBase<TSettings> : IFormBuilderActionType
   ActionTypeDeclaration Declaration { get; }
   FieldSettingsSchema SettingsSchema { get; }
@@ -258,15 +241,6 @@ public interface Jiron.Umbraco.FormBuilder.Core.Actions.IFormBuilderActionType
   Task<ActionTestResult> TestAsync(ActionTestContext context, CancellationToken cancellationToken)
   ValueTask<IReadOnlyDictionary<string, IReadOnlyList<FieldSettingChoice>>> SiteChoicesAsync(CancellationToken cancellationToken)
   void CheckSettings(ActionSettingsCheck check)
-
-public sealed class Jiron.Umbraco.FormBuilder.Core.Actions.SetStateActionSettings
-  SetStateTarget State { get; init; }
-  ctor()
-
-public enum Jiron.Umbraco.FormBuilder.Core.Actions.SetStateTarget
-  Approved = 0
-  Rejected = 1
-  Spam = 2
 
 public sealed class Jiron.Umbraco.FormBuilder.Core.Composing.FormBuilderComposition
   FormBuilderActionTypeCollectionBuilder ActionTypes()
@@ -1414,26 +1388,6 @@ public sealed record Jiron.Umbraco.FormBuilder.Core.Definitions.UniquePerFormChe
   override string ToString()
   static bool op_Equality(UniquePerFormCheck? left, UniquePerFormCheck? right)
   static bool op_Inequality(UniquePerFormCheck? left, UniquePerFormCheck? right)
-
-public sealed class Jiron.Umbraco.FormBuilder.Core.Email.EmailActionSettings
-  Guid? Layout { get; init; }
-  Guid? ReplyToField { get; init; }
-  Guid? ToField { get; init; }
-  IReadOnlyList<Guid> Attachments { get; init; }
-  IReadOnlyList<Guid> IncludeSensitive { get; init; }
-  IReadOnlyList<string> Bcc { get; init; }
-  IReadOnlyList<string> Cc { get; init; }
-  IReadOnlyList<string> To { get; init; }
-  JsonElement? RecipientMap { get; init; }
-  LocalizedHtml? Body { get; init; }
-  LocalizedText? Subject { get; init; }
-  bool PlainText { get; init; }
-  bool ToCreator { get; init; }
-  bool ToPrivacyTeam { get; init; }
-  bool WithoutUnanswered { get; init; }
-  ctor()
-  string? From { get; init; }
-  string? View { get; init; }
 
 public sealed record Jiron.Umbraco.FormBuilder.Core.Email.EmailViewModel
   bool Equals(EmailViewModel? other)
@@ -3620,34 +3574,6 @@ public sealed class Jiron.Umbraco.FormBuilder.Core.OptionLists.AgreementOptionSo
   string Label { get; }
   string Name { get; }
 
-public sealed class Jiron.Umbraco.FormBuilder.Core.OptionLists.CodeOptionListSettings
-  ctor()
-  string? Source { get; init; }
-
-public sealed class Jiron.Umbraco.FormBuilder.Core.OptionLists.ContentOptionListSettings
-  ContentOptionOrder Order { get; init; }
-  Guid? Root { get; init; }
-  IReadOnlyList<Guid> DocumentTypes { get; init; }
-  bool Descendants { get; init; }
-  ctor()
-  string LabelFrom { get; init; }
-  string ValueFrom { get; init; }
-
-public enum Jiron.Umbraco.FormBuilder.Core.OptionLists.ContentOptionOrder
-  Tree = 0
-  Label = 1
-
-public sealed class Jiron.Umbraco.FormBuilder.Core.OptionLists.CountriesOptionListSettings
-  IReadOnlyList<string> Countries { get; init; }
-  ctor()
-
-public sealed class Jiron.Umbraco.FormBuilder.Core.OptionLists.DataTypeOptionListSettings
-  Guid? DataType { get; init; }
-  ctor()
-
-public sealed class Jiron.Umbraco.FormBuilder.Core.OptionLists.FileOptionListSettings
-  ctor()
-
 public sealed record Jiron.Umbraco.FormBuilder.Core.OptionLists.FormBuilderOption
   Guid? Image { get; init; }
   IReadOnlyList<string> ParentValues { get; init; }
@@ -3718,36 +3644,17 @@ public interface Jiron.Umbraco.FormBuilder.Core.OptionLists.IFormBuilderOptionSo
   string Label { get; }
   string Name { get; }
 
-public sealed class Jiron.Umbraco.FormBuilder.Core.OptionLists.ManualOptionListSettings
-  ctor()
-
 public sealed class Jiron.Umbraco.FormBuilder.Core.OptionLists.MonthsOptionSource : IFormBuilderOptionSource
   ValueTask<IReadOnlyList<FormBuilderOption>> GetOptionsAsync(FormBuilderOptionRequest request, CancellationToken cancellationToken)
   ctor()
   string Label { get; }
   string Name { get; }
 
-public enum Jiron.Umbraco.FormBuilder.Core.OptionLists.OptionListKind
-  Manual = 0
-  Content = 1
-  DataType = 2
-  Url = 3
-  File = 4
-  Countries = 5
-  Code = 6
-
 public sealed class Jiron.Umbraco.FormBuilder.Core.OptionLists.SatisfactionOptionSource : IFormBuilderOptionSource
   ValueTask<IReadOnlyList<FormBuilderOption>> GetOptionsAsync(FormBuilderOptionRequest request, CancellationToken cancellationToken)
   ctor()
   string Label { get; }
   string Name { get; }
-
-public sealed class Jiron.Umbraco.FormBuilder.Core.OptionLists.UrlOptionListSettings
-  ctor()
-  string LabelFrom { get; init; }
-  string ListPath { get; init; }
-  string ValueFrom { get; init; }
-  string? Url { get; init; }
 
 public sealed class Jiron.Umbraco.FormBuilder.Core.OptionLists.WeekdaysOptionSource : IFormBuilderOptionSource
   ValueTask<IReadOnlyList<FormBuilderOption>> GetOptionsAsync(FormBuilderOptionRequest request, CancellationToken cancellationToken)
@@ -3939,10 +3846,6 @@ public sealed class Jiron.Umbraco.FormBuilder.Core.Themes.Bootstrap5Theme : IFor
   string ViewFolder { get; }
   string? Stylesheet { get; }
 
-public static class Jiron.Umbraco.FormBuilder.Core.Themes.BuiltInThemes
-  const string DefaultAlias = "default"
-  static IReadOnlyList<Type> All { get; }
-
 public sealed class Jiron.Umbraco.FormBuilder.Core.Themes.DefaultTheme : IFormBuilderTheme
   IReadOnlyDictionary<string, string> Classes { get; }
   IReadOnlyDictionary<string, string> DarkTokens { get; }
@@ -4009,55 +3912,6 @@ public sealed class Jiron.Umbraco.FormBuilder.Core.Themes.UnstyledTheme : IFormB
   string Name { get; }
   string ViewFolder { get; }
   string? Stylesheet { get; }
-
-public sealed class Jiron.Umbraco.FormBuilder.Core.Webhooks.EntryActionFailedWebhookEvent : EntryWebhookEvent<EntryActionFailedNotification>
-  ctor(IWebhookFiringService firing, IWebhookService webhooks, IOptionsMonitor<WebhookSettings> settings)
-  override string Alias { get; }
-
-public sealed class Jiron.Umbraco.FormBuilder.Core.Webhooks.EntryApprovedWebhookEvent : EntryWebhookEvent<EntryApprovedNotification>
-  ctor(IWebhookFiringService firing, IWebhookService webhooks, IOptionsMonitor<WebhookSettings> settings)
-  override string Alias { get; }
-
-public sealed class Jiron.Umbraco.FormBuilder.Core.Webhooks.EntryDeletedWebhookEvent : EntryWebhookEvent<EntryDeletedNotification>
-  ctor(IWebhookFiringService firing, IWebhookService webhooks, IOptionsMonitor<WebhookSettings> settings)
-  override string Alias { get; }
-
-public sealed class Jiron.Umbraco.FormBuilder.Core.Webhooks.EntryRejectedWebhookEvent : EntryWebhookEvent<EntryRejectedNotification>
-  ctor(IWebhookFiringService firing, IWebhookService webhooks, IOptionsMonitor<WebhookSettings> settings)
-  override string Alias { get; }
-
-public sealed class Jiron.Umbraco.FormBuilder.Core.Webhooks.EntrySubmittedWebhookEvent : EntryWebhookEvent<EntrySubmittedNotification>
-  ctor(IWebhookFiringService firing, IWebhookService webhooks, IOptionsMonitor<WebhookSettings> settings)
-  override string Alias { get; }
-
-public abstract class Jiron.Umbraco.FormBuilder.Core.Webhooks.EntryWebhookEvent<T> : WebhookEventBase<T>
-  override bool ShouldFireWebhookForNotification(T notificationObject)
-  override object? ConvertNotificationToRequestPayload(T notification)
-  protected ctor(IWebhookFiringService firing, IWebhookService webhooks, IOptionsMonitor<WebhookSettings> settings)
-
-public sealed class Jiron.Umbraco.FormBuilder.Core.Webhooks.WebhookActionSettings
-  IReadOnlyList<Guid> IncludeSensitive { get; init; }
-  JsonElement? Fields { get; init; }
-  JsonElement? Headers { get; init; }
-  WebhookFormat Format { get; init; }
-  WebhookTarget Target { get; init; }
-  bool Metadata { get; init; }
-  bool WithoutAnswers { get; init; }
-  ctor()
-  string? Message { get; init; }
-  string? Secret { get; init; }
-  string? Template { get; init; }
-  string? Url { get; init; }
-
-public enum Jiron.Umbraco.FormBuilder.Core.Webhooks.WebhookFormat
-  Json = 0
-  Form = 1
-  Xml = 2
-
-public enum Jiron.Umbraco.FormBuilder.Core.Webhooks.WebhookTarget
-  Url = 0
-  Slack = 1
-  Teams = 2
 
 public enum Jiron.Umbraco.FormBuilder.Logic.FieldKind
   Text = 0

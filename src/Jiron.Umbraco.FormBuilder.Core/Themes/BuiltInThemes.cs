@@ -3,7 +3,7 @@ using System.Collections.Frozen;
 namespace Jiron.Umbraco.FormBuilder.Core.Themes;
 
 /// <summary>The themes Jiron Form Builder ships (ADR-0015, ADR-0105), in the order the backoffice lists them.</summary>
-public static class BuiltInThemes
+internal static class BuiltInThemes
 {
     /// <summary>The alias of the theme every other resolution falls back to.</summary>
     public const string DefaultAlias = "default";

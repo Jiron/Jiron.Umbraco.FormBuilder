@@ -43,7 +43,7 @@ internal sealed class TestEmailController(TestEmails emails, IUserService users,
 }
 
 /// <summary>What a test mail shows.</summary>
-public sealed class TestEmailRequestModel
+internal sealed class TestEmailRequestModel
 {
     /// <summary>The key of the site's root whose sender and layout it shows; null for the global settings.</summary>
     public Guid? Site { get; init; }
@@ -53,7 +53,7 @@ public sealed class TestEmailRequestModel
 }
 
 /// <summary>A queued test mail.</summary>
-public sealed class TestEmailResponseModel
+internal sealed class TestEmailResponseModel
 {
     /// <summary>The address it goes to: the asking user's.</summary>
     public required string To { get; init; }

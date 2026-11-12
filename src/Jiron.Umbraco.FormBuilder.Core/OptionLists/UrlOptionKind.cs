@@ -266,7 +266,7 @@ internal sealed record UrlOptionCopy(IReadOnlyList<FormBuilderOption> Options, D
 }
 
 /// <summary>The configuration of a URL list (ADR-0076).</summary>
-public sealed class UrlOptionListSettings
+internal sealed class UrlOptionListSettings
 {
     /// <summary>The address, absolute, <c>https</c> (or <c>http</c> when the host allows it), on a host the site calls.</summary>
     [Required]

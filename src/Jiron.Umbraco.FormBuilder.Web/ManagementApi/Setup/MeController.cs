@@ -30,7 +30,7 @@ internal sealed class MeController(IFormBuilderAccessService access) : FormBuild
 }
 
 /// <summary>What the signed-in user holds.</summary>
-public sealed class MyPermissionsResponseModel
+internal sealed class MyPermissionsResponseModel
 {
     /// <summary>The permissions they hold globally.</summary>
     public required IReadOnlyList<string> Global { get; init; }

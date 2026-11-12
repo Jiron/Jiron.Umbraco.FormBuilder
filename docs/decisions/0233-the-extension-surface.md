@@ -116,3 +116,28 @@ every delete for good. Both stay as they are, and the promise is made exact:
 
 `EntryDeletingNotification` is therefore told before a user's delete, retention and the privacy tools' erase, each
 entry once. Its declaration and docs/extending.md say so.
+
+## Amendment (step 16.7, 2026-11-12)
+
+The code quality pass read the whole public surface against this record and `docs/extending.md`, and 143 types left
+it, each used only inside the packages and their friend assemblies:
+
+- **The Management API's 118 request and response models** that were still public in Web: the controllers are
+  internal and found by the package's own provider, as the other 239 models already were.
+- **The built-in actions' settings** (email, webhook with its format and target, content with its parent source, set
+  state with its target) and **the option list kinds** with their settings: their action types and kinds are internal.
+- **`BuiltInThemes`**, the registration list of the themes (the theme types stay public, so a site can remove one);
+  **the webhook events** of the entry notifications (Umbraco finds them by registration; the notifications stay); and
+  **`FormPickerDeliveryMarker`**, the in-between value the Delivery API middleware rewrites.
+
+Kept public on purpose, though they may look internal: the built-in field types, themes and option sources with their
+settings (a site removes or replaces them by type), composers, collections and builders, options classes, tag helpers,
+the view component and surface controller (MVC's discovery), the form picker's editor and converter (Umbraco's type
+scan), the rendering models and `EmailViewModel` (a site's own views compile against them), the projection of the
+public JSON (4.2b), and the types the public services' signatures use (`FolderVisibility`, `FormAccessTarget`,
+`DeletionCandidate`, `Page<T>`, `PageRequest`, `FormVersionKind`, `FieldKind`) along with the codes a site reads
+(`ActionTestCodes`, `MergeTagProblems`, `FormBuilderFileId`, `FormBuilderSettingsSections`, `FormBuilderPermissions`).
+Naming that differs between older and newer contracts (a key with and without its `Key` suffix, `Name` or `Alias` as an
+extension's id) stays: each contract is consistent within itself and named so in the extension guide and the samples,
+and renaming across them would touch every sample for a difference of words. A new contract takes the names of the
+contracts it sits beside.

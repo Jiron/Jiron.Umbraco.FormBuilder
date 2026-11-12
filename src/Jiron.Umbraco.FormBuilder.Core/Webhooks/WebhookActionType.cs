@@ -15,7 +15,7 @@ using Jiron.Umbraco.FormBuilder.Core.Settings;
 namespace Jiron.Umbraco.FormBuilder.Core.Webhooks;
 
 /// <summary>What a webhook's body is written as.</summary>
-public enum WebhookFormat
+internal enum WebhookFormat
 {
     /// <summary>A JSON object.</summary>
     [FormBuilderChoice("#jfbActionChoices_webhookFormatJson")]
@@ -31,7 +31,7 @@ public enum WebhookFormat
 }
 
 /// <summary>Where a webhook's address comes from.</summary>
-public enum WebhookTarget
+internal enum WebhookTarget
 {
     /// <summary>The action's own address.</summary>
     [FormBuilderChoice("#jfbActionChoices_webhookTargetUrl")]
@@ -47,7 +47,7 @@ public enum WebhookTarget
 }
 
 /// <summary>The settings of the webhook action (ROADMAP 8.4, ADR-0161).</summary>
-public sealed class WebhookActionSettings
+internal sealed class WebhookActionSettings
 {
     /// <summary>Where it goes; its box draws the address within it (ADR-0191).</summary>
     [FormBuilderSetting("#jfbActionSettings_webhookTarget", Order = 1, Editor = "webhookAddress")]

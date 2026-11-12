@@ -231,7 +231,7 @@ internal sealed class ActionFailedEventHandler(EntryEvents entryEvents, Delivery
 /// the database on any of them, and Umbraco's job sends it from the scheduling server.
 /// </summary>
 /// <typeparam name="T">The notification.</typeparam>
-public abstract class EntryWebhookEvent<T>(IWebhookFiringService firing, IWebhookService webhooks, IOptionsMonitor<WebhookSettings> settings)
+internal abstract class EntryWebhookEvent<T>(IWebhookFiringService firing, IWebhookService webhooks, IOptionsMonitor<WebhookSettings> settings)
     : WebhookEventBase<T>(firing, webhooks, settings, new SingleServerRoleAccessor())
     where T : EntryNotification
 {
@@ -252,7 +252,7 @@ public abstract class EntryWebhookEvent<T>(IWebhookFiringService firing, IWebhoo
 
 /// <summary>An entry was submitted, in Settings, Webhooks.</summary>
 [WebhookEvent("Forms: entry submitted", global::Umbraco.Cms.Core.Constants.WebhookEvents.Types.Other)]
-public sealed class EntrySubmittedWebhookEvent(IWebhookFiringService firing, IWebhookService webhooks, IOptionsMonitor<WebhookSettings> settings)
+internal sealed class EntrySubmittedWebhookEvent(IWebhookFiringService firing, IWebhookService webhooks, IOptionsMonitor<WebhookSettings> settings)
     : EntryWebhookEvent<EntrySubmittedNotification>(firing, webhooks, settings)
 {
     /// <inheritdoc />
@@ -261,7 +261,7 @@ public sealed class EntrySubmittedWebhookEvent(IWebhookFiringService firing, IWe
 
 /// <summary>An entry was approved, in Settings, Webhooks.</summary>
 [WebhookEvent("Forms: entry approved", global::Umbraco.Cms.Core.Constants.WebhookEvents.Types.Other)]
-public sealed class EntryApprovedWebhookEvent(IWebhookFiringService firing, IWebhookService webhooks, IOptionsMonitor<WebhookSettings> settings)
+internal sealed class EntryApprovedWebhookEvent(IWebhookFiringService firing, IWebhookService webhooks, IOptionsMonitor<WebhookSettings> settings)
     : EntryWebhookEvent<EntryApprovedNotification>(firing, webhooks, settings)
 {
     /// <inheritdoc />
@@ -270,7 +270,7 @@ public sealed class EntryApprovedWebhookEvent(IWebhookFiringService firing, IWeb
 
 /// <summary>An entry was rejected, in Settings, Webhooks.</summary>
 [WebhookEvent("Forms: entry rejected", global::Umbraco.Cms.Core.Constants.WebhookEvents.Types.Other)]
-public sealed class EntryRejectedWebhookEvent(IWebhookFiringService firing, IWebhookService webhooks, IOptionsMonitor<WebhookSettings> settings)
+internal sealed class EntryRejectedWebhookEvent(IWebhookFiringService firing, IWebhookService webhooks, IOptionsMonitor<WebhookSettings> settings)
     : EntryWebhookEvent<EntryRejectedNotification>(firing, webhooks, settings)
 {
     /// <inheritdoc />
@@ -279,7 +279,7 @@ public sealed class EntryRejectedWebhookEvent(IWebhookFiringService firing, IWeb
 
 /// <summary>An entry was deleted, in Settings, Webhooks.</summary>
 [WebhookEvent("Forms: entry deleted", global::Umbraco.Cms.Core.Constants.WebhookEvents.Types.Other)]
-public sealed class EntryDeletedWebhookEvent(IWebhookFiringService firing, IWebhookService webhooks, IOptionsMonitor<WebhookSettings> settings)
+internal sealed class EntryDeletedWebhookEvent(IWebhookFiringService firing, IWebhookService webhooks, IOptionsMonitor<WebhookSettings> settings)
     : EntryWebhookEvent<EntryDeletedNotification>(firing, webhooks, settings)
 {
     /// <inheritdoc />
@@ -288,7 +288,7 @@ public sealed class EntryDeletedWebhookEvent(IWebhookFiringService firing, IWebh
 
 /// <summary>An action of an entry failed for good, in Settings, Webhooks.</summary>
 [WebhookEvent("Forms: action failed", global::Umbraco.Cms.Core.Constants.WebhookEvents.Types.Other)]
-public sealed class EntryActionFailedWebhookEvent(IWebhookFiringService firing, IWebhookService webhooks, IOptionsMonitor<WebhookSettings> settings)
+internal sealed class EntryActionFailedWebhookEvent(IWebhookFiringService firing, IWebhookService webhooks, IOptionsMonitor<WebhookSettings> settings)
     : EntryWebhookEvent<EntryActionFailedNotification>(firing, webhooks, settings)
 {
     /// <inheritdoc />
