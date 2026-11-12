@@ -62,7 +62,7 @@ mapping of each case to the code and its tests found four that did not hold:
 
 | Case | Held by | Tested in |
 | --- | --- | --- |
-| The mail server is down: no attempt spent | `MailServerReach`, `EmailAttempts` | `MailServerReachTests`, `EmailAttemptTests`, `MailServerDownTests` (Umbraco's own sender against a port nothing listens on), `HealthProbeTests` |
+| The mail server is down: no attempt spent; a connection cut after it answered spends one | `MailServerReach`, `EmailAttempts` | `MailServerReachTests`, `EmailAttemptTests`, `MailServerDownTests` (Umbraco's own sender against a port nothing listens on), `HealthProbeTests` |
 | Mail is not set up: no attempt spent | `EmailQueue` (ADR-0007) | `EmailAttemptTests` |
 | A webhook's receiver times out | the attempt's time limit, uncertain | `WebhookActionTests`, `ActionProcessorTests` |
 | A transient database error | the outermost unit of work retried (Tandem ADR-0065) | `TransientRetryTests`, `FormBuilderDatabaseErrorsTests` |
@@ -82,3 +82,21 @@ mapping of each case to the code and its tests found four that did not hold:
 - A form's view on a page is held as text until it has rendered, which a page's view component did not do before. The
   markup is the same.
 - A submission on a server whose copy is behind reads the form once more; on every other submission nothing changes.
+
+## Amendment (2026-11-12, step 16.5)
+
+The phase review found the rule wider than written: any socket error counted as no mail server, so a connection reset
+while the mail's data was going out put the mail back with its attempt, though the mail server had answered and the
+mail may have left. Such a mail could go out twice, and one whose connection always broke there went back to the queue
+for good. A refusal is now only a socket error that made no connection: the connection refused, no such host or no
+answer from the name lookup, the host or network unreachable or down, the address not available
+(`MailServerReach.NothingSent`). A connection reset or aborted, a socket shut down and a timeout are ordinary failed
+attempts again, which the back-off retries and the fifth fails, as any other error. Tested in `MailServerReachTests`
+(each code on both sides) and `EmailAttemptTests` (`AConnectionCutWhileTheMailIsSent_SpendsAnAttempt_AndThisServerDoesNotWait`).
+
+A published version this server cannot read was kept as a form not served, but a post's check that the copy here is
+behind read it again whenever the copy was not a form the website serves, so each post to such a form read and parsed
+the version anew and logged the same error. The mark now holds the public revision it was read at
+(`PublishedFormCache.IsKeptAsUnreadable`), and only a later revision (a new publish another server made) is read again,
+for a post and its catch-up alike. Tested in `PublicFormCacheTests`
+(`APublishedVersionThisServerCannotRead_IsAnsweredAsMissing_AndLoggedOncePerLoad`, now with two posts).

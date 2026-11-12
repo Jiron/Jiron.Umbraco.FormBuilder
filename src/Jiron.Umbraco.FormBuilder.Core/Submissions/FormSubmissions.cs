@@ -459,7 +459,8 @@ internal sealed class FormSubmissions(
             return null;
         }
 
-        if (cached is null || row.PublicRevision > cached.Published.Form.PublicRevision)
+        // A form kept as unreadable at this revision reads the same again, so it is not read on every post (16.5's review).
+        if (cached is null ? !cache.IsKeptAsUnreadable(key, row.PublicRevision) : row.PublicRevision > cached.Published.Form.PublicRevision)
         {
             cached = await cache.RenewAsync(key, cancellationToken);
         }

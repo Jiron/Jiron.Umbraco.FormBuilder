@@ -81,4 +81,34 @@ public sealed class MailServerReachTests
             Assert.That(MailServerReach.Refused(new TimeoutException()), Is.False, "a cut-off may have sent the mail");
         });
     }
+
+    [TestCase(SocketError.ConnectionRefused)]
+    [TestCase(SocketError.HostNotFound)]
+    [TestCase(SocketError.NoData)]
+    [TestCase(SocketError.TryAgain)]
+    [TestCase(SocketError.HostUnreachable)]
+    [TestCase(SocketError.HostDown)]
+    [TestCase(SocketError.NetworkUnreachable)]
+    [TestCase(SocketError.NetworkDown)]
+    [TestCase(SocketError.AddressNotAvailable)]
+    public void ASocketsErrorThatMadeNoConnection_IsARefusal(SocketError error) =>
+        Assert.That(MailServerReach.Refused(new IOException("Unable to connect", new SocketException((int)error))), Is.True);
+
+    [TestCase(SocketError.ConnectionReset)]
+    [TestCase(SocketError.ConnectionAborted)]
+    [TestCase(SocketError.TimedOut)]
+    [TestCase(SocketError.Shutdown)]
+    [TestCase(SocketError.NotConnected)]
+    public void ASocketsErrorAfterTheConnection_IsAnOrdinaryFailure_AsTheMailMayHaveLeft(SocketError error)
+    {
+        var cut = new SocketException((int)error);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(MailServerReach.Refused(cut), Is.False, "alone");
+            Assert.That(MailServerReach.Refused(new IOException("Unable to write data to the transport connection", cut)), Is.False, "wrapped, as a reset during the mail's data comes");
+            Assert.That(MailServerReach.Refused(new AggregateException(new IOException("x", cut))), Is.False, "among others");
+            Assert.That(MailServerReach.Refused(new AggregateException(new IOException("x", cut), new SocketException((int)SocketError.ConnectionRefused))), Is.True, "beside a refusal, the refusal counts");
+        });
+    }
 }

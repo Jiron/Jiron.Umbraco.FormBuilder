@@ -174,6 +174,25 @@ public sealed class EmailAttemptTests : EmailTestBase
     }
 
     [Test]
+    public async Task AConnectionCutWhileTheMailIsSent_SpendsAnAttempt_AndThisServerDoesNotWait()
+    {
+        // The mail server answered, so the mail may have left: an ordinary failed attempt, not a refusal (ADR-0237).
+        var mail = await Outbox.QueueAsync(Mail());
+        Sender.Script = _ => throw new IOException("Unable to write data to the transport connection", new SocketException((int)SocketError.ConnectionReset));
+        var reach = GetRequiredService<MailServerReach>();
+
+        await Pass.RunAsync(CancellationToken.None);
+
+        var queued = (await Emails.GetAsync(mail!.Id))!;
+        Assert.Multiple(() =>
+        {
+            Assert.That((queued.State, queued.Attempts), Is.EqualTo((EmailState.Queued, 1)));
+            Assert.That(queued.LastError, Is.EqualTo(new DeliveryError(ActionAttempts.Threw, typeof(IOException).FullName)));
+            Assert.That((reach.Unreached, reach.Paused), Is.EqualTo((false, false)));
+        });
+    }
+
+    [Test]
     public async Task AnError_ComesBackAfterTheBackOff_AndFailsForGoodAfterTheFifth()
     {
         var mail = await Outbox.QueueAsync(Mail());

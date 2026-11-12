@@ -205,7 +205,8 @@ internal sealed partial class PublishedFormCache(
     /// <param name="key">The form's key.</param>
     /// <param name="cancellationToken">Stops waiting for the reads.</param>
     public async Task<CachedForm?> CatchUpAsync(Guid key, CancellationToken cancellationToken = default) =>
-        IsKeptAsNotServed(key) && await forms.GetAsync(key, cancellationToken) is { IsPublished: true, TrashedUtc: null }
+        IsKeptAsNotServed(key) && await forms.GetAsync(key, cancellationToken) is { IsPublished: true, TrashedUtc: null } row
+            && !IsKeptAsUnreadable(key, row.PublicRevision)
             ? await RenewAsync(key, cancellationToken)
             : null;
 
@@ -215,6 +216,15 @@ internal sealed partial class PublishedFormCache(
     /// </summary>
     /// <param name="key">The form's key.</param>
     public bool IsKeptAsNotServed(Guid key) => appCaches.RuntimeCache.Get(FormCacheKeys.Published(key)) is NotServedForm;
+
+    /// <summary>
+    /// Whether this server keeps the form as unreadable at this public revision or a later one, which takes no read: its
+    /// published version did not read, and reading it again finds the same until it is published again (16.5's review).
+    /// </summary>
+    /// <param name="key">The form's key.</param>
+    /// <param name="publicRevision">The revision the form's row shows now.</param>
+    public bool IsKeptAsUnreadable(Guid key, int publicRevision) =>
+        appCaches.RuntimeCache.Get(FormCacheKeys.Published(key)) is UnreadableForm { Revision: var revision } && revision >= publicRevision;
 
     /// <summary>Whether this server keeps the form as the website serves it, which takes no read (ADR-0149).</summary>
     /// <param name="key">The form's key.</param>
@@ -231,7 +241,7 @@ internal sealed partial class PublishedFormCache(
     // The form's row first, so a key that names no form costs one read.
     private async Task<object> LoadAsync(Guid key)
     {
-        if (await forms.GetAsync(key, CancellationToken.None) is null)
+        if (await forms.GetAsync(key, CancellationToken.None) is not { } row)
         {
             return Missing;
         }
@@ -245,7 +255,7 @@ internal sealed partial class PublishedFormCache(
         {
             // Logged once per server and load, as the mark is kept until the form changes.
             LogUnreadable(logger, key, exception.Problems.Count);
-            return NotServed;
+            return new UnreadableForm(row.PublicRevision);
         }
 
         return published is null ? NotServed : new CachedForm(published, PublicProjection.Create(published.Definition, types));
@@ -256,7 +266,13 @@ internal sealed partial class PublishedFormCache(
 
     private sealed record FormKey(Guid Key);
 
-    private sealed class NotServedForm;
+    private class NotServedForm;
+
+    // A published version that did not read at the form's public revision then: only a later publish is read again.
+    private sealed class UnreadableForm(int revision) : NotServedForm
+    {
+        public int Revision { get; } = revision;
+    }
 
     private sealed class NoForm;
 }

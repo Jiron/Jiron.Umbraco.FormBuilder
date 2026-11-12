@@ -172,13 +172,28 @@ public sealed class PublicFormCacheTests : PublicApiTestBase
             answers.Add($"{await RefusalAsync(response)} after {Watched.PublishedReads} read(s)");
         }
 
+        // A post reads the row, which says the form is published, but not the version again (16.5's review): it would read the same.
+        for (var time = 0; time < 2; time++)
+        {
+            using var post = await SendAsync(HttpMethod.Post, $"{Root}/forms/{key}/entries", request => request.Content = new StringContent("""{"revision":1,"values":{"name":"Grace"}}""", System.Text.Encoding.UTF8, "application/json"));
+            answers.Add($"post: {await RefusalAsync(post)} after {Watched.PublishedReads} read(s)");
+        }
+
+        // The pipeline's own read of the form, as a post without JavaScript takes it, holds the same.
+        var submissions = GetRequiredService<Jiron.Umbraco.FormBuilder.Core.Submissions.FormSubmissions>();
+        for (var time = 0; time < 2; time++)
+        {
+            var receipt = await submissions.ReceiptAsync(key, Guid.NewGuid(), member: null);
+            answers.Add($"pipeline: {receipt.Refusal} after {Watched.PublishedReads} read(s)");
+        }
+
         var logged = Logged();
         await SaveAndPublishAsync(key, definition => WithFields(definition, NameField with { Label = new LocalizedText("Full name") }));
         answers.Add(await AnswerAsync("published again", "broken"));
 
         Assert.Multiple(() =>
         {
-            Assert.That(answers, Is.EqualTo(new[] { "404 form_not_found after 1 read(s)", "404 form_not_found after 1 read(s)", "published again: 200 Full name" }), "kept as not served until it changes");
+            Assert.That(answers, Is.EqualTo(new[] { "404 form_not_found after 1 read(s)", "404 form_not_found after 1 read(s)", "post: 404 form_not_found after 1 read(s)", "post: 404 form_not_found after 1 read(s)", "pipeline: FormNotFound after 1 read(s)", "pipeline: FormNotFound after 1 read(s)", "published again: 200 Full name" }), "kept as not served until it changes");
             Assert.That(logged.Select(entry => entry.Level), Is.EqualTo(new[] { LogLevel.Error }), "once per load");
             Assert.That(logged.FirstOrDefault()?.Message, Does.StartWith($"The published version of the form {key} cannot be read, so the website answers it as missing until it is published again. Problems: "));
             Assert.That(Logged(), Has.Count.EqualTo(1), "a version that reads logs nothing");

@@ -1,3 +1,4 @@
+using System.Collections.Frozen;
 using System.Collections.Immutable;
 using System.Net.Sockets;
 
@@ -42,7 +43,28 @@ internal sealed class MailServerReach(TimeProvider time)
         }
     }
 
-    /// <summary>Whether an attempt ended because no mail server answered: a socket's error anywhere in what it threw.</summary>
+    /// <summary>
+    /// The socket errors that mean no connection was made, so nothing was sent: the connection refused, no such host or no
+    /// answer from the name lookup, the host or network unreachable or down. A connection reset or aborted, or a timeout, may
+    /// end a session that already handed over the mail, so it stays an ordinary failed attempt.
+    /// </summary>
+    private static readonly FrozenSet<SocketError> NothingSent = new[]
+    {
+        SocketError.ConnectionRefused,
+        SocketError.HostNotFound,
+        SocketError.NoData,
+        SocketError.TryAgain,
+        SocketError.HostUnreachable,
+        SocketError.HostDown,
+        SocketError.NetworkUnreachable,
+        SocketError.NetworkDown,
+        SocketError.AddressNotAvailable,
+    }.ToFrozenSet();
+
+    /// <summary>
+    /// Whether an attempt ended because no mail server answered: a socket's error from <see cref="NothingSent"/> anywhere in
+    /// what it threw.
+    /// </summary>
     /// <param name="exception">What the attempt threw.</param>
     public static bool Refused(Exception exception)
     {
@@ -51,7 +73,7 @@ internal sealed class MailServerReach(TimeProvider time)
         for (var seen = 0; pending.Count > 0 && seen < 16; seen++)
         {
             var current = pending.Pop();
-            if (current is SocketException)
+            if (current is SocketException socket && NothingSent.Contains(socket.SocketErrorCode))
             {
                 return true;
             }
