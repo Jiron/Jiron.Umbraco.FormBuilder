@@ -66,6 +66,12 @@ public sealed class TestUser
 
     /// <summary>Aliases of the groups the user belongs to.</summary>
     public IList<string> Groups { get; } = [];
+
+    /// <summary>
+    /// The backoffice language the user's account keeps on the server, an ISO code such as <c>de-DE</c>; Umbraco's
+    /// default when empty. What the server writes in the user's language (an alert, a digest, a sample mail) follows it.
+    /// </summary>
+    public string Language { get; set; } = string.Empty;
 }
 
 /// <summary>A member a test creates, approved, of Umbraco's default member type, with the given password.</summary>

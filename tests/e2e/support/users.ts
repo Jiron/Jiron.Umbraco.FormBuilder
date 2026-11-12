@@ -9,6 +9,7 @@ import { credentialsFile } from './paths.ts';
  */
 export type Role =
   | 'admin'
+  | 'adminDe'
   | 'designer'
   | 'layoutDesigner'
   | 'entryHandler'
@@ -21,6 +22,7 @@ export type Role =
 
 export const ROLES: readonly Role[] = [
   'admin',
+  'adminDe',
   'designer',
   'layoutDesigner',
   'entryHandler',
@@ -31,6 +33,12 @@ export const ROLES: readonly Role[] = [
   'outsider',
   'editor',
 ];
+
+/**
+ * The personas who are another persona in another language: the walks sign in as them to see what the server writes in
+ * the user's own language (ROADMAP 16.6). The checks of each persona's rights leave them out, as their twin's cover them.
+ */
+export const TWINS: ReadonlySet<Role> = new Set<Role>(['adminDe']);
 
 /** The personas without the Forms section: Umbraco's own groups only. */
 export const WITHOUT_FORMS: ReadonlySet<Role> = new Set<Role>(['outsider', 'editor']);
@@ -86,10 +94,17 @@ export const RESTRICTED_FOLDERS = [
   { name: 'HR', group: 'jfbHrTeam', permissions: ['viewEntries', 'editEntries'] },
 ] as const;
 
-/** Who each persona is and which Umbraco user groups it belongs to. */
-export const PEOPLE: Record<Role, { name: string; email: string; groups: readonly string[] }> = {
+/** Who each persona is, which Umbraco user groups it belongs to, and the backoffice language its account keeps. */
+export const PEOPLE: Record<Role, { name: string; email: string; groups: readonly string[]; language?: string }> = {
   // The unattended install's super user, in the groups Umbraco gives it.
   admin: { name: 'Ada Admin', email: 'e2e-admin@jfb.test', groups: ['admin', 'sensitiveData'] },
+  // The admin's German twin, whose language the server keeps, so its alerts, digests and sample mails are German.
+  adminDe: {
+    name: 'Adele Admin',
+    email: 'e2e-admin-de@jfb.test',
+    groups: ['admin', 'sensitiveData'],
+    language: 'de-DE',
+  },
   designer: { name: 'Dana Designer', email: 'e2e-designer@jfb.test', groups: ['jfbDesigners'] },
   layoutDesigner: { name: 'Lea Layout', email: 'e2e-layout@jfb.test', groups: ['jfbLayoutDesigners'] },
   entryHandler: { name: 'Eli Entries', email: 'e2e-entries@jfb.test', groups: ['jfbEntryHandlers'] },

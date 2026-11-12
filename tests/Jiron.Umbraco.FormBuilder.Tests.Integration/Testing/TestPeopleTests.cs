@@ -64,6 +64,27 @@ public sealed class TestPeopleTests : FormBuilderMigrationTestBase
     }
 
     [Test]
+    public async Task EnsureUserAsync_WithALanguage_KeepsItOnTheServer_AndTheGroupsAsCreated()
+    {
+        var password = TestPeople.NewPassword();
+        var user = User(password, "editor");
+        user.Language = "de-DE";
+
+        await People.EnsureUserAsync(user);
+
+        var stored = GetRequiredService<IUserService>().GetByEmail(Designer);
+        var signsIn = await SignsInAsync(Designer, password);
+        Assert.Multiple(() =>
+        {
+            Assert.That(stored!.Language, Is.EqualTo("de-DE"));
+            Assert.That(stored.Name, Is.EqualTo("Dana Designer"));
+            Assert.That(stored.Groups.Select(g => g.Alias), Is.EquivalentTo(new[] { "editor" }));
+            Assert.That(stored.IsApproved, Is.True);
+            Assert.That(signsIn, Is.True);
+        });
+    }
+
+    [Test]
     public async Task EnsureUserGroupAsync_ThatEditsContent_MayCreateUpdateAndPublishEverywhere_AsAContentActionNeeds()
     {
         var group = await People.EnsureUserGroupAsync(new TestUserGroup { Alias = "jfbContentDesigners", Sections = { "content" }, ContentRootAccess = true, ContentEditing = true });

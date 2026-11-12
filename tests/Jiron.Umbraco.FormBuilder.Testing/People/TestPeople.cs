@@ -113,7 +113,29 @@ public sealed class TestPeople(
             throw new InvalidOperationException($"Could not set the password of the test user {user.Email}: {changed.Status}.");
         }
 
-        return createdUser;
+        if (string.IsNullOrWhiteSpace(user.Language))
+        {
+            return createdUser;
+        }
+
+        // Umbraco creates a user in its default language; the update sets the user's own, and keeps the rest as created.
+        var updated = await users.UpdateAsync(
+            Constants.Security.SuperUserKey,
+            new UserUpdateModel
+            {
+                ExistingUserKey = createdUser.Key,
+                Email = createdUser.Email,
+                UserName = createdUser.Username,
+                Name = createdUser.Name ?? createdUser.Email,
+                LanguageIsoCode = user.Language,
+                UserGroupKeys = groupKeys,
+            });
+        if (!updated.Success || updated.Result is null)
+        {
+            throw new InvalidOperationException($"Could not set the language of the test user {user.Email}: {updated.Status}.");
+        }
+
+        return updated.Result;
     }
 
     /// <summary>Creates the member group unless its name exists; returns the group either way.</summary>

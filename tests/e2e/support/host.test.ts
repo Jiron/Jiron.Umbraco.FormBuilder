@@ -97,7 +97,10 @@ test('the host environment creates every persona but the admin, with its groups,
     PEOPLE[role].groups.forEach((group, i) =>
       assert.equal(env[`JironFormBuilderTesting__Users__${u}__Groups__${i}`], group),
     );
+    // Only a twin keeps a language of its own (ROADMAP 16.6); the others take Umbraco's default.
+    assert.equal(env[`JironFormBuilderTesting__Users__${u}__Language`], PEOPLE[role].language);
   });
+  assert.equal(env[`JironFormBuilderTesting__Users__${users.indexOf('adminDe')}__Language`], 'de-DE');
   assert.equal(env[`JironFormBuilderTesting__Users__${users.length}__Email`], undefined);
   USER_GROUPS.forEach((group, g) => {
     assert.equal(env[`JironFormBuilderTesting__UserGroups__${g}__Alias`], group.alias);

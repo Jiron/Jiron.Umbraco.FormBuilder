@@ -38,7 +38,8 @@ const SAVE_DRAFT = '[data-mark="workspace-action:Jiron.FormBuilder.WorkspaceActi
 const PREVIEW = '[data-mark="workspace-action:Jiron.FormBuilder.WorkspaceAction.Form.Preview"]';
 
 /** Dresses a page for a combination: its window, Umbraco's theme, and the backoffice's language, which the walk gives by
- * answering the current user's language as the combination's, so nothing changes on the shared host. */
+ * answering the current user's language as the combination's; in German it also signs in as the admin's German twin,
+ * whose account keeps the language on the server (ROADMAP 16.6). */
 async function dress(page: Page, combo: Combo): Promise<void> {
   // A step that cannot find its way gives up soon, so the walk notes it and goes on.
   page.setDefaultTimeout(15_000);
@@ -633,7 +634,8 @@ for (const combo of COMBOS.filter((each) => wantedCombo(each))) {
     const label = comboName(combo);
     const made = await seed(api, request, label, testInfo.outputPath('import.json'));
     await dress(page, combo);
-    await loginAs('admin');
+    // In German as the admin's German twin, whose language the server keeps, so what the server writes is German too.
+    await loginAs(combo.language === 'de' ? 'adminDe' : 'admin');
     const walk = new Walk(page, join(walkDir(), label));
 
     // The section.

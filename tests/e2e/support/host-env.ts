@@ -88,6 +88,8 @@ export function hostEnvironment(secrets: E2ESecrets, options: { deliveryApi: boo
     env[`JironFormBuilderTesting__Users__${u}__Name`] = user.name;
     env[`JironFormBuilderTesting__Users__${u}__Password`] = user.password;
     PEOPLE[role].groups.forEach((group, i) => (env[`JironFormBuilderTesting__Users__${u}__Groups__${i}`] = group));
+    const language = PEOPLE[role].language;
+    if (language) env[`JironFormBuilderTesting__Users__${u}__Language`] = language;
   });
 
   // The demo's own seeder creates the members, in its member group, with access to the members area.

@@ -1,11 +1,12 @@
 import { expect, test } from '../../fixtures.ts';
-import { FORMS_SECTION, PEOPLE, ROLES, USER_GROUPS, WITHOUT_FORMS } from '../../support/users.ts';
+import { FORMS_SECTION, PEOPLE, ROLES, TWINS, USER_GROUPS, WITHOUT_FORMS } from '../../support/users.ts';
 
 const MANAGEMENT_API = '/umbraco/management/api/v1';
 
 interface CurrentUser {
   email: string;
   isAdmin: boolean;
+  languageIsoCode: string | null;
   userGroupIds: { id: string }[];
   allowedSections: string[];
 }
@@ -18,7 +19,7 @@ interface UserGroupPage {
 const sectionsOf = (role: (typeof ROLES)[number]): Set<string> =>
   new Set(USER_GROUPS.filter((group) => PEOPLE[role].groups.includes(group.alias)).flatMap((group) => group.sections));
 
-for (const role of ROLES) {
+for (const role of ROLES.filter((each) => !TWINS.has(each))) {
   test(`${role} signs in through the backoffice login screen`, async ({ page, loginAs }) => {
     await loginAs(role);
 
@@ -41,7 +42,7 @@ test('every persona signs in through the Management API with exactly its groups 
   expect(groups.status()).toBe(200);
   const aliasById = new Map(((await groups.json()) as UserGroupPage).items.map((group) => [group.id, group.alias]));
 
-  for (const role of ROLES) {
+  for (const role of ROLES.filter((each) => !TWINS.has(each))) {
     const api = role === 'admin' ? admin : await apiAs(role);
     const response = await api.get(`${MANAGEMENT_API}/user/current`);
     expect(response.status(), role).toBe(200);
@@ -55,6 +56,16 @@ test('every persona signs in through the Management API with exactly its groups 
     // Every persona but those in Umbraco's own groups only has the Forms section; access.spec.ts checks what each may
     // do there.
     if (role !== 'admin') expect(user.allowedSections.includes(FORMS_SECTION), role).toBe(!WITHOUT_FORMS.has(role));
+  }
+});
+
+test("each persona's twin is that persona in its own language, kept on the server", async ({ apiAs }) => {
+  // ROADMAP 16.6: the walks sign in as a twin to see what the server writes in the user's language.
+  for (const twin of TWINS) {
+    const user = (await (await (await apiAs(twin)).get(`${MANAGEMENT_API}/user/current`)).json()) as CurrentUser;
+    expect(user.email, twin).toBe(PEOPLE[twin].email);
+    expect(user.languageIsoCode, twin).toBe(PEOPLE[twin].language);
+    expect(user.isAdmin, twin).toBe(PEOPLE[twin].groups.includes('admin'));
   }
 });
 
