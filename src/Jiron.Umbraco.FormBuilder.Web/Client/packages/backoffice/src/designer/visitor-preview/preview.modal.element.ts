@@ -22,7 +22,7 @@ import { confirmList } from '../../ui/confirm';
 import { CANVAS_WIDTHS, type CanvasWidth } from '../canvas/widths';
 import { FrameHost } from './frame-host';
 import type { PreviewModalData } from './preview.modal.token';
-import type { PreviewRead, TestEntryRead } from './preview-read';
+import { FAILED, type PreviewRead, type TestEntryRead } from './preview-read';
 
 /** The frame's sandbox: its own scripts and forms, and links in a tab of their own; never the backoffice's origin. */
 export const FRAME_SANDBOX = 'allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox';
@@ -49,6 +49,7 @@ export class PreviewModalElement extends UmbModalBaseElement<PreviewModalData, n
     _runs: { state: true },
     _held: { state: true },
     _expired: { state: true },
+    _refused: { state: true },
     _sent: { state: true },
     _running: { state: true },
   };
@@ -285,6 +286,8 @@ export class PreviewModalElement extends UmbModalBaseElement<PreviewModalData, n
   declare private _held: boolean;
   // Whether the public API refused the frame's ticket: the preview must load again to send.
   declare private _expired: boolean;
+  // Whether a content action of the draft needs rights in Umbraco the user lacks, so test entries run no actions for them.
+  declare private _refused: boolean;
   declare private _sent: Sent | null;
   declare private _running: boolean;
 
@@ -305,6 +308,7 @@ export class PreviewModalElement extends UmbModalBaseElement<PreviewModalData, n
     this._runs = false;
     this._held = false;
     this._expired = false;
+    this._refused = false;
     this._sent = null;
     this._running = false;
   }
@@ -344,7 +348,7 @@ export class PreviewModalElement extends UmbModalBaseElement<PreviewModalData, n
    * The draft's document in the language and scheme chosen, empty or with the sample answers, its test entries running
    * their actions or not; an answer that comes after a later ask is dropped. A new document has sent nothing yet.
    */
-  async #read() {
+  async #read(): Promise<void> {
     const data = this.data;
     if (!data) return;
     const asked = ++this.#asked;
@@ -356,6 +360,12 @@ export class PreviewModalElement extends UmbModalBaseElement<PreviewModalData, n
     const runs = this._runs;
     const read = await data.read(this._culture, { dark: this._dark, sample: this._sample, actions: runs });
     if (asked !== this.#asked) return;
+    if (read.kind === 'actionsRefused' && runs) {
+      // The draft shows all the same, its test entries running no actions; the note says why.
+      this.#refuse();
+      return this.#read();
+    }
+
     if (read.kind === 'shown') {
       this._culture = read.culture;
       const root = this.renderRoot;
@@ -365,7 +375,12 @@ export class PreviewModalElement extends UmbModalBaseElement<PreviewModalData, n
         },
       };
       this.#host = new FrameHost(frame, data.form, read.version, read.lifetimeSeconds, {
-        ticket: (version, runActions) => data.ticket(version, runActions),
+        ticket: async (version, runActions) => {
+          const answer = await data.ticket(version, runActions);
+          if (answer !== 'refused') return answer;
+          if (asked === this.#asked) this.#refuse();
+          return undefined;
+        },
         runsActions: runs,
         sent: (submissionId) => void this.#heardSent(asked, submissionId),
         held: (runs) => {
@@ -381,7 +396,16 @@ export class PreviewModalElement extends UmbModalBaseElement<PreviewModalData, n
       // Switched while the document was on its way: the frame gets a ticket that says so once it has loaded.
       if (this._runs !== runs) void this.#host.runActions(this._runs);
     }
-    this._shown = read;
+    this._shown = read.kind === 'actionsRefused' ? FAILED : read;
+  }
+
+  // A content action of the draft needs rights in Umbraco the user lacks: test entries run no actions, and the switch
+  // and the offer to run them go, as neither could work.
+  #refuse() {
+    this.#closeMenu();
+    this._refused = true;
+    this._runs = false;
+    this._held = false;
   }
 
   // The frame sent a submission: the note says which test entry it made, once read, while that document shows.
@@ -429,7 +453,8 @@ export class PreviewModalElement extends UmbModalBaseElement<PreviewModalData, n
       this._running = true;
       const answer = await data.runActions(sent.submissionId);
       if (this._sent?.submissionId !== sent.submissionId) return;
-      this._sent = { ...this._sent, ran: answer !== 'failed', failed: answer === 'failed' };
+      if (answer === 'refused') this.#refuse();
+      this._sent = { ...this._sent, ran: answer === 'ran' || answer === 'alreadyRan', failed: answer === 'failed' };
     } finally {
       this.#busy = false;
       this._running = false;
@@ -515,17 +540,24 @@ export class PreviewModalElement extends UmbModalBaseElement<PreviewModalData, n
         ></uui-button>
       </p>`;
     const sent = this._sent;
-    if (sent === null) return html`<p class="note">${this._held ? this.#term('noteOn') : this.#term('noteOff')}</p>`;
+    if (sent === null)
+      return html`<p class="note">
+        ${this._held ? this.#term('noteOn') : this._refused ? this.#term('noteRefused') : this.#term('noteOff')}
+      </p>`;
     const entry = sent.entry;
     if (entry === null) return html`<p class="note" data-sent role="status"></p>`;
     if (entry.kind === 'missing') return html`<p class="note" data-sent role="status">${this.#term('sentOnly')}</p>`;
     const ran = entry.actionsRan || sent.ran;
-    const offers = !ran && this.data?.mayRunActions === true && entry.actions.length > 0;
+    const offers = !ran && this.#mayRun() && entry.actions.length > 0;
     return html`<p class="note" data-sent role="status">
       <span
         >${this.#term('saved', entry.number)}
         ${entry.awaitsConfirmation ? this.#term('awaiting') : ran ? this.#term('running') : this.#term('noneRan')}${
-          sent.failed ? html` <span role="alert">${this.#term('runFailed')}</span>` : nothing
+          sent.failed
+            ? html` <span role="alert">${this.#term('runFailed')}</span>`
+            : this._refused && !ran
+              ? html` <span role="alert">${this.#term('runRefused')}</span>`
+              : nothing
         }</span
       >${
         offers
@@ -542,13 +574,19 @@ export class PreviewModalElement extends UmbModalBaseElement<PreviewModalData, n
     </p>`;
   }
 
+  // Whether the user may switch the test entries' actions on: they manage actions, and no content action needs rights
+  // in Umbraco they lack.
+  #mayRun(): boolean {
+    return this.data?.mayRunActions === true && !this._refused;
+  }
+
   // The "..." holds the colour scheme, for a theme that offers the dark one, and the site's languages, when it has more
   // than one; with neither it is not there.
   #more(): TemplateResult | typeof nothing {
     const shown = this._shown;
     const schemes = shown.kind === 'shown' && shown.darkScheme;
     const languages = this.data?.languages ?? [];
-    const runs = this.data?.mayRunActions === true;
+    const runs = this.#mayRun();
     if (!schemes && languages.length < 2 && !runs) return nothing;
     const culture = this._culture?.toLowerCase();
     const choice = (label: string, pressed: boolean, choose: () => void) =>

@@ -19,7 +19,7 @@ import { all, deferred, must, registerEnglish, settle, shadow, text } from '../.
 import { readWidth } from '../canvas/widths';
 import { FRAME_SANDBOX, PreviewModalElement } from './preview.modal.element';
 import type { PreviewModalData } from './preview.modal.token';
-import type { PreviewAsk, PreviewRead, PreviewTicket, RunAnswer, TestEntryRead } from './preview-read';
+import type { PreviewAsk, PreviewRead, PreviewTicket, RunAnswer, TestEntryRead, TicketAnswer } from './preview-read';
 
 /** Umbraco's confirm dialog: whether the user confirms, what it was asked, and what it waits for before it answers. */
 const confirming = vi.hoisted(() => ({
@@ -102,7 +102,7 @@ async function previewOf(
 ) {
   const element = new PreviewModalElement();
   const reads = vi.fn(read);
-  const tickets = vi.fn<(version: number, runActions: boolean) => Promise<PreviewTicket | undefined>>(() =>
+  const tickets = vi.fn<(version: number, runActions: boolean) => Promise<TicketAnswer>>(() =>
     Promise.resolve({ ticket: 'new-ticket', lifetime: 600 }),
   );
   const entries = vi.fn<(submissionId: string) => Promise<TestEntryRead>>(() =>
@@ -493,5 +493,50 @@ describe('the preview', () => {
 
     const designer = await previewOf();
     expect(designer.root.querySelector('#jfb-preview-tests')).toBeNull();
+  });
+
+  it('says why test entries run no actions when a content action needs rights the user lacks, and offers no switch', async () => {
+    const REFUSED =
+      "Entries sent here are test entries. They run no actions: one of this form's content actions needs rights in Umbraco you don't have.";
+    const { element, root, tickets } = await previewListening(() => shownIn('en-US'), { mayRunActions: true });
+    tickets.mockImplementation(() => Promise.resolve('refused'));
+    must(buttonsOf(element, 'jfb-preview-tests')[0], 'Run actions for test entries').click();
+    await vi.waitFor(() => expect(tickets).toHaveBeenCalledWith(7, true));
+    await across();
+    await settle(element);
+    expect(noteOf(root)).toBe(REFUSED);
+    expect(root.querySelector('#jfb-preview-tests'), 'a switch that cannot work').toBeNull();
+    document.body.replaceChildren();
+
+    // A document asked for with the actions on comes back without them, and says so.
+    const asks: PreviewAsk[] = [];
+    const reading = await previewOf({ mayRunActions: true }, (_culture, ask) => {
+      asks.push(ask);
+      return Promise.resolve(ask.actions ? { kind: 'actionsRefused' } : shownIn('en-US'));
+    });
+    must(buttonsOf(reading.element, 'jfb-preview-tests')[0], 'Run actions for test entries').click();
+    await settle(reading.element);
+    toolbarButton(reading.root, 'Fill with sample answers').click();
+    await vi.waitFor(() => expect(asks.some((ask) => ask.actions)).toBe(true));
+    await vi.waitFor(() => expect(reading.root.querySelector('iframe')).not.toBeNull());
+    expect(asks.at(-1)?.actions).toBe(false);
+    expect(noteOf(reading.root)).toBe(REFUSED);
+  });
+
+  it("says the actions can't run for a content action's rights, and offers Run actions... no more", async () => {
+    const refused = await previewListening(() => shownIn('en-US'), {
+      mayRunActions: true,
+      runActions: () => Promise.resolve('refused'),
+    });
+    sentOver(refused.port.port);
+    await vi.waitFor(() => expect(refused.root.querySelector('.note uui-button')).not.toBeNull());
+    must(refused.root.querySelector<HTMLElement>('.note uui-button'), 'Run actions').click();
+    await vi.waitFor(() =>
+      expect(text(refused.root.querySelector('.note [role="alert"]'))).toBe(
+        "The actions can't run: one of this form's content actions needs rights in Umbraco you don't have.",
+      ),
+    );
+    expect(refused.root.querySelector('.note uui-button')).toBeNull();
+    expect(noteOf(refused.root)).toContain('No actions ran.');
   });
 });

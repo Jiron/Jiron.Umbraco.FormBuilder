@@ -5,7 +5,7 @@ import { UmbModalToken } from '@umbraco-cms/backoffice/modal';
 import type { CanvasWidth } from '../canvas/widths';
 import { PREVIEW_MODAL_ALIAS } from '../constants';
 import type { SiteLanguage } from '../preview/look';
-import type { PreviewAsk, PreviewRead, PreviewTicket, RunAnswer, TestEntryRead } from './preview-read';
+import type { PreviewAsk, PreviewRead, RunAnswer, TestEntryRead, TicketAnswer } from './preview-read';
 
 /** An action as Run actions... lists it: its name, and what it does in one line, as the Actions view says them. */
 export interface ActionLine {
@@ -28,8 +28,11 @@ export interface PreviewModalData {
   readonly mayRunActions: boolean;
   /** The saved draft's document in a language, light or dark, empty or with the sample answers. */
   readonly read: (culture: string | null, ask: PreviewAsk) => Promise<PreviewRead>;
-  /** A new ticket for the version the document shows, whose test entries run their actions or not; undefined without an answer. */
-  readonly ticket: (version: number, runActions: boolean) => Promise<PreviewTicket | undefined>;
+  /**
+   * A new ticket for the version the document shows, whose test entries run their actions or not; `refused` when a content
+   * action needs rights in Umbraco the user lacks; undefined without an answer.
+   */
+  readonly ticket: (version: number, runActions: boolean) => Promise<TicketAnswer>;
   /** The test entry the frame sent, by its submission id. */
   readonly testEntry: (submissionId: string) => Promise<TestEntryRead>;
   /** Runs the actions of the test entry the frame sent, once. */

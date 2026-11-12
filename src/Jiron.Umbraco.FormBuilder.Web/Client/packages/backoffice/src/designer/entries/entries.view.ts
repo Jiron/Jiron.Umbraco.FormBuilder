@@ -307,6 +307,11 @@ export class EntriesViewElement extends UmbLitElement {
         border-collapse: collapse;
       }
 
+      table:focus-visible {
+        outline: 2px solid var(--uui-color-focus);
+        outline-offset: -2px;
+      }
+
       th {
         padding: var(--uui-size-space-4) var(--uui-size-space-5);
         font-weight: 700;
@@ -1621,8 +1626,9 @@ export class EntriesViewElement extends UmbLitElement {
         }
 
         if (this._cursor < 0) return;
+        // The focus stays in the list, on the table itself, so j and k go on from the first or last row.
         this._cursor = -1;
-        (document.activeElement as HTMLElement | null)?.blur?.();
+        this.shadowRoot?.querySelector<HTMLElement>('.scroller > table')?.focus({ preventScroll: true });
         break;
       case '?':
         void umbOpenModal(this, ENTRY_KEYS_MODAL).catch(() => undefined);
@@ -1952,6 +1958,7 @@ export class EntriesViewElement extends UmbLitElement {
     return html`<uui-box class="box--flush">
       <div class="scroller">
         <table
+          tabindex="-1"
           class=${[
             state === 'column' ? '' : 'no-state',
             narrowed ? 'narrowed' : '',

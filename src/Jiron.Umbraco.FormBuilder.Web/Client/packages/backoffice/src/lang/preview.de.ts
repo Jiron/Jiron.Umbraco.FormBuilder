@@ -19,6 +19,8 @@ export default {
     noteOff: 'Hier gesendete Einträge sind Testeinträge. Für sie laufen keine Aktionen.',
     noteOn:
       'Hier gesendete Einträge sind Testeinträge. Ihre Aktionen laufen, ihre E-Mails und Nachrichten gehen also wirklich hinaus.',
+    noteRefused:
+      'Hier gesendete Einträge sind Testeinträge. Für sie laufen keine Aktionen: Eine Inhaltsaktion dieses Formulars braucht Rechte in Umbraco, die Sie nicht haben.',
     saved: (number: number) => `Als Testeintrag #${number} gespeichert.`,
     noneRan: 'Es liefen keine Aktionen.',
     running: 'Seine Aktionen laufen.',
@@ -33,6 +35,8 @@ export default {
         : `Diese ${count} Aktionen laufen wie bei einem echten Eintrag; ihre E-Mails und Nachrichten gehen also wirklich hinaus.`,
     runConfirm: (count: number) => (count === 1 ? '1 Aktion ausführen' : `${count} Aktionen ausführen`),
     runFailed: 'Die Aktionen konnten nicht ausgeführt werden.',
+    runRefused:
+      'Die Aktionen können nicht laufen: Eine Inhaltsaktion dieses Formulars braucht Rechte in Umbraco, die Sie nicht haben.',
     expired: 'Diese Vorschau kann nichts mehr senden: Ihr Zugang ist abgelaufen.',
     loadAgain: 'Neu laden',
   },

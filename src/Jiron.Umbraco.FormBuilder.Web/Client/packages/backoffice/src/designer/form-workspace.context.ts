@@ -64,9 +64,10 @@ import {
   previewRead,
   runAnswer,
   testEntryRead,
+  ticketRead,
   type PreviewAsk,
   type PreviewRead,
-  type PreviewTicket,
+  type TicketAnswer,
   type RunAnswer,
   type TestEntryRead,
 } from './visitor-preview/preview-read';
@@ -523,15 +524,17 @@ export class FormWorkspaceContext
 
   /**
    * A new ticket for the version of the form the preview shows, whose test entries run their actions or not (ADR-0203,
-   * ADR-0204); undefined without an answer.
+   * ADR-0204); `refused` for a content action's rights; undefined without an answer.
    */
-  async previewTicketOf(version: number, runActions: boolean): Promise<PreviewTicket | undefined> {
+  async previewTicketOf(version: number, runActions: boolean): Promise<TicketAnswer> {
     const key = this.getUnique();
     if (!key) return undefined;
-    const { data } = await tryExecute(this, formPreviewTicket({ path: { key }, body: { version, runActions } }), {
-      disableNotifications: true,
-    });
-    return data ? { ticket: data.ticket, lifetime: data.lifetimeSeconds } : undefined;
+    const { data, error } = await tryExecute(
+      this,
+      formPreviewTicket({ path: { key }, body: { version, runActions } }),
+      { disableNotifications: true },
+    );
+    return ticketRead(data, codeOf(error));
   }
 
   /** The test entry the preview sent with a submission id (ADR-0204). */

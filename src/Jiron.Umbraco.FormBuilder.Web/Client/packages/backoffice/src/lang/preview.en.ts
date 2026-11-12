@@ -20,6 +20,8 @@ export default {
     runForTests: 'Run actions for test entries',
     noteOff: 'Entries sent here are test entries. They run no actions.',
     noteOn: 'Entries sent here are test entries. Their actions run, so their emails and messages really go out.',
+    noteRefused:
+      "Entries sent here are test entries. They run no actions: one of this form's content actions needs rights in Umbraco you don't have.",
     saved: (number: number) => `Saved as test entry #${number}.`,
     noneRan: 'No actions ran.',
     running: 'Its actions are running.',
@@ -34,6 +36,7 @@ export default {
         : `These ${count} actions run as they would for a real entry, so their emails and messages really go out.`,
     runConfirm: (count: number) => (count === 1 ? 'Run 1 action' : `Run ${count} actions`),
     runFailed: "The actions couldn't be run.",
+    runRefused: "The actions can't run: one of this form's content actions needs rights in Umbraco you don't have.",
     expired: "This preview can't send any more: its access has run out.",
     loadAgain: 'Load again',
   },

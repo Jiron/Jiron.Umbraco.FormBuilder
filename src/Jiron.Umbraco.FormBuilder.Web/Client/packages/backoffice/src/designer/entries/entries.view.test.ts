@@ -715,6 +715,18 @@ describe("a form's Entries view", () => {
     expect(opened.modals.at(-1)?.token).toBe(ENTRY_KEYS_MODAL_ALIAS);
   });
 
+  it('clears the cursor with Esc and keeps the focus in the list, so j starts again at the first row', async () => {
+    const { rows, root, view, press } = await viewOf();
+    await press('j');
+    await press('j');
+    await press('Escape', must(view.shadowRoot?.activeElement, 'the focused row'));
+    expect(rows().some((row) => row.classList.contains('cursor'))).toBe(false);
+    expect(view.shadowRoot?.activeElement).toBe(root.querySelector('table'));
+    await press('j', must(view.shadowRoot?.activeElement, 'the table'));
+    expect(rows()[0]?.classList.contains('cursor')).toBe(true);
+    expect(view.shadowRoot?.activeElement).toBe(rows()[0]);
+  });
+
   it('takes its keys only while the focus is in the list, never from elsewhere on the page (WCAG 2.1.4)', async () => {
     const { rows, press } = await viewOf();
     await press('j', document.body);
